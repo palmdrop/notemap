@@ -53,8 +53,8 @@ flowchart LR
 | Recorder | Fossify Voice Recorder (F-Droid) | Confirmed: records straight into the vault's `voice/` folder, already covered by the existing FolderSync pair. |
 | Phone→server | FolderSync (existing) | `voice/` must be inside the synced set — see [obsidian.md](obsidian.md). |
 | Transcription app | [Speakr](https://github.com/murtaza-nasir/speakr) (Docker) | Watched folder intake, synced correction editor, templated auto-export. |
-| ASR backend | WhisperX (self-hosted, Speakr's recommended connector) | Word-level timestamps; CPU is fine for voice-memo lengths, GPU optional. |
-| Formatting LLM | Ollama + small model (~8B, e.g. Llama 3.1 or Qwen 3) | Via Speakr's OpenAI-compatible backend setting. Reformatting needs no big model. |
+| ASR backend | WhisperX (self-hosted, Speakr's recommended connector) | Word-level timestamps. Homelab RTX 2060 (6 GB): use `medium` int8 (~2–2.5 GB VRAM), seconds per memo. |
+| Formatting LLM | Ollama + small quantized model (3–8B Q4) | Via Speakr's OpenAI-compatible backend setting. Runs after transcription, so it never shares VRAM with Whisper; short `keep_alive` frees the GPU between jobs. |
 | Glue | Copy script: server `voice/` → Speakr watch folder | inotify or cron+rsync; idempotent (track already-copied files). |
 
 ### Export template (sketch)
