@@ -42,6 +42,6 @@ flowchart LR
     memos -.->|manual review: promote keepers| vault
 ```
 
-Longer-term, these flows might converge into a single self-hostable app — see [vision/unified-app.md](vision/unified-app.md) for the gaps such an app would fill and a critical take on whether it's worth building.
+Longer-term, these flows might converge into a single self-hostable app — see [vision/unified-app.md](vision/unified-app.md) for the gaps such an app would fill and a critical take on whether it's worth building. [vision/semantic-search.md](vision/semantic-search.md) covers vector embeddings for smart search and "this note belongs to project X" suggestions: Smart Connections in the vault today, an embedding index in the hub later.
 
 Fast notes and the vault are deliberately **separate systems**: Memos is the timestamped stream of ephemeral thoughts, the vault is where refined, long-lived material ends up. The bridge between them is a manual review ritual, not automation (see [fast-notes.md](flows/fast-notes.md#processing-later)).

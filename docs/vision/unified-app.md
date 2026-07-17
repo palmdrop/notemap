@@ -11,7 +11,7 @@ Capture **anything** I deem potentially important — a jotted idea, a movie to 
 ## The core loop: capture → enrich → process
 
 1. **Capture** — universal and instant. Text, voice, sound, links; anything. No decisions at capture time beyond optional tags. This is why capture must be its own surface and not a vault editor: filing is precisely what capture must never ask for.
-2. **Enrich** (automatic, server-side, advisory only) — transcription when the audio is speech (and recognizing when it isn't — birdsong shouldn't come back as garbled text), suggested tags, a suggested title, a guessed type (idea / bookmark / todo / sound / reference) and destination. Hard rule: **enrichment produces suggestions attached to the item, never mutations.** Nothing is moved, renamed, or rewritten until I say so.
+2. **Enrich** (automatic, server-side, advisory only) — transcription when the audio is speech (and recognizing when it isn't — birdsong shouldn't come back as garbled text), suggested tags, a suggested title, a guessed type (idea / bookmark / todo / sound / reference) and destination. The destination guess is embedding-based, not an LLM guess — nearest-neighbor similarity against the vault, with the matching notes shown as evidence (see [semantic-search.md](semantic-search.md)). Hard rule: **enrichment produces suggestions attached to the item, never mutations.** Nothing is moved, renamed, or rewritten until I say so.
 3. **Process** (manual, batched) — the review queue, done daily-ish, on phone or in browser. Each item is one decision: accept the suggestions or adjust them, then route — into the app's own storage, into the vault, into another platform, or to the archive/trash. The queue drains to zero; that's the ritual. GTD's inbox-processing discipline, applied to multimodal captures instead of email.
 
 ## What exists vs. what's missing
@@ -69,7 +69,7 @@ flowchart TB
     speakr -.->|correction UI, linked from app| phone
 ```
 
-- **Hub server** (the only truly new backend code): item store, sync API, lifecycle state machine, enrichment orchestration (Speakr API/webhook client, Ollama client — output stored as suggestions on the item, never applied), and pluggable **routers**: vault writer first (plain filesystem writes into the Nextcloud-served vault dir; Obsidian-compatible markdown + `![[audio]]` embeds), generic webhook/exporter interface for other platforms later.
+- **Hub server** (the only truly new backend code): item store, sync API, lifecycle state machine, enrichment orchestration (Speakr API/webhook client, Ollama client, embedding index of the vault for destination suggestions and cross-system search — [semantic-search.md](semantic-search.md); sqlite-vec keeps it inside the item store, no extra service), output stored as suggestions on the item, never applied — and pluggable **routers**: vault writer first (plain filesystem writes into the Nextcloud-served vault dir; Obsidian-compatible markdown + `![[audio]]` embeds), generic webhook/exporter interface for other platforms later.
 - **Android app** (the expensive part): local-first store, capture UX with Memos-like speed, share-target so *any* recorder app can feed it, background sync. Could start as a PWA (Speakr and Memos both prove the pattern) — but true offline capture + reliable background sync on Android realistically wants a native (or Tauri/Capacitor) app eventually.
 - **Speakr integration**: hub submits audio via Speakr's REST API, listens to its signed webhooks, pulls the corrected transcript on export. Correction stays in Speakr's UI.
 
@@ -79,6 +79,7 @@ flowchart TB
   - The pipeline is bursty and **sequential** (transcribe → then format), so the two models never need to be resident at once; the GPU sits idle between memos and none of the other services use it.
   - WhisperX with `medium` int8 (~2–2.5 GB VRAM, seconds per memo on GPU; `small` as fallback). Skip diarization for now (voice memos are single-speaker).
   - Ollama with a **3–4B quantized model** (e.g. Llama 3.2 3B, Qwen 3 4B, ~3 GB) — enough for cleanup/formatting, which is the only LLM job; up to 8B Q4 fits if loaded alone. Set a short `keep_alive` so VRAM frees between jobs. One Ollama instance can also serve Karakeep's AI tagging.
+  - The embedding model for [semantic search & destination suggestions](semantic-search.md) is a non-issue: a few hundred MB, runs on CPU, never competes for VRAM.
   - Everything batch/async: capture must never wait on AI.
 - **Vault is plain files** — the app writes standard markdown; if the app dies, the archive is untouched and every capture is exportable. No lock-in, ever.
 - **Degrade gracefully offline**: capture always works; AI steps queue.

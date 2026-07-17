@@ -32,6 +32,7 @@ The known pain points are battery drain from background operation and unreliable
 - **Sync conditions:** Wi-Fi only (or Wi-Fi + charging). On the road, trigger a manual sync when on hotel/café Wi-Fi instead.
 - **Conflict handling:** set conflict resolution to *keep both files* (never "overwrite oldest" silently). A `(conflict)` copy is annoying; a silently lost edit is worse.
 - **Exclude `.obsidian/`** (or at least `.obsidian/workspace*` and plugin caches) from sync. Workspace state changes constantly, causes most conflicts, and desktop/mobile configs diverge anyway. Sync note content and attachments only.
+- **Exclude `.smart-env/`** — the Smart Connections embedding index (see [semantic-search.md](../vision/semantic-search.md)). It's per-device and regenerable; syncing it only causes conflicts.
 
 ### Vault conventions relevant to sync
 
