@@ -41,6 +41,18 @@ Being honest about wheel-reinvention:
 
 Verdict: **not reinventing the wheel, provided the app is a thin hub, not a monolith.** The moment it grows its own transcription engine or its own full editor, it's rebuilding Speakr. The defensible product is: capture client + state machine + vault writer + integrations.
 
+### Landscape check (2026-07)
+
+A survey of existing software ([../inspiration/prior-art.md](../inspiration/prior-art.md)) confirms the gap analysis above — nothing combines offline-first multimodal capture + advisory-only enrichment + lifecycle state + queue ritual + routing into external archives — but moves the build-vs-assemble line:
+
+- **Karakeep** (already self-hosted here) covers capture-anything + Ollama-based advisory tagging; it's an archive, not a conveyor belt, but the hub could be glue around it rather than from scratch.
+- **Blinko** ships quick capture + a two-tier note lifecycle + pgvector semantic search, self-hosted — the project most likely to grow into this vision externally.
+- **Note Companion** (Obsidian plugin) already implements suggest-then-ratify over an inbox folder — most of the Phase-1 value, inside Obsidian, desktop-only.
+- **n8n** can express Phase 1's orchestration (Memos API + Speakr webhooks + Ollama + vault writes) as configuration instead of code.
+- **Drafts** (iOS) and **org-capture → refile** are the design prior art for the capture→route model and the processing ritual respectively.
+
+Consequence: **Phase 1 should only be built if the assembled alternatives fail in practice** — see [../action-plan.md](../action-plan.md) for the try-first sequence and the review checkpoint that decides.
+
 ## Sketch
 
 ```mermaid

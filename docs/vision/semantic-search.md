@@ -38,6 +38,8 @@ This fits the **advisory-only rule** better than LLM guesses: a similarity score
 
 The hub-side index also enables the one thing no Obsidian plugin can do: **cross-system search** — one query spanning the Memos timeline, voice transcripts, and the vault.
 
+Partial prior art on the hub side: **Blinko** (see [../inspiration/prior-art.md](../inspiration/prior-art.md)) ships a self-hosted pgvector embedding index with Ollama over its own notes — proof the mechanics are commodity — but it only indexes its own store, and does search/RAG rather than destination suggestions. The k-NN "this belongs to project X, here are the neighbors as evidence" pattern remains unbuilt anywhere.
+
 ### What to borrow from Khoj
 
 Khoj proves the pattern the hub needs — server-side vault indexing with incremental re-index on file changes, thin clients — but bundles it inside a second-brain app. Borrow the architecture (or its indexing code), not the product.

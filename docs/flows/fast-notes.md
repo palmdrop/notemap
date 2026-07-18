@@ -32,6 +32,15 @@ Memos is the stream; the Obsidian vault is the archive of refined material. The 
 
 Notes are generally *not deleted* from Memos after promotion — the timeline doubles as a lightweight journal, and its value is the unedited timestamped record.
 
+### Reducing promotion friction (decided 2026-07)
+
+**Decision: Memos stays as the capture surface; the [obsidian-memos-sync](https://github.com/RyoJerryYu/obsidian-memos-sync) plugin bridges it into the vault.** It pulls memos from the server into vault daily notes (attachments included), so the review ritual happens *inside the vault*: skim the synced timeline, promote by moving text to project notes — no cross-app copy-paste. Check plugin compatibility against the pinned Memos server version before installing. See [../action-plan.md](../action-plan.md), Approach A.
+
+### Alternatives considered
+
+- **Thino** (Memos-style timeline as an Obsidian plugin) would collapse Memos + vault into one system — rejected for now. One-tap capture is *approximable*: Obsidian mobile 1.11 (2026-01) has official homescreen widgets ("Create a note" / "Open daily note", full app launch), and community widgets can append to the daily note **without opening Obsidian** ([forum widget](https://forum.obsidian.md/t/i-built-a-android-home-screen-widget-for-obsidian-view-notes-tick-off-tasks-and-quick-capture-without-opening-the-app/112819), [Automate flow](https://zachyoung.dev/posts/obsidian-quick-capture-for-android)) — Thino parses timestamped daily-note entries as thinos. But that puts every capture on **two-way file sync** (FolderSync races on the daily note, desktop edits the same file) — exactly the fragile transport [unified-app.md](../vision/unified-app.md) wants out of the capture path, while Memos capture rides API sync. Also: Thino ≥2.0 is closed-source freemium (data stays plain markdown, so lock-in is mild). Revisit only if the two-system setup starts feeling redundant *and* the sync-conflict risk is acceptable.
+- **Blinko** (self-hosted, Memos-like + Ollama AI + semantic search) is a candidate Memos *replacement* with adoption criteria (offline capture test, capture-speed parity, migration) in [../action-plan.md](../action-plan.md), Approach C.
+
 ## Suggested setup
 
 | Component | Choice | Notes |

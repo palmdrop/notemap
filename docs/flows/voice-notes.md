@@ -81,7 +81,7 @@ Both sections on purpose: the formatted version for reading, the raw timestamped
 ### Decisions made
 
 - **Audio home:** vault is the archive; Speakr holds a duplicate working copy. Accepted cost: double storage. Optional later: prune Speakr recordings after correction is finalized.
-- **Speakr over Scriberr:** Scriberr has no file export (transcripts live only in its own DB/UI) and its development is currently paused; Speakr's vault auto-export is a first-class feature.
+- **Speakr over Scriberr:** Scriberr has no file export (transcripts live only in its own DB/UI); Speakr's vault auto-export is a first-class feature. (Update 2026-07: Scriberr development has resumed — Parakeet/Canary models, speaker detection. Worth re-checking export support before Phase 1, but auto-export still decides in Speakr's favor.)
 
 ### Open items (before building)
 
