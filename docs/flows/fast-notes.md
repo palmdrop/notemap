@@ -34,7 +34,9 @@ Notes are generally *not deleted* from Memos after promotion — the timeline do
 
 ### Reducing promotion friction (decided 2026-07)
 
-**Decision: Memos stays as the capture surface; the [obsidian-memos-sync](https://github.com/RyoJerryYu/obsidian-memos-sync) plugin bridges it into the vault.** It pulls memos from the server into vault daily notes (attachments included), so the review ritual happens *inside the vault*: skim the synced timeline, promote by moving text to project notes — no cross-app copy-paste. Check plugin compatibility against the pinned Memos server version before installing. See [../action-plan.md](../action-plan.md), Approach A.
+**Decision: Memos stays as the capture surface; a small server-side script — [`scripts/memos-vault-sync/`](../../scripts/memos-vault-sync/README.md) — bridges memos into the vault as inbox items.** One file per memo in `inbox/`; deleting/moving the file in Obsidian = processed (never re-synced); a memo edited server-side after sync resurfaces with a visible ✏️ edited marker; user-modified files are never overwritten. Runs as a systemd timer on the server — only the server writes vault files, per the one-writer principle in [unified-app.md](../vision/unified-app.md).
+
+The plugin route was tried first and failed on Memos 0.27.1: [obsidian-memos-sync](https://github.com/RyoJerryYu/obsidian-memos-sync) is broken on servers ≥0.25 ([open issue](https://github.com/RyoJerryYu/obsidian-memos-sync/issues/52)), [Yet Another Memos Sync](https://github.com/exusiaiwei/yet-another-memos-sync) (maintained, ≤0.25.1) also failed in practice, and the remaining plugins are stale (≤0.22.5). All of them are daily-note-mode only anyway — no configurable file layout — and every plugin inherits the Memos-API-churn treadmill. The script fixes both.
 
 ### Alternatives considered
 

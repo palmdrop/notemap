@@ -1,0 +1,12 @@
+[Unit]
+Description=One-way sync of Memos into the Obsidian vault inbox
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/memos-vault-sync.env
+ExecStart=/usr/bin/python3 /opt/notemap/scripts/memos-vault-sync/memos_to_vault.py
+# Run as the user that owns the vault files so Nextcloud/FolderSync see sane ownership.
+User=palmdrop
+Nice=10

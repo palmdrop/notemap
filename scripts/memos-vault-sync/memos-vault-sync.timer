@@ -1,0 +1,10 @@
+[Unit]
+Description=Run memos-vault-sync periodically
+
+[Timer]
+OnCalendar=hourly
+RandomizedDelaySec=5m
+Persistent=true
+
+[Install]
+WantedBy=timers.target
