@@ -7,9 +7,12 @@ unless the memo is edited server-side afterwards, in which case it resurfaces
 as a fresh inbox item carrying an "edited" marker. User-modified files are
 never overwritten.
 
-Stdlib only. Configured via environment variables (see scripts/README.md).
-Written against Memos 0.27 (/api/v1/memos); field access is defensive because
-Memos renames API fields between minor versions.
+Incremental by default: each run only fetches memos updated since the previous
+run (plus a grace margin), via a server-side updated_ts filter. The first run,
+and `--full`, scan everything. Stdlib only. Configured via environment
+variables (see scripts/README.md). Written against Memos 0.27 (/api/v1/memos);
+field access is defensive because Memos renames API fields between minor
+versions.
 """
 
 import argparse
@@ -22,10 +25,10 @@ import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
-STATE_VERSION = 1
+STATE_VERSION = 2
 EMBEDDABLE = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".bmp",
               ".m4a", ".mp3", ".ogg", ".wav", ".flac", ".webm", ".mp4", ".mov", ".pdf"}
 
@@ -53,6 +56,10 @@ def load_config():
         "state_file": Path(env("STATE_FILE", required=True)),
         "attachments_subdir": env("ATTACHMENTS_SUBDIR", "attachments"),
         "page_size": int(env("PAGE_SIZE", "1000")),  # API max; fewer round trips on full scan
+        # Extra lookback added on top of the elapsed-since-last-sync window, to
+        # cover memos that land while a sync is running and any timing jitter.
+        # Overlap is free: already-synced unchanged memos are skipped with no I/O.
+        "grace_seconds": int(env("GRACE_SECONDS", "600")),
     }
 
 
@@ -69,11 +76,25 @@ def api_get(cfg, path, params=None, raw=False):
     return body if raw else json.loads(body)
 
 
-def fetch_memos(cfg, log):
-    """All non-archived memos visible to the token's account, oldest first."""
+def fetch_memos(cfg, log, lookback_seconds=None):
+    """Non-archived memos visible to the token's account, oldest first.
+
+    With lookback_seconds set, only memos updated within that window are
+    fetched, via a server-side CEL filter on updated_ts (covers both new and
+    edited memos, since a new memo's updated_ts equals its created_ts). The
+    offset is in seconds and evaluated against the server's clock with now(),
+    so client/server clock skew does not matter. lookback_seconds=None fetches
+    everything (full sync).
+    """
     memos, page_token = [], ""
+    memo_filter = None
+    if lookback_seconds is not None:
+        memo_filter = f"updated_ts >= now() - {int(lookback_seconds)}"
+        log(f"incremental filter: {memo_filter}")
     while True:
         params = {"pageSize": cfg["page_size"]}
+        if memo_filter:
+            params["filter"] = memo_filter  # repeated per page; pageToken alone is not enough
         if page_token:
             params["pageToken"] = page_token
         data = api_get(cfg, "/api/v1/memos", params)
@@ -81,7 +102,8 @@ def fetch_memos(cfg, log):
         page_token = data.get("nextPageToken", "")
         if not page_token:
             break
-    log(f"fetched {len(memos)} memos from server")
+    scope = "all" if lookback_seconds is None else f"last {int(lookback_seconds)}s"
+    log(f"fetched {len(memos)} memos from server ({scope})")
     kept = [m for m in memos if memo_state(m) == "NORMAL"]
     kept.sort(key=lambda m: memo_time(m))
     return kept
@@ -216,8 +238,11 @@ def write_note(cfg, memo, log, dry_run, edited=False):
 
 def load_state(path):
     if path.exists():
-        return json.loads(path.read_text())
-    return {"version": STATE_VERSION, "memos": {}}
+        state = json.loads(path.read_text())
+        state.setdefault("memos", {})
+        state.setdefault("last_sync_start", None)  # absent in v1 -> forces a full sync
+        return state
+    return {"version": STATE_VERSION, "last_sync_start": None, "memos": {}}
 
 
 def save_state(path, state):
@@ -227,7 +252,27 @@ def save_state(path, state):
 
 # --- sync ---
 
-def sync(cfg, dry_run, log):
+def compute_lookback(state, cfg, run_start, force_full, log):
+    """Seconds to look back, or None for a full sync.
+
+    Full sync when forced or when there is no recorded last sync (first run,
+    or a v1 state). Otherwise: elapsed since the previous sync started, plus a
+    grace margin — so the window always reaches back to before the last run
+    began, and downtime is covered automatically (a systemd Persistent=true
+    timer catches up, and the widened window then re-scans the whole gap).
+    """
+    if force_full:
+        log("full sync (forced)")
+        return None
+    last = state.get("last_sync_start")
+    if not last:
+        log("full sync (no previous sync recorded)")
+        return None
+    elapsed = (run_start - datetime.fromisoformat(last)).total_seconds()
+    return max(elapsed, 0) + cfg["grace_seconds"]
+
+
+def sync(cfg, dry_run, force_full, log):
     try:
         profile = api_get(cfg, "/api/v1/workspace/profile")
         log(f"server version: {profile.get('version', 'unknown')}")
@@ -238,7 +283,10 @@ def sync(cfg, dry_run, log):
     known = state["memos"]
     new = updated = skipped = 0
 
-    for memo in fetch_memos(cfg, log):
+    run_start = datetime.now(timezone.utc)
+    lookback = compute_lookback(state, cfg, run_start, force_full, log)
+
+    for memo in fetch_memos(cfg, log, lookback):
         uid = memo_uid(memo)
         update_time = memo.get("updateTime", "")
         entry = known.get(uid)
@@ -268,15 +316,23 @@ def sync(cfg, dry_run, log):
         updated += 1
 
     if not dry_run:
+        # Record the start time (not now): the next run's window then reaches
+        # back to before this fetch, covering anything that landed during it.
+        state["version"] = STATE_VERSION
+        state["last_sync_start"] = run_start.isoformat()
         save_state(cfg["state_file"], state)
     prefix = "[dry-run] " if dry_run else ""
-    print(f"{prefix}sync done: {new} new, {updated} edited, {skipped} unchanged")
+    mode = "full" if lookback is None else "incremental"
+    print(f"{prefix}sync done ({mode}): {new} new, {updated} edited, {skipped} unchanged")
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--dry-run", action="store_true",
                         help="report what would be written without touching vault or state")
+    parser.add_argument("--full", action="store_true",
+                        help="scan all memos, ignoring the incremental window "
+                             "(use for reconciliation; the first run is always full)")
     parser.add_argument("--verbose", action="store_true", help="log per-memo detail")
     args = parser.parse_args()
 
@@ -284,7 +340,7 @@ def main():
         if args.verbose:
             print(message)
 
-    sync(load_config(), args.dry_run, log)
+    sync(load_config(), args.dry_run, args.full, log)
 
 
 if __name__ == "__main__":
