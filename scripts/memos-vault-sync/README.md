@@ -22,7 +22,7 @@ All via environment variables — see [memos-vault-sync.env.example](memos-vault
 | `STATE_FILE` | yes | sync-state JSON — **must live outside the vault** |
 | `MEMOS_WEB_URL` | no | public UI base for frontmatter links (default: `MEMOS_URL`) |
 | `ATTACHMENTS_SUBDIR` | no | attachment folder under inbox (default `attachments`; empty = link only) |
-| `PAGE_SIZE` | no | API page size (default 100) |
+| `PAGE_SIZE` | no | API page size (default 1000, the server max) |
 
 ### First run / testing
 

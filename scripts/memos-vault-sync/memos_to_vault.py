@@ -52,7 +52,7 @@ def load_config():
         "inbox_dir": Path(env("VAULT_INBOX_DIR", required=True)),
         "state_file": Path(env("STATE_FILE", required=True)),
         "attachments_subdir": env("ATTACHMENTS_SUBDIR", "attachments"),
-        "page_size": int(env("PAGE_SIZE", "100")),
+        "page_size": int(env("PAGE_SIZE", "1000")),  # API max; fewer round trips on full scan
     }
 
 
