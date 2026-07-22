@@ -14,3 +14,11 @@ ExecStart=/usr/bin/python3 /opt/notemap/scripts/memos-vault-sync/memos_to_vault.
 User=33
 Group=33
 Nice=10
+
+# After a successful sync, have Nextcloud index the externally-written files.
+# '+' runs this line as root (needed for docker-socket access), bypassing User=33.
+# Fill in <container> and the Nextcloud path (/<ncuser>/files/<path-to>/inbox).
+# Test the command by hand first; use plain files:scan (not --unscanned) so edited
+# memos are re-indexed. Optional: '+-' instead of '+' to not fail the sync if the
+# scan errors; append --quiet to reduce journal noise.
+#ExecStartPost=+/usr/bin/docker exec -u 33 <container> php occ files:scan --path=/<ncuser>/files/<path-to>/inbox
