@@ -343,7 +343,9 @@ def sync(cfg, dry_run, force_full, log):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    # Literal, not __doc__: docstrings are None under `python -OO` / PYTHONOPTIMIZE=2.
+    parser = argparse.ArgumentParser(
+        description="One-way sync: Memos server -> Obsidian vault inbox.")
     parser.add_argument("--dry-run", action="store_true",
                         help="report what would be written without touching vault or state")
     parser.add_argument("--full", action="store_true",
