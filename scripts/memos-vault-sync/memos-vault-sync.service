@@ -17,8 +17,10 @@ Nice=10
 
 # After a successful sync, have Nextcloud index the externally-written files.
 # '+' runs this line as root (needed for docker-socket access), bypassing User=33.
-# Fill in <container> and the Nextcloud path (/<ncuser>/files/<path-to>/inbox).
+# NC_CONTAINER and NC_SCAN_PATH come from the EnvironmentFile, so this line stays
+# generic — set them there, not here. (NC_SCAN_PATH is Nextcloud's *virtual* path,
+# /<ncuser>/files/<path>/inbox, not VAULT_INBOX_DIR's filesystem path.)
 # Test the command by hand first; use plain files:scan (not --unscanned) so edited
 # memos are re-indexed. Optional: '+-' instead of '+' to not fail the sync if the
 # scan errors; append --quiet to reduce journal noise.
-#ExecStartPost=+/usr/bin/docker exec -u 33 <container> php occ files:scan --path=/<ncuser>/files/<path-to>/inbox
+#ExecStartPost=+/usr/bin/docker exec -u 33 ${NC_CONTAINER} php occ files:scan --path=${NC_SCAN_PATH}
