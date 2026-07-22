@@ -7,6 +7,10 @@ After=network-online.target
 Type=oneshot
 EnvironmentFile=/etc/memos-vault-sync.env
 ExecStart=/usr/bin/python3 /opt/notemap/scripts/memos-vault-sync/memos_to_vault.py
-# Run as the user that owns the vault files so Nextcloud/FolderSync see sane ownership.
-User=palmdrop
+# Run as the uid/gid Nextcloud owns the vault files with (www-data inside the
+# container = 33:33 on the host, even if no name resolves there). Numeric is
+# fine; Group is set explicitly so files land 33:33 regardless of uid 33's
+# primary group on the host.
+User=33
+Group=33
 Nice=10

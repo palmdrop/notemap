@@ -62,7 +62,14 @@ systemctl start memos-vault-sync.service   # run once now
 journalctl -u memos-vault-sync.service     # logs
 ```
 
-Adjust `User=` and the script path in the `.service` file to the deployment location. Runs hourly (`Persistent=true` catches up after downtime).
+Adjust the script path in the `.service` file to the deployment location. Runs hourly (`Persistent=true` catches up after downtime).
+
+**Running as the Nextcloud uid.** The unit runs as `User=33` / `Group=33` — the uid:gid Nextcloud owns vault files with inside its container (www-data), so synced files land with ownership Nextcloud accepts (on the host uid 33 may have no name and gid 33 may show as e.g. `tape`; only the numbers matter). Because the process then runs *as* uid 33, everything it touches must be reachable by that uid — this is the part that actually bites:
+
+- **Token file** (`MEMOS_TOKEN_FILE`): read by the script as uid 33, so it must be readable by 33 — `sudo chown 33:33 /etc/memos-vault-sync.token && sudo chmod 600 /etc/memos-vault-sync.token`. (The `EnvironmentFile` itself is read by systemd as root before dropping privileges, so it can stay `root:root 600`.)
+- **State dir** (`STATE_FILE`'s directory): must be writable by 33 — `sudo install -d -o 33 -g 33 /var/lib/memos-vault-sync`.
+- **Inbox dir** (`VAULT_INBOX_DIR`): already 33-owned if Nextcloud created it; otherwise `chown` it so the script can write.
+- Files are created mode 0600 owned 33:33; since Nextcloud runs as 33 that is sufficient. Still run `occ files:scan` (or use an External Storage mount) so Nextcloud indexes the external writes.
 
 ### Caveats
 
