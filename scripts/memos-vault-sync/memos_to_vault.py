@@ -272,12 +272,28 @@ def compute_lookback(state, cfg, run_start, force_full, log):
     return max(elapsed, 0) + cfg["grace_seconds"]
 
 
-def sync(cfg, dry_run, force_full, log):
+def health_check(cfg):
+    """Fail fast with a clear message (not a mid-run traceback) if the server is
+    unreachable or the token is bad, before any fetching or writing.
+
+    Probes GET /memos?pageSize=1 — the endpoint the sync relies on anyway,
+    present across versions, and which also validates the access token (a
+    liveness-only endpoint like /healthz would not confirm auth works).
+    """
     try:
-        profile = api_get(cfg, "/api/v1/workspace/profile")
-        log(f"server version: {profile.get('version', 'unknown')}")
-    except (urllib.error.URLError, urllib.error.HTTPError) as exc:
-        sys.exit(f"error: cannot reach Memos at {cfg['base_url']}: {exc}")
+        api_get(cfg, "/api/v1/memos", {"pageSize": 1})
+    except urllib.error.HTTPError as exc:
+        if exc.code in (401, 403):
+            sys.exit(f"error: Memos rejected the token (HTTP {exc.code}) — "
+                     "check MEMOS_TOKEN / MEMOS_TOKEN_FILE")
+        sys.exit(f"error: Memos health check failed at {cfg['base_url']} (HTTP {exc.code})")
+    except urllib.error.URLError as exc:
+        sys.exit(f"error: cannot reach Memos at {cfg['base_url']}: {exc.reason}")
+
+
+def sync(cfg, dry_run, force_full, log):
+    health_check(cfg)
+    log(f"connected to Memos at {cfg['base_url']}")
 
     state = load_state(cfg["state_file"])
     known = state["memos"]

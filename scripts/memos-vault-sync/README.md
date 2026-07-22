@@ -39,8 +39,7 @@ Flags: `--dry-run` (touch nothing), `--full` (scan all memos, skip the increment
 ### First run / testing
 
 ```bash
-# 1. Sanity-check server + token by hand:
-curl -s "$MEMOS_URL/api/v1/workspace/profile"
+# 1. Sanity-check server + token by hand (this is also the script's health check):
 curl -s -H "Authorization: Bearer $TOKEN" "$MEMOS_URL/api/v1/memos?pageSize=1"
 
 # 2. Dry run — prints what would be written, touches nothing:
