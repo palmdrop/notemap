@@ -44,7 +44,11 @@ def load_config():
     token = env("MEMOS_TOKEN")
     token_file = env("MEMOS_TOKEN_FILE")
     if not token and token_file:
-        token = Path(token_file).read_text().strip()
+        try:
+            token = Path(token_file).read_text().strip()
+        except OSError as exc:
+            sys.exit(f"error: cannot read token file {token_file}: "
+                     f"{exc.strerror} (must be readable by the uid the service runs as)")
     if not token:
         sys.exit("error: MEMOS_TOKEN or MEMOS_TOKEN_FILE is not set")
     base_url = env("MEMOS_URL", required=True).rstrip("/")
