@@ -33,7 +33,7 @@ All via environment variables — see [memos-vault-sync.env.example](memos-vault
 | `ATTACHMENTS_SUBDIR` | no | attachment folder under inbox (default `attachments`; empty = link only) |
 | `PAGE_SIZE` | no | API page size (default 1000, the server max) |
 | `GRACE_SECONDS` | no | extra lookback added to the incremental window (default 600) |
-| `FILE_MODE` | no | octal mode for note/attachment files (default `0644`; state file stays `0600`) |
+| `FILE_MODE` | no | octal mode for written files — notes, attachments, and the state file (default `0644`) |
 
 Flags: `--dry-run` (touch nothing), `--full` (scan all memos, skip the incremental window), `--verbose` (per-memo logging; also prints the filter and fetch counts).
 

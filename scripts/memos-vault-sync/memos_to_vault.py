@@ -257,9 +257,9 @@ def load_state(path):
     return {"version": STATE_VERSION, "last_sync_start": None, "memos": {}}
 
 
-def save_state(path, state):
+def save_state(path, state, mode=None):
     path.parent.mkdir(parents=True, exist_ok=True)
-    atomic_write_bytes(path, json.dumps(state, indent=1).encode())
+    atomic_write_bytes(path, json.dumps(state, indent=1).encode(), mode)
 
 
 # --- sync ---
@@ -348,7 +348,7 @@ def sync(cfg, dry_run, force_full, log):
         # back to before this fetch, covering anything that landed during it.
         state["version"] = STATE_VERSION
         state["last_sync_start"] = run_start.isoformat()
-        save_state(cfg["state_file"], state)
+        save_state(cfg["state_file"], state, cfg["file_mode"])
     prefix = "[dry-run] " if dry_run else ""
     mode = "full" if lookback is None else "incremental"
     print(f"{prefix}sync done ({mode}): {new} new, {updated} edited, {skipped} unchanged")
