@@ -1,33 +1,18 @@
-# logger@.service — reusable oneshot that dispatches to a pre-existing log.sh.
+# logger@.service — logs an error for the unit that triggered it, via log.sh.
 #
-# A template instance carries only ONE string, so the three fields are packed
-# into it as  level|service|message  and unpacked here into three arguments.
+# Use as a failure handler. The failing unit passes its own name as the
+# instance, in its [Unit] section:
 #
-# CALL IT (always via systemd-escape --template, so spaces/pipes/dashes survive
-# the round trip — systemd-escape turns '|'->\x7c, ' '->\x20, '-'->\x2d, and %I
-# reverses them all):
+#   OnFailure=logger@%n.service
 #
-#   systemctl start "$(systemd-escape --template=logger@.service \
-#       'error|memos-vault-sync.service|sync failed: connection refused')"
-#
-# %I is the unescaped instance; bash splits on '|'. level and service are plain
-# tokens; message is the remainder, so it may contain spaces and even '|'.
-# log.sh is invoked as:  log.sh <level> <service> <message>
-#
-# OnFailure use: do NOT write %n into the instance here — its literal '-' would
-# come back as '/'. Either:
-#  (a) hardcode a pre-escaped instance with a fixed message; generate it with
-#        systemd-escape --template=logger@.service 'error|memos-vault-sync.service|sync failed'
-#      then in the failing unit's [Unit]:
-#        OnFailure=logger@error\x7cmemos\x2dvault\x2dsync.service\x7csync\x20failed.service
-#  (b) simpler — a dedicated one-line wrapper unit that calls log.sh directly,
-#      ExecStart=/PATH/TO/log.sh error memos-vault-sync.service "sync failed"
-#      pointed at by OnFailure=<wrapper>.service (no packing, no escaping).
+# Here %i is that name (e.g. memos-vault-sync.service). Use %i, NOT %I — %I
+# would unescape '-' back to '/' and mangle the name. log.sh is called as:
+#   log.sh error <service-name>
+# Set the log.sh path in ExecStart below.
 
 [Unit]
-Description=Log dispatch (%I)
+Description=Log error for %i
 
 [Service]
 Type=oneshot
-# Set the path to your log.sh below.
-ExecStart=/bin/bash -c 'IFS="|" read -r level service message <<<"$1"; exec /PATH/TO/log.sh "$level" "$service" "$message"' _ %I
+ExecStart=/PATH/TO/log.sh error %i
