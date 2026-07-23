@@ -64,6 +64,10 @@ def load_config():
         # cover memos that land while a sync is running and any timing jitter.
         # Overlap is free: already-synced unchanged memos are skipped with no I/O.
         "grace_seconds": int(env("GRACE_SECONDS", "600")),
+        # Mode for written note + attachment files. mkstemp forces 0600, so this
+        # is applied explicitly. Default 0644 = Nextcloud's standard (owner rw,
+        # group/other read) so other users/scripts can read them.
+        "file_mode": int(env("FILE_MODE", "0644"), 8),
     }
 
 
@@ -191,7 +195,7 @@ def attachment_lines(cfg, memo, log, dry_run):
                 lines.append(f"[attachment: {filename}]({cfg['web_url']}/{att_name})")
                 continue
             target.parent.mkdir(parents=True, exist_ok=True)
-            atomic_write_bytes(target, blob)
+            atomic_write_bytes(target, blob, cfg["file_mode"])
             log(f"  attachment saved: {target.name}")
         if Path(filename).suffix.lower() in EMBEDDABLE:
             lines.append(f"![[{local_name}]]")
@@ -202,11 +206,15 @@ def attachment_lines(cfg, memo, log, dry_run):
 
 # --- filesystem ---
 
-def atomic_write_bytes(path, data):
+def atomic_write_bytes(path, data, mode=None):
+    # mkstemp forces 0600; chmod the temp file before the rename so the file
+    # appears at its final path already carrying `mode` (no 0600 window there).
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
     try:
         with os.fdopen(fd, "wb") as handle:
             handle.write(data)
+        if mode is not None:
+            os.chmod(tmp, mode)
         os.replace(tmp, path)
     except BaseException:
         os.unlink(tmp)
@@ -236,7 +244,7 @@ def write_note(cfg, memo, log, dry_run, edited=False):
     path = unique_path(cfg["inbox_dir"], stem)
     if not dry_run:
         cfg["inbox_dir"].mkdir(parents=True, exist_ok=True)
-        atomic_write_bytes(path, data)
+        atomic_write_bytes(path, data, cfg["file_mode"])
     return path.name, sha256(data)
 
 
