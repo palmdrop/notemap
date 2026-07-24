@@ -14,6 +14,12 @@ Capture **anything** I deem potentially important — a jotted idea, a movie to 
 2. **Enrich** (automatic, server-side, advisory only) — transcription when the audio is speech (and recognizing when it isn't — birdsong shouldn't come back as garbled text), suggested tags, a suggested title, a guessed type (idea / bookmark / todo / sound / reference) and destination. The destination guess is embedding-based, not an LLM guess — nearest-neighbor similarity against the vault, with the matching notes shown as evidence (see [semantic-search.md](semantic-search.md)). Hard rule: **enrichment produces suggestions attached to the item, never mutations.** Nothing is moved, renamed, or rewritten until I say so.
 3. **Process** (manual, batched) — the review queue, done daily-ish, on phone or in browser. Each item is one decision: accept the suggestions or adjust them, then route — into the app's own storage, into the vault, into another platform, or to the archive/trash. The queue drains to zero; that's the ritual. GTD's inbox-processing discipline, applied to multimodal captures instead of email.
 
+### Processing view: atomic items, unified reading surface
+
+A refinement of the Process step, prompted by the file-per-memo friction in today's Obsidian flow ([fast-notes.md](../flows/fast-notes.md#processing-the-inbox-in-obsidian)): each capture stays a **separate entity** in the item store — its own lifecycle state, enrichment, provenance, and routing decision — but during processing the queue is **rendered as one continuous document**, so reading and copying across items feels like scrolling a single long note, not opening files one at a time. The atomic model is what the pipeline needs (per-item state and suggestions); the unified view is what the human needs (fast linear reading, cherry-picking text across items). They're just two projections of the same underlying items — the backing store never collapses into one blob.
+
+Deferred, deliberately: **how "processed" is marked** in this view — a per-item action as you scroll, a keystroke/swipe, or inferred from what you route or copy out — is undecided. Recorded now so the data model stays atomic underneath whatever the reading surface turns out to be; the marking mechanism is a later concern.
+
 ## What exists vs. what's missing
 
 | Requirement | Covered today by | Gap |
