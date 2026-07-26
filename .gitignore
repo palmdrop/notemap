@@ -1,0 +1,47 @@
+# Env & secrets  (keep the *.example templates tracked)
+.env
+*.env
+!*.env.example
+!.env.example
+*.pem
+*.key
+
+# Local data / runtime state (item store, vector index, volumes)
+data/
+*.db
+*.sqlite
+*.sqlite3
+*.sqlite3-journal
+
+# Python (scripts/)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Node / web queue UI (if/when added)
+node_modules/
+dist/
+build/
+.cache/
+*.tsbuildinfo
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.\#*
+\#*\#
