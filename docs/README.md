@@ -9,6 +9,8 @@ Guiding principles:
 - **Fast capture, deliberate processing** — getting a thought down should take seconds; organizing and refining happens later, on my terms.
 - **Privacy** — audio and text never leave infrastructure I control. Transcription and LLM processing run on my own hardware.
 
+Formats and interop (how captures enter, how routed artifacts stay traceable, how other apps feed in): [standards.md](standards.md) — part of the wider `commons` family of tools.
+
 ## The three flows
 
 | Flow | Doc | Capture tool | Home |
