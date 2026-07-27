@@ -32,6 +32,15 @@ The two questions this answers:
 - Covers: most of the Phase-1 hub value (suggest-then-ratify over an inbox) with zero backend code.
 - Caveats: desktop-only; polished path is their cloud service — self-hosting/own-endpoint mode needs verifying against the privacy rule before use.
 
+### Memex (memex-lab)
+
+[Memex](https://github.com/memex-lab/memex) — GPL-3.0 Flutter app (iOS/Android), actively developed, ~750 commits. An **AI journal**: captures text, photos and voice on the phone, then multi-agent AI turns fragments into typed "cards" (10+ types — task, event, article, person, metric…) organised P.A.R.A.-style, with entity extraction, tags, cross-references and generated insight cards. Storage is local: Drift/SQLite plus markdown files on the device, optional folder or iCloud backup. Bring-your-own LLM across 14+ providers **including Ollama**, prompts going phone → provider directly.
+
+- Covers, and closer than anything else on the capture side: **on-device multimodal capture + local-first storage + local-LLM enrichment + typed heterogeneous fragments** — the card taxonomy is the nearest existing thing to the fragment types in [project-collections.md](../vision/project-collections.md), and markdown export keeps the no-lock-in rule.
+- Missing vs. the vision, and the gap is philosophical: **the AI acts rather than suggests.** Cards are generated, not proposed for ratification — the inverse of the advisory-only rule ([standards.md](../standards.md#the-ingestion-contract-the-inbox)). There is no queue, no lifecycle state, no ratification step, and no routing: export is not delivery to a destination, and items are never meant to *leave*. It is a journal, i.e. an archive.
+- On-device only means **no server** — no shared pipeline across phone and desktop, no vault writer, no WhisperX-grade transcription on the homelab GPU.
+- Most interesting angle: as a **Flutter capture client under a compatible licence**, it is the closest existing starting point for the vision's Phase 2 mobile app — the expensive part per [unified-app.md](../vision/unified-app.md#sketch). Worth re-checking before any mobile work begins.
+
 ## The workflow itself has famous prior art
 
 - **[Drafts](https://getdrafts.com/)** (iOS/Mac) — the canonical "capture first, route later" product: every capture lands in an Inbox, processing means firing **actions** that send text to destinations, then archive/trash ([docs](https://docs.getdrafts.com/gettingstarted/)). Apple-only and cloud-synced, so a *design reference* (especially its action/routing model), not a solution.
@@ -65,5 +74,5 @@ Catch: Telegram is a third-party cloud — violates the privacy principle for au
 
 The critical take in [unified-app.md](../vision/unified-app.md) survives contact with the landscape, with two amendments:
 
-1. **The uncovered combination is confirmed**: nothing does offline-first multimodal capture + *advisory-only* enrichment + lifecycle state + queue-drain ritual + pluggable routing into someone else's archive. Everything close is either an archive that keeps your stuff (Karakeep, Blinko), an in-vault assistant (Note Companion), or cloud (Drafts, Mem, Sublime).
+1. **The uncovered combination is confirmed**: nothing does offline-first multimodal capture + *advisory-only* enrichment + lifecycle state + queue-drain ritual + pluggable routing into someone else's archive. Everything close is either an archive that keeps your stuff (Karakeep, Blinko, Memex), an in-vault assistant (Note Companion), or cloud (Drafts, Mem, Sublime). Memex is the sharpest illustration of the split: it has the best local-first multimodal capture of the lot and still inverts the core rule by letting the AI file for you.
 2. **The build-vs-assemble line has moved.** Before writing the hub: (a) try **suggest-then-ratify inside Obsidian** (Note Companion over `inbox/`) — most of the Phase-1 value; (b) if orchestration is still missing, try an **n8n skeleton** over Memos + Speakr + Ollama. Only if the ritual proves out *and* the assembled version still grates does the bespoke hub earn its keep. See [action-plan.md](../action-plan.md).
