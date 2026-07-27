@@ -1,6 +1,8 @@
 # Vision: project collections — the project as a database
 
-Direction note (2026-07), deliberately vague and long-term — recorded so the capability isn't forgotten, and so the architecture doesn't accidentally close the door on it. **The core of the app is unchanged**: the processing queue and second-brain integrations (Obsidian first, possibly others, possibly an own-built system someday). The app stays general; this flow — collection/research/moodboard gathering — is one use of it, alongside plain note taking. Where collected material ultimately *lives* (in-app, in the vault, elsewhere) is deliberately undecided: **keep it open for now.**
+Direction note (2026-07), long-term — recorded so the capability isn't forgotten, and so the architecture doesn't accidentally close the door on it. **The core of the app is unchanged**: the processing queue and second-brain integrations (Obsidian first, possibly others, possibly an own-built system someday). The app stays general; this flow — collection/research/moodboard gathering — is one use of it, alongside plain note taking.
+
+**Update (2026-07): where collected material lives is no longer an open question — it is not notemap's question.** A collection is always a **destination**, reached through a routing adapter: an Obsidian folder, a single markdown file, an Are.na-like board, a future standalone app. notemap owns the feed, classification, enrichment, and the routing log; it does not own collections, prose, or arrangement. See [pool-and-routing.md](pool-and-routing.md#collections-are-destinations). The consequence is that the collection's home can change — or be several homes at once — without touching the pool.
 
 ## The idea
 
@@ -42,7 +44,9 @@ These apps prove the demand; none combines **self-hosted + offline-first capture
 
 ## How it fits the existing vision
 
-This changes nothing about the core loop — capture → enrich → process, with the queue draining into destinations. It adds one candidate destination: a **project collection**, alongside "vault" and "other platform." Whether collections live in the app's own storage, as a convention inside the vault, or in some other system is exactly what stays open; some captures just don't want to become markdown in a folder, and the routing step should eventually have somewhere to send them.
+This changes nothing about the core loop — capture → enrich → process, with the queue draining into destinations. It adds one candidate destination: a **project collection**, alongside "vault" and "other platform." Which *shape* a collection takes stays open — some captures just don't want to become markdown in a folder — but the mechanism doesn't: it's an adapter behind the routing table in [pool-and-routing.md](pool-and-routing.md#destinations-and-the-routing-table), same as any other sink.
+
+One consequence of the settled model is worth noting here: **captures never merge with each other.** Merging and appending happen from a capture *into* an entity in the destination — a notemap note into an Obsidian document — never between two queue items. The processed-artifact layer therefore lives on the destination side, and what notemap keeps is the original capture plus a best-effort pointer to where it went.
 
 Concretely, what's cheap to honor early and expensive to retrofit, whatever the eventual home:
 

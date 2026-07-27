@@ -61,6 +61,9 @@ don't require model changes.
   - `wasDerivedFrom` — processed artifact → original capture
   - `wasGeneratedBy` — enrichment output → the activity/model that produced it
   - `wasAttributedTo` — the agent: a human decision vs. `whisperx-medium` vs. `qwen3-4b`
+  - `wasRevisionOf` — a revision → the capture it supersedes. Edits are **appends, not
+    mutations**: a new item carrying the original `created` plus an `updated` timestamp,
+    linked back to its predecessor ([vision/pool-and-routing.md](vision/pool-and-routing.md#edits-are-revisions-not-mutations)).
 - **Routed-artifact frontmatter vocabulary** — every item that leaves notemap carries, in
   YAML frontmatter, [Dublin Core](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/)
   terms (`title`, `creator`, `date`, `source`) plus `source_id`, `captured_at`,
@@ -82,6 +85,13 @@ so different sinks emit different dialects from the same item:
 | other platforms | generic webhook/exporter interface |
 
 One writer per file: only the server-side router touches vault files.
+
+Routing is **non-destructive and append-only**: the capture stays in the feed, and each
+delivery appends a `(destination, timestamp, pointer)` record — a list, not a boolean, since
+one item may be routed to several destinations. The pointer is best-effort; the destination
+is someone else's system, so a stale pointer records where a note *once went* rather than
+guaranteeing where it is. Adapters declare which verbs (`create`, `append`, `place`) they
+support per payload type. Full model: [vision/pool-and-routing.md](vision/pool-and-routing.md#destinations-and-the-routing-table).
 
 ---
 
