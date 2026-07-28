@@ -99,6 +99,14 @@ support per payload type. Full model: [vision/pool-and-routing.md](vision/pool-a
 
 - **Roles:** store / router (+ enrichment). **Tier 3** (live ingestion API) — it *is* the
   bus other apps hook into.
+- **Enrichment providers:** every enrichment step is an adapter, configured not compiled.
+  Transcription's contract is *audio in → (text, WebVTT word-level timestamps, language,
+  confidence, is-speech) out*, asynchronous, with a completion signal; the pragmatic wire
+  format is an **OpenAI-compatible `/audio/transcriptions` endpoint**, with a generic webhook
+  adapter as the escape hatch. Transcription and *correction* are separate capabilities — most
+  providers offer only the first. Each provider carries a trust level (local-only by default)
+  and is named on the item via `wasAttributedTo`.
+  See [vision/audio-intake.md](vision/audio-intake.md#transcription-is-a-provider-not-a-component).
 - **Enrichment infra** (not a wire standard, recorded for completeness):
   [sqlite-vec](https://github.com/asg017/sqlite-vec) embedding index with a multilingual
   Ollama model (`bge-m3` / `multilingual-e5-small`) — powers destination suggestions and

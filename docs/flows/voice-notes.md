@@ -2,6 +2,8 @@
 
 Record a voice memo on the phone; end up with a formatted, timestamped transcript note **beside the audio file in the Obsidian vault** — transcribed and post-processed entirely on my own server, with a web UI for correcting transcription mistakes against the audio.
 
+This is the **Phase 0 pipeline** and it stays as written. Note what it is not: audio never becomes a notemap pool item here, and the transcript is written straight into `vault/voice/` — i.e. the destination is fixed at record time rather than chosen during processing. How audio enters the pool instead (share-target, built-in recorder, folder watch), and why transcription has to become a **configurable provider** rather than a hardwired Speakr, is in [../vision/audio-intake.md](../vision/audio-intake.md).
+
 ## Why this flow
 
 - Speaking is faster than typing for longer thoughts, especially while walking/traveling.

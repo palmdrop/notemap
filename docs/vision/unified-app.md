@@ -91,9 +91,11 @@ flowchart TB
 
 - **Hub server** (the only truly new backend code): item store, sync API, lifecycle state machine, enrichment orchestration (Speakr API/webhook client, Ollama client, embedding index of the vault for destination suggestions and cross-system search — [semantic-search.md](semantic-search.md); sqlite-vec keeps it inside the item store, no extra service), output stored as suggestions on the item, never applied — and pluggable **routers**: vault writer first (plain filesystem writes into the Nextcloud-served vault dir; Obsidian-compatible markdown + `![[audio]]` embeds), generic webhook/exporter interface for other platforms later.
 - **Android app** (the expensive part): local-first store, capture UX with Memos-like speed, share-target so *any* recorder app can feed it, background sync. Could start as a PWA (Speakr and Memos both prove the pattern) — but true offline capture + reliable background sync on Android realistically wants a native (or Tauri/Capacitor) app eventually.
-- **Speakr integration**: hub submits audio via Speakr's REST API, listens to its signed webhooks, pulls the corrected transcript on export. Correction stays in Speakr's UI.
+- **Speakr integration**: hub submits audio via Speakr's REST API, listens to its signed webhooks, pulls the corrected transcript on export. Correction stays in Speakr's UI. But Speakr is **one provider behind an adapter**, not a dependency — transcription (and every other enrichment step) is configurable, so a deployment can point at another self-hosted endpoint, an external service, or the user's own tooling. See [audio-intake.md](audio-intake.md#transcription-is-a-provider-not-a-component).
 
 ## Constraints (hard requirements)
+
+These are hard requirements *for this deployment*, and the shipped defaults — but they are a **deployment policy, not an architecture**. Enrichment steps sit behind provider adapters ([audio-intake.md](audio-intake.md#the-same-applies-to-every-enrichment-step)), so someone whose hardware or trust boundary differs can repoint them without forking. Local-only stays the default; anything that sends content off-box is opt-in, per provider, and visibly attributed on the item.
 
 - **All AI self-hosted and lightweight** — must run on the homelab: an old ASUS laptop with an **RTX 2060 (6 GB VRAM)**, shared with Nextcloud, Vaultwarden, Karakeep, etc.
   - The pipeline is bursty and **sequential** (transcribe → then format), so the two models never need to be resident at once; the GPU sits idle between memos and none of the other services use it.
