@@ -1,2 +1,2 @@
-export type { StepState } from "./enrichment/step-state.js";
-export { isWorkExpected } from "./enrichment/step-state.js";
+export type { EnrichmentState } from "./enrichment/state.js";
+export { isWorkExpected } from "./enrichment/state.js";

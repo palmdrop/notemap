@@ -75,9 +75,11 @@ arrived, never a judgement. Adapters declare which verbs they support per payloa
 _Avoid_: type, kind, format
 
 **Enrichment**:
-Anything automated that produces material *beside* a capture without changing it: a transcript, a
-suggested tag, a guessed destination, an embedding.
-_Avoid_: processing, AI, analysis
+One automated unit of work that produces material *beside* a capture without changing it: a
+transcript, a suggested tag, a guessed destination, an embedding. Each declares what it needs and
+runs once those needs are met, so enrichments are unordered and may run concurrently. Counts as a
+noun for both the unit and its per-item state.
+_Avoid_: processing, AI, analysis, step, stage, pipeline
 
 **Suggestion**:
 A single advisory output of enrichment, awaiting a human decision, and meaningless until it gets
@@ -95,7 +97,7 @@ from; rejecting is kept as signal about the suggester.
 _Avoid_: approve, confirm, apply
 
 **Provider**:
-A configured external capability that performs one enrichment step — transcription, formatting,
+A configured external capability that performs one enrichment — transcription, formatting,
 embedding. Reached through an adapter.
 _Avoid_: backend, engine, service
 

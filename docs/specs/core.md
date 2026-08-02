@@ -156,18 +156,18 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   one that is ignored.
 - Removing an accepted tag deletes it. A later re-suggestion arrives as a new pending
   suggestion rather than silently reappearing.
-- Each enrichment step declares what it needs. A step runs when its needs are satisfied, and its
+- Each enrichment declares what it needs. An enrichment runs when its needs are satisfied, and its
   state is always one of: **unavailable** (no provider configured), **not applicable** (not
   requested, or its inputs will never exist), **pending**, **running**, **failed** or **done**.
   These are distinguishable from outside, so a client can always say whether anything is coming.
-- Whether a step runs automatically or must be requested is policy configured **per intake
+- Whether an enrichment runs automatically or must be requested is policy configured **per intake
   source** — a recording from a voice-memo source may transcribe automatically while an
   arbitrary uploaded file requires an explicit request.
 - Enrichment may be re-run at any time and is never destructive: a new artifact appears beside
   the old one, attributed to its own producer.
 - An item is fully processable while enrichment is pending, unavailable or failed. Capture never
   waits on enrichment.
-- Work in progress survives a crash: an interrupted step becomes eligible again rather than
+- Work in progress survives a crash: an interrupted enrichment becomes eligible again rather than
   being lost or duplicated.
 
 ### Routing
@@ -265,8 +265,8 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   dominates while the model churns; Rust would exclude only JS hosts, and only as owners.
 - **[Suggestions and artifacts](../adr/0006-enrichment-splits-into-suggestions-and-artifacts.md)**
   — only one of the two is ratifiable, and ratification must not discard provenance.
-- **[Steps declare their needs](../adr/0007-enrichment-steps-declare-their-needs.md)** — one
-  mechanism covers unconfigured providers, opt-in steps and unmet inputs, and keeps item status
+- **[Enrichments declare their needs](../adr/0007-enrichment-steps-declare-their-needs.md)** — one
+  mechanism covers unconfigured providers, opt-in enrichments and unmet inputs, and keeps item status
   answerable.
 - **[Adapters are in-process, wired by the host](../adr/0008-adapters-are-in-process-and-wired-by-the-host.md)**
   — direct calls, but the dependency points inward so core stays portable.
@@ -325,9 +325,9 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   order, same classification, same artifacts and corrections, same routing records.
 - Deleting or editing a mirror text file leaves the pool unaffected.
 - Editing an asset outside notemap is reported as a change rather than passing unnoticed.
-- With no providers configured, every enrichment step reports unavailable, and items remain
+- With no providers configured, every enrichment reports unavailable, and items remain
   fully classifiable, archivable and routable.
-- An enrichment step interrupted mid-run becomes eligible again and does not produce a duplicate
+- An enrichment interrupted mid-run becomes eligible again and does not produce a duplicate
   artifact.
 - Accepting a suggested tag produces a tag attributed to the provider that suggested it;
   removing that tag and re-running enrichment produces a new pending suggestion rather than

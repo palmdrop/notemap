@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { isWorkExpected, type StepState } from "./step-state.js";
+import { isWorkExpected, type EnrichmentState } from "./state.js";
 
 describe("isWorkExpected", () => {
-  it("expects work while a step is queued, running or retrying", () => {
-    const inFlight: StepState[] = [
+  it("expects work while an enrichment is queued, running or retrying", () => {
+    const inFlight: EnrichmentState[] = [
       { kind: "pending" },
       { kind: "running" },
       { kind: "failed", attempts: 2 },
@@ -15,8 +15,8 @@ describe("isWorkExpected", () => {
     }
   });
 
-  it("expects nothing further once a step is done or cannot run", () => {
-    const settled: StepState[] = [
+  it("expects nothing further once an enrichment is done or cannot run", () => {
+    const settled: EnrichmentState[] = [
       { kind: "done" },
       { kind: "unavailable" },
       { kind: "not-applicable" },
