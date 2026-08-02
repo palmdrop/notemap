@@ -15,7 +15,7 @@ The principles behind these choices, stated here so this repo stands on its own:
    [ADR 1](adr/0001-pool-is-a-database.md).
 3. **Originals are immutable; processing is additive.** Preservation is a default the user can
    override, not a lock.
-4. **Enrichment is advisory.** Automated steps propose; a human ratifies.
+4. **Enrichment is advisory.** Enrichments propose; a human ratifies.
 5. **One writer per file.** Exactly one process is authoritative for any given file.
 6. **Fast capture, deliberate processing.** Capture asks no questions; filing happens later.
 7. **Provenance is first-class.** Anything processed can be traced back to its capture.
@@ -131,7 +131,7 @@ support per payload type. Full model: [exploration/vision/pool-and-routing.md](e
   file-level sharing actually happens — or as **Tier 3** API clients. The plain-file mirror
   notemap writes is a safety net, not an interop surface: it is write-only and nothing should
   build against it.
-- **Enrichment providers:** every enrichment step is an adapter, configured not compiled.
+- **Enrichment providers:** every enrichment is an adapter, configured not compiled.
   Transcription's contract is *audio in → (text, WebVTT word-level timestamps, language,
   confidence, is-speech) out*, asynchronous, with a completion signal; the pragmatic wire
   format is an **OpenAI-compatible `/audio/transcriptions` endpoint**, with a generic webhook
