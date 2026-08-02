@@ -8,8 +8,8 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   prettier,
   {
-    // Second belt on the core seam (ADR 2/5/8): the first is core's tsconfig,
-    // which has no Node types. Core reaches the outside world through ports only.
+    // Second belt on the core seam: the first is core's tsconfig, which has no
+    // Node types. Core reaches the outside world through ports only.
     files: ["packages/core/**/*.ts"],
     rules: {
       "no-restricted-imports": [
