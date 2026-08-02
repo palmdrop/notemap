@@ -1,0 +1,137 @@
+# Notemap
+
+Notemap captures anything worth keeping into one pool, enriches it without altering it, and
+routes it out to wherever it actually lives. It is a conveyor belt, not an archive: items are
+supposed to leave.
+
+## Language
+
+### The store
+
+**Pool**:
+The complete set of items notemap holds. Owned outright by notemap and reachable only through
+its API.
+_Avoid_: store, inbox, database
+
+**Item**:
+One thing in the pool, with its own lifecycle, enrichment and routing decisions. Items never
+merge with each other.
+_Avoid_: note, memo, entry, card
+
+**Capture**:
+The original payload of an item exactly as it entered, plus the act of it entering. Immutable.
+_Avoid_: original, raw note
+
+**Feed**:
+The pool read chronologically and completely. Accumulates forever; its job is that nothing is
+ever lost.
+_Avoid_: timeline, stream, history
+
+**Queue**:
+The pool read as unprocessed, unarchived items, oldest first. A view, not a place. Its job is to
+drain to zero.
+_Avoid_: inbox, backlog, todo list
+
+**Head**:
+The newest item in the feed. The only item that may be amended in place rather than revised.
+_Avoid_: first in the queue (the queue is oldest-first, so its first item is the oldest), latest,
+top
+
+**Revision**:
+A new item that replaces an earlier one, carrying the original capture time plus an edit time.
+Editing appends a revision; it never overwrites.
+_Avoid_: version, update, edit
+
+**Superseded**:
+Said of an item that a later revision points at. Derived from the revision link, never stored.
+_Avoid_: outdated, replaced, stale
+
+**Mirror**:
+The complete plain-file copy of the pool that notemap writes and never reads, except to rebuild a
+lost pool. Automatic and complete, which is what distinguishes it from a **destination**.
+_Avoid_: backup, export, sync folder
+
+**Asset**:
+A media file belonging to a capture — audio, image, page snapshot. Stored once, referenced by both
+the pool and the mirror, and named for a human rather than for its contents.
+_Avoid_: blob, attachment, media file
+
+### Processing
+
+**Classification**:
+Deciding what an item is and whose it is. Cheap, reversible, and does not remove the item from the
+queue. Its only axis is tags.
+_Avoid_: tagging, triage, labelling
+
+**Tag**:
+A free-text label on an item, and the whole of classification. Namespacing is convention, not
+structure: `project/fiction-a`, `kind/quote`. There is no separate item type and no project entity
+— both are tags.
+_Avoid_: label, category, keyword, folder
+
+**Payload type**:
+What a capture mechanically *is* — text, voice, link, annotation, table. Determined by what
+arrived, never a judgement. Adapters declare which verbs they support per payload type.
+_Avoid_: type, kind, format
+
+**Enrichment**:
+Anything automated that produces material *beside* a capture without changing it: a transcript, a
+suggested tag, a guessed destination, an embedding.
+_Avoid_: processing, AI, analysis
+
+**Suggestion**:
+A single advisory output of enrichment, awaiting a human decision, and meaningless until it gets
+one. Resolves to accepted or rejected; both are kept.
+_Avoid_: recommendation, prediction, guess
+
+**Artifact**:
+A durable enrichment output that stands on its own and is never ratified — a transcript, an
+embedding. Correcting one is not an edit of the capture.
+_Avoid_: result, output, derived data
+
+**Ratify**:
+To accept or reject a suggestion. Accepting writes real state that records which agent it came
+from; rejecting is kept as signal about the suggester.
+_Avoid_: approve, confirm, apply
+
+**Provider**:
+A configured external capability that performs one enrichment step — transcription, formatting,
+embedding. Reached through an adapter.
+_Avoid_: backend, engine, service
+
+**Processed**:
+Said of an item that has been routed or archived. Scrolling past an item is a **skip**, which
+changes nothing.
+_Avoid_: done, handled, cleared
+
+### Leaving
+
+**Destination**:
+Anywhere an item can be delivered — a vault, a single file, a board, another app. Notemap does not
+own destinations and does not know their shape.
+_Avoid_: target, sink, output
+
+**Adapter**:
+The code that speaks one destination's or one provider's protocol. Adapters declare which payload
+types and which verbs they support.
+_Avoid_: plugin, connector, integration
+
+**Route**:
+To deliver an item to a destination. Non-destructive: the item stays in the feed, and delivery may
+happen more than once, to more than one place.
+_Avoid_: export, publish, send, file
+
+**Routing record**:
+One entry in the append-only log of deliveries: destination, time, and a best-effort pointer to
+where the item landed. A stale pointer is acceptable.
+_Avoid_: routing status, delivery flag
+
+**Archive**:
+To hide an item from the queue without deleting it. Presented in the UI as delete when the user
+means "this is noise"; the item stays in the feed and stays processable.
+_Avoid_: delete, dismiss, trash
+
+**Purge**:
+To irreversibly remove an item, its whole revision chain, its blobs and its enrichment. The one
+destructive operation, and the one exception to the append-only rule.
+_Avoid_: hard delete, wipe, erase

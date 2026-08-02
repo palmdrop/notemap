@@ -8,7 +8,7 @@ Approaches ordered by how little new self-hosting they need. A, B and E stack; C
 
 The baseline: keep Memos (the homescreen quick-note shortcut stays), keep the planned voice pipeline, add the missing bridges.
 
-1. **Memos → vault inbox via [`scripts/memos-vault-sync/`](../scripts/memos-vault-sync/README.md)** — *decided; first step*. (Plugin route tried and failed on Memos 0.27.1 — see [flows/fast-notes.md](flows/fast-notes.md).) One file per memo in `inbox/`, delete/move = processed, server-side edits resurface with a marker. Deploy as systemd timer; remember the Nextcloud-visibility caveat (`occ files:scan` / External Storage) shared with the Speakr export.
+1. **Memos → vault inbox via `scripts/memos-vault-sync/`** — *decided; first step*. (Plugin route tried and failed on Memos 0.27.1 — see [flows/fast-notes.md](flows/fast-notes.md).) One file per memo in `inbox/`, delete/move = processed, server-side edits resurface with a marker. Deploy as systemd timer; remember the Nextcloud-visibility caveat (`occ files:scan` / External Storage) shared with the Speakr export.
 2. **Point Karakeep's AI tagging at the existing Ollama** (it's already running) — read-later/bookmark captures get local-AI enrichment for free.
 3. **Smart Connections** in desktop Obsidian (already planned — [semantic-search.md](vision/semantic-search.md)); exclude `.smart-env/` from FolderSync.
 4. **Phase-0 voice glue as planned** ([voice-notes.md](flows/voice-notes.md)): FolderSync + copy script + Speakr auto-export.
@@ -104,7 +104,7 @@ There is no rule engine in the vault, and that is fine — the manual equivalent
 (`#fictionidea1`), the tag arrives in the synced inbox file, you move the file to the matching
 folder. Run it manually for the trial and write down the mapping that emerges.
 
-**Only if a mapping proves stable** should [`scripts/memos-vault-sync/`](../scripts/memos-vault-sync/README.md)
+**Only if a mapping proves stable** should `scripts/memos-vault-sync/`
 grow a tag→folder table — and even then as *pre-filing for classification*, not delivery.
 Auto-routing at sync time would skip the queue entirely, which is the one thing the model
 forbids: rules propose, the user confirms

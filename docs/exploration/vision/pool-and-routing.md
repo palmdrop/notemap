@@ -60,12 +60,14 @@ The flow should encourage treating notes as immutable; editing is rare. When it 
 is **append, not overwrite**:
 
 - A **new item** is added to the feed, linked to the one it replaces (`supersedes`, PROV
-  `wasRevisionOf` — see [standards.md](../standards.md#identity--provenance-the-cross-app-glue)).
+  `wasRevisionOf` — see [standards.md](../../standards.md#identity--provenance-the-cross-app-glue)).
 - It carries `created` = the *original* capture time, and `updated` = the time of the edit.
-- **Ordering uses `updated` when present, `created` otherwise.** Most notes have no
-  `updated`. An edited note therefore resurfaces at the *front* of the queue — the edit is
-  a fresh decision to make, and this is what makes a persistent cursor safe (a revision
-  appears ahead of the cursor, never silently behind it).
+- **The queue orders by `updated` when present, `created` otherwise** — while the **feed**
+  always orders by `created` and never moves. Two surfaces, two orders, each right for its job
+  ([ADR 10](../../adr/0010-feed-and-queue-sort-differently.md)). An edited note therefore
+  resurfaces at the *newest end* of the oldest-first queue — ahead of any forward-moving
+  position, never silently behind it. (This originally said "the front of the queue", which
+  reads as the oldest end and means the opposite.)
 - The superseded item is excluded from the queue. "Superseded" is **derived** — it is
   simply "something points at me as its predecessor" — not a stored flag.
 - Enrichment re-runs against the revision: the transcript, tags, and destination guess
@@ -81,9 +83,15 @@ Fixing a typo immediately after capture is not a revision of the record; it is s
 finishing the thought. **The newest item may be edited in place** while it is still
 unprocessed and within a grace window.
 
-Recommended window semantics, open to change: *until the next capture, or a configurable
-timeout, whichever comes first* — capturing something else seals the previous note. Any
-in-place edit invalidates whatever enrichment already ran, which simply re-runs.
+**Settled 2026-08-02** ([ADR 11](../../adr/0011-in-place-amendment-of-the-head.md)): in place is
+allowed exactly while the item is the **head** — the newest item — *and* still unprocessed.
+Capturing something else seals it, and nothing else does; the configurable timeout once
+proposed here was dropped as complexity that bought little. Any in-place edit invalidates
+whatever enrichment already ran, which simply re-runs.
+
+Immutability begins at the pool, not at the client: a capture core has not yet accepted may be
+amended or discarded freely. An offline client that cannot know whether it still holds the head
+decides locally, and the edit is demoted to a revision on arrival if it no longer does.
 
 ## State: two mutable bits
 
@@ -91,7 +99,7 @@ Everything else about an item is derived. This is what keeps the hub thin.
 
 | Stored | Shape | Notes |
 |---|---|---|
-| `archived` | boolean + cause (`user` \| `auto`) + optional reason | one flag, three doors — see below |
+| `archived` | boolean + optional reason | **amended 2026-08-02:** no `cause` field. Auto-archive is deferred, so every stored archive is a user decision; if age-out later ships as the derived predicate below, `cause` becomes derived too and needs no migration |
 | routing records | **append-only list** of `(destination, timestamp, pointer)` | not a boolean; an item can be routed more than once, to more than one place |
 
 Derived, never stored:
@@ -146,6 +154,13 @@ feed.
    time**, are archived automatically. Not deleted; hidden, so a backlog the user never got
    to stops weighing on the queue.
 
+   **Deferred 2026-08-02.** Not built for now. `action-plan.md` lists *"did you want
+   auto-archive, and after how long?"* as a question the Obsidian trial should answer, so any
+   threshold picked today is a guess. When it does ship it should be the **derived predicate**
+   described above rather than a timer that writes: nothing is stored, the threshold becomes a
+   live dial, and raising it simply returns aged items to the queue. The archive stays fully
+   processable either way, which is what removes the need to ever *un*-archive.
+
 Archived notes live in their own tab and **remain fully processable** — the archive is a
 filter, not a terminus. The `cause` field distinguishes a note the user decided about from
 one that merely aged out; an optional **reason** on manual archiving is cheap to record now
@@ -160,7 +175,7 @@ Processing is two phases, and they cost very different amounts:
 | Decision | what is this, whose is it | where it goes, in what form |
 | Cost | seconds; bulk-able; fully reversible | needs the destination's shape in mind |
 | Effect | item stays in the queue | item is delivered; queue drains |
-| Enrichment's role | suggests tags and type | suggests destination |
+| Enrichment's role | suggests tags | suggests destination |
 
 Classification may happen at capture (an inline `#tag`, as in
 [fast-notes.md](../flows/fast-notes.md#capture-anywhere-online-or-offline)), during a
@@ -193,7 +208,7 @@ rules:
   no linking. If routing only works against a vault it is not routing, it is a vault
   writer — that adapter is what proves the interface is real.
 - **Rules propose, they do not fire.** Per the hard rule in
-  [standards.md](../standards.md#the-ingestion-contract-the-inbox), a matching rule
+  [standards.md](../../standards.md#the-ingestion-contract-the-inbox), a matching rule
   pre-fills the destination and the user confirms. Auto-fire is opt-in per rule, for
   patterns that have earned trust.
 - **Fan-out is legal.** Two rules match, the note goes to both places — hence routing
@@ -202,7 +217,7 @@ rules:
   an existing one; an audio blob or an image can only be *placed* (a file plus a stub note,
   or a list entry). Some (destination, payload-type) pairs are simply invalid, and the
   adapter must declare which. See the payload table in
-  [standards.md](../standards.md#payload-types).
+  [standards.md](../../standards.md#payload-types).
 
 Which existing note to append to is a later concern, but the machinery already exists: the
 k-NN destination suggestion in
@@ -235,15 +250,25 @@ A hard delete purges, for the note and **its entire revision chain**:
 
 - every revision of the item (otherwise the content survives in a superseded version — this
   is the point of the feature, and the easiest part to get wrong);
-- attached blobs (audio, snapshots), unless content-addressed and shared with another item;
+- attached assets (audio, snapshots), unless another item still references them — assets are
+  path-addressed rather than content-addressed, with the content hash recorded as metadata for
+  drift detection, so sharing is a reference count
+  ([ADR 1](../../adr/0001-pool-is-a-database.md));
 - enrichment artifacts: transcripts, suggestions, and **embedding vectors**, which are
   lossy but real traces of the text;
 - all routing records referencing it.
 
 It does **not** touch anything already delivered to a destination. If routing records exist
 at delete time, the user is warned with the specifics — *"deleted here, but this note may
-still exist in vault B"* — and after the purge nothing remains to warn about later. No
-tombstone: that is what the user asked for.
+still exist in vault B"* — and after the purge nothing remains to warn about later.
+
+**Amended 2026-08-02:** this section originally said *"no tombstone: that is what the user
+asked for"*. That held while nothing outside the pool kept a copy. Clients now cache items
+([ADR 3](../../adr/0003-clients-hold-an-outbox-pools-do-not-replicate.md)) and delta sync reports
+changes since a cursor, so a deleted row produces no change and a cached copy would survive
+forever — defeating the feature. A purge therefore retains `(id, purged_at)` and nothing else,
+garbage-collected after a retention window. See
+[ADR 4](../../adr/0004-purge-leaves-a-minimal-tombstone.md).
 
 ## What notemap owns, and what it does not
 
@@ -251,9 +276,12 @@ Because items never merge with each other and the store is append-only, the hub 
 It owns exactly four things:
 
 1. the **feed** — immutable, chronological, complete;
-2. **classification** — tags, type, project assignment;
+2. **classification** — tags, and only tags. *Amended 2026-08-02:* there is no item type and no
+   project entity. "Type" in the sense of idea/bookmark/todo is a tag; a project is a tag that
+   routing rules match on, since collections are destinations. **Payload type** — text, voice,
+   link — is mechanical, derived from what arrived, and is not classification;
 3. **enrichment** — advisory only, regenerable, never applied
-   ([standards.md](../standards.md#the-ingestion-contract-the-inbox));
+   ([standards.md](../../standards.md#the-ingestion-contract-the-inbox));
 4. the **routing log** — append-only, best-effort pointers.
 
 It does not own collections, prose, arrangement, composition, or any editor. There is no
@@ -263,8 +291,13 @@ defensible version of the *"thin hub, not a monolith"* verdict in
 
 ## Deliberately open
 
-- **Grace-window semantics** for in-place editing the head of the feed.
+- ~~**Grace-window semantics** for in-place editing the head of the feed.~~ **Settled
+  2026-08-02** — head *and* unprocessed, no timeout
+  ([ADR 11](../../adr/0011-in-place-amendment-of-the-head.md)).
 - **Rendering of revision chains** in the feed and queue.
+- **Processing position** — whether it is a persisted cursor or simply scroll position in a
+  continuous document. Core holds neither
+  ([ADR 10](../../adr/0010-feed-and-queue-sort-differently.md)); this is a frontend question.
 - **Multiple inboxes** — choosing a target pool at capture time. A future concern; one pool
   per user for now.
 - **Merge granularity** — appending into an existing note, and how (or whether) the pointer

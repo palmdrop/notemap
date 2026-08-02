@@ -27,7 +27,7 @@ notemap in a way that matters:
 ## Three intake paths, one envelope
 
 All three produce the same capture envelope
-([standards.md](../standards.md#the-ingestion-contract-the-inbox)): audio blob plus metadata.
+([standards.md](../../standards.md#the-ingestion-contract-the-inbox)): audio blob plus metadata.
 Nothing downstream knows or cares which path an item arrived by.
 
 | Path | For | Notes |
@@ -65,11 +65,19 @@ sits there **enriching**.
     untouched; only a suggestion beside it changed.
   - **Re-transcribing later is always allowed and never destructive.** A better model in two
     years produces a *new* enrichment beside the old one, attributed to its own model
-    ([PROV `wasGeneratedBy` / `wasAttributedTo`](../standards.md#identity--provenance-the-cross-app-glue)).
+    ([PROV `wasGeneratedBy` / `wasAttributedTo`](../../standards.md#identity--provenance-the-cross-app-glue)).
 - **Not all audio is speech.** Birdsong must not come back as a garbled transcript — an
   uncovered gap per [prior-art.md](../inspiration/prior-art.md). Non-speech is a legitimate
   capture with no transcript, routable as sound. The provider contract therefore has to be able
   to answer "this isn't speech" rather than always returning text.
+
+  **Loosened 2026-08-02.** How well models actually reject non-speech is unproven, so this is a
+  nice-to-have rather than a requirement, and the first iteration of core ships with no
+  transcription provider at all. The likelier first shape is that transcription is **requested**
+  — automatically for a source like a voice-memo app, explicitly for an arbitrary uploaded file
+  ([ADR 7](../../adr/0007-enrichment-steps-declare-their-needs.md)). Note that the "not applicable"
+  state this was meant to justify is needed anyway: an unconfigured provider and an
+  unrequested step both produce it.
 
 ## Transcription is a provider, not a component
 
@@ -118,7 +126,7 @@ Privacy then has to be enforced *and visible*:
 - Anything that sends content off-box is opt-in, per provider, and stated on the item — which
   `wasAttributedTo` already records ("transcribed by `whisperx-medium`" vs. a named external
   service).
-- The [advisory-only rule](../standards.md#the-ingestion-contract-the-inbox) is unaffected by
+- The [advisory-only rule](../../standards.md#the-ingestion-contract-the-inbox) is unaffected by
   provider choice: whoever produced it, the output is a suggestion beside the capture.
 
 ## What this changes about the Phase 0 flow

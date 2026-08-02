@@ -6,27 +6,26 @@
 *.pem
 *.key
 
-# Local data / runtime state (item store, vector index, volumes)
+# A pool and everything around it (ADR 1). A pool normally lives outside the
+# repo, but dev runs and tests put one here.
 data/
+state/
+pool-mirror/
+assets/
 *.db
+*.db-wal
+*.db-shm
 *.sqlite
 *.sqlite3
 *.sqlite3-journal
 
-# Python (scripts/)
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-.mypy_cache/
-.pytest_cache/
-.ruff_cache/
-
-# Node / web queue UI (if/when added)
+# Node / TypeScript (pnpm). pnpm-lock.yaml is committed on purpose — do not add it here.
 node_modules/
+.pnpm-store/
 dist/
 build/
 .cache/
+coverage/
 *.tsbuildinfo
 
 # Logs
@@ -45,3 +44,8 @@ desktop.ini
 *~
 .\#*
 \#*\#
+
+# agents
+.claude/worktrees/
+.claude/artifacts/
+.claude/settings.local.json
