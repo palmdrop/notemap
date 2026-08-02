@@ -1,9 +1,9 @@
 /**
  * The state of one enrichment step for one item.
  *
- * Transcribed from ADR 7, whose point is that these are distinguishable from
- * outside: a client can always say whether anything is still coming, rather
- * than showing a perpetual "still working".
+ * Every state is distinguishable from outside, so a client can always say
+ * whether anything is still coming rather than showing a perpetual
+ * "still working".
  */
 export type StepState =
   | { readonly kind: "unavailable" }
@@ -16,8 +16,8 @@ export type StepState =
 /**
  * Whether this step may still produce something without anyone asking.
  *
- * `failed` counts: ADR 7 gives it attempts and backoff, so it is a step that
- * retries rather than a step that has stopped.
+ * `failed` counts: a failed step retries with backoff, so it is a step that
+ * is waiting rather than a step that has stopped.
  */
 export function isWorkExpected(state: StepState): boolean {
   switch (state.kind) {
