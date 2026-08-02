@@ -20,7 +20,9 @@ leaves the exact window deliberately open. When may an edit be in place?
 Anything else appends a revision.
 
 No timeout. Capturing something else seals the previous item, and that is the only thing that
-does.
+does. *Amended 2026-08-02*: only a capture that becomes the **new head** seals — intake whose
+source time places it earlier in the feed, such as a file import or an offline sync, does not
+end a thought still being written.
 
 **Immutability begins at the pool, not at the client.** A capture core has never accepted has
 no history to preserve, so a client may amend or discard it freely while it sits in the outbox.

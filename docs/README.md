@@ -10,6 +10,7 @@ supposed to leave.
 |---|---|
 | [../CONTEXT.md](../CONTEXT.md) | The glossary. Use these words; avoid the listed alternatives. |
 | [specs/core.md](specs/core.md) | What core is and does, in observable terms. |
+| [specs/http-v1.md](specs/http-v1.md) · [specs/sync.md](specs/sync.md) · [specs/mirror.md](specs/mirror.md) | The `/v1` surface, the client sync contract, the mirror on disk. Stubs awaiting their own grilling sessions. |
 | [adr/](adr/) | The decisions, and why. Read before re-opening a settled question. |
 | [standards.md](standards.md) | Principles, formats and the interop contract. |
 | [plans/](plans/) · [reviews/](reviews/) | Implementation plans and code reviews, as they happen. |

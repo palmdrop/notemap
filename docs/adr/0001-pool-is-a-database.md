@@ -58,7 +58,8 @@ discovered years too late. Rebuild is the *only* time notemap reads the mirror.
 
 The mirror carries captures, media, and durable human-owned state (classification,
 corrections, routing records). It does not carry pending suggestions: enrichment is
-regenerable by definition.
+regenerable by definition. *Amended 2026-08-02*: artifacts are mirrored too — the original
+transcript and its correction both — so a rebuild loses neither.
 
 The never-read rule has exactly **one exception: media bytes**, which are read from `assets/`
 at runtime. Text and state are still write-only.

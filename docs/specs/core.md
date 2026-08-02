@@ -30,10 +30,14 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - **Routing** — the destination port, the append-only routing log, and a filesystem
   destination including its append-to-an-existing-file form.
 - **The mirror** — lossless write-only mirroring, and rebuild of a pool from mirror + assets.
+  On-disk format: [mirror.md](mirror.md).
 - **Intake** — the capture envelope, with stable source identity and source-supplied capture
   time.
-- **Sync** — delta reads and idempotent replay of client operations.
-- **Hosts** — a CLI and a daemon exposing `/v1`.
+- **Sync** — the domain obligations only: client-generated ids and idempotent operations.
+  The protocol — delta reads, conflict resolution, tombstone retention — is
+  [sync.md](sync.md).
+- **Hosts** — a CLI and a daemon exposing `/v1`. The HTTP surface is
+  [http-v1.md](http-v1.md).
 
 ### Out of scope
 
@@ -70,13 +74,27 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 
 ### Editing
 
+- **A revision is about content, and only content.** Editing the capture's content — its text,
+  or an attached file — appends a revision. Classification, archiving, routing and
+  ratification change an item's state in place and never produce a revision.
 - Editing an item **appends a revision**: a new item linked to the one it replaces, carrying
   the original capture time plus the time of the edit.
+- A revision is a clone with a link: **tags carry over**, keeping their attribution.
+  **Routing records do not** — they are the original's history and stay with it. The revision
+  therefore starts unprocessed and resurfaces in the queue, whether or not the original was
+  routed.
+- Nothing that triggers routing carries over either. A proposed destination is a
+  **suggestion**, not a tag
+  ([ADR 6](../adr/0006-enrichment-splits-into-suggestions-and-artifacts.md)), and pending
+  suggestions attach to one item: rules re-propose against the revision's tags.
+- A revision of an archived item is **not archived** — editing says the item is alive again.
+  The same holds for routing, per the above; archive and routing state both stay behind.
 - An item is **superseded** when a later revision points at it. This is derived from the link,
   never stored, and superseded items are excluded from the queue.
 - The single exception is **amendment of the head**: the newest item in the feed may be edited
-  in place while it is still unprocessed. Capturing anything else seals it. There is no
-  timeout.
+  in place while it is still unprocessed. **Only a capture that becomes the new head seals
+  it** — intake placed earlier in the feed by its source time, such as a file import or an
+  offline sync, does not. There is no timeout.
 - A client may freely amend or discard a capture that core has not yet accepted. Immutability
   begins at the pool. Once a capture has been handed over for delivery it must be treated as
   accepted, even before a response arrives.
@@ -114,7 +132,14 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 
 - The queue presents items that are unprocessed, unarchived and not superseded, oldest first,
   ordered by last touch so that a revised item resurfaces where it will be encountered.
-- An item is **processed** when it has been routed, or when it has been archived. Passing over
+- **Last touch means content time**: the revision or amendment time where one exists
+  (`content_updated_at`), the capture time otherwise (`created_at`). Classification, routing,
+  archiving and enrichment never move an item in the queue.
+- A third timestamp, `modified_at`, records the last change of any kind — content or state —
+  and exists for sync delta reads only ([sync.md](sync.md)). It never affects ordering.
+- An item is **processed** when it has been routed or archived. Being **marked processed by
+  hand** — the user carried its content onward themselves — is routing: it appends a routing
+  record whose destination is the user, with an optional note of where it went. Passing over
   an item changes nothing and is a skip.
 - Core holds no position in the queue. Reads are ordered and paginated; where processing has
   got to is the caller's concern.
@@ -166,8 +191,10 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   during normal operation.
 - The mirror is **lossless**: a pool can be rebuilt from the mirror and the assets alone. This
   is the only circumstance in which the mirror is read.
-- The mirror carries captures, classification, corrections and routing records. It does not
-  carry pending suggestions, which are regenerable by definition.
+- The mirror carries captures, classification, **artifacts and their corrections** — the
+  original transcript and the corrected one both — and routing records. It does not carry
+  pending suggestions, which are regenerable by definition.
+- The on-disk layout and file formats are specified in [mirror.md](mirror.md).
 - **Media is stored once.** Both the pool and the mirror reference the same asset, named for a
   human rather than for its contents. Core records each asset's content hash so that a change
   made outside notemap is detected and reported rather than silently absorbed.
@@ -181,11 +208,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   payload, the source, the source's own identifier, and the capture time.
 - A capture is identified by an id the client generates, so submitting the same capture twice
   has no additional effect.
-- Operations replayed by a client are idempotent and order-independent. Where two clients
-  disagree about classification or archiving, the later decision wins.
-- Routing is never replayed from a client queue; it requires a reachable destination and is
-  performed against the pool directly.
-- A client can ask for everything that has changed since a point it names, including purges.
+- Core's obligations to offline clients are idempotent operations and client-generated ids.
+  The sync protocol — outbox replay, conflict resolution, delta reads, tombstones — is
+  specified in [sync.md](sync.md).
 - Intake must not accept a partially written file. A file source waits for the file to be
   complete before it becomes a capture.
 
@@ -193,7 +218,11 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 
 ## Constraints
 
-- **TypeScript on Node, with pnpm.** A future port to Rust is deliberately kept open, so the
+- **TypeScript on Node, with pnpm workspaces** (decided 2026-08-02): core, adapters and each
+  host are separate packages, so the dependency direction of
+  [ADR 8](../adr/0008-adapters-are-in-process-and-wired-by-the-host.md) is enforced by tooling
+  — core's package has no dependencies and no Node types, and `import fs` fails typecheck
+  rather than review. A future port to Rust is deliberately kept open, so the
   domain layer avoids constructs that would not survive one: explicit state modelling, narrow
   interfaces, schema in migrations rather than inferred from types.
 - **Core takes no framework or runtime dependency.** No HTTP, no timers, no configuration
@@ -209,7 +238,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   safe by leasing work, not by forbidding it.
 - The HTTP surface is versioned from the first commit. `/v1` may take breaking changes until the
   first pool exists that would be upsetting to lose; from then on breaking changes mean a new
-  version and a changelog.
+  version and a changelog. The surface itself is specified in [http-v1.md](http-v1.md).
+- **No authentication for now** (decided 2026-08-02). The daemon binds to localhost or a
+  trusted network; the pool is the boundary.
 - Everything that leaves the pool carries identity and provenance, per
   [standards.md](../standards.md). Local-only is the default for every provider; anything that
   sends content off-box is opt-in and named on the item.
@@ -250,8 +281,6 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 
 ## Open questions
 
-- [ ] 2026-08-02 — Authentication: how clients hold credentials, and how the Micropub adapter's
-      OAuth2 expectations relate to the native API. Deliberately skipped for the first slice.
 - [ ] 2026-08-02 — The routing-rule table: how rules are expressed, how fan-out to several
       destinations is presented, and whether a rule may ever be trusted to fire unattended.
 - [ ] 2026-08-02 — Whether removing an accepted tag should suppress that suggestion permanently,
@@ -262,8 +291,6 @@ Recorded in full under [docs/adr/](../adr/). In brief:
       or a minimal editor in notemap.
 - [ ] 2026-08-02 — Whether routing copies an asset to the destination or leaves a reference, which
       probably differs per destination.
-- [ ] 2026-08-02 — Tombstone retention window, and what a client does when it has been offline
-      longer than one.
 - [ ] 2026-08-02 — Multiple pools per user, and multi-user operation. Nothing decided forecloses
       either; neither is designed.
 
@@ -276,19 +303,26 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   feed, not at the end.
 - Editing a non-head item leaves the original readable in the feed and excludes it from the
   queue; the revision appears in the queue.
-- Editing the head while unprocessed changes it in place and creates no revision. Capturing
-  anything else first causes the same edit to produce a revision instead.
+- Editing the head while unprocessed changes it in place and creates no revision. Capturing a
+  new head first causes the same edit to produce a revision instead; an intake whose capture
+  time places it earlier in the feed seals nothing.
 - An item that has been routed no longer appears in the queue and still appears in the feed,
   with a record of where it went.
 - An item routed to two destinations carries two routing records.
 - An archived item does not appear in the queue, does appear in the archive, and can still be
   routed from there.
+- An item marked processed by hand leaves the queue, stays in the feed unarchived, and carries
+  a routing record naming the user as destination.
+- Editing a routed item produces a revision that carries the original's tags with their
+  attribution, carries none of its routing records, and appears in the queue; the original
+  keeps its routing records.
+- Accepting a tag on an item does not change its position in the queue.
 - Purging an item removes every revision of it, its assets where unreferenced, and its mirror
   files; a client that had cached it learns it is gone on its next sync.
 - Purging an item that has been routed warns, before proceeding, about the specific
   destinations it reached.
 - A pool rebuilt from its mirror and assets is equivalent to the original: same items, same
-  order, same classification, same routing records.
+  order, same classification, same artifacts and corrections, same routing records.
 - Deleting or editing a mirror text file leaves the pool unaffected.
 - Editing an asset outside notemap is reported as a change rather than passing unnoticed.
 - With no providers configured, every enrichment step reports unavailable, and items remain

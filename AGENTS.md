@@ -15,7 +15,8 @@ Privacy, data ownership, self-hostable, local-first, offline-friendly, are impor
 - `CONTEXT.md` — the glossary. Use these words and avoid the listed alternatives. If a term is
   missing or wrong, fix it there rather than inventing a synonym.
 - `docs/adr/` — decisions and why they were made. Read before re-opening a settled question.
-- `docs/specs/core.md` — what core is, in observable terms.
+- `docs/specs/` — what each piece is, in observable terms. `core.md` is the domain;
+  `http-v1.md`, `sync.md` and `mirror.md` are stubs awaiting their own sessions.
 - `docs/standards.md` — principles, formats, interop contract.
 - `docs/exploration/` — frozen. The design phase these were derived from, kept as rationale.
   Where it disagrees with an ADR, the ADR wins.

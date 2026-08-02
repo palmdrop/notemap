@@ -100,8 +100,8 @@ embedding. Reached through an adapter.
 _Avoid_: backend, engine, service
 
 **Processed**:
-Said of an item that has been routed or archived. Scrolling past an item is a **skip**, which
-changes nothing.
+Said of an item that has been routed or archived. Marking an item processed by hand is routing
+whose destination is the user. Scrolling past an item is a **skip**, which changes nothing.
 _Avoid_: done, handled, cleared
 
 ### Leaving
@@ -132,6 +132,6 @@ means "this is noise"; the item stays in the feed and stays processable.
 _Avoid_: delete, dismiss, trash
 
 **Purge**:
-To irreversibly remove an item, its whole revision chain, its blobs and its enrichment. The one
+To irreversibly remove an item, its whole revision chain, its assets and its enrichment. The one
 destructive operation, and the one exception to the append-only rule.
 _Avoid_: hard delete, wipe, erase

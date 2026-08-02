@@ -35,6 +35,10 @@ is *wrong* from one that is merely ignored, and they cannot be backfilled.
 
 Removing a tag is a row delete. A later re-suggestion arrives as a fresh pending suggestion.
 
+*Amended 2026-08-02*: the suggestion history is **not mirrored**. A pool rebuilt from its
+mirror loses the rejection signal; that loss is accepted rather than paid for in mirror
+complexity.
+
 ### Considered options
 
 - **Copy the value, keep attribution only on the suggestion.** Simplest schema. Rejected

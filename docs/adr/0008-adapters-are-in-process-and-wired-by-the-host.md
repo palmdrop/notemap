@@ -28,6 +28,10 @@ src/hosts/daemon/  composition root: constructs adapters,
                    registers them against core's ports
 ```
 
+*Amended 2026-08-02*: the layout is realized as **pnpm workspace packages** — core, adapters
+and each host as separate packages — so core's no-outward-imports rule is enforced by an empty
+dependency list and a tsconfig without Node types, not by convention.
+
 Calls are direct in-process function calls — no IPC, no wire protocol, no latency. What the
 host-wires-them rule buys is the direction of the dependency: core keeps no filesystem or HTTP
 dependency, stays runtime-neutral per [ADR 5](0005-typescript-now-rust-later.md), and remains
