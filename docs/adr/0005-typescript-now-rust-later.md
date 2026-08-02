@@ -55,6 +55,15 @@ portable:
 
 ## More information
 
+*Reaffirmed 2026-08-02*, re-examined before scaffolding against primary sources
+([../research/rust-viability.md](../research/rust-viability.md)). Two of the drivers turned
+out weaker than stated: the domain layer would be plain synchronous Rust (async only at the
+daemon edge via `spawn_blocking`), and the JS-host foreclosure is narrower than framed — an
+Obsidian-mobile pool owner is blocked for a native-SQLite TypeScript core too, while a
+desktop-only plugin can load a Rust core via napi-rs. The decision stands on iteration cost
+and first-slice velocity alone, which is judged sufficient. The revisit trigger below is
+unchanged.
+
 Revisit once the domain model is stable and the queue ritual has proven itself in daily use.
 Obsidian's Rust path was checked: [obsidian-rust-template](https://github.com/rachtsingh/obsidian-rust-template)
 is a one-day proof of concept from December 2022 that demonstrates `wasm-pack` build plumbing
