@@ -1,7 +1,7 @@
 # Review: Core API shape (PR #2, `agent/core-api-shape`)
 
 **Date**: 2026-08-04
-**Status**: Open
+**Status**: Resolved
 **Scope**: `packages/core/src/`, `docs/adr/0012`, `docs/adr/0013`, amendments to ADRs 1/5/6/10, `CONTEXT.md`, `docs/specs/core.md`, `docs/specs/mirror.md`, `docs/standards.md`
 **Spec**: `docs/specs/core.md`
 
@@ -212,4 +212,60 @@ implementation exists. Consider whether the "no logic" rule should also mean "no
 
 ## Resolution
 
-<!-- Pending. -->
+Resolved 2026-08-04 in `6f31f3b`, merged as `a884534`. Reconciled with the developer's own
+review on PR #2; where the two overlapped they agreed, and the one conflict is noted below.
+
+**Bugs — all fixed.**
+
+1. Suggestions are writable: `WorkOutcome.succeeded` carries `SuggestionDraft[]` alongside
+   `ArtifactDraft[]`, and the `Command` union gains `add-suggestions`. The enrichment loop is
+   expressible end to end.
+2. `request-enrichment` command added, so requesting by hand has a write path that does not
+   require a lease.
+3. `capture-id-conflict` added, symmetric with `source-item-changed`. `core.md` now states the
+   rule for both identities: a resubmission whose content differs is refused, whichever
+   identity matched.
+
+**Design — all fixed.**
+
+4. `ItemRecord` splits the write-side record from the read projection. Commands carry
+   `ItemRecord`, which has neither `supersededBy` nor `modifiedAt`, so neither can reach a
+   driver. `Item` is `ItemRecord` plus those two, and the store owns both.
+5. Counting is assigned: the pool store owns item-to-asset and answers `unreferencedAssets`;
+   the asset store owns asset-to-blob via `release`. `AssetStore.sweepUnreferenced` is gone —
+   it required knowledge that port never had — and `purge-item.release` with it.
+6. `settle-work` splits into `settle-enrichment` and `settle-mirror`, so a mirror job no longer
+   has to supply an `EnrichmentState` it does not have. `WorkOutcome` carries drafts rather
+   than one opaque object.
+7. `PoolConfig` gives `RetryPolicy`, `PayloadTypeDescriptor`, `SourceDescriptor` and
+   `EnrichmentDescriptor` somewhere to attach. `MaintenanceApi` and `MirrorReader` cover
+   rebuild and verify/repair. `EnrichmentDescriptor` is marked deliberately partial, since what
+   an enrichment declares as its needs is genuinely unsettled.
+8. `ActionKind` gains the missing mutations; `Action.subject` is optional, for entries with no
+   item-shaped subject.
+
+**Minor.**
+
+9. Fixed — `itemBySourceIdentity` takes a `SourceId`.
+10. Fixed — `purge-item` carries `tombstones`, and `ItemsApi.purge` returns the chain's.
+11. Kept, with the comment it was missing. It survived a general comment cull because it states
+    something the type cannot.
+12. Fixed — `CONTEXT.md` gains **Agent**, **Action**, **Job** and **Lease**. Left open: the
+    developer questioned whether *agent* is the right word at all. It is already the word in
+    `core.md` and `standards.md`, so it was made official rather than replaced; changing it is
+    a rename everywhere and remains that person's call.
+13. Fixed — ADR 5's "no Node built-ins" corrected to match `core.md`'s clarification.
+14. Decided: **editing a superseded item is refused.** `item-superseded` added to
+    `EditRefusal`, and `core.md` states why — allowing it forks the revision chain into two
+    live revisions with nothing to say which is current.
+15. Not done, deliberately. Type-level assertions are worth having, but they belong with the
+    first implementation slice rather than in a commit whose whole premise is that no logic
+    ships.
+
+**From the developer's review, in the same commit.** Type files moved under `src/types/`, split
+into `domain/` and `api/`; barrels re-export with `export *`; the branded-string helper is
+defined once and the JSON types moved out of `ids.ts`; comments cut to those stating something
+a type cannot; `.js` import extensions dropped, which required moving the workspace from
+`moduleResolution` NodeNext to Bundler. Two of that review's points were answered rather than
+acted on: TypeScript ships no JSON value type to import instead, and `Result` has two variants
+by design because anything that is not a domain refusal throws.
