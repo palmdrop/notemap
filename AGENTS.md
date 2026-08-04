@@ -4,9 +4,9 @@ Notemap is a quick way of capturing and processing notes, and routing the conten
 See `/docs` for further details.
 
 This is a learning project. Interface design, architecture and module apis should be designed in tandem with me, the developer, 
-unless otherwise instructed. Before choosing language, library or other major decisions, consult me. 
+unless otherwise instructed. Before choosing language, library or other major decisions, consult me. When I write code or define interfaces, push back if they contradict specs or ADRs, but ultimately concede if I confirm this is the shape I want. Update the docs accordingly.
 
-Notemap is a greenfield project. There are no live users. Features and API's may change without proper migrations.
+Notemap is a greenfield project. There are no live users. Features and API's may change without proper migrations. 
 
 Privacy, data ownership, self-hostable, local-first, offline-friendly, are important keywords for the project.
 
@@ -19,6 +19,9 @@ Privacy, data ownership, self-hostable, local-first, offline-friendly, are impor
 - `docs/standards.md` — principles, formats, interop contract.
 - `docs/exploration/` — frozen. The design phase these were derived from, kept as rationale.
   Where it disagrees with an ADR, the ADR wins.
+
+PLEASE NOTE: Notemap is in constant flux. Docs should be up to date with code, but feel free to propose changes to docs, ADRs, other decisions,
+even though they are strongly worded as already decided. But be transparant and ask for confirmation when doing so.
 
 ## Coding guidelines
 

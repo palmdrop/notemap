@@ -46,18 +46,29 @@ What is already settled, extracted from [core.md](core.md) and
   records. It does not carry pending suggestions, which are regenerable by definition, nor the
   accepted/rejected suggestion history (decided 2026-08-02): a rebuilt pool loses the rejection
   signal, and that loss is accepted.
+- **The mirror carries material, not operational state** (decided 2026-08-03). Captures,
+  enrichment artifacts and the durable human-owned state around them are mirrored. The action
+  log ([ADR 12](../adr/0012-core-keeps-an-append-only-action-log.md)), job rows and leases are
+  not: they describe how notemap ran, not what the user kept, and a pool rebuilt without them
+  is not missing anything of the user's. A rebuilt pool therefore has no history.
 - **Mirror writes are asynchronous** (decided 2026-08-02). They go through the same job/lease
   machinery as enrichment; a capture never fails because a mirror write did. The lossless
   claim is therefore "lossless up to pending mirror jobs", and the verify/repair operation
   closes the gap — backup tooling runs it first.
-- **Media is stored once**, in `assets/`, referenced by both the pool and the mirror.
-  Path-addressed, named for a human; the content hash is recorded so drift is detected and
-  reported, never silently absorbed.
+- **Media is stored once**, in `assets/`, referenced by both the pool and the mirror. Blobs are
+  **content-addressed** and sharded by hash prefix
+  ([ADR 13](../adr/0013-assets-are-named-references-to-content-addressed-blobs.md)); a blob's
+  name is its own SHA-256, so drift is detected and reported, never silently absorbed.
+- **The mirror records each asset's filename beside its blob reference** (decided 2026-08-04).
+  `assets/` is therefore not browsable the way a folder of named files would be: a human who has
+  lost notemap finds the bytes by reading the mirror's text, which names them. This is an
+  accepted narrowing of the mirror's promise — the data is there and findable, not arranged the
+  way it arrived.
 - An external tool editing or deleting mirror text cannot corrupt the pool.
 - Format: CommonMark + YAML frontmatter with a state sidecar. Frontmatter vocabulary per
   [standards.md](../standards.md#identity--provenance-the-cross-app-glue).
-- Layout sketch (ADR 1): `state/`, `pool-mirror/YYYY/MM/DD/` and `assets/YYYY/MM/DD/` as
-  siblings; the backup unit is the whole `notemap/` directory.
+- Layout sketch (ADR 1, amended by ADR 13): `state/`, `pool-mirror/YYYY/MM/DD/` and
+  `assets/<hash-prefix>/` as siblings; the backup unit is the whole `notemap/` directory.
 - **The mirror writer and the asset store are ports** — a different driver could put the same
   bytes elsewhere without touching the domain.
 - Pre-freeze the format is cheap to change: the mirror is regenerable from the database

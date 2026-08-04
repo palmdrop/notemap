@@ -52,9 +52,16 @@ lost pool. Automatic and complete, which is what distinguishes it from a **desti
 _Avoid_: backup, export, sync folder
 
 **Asset**:
-A media file belonging to a capture — audio, image, page snapshot. Stored once, referenced by both
-the pool and the mirror, and named for a human rather than for its contents.
-_Avoid_: blob, attachment, media file
+A named reference to media belonging to a capture — audio, image, page snapshot. Carries the
+filename exactly as it was uploaded and points at the blob holding the bytes. Uploading the same
+bytes twice under two names produces two assets.
+_Avoid_: attachment, media file
+
+**Blob**:
+The bytes an asset points at, stored once and addressed by their SHA-256. Named for a machine,
+shared by the pool and the mirror, and freed when the last asset referencing it goes. The layer
+where deduplication happens; a filename never reaches it.
+_Avoid_: object, binary, content
 
 ### Processing
 
@@ -71,7 +78,8 @@ _Avoid_: label, category, keyword, folder
 
 **Payload type**:
 What a capture mechanically *is* — text, voice, link, annotation, table. Determined by what
-arrived, never a judgement. Adapters declare which verbs they support per payload type.
+arrived, never a judgement. Adapters declare which payload types each of their capabilities
+accepts.
 _Avoid_: type, kind, format
 
 **Enrichment**:
@@ -87,14 +95,19 @@ one. Resolves to accepted or rejected; both are kept.
 _Avoid_: recommendation, prediction, guess
 
 **Artifact**:
-A durable enrichment output that stands on its own and is never ratified — a transcript, an
-embedding. Correcting one is not an edit of the capture.
+A durable enrichment output that stands on its own and is never accepted or rejected — a
+transcript, an embedding. It is not a proposal. Correcting one is not an edit of the capture.
 _Avoid_: result, output, derived data
 
-**Ratify**:
-To accept or reject a suggestion. Accepting writes real state that records which agent it came
-from; rejecting is kept as signal about the suggester.
-_Avoid_: approve, confirm, apply
+**Accept** / **Reject**:
+What a person does to a suggestion. Accepting writes real state that records which agent the
+suggestion came from; rejecting is kept as signal about the suggester. Both are kept.
+_Avoid_: ratify, approve, confirm, apply
+
+**Decision**:
+A suggestion's resolution — accepted or rejected. A suggestion that has neither is
+**undecided**. The collective noun only; the actions are always named directly.
+_Avoid_: ratification, verdict, outcome
 
 **Provider**:
 A configured external capability that performs one enrichment — transcription, formatting,
@@ -114,9 +127,16 @@ own destinations and does not know their shape.
 _Avoid_: target, sink, output
 
 **Adapter**:
-The code that speaks one destination's or one provider's protocol. Adapters declare which payload
-types and which verbs they support.
+The code that speaks one destination's or one provider's protocol. Adapters declare the
+capabilities they offer.
 _Avoid_: plugin, connector, integration
+
+**Capability**:
+One thing an adapter can do — create a note, append into an existing file, post to a board
+column. Names itself, says which payload types it accepts, and carries a schema for what a
+delivery must target. Core matches and refuses; it holds no list of its own, so a new kind of
+destination needs no change in core.
+_Avoid_: verb, action, method, operation
 
 **Route**:
 To deliver an item to a destination. Non-destructive: the item stays in the feed, and delivery may

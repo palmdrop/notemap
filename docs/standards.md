@@ -15,7 +15,7 @@ The principles behind these choices, stated here so this repo stands on its own:
    [ADR 1](adr/0001-pool-is-a-database.md).
 3. **Originals are immutable; processing is additive.** Preservation is a default the user can
    override, not a lock.
-4. **Enrichment is advisory.** Enrichments propose; a human ratifies.
+4. **Enrichment is advisory.** Enrichments propose; a human accepts or rejects.
 5. **One writer per file.** Exactly one process is authoritative for any given file.
 6. **Fast capture, deliberate processing.** Capture asks no questions; filing happens later.
 7. **Provenance is first-class.** Anything processed can be traced back to its capture.
@@ -49,7 +49,7 @@ layered beside it.
 that output is of two kinds. A **suggestion** — a tag, a title, a destination — is a proposal
 that means nothing until accepted or rejected, and accepting it writes state carrying the
 attribution of whichever agent produced it. An **artifact** — a transcript, an embedding — is
-durable, stands on its own, and is never ratified; correcting one is not an edit of the
+durable, stands on its own, and is never accepted or rejected; correcting one is not an edit of the
 capture. There is no "type guess": classification is tags only.
 
 ---
@@ -77,9 +77,13 @@ don't require model changes.
 - **Identity:** UUIDv7 (time-ordered) for every item/enrichment/collection; content hashes
   **recorded for** immutable assets (snapshots, audio) — *amended 2026-08-02*
   ([ADR 1](adr/0001-pool-is-a-database.md)): assets are addressed by path, not by hash, since a
-  hash filename is unusable for a human and becomes a lie the moment the file changes. The hash
-  is metadata used to detect drift; sharing is a reference count. Reference across systems with
-  the
+  hash filename is unusable for a human and becomes a lie the moment the file changes.
+  *Superseded 2026-08-04* ([ADR 13](adr/0013-assets-are-named-references-to-content-addressed-blobs.md)):
+  the two concerns are split. An **asset** keeps the filename exactly as uploaded; the **blob**
+  it points at is addressed by its **SHA-256**, stored once, and shared by every asset with the
+  same content. The hash names the blob rather than annotating a human-named file, which is
+  sound because a blob is immutable — changed bytes are a different blob — and it is still what
+  detects drift. Sharing is a reference count at both layers. Reference across systems with the
   `urn:commons:item:<uuid>` URI namespace ([RFC 8141](https://datatracker.ietf.org/doc/html/rfc8141)).
   A web resource = URL + capture time ([Memento](https://datatracker.ietf.org/doc/html/rfc7089)).
 - **Provenance:** the three [W3C PROV](https://www.w3.org/TR/prov-o/) relations, as
@@ -117,7 +121,10 @@ delivery appends a `(destination, timestamp, pointer)` record — a list, not a 
 one item may be routed to several destinations. The pointer is best-effort; the destination
 is someone else's system, so a stale pointer records where a note *once went* rather than
 guaranteeing where it is. Adapters declare which verbs (`create`, `append`, `place`) they
-support per payload type. Full model: [exploration/vision/pool-and-routing.md](exploration/vision/pool-and-routing.md#destinations-and-the-routing-table).
+support per payload type. *Superseded 2026-08-04*: a fixed verb set is filesystem-shaped, and a
+board, a webhook or a Micropub endpoint does not decompose into it. An adapter instead declares
+**capabilities** — each naming itself, the payload types it accepts, and a schema for what a
+delivery must target — and core refuses anything undeclared rather than approximating it. Full model: [exploration/vision/pool-and-routing.md](exploration/vision/pool-and-routing.md#destinations-and-the-routing-table).
 
 ---
 
