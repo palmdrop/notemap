@@ -1,5 +1,6 @@
-import type { Agent } from "./agent.js";
-import type { ActionId, ItemId, JsonObject, Timestamp } from "./ids.js";
+import type { JsonObject } from "../json";
+import type { Agent } from "./agent";
+import type { ActionId, ItemId, Timestamp } from "./ids";
 
 export type ActionKind =
   | "captured"
@@ -7,6 +8,7 @@ export type ActionKind =
   | "revised"
   | "tagged"
   | "untagged"
+  | "suggestion-added"
   | "suggestion-accepted"
   | "suggestion-rejected"
   | "artifact-added"
@@ -15,18 +17,17 @@ export type ActionKind =
   | "unarchived"
   | "routed"
   | "delivery-failed"
+  | "enrichment-requested"
   | "enrichment-failed"
   | "enrichment-abandoned"
-  | "purged";
+  | "assets-released"
+  | "purged"
+  | "actions-cleared";
 
-/**
- * Written by the same command as the change it describes, so the two cannot
- * disagree. Read by humans tracing something; state is never derived from it.
- */
 export type Action = {
   readonly id: ActionId;
   readonly kind: ActionKind;
-  readonly subject: ItemId;
+  readonly subject?: ItemId;
   readonly by: Agent;
   readonly at: Timestamp;
   readonly detail: JsonObject;

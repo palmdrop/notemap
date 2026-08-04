@@ -1,3 +1,4 @@
+import type { SchemaIssue } from "../json";
 import type {
   ArtifactId,
   AssetId,
@@ -8,20 +9,10 @@ import type {
   ItemId,
   LeaseId,
   PayloadTypeName,
-  SchemaIssue,
   SourceId,
   SuggestionId,
   Timestamp,
-} from "./ids.js";
-
-/**
- * Every refusal names facts and never a message. Core has no locale and no
- * interface; turning these into a sentence or a status code is the host's job.
- *
- * Unions are per-operation rather than shared, so a caller's switch is
- * exhaustive over exactly what its call can produce. Some are aliases today
- * and exist so that gaining a refusal later is not a change of shape.
- */
+} from "../domain/ids";
 
 export type SubjectRefusal =
   | { readonly kind: "no-such-item"; readonly item: ItemId }
@@ -46,7 +37,7 @@ export type CaptureRefusal =
       readonly expected: BlobHash;
       readonly actual: BlobHash;
     }
-  /** Same source identity, different content: an outside edit must not rewrite pool history. */
+  | { readonly kind: "capture-id-conflict"; readonly existing: ItemId }
   | { readonly kind: "source-item-changed"; readonly existing: ItemId };
 
 export type EditRefusal =
@@ -55,7 +46,8 @@ export type EditRefusal =
       readonly kind: "payload-invalid";
       readonly issues: readonly SchemaIssue[];
     }
-  | { readonly kind: "payload-type-changed"; readonly from: PayloadTypeName };
+  | { readonly kind: "payload-type-changed"; readonly from: PayloadTypeName }
+  | { readonly kind: "item-superseded"; readonly by: ItemId };
 
 export type TagRefusal = SubjectRefusal;
 
@@ -79,7 +71,6 @@ export type ArtifactRefusal = {
   readonly artifact: ArtifactId;
 };
 
-/** Knowable from declared capabilities alone, before anything is attempted. */
 export type PreparationRefusal =
   | SubjectRefusal
   | {
@@ -100,7 +91,6 @@ export type PreparationRefusal =
       readonly issues: readonly SchemaIssue[];
     };
 
-/** Only knowable from the adapter's answer, and worth retrying. */
 export type AttemptFailure =
   | { readonly kind: "unreachable"; readonly detail: string }
   | { readonly kind: "rejected-by-destination"; readonly detail: string };
@@ -120,3 +110,7 @@ export type LeaseRefusal = {
 };
 
 export type ActionLogRefusal = SubjectRefusal;
+
+export type RebuildRefusal =
+  | { readonly kind: "pool-not-empty" }
+  | { readonly kind: "mirror-unreadable"; readonly detail: string };

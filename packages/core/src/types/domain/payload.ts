@@ -1,10 +1,7 @@
-import type { AssetRef } from "./asset.js";
-import type { JsonObject, JsonSchema, PayloadTypeName } from "./ids.js";
+import type { JsonObject, JsonSchema } from "../json";
+import type { AssetRef } from "./asset";
+import type { PayloadTypeName } from "./ids";
 
-/**
- * `content` is never parsed by core. Everything core needs to know about a
- * payload — which assets it holds — is declared in `assets` instead.
- */
 export type Payload = {
   readonly type: PayloadTypeName;
   readonly content: JsonObject;

@@ -1,21 +1,17 @@
-import type { FailureDetail } from "./enrichment.js";
+import type { ArtifactDraft, FailureDetail } from "./enrichment";
 import type {
   Duration,
   EnrichmentName,
   ItemId,
   JobId,
-  JsonObject,
   LeaseId,
   Timestamp,
-} from "./ids.js";
+} from "./ids";
+import type { SuggestionDraft } from "./suggestion";
 
 export type JobKind = "enrichment" | "mirror";
 
-/**
- * Deliberately partial. What a job carries as input, and how an enrichment's
- * declared needs resolve into one, is unsettled; only the fields every job
- * has regardless are named here.
- */
+/** Deliberately partial: what a job carries as input is unsettled. */
 export type Job = {
   readonly id: JobId;
   readonly kind: JobKind;
@@ -26,16 +22,11 @@ export type Job = {
 };
 
 export type ClaimRequest = {
-  /** A host claims only what it can actually run. */
   readonly kinds: readonly JobKind[];
   readonly limit: number;
   readonly leaseFor: Duration;
 };
 
-/**
- * A lease expires by being past `expiresAt` when someone next claims — core
- * holds no timer, so nothing reaps it on a schedule.
- */
 export type Lease = {
   readonly id: LeaseId;
   readonly job: Job;
@@ -43,10 +34,13 @@ export type Lease = {
 };
 
 export type WorkOutcome =
-  | { readonly kind: "succeeded"; readonly result: JsonObject }
+  | {
+      readonly kind: "succeeded";
+      readonly artifacts: readonly ArtifactDraft[];
+      readonly suggestions: readonly SuggestionDraft[];
+    }
   | {
       readonly kind: "failed";
-      /** False sends it straight to abandoned: retrying will fail identically. */
       readonly retryable: boolean;
       readonly detail: FailureDetail;
     };

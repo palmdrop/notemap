@@ -1,22 +1,31 @@
-import type { Action } from "./action-log.js";
-import type { Agent } from "./agent.js";
-import type { Asset, AssetMeta, BlobIntegrity } from "./asset.js";
-import type { CaptureEnvelope, CaptureOutcome } from "./capture.js";
-import type { Artifact, EnrichmentStatus } from "./enrichment.js";
+import type { JsonObject } from "../json";
+import type { Page, Result, Slice } from "../result";
+import type { Action } from "../domain/action-log";
+import type { Agent } from "../domain/agent";
+import type { Asset, AssetMeta, BlobIntegrity } from "../domain/asset";
+import type { CaptureEnvelope, CaptureOutcome } from "../domain/capture";
+import type { Artifact, EnrichmentStatus } from "../domain/enrichment";
 import type {
   ArtifactId,
   AssetId,
   Duration,
   EnrichmentName,
   ItemId,
-  JsonObject,
   LeaseId,
   SuggestionId,
+  SyncCursor,
   TagName,
-} from "./ids.js";
-import type { EditOutcome, Item } from "./item.js";
-import type { Page, Slice } from "./paging.js";
-import type { Payload } from "./payload.js";
+} from "../domain/ids";
+import type { EditOutcome, Item } from "../domain/item";
+import type { Payload } from "../domain/payload";
+import type {
+  DeliveryRequest,
+  DestinationDescriptor,
+  RoutingRecord,
+} from "../domain/routing";
+import type { Suggestion } from "../domain/suggestion";
+import type { Delta, Tombstone } from "../domain/sync";
+import type { ClaimRequest, Lease, WorkOutcome } from "../domain/work";
 import type {
   ActionLogRefusal,
   ArchiveRefusal,
@@ -28,19 +37,11 @@ import type {
   EnrichmentRefusal,
   LeaseRefusal,
   PurgeRefusal,
+  RebuildRefusal,
   RoutingRefusal,
   SuggestionRefusal,
   TagRefusal,
-} from "./refusal.js";
-import type { Result } from "./result.js";
-import type {
-  DeliveryRequest,
-  DestinationDescriptor,
-  RoutingRecord,
-} from "./routing.js";
-import type { Suggestion } from "./suggestion.js";
-import type { Delta, SyncCursor, Tombstone } from "./sync.js";
-import type { ClaimRequest, Lease, WorkOutcome } from "./work.js";
+} from "./refusal";
 
 export interface ItemsApi {
   get(id: ItemId): Promise<Item | undefined>;
@@ -49,10 +50,9 @@ export interface ItemsApi {
   untag(id: ItemId, tag: TagName): Promise<Result<Item, TagRefusal>>;
   archive(id: ItemId, reason?: string): Promise<Result<Item, ArchiveRefusal>>;
   unarchive(id: ItemId): Promise<Result<Item, ArchiveRefusal>>;
-  purge(id: ItemId): Promise<Result<Tombstone, PurgeRefusal>>;
+  purge(id: ItemId): Promise<Result<readonly Tombstone[], PurgeRefusal>>;
 }
 
-/** Ordered and paginated; where processing has got to is the caller's to remember. */
 export interface ViewsApi {
   feed(page: Page): Promise<Slice<Item>>;
   queue(page: Page): Promise<Slice<Item>>;
@@ -76,8 +76,6 @@ export interface EnrichmentApi {
     artifact: ArtifactId,
     content: JsonObject,
   ): Promise<Result<Artifact, ArtifactRefusal>>;
-
-  /** Everything that has given up, so a client can show what needs attention. */
   abandoned(page: Page): Promise<Slice<EnrichmentStatus>>;
 }
 
@@ -100,7 +98,6 @@ export interface AssetsApi {
     meta: AssetMeta,
   ): Promise<Result<Asset, AssetRefusal>>;
   get(id: AssetId): Promise<Asset | undefined>;
-  /** Refuses rather than returning nothing, because a missing blob is not the same as a missing asset. */
   open(
     id: AssetId,
     signal?: AbortSignal,
@@ -108,7 +105,6 @@ export interface AssetsApi {
   verify(id: AssetId): Promise<BlobIntegrity>;
 }
 
-/** Core exposes claimable work; the host decides when and how much to run. */
 export interface WorkApi {
   claim(request: ClaimRequest): Promise<readonly Lease[]>;
   complete(
@@ -122,7 +118,6 @@ export interface WorkApi {
 export interface ActionsApi {
   forItem(item: ItemId, page: Page): Promise<Slice<Action>>;
   all(page: Page): Promise<Slice<Action>>;
-  /** Purging an item leaves its history; discarding that is a separate wish. */
   clear(item?: ItemId): Promise<Result<void, ActionLogRefusal>>;
 }
 
@@ -130,7 +125,19 @@ export interface SyncApi {
   changesSince(cursor: SyncCursor | undefined, limit: number): Promise<Delta>;
 }
 
-/** One instance per pool. Nothing here is global, ambient or shared. */
+export type MirrorReport = {
+  readonly checked: number;
+  readonly missing: readonly ItemId[];
+  readonly drifted: readonly AssetId[];
+};
+
+export interface MaintenanceApi {
+  rebuildFromMirror(): Promise<Result<number, RebuildRefusal>>;
+  verifyMirror(): Promise<MirrorReport>;
+  repairMirror(): Promise<MirrorReport>;
+  sweepUnreferencedAssets(): Promise<readonly AssetId[]>;
+}
+
 export interface Pool {
   capture(
     envelope: CaptureEnvelope,
@@ -145,4 +152,5 @@ export interface Pool {
   readonly work: WorkApi;
   readonly actions: ActionsApi;
   readonly sync: SyncApi;
+  readonly maintenance: MaintenanceApi;
 }

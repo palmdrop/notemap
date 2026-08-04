@@ -1,23 +1,13 @@
-import type { Agent } from "./agent.js";
-import type { AssetRef } from "./asset.js";
-import type {
-  ArtifactId,
-  EnrichmentName,
-  ItemId,
-  JsonObject,
-  Timestamp,
-} from "./ids.js";
+import type { JsonObject } from "../json";
+import type { Agent } from "./agent";
+import type { AssetRef } from "./asset";
+import type { ArtifactId, EnrichmentName, ItemId, Timestamp } from "./ids";
 
 export type FailureDetail = {
   readonly code: string;
   readonly detail: string;
 };
 
-/**
- * `failed` and `abandoned` differ only in whether anything further will
- * happen unasked. Without that split an item could never answer "is anything
- * still coming?", which every other state exists to make answerable.
- */
 export type EnrichmentState =
   | { readonly kind: "unavailable" }
   | { readonly kind: "not-applicable" }
@@ -50,7 +40,13 @@ export type Artifact = {
   readonly createdAt: Timestamp;
   readonly content: JsonObject;
   readonly assets: readonly AssetRef[];
-
-  /** A correction is an artifact of its own; both it and the original are kept. */
   readonly correctionOf?: ArtifactId;
+};
+
+export type ArtifactDraft = Omit<Artifact, "id" | "by" | "createdAt">;
+
+/** Deliberately partial: what an enrichment needs, and how needs resolve, is unsettled. */
+export type EnrichmentDescriptor = {
+  readonly name: EnrichmentName;
+  readonly appliesTo: readonly string[];
 };

@@ -1,20 +1,14 @@
+import type { JsonObject, JsonSchema } from "../json";
 import type {
   CapabilityName,
   DestinationId,
   ItemId,
-  JsonObject,
-  JsonSchema,
   PayloadTypeName,
   RoutingRecordId,
   Timestamp,
-} from "./ids.js";
-import type { Payload } from "./payload.js";
+} from "./ids";
+import type { Payload } from "./payload";
 
-/**
- * Adapters name their own capabilities. A fixed set of verbs was tried and
- * rejected as filesystem-shaped: a board, a webhook and a Micropub endpoint
- * do not decompose into create, append and place.
- */
 export type Capability = {
   readonly name: CapabilityName;
   readonly accepts: readonly PayloadTypeName[];
@@ -32,7 +26,6 @@ export type DeliveryRequest = {
   readonly target: JsonObject;
 };
 
-/** What an adapter is handed once core has checked it against the capability. */
 export type Delivery = {
   readonly item: ItemId;
   readonly destination: DestinationId;
@@ -63,7 +56,5 @@ export type RoutingRecord = {
   readonly item: ItemId;
   readonly target: RoutingTarget;
   readonly at: Timestamp;
-
-  /** Where it landed when the delivery happened, not a promise about now. */
   readonly pointer?: string;
 };

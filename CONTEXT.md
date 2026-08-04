@@ -114,6 +114,28 @@ A configured external capability that performs one enrichment — transcription,
 embedding. Reached through an adapter.
 _Avoid_: backend, engine, service
 
+**Agent**:
+Whoever or whatever did something: the person, a named provider, or an intake source. Recorded
+on every tag, artifact and suggestion so that "which of these did a model give me?" stays
+answerable.
+_Avoid_: author, actor, user
+
+**Action**:
+One entry in the append-only log of everything that changed state — what happened, when, by
+which agent, to what. Read by a human tracing something; pool state is never derived from it.
+_Avoid_: event, audit entry, history
+
+**Job**:
+One unit of claimable work core holds but never runs — an enrichment to perform, a mirror file
+to write. Hosts claim jobs and drive them; core only records that there is something to do.
+_Avoid_: task, queue entry, work item
+
+**Lease**:
+A time-limited exclusive claim on a job. It expires by being past its time when someone next
+claims, not by anything reaping it, which is what lets a crashed host's work become available
+again without cleanup.
+_Avoid_: lock, reservation, claim
+
 **Processed**:
 Said of an item that has been routed or archived. Marking an item processed by hand is routing
 whose destination is the user. Scrolling past an item is a **skip**, which changes nothing.

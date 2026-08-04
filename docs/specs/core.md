@@ -91,6 +91,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   The same holds for routing, per the above; archive and routing state both stay behind.
 - An item is **superseded** when a later revision points at it. This is derived from the link,
   never stored, and superseded items are excluded from the queue.
+- **Editing a superseded item is refused** (decided 2026-08-04). Allowing it would fork the
+  revision chain into two revisions of one original, both live in the queue, with nothing to
+  say which is current. Edits go to the end of the chain.
 - The single exception is **amendment of the head**: the newest item in the feed may be edited
   in place while it is still unprocessed. **Only a capture that becomes the new head seals
   it** — intake placed earlier in the feed by its source time, such as a file import or an
@@ -265,9 +268,10 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   and no memory across a restart, so it supplies only its source identity and core mints the
   id. This keeps every id a time-ordered UUIDv7 rather than deriving ids from source paths.
 - Submitting the same capture twice has no additional effect, whichever identity matches, and
-  the caller is told which one did. Re-reading a source whose content has **changed** is
-  refused rather than silently recorded as an edit: an external change must not rewrite pool
-  history.
+  the caller is told which one did. **Resubmitting under an identity that already exists, with
+  content that differs, is refused** — for either identity (clarified 2026-08-04). An external
+  change must not rewrite pool history, and a client whose replay disagrees with what the pool
+  holds must be told rather than silently ignored.
 - Core's obligations to offline clients are idempotent operations and client-generated ids.
   The sync protocol — outbox replay, conflict resolution, delta reads, tombstones — is
   specified in [sync.md](sync.md).

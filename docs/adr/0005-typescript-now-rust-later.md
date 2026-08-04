@@ -39,10 +39,13 @@ port ever happens the domain layer is rewritten like everything else.
 Four of the original five rules survive, each on its own independent grounds rather than as
 portability constraints:
 
-- **The domain layer takes no framework or runtime dependency.** No Node built-ins, no HTTP,
-  no config, no timers — all of it behind ports. Grounded in
+- **The domain layer reaches nothing outside itself.** No filesystem, no HTTP, no timers, no
+  config sourcing — all of it behind ports. Grounded in
   [ADR 2](0002-core-is-a-host-agnostic-library.md): core must be embeddable and testable
-  without a host.
+  without a host. *Clarified 2026-08-04*: this originally read "no Node built-ins", which
+  overstated it. Core carries `@types/node` so runtime types such as `AbortSignal` resolve, and
+  pure computational libraries are fine; `fs` is importable and avoided by convention rather
+  than by tooling ([core.md](../specs/core.md)).
 - **State is modelled explicitly** as discriminated unions. Kept because the spec's guarantees
   are stated as states, and a union is how the compiler enforces exhaustiveness.
 - **Ports are narrow interfaces**, one concern each, because that is what makes them

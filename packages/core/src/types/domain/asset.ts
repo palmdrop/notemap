@@ -1,10 +1,5 @@
-import type { AssetId, BlobHash } from "./ids.js";
+import type { AssetId, BlobHash } from "./ids";
 
-/**
- * A name for content, not the content. Storing identical bytes under two
- * filenames produces two assets sharing one blob, so each upload keeps the
- * name it arrived with.
- */
 export type Asset = {
   readonly id: AssetId;
   readonly filename: string;
@@ -20,9 +15,9 @@ export type AssetMeta = {
 
 export type BlobIntegrity = "intact" | "drifted" | "missing";
 
-/** Names one asset's role within a payload: `audio`, `snapshot`, `image`. */
 export type AssetRef = {
   readonly slot: string;
   readonly asset: AssetId;
+  /** The content the capture expected, so a swapped asset is caught at capture time. */
   readonly hash: BlobHash;
 };
