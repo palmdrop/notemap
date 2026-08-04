@@ -29,13 +29,53 @@ folder of plain files, or a database that notemap owns outright?
 
 ## Decision outcome
 
-**The pool is a SQLite database that notemap owns.** Captures, revisions, classification,
-enrichment, and the routing log all live in it.
+**The pool is a database that notemap owns**, not a folder of files. Captures, revisions,
+classification, enrichment, and the routing log all live in it.
+
+*Amended 2026-08-03 — SQLite is the first driver, not the decision.* This originally read "the
+pool is a **SQLite** database", which put the driver in the decision. **Core is
+storage-agnostic**: it states what it needs of a store and does not know which store answers.
+SQLite is the initial implementation and remains the only planned one — nothing here promises a
+second — but core may not assume it.
+
+What core requires of any storage driver:
+
+- **A domain operation applies all-or-nothing.** Core submits one command per operation —
+  a capture and the jobs it enqueues are one command — and never holds a transaction handle.
+  The driver decides how to make that atomic. Core therefore cannot perform I/O inside a
+  transaction, because it has no transaction to be inside.
+- **Commands carry preconditions**, and the driver refuses a command whose precondition no
+  longer holds. This is what makes read-modify-write safe without core owning a lock: an
+  amendment is submitted expecting its item to still be the head, and a refusal demotes it to a
+  revision ([ADR 11](0011-in-place-amendment-of-the-head.md),
+  [sync.md](../specs/sync.md)).
+- **Ordered, paginated reads with stable cursors**, expressed in domain terms — the queue and
+  the feed are asked for as such. Core states the question; the driver chooses how to answer
+  it, including whatever it materializes or indexes to do so.
+- **Uniqueness on client-generated capture ids**, so a replayed capture produces one item.
+- **`modified_at` assigned monotonically per pool**, or a client's delta read can miss a write
+  that committed out of order ([sync.md](../specs/sync.md)).
+- **Assets and blobs released by reference count**
+  ([ADR 13](0013-assets-are-named-references-to-content-addressed-blobs.md)), with a reference
+  taken when the referencing capture commits rather than when bytes are stored.
+
+Derived state stays derived *in the model* — there is no independent `superseded` flag that can
+drift from the revision link. A driver materializing it as a column or an index is free to, so
+long as it remains a function of the link.
 
 Media (audio, snapshots, images) live **once**, in a shared `assets/` directory that both
 the database and the mirror reference. Duplicating media into the mirror was rejected: a
 user who edits one copy creates a *silent* fork, and a later rebuild would quietly resurrect
 the edited version. One shared file breaks loudly instead, which is the better failure.
+
+> **Superseded 2026-08-04 by
+> [ADR 13](0013-assets-are-named-references-to-content-addressed-blobs.md).** The paragraph
+> below decided assets are path-addressed and human-named. That held until deduplication was
+> added on top, which raised a question it could not answer: whose filename wins when the same
+> bytes arrive under two names. ADR 13 splits the two — a named **asset** referencing a
+> content-addressed **blob** — so filenames are preserved exactly and content is still stored
+> once. Everything else in this ADR stands. Kept for the reasoning, which ADR 13 builds on
+> rather than discards.
 
 Assets are **addressed by path**, not by content hash — a hash filename is unusable for a
 human and becomes a lie the moment the file changes. The hash is recorded as metadata so
@@ -74,8 +114,13 @@ On-disk layout — `state/`, `pool-mirror/` and `assets/` are siblings:
 notemap/
   state/notemap.db          <- authoritative, never synced
   pool-mirror/2026/08/01/   <- write-only: capture .md + state .json
-  assets/2026/08/01/        <- media, single copy, path-addressed
+  assets/ab/cd1234…         <- blobs, single copy, content-addressed (ADR 13)
 ```
+
+*Amended 2026-08-04*: `assets/` was originally laid out by date, matching `pool-mirror/`. Under
+[ADR 13](0013-assets-are-named-references-to-content-addressed-blobs.md) it holds blobs sharded
+by hash prefix, because the same bytes have no single date. Filenames live on the asset record
+and are written into the mirror's text beside each blob reference.
 
 Because mirror text is never read, `pool-mirror/` is safe to place inside a synced folder.
 Neither half is portable alone, though: **the backup unit is the whole `notemap/` directory**,
@@ -88,8 +133,11 @@ copy; the mirror and the destinations hold the durable one.
 
 ### Consequences
 
-- **Good** — transactions, real invariants, FTS5 and sqlite-vec in the same file, no
-  file-watching, no "who wrote this?" ambiguity.
+- **Good** — transactions, real invariants, no file-watching, no "who wrote this?" ambiguity.
+  *Amended 2026-08-03*: "FTS5 and sqlite-vec in the same file" was also listed here. It is a
+  property of the SQLite driver, not of the decision. Search and the embedding index may not
+  assume storage co-located with the pool; both are out of scope for the first slice, so this
+  costs nothing yet.
 - **Bad** — the pool is opaque without notemap running; the mirror and the export path are
   now load-bearing and must be tested, not aspirational.
 - **Neutral** — the pool becomes **private to notemap**. Other tools cannot interop with it by
@@ -131,3 +179,7 @@ Model: [../exploration/vision/pool-and-routing.md](../exploration/vision/pool-an
 Formats: [../standards.md](../standards.md).
 Revisit if the pool ever needs to be readable by another app on the same machine without a
 running notemap, or if the mirror proves sufficient on its own.
+
+*Added 2026-08-03*: the "local filesystem, never a network share" rule that accompanies leasing
+([ADR 2](0002-core-is-a-host-agnostic-library.md), [core.md](../specs/core.md)) is a limit of
+the SQLite driver, not a requirement core places on storage. It is documented with the driver.

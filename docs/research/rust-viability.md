@@ -1,8 +1,10 @@
 # Research: Rust viability for core
 
 **Date**: 2026-08-02
-**Status**: Draft — informs a possible revisit of
-[ADR 5](../adr/0005-typescript-now-rust-later.md).
+**Status**: Draft — informed the 2026-08-03 amendment to
+[ADR 5](../adr/0005-typescript-now-rust-later.md), which dropped the portability rules. The
+findings below stand; they describe what a port *would* cost, not a constraint on how core is
+written today.
 
 ---
 

@@ -31,25 +31,40 @@ once the domain model has settled.
 The stack of any existing project is precedent, not a mandate; in particular Bun is not
 inherited.
 
-Because the port is a real possibility rather than a nicety, core is written to stay
-portable:
+*Amended 2026-08-03 — the portability rules are dropped.* This ADR originally required core to
+be written so a Rust port would transfer mechanically. That tax is no longer paid: **Rust
+portability does not influence how core is written.** Core is idiomatic TypeScript, and if a
+port ever happens the domain layer is rewritten like everything else.
 
-- **The domain layer takes no framework or runtime dependency.** No Node built-ins, no HTTP,
-  no config, no timers — all of it behind ports.
-- **State is modelled explicitly** as discriminated unions, so it maps mechanically to Rust
-  enums. No structural-typing tricks, no decorator or metaprogramming cleverness in the model.
-- **Ports are narrow interfaces**, one concern each, so they map to traits one-to-one.
-- **Port boundaries are async**, which both a Node host and a future Rust host want anyway.
-- **The schema lives in migrations**, not inferred from TypeScript types, so it survives a
-  rewrite untouched.
+Four of the original five rules survive, each on its own independent grounds rather than as
+portability constraints:
+
+- **The domain layer reaches nothing outside itself.** No filesystem, no HTTP, no timers, no
+  config sourcing — all of it behind ports. Grounded in
+  [ADR 2](0002-core-is-a-host-agnostic-library.md): core must be embeddable and testable
+  without a host. *Clarified 2026-08-04*: this originally read "no Node built-ins", which
+  overstated it. Core carries `@types/node` so runtime types such as `AbortSignal` resolve, and
+  pure computational libraries are fine; `fs` is importable and avoided by convention rather
+  than by tooling ([core.md](../specs/core.md)).
+- **State is modelled explicitly** as discriminated unions. Kept because the spec's guarantees
+  are stated as states, and a union is how the compiler enforces exhaustiveness.
+- **Ports are narrow interfaces**, one concern each, because that is what makes them
+  substitutable in a test.
+- **Port boundaries are async**, because they are I/O.
+
+The fifth — *the schema lives in migrations, not inferred from TypeScript types* — rested on
+portability alone and is **now open**. Schema-first tooling that generates types is a live
+option for the storage adapter.
 
 ### Consequences
 
-- **Good** — fastest iteration while tags, ratification and the job model are unsettled; one
-  language across core and the queue UI; every host in ADR 2 stays open, plugin included.
-- **Bad** — the portability rules are a tax paid continuously for a port that may never happen.
-- **Neutral** — if the port does happen, storage and host adapters are rewritten regardless;
-  only the domain layer is meant to transfer.
+- **Good** — fastest iteration while tags, suggestion decisions and the job model are unsettled; one
+  language across core and the queue UI; every host in ADR 2 stays open, plugin included. After
+  the amendment, no continuous tax is paid for a port that may never happen.
+- **Bad** — a Rust port, should it happen, is a rewrite of the domain layer and not a
+  translation. That cost is accepted in exchange for writing the model the way TypeScript
+  wants it written.
+- **Neutral** — storage and host adapters were always going to be rewritten under a port.
 
 ---
 

@@ -20,7 +20,7 @@ Which sorts how?
 
 *Amended 2026-08-02*: `updated` means **content time only** — a revision or an amendment — and
 is named `content_updated_at` to say so. A separate `modified_at`, bumped by every change
-including classification, routing, archiving and ratification, exists for sync delta reads
+including classification, routing, archiving and deciding on a suggestion, exists for sync delta reads
 ([specs/sync.md](../specs/sync.md)) and never affects ordering.
 
 The feed is immutable true chronology: a note written offline on a plane and synced three days

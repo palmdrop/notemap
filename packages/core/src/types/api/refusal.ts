@@ -1,0 +1,116 @@
+import type { SchemaIssue } from "../json";
+import type {
+  ArtifactId,
+  AssetId,
+  BlobHash,
+  CapabilityName,
+  DestinationId,
+  EnrichmentName,
+  ItemId,
+  LeaseId,
+  PayloadTypeName,
+  SourceId,
+  SuggestionId,
+  Timestamp,
+} from "../domain/ids";
+
+export type SubjectRefusal =
+  | { readonly kind: "no-such-item"; readonly item: ItemId }
+  | {
+      readonly kind: "item-purged";
+      readonly item: ItemId;
+      readonly at: Timestamp;
+    };
+
+export type CaptureRefusal =
+  | { readonly kind: "unknown-source"; readonly source: SourceId }
+  | { readonly kind: "unknown-payload-type"; readonly type: PayloadTypeName }
+  | {
+      readonly kind: "payload-invalid";
+      readonly issues: readonly SchemaIssue[];
+    }
+  | { readonly kind: "missing-asset-slot"; readonly slot: string }
+  | { readonly kind: "unknown-asset"; readonly asset: AssetId }
+  | {
+      readonly kind: "asset-hash-mismatch";
+      readonly asset: AssetId;
+      readonly expected: BlobHash;
+      readonly actual: BlobHash;
+    }
+  | { readonly kind: "capture-id-conflict"; readonly existing: ItemId }
+  | { readonly kind: "source-item-changed"; readonly existing: ItemId };
+
+export type EditRefusal =
+  | SubjectRefusal
+  | {
+      readonly kind: "payload-invalid";
+      readonly issues: readonly SchemaIssue[];
+    }
+  | { readonly kind: "payload-type-changed"; readonly from: PayloadTypeName }
+  | { readonly kind: "item-superseded"; readonly by: ItemId };
+
+export type TagRefusal = SubjectRefusal;
+
+export type ArchiveRefusal = SubjectRefusal;
+
+export type PurgeRefusal = SubjectRefusal;
+
+export type SuggestionRefusal =
+  | SubjectRefusal
+  | { readonly kind: "no-such-suggestion"; readonly suggestion: SuggestionId }
+  | { readonly kind: "already-decided"; readonly suggestion: SuggestionId };
+
+export type EnrichmentRefusal =
+  | SubjectRefusal
+  | { readonly kind: "unknown-enrichment"; readonly enrichment: EnrichmentName }
+  | { readonly kind: "no-provider"; readonly enrichment: EnrichmentName }
+  | { readonly kind: "needs-unmet"; readonly enrichment: EnrichmentName };
+
+export type ArtifactRefusal = {
+  readonly kind: "no-such-artifact";
+  readonly artifact: ArtifactId;
+};
+
+export type PreparationRefusal =
+  | SubjectRefusal
+  | {
+      readonly kind: "unknown-destination";
+      readonly destination: DestinationId;
+    }
+  | {
+      readonly kind: "capability-undeclared";
+      readonly capability: CapabilityName;
+    }
+  | {
+      readonly kind: "payload-type-unsupported";
+      readonly type: PayloadTypeName;
+      readonly accepts: readonly PayloadTypeName[];
+    }
+  | {
+      readonly kind: "target-invalid";
+      readonly issues: readonly SchemaIssue[];
+    };
+
+export type AttemptFailure =
+  | { readonly kind: "unreachable"; readonly detail: string }
+  | { readonly kind: "rejected-by-destination"; readonly detail: string };
+
+export type DeliveryRefusal = PreparationRefusal | AttemptFailure;
+
+export type RoutingRefusal = SubjectRefusal;
+
+export type AssetRefusal =
+  | { readonly kind: "no-such-asset"; readonly asset: AssetId }
+  | { readonly kind: "blob-missing"; readonly blob: BlobHash }
+  | { readonly kind: "blob-drifted"; readonly blob: BlobHash };
+
+export type LeaseRefusal = {
+  readonly kind: "lease-lost";
+  readonly lease: LeaseId;
+};
+
+export type ActionLogRefusal = SubjectRefusal;
+
+export type RebuildRefusal =
+  | { readonly kind: "pool-not-empty" }
+  | { readonly kind: "mirror-unreadable"; readonly detail: string };

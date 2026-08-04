@@ -1,4 +1,4 @@
-# 6. Enrichment splits into suggestions and artifacts; ratification writes attributed state
+# 6. Enrichment splits into suggestions and artifacts; accepting one writes attributed state
 
 **Date**: 2026-08-02
 **Status**: Accepted
@@ -15,7 +15,7 @@ document says what happens when the user says *yes*. What does accepting write?
 
 ## Decision outcome
 
-**Enrichment produces two different kinds of thing, and only one is ratifiable.**
+**Enrichment produces two different kinds of thing, and only one awaits a decision.**
 
 - A **suggestion** is a proposal awaiting a decision — a tag, a title, a destination guess. It
   means nothing until someone accepts or rejects it.
@@ -28,7 +28,7 @@ This split is already assumed by [ADR 1](0001-pool-is-a-database.md): the mirror
 transcripts and corrections but not pending suggestions, because enrichment is regenerable.
 
 **Accepting a suggestion writes real state that carries its attribution.** A tag row records
-who put it there — a human, or the named provider — so `wasAttributedTo` survives ratification
+who put it there — a human, or the named provider — so `wasAttributedTo` survives acceptance
 and "which of my tags did a model give me?" stays answerable. The suggestion is marked
 accepted or rejected and kept: rejections are the only signal distinguishing a suggester that
 is *wrong* from one that is merely ignored, and they cannot be backfilled.
@@ -55,6 +55,6 @@ complexity.
 
 - **Good** — one place to read classification from; provenance survives; rejection signal is
   captured from day one.
-- **Bad** — one extra column and one extra write per ratification.
+- **Bad** — one extra column and one extra write per decision.
 - **Neutral** — whether removing a tag should suppress that suggestion permanently is left
   open (2026-08-02). Rejecting once per revision is mild; suppression is easy to add later.

@@ -47,7 +47,7 @@ this spec is unwritten.
 - A client can ask for everything that has changed since a point it names, including purges.
 - **Delta reads are keyed on `modified_at`** (decided 2026-08-02): a server-assigned timestamp
   bumped by every change to an item — content and state alike, including classification,
-  routing, archiving and ratification. It is distinct from `created_at` and
+  routing, archiving and deciding on a suggestion. It is distinct from `created_at` and
   `content_updated_at`, which order the feed and queue and record content time only
   ([core.md](core.md)). Core must assign it monotonically per pool, or a client can miss
   writes that commit out of order.
