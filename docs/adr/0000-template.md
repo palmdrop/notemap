@@ -55,4 +55,4 @@ Chosen: **Option B**, because …
 
 ## More information
 
-Links to the spec, plan, review or conversation this came out of. Note the conditions under which this decision should be revisited.
+Links to the spec, plan, review or conversation this came out of. Note the conditions under which this decision should be revisited — **Accepted** means chosen on the date above, not closed.
