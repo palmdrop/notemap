@@ -34,7 +34,7 @@ export interface Clock {
 }
 
 export interface IdGenerator {
-  next(): string;
+  next<T extends string>(): T;
 }
 
 export interface SchemaValidator {
@@ -84,6 +84,7 @@ export type Precondition =
     }
   | { readonly kind: "lease-held"; readonly lease: LeaseId };
 
+// NOTE: Do not like this, makes typing and return values very annoying to deal with. PoolStore should just have clear mutator functions, like .append and .revise and .tag and .untag 
 export type Command =
   | {
       readonly kind: "append-capture";
@@ -163,12 +164,16 @@ export type PreconditionFailed = {
   readonly precondition: Precondition;
 };
 
+// TODO: need to move type definitions that are used outside of core into a shared types package? or should a port implementation import types FROM core? 
 /**
  * Deliberately partial: the read surface grows with the first implementation
  * slice rather than being guessed at in full.
  */
 export interface PoolStore {
+  // Mutations
+  // NOTE: Do not like this, I want clean mutator functions with expected return values for each mutation
   apply(mutation: Mutation): Promise<Result<void, PreconditionFailed>>;
+  // addCapture: (item: ItemRecord): Promise<Result<Item, 
 
   item(id: ItemId): Promise<Item | undefined>;
   head(): Promise<Item | undefined>;

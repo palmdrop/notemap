@@ -79,10 +79,8 @@ export function stubPorts(): PoolPorts {
  * Every operation throws. The parameters are ignored but declared, because the
  * shape a pool is constructed from is itself part of what the tests specify.
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function createStubPool(config: PoolConfig, ports: PoolPorts): Pool {
-  void config;
-  void ports;
-
   return {
     capture: notImplemented,
     items: {
