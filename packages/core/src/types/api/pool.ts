@@ -153,4 +153,11 @@ export interface Pool {
   readonly actions: ActionsApi;
   readonly sync: SyncApi;
   readonly maintenance: MaintenanceApi;
+
+  /**
+   * Disposes the pool, releasing every port that holds something open. The host
+   * decides when a pool is done with; core never decides for it. Wiring the
+   * ports is the host's job, operating them afterwards is not.
+   */
+  close(): Promise<void>;
 }

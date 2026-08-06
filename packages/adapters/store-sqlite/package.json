@@ -11,14 +11,10 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@notemap/core": "workspace:*",
-    "better-sqlite3": "^13.0.3",
-    "drizzle-orm": "^0.45.2"
+    "@notemap/core": "workspace:*"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^24.10.1",
-    "drizzle-kit": "^0.31.10",
     "vitest": "^3.2.4"
   }
 }

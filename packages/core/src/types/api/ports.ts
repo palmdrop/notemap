@@ -139,4 +139,11 @@ export interface PoolStore extends PoolReads {
     until: Timestamp,
   ): Promise<Result<Lease, LeaseRefusal>>;
   releaseLease(lease: LeaseId): Promise<void>;
+
+  /**
+   * Releases whatever the store holds open. Declared on every store even where
+   * one has nothing to release, so a host disposing a pool never has to ask
+   * which kind of store it wired.
+   */
+  close(): Promise<void>;
 }

@@ -50,6 +50,7 @@ export function stubStore(): PoolStore {
     claim: notImplemented,
     extendLease: notImplemented,
     releaseLease: notImplemented,
+    close: notImplemented,
   };
 }
 
@@ -139,5 +140,6 @@ export function createStubPool(config: PoolConfig, ports: PoolPorts): Pool {
       repairMirror: notImplemented,
       sweepUnreferencedAssets: notImplemented,
     },
+    close: notImplemented,
   };
 }

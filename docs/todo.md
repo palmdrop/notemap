@@ -6,3 +6,4 @@
 - [ ] Routing edits - being able to freely edit an item as it is routed, amending and editing. Question: should this be done as an amendment FIRST, put at the top of the queue, and THEN routed? or should the on-route edits only be stored in the destination?
 - [ ] Reconsider revisions: maybe they should appear in the original place of the note, or that should be a filter option. User can choose to view the queue in order of creation, modification, etc. Revisions appear in place of original, but in the db, they are different entries. 
 - [ ] Certain feed views allow me to view all revisions, all entries, open to see
+- [ ] Allow a user to have multiple pools? Use case: I route some captures to another pool, where I do more granular routing.

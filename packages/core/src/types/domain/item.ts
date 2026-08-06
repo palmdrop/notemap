@@ -18,7 +18,7 @@ export type ItemRecord = {
   readonly id: ItemId;
   readonly source: SourceId;
   readonly sourceItemId: string;
-  readonly payload: Payload; // HMM... not sure
+  readonly payload: Payload;
   readonly tags: readonly Tag[];
   readonly createdAt: Timestamp;
   readonly contentUpdatedAt?: Timestamp;

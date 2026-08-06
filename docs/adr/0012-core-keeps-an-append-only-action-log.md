@@ -28,9 +28,12 @@ convenience or the source of truth?
   three days old is indistinguishable from one that is.
 - The pool is private, single-user and local-first, so a detailed trace is the user's own
   material rather than surveillance of them.
-- Every mutation already flows through one atomic command per operation
-  ([ADR 1](0001-pool-is-a-database.md)), so a log entry can be written in the same command as
-  the change it describes and cannot drift from it.
+- Every mutation already applies all-or-nothing ([ADR 1](0001-pool-is-a-database.md)), so a log
+  entry can be written in the same atomic unit as the change it describes and cannot drift from
+  it. *Amended 2026-08-06*: that unit is a transaction core opens rather than a command it
+  submits. Appending the entry is now its own call inside that transaction, so **core can
+  forget to make it** where the old shape made it structurally unforgettable. Atomicity is
+  unchanged; what was a type-level guarantee is now one that tests and review keep.
 
 ---
 

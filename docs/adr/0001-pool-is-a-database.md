@@ -40,19 +40,44 @@ second — but core may not assume it.
 
 What core requires of any storage driver:
 
-- **A domain operation applies all-or-nothing.** Core submits one command per operation —
-  a capture and the jobs it enqueues are one command — and never holds a transaction handle.
-  The driver decides how to make that atomic. Core therefore cannot perform I/O inside a
-  transaction, because it has no transaction to be inside.
-- **Commands carry preconditions**, and the driver refuses a command whose precondition no
-  longer holds. This is what makes read-modify-write safe without core owning a lock: an
-  amendment is submitted expecting its item to still be the head, and a refusal demotes it to a
-  revision ([ADR 11](0011-in-place-amendment-of-the-head.md),
-  [sync.md](../specs/sync.md)).
+- **A domain operation applies all-or-nothing.**
+
+  > *Amended 2026-08-06 — core holds a transaction handle after all.* This originally read
+  > "core submits one command per operation ... and never holds a transaction handle", with
+  > preconditions carried on each command. Building the first driver showed what that costs: a
+  > reified command union makes every mutation's return type opaque, so core cannot get back
+  > the `modified_at` the driver just assigned without a second read, and everything a mutation
+  > writes besides its own record — the jobs it enqueues, the log entry recording it — has to
+  > travel as parameters to keep it in the same atomic unit. Preconditions were the same
+  > problem wearing a type: an assertion submitted ahead of a write, refused out of band,
+  > because core had no way to read and write in one breath.
+  >
+  > The store now exposes `transaction(work)`. Core reads and writes freely inside it; the
+  > driver commits when the work resolves and discards it when the work rejects. All-or-nothing
+  > is unchanged — it is the whole point — and so is every other requirement below.
+  >
+  > **Preconditions are gone as a concept.** They are ordinary reads now. ADR 11's amendment
+  > stops being "assert `is-head`, catch the refusal, resubmit as a revision" and becomes one
+  > readable flow in core: read the head, amend it or append a revision.
+  >
+  > What this costs, stated plainly: the rule that **core performs no I/O inside a
+  > transaction** survives, but it is now a convention review defends rather than a structural
+  > impossibility. The store holds a write lock for as long as the callback runs, so awaiting
+  > an asset store or a provider in there stalls the pool. A *synchronous* callback would
+  > enforce it — no port could be awaited, because every port is async — at the price of
+  > foreclosing an asynchronous store such as Postgres. This is the same trade
+  > [core.md](../specs/core.md) already made for `fs` on 2026-08-04, resolved the same way.
+  >
+  > It also narrows "storage-agnostic" by a little: a store must tolerate a transaction that
+  > stays open across the caller's `await` points.
 - **Ordered, paginated reads with stable cursors**, expressed in domain terms — the queue and
   the feed are asked for as such. Core states the question; the driver chooses how to answer
   it, including whatever it materializes or indexes to do so.
 - **Uniqueness on client-generated capture ids**, so a replayed capture produces one item.
+  *Clarified 2026-08-06*: uniqueness on a **source identity** applies to captures only. A
+  revision is a new item but not a new capture from a source, so it carries the identity of the
+  capture it revises and is exempt — the rule exists so that re-reading a source cannot
+  duplicate, and a revision never came from a source at all.
 - **`modified_at` assigned monotonically per pool**, or a client's delta read can miss a write
   that committed out of order ([sync.md](../specs/sync.md)).
 - **Assets and blobs released by reference count**

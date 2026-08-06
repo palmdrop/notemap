@@ -1,6 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 
 import type {
   Action,
@@ -9,23 +10,20 @@ import type {
   Agent,
   AssetId,
   BlobHash,
+  Clock,
   Item,
   ItemId,
   ItemRecord,
   Job,
   JobId,
   PayloadTypeName,
+  PoolStore,
   SourceId,
   TagName,
   Timestamp,
 } from "@notemap/core";
-import Database from "better-sqlite3";
 
-import {
-  createSqlitePoolStore,
-  type CaptureSliceTx,
-  type SqlitePoolStore,
-} from "../pool-store";
+import { createSqlitePoolStore } from "../pool-store";
 
 export const SCRATCHPAD = "scratchpad" as SourceId;
 export const TEXT = "text" as PayloadTypeName;
@@ -35,53 +33,46 @@ export function at(value: string): Timestamp {
 }
 
 /**
- * A store over its own private `:memory:` database. Two of these share nothing,
- * which is what makes the "two pools in one process" guarantee testable.
+ * A store over a file in its own temporary directory, torn down after the test.
+ *
+ * Files rather than `:memory:` on purpose: a `:memory:` database cannot have
+ * the second connection reads use, so it would exercise different isolation
+ * from the one that ships.
  */
-export function store(now?: () => number): SqlitePoolStore {
-  return createSqlitePoolStore({
-    file: ":memory:",
-    ...(now === undefined ? {} : { now }),
-  });
-}
-
-/**
- * A store over a real file, plus a second connection to the same database. The
- * second connection is how a test reads tables this slice has no port method
- * for yet — the jobs a capture enqueued, for one.
- */
-export function fileStore(now?: () => number): {
-  store: SqlitePoolStore;
-  raw: Database.Database;
-  cleanup: () => void;
+export function store(clock?: Clock): {
+  pool: PoolStore;
+  file: string;
+  /** A second connection, for asserting on tables no port method reaches yet. */
+  raw: DatabaseSync;
+  cleanup: () => Promise<void>;
 } {
   const directory = mkdtempSync(join(tmpdir(), "notemap-store-"));
   const file = join(directory, "pool.db");
-  const opened = createSqlitePoolStore({
+  const pool = createSqlitePoolStore({
     file,
-    ...(now === undefined ? {} : { now }),
+    ...(clock === undefined ? {} : { clock }),
   });
-  const raw = new Database(file, { readonly: true });
+  const raw = new DatabaseSync(file);
 
   return {
-    store: opened,
+    pool,
+    file,
     raw,
-    cleanup: () => {
+    cleanup: async () => {
       raw.close();
-      opened.close();
+      await pool.close();
       rmSync(directory, { recursive: true, force: true });
     },
   };
 }
 
 /** A clock that stands still until a test moves it. */
-export function frozenClock(start = 1_000_000): {
-  now: () => number;
-  set: (value: number) => void;
+export function frozenClock(start = "2026-08-03T09:00:00.000Z"): Clock & {
+  set: (value: string) => void;
 } {
   let current = start;
   return {
-    now: () => current,
+    now: () => current as Timestamp,
     set: (value) => {
       current = value;
     },
@@ -94,6 +85,7 @@ type CaptureOverrides = {
   readonly sourceItemId?: string;
   readonly text?: string;
   readonly createdAt?: string;
+  readonly contentUpdatedAt?: string;
   readonly tags?: readonly { name: string; by: Agent; addedAt: string }[];
   readonly assets?: readonly { slot: string; asset: string; hash: string }[];
   readonly revisionOf?: string;
@@ -121,10 +113,32 @@ export function capture(overrides: CaptureOverrides = {}): ItemRecord {
       addedAt: at(tag.addedAt),
     })),
     createdAt: at(overrides.createdAt ?? "2026-08-03T09:00:00.000Z"),
+    ...(overrides.contentUpdatedAt === undefined
+      ? {}
+      : { contentUpdatedAt: at(overrides.contentUpdatedAt) }),
     ...(overrides.revisionOf === undefined
       ? {}
       : { revisionOf: overrides.revisionOf as ItemId }),
   };
+}
+
+/**
+ * A revision as core.md describes one: a new item carrying the original's
+ * capture time, with the edit recorded separately, and no source identity of
+ * its own — it did not come from a source.
+ */
+export function revisionOf(
+  original: ItemRecord,
+  overrides: { id: string; text: string; editedAt: string },
+): ItemRecord {
+  return capture({
+    id: overrides.id,
+    text: overrides.text,
+    sourceItemId: original.sourceItemId,
+    createdAt: original.createdAt,
+    contentUpdatedAt: overrides.editedAt,
+    revisionOf: original.id,
+  });
 }
 
 export function captured(
@@ -158,12 +172,12 @@ export function mirrorJob(item: ItemRecord, jobId = `job-${item.id}`): Job {
  * assemble it here rather than repeating it.
  */
 export function appendCapture(
-  pool: SqlitePoolStore,
+  pool: PoolStore,
   record: ItemRecord,
   enqueued: readonly Job[] = [],
   action: Action = captured(record),
 ): Promise<Item> {
-  return pool.transaction(async (tx: CaptureSliceTx) => {
+  return pool.transaction(async (tx) => {
     const item = await tx.insertItem(record);
     await tx.enqueue(enqueued);
     await tx.appendAction(action);
