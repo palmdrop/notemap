@@ -1,4 +1,4 @@
-import type { Result } from "./types/result";
+import type { Result } from "../types/result";
 
 export function ok<T, E>(value: T): Result<T, E> {
   return { kind: "ok", value };

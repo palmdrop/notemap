@@ -1,4 +1,6 @@
-import { ok, refused } from "../result";
+import { dequal } from "dequal";
+
+import { ok, refused } from "../utils/result";
 import type { PoolConfig } from "../types/api/config";
 import type { PoolPorts, PoolTx } from "../types/api/ports";
 import type { CaptureRefusal } from "../types/api/refusal";
@@ -6,9 +8,8 @@ import type { Agent } from "../types/domain/agent";
 import type { CaptureEnvelope, CaptureOutcome } from "../types/domain/capture";
 import type { ActionId, ItemId, JobId } from "../types/domain/ids";
 import type { Item, ItemRecord } from "../types/domain/item";
+import type { Payload } from "../types/domain/payload";
 import type { Result } from "../types/result";
-
-import { sameInstant, sameJson } from "./equality";
 
 type CaptureResult = Result<CaptureOutcome, CaptureRefusal>;
 
@@ -128,29 +129,48 @@ async function append(
 }
 
 /**
- * Compares only what the capture fixed. Tags are excluded deliberately: they go
- * on changing after capture, so an item classified since would otherwise read
- * as a conflicting resubmission of itself.
+ * What a capture fixed, projected from either side into one comparable shape.
+ * Exclusion, not enumeration: the ids and tags are dropped — tags go on
+ * changing after capture, so an item classified since would otherwise read as
+ * a conflicting resubmission of itself — and everything else is compared
+ * whole, so a field added to the envelope is compared by default rather than
+ * silently ignored. The item projection is typed as this same shape, so a
+ * field added there without a mapping fails to compile instead of falling out
+ * of the comparison.
  */
+type FixedByCapture = Omit<CaptureEnvelope, "id" | "tags" | "capturedAt"> & {
+  /** As an instant: a timestamp's spelling is not part of what it means. */
+  readonly capturedAtMs: number;
+};
+
 function isReplayOf(existing: Item, envelope: CaptureEnvelope): boolean {
-  return (
-    existing.source === envelope.source &&
-    existing.sourceItemId === envelope.sourceItemId &&
-    sameInstant(existing.createdAt, envelope.capturedAt) &&
-    existing.payload.type === envelope.payload.type &&
-    sameJson(existing.payload.content, envelope.payload.content) &&
-    sameJson(existing.payload.metadata, envelope.payload.metadata) &&
-    sameAssets(existing, envelope)
-  );
+  return dequal(fixedByItem(existing), fixedByEnvelope(envelope));
 }
 
-function sameAssets(existing: Item, envelope: CaptureEnvelope): boolean {
-  const held = new Map(existing.payload.assets.map((ref) => [ref.slot, ref]));
-  return (
-    held.size === envelope.payload.assets.length &&
-    envelope.payload.assets.every((ref) => {
-      const mine = held.get(ref.slot);
-      return mine?.asset === ref.asset && mine.hash === ref.hash;
-    })
-  );
+function fixedByEnvelope(envelope: CaptureEnvelope): FixedByCapture {
+  const { id, tags, capturedAt, ...fixed } = envelope;
+  return {
+    ...fixed,
+    capturedAtMs: Date.parse(capturedAt),
+    payload: canonical(envelope.payload),
+  };
+}
+
+function fixedByItem(item: Item): FixedByCapture {
+  return {
+    source: item.source,
+    sourceItemId: item.sourceItemId,
+    capturedAtMs: Date.parse(item.createdAt),
+    payload: canonical(item.payload),
+  };
+}
+
+/** Asset order carries no meaning, so neither side gets to differ by it. */
+function canonical(payload: Payload): Payload {
+  return {
+    ...payload,
+    assets: [...payload.assets].sort((a, b) =>
+      a.slot < b.slot ? -1 : a.slot > b.slot ? 1 : 0,
+    ),
+  };
 }

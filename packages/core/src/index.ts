@@ -1,3 +1,3 @@
 export * from "./types";
-export * from "./result";
+export * from "./utils/result";
 export * from "./pool";

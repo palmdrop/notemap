@@ -8,6 +8,13 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   prettier,
   {
+    // Omitting fields by destructuring rest is how a projection stays
+    // exhaustive; the discarded bindings are the point, not an oversight.
+    rules: {
+      "@typescript-eslint/no-unused-vars": ["error", { ignoreRestSiblings: true }],
+    },
+  },
+  {
     // Core carries @types/node for runtime types such as AbortSignal, so the
     // compiler will not stop an import of `fs`. This will. Core reaches the
     // outside world through ports only.
