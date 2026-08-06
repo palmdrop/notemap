@@ -35,8 +35,8 @@ classification, enrichment, and the routing log all live in it.
 *Amended 2026-08-03 — SQLite is the first driver, not the decision.* This originally read "the
 pool is a **SQLite** database", which put the driver in the decision. **Core is
 storage-agnostic**: it states what it needs of a store and does not know which store answers.
-SQLite is the initial implementation and remains the only planned one — nothing here promises a
-second — but core may not assume it.
+SQLite is the **default** driver and the one that ships; another may be wanted for a platform or
+a hosting arrangement that cannot use it. Core may not assume which answers.
 
 What core requires of any storage driver:
 

@@ -239,7 +239,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 ### The mirror
 
 - Every capture is written to disk as a plain text file with its metadata, and never read back
-  during normal operation.
+  during normal operation. **Each capture enqueues exactly one mirror job** (decided
+  2026-08-06), in the same atomic unit as the capture itself: an item committed with nothing
+  recording that its mirror is owed would never be written, and nothing would notice.
 - The mirror is **lossless**: a pool can be rebuilt from the mirror and the assets alone. This
   is the only circumstance in which the mirror is read.
 - The mirror carries captures, classification, **artifacts and their corrections** — the
@@ -328,8 +330,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   [ADR 1](../adr/0001-pool-is-a-database.md)). It states what it requires of a store —
   all-or-nothing application of a transaction core opens, ordered paginated reads asked for in
   domain terms, unique client-generated capture ids, monotonic `modified_at`,
-  reference-counted asset release — and does not know which store answers. SQLite is the first
-  driver and the only planned one. *Amended 2026-08-06*: core holds a transaction handle and
+  reference-counted asset release — and does not know which store answers. SQLite is the
+  default driver and the one that ships; another may be wanted for a platform or a hosting
+  arrangement that cannot use it. *Amended 2026-08-06*: core holds a transaction handle and
   reads and writes inside it, so preconditions are ordinary reads rather than assertions
   carried on a command. **Core still performs no I/O inside a transaction** — the store holds a
   write lock for its duration — but that is now a convention review defends rather than a
@@ -405,6 +408,11 @@ Recorded in full under [docs/adr/](../adr/). In brief:
       probably differs per destination.
 - [ ] 2026-08-02 — Multiple pools per user, and multi-user operation. Nothing decided forecloses
       either; neither is designed.
+- [ ] 2026-08-06 — Whether a unit of work is always *about an item*. Every job in the first
+      slice is — enrichment and mirroring both — and a job dies with the item it is about. The
+      asset sweep is the one piece of in-scope work that is pool-wide rather than about
+      anything, and it is not modelled as a job today. If it becomes one, a job's subject has
+      to say what kind of thing it names rather than being an item id.
 
 ---
 

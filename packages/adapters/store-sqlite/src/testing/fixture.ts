@@ -39,7 +39,10 @@ export function at(value: string): Timestamp {
  * the second connection reads use, so it would exercise different isolation
  * from the one that ships.
  */
-export function store(clock?: Clock): {
+export function store(
+  clock?: Clock,
+  transactionTimeoutMs?: number,
+): {
   pool: PoolStore;
   file: string;
   /** A second connection, for asserting on tables no port method reaches yet. */
@@ -51,6 +54,7 @@ export function store(clock?: Clock): {
   const pool = createSqlitePoolStore({
     file,
     ...(clock === undefined ? {} : { clock }),
+    ...(transactionTimeoutMs === undefined ? {} : { transactionTimeoutMs }),
   });
   const raw = new DatabaseSync(file);
 

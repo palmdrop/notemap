@@ -1,7 +1,8 @@
 # @notemap/store-sqlite
 
-The SQLite driver for core's `PoolStore` port. First driver, and the only planned one
-([ADR 1](../../../docs/adr/0001-pool-is-a-database.md)).
+The SQLite driver for core's `PoolStore` port — the default, and the one that ships. Core is
+storage-agnostic ([ADR 1](../../../docs/adr/0001-pool-is-a-database.md)), so another driver is
+possible where a platform or a hosting arrangement cannot use this one.
 
 ## Written against `node:sqlite`, with no ORM
 
@@ -31,7 +32,9 @@ Type safety is kept by hand instead, in two halves that check each other:
   survive one. This is a limit of this driver, not something core requires of storage.
 - **Transactions are serialized.** One write at a time, across the whole pool, for as long as
   core's callback runs. Fine for a single-user local pool; it is a throughput ceiling for
-  anything else.
+  anything else. A transaction that overruns `transactionTimeoutMs` (30s by default) is rolled
+  back, and its handle dies with it — a callback that keeps running afterwards finds every
+  method throwing rather than writing outside the transaction it thinks it is in.
 - **`:memory:` gives no read isolation.** Reads normally run on a second connection so they
   cannot observe an open transaction's uncommitted writes, and an in-memory database has no
   second connection to give — each one would be a separate database. Tests use files.

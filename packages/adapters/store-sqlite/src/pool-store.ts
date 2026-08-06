@@ -34,7 +34,7 @@ import type {
   PoolMetaRow,
 } from "./rows";
 import { placeholders, statements, type Bindable } from "./statements";
-import { serializeTransactions } from "./transactions";
+import { serializeTransactions, type Fence } from "./transactions";
 
 export type SqlitePoolStoreConfig = {
   /**
@@ -50,6 +50,13 @@ export type SqlitePoolStoreConfig = {
    * clock, which is right for a host that has no reason to care.
    */
   readonly clock?: Clock;
+  /**
+   * How long one transaction may run before it is rolled back. Transactions
+   * are serialized, so a callback that never settles stalls every write against
+   * the pool; this is the backstop. It is not a budget to design against — a
+   * transaction that comes close to it is doing something it should not.
+   */
+  readonly transactionTimeoutMs?: number;
 };
 
 const ITEM_COLUMNS = `
@@ -93,7 +100,10 @@ export function createSqlitePoolStore(
 
   const write = statements(writer);
   const read = statements(reader);
-  const transactions = serializeTransactions(writer);
+  const transactions = serializeTransactions(
+    writer,
+    config.transactionTimeoutMs,
+  );
   const clock = config.clock ?? systemClock;
 
   const insertItem = write.query(`
@@ -306,64 +316,85 @@ export function createSqlitePoolStore(
   const committed = on(false);
   const uncommitted = on(true);
 
-  const tx: PoolTx = {
-    ...uncommitted,
-    ...notYetImplementedReads(),
+  /**
+   * Built per transaction rather than once, because every method has to consult
+   * that transaction's fence — a handle outliving its transaction would write
+   * outside one, or into whichever started next.
+   */
+  function poolTx(fence: Fence): PoolTx {
+    const guard = <A extends unknown[], R>(
+      method: (...args: A) => Promise<R>,
+    ) => {
+      return async (...args: A): Promise<R> => {
+        fence.check();
+        return method(...args);
+      };
+    };
 
-    insertItem: async (record: ItemRecord): Promise<Item> => {
-      insertItem.run(...itemParams(record, nextModifiedAt()));
+    return {
+      ...notYetImplementedReads(),
 
-      for (const tag of record.tags) {
-        insertTag.run(
-          record.id,
-          tag.name,
-          ...agentColumns(tag.by),
-          toMillis(tag.addedAt),
+      item: guard(uncommitted.item),
+      itemBySourceIdentity: guard(uncommitted.itemBySourceIdentity),
+      head: guard(uncommitted.head),
+      feed: guard(uncommitted.feed),
+      actions: guard(uncommitted.actions),
+
+      insertItem: guard(async (record: ItemRecord): Promise<Item> => {
+        insertItem.run(...itemParams(record, nextModifiedAt()));
+
+        for (const tag of record.tags) {
+          insertTag.run(
+            record.id,
+            tag.name,
+            ...agentColumns(tag.by),
+            toMillis(tag.addedAt),
+          );
+        }
+
+        for (const ref of record.payload.assets) {
+          insertAsset.run(record.id, ref.slot, ref.asset, ref.hash);
+        }
+
+        const stored = await uncommitted.item(record.id);
+        if (stored === undefined) {
+          throw new Error("the item just written could not be read back");
+        }
+        return stored;
+      }),
+
+      appendAction: guard(async (action: Action): Promise<void> => {
+        insertAction.run(
+          action.id,
+          action.kind,
+          action.subject ?? null,
+          ...agentColumns(action.by),
+          toMillis(action.at),
+          JSON.stringify(action.detail),
         );
-      }
+      }),
 
-      for (const ref of record.payload.assets) {
-        insertAsset.run(record.id, ref.slot, ref.asset, ref.hash);
-      }
-
-      const stored = await uncommitted.item(record.id);
-      if (stored === undefined) {
-        throw new Error("the item just written could not be read back");
-      }
-      return stored;
-    },
-
-    appendAction: async (action: Action): Promise<void> => {
-      insertAction.run(
-        action.id,
-        action.kind,
-        action.subject ?? null,
-        ...agentColumns(action.by),
-        toMillis(action.at),
-        JSON.stringify(action.detail),
-      );
-    },
-
-    enqueue: async (enqueued: readonly Job[]): Promise<void> => {
-      for (const job of enqueued) {
-        insertJob.run(
-          job.id,
-          job.kind,
-          job.subject,
-          job.enrichment ?? null,
-          job.attempt,
-          toMillis(job.enqueuedAt),
-        );
-      }
-    },
-  };
+      enqueue: guard(async (enqueued: readonly Job[]): Promise<void> => {
+        for (const job of enqueued) {
+          insertJob.run(
+            job.id,
+            job.kind,
+            job.subject,
+            job.enrichment ?? null,
+            job.attempt,
+            toMillis(job.enqueuedAt),
+          );
+        }
+      }),
+    };
+  }
 
   return {
     ...committed,
     ...notYetImplementedReads(),
 
     transaction: <T>(work: (handle: PoolTx) => Promise<T>): Promise<T> =>
-      transactions.run(() => work(tx)),
+      transactions.run((fence) => work(poolTx(fence))),
 
     claim: unimplemented("claim"),
     extendLease: unimplemented("extendLease"),

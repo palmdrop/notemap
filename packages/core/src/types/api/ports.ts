@@ -25,6 +25,18 @@ import type { Delta, Tombstone } from "../domain/sync";
 import type { ClaimRequest, Job, Lease, WorkOutcome } from "../domain/work";
 import type { LeaseRefusal } from "./refusal";
 
+/** Everything a pool reaches the outside world through. Core sources none of it. */
+export type PoolPorts = {
+  readonly store: PoolStore;
+  readonly clock: Clock;
+  readonly ids: IdGenerator;
+  readonly schemas: SchemaValidator;
+  readonly assets: AssetStore;
+  readonly mirrorWriter: MirrorWriter;
+  readonly mirrorReader: MirrorReader;
+  readonly destinations: readonly DestinationAdapter[];
+};
+
 export interface Clock {
   now(): Timestamp;
 }

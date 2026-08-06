@@ -281,6 +281,48 @@ describe("a transaction", () => {
     ]);
   });
 
+  it("kills the handle once it has ended, so a leaked one cannot write", async () => {
+    const { pool: p } = pool();
+    let leaked: Parameters<Parameters<typeof p.transaction>[0]>[0] | undefined;
+
+    await p.transaction(async (tx) => {
+      leaked = tx;
+    });
+
+    // Without the fence this insert lands outside any transaction, committing
+    // on its own — or inside whichever transaction started next.
+    await expect(
+      leaked?.insertItem(capture({ id: "escaped" })),
+    ).rejects.toThrow(/transaction has ended/);
+    expect(await p.item("escaped" as ItemId)).toBeUndefined();
+  });
+
+  it("rolls back a transaction that overruns, and stops it writing after", async () => {
+    const { pool: p } = pool(undefined, 40);
+    let after: unknown;
+
+    const stalled = p.transaction(async (tx) => {
+      await tx.insertItem(capture({ id: "stalled" }));
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      // The callback keeps running after the timeout; the fence is what stops
+      // this reaching the connection.
+      after = await tx
+        .insertItem(capture({ id: "after-timeout" }))
+        .catch((error: Error) => error);
+    });
+
+    await expect(stalled).rejects.toThrow(/exceeded 40ms/);
+    expect(await p.item("stalled" as ItemId)).toBeUndefined();
+
+    // The pool still works once the overrunning transaction is out of the way.
+    await expect(
+      appendCapture(p, capture({ id: "next" })),
+    ).resolves.toBeDefined();
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    expect(after).toBeInstanceOf(Error);
+    expect(await p.item("after-timeout" as ItemId)).toBeUndefined();
+  });
+
   it("refuses to open one inside another rather than waiting on itself", async () => {
     const { pool: p } = pool();
 

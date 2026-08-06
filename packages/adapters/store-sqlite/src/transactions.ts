@@ -1,22 +1,31 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { DatabaseSync } from "node:sqlite";
 
+/** Long enough that no honest transaction reaches it, short of a pool wedged forever. */
+export const DEFAULT_TRANSACTION_TIMEOUT_MS = 30_000;
+
+export type Transactions = {
+  run: <T>(work: (fence: Fence) => Promise<T>) => Promise<T>;
+};
+
 /**
- * Runs transactions one at a time over a single connection.
+ * Held by everything a transaction hands to core, and checked before each
+ * statement. Once a transaction has ended, its handle is dead: a statement
+ * issued afterwards would land outside any transaction — auto-committing on its
+ * own, unreviewable, unrollbackable — or worse, inside whichever transaction
+ * happened to start next.
  *
- * `BEGIN` is connection state, not a scope, so two transactions overlapping on
- * one connection would issue their statements into each other. Core's callback
- * may await between statements — that is the whole point of an asynchronous
- * transaction — so overlap is reachable whenever two operations are in flight,
- * and the queue is what makes it not happen.
- *
- * The write lock is held for as long as the callback runs. Core doing outside
- * I/O in there stalls every other write against the pool; that is a convention
- * core keeps, not something this can enforce.
+ * That is reachable without core doing anything exotic: leak `tx` into a promise
+ * the callback forgets to await, and its writes arrive after the commit.
  */
-export function serializeTransactions(connection: DatabaseSync): {
-  run: <T>(work: () => Promise<T>) => Promise<T>;
-} {
+export type Fence = {
+  check(): void;
+};
+
+export function serializeTransactions(
+  connection: DatabaseSync,
+  timeoutMs: number = DEFAULT_TRANSACTION_TIMEOUT_MS,
+): Transactions {
   let tail: Promise<unknown> = Promise.resolve();
 
   /**
@@ -28,18 +37,52 @@ export function serializeTransactions(connection: DatabaseSync): {
    */
   const active = new AsyncLocalStorage<true>();
 
-  async function execute<T>(work: () => Promise<T>): Promise<T> {
+  async function execute<T>(work: (fence: Fence) => Promise<T>): Promise<T> {
     // Inside the guard: a BEGIN that fails — SQLITE_BUSY against a second host
     // process — must not leave the queue believing a transaction is open.
     connection.exec("BEGIN IMMEDIATE");
 
+    let live = true;
+    const fence: Fence = {
+      check: () => {
+        if (!live) {
+          throw new Error(
+            "this transaction has ended; its handle cannot be used any more",
+          );
+        }
+      },
+    };
+
+    let expire: NodeJS.Timeout | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      expire = setTimeout(() => {
+        reject(
+          new Error(
+            `transaction exceeded ${timeoutMs}ms and was rolled back; core must not wait on the outside world inside one`,
+          ),
+        );
+      }, timeoutMs);
+      // The pool should not be held open purely by this timer.
+      expire.unref?.();
+    });
+
     try {
-      const result = await active.run(true, work);
+      // Racing is only safe because of the fence: the callback keeps running
+      // after a timeout, and the fence is what stops its later statements
+      // reaching the connection.
+      const result = await Promise.race([
+        active.run(true, () => work(fence)),
+        timeout,
+      ]);
+      fence.check();
       connection.exec("COMMIT");
       return result;
     } catch (cause) {
       rollback();
       throw cause;
+    } finally {
+      live = false;
+      clearTimeout(expire);
     }
   }
 
@@ -54,7 +97,7 @@ export function serializeTransactions(connection: DatabaseSync): {
   }
 
   return {
-    run: <T>(work: () => Promise<T>): Promise<T> => {
+    run: <T>(work: (fence: Fence) => Promise<T>): Promise<T> => {
       if (active.getStore()) {
         return Promise.reject(
           new Error(
