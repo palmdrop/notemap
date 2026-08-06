@@ -29,7 +29,7 @@ function notImplemented(): never {
 
 export function stubStore(): PoolStore {
   return {
-    apply: notImplemented,
+    transaction: notImplemented,
     item: notImplemented,
     head: notImplemented,
     itemBySourceIdentity: notImplemented,

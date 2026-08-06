@@ -1,5 +1,5 @@
 import type { JsonObject } from "../json";
-import type { Page, Result, Slice } from "../result";
+import type { FeedPage, Page, Result, Slice } from "../result";
 import type { Action } from "../domain/action-log";
 import type { Agent } from "../domain/agent";
 import type { Asset, AssetMeta, BlobIntegrity } from "../domain/asset";
@@ -54,7 +54,7 @@ export interface ItemsApi {
 }
 
 export interface ViewsApi {
-  feed(page: Page): Promise<Slice<Item>>;
+  feed(page: FeedPage): Promise<Slice<Item>>;
   queue(page: Page): Promise<Slice<Item>>;
   archived(page: Page): Promise<Slice<Item>>;
 }

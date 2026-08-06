@@ -1,15 +1,10 @@
 import type { JsonSchema, JsonValue, SchemaIssue } from "../json";
-import type { Page, Result, Slice } from "../result";
+import type { FeedPage, Page, Result, Slice } from "../result";
 import type { Action } from "../domain/action-log";
 import type { Asset, AssetMeta, BlobIntegrity } from "../domain/asset";
-import type {
-  Artifact,
-  EnrichmentState,
-  EnrichmentStatus,
-} from "../domain/enrichment";
+import type { Artifact, EnrichmentStatus } from "../domain/enrichment";
 import type {
   AssetId,
-  EnrichmentName,
   ItemId,
   LeaseId,
   ProviderName,
@@ -18,16 +13,17 @@ import type {
   SyncCursor,
   Timestamp,
 } from "../domain/ids";
-import type { ArchiveState, Item, ItemRecord, Tag } from "../domain/item";
+import type { Item, ItemRecord } from "../domain/item";
 import type {
   Delivery,
   DeliveryOutcome,
   DestinationDescriptor,
   RoutingRecord,
 } from "../domain/routing";
-import type { Suggestion, SuggestionDecision } from "../domain/suggestion";
+import type { Suggestion } from "../domain/suggestion";
 import type { Delta, Tombstone } from "../domain/sync";
 import type { ClaimRequest, Job, Lease, WorkOutcome } from "../domain/work";
+import type { LeaseRefusal } from "./refusal";
 
 export interface Clock {
   now(): Timestamp;
@@ -74,107 +70,11 @@ export interface ProviderAdapter {
   run(job: Job, signal?: AbortSignal): Promise<WorkOutcome>;
 }
 
-export type Precondition =
-  | { readonly kind: "is-head"; readonly item: ItemId }
-  | { readonly kind: "item-absent"; readonly item: ItemId }
-  | {
-      readonly kind: "item-unchanged";
-      readonly item: ItemId;
-      readonly modifiedAt: Timestamp;
-    }
-  | { readonly kind: "lease-held"; readonly lease: LeaseId };
-
-// NOTE: Do not like this, makes typing and return values very annoying to deal with. PoolStore should just have clear mutator functions, like .append and .revise and .tag and .untag 
-export type Command =
-  | {
-      readonly kind: "append-capture";
-      readonly item: ItemRecord;
-      readonly jobs: readonly Job[];
-      /** Counted here rather than at upload, so a crash leaks space and never a reference. */
-      readonly references: readonly AssetId[];
-    }
-  | {
-      readonly kind: "append-revision";
-      readonly revision: ItemRecord;
-      readonly supersedes: ItemId;
-      readonly jobs: readonly Job[];
-      readonly references: readonly AssetId[];
-    }
-  | {
-      readonly kind: "amend-item";
-      readonly item: ItemRecord;
-      readonly jobs: readonly Job[];
-      readonly references: readonly AssetId[];
-    }
-  | {
-      readonly kind: "set-tags";
-      readonly item: ItemId;
-      readonly tags: readonly Tag[];
-    }
-  | {
-      readonly kind: "set-archive";
-      readonly item: ItemId;
-      readonly archived: ArchiveState | undefined;
-    }
-  | {
-      readonly kind: "add-suggestions";
-      readonly suggestions: readonly Suggestion[];
-    }
-  | {
-      readonly kind: "decide-suggestion";
-      readonly suggestion: SuggestionId;
-      readonly decision: SuggestionDecision;
-      readonly tags: readonly Tag[];
-    }
-  | { readonly kind: "append-routing-record"; readonly record: RoutingRecord }
-  | { readonly kind: "append-artifact"; readonly artifact: Artifact }
-  | {
-      readonly kind: "request-enrichment";
-      readonly item: ItemId;
-      readonly enrichment: EnrichmentName;
-      readonly jobs: readonly Job[];
-    }
-  | {
-      readonly kind: "settle-enrichment";
-      readonly lease: LeaseId;
-      readonly enrichment: EnrichmentName;
-      readonly state: EnrichmentState;
-      readonly artifacts: readonly Artifact[];
-      readonly suggestions: readonly Suggestion[];
-    }
-  | {
-      readonly kind: "settle-mirror";
-      readonly lease: LeaseId;
-      readonly mirroredAt: Timestamp;
-    }
-  | {
-      readonly kind: "purge-item";
-      readonly tombstones: readonly Tombstone[];
-    }
-  | { readonly kind: "clear-actions"; readonly item?: ItemId };
-
-export type Mutation = {
-  readonly command: Command;
-  readonly preconditions: readonly Precondition[];
-  readonly actions: readonly Action[];
-};
-
-export type PreconditionFailed = {
-  readonly kind: "precondition-failed";
-  readonly precondition: Precondition;
-};
-
-// TODO: need to move type definitions that are used outside of core into a shared types package? or should a port implementation import types FROM core? 
 /**
- * Deliberately partial: the read surface grows with the first implementation
- * slice rather than being guessed at in full.
+ * Deliberately partial: the surface grows one implementation slice at a time
+ * rather than being guessed at in full.
  */
-export interface PoolStore {
-  // Mutations
-  // NOTE: Do not like this, I want clean mutator functions with expected return values for each mutation
-  apply(mutation: Mutation): Promise<Result<void, PreconditionFailed>>;
-  // addCapture: (item: ItemRecord): Promise<Result<Item, 
-
+export interface PoolReads {
   item(id: ItemId): Promise<Item | undefined>;
   head(): Promise<Item | undefined>;
   itemBySourceIdentity(
@@ -184,7 +84,7 @@ export interface PoolStore {
   revisionChain(id: ItemId): Promise<readonly Item[]>;
   tombstone(id: ItemId): Promise<Tombstone | undefined>;
 
-  feed(page: Page): Promise<Slice<Item>>;
+  feed(page: FeedPage): Promise<Slice<Item>>;
   queue(page: Page): Promise<Slice<Item>>;
   archived(page: Page): Promise<Slice<Item>>;
 
@@ -203,11 +103,40 @@ export interface PoolStore {
 
   actions(item: ItemId | undefined, page: Page): Promise<Slice<Action>>;
   changesSince(cursor: SyncCursor | undefined, limit: number): Promise<Delta>;
+}
+
+/**
+ * Reads and writes inside one transaction. A precondition is an ordinary read
+ * here — an amendment checks that its item is still the head, and demotes
+ * itself to a revision when it is not — so nothing has to be asserted up front.
+ *
+ * Which assets an item references is not passed to `insertItem`: the store
+ * takes it from the payload, so the count and the payload cannot disagree.
+ */
+export interface PoolTx extends PoolReads {
+  insertItem(record: ItemRecord): Promise<Item>;
+  appendAction(action: Action): Promise<void>;
+  enqueue(jobs: readonly Job[]): Promise<void>;
+}
+
+export interface PoolStore extends PoolReads {
+  /**
+   * Applies `work` all-or-nothing: the store commits what it wrote when the
+   * promise resolves and discards it when the promise rejects.
+   *
+   * **Core performs no outside I/O in here.** Every port is async and the store
+   * holds a write lock for as long as `work` runs, so awaiting an asset store, a
+   * provider or a destination inside a transaction stalls the pool. Validate,
+   * fetch and hash first, then open the transaction. This is a design rule
+   * review defends rather than one the types enforce — a synchronous callback
+   * would enforce it, at the price of ever supporting an asynchronous store.
+   */
+  transaction<T>(work: (tx: PoolTx) => Promise<T>): Promise<T>;
 
   claim(request: ClaimRequest, now: Timestamp): Promise<readonly Lease[]>;
   extendLease(
     lease: LeaseId,
     until: Timestamp,
-  ): Promise<Result<Lease, PreconditionFailed>>;
+  ): Promise<Result<Lease, LeaseRefusal>>;
   releaseLease(lease: LeaseId): Promise<void>;
 }
