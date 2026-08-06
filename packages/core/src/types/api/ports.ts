@@ -52,6 +52,12 @@ export interface SchemaValidator {
 /** Owns the asset-to-blob count. Which assets an item references is the pool store's. */
 export interface AssetStore {
   store(bytes: AsyncIterable<Uint8Array>, meta: AssetMeta): Promise<Asset>;
+  /**
+   * Resolves a reference before the capture carrying it commits: without this
+   * core cannot tell an unknown asset from one whose blob has been swapped
+   * underneath it, and both are refusals it is meant to raise.
+   */
+  get(id: AssetId): Promise<Asset | undefined>;
   open(id: AssetId, signal?: AbortSignal): Promise<AsyncIterable<Uint8Array>>;
   verify(id: AssetId): Promise<BlobIntegrity>;
   release(assets: readonly AssetId[]): Promise<void>;

@@ -147,8 +147,16 @@ export function createSqlitePoolStore(
     const itemById = source.query<ItemRow, [string]>(
       `SELECT ${ITEM_COLUMNS} FROM items WHERE id = ?`,
     );
+    /**
+     * `revision_of IS NULL` because a revision carries the source identity of
+     * the capture it revises, so a chain has one identity across every link.
+     * The question this answers is whether that source's item already arrived,
+     * and the capture is the one that answers it. The uniqueness index is
+     * partial on the same condition.
+     */
     const itemBySource = source.query<ItemRow, [string, string]>(
-      `SELECT ${ITEM_COLUMNS} FROM items WHERE source_id = ? AND source_item_id = ?`,
+      `SELECT ${ITEM_COLUMNS} FROM items
+       WHERE source_id = ? AND source_item_id = ? AND revision_of IS NULL`,
     );
     const newestItem = source.query<ItemRow, []>(
       `SELECT ${ITEM_COLUMNS} FROM items ORDER BY created_at DESC, id DESC LIMIT 1`,

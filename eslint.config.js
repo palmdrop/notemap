@@ -8,8 +8,9 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   prettier,
   {
-    // Second belt on the core seam: the first is core's tsconfig, which has no
-    // Node types. Core reaches the outside world through ports only.
+    // Core carries @types/node for runtime types such as AbortSignal, so the
+    // compiler will not stop an import of `fs`. This will. Core reaches the
+    // outside world through ports only.
     files: ["packages/core/**/*.ts"],
     rules: {
       "no-restricted-imports": [

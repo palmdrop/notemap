@@ -1,0 +1,94 @@
+import type { PoolConfig } from "../types/api/config";
+import type { Pool } from "../types/api/pool";
+import type { PoolPorts } from "../types/api/ports";
+
+import { capture } from "./capture";
+
+/**
+ * The methods whose slice is not built yet. Named rather than silently absent,
+ * so a host wiring a pool gets the method it asked for or a message saying
+ * which one it was.
+ */
+function notImplemented(method: string): () => never {
+  return () => {
+    throw new Error(`core: ${method} is not implemented yet`);
+  };
+}
+
+export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
+  const { store } = ports;
+
+  return {
+    capture: (envelope) => capture(config, ports, envelope),
+
+    items: {
+      get: (id) => store.item(id),
+      edit: notImplemented("items.edit"),
+      tag: notImplemented("items.tag"),
+      untag: notImplemented("items.untag"),
+      archive: notImplemented("items.archive"),
+      unarchive: notImplemented("items.unarchive"),
+      purge: notImplemented("items.purge"),
+    },
+
+    views: {
+      feed: (page) => store.feed(page),
+      queue: notImplemented("views.queue"),
+      archived: notImplemented("views.archived"),
+    },
+
+    suggestions: {
+      pendingFor: notImplemented("suggestions.pendingFor"),
+      accept: notImplemented("suggestions.accept"),
+      reject: notImplemented("suggestions.reject"),
+    },
+
+    enrichment: {
+      statusOf: notImplemented("enrichment.statusOf"),
+      request: notImplemented("enrichment.request"),
+      artifactsFor: notImplemented("enrichment.artifactsFor"),
+      correct: notImplemented("enrichment.correct"),
+      abandoned: notImplemented("enrichment.abandoned"),
+    },
+
+    routing: {
+      destinations: notImplemented("routing.destinations"),
+      route: notImplemented("routing.route"),
+      markProcessed: notImplemented("routing.markProcessed"),
+      recordsFor: notImplemented("routing.recordsFor"),
+    },
+
+    assets: {
+      store: notImplemented("assets.store"),
+      get: notImplemented("assets.get"),
+      open: notImplemented("assets.open"),
+      verify: notImplemented("assets.verify"),
+    },
+
+    work: {
+      claim: notImplemented("work.claim"),
+      complete: notImplemented("work.complete"),
+      extend: notImplemented("work.extend"),
+      release: notImplemented("work.release"),
+    },
+
+    actions: {
+      forItem: (item, page) => store.actions(item, page),
+      all: (page) => store.actions(undefined, page),
+      clear: notImplemented("actions.clear"),
+    },
+
+    sync: { changesSince: notImplemented("sync.changesSince") },
+
+    maintenance: {
+      rebuildFromMirror: notImplemented("maintenance.rebuildFromMirror"),
+      verifyMirror: notImplemented("maintenance.verifyMirror"),
+      repairMirror: notImplemented("maintenance.repairMirror"),
+      sweepUnreferencedAssets: notImplemented(
+        "maintenance.sweepUnreferencedAssets",
+      ),
+    },
+
+    close: () => store.close(),
+  };
+}

@@ -1,0 +1,16 @@
+{
+  "name": "@notemap/integration-tests",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@notemap/core": "workspace:*",
+    "@notemap/store-sqlite": "workspace:*",
+    "@types/node": "^24.10.1",
+    "vitest": "^3.2.4"
+  }
+}

@@ -320,10 +320,12 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   the id that was not found — and the host renders that into a message or a status code.
 - **Core is instantiated per pool, never global.** No module-level state, no ambient
   configuration, no singleton connection.
-- **A pool is disposed explicitly, by the host that built it** (decided 2026-08-06). Closing
-  releases every port holding something open. The host wires the ports and decides when the
-  pool is done with; it should not have to know which of them had anything to release, so
-  closing is declared on every port rather than only the ones that need it.
+- **A pool is disposed explicitly, by the host that built it** (decided 2026-08-06). Closing the
+  pool releases every port holding something open, and **only those ports declare `close()`**
+  (amended 2026-08-06): a clock and an id generator have nothing to release, and a method that
+  does nothing on most implementations is one a host learns to ignore. Which ports hold
+  something open is core's to know — the host wires the ports and closes the pool, and closes
+  nothing else itself.
 - **The host wires adapters.** Core imports no adapter. Calls are in-process; there is no IPC.
 - Repository layout separates the domain, the adapters and the hosts.
 - **Core is storage-agnostic** (amended 2026-08-03,

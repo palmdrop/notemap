@@ -163,6 +163,24 @@ describe("revisions", () => {
     expect((await p.item(original.id))?.supersededBy).toBe("item-2");
     expect((await p.item(revision.id))?.supersededBy).toBeUndefined();
   });
+
+  it("is not what a lookup by source identity answers with", async () => {
+    const { pool: p } = pool();
+    const original = capture({ id: "item-1", sourceItemId: "src-a" });
+    await appendCapture(p, original);
+    await appendCapture(
+      p,
+      revisionOf(original, {
+        id: "item-2",
+        text: "reworded",
+        editedAt: "2026-08-04T11:00:00.000Z",
+      }),
+    );
+
+    const found = await p.itemBySourceIdentity(SCRATCHPAD, "src-a");
+
+    expect(found?.id).toBe("item-1");
+  });
 });
 
 describe("a transaction", () => {

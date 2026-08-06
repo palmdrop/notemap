@@ -248,6 +248,21 @@ importers:
         specifier: ^3.2.4
         version: 3.2.7(@types/node@24.13.3)(tsx@4.23.5)
 
+  tests/integration:
+    devDependencies:
+      '@notemap/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@notemap/store-sqlite':
+        specifier: workspace:*
+        version: link:../../packages/adapters/store-sqlite
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.13.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/node@24.13.3)(tsx@4.23.5)
+
 packages:
 
   '@esbuild/aix-ppc64@0.28.1':
