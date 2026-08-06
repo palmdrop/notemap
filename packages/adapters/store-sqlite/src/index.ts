@@ -1,1 +1,2 @@
-export * from './store/sqlite-pool-store';
+export * from "./pool-store";
+export * as schema from "./schema";
