@@ -48,7 +48,9 @@ export const MIGRATIONS: readonly string[] = [
     item_id  TEXT    NOT NULL REFERENCES items (id) ON DELETE CASCADE,
     name     TEXT    NOT NULL,
     by_kind  TEXT    NOT NULL CHECK (by_kind IN ('person', 'provider', 'source')),
-    by_ref   TEXT,
+    -- A person is anonymous; a provider or source is named. The mapper reads
+    -- by_ref back on exactly that assumption, so the row may not break it.
+    by_ref   TEXT    CHECK ((by_kind = 'person') = (by_ref IS NULL)),
     added_at INTEGER NOT NULL,
     PRIMARY KEY (item_id, name)
   ) STRICT;
@@ -87,7 +89,7 @@ export const MIGRATIONS: readonly string[] = [
     kind    TEXT    NOT NULL,
     subject TEXT,
     by_kind TEXT    NOT NULL CHECK (by_kind IN ('person', 'provider', 'source')),
-    by_ref  TEXT,
+    by_ref  TEXT    CHECK ((by_kind = 'person') = (by_ref IS NULL)),
     at      INTEGER NOT NULL,
     detail  TEXT    NOT NULL
   ) STRICT;
@@ -120,10 +122,20 @@ export function migrate(connection: DatabaseSync): void {
   }
 
   for (let version = applied; version < MIGRATIONS.length; version += 1) {
-    // `user_version` takes no parameter binding, and the value is a loop
-    // counter rather than anything a caller supplies.
-    connection.exec(
-      `BEGIN IMMEDIATE; ${MIGRATIONS[version]} PRAGMA user_version = ${version + 1}; COMMIT;`,
-    );
+    try {
+      // `user_version` takes no parameter binding, and the value is a loop
+      // counter rather than anything a caller supplies.
+      connection.exec(
+        `BEGIN IMMEDIATE; ${MIGRATIONS[version]} PRAGMA user_version = ${version + 1}; COMMIT;`,
+      );
+    } catch (cause) {
+      try {
+        // A failure mid-script leaves its transaction open on the connection.
+        connection.exec("ROLLBACK");
+      } catch {
+        // It failed before BEGIN, or SQLite already rolled back on its own.
+      }
+      throw cause;
+    }
   }
 }

@@ -34,18 +34,22 @@ export function serializeTransactions(
    * unrelated one that merely arrived while a transaction was in flight, and
    * would reject the second — which is every concurrent caller, since every
    * `await` in the callback is a window for one to arrive.
+   *
+   * The stored state is the same liveness the fence checks, so a call that
+   * inherited the context of a transaction already over — async work leaked
+   * out of a callback — is told that, rather than accused of nesting.
    */
-  const active = new AsyncLocalStorage<true>();
+  const active = new AsyncLocalStorage<{ live: boolean }>();
 
   async function execute<T>(work: (fence: Fence) => Promise<T>): Promise<T> {
     // Inside the guard: a BEGIN that fails — SQLITE_BUSY against a second host
     // process — must not leave the queue believing a transaction is open.
     connection.exec("BEGIN IMMEDIATE");
 
-    let live = true;
+    const state = { live: true };
     const fence: Fence = {
       check: () => {
-        if (!live) {
+        if (!state.live) {
           throw new Error(
             "this transaction has ended; its handle cannot be used any more",
           );
@@ -71,17 +75,16 @@ export function serializeTransactions(
       // after a timeout, and the fence is what stops its later statements
       // reaching the connection.
       const result = await Promise.race([
-        active.run(true, () => work(fence)),
+        active.run(state, () => work(fence)),
         timeout,
       ]);
-      fence.check();
       connection.exec("COMMIT");
       return result;
     } catch (cause) {
       rollback();
       throw cause;
     } finally {
-      live = false;
+      state.live = false;
       clearTimeout(expire);
     }
   }
@@ -98,10 +101,13 @@ export function serializeTransactions(
 
   return {
     run: <T>(work: (fence: Fence) => Promise<T>): Promise<T> => {
-      if (active.getStore()) {
+      const enclosing = active.getStore();
+      if (enclosing) {
         return Promise.reject(
           new Error(
-            "a transaction was opened inside another and would wait on itself",
+            enclosing.live
+              ? "a transaction was opened inside another and would wait on itself"
+              : "this call inherited a transaction that has already ended; it leaked out of its callback",
           ),
         );
       }

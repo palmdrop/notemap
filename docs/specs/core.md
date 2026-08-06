@@ -97,6 +97,12 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   The same holds for routing, per the above; archive and routing state both stay behind.
 - An item is **superseded** when a later revision points at it. This is derived from the link,
   never stored, and superseded items are excluded from the queue.
+- **Ids never order a revision against its original** (decided 2026-08-06). A revision carries
+  its original's capture time, so the two tie in the feed, and ids are not guaranteed to sort
+  by mint order — see intake. Wherever the tie matters — feed order, finding the head — a
+  revision's place comes from the revision link: it follows the item it supersedes. Ties
+  between unrelated items may break on any stable key, id included, since no meaning rides on
+  them.
 - **Editing a superseded item is refused** (decided 2026-08-04). Allowing it would fork the
   revision chain into two revisions of one original, both live in the queue, with nothing to
   say which is current. Edits go to the end of the chain.
@@ -274,7 +280,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - **A source that cannot remember an id does not supply one.** A client that captures offline
   mints its own id and replays it; a passive source has no capture moment at which to mint one
   and no memory across a restart, so it supplies only its source identity and core mints the
-  id. This keeps every id a time-ordered UUIDv7 rather than deriving ids from source paths.
+  id. Ids core mints are time-ordered UUIDv7s, and a client is encouraged to mint the same —
+  but any unique id is accepted, not validated for shape (clarified 2026-08-06), so nothing
+  in the model may depend on ids sorting by time.
 - Submitting the same capture twice has no additional effect, whichever identity matches, and
   the caller is told which one did. **Resubmitting under an identity that already exists, with
   content that differs, is refused** — for either identity (clarified 2026-08-04). An external
@@ -318,6 +326,11 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - **A refusal carries facts, never a sentence.** Core has no locale and no interface, so it
   reports what was wrong in structured terms — the payload type and the list that was accepted,
   the id that was not found — and the host renders that into a message or a status code.
+- **A timestamp is an instant, not a spelling** (decided 2026-08-06). `Timestamp` is RFC 3339
+  UTC, which admits more than one spelling of one instant, and a store is free to hand a
+  timestamp back in its own canonical form. Timestamp equality is therefore instant equality —
+  a replay is compared by what time it names, never by the string that names it — and nothing
+  compares timestamps as text across the store boundary.
 - **Core is instantiated per pool, never global.** No module-level state, no ambient
   configuration, no singleton connection.
 - **A pool is disposed explicitly, by the host that built it** (decided 2026-08-06). Closing the

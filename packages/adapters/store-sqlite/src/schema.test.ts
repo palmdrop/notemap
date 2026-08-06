@@ -70,6 +70,32 @@ describe("the row types and the migrations agree", () => {
     }
   });
 
+  it("refuses an agent whose name disagrees with its kind", async () => {
+    const opened = store();
+    try {
+      opened.raw.exec("PRAGMA foreign_keys = ON");
+      opened.raw
+        .prepare(
+          `INSERT INTO items (id, source_id, source_item_id, payload_type,
+           payload_content, payload_metadata, created_at, modified_at)
+           VALUES ('item', 'src', 'a', 'text', '{}', '{}', 1, 1)`,
+        )
+        .run();
+
+      const tag = opened.raw.prepare(
+        `INSERT INTO item_tags (item_id, name, by_kind, by_ref, added_at)
+         VALUES ('item', ?, ?, ?, 1)`,
+      );
+
+      // A person is anonymous; a provider or source is named.
+      expect(() => tag.run("a", "person", "someone")).toThrow(/constraint/i);
+      expect(() => tag.run("b", "provider", null)).toThrow(/constraint/i);
+      expect(() => tag.run("c", "provider", "whisper")).not.toThrow();
+    } finally {
+      await opened.cleanup();
+    }
+  });
+
   it("lets two revisions share the source identity they revise", async () => {
     const opened = store();
     try {

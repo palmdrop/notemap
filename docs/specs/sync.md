@@ -49,8 +49,9 @@ this spec is unwritten.
   bumped by every change to an item — content and state alike, including classification,
   routing, archiving and deciding on a suggestion. It is distinct from `created_at` and
   `content_updated_at`, which order the feed and queue and record content time only
-  ([core.md](core.md)). Core must assign it monotonically per pool, or a client can miss
-  writes that commit out of order.
+  ([core.md](core.md)). The store assigns it monotonically per pool
+  ([ADR 1](../adr/0001-pool-is-a-database.md)), or a client can miss writes that commit out
+  of order.
 - Purge propagates as a minimal tombstone — `(id, purged_at)` and nothing else — which is
   itself removed after a retention window
   ([ADR 4](../adr/0004-purge-leaves-a-minimal-tombstone.md)).

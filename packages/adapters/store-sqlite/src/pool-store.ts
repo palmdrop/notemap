@@ -17,7 +17,12 @@ import type {
   SourceId,
 } from "@notemap/core";
 
-import { decodeCursor, encodeCursor, type Keyset } from "./cursor";
+import {
+  decodeCursor,
+  encodeCursor,
+  type CursorSpace,
+  type Keyset,
+} from "./cursor";
 import {
   agentColumns,
   itemParams,
@@ -67,6 +72,13 @@ const ITEM_COLUMNS = `
 
 const DEFAULT_ORDER: FeedOrder = "newest-first";
 
+/**
+ * In-process writes are serialized by the transaction queue, so SQLITE_BUSY is
+ * only ever another process — a second host on the same pool. Waiting briefly
+ * beats failing the instant two hosts' writes touch.
+ */
+const BUSY_TIMEOUT_MS = 5_000;
+
 const systemClock: Clock = {
   now: () => new Date().toISOString() as ReturnType<Clock["now"]>,
 };
@@ -81,22 +93,34 @@ export function createSqlitePoolStore(
   config: SqlitePoolStoreConfig,
 ): PoolStore {
   const writer = new DatabaseSync(config.file);
-  writer.exec("PRAGMA foreign_keys = ON");
-  if (config.file !== ":memory:") writer.exec("PRAGMA journal_mode = WAL");
-  migrate(writer);
+  let reader = writer;
+  try {
+    writer.exec("PRAGMA foreign_keys = ON");
+    writer.exec(`PRAGMA busy_timeout = ${BUSY_TIMEOUT_MS}`);
+    if (config.file !== ":memory:") writer.exec("PRAGMA journal_mode = WAL");
+    migrate(writer);
 
-  /**
-   * Reads run on their own connection so a read outside a transaction cannot
-   * observe what an open transaction has written and may still roll back. WAL
-   * gives that connection a consistent snapshot without blocking the writer.
-   *
-   * A `:memory:` database has no second connection to give — each one would be
-   * a separate database — so it shares the writer and forfeits that isolation.
-   * Tests use files for exactly this reason.
-   */
-  const reader =
-    config.file === ":memory:" ? writer : new DatabaseSync(config.file);
-  if (reader !== writer) reader.exec("PRAGMA query_only = ON");
+    /**
+     * Reads run on their own connection so a read outside a transaction cannot
+     * observe what an open transaction has written and may still roll back. WAL
+     * gives that connection a consistent snapshot without blocking the writer.
+     *
+     * A `:memory:` database has no second connection to give — each one would
+     * be a separate database — so it shares the writer and forfeits that
+     * isolation. Tests use files for exactly this reason.
+     */
+    if (config.file !== ":memory:") {
+      reader = new DatabaseSync(config.file);
+      reader.exec("PRAGMA query_only = ON");
+      reader.exec(`PRAGMA busy_timeout = ${BUSY_TIMEOUT_MS}`);
+    }
+  } catch (cause) {
+    // A store that failed to open leaves no connection behind for the caller
+    // to know about, let alone close.
+    if (reader !== writer) reader.close();
+    writer.close();
+    throw cause;
+  }
 
   const write = statements(writer);
   const read = statements(reader);
@@ -219,10 +243,14 @@ export function createSqlitePoolStore(
 
     function keysetPage<T extends { at: number; id: string }>(
       page: Page,
-      order: FeedOrder,
+      space: CursorSpace,
       fetch: (after: Keyset | undefined, limit: number) => readonly T[],
     ): { readonly rows: readonly T[]; readonly next: PageCursor | undefined } {
-      const after = page.after ? decodeCursor(page.after, order) : undefined;
+      if (!Number.isInteger(page.limit) || page.limit <= 0) {
+        throw new TypeError(`page limit must be a positive integer: ${page.limit}`);
+      }
+
+      const after = page.after ? decodeCursor(page.after, space) : undefined;
       // One more row than asked for, so exhaustion is known rather than guessed.
       const rows = fetch(after, page.limit + 1);
       const hasMore = rows.length > page.limit;
@@ -231,7 +259,7 @@ export function createSqlitePoolStore(
 
       return {
         rows: values,
-        next: hasMore && last ? encodeCursor(last, order) : undefined,
+        next: hasMore && last ? encodeCursor(last, space) : undefined,
       };
     }
 
@@ -254,7 +282,7 @@ export function createSqlitePoolStore(
         const comparison = descending ? "<" : ">";
         const direction = descending ? "DESC" : "ASC";
 
-        const { rows, next } = keysetPage(page, order, (after, limit) => {
+        const { rows, next } = keysetPage(page, `feed:${order}`, (after, limit) => {
           const where =
             after === undefined
               ? ""
@@ -285,7 +313,7 @@ export function createSqlitePoolStore(
       ): Promise<Slice<Action>> => {
         const { rows, next } = keysetPage(
           page,
-          "oldest-first",
+          "actions",
           (after, limit) => {
             const clauses: string[] = [];
             const params: Bindable[] = [];

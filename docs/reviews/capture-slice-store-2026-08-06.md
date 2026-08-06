@@ -1,9 +1,31 @@
 # Review: Capture slice over SQLite (PR #3, `agent/capture-slice-tests`)
 
 **Date**: 2026-08-06
-**Status**: Open
+**Status**: Closed — 2026-08-06
 **Scope**: `packages/adapters/store-sqlite/`, `packages/core/src/types/` (port reshape), `packages/core/src/pool/*.test.ts`, `packages/core/src/testing/`
 **Spec**: `docs/specs/core.md`, `docs/specs/sync.md`, ADRs 1, 8, 10, 11, 12, 13
+
+## Resolution
+
+The file references below describe the drizzle/better-sqlite3 driver this review was written
+against; the driver was rewritten on `node:sqlite` afterwards, and the findings were resolved
+against that rewrite.
+
+- **Fixed by the rewrite** (`a975cfd`, `a31f103`, `15b7f23`): 1 and 2 (reentrancy is detected
+  by `AsyncLocalStorage`, no flag to leak), 3 (reads run on a second `query_only` connection),
+  4 (`ROLLBACK` failure is swallowed in favour of the original error), 5 (decided: a revision
+  carries the identity of the capture it revises; partial unique index plus spec and ADR 1
+  amendments), 6 (`items_one_revision_each`), 8 (the fence), 9 (ADR 10 amended), 11 and 12
+  (mid-flight arrival and same-instant ties are tested), 13 (core's skipped suites were
+  replaced by `tests/integration/` driving core over the real store), 14.
+- **Fixed after the rewrite, same branch**: 10 (timestamp equality is instant equality,
+  recorded in `core.md`), 16 (cursor tags are namespaced per read surface), 17 (malformed
+  cursors and non-positive limits are refused), 18 (`by_ref` null-consistency `CHECK`), and
+  the `sync.md` line assigning `modified_at` to core.
+- **Accepted as is**: 7 — the ADR 12 amendment records that the log coupling is now discipline;
+  a structural nudge is to be revisited when the mutation surface grows past a few methods.
+- **Still open**: 15, under discussion — the fix direction is per-kind minting methods on
+  `IdGenerator` so the cast lives in the generator, not at call sites.
 
 ---
 

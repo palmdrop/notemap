@@ -350,6 +350,23 @@ describe("a transaction", () => {
       }),
     ).rejects.toThrow("wait on itself");
   });
+
+  it("tells a call that leaked out of an ended transaction so, not that it nested", async () => {
+    const { pool: p } = pool();
+    let escaped: Promise<unknown> | undefined;
+
+    await p.transaction(async () => {
+      // Fire-and-forget work spawned in the callback inherits its context and
+      // outlives it; by the time this timer fires the transaction is over.
+      escaped = new Promise((resolve, reject) => {
+        setTimeout(() => {
+          p.transaction(async () => undefined).then(resolve, reject);
+        }, 20);
+      });
+    });
+
+    await expect(escaped).rejects.toThrow(/already ended/);
+  });
 });
 
 describe("the identity checks core makes inside a transaction", () => {
@@ -569,7 +586,33 @@ describe("the feed", () => {
     const newest = await p.feed({ limit: 1 });
     await expect(
       p.feed(nextPage(newest.next, { limit: 1, order: "oldest-first" })),
-    ).rejects.toThrow(/different order/);
+    ).rejects.toThrow(/different read/);
+  });
+
+  it("refuses a cursor issued for a different surface", async () => {
+    const { pool: p } = pool();
+    for (const id of ["a", "b", "c"]) {
+      await appendCapture(p, capture({ id }));
+    }
+
+    const feed = await p.feed({ limit: 1, order: "oldest-first" });
+    await expect(
+      p.actions(undefined, nextPage(feed.next, { limit: 1 })),
+    ).rejects.toThrow(/different read/);
+  });
+
+  it("refuses a malformed cursor rather than reading from position zero", async () => {
+    const { pool: p } = pool();
+    await appendCapture(p, capture());
+
+    await expect(
+      p.feed({ limit: 1, after: "fn::x" as PageCursor }),
+    ).rejects.toThrow(/not a cursor/);
+  });
+
+  it("refuses a limit that is not a positive count", async () => {
+    const { pool: p } = pool();
+    await expect(p.feed({ limit: 0 })).rejects.toThrow(/positive integer/);
   });
 
   it("hands back an empty slice for an empty pool", async () => {
