@@ -1,5 +1,5 @@
 {
-  "name": "@notemap/core",
+  "name": "@notemap/store-sqlite",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -8,13 +8,13 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@notemap/core": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
     "vitest": "^3.2.4"
-  },
-  "dependencies": {
-    "dequal": "^2.0.3"
   }
 }

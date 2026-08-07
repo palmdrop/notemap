@@ -1,7 +1,7 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-08-03
+**Last updated**: 2026-08-06
 **Shipped**:
 
 ---
@@ -62,7 +62,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - Every capture entering the pool becomes an **item** and is never lost. Routing, archiving and
   classification are all non-destructive.
 - The feed presents every item chronologically by capture time, complete, including archived
-  and superseded items.
+  and superseded items. **Which end it starts from is the reader's** (decided 2026-08-06):
+  the feed takes an order, newest first by default. The queue does not — oldest first is what
+  makes it a queue ([ADR 10](../adr/0010-feed-and-queue-sort-differently.md)).
 - **Capture time comes from the source, never from arrival.** A note written offline and synced
   three days later occupies its true chronological position. A file picked up by an import path
   is placed at its recording time, read from file metadata or the source's naming pattern.
@@ -79,6 +81,10 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   accepting a suggestion change an item's state in place and never produce a revision.
 - Editing an item **appends a revision**: a new item linked to the one it replaces, carrying
   the original capture time plus the time of the edit.
+- **A revision carries the source identity of the capture it revises** (decided 2026-08-06).
+  It is a new item but not a new capture: no source produced it, so it mints no identity of its
+  own. Source identity is unique per capture, and a revision is exempt — the uniqueness exists
+  so that re-reading a source cannot duplicate, which a revision cannot do.
 - A revision is a clone with a link: **tags carry over**, keeping their attribution.
   **Routing records do not** — they are the original's history and stay with it. The revision
   therefore starts unprocessed and resurfaces in the queue, whether or not the original was
@@ -91,6 +97,12 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   The same holds for routing, per the above; archive and routing state both stay behind.
 - An item is **superseded** when a later revision points at it. This is derived from the link,
   never stored, and superseded items are excluded from the queue.
+- **Ids never order a revision against its original** (decided 2026-08-06). A revision carries
+  its original's capture time, so the two tie in the feed, and ids are not guaranteed to sort
+  by mint order — see intake. Wherever the tie matters — feed order, finding the head — a
+  revision's place comes from the revision link: it follows the item it supersedes. Ties
+  between unrelated items may break on any stable key, id included, since no meaning rides on
+  them.
 - **Editing a superseded item is refused** (decided 2026-08-04). Allowing it would fork the
   revision chain into two revisions of one original, both live in the queue, with nothing to
   say which is current. Edits go to the end of the chain.
@@ -233,7 +245,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 ### The mirror
 
 - Every capture is written to disk as a plain text file with its metadata, and never read back
-  during normal operation.
+  during normal operation. **Each capture enqueues exactly one mirror job** (decided
+  2026-08-06), in the same atomic unit as the capture itself: an item committed with nothing
+  recording that its mirror is owed would never be written, and nothing would notice.
 - The mirror is **lossless**: a pool can be rebuilt from the mirror and the assets alone. This
   is the only circumstance in which the mirror is read.
 - The mirror carries captures, classification, **artifacts and their corrections** — the
@@ -266,7 +280,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - **A source that cannot remember an id does not supply one.** A client that captures offline
   mints its own id and replays it; a passive source has no capture moment at which to mint one
   and no memory across a restart, so it supplies only its source identity and core mints the
-  id. This keeps every id a time-ordered UUIDv7 rather than deriving ids from source paths.
+  id. Ids core mints are time-ordered UUIDv7s, and a client is encouraged to mint the same —
+  but any unique id is accepted, not validated for shape (clarified 2026-08-06), so nothing
+  in the model may depend on ids sorting by time.
 - Submitting the same capture twice has no additional effect, whichever identity matches, and
   the caller is told which one did. **Resubmitting under an identity that already exists, with
   content that differs, is refused** — for either identity (clarified 2026-08-04). An external
@@ -310,16 +326,32 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - **A refusal carries facts, never a sentence.** Core has no locale and no interface, so it
   reports what was wrong in structured terms — the payload type and the list that was accepted,
   the id that was not found — and the host renders that into a message or a status code.
+- **A timestamp is an instant, not a spelling** (decided 2026-08-06). `Timestamp` is RFC 3339
+  UTC, which admits more than one spelling of one instant, and a store is free to hand a
+  timestamp back in its own canonical form. Timestamp equality is therefore instant equality —
+  a replay is compared by what time it names, never by the string that names it — and nothing
+  compares timestamps as text across the store boundary.
 - **Core is instantiated per pool, never global.** No module-level state, no ambient
   configuration, no singleton connection.
+- **A pool is disposed explicitly, by the host that built it** (decided 2026-08-06). Closing the
+  pool releases every port holding something open, and **only those ports declare `close()`**
+  (amended 2026-08-06): a clock and an id generator have nothing to release, and a method that
+  does nothing on most implementations is one a host learns to ignore. Which ports hold
+  something open is core's to know — the host wires the ports and closes the pool, and closes
+  nothing else itself.
 - **The host wires adapters.** Core imports no adapter. Calls are in-process; there is no IPC.
 - Repository layout separates the domain, the adapters and the hosts.
 - **Core is storage-agnostic** (amended 2026-08-03,
   [ADR 1](../adr/0001-pool-is-a-database.md)). It states what it requires of a store —
-  all-or-nothing application of one command per domain operation, commands carrying
-  preconditions, ordered paginated reads asked for in domain terms, unique client-generated
-  capture ids, monotonic `modified_at`, reference-counted asset release — and does not know
-  which store answers. SQLite is the first driver and the only planned one.
+  all-or-nothing application of a transaction core opens, ordered paginated reads asked for in
+  domain terms, unique client-generated capture ids, monotonic `modified_at`,
+  reference-counted asset release — and does not know which store answers. SQLite is the
+  default driver and the one that ships; another may be wanted for a platform or a hosting
+  arrangement that cannot use it. *Amended 2026-08-06*: core holds a transaction handle and
+  reads and writes inside it, so preconditions are ordinary reads rather than assertions
+  carried on a command. **Core still performs no I/O inside a transaction** — the store holds a
+  write lock for its duration — but that is now a convention review defends rather than a
+  structural impossibility, the same call already made for `fs`.
 - **A pool lives on a local filesystem, never on a network share.** Concurrent hosts are made
   safe by leasing work, not by forbidding it. This is a limit of the SQLite driver, documented
   with it, rather than a requirement core places on storage.
@@ -342,7 +374,8 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   external edits expensive, and the cost falls on reading files back, not writing them. A
   lossless write-only mirror buys ownership without reconciliation. *Amended 2026-08-03*:
   SQLite is the first driver, not the decision; core is storage-agnostic and states its
-  requirements, including one atomic command per domain operation.
+  requirements, including all-or-nothing application per domain operation. *Amended
+  2026-08-06*: core holds a transaction handle; preconditions are gone.
 - **[Core is a host-agnostic library](../adr/0002-core-is-a-host-agnostic-library.md)** — the
   daemon is one host, not the architecture. The seam is nearly free now and expensive later.
 - **[Clients hold an outbox; pools do not replicate](../adr/0003-clients-hold-an-outbox-pools-do-not-replicate.md)**
@@ -390,14 +423,19 @@ Recorded in full under [docs/adr/](../adr/). In brief:
       probably differs per destination.
 - [ ] 2026-08-02 — Multiple pools per user, and multi-user operation. Nothing decided forecloses
       either; neither is designed.
+- [ ] 2026-08-06 — Whether a unit of work is always *about an item*. Every job in the first
+      slice is — enrichment and mirroring both — and a job dies with the item it is about. The
+      asset sweep is the one piece of in-scope work that is pool-wide rather than about
+      anything, and it is not modelled as a job today. If it becomes one, a job's subject has
+      to say what kind of thing it names rather than being an item id.
 
 ---
 
 ## Acceptance criteria
 
 - A capture submitted twice with the same client-generated id produces exactly one item.
-- A capture whose source reports a capture time three days old appears at that position in the
-  feed, not at the end.
+- A capture whose source reports a capture time three days old appears at its chronological
+  position in the feed, not at the position its arrival would give it.
 - Editing a non-head item leaves the original readable in the feed and excludes it from the
   queue; the revision appears in the queue.
 - Editing the head while unprocessed changes it in place and creates no revision. Capturing a

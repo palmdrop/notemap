@@ -56,3 +56,8 @@ Only write comments that describe decisions that are unexpected. Code and commen
   session has an `ssh-agent`, so a push over SSH dies with `Permission denied (publickey)`.
 - Branch per plan, `agent/<plan-file-stem>`. Never commit to `main` directly.
 - Never force-push a branch that has an open PR.
+
+# Verification
+
+When you are done implementing a feature, or making a larger test, run typecheck, tests and linters. 
+Resolve any issues before commiting or stating that you are done. 

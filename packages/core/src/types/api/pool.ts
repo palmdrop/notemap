@@ -1,5 +1,5 @@
 import type { JsonObject } from "../json";
-import type { Page, Result, Slice } from "../result";
+import type { FeedPage, Page, Result, Slice } from "../result";
 import type { Action } from "../domain/action-log";
 import type { Agent } from "../domain/agent";
 import type { Asset, AssetMeta, BlobIntegrity } from "../domain/asset";
@@ -54,7 +54,7 @@ export interface ItemsApi {
 }
 
 export interface ViewsApi {
-  feed(page: Page): Promise<Slice<Item>>;
+  feed(page: FeedPage): Promise<Slice<Item>>;
   queue(page: Page): Promise<Slice<Item>>;
   archived(page: Page): Promise<Slice<Item>>;
 }
@@ -153,4 +153,11 @@ export interface Pool {
   readonly actions: ActionsApi;
   readonly sync: SyncApi;
   readonly maintenance: MaintenanceApi;
+
+  /**
+   * Disposes the pool, releasing every port that holds something open. The host
+   * decides when a pool is done with; core never decides for it. Wiring the
+   * ports is the host's job, operating them afterwards is not.
+   */
+  close(): Promise<void>;
 }

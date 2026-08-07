@@ -18,6 +18,18 @@ Which sorts how?
 
 **The feed sorts by `created`. The queue sorts by `updated ?? created`.** Both ascending.
 
+*Amended 2026-08-06 — the feed's direction is the caller's, and defaults to newest first.*
+"Both ascending" fixed a direction the feed has no business fixing. What a client shows first is
+interface policy, and [core.md](../specs/core.md) says core imposes none; a reader opening the
+feed expects the most recent thing, the way every timeline does. So the feed takes an **order**
+on the read — `newest-first` by default, `oldest-first` on request — and a cursor belongs to the
+order it was issued for, refused under the other.
+
+What does not change is the **key**: the feed still sorts by `created`, which is what this ADR
+is actually about. Direction was never the decision; it was an unexamined default riding along
+with one. **The queue stays ascending** and takes no order, because oldest-first is what makes
+it a queue.
+
 *Amended 2026-08-02*: `updated` means **content time only** — a revision or an amendment — and
 is named `content_updated_at` to say so. A separate `modified_at`, bumped by every change
 including classification, routing, archiving and deciding on a suggestion, exists for sync delta reads
