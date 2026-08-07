@@ -1,7 +1,7 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-08-03
+**Last updated**: 2026-08-06
 **Shipped**:
 
 ---
