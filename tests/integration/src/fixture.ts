@@ -9,6 +9,7 @@ import {
   type Clock,
   type Duration,
   type IdGenerator,
+  type MintableId,
   type ItemId,
   type JsonObject,
   type JsonSchema,
@@ -98,7 +99,7 @@ export function frozenClock(start = "2026-08-06T09:00:00.000Z"): Clock & {
 export function countingIds(): IdGenerator & { issued: () => number } {
   let count = 0;
   return {
-    next: <T extends string>() => `id-${++count}` as T,
+    next: <T extends MintableId>() => `id-${++count}` as T,
     issued: () => count,
   };
 }

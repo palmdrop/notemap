@@ -7,6 +7,7 @@ import type {
   AssetId,
   ItemId,
   LeaseId,
+  MintableId,
   ProviderName,
   SourceId,
   SuggestionId,
@@ -41,8 +42,13 @@ export interface Clock {
   now(): Timestamp;
 }
 
+/**
+ * Constrained to the brands that are minted rather than derived or configured:
+ * `next<BlobHash>()` or `next<Timestamp>()` would fabricate a fact, and now
+ * fails to compile instead.
+ */
 export interface IdGenerator {
-  next<T extends string>(): T;
+  next<T extends MintableId>(): T;
 }
 
 export interface SchemaValidator {

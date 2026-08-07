@@ -24,8 +24,10 @@ against that rewrite.
   the `sync.md` line assigning `modified_at` to core.
 - **Accepted as is**: 7 — the ADR 12 amendment records that the log coupling is now discipline;
   a structural nudge is to be revisited when the mutation surface grows past a few methods.
-- **Still open**: 15, under discussion — the fix direction is per-kind minting methods on
-  `IdGenerator` so the cast lives in the generator, not at call sites.
+- **Fixed after discussion**: 15 — not with per-kind minting methods, which spell the same
+  mistake differently while growing the port. The real hole was minting brands that are
+  derived or configured rather than created — `next<BlobHash>()`, `next<Timestamp>()` — and
+  `next` is now constrained to a `MintableId` union that excludes them.
 
 ---
 

@@ -18,6 +18,23 @@ export type LeaseId = Branded<string, "LeaseId">;
 export type ActionId = Branded<string, "ActionId">;
 export type SyncCursor = Branded<string, "SyncCursor">;
 
+/**
+ * The brands a generator may mint: fresh identities for things that are
+ * created. Everything else is excluded because it comes from somewhere — a
+ * hash from content, a source or provider name from configuration, a
+ * timestamp from the clock, a cursor from the store — and minting one would
+ * fabricate a fact.
+ */
+export type MintableId =
+  | ItemId
+  | AssetId
+  | SuggestionId
+  | ArtifactId
+  | RoutingRecordId
+  | JobId
+  | LeaseId
+  | ActionId;
+
 /** RFC 3339, always UTC. */
 export type Timestamp = Branded<string, "Timestamp">;
 
