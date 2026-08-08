@@ -4,6 +4,13 @@
 **Last updated**: 2026-08-08
 **Shipped**:
 
+- 2026-08-08 — The capture-and-feed subset is specified rather than stubbed: the two writes and
+  two reads it needs, the error envelope and the full refusal-to-status table, pagination by
+  position, transport and bind, and the OpenAPI document. Nothing is implemented yet; the
+  daemon that answers these routes is
+  [capture-feed-mvp.md](../plans/capture-feed-mvp.md) phase 3.
+  ([plan](../plans/http-v1-subset-and-positions.md))
+
 ---
 
 ## Outcome

@@ -6,6 +6,7 @@ export * from "./enrichment";
 export * from "./ids";
 export * from "./item";
 export * from "./payload";
+export * from "./position";
 export * from "./routing";
 export * from "./source";
 export * from "./suggestion";

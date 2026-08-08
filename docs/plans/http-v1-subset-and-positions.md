@@ -1,9 +1,9 @@
 # The /v1 capture-and-feed subset, and pagination by position
 
 **Date**: 2026-08-08
-**Status**: Todo
+**Status**: Done
 **Spec**: `docs/specs/http-v1.md`, `docs/specs/core.md`
-**Closed**:
+**Closed**: 2026-08-08
 
 ---
 
@@ -105,35 +105,35 @@ page work live. Its phase 3 depends on both phases here.
 
 ### Phase 2 — Core position surgery *(depends on phase 1)*
 
-- [ ] Core types: `Position` (`{at, id}`) and the abandoned position shape; `FeedPage`,
+- [x] Core types: `Position` (`{at, id}`) and the abandoned position shape; `FeedPage`,
       `Page`, `Slice.next` move off `PageCursor`; `abandonedAt` on the abandoned state.
-- [ ] Store port: paginated read signatures take positions; wrong-order/garbage cursor
+- [x] Store port: paginated read signatures take positions; wrong-order/garbage cursor
       handling disappears (a malformed position never reaches the store).
-- [ ] `store-sqlite`: delete `cursor.ts`; `keysetPage` works on positions; `abandoned`
+- [x] `store-sqlite`: delete `cursor.ts`; `keysetPage` works on positions; `abandoned`
       ordered by `abandonedAt` (migration for the new column if the schema stores state).
-- [ ] Tests: pagination through positions on feed/queue/archived/actions/abandoned;
+- [x] Tests: pagination through positions on feed/queue/archived/actions/abandoned;
       a position surviving a purge of the row it names; bare-`at` bound semantics
       (see unknown below); both orders from one position.
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint` green; `grep -r PageCursor
+- [x] Verify: `pnpm typecheck && pnpm test && pnpm lint` green; `grep -r PageCursor
       packages/` finds nothing.
-- [ ] `git commit`
+- [x] `git commit`
 
 ---
 
-## Unknowns
+## Unknowns — resolved
 
-- **Bare-timestamp entry semantics** — `after=<timestamp>` with no id needs a defined
-  bound. Ids are arbitrary strings (no extreme sentinel exists), so the likely shape is
-  `Position.id` optional with a strict comparison on `at` alone — which may skip rows
-  sharing the boundary millisecond, acceptable for a coarse entry. If it turns out ugly in
-  the store, fallback: the wire rejects bare timestamps for now and `after` requires the
-  full position.
-- **Where `abandonedAt` lives in the schema** — if enrichment state is not yet persisted
-  by the store, the field lands in types only and the driver work shrinks. Check before
-  sizing the migration.
-- **`Slice` genericity** — one `Slice<T>` whose `next` varies per surface may want a type
-  parameter. If it turns into type gymnastics, per-surface slice types are the fallback;
-  the wire shape is unaffected.
+- **Bare-timestamp entry semantics** — the likely shape held. `Position.id` is optional; with
+  no id the store bounds on `at` alone, strictly, and rows sharing that instant fall outside
+  it. It cost one branch in one helper, so the fallback of rejecting bare timestamps on the
+  wire was not needed. Both the coarse entry and the instant it skips are covered by tests.
+- **Where `abandonedAt` lives in the schema** — nowhere. The store persists no enrichment state
+  at all yet: there is no `enrichment_states` table, and `abandonedEnrichments` is still one of
+  the driver's `unimplemented` reads. `abandonedAt` lands in core's types only, and there is no
+  migration to write. The column arrives with the table, in whichever plan builds the
+  enrichment slice.
+- **`Slice` genericity** — a type parameter with a default was enough: `Slice<T, P = Position>`
+  and `Page<P = Position>`. Only the abandoned surface passes one, and every other signature
+  reads exactly as it did before.
 
 ---
 

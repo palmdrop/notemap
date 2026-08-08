@@ -1,8 +1,17 @@
-import type { FeedPage, Item, ItemId, Page, PageCursor } from "@notemap/core";
+import type {
+  FeedPage,
+  Item,
+  ItemId,
+  Page,
+  PoolStore,
+  Position,
+  Timestamp,
+} from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
   appendCapture,
+  at,
   capture,
   captured,
   frozenClock,
@@ -16,9 +25,22 @@ const ALL: Page = { limit: 50 };
 
 const ids = (values: readonly Item[]) => values.map((item) => item.id);
 
-function nextPage(cursor: PageCursor | undefined, page: FeedPage): FeedPage {
-  if (cursor === undefined) throw new Error("expected another page");
-  return { ...page, after: cursor };
+/** `item-0`…`item-<count - 1>`, one minute apart, oldest first. */
+async function minutelyItems(p: PoolStore, count: number): Promise<void> {
+  for (let index = 0; index < count; index += 1) {
+    await appendCapture(
+      p,
+      capture({
+        id: `item-${index}`,
+        createdAt: `2026-08-03T09:0${index}:00.000Z`,
+      }),
+    );
+  }
+}
+
+function nextPage<P extends Page>(position: Position | undefined, page: P): P {
+  if (position === undefined) throw new Error("expected another page");
+  return { ...page, after: position };
 }
 
 const open: (() => Promise<void>)[] = [];
@@ -529,17 +551,9 @@ describe("the feed", () => {
     ]);
   });
 
-  it("paginates with a cursor and stops without a trailing empty page", async () => {
+  it("paginates through positions and stops without a trailing empty page", async () => {
     const { pool: p } = pool();
-    for (let index = 0; index < 5; index += 1) {
-      await appendCapture(
-        p,
-        capture({
-          id: `item-${index}`,
-          createdAt: `2026-08-03T09:0${index}:00.000Z`,
-        }),
-      );
-    }
+    await minutelyItems(p, 5);
 
     const page: FeedPage = { limit: 2, order: "oldest-first" };
     const first = await p.feed(page);
@@ -555,15 +569,7 @@ describe("the feed", () => {
 
   it("paginates newest-first without repeating or skipping", async () => {
     const { pool: p } = pool();
-    for (let index = 0; index < 5; index += 1) {
-      await appendCapture(
-        p,
-        capture({
-          id: `item-${index}`,
-          createdAt: `2026-08-03T09:0${index}:00.000Z`,
-        }),
-      );
-    }
+    await minutelyItems(p, 5);
 
     const page: FeedPage = { limit: 2 };
     const first = await p.feed(page);
@@ -577,37 +583,79 @@ describe("the feed", () => {
     ]).toEqual(["item-4", "item-3", "item-2", "item-1", "item-0"]);
   });
 
-  it("refuses a cursor issued for the other order", async () => {
+  it("reads either order from one position, since it names a place", async () => {
     const { pool: p } = pool();
-    for (const id of ["a", "b", "c"]) {
-      await appendCapture(p, capture({ id }));
-    }
+    await minutelyItems(p, 5);
 
-    const newest = await p.feed({ limit: 1 });
-    await expect(
-      p.feed(nextPage(newest.next, { limit: 1, order: "oldest-first" })),
-    ).rejects.toThrow(/different read/);
+    // The position after ["item-4", "item-3"], read from the newest end.
+    const newest = await p.feed({ limit: 2 });
+    const from = newest.next;
+
+    expect(ids((await p.feed(nextPage(from, { limit: 2 }))).values)).toEqual([
+      "item-2",
+      "item-1",
+    ]);
+    expect(
+      ids(
+        (await p.feed(nextPage(from, { limit: 2, order: "oldest-first" })))
+          .values,
+      ),
+    ).toEqual(["item-4"]);
   });
 
-  it("refuses a cursor issued for a different surface", async () => {
-    const { pool: p } = pool();
-    for (const id of ["a", "b", "c"]) {
-      await appendCapture(p, capture({ id }));
-    }
+  it("continues from a position whose row is gone", async () => {
+    const { pool: p, raw } = pool();
+    await minutelyItems(p, 5);
 
-    const feed = await p.feed({ limit: 1, order: "oldest-first" });
-    await expect(
-      p.actions(undefined, nextPage(feed.next, { limit: 1 })),
-    ).rejects.toThrow(/different read/);
+    const page: FeedPage = { limit: 2 };
+    const first = await p.feed(page);
+    // The row the position names, purged between the two reads. A position is
+    // compared against, never looked up, so the next page is unaffected.
+    raw.prepare("DELETE FROM items WHERE id = ?").run("item-3");
+
+    const second = await p.feed(nextPage(first.next, page));
+    expect(ids(second.values)).toEqual(["item-2", "item-1"]);
   });
 
-  it("refuses a malformed cursor rather than reading from position zero", async () => {
+  it("takes a bare timestamp as a coarse entry point", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 5);
+
+    const page: FeedPage = { limit: 50, order: "oldest-first" };
+    const from: Position = { at: at("2026-08-03T09:02:00.000Z") };
+
+    expect(ids((await p.feed({ ...page, after: from })).values)).toEqual([
+      "item-3",
+      "item-4",
+    ]);
+  });
+
+  it("skips rows sharing the instant a bare timestamp names", async () => {
+    const { pool: p } = pool();
+    const shared = "2026-08-03T09:00:00.000Z";
+    for (const id of ["a", "b"]) {
+      await appendCapture(p, capture({ id, createdAt: shared }));
+    }
+    await appendCapture(
+      p,
+      capture({ id: "c", createdAt: "2026-08-03T09:01:00.000Z" }),
+    );
+
+    // The cost of an entry point that names no row: the bound is strict on time
+    // alone, so both rows at that instant fall outside it.
+    const from: Position = { at: at(shared) };
+    const page: FeedPage = { limit: 50, order: "oldest-first", after: from };
+
+    expect(ids((await p.feed(page)).values)).toEqual(["c"]);
+  });
+
+  it("refuses a position that names no instant, rather than reading from zero", async () => {
     const { pool: p } = pool();
     await appendCapture(p, capture());
 
     await expect(
-      p.feed({ limit: 1, after: "fn::x" as PageCursor }),
-    ).rejects.toThrow(/not a cursor/);
+      p.feed({ limit: 1, after: { at: "half past four" as Timestamp } }),
+    ).rejects.toThrow(/not a parseable timestamp/);
   });
 
   it("refuses a limit that is not a positive count", async () => {
@@ -650,6 +698,53 @@ describe("the action log", () => {
 
     expect((await p.actions("item-1" as ItemId, ALL)).values).toHaveLength(1);
     expect((await p.actions(undefined, ALL)).values).toHaveLength(2);
+  });
+
+  it("paginates through positions, oldest first", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 5);
+
+    const page: Page = { limit: 2 };
+    const first = await p.actions(undefined, page);
+    const second = await p.actions(undefined, nextPage(first.next, page));
+    const third = await p.actions(undefined, nextPage(second.next, page));
+
+    const subjects = [first, second, third].flatMap((slice) =>
+      slice.values.map((action) => action.subject),
+    );
+    expect(subjects).toEqual([
+      "item-0",
+      "item-1",
+      "item-2",
+      "item-3",
+      "item-4",
+    ]);
+    expect(third.next).toBeUndefined();
+  });
+
+  it("keeps the subject filter across a page boundary", async () => {
+    const { pool: p } = pool();
+    const record = capture({ id: "item-1" });
+    await appendCapture(p, record);
+    // A second entry about the same item, and one about another, so a page
+    // continued from a position has both to exclude.
+    await appendCapture(p, capture({ id: "item-2" }));
+    await p.transaction(async (tx) => {
+      await tx.appendAction({
+        ...captured(record, "action-later"),
+        at: at("2026-08-03T10:00:00.000Z"),
+      });
+    });
+
+    const page: Page = { limit: 1 };
+    const first = await p.actions("item-1" as ItemId, page);
+    const second = await p.actions(
+      "item-1" as ItemId,
+      nextPage(first.next, page),
+    );
+
+    expect(second.values.map((action) => action.id)).toEqual(["action-later"]);
+    expect(second.next).toBeUndefined();
   });
 });
 

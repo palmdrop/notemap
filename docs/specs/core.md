@@ -1,8 +1,14 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-08-06
+**Last updated**: 2026-08-08
 **Shipped**:
+
+- 2026-08-08 — Paginated reads continue from a domain **position** rather than an opaque
+  cursor, across core's types, the store port and the SQLite driver. An abandoned enrichment
+  now records `abandonedAt`, which is what its surface is ordered by.
+  ([plan](../plans/http-v1-subset-and-positions.md),
+  [ADR 14](../adr/0014-pagination-by-domain-position.md))
 
 ---
 
