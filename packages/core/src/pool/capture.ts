@@ -34,11 +34,9 @@ function validate(
   ports: PoolPorts,
   envelope: CaptureEnvelope,
 ): CaptureRefusal | undefined {
-  const source = config.sources.find((known) => known.id === envelope.source);
-  if (source === undefined) {
-    return { kind: "unknown-source", source: envelope.source };
-  }
-
+  // `config.sources` is deliberately not consulted here. It is a policy
+  // registry, not a guest list: a source that is not in it captures normally
+  // and simply has no policy attached.
   const type = config.payloadTypes.find(
     (known) => known.name === envelope.payload.type,
   );

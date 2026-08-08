@@ -44,14 +44,34 @@ no shared types package, README recording any non-obvious call.
 - [ ] No `close()` — it holds nothing open, per the amended port decision in `core.md`
 - [ ] `git commit`
 
-### Phase 3 — Daemon slice *(depends on phases 1 and 2)*
+### Phase 2b — Sources need no declaration *(core + docs; blocks phase 3)*
+
+Decided 2026-08-08: any source id is accepted at capture; declaring a source in config
+attaches policy (`autoRequest`), nothing more — registration gated nothing an open client
+could not spell, and refusing a capture for a paperwork reason is the wrong trade for a
+capture tool. The accepted cost, stated in the spec: a typo'd source id mints a parallel
+identity, visible in attribution rather than prevented.
+
+- [x] Core: remove `unknown-source` from `CaptureRefusal`; capture stops consulting the
+      source list for admission. `PoolConfig.sources` stays, as the policy registry;
+      an undeclared source gets empty policy
+- [x] `docs/specs/core.md`, same change: decided line in the intake section; drop the
+      refusal from any listing
+- [x] `docs/specs/http-v1.md`, same change: drop the `unknown-source` row from the 422
+      table
+- [x] Document `Duration` as milliseconds where it is declared (`domain/ids.ts`)
+- [x] Tests: a capture from an undeclared source is accepted and triggers no auto-request;
+      former unknown-source refusal tests updated
+- [x] `git commit`
+
+### Phase 3 — Daemon slice *(depends on phases 1, 2 and 2b)*
 
 `apps/daemon` is an empty scaffold. The daemon is a thin translation onto core (ADR 2): no
 logic of its own, and nothing reaches the pool except through `createPool`.
 
-- [ ] Config loading from TOML: pool file path, sources, payload types (one `text` type to
-      start), empty enrichments, a retry policy, bind port (default 4747). The host sources
-      config; core takes it as data
+- [ ] Config loading from TOML, exactly the shape under "Config, decided" below: found at
+      `$XDG_CONFIG_HOME/notemap/config.toml`, overridable with `--config <path>`; absent
+      lists mean empty. The host sources config; core takes it as data
 - [ ] Wire ports: `store-sqlite`, system clock, UUIDv7 id generator (the `uuid` package), ajv
       validator, `unimplemented`-stub mirror writer/reader (nothing can invoke them — the
       driver's `claim()` does not exist yet), empty destinations
@@ -74,7 +94,7 @@ Deliberately not the queue UI, and deliberately throwaway: one static page the d
 no framework, no build step. It retires when the real frontend gets designed.
 
 - [ ] Capture box that mints a UUIDv7 client-side — hand-rolled inline, no build step — sends it
-      as both `id` and `sourceItemId`, and `POST`s the envelope; visible
+      as both `id` and `sourceItemId` with source `web`, and `POST`s the envelope; visible
       already-captured/refused feedback rendered from the structured error body
 - [ ] Feed list, newest first, "load more" by following the slice's `next` URL
 - [ ] Online-only, stated on the page or in the daemon README: offline capture waits for the
@@ -99,6 +119,49 @@ Resolved in the phase-1 grilling session (2026-08-08), recorded in
 - **Port** — **4747** by default, bound to `127.0.0.1` only, no CORS headers.
 - **The OpenAPI document** is part of the contract: generated, served at `/v1/openapi.json`,
   checked in. Client and hook generation from it is deferred.
+
+Resolved in the config session (2026-08-08). The open-sources decision lands in the specs
+via phase 2b; the config shape below is host-owned and lands in the daemon README with
+phase 3:
+
+- **Open sources** — a source needs no declaration; declaring one attaches policy. See
+  phase 2b.
+- **Source `name`** — deferred. Nothing stores a `SourceDescriptor`, so a display name can
+  be added any time without migration; no consumer exists yet.
+- **`Duration`** — milliseconds, to be documented at the type (phase 2b).
+- **The browser source id** — `web`, declared in config with `autoRequest = []`; the page
+  hardcodes it to match.
+- **The `text` payload content schema** — `{ text: string }`, required, `minLength: 1`
+  (an empty capture is `payload-invalid`, not an item), `additionalProperties: false`, no
+  asset slots. `metadata` stays unconstrained; core validates `contentSchema` only.
+- **Config, decided** — keys are core's names verbatim (camelCase); daemon-owned settings
+  under `[daemon]`; pool path defaults to `$XDG_DATA_HOME/notemap/pool.db`:
+
+  ```toml
+  [daemon]
+  pool = "~/.local/share/notemap/pool.db"  # default shown
+  port = 4747                              # default
+
+  [retry]
+  maxAttempts = 5
+  initialBackoff = 1000    # milliseconds
+  maxBackoff = 60000
+
+  [[sources]]
+  id = "web"
+  autoRequest = []
+
+  [[payloadTypes]]
+  name = "text"
+  requiredSlots = []
+  [payloadTypes.contentSchema]
+  type = "object"
+  required = ["text"]
+  additionalProperties = false
+  [payloadTypes.contentSchema.properties.text]
+  type = "string"
+  minLength = 1
+  ```
 
 Still open — consult the developer before resolving (AGENTS.md: language and library choices
 are theirs):

@@ -188,7 +188,6 @@ Every error, from core or from the daemon, is one shape:
 | `415` | `unsupported-media-type` | `contentType` | daemon |
 | `422` | `limit-too-large` | `limit`, `max` | daemon |
 | `422` | `bad-position` | `after` | daemon |
-| `422` | `unknown-source` | `source` | core |
 | `422` | `unknown-payload-type` | `type` | core |
 | `422` | `payload-invalid` | `issues` | core |
 | `422` | `missing-asset-slot` | `slot` | core |

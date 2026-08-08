@@ -284,6 +284,13 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   payload, the source, the source's own identifier, the capture time, and any tags the source
   already knows about. **Source-supplied tags are attributed to that source** (decided
   2026-08-04), so importing from an already-classified system does not lose its classification.
+- **A source needs no declaration** (decided 2026-08-08). Any source id is accepted at capture.
+  Declaring a source in configuration attaches **policy** to it — today only whether its
+  captures auto-request an enrichment — and nothing else; an undeclared source captures
+  normally and carries empty policy. Registration gated nothing an open client could not
+  spell, and refusing a capture for a paperwork reason is the wrong trade for a tool whose
+  first job is that capture always works. The accepted cost: a typo'd source id mints a
+  parallel identity rather than being caught, which shows up in attribution.
 - **Every capture is identified twice: by its own id, and by its source's id for it**
   (decided 2026-08-04). Both are unique, and they answer different questions. The capture id
   makes replay harmless for a client that captured while unreachable. The source identity makes
