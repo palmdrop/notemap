@@ -1,16 +1,20 @@
 {
-  "name": "@notemap/integration-tests",
+  "name": "@notemap/schema-ajv",
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
-  "devDependencies": {
+  "dependencies": {
     "@notemap/core": "workspace:*",
-    "@notemap/schema-ajv": "workspace:*",
-    "@notemap/store-sqlite": "workspace:*",
+    "ajv": "^8.20.0"
+  },
+  "devDependencies": {
     "@types/node": "^24.10.1",
     "vitest": "^3.2.4"
   }

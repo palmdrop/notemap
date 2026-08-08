@@ -38,11 +38,11 @@ The port is `SchemaValidator` in `packages/core/src/types/api/ports.ts`; every h
 Follow the adapter conventions `packages/adapters/store-sqlite/` set: `import type` from core,
 no shared types package, README recording any non-obvious call.
 
-- [ ] `packages/adapters/schema-ajv`: map ajv errors onto core's `SchemaIssue`
-- [ ] Tests: a valid payload, each issue kind the mapping produces, and that the adapter is
+- [x] `packages/adapters/schema-ajv`: map ajv errors onto core's `SchemaIssue`
+- [x] Tests: a valid payload, each issue kind the mapping produces, and that the adapter is
       per-instance (no module-level ajv cache shared across pools)
-- [ ] No `close()` — it holds nothing open, per the amended port decision in `core.md`
-- [ ] `git commit`
+- [x] No `close()` — it holds nothing open, per the amended port decision in `core.md`
+- [x] `git commit`
 
 ### Phase 2b — Sources need no declaration *(core + docs; blocks phase 3)*
 
