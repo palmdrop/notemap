@@ -3,7 +3,8 @@ import tseslint from "typescript-eslint";
 import prettier from "eslint-config-prettier";
 
 export default tseslint.config(
-  { ignores: ["docs/"] },
+  // `dist/` is the daemon's esbuild bundle: generated, and not ours to lint.
+  { ignores: ["docs/", "**/dist/"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   prettier,

@@ -187,6 +187,8 @@ Every error, from core or from the daemon, is one shape:
 | `409` | `source-item-changed` | `existing` | core |
 | `415` | `unsupported-media-type` | `contentType` | daemon |
 | `422` | `limit-too-large` | `limit`, `max` | daemon |
+| `422` | `bad-limit` | `limit` | daemon |
+| `422` | `bad-order` | `order`, `allowed` | daemon |
 | `422` | `bad-position` | `after` | daemon |
 | `422` | `unknown-payload-type` | `type` | core |
 | `422` | `payload-invalid` | `issues` | core |
@@ -203,7 +205,19 @@ outside the table is a bug, and is `500` with no body — a daemon that turns an
 throw into a domain-looking refusal teaches clients to trust a fiction.
 
 `malformed-envelope` reports its problems as `SchemaIssue` — `{ path, keyword }` — the same
-shape `payload-invalid` uses, because a client rendering one has then rendered both.
+shape `payload-invalid` uses, because a client rendering one has then rendered both. `path` is
+a JSON Pointer and `keyword` names the rule that failed, in JSON Schema's vocabulary wherever
+one applies, so the two do not merely share a shape but a language.
+
+**The envelope is strict**: a key `/v1` does not know is `400 malformed-envelope` naming that
+key, not a key quietly dropped. A client that misspells `capturedAt` would otherwise file every
+capture at the wrong time and never be told. This is affordable because `/v1` may still take
+breaking changes ([ADR 9](../adr/0009-versioned-api-mutable-until-first-real-pool.md)); a
+version that has to evolve additively will have to revisit it.
+
+A parameter is refused the same way as a body: a `limit` that is not a positive count is
+`bad-limit`, an `order` that is not one of the two is `bad-order` carrying the ones that are.
+Both are `422` by the same rule as the rest — the request was understood and declined.
 
 ### The OpenAPI document
 

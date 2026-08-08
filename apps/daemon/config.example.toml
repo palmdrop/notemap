@@ -1,0 +1,42 @@
+# notemap daemon configuration.
+#
+# Copy to $XDG_CONFIG_HOME/notemap/config.toml (usually ~/.config/notemap/config.toml),
+# or pass --config <path>.
+#
+# Keys are core's own names, so `docs/specs/core.md` reads as documentation for
+# this file. Absent lists mean empty.
+
+[daemon]
+# The SQLite file the pool lives in. Defaults to
+# $XDG_DATA_HOME/notemap/pool.db. Never a network share.
+pool = "~/.local/share/notemap/pool.db"
+# Bound to 127.0.0.1 only. There is no authentication.
+port = 4747
+
+# What core does with an enrichment that keeps failing. Nothing is enriched
+# yet; these are here because core takes them as data and has no defaults of
+# its own to invent.
+[retry]
+maxAttempts = 5
+initialBackoff = 1000 # milliseconds
+maxBackoff = 60000
+
+# A source needs no declaration to capture — declaring one attaches policy.
+# `web` is the capture page, which hardcodes this id.
+[[sources]]
+id = "web"
+autoRequest = []
+
+[[payloadTypes]]
+name = "text"
+requiredSlots = []
+
+[payloadTypes.contentSchema]
+type = "object"
+required = ["text"]
+additionalProperties = false
+
+[payloadTypes.contentSchema.properties.text]
+type = "string"
+# An empty capture is a payload that failed its schema, not an item.
+minLength = 1

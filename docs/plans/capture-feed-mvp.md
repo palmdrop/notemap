@@ -69,24 +69,24 @@ identity, visible in attribution rather than prevented.
 `apps/daemon` is an empty scaffold. The daemon is a thin translation onto core (ADR 2): no
 logic of its own, and nothing reaches the pool except through `createPool`.
 
-- [ ] Config loading from TOML, exactly the shape under "Config, decided" below: found at
+- [x] Config loading from TOML, exactly the shape under "Config, decided" below: found at
       `$XDG_CONFIG_HOME/notemap/config.toml`, overridable with `--config <path>`; absent
       lists mean empty. The host sources config; core takes it as data
-- [ ] Wire ports: `store-sqlite`, system clock, UUIDv7 id generator (the `uuid` package), ajv
+- [x] Wire ports: `store-sqlite`, system clock, UUIDv7 id generator (the `uuid` package), ajv
       validator, `unimplemented`-stub mirror writer/reader (nothing can invoke them — the
       driver's `claim()` does not exist yet), empty destinations
-- [ ] Endpoints exactly as `http-v1.md` specifies them, on Hono with `@hono/zod-openapi`:
+- [x] Endpoints exactly as `http-v1.md` specifies them, on Hono with `@hono/zod-openapi`:
       `POST /v1/captures`, `GET /v1/feed`, `GET /v1/items/:id`, including the full
       refusal-to-status table and the `{ "error": { "code", ...facts } }` envelope
-- [ ] Positions on the wire: parse `after` as `<at>,<id>` or a bare timestamp, refuse anything
+- [x] Positions on the wire: parse `after` as `<at>,<id>` or a bare timestamp, refuse anything
       else `422 bad-position`, refuse `limit` above 500 rather than clamping, and render core's
       next position as the ready-to-fetch relative `next` URL
-- [ ] `GET /v1/openapi.json`, generated from the routes and checked into the repo
-- [ ] Graceful shutdown: the host closes the pool it built, and closes nothing else
-- [ ] Tests: HTTP-level — capture, replay, each refusal's status and body, feed pagination by
+- [x] `GET /v1/openapi.json`, generated from the routes and checked into the repo
+- [x] Graceful shutdown: the host closes the pool it built, and closes nothing else
+- [x] Tests: HTTP-level — capture, replay, each refusal's status and body, feed pagination by
       following `next` to exhaustion, a bare-timestamp entry, and a refused limit. Verify by
       hand: start the daemon, `curl` a capture, read it back
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 4 — Static capture-and-feed page *(depends on phase 3)*
 
