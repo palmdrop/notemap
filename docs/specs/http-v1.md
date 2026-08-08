@@ -4,6 +4,12 @@
 **Last updated**: 2026-08-08
 **Shipped**:
 
+- 2026-08-08 — The subset is served. `apps/daemon` is a real host: TOML config, the SQLite
+  store, the ajv validator and UUIDv7 ids wired onto `createPool`, answering `POST
+  /v1/captures`, `GET /v1/feed`, `GET /v1/items/:id` and `GET /v1/openapi.json` on localhost,
+  with a throwaway capture-and-feed page at `/`. Implementation added `bad-limit` and
+  `bad-order` to the refusal table and settled that the envelope is strict.
+  ([plan](../plans/capture-feed-mvp.md))
 - 2026-08-08 — The capture-and-feed subset is specified rather than stubbed: the two writes and
   two reads it needs, the error envelope and the full refusal-to-status table, pagination by
   position, transport and bind, and the OpenAPI document. Nothing is implemented yet; the

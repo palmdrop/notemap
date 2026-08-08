@@ -16,6 +16,7 @@ import {
   errorBody,
   type DaemonRefusal,
 } from "./errors";
+import { capturePage } from "./page";
 import {
   DEFAULT_LIMIT,
   FEED_ORDERS,
@@ -232,6 +233,10 @@ export function createApp(pool: Pool): OpenAPIHono {
   });
 
   app.doc31("/v1/openapi.json", OPENAPI_INFO);
+
+  app.get("/", (context) =>
+    context.html(capturePage(), 200, { "cache-control": "no-cache" }),
+  );
 
   app.notFound((context) => {
     const path = new URL(context.req.url).pathname;

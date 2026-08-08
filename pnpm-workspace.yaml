@@ -8,4 +8,4 @@ packages:
 allowBuilds:
   esbuild: true
 minimumReleaseAgeExclude:
-  - '@hono/zod-openapi@1.5.2'
+  - "@hono/zod-openapi@1.5.2"

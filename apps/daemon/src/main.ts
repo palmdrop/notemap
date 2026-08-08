@@ -53,13 +53,28 @@ async function main(): Promise<void> {
   mkdirSync(dirname(config.pool), { recursive: true });
 
   const pool = openPool(config.pool, config.poolConfig);
-  const server = serve({
-    fetch: createApp(pool).fetch,
-    hostname: BIND,
-    port: config.port,
-  });
+  const server = serve(
+    {
+      fetch: createApp(pool).fetch,
+      hostname: BIND,
+      port: config.port,
+    },
+    // Announced on listening, not on starting: a daemon that says it is serving
+    // and then dies on the next line is worse than one that says nothing.
+    (address) =>
+      console.log(`notemap: ${config.pool} on http://${BIND}:${address.port}`),
+  );
 
-  console.log(`notemap: ${config.pool} on http://${BIND}:${config.port}`);
+  // Something already on the port is the ordinary mistake — a daemon left
+  // running — and deserves a sentence rather than a stack trace.
+  server.on("error", (error: NodeJS.ErrnoException) => {
+    console.error(
+      error.code === "EADDRINUSE"
+        ? `port ${config.port} is already in use; stop what is on it, or set daemon.port`
+        : error.message,
+    );
+    void pool.close().then(() => process.exit(1));
+  });
 
   /**
    * The host closes the pool it built, and closes nothing else: which ports

@@ -1,10 +1,9 @@
 # Capture-and-feed MVP
 
 **Date**: 2026-08-07
-**Status**: In progress — phase 1 done, in
-[http-v1-subset-and-positions.md](http-v1-subset-and-positions.md)
+**Status**: Done
 **Spec**: `docs/specs/http-v1.md`, `docs/specs/core.md`
-**Closed**:
+**Closed**: 2026-08-08
 
 ---
 
@@ -93,15 +92,15 @@ logic of its own, and nothing reaches the pool except through `createPool`.
 Deliberately not the queue UI, and deliberately throwaway: one static page the daemon serves,
 no framework, no build step. It retires when the real frontend gets designed.
 
-- [ ] Capture box that mints a UUIDv7 client-side — hand-rolled inline, no build step — sends it
+- [x] Capture box that mints a UUIDv7 client-side — hand-rolled inline, no build step — sends it
       as both `id` and `sourceItemId` with source `web`, and `POST`s the envelope; visible
       already-captured/refused feedback rendered from the structured error body
-- [ ] Feed list, newest first, "load more" by following the slice's `next` URL
-- [ ] Online-only, stated on the page or in the daemon README: offline capture waits for the
+- [x] Feed list, newest first, "load more" by following the slice's `next` URL
+- [x] Online-only, stated on the page or in the daemon README: offline capture waits for the
       outbox protocol (`sync.md`)
-- [ ] Daemon README: how to run, the disposable-pool stance, localhost-only
-- [ ] Verify by hand in a browser; the HTTP tests from phase 3 cover the surface it uses
-- [ ] `git commit`
+- [x] Daemon README: how to run, the disposable-pool stance, localhost-only
+- [x] Verify by hand in a browser; the HTTP tests from phase 3 cover the surface it uses
+- [x] `git commit`
 
 ---
 

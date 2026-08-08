@@ -4,6 +4,10 @@
 **Last updated**: 2026-08-08
 **Shipped**:
 
+- 2026-08-08 — A source needs no declaration to capture; `config.sources` is a policy registry
+  rather than a guest list, and `unknown-source` is gone. The `SchemaValidator` port has its
+  first real implementation (`@notemap/schema-ajv`), and the first host — the daemon — drives a
+  pool through configured adapters end to end. ([plan](../plans/capture-feed-mvp.md))
 - 2026-08-08 — Paginated reads continue from a domain **position** rather than an opaque
   cursor, across core's types, the store port and the SQLite driver. An abandoned enrichment
   now records `abandonedAt`, which is what its surface is ordered by.

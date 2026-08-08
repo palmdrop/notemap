@@ -12,7 +12,10 @@ export default tseslint.config(
     // Omitting fields by destructuring rest is how a projection stays
     // exhaustive; the discarded bindings are the point, not an oversight.
     rules: {
-      "@typescript-eslint/no-unused-vars": ["error", { ignoreRestSiblings: true }],
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { ignoreRestSiblings: true },
+      ],
     },
   },
   {
