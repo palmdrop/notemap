@@ -26,7 +26,13 @@ import type {
 } from "../domain/routing";
 import type { Suggestion } from "../domain/suggestion";
 import type { Delta, Tombstone } from "../domain/sync";
-import type { ClaimRequest, Lease, WorkOutcome } from "../domain/work";
+import type {
+  AbandonedWork,
+  ClaimRequest,
+  Lease,
+  WorkOutcome,
+} from "../domain/work";
+import type { MirrorReader } from "./ports";
 import type {
   ActionLogRefusal,
   ArchiveRefusal,
@@ -38,7 +44,6 @@ import type {
   EnrichmentRefusal,
   LeaseRefusal,
   PurgeRefusal,
-  RebuildRefusal,
   RoutingRefusal,
   SuggestionRefusal,
   TagRefusal,
@@ -77,9 +82,6 @@ export interface EnrichmentApi {
     artifact: ArtifactId,
     content: JsonObject,
   ): Promise<Result<Artifact, ArtifactRefusal>>;
-  abandoned(
-    page: Page<AbandonedPosition>,
-  ): Promise<Slice<EnrichmentStatus, AbandonedPosition>>;
 }
 
 export interface RoutingApi {
@@ -116,6 +118,14 @@ export interface WorkApi {
   ): Promise<Result<void, LeaseRefusal>>;
   extend(lease: LeaseId, by: Duration): Promise<Result<Lease, LeaseRefusal>>;
   release(lease: LeaseId): Promise<Result<void, LeaseRefusal>>;
+
+  /**
+   * One list of everything core has stopped retrying, of every kind, so a
+   * client answers "what needs me" with one read rather than merging two.
+   */
+  abandoned(
+    page: Page<AbandonedPosition>,
+  ): Promise<Slice<AbandonedWork, AbandonedPosition>>;
 }
 
 export interface ActionsApi {
@@ -134,10 +144,22 @@ export type MirrorReport = {
   readonly drifted: readonly AssetId[];
 };
 
+/**
+ * Fast checks that every item has a pair that parses and records the right
+ * `modified_at`; deep additionally re-serialises and compares byte for byte,
+ * and hashes every referenced blob.
+ */
+export type VerifyDepth = "fast" | "deep";
+
+/**
+ * Rebuild is absent: it makes a pool rather than operating on one, so it is its
+ * own entry point and lands with its own slice. Verify and repair take the
+ * reader as an argument for the same reason — walking the mirror is not normal
+ * operation, and a pool is never handed the means to.
+ */
 export interface MaintenanceApi {
-  rebuildFromMirror(): Promise<Result<number, RebuildRefusal>>;
-  verifyMirror(): Promise<MirrorReport>;
-  repairMirror(): Promise<MirrorReport>;
+  verifyMirror(reader: MirrorReader, depth: VerifyDepth): Promise<MirrorReport>;
+  repairMirror(reader: MirrorReader): Promise<MirrorReport>;
   sweepUnreferencedAssets(): Promise<readonly AssetId[]>;
 }
 

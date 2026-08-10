@@ -1,4 +1,5 @@
 import type { EnrichmentName, ItemId, Timestamp } from "./ids";
+import type { JobKind } from "./work";
 
 /**
  * Where a paginated read continues from: the sort key of the last row it handed
@@ -21,12 +22,14 @@ export type Position = {
 };
 
 /**
- * An enrichment state is identified by the pair it belongs to rather than by an
- * id of its own, so the surface listing abandoned ones is continued by naming
- * that pair.
+ * Abandoned work has no id of its own — it is identified by what it is about
+ * and what kind of work it is — so the surface listing it is continued by
+ * naming that tuple.
  */
 export type AbandonedPosition = {
   readonly at: Timestamp;
   readonly item: ItemId;
-  readonly enrichment: EnrichmentName;
+  readonly kind: JobKind;
+  /** Present for enrichment work only. */
+  readonly enrichment?: EnrichmentName;
 };

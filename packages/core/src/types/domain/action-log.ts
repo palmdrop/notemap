@@ -18,8 +18,8 @@ export type ActionKind =
   | "routed"
   | "delivery-failed"
   | "enrichment-requested"
-  | "enrichment-failed"
-  | "enrichment-abandoned"
+  | "work-failed"
+  | "work-abandoned"
   | "assets-released"
   | "purged"
   | "actions-cleared";

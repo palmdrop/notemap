@@ -48,7 +48,6 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
       request: notImplemented("enrichment.request"),
       artifactsFor: notImplemented("enrichment.artifactsFor"),
       correct: notImplemented("enrichment.correct"),
-      abandoned: notImplemented("enrichment.abandoned"),
     },
 
     routing: {
@@ -70,6 +69,7 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
       complete: notImplemented("work.complete"),
       extend: notImplemented("work.extend"),
       release: notImplemented("work.release"),
+      abandoned: notImplemented("work.abandoned"),
     },
 
     actions: {
@@ -81,7 +81,6 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
     sync: { changesSince: notImplemented("sync.changesSince") },
 
     maintenance: {
-      rebuildFromMirror: notImplemented("maintenance.rebuildFromMirror"),
       verifyMirror: notImplemented("maintenance.verifyMirror"),
       repairMirror: notImplemented("maintenance.repairMirror"),
       sweepUnreferencedAssets: notImplemented(

@@ -11,7 +11,6 @@ import {
   type IdGenerator,
   type MintableId,
   type ItemId,
-  type MirrorReader,
   type MirrorWriter,
   type PayloadTypeName,
   type Pool,
@@ -112,15 +111,10 @@ const noAssets: AssetStore = {
   release: () => absent("asset store"),
 };
 
+/** Wired but never called: its presence is what makes the mirror enabled. */
 const noMirrorWriter: MirrorWriter = {
   write: () => absent("mirror writer"),
   remove: () => absent("mirror writer"),
-};
-
-const noMirrorReader: MirrorReader = {
-  items: () => absent("mirror reader"),
-  artifacts: () => absent("mirror reader"),
-  routingRecords: () => absent("mirror reader"),
 };
 
 export type Harness = {
@@ -149,7 +143,6 @@ export function harness(config: PoolConfig = CONFIG): Harness {
     schemas: createAjvSchemaValidator(),
     assets: noAssets,
     mirrorWriter: noMirrorWriter,
-    mirrorReader: noMirrorReader,
     destinations: [],
   };
 

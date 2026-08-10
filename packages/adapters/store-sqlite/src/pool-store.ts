@@ -489,7 +489,7 @@ function notYetImplementedReads() {
     routingRecords: unimplemented("routingRecords"),
     artifacts: unimplemented("artifacts"),
     enrichmentStates: unimplemented("enrichmentStates"),
-    abandonedEnrichments: unimplemented("abandonedEnrichments"),
+    abandonedWork: unimplemented("abandonedWork"),
     unreferencedAssets: unimplemented("unreferencedAssets"),
     changesSince: unimplemented("changesSince"),
   };

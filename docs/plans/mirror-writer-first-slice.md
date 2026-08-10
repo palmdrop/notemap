@@ -28,29 +28,37 @@ until purge is built.
 
 ### Phase 0 — Branch
 
-- [ ] `git checkout -b agent/mirror-writer-first-slice`
+- [x] `git checkout -b agent/mirror-writer-first-slice`
 
 ### Phase 1 — Make the types agree with the specs *(no behaviour; blocks everything)*
 
 Pure type and wiring changes, each one a place the code presently contradicts a spec. Nothing
 here should change what any existing test asserts.
 
-- [ ] `PoolPorts`: drop `mirrorReader` entirely, and make `mirrorWriter` optional. A pool wired
+- [x] `PoolPorts`: drop `mirrorReader` entirely, and make `mirrorWriter` optional. A pool wired
       for capture must hold nothing that can read the mirror (`mirror.md`, rebuild), and a pool
-      may be wired without a writer (`mirror.md`, disabling)
-- [ ] `MirrorWriter.write` takes the resolved assets the record needs — id, filename, media type,
-      size, blob hash — since `AssetRef` carries none of them and the asset store owns them.
-      Empty for every payload type that exists today
-- [ ] `JobKind` gains `mirror-remove`. Document on `Job` that a subject may name an item that has
+      may be wired without a writer (`mirror.md`, disabling). Capture enqueues a mirror job only
+      when a writer is wired
+- [x] `MirrorWriter.write` takes a `MirrorRecord`. *Changed from the original task, which added
+      the resolved assets as a fourth positional argument*: ADR 15 gives core the record, so the
+      port hands over one finished value rather than four parts the driver reassembles. The type
+      lands here; its projection, serialisation and parse are phase 4
+- [x] `JobKind` gains `mirror-remove`. Document on `Job` that a subject may name an item that has
       been purged
-- [ ] `WorkOutcome`: the success variant is enrichment-shaped (artifacts and suggestions). Give
-      mirror work a success that carries nothing, rather than making it report two empty arrays
-- [ ] Move `abandoned` from `EnrichmentApi` to `WorkApi`; `AbandonedPosition` gains `kind`, per
-      ADR 14's 2026-08-11 amendment
-- [ ] `apps/daemon/src/ports.ts`: delete `noMirrorReader` and `noMirrorWriter`; the daemon wires
+- [x] `WorkOutcome`: the success variant is enrichment-shaped (artifacts and suggestions). Give
+      mirror work a success that carries nothing, rather than making it report two empty arrays —
+      landed as two successes, `succeeded` and `enriched`
+- [x] Move `abandoned` from `EnrichmentApi` to `WorkApi`; `AbandonedPosition` gains `kind`, per
+      ADR 14's 2026-08-11 amendment. `PoolReads.abandonedEnrichments` becomes `abandonedWork`,
+      answering the new `AbandonedWork` row rather than an `EnrichmentStatus`
+- [x] *Not in the original task*: `ActionKind`'s `enrichment-failed` and `enrichment-abandoned`
+      become `work-failed` and `work-abandoned`, since every attempt at work of any kind appends
+      one. `MaintenanceApi.rebuildFromMirror` is removed — rebuild makes a pool rather than
+      operating on one — and `verifyMirror`/`repairMirror` take the reader explicitly
+- [x] `apps/daemon/src/ports.ts`: delete `noMirrorReader` and `noMirrorWriter`; the daemon wires
       no mirror writer until phase 6, which is now a legal state rather than a stub that throws
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint` — green, with no test assertions changed
-- [ ] `git commit`
+- [x] Verify: `pnpm typecheck && pnpm test && pnpm lint` — green, with no test assertions changed
+- [x] `git commit`
 
 ### Phase 2 — Jobs that can be claimed *(store; depends on phase 1)*
 
@@ -146,29 +154,22 @@ New package `packages/adapters/mirror-fs`, following the conventions `store-sqli
 
 ## Unknowns and pending decisions
 
-Consult the developer before resolving the first three — AGENTS.md puts library and layout choices
-with them.
+All resolved 2026-08-11, before phase 1.
 
-- **A property-testing library.** Phase 4's round trip wants generated inputs and the repo has
-  only vitest. `fast-check` is the obvious candidate. *Fallback if it is not wanted*: hand-rolled
-  generators in vitest, which costs coverage rather than correctness.
-- **The pool directory layout contradicts itself today.** `mirror.md` and ADR 1 lay out
-  `notemap/{state/notemap.db, pool-mirror/, assets/}` as siblings, but the daemon defaults its
-  pool to `~/.local/share/notemap/pool.db`. Either the default moves under `state/`, or the layout
-  drops `state/`. This is a decision, not a bug to pick a side on. *Fallback*: mirror root
-  configured independently of the pool path, which works and leaves the backup unit unstated.
-- **Does `MirrorReader` survive phase 1?** It has no consumer once it leaves `PoolPorts`, and
-  rebuild is out of this slice. Deleting it and reintroducing it with rebuild keeps dead types out;
-  keeping it records the shape while it is fresh. *Fallback*: keep it, unreferenced.
-- **Directory fsync after rename.** Renaming atomically swaps the entry, but the *directory* entry
-  itself is not durable until the directory is synced on most filesystems. *Fallback*: sync the
-  directory too — one extra syscall per write, and it removes a class of "the file vanished after
-  a power cut" that is miserable to diagnose.
-- **Runner cadence.** A poll interval is the simple thing; a kick after each capture is more
-  responsive and needs a signal from the host's own request path. *Fallback*: poll on an interval
-  from config, which is testable and boring.
-- **Does `mirror-remove` land with no producer?** Included above on the grounds that the schema
-  is cheap now and a migration later. *Fallback*: leave the CHECK narrow and widen it with purge.
+- **A property-testing library** — `fast-check`, as a devDependency of `@notemap/core`. Shrinking
+  is the whole value: a hand-rolled generator that fails hands back a forty-field blob, and this
+  is the test the lossless claim rests on.
+- **The pool directory layout** — the daemon's default moves under the layout the docs state,
+  rather than the docs moving. `state/notemap.db` and `pool-mirror/` are siblings under one
+  notemap root, which is the backup unit, and both default from it.
+- **`MirrorReader`** — kept, and the signatures that contradicted it fixed with it:
+  `verifyMirror` and `repairMirror` take a reader, and `rebuildFromMirror` leaves `MaintenanceApi`
+  altogether, since rebuild makes a pool rather than operating on one.
+- **Directory fsync after rename** — yes, sync the directory too. One extra syscall per write
+  against a class of "the file vanished after a power cut" that is miserable to diagnose.
+- **Runner cadence** — poll on an interval from config. Testable and boring; a kick from the
+  request path can come later without changing the runner's shape.
+- **`mirror-remove` lands with no producer** — yes. The schema is cheap now and a migration later.
 
 ---
 

@@ -9,12 +9,16 @@ import type {
 } from "./ids";
 import type { SuggestionDraft } from "./suggestion";
 
-export type JobKind = "enrichment" | "mirror";
+export type JobKind = "enrichment" | "mirror" | "mirror-remove";
 
 /** Deliberately partial: what a job carries as input is unsettled. */
 export type Job = {
   readonly id: JobId;
   readonly kind: JobKind;
+  /**
+   * The item the work is about, which need not still exist: removing a purged
+   * item's mirror files outlives the item it names. Compared, never resolved.
+   */
   readonly subject: ItemId;
   readonly enrichment?: EnrichmentName;
   readonly attempt: number;
@@ -33,9 +37,15 @@ export type Lease = {
   readonly expiresAt: Timestamp;
 };
 
+/**
+ * Two successes rather than one, because only enrichment produces material.
+ * Mirror work that succeeded has nothing to report, and saying so with two
+ * empty arrays would make emptiness look like a result rather than the shape.
+ */
 export type WorkOutcome =
+  | { readonly kind: "succeeded" }
   | {
-      readonly kind: "succeeded";
+      readonly kind: "enriched";
       readonly artifacts: readonly ArtifactDraft[];
       readonly suggestions: readonly SuggestionDraft[];
     }
@@ -45,8 +55,24 @@ export type WorkOutcome =
       readonly detail: FailureDetail;
     };
 
+/**
+ * `maxAttempts` bounds enrichment only. A retryable mirror failure retries
+ * indefinitely at the backoff cap, since the material exists and is unmirrored
+ * however many times the write has failed.
+ */
 export type RetryPolicy = {
   readonly maxAttempts: number;
   readonly initialBackoff: Duration;
   readonly maxBackoff: Duration;
+};
+
+/** One row of the surface answering "what needs me", for work of any kind. */
+export type AbandonedWork = {
+  readonly item: ItemId;
+  readonly kind: JobKind;
+  /** Present for enrichment work only. */
+  readonly enrichment?: EnrichmentName;
+  readonly attempts: number;
+  readonly lastFailure: FailureDetail;
+  readonly abandonedAt: Timestamp;
 };

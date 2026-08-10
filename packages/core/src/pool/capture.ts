@@ -104,15 +104,18 @@ async function append(
 
   // In the same transaction as the item: one committed with nothing recording
   // that its mirror is owed would never be written, and nothing would notice.
-  await tx.enqueue([
-    {
-      id: ports.ids.next<JobId>(),
-      kind: "mirror",
-      subject: item.id,
-      attempt: 0,
-      enqueuedAt: at,
-    },
-  ]);
+  // No writer wired is the mirror disabled, and then nothing is owed.
+  if (ports.mirrorWriter !== undefined) {
+    await tx.enqueue([
+      {
+        id: ports.ids.next<JobId>(),
+        kind: "mirror",
+        subject: item.id,
+        attempt: 0,
+        enqueuedAt: at,
+      },
+    ]);
+  }
 
   await tx.appendAction({
     id: ports.ids.next<ActionId>(),

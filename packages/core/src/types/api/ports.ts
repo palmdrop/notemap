@@ -15,6 +15,7 @@ import type {
   Timestamp,
 } from "../domain/ids";
 import type { Item, ItemRecord } from "../domain/item";
+import type { MirrorRecord } from "../domain/mirror";
 import type { AbandonedPosition } from "../domain/position";
 import type {
   Delivery,
@@ -24,18 +25,30 @@ import type {
 } from "../domain/routing";
 import type { Suggestion } from "../domain/suggestion";
 import type { Delta, Tombstone } from "../domain/sync";
-import type { ClaimRequest, Job, Lease, WorkOutcome } from "../domain/work";
+import type {
+  AbandonedWork,
+  ClaimRequest,
+  Job,
+  Lease,
+  WorkOutcome,
+} from "../domain/work";
 import type { LeaseRefusal } from "./refusal";
 
-/** Everything a pool reaches the outside world through. Core sources none of it. */
+/**
+ * Everything a pool reaches the outside world through. Core sources none of it.
+ *
+ * There is deliberately no mirror reader here. Rebuild and verify take one as
+ * an argument, so a pool wired for capture holds nothing that can read the
+ * mirror and write-only is structural rather than a convention.
+ */
 export type PoolPorts = {
   readonly store: PoolStore;
   readonly clock: Clock;
   readonly ids: IdGenerator;
   readonly schemas: SchemaValidator;
   readonly assets: AssetStore;
-  readonly mirrorWriter: MirrorWriter;
-  readonly mirrorReader: MirrorReader;
+  /** Absent disables the mirror: nothing enqueues mirror jobs. */
+  readonly mirrorWriter?: MirrorWriter;
   readonly destinations: readonly DestinationAdapter[];
 };
 
@@ -70,15 +83,20 @@ export interface AssetStore {
   release(assets: readonly AssetId[]): Promise<void>;
 }
 
+/**
+ * Where a record's bytes land, and what a person sees beside them. Core hands
+ * over a finished record; layout, atomicity and rendering are the driver's.
+ */
 export interface MirrorWriter {
-  write(
-    item: Item,
-    artifacts: readonly Artifact[],
-    records: readonly RoutingRecord[],
-  ): Promise<void>;
+  write(record: MirrorRecord): Promise<void>;
+  /** The item may already be purged, so this is given a bare id. */
   remove(item: ItemId): Promise<void>;
 }
 
+/**
+ * Reads mirror text, which normal operation never does. Handed to rebuild and
+ * verify explicitly, and never wired into a pool.
+ */
 export interface MirrorReader {
   items(): AsyncIterable<Item>;
   artifacts(item: ItemId): Promise<readonly Artifact[]>;
@@ -118,9 +136,9 @@ export interface PoolReads {
   routingRecords(item: ItemId): Promise<readonly RoutingRecord[]>;
   artifacts(item: ItemId): Promise<readonly Artifact[]>;
   enrichmentStates(item: ItemId): Promise<readonly EnrichmentStatus[]>;
-  abandonedEnrichments(
+  abandonedWork(
     page: Page<AbandonedPosition>,
-  ): Promise<Slice<EnrichmentStatus, AbandonedPosition>>;
+  ): Promise<Slice<AbandonedWork, AbandonedPosition>>;
 
   /** The pool store owns the item-to-asset count, so only it can find these. */
   unreferencedAssets(
