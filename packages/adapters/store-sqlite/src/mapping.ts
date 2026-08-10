@@ -6,9 +6,12 @@ import type {
   AssetId,
   AssetRef,
   BlobHash,
+  EnrichmentName,
   Item,
   ItemId,
   ItemRecord,
+  Job,
+  JobId,
   JsonObject,
   PayloadTypeName,
   ProviderName,
@@ -23,6 +26,7 @@ import type {
   ItemAssetRow,
   ItemRow,
   ItemTagRow,
+  JobRow,
 } from "./rows";
 
 export function toMillis(value: Timestamp): number {
@@ -155,6 +159,19 @@ export function itemParams(
     record.archived === undefined ? null : toMillis(record.archived.archivedAt),
     record.archived?.reason ?? null,
   ];
+}
+
+export function toJob(row: JobRow): Job {
+  return {
+    id: row.id as JobId,
+    kind: row.kind,
+    subject: row.subject as ItemId,
+    ...(row.enrichment === null
+      ? {}
+      : { enrichment: row.enrichment as EnrichmentName }),
+    attempt: row.attempt,
+    enqueuedAt: toTimestamp(row.enqueued_at),
+  };
 }
 
 export function toAction(row: ActionRow): Action {

@@ -119,6 +119,12 @@ describe("writing a capture", () => {
         enrichment: null,
         attempt: 0,
         enqueued_at: Date.parse(record.createdAt),
+        next_attempt_at: Date.parse(record.createdAt),
+        lease_id: null,
+        lease_expires_at: null,
+        abandoned_at: null,
+        last_failure_code: null,
+        last_failure_detail: null,
       },
     ]);
   });
@@ -338,7 +344,7 @@ describe("a transaction", () => {
   });
 
   it("rolls back a transaction that overruns, and stops it writing after", async () => {
-    const { pool: p } = pool(undefined, 40);
+    const { pool: p } = pool({ transactionTimeoutMs: 40 });
     let after: unknown;
 
     const stalled = p.transaction(async (tx) => {
@@ -444,7 +450,7 @@ describe("the identity checks core makes inside a transaction", () => {
 
 describe("modifiedAt", () => {
   it("increases strictly even while the clock stands still", async () => {
-    const { pool: p } = pool(frozenClock());
+    const { pool: p } = pool({ clock: frozenClock() });
 
     const first = await appendCapture(p, capture({ id: "item-1" }));
     const second = await appendCapture(p, capture({ id: "item-2" }));
@@ -456,7 +462,7 @@ describe("modifiedAt", () => {
 
   it("does not go backwards when the clock does", async () => {
     const clock = frozenClock("2026-08-03T10:00:00.000Z");
-    const { pool: p } = pool(clock);
+    const { pool: p } = pool({ clock });
 
     const first = await appendCapture(p, capture({ id: "item-1" }));
 

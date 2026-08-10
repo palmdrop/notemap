@@ -11,11 +11,13 @@ import type {
   AssetId,
   BlobHash,
   Clock,
+  IdGenerator,
   Item,
   ItemId,
   ItemRecord,
   Job,
   JobId,
+  MintableId,
   PayloadTypeName,
   PoolStore,
   SourceId,
@@ -39,10 +41,13 @@ export function at(value: string): Timestamp {
  * the second connection reads use, so it would exercise different isolation
  * from the one that ships.
  */
-export function store(
-  clock?: Clock,
-  transactionTimeoutMs?: number,
-): {
+export type StoreOptions = {
+  readonly clock?: Clock;
+  readonly ids?: IdGenerator;
+  readonly transactionTimeoutMs?: number;
+};
+
+export function store(options: StoreOptions = {}): {
   pool: PoolStore;
   file: string;
   /** A second connection, for asserting on tables no port method reaches yet. */
@@ -51,11 +56,7 @@ export function store(
 } {
   const directory = mkdtempSync(join(tmpdir(), "notemap-store-"));
   const file = join(directory, "pool.db");
-  const pool = createSqlitePoolStore({
-    file,
-    ...(clock === undefined ? {} : { clock }),
-    ...(transactionTimeoutMs === undefined ? {} : { transactionTimeoutMs }),
-  });
+  const pool = createSqlitePoolStore({ file, ...options });
   const raw = new DatabaseSync(file);
 
   return {
@@ -68,6 +69,12 @@ export function store(
       rmSync(directory, { recursive: true, force: true });
     },
   };
+}
+
+/** Names every minted id after its order, so a test can predict a lease. */
+export function countingIds(prefix = "lease"): IdGenerator {
+  let count = 0;
+  return { next: <T extends MintableId>() => `${prefix}-${++count}` as T };
 }
 
 /** A clock that stands still until a test moves it. */

@@ -42,11 +42,17 @@ export type ItemAssetRow = {
 
 export type JobRow = {
   readonly id: string;
-  readonly kind: "enrichment" | "mirror";
+  readonly kind: "enrichment" | "mirror" | "mirror-remove";
   readonly subject: string;
   readonly enrichment: string | null;
   readonly attempt: number;
   readonly enqueued_at: number;
+  readonly next_attempt_at: number;
+  readonly lease_id: string | null;
+  readonly lease_expires_at: number | null;
+  readonly abandoned_at: number | null;
+  readonly last_failure_code: string | null;
+  readonly last_failure_detail: string | null;
 };
 
 export type ActionRow = AgentColumns & {
@@ -80,7 +86,20 @@ export const TABLE_COLUMNS = {
   ],
   item_tags: ["item_id", "name", "by_kind", "by_ref", "added_at"],
   item_assets: ["item_id", "slot", "asset_id", "hash"],
-  jobs: ["id", "kind", "subject", "enrichment", "attempt", "enqueued_at"],
+  jobs: [
+    "id",
+    "kind",
+    "subject",
+    "enrichment",
+    "attempt",
+    "enqueued_at",
+    "next_attempt_at",
+    "lease_id",
+    "lease_expires_at",
+    "abandoned_at",
+    "last_failure_code",
+    "last_failure_detail",
+  ],
   actions: ["id", "kind", "subject", "by_kind", "by_ref", "at", "detail"],
   pool_meta: ["key", "value"],
 } as const satisfies Record<string, readonly string[]>;

@@ -183,7 +183,7 @@ export interface PoolStore extends PoolReads {
     lease: LeaseId,
     until: Timestamp,
   ): Promise<Result<Lease, LeaseRefusal>>;
-  releaseLease(lease: LeaseId): Promise<void>;
+  releaseLease(lease: LeaseId): Promise<Result<void, LeaseRefusal>>;
 
   /**
    * Releases whatever the store holds open. Declared on every store even where

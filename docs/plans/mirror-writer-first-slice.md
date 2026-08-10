@@ -65,22 +65,31 @@ here should change what any existing test asserts.
 `claim`, `extendLease` and `releaseLease` are `unimplemented` in the driver and the `jobs` table
 has no lease or retry columns. The mirror cannot run before this exists.
 
-- [ ] New migration — never edit migration 0. SQLite cannot drop a foreign key in place, so this
+- [x] New migration — never edit migration 0. SQLite cannot drop a foreign key in place, so this
       recreates `jobs`: no FK on `subject`, `kind` CHECK widened to include `mirror-remove`, plus
       lease columns (lease id, expiry) and retry columns (attempts, next attempt at, abandoned at,
-      last failure code and detail)
-- [ ] Coalescing as a **partial unique index**: at most one *unleased* mirror job per subject.
+      last failure code and detail). The existing `attempt` column already counts attempts and is
+      kept as it stands
+- [x] Coalescing as a **partial unique index**: at most one *unleased* mirror job per subject.
       `enqueue` becomes a no-op on that conflict rather than an error, which is exactly the
       coalescing rule — a mutation arriving while a job is leased inserts, because the index does
-      not cover leased rows
-- [ ] `claim`: by kind, oldest `enqueued_at` first, skipping jobs whose next attempt is in the
+      not cover leased rows. The conflict target names the index's own predicate, so two jobs
+      sharing an id still fail rather than being swallowed as coalescing
+- [x] `claim`: by kind, oldest `enqueued_at` first, skipping jobs whose next attempt is in the
       future, whose lease has not expired, or which are abandoned. **A mirror job is claimable
-      only when its subject has no leased mirror job**, so at most one write per item is in flight
-- [ ] `extendLease`, `releaseLease`
-- [ ] Tests: coalescing collapses N enqueues into one job; a mutation during a lease enqueues a
+      only when its subject has no leased mirror job**, so at most one write per item is in flight.
+      Jobs are leased one at a time, since leasing the first is what makes the second unclaimable
+- [x] `extendLease`, `releaseLease`. *Two things the plan did not foresee*: `PoolStore.releaseLease`
+      now answers `Result<void, LeaseRefusal>` rather than `void`, since `work.release` has to be
+      able to say `lease-lost`; and releasing a mirror lease **deletes** the job when a newer
+      unleased one exists for that item, because clearing the lease would otherwise violate the
+      coalescing index — the newer job writes state read fresh and says everything this one would
+- [x] *Not in the original task*: the store mints lease ids, so `SqlitePoolStoreConfig` gains an
+      optional `ids` beside its `clock`, on the same terms
+- [x] Tests: coalescing collapses N enqueues into one job; a mutation during a lease enqueues a
       second; two concurrent claims of one item's mirror work yield one lease; an expired lease is
       reclaimable with no reaper having run; `schema.test.ts` still agrees with `rows.ts`
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 3 — Core drives the work *(depends on phase 2)*
 

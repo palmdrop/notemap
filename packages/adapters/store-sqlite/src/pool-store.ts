@@ -1,20 +1,26 @@
+import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 
 import type {
   Action,
+  ClaimRequest,
   Clock,
   FeedOrder,
   FeedPage,
+  IdGenerator,
   Item,
   ItemId,
   ItemRecord,
   Job,
+  LeaseId,
+  MintableId,
   Page,
   PoolStore,
   PoolTx,
   Position,
   Slice,
   SourceId,
+  Timestamp,
 } from "@notemap/core";
 
 import {
@@ -25,6 +31,7 @@ import {
   toMillis,
   toTimestamp,
 } from "./mapping";
+import { jobQueue } from "./jobs";
 import { LAST_MODIFIED_AT, migrate } from "./migrations";
 import type {
   ActionRow,
@@ -51,6 +58,12 @@ export type SqlitePoolStoreConfig = {
    */
   readonly clock?: Clock;
   /**
+   * Mints lease ids, which are the store's own: a lease exists only for as long
+   * as the row holding it, and core never names one it has not been handed.
+   * Defaults to random UUIDs; a test pins it to read leases off a sequence.
+   */
+  readonly ids?: IdGenerator;
+  /**
    * How long one transaction may run before it is rolled back. Transactions
    * are serialized, so a callback that never settles stalls every write against
    * the pool; this is the backstop. It is not a budget to design against — a
@@ -76,6 +89,10 @@ const BUSY_TIMEOUT_MS = 5_000;
 
 const systemClock: Clock = {
   now: () => new Date().toISOString() as ReturnType<Clock["now"]>,
+};
+
+const randomIds: IdGenerator = {
+  next: <T extends MintableId>() => randomUUID() as T,
 };
 
 /** A position in the store's own units. */
@@ -166,10 +183,7 @@ export function createSqlitePoolStore(
   const insertAsset = write.query(`
     INSERT INTO item_assets (item_id, slot, asset_id, hash) VALUES (?, ?, ?, ?)
   `);
-  const insertJob = write.query(`
-    INSERT INTO jobs (id, kind, subject, enrichment, attempt, enqueued_at)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `);
+  const jobs = jobQueue(write, config.ids ?? randomIds);
   const insertAction = write.query(`
     INSERT INTO actions (id, kind, subject, by_kind, by_ref, at, detail)
     VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -441,16 +455,7 @@ export function createSqlitePoolStore(
       }),
 
       enqueue: guard(async (enqueued: readonly Job[]): Promise<void> => {
-        for (const job of enqueued) {
-          insertJob.run(
-            job.id,
-            job.kind,
-            job.subject,
-            job.enrichment ?? null,
-            job.attempt,
-            toMillis(job.enqueuedAt),
-          );
-        }
+        jobs.enqueue(enqueued);
       }),
     };
   }
@@ -462,9 +467,19 @@ export function createSqlitePoolStore(
     transaction: <T>(work: (handle: PoolTx) => Promise<T>): Promise<T> =>
       transactions.run((fence) => work(poolTx(fence))),
 
-    claim: unimplemented("claim"),
-    extendLease: unimplemented("extendLease"),
-    releaseLease: unimplemented("releaseLease"),
+    /**
+     * Through the same queue as a transaction, and for the same reason: leasing
+     * a job is a write, and the rule that decides whether one may be leased
+     * reads rows another claim is in the middle of taking.
+     */
+    claim: (request: ClaimRequest, now: Timestamp) =>
+      transactions.run(async () => jobs.claim(request, now)),
+
+    extendLease: (lease: LeaseId, until: Timestamp) =>
+      transactions.run(async () => jobs.extendLease(lease, until)),
+
+    releaseLease: (lease: LeaseId) =>
+      transactions.run(async () => jobs.releaseLease(lease)),
 
     close: async () => {
       if (reader !== writer) reader.close();

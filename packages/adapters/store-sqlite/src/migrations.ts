@@ -106,6 +106,56 @@ export const MIGRATIONS: readonly string[] = [
     value INTEGER NOT NULL
   ) STRICT;
   `,
+
+  `
+  -- SQLite cannot drop a foreign key in place, and \`subject\` must lose the one
+  -- it has: removing a purged item's mirror files is work about an item that no
+  -- longer exists, so a cascade would delete the job that records the debt.
+  CREATE TABLE jobs_next (
+    id                  TEXT    NOT NULL PRIMARY KEY,
+    kind                TEXT    NOT NULL
+                        CHECK (kind IN ('enrichment', 'mirror', 'mirror-remove')),
+    subject             TEXT    NOT NULL,
+    -- An enrichment job that does not say which enrichment is meaningless, and
+    -- nothing else has one to name.
+    enrichment          TEXT    CHECK ((kind = 'enrichment') = (enrichment IS NOT NULL)),
+    attempt             INTEGER NOT NULL,
+    enqueued_at         INTEGER NOT NULL,
+    -- Backoff: a job is invisible to \`claim\` until this passes.
+    next_attempt_at     INTEGER NOT NULL,
+    lease_id            TEXT,
+    lease_expires_at    INTEGER CHECK ((lease_id IS NULL) = (lease_expires_at IS NULL)),
+    abandoned_at        INTEGER,
+    last_failure_code   TEXT,
+    last_failure_detail TEXT
+                        CHECK ((last_failure_code IS NULL) = (last_failure_detail IS NULL))
+  ) STRICT;
+
+  INSERT INTO jobs_next
+    (id, kind, subject, enrichment, attempt, enqueued_at, next_attempt_at)
+    SELECT id, kind, subject, enrichment, attempt, enqueued_at, enqueued_at FROM jobs;
+
+  DROP TABLE jobs;
+  ALTER TABLE jobs_next RENAME TO jobs;
+
+  -- Coalescing, as a constraint rather than a convention: at most one *unleased*
+  -- mirror job per item. A mutation arriving while one is pending is absorbed by
+  -- it, because that job writes current state when it runs; a mutation arriving
+  -- while the only job is leased inserts, because this index does not cover
+  -- leased rows and the host holding the lease has already read its state.
+  CREATE UNIQUE INDEX jobs_one_unleased_mirror
+    ON jobs (subject, kind)
+    WHERE kind IN ('mirror', 'mirror-remove') AND lease_id IS NULL;
+
+  CREATE UNIQUE INDEX jobs_lease ON jobs (lease_id) WHERE lease_id IS NOT NULL;
+
+  CREATE INDEX jobs_claimable ON jobs (kind, next_attempt_at, enqueued_at, id);
+  CREATE INDEX jobs_subject   ON jobs (subject, kind);
+
+  CREATE INDEX jobs_abandoned
+    ON jobs (abandoned_at, subject, kind)
+    WHERE abandoned_at IS NOT NULL;
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";
