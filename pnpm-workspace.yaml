@@ -5,7 +5,11 @@ packages:
   - "tests/*"
 # esbuild ships prebuilt binaries and needs its install script to place them.
 # It arrives via vitest, as a devDependency only.
+#
+# Scarf arrives via swagger-ui-dist and reports the install to a third party from
+# a postinstall script. Nothing in the two files the daemon serves references it.
 allowBuilds:
+  "@scarf/scarf": false
   esbuild: true
 minimumReleaseAgeExclude:
   - "@hono/zod-openapi@1.5.2"

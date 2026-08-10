@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>notemap API</title>
+    <link rel="stylesheet" href="/docs/swagger-ui.css" />
+    <style>
+      body {
+        margin: 0;
+      }
+      .swagger-ui .topbar {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="swagger"></div>
+    <script src="/docs/swagger-ui-bundle.js"></script>
+    <script>
+      SwaggerUIBundle({
+        url: "/v1/openapi.json",
+        dom_id: "#swagger",
+        presets: [SwaggerUIBundle.presets.apis],
+        layout: "BaseLayout",
+        deepLinking: true,
+        tryItOutEnabled: true,
+        displayRequestDuration: true,
+        defaultModelsExpandDepth: 2,
+      });
+    </script>
+  </body>
+</html>

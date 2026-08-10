@@ -2,3 +2,4 @@
 docs/
 pnpm-lock.yaml
 apps/daemon/openapi.json
+apps/daemon/public/vendor/

@@ -1,8 +1,12 @@
 import { build } from "esbuild";
 import { fileURLToPath } from "node:url";
 
+import { vendorSwaggerUi } from "./vendor-swagger.ts";
+
 const entry = (name: string) =>
   fileURLToPath(new URL(`../src/${name}.ts`, import.meta.url));
+
+vendorSwaggerUi();
 
 /**
  * The workspace packages are written for a bundler — extensionless relative

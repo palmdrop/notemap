@@ -7,11 +7,13 @@ and nothing reaches the pool except through `createPool`.
 
 The surface it answers is specified in [docs/specs/http-v1.md](../../docs/specs/http-v1.md).
 Today that is the capture-and-feed subset: `POST /v1/captures`, `GET /v1/feed`,
-`GET /v1/items/:id`, plus `GET /v1/openapi.json`.
+`GET /v1/items/:id`, plus `GET /v1/openapi.json`. It also serves two pages of its own, outside
+the contract: the capture page at `/` and an OpenAPI playground at `/docs`.
 
 ## Running it
 
 ```sh
+mkdir -p ~/.config/notemap
 cp apps/daemon/config.example.toml ~/.config/notemap/config.toml
 pnpm --filter @notemap/daemon start
 ```
@@ -52,6 +54,21 @@ pnpm --filter @notemap/daemon openapi
 A test compares the served document against the checked-in copy, so a route change that changes
 the contract either shows up in the diff of the change that caused it or fails the suite.
 
+## The playground is served, not fetched
+
+`/docs` is Swagger UI reading `/v1/openapi.json` from the daemon that served it. Two files —
+`swagger-ui-bundle.js` and `swagger-ui.css` — are copied out of `swagger-ui-dist` into
+`public/vendor/swagger/` by the build step and are not checked in. Loading them from a CDN would
+be smaller and would mean a daemon that cannot describe itself offline, and that tells a third
+party each time it is asked to.
+
+Same origin is the requirement, not a convenience: the daemon sends no CORS headers, so a
+playground served from anywhere else could render the document and never call it.
+
+`swagger-ui-dist` pulls in `@scarf/scarf`, which reports the install to a third party from a
+postinstall script. `pnpm-workspace.yaml` denies it the right to run. Nothing in the two files
+the daemon serves refers to it.
+
 ## Why this one app has a build step
 
 Nothing else in the repo builds. The workspace packages are written for a bundler —
@@ -59,6 +76,13 @@ extensionless relative imports, directory index files — so `node src/main.ts` 
 `@notemap/core` even though Node strips the types happily. `scripts/build.ts` bundles with
 esbuild, which confines the problem to the one package that has to actually run. Making the
 packages Node-resolvable is the alternative, and a bigger change than it sounds.
+
+Two things follow from it. `scripts/` runs under bare Node rather than the bundler, so its own
+imports carry a `.ts` extension and the package enables `allowImportingTsExtensions`. And every
+source file collapses into `dist/main.js`, so `import.meta.url` at runtime is that one file's,
+whatever depth the source sat at: anything resolved against it belongs in `src/paths.ts`, which
+sits at the depth the bundle does. The tests import sources and cannot see this difference —
+`src/paths.test.ts` is what stands in for them.
 
 ## Notes on the wiring
 

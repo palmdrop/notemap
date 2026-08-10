@@ -19,6 +19,9 @@ assets/
 *.sqlite3
 *.sqlite3-journal
 
+# Swagger UI, copied out of node_modules by the daemon's build step.
+apps/daemon/public/vendor/
+
 # Node / TypeScript (pnpm). pnpm-lock.yaml is committed on purpose — do not add it here.
 node_modules/
 .pnpm-store/

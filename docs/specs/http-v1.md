@@ -1,9 +1,12 @@
 # Spec: HTTP API (`/v1`)
 
 **Status**: Draft — the capture-and-feed subset is settled; the rest is stub
-**Last updated**: 2026-08-08
+**Last updated**: 2026-08-10
 **Shipped**:
 
+- 2026-08-10 — The document is served with something that reads it: an OpenAPI playground at
+  `/docs`, Swagger UI vendored out of `swagger-ui-dist` by the daemon's build step and pointed
+  at `/v1/openapi.json`. Host surface, outside the contract and absent from the document.
 - 2026-08-08 — The subset is served. `apps/daemon` is a real host: TOML config, the SQLite
   store, the ajv validator and UUIDv7 ids wired onto `createPool`, answering `POST
   /v1/captures`, `GET /v1/feed`, `GET /v1/items/:id` and `GET /v1/openapi.json` on localhost,
@@ -84,7 +87,8 @@ Nothing here forecloses them; they get the same treatment when their slice is bu
   header is the moment to reconsider authentication rather than a convenience. Binding wider
   than localhost exposes an unauthenticated pool to whoever can reach the address — the
   configuration allows it, and nothing in `/v1` defends it.
-- The capture page is served at `/`. Everything else the API answers is under `/v1`.
+- The capture page is served at `/` and the playground at `/docs`. Everything the API itself
+  answers is under `/v1`.
 - An unknown path is `404 unknown-route`. A known path with the wrong method is `405`, carrying
   an `Allow` header listing the methods that path does answer. `OPTIONS` is one of them, and is
   answered `204` with the same `Allow`.
@@ -263,6 +267,24 @@ changes the document shows up in the diff of the change that caused it.
 Generating clients or hooks from the document is deliberately deferred. The document exists so
 that it can be, and so that anything speaking OpenAPI can read this API without the spec.
 
+### The playground
+
+`GET /docs` is a **Swagger UI page the daemon serves itself**, reading `/v1/openapi.json` from
+the daemon that served it. It describes the daemon that is running rather than a copy of it, and
+requests it issues are same-origin — which is the only way a browser can execute them against an
+API that sends no CORS headers. A playground on any other origin could render the document and
+never call it.
+
+Its script and stylesheet are **vendored, never fetched from a CDN**: a local-first daemon that
+reaches a third party in order to describe itself is not one, and the playground has to work on
+a machine with no route to the internet. The daemon's build step copies them out of
+`swagger-ui-dist`; they are not checked in. A `/docs` path naming anything else is
+`404 unknown-route` — the request names one of two files, not a path into the filesystem.
+
+The playground is **host surface, not contract**. It is absent from the document, nothing in
+`/v1` refers to it, and removing it changes no promise this spec makes. `/v1/openapi.json`
+remains the interop surface; `/docs` is a convenience over it.
+
 ---
 
 ## Constraints
@@ -325,3 +347,8 @@ that it can be, and so that anything speaking OpenAPI can read this API without 
   with an `Allow` header.
 - `GET /v1/openapi.json` returns a valid OpenAPI 3.1 document describing every route above, and
   it matches the copy checked into the repo.
+- `GET /docs` returns a page that loads its script, its stylesheet and the OpenAPI document from
+  the daemon itself, and nothing from anywhere else.
+- A `/docs` path naming anything but the vendored Swagger UI files returns `404 unknown-route`,
+  and no `/docs` path reaches a file outside the vendored directory.
+- The playground appears nowhere in `GET /v1/openapi.json`.

@@ -262,6 +262,9 @@ importers:
       esbuild:
         specifier: ^0.28.0
         version: 0.28.1
+      swagger-ui-dist:
+        specifier: ^5.32.12
+        version: 5.32.12
       vitest:
         specifier: ^3.2.4
         version: 3.2.7(@types/node@24.13.3)(tsx@4.23.5)(yaml@2.9.0)
@@ -715,6 +718,9 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@scarf/scarf@1.4.0':
+    resolution: {integrity: sha512-xxeapPiUXdZAE3che6f3xogoJPeZgig6omHEy1rIY5WVsB3H2BHNnZH+gHG6x91SCWyQCzWGsuL2Hh3ClO5/qQ==}
+
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
 
@@ -1167,6 +1173,9 @@ packages:
   strip-literal@3.1.0:
     resolution: {integrity: sha512-8r3mkIM/2+PpjHoOtiAW8Rg3jJLHaV7xPwG+YRGrv6FP0wwk/toTpATxWYOW0BKdWwl82VT2tFYi5DlROa0Mxg==}
 
+  swagger-ui-dist@5.32.12:
+    resolution: {integrity: sha512-ceXE+KNc5LXafhh36trB6nxK+U2EIKUWzHT7sBiMosf2eJLAefalYnTwMouQBmSyED6m7Yz+GYZEcL+Glt3sww==}
+
   tinybench@2.9.0:
     resolution: {integrity: sha512-0+DUvqWMValLmha6lr4kD8iAMK1HzV0/aKnCtWb9v9641TnP/MFb7Pc2bxoxQjTXAErryXVgUOfv2YqNllqGeg==}
 
@@ -1556,6 +1565,8 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.62.4':
     optional: true
+
+  '@scarf/scarf@1.4.0': {}
 
   '@types/chai@5.2.3':
     dependencies:
@@ -2060,6 +2071,10 @@ snapshots:
   strip-literal@3.1.0:
     dependencies:
       js-tokens: 9.0.1
+
+  swagger-ui-dist@5.32.12:
+    dependencies:
+      '@scarf/scarf': 1.4.0
 
   tinybench@2.9.0: {}
 
