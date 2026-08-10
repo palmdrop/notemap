@@ -83,6 +83,10 @@ What core requires of any storage driver:
 - **Assets and blobs released by reference count**
   ([ADR 13](0013-assets-are-named-references-to-content-addressed-blobs.md)), with a reference
   taken when the referencing capture commits rather than when bytes are stored.
+- **Work whose subject may name a purged item** (*added 2026-08-11*). Removing an item's mirror
+  files is work about an item that no longer exists, so a job's subject may not be a foreign key
+  onto items and purge deletes an item's outstanding jobs explicitly instead of relying on a
+  cascade. The action log already carries a subject on the same terms, for the same reason.
 
 Derived state stays derived *in the model* — there is no independent `superseded` flag that can
 drift from the revision link. A driver materializing it as a column or an index is free to, so
@@ -116,6 +120,15 @@ mirror**: every capture is written to disk as CommonMark + YAML frontmatter with
 sidecar, and **never read back during normal operation**. There is nothing to reconcile, and
 a dead notemap never blocks access to a decade of material.
 
+> **The file split above is superseded 2026-08-11 by
+> [ADR 15](0015-the-mirror-record-is-authoritative-markdown-is-a-rendering.md).** "Capture in the
+> `.md`, state in the `.json`" assumed every capture has a prose body. A payload's content is an
+> open-ended JSON object, and an annotation, a canvas or a table has no body to be the markdown,
+> so markdown cannot carry losslessness for most payload types. The two files now divide by
+> audience: the **record** — the `.json` — is authoritative and complete, and the `.md` is a
+> rendering nothing ever parses. Everything else here is unchanged: still lossless, still
+> write-only, still the only thing a rebuild reads.
+
 The mirror is lossless on purpose: a pool must be **rebuildable from the mirror alone** if
 the database is lost. That is what makes the mirror testable — a round-trip property test
 (pool → mirror → pool) keeps it honest, where an untested mirror would rot silently and be
@@ -138,7 +151,7 @@ On-disk layout — `state/`, `pool-mirror/` and `assets/` are siblings:
 ```
 notemap/
   state/notemap.db          <- authoritative, never synced
-  pool-mirror/2026/08/01/   <- write-only: capture .md + state .json
+  pool-mirror/2026/08/01/   <- write-only: record .json + rendering .md (ADR 15)
   assets/ab/cd1234…         <- blobs, single copy, content-addressed (ADR 13)
 ```
 

@@ -57,6 +57,29 @@ The complete plain-file copy of the pool that notemap writes and never reads, ex
 lost pool. Automatic and complete, which is what distinguishes it from a **destination**.
 _Avoid_: backup, export, sync folder
 
+**Mirror record**:
+One item's complete durable state as the mirror carries it — payload, classification, assets,
+artifacts and their corrections, routing records. The unit of mirroring, and the only thing a
+rebuild reads. Owned by the domain; where its bytes land is the driver's.
+_Avoid_: sidecar, state file, document, snapshot
+
+**Rendering**:
+The readable file the mirror writes beside a record, for a person who no longer has notemap.
+Nothing ever parses it, which is precisely what lets it be lossy, opinionated and pretty.
+_Avoid_: export, markdown copy, view
+
+**Rebuild**:
+Reconstructing a pool from a mirror and its assets. Not an operation on a pool but the act of
+making one, so a live pool is never given the means to read the mirror. The rebuilt pool carries a
+new identity and no history.
+_Avoid_: restore, import, recovery
+
+**Verify** / **repair**:
+Checking that the mirror matches the pool, and making it match. Verify reports; repair only
+enqueues work, so every byte the mirror receives still arrives by the one write path. Neither ever
+changes the pool: the pool is authoritative and the mirror is the copy.
+_Avoid_: sync, reconcile, fsck
+
 **Asset**:
 A named reference to media belonging to a capture — audio, image, page snapshot. Carries the
 filename exactly as it was uploaded and points at the blob holding the bytes. Uploading the same
@@ -132,8 +155,10 @@ which agent, to what. Read by a human tracing something; pool state is never der
 _Avoid_: event, audit entry, history
 
 **Job**:
-One unit of claimable work core holds but never runs — an enrichment to perform, a mirror file
-to write. Hosts claim jobs and drive them; core only records that there is something to do.
+One unit of claimable work core holds but never runs — an enrichment to perform, a mirror record
+to write, a purged item's mirror files to remove. Hosts claim jobs and drive them; core only
+records that there is something to do. A job names what it is about, which may be an item that has
+since been purged.
 _Avoid_: task, queue entry, work item
 
 **Lease**:

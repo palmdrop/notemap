@@ -1,7 +1,7 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-08-08
+**Last updated**: 2026-08-11
 **Shipped**:
 
 - 2026-08-08 — A source needs no declaration to capture; `config.sources` is a policy registry
@@ -148,6 +148,15 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - **Purge** is the only destructive operation. It removes the item, its entire revision chain,
   its enrichment, its routing records, its mirror files and its assets — an asset only when no
   remaining item references it, and the blob beneath it only when no remaining asset does.
+- **A job's subject may outlive the item it names** (decided 2026-08-11), which closes the open
+  question of 2026-08-06. Removing an item's mirror files is work about an item that no longer
+  exists, so purge deletes the item's outstanding jobs explicitly and enqueues a mirror-removal
+  job carrying the bare id. The alternative — deleting the files outside the transaction — leaves
+  a failed unlink with nothing recording that removal is owed and nothing retrying, while purge
+  reports success; for the one destructive operation that is the wrong trade
+  ([ADR 4](../adr/0004-purge-leaves-a-minimal-tombstone.md)). The store therefore places no
+  foreign key on a job's subject, following the action log, which already carries a subject
+  without one for the same reason.
 - **An asset's reference is taken when the capture referencing it commits**, not when its bytes
   are stored (decided 2026-08-04). A client that uploads and then crashes leaves an unreferenced
   asset, which is wasted space, rather than a reference to a capture that never arrived, which
@@ -217,6 +226,17 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   (added 2026-08-08): that surface is a list a person works through, and a list with no order is
   one they cannot resume, so `abandonedAt` is what it is ordered and paginated by
   ([ADR 14](../adr/0014-pagination-by-domain-position.md)).
+- **That surface covers work, not only enrichment** (amended 2026-08-11). Mirroring is a job like
+  any other and a mirror job that cannot succeed needs the same visibility, so both job kinds
+  report an outcome and the surface is one list of abandoned **work**, keyed by
+  `{ at, item, kind, enrichment? }`. A client answers "what needs me" with one read rather than
+  merging two, and a third job kind later adds no third list.
+- **Mirror work retries differently, and deliberately** (added 2026-08-11). Bounded retry exists
+  so an item can answer "is anything still coming?", and for enrichment the answer may honestly
+  be no. For mirroring it is always yes: the material exists and is unmirrored, and giving up
+  does not change that. A retryable mirror failure — an offline folder, a full disk — therefore
+  retries indefinitely with capped backoff, while a non-retryable one — a renderer that throws —
+  is abandoned on the first attempt, since it will fail identically forever.
 - **An abandoned enrichment can be requested again by hand**, which resets its attempts. Giving
   up is core's decision about automatic work, never a refusal to try when asked.
 - Backoff timing and the attempt limit are **configuration data core is given**, not policy core
@@ -259,15 +279,43 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 
 ### The mirror
 
-- Every capture is written to disk as a plain text file with its metadata, and never read back
-  during normal operation. **Each capture enqueues exactly one mirror job** (decided
-  2026-08-06), in the same atomic unit as the capture itself: an item committed with nothing
-  recording that its mirror is owed would never be written, and nothing would notice.
+- Every capture is written to disk and never read back during normal operation. **Every mutation
+  that changes mirrored material enqueues a mirror job for that item** (amended 2026-08-11), in
+  the same atomic unit as the mutation itself: a change committed with nothing recording that its
+  mirror is owed would never be written, and nothing would notice. This originally read "each
+  capture enqueues exactly one mirror job" (decided 2026-08-06), which covered only the first of
+  an item's writes — tags, archive state, artifacts and routing records all arrive later and are
+  all mirrored.
+- **Mirror jobs coalesce against unclaimed jobs only** (decided 2026-08-11). A mutation arriving
+  while a pending, unleased job exists adds nothing, because that job will write current state.
+  A mutation arriving while the item's only mirror job is *leased* enqueues a new one: the host
+  holding the lease has already read the state it is writing, and absorbing the mutation into it
+  would lose the mutation with nothing recording the loss. A mirror job is claimable only when
+  its item has no leased mirror job, so at most one write per item is in flight and two writers
+  never race on one file.
 - The mirror is **lossless**: a pool can be rebuilt from the mirror and the assets alone. This
   is the only circumstance in which the mirror is read.
 - The mirror carries captures, classification, **artifacts and their corrections** — the
   original transcript and the corrected one both — and routing records. It does not carry
   pending suggestions, which are regenerable by definition.
+- **The record is core's; the bytes are the driver's** (decided 2026-08-11,
+  [ADR 15](../adr/0015-the-mirror-record-is-authoritative-markdown-is-a-rendering.md)). Core
+  defines one item's mirror record, its canonical serialisation and its parse, so losslessness is
+  proved once as a property test with no filesystem rather than by each driver. The plain-text
+  file beside it is a **rendering that nothing ever parses**, produced by a host-wired renderer —
+  which is what lets it be readable for payload types whose content could never round-trip
+  through markdown.
+- **Rebuild is its own entry point, not an operation on a live pool** (decided 2026-08-11). It
+  takes the mirror reader explicitly and populates an empty pool, so a pool wired for capture
+  holds nothing that can read the mirror. It writes items directly, enqueuing no mirror jobs and
+  appending no actions, and derives enrichment state from mirrored artifacts so that nothing
+  already enriched is enriched again. **A rebuilt pool mints a new identity**, since its
+  `modified_at` sequence restarts and every cached delta cursor is therefore void rather than
+  merely stale; what a client does about that is [sync.md](sync.md)'s.
+- **The mirror may be disabled by wiring a pool without a mirror writer** (decided 2026-08-11),
+  in which case nothing enqueues mirror jobs. Re-enabling is one verify/repair run. The cost is
+  that the database becomes the only copy and ADR 9's drop-and-rebuild migration path stops
+  applying to that pool.
 - The on-disk layout and file formats are specified in [mirror.md](mirror.md).
 - **Media is stored once, and named twice**
   ([ADR 13](../adr/0013-assets-are-named-references-to-content-addressed-blobs.md)). An **asset**
@@ -367,7 +415,8 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   [ADR 1](../adr/0001-pool-is-a-database.md)). It states what it requires of a store —
   all-or-nothing application of a transaction core opens, ordered paginated reads asked for in
   domain terms, unique client-generated capture ids, monotonic `modified_at`,
-  reference-counted asset release — and does not know which store answers. *Amended
+  reference-counted asset release, work whose subject may name a purged item — and does not know
+  which store answers. *Amended
   2026-08-08*: **that includes the continuation.** A paginated read is continued from a
   **position** — the sort-key fields of the last row handed out, in domain terms — rather than
   from an opaque cursor the store minted, and `PageCursor` is gone
@@ -437,6 +486,13 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 - **[Pagination by domain position](../adr/0014-pagination-by-domain-position.md)** — an opaque
   cursor bought nothing a store's sort key does not already make public, and offsets drop rows
   in a domain where inserts land behind the reader. Supersedes ADR 10's cursor clause.
+  *Amended 2026-08-11*: the abandoned surface covers work of every job kind, not enrichment
+  alone.
+- **[The mirror record is authoritative; the markdown is a
+  rendering](../adr/0015-the-mirror-record-is-authoritative-markdown-is-a-rendering.md)** — a
+  payload's content is open-ended JSON, so markdown cannot carry losslessness for most payload
+  types. The files divide by audience instead, and nothing ever parses the readable one.
+  Supersedes ADR 1's capture-`.md` + state-`.json` split.
 
 ---
 
@@ -454,11 +510,11 @@ Recorded in full under [docs/adr/](../adr/). In brief:
       probably differs per destination.
 - [ ] 2026-08-02 — Multiple pools per user, and multi-user operation. Nothing decided forecloses
       either; neither is designed.
-- [ ] 2026-08-06 — Whether a unit of work is always *about an item*. Every job in the first
-      slice is — enrichment and mirroring both — and a job dies with the item it is about. The
-      asset sweep is the one piece of in-scope work that is pool-wide rather than about
-      anything, and it is not modelled as a job today. If it becomes one, a job's subject has
-      to say what kind of thing it names rather than being an item id.
+- [ ] 2026-08-11 — Whether a unit of work is ever about something other than *an item*. The
+      "must a job's subject be a live item?" half of this closed on 2026-08-11: it need not, and
+      mirror removal is the case that settled it. What remains is that the asset sweep is
+      pool-wide rather than about anything at all, and is not modelled as a job. If it becomes
+      one, a job's subject has to say what kind of thing it names rather than being an id.
 - [ ] 2026-08-08 — How a revision is ordered against its original in the feed, in a store. This
       spec says a revision carries its original's capture time, so the two tie, and that the tie
       is broken by the revision link: the revision follows the item it supersedes. The SQLite

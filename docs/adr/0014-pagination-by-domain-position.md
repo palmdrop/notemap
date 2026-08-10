@@ -57,6 +57,16 @@ is unchanged from ADR 10.
 | `actions.*` | `{ at, id }` |
 | `abandoned` | `{ at: abandonedAt, item, enrichment }` |
 
+*Amended 2026-08-11 — the abandoned surface covers work, not only enrichment.* Mirroring is a job
+like enrichment, and a mirror job that cannot succeed has to reach the same "three things need
+you" list rather than a second one a client must merge ([mirror.md](../specs/mirror.md)). The
+surface is `abandonedWork` and its position is `{ at: abandonedAt, item, kind, enrichment? }`,
+where `kind` is the job kind and `enrichment` is present only for enrichment work. This does not
+disturb the decision: the position is still the sort key of the surface, still stated in domain
+terms, and still names the tuple that identifies a row where no id exists. A mirror-removal job
+carries an item id whose item has been purged, which a position compares rather than looks up, so
+nothing here has to change for it.
+
 The abandoned surface has no id of its own — an enrichment state is identified by the pair it
 belongs to — so its position names the pair. That surface previously had **no time to sort by at
 all**, so this decision adds **`abandonedAt`** to the abandoned enrichment state: the instant
