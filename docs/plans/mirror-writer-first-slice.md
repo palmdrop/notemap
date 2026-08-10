@@ -118,13 +118,18 @@ has no lease or retry columns. The mirror cannot run before this exists.
 
 Core owns the record, its canonical serialisation and its parse (ADR 15).
 
-- [ ] `MirrorRecord` and a projection from an item plus its assets, artifacts and routing records
-- [ ] Canonical serialisation: stable key order, and **one spelling per instant** — without it the
-      byte comparison deep verify will perform reports drift forever
-- [ ] Parse, and the round-trip property test: pool state → record → state, over generated inputs
-- [ ] Tests: round trip; a record whose timestamps arrive in a different but equivalent spelling
+- [x] `MirrorRecord` and a projection from an item plus its assets, artifacts and routing records.
+      The projection is where canonicalisation happens, so two projections of one state are equal
+      as *values* and not merely as bytes
+- [x] Canonical serialisation: stable key order, and **one spelling per instant** — without it the
+      byte comparison deep verify will perform reports drift forever. Keys sort at every depth,
+      including inside a payload's open JSON; every unordered collection gets one order
+- [x] Parse, and the round-trip property test: pool state → record → state, over generated inputs.
+      Parse rejects rather than salvages — a half-record would let verify call a mirror healthy
+      that cannot rebuild
+- [x] Tests: round trip; a record whose timestamps arrive in a different but equivalent spelling
       serialises identically; the fields `mirror.md` says are *not* carried are absent
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 5 — The local filesystem driver *(depends on phases 1 and 4)*
 
