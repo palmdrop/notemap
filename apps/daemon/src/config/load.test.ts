@@ -5,10 +5,10 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { defaultConfigPath, defaultPoolPath, parseConfig } from "./config";
+import { defaultConfigPath, defaultPoolPath, parseConfig } from "./load";
 
 const EXAMPLE = fileURLToPath(
-  new URL("../config.example.toml", import.meta.url),
+  new URL("../../config.example.toml", import.meta.url),
 );
 
 const parse = (source: string) => parseConfig(source, "test.toml");

@@ -14,26 +14,24 @@ import type {
   SourceId,
 } from "@notemap/core";
 
+import { DEFAULT_HOST, DEFAULT_PORT, DEFAULT_RETRY } from "../constants";
+
 export type DaemonConfig = {
   /** The SQLite file the pool lives in. */
   readonly pool: string;
+  readonly host: string;
   readonly port: number;
   readonly poolConfig: PoolConfig;
 };
 
-const DEFAULT_PORT = 4747;
-
 const jsonSchema = z.record(z.string(), z.unknown());
 
-/**
- * Keys are core's names verbatim, so a reader of `core.md` can write this file
- * without a translation table. Absent lists mean empty rather than invalid: a
- * pool with no enrichments configured is an ordinary pool.
- */
+/** Keys are core's own names. Absent lists mean empty. */
 const fileSchema = z.strictObject({
   daemon: z
     .strictObject({
       pool: z.string().optional(),
+      host: z.string().min(1).optional(),
       port: z.number().int().min(1).max(65535).optional(),
     })
     .optional(),
@@ -71,13 +69,7 @@ const fileSchema = z.strictObject({
     .default([]),
 });
 
-const DEFAULT_RETRY = {
-  maxAttempts: 5,
-  initialBackoff: 1000,
-  maxBackoff: 60_000,
-};
-
-/** `~` is the shell's, not the filesystem's, so a config file has to be told. */
+/** `~` is the shell's, not the filesystem's. */
 function expandHome(path: string): string {
   return path === "~" || path.startsWith("~/")
     ? join(homedir(), path.slice(1))
@@ -120,6 +112,7 @@ export function parseConfig(source: string, from: string): DaemonConfig {
 
   return {
     pool: resolve(expandHome(file.daemon?.pool ?? defaultPoolPath())),
+    host: file.daemon?.host ?? DEFAULT_HOST,
     port: file.daemon?.port ?? DEFAULT_PORT,
     poolConfig: {
       sources: file.sources.map((source) => ({

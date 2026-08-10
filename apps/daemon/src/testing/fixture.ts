@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import type { OpenAPIHono } from "@hono/zod-openapi";
+import type { Hono } from "hono";
 
 import type {
   Duration,
@@ -17,7 +17,7 @@ import { openPool } from "../ports";
 export const WEB = "web" as SourceId;
 export const TEXT = "text" as PayloadTypeName;
 
-/** The daemon's example config, as core takes it. */
+/** The example config, as core takes it. */
 export const CONFIG: PoolConfig = {
   sources: [{ id: WEB, autoRequest: [] }],
   payloadTypes: [
@@ -41,7 +41,7 @@ export const CONFIG: PoolConfig = {
 };
 
 export type Daemon = {
-  readonly app: OpenAPIHono;
+  readonly app: Hono;
   readonly cleanup: () => Promise<void>;
 };
 
@@ -84,7 +84,7 @@ export function envelope(overrides: EnvelopeOverrides = {}) {
   };
 }
 
-export async function post(app: OpenAPIHono, body: unknown): Promise<Response> {
+export async function post(app: Hono, body: unknown): Promise<Response> {
   return app.request("/v1/captures", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -93,10 +93,7 @@ export async function post(app: OpenAPIHono, body: unknown): Promise<Response> {
 }
 
 /** Captures `count` items one minute apart, oldest first, and returns their ids. */
-export async function captureMany(
-  app: OpenAPIHono,
-  count: number,
-): Promise<string[]> {
+export async function captureMany(app: Hono, count: number): Promise<string[]> {
   const ids: string[] = [];
   for (let index = 0; index < count; index += 1) {
     const id = `0198f0c2-0000-7000-8000-00000000000${index}`;

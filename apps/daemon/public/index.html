@@ -145,11 +145,7 @@
       const feed = document.getElementById("feed");
       const more = document.getElementById("more");
 
-      /**
-       * UUIDv7, hand-rolled: 48 bits of milliseconds, then random, with the
-       * version and variant bits set. `crypto.randomUUID()` is v4, and a build
-       * step to import one function costs more than the function.
-       */
+      /** `crypto.randomUUID()` is v4; this is v7, so ids sort by mint time. */
       function uuidv7() {
         const bytes = crypto.getRandomValues(new Uint8Array(16));
         const millis = Date.now();
@@ -175,12 +171,6 @@
         say.classList.toggle("bad", bad);
       }
 
-      /**
-       * The daemon sends facts, never a sentence: `{ error: { code, ...facts }
-       * }`. Rendering them is this client's job, and the codes it has anything
-       * particular to say about are the ones a person typing into a box can
-       * actually cause.
-       */
       function readError(body) {
         const error = body?.error;
         if (!error?.code) return "something went wrong";
@@ -247,8 +237,6 @@
         const body = text.value;
         if (body.trim() === "") return;
 
-        // One minted value fills both identities: this client mints its own id
-        // at the moment of capture, so it is also the source's id for it.
         const id = uuidv7();
         const button = form.querySelector("button");
         button.disabled = true;

@@ -3,7 +3,7 @@
   "info": {
     "title": "notemap",
     "version": "1",
-    "description": "The capture-and-feed subset of notemap's /v1 surface. Binds to localhost; no authentication."
+    "description": "The capture-and-feed subset of notemap's /v1 surface. Binds to localhost by default; no authentication."
   },
   "components": {
     "schemas": {
@@ -45,12 +45,10 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "source": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "sourceItemId": {
             "type": "string"
@@ -79,12 +77,10 @@
                       "type": "string"
                     },
                     "asset": {
-                      "type": "string",
-                      "minLength": 1
+                      "type": "string"
                     },
                     "hash": {
-                      "type": "string",
-                      "minLength": 1
+                      "type": "string"
                     }
                   },
                   "required": ["slot", "asset", "hash"]
@@ -99,8 +95,7 @@
               "type": "object",
               "properties": {
                 "name": {
-                  "type": "string",
-                  "minLength": 1
+                  "type": "string"
                 },
                 "by": {
                   "anyOf": [
@@ -122,8 +117,7 @@
                           "enum": ["provider"]
                         },
                         "provider": {
-                          "type": "string",
-                          "minLength": 1
+                          "type": "string"
                         }
                       },
                       "required": ["kind", "provider"]
@@ -136,8 +130,7 @@
                           "enum": ["source"]
                         },
                         "source": {
-                          "type": "string",
-                          "minLength": 1
+                          "type": "string"
                         }
                       },
                       "required": ["kind", "source"]
@@ -145,31 +138,26 @@
                   ]
                 },
                 "addedAt": {
-                  "type": "string",
-                  "minLength": 1
+                  "type": "string"
                 }
               },
               "required": ["name", "by", "addedAt"]
             }
           },
           "createdAt": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "contentUpdatedAt": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "revisionOf": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "archived": {
             "type": "object",
             "properties": {
               "archivedAt": {
-                "type": "string",
-                "minLength": 1
+                "type": "string"
               },
               "reason": {
                 "type": "string"
@@ -178,12 +166,10 @@
             "required": ["archivedAt"]
           },
           "modifiedAt": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "supersededBy": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           }
         },
         "required": [
@@ -212,8 +198,18 @@
             "minLength": 1
           },
           "capturedAt": {
-            "type": "string",
-            "minLength": 1
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "string",
+                "format": "date"
+              }
+            ],
+            "description": "An ISO 8601 instant: a date-time carrying an offset (`2026-08-08T09:00:00Z`, `2026-08-08T09:00:00+02:00`), or a date alone, which means midnight UTC. A date-time without an offset is refused — there is no way to tell which zone it was written in.",
+            "example": "2026-08-08T09:00:00.000Z"
           },
           "payload": {
             "type": "object",
@@ -239,12 +235,10 @@
                       "type": "string"
                     },
                     "asset": {
-                      "type": "string",
-                      "minLength": 1
+                      "type": "string"
                     },
                     "hash": {
-                      "type": "string",
-                      "minLength": 1
+                      "type": "string"
                     }
                   },
                   "required": ["slot", "asset", "hash"]
@@ -468,11 +462,11 @@
           {
             "schema": {
               "type": "string",
-              "description": "The position to continue from: `<at>,<id>`, or a bare RFC 3339 timestamp as a coarse entry point.",
+              "description": "The position to continue from: `<at>,<id>`, or a bare instant as a coarse entry point.",
               "example": "2026-08-08T09:00:00.000Z,0198f0c2-0000-7000-8000-000000000000"
             },
             "required": false,
-            "description": "The position to continue from: `<at>,<id>`, or a bare RFC 3339 timestamp as a coarse entry point.",
+            "description": "The position to continue from: `<at>,<id>`, or a bare instant as a coarse entry point.",
             "name": "after",
             "in": "query"
           }

@@ -75,16 +75,44 @@ Nothing here forecloses them; they get the same treatment when their slice is bu
 
 ### Transport
 
-- **`application/json; charset=utf-8` in both directions.** A request with a body and a
-  different media type is refused `415 unsupported-media-type`; a missing `Content-Type` on a
-  request with a body is treated the same way. Charset is stated on responses and ignored on
-  requests, since the body is parsed as UTF-8 regardless.
-- **The daemon binds `127.0.0.1` only**, default port `4747`, configurable. It sends no CORS
-  headers: nothing but a page it serves itself is meant to reach it, and adding the header is
-  the moment to reconsider authentication rather than a convenience.
+- **`application/json; charset=utf-8` in both directions.** A request with a body whose media
+  type is anything but `application/json` is refused `415 unsupported-media-type`; a missing
+  `Content-Type` on a request with a body is treated the same way. Parameters on the type are
+  ignored, and so is the charset — the body is parsed as UTF-8 regardless.
+- **The daemon binds `127.0.0.1` by default**, on port `4747`; both are configurable. It sends
+  no CORS headers: nothing but a page it serves itself is meant to reach it, and adding the
+  header is the moment to reconsider authentication rather than a convenience. Binding wider
+  than localhost exposes an unauthenticated pool to whoever can reach the address — the
+  configuration allows it, and nothing in `/v1` defends it.
 - The capture page is served at `/`. Everything else the API answers is under `/v1`.
 - An unknown path is `404 unknown-route`. A known path with the wrong method is `405`, carrying
-  an `Allow` header listing the methods that path does answer.
+  an `Allow` header listing the methods that path does answer. `OPTIONS` is one of them, and is
+  answered `204` with the same `Allow`.
+
+### Instants
+
+Every time the API accepts — `capturedAt`, and the `at` of a position — is an **ISO 8601
+instant**, and is stated back in the RFC 3339 UTC form core uses.
+
+| Accepted | |
+|---|---|
+| `2026-08-08T09:00:00.000Z` | any fractional precision, or none |
+| `2026-08-08T09:00Z` | seconds optional |
+| `2026-08-08T09:00:00+02:00` | an offset, converted to UTC |
+| `2026-08-08` | a date alone, meaning midnight UTC |
+
+Everything else is refused — `Aug 8 2026`, `8/8/2026`, epoch seconds, and calendar impossibles
+like `2026-02-31`, which a naive parser silently rolls over into March.
+
+**A date-time without an offset (`2026-08-08T09:00:00`) is refused.** It names no instant: read
+as UTC it is wrong for every client that meant local, and read as the daemon's own zone the
+captured instant would depend on where the daemon happens to run. A client that means local time
+says so with an offset, which is exact. The refusal is `400 malformed-envelope` with keyword
+`format` for a capture, `422 bad-position` for a position.
+
+What is accepted is wider than what is returned: the daemon normalises before core sees it, so a
+`Timestamp` in the pool is always RFC 3339 UTC and a round trip returns the canonical spelling
+rather than the one the client wrote.
 
 ### Captures
 
@@ -138,10 +166,10 @@ In the subset because the capture page needs to read back what it just wrote, an
 - **`limit` above 500 is refused, never clamped** — `422 limit-too-large`, carrying `limit` and
   `max`. A page silently smaller than asked for is a bug a client finds late, in production,
   by noticing rows it never saw; a refusal is found on the first call.
-- **`after` is a position**, spelled `<at>,<id>` — an RFC 3339 timestamp, a comma, then the id
-  of the last row seen. Ids are arbitrary strings and may contain commas, so the split is on
-  the **first** comma only; an RFC 3339 timestamp contains none.
-- **A bare timestamp is accepted as a coarse entry point**: `after=<at>` with no comma bounds
+- **`after` is a position**, spelled `<at>,<id>` — an instant, a comma, then the id of the last
+  row seen. Ids are arbitrary strings and may contain commas, so the split is on the **first**
+  comma only; an instant contains none.
+- **A bare instant is accepted as a coarse entry point**: `after=<at>` with no comma bounds
   the read on `at` alone, strictly. It may skip rows sharing the boundary instant, which is
   what "coarse" means and why a continuation always carries the id.
 - A position that is not one of those two forms is `422 bad-position`.
@@ -274,7 +302,14 @@ that it can be, and so that anything speaking OpenAPI can read this API without 
   carries the refusal's facts under `error` with `code` equal to its `kind`.
 - A body that is not JSON returns `400 malformed-json`; a JSON body that is not an envelope
   returns `400 malformed-envelope` with `issues`.
-- A request with a body and no `application/json` content type returns `415`.
+- A request with a body and no `application/json` content type returns `415`; `text/json` is
+  one of the types refused.
+- `capturedAt` accepts an offset and stores the instant it names in UTC; a date alone is
+  midnight UTC; `2026-08-08T09:00:00` with no offset, `Aug 8 2026` and `2026-02-31` are all
+  `400 malformed-envelope` with keyword `format`.
+- `OPTIONS` on a known path returns `204` and an `Allow` header; on an unknown path, `404`.
+- A path that merely resembles a route — `/v1/openapiXjson` — returns `404 unknown-route`,
+  never a `405` listing the method that was just refused.
 - `GET /v1/feed` with no parameters returns the 50 newest items and, where more exist, a `next`
   URL that fetches the next 50 without further assembly.
 - Following `next` until it is absent yields every item exactly once, in order, and no trailing

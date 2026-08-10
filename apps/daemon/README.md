@@ -20,9 +20,9 @@ pnpm --filter @notemap/daemon start
 the daemon looks in `$XDG_CONFIG_HOME/notemap/config.toml` and refuses to start if nothing is
 there, rather than coming up with no payload types and refusing every capture instead.
 
-It binds **`127.0.0.1` only**, on port 4747 by default, and sends no CORS headers. There is no
-authentication: the pool is the boundary. Putting this behind a reverse proxy is the point at
-which authentication stops being deferred.
+`daemon.host` and `daemon.port` default to `127.0.0.1` and 4747, and it sends no CORS headers.
+There is no authentication: the pool is the boundary, so binding wider than localhost exposes it
+to whoever can reach the address.
 
 `SIGINT` or `SIGTERM` stops it: the listener closes, idle connections go immediately, anything
 still in flight gets two seconds, and then the host closes the pool it built — and nothing else.
@@ -57,21 +57,22 @@ the contract either shows up in the diff of the change that caused it or fails t
 Nothing else in the repo builds. The workspace packages are written for a bundler —
 extensionless relative imports, directory index files — so `node src/main.ts` cannot resolve
 `@notemap/core` even though Node strips the types happily. `scripts/build.ts` bundles with
-esbuild, which confines the problem to the one package that has to actually run rather than
-rewriting every import in core and the adapters. If the build step ever becomes the annoying
-part, making the packages Node-resolvable is the alternative, and it is a bigger change than it
-sounds.
+esbuild, which confines the problem to the one package that has to actually run. Making the
+packages Node-resolvable is the alternative, and a bigger change than it sounds.
 
 ## Notes on the wiring
 
-- **Ids are UUIDv7**, from the `uuid` package. Time-ordered as `core.md` encourages, though
-  nothing in the model may depend on that.
 - **The asset store and the mirror ports throw.** They have no adapter yet and nothing can reach
   them: there are no asset endpoints, and no mirror job can be claimed until the store
   implements `claim()`. They throw rather than doing nothing, so "unbuilt" cannot quietly become
   "lossy" the moment one becomes reachable.
-- **Route documentation and route handlers are registered separately** in `app.ts`, rather than
+- **Routes are documented in `routes/definitions.ts` and handled in `routes/*.ts`**, rather than
   through `@hono/zod-openapi`'s `app.openapi()`. That helper types each handler against the
-  responses its route declares, and this API answers every refusal through one helper, in one
-  envelope, at statuses the helper would rather see enumerated per route. The generated document
-  comes from the same registry either way, and the test above is what keeps the two honest.
+  responses its route declares, which fights an API answering every refusal through one helper,
+  in one envelope. Handlers take their Hono path from the same definition the document is built
+  from, and the per-status error codes are derived from the status maps in `errors/refusals.ts`,
+  so neither can drift.
+- **Schemas import `z` from `zod`, not from `@hono/zod-openapi`.** The re-exported one collapses
+  `z.infer` to `any` under this tsconfig, which silently disables every type check written
+  against it. `.openapi()` still works on plain zod schemas — the package augments the
+  prototype.

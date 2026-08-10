@@ -9,7 +9,7 @@
   "scripts": {
     "build": "node scripts/build.ts",
     "start": "node scripts/build.ts && node dist/main.js",
-    "openapi": "node scripts/build.ts && node dist/main.js --openapi",
+    "openapi": "node scripts/build.ts && node dist/write-openapi.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

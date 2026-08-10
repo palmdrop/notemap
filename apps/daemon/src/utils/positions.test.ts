@@ -15,16 +15,35 @@ describe("reading a position off the wire", () => {
     expect(parsePosition(`${AT},a,b,c`)).toEqual({ at: AT, id: "a,b,c" });
   });
 
-  it("takes a bare timestamp as a position with no id", () => {
+  it("takes a bare instant as a position with no id", () => {
     expect(parsePosition(AT)).toEqual({ at: AT });
   });
 
-  it("accepts a coarser spelling of an instant", () => {
-    expect(parsePosition("2026-08-08")).toEqual({ at: "2026-08-08" });
+  it("normalises a date to midnight UTC", () => {
+    expect(parsePosition("2026-08-08")).toEqual({
+      at: "2026-08-08T00:00:00.000Z",
+    });
   });
 
-  it("refuses anything whose first field is not an instant", () => {
-    for (const raw of ["", "half past four,item-1", ",item-1", "not-a-time"]) {
+  it("normalises an offset to UTC", () => {
+    expect(parsePosition("2026-08-08T09:00:00+02:00,item-1")).toEqual({
+      at: "2026-08-08T07:00:00.000Z",
+      id: "item-1",
+    });
+  });
+
+  it("refuses anything that is not an ISO 8601 instant", () => {
+    for (const raw of [
+      "",
+      ",item-1",
+      "half past four,item-1",
+      "not-a-time",
+      "Aug 8 2026",
+      "8/8/2026",
+      "1754640000",
+      "2026-02-31",
+      "2026-08-08T09:00:00",
+    ]) {
       expect(parsePosition(raw)).toBeUndefined();
     }
   });
@@ -35,7 +54,7 @@ describe("reading a position off the wire", () => {
 });
 
 describe("writing one back", () => {
-  it("round-trips both forms", () => {
+  it("round-trips a canonical position", () => {
     for (const raw of [AT, `${AT},item-1`, `${AT},a,b`]) {
       expect(formatPosition(parsePosition(raw)!)).toBe(raw);
     }

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { OPENAPI_FILE } from "./openapi-file";
+import { OPENAPI_FILE } from "./openapi";
 import { daemon, type Daemon } from "./testing/fixture";
 
 const open: Daemon[] = [];

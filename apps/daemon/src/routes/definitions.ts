@@ -1,31 +1,36 @@
-import { createRoute, z } from "@hono/zod-openapi";
+import { createRoute } from "@hono/zod-openapi";
+import { z } from "zod";
 
+import { JSON_MEDIA_TYPE, MAX_LIMIT } from "../constants";
 import {
-  captureEnvelopeSchema,
+  BODY_STATUS,
+  CAPTURE_STATUS,
+  codesFor,
+  PARAMETER_STATUS,
+  SUBJECT_STATUS,
+} from "../errors/refusals";
+import { captureEnvelopeSchema } from "../schemas/envelope";
+import { errorSchema } from "../schemas/error";
+import {
   captureOutcomeSchema,
-  errorSchema,
   feedSliceSchema,
   itemSchema,
-} from "./wire";
-
-const JSON_CONTENT = "application/json";
+} from "../schemas/item";
+import type { StatusMap } from "../errors/refusals";
 
 function errorResponse(
   description: string,
-  codes: readonly [string, ...string[]],
+  status: number,
+  ...maps: readonly StatusMap[]
 ) {
   return {
     description,
-    content: { [JSON_CONTENT]: { schema: errorSchema(codes) } },
+    content: {
+      [JSON_MEDIA_TYPE]: { schema: errorSchema(codesFor(status, ...maps)) },
+    },
   };
 }
 
-/**
- * The feed's parameters are declared as plain strings and checked by hand in
- * the handler. Letting the framework validate them would answer a bad `order`
- * or `limit` in its own error shape, and this API answers in exactly one:
- * `{ error: { code, ...facts } }`.
- */
 const feedQuery = z.object({
   order: z
     .string()
@@ -40,8 +45,7 @@ const feedQuery = z.object({
     .optional()
     .openapi({
       param: { name: "limit", in: "query" },
-      description:
-        "1–500. Defaults to 50. A larger value is refused, not clamped.",
+      description: `1–${MAX_LIMIT}. Defaults to 50. A larger value is refused, not clamped.`,
       example: "50",
     }),
   after: z
@@ -50,7 +54,7 @@ const feedQuery = z.object({
     .openapi({
       param: { name: "after", in: "query" },
       description:
-        "The position to continue from: `<at>,<id>`, or a bare RFC 3339 timestamp as a coarse entry point.",
+        "The position to continue from: `<at>,<id>`, or a bare instant as a coarse entry point.",
       example: "2026-08-08T09:00:00.000Z,0198f0c2-0000-7000-8000-000000000000",
     }),
 });
@@ -64,7 +68,7 @@ export const captureRoute = createRoute({
   request: {
     body: {
       required: true,
-      content: { [JSON_CONTENT]: { schema: captureEnvelopeSchema } },
+      content: { [JSON_MEDIA_TYPE]: { schema: captureEnvelopeSchema } },
     },
   },
   responses: {
@@ -73,31 +77,28 @@ export const captureRoute = createRoute({
       headers: z.object({
         Location: z.string().openapi({ example: "/v1/items/0198f0c2-..." }),
       }),
-      content: { [JSON_CONTENT]: { schema: captureOutcomeSchema } },
+      content: { [JSON_MEDIA_TYPE]: { schema: captureOutcomeSchema } },
     },
     200: {
       description:
         "Already captured. `matchedOn` says which identity the replay matched.",
-      content: { [JSON_CONTENT]: { schema: captureOutcomeSchema } },
+      content: { [JSON_MEDIA_TYPE]: { schema: captureOutcomeSchema } },
     },
-    400: errorResponse("The body could not be read as an envelope.", [
-      "malformed-json",
-      "malformed-envelope",
-    ]),
+    400: errorResponse(
+      "The body could not be read as an envelope.",
+      400,
+      BODY_STATUS,
+    ),
     409: errorResponse(
       "The identity exists and the content differs. Nothing was written.",
-      ["capture-id-conflict", "source-item-changed"],
+      409,
+      CAPTURE_STATUS,
     ),
-    415: errorResponse("The body was not JSON.", ["unsupported-media-type"]),
+    415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
     422: errorResponse(
       "The envelope was understood and the pool declined it.",
-      [
-        "unknown-payload-type",
-        "payload-invalid",
-        "missing-asset-slot",
-        "unknown-asset",
-        "asset-hash-mismatch",
-      ],
+      422,
+      CAPTURE_STATUS,
     ),
   },
 });
@@ -112,14 +113,13 @@ export const feedRoute = createRoute({
   responses: {
     200: {
       description: "A page of the feed.",
-      content: { [JSON_CONTENT]: { schema: feedSliceSchema } },
+      content: { [JSON_MEDIA_TYPE]: { schema: feedSliceSchema } },
     },
-    422: errorResponse("A parameter was understood and refused.", [
-      "limit-too-large",
-      "bad-limit",
-      "bad-order",
-      "bad-position",
-    ]),
+    422: errorResponse(
+      "A parameter was understood and refused.",
+      422,
+      PARAMETER_STATUS,
+    ),
   },
 });
 
@@ -135,8 +135,15 @@ export const itemRoute = createRoute({
   responses: {
     200: {
       description: "The item.",
-      content: { [JSON_CONTENT]: { schema: itemSchema } },
+      content: { [JSON_MEDIA_TYPE]: { schema: itemSchema } },
     },
-    404: errorResponse("No item has that id.", ["no-such-item"]),
+    404: errorResponse("No item has that id.", 404, SUBJECT_STATUS),
   },
 });
+
+export const ROUTES = [captureRoute, feedRoute, itemRoute] as const;
+
+/** OpenAPI writes a path parameter `{id}`; Hono matches it as `:id`. */
+export function honoPath(path: string): string {
+  return path.replace(/\{([^}]+)\}/g, ":$1");
+}

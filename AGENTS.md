@@ -48,6 +48,15 @@ Do not write comments that refer to discussions, ADRs or other docs, unless part
 
 Only write comments that describe decisions that are unexpected. Code and comments should be self-contained.
 
+Comments are the exception, not the habit. Do not restate what the code does, do not explain why
+an alternative was rejected, and do not write a paragraph where the code is already clear — that
+reasoning belongs in the docs, which the code never points back at. A comment that claims a
+guarantee must be one the code actually enforces; a stale or false comment is worse than none.
+
+Keep files small and grouped by concern, in folders — routes, middleware, schemas, errors,
+types, utils, constants. A flat directory of everything is not a structure. Tests live beside
+what they test.
+
 ## Git
 
 - **`origin` is HTTPS** — `https://github.com/palmdrop/notemap.git`. Credentials come from

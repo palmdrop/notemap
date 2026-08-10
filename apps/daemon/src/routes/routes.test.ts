@@ -9,7 +9,7 @@ import {
   TEXT,
   WEB,
   type Daemon,
-} from "./testing/fixture";
+} from "../testing/fixture";
 
 const open: Daemon[] = [];
 
@@ -210,18 +210,46 @@ describe("a body the daemon cannot read as an envelope", () => {
     });
   });
 
-  it("answers 415 when the body is not declared as JSON", async () => {
+  it("answers 415 when the body is not declared as application/json", async () => {
+    const app = serving();
+
+    for (const contentType of ["text/plain", "text/json", "application/xml"]) {
+      const response = await app.request("/v1/captures", {
+        method: "POST",
+        headers: { "content-type": contentType },
+        body: JSON.stringify(envelope()),
+      });
+
+      expect(response.status, contentType).toBe(415);
+      expect(await body(response)).toEqual({
+        error: { code: "unsupported-media-type", contentType },
+      });
+    }
+  });
+
+  it("accepts application/json with parameters on it", async () => {
     const app = serving();
 
     const response = await app.request("/v1/captures", {
       method: "POST",
-      headers: { "content-type": "text/plain" },
+      headers: { "content-type": "application/json; charset=utf-8" },
       body: JSON.stringify(envelope()),
     });
 
-    expect(response.status).toBe(415);
+    expect(response.status).toBe(201);
+  });
+
+  it("answers 400 for a capturedAt that names no instant", async () => {
+    const app = serving();
+
+    const response = await post(app, envelope({ capturedAt: "yesterday" }));
+
+    expect(response.status).toBe(400);
     expect(await body(response)).toEqual({
-      error: { code: "unsupported-media-type", contentType: "text/plain" },
+      error: {
+        code: "malformed-envelope",
+        issues: [{ path: "/capturedAt", keyword: "format" }],
+      },
     });
   });
 });
@@ -444,5 +472,103 @@ describe("the capture page", () => {
 
     expect(response.status).toBe(405);
     expect(response.headers.get("allow")).toBe("GET, OPTIONS");
+  });
+});
+
+describe("the instants a capture may name", () => {
+  it("normalises an offset to UTC before the pool sees it", async () => {
+    const app = serving();
+
+    const response = await post(
+      app,
+      envelope({ capturedAt: "2026-08-08T09:00:00+02:00" }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(await body(response)).toMatchObject({
+      item: { createdAt: "2026-08-08T07:00:00.000Z" },
+    });
+  });
+
+  it("takes a date alone as midnight UTC", async () => {
+    const app = serving();
+
+    const response = await post(app, envelope({ capturedAt: "2026-08-08" }));
+
+    expect(response.status).toBe(201);
+    expect(await body(response)).toMatchObject({
+      item: { createdAt: "2026-08-08T00:00:00.000Z" },
+    });
+  });
+
+  it("refuses a date-time with no offset rather than guessing a zone", async () => {
+    const app = serving();
+
+    const response = await post(
+      app,
+      envelope({ capturedAt: "2026-08-08T09:00:00" }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(await body(response)).toMatchObject({
+      error: { issues: [{ path: "/capturedAt", keyword: "format" }] },
+    });
+  });
+
+  it("refuses a date that does not exist", async () => {
+    const app = serving();
+
+    const response = await post(app, envelope({ capturedAt: "2026-02-31" }));
+
+    expect(response.status).toBe(400);
+  });
+});
+
+describe("OPTIONS", () => {
+  it("answers a known path with 204 and the methods it allows", async () => {
+    const app = serving();
+
+    const response = await app.request("/v1/feed", { method: "OPTIONS" });
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("allow")).toBe("GET, OPTIONS");
+  });
+
+  it("answers an unknown path 404 rather than advertising nothing", async () => {
+    const app = serving();
+
+    const response = await app.request("/v1/nothing", { method: "OPTIONS" });
+
+    expect(response.status).toBe(404);
+    expect(await body(response)).toEqual({
+      error: { code: "unknown-route", path: "/v1/nothing" },
+    });
+  });
+
+  it("does not appear in Allow on a path that answers nothing", async () => {
+    const app = serving();
+
+    const response = await app.request("/v1/nothing", { method: "DELETE" });
+
+    expect(response.status).toBe(404);
+  });
+});
+
+describe("paths that only look like routes", () => {
+  it("does not let a dot in a route path match any character", async () => {
+    const app = serving();
+
+    const response = await app.request("/v1/openapiXjson");
+
+    expect(response.status).toBe(404);
+    expect(await body(response)).toEqual({
+      error: { code: "unknown-route", path: "/v1/openapiXjson" },
+    });
+  });
+
+  it("still matches the real path", async () => {
+    const app = serving();
+
+    expect((await app.request("/v1/openapi.json")).status).toBe(200);
   });
 });

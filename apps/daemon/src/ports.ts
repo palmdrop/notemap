@@ -20,17 +20,11 @@ export const systemClock: Clock = {
   now: () => new Date().toISOString() as Timestamp,
 };
 
-/** Time-ordered, as `core.md` encourages; nothing in the model depends on it. */
 export const uuidV7Ids: IdGenerator = {
   next: <T extends MintableId>() => uuidv7() as T,
 };
 
-/**
- * The ports with no adapter yet. They throw rather than doing nothing, because
- * nothing can reach them: there are no asset endpoints, and no mirror job can
- * be claimed until the store implements `claim()`. A silent no-op here would
- * turn "unbuilt" into "quietly lossy" the moment one of them becomes reachable.
- */
+/** Throws rather than no-ops, so an unbuilt port cannot become a quietly lossy one. */
 function absent(port: string): never {
   throw new Error(`the daemon wires no ${port} yet`);
 }
@@ -54,10 +48,6 @@ const noMirrorReader: MirrorReader = {
   routingRecords: () => absent("mirror reader"),
 };
 
-/**
- * The host's whole job: source the configuration, build the adapters, hand them
- * to core. Nothing reaches the pool except through what this returns.
- */
 export function openPool(file: string, config: PoolConfig): Pool {
   const ports: PoolPorts = {
     store: createSqlitePoolStore({ file, clock: systemClock }),
