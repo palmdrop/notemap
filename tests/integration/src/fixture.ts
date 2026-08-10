@@ -91,10 +91,12 @@ export function frozenClock(start = "2026-08-06T09:00:00.000Z"): Clock & {
  * serves every id kind and the sequence is shared — which is why the tests read
  * ids off what they get back rather than predicting them.
  */
-export function countingIds(): IdGenerator & { issued: () => number } {
+export function countingIds(
+  prefix = "id",
+): IdGenerator & { issued: () => number } {
   let count = 0;
   return {
-    next: <T extends MintableId>() => `id-${++count}` as T,
+    next: <T extends MintableId>() => `${prefix}-${++count}` as T,
     issued: () => count,
   };
 }
@@ -137,7 +139,8 @@ export function harness(config: PoolConfig = CONFIG): Harness {
   const ids = countingIds();
 
   const ports: PoolPorts = {
-    store: createSqlitePoolStore({ file, clock }),
+    // Lease ids are the store's to mint, so it gets its own sequence.
+    store: createSqlitePoolStore({ file, clock, ids: countingIds("lease") }),
     clock,
     ids,
     schemas: createAjvSchemaValidator(),

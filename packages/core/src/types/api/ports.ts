@@ -29,6 +29,7 @@ import type {
   AbandonedWork,
   ClaimRequest,
   Job,
+  JobResolution,
   Lease,
   WorkOutcome,
 } from "../domain/work";
@@ -162,6 +163,10 @@ export interface PoolTx extends PoolReads {
   insertItem(record: ItemRecord): Promise<Item>;
   appendAction(action: Action): Promise<void>;
   enqueue(jobs: readonly Job[]): Promise<void>;
+
+  /** The job a lease still holds, or nothing if the lease has been taken over. */
+  leasedJob(lease: LeaseId): Promise<Lease | undefined>;
+  resolveJob(lease: LeaseId, resolution: JobResolution): Promise<void>;
 }
 
 export interface PoolStore extends PoolReads {

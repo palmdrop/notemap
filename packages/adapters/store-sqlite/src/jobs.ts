@@ -1,13 +1,20 @@
 import {
   ok,
   refused,
+  type AbandonedPosition,
+  type AbandonedWork,
   type ClaimRequest,
+  type EnrichmentName,
   type IdGenerator,
+  type ItemId,
   type Job,
+  type JobResolution,
   type Lease,
   type LeaseId,
   type LeaseRefusal,
+  type Page,
   type Result,
+  type Slice,
   type Timestamp,
 } from "@notemap/core";
 
@@ -38,6 +45,8 @@ export type JobQueue = {
   claim(request: ClaimRequest, now: Timestamp): readonly Lease[];
   extendLease(lease: LeaseId, until: Timestamp): Result<Lease, LeaseRefusal>;
   releaseLease(lease: LeaseId): Result<void, LeaseRefusal>;
+  leasedJob(lease: LeaseId): Lease | undefined;
+  resolveJob(lease: LeaseId, resolution: JobResolution): void;
 };
 
 export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
@@ -66,6 +75,10 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
 
   const deleteJob = write.query<never, [string]>(
     `DELETE FROM jobs WHERE id = ?`,
+  );
+
+  const finishJob = write.query<never, [string]>(
+    `DELETE FROM jobs WHERE lease_id = ?`,
   );
 
   /**
@@ -194,5 +207,130 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
 
       return ok<void, LeaseRefusal>(undefined);
     },
+
+    leasedJob: (lease) => {
+      const row = byLease.get(lease);
+      if (row === undefined || row.lease_expires_at === null) return undefined;
+      return {
+        id: lease,
+        job: toJob(row),
+        expiresAt: toTimestamp(row.lease_expires_at),
+      };
+    },
+
+    /**
+     * Applies what core decided, and gives up the lease in the same statement:
+     * work that has been resolved is no longer anybody's.
+     */
+    resolveJob: (lease, resolution) => {
+      if (resolution.kind === "done") {
+        finishJob.run(lease);
+        return;
+      }
+
+      const [at, column] =
+        resolution.kind === "retry"
+          ? ([resolution.nextAttemptAt, "next_attempt_at"] as const)
+          : ([resolution.abandonedAt, "abandoned_at"] as const);
+
+      write
+        .query<never, [number, string, string, number, string]>(
+          `UPDATE jobs
+           SET lease_id = NULL, lease_expires_at = NULL,
+               attempt = ?, last_failure_code = ?, last_failure_detail = ?,
+               ${column} = ?
+           WHERE lease_id = ?`,
+        )
+        .run(
+          resolution.attempt,
+          resolution.failure.code,
+          resolution.failure.detail,
+          toMillis(at),
+          lease,
+        );
+    },
+  };
+}
+
+/**
+ * The surface answering "what needs me", of every kind at once. A read rather
+ * than part of the queue, so it can run on the reader's connection and never
+ * see what an open transaction may still roll back.
+ */
+export function abandonedWork(
+  source: Statements,
+  page: Page<AbandonedPosition>,
+): Slice<AbandonedWork, AbandonedPosition> {
+  if (!Number.isInteger(page.limit) || page.limit <= 0) {
+    throw new TypeError(`page limit must be a positive integer: ${page.limit}`);
+  }
+
+  const after = page.after;
+  const where = after === undefined ? "" : `AND ${ABANDONED_KEYSET}`;
+  const params: Bindable[] = [
+    ...(after === undefined
+      ? []
+      : [toMillis(after.at), after.item, after.kind, after.enrichment ?? ""]),
+    // One more than asked for, so exhaustion is known rather than guessed.
+    page.limit + 1,
+  ];
+
+  const rows = source
+    .query<JobRow, Bindable[]>(
+      `SELECT ${JOB_COLUMNS} FROM jobs
+       WHERE abandoned_at IS NOT NULL ${where}
+       ORDER BY ${ABANDONED_ORDER} LIMIT ?`,
+    )
+    .all(...params);
+
+  const hasMore = rows.length > page.limit;
+  const values = (hasMore ? rows.slice(0, page.limit) : rows).map(
+    toAbandonedWork,
+  );
+  const last = values.at(-1);
+
+  return {
+    values,
+    ...(hasMore && last
+      ? {
+          next: {
+            at: last.abandonedAt,
+            item: last.item,
+            kind: last.kind,
+            ...(last.enrichment === undefined
+              ? {}
+              : { enrichment: last.enrichment }),
+          },
+        }
+      : {}),
+  };
+}
+
+/**
+ * The tuple identifying one abandoned row, compared whole. `enrichment` is null
+ * for everything but enrichment work, and a null would make every comparison
+ * against it null, so it collapses to the empty string on both sides.
+ */
+const ABANDONED_KEY = `(abandoned_at, subject, kind, COALESCE(enrichment, ''))`;
+const ABANDONED_KEYSET = `${ABANDONED_KEY} > (?, ?, ?, ?)`;
+const ABANDONED_ORDER = `abandoned_at ASC, subject ASC, kind ASC, COALESCE(enrichment, '') ASC`;
+
+function toAbandonedWork(row: JobRow): AbandonedWork {
+  if (row.abandoned_at === null || row.last_failure_code === null) {
+    throw new Error(`job ${row.id} is abandoned with nothing saying why`);
+  }
+
+  return {
+    item: row.subject as ItemId,
+    kind: row.kind,
+    ...(row.enrichment === null
+      ? {}
+      : { enrichment: row.enrichment as EnrichmentName }),
+    attempts: row.attempt,
+    lastFailure: {
+      code: row.last_failure_code,
+      detail: row.last_failure_detail ?? "",
+    },
+    abandonedAt: toTimestamp(row.abandoned_at),
   };
 }

@@ -144,10 +144,11 @@ embedding. Reached through an adapter.
 _Avoid_: backend, engine, service
 
 **Agent**:
-Whoever or whatever did something: the person, a named provider, or an intake source. Recorded
-on every tag, artifact and suggestion so that "which of these did a model give me?" stays
-answerable.
-_Avoid_: author, actor, user
+Whoever or whatever did something: the person, a named provider, an intake source, or notemap
+itself. Recorded on every tag, artifact and suggestion so that "which of these did a model give
+me?" stays answerable. Notemap is its own agent only for work it drives rather than performs on
+anyone's behalf — a mirror write that failed is attributable to nobody else.
+_Avoid_: author, actor, user, system
 
 **Action**:
 One entry in the append-only log of everything that changed state — what happened, when, by

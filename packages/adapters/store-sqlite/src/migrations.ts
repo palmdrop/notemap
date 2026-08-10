@@ -156,6 +156,30 @@ export const MIGRATIONS: readonly string[] = [
     ON jobs (abandoned_at, subject, kind)
     WHERE abandoned_at IS NOT NULL;
   `,
+
+  `
+  -- Notemap is its own agent for work it drives rather than performs on anyone's
+  -- behalf, and a CHECK cannot be widened in place. \`item_tags\` keeps the narrow
+  -- set: a tag is always somebody's.
+  CREATE TABLE actions_next (
+    id      TEXT    NOT NULL PRIMARY KEY,
+    kind    TEXT    NOT NULL,
+    subject TEXT,
+    by_kind TEXT    NOT NULL
+            CHECK (by_kind IN ('notemap', 'person', 'provider', 'source')),
+    by_ref  TEXT    CHECK ((by_kind IN ('notemap', 'person')) = (by_ref IS NULL)),
+    at      INTEGER NOT NULL,
+    detail  TEXT    NOT NULL
+  ) STRICT;
+
+  INSERT INTO actions_next SELECT id, kind, subject, by_kind, by_ref, at, detail FROM actions;
+
+  DROP TABLE actions;
+  ALTER TABLE actions_next RENAME TO actions;
+
+  CREATE INDEX actions_subject ON actions (subject, at);
+  CREATE INDEX actions_at      ON actions (at);
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

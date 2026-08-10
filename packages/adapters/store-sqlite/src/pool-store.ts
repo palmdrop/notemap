@@ -2,9 +2,11 @@ import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 
 import type {
+  AbandonedPosition,
   Action,
   ClaimRequest,
   Clock,
+  JobResolution,
   FeedOrder,
   FeedPage,
   IdGenerator,
@@ -31,7 +33,7 @@ import {
   toMillis,
   toTimestamp,
 } from "./mapping";
-import { jobQueue } from "./jobs";
+import { abandonedWork, jobQueue } from "./jobs";
 import { LAST_MODIFIED_AT, migrate } from "./migrations";
 import type {
   ActionRow,
@@ -318,6 +320,9 @@ export function createSqlitePoolStore(
       item: async (id: ItemId): Promise<Item | undefined> =>
         one(itemById.get(id)),
 
+      abandonedWork: async (page: Page<AbandonedPosition>) =>
+        abandonedWork(source, page),
+
       itemBySourceIdentity: async (
         sourceId: SourceId,
         sourceItemId: string,
@@ -415,6 +420,7 @@ export function createSqlitePoolStore(
       ...notYetImplementedReads(),
 
       item: guard(uncommitted.item),
+      abandonedWork: guard(uncommitted.abandonedWork),
       itemBySourceIdentity: guard(uncommitted.itemBySourceIdentity),
       head: guard(uncommitted.head),
       feed: guard(uncommitted.feed),
@@ -457,6 +463,14 @@ export function createSqlitePoolStore(
       enqueue: guard(async (enqueued: readonly Job[]): Promise<void> => {
         jobs.enqueue(enqueued);
       }),
+
+      leasedJob: guard(async (lease: LeaseId) => jobs.leasedJob(lease)),
+
+      resolveJob: guard(
+        async (lease: LeaseId, resolution: JobResolution): Promise<void> => {
+          jobs.resolveJob(lease, resolution);
+        },
+      ),
     };
   }
 
@@ -504,7 +518,6 @@ function notYetImplementedReads() {
     routingRecords: unimplemented("routingRecords"),
     artifacts: unimplemented("artifacts"),
     enrichmentStates: unimplemented("enrichmentStates"),
-    abandonedWork: unimplemented("abandonedWork"),
     unreferencedAssets: unimplemented("unreferencedAssets"),
     changesSince: unimplemented("changesSince"),
   };

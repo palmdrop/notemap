@@ -8,7 +8,7 @@
  */
 
 export type AgentColumns = {
-  readonly by_kind: "person" | "provider" | "source";
+  readonly by_kind: "notemap" | "person" | "provider" | "source";
   readonly by_ref: string | null;
 };
 

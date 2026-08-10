@@ -93,20 +93,26 @@ has no lease or retry columns. The mirror cannot run before this exists.
 
 ### Phase 3 — Core drives the work *(depends on phase 2)*
 
-- [ ] `work.claim`, `work.extend`, `work.release` — thin passes onto the store
-- [ ] `work.complete(lease, outcome)`: success removes the job; a **retryable** failure bumps
+- [x] `work.claim`, `work.extend`, `work.release` — thin passes onto the store
+- [x] `work.complete(lease, outcome)`: success removes the job; a **retryable** failure bumps
       attempts and schedules the next attempt with capped backoff from the configured
-      `RetryPolicy`; a **non-retryable** failure abandons immediately
-- [ ] Mirror work ignores `maxAttempts` on retryable failures and retries indefinitely at the
+      `RetryPolicy`; a **non-retryable** failure abandons immediately. `PoolTx` gains the two
+      primitives this needs — `leasedJob` and `resolveJob` — so the store applies a decision core
+      made rather than holding any retry policy of its own
+- [x] Mirror work ignores `maxAttempts` on retryable failures and retries indefinitely at the
       backoff cap, per `core.md`'s 2026-08-11 addition. Enrichment keeps the bounded rule; the
       difference is by job kind
-- [ ] Every attempt appends an action carrying what went wrong
-- [ ] `work.abandoned(page)`: one list of abandoned work of any kind, ordered by `abandonedAt`,
+- [x] Every attempt appends an action carrying what went wrong. **This needed a domain change the
+      plan did not foresee**: an action carries the agent who did it, and no existing agent fits
+      work core drives on nobody's behalf. `Agent` gains a `notemap` variant, `CONTEXT.md` says so,
+      and migration 2 widens the `actions` CHECK — `item_tags` keeps the narrow set, since a tag
+      is always somebody's
+- [x] `work.abandoned(page)`: one list of abandoned work of any kind, ordered by `abandonedAt`,
       positioned by `{ at, item, kind, enrichment? }`
-- [ ] Tests: a retryable failure is still claimable after its backoff and was never abandoned; a
+- [x] Tests: a retryable failure is still claimable after its backoff and was never abandoned; a
       non-retryable one is abandoned on attempt 1 and appears on `work.abandoned`; completing
       under a stale lease is refused `lease-lost`
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 4 — The mirror record *(core; independent of phases 2–3)*
 

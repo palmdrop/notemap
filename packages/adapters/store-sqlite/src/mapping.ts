@@ -50,6 +50,8 @@ export function agentColumns(
   agent: Agent,
 ): [AgentColumns["by_kind"], string | null] {
   switch (agent.kind) {
+    case "notemap":
+      return ["notemap", null];
     case "person":
       return ["person", null];
     case "provider":
@@ -61,6 +63,8 @@ export function agentColumns(
 
 function toAgent(row: AgentColumns): Agent {
   switch (row.by_kind) {
+    case "notemap":
+      return { kind: "notemap" };
     case "person":
       return { kind: "person" };
     case "provider":

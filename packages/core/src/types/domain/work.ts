@@ -66,6 +66,26 @@ export type RetryPolicy = {
   readonly maxBackoff: Duration;
 };
 
+/**
+ * What core decided a finished attempt means, for a store to apply. The store
+ * holds no policy: which failures retry, how long the backoff is and when work
+ * is given up on are core's, and arrive here already worked out.
+ */
+export type JobResolution =
+  | { readonly kind: "done" }
+  | {
+      readonly kind: "retry";
+      readonly attempt: number;
+      readonly nextAttemptAt: Timestamp;
+      readonly failure: FailureDetail;
+    }
+  | {
+      readonly kind: "abandoned";
+      readonly attempt: number;
+      readonly abandonedAt: Timestamp;
+      readonly failure: FailureDetail;
+    };
+
 /** One row of the surface answering "what needs me", for work of any kind. */
 export type AbandonedWork = {
   readonly item: ItemId;
