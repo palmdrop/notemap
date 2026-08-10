@@ -25,6 +25,12 @@ feed expects the most recent thing, the way every timeline does. So the feed tak
 on the read — `newest-first` by default, `oldest-first` on request — and a cursor belongs to the
 order it was issued for, refused under the other.
 
+*Superseded 2026-08-08 for that last clause only*
+([ADR 14](0014-pagination-by-domain-position.md)): reads continue from a **position**, the sort
+key of the last row seen stated in domain terms, and a position is order-free — it names a place
+in the feed, not a direction of travel, so the same one continues either order. The feed still
+takes an order on the read; there is no longer a cursor to belong to one.
+
 What does not change is the **key**: the feed still sorts by `created`, which is what this ADR
 is actually about. Direction was never the decision; it was an unexamined default riding along
 with one. **The queue stays ascending** and takes no order, because oldest-first is what makes

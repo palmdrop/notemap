@@ -1,0 +1,32 @@
+{
+  "name": "@notemap/daemon",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "notemap-daemon": "./dist/main.js"
+  },
+  "scripts": {
+    "build": "node scripts/build.ts",
+    "start": "node scripts/build.ts && node dist/main.js",
+    "openapi": "node scripts/build.ts && node dist/write-openapi.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.0",
+    "@hono/zod-openapi": "^1.5.2",
+    "@notemap/core": "workspace:*",
+    "@notemap/schema-ajv": "workspace:*",
+    "@notemap/store-sqlite": "workspace:*",
+    "hono": "^4.13.1",
+    "smol-toml": "^1.7.1",
+    "uuid": "^14.0.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "esbuild": "^0.28.0",
+    "vitest": "^3.2.4"
+  }
+}

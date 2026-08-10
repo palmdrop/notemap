@@ -11,21 +11,17 @@ import {
   type IdGenerator,
   type MintableId,
   type ItemId,
-  type JsonObject,
-  type JsonSchema,
-  type JsonValue,
   type MirrorReader,
   type MirrorWriter,
   type PayloadTypeName,
   type Pool,
   type PoolConfig,
   type PoolPorts,
-  type SchemaIssue,
-  type SchemaValidator,
   type SourceId,
   type TagName,
   type Timestamp,
 } from "@notemap/core";
+import { createAjvSchemaValidator } from "@notemap/schema-ajv";
 import { createSqlitePoolStore } from "@notemap/store-sqlite";
 
 /** A source that mints and replays its own capture ids: a client with an outbox. */
@@ -104,50 +100,6 @@ export function countingIds(): IdGenerator & { issued: () => number } {
   };
 }
 
-/**
- * Enough of a validator to tell a well-formed payload from a malformed one:
- * required keys, and the declared primitive type of each property. Not a JSON
- * Schema implementation, and not pretending to be one — the real validator is a
- * port a host supplies.
- */
-export function toyValidator(): SchemaValidator {
-  const isObject = (value: JsonValue | undefined): value is JsonObject =>
-    typeof value === "object" && value !== null && !Array.isArray(value);
-  const asObject = (value: JsonValue | undefined): JsonObject | undefined =>
-    isObject(value) ? value : undefined;
-
-  return {
-    validate(schema: JsonSchema, value: JsonValue): readonly SchemaIssue[] {
-      const object = asObject(value);
-      if (object === undefined) return [{ path: "", keyword: "type" }];
-
-      const issues: SchemaIssue[] = [];
-      const required: readonly JsonValue[] = Array.isArray(schema.required)
-        ? schema.required
-        : [];
-      for (const key of required) {
-        if (typeof key === "string" && !(key in object)) {
-          issues.push({ path: `/${key}`, keyword: "required" });
-        }
-      }
-
-      const properties = asObject(schema.properties) ?? {};
-      for (const [key, declared] of Object.entries(properties)) {
-        const present = object[key];
-        if (present === undefined) continue;
-        if (
-          asObject(declared)?.type === "string" &&
-          typeof present !== "string"
-        ) {
-          issues.push({ path: `/${key}`, keyword: "type" });
-        }
-      }
-
-      return issues;
-    },
-  };
-}
-
 function absent(port: string): never {
   throw new Error(`no ${port} is wired in these tests`);
 }
@@ -194,7 +146,7 @@ export function harness(config: PoolConfig = CONFIG): Harness {
     store: createSqlitePoolStore({ file, clock }),
     clock,
     ids,
-    schemas: toyValidator(),
+    schemas: createAjvSchemaValidator(),
     assets: noAssets,
     mirrorWriter: noMirrorWriter,
     mirrorReader: noMirrorReader,

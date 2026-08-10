@@ -1,0 +1,76 @@
+import type { CaptureRefusal } from "@notemap/core";
+
+import type { DaemonRefusal, ErrorBody } from "../types";
+
+export type StatusMap = Readonly<Record<string, number>>;
+
+/** `409` is a conflict with what the pool holds; `422` is anything else it declined. */
+export const CAPTURE_STATUS = {
+  "capture-id-conflict": 409,
+  "source-item-changed": 409,
+  "unknown-payload-type": 422,
+  "payload-invalid": 422,
+  "missing-asset-slot": 422,
+  "unknown-asset": 422,
+  "asset-hash-mismatch": 422,
+} as const satisfies Record<CaptureRefusal["kind"], number>;
+
+/** Anything wrong with the request body itself. */
+export const BODY_STATUS = {
+  "malformed-json": 400,
+  "malformed-envelope": 400,
+  "unsupported-media-type": 415,
+} as const;
+
+/** Anything wrong with a query parameter. */
+export const PARAMETER_STATUS = {
+  "limit-too-large": 422,
+  "bad-limit": 422,
+  "bad-order": 422,
+  "bad-position": 422,
+} as const;
+
+export const SUBJECT_STATUS = { "no-such-item": 404 } as const;
+
+export const ADDRESS_STATUS = {
+  "unknown-route": 404,
+  "method-not-allowed": 405,
+} as const;
+
+/** Split by concern so a route can document only the codes it can answer with. */
+const DAEMON_STATUS = {
+  ...BODY_STATUS,
+  ...PARAMETER_STATUS,
+  ...SUBJECT_STATUS,
+  ...ADDRESS_STATUS,
+} as const satisfies Record<DaemonRefusal["kind"], number>;
+
+export function captureStatus(refusal: CaptureRefusal): number {
+  return CAPTURE_STATUS[refusal.kind];
+}
+
+export function daemonStatus(refusal: DaemonRefusal): number {
+  return DAEMON_STATUS[refusal.kind];
+}
+
+export function errorBody(refusal: CaptureRefusal | DaemonRefusal): ErrorBody {
+  const { kind, ...facts } = refusal;
+  return { error: { code: kind, ...facts } };
+}
+
+/** The codes a route answers with at one status, read off the mapping itself. */
+export function codesFor(
+  status: number,
+  ...maps: readonly StatusMap[]
+): [string, ...string[]] {
+  const codes = maps
+    .flatMap((map) => Object.entries(map))
+    .filter(([, mapped]) => mapped === status)
+    .map(([code]) => code);
+
+  const [first, ...rest] = codes;
+  if (first === undefined) {
+    throw new Error(`no refusal maps to ${status}`);
+  }
+  return [first, ...rest];
+}

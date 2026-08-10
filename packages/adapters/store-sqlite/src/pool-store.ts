@@ -10,25 +10,20 @@ import type {
   ItemRecord,
   Job,
   Page,
-  PageCursor,
   PoolStore,
   PoolTx,
+  Position,
   Slice,
   SourceId,
 } from "@notemap/core";
 
-import {
-  decodeCursor,
-  encodeCursor,
-  type CursorSpace,
-  type Keyset,
-} from "./cursor";
 import {
   agentColumns,
   itemParams,
   toAction,
   toItem,
   toMillis,
+  toTimestamp,
 } from "./mapping";
 import { LAST_MODIFIED_AT, migrate } from "./migrations";
 import type {
@@ -82,6 +77,36 @@ const BUSY_TIMEOUT_MS = 5_000;
 const systemClock: Clock = {
   now: () => new Date().toISOString() as ReturnType<Clock["now"]>,
 };
+
+/** A position in the store's own units. */
+type Bound = { readonly at: number; readonly id?: string };
+
+function bound(position: Position): Bound {
+  return {
+    at: toMillis(position.at),
+    ...(position.id === undefined ? {} : { id: position.id }),
+  };
+}
+
+/**
+ * The comparison that continues a read past one position, in whichever
+ * direction it runs. A position with no id bounds on time alone — a coarse
+ * entry point, which may skip rows sharing that instant.
+ */
+function keysetClause(
+  column: string,
+  after: Bound,
+  comparison: "<" | ">",
+): { readonly sql: string; readonly params: Bindable[] } {
+  if (after.id === undefined) {
+    return { sql: `${column} ${comparison} ?`, params: [after.at] };
+  }
+
+  return {
+    sql: `(${column} ${comparison} ? OR (${column} = ? AND id ${comparison} ?))`,
+    params: [after.at, after.at, after.id],
+  };
+}
 
 function unimplemented(method: string): () => never {
   return () => {
@@ -241,16 +266,25 @@ export function createSqlitePoolStore(
       return row === undefined ? undefined : hydrate([row])[0];
     }
 
+    /**
+     * Keyset, not offset: a page continues from the sort key of the last row
+     * handed out, so a row inserted behind the reader — an offline sync, a file
+     * import — cannot make a page skip or repeat.
+     *
+     * The position arrives in domain terms and is only ever compared, never
+     * looked up, so it keeps working when the row it names is gone.
+     */
     function keysetPage<T extends { at: number; id: string }>(
       page: Page,
-      space: CursorSpace,
-      fetch: (after: Keyset | undefined, limit: number) => readonly T[],
-    ): { readonly rows: readonly T[]; readonly next: PageCursor | undefined } {
+      fetch: (after: Bound | undefined, limit: number) => readonly T[],
+    ): { readonly rows: readonly T[]; readonly next: Position | undefined } {
       if (!Number.isInteger(page.limit) || page.limit <= 0) {
-        throw new TypeError(`page limit must be a positive integer: ${page.limit}`);
+        throw new TypeError(
+          `page limit must be a positive integer: ${page.limit}`,
+        );
       }
 
-      const after = page.after ? decodeCursor(page.after, space) : undefined;
+      const after = page.after && bound(page.after);
       // One more row than asked for, so exhaustion is known rather than guessed.
       const rows = fetch(after, page.limit + 1);
       const hasMore = rows.length > page.limit;
@@ -259,7 +293,10 @@ export function createSqlitePoolStore(
 
       return {
         rows: values,
-        next: hasMore && last ? encodeCursor(last, space) : undefined,
+        next:
+          hasMore && last
+            ? { at: toTimestamp(last.at), id: last.id }
+            : undefined,
       };
     }
 
@@ -282,15 +319,13 @@ export function createSqlitePoolStore(
         const comparison = descending ? "<" : ">";
         const direction = descending ? "DESC" : "ASC";
 
-        const { rows, next } = keysetPage(page, `feed:${order}`, (after, limit) => {
-          const where =
+        const { rows, next } = keysetPage(page, (after, limit) => {
+          const keyset =
             after === undefined
-              ? ""
-              : `WHERE created_at ${comparison} ? OR (created_at = ? AND id ${comparison} ?)`;
-          const params: Bindable[] =
-            after === undefined
-              ? [limit]
-              : [after.at, after.at, after.id, limit];
+              ? undefined
+              : keysetClause("created_at", after, comparison);
+          const where = keyset === undefined ? "" : `WHERE ${keyset.sql}`;
+          const params: Bindable[] = [...(keyset?.params ?? []), limit];
 
           return source
             .query<ItemRow, Bindable[]>(
@@ -311,35 +346,30 @@ export function createSqlitePoolStore(
         subject: ItemId | undefined,
         page: Page,
       ): Promise<Slice<Action>> => {
-        const { rows, next } = keysetPage(
-          page,
-          "actions",
-          (after, limit) => {
-            const clauses: string[] = [];
-            const params: Bindable[] = [];
+        const { rows, next } = keysetPage(page, (after, limit) => {
+          const clauses: string[] = [];
+          const params: Bindable[] = [];
 
-            if (subject !== undefined) {
-              clauses.push("subject = ?");
-              params.push(subject);
-            }
-            if (after !== undefined) {
-              clauses.push("(at > ? OR (at = ? AND id > ?))");
-              params.push(after.at, after.at, after.id);
-            }
+          if (subject !== undefined) {
+            clauses.push("subject = ?");
+            params.push(subject);
+          }
+          if (after !== undefined) {
+            const keyset = keysetClause("at", after, ">");
+            clauses.push(keyset.sql);
+            params.push(...keyset.params);
+          }
 
-            const where = clauses.length
-              ? `WHERE ${clauses.join(" AND ")}`
-              : "";
-            params.push(limit);
+          const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+          params.push(limit);
 
-            return source
-              .query<ActionRow, Bindable[]>(
-                `SELECT id, kind, subject, by_kind, by_ref, at, detail FROM actions
+          return source
+            .query<ActionRow, Bindable[]>(
+              `SELECT id, kind, subject, by_kind, by_ref, at, detail FROM actions
                ${where} ORDER BY at ASC, id ASC LIMIT ?`,
-              )
-              .all(...params);
-          },
-        );
+            )
+            .all(...params);
+        });
 
         return {
           values: rows.map(toAction),

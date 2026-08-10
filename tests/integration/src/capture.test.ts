@@ -258,20 +258,43 @@ describe("resubmitting under an identity that already exists", () => {
   });
 });
 
-describe("a capture core will not accept", () => {
-  it("names the source it does not know", async () => {
+describe("a source core has never been told about", () => {
+  it("captures like any other, and is attributed to itself", async () => {
     const { pool: p } = pool();
 
-    const refused = await p.capture(
-      envelope({ source: "nowhere" as typeof SCRATCHPAD }),
+    const item = captured(
+      await p.capture(envelope({ source: "nowhere" as typeof SCRATCHPAD })),
     );
 
-    expect(refused).toEqual({
-      kind: "refused",
-      refusal: { kind: "unknown-source", source: "nowhere" },
+    expect(item.source).toBe("nowhere");
+    await expect(p.views.feed(ALL)).resolves.toMatchObject({
+      values: [{ id: item.id }],
     });
   });
 
+  it("carries no policy, which is the whole of what declaring one buys", async () => {
+    const { pool: p } = pool();
+
+    const item = captured(
+      await p.capture(
+        envelope({
+          source: "nowhere" as typeof SCRATCHPAD,
+          tags: ["kind/note"],
+        }),
+      ),
+    );
+
+    // The only policy a source carries today is `autoRequest`, and there are no
+    // enrichments configured for it to name, so what is asserted here is that
+    // an undeclared source is not a lesser capture: its tags are attributed to
+    // it exactly as a declared source's are.
+    expect(item.tags).toEqual([
+      expect.objectContaining({ by: { kind: "source", source: "nowhere" } }),
+    ]);
+  });
+});
+
+describe("a capture core will not accept", () => {
   it("names the payload type it does not know", async () => {
     const { pool: p } = pool();
     const unknown = {
@@ -322,7 +345,10 @@ describe("a capture core will not accept", () => {
   it("writes nothing at all", async () => {
     const { pool: p } = pool();
 
-    await p.capture(envelope({ source: "nowhere" as typeof SCRATCHPAD }));
+    await p.capture({
+      ...envelope(),
+      payload: { ...envelope().payload, type: "video" as typeof TEXT },
+    });
 
     await expect(p.views.feed(ALL)).resolves.toEqual({ values: [] });
     await expect(p.actions.all(ALL)).resolves.toEqual({ values: [] });

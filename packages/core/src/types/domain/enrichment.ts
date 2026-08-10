@@ -23,6 +23,8 @@ export type EnrichmentState =
       readonly kind: "abandoned";
       readonly attempts: number;
       readonly lastFailure: FailureDetail;
+      /** What the surface listing everything abandoned is ordered by. */
+      readonly abandonedAt: Timestamp;
     }
   | { readonly kind: "done" };
 

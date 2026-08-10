@@ -18,6 +18,7 @@ import type {
 } from "../domain/ids";
 import type { EditOutcome, Item } from "../domain/item";
 import type { Payload } from "../domain/payload";
+import type { AbandonedPosition } from "../domain/position";
 import type {
   DeliveryRequest,
   DestinationDescriptor,
@@ -76,7 +77,9 @@ export interface EnrichmentApi {
     artifact: ArtifactId,
     content: JsonObject,
   ): Promise<Result<Artifact, ArtifactRefusal>>;
-  abandoned(page: Page): Promise<Slice<EnrichmentStatus>>;
+  abandoned(
+    page: Page<AbandonedPosition>,
+  ): Promise<Slice<EnrichmentStatus, AbandonedPosition>>;
 }
 
 export interface RoutingApi {

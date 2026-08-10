@@ -126,11 +126,7 @@ export function capture(overrides: CaptureOverrides = {}): ItemRecord {
   };
 }
 
-/**
- * A revision as core.md describes one: a new item carrying the original's
- * capture time, with the edit recorded separately, and no source identity of
- * its own — it did not come from a source.
- */
+/** Carries the original's capture time and source identity; the edit is recorded separately. */
 export function revisionOf(
   original: ItemRecord,
   overrides: { id: string; text: string; editedAt: string },

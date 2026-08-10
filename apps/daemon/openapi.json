@@ -1,0 +1,572 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "notemap",
+    "version": "1",
+    "description": "The capture-and-feed subset of notemap's /v1 surface. Binds to localhost by default; no authentication."
+  },
+  "components": {
+    "schemas": {
+      "CaptureOutcome": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["captured"]
+              },
+              "item": {
+                "$ref": "#/components/schemas/Item"
+              }
+            },
+            "required": ["kind", "item"]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["already-captured"]
+              },
+              "item": {
+                "$ref": "#/components/schemas/Item"
+              },
+              "matchedOn": {
+                "type": "string",
+                "enum": ["id", "source"]
+              }
+            },
+            "required": ["kind", "item", "matchedOn"]
+          }
+        ]
+      },
+      "Item": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceItemId": {
+            "type": "string"
+          },
+          "payload": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "minLength": 1
+              },
+              "content": {
+                "type": "object",
+                "additionalProperties": {}
+              },
+              "metadata": {
+                "type": "object",
+                "additionalProperties": {}
+              },
+              "assets": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "slot": {
+                      "type": "string"
+                    },
+                    "asset": {
+                      "type": "string"
+                    },
+                    "hash": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["slot", "asset", "hash"]
+                }
+              }
+            },
+            "required": ["type", "content", "metadata", "assets"]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "by": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": ["person"]
+                        }
+                      },
+                      "required": ["kind"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": ["provider"]
+                        },
+                        "provider": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["kind", "provider"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": ["source"]
+                        },
+                        "source": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["kind", "source"]
+                    }
+                  ]
+                },
+                "addedAt": {
+                  "type": "string"
+                }
+              },
+              "required": ["name", "by", "addedAt"]
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "contentUpdatedAt": {
+            "type": "string"
+          },
+          "revisionOf": {
+            "type": "string"
+          },
+          "archived": {
+            "type": "object",
+            "properties": {
+              "archivedAt": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": ["archivedAt"]
+          },
+          "modifiedAt": {
+            "type": "string"
+          },
+          "supersededBy": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "sourceItemId",
+          "payload",
+          "tags",
+          "createdAt",
+          "modifiedAt"
+        ]
+      },
+      "CaptureEnvelope": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sourceItemId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "capturedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "string",
+                "format": "date"
+              }
+            ],
+            "description": "An ISO 8601 instant: a date-time carrying an offset (`2026-08-08T09:00:00Z`, `2026-08-08T09:00:00+02:00`), or a date alone, which means midnight UTC. A date-time without an offset is refused — there is no way to tell which zone it was written in.",
+            "example": "2026-08-08T09:00:00.000Z"
+          },
+          "payload": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "minLength": 1
+              },
+              "content": {
+                "type": "object",
+                "additionalProperties": {}
+              },
+              "metadata": {
+                "type": "object",
+                "additionalProperties": {}
+              },
+              "assets": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "slot": {
+                      "type": "string"
+                    },
+                    "asset": {
+                      "type": "string"
+                    },
+                    "hash": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["slot", "asset", "hash"]
+                }
+              }
+            },
+            "required": ["type", "content", "metadata", "assets"]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": ["source", "sourceItemId", "capturedAt", "payload"],
+        "additionalProperties": false
+      },
+      "FeedSlice": {
+        "type": "object",
+        "properties": {
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Item"
+            }
+          },
+          "next": {
+            "type": "string",
+            "description": "A ready-to-fetch relative URL for the next page. Absent on the last page.",
+            "example": "/v1/feed?order=newest-first&limit=50&after=..."
+          }
+        },
+        "required": ["values"]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/v1/captures": {
+      "post": {
+        "summary": "Capture something into the pool",
+        "description": "The body is a capture envelope. Submitting the same capture twice has no additional effect and answers 200 rather than 201.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptureEnvelope"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Already captured. `matchedOn` says which identity the replay matched.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaptureOutcome"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Captured. `Location` names the item.",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "example": "/v1/items/0198f0c2-..."
+                },
+                "required": true
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaptureOutcome"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body could not be read as an envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["malformed-json", "malformed-envelope"]
+                        }
+                      },
+                      "required": ["code"],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The identity exists and the content differs. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["capture-id-conflict", "source-item-changed"]
+                        }
+                      },
+                      "required": ["code"],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The body was not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["unsupported-media-type"]
+                        }
+                      },
+                      "required": ["code"],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The envelope was understood and the pool declined it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unknown-payload-type",
+                            "payload-invalid",
+                            "missing-asset-slot",
+                            "unknown-asset",
+                            "asset-hash-mismatch"
+                          ]
+                        }
+                      },
+                      "required": ["code"],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/feed": {
+      "get": {
+        "summary": "Read the feed",
+        "description": "Every item chronologically by capture time, including archived and superseded ones. Follow `next` until it is absent.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "`newest-first` (default) or `oldest-first`.",
+              "example": "newest-first"
+            },
+            "required": false,
+            "description": "`newest-first` (default) or `oldest-first`.",
+            "name": "order",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "1–500. Defaults to 50. A larger value is refused, not clamped.",
+              "example": "50"
+            },
+            "required": false,
+            "description": "1–500. Defaults to 50. A larger value is refused, not clamped.",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "The position to continue from: `<at>,<id>`, or a bare instant as a coarse entry point.",
+              "example": "2026-08-08T09:00:00.000Z,0198f0c2-0000-7000-8000-000000000000"
+            },
+            "required": false,
+            "description": "The position to continue from: `<at>,<id>`, or a bare instant as a coarse entry point.",
+            "name": "after",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of the feed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedSlice"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter was understood and refused.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "limit-too-large",
+                            "bad-limit",
+                            "bad-order",
+                            "bad-position"
+                          ]
+                        }
+                      },
+                      "required": ["code"],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/items/{id}": {
+      "get": {
+        "summary": "Read one item",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The item.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Item"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No item has that id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["no-such-item"]
+                        }
+                      },
+                      "required": ["code"],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}

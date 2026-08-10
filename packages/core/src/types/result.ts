@@ -1,14 +1,13 @@
-import type { Branded } from "./branded";
+import type { Position } from "./domain/position";
 
 /** Two variants only: anything that is not a domain refusal throws. */
 export type Result<T, E> =
   | { readonly kind: "ok"; readonly value: T }
   | { readonly kind: "refused"; readonly refusal: E };
 
-export type PageCursor = Branded<string, "PageCursor">;
-
-export type Page = {
-  readonly after?: PageCursor;
+/** Continued from the position the previous slice handed back, if there was one. */
+export type Page<P = Position> = {
+  readonly after?: P;
   readonly limit: number;
 };
 
@@ -19,12 +18,12 @@ export type Page = {
  */
 export type FeedOrder = "newest-first" | "oldest-first";
 
-/** A cursor belongs to the order it was issued for, and is refused under the other. */
+/** A position belongs to no order, so one continues a read in either direction. */
 export type FeedPage = Page & {
   readonly order?: FeedOrder;
 };
 
-export type Slice<T> = {
+export type Slice<T, P = Position> = {
   readonly values: readonly T[];
-  readonly next?: PageCursor;
+  readonly next?: P;
 };

@@ -9,7 +9,6 @@ import type {
   ItemId,
   LeaseId,
   PayloadTypeName,
-  SourceId,
   SuggestionId,
   Timestamp,
 } from "../domain/ids";
@@ -23,7 +22,6 @@ export type SubjectRefusal =
     };
 
 export type CaptureRefusal =
-  | { readonly kind: "unknown-source"; readonly source: SourceId }
   | { readonly kind: "unknown-payload-type"; readonly type: PayloadTypeName }
   | {
       readonly kind: "payload-invalid";

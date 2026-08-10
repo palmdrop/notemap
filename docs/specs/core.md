@@ -1,8 +1,18 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-08-06
+**Last updated**: 2026-08-08
 **Shipped**:
+
+- 2026-08-08 — A source needs no declaration to capture; `config.sources` is a policy registry
+  rather than a guest list, and `unknown-source` is gone. The `SchemaValidator` port has its
+  first real implementation (`@notemap/schema-ajv`), and the first host — the daemon — drives a
+  pool through configured adapters end to end. ([plan](../plans/capture-feed-mvp.md))
+- 2026-08-08 — Paginated reads continue from a domain **position** rather than an opaque
+  cursor, across core's types, the store port and the SQLite driver. An abandoned enrichment
+  now records `abandonedAt`, which is what its surface is ordered by.
+  ([plan](../plans/http-v1-subset-and-positions.md),
+  [ADR 14](../adr/0014-pagination-by-domain-position.md))
 
 ---
 
@@ -169,8 +179,10 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   hand** — the user carried its content onward themselves — is routing: it appends a routing
   record whose destination is the user, with an optional note of where it went. Passing over
   an item changes nothing and is a skip.
-- Core holds no position in the queue. Reads are ordered and paginated; where processing has
-  got to is the caller's concern.
+- Core holds no position in the queue. Reads are ordered and paginated, continuing from a
+  **position** the caller hands back — the sort key of the last row it saw
+  ([ADR 14](../adr/0014-pagination-by-domain-position.md)). Where processing has got to is the
+  caller's concern, and a position is not it.
 
 ### Enrichment
 
@@ -201,7 +213,10 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   learns about it without polling every item; and every attempt is an entry in the action log
   ([ADR 12](../adr/0012-core-keeps-an-append-only-action-log.md)). Core additionally exposes
   everything currently abandoned as one readable surface, so a client can show "three things
-  need you" without walking the pool.
+  need you" without walking the pool. **An abandoned enrichment records when it was abandoned**
+  (added 2026-08-08): that surface is a list a person works through, and a list with no order is
+  one they cannot resume, so `abandonedAt` is what it is ordered and paginated by
+  ([ADR 14](../adr/0014-pagination-by-domain-position.md)).
 - **An abandoned enrichment can be requested again by hand**, which resets its attempts. Giving
   up is core's decision about automatic work, never a refusal to try when asked.
 - Backoff timing and the attempt limit are **configuration data core is given**, not policy core
@@ -273,6 +288,13 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   payload, the source, the source's own identifier, the capture time, and any tags the source
   already knows about. **Source-supplied tags are attributed to that source** (decided
   2026-08-04), so importing from an already-classified system does not lose its classification.
+- **A source needs no declaration** (decided 2026-08-08). Any source id is accepted at capture.
+  Declaring a source in configuration attaches **policy** to it — today only whether its
+  captures auto-request an enrichment — and nothing else; an undeclared source captures
+  normally and carries empty policy. Registration gated nothing an open client could not
+  spell, and refusing a capture for a paperwork reason is the wrong trade for a tool whose
+  first job is that capture always works. The accepted cost: a typo'd source id mints a
+  parallel identity rather than being caught, which shows up in attribution.
 - **Every capture is identified twice: by its own id, and by its source's id for it**
   (decided 2026-08-04). Both are unique, and they answer different questions. The capture id
   makes replay harmless for a client that captured while unreachable. The source identity makes
@@ -345,7 +367,13 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   [ADR 1](../adr/0001-pool-is-a-database.md)). It states what it requires of a store —
   all-or-nothing application of a transaction core opens, ordered paginated reads asked for in
   domain terms, unique client-generated capture ids, monotonic `modified_at`,
-  reference-counted asset release — and does not know which store answers. SQLite is the
+  reference-counted asset release — and does not know which store answers. *Amended
+  2026-08-08*: **that includes the continuation.** A paginated read is continued from a
+  **position** — the sort-key fields of the last row handed out, in domain terms — rather than
+  from an opaque cursor the store minted, and `PageCursor` is gone
+  ([ADR 14](../adr/0014-pagination-by-domain-position.md)). The one exception is sync's delta
+  cursor, which stays opaque deliberately: it names a store-internal sequence, which is exactly
+  what should not be stated in domain terms. SQLite is the
   default driver and the one that ships; another may be wanted for a platform or a hosting
   arrangement that cannot use it. *Amended 2026-08-06*: core holds a transaction handle and
   reads and writes inside it, so preconditions are ordinary reads rather than assertions
@@ -406,6 +434,9 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 - **[Assets name, blobs store](../adr/0013-assets-are-named-references-to-content-addressed-blobs.md)**
   — a filename is user data and must survive a round trip, so the human name and the
   deduplicated content live at different layers. Supersedes ADR 1's asset addressing.
+- **[Pagination by domain position](../adr/0014-pagination-by-domain-position.md)** — an opaque
+  cursor bought nothing a store's sort key does not already make public, and offsets drop rows
+  in a domain where inserts land behind the reader. Supersedes ADR 10's cursor clause.
 
 ---
 
@@ -428,6 +459,17 @@ Recorded in full under [docs/adr/](../adr/). In brief:
       asset sweep is the one piece of in-scope work that is pool-wide rather than about
       anything, and it is not modelled as a job today. If it becomes one, a job's subject has
       to say what kind of thing it names rather than being an item id.
+- [ ] 2026-08-08 — How a revision is ordered against its original in the feed, in a store. This
+      spec says a revision carries its original's capture time, so the two tie, and that the tie
+      is broken by the revision link: the revision follows the item it supersedes. The SQLite
+      driver breaks it on `(created_at, id)`, which agrees with the link **only when ids sort by
+      mint order** — true for the UUIDv7s core mints, and not guaranteed for the arbitrary ids a
+      client is allowed to supply. A client minting `aaa` for a revision of `zzz` would see the
+      revision before its original. The candidates are ordering on the chain explicitly, which
+      is a recursive query on every feed page, or narrowing what an id may be, which contradicts
+      "any unique id is accepted". Not urgent — nothing revises yet — but the pagination
+      position is `(createdAt, id)`, so whatever this becomes, it has to stay a total order the
+      position can name.
 
 ---
 

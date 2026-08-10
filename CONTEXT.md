@@ -32,6 +32,12 @@ The pool read as unprocessed, unarchived items, oldest first. A view, not a plac
 drain to zero.
 _Avoid_: inbox, backlog, todo list
 
+**Position**:
+The sort-key fields of the last row a paginated read handed out, named in domain terms — the feed
+continues from a capture time and an id. A parameter of a read, never stored, and never the
+frontend's idea of how far processing has got, which notemap's core does not hold.
+_Avoid_: cursor, token, offset, page number
+
 **Head**:
 The newest item in the feed. The only item that may be amended in place rather than revised.
 _Avoid_: first in the queue (the queue is oldest-first, so its first item is the oldest), latest,

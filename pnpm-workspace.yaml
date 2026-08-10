@@ -7,3 +7,5 @@ packages:
 # It arrives via vitest, as a devDependency only.
 allowBuilds:
   esbuild: true
+minimumReleaseAgeExclude:
+  - "@hono/zod-openapi@1.5.2"

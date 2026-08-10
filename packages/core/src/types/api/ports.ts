@@ -15,6 +15,7 @@ import type {
   Timestamp,
 } from "../domain/ids";
 import type { Item, ItemRecord } from "../domain/item";
+import type { AbandonedPosition } from "../domain/position";
 import type {
   Delivery,
   DeliveryOutcome,
@@ -117,7 +118,9 @@ export interface PoolReads {
   routingRecords(item: ItemId): Promise<readonly RoutingRecord[]>;
   artifacts(item: ItemId): Promise<readonly Artifact[]>;
   enrichmentStates(item: ItemId): Promise<readonly EnrichmentStatus[]>;
-  abandonedEnrichments(page: Page): Promise<Slice<EnrichmentStatus>>;
+  abandonedEnrichments(
+    page: Page<AbandonedPosition>,
+  ): Promise<Slice<EnrichmentStatus, AbandonedPosition>>;
 
   /** The pool store owns the item-to-asset count, so only it can find these. */
   unreferencedAssets(

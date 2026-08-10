@@ -1,0 +1,36 @@
+# notemap daemon configuration.
+#
+# Copy to $XDG_CONFIG_HOME/notemap/config.toml (usually ~/.config/notemap/config.toml),
+# or pass --config <path>.
+#
+# Keys are core's own names, so `docs/specs/core.md` reads as documentation for
+# this file. Absent lists mean empty.
+
+[daemon]
+pool = "~/.local/share/notemap/pool.db"
+host = "127.0.0.1"
+port = 4747
+
+[retry]
+maxAttempts = 5
+initialBackoff = 1000 # milliseconds
+maxBackoff = 60000
+
+# A source needs no declaration to capture; declaring one attaches policy.
+# `web` is the capture page, which hardcodes this id.
+[[sources]]
+id = "web"
+autoRequest = []
+
+[[payloadTypes]]
+name = "text"
+requiredSlots = []
+
+[payloadTypes.contentSchema]
+type = "object"
+required = ["text"]
+additionalProperties = false
+
+[payloadTypes.contentSchema.properties.text]
+type = "string"
+minLength = 1
