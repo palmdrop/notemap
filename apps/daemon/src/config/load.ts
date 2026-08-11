@@ -14,13 +14,28 @@ import type {
   SourceId,
 } from "@notemap/core";
 
-import { DEFAULT_HOST, DEFAULT_PORT, DEFAULT_RETRY } from "../constants";
+import {
+  DEFAULT_HOST,
+  DEFAULT_MIRROR,
+  DEFAULT_PORT,
+  DEFAULT_RETRY,
+} from "../constants";
+
+export type MirrorConfig = {
+  /** The `pool-mirror` directory. */
+  readonly root: string;
+  readonly pollIntervalMs: number;
+  readonly leaseForMs: Duration;
+  readonly batch: number;
+};
 
 export type DaemonConfig = {
   /** The SQLite file the pool lives in. */
   readonly pool: string;
   readonly host: string;
   readonly port: number;
+  /** Absent turns the mirror off: nothing is written and no job is enqueued. */
+  readonly mirror?: MirrorConfig;
   readonly poolConfig: PoolConfig;
 };
 
@@ -33,6 +48,14 @@ const fileSchema = z.strictObject({
       pool: z.string().optional(),
       host: z.string().min(1).optional(),
       port: z.number().int().min(1).max(65535).optional(),
+    })
+    .optional(),
+  mirror: z
+    .strictObject({
+      root: z.string().min(1),
+      pollInterval: z.number().int().positive().optional(),
+      leaseFor: z.number().int().positive().optional(),
+      batch: z.number().int().positive().optional(),
     })
     .optional(),
   retry: z
@@ -87,8 +110,20 @@ export function defaultConfigPath(): string {
   return join(xdg("XDG_CONFIG_HOME", ".config"), "notemap", "config.toml");
 }
 
+/**
+ * The backup unit: the database, the mirror and the assets are siblings under
+ * one directory, so "back up notemap" names something real.
+ */
+export function defaultDataRoot(): string {
+  return join(xdg("XDG_DATA_HOME", ".local/share"), "notemap");
+}
+
 export function defaultPoolPath(): string {
-  return join(xdg("XDG_DATA_HOME", ".local/share"), "notemap", "pool.db");
+  return join(defaultDataRoot(), "state", "notemap.db");
+}
+
+export function defaultMirrorRoot(): string {
+  return join(defaultDataRoot(), "pool-mirror");
 }
 
 export function parseConfig(source: string, from: string): DaemonConfig {
@@ -114,6 +149,17 @@ export function parseConfig(source: string, from: string): DaemonConfig {
     pool: resolve(expandHome(file.daemon?.pool ?? defaultPoolPath())),
     host: file.daemon?.host ?? DEFAULT_HOST,
     port: file.daemon?.port ?? DEFAULT_PORT,
+    ...(file.mirror === undefined
+      ? {}
+      : {
+          mirror: {
+            root: resolve(expandHome(file.mirror.root)),
+            pollIntervalMs: file.mirror.pollInterval ?? DEFAULT_MIRROR.pollMs,
+            leaseForMs: (file.mirror.leaseFor ??
+              DEFAULT_MIRROR.leaseMs) as Duration,
+            batch: file.mirror.batch ?? DEFAULT_MIRROR.batch,
+          },
+        }),
     poolConfig: {
       sources: file.sources.map((source) => ({
         id: source.id as SourceId,

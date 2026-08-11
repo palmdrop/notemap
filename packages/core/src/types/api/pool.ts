@@ -17,6 +17,7 @@ import type {
   TagName,
 } from "../domain/ids";
 import type { EditOutcome, Item } from "../domain/item";
+import type { MirrorRecord } from "../domain/mirror";
 import type { Payload } from "../domain/payload";
 import type { AbandonedPosition } from "../domain/position";
 import type {
@@ -138,6 +139,15 @@ export interface SyncApi {
   changesSince(cursor: SyncCursor | undefined, limit: number): Promise<Delta>;
 }
 
+export interface MirrorApi {
+  /**
+   * What the mirror would write for this item now, or nothing if it is gone.
+   * A read of the pool: a mirror job carries no snapshot, so whatever performs
+   * the write asks for the state at the moment it writes.
+   */
+  recordFor(item: ItemId): Promise<MirrorRecord | undefined>;
+}
+
 export type MirrorReport = {
   readonly checked: number;
   readonly missing: readonly ItemId[];
@@ -175,6 +185,7 @@ export interface Pool {
   readonly routing: RoutingApi;
   readonly assets: AssetsApi;
   readonly work: WorkApi;
+  readonly mirror: MirrorApi;
   readonly actions: ActionsApi;
   readonly sync: SyncApi;
   readonly maintenance: MaintenanceApi;

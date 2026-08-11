@@ -27,15 +27,62 @@ There is no authentication: the pool is the boundary, so binding wider than loca
 to whoever can reach the address.
 
 `SIGINT` or `SIGTERM` stops it: the listener closes, idle connections go immediately, anything
-still in flight gets two seconds, and then the host closes the pool it built — and nothing else.
+still in flight gets two seconds, then the mirror runner stops — giving back any lease it holds
+— and then the host closes the pool it built, and nothing else.
+
+## The mirror
+
+Every capture is also written to disk as a plain file pair — a `.json` **record**, which is
+complete and authoritative, and a `.md` **rendering**, which nothing ever parses
+([docs/specs/mirror.md](../../docs/specs/mirror.md)). Nothing reads either back during normal
+operation. The point is that a lost pool is rebuildable and that uninstalling notemap costs
+nothing but the tooling.
+
+```toml
+[mirror]
+root = "~/.local/share/notemap/pool-mirror"
+pollInterval = 1000 # milliseconds between sweeps for owed writes
+leaseFor = 60000    # how long a claimed write is held before anyone may retake it
+batch = 16          # writes claimed per sweep
+```
+
+The layout the root belongs to is one directory, and that directory is the backup unit —
+rebuilding needs the mirror *and* the assets, and neither half is portable alone:
+
+```
+~/.local/share/notemap/
+  state/notemap.db      <- authoritative, never synced
+  pool-mirror/YYYY/MM/DD/
+  assets/<hash-prefix>/
+```
+
+Writes are asynchronous. Capture commits, records that a write is owed, and answers; a poll loop
+claims that work and performs it. **A capture never fails because a mirror write did** — a write
+that fails because the folder is offline retries indefinitely, and one that fails because a
+renderer threw is given up on at once and shows up on the abandoned-work surface. Because mirror
+text is never read, `pool-mirror/` is safe inside a synced folder.
+
+**Deleting the `[mirror]` table turns the mirror off**, and then nothing is written and no work
+is even recorded as owed. Two consequences worth stating plainly, because they are easy to
+acquire without noticing: the SQLite file becomes the only copy of everything, and the
+drop-and-rebuild migration path below stops applying to that pool. Re-enabling it is one repair
+run, which is not built yet — so today, turning it off and back on leaves everything captured in
+between unmirrored.
+
+The daemon wires a renderer for `text` and nothing else. A payload type with no renderer still
+gets a readable file: the same provenance frontmatter, and its content as a fenced JSON block.
 
 ## Pools created now are disposable
 
 There are no live users and no migrations are owed
 ([ADR 9](../../docs/adr/0009-versioned-api-mutable-until-first-real-pool.md)). `/v1` and the
 schema may both change without a migration path until the developer says they hold something
-they would be upset to lose. **Do not put anything in a pool yet that only exists there.** The
-mirror is the next core slice, and it is what ends this stance.
+they would be upset to lose.
+
+The mirror is what ends this stance, and it is now here — but only half of it. Writing works;
+**rebuild, verify and repair do not exist yet**, so the mirror is a complete copy that nothing
+can yet read back. Until they land, treat it as insurance you cannot currently claim on: the
+files are correct and a human can read them, but notemap cannot turn them back into a pool.
 
 ## Capture is online-only
 
@@ -86,10 +133,16 @@ sits at the depth the bundle does. The tests import sources and cannot see this 
 
 ## Notes on the wiring
 
-- **The asset store and the mirror ports throw.** They have no adapter yet and nothing can reach
-  them: there are no asset endpoints, and no mirror job can be claimed until the store
-  implements `claim()`. They throw rather than doing nothing, so "unbuilt" cannot quietly become
-  "lossy" the moment one becomes reachable.
+- **The asset store throws.** It has no adapter yet and nothing can reach it — there are no
+  asset endpoints — and it throws rather than doing nothing, so "unbuilt" cannot quietly become
+  "lossy" the moment it becomes reachable. The mirror writer is different: it is genuinely
+  optional, and its absence is a state core knows about rather than a stub, so a pool wired
+  without one enqueues no mirror jobs instead of accumulating work nothing will claim.
+- **The runner holds a timer and nothing else.** Which job is next, whether a failure retries and
+  when, and when work is given up on are all core's
+  ([ADR 2](../../docs/adr/0002-core-is-a-host-agnostic-library.md)): the host drives *when*, core
+  owns the state. Polling rather than being kicked from the capture route is the boring choice
+  and needs no signal from a route handler.
 - **Routes are documented in `routes/definitions.ts` and handled in `routes/*.ts`**, rather than
   through `@hono/zod-openapi`'s `app.openapi()`. That helper types each handler against the
   responses its route declares, which fights an API answering every refusal through one helper,

@@ -12,6 +12,7 @@ import type {
 } from "@notemap/core";
 
 import { createApp } from "../app";
+import { startMirrorRunner } from "../mirror/runner";
 import { openPool } from "../ports";
 
 export const WEB = "web" as SourceId;
@@ -42,16 +43,43 @@ export const CONFIG: PoolConfig = {
 
 export type Daemon = {
   readonly app: Hono;
+  /** Where the mirror would write, whether or not one is wired. */
+  readonly mirrorRoot: string;
+  /** Runs every claimable mirror job now. Zero when no mirror is wired. */
+  readonly drain: () => Promise<number>;
   readonly cleanup: () => Promise<void>;
 };
 
-export function daemon(config: PoolConfig = CONFIG): Daemon {
+/**
+ * The runner is driven by hand rather than by its timer: a test that waits for
+ * a poll is a test that fails on a slow machine.
+ */
+const NEVER_POLLS = 60 * 60 * 1000;
+
+export function daemon(config: PoolConfig = CONFIG, mirroring = false): Daemon {
   const directory = mkdtempSync(join(tmpdir(), "notemap-daemon-"));
-  const pool = openPool(join(directory, "pool.db"), config);
+  const mirrorRoot = join(directory, "pool-mirror");
+  const { pool, mirrorWriter } = openPool(
+    join(directory, "pool.db"),
+    config,
+    mirroring ? mirrorRoot : undefined,
+  );
+
+  const runner =
+    mirrorWriter === undefined
+      ? undefined
+      : startMirrorRunner(pool, mirrorWriter, {
+          pollIntervalMs: NEVER_POLLS,
+          leaseForMs: 60_000 as Duration,
+          batch: 16,
+        });
 
   return {
     app: createApp(pool),
+    mirrorRoot,
+    drain: async () => (await runner?.drain()) ?? 0,
     cleanup: async () => {
+      await runner?.stop();
       await pool.close();
       rmSync(directory, { recursive: true, force: true });
     },

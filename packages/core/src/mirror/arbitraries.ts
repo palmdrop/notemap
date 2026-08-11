@@ -26,9 +26,30 @@ const branded = <T>(): fc.Arbitrary<T> => name() as fc.Arbitrary<T>;
 
 /** Open JSON, exactly as a client may send it, including nested objects and nulls. */
 const jsonObject = (): fc.Arbitrary<JsonObject> =>
-  fc.dictionary(fc.string(), fc.jsonValue() as fc.Arbitrary<never>, {
-    maxKeys: 4,
-  }) as fc.Arbitrary<JsonObject>;
+  fc.dictionary(
+    fc.string(),
+    fc.jsonValue().map(oneZero) as fc.Arbitrary<never>,
+    {
+      maxKeys: 4,
+    },
+  ) as fc.Arbitrary<JsonObject>;
+
+/**
+ * JSON has one zero — `JSON.stringify(-0)` is `"0"` — and the pool collapses it
+ * at the same boundary, since payload content is stored as JSON text. So `-0`
+ * is not a value notemap holds anywhere, and generating one would test the
+ * mirror against a state the pool cannot be in.
+ */
+function oneZero(value: unknown): unknown {
+  if (Object.is(value, -0)) return 0;
+  if (Array.isArray(value)) return value.map(oneZero);
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, each]) => [key, oneZero(each)]),
+    );
+  }
+  return value;
+}
 
 const agent = (): fc.Arbitrary<Agent> =>
   fc.oneof(

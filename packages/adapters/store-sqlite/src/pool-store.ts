@@ -4,9 +4,11 @@ import { DatabaseSync } from "node:sqlite";
 import type {
   AbandonedPosition,
   Action,
+  Artifact,
   ClaimRequest,
   Clock,
   JobResolution,
+  RoutingRecord,
   FeedOrder,
   FeedPage,
   IdGenerator,
@@ -323,6 +325,12 @@ export function createSqlitePoolStore(
       abandonedWork: async (page: Page<AbandonedPosition>) =>
         abandonedWork(source, page),
 
+      // Neither has a table yet, so an item genuinely has none of either.
+      // Empty rather than unimplemented, because the mirror asks for both on
+      // every write and a throw would be a lie about what the pool holds.
+      artifacts: async (): Promise<readonly Artifact[]> => [],
+      routingRecords: async (): Promise<readonly RoutingRecord[]> => [],
+
       itemBySourceIdentity: async (
         sourceId: SourceId,
         sourceItemId: string,
@@ -421,6 +429,8 @@ export function createSqlitePoolStore(
 
       item: guard(uncommitted.item),
       abandonedWork: guard(uncommitted.abandonedWork),
+      artifacts: guard(uncommitted.artifacts),
+      routingRecords: guard(uncommitted.routingRecords),
       itemBySourceIdentity: guard(uncommitted.itemBySourceIdentity),
       head: guard(uncommitted.head),
       feed: guard(uncommitted.feed),
@@ -515,8 +525,6 @@ function notYetImplementedReads() {
     archived: unimplemented("archived"),
     suggestions: unimplemented("suggestions"),
     suggestion: unimplemented("suggestion"),
-    routingRecords: unimplemented("routingRecords"),
-    artifacts: unimplemented("artifacts"),
     enrichmentStates: unimplemented("enrichmentStates"),
     unreferencedAssets: unimplemented("unreferencedAssets"),
     changesSince: unimplemented("changesSince"),

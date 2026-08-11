@@ -162,14 +162,23 @@ New package `packages/adapters/mirror-fs`, following the conventions `store-sqli
 
 ### Phase 6 — Daemon wiring and the runner *(depends on phases 3 and 5)*
 
-- [ ] Config: the mirror root, and its absence meaning no mirror writer is wired
-- [ ] A `text` renderer for the one payload type that exists
-- [ ] A loop that claims mirror jobs, calls the writer, and reports the outcome — the host drives
-      *when*, core owns the state (ADR 2). Shut it down with the pool
-- [ ] Daemon README: how the mirror is configured, and that the pool is no longer the only copy
-- [ ] Tests: capture through HTTP, drain the queue, assert the files; a capture with the mirror
+- [x] Config: a `[mirror]` table whose absence means no mirror writer is wired. The pool default
+      moves to `<data>/notemap/state/notemap.db` and the mirror defaults to its sibling
+      `pool-mirror/`, per the layout decision above
+- [x] A `text` renderer for the one payload type that exists
+- [x] A loop that claims mirror jobs, calls the writer, and reports the outcome — the host drives
+      *when*, core owns the state (ADR 2). Shut it down with the pool, before the pool, so a lease
+      it holds is given back
+- [x] *Not in the original task*: something has to read the state a write is owed for, and a job
+      carries no snapshot. `Pool.mirror.recordFor(item)` is that read — of the pool, never of the
+      mirror. The SQLite store's `artifacts` and `routingRecords` stop being unimplemented and
+      answer empty, which is what an item genuinely has while neither has a table
+- [x] Daemon README: how the mirror is configured, and that the pool is no longer the only copy —
+      with the caveat that rebuild, verify and repair do not exist yet, so it is a copy nothing
+      can read back
+- [x] Tests: capture through HTTP, drain the queue, assert the files; a capture with the mirror
       unconfigured still succeeds and enqueues nothing
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 7 — End to end *(depends on phase 6)*
 

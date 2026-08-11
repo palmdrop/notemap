@@ -21,3 +21,14 @@ export const DEFAULT_RETRY = {
 };
 
 export const SHUTDOWN_GRACE_MS = 2_000;
+
+/**
+ * The runner polls rather than being kicked by the request path. A capture is
+ * mirrored within a second of committing, which is well inside what "the pool
+ * is no longer the only copy" has to mean, and it needs no signal from a route.
+ */
+export const DEFAULT_MIRROR = {
+  pollMs: 1_000,
+  leaseMs: 60_000,
+  batch: 16,
+};

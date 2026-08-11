@@ -3,6 +3,7 @@ import type { Pool } from "../types/api/pool";
 import type { PoolPorts } from "../types/api/ports";
 
 import { capture } from "./capture";
+import * as mirror from "./mirror";
 import * as work from "./work";
 
 /**
@@ -73,6 +74,8 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
       release: (lease) => work.release(ports, lease),
       abandoned: (page) => work.abandoned(ports, page),
     },
+
+    mirror: { recordFor: (item) => mirror.recordFor(ports, item) },
 
     actions: {
       forItem: (item, page) => store.actions(item, page),

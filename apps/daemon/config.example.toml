@@ -7,9 +7,21 @@
 # this file. Absent lists mean empty.
 
 [daemon]
-pool = "~/.local/share/notemap/pool.db"
+pool = "~/.local/share/notemap/state/notemap.db"
 host = "127.0.0.1"
 port = 4747
+
+# The plain-file copy of everything, written and never read back. Delete this
+# whole table and the mirror is off: nothing is written, and no work is even
+# recorded as owed — which makes the SQLite file the only copy of everything.
+#
+# `root` is a sibling of `state/`, because rebuilding needs the mirror and the
+# assets together: the backup unit is the whole `notemap/` directory.
+[mirror]
+root = "~/.local/share/notemap/pool-mirror"
+pollInterval = 1000 # milliseconds between sweeps for owed writes
+leaseFor = 60000    # how long a claimed write is held before anyone may retake it
+batch = 16          # writes claimed per sweep
 
 [retry]
 maxAttempts = 5
