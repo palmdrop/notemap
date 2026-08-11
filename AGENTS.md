@@ -3,6 +3,39 @@
 Notemap is a quick way of capturing and processing notes, and routing the contents of these notes to other knowledge-management systems.  
 See `/docs` for further details.
 
+## Rules
+
+Design and process
+
+- Consult me before choosing a language, library, or making any other major decision.
+- Design interfaces, architecture and module APIs together with me, unless told otherwise.
+- Say so and make the case when you see a better pattern, even where a doc states the opposite. Never quietly implement a shape you believe is wrong.
+- Push back when I write code or define interfaces that contradict a spec or ADR — then concede if I confirm that is the shape I want.
+- Change the doc and the code in the same change, and get my confirmation before either lands.
+- Read `CONTEXT.md` and use its words. Fix a term there rather than inventing a synonym.
+
+Code
+
+- Comments are the exception. Do not restate the code, do not explain rejected alternatives, do not point at discussions, ADRs or other docs.
+- Keep files small and grouped by concern, in folders. Tests live beside what they test.
+
+Git
+
+- Branch per plan, `agent/<plan-file-stem>`. Never commit to `main` directly.
+- Keep `origin` on HTTPS — `https://github.com/palmdrop/notemap.git`. Never change it to `git@github.com:`.
+- Never force-push a branch that has an open PR.
+
+Verification
+
+- Run typecheck, tests and linters when you finish a feature or a larger test.
+- Resolve every issue before you commit or state that you are done.
+
+---
+
+The rest of this file is the reasoning behind those rules.
+
+## What this project is
+
 This is a learning project. Interface design, architecture and module apis should be designed in tandem with me, the developer, 
 unless otherwise instructed. Before choosing language, library or other major decisions, consult me. When I write code or define interfaces, push back if they contradict specs or ADRs, but ultimately concede if I confirm this is the shape I want. Update the docs accordingly.
 
@@ -66,7 +99,7 @@ what they test.
 - Branch per plan, `agent/<plan-file-stem>`. Never commit to `main` directly.
 - Never force-push a branch that has an open PR.
 
-# Verification
+## Verification
 
 When you are done implementing a feature, or making a larger test, run typecheck, tests and linters. 
 Resolve any issues before commiting or stating that you are done. 
