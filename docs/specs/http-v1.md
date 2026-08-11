@@ -34,7 +34,7 @@ other software builds against. One versioned prefix, `/v1`, from the first commi
 ### In scope
 
 - The `/v1` resource model: captures, items, feed, queue, tags, suggestions, artifacts,
-  routing, archive, purge, assets.
+  routing, archive, purge, assets, the action log.
 - Pagination, error model, content types.
 - Asset upload and download.
 - The wire form of the sync surface — the protocol itself is [sync.md](sync.md).
@@ -51,6 +51,8 @@ other software builds against. One versioned prefix, `/v1`, from the first commi
 Settled (2026-08-08): `POST /v1/captures`, `GET /v1/feed`, `GET /v1/items/:id`, the error
 envelope and the complete refusal-to-status table, pagination by position, content types, the
 bind address and port, and the OpenAPI document.
+
+Settled (2026-08-11): `GET /v1/actions`, and the log page at `/log`.
 
 Still stub, and unwritten below: the queue read, tagging and untagging, suggestions and their
 decisions, artifacts and corrections, routing and destinations, archive and unarchive, purge and
@@ -87,8 +89,8 @@ Nothing here forecloses them; they get the same treatment when their slice is bu
   header is the moment to reconsider authentication rather than a convenience. Binding wider
   than localhost exposes an unauthenticated pool to whoever can reach the address — the
   configuration allows it, and nothing in `/v1` defends it.
-- The capture page is served at `/` and the playground at `/docs`. Everything the API itself
-  answers is under `/v1`.
+- The capture page is served at `/`, the action log page at `/log`, and the playground at
+  `/docs`. Everything the API itself answers is under `/v1`.
 - An unknown path is `404 unknown-route`. A known path with the wrong method is `405`, carrying
   an `Allow` header listing the methods that path does answer. `OPTIONS` is one of them, and is
   answered `204` with the same `Allow`.
@@ -198,6 +200,49 @@ The response is a slice:
 - Both orders may be read from one position. It names a place in the feed, not a direction of
   travel — `newest-first` continues below it, `oldest-first` above it.
 
+### The action log
+
+`GET /v1/actions`
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `order` | `newest-first` | `newest-first` or `oldest-first` |
+| `limit` | `50` | 1–500 |
+| `after` | *(absent)* | The position to continue from |
+| `item` | *(absent)* | Narrows the read to one subject |
+
+- `order`, `limit` and `after` mean what they mean on the feed and are refused in the same ways.
+  A position is `<at>,<id>`, or a bare instant as a coarse entry point.
+- **`item` is neither validated nor refused.** Any string is a legal filter, and one that names
+  nothing answers an empty page. The log outlives the material it describes
+  ([core.md](core.md#the-action-log)), so a purged item's entries are a normal thing to ask for
+  and `404 no-such-item` would be a lie about a log that holds them.
+
+```json
+{
+  "values": [
+    {
+      "id": "0198f0c2-...",
+      "kind": "captured",
+      "subject": "0198f0c2-...",
+      "by": { "kind": "source", "source": "capture-page" },
+      "at": "2026-08-08T09:00:00.123Z",
+      "detail": {}
+    }
+  ],
+  "next": "/v1/actions?order=newest-first&limit=50&after=2026-08-08T09%3A00%3A00.123Z%2C0198f0c2-..."
+}
+```
+
+- `at` is when the pool applied the action, which for a capture is its arrival and not the
+  `capturedAt` its source reported.
+- `by` is the agent, and unlike a tag's it may be `{ "kind": "notemap" }` — work core drives on
+  nobody's behalf.
+- `detail` is open JSON whose shape follows the kind. It carries facts and never a sentence, the
+  same as an error body.
+- `next` is a ready-to-fetch relative URL on the same terms as the feed's, carrying the order, the
+  limit, the filter where there is one, and the next position. It is absent on the last page.
+
 ### Errors
 
 Every error, from core or from the daemon, is one shape:
@@ -285,6 +330,15 @@ The playground is **host surface, not contract**. It is absent from the document
 `/v1` refers to it, and removing it changes no promise this spec makes. `/v1/openapi.json`
 remains the interop surface; `/docs` is a convenience over it.
 
+### The log page
+
+`GET /log` is a page the daemon serves itself, reading `GET /v1/actions` from the daemon that
+served it and paging by following `next`. It exists so that the log can be looked at without a
+database client, which is the difference between a trace that is kept and one that is read.
+
+It is **host surface on the same terms as the playground**: absent from the document, referred to
+by nothing in `/v1`, and removable without changing a promise this spec makes.
+
 ---
 
 ## Constraints
@@ -347,8 +401,16 @@ remains the interop surface; `/docs` is a convenience over it.
   with an `Allow` header.
 - `GET /v1/openapi.json` returns a valid OpenAPI 3.1 document describing every route above, and
   it matches the copy checked into the repo.
+- `GET /v1/actions` with no parameters returns the 50 newest entries, newest first, and the entry
+  for a capture carries the instant the daemon received it rather than its `capturedAt`.
+- `GET /v1/actions?item=<id>` returns that subject's entries and no others, and following `next`
+  carries the filter with it.
+- An `item` no pool item has returns `200` with an empty page, never `404`; an item purged after
+  its entries were written still returns them.
 - `GET /docs` returns a page that loads its script, its stylesheet and the OpenAPI document from
   the daemon itself, and nothing from anywhere else.
+- `GET /log` returns a page that loads nothing from anywhere but the daemon, and renders entries
+  it read from `GET /v1/actions`.
 - A `/docs` path naming anything but the vendored Swagger UI files returns `404 unknown-route`,
   and no `/docs` path reaches a file outside the vendored directory.
-- The playground appears nowhere in `GET /v1/openapi.json`.
+- Neither the playground nor the log page appears anywhere in `GET /v1/openapi.json`.
