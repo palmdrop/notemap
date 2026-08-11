@@ -60,7 +60,7 @@ describe("capturing through HTTP, with a mirror wired", () => {
     expect(stored.item.source).toBe("web");
 
     const text = await readFile(rendering, "utf8");
-    expect(text).toContain('capture_source: "web"');
+    expect(text).toContain("capture_source: 'web'");
     expect(text.trimEnd().endsWith("the mirror is the point")).toBe(true);
   });
 

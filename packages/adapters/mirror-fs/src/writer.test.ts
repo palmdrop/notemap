@@ -173,17 +173,17 @@ describe("the rendering", () => {
 
     expect(frontmatterOf(rendering)).toBe(
       [
-        'id: "item-1"',
-        'capture_source: "scratchpad"',
-        'source_id: "src-1"',
-        'payload_type: "text"',
-        'captured_at: "2026-08-11T14:23:05.000Z"',
-        'wasAttributedTo: "scratchpad"',
-        'updated_at: "2026-08-11T15:00:00.000Z"',
+        "id: 'item-1'",
+        "capture_source: 'scratchpad'",
+        "source_id: 'src-1'",
+        "payload_type: 'text'",
+        "captured_at: '2026-08-11T14:23:05.000Z'",
+        "wasAttributedTo: 'scratchpad'",
+        "updated_at: '2026-08-11T15:00:00.000Z'",
         "tags:",
-        '  - "kind/quote"',
-        '  - "project/fiction-a"',
-        'wasRevisionOf: "item-0"',
+        "  - 'kind/quote'",
+        "  - 'project/fiction-a'",
+        "wasRevisionOf: 'item-0'",
         "",
       ].join("\n"),
     );
@@ -223,20 +223,20 @@ describe("the rendering", () => {
       await readFile(pathsFor(where, record()).rendering, "utf8"),
     );
 
-    expect(block).toContain('id: "item-1"');
-    expect(block).toContain('title: "mine"');
+    expect(block).toContain("id: 'item-1'");
+    expect(block).toContain("title: 'mine'");
     expect(block).not.toContain("not-the-item-id");
   });
 
   it("survives a value that would otherwise break the block", async () => {
     const { root: where, writer } = mirror();
 
-    await writer.write(record({ tags: ['a: b #c "d"'] }));
+    await writer.write(record({ tags: ["a: b #c \"d\" 'e'"] }));
     const block = frontmatterOf(
       await readFile(pathsFor(where, record()).rendering, "utf8"),
     );
 
-    expect(block).toContain('  - "a: b #c \\"d\\""');
+    expect(block).toContain("  - 'a: b #c \"d\" ''e'''");
   });
 
   /** A payload's content is open JSON, so it may hold a backtick run of any length. */
@@ -393,7 +393,7 @@ describe("timestamps", () => {
       await readFile(pathsFor(where, written).rendering, "utf8"),
     );
 
-    expect(block).toContain('captured_at: "2026-08-11T14:23:05.000Z"');
+    expect(block).toContain("captured_at: '2026-08-11T14:23:05.000Z'");
     expect(at("2026-08-11T14:23:05.000Z")).toBe(written.item.createdAt);
   });
 });

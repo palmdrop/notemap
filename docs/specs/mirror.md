@@ -1,8 +1,14 @@
 # Spec: The mirror on disk
 
 **Status**: Draft
-**Last updated**: 2026-08-11
+**Last updated**: 2026-08-12
 **Shipped**:
+
+- 2026-08-12 — **Frontmatter strings are single-quoted.** The YAML library is now `js-yaml`,
+  which ships ESM: `yaml` is CommonJS on node, and the `require("process")` inside it survived
+  into the daemon's ESM bundle as a call that throws on load. Values are still quoted without
+  exception and keys still are not, so nothing reads back as a number, a bool or null; only the
+  quote character changed. A smoke test now runs `dist/main.js`, which is what nothing did.
 
 - 2026-08-11 — **The writer half.** The mirror record, its canonical serialisation and its parse
   live in core, proved lossless by a property test over generated pools. Mirror jobs can be

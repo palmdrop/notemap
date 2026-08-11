@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@notemap/core": "workspace:*",
-    "yaml": "^2.9.0"
+    "js-yaml": "^5.2.3"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",

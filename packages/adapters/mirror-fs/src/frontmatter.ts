@@ -1,4 +1,4 @@
-import { stringify } from "yaml";
+import { dump } from "js-yaml";
 
 import type { ItemRecord, MirrorRecord } from "@notemap/core";
 
@@ -65,10 +65,9 @@ export function fixedFrontmatter(
 
 /** Every string is quoted, so no value can be read back as a number, a bool or null. */
 export function toYaml(entries: ReadonlyMap<string, FrontmatterValue>): string {
-  const body = stringify(Object.fromEntries(entries), {
-    defaultStringType: "QUOTE_DOUBLE",
-    defaultKeyType: "PLAIN",
-    lineWidth: 0,
+  const body = dump(Object.fromEntries(entries), {
+    forceQuotes: true,
+    lineWidth: -1,
   });
 
   return `---\n${body}---\n`;
