@@ -17,6 +17,7 @@ import type {
   TagName,
 } from "../domain/ids";
 import type { EditOutcome, Item } from "../domain/item";
+import type { MirrorRecord } from "../domain/mirror";
 import type { Payload } from "../domain/payload";
 import type { AbandonedPosition } from "../domain/position";
 import type {
@@ -26,7 +27,13 @@ import type {
 } from "../domain/routing";
 import type { Suggestion } from "../domain/suggestion";
 import type { Delta, Tombstone } from "../domain/sync";
-import type { ClaimRequest, Lease, WorkOutcome } from "../domain/work";
+import type {
+  AbandonedWork,
+  ClaimRequest,
+  Lease,
+  WorkOutcome,
+} from "../domain/work";
+import type { MirrorReader } from "./ports";
 import type {
   ActionLogRefusal,
   ArchiveRefusal,
@@ -38,7 +45,6 @@ import type {
   EnrichmentRefusal,
   LeaseRefusal,
   PurgeRefusal,
-  RebuildRefusal,
   RoutingRefusal,
   SuggestionRefusal,
   TagRefusal,
@@ -77,9 +83,6 @@ export interface EnrichmentApi {
     artifact: ArtifactId,
     content: JsonObject,
   ): Promise<Result<Artifact, ArtifactRefusal>>;
-  abandoned(
-    page: Page<AbandonedPosition>,
-  ): Promise<Slice<EnrichmentStatus, AbandonedPosition>>;
 }
 
 export interface RoutingApi {
@@ -116,6 +119,11 @@ export interface WorkApi {
   ): Promise<Result<void, LeaseRefusal>>;
   extend(lease: LeaseId, by: Duration): Promise<Result<Lease, LeaseRefusal>>;
   release(lease: LeaseId): Promise<Result<void, LeaseRefusal>>;
+
+  /** Everything core has stopped retrying, of every kind, in one list. */
+  abandoned(
+    page: Page<AbandonedPosition>,
+  ): Promise<Slice<AbandonedWork, AbandonedPosition>>;
 }
 
 export interface ActionsApi {
@@ -128,16 +136,31 @@ export interface SyncApi {
   changesSince(cursor: SyncCursor | undefined, limit: number): Promise<Delta>;
 }
 
+export interface MirrorApi {
+  /** What the mirror would write for this item now, or nothing if it is gone. */
+  recordFor(item: ItemId): Promise<MirrorRecord | undefined>;
+}
+
 export type MirrorReport = {
   readonly checked: number;
   readonly missing: readonly ItemId[];
   readonly drifted: readonly AssetId[];
 };
 
+/**
+ * Fast checks that every item has a pair that parses and records the right
+ * `modified_at`; deep additionally re-serialises and compares byte for byte,
+ * and hashes every referenced blob.
+ */
+export type VerifyDepth = "fast" | "deep";
+
+/**
+ * Rebuild is absent: it makes a pool rather than operating on one. Verify and
+ * repair take a reader as an argument, so a pool never holds one.
+ */
 export interface MaintenanceApi {
-  rebuildFromMirror(): Promise<Result<number, RebuildRefusal>>;
-  verifyMirror(): Promise<MirrorReport>;
-  repairMirror(): Promise<MirrorReport>;
+  verifyMirror(reader: MirrorReader, depth: VerifyDepth): Promise<MirrorReport>;
+  repairMirror(reader: MirrorReader): Promise<MirrorReport>;
   sweepUnreferencedAssets(): Promise<readonly AssetId[]>;
 }
 
@@ -153,14 +176,11 @@ export interface Pool {
   readonly routing: RoutingApi;
   readonly assets: AssetsApi;
   readonly work: WorkApi;
+  readonly mirror: MirrorApi;
   readonly actions: ActionsApi;
   readonly sync: SyncApi;
   readonly maintenance: MaintenanceApi;
 
-  /**
-   * Disposes the pool, releasing every port that holds something open. The host
-   * decides when a pool is done with; core never decides for it. Wiring the
-   * ports is the host's job, operating them afterwards is not.
-   */
+  /** Disposes the pool, releasing every port that holds something open. */
   close(): Promise<void>;
 }

@@ -17,6 +17,7 @@
     "@hono/node-server": "^2.1.0",
     "@hono/zod-openapi": "^1.5.2",
     "@notemap/core": "workspace:*",
+    "@notemap/mirror-fs": "workspace:*",
     "@notemap/schema-ajv": "workspace:*",
     "@notemap/store-sqlite": "workspace:*",
     "hono": "^4.13.1",

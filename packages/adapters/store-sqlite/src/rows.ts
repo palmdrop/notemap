@@ -1,14 +1,11 @@
 /**
- * The shape of every table, as SQLite hands it back.
- *
- * Hand-written SQL cannot prove a row matches its type, so these are the one
- * place the driver asserts rather than checks. `schema.test.ts` closes the gap
- * from the other end: it reads `PRAGMA table_info` and fails if a column here
- * has no counterpart in the migration, or the other way round.
+ * The shape of every table, as SQLite hands it back — the one place the driver
+ * asserts rather than checks. `schema.test.ts` closes the gap from the other
+ * end, failing if these and the migrations disagree on any column.
  */
 
 export type AgentColumns = {
-  readonly by_kind: "person" | "provider" | "source";
+  readonly by_kind: "notemap" | "person" | "provider" | "source";
   readonly by_ref: string | null;
 };
 
@@ -42,11 +39,17 @@ export type ItemAssetRow = {
 
 export type JobRow = {
   readonly id: string;
-  readonly kind: "enrichment" | "mirror";
+  readonly kind: "enrichment" | "mirror" | "mirror-remove";
   readonly subject: string;
   readonly enrichment: string | null;
   readonly attempt: number;
   readonly enqueued_at: number;
+  readonly next_attempt_at: number;
+  readonly lease_id: string | null;
+  readonly lease_expires_at: number | null;
+  readonly abandoned_at: number | null;
+  readonly last_failure_code: string | null;
+  readonly last_failure_detail: string | null;
 };
 
 export type ActionRow = AgentColumns & {
@@ -80,7 +83,20 @@ export const TABLE_COLUMNS = {
   ],
   item_tags: ["item_id", "name", "by_kind", "by_ref", "added_at"],
   item_assets: ["item_id", "slot", "asset_id", "hash"],
-  jobs: ["id", "kind", "subject", "enrichment", "attempt", "enqueued_at"],
+  jobs: [
+    "id",
+    "kind",
+    "subject",
+    "enrichment",
+    "attempt",
+    "enqueued_at",
+    "next_attempt_at",
+    "lease_id",
+    "lease_expires_at",
+    "abandoned_at",
+    "last_failure_code",
+    "last_failure_detail",
+  ],
   actions: ["id", "kind", "subject", "by_kind", "by_ref", "at", "detail"],
   pool_meta: ["key", "value"],
 } as const satisfies Record<string, readonly string[]>;

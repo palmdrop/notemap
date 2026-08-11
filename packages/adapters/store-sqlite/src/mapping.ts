@@ -6,9 +6,12 @@ import type {
   AssetId,
   AssetRef,
   BlobHash,
+  EnrichmentName,
   Item,
   ItemId,
   ItemRecord,
+  Job,
+  JobId,
   JsonObject,
   PayloadTypeName,
   ProviderName,
@@ -23,6 +26,7 @@ import type {
   ItemAssetRow,
   ItemRow,
   ItemTagRow,
+  JobRow,
 } from "./rows";
 
 export function toMillis(value: Timestamp): number {
@@ -33,11 +37,7 @@ export function toMillis(value: Timestamp): number {
   return millis;
 }
 
-/**
- * Always the canonical spelling, whatever the source wrote. Storing epoch
- * milliseconds is what makes the feed sortable, and it means a timestamp does
- * not survive a round trip byte for byte — only instant for instant.
- */
+/** The canonical spelling, whatever the source wrote: a timestamp round-trips instant for instant, not byte for byte. */
 export function toTimestamp(millis: number): Timestamp {
   return new Date(millis).toISOString() as Timestamp;
 }
@@ -46,6 +46,8 @@ export function agentColumns(
   agent: Agent,
 ): [AgentColumns["by_kind"], string | null] {
   switch (agent.kind) {
+    case "notemap":
+      return ["notemap", null];
     case "person":
       return ["person", null];
     case "provider":
@@ -57,6 +59,8 @@ export function agentColumns(
 
 function toAgent(row: AgentColumns): Agent {
   switch (row.by_kind) {
+    case "notemap":
+      return { kind: "notemap" };
     case "person":
       return { kind: "person" };
     case "provider":
@@ -155,6 +159,19 @@ export function itemParams(
     record.archived === undefined ? null : toMillis(record.archived.archivedAt),
     record.archived?.reason ?? null,
   ];
+}
+
+export function toJob(row: JobRow): Job {
+  return {
+    id: row.id as JobId,
+    kind: row.kind,
+    subject: row.subject as ItemId,
+    ...(row.enrichment === null
+      ? {}
+      : { enrichment: row.enrichment as EnrichmentName }),
+    attempt: row.attempt,
+    enqueuedAt: toTimestamp(row.enqueued_at),
+  };
 }
 
 export function toAction(row: ActionRow): Action {

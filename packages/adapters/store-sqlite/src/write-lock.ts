@@ -2,42 +2,40 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import type { DatabaseSync } from "node:sqlite";
 
 /** Long enough that no honest transaction reaches it, short of a pool wedged forever. */
-export const DEFAULT_TRANSACTION_TIMEOUT_MS = 30_000;
+export const DEFAULT_WRITE_TIMEOUT_MS = 30_000;
 
-export type Transactions = {
-  run: <T>(work: (fence: Fence) => Promise<T>) => Promise<T>;
+/**
+ * The single writer. Every write against the pool queues here and runs alone,
+ * wrapped in its own transaction — which is why a claim takes the lock too: it
+ * reads the rows it is about to lease, and a second claimer must not be between
+ * the two.
+ */
+export type WriteLock = {
+  transact: <T>(work: (fence: Fence) => Promise<T>) => Promise<T>;
 };
 
 /**
- * Held by everything a transaction hands to core, and checked before each
- * statement. Once a transaction has ended, its handle is dead: a statement
- * issued afterwards would land outside any transaction — auto-committing on its
- * own, unreviewable, unrollbackable — or worse, inside whichever transaction
- * happened to start next.
- *
- * That is reachable without core doing anything exotic: leak `tx` into a promise
- * the callback forgets to await, and its writes arrive after the commit.
+ * Checked before each statement. Once a transaction has ended its handle is
+ * dead: a statement issued afterwards would land outside any transaction, or
+ * inside whichever one started next. Reachable by leaking `tx` into a promise
+ * the callback forgets to await.
  */
 export type Fence = {
   check(): void;
 };
 
-export function serializeTransactions(
+export function writeLock(
   connection: DatabaseSync,
-  timeoutMs: number = DEFAULT_TRANSACTION_TIMEOUT_MS,
-): Transactions {
+  timeoutMs: number = DEFAULT_WRITE_TIMEOUT_MS,
+): WriteLock {
   let tail: Promise<unknown> = Promise.resolve();
 
   /**
    * Set for the duration of one transaction's callback and inherited by
-   * everything it awaits. A plain boolean cannot tell a nested call from an
-   * unrelated one that merely arrived while a transaction was in flight, and
-   * would reject the second — which is every concurrent caller, since every
-   * `await` in the callback is a window for one to arrive.
-   *
-   * The stored state is the same liveness the fence checks, so a call that
-   * inherited the context of a transaction already over — async work leaked
-   * out of a callback — is told that, rather than accused of nesting.
+   * everything it awaits, so a nested call is told apart from an unrelated one
+   * that merely arrived while a transaction was in flight. The stored state is
+   * the same liveness the fence checks, so a call that inherited a transaction
+   * already over is told that rather than accused of nesting.
    */
   const active = new AsyncLocalStorage<{ live: boolean }>();
 
@@ -93,14 +91,13 @@ export function serializeTransactions(
     try {
       connection.exec("ROLLBACK");
     } catch {
-      // SQLite rolls back by itself on some errors — a full disk, an I/O
-      // error — and then ROLLBACK throws. Swallowed so the failure core
-      // actually needs to see is the one that propagates.
+      // SQLite rolls back by itself on some errors — a full disk, an I/O error
+      // — and then ROLLBACK throws.
     }
   }
 
   return {
-    run: <T>(work: (fence: Fence) => Promise<T>): Promise<T> => {
+    transact: <T>(work: (fence: Fence) => Promise<T>): Promise<T> => {
       const enclosing = active.getStore();
       if (enclosing) {
         return Promise.reject(

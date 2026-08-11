@@ -3,6 +3,8 @@ import type { Pool } from "../types/api/pool";
 import type { PoolPorts } from "../types/api/ports";
 
 import { capture } from "./capture";
+import * as mirror from "./mirror";
+import * as work from "./work";
 
 /**
  * The methods whose slice is not built yet. Named rather than silently absent,
@@ -48,7 +50,6 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
       request: notImplemented("enrichment.request"),
       artifactsFor: notImplemented("enrichment.artifactsFor"),
       correct: notImplemented("enrichment.correct"),
-      abandoned: notImplemented("enrichment.abandoned"),
     },
 
     routing: {
@@ -66,11 +67,15 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
     },
 
     work: {
-      claim: notImplemented("work.claim"),
-      complete: notImplemented("work.complete"),
-      extend: notImplemented("work.extend"),
-      release: notImplemented("work.release"),
+      claim: (request) => work.claim(ports, request),
+      complete: (lease, outcome) =>
+        work.complete(config, ports, lease, outcome),
+      extend: (lease, by) => work.extend(ports, lease, by),
+      release: (lease) => work.release(ports, lease),
+      abandoned: (page) => work.abandoned(ports, page),
     },
+
+    mirror: { recordFor: (item) => mirror.recordFor(ports, item) },
 
     actions: {
       forItem: (item, page) => store.actions(item, page),
@@ -81,7 +86,6 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
     sync: { changesSince: notImplemented("sync.changesSince") },
 
     maintenance: {
-      rebuildFromMirror: notImplemented("maintenance.rebuildFromMirror"),
       verifyMirror: notImplemented("maintenance.verifyMirror"),
       repairMirror: notImplemented("maintenance.repairMirror"),
       sweepUnreferencedAssets: notImplemented(

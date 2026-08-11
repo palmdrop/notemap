@@ -18,7 +18,15 @@ describe("the example config", () => {
     const config = parse(readFileSync(EXAMPLE, "utf8"));
 
     expect(config.port).toBe(4747);
-    expect(config.pool).toBe(join(homedir(), ".local/share/notemap/pool.db"));
+    expect(config.pool).toBe(
+      join(homedir(), ".local/share/notemap/state/notemap.db"),
+    );
+    expect(config.mirror).toEqual({
+      root: join(homedir(), ".local/share/notemap/pool-mirror"),
+      pollIntervalMs: 1000,
+      leaseForMs: 60_000,
+      batch: 16,
+    });
     expect(config.poolConfig.sources).toEqual([{ id: "web", autoRequest: [] }]);
     expect(config.poolConfig.payloadTypes).toEqual([
       {
@@ -41,6 +49,8 @@ describe("what a config may leave out", () => {
 
     expect(config.port).toBe(4747);
     expect(config.pool).toBe(defaultPoolPath());
+    // No mirror table is the mirror off, rather than one at a guessed path.
+    expect(config.mirror).toBeUndefined();
     expect(config.poolConfig).toMatchObject({
       sources: [],
       payloadTypes: [],
@@ -86,12 +96,27 @@ describe("where the daemon looks", () => {
     vi.unstubAllEnvs();
   });
 
+  it("defaults the mirror's cadence but never its root", () => {
+    const config = parse('[mirror]\nroot = "/tmp/pool-mirror"\n');
+
+    expect(config.mirror).toEqual({
+      root: "/tmp/pool-mirror",
+      pollIntervalMs: 1000,
+      leaseForMs: 60_000,
+      batch: 16,
+    });
+  });
+
+  it("refuses a mirror table with no root, rather than guessing one", () => {
+    expect(() => parse("[mirror]\npollInterval = 500\n")).toThrow(/root/);
+  });
+
   it("follows the XDG variables when they are set", () => {
     vi.stubEnv("XDG_CONFIG_HOME", "/xdg/config");
     vi.stubEnv("XDG_DATA_HOME", "/xdg/data");
 
     expect(defaultConfigPath()).toBe("/xdg/config/notemap/config.toml");
-    expect(defaultPoolPath()).toBe("/xdg/data/notemap/pool.db");
+    expect(defaultPoolPath()).toBe("/xdg/data/notemap/state/notemap.db");
   });
 
   it("falls back to the standard directories when they are not", () => {
@@ -102,7 +127,7 @@ describe("where the daemon looks", () => {
       join(homedir(), ".config/notemap/config.toml"),
     );
     expect(defaultPoolPath()).toBe(
-      join(homedir(), ".local/share/notemap/pool.db"),
+      join(homedir(), ".local/share/notemap/state/notemap.db"),
     );
   });
 

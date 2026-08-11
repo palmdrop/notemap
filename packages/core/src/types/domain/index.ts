@@ -5,6 +5,7 @@ export * from "./capture";
 export * from "./enrichment";
 export * from "./ids";
 export * from "./item";
+export * from "./mirror";
 export * from "./payload";
 export * from "./position";
 export * from "./routing";

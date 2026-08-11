@@ -7,6 +7,7 @@ import { serve } from "@hono/node-server";
 import { createApp } from "./app";
 import { loadConfig } from "./config/load";
 import { SHUTDOWN_GRACE_MS } from "./constants";
+import { startMirrorRunner } from "./mirror/runner";
 import { openPool } from "./ports";
 
 function start(): void {
@@ -18,13 +19,35 @@ function start(): void {
   const config = loadConfig(values.config);
   mkdirSync(dirname(config.pool), { recursive: true });
 
-  const pool = openPool(config.pool, config.poolConfig);
+  const { pool, mirrorWriter } = openPool(
+    config.pool,
+    config.poolConfig,
+    config.mirror?.root,
+  );
+
+  const mirror =
+    config.mirror === undefined || mirrorWriter === undefined
+      ? undefined
+      : startMirrorRunner(pool, mirrorWriter, config.mirror);
+
+  /** The runner holds a lease while it writes; stopping it first gives it back. */
+  const close = async () => {
+    await mirror?.stop();
+    await pool.close();
+  };
+
   const server = serve(
     { fetch: createApp(pool).fetch, hostname: config.host, port: config.port },
-    (address) =>
+    (address) => {
       console.log(
         `notemap: ${config.pool} on http://${config.host}:${address.port}`,
-      ),
+      );
+      console.log(
+        config.mirror === undefined
+          ? "notemap: no mirror configured — the pool is the only copy"
+          : `notemap: mirroring to ${config.mirror.root}`,
+      );
+    },
   );
 
   server.on("error", (error: NodeJS.ErrnoException) => {
@@ -33,7 +56,7 @@ function start(): void {
         ? `port ${config.port} is already in use; stop what is on it, or set daemon.port`
         : error.message,
     );
-    void pool.close().then(() => process.exit(1));
+    void close().then(() => process.exit(1));
   });
 
   /**
@@ -48,7 +71,7 @@ function start(): void {
     };
 
     server.close(() => {
-      void pool.close().then(() => process.exit(0));
+      void close().then(() => process.exit(0));
     });
     sockets.closeIdleConnections?.();
     setTimeout(

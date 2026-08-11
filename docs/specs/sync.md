@@ -1,7 +1,7 @@
 # Spec: Sync and the client contract
 
 **Status**: Stub — to be written properly in a dedicated grilling session
-**Last updated**: 2026-08-02
+**Last updated**: 2026-08-11
 **Shipped**:
 
 ---
@@ -58,6 +58,11 @@ this spec is unwritten.
 - An in-place amendment of the head arriving from a client that could not know whether it
   still held the head is re-evaluated on arrival and demoted to a revision if it no longer
   does ([ADR 11](../adr/0011-in-place-amendment-of-the-head.md)).
+- **A rebuilt pool carries a new identity, and that identity is readable** (decided 2026-08-11,
+  [mirror.md](mirror.md)). A rebuild restarts the `modified_at` sequence from zero, and a delta
+  cursor names that store-internal sequence, so an old cursor is not merely stale — it points
+  somewhere entirely different and would be answered confidently and wrongly. Comparing the pool
+  identity it cached is how a client detects this at all. What it does next is unwritten below.
 
 ---
 
@@ -75,8 +80,11 @@ this spec is unwritten.
       one made elsewhere.
 - [ ] 2026-08-02 — "Idempotent and order-independent" versus last-write-wins: LWW requires an
       order, so the precise claim needs pinning down.
-- [ ] 2026-08-02 — Rebuild interaction: a pool rebuilt from its mirror has lost its tombstones
-      and whatever the delta cursor was. What a client does when its pool has been rebuilt.
+- [ ] 2026-08-11 — Rebuild interaction: what a client *does* once it detects a rebuild. Detection
+      is settled — the pool identity changes and is readable — but not the response: a full
+      resync of the cached window, a resync from scratch, or a prompt. A rebuilt pool has also
+      lost its tombstones, so a client holding a copy of something purged before the rebuild will
+      never be told it is gone, which is the case that needs an answer rather than a default.
 - [ ] 2026-08-02 — Tombstone retention window, and what a client does when it has been offline
       longer than one. (Moved from core.md.)
 - [ ] 2026-08-02 — The exact outbox operation vocabulary: which operations exist and replay.

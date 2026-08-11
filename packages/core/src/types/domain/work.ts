@@ -9,12 +9,13 @@ import type {
 } from "./ids";
 import type { SuggestionDraft } from "./suggestion";
 
-export type JobKind = "enrichment" | "mirror";
+export type JobKind = "enrichment" | "mirror" | "mirror-remove";
 
 /** Deliberately partial: what a job carries as input is unsettled. */
 export type Job = {
   readonly id: JobId;
   readonly kind: JobKind;
+  /** Need not still exist: a purge's mirror-remove outlives the item it names. */
   readonly subject: ItemId;
   readonly enrichment?: EnrichmentName;
   readonly attempt: number;
@@ -33,9 +34,11 @@ export type Lease = {
   readonly expiresAt: Timestamp;
 };
 
+/** Two successes rather than one, because only enrichment produces material. */
 export type WorkOutcome =
+  | { readonly kind: "succeeded" }
   | {
-      readonly kind: "succeeded";
+      readonly kind: "enriched";
       readonly artifacts: readonly ArtifactDraft[];
       readonly suggestions: readonly SuggestionDraft[];
     }
@@ -45,8 +48,36 @@ export type WorkOutcome =
       readonly detail: FailureDetail;
     };
 
+/** `maxAttempts` bounds enrichment only: a retryable mirror failure retries forever. */
 export type RetryPolicy = {
   readonly maxAttempts: number;
   readonly initialBackoff: Duration;
   readonly maxBackoff: Duration;
+};
+
+/** What core decided a finished attempt means. The store applies it and holds no policy of its own. */
+export type JobResolution =
+  | { readonly kind: "done" }
+  | {
+      readonly kind: "retry";
+      readonly attempt: number;
+      readonly nextAttemptAt: Timestamp;
+      readonly failure: FailureDetail;
+    }
+  | {
+      readonly kind: "abandoned";
+      readonly attempt: number;
+      readonly abandonedAt: Timestamp;
+      readonly failure: FailureDetail;
+    };
+
+/** One row of the surface answering "what needs me", for work of any kind. */
+export type AbandonedWork = {
+  readonly item: ItemId;
+  readonly kind: JobKind;
+  /** Present for enrichment work only. */
+  readonly enrichment?: EnrichmentName;
+  readonly attempts: number;
+  readonly lastFailure: FailureDetail;
+  readonly abandonedAt: Timestamp;
 };

@@ -9,6 +9,7 @@
   },
   "devDependencies": {
     "@notemap/core": "workspace:*",
+    "@notemap/mirror-fs": "workspace:*",
     "@notemap/schema-ajv": "workspace:*",
     "@notemap/store-sqlite": "workspace:*",
     "@types/node": "^24.10.1",

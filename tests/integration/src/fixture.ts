@@ -11,16 +11,17 @@ import {
   type IdGenerator,
   type MintableId,
   type ItemId,
-  type MirrorReader,
   type MirrorWriter,
   type PayloadTypeName,
   type Pool,
   type PoolConfig,
   type PoolPorts,
+  type PoolStore,
   type SourceId,
   type TagName,
   type Timestamp,
 } from "@notemap/core";
+import { createFilesystemMirrorWriter } from "@notemap/mirror-fs";
 import { createAjvSchemaValidator } from "@notemap/schema-ajv";
 import { createSqlitePoolStore } from "@notemap/store-sqlite";
 
@@ -92,10 +93,12 @@ export function frozenClock(start = "2026-08-06T09:00:00.000Z"): Clock & {
  * serves every id kind and the sequence is shared — which is why the tests read
  * ids off what they get back rather than predicting them.
  */
-export function countingIds(): IdGenerator & { issued: () => number } {
+export function countingIds(
+  prefix = "id",
+): IdGenerator & { issued: () => number } {
   let count = 0;
   return {
-    next: <T extends MintableId>() => `id-${++count}` as T,
+    next: <T extends MintableId>() => `${prefix}-${++count}` as T,
     issued: () => count,
   };
 }
@@ -117,39 +120,62 @@ const noMirrorWriter: MirrorWriter = {
   remove: () => absent("mirror writer"),
 };
 
-const noMirrorReader: MirrorReader = {
-  items: () => absent("mirror reader"),
-  artifacts: () => absent("mirror reader"),
-  routingRecords: () => absent("mirror reader"),
-};
-
 export type Harness = {
   readonly pool: Pool;
+  /** Reachable so a test can stand in for a mutation core cannot perform yet. */
+  readonly store: PoolStore;
   readonly clock: ReturnType<typeof frozenClock>;
   readonly ids: ReturnType<typeof countingIds>;
   readonly file: string;
+  /** Where the mirror writes, whether or not a real writer is wired. */
+  readonly mirrorRoot: string;
   readonly cleanup: () => Promise<void>;
 };
+
+/**
+ * `stub` wires a writer that is never called: its presence is what makes the
+ * mirror enabled, so capture still records that a write is owed. `off` wires
+ * none at all, which is the disabled mirror.
+ */
+export type Mirroring = "stub" | "filesystem" | "off";
 
 /**
  * A pool wired the way a host wires one, over the SQLite store on a real file.
  * Files rather than `:memory:`, because an in-memory database cannot have the
  * second connection the driver's reads use.
  */
-export function harness(config: PoolConfig = CONFIG): Harness {
+export function harness(
+  config: PoolConfig = CONFIG,
+  mirroring: Mirroring = "stub",
+): Harness {
   const directory = mkdtempSync(join(tmpdir(), "notemap-integration-"));
   const file = join(directory, "pool.db");
+  const mirrorRoot = join(directory, "pool-mirror");
   const clock = frozenClock();
   const ids = countingIds();
 
+  // Lease ids are the store's to mint, so it gets its own sequence.
+  const store = createSqlitePoolStore({
+    file,
+    clock,
+    ids: countingIds("lease"),
+  });
+
   const ports: PoolPorts = {
-    store: createSqlitePoolStore({ file, clock }),
+    store,
+    work: store,
     clock,
     ids,
     schemas: createAjvSchemaValidator(),
     assets: noAssets,
-    mirrorWriter: noMirrorWriter,
-    mirrorReader: noMirrorReader,
+    ...(mirroring === "off"
+      ? {}
+      : {
+          mirrorWriter:
+            mirroring === "filesystem"
+              ? createFilesystemMirrorWriter({ root: mirrorRoot })
+              : noMirrorWriter,
+        }),
     destinations: [],
   };
 
@@ -157,9 +183,11 @@ export function harness(config: PoolConfig = CONFIG): Harness {
 
   return {
     pool,
+    store,
     clock,
     ids,
     file,
+    mirrorRoot,
     cleanup: async () => {
       await pool.close();
       rmSync(directory, { recursive: true, force: true });
