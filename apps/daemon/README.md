@@ -15,10 +15,11 @@ the contract: the capture page at `/` and an OpenAPI playground at `/docs`.
 ```sh
 mkdir -p ~/.config/notemap
 cp apps/daemon/config.example.toml ~/.config/notemap/config.toml
-pnpm --filter @notemap/daemon start
+pnpm dev
 ```
 
-`start` builds and runs. `--config <path>` overrides where the config is read from; without it
+`pnpm dev` from the repo root is `pnpm --filter @notemap/daemon start`, which builds and runs in
+the foreground. There is no watch mode: a code change needs the command run again. `--config <path>` overrides where the config is read from; without it
 the daemon looks in `$XDG_CONFIG_HOME/notemap/config.toml` and refuses to start if nothing is
 there, rather than coming up with no payload types and refusing every capture instead.
 
