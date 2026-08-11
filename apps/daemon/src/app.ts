@@ -4,6 +4,7 @@ import type { Pool } from "@notemap/core";
 
 import { assetHandler } from "./docs/assets";
 import { docsPage } from "./docs/page";
+import { logPage } from "./log/page";
 import { requireJsonBody } from "./middleware/content-type";
 import { methodsFor, notFound } from "./middleware/not-found";
 import { openApiDocument } from "./openapi";
@@ -35,6 +36,10 @@ export function createApp(pool: Pool): Hono {
 
   app.get("/", (context) =>
     context.html(capturePage(), 200, { "cache-control": "no-cache" }),
+  );
+
+  app.get("/log", (context) =>
+    context.html(logPage(), 200, { "cache-control": "no-cache" }),
   );
 
   app.get("/docs", (context) =>

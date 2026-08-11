@@ -178,14 +178,14 @@ to it. Nothing here restates ADR 12's reasoning; the spec states observable beha
 
 ### Phase 5 — The page at `/log` *(depends on phase 4)*
 
-- [ ] `public/log.html`, following the capture page's conventions — no framework, no build step,
+- [x] `public/log.html`, following the capture page's conventions — no framework, no build step,
       system colours. Time, kind, agent, subject and the detail rendered generically, since
       `detail` is open by decision; "Load more" follows `next`; a link each way between `/` and
       `/log`
-- [ ] `src/log/page.ts` reading it from `PUBLIC_DIR` and caching, as `page.ts` and `docs/page.ts`
+- [x] `src/log/page.ts` reading it from `PUBLIC_DIR` and caching, as `page.ts` and `docs/page.ts`
       do, and the route registered in `app.ts`. `OPTIONS` and `405` fall out of `methodsFor`
-- [ ] Daemon README: the third page, and what it is for
-- [ ] Tests: `/log` serves the page; it appears nowhere in `GET /v1/openapi.json`, on the same
+- [x] Daemon README: the third page, and what it is for
+- [x] Tests: `/log` serves the page; it appears nowhere in `GET /v1/openapi.json`, on the same
       terms `/docs` does not
 - [ ] Verify: `pnpm --filter @notemap/daemon test`, then `pnpm dev` — capture something on `/`,
       see the entry on `/log`, and page past the end of it
