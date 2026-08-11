@@ -5,7 +5,9 @@ import prettier from "eslint-config-prettier";
 export default tseslint.config(
   // `dist/` is the daemon's esbuild bundle and `vendor/` is Swagger UI copied
   // out of node_modules: both generated, and neither ours to lint.
-  { ignores: ["docs/", "**/dist/", "apps/daemon/public/vendor/"] },
+  // `.claude/` holds agent scratch, including worktrees that are whole copies
+  // of this repo — linting one lints everything twice.
+  { ignores: ["docs/", ".claude/", "**/dist/", "apps/daemon/public/vendor/"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   prettier,
