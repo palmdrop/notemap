@@ -189,8 +189,11 @@ Addressed 2026-08-11, alongside the PR review on
    fresh. `abandoned` needs no rule once finding 2 is fixed — an abandoned job is no longer in the
    index. Pinned by `jobs.test.ts`, which reproduces the original
    `UNIQUE constraint failed: jobs.subject, jobs.kind` when the guard is removed.
-2. **Fixed.** Migration 4 narrows the index predicate to
-   `lease_id IS NULL AND abandoned_at IS NULL`, and `PENDING_MIRROR` matches it. A consequence
+2. **Fixed.** The index predicate narrows to `lease_id IS NULL AND abandoned_at IS NULL`, and
+   `PENDING_MIRROR` matches it. Edited into migration 2 rather than added as a fourth: nothing
+   real exists on this schema, so the file states the index once instead of recording how it got
+   there. It is `jobs_one_pending_mirror` now — the old name asserted the predicate it had. A
+   consequence
    the finding did not name: an abandoned row would then linger on the abandoned-work surface
    reporting a failure a later write had already settled, so `resolveJob(done)` clears its item's
    abandoned mirror rows.

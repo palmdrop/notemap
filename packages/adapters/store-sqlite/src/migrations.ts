@@ -143,9 +143,15 @@ export const MIGRATIONS: readonly string[] = [
   -- it, because that job writes current state when it runs; a mutation arriving
   -- while the only job is leased inserts, because this index does not cover
   -- leased rows and the host holding the lease has already read its state.
-  CREATE UNIQUE INDEX jobs_one_unleased_mirror
+  --
+  -- Neither leased nor abandoned counts as pending. An abandoned job records a
+  -- failure for a person, not a write still to come, so holding a slot would
+  -- make it swallow every write its item went on to owe.
+  CREATE UNIQUE INDEX jobs_one_pending_mirror
     ON jobs (subject, kind)
-    WHERE kind IN ('mirror', 'mirror-remove') AND lease_id IS NULL;
+    WHERE kind IN ('mirror', 'mirror-remove')
+      AND lease_id IS NULL
+      AND abandoned_at IS NULL;
 
   CREATE UNIQUE INDEX jobs_lease ON jobs (lease_id) WHERE lease_id IS NOT NULL;
 
@@ -179,20 +185,6 @@ export const MIGRATIONS: readonly string[] = [
 
   CREATE INDEX actions_subject ON actions (subject, at);
   CREATE INDEX actions_at      ON actions (at);
-  `,
-
-  `
-  -- An abandoned job is not pending, and holding a slot in the coalescing index
-  -- made it swallow every later mirror debt for its item: the enqueue that
-  -- should record the next write conflicted with it and did nothing. Abandoning
-  -- now frees the slot, so a later mutation — or a repair — enqueues afresh.
-  DROP INDEX jobs_one_unleased_mirror;
-
-  CREATE UNIQUE INDEX jobs_one_unleased_mirror
-    ON jobs (subject, kind)
-    WHERE kind IN ('mirror', 'mirror-remove')
-      AND lease_id IS NULL
-      AND abandoned_at IS NULL;
   `,
 ];
 
