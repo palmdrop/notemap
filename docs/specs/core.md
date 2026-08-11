@@ -13,6 +13,13 @@
   now records `abandonedAt`, which is what its surface is ordered by.
   ([plan](../plans/http-v1-subset-and-positions.md),
   [ADR 14](../adr/0014-pagination-by-domain-position.md))
+- 2026-08-11 — **Work core drives but never runs.** `work.claim`, `complete`, `extend`, `release`
+  and `abandoned` are built over a store that can lease jobs. Which failures retry, how long the
+  backoff is and when work is given up on are core's alone — and mirror work retries
+  indefinitely where enrichment is bounded. Core owns the mirror record and answers an item's,
+  read fresh. `Agent` gains a **`notemap`** variant, for work core drives on nobody's behalf: an
+  attempt that failed is attributable to no person, provider or source.
+  ([plan](../plans/mirror-writer-first-slice.md))
 
 ---
 
@@ -239,6 +246,11 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   is abandoned on the first attempt, since it will fail identically forever.
 - **An abandoned enrichment can be requested again by hand**, which resets its attempts. Giving
   up is core's decision about automatic work, never a refusal to try when asked.
+- **Notemap is its own agent for the work it drives** (added 2026-08-11). Every action carries
+  the agent who performed it, and an attempt at a job nobody asked for — a mirror write that
+  failed, work given up on — belongs to no person, provider or source. `Agent` therefore has a
+  `notemap` variant, used for that and nothing else: a tag, an artifact or a suggestion is always
+  somebody's.
 - Backoff timing and the attempt limit are **configuration data core is given**, not policy core
   invents, consistent with core taking configuration as data but never sourcing it.
 - Whether an enrichment runs automatically or must be requested is policy configured **per intake

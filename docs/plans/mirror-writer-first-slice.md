@@ -1,7 +1,7 @@
 # Mirror writer — first slice
 
 **Date**: 2026-08-11
-**Status**: Todo
+**Status**: Done
 **Spec**: `docs/specs/mirror.md`, `docs/specs/core.md`
 **Closed**:
 
@@ -182,12 +182,14 @@ New package `packages/adapters/mirror-fs`, following the conventions `store-sqli
 
 ### Phase 7 — End to end *(depends on phase 6)*
 
-- [ ] Integration tests in `tests/integration/`: capture → job → files on disk matching the pool;
+- [x] Integration tests in `tests/integration/`: capture → job → files on disk matching the pool;
       an unwritable mirror root retries and recovers when it becomes writable, without having been
       abandoned; a mutation arriving during a leased write is written by a later job rather than
       lost. That last one is the race the coalescing rule exists for and the only one that loses
-      material silently if it is wrong
-- [ ] `git commit`
+      material silently if it is wrong. **The mutation is stood in for by enqueuing the job a
+      mutation would enqueue**, because `edit`, `tag` and `archive` are not built; the store-level
+      test proves the coalescing rule itself
+- [x] `git commit`
 
 ---
 

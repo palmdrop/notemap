@@ -4,6 +4,16 @@
 **Last updated**: 2026-08-11
 **Shipped**:
 
+- 2026-08-11 — **The writer half.** The mirror record, its canonical serialisation and its parse
+  live in core, proved lossless by a property test over generated pools. Mirror jobs can be
+  claimed, coalesce against unleased jobs only, and are claimable only when their item has no
+  write in flight. A local filesystem driver (`@notemap/mirror-fs`) writes a record and a
+  rendering per item, atomically, record first. The daemon wires it, polls for owed writes, and
+  captures normally with it turned off. **Rebuild, verify and repair are not built**, so what
+  exists today is a complete copy that notemap cannot yet read back.
+  ([plan](../plans/mirror-writer-first-slice.md),
+  [ADR 15](../adr/0015-the-mirror-record-is-authoritative-markdown-is-a-rendering.md))
+
 ---
 
 ## Outcome
@@ -84,6 +94,10 @@ would report drift forever.
 The driver decides where the bytes go: paths, layout, atomicity, and the entire human-facing
 rendering. A different driver could put the same records in object storage without touching the
 domain.
+
+Because a job carries no snapshot, core also answers **the record for an item as it stands now**,
+which is what whatever performs a write asks for at the moment it writes. That is a read of the
+pool, not of the mirror; nothing about it can reach a mirror file.
 
 ### What makes a write owed
 
