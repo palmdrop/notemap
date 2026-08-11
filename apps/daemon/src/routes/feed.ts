@@ -1,8 +1,8 @@
 import type { Context } from "hono";
 
-import type { FeedOrder, Pool } from "@notemap/core";
+import type { Pool, ReadOrder } from "@notemap/core";
 
-import { DEFAULT_LIMIT, FEED_ORDERS, MAX_LIMIT } from "../constants";
+import { DEFAULT_LIMIT, MAX_LIMIT, READ_ORDERS } from "../constants";
 import type { FeedQuery } from "../types";
 import { feedUrl, parsePosition } from "../utils/positions";
 import { json, refuse } from "../utils/responses";
@@ -12,14 +12,14 @@ export function readFeedQuery(url: URL): FeedQuery {
   const rawLimit = url.searchParams.get("limit");
   const rawAfter = url.searchParams.get("after");
 
-  const order = (rawOrder ?? FEED_ORDERS[0]) as FeedOrder;
-  if (!FEED_ORDERS.includes(order)) {
+  const order = (rawOrder ?? READ_ORDERS[0]) as ReadOrder;
+  if (!READ_ORDERS.includes(order)) {
     return {
       ok: false,
       refusal: {
         kind: "bad-order",
         order: rawOrder ?? "",
-        allowed: FEED_ORDERS,
+        allowed: READ_ORDERS,
       },
     };
   }

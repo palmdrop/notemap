@@ -12,15 +12,26 @@ export type Page<P = Position> = {
 };
 
 /**
- * Which end of the feed a read starts from. A read parameter rather than
+ * Which end of a surface a read starts from. A read parameter rather than
  * configuration: core imposes no interface policy, so what a client shows first
  * is the client's to decide.
  */
-export type FeedOrder = "newest-first" | "oldest-first";
+export type ReadOrder = "newest-first" | "oldest-first";
 
-/** A position belongs to no order, so one continues a read in either direction. */
-export type FeedPage = Page & {
-  readonly order?: FeedOrder;
+/** What a caller asks for, leaving the order to core where it does not care. */
+export type PageRequest<P = Position> = Page<P> & {
+  readonly order?: ReadOrder;
+};
+
+/**
+ * A page whose order is settled, which is the only kind a store is handed: the
+ * default is core's, so no driver holds an opinion about which end a read
+ * starts from.
+ *
+ * A position belongs to no order, so one continues a read in either direction.
+ */
+export type OrderedPage<P = Position> = Page<P> & {
+  readonly order: ReadOrder;
 };
 
 export type Slice<T, P = Position> = {

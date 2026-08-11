@@ -1,6 +1,6 @@
 import type { JsonSchema, JsonValue, SchemaIssue } from "../json";
-import type { FeedPage, Page, Result, Slice } from "../result";
-import type { Action } from "../domain/action-log";
+import type { OrderedPage, Page, Result, Slice } from "../result";
+import type { Action, ActionQuery } from "../domain/action-log";
 import type { Asset, AssetMeta, BlobIntegrity } from "../domain/asset";
 import type { Artifact, EnrichmentStatus } from "../domain/enrichment";
 import type {
@@ -142,7 +142,7 @@ export interface PoolReads {
   revisionChain(id: ItemId): Promise<readonly Item[]>;
   tombstone(id: ItemId): Promise<Tombstone | undefined>;
 
-  feed(page: FeedPage): Promise<Slice<Item>>;
+  feed(page: OrderedPage): Promise<Slice<Item>>;
   queue(page: Page): Promise<Slice<Item>>;
   archived(page: Page): Promise<Slice<Item>>;
 
@@ -158,7 +158,7 @@ export interface PoolReads {
     limit: number,
   ): Promise<readonly AssetId[]>;
 
-  actions(item: ItemId | undefined, page: Page): Promise<Slice<Action>>;
+  actions(query: ActionQuery, page: OrderedPage): Promise<Slice<Action>>;
   changesSince(cursor: SyncCursor | undefined, limit: number): Promise<Delta>;
 }
 

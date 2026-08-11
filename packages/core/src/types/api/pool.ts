@@ -1,5 +1,5 @@
 import type { JsonObject } from "../json";
-import type { FeedPage, Page, Result, Slice } from "../result";
+import type { Page, PageRequest, Result, Slice } from "../result";
 import type { Action } from "../domain/action-log";
 import type { Agent } from "../domain/agent";
 import type { Asset, AssetMeta, BlobIntegrity } from "../domain/asset";
@@ -61,7 +61,7 @@ export interface ItemsApi {
 }
 
 export interface ViewsApi {
-  feed(page: FeedPage): Promise<Slice<Item>>;
+  feed(page: PageRequest): Promise<Slice<Item>>;
   queue(page: Page): Promise<Slice<Item>>;
   archived(page: Page): Promise<Slice<Item>>;
 }
@@ -127,8 +127,8 @@ export interface WorkApi {
 }
 
 export interface ActionsApi {
-  forItem(item: ItemId, page: Page): Promise<Slice<Action>>;
-  all(page: Page): Promise<Slice<Action>>;
+  forItem(item: ItemId, page: PageRequest): Promise<Slice<Action>>;
+  all(page: PageRequest): Promise<Slice<Action>>;
   clear(item?: ItemId): Promise<Result<void, ActionLogRefusal>>;
 }
 

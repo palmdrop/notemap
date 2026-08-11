@@ -1,4 +1,4 @@
-import type { FeedOrder, Position, SchemaIssue } from "@notemap/core";
+import type { Position, ReadOrder, SchemaIssue } from "@notemap/core";
 
 export type ErrorBody = {
   readonly error: { readonly code: string } & Record<string, unknown>;
@@ -34,7 +34,7 @@ export type DaemonRefusal =
 export type FeedQuery =
   | {
       readonly ok: true;
-      readonly order: FeedOrder;
+      readonly order: ReadOrder;
       readonly limit: number;
       readonly after?: Position;
     }

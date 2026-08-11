@@ -107,7 +107,12 @@ export type LeaseRefusal = {
   readonly lease: LeaseId;
 };
 
-export type ActionLogRefusal = SubjectRefusal;
+/**
+ * Clearing refuses nothing. A purged item's entries are the case the operation
+ * exists for, so refusing `no-such-item` would refuse exactly when it is
+ * wanted; the result stays refusal-shaped because every mutation's is.
+ */
+export type ActionLogRefusal = never;
 
 export type RebuildRefusal =
   | { readonly kind: "pool-not-empty" }

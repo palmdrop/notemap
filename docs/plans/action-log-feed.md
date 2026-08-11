@@ -108,46 +108,53 @@ to it. Nothing here restates ADR 12's reasoning; the spec states observable beha
 
 ### Phase 2 — Core: the read, and the append discipline *(depends on phase 1)*
 
-- [ ] Generalise the order off the feed: `FeedOrder` becomes `ReadOrder`, `FeedPage` becomes
+- [x] Generalise the order off the feed: `FeedOrder` becomes `ReadOrder`, `FeedPage` becomes
       `OrderedPage<P = Position>`, and both the feed and the log take it. No alias left behind —
       two names for one thing is how they drift
-- [ ] **The default moves into core, and the port stops accepting its absence.** Newest-first
+- [x] **The default moves into core, and the port stops accepting its absence.** Newest-first
       lives in the SQLite driver today (`DEFAULT_ORDER`), which makes it the driver's policy — a
       second store could disagree with core.md and nothing would catch it. `OrderedPage`'s order
       is **required** on `PoolReads`, and optional only on the pool API a caller reaches, where
       core fills it in. A driver cannot default what it is always given
-- [ ] The feed's existing tests assert the default through the store; they move to asserting it
-      through core, which is where the guarantee now lives
-- [ ] `PoolReads.actions(query, page)` where the query is `{ item?: ItemId }`. `ActionsApi`'s
+- [x] The feed's existing tests assert the default through the store; they move to asserting it
+      through core, which is where the guarantee now lives. *Already there*: the integration suite
+      covers it ("reads newest first when the caller says nothing"), so the store test stopped
+      asserting a default rather than a new test being written
+- [x] `PoolReads.actions(query, page)` where the query is `{ item?: ItemId }`. `ActionsApi`'s
       `forItem`/`all` stay as the ergonomic split over it — `actions(undefined, page)` at a call
       site says nothing about what the undefined means
-- [ ] A `recordAction` helper in `pool/` that mints the id, stamps the clock and appends. Capture
+- [x] A `recordAction` helper in `pool/` that mints the id and appends. *`at` is the caller's
+      rather than the helper's*: capture already reads the clock for the mirror job it enqueues,
+      and two reads in one transaction would put the entry a moment after the change it records.
+      Capture
       and `work.complete` hand-roll all three today, which is how the shape drifts; ADR 12's
       amendment already concedes the coupling is discipline, and this is what makes the discipline
       one grep
-- [ ] `work-failed`/`work-abandoned` detail becomes `failure: { code, detail }` rather than the
+- [x] `work-failed`/`work-abandoned` detail becomes `failure: { code, detail }` rather than the
       failure's fields spread beside `work` and `attempt` — `detail.detail` reads as a mistake
       because it is one
-- [ ] `ActionLogRefusal` stops being `SubjectRefusal`. Clearing a **purged** item's entries is the
+- [x] `ActionLogRefusal` stops being `SubjectRefusal` — it is `never`, since clearing has nothing
+      left to refuse. Clearing a **purged** item's entries is the
       case the operation exists for, and `no-such-item` refuses exactly then — the same reasoning
       that took the foreign key off a job's subject. `clear` stays `notImplemented`
-- [ ] Verify: `pnpm typecheck && pnpm test`
-- [ ] `git commit`
+- [x] Verify: `pnpm typecheck && pnpm test`
+- [x] `git commit` — *one commit with phase 3*: a port whose signature changed does not compile
+      apart from the driver that answers it, and a commit that does not build is not a commit
 
 ### Phase 3 — Store: ordered and filtered *(depends on phase 2)*
 
-- [ ] `actions` honours the order in both directions — `at DESC, id DESC` with a `<` keyset, or
+- [x] `actions` honours the order in both directions — `at DESC, id DESC` with a `<` keyset, or
       ASC with `>`. `keysetPage` already serves the feed; it gains a direction rather than being
       copied
-- [ ] New migration — never edit one that has run — replacing `actions_at` and `actions_subject`
+- [x] New migration — never edit one that has run — replacing `actions_at` and `actions_subject`
       with `(at, id)` and `(subject, at, id)`, so the index covers the order the keyset actually
       reads in. Behaviour is unchanged; a log that grows without this reads by sorting
-- [ ] Tests: newest-first paging to exhaustion with no trailing empty page; one position
+- [x] Tests: newest-first paging to exhaustion with no trailing empty page; one position
       continuing a read in either direction; the subject filter surviving a page boundary in both
       orders; **entries whose subject names no item are returned** — appendable today, since the
       table deliberately carries no foreign key, and the case purge will produce
-- [ ] Verify: `pnpm --filter @notemap/store-sqlite test`
-- [ ] `git commit`
+- [x] Verify: `pnpm --filter @notemap/store-sqlite test`
+- [x] `git commit` — with phase 2, per the note above
 
 ### Phase 4 — `GET /v1/actions` *(depends on phase 3)*
 

@@ -1,12 +1,13 @@
 import { dequal } from "dequal";
 
+import { recordAction } from "./actions";
 import { ok, refused } from "../utils/result";
 import type { PoolConfig } from "../types/api/config";
 import type { PoolPorts, PoolTx } from "../types/api/ports";
 import type { CaptureRefusal } from "../types/api/refusal";
 import type { Agent } from "../types/domain/agent";
 import type { CaptureEnvelope, CaptureOutcome } from "../types/domain/capture";
-import type { ActionId, ItemId, JobId } from "../types/domain/ids";
+import type { ItemId, JobId } from "../types/domain/ids";
 import type { Item, ItemRecord } from "../types/domain/item";
 import type { Payload } from "../types/domain/payload";
 import type { Result } from "../types/result";
@@ -110,8 +111,7 @@ async function append(
     ]);
   }
 
-  await tx.appendAction({
-    id: ports.ids.next<ActionId>(),
+  await recordAction(ports, tx, {
     kind: "captured",
     subject: item.id,
     by,

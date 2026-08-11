@@ -4,6 +4,7 @@ import type { PoolPorts } from "../types/api/ports";
 
 import { capture } from "./capture";
 import * as mirror from "./mirror";
+import { ordered } from "./reads";
 import * as work from "./work";
 
 /**
@@ -34,7 +35,7 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
     },
 
     views: {
-      feed: (page) => store.feed(page),
+      feed: (page) => store.feed(ordered(page)),
       queue: notImplemented("views.queue"),
       archived: notImplemented("views.archived"),
     },
@@ -78,8 +79,8 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
     mirror: { recordFor: (item) => mirror.recordFor(ports, item) },
 
     actions: {
-      forItem: (item, page) => store.actions(item, page),
-      all: (page) => store.actions(undefined, page),
+      forItem: (item, page) => store.actions({ item }, ordered(page)),
+      all: (page) => store.actions({}, ordered(page)),
       clear: notImplemented("actions.clear"),
     },
 

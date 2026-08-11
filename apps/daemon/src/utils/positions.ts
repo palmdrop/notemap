@@ -1,4 +1,4 @@
-import type { FeedOrder, Position } from "@notemap/core";
+import type { Position, ReadOrder } from "@notemap/core";
 
 import { instant, toTimestamp } from "../schemas/timestamp";
 
@@ -24,7 +24,7 @@ export function formatPosition(position: Position): string {
 }
 
 export function feedUrl(
-  order: FeedOrder,
+  order: ReadOrder,
   limit: number,
   after: Position,
 ): string {

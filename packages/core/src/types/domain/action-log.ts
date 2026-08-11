@@ -32,3 +32,12 @@ export type Action = {
   readonly at: Timestamp;
   readonly detail: JsonObject;
 };
+
+/**
+ * Which entries a read of the log is about; empty is the whole log. A subject
+ * the pool no longer holds is a normal thing to ask for — the log outlives the
+ * material — so this narrows a read and never fails to resolve.
+ */
+export type ActionQuery = {
+  readonly item?: ItemId;
+};

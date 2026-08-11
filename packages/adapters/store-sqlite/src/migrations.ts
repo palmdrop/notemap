@@ -186,6 +186,17 @@ export const MIGRATIONS: readonly string[] = [
   CREATE INDEX actions_subject ON actions (subject, at);
   CREATE INDEX actions_at      ON actions (at);
   `,
+
+  `
+  -- The log is now read from either end, and its keyset compares \`(at, id)\`.
+  -- An index on \`at\` alone leaves the tie-break to a sort of everything sharing
+  -- an instant, which is every entry a single transaction appended.
+  DROP INDEX actions_subject;
+  DROP INDEX actions_at;
+
+  CREATE INDEX actions_subject ON actions (subject, at, id);
+  CREATE INDEX actions_at      ON actions (at, id);
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";
