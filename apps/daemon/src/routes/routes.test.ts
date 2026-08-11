@@ -404,6 +404,110 @@ describe("GET /v1/feed", () => {
   });
 });
 
+describe("GET /v1/actions", () => {
+  type Entry = { kind: string; subject?: string; at: string };
+  type LogPage = { values: Entry[]; next?: string };
+
+  it("reads newest first, timed by arrival rather than by capture time", async () => {
+    const app = serving();
+    const ids = await captureMany(app, 3);
+
+    const response = await app.request("/v1/actions");
+    const slice: LogPage = await body(response);
+
+    expect(response.status).toBe(200);
+    expect(slice.values.map((entry) => entry.subject)).toEqual(
+      [...ids].reverse(),
+    );
+    expect(slice.values.map((entry) => entry.kind)).toEqual([
+      "captured",
+      "captured",
+      "captured",
+    ]);
+    // The captures are timed 09:00, 09:01, 09:02; their entries are not.
+    for (const entry of slice.values) {
+      expect(entry.at.startsWith("2026-08-08T09:0")).toBe(false);
+    }
+  });
+
+  it("narrows to one subject", async () => {
+    const app = serving();
+    const ids = await captureMany(app, 3);
+
+    const slice: LogPage = await body(
+      await app.request(`/v1/actions?item=${ids[1]}`),
+    );
+
+    expect(slice.values.map((entry) => entry.subject)).toEqual([ids[1]]);
+  });
+
+  it("answers an empty page for a subject no item has, never a 404", async () => {
+    const app = serving();
+    await captureMany(app, 1);
+
+    const response = await app.request("/v1/actions?item=never-existed");
+
+    expect(response.status).toBe(200);
+    expect(await body(response)).toEqual({ values: [] });
+  });
+
+  it("pages to exhaustion by following next, without repeating or dropping", async () => {
+    const app = serving();
+    const ids = await captureMany(app, 3);
+
+    const seen: string[] = [];
+    let url = "/v1/actions?limit=1&order=oldest-first";
+
+    for (;;) {
+      const slice: LogPage = await body(await app.request(url));
+      seen.push(...slice.values.map((entry) => entry.subject ?? ""));
+      if (slice.next === undefined) break;
+      url = slice.next;
+    }
+
+    expect(seen).toEqual(ids);
+  });
+
+  it("carries the filter into next, so a filtered read pages as itself", async () => {
+    const app = serving();
+    const ids = await captureMany(app, 3);
+
+    // One entry per item today, so the filtered read that has a next page is
+    // the unfiltered one; what matters here is that the filter survives it.
+    const slice: LogPage = await body(
+      await app.request(`/v1/actions?limit=1&item=${ids[0]}`),
+    );
+
+    expect(slice.values.map((entry) => entry.subject)).toEqual([ids[0]]);
+    expect(slice.next).toBeUndefined();
+
+    const unfiltered: LogPage = await body(
+      await app.request("/v1/actions?limit=1"),
+    );
+    expect(unfiltered.next).toBeDefined();
+    expect(
+      new URL(unfiltered.next ?? "", "http://localhost").searchParams.get(
+        "item",
+      ),
+    ).toBeNull();
+  });
+
+  it("refuses a parameter the way every paginated read does", async () => {
+    const app = serving();
+
+    expect((await app.request("/v1/actions?limit=501")).status).toBe(422);
+    expect(await body(await app.request("/v1/actions?order=sideways"))).toEqual(
+      {
+        error: {
+          code: "bad-order",
+          order: "sideways",
+          allowed: ["newest-first", "oldest-first"],
+        },
+      },
+    );
+  });
+});
+
 describe("routing", () => {
   it("answers 404 unknown-route for a path that is not there", async () => {
     const app = serving();

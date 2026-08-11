@@ -1,4 +1,4 @@
-import type { Position, ReadOrder } from "@notemap/core";
+import type { Position } from "@notemap/core";
 
 import { instant, toTimestamp } from "../schemas/timestamp";
 
@@ -23,15 +23,19 @@ export function formatPosition(position: Position): string {
     : `${position.at},${position.id}`;
 }
 
-export function feedUrl(
-  order: ReadOrder,
-  limit: number,
+/**
+ * The next page, ready to fetch. The parameters are the caller's because they
+ * differ per surface — the log carries its filter, the feed has none — and a
+ * client should never have to reassemble the query it was already reading.
+ */
+export function pageUrl(
+  path: string,
+  parameters: Readonly<Record<string, string>>,
   after: Position,
 ): string {
   const query = new URLSearchParams({
-    order,
-    limit: String(limit),
+    ...parameters,
     after: formatPosition(after),
   });
-  return `/v1/feed?${query.toString()}`;
+  return `${path}?${query.toString()}`;
 }

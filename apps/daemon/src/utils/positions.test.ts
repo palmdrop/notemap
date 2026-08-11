@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Timestamp } from "@notemap/core";
 
-import { feedUrl, formatPosition, parsePosition } from "./positions";
+import { formatPosition, pageUrl, parsePosition } from "./positions";
 
 const AT = "2026-08-08T09:00:00.000Z";
 
@@ -63,10 +63,11 @@ describe("writing one back", () => {
 
 describe("the next URL", () => {
   it("carries the order, the limit and the position, ready to fetch", () => {
-    const url = feedUrl("oldest-first", 25, {
-      at: AT as Timestamp,
-      id: "item-1",
-    });
+    const url = pageUrl(
+      "/v1/feed",
+      { order: "oldest-first", limit: "25" },
+      { at: AT as Timestamp, id: "item-1" },
+    );
 
     const parsed = new URL(url, "http://localhost");
     expect(parsed.pathname).toBe("/v1/feed");
@@ -75,11 +76,27 @@ describe("the next URL", () => {
     expect(parsed.searchParams.get("after")).toBe(`${AT},item-1`);
   });
 
+  it("carries whatever else the surface reads by, such as a filter", () => {
+    const url = pageUrl(
+      "/v1/actions",
+      { order: "newest-first", limit: "50", item: "item-1" },
+      { at: AT as Timestamp, id: "action-1" },
+    );
+
+    const parsed = new URL(url, "http://localhost");
+    expect(parsed.pathname).toBe("/v1/actions");
+    expect(parsed.searchParams.get("item")).toBe("item-1");
+  });
+
   it("escapes the position, so an id with a separator in it survives", () => {
-    const url = feedUrl("newest-first", 1, {
-      at: AT as Timestamp,
-      id: "a&b=c?d",
-    });
+    const url = pageUrl(
+      "/v1/feed",
+      { order: "newest-first", limit: "1" },
+      {
+        at: AT as Timestamp,
+        id: "a&b=c?d",
+      },
+    );
 
     expect(new URL(url, "http://localhost").searchParams.get("after")).toBe(
       `${AT},a&b=c?d`,

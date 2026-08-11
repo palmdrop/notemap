@@ -158,20 +158,23 @@ to it. Nothing here restates ADR 12's reasoning; the spec states observable beha
 
 ### Phase 4 — `GET /v1/actions` *(depends on phase 3)*
 
-- [ ] Generalise the query reader: `readFeedQuery` parses order, limit and position for one route
+- [x] Generalise the query reader: `readFeedQuery` parses order, limit and position for one route
       and refuses in the four ways both routes refuse. Lift it, and lift `feedUrl` with it — it
       hardcodes `/v1/feed` and the actions route has to carry `item` through into `next`
-- [ ] `schemas/action.ts`: the entry and the slice. The agent union **includes `notemap`** here,
+- [x] `schemas/action.ts`: the entry and the slice. The agent union **includes `notemap`** here,
       where `item.tags[].by` does not — a tag is always somebody's, and work core drives is not
-- [ ] The route definition, the handler, and `ROUTES`. `item` passes through unvalidated: any
+- [x] The route definition, the handler, and `ROUTES`. `item` passes through unvalidated: any
       string is a legal filter and an unmatched one is an empty page
-- [ ] Regenerate the checked-in document — `pnpm --filter @notemap/daemon openapi` — in the same
+- [x] Regenerate the checked-in document — `pnpm --filter @notemap/daemon openapi` — in the same
       commit as the route that changed it
-- [ ] Tests: the default page is newest-first; following `next` yields every entry exactly once;
+- [x] Tests: the default page is newest-first; following `next` yields every entry exactly once;
       `item` narrows; an `item` no pool holds is `200` with an empty page and never `404`;
-      `limit=501` is `limit-too-large`; a malformed `after` is `bad-position`
-- [ ] Verify: `pnpm --filter @notemap/daemon test`
-- [ ] `git commit`
+      `limit=501` is `limit-too-large`; a malformed `after` is `bad-position`. *One test the
+      route cannot carry yet*: a filtered read that has a next page needs two entries about one
+      item, and no mutation but capture exists to write the second — the filter surviving into
+      `next` is covered as a unit test over `pageUrl`, and across a page boundary in the store
+- [x] Verify: `pnpm --filter @notemap/daemon test`
+- [x] `git commit`
 
 ### Phase 5 — The page at `/log` *(depends on phase 4)*
 

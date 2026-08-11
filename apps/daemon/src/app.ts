@@ -8,8 +8,10 @@ import { requireJsonBody } from "./middleware/content-type";
 import { methodsFor, notFound } from "./middleware/not-found";
 import { openApiDocument } from "./openapi";
 import { capturePage } from "./page";
+import { actionsHandler } from "./routes/actions";
 import { captureHandler } from "./routes/captures";
 import {
+  actionsRoute,
   captureRoute,
   feedRoute,
   honoPath,
@@ -27,6 +29,7 @@ export function createApp(pool: Pool): Hono {
   app.post(honoPath(captureRoute.path), captureHandler(pool));
   app.get(honoPath(feedRoute.path), feedHandler(pool));
   app.get(honoPath(itemRoute.path), itemHandler(pool));
+  app.get(honoPath(actionsRoute.path), actionsHandler(pool));
 
   app.get("/v1/openapi.json", () => json(openApiDocument(), 200));
 

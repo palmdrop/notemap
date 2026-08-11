@@ -9,6 +9,7 @@ import {
   PARAMETER_STATUS,
   SUBJECT_STATUS,
 } from "../errors/refusals";
+import { actionSliceSchema } from "../schemas/action";
 import { captureEnvelopeSchema } from "../schemas/envelope";
 import { errorSchema } from "../schemas/error";
 import {
@@ -31,7 +32,8 @@ function errorResponse(
   };
 }
 
-const feedQuery = z.object({
+/** The parameters every paginated read takes, described once. */
+const pageQuery = z.object({
   order: z
     .string()
     .optional()
@@ -56,6 +58,18 @@ const feedQuery = z.object({
       description:
         "The position to continue from: `<at>,<id>`, or a bare instant as a coarse entry point.",
       example: "2026-08-08T09:00:00.000Z,0198f0c2-0000-7000-8000-000000000000",
+    }),
+});
+
+const actionsQuery = pageQuery.extend({
+  item: z
+    .string()
+    .optional()
+    .openapi({
+      param: { name: "item", in: "query" },
+      description:
+        "Narrows the read to one subject. Never validated: an id no item has answers an empty page, since the log outlives what it describes.",
+      example: "0198f0c2-0000-7000-8000-000000000000",
     }),
 });
 
@@ -109,11 +123,31 @@ export const feedRoute = createRoute({
   summary: "Read the feed",
   description:
     "Every item chronologically by capture time, including archived and superseded ones. Follow `next` until it is absent.",
-  request: { query: feedQuery },
+  request: { query: pageQuery },
   responses: {
     200: {
       description: "A page of the feed.",
       content: { [JSON_MEDIA_TYPE]: { schema: feedSliceSchema } },
+    },
+    422: errorResponse(
+      "A parameter was understood and refused.",
+      422,
+      PARAMETER_STATUS,
+    ),
+  },
+});
+
+export const actionsRoute = createRoute({
+  method: "get",
+  path: "/v1/actions",
+  summary: "Read the action log",
+  description:
+    "Every action that changed state, newest first by default. Narrow it to one subject with `item`; the log outlives the material, so a purged item's entries are still answered.",
+  request: { query: actionsQuery },
+  responses: {
+    200: {
+      description: "A page of the log.",
+      content: { [JSON_MEDIA_TYPE]: { schema: actionSliceSchema } },
     },
     422: errorResponse(
       "A parameter was understood and refused.",
@@ -141,7 +175,12 @@ export const itemRoute = createRoute({
   },
 });
 
-export const ROUTES = [captureRoute, feedRoute, itemRoute] as const;
+export const ROUTES = [
+  captureRoute,
+  feedRoute,
+  itemRoute,
+  actionsRoute,
+] as const;
 
 /** OpenAPI writes a path parameter `{id}`; Hono matches it as `:id`. */
 export function honoPath(path: string): string {
