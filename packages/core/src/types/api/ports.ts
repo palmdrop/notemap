@@ -82,7 +82,7 @@ export interface MirrorWriter {
 }
 
 /**
- * What one file in the mirror turned out to be. A record carries the item, its
+ * What one entry in the mirror turned out to be. A record carries the item, its
  * artifacts and its routing together, so there is nothing to ask for per item.
  *
  * Everything the reader could not turn into a record is still reported: verify
@@ -96,6 +96,12 @@ export type MirrorEntry =
       readonly kind: "record";
       readonly path: string;
       readonly record: MirrorRecord;
+      /**
+       * The rendering beside it. Absent is a finding rather than a fault: a
+       * renderer that was abandoned leaves a complete record and no `.md`, and
+       * verify is what reports the pair as incomplete.
+       */
+      readonly rendering?: string;
     }
   | {
       readonly kind: "unreadable";

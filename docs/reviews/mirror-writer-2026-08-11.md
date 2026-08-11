@@ -205,7 +205,11 @@ Addressed 2026-08-11, alongside the PR review on
 4. **Fixed**, rather than deferred as the finding suggested. `MirrorReader` is
    `entries(): AsyncIterable<MirrorEntry>` — a record, a file that would not parse, or a stray.
    That is not a guess about the verify slice: `mirror.md`'s Constraints already name those three
-   cases, and the old shape could express none of them.
+   cases, and the old shape could express none of them. Deleting the type outright was not
+   available either, since the same spec settles that verify and repair take a reader.
+   A record entry names the rendering beside it, absent where there is none — without that, the
+   rule stated alongside this fix (a record without its rendering is expected, and reported) would
+   describe a finding no reader could produce.
 5. **Fixed.** A missing asset throws `MirrorWriteFailure("asset-missing", …, retryable: false)`
    instead of falling through the "unknown is retryable" default.
 6. **Fixed.** A caller arriving mid-tick now waits for that tick *and then a fresh one*, so

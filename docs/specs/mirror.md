@@ -306,10 +306,12 @@ catches an external edit that fast mode cannot, and verifies every referenced bl
 asset store. It hashes every byte in the pool, so it is run on request rather than at every
 backup.
 
-The reader hands back **one entry per file**, each of which is a record that parsed, a file that
-would not parse, or a stray — a temporary file a crash left, a rendering with no record. Whether
-a record is an *orphan* is not the reader's to say: that needs the pool. Artifacts and routing
-are not asked for per item, because a record already carries them.
+The reader hands back **one entry per pair**, each of which is a record that parsed, a file that
+would not parse, or a stray — a temporary file a crash left, a rendering with no record. A record
+entry names the rendering beside it, and **a record whose rendering is absent is a finding, not a
+fault**: writes are record-first, so an abandoned renderer leaves exactly that. Whether a record
+is an *orphan* is not the reader's to say: that needs the pool. Artifacts and routing are not
+asked for per item, because a record already carries them.
 
 **Repair only enqueues.** A mirror job for every item whose files are missing or stale, a removal
 job for every orphan — and then the job runner writes, as it does for everything else. There is
