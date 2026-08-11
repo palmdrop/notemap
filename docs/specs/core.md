@@ -1,7 +1,7 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-08-11
+**Last updated**: 2026-08-12
 **Shipped**:
 
 - 2026-08-08 — A source needs no declaration to capture; `config.sources` is a policy registry
@@ -22,6 +22,15 @@
   leasing, and the abandoned-work surface — is a **`WorkQueue`** port separate from `PoolStore`;
   enqueue and resolve stay on the transaction handle, where they have to be.
   ([plan](../plans/mirror-writer-first-slice.md))
+- 2026-08-12 — **The action log is stated, and readable.** It has been half-built since the
+  capture slice; what it guarantees is now written down rather than implied, and it reads newest
+  first by default, ordered and paginated by position and narrowable to one subject. A subject
+  the pool no longer holds answers an empty page rather than refusing, which is what a purged
+  item's entries need. **Ordering is core's**: a store is handed an order it must honour, where
+  the SQLite driver used to hold the default, and `FeedOrder`/`FeedPage` become `ReadOrder`,
+  `PageRequest` and `OrderedPage` now neither belongs to the feed. Failed attempts at work are
+  logged and successful ones are not, and `ActionLogRefusal` is gone — clearing a purged item's
+  entries is the case clearing exists for. ([plan](../plans/action-log-feed.md))
 
 ---
 

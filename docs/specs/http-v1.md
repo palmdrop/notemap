@@ -1,8 +1,15 @@
 # Spec: HTTP API (`/v1`)
 
-**Status**: Draft — the capture-and-feed subset is settled; the rest is stub
-**Last updated**: 2026-08-10
+**Status**: Draft — the capture-and-feed subset and the action log are settled; the rest is stub
+**Last updated**: 2026-08-12
 **Shipped**:
+
+- 2026-08-12 — The action log is served: `GET /v1/actions`, newest first by default, paginated by
+  position and narrowable with `item` — which is never validated, since the log outlives what it
+  describes and an id no item has is an empty page rather than a `404`. The order, limit and
+  position parsing is shared with the feed, and `next` carries whatever a surface pages by. A
+  page at `/log` renders it, on the same host-surface terms as `/docs`.
+  ([plan](../plans/action-log-feed.md))
 
 - 2026-08-10 — The document is served with something that reads it: an OpenAPI playground at
   `/docs`, Swagger UI vendored out of `swagger-ui-dist` by the daemon's build step and pointed

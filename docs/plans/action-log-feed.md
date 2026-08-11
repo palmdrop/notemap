@@ -1,9 +1,9 @@
 # The action log, read end to end
 
 **Date**: 2026-08-11
-**Status**: Todo
+**Status**: Done
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`
-**Closed**:
+**Closed**: 2026-08-12
 
 ---
 
@@ -193,12 +193,13 @@ to it. Nothing here restates ADR 12's reasoning; the spec states observable beha
 
 ### Phase 6 — End to end, and close *(depends on phase 5)*
 
-- [ ] Integration tests in `tests/integration/`: a capture's entry is timed by arrival while its
+- [x] Integration tests in `tests/integration/`: a capture's entry is timed by arrival while its
       capture time sits three days earlier; a failed mirror attempt appears attributed to
       `notemap` carrying the corrected failure shape, and a successful one appears not at all;
-      newest-first ordering holds across a page boundary
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint && pnpm format:check`
-- [ ] Set **Status**, add the `Shipped:` entries to both specs, `git commit`
+      newest-first ordering holds across a page boundary, and one position continues the read
+      either way. *Arrival timing was already covered* by `capture.test.ts`
+- [x] Verify: `pnpm typecheck && pnpm test && pnpm lint && pnpm format:check`
+- [x] Set **Status**, add the `Shipped:` entries to both specs, `git commit`
 
 ---
 

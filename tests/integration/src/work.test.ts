@@ -262,6 +262,19 @@ describe("the action log", () => {
     ]);
   });
 
+  it("records nothing for an attempt that succeeded", async () => {
+    const { pool: p, item } = await owing();
+    const lease = await claimOne(p);
+
+    await p.work.complete(lease.id, { kind: "succeeded" });
+
+    // The write is its own record. An entry beside it would say a second time
+    // what the mirror file already says.
+    expect(await kindsFor(p, item.id)).toEqual([
+      expect.objectContaining({ kind: "captured" }),
+    ]);
+  });
+
   it("records an attempt that was the last one", async () => {
     const { pool: p, item } = await owing();
     const lease = await claimOne(p);
