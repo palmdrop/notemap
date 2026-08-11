@@ -11,6 +11,14 @@
   rendering per item, atomically, record first. The daemon wires it, polls for owed writes, and
   captures normally with it turned off. **Rebuild, verify and repair are not built**, so what
   exists today is a complete copy that notemap cannot yet read back.
+- 2026-08-11 — **Review fixes.** Coalescing counts *pending* jobs, so an abandoned job no longer
+  swallows the writes its item goes on to owe, and a retry whose rival is already pending is
+  dropped rather than rejected. Removal matches the id inside a record instead of the filename,
+  which was deleting every item whose id merely ended with the one asked for. Filenames fold
+  case. A missing asset carries its own non-retryable code. The frontmatter block is emitted by
+  a YAML library and its key mapping is exhaustive over `ItemRecord`, so a field added to the
+  domain fails to compile until someone decides where it goes. `MirrorReader` now describes what
+  a record mirror holds. ([review](../reviews/mirror-writer-2026-08-11.md))
   ([plan](../plans/mirror-writer-first-slice.md),
   [ADR 15](../adr/0015-the-mirror-record-is-authoritative-markdown-is-a-rendering.md))
 
@@ -107,11 +115,19 @@ removed, an archive or unarchive, an artifact or a correction, a routing record:
 pool owing the mirror a write, and a mutation committed with nothing recording that debt would
 never be written and nothing would notice.
 
-Jobs **coalesce against unclaimed jobs only**. A mutation arriving while an item already has a
+Jobs **coalesce against pending jobs only**. A mutation arriving while an item already has a
 pending, unleased mirror job adds nothing — that job will write the current state when it runs.
 A mutation arriving while the item's only mirror job is *leased* enqueues a new one, because the
 host holding that lease has already read the state it is writing and would otherwise absorb the
 mutation into a write that cannot contain it.
+
+**Abandoned jobs are not pending** (decided 2026-08-11). An abandoned job records a failure a
+person has to look at; it is not a write that is still going to happen, so it holds no slot and
+a later mutation — or a repair — enqueues afresh. Treating it as pending made it swallow every
+write its item went on to owe, which is exactly the loss the debt rule exists to prevent. A job
+that ends by being *retried* while a rival is already pending is dropped instead: the rival
+writes state read fresh, so it says everything the retry would have. An abandoned job stops
+being reported once a later write for that item succeeds — the failure it names is settled.
 
 A mirror job is **claimable only when its item has no leased mirror job**. At most one write per
 item is ever in flight, so two writers never race on one file and a write carrying older state
@@ -133,6 +149,12 @@ A write produces two files, in this order:
 Material is durable before presentation is attempted. A renderer is host-supplied code, and a
 bug in it must not keep material out of the mirror.
 
+**A record without its rendering is therefore a state the mirror can be in** (stated 2026-08-11),
+and an expected one: an abandoned rendering leaves it so indefinitely. It is not drift and it is
+not a torn write — the record is complete and a rebuild reads only the record. Verify reports the
+missing rendering, and a repair rewrites the pair. The reverse — a rendering with no record — is
+a stray, because nothing ever writes one in that order.
+
 ### The markdown is a rendering
 
 Nothing ever parses the `.md`. It exists for a person who has lost notemap, and losslessness
@@ -143,7 +165,9 @@ that everything on disk must round-trip, and here half of it deliberately does n
 
 Renderers are wired by the host, per payload type, because a payload's content is an open JSON
 object and nothing in core knows which part of it is prose. A payload type with no renderer
-falls back to the driver's default: frontmatter and a fenced JSON block of the content. A
+falls back to the driver's default: frontmatter and a fenced JSON block of the content, whose
+fence is made longer than any backtick run inside it — a payload's content is open JSON and may
+hold one of any length. A
 renderer that throws **fails the job**, so a broken renderer is visible rather than silently
 degrading into JSON blocks — and because the record is already durable by then, nothing is lost
 while it is broken.
@@ -163,12 +187,22 @@ action log.
   indefinitely with capped backoff. The work is genuinely still owed and will eventually
   succeed, and a bounded limit would abandon every pending job at once the first time a synced
   folder went away for a day.
-- A **non-retryable** failure — a renderer that throws, a record that will not serialise — is
-  abandoned on the first attempt. It will fail identically on every attempt, and retrying
-  forever would keep it off the surface that exists to say something needs a person.
+- A **non-retryable** failure — a renderer that throws, a record that will not serialise, an
+  asset the store no longer has — is abandoned on the first attempt. It will fail identically on
+  every attempt, and retrying forever would keep it off the surface that exists to say something
+  needs a person.
+
+**An unrecognised failure is retryable.** That default is deliberate: giving up on work that is
+genuinely still owed loses material until someone runs a repair, where retrying something
+hopeless costs a row on a surface that already says it needs a person. It follows that a case
+worth abandoning has to *say so* — a missing asset is a known fact and carries its own code,
+rather than falling through to the default (decided 2026-08-11). Rebuild takes the opposite
+stance on the same fact, and correctly: a missing blob is reported and never fatal there, because
+by then nothing can be done about it, where the writer still can.
 
 Abandoned mirror work appears on the same surface as abandoned enrichment
-([core.md](core.md#enrichment)), so one read answers "what needs me". Repair re-enqueues it.
+([core.md](core.md#enrichment)), so one read answers "what needs me". Repair re-enqueues it, and
+the abandoned row stops being reported once that write lands.
 
 ### Purge
 
@@ -201,7 +235,15 @@ pool-mirror/2026/08/11/T142305-text-<item-id>.md
 
 Directory and time prefix come from the item's capture time **in UTC**; the type is the payload
 type; the id is the item's. Every component is immutable, so **the path is computable from the
-item alone**, identically on every machine, forever. This is what lets a rewrite, a removal and a
+item alone**, identically on every machine, forever.
+
+Ids are client-minted and may hold anything, so the id in the filename is a **one-way encoding**
+(stated 2026-08-11): anything but a lowercase safe name is replaced *and* given a digest of the
+original. Case is folded because `abc` and `ABC` are two items but one file on macOS and Windows,
+and a digest is what keeps two ids that sanitise alike in two files. The consequence is that a
+filename cannot be turned back into an id — so removal, which is given a bare id because the item
+may already be purged, walks the tree and matches on the id **inside** each record. Matching on
+the name would take every item whose id merely ends with the one asked for. This is what lets a rewrite, a removal and a
 repair address a file directly, in a store that may never be read for an index. A revision
 carries its original's capture time and so lands in the same directory at the same instant; the
 id keeps them distinct.
@@ -263,6 +305,11 @@ writes.
 catches an external edit that fast mode cannot, and verifies every referenced blob through the
 asset store. It hashes every byte in the pool, so it is run on request rather than at every
 backup.
+
+The reader hands back **one entry per file**, each of which is a record that parsed, a file that
+would not parse, or a stray — a temporary file a crash left, a rendering with no record. Whether
+a record is an *orphan* is not the reader's to say: that needs the pool. Artifacts and routing
+are not asked for per item, because a record already carries them.
 
 **Repair only enqueues.** A mirror job for every item whose files are missing or stale, a removal
 job for every orphan — and then the job runner writes, as it does for everything else. There is

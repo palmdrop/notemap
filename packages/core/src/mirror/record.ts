@@ -9,11 +9,9 @@ import type { RoutingRecord } from "../types/domain/routing";
 /**
  * One item's durable state, in the one form the mirror stores it in.
  *
- * Canonical on the way out rather than on the way to disk: every instant gets
- * its single spelling and every unordered collection its single order here, so
- * two projections of the same state are equal as values, not merely as bytes.
- * Without that the byte comparison deep verify performs would report drift
- * forever, since a store may hand a timestamp back however it likes.
+ * Canonical here rather than at the byte layer: every instant gets its single
+ * spelling and every unordered collection its single order, so two projections
+ * of one state are equal as values and not merely as bytes.
  */
 export function projectMirrorRecord(
   item: Item,
@@ -21,8 +19,6 @@ export function projectMirrorRecord(
   artifacts: readonly Artifact[],
   routing: readonly RoutingRecord[],
 ): MirrorRecord {
-  // `supersededBy` follows from the revision link and is dropped by taking the
-  // record half of the item; `modifiedAt` is carried, but for verification only.
   const { modifiedAt, supersededBy, ...record } = item;
 
   return {

@@ -35,15 +35,10 @@ import type {
 } from "../domain/work";
 import type { LeaseRefusal } from "./refusal";
 
-/**
- * Everything a pool reaches the outside world through. Core sources none of it.
- *
- * There is deliberately no mirror reader here. Rebuild and verify take one as
- * an argument, so a pool wired for capture holds nothing that can read the
- * mirror and write-only is structural rather than a convention.
- */
+/** Everything a pool reaches the outside world through. Core sources none of it. */
 export type PoolPorts = {
   readonly store: PoolStore;
+  readonly work: WorkQueue;
   readonly clock: Clock;
   readonly ids: IdGenerator;
   readonly schemas: SchemaValidator;
@@ -57,11 +52,7 @@ export interface Clock {
   now(): Timestamp;
 }
 
-/**
- * Constrained to the brands that are minted rather than derived or configured:
- * `next<BlobHash>()` or `next<Timestamp>()` would fabricate a fact, and now
- * fails to compile instead.
- */
+/** Only the brands that are minted: `next<BlobHash>()` fabricates a fact, and will not compile. */
 export interface IdGenerator {
   next<T extends MintableId>(): T;
 }
@@ -73,11 +64,7 @@ export interface SchemaValidator {
 /** Owns the asset-to-blob count. Which assets an item references is the pool store's. */
 export interface AssetStore {
   store(bytes: AsyncIterable<Uint8Array>, meta: AssetMeta): Promise<Asset>;
-  /**
-   * Resolves a reference before the capture carrying it commits: without this
-   * core cannot tell an unknown asset from one whose blob has been swapped
-   * underneath it, and both are refusals it is meant to raise.
-   */
+  /** Resolves a reference before the capture carrying it commits. */
   get(id: AssetId): Promise<Asset | undefined>;
   open(id: AssetId, signal?: AbortSignal): Promise<AsyncIterable<Uint8Array>>;
   verify(id: AssetId): Promise<BlobIntegrity>;
@@ -95,13 +82,34 @@ export interface MirrorWriter {
 }
 
 /**
+ * What one file in the mirror turned out to be. A record carries the item, its
+ * artifacts and its routing together, so there is nothing to ask for per item.
+ *
+ * Everything the reader could not turn into a record is still reported: verify
+ * has to see the file that would not parse and the debris a crash left, and a
+ * reader that passed over them quietly would let it call a mirror healthy that
+ * cannot rebuild. Whether a record is an *orphan* is not the reader's to say —
+ * that needs the pool.
+ */
+export type MirrorEntry =
+  | {
+      readonly kind: "record";
+      readonly path: string;
+      readonly record: MirrorRecord;
+    }
+  | {
+      readonly kind: "unreadable";
+      readonly path: string;
+      readonly detail: string;
+    }
+  | { readonly kind: "stray"; readonly path: string };
+
+/**
  * Reads mirror text, which normal operation never does. Handed to rebuild and
  * verify explicitly, and never wired into a pool.
  */
 export interface MirrorReader {
-  items(): AsyncIterable<Item>;
-  artifacts(item: ItemId): Promise<readonly Artifact[]>;
-  routingRecords(item: ItemId): Promise<readonly RoutingRecord[]>;
+  entries(): AsyncIterable<MirrorEntry>;
 }
 
 export interface DestinationAdapter {
@@ -137,9 +145,6 @@ export interface PoolReads {
   routingRecords(item: ItemId): Promise<readonly RoutingRecord[]>;
   artifacts(item: ItemId): Promise<readonly Artifact[]>;
   enrichmentStates(item: ItemId): Promise<readonly EnrichmentStatus[]>;
-  abandonedWork(
-    page: Page<AbandonedPosition>,
-  ): Promise<Slice<AbandonedWork, AbandonedPosition>>;
 
   /** The pool store owns the item-to-asset count, so only it can find these. */
   unreferencedAssets(
@@ -152,9 +157,7 @@ export interface PoolReads {
 }
 
 /**
- * Reads and writes inside one transaction. A precondition is an ordinary read
- * here — an amendment checks that its item is still the head, and demotes
- * itself to a revision when it is not — so nothing has to be asserted up front.
+ * Reads and writes inside one transaction.
  *
  * Which assets an item references is not passed to `insertItem`: the store
  * takes it from the payload, so the count and the payload cannot disagree.
@@ -174,21 +177,12 @@ export interface PoolStore extends PoolReads {
    * Applies `work` all-or-nothing: the store commits what it wrote when the
    * promise resolves and discards it when the promise rejects.
    *
-   * **Core performs no outside I/O in here.** Every port is async and the store
-   * holds a write lock for as long as `work` runs, so awaiting an asset store, a
-   * provider or a destination inside a transaction stalls the pool. Validate,
-   * fetch and hash first, then open the transaction. This is a design rule
-   * review defends rather than one the types enforce — a synchronous callback
-   * would enforce it, at the price of ever supporting an asynchronous store.
+   * **Core performs no outside I/O in here.** The store holds a write lock for
+   * as long as `work` runs, so awaiting an asset store, a provider or a
+   * destination inside a transaction stalls the pool. Validate, fetch and hash
+   * first, then open the transaction. The types do not enforce this.
    */
   transaction<T>(work: (tx: PoolTx) => Promise<T>): Promise<T>;
-
-  claim(request: ClaimRequest, now: Timestamp): Promise<readonly Lease[]>;
-  extendLease(
-    lease: LeaseId,
-    until: Timestamp,
-  ): Promise<Result<Lease, LeaseRefusal>>;
-  releaseLease(lease: LeaseId): Promise<Result<void, LeaseRefusal>>;
 
   /**
    * Releases whatever the store holds open. Declared on every store even where
@@ -196,4 +190,26 @@ export interface PoolStore extends PoolReads {
    * which kind of store it wired.
    */
   close(): Promise<void>;
+}
+
+/**
+ * Dispatch: who holds which job, for how long, and what was given up on. None
+ * of it touches item state, which is what separates it from the enqueue and
+ * resolve on `PoolTx` — those mean nothing outside the transaction that caused
+ * the work, and so can never live anywhere but the store.
+ *
+ * A driver may implement this and `PoolStore` as one object, and the SQLite one
+ * does. The split says which half would have to move to run the queue
+ * elsewhere, not that it already has.
+ */
+export interface WorkQueue {
+  claim(request: ClaimRequest, now: Timestamp): Promise<readonly Lease[]>;
+  extendLease(
+    lease: LeaseId,
+    until: Timestamp,
+  ): Promise<Result<Lease, LeaseRefusal>>;
+  releaseLease(lease: LeaseId): Promise<Result<void, LeaseRefusal>>;
+  abandonedWork(
+    page: Page<AbandonedPosition>,
+  ): Promise<Slice<AbandonedWork, AbandonedPosition>>;
 }

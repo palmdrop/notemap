@@ -1,10 +1,7 @@
 /**
- * The shape of every table, as SQLite hands it back.
- *
- * Hand-written SQL cannot prove a row matches its type, so these are the one
- * place the driver asserts rather than checks. `schema.test.ts` closes the gap
- * from the other end: it reads `PRAGMA table_info` and fails if a column here
- * has no counterpart in the migration, or the other way round.
+ * The shape of every table, as SQLite hands it back — the one place the driver
+ * asserts rather than checks. `schema.test.ts` closes the gap from the other
+ * end, failing if these and the migrations disagree on any column.
  */
 
 export type AgentColumns = {

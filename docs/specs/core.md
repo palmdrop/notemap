@@ -18,7 +18,9 @@
   backoff is and when work is given up on are core's alone — and mirror work retries
   indefinitely where enrichment is bounded. Core owns the mirror record and answers an item's,
   read fresh. `Agent` gains a **`notemap`** variant, for work core drives on nobody's behalf: an
-  attempt that failed is attributable to no person, provider or source.
+  attempt that failed is attributable to no person, provider or source. Dispatch — claiming and
+  leasing, and the abandoned-work surface — is a **`WorkQueue`** port separate from `PoolStore`;
+  enqueue and resolve stay on the transaction handle, where they have to be.
   ([plan](../plans/mirror-writer-first-slice.md))
 
 ---
@@ -298,7 +300,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   capture enqueues exactly one mirror job" (decided 2026-08-06), which covered only the first of
   an item's writes — tags, archive state, artifacts and routing records all arrive later and are
   all mirrored.
-- **Mirror jobs coalesce against unclaimed jobs only** (decided 2026-08-11). A mutation arriving
+- **Mirror jobs coalesce against pending jobs only** (decided 2026-08-11, amended the same day).
+  An abandoned job is not pending: it records a failure for a person, not a write still to come,
+  so it holds no slot and a later mutation enqueues afresh. A mutation arriving
   while a pending, unleased job exists adds nothing, because that job will write current state.
   A mutation arriving while the item's only mirror job is *leased* enqueues a new one: the host
   holding the lease has already read the state it is writing, and absorbing the mutation into it
@@ -441,6 +445,13 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   carried on a command. **Core still performs no I/O inside a transaction** — the store holds a
   write lock for its duration — but that is now a convention review defends rather than a
   structural impossibility, the same call already made for `fs`.
+- **Dispatch is a port of its own** (decided 2026-08-11). `WorkQueue` — claiming a job, extending
+  and releasing a lease, and the abandoned-work surface — is separate from `PoolStore`, because
+  none of it touches item state. **Enqueue and resolve are not**, and cannot be: they live on the
+  transaction handle because a mutation that committed with nothing recording the work it owes is
+  exactly what the mirror's guarantee forbids, and there is no atomic write across two stores. A
+  driver may implement both ports as one object, and the SQLite one does. The split names which
+  half would have to move to run the queue elsewhere — it is not a claim that anything has.
 - **A pool lives on a local filesystem, never on a network share.** Concurrent hosts are made
   safe by leasing work, not by forbidding it. This is a limit of the SQLite driver, documented
   with it, rather than a requirement core places on storage.

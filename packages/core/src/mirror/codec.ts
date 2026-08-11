@@ -23,22 +23,14 @@ import type { Payload } from "../types/domain/payload";
 import type { RoutingRecord, RoutingTarget } from "../types/domain/routing";
 
 /**
- * The record as bytes. Keys are sorted at every depth — including inside the
- * open JSON of a payload's content, where the order is whatever a client sent —
- * so one state has one serialisation and deep verify can compare bytes.
- *
- * Indented and newline-terminated because a person who has lost notemap may
- * end up reading this file, and it costs nothing that matters.
+ * The record as bytes. Keys are sorted at every depth, including inside the
+ * open JSON of a payload's content, so one state has one serialisation.
  */
 export function serialiseMirrorRecord(record: MirrorRecord): string {
   return `${JSON.stringify(record, sortedKeys, 2)}\n`;
 }
 
-/**
- * Rejects rather than salvages. A file that will not parse is a finding verify
- * has to report; one that parsed into a half-record would let verify call a
- * mirror healthy that cannot rebuild.
- */
+/** Rejects rather than salvages: a half-record would let verify call a mirror healthy that cannot rebuild. */
 export function parseMirrorRecord(text: string): MirrorRecord {
   let parsed: unknown;
   try {

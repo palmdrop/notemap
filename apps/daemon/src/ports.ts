@@ -64,8 +64,11 @@ export function openPool(
           renderers: RENDERERS,
         });
 
+  const store = createSqlitePoolStore({ file, clock: systemClock });
+
   const ports: PoolPorts = {
-    store: createSqlitePoolStore({ file, clock: systemClock }),
+    store,
+    work: store,
     clock: systemClock,
     ids: uuidV7Ids,
     schemas: createAjvSchemaValidator(),

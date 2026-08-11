@@ -32,8 +32,12 @@ const JOB_COLUMNS = `
 /** The kinds the one-write-per-item rules apply to. */
 const MIRROR_KINDS = `('mirror', 'mirror-remove')`;
 
-/** Matched against the partial index of the same name, so only it can be conflicted on. */
-const UNLEASED_MIRROR = `kind IN ${MIRROR_KINDS} AND lease_id IS NULL`;
+/**
+ * Matched against the partial index of the same name, so only it can be
+ * conflicted on. Abandoned rows are excluded: they are not pending, and holding
+ * a slot would make an abandoned job swallow every later write its item owes.
+ */
+const PENDING_MIRROR = `kind IN ${MIRROR_KINDS} AND lease_id IS NULL AND abandoned_at IS NULL`;
 
 /**
  * The queue, as SQL. Synchronous, because `node:sqlite` is: every method here
@@ -54,7 +58,7 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
     INSERT INTO jobs
       (id, kind, subject, enrichment, attempt, enqueued_at, next_attempt_at)
     VALUES (?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT (subject, kind) WHERE ${UNLEASED_MIRROR} DO NOTHING
+    ON CONFLICT (subject, kind) WHERE ${PENDING_MIRROR} DO NOTHING
   `);
 
   const byLease = write.query<JobRow, [string]>(
@@ -82,21 +86,26 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
   );
 
   /**
-   * Whether releasing this lease would leave the item with two unleased mirror
-   * jobs, which the coalescing index forbids. The rival is the newer job, and
-   * it writes state read fresh, so it says everything this one would have.
+   * The other pending mirror job for this item, whose existence forbids putting
+   * this one back. It writes state read fresh, so it already says everything
+   * this job would have.
    */
   const rival = write.query<{ id: string }, [string, string, string]>(`
     SELECT id FROM jobs
-    WHERE subject = ? AND kind = ? AND id <> ? AND lease_id IS NULL
+    WHERE subject = ? AND kind = ? AND id <> ?
+      AND lease_id IS NULL AND abandoned_at IS NULL
     LIMIT 1
   `);
 
+  /** An abandoned job's debt is settled once a later write for its item succeeds. */
+  const clearAbandoned = write.query<never, [string, string]>(`
+    DELETE FROM jobs
+    WHERE subject = ? AND kind = ? AND abandoned_at IS NOT NULL
+  `);
+
   /**
-   * One claimable job, oldest first. Skips what is abandoned, what is waiting
-   * out a backoff, and what someone else still holds — and, for mirror work,
-   * anything whose item already has a write in flight, so two writers never
-   * race on one file.
+   * One claimable job, oldest first — for mirror work, only where the item has
+   * no write already in flight.
    *
    * Taken one at a time rather than as a page: leasing the first is what makes
    * the second unclaimable, and a single query could not see its own effect.
@@ -132,6 +141,14 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
       `,
       )
       .get(...params);
+  }
+
+  /** Whether a pending job for this item already says everything this one would. */
+  function superseded(row: JobRow): boolean {
+    return (
+      row.kind !== "enrichment" &&
+      rival.get(row.subject, row.kind, row.id) !== undefined
+    );
   }
 
   return {
@@ -196,14 +213,8 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
       const row = byLease.get(lease);
       if (row === undefined) return refused({ kind: "lease-lost", lease });
 
-      if (
-        row.kind === "enrichment" ||
-        rival.get(row.subject, row.kind, row.id) === undefined
-      ) {
-        clearLease.run(row.id);
-      } else {
-        deleteJob.run(row.id);
-      }
+      if (superseded(row)) deleteJob.run(row.id);
+      else clearLease.run(row.id);
 
       return ok<void, LeaseRefusal>(undefined);
     },
@@ -218,13 +229,22 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
       };
     },
 
-    /**
-     * Applies what core decided, and gives up the lease in the same statement:
-     * work that has been resolved is no longer anybody's.
-     */
+    /** Applies what core decided, and gives up the lease in the same statement. */
     resolveJob: (lease, resolution) => {
+      const row = byLease.get(lease);
+      if (row === undefined) return;
+
       if (resolution.kind === "done") {
         finishJob.run(lease);
+        if (row.kind !== "enrichment")
+          clearAbandoned.run(row.subject, row.kind);
+        return;
+      }
+
+      // A retry puts the job back among the pending, where a rival would
+      // collide with it. Abandoning does not, so it never has to give way.
+      if (resolution.kind === "retry" && superseded(row)) {
+        deleteJob.run(row.id);
         return;
       }
 
@@ -252,11 +272,7 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
   };
 }
 
-/**
- * The surface answering "what needs me", of every kind at once. A read rather
- * than part of the queue, so it can run on the reader's connection and never
- * see what an open transaction may still roll back.
- */
+/** Runs on the reader's connection, so it never sees what a transaction may still roll back. */
 export function abandonedWork(
   source: Statements,
   page: Page<AbandonedPosition>,

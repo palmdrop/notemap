@@ -3,11 +3,12 @@ import type {
   Item,
   ItemId,
   Page,
-  PoolStore,
   Position,
   Timestamp,
 } from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
+
+import type { SqlitePoolStore } from "./pool-store";
 
 import {
   appendCapture,
@@ -26,7 +27,7 @@ const ALL: Page = { limit: 50 };
 const ids = (values: readonly Item[]) => values.map((item) => item.id);
 
 /** `item-0`…`item-<count - 1>`, one minute apart, oldest first. */
-async function minutelyItems(p: PoolStore, count: number): Promise<void> {
+async function minutelyItems(p: SqlitePoolStore, count: number): Promise<void> {
   for (let index = 0; index < count; index += 1) {
     await appendCapture(
       p,

@@ -1,14 +1,13 @@
+import { MirrorWriteFailure } from "../mirror/failure";
 import { projectMirrorRecord } from "../mirror/record";
 import type { PoolPorts } from "../types/api/ports";
 import type { AssetId, ItemId } from "../types/domain/ids";
 import type { MirrorRecord } from "../types/domain/mirror";
 
 /**
- * An item's durable state as the mirror would carry it, read fresh.
- *
- * This is a read of the *pool*, not of the mirror: a job carries no snapshot,
- * so whatever writes a mirror file asks for the state at the moment it writes.
- * Nothing here can reach a mirror file.
+ * An item's durable state as the mirror would carry it. A read of the *pool*,
+ * not of the mirror: a job carries no snapshot, so a write asks for the state
+ * at the moment it writes.
  */
 export async function recordFor(
   ports: PoolPorts,
@@ -22,8 +21,6 @@ export async function recordFor(
     ports.store.routingRecords(id),
   ]);
 
-  // A reference names an id and a hash; the filename, media type and size a
-  // rebuild needs to restore the same asset identity are the asset store's.
   const referenced = new Set<AssetId>([
     ...item.payload.assets.map((ref) => ref.asset),
     ...artifacts.flatMap((artifact) => artifact.assets.map((ref) => ref.asset)),
@@ -33,8 +30,13 @@ export async function recordFor(
     [...referenced].map(async (asset) => {
       const resolved = await ports.assets.get(asset);
       if (resolved === undefined) {
-        throw new Error(
+        // Not retryable: the reference is durable and the blob is not coming
+        // back on its own, so retrying forever would hide it from the surface
+        // that exists to ask a person for it.
+        throw new MirrorWriteFailure(
+          "asset-missing",
           `item ${id} references asset ${asset}, which the asset store does not have`,
+          false,
         );
       }
       return resolved;

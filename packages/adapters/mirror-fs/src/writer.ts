@@ -1,23 +1,24 @@
-import { readdir } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import {
   MirrorWriteFailure,
+  parseMirrorRecord,
   serialiseMirrorRecord,
   type ItemId,
   type MirrorRecord,
   type MirrorWriter,
 } from "@notemap/core";
 
-import { removeIfPresent, writeAtomically } from "./atomic";
+import { removeIfPresent, TEMPORARY_PREFIX, writeAtomically } from "./atomic";
 import {
   FIXED_KEYS,
   fixedFrontmatter,
   toYaml,
   type FrontmatterValue,
 } from "./frontmatter";
-import { pathsFor, stemSuffixFor } from "./paths";
-import { renderAsJson, type Renderers } from "./renderers";
+import { pathsFor, renderingBeside } from "./paths";
+import { renderAsJson, type Rendering, type Renderers } from "./renderers";
 
 export type FilesystemMirrorConfig = {
   /** The `pool-mirror` directory itself. Created as writes land in it. */
@@ -41,16 +42,11 @@ export function createFilesystemMirrorWriter(
       await writeAtomically(paths.rendering, render(renderers, record));
     },
 
-    /**
-     * Given a bare id, because the item may already be purged — which also
-     * means the path cannot be computed and the tree has to be searched.
-     * Purge is rare; a walk per purge is the price of not making a job carry
-     * a snapshot of the item it is about.
-     */
+    /** A bare id cannot give a path, so removal walks the tree instead. */
     remove: async (item: ItemId): Promise<void> => {
-      const suffix = stemSuffixFor(item);
-      for (const path of await filesFor(config.root, suffix)) {
-        await removeIfPresent(path);
+      for (const record of await recordsFor(config.root, item)) {
+        await removeIfPresent(renderingBeside(record));
+        await removeIfPresent(record);
       }
     },
   };
@@ -59,12 +55,11 @@ export function createFilesystemMirrorWriter(
 function render(renderers: Renderers, record: MirrorRecord): string {
   const renderer = renderers[record.item.payload.type] ?? renderAsJson;
 
-  let rendered;
+  let rendered: Rendering;
   try {
     rendered = renderer(record);
   } catch (cause) {
-    // Non-retryable: it will throw identically on every attempt, and the
-    // record is already durable, so nothing is lost while it is broken.
+    // Non-retryable: it will throw identically on every attempt.
     throw new MirrorWriteFailure(
       "renderer-threw",
       `the renderer for ${record.item.payload.type} threw: ${cause instanceof Error ? cause.message : String(cause)}`,
@@ -82,10 +77,17 @@ function render(renderers: Renderers, record: MirrorRecord): string {
   return `${toYaml(entries)}\n${rendered.body}`;
 }
 
-/** Both halves of every pair whose stem ends in this suffix, at any date. */
-async function filesFor(
+/**
+ * Every record file in the tree that is about this item, matched on the id
+ * inside it. A filename cannot be turned back into an id, and matching on the
+ * name alone would delete `a-b`'s files when asked to remove `b`.
+ *
+ * A file that will not parse is left alone: nothing can say whose it is, and
+ * deleting it on suspicion is worse than leaving debris for verify to report.
+ */
+async function recordsFor(
   root: string,
-  suffix: string,
+  item: ItemId,
 ): Promise<readonly string[]> {
   let entries;
   try {
@@ -95,12 +97,20 @@ async function filesFor(
     throw cause;
   }
 
-  return entries
-    .filter(
-      (entry) =>
-        entry.isFile() &&
-        (entry.name.endsWith(`${suffix}.json`) ||
-          entry.name.endsWith(`${suffix}.md`)),
-    )
-    .map((entry) => join(entry.parentPath, entry.name));
+  const matched: string[] = [];
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
+    if (entry.name.startsWith(TEMPORARY_PREFIX)) continue;
+
+    const path = join(entry.parentPath, entry.name);
+    try {
+      if (parseMirrorRecord(await readFile(path, "utf8")).item.id === item) {
+        matched.push(path);
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return matched;
 }

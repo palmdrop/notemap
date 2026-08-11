@@ -120,10 +120,7 @@ export interface WorkApi {
   extend(lease: LeaseId, by: Duration): Promise<Result<Lease, LeaseRefusal>>;
   release(lease: LeaseId): Promise<Result<void, LeaseRefusal>>;
 
-  /**
-   * One list of everything core has stopped retrying, of every kind, so a
-   * client answers "what needs me" with one read rather than merging two.
-   */
+  /** Everything core has stopped retrying, of every kind, in one list. */
   abandoned(
     page: Page<AbandonedPosition>,
   ): Promise<Slice<AbandonedWork, AbandonedPosition>>;
@@ -140,11 +137,7 @@ export interface SyncApi {
 }
 
 export interface MirrorApi {
-  /**
-   * What the mirror would write for this item now, or nothing if it is gone.
-   * A read of the pool: a mirror job carries no snapshot, so whatever performs
-   * the write asks for the state at the moment it writes.
-   */
+  /** What the mirror would write for this item now, or nothing if it is gone. */
   recordFor(item: ItemId): Promise<MirrorRecord | undefined>;
 }
 
@@ -162,10 +155,8 @@ export type MirrorReport = {
 export type VerifyDepth = "fast" | "deep";
 
 /**
- * Rebuild is absent: it makes a pool rather than operating on one, so it is its
- * own entry point and lands with its own slice. Verify and repair take the
- * reader as an argument for the same reason — walking the mirror is not normal
- * operation, and a pool is never handed the means to.
+ * Rebuild is absent: it makes a pool rather than operating on one. Verify and
+ * repair take a reader as an argument, so a pool never holds one.
  */
 export interface MaintenanceApi {
   verifyMirror(reader: MirrorReader, depth: VerifyDepth): Promise<MirrorReport>;
@@ -190,10 +181,6 @@ export interface Pool {
   readonly sync: SyncApi;
   readonly maintenance: MaintenanceApi;
 
-  /**
-   * Disposes the pool, releasing every port that holds something open. The host
-   * decides when a pool is done with; core never decides for it. Wiring the
-   * ports is the host's job, operating them afterwards is not.
-   */
+  /** Disposes the pool, releasing every port that holds something open. */
   close(): Promise<void>;
 }

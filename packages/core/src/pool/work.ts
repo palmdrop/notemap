@@ -19,17 +19,14 @@ import type {
 } from "../types/domain/work";
 import type { Page, Result, Slice } from "../types/result";
 
-/**
- * Doubling past this would reach Infinity, and the cap is long since in force:
- * mirror work retries forever, so an attempt count has no ceiling of its own.
- */
+/** Mirror attempts have no ceiling, so the doubling needs one before it reaches Infinity. */
 const MAX_DOUBLINGS = 32;
 
 export function claim(
   ports: PoolPorts,
   request: ClaimRequest,
 ): Promise<readonly Lease[]> {
-  return ports.store.claim(request, ports.clock.now());
+  return ports.work.claim(request, ports.clock.now());
 }
 
 export function extend(
@@ -37,21 +34,21 @@ export function extend(
   lease: LeaseId,
   by: Duration,
 ): Promise<Result<Lease, LeaseRefusal>> {
-  return ports.store.extendLease(lease, later(ports.clock.now(), by));
+  return ports.work.extendLease(lease, later(ports.clock.now(), by));
 }
 
 export function release(
   ports: PoolPorts,
   lease: LeaseId,
 ): Promise<Result<void, LeaseRefusal>> {
-  return ports.store.releaseLease(lease);
+  return ports.work.releaseLease(lease);
 }
 
 export function abandoned(
   ports: PoolPorts,
   page: Page<AbandonedPosition>,
 ): Promise<Slice<AbandonedWork, AbandonedPosition>> {
-  return ports.store.abandonedWork(page);
+  return ports.work.abandonedWork(page);
 }
 
 export async function complete(
@@ -117,11 +114,7 @@ export async function complete(
   });
 }
 
-/**
- * Only enrichment is bounded. For mirroring the answer to "is anything still
- * coming?" is always yes — the material exists and is unmirrored — so giving up
- * would change nothing but the visibility of work that is genuinely still owed.
- */
+/** Only enrichment is bounded: unmirrored material is owed however many times the write has failed. */
 function exhausted(
   policy: RetryPolicy,
   kind: JobKind,

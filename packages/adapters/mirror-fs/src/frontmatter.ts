@@ -1,80 +1,75 @@
-import type { MirrorRecord } from "@notemap/core";
+import { stringify } from "yaml";
+
+import type { ItemRecord, MirrorRecord } from "@notemap/core";
 
 export type FrontmatterValue = string | number | boolean | readonly string[];
 
 /**
- * The keys the driver emits from the record. A renderer may add its own but
- * never these: provenance is a standing guarantee, not something a host's
- * rendering gets to drop or rewrite.
+ * Where each of an item's fields goes in the frontmatter, or `null` where it
+ * deliberately goes nowhere. Keyed by `ItemRecord`, so a field added to the
+ * domain fails to compile until someone decides which of the two it is.
+ *
+ * The names are an interop contract — other tools read these files — so they
+ * are stable across a rename on the domain side, and several are the PROV terms
+ * rather than notemap's own.
  */
-export const FIXED_KEYS = [
-  "id",
-  "capture_source",
-  "source_id",
-  "payload_type",
-  "captured_at",
-  "updated_at",
-  "archived_at",
-  "tags",
+const KEYS = {
+  id: "id",
+  source: "capture_source",
+  sourceItemId: "source_id",
+  payload: "payload_type",
+  createdAt: "captured_at",
+  contentUpdatedAt: "updated_at",
+  archived: "archived_at",
+  tags: "tags",
+  revisionOf: "wasRevisionOf",
+} as const satisfies Record<keyof ItemRecord, string | null>;
+
+/** A renderer may add its own keys, but never shadow one of these. */
+export const FIXED_KEYS: readonly string[] = [
+  ...Object.values(KEYS),
   "wasAttributedTo",
-  "wasRevisionOf",
-] as const;
+];
 
 export function fixedFrontmatter(
   record: MirrorRecord,
 ): Map<string, FrontmatterValue> {
   const item = record.item;
   const entries = new Map<string, FrontmatterValue>([
-    ["id", item.id],
-    ["capture_source", item.source],
-    ["source_id", item.sourceItemId],
-    ["payload_type", item.payload.type],
-    ["captured_at", item.createdAt],
+    [KEYS.id, item.id],
+    [KEYS.source, item.source],
+    [KEYS.sourceItemId, item.sourceItemId],
+    [KEYS.payload, item.payload.type],
+    [KEYS.createdAt, item.createdAt],
     ["wasAttributedTo", item.source],
   ]);
 
   if (item.contentUpdatedAt !== undefined) {
-    entries.set("updated_at", item.contentUpdatedAt);
+    entries.set(KEYS.contentUpdatedAt, item.contentUpdatedAt);
   }
   if (item.archived !== undefined) {
-    entries.set("archived_at", item.archived.archivedAt);
+    entries.set(KEYS.archived, item.archived.archivedAt);
   }
   if (item.tags.length > 0) {
     entries.set(
-      "tags",
+      KEYS.tags,
       item.tags.map((tag) => tag.name),
     );
   }
   if (item.revisionOf !== undefined) {
-    entries.set("wasRevisionOf", item.revisionOf);
+    entries.set(KEYS.revisionOf, item.revisionOf);
   }
 
   return entries;
 }
 
-/**
- * YAML, emitted rather than templated. Every string goes out as a JSON string,
- * which YAML 1.2 accepts verbatim as a double-quoted scalar — so a filename
- * with a colon or a tag with a hash cannot break the block.
- */
+/** Every string is quoted, so no value can be read back as a number, a bool or null. */
 export function toYaml(entries: ReadonlyMap<string, FrontmatterValue>): string {
-  const lines = ["---"];
+  const body = stringify(Object.fromEntries(entries), {
+    defaultStringType: "QUOTE_DOUBLE",
+    defaultKeyType: "PLAIN",
+    lineWidth: 0,
+  });
 
-  for (const [key, value] of entries) {
-    if (Array.isArray(value)) {
-      lines.push(`${key}:`);
-      for (const each of value) lines.push(`  - ${JSON.stringify(each)}`);
-    } else {
-      lines.push(
-        `${key}: ${scalar(value as Exclude<FrontmatterValue, readonly string[]>)}`,
-      );
-    }
-  }
-
-  lines.push("---");
-  return `${lines.join("\n")}\n`;
-}
-
-function scalar(value: string | number | boolean): string {
-  return typeof value === "string" ? JSON.stringify(value) : String(value);
+  return `---\n${body}---\n`;
 }

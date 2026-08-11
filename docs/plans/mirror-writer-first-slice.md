@@ -206,6 +206,11 @@ All resolved 2026-08-11, before phase 1.
 - **`MirrorReader`** — kept, and the signatures that contradicted it fixed with it:
   `verifyMirror` and `repairMirror` take a reader, and `rebuildFromMirror` leaves `MaintenanceApi`
   altogether, since rebuild makes a pool rather than operating on one.
+  *Superseded 2026-08-11* — keeping the interface was the wrong half of that call. It was still
+  the pre-ADR-15 shape, yielding an `Item` plus per-item artifacts and routing, which is not what
+  a record holds and cannot express the parse failures and debris `mirror.md` requires a reader to
+  report. It is now `entries(): AsyncIterable<MirrorEntry>`. The signature fixes stand.
+  ([review](../reviews/mirror-writer-2026-08-11.md))
 - **Directory fsync after rename** — yes, sync the directory too. One extra syscall per write
   against a class of "the file vanished after a power cut" that is miserable to diagnose.
 - **Runner cadence** — poll on an interval from config. Testable and boring; a kick from the

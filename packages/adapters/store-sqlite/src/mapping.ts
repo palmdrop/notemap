@@ -37,11 +37,7 @@ export function toMillis(value: Timestamp): number {
   return millis;
 }
 
-/**
- * Always the canonical spelling, whatever the source wrote. Storing epoch
- * milliseconds is what makes the feed sortable, and it means a timestamp does
- * not survive a round trip byte for byte — only instant for instant.
- */
+/** The canonical spelling, whatever the source wrote: a timestamp round-trips instant for instant, not byte for byte. */
 export function toTimestamp(millis: number): Timestamp {
   return new Date(millis).toISOString() as Timestamp;
 }

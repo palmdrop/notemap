@@ -25,6 +25,7 @@ import type {
   Slice,
   SourceId,
   Timestamp,
+  WorkQueue,
 } from "@notemap/core";
 
 import {
@@ -45,33 +46,18 @@ import type {
   PoolMetaRow,
 } from "./rows";
 import { placeholders, statements, type Bindable } from "./statements";
-import { serializeTransactions, type Fence } from "./transactions";
+import { writeLock, type Fence } from "./write-lock";
 
 export type SqlitePoolStoreConfig = {
-  /**
-   * A path on a local filesystem, or `:memory:`. Never a network share —
-   * SQLite's locking does not survive one, and concurrent hosts are made safe
-   * by leasing work instead.
-   */
+  /** A local path or `:memory:`. Never a network share: SQLite's locking does not survive one. */
   readonly file: string;
-  /**
-   * Core's clock, so a pool has one timeline. The store needs its own reading
-   * because `modified_at` is the store's to assign, but taking it from here
-   * means a test that pins core's clock pins this too. Defaults to the system
-   * clock, which is right for a host that has no reason to care.
-   */
+  /** Core's clock, so a pool has one timeline. `modified_at` is read off it. */
   readonly clock?: Clock;
-  /**
-   * Mints lease ids, which are the store's own: a lease exists only for as long
-   * as the row holding it, and core never names one it has not been handed.
-   * Defaults to random UUIDs; a test pins it to read leases off a sequence.
-   */
+  /** Mints lease ids, which are the store's own. Defaults to random UUIDs. */
   readonly ids?: IdGenerator;
   /**
-   * How long one transaction may run before it is rolled back. Transactions
-   * are serialized, so a callback that never settles stalls every write against
-   * the pool; this is the backstop. It is not a budget to design against — a
-   * transaction that comes close to it is doing something it should not.
+   * The backstop for a callback that never settles, which would otherwise stall
+   * every write against the pool. Not a budget to design against.
    */
   readonly transactionTimeoutMs?: number;
 };
@@ -84,11 +70,7 @@ const ITEM_COLUMNS = `
 
 const DEFAULT_ORDER: FeedOrder = "newest-first";
 
-/**
- * In-process writes are serialized by the transaction queue, so SQLITE_BUSY is
- * only ever another process — a second host on the same pool. Waiting briefly
- * beats failing the instant two hosts' writes touch.
- */
+/** The write lock serializes this process, so SQLITE_BUSY is only ever a second host. */
 const BUSY_TIMEOUT_MS = 5_000;
 
 const systemClock: Clock = {
@@ -109,11 +91,7 @@ function bound(position: Position): Bound {
   };
 }
 
-/**
- * The comparison that continues a read past one position, in whichever
- * direction it runs. A position with no id bounds on time alone — a coarse
- * entry point, which may skip rows sharing that instant.
- */
+/** The comparison that continues a read past one position, in whichever direction it runs. */
 function keysetClause(
   column: string,
   after: Bound,
@@ -135,9 +113,15 @@ function unimplemented(method: string): () => never {
   };
 }
 
+/**
+ * Both ports in one object: the queue is rows in the same database, so its
+ * claims share the write lock with the transactions they race against.
+ */
+export type SqlitePoolStore = PoolStore & WorkQueue;
+
 export function createSqlitePoolStore(
   config: SqlitePoolStoreConfig,
-): PoolStore {
+): SqlitePoolStore {
   const writer = new DatabaseSync(config.file);
   let reader = writer;
   try {
@@ -147,13 +131,10 @@ export function createSqlitePoolStore(
     migrate(writer);
 
     /**
-     * Reads run on their own connection so a read outside a transaction cannot
-     * observe what an open transaction has written and may still roll back. WAL
-     * gives that connection a consistent snapshot without blocking the writer.
-     *
-     * A `:memory:` database has no second connection to give — each one would
-     * be a separate database — so it shares the writer and forfeits that
-     * isolation. Tests use files for exactly this reason.
+     * Reads get their own connection, so one outside a transaction cannot see
+     * what that transaction may still roll back. A `:memory:` database has no
+     * second connection to give — each would be a separate database — so it
+     * shares the writer and forfeits that isolation.
      */
     if (config.file !== ":memory:") {
       reader = new DatabaseSync(config.file);
@@ -161,8 +142,7 @@ export function createSqlitePoolStore(
       reader.exec(`PRAGMA busy_timeout = ${BUSY_TIMEOUT_MS}`);
     }
   } catch (cause) {
-    // A store that failed to open leaves no connection behind for the caller
-    // to know about, let alone close.
+    // A store that failed to open leaves the caller no connection to close.
     if (reader !== writer) reader.close();
     writer.close();
     throw cause;
@@ -170,10 +150,7 @@ export function createSqlitePoolStore(
 
   const write = statements(writer);
   const read = statements(reader);
-  const transactions = serializeTransactions(
-    writer,
-    config.transactionTimeoutMs,
-  );
+  const writes = writeLock(writer, config.transactionTimeoutMs);
   const clock = config.clock ?? systemClock;
 
   const insertItem = write.query(`
@@ -215,11 +192,8 @@ export function createSqlitePoolStore(
       `SELECT ${ITEM_COLUMNS} FROM items WHERE id = ?`,
     );
     /**
-     * `revision_of IS NULL` because a revision carries the source identity of
-     * the capture it revises, so a chain has one identity across every link.
-     * The question this answers is whether that source's item already arrived,
-     * and the capture is the one that answers it. The uniqueness index is
-     * partial on the same condition.
+     * `revision_of IS NULL` because a whole chain shares one source identity,
+     * and the capture at its root is the link that answers for it.
      */
     const itemBySource = source.query<ItemRow, [string, string]>(
       `SELECT ${ITEM_COLUMNS} FROM items
@@ -252,8 +226,6 @@ export function createSqlitePoolStore(
         )
         .all(...ids);
 
-      // Grouped once rather than filtered per item, which would be quadratic
-      // in the page size.
       const group = <T extends { item_id: string }>(all: readonly T[]) => {
         const byItem = new Map<string, T[]>();
         for (const row of all) {
@@ -285,12 +257,8 @@ export function createSqlitePoolStore(
     }
 
     /**
-     * Keyset, not offset: a page continues from the sort key of the last row
-     * handed out, so a row inserted behind the reader — an offline sync, a file
-     * import — cannot make a page skip or repeat.
-     *
-     * The position arrives in domain terms and is only ever compared, never
-     * looked up, so it keeps working when the row it names is gone.
+     * Keyset, not offset: a row inserted behind the reader cannot make a page
+     * skip or repeat.
      */
     function keysetPage<T extends { at: number; id: string }>(
       page: Page,
@@ -325,9 +293,7 @@ export function createSqlitePoolStore(
       abandonedWork: async (page: Page<AbandonedPosition>) =>
         abandonedWork(source, page),
 
-      // Neither has a table yet, so an item genuinely has none of either.
-      // Empty rather than unimplemented, because the mirror asks for both on
-      // every write and a throw would be a lie about what the pool holds.
+      // Neither has a table yet, so empty is what an item genuinely has.
       artifacts: async (): Promise<readonly Artifact[]> => [],
       routingRecords: async (): Promise<readonly RoutingRecord[]> => [],
 
@@ -409,11 +375,7 @@ export function createSqlitePoolStore(
   const committed = on(false);
   const uncommitted = on(true);
 
-  /**
-   * Built per transaction rather than once, because every method has to consult
-   * that transaction's fence — a handle outliving its transaction would write
-   * outside one, or into whichever started next.
-   */
+  /** Built per transaction, because every method has to consult that transaction's fence. */
   function poolTx(fence: Fence): PoolTx {
     const guard = <A extends unknown[], R>(
       method: (...args: A) => Promise<R>,
@@ -428,7 +390,6 @@ export function createSqlitePoolStore(
       ...notYetImplementedReads(),
 
       item: guard(uncommitted.item),
-      abandonedWork: guard(uncommitted.abandonedWork),
       artifacts: guard(uncommitted.artifacts),
       routingRecords: guard(uncommitted.routingRecords),
       itemBySourceIdentity: guard(uncommitted.itemBySourceIdentity),
@@ -489,21 +450,16 @@ export function createSqlitePoolStore(
     ...notYetImplementedReads(),
 
     transaction: <T>(work: (handle: PoolTx) => Promise<T>): Promise<T> =>
-      transactions.run((fence) => work(poolTx(fence))),
+      writes.transact((fence) => work(poolTx(fence))),
 
-    /**
-     * Through the same queue as a transaction, and for the same reason: leasing
-     * a job is a write, and the rule that decides whether one may be leased
-     * reads rows another claim is in the middle of taking.
-     */
     claim: (request: ClaimRequest, now: Timestamp) =>
-      transactions.run(async () => jobs.claim(request, now)),
+      writes.transact(async () => jobs.claim(request, now)),
 
     extendLease: (lease: LeaseId, until: Timestamp) =>
-      transactions.run(async () => jobs.extendLease(lease, until)),
+      writes.transact(async () => jobs.extendLease(lease, until)),
 
     releaseLease: (lease: LeaseId) =>
-      transactions.run(async () => jobs.releaseLease(lease)),
+      writes.transact(async () => jobs.releaseLease(lease)),
 
     close: async () => {
       if (reader !== writer) reader.close();

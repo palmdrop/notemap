@@ -24,19 +24,14 @@ export async function capture(
   return ports.store.transaction((tx) => append(ports, envelope, tx));
 }
 
-/**
- * Everything decidable without reading the pool, so the transaction opens only
- * once the capture is known to be well formed — the store holds a write lock
- * for as long as it is open.
- */
+/** Everything decidable without reading the pool, so a malformed capture never opens a transaction. */
 function validate(
   config: PoolConfig,
   ports: PoolPorts,
   envelope: CaptureEnvelope,
 ): CaptureRefusal | undefined {
-  // `config.sources` is deliberately not consulted here. It is a policy
-  // registry, not a guest list: a source that is not in it captures normally
-  // and simply has no policy attached.
+  // `config.sources` is a policy registry, not a guest list: a source absent
+  // from it captures normally, with no policy attached.
   const type = config.payloadTypes.find(
     (known) => known.name === envelope.payload.type,
   );
@@ -56,8 +51,7 @@ function validate(
     return { kind: "missing-asset-slot", slot: missing };
   }
 
-  // `unknown-asset` and `asset-hash-mismatch` are not checked here yet: no
-  // AssetStore implementation exists to resolve a reference against.
+  // `unknown-asset` and `asset-hash-mismatch` await an AssetStore to resolve against.
   return undefined;
 }
 
@@ -104,7 +98,6 @@ async function append(
 
   // In the same transaction as the item: one committed with nothing recording
   // that its mirror is owed would never be written, and nothing would notice.
-  // No writer wired is the mirror disabled, and then nothing is owed.
   if (ports.mirrorWriter !== undefined) {
     await tx.enqueue([
       {
@@ -130,14 +123,12 @@ async function append(
 }
 
 /**
- * What a capture fixed, projected from either side into one comparable shape.
- * Exclusion, not enumeration: the ids and tags are dropped — tags go on
- * changing after capture, so an item classified since would otherwise read as
- * a conflicting resubmission of itself — and everything else is compared
- * whole, so a field added to the envelope is compared by default rather than
- * silently ignored. The item projection is typed as this same shape, so a
- * field added there without a mapping fails to compile instead of falling out
- * of the comparison.
+ * What a capture fixed, from either side, in one comparable shape.
+ *
+ * By exclusion rather than enumeration, so a field added to the envelope is
+ * compared by default. Tags are dropped because they go on changing after
+ * capture, and an item classified since would otherwise read as a conflicting
+ * resubmission of itself.
  */
 type FixedByCapture = Omit<CaptureEnvelope, "id" | "tags" | "capturedAt"> & {
   /** As an instant: a timestamp's spelling is not part of what it means. */

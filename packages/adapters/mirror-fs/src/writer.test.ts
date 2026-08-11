@@ -52,6 +52,12 @@ function frontmatterOf(rendering: string): string {
   return rendering.slice(4, end + 1);
 }
 
+function bodyOf(rendering: string): string {
+  const end = rendering.indexOf("\n---\n", 4);
+  if (end === -1) throw new Error(`no frontmatter block in:\n${rendering}`);
+  return rendering.slice(end + "\n---\n".length).trim();
+}
+
 describe("where the pair lands", () => {
   it("puts both halves at the path the item derives", async () => {
     const { root: where, writer } = mirror();
@@ -89,6 +95,14 @@ describe("where the pair lands", () => {
 
     expect(first.record).not.toBe(second.record);
     expect(first.record).not.toContain("/a/b");
+  });
+
+  /** `abc` and `ABC` are two items but one file on macOS and Windows. */
+  it("keeps two items apart when their ids differ only by case", () => {
+    const lower = pathsFor("/m", record({ id: "abc" }));
+    const upper = pathsFor("/m", record({ id: "ABC" }));
+
+    expect(lower.record.toLowerCase()).not.toBe(upper.record.toLowerCase());
   });
 
   it("leaves no temporary file behind once a write has landed", async () => {
@@ -225,6 +239,20 @@ describe("the rendering", () => {
     expect(block).toContain('  - "a: b #c \\"d\\""');
   });
 
+  /** A payload's content is open JSON, so it may hold a backtick run of any length. */
+  it("fences content that contains a fence", async () => {
+    const { root: where, writer } = mirror();
+    const written = record({ text: "see ```js\nhere()\n``` for why" });
+
+    await writer.write(written);
+    const body = bodyOf(
+      await readFile(pathsFor(where, written).rendering, "utf8"),
+    );
+
+    expect(body.startsWith("````json")).toBe(true);
+    expect(body.endsWith("\n````")).toBe(true);
+  });
+
   /** The record is already durable by the time a renderer runs, so nothing is lost. */
   it("leaves the record durable when the renderer throws", async () => {
     const { root: where, writer } = mirror({
@@ -311,6 +339,34 @@ describe("removing", () => {
     await writer.remove("item-1" as ItemId);
 
     expect(await everyFile(where)).toEqual([]);
+  });
+
+  /**
+   * Ids are client-minted, so one being a `-`-suffix of another is reachable
+   * input. Matching on the filename would take both.
+   */
+  it("leaves an item whose id ends with the removed one alone", async () => {
+    const { root: where, writer } = mirror();
+    await writer.write(record({ id: "b" }));
+    await writer.write(record({ id: "a-b" }));
+
+    await writer.remove("b" as ItemId);
+
+    expect(await everyFile(where)).toEqual([
+      pathsFor(where, record({ id: "a-b" })).record,
+      pathsFor(where, record({ id: "a-b" })).rendering,
+    ]);
+  });
+
+  it("leaves a record it cannot parse where it is", async () => {
+    const { root: where, writer } = mirror();
+    await writer.write(record({ id: "item-1" }));
+    const debris = join(where, "2026", "08", "11", "T142305-text-junk.json");
+    await writeFile(debris, "{ not a record", "utf8");
+
+    await writer.remove("item-1" as ItemId);
+
+    expect(await everyFile(where)).toEqual([debris]);
   });
 });
 

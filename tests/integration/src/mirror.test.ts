@@ -245,6 +245,47 @@ describe("a mutation arriving while a write is in flight", () => {
     expect(await filesUnder(harnessed.mirrorRoot)).toHaveLength(2);
   });
 
+  /**
+   * The failure path takes a different route through the store from the success
+   * one, and it is the path a folder going offline mid-write actually takes.
+   */
+  it("records the failed attempt rather than rejecting the whole drain", async () => {
+    const harnessed = pool();
+    await harnessed.pool.capture(envelope());
+
+    const [lease] = await harnessed.pool.work.claim({
+      kinds: ["mirror"],
+      limit: 10,
+      leaseFor: LEASE_FOR,
+    });
+    if (lease === undefined) throw new Error("expected a claimable job");
+
+    await mutateDuring(lease, harnessed);
+
+    await expect(
+      harnessed.pool.work.complete(lease.id, {
+        kind: "failed",
+        retryable: true,
+        detail: { code: "folder-offline", detail: "ENOENT" },
+      }),
+    ).resolves.toEqual({ kind: "ok", value: undefined });
+
+    // The mutation's job is left to do the write, and says everything the
+    // failed one would have.
+    const remaining = await harnessed.pool.work.claim({
+      kinds: ["mirror"],
+      limit: 10,
+      leaseFor: LEASE_FOR,
+    });
+    expect(remaining.map((each) => each.job.id)).toEqual([
+      "job-from-the-mutation",
+    ]);
+    for (const each of remaining) await harnessed.pool.work.release(each.id);
+
+    expect(await drainWith(harnessed)()).toBe(1);
+    expect(await filesUnder(harnessed.mirrorRoot)).toHaveLength(2);
+  });
+
   it("never lets two writes for one item be in flight at once", async () => {
     const harnessed = pool();
     await harnessed.pool.capture(envelope());

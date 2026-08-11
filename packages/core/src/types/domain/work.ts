@@ -15,10 +15,7 @@ export type JobKind = "enrichment" | "mirror" | "mirror-remove";
 export type Job = {
   readonly id: JobId;
   readonly kind: JobKind;
-  /**
-   * The item the work is about, which need not still exist: removing a purged
-   * item's mirror files outlives the item it names. Compared, never resolved.
-   */
+  /** Need not still exist: a purge's mirror-remove outlives the item it names. */
   readonly subject: ItemId;
   readonly enrichment?: EnrichmentName;
   readonly attempt: number;
@@ -37,11 +34,7 @@ export type Lease = {
   readonly expiresAt: Timestamp;
 };
 
-/**
- * Two successes rather than one, because only enrichment produces material.
- * Mirror work that succeeded has nothing to report, and saying so with two
- * empty arrays would make emptiness look like a result rather than the shape.
- */
+/** Two successes rather than one, because only enrichment produces material. */
 export type WorkOutcome =
   | { readonly kind: "succeeded" }
   | {
@@ -55,22 +48,14 @@ export type WorkOutcome =
       readonly detail: FailureDetail;
     };
 
-/**
- * `maxAttempts` bounds enrichment only. A retryable mirror failure retries
- * indefinitely at the backoff cap, since the material exists and is unmirrored
- * however many times the write has failed.
- */
+/** `maxAttempts` bounds enrichment only: a retryable mirror failure retries forever. */
 export type RetryPolicy = {
   readonly maxAttempts: number;
   readonly initialBackoff: Duration;
   readonly maxBackoff: Duration;
 };
 
-/**
- * What core decided a finished attempt means, for a store to apply. The store
- * holds no policy: which failures retry, how long the backoff is and when work
- * is given up on are core's, and arrive here already worked out.
- */
+/** What core decided a finished attempt means. The store applies it and holds no policy of its own. */
 export type JobResolution =
   | { readonly kind: "done" }
   | {

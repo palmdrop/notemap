@@ -22,11 +22,7 @@ export type MirrorRunner = {
   stop(): Promise<void>;
 };
 
-/**
- * The host drives *when*; core owns the state. This holds a timer and nothing
- * else — which job is next, whether a failure retries and when, are all
- * answered by `claim` and `complete`.
- */
+/** The host drives *when*; core owns the state. This holds a timer and nothing else. */
 export function startMirrorRunner(
   pool: Pool,
   writer: MirrorWriter,
@@ -44,9 +40,8 @@ export function startMirrorRunner(
         return { kind: "succeeded" };
       }
 
+      // Gone means nothing left to mirror; removing its files is purge's job.
       const record = await pool.mirror.recordFor(lease.job.subject);
-      // The item is gone, so there is nothing left to mirror. Removing its
-      // files is a separate job that purge owes.
       if (record !== undefined) await writer.write(record);
       return { kind: "succeeded" };
     } catch (cause) {
@@ -55,9 +50,8 @@ export function startMirrorRunner(
   }
 
   async function runOnce(): Promise<number> {
-    // A job whose backoff is zero would otherwise be claimed again inside the
-    // same drain, forever. One attempt per job per drain, and the next tick
-    // picks it up when it is due.
+    // One attempt per job per drain: a zero backoff would otherwise let a
+    // failing job be reclaimed inside this same loop, forever.
     const attempted = new Set<string>();
     let resolved = 0;
 
@@ -84,8 +78,19 @@ export function startMirrorRunner(
     }
   }
 
-  /** One drain at a time: a slow disk must not stack ticks on top of each other. */
+  /**
+   * One drain at a time: a slow disk must not stack ticks on top of each other.
+   *
+   * A caller arriving mid-tick waits for that tick *and then a fresh one*, so
+   * `drain()` means "everything owed when I asked is written". The running tick
+   * may have claimed before their work was enqueued, and answering with it
+   * would report a drain that could not have seen them.
+   */
   function drain(): Promise<number> {
+    return (inFlight ?? Promise.resolve(0)).then(next, next);
+  }
+
+  function next(): Promise<number> {
     inFlight ??= runOnce().finally(() => {
       inFlight = undefined;
     });
@@ -94,7 +99,9 @@ export function startMirrorRunner(
 
   const tick = () => {
     if (stopped) return;
-    void drain().catch(onError);
+    // The timer wants a drain, not a *fresh* drain — one already running is
+    // exactly what this tick would have started.
+    void next().catch(onError);
   };
 
   timer = setInterval(tick, config.pollIntervalMs);

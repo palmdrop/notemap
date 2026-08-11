@@ -5,10 +5,11 @@ import type {
   Job,
   JobId,
   LeaseId,
-  PoolStore,
   Timestamp,
 } from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
+
+import type { SqlitePoolStore } from "./pool-store";
 
 import {
   appendCapture,
@@ -55,12 +56,12 @@ function job(overrides: {
   };
 }
 
-function enqueue(p: PoolStore, ...jobs: readonly Job[]): Promise<void> {
+function enqueue(p: SqlitePoolStore, ...jobs: readonly Job[]): Promise<void> {
   return p.transaction((tx) => tx.enqueue(jobs));
 }
 
 function claim(
-  p: PoolStore,
+  p: SqlitePoolStore,
   overrides: { limit?: number; kinds?: Job["kind"][]; now?: Timestamp } = {},
 ) {
   return p.claim(
@@ -348,7 +349,7 @@ describe("leases", () => {
 describe("backoff and abandonment", () => {
   async function withJobRow(
     columns: Record<string, number | string | null>,
-  ): Promise<PoolStore> {
+  ): Promise<SqlitePoolStore> {
     const { pool: p, raw } = pool();
     const record = capture();
     await appendCapture(p, record, [mirrorJob(record, "job-1")]);
@@ -384,5 +385,101 @@ describe("backoff and abandonment", () => {
     });
 
     expect(await claim(p)).toEqual([]);
+  });
+});
+
+/**
+ * A mutation arriving during a leased write is allowed to enqueue a second job,
+ * so every way of ending the first has to cope with the second already existing.
+ */
+describe("resolving a job that has a rival", () => {
+  async function leasedWithRival() {
+    const opened = pool({ ids: countingIds() });
+    const record = capture();
+    await appendCapture(opened.pool, record);
+    await enqueue(opened.pool, job({ id: "job-1", subject: record }));
+
+    const [lease] = await claim(opened.pool);
+    if (lease === undefined) throw new Error("expected a lease");
+
+    await enqueue(opened.pool, job({ id: "job-2", subject: record }));
+    return { ...opened, record, lease };
+  }
+
+  it("drops a retried job the newer one supersedes", async () => {
+    const { pool: p, lease, raw } = await leasedWithRival();
+
+    await p.transaction((tx) =>
+      tx.resolveJob(lease.id, {
+        kind: "retry",
+        attempt: 1,
+        nextAttemptAt: at("2026-08-03T10:01:00.000Z"),
+        failure: { code: "folder-offline", detail: "ENOENT" },
+      }),
+    );
+
+    expect(jobIds(raw)).toEqual(["job-2"]);
+  });
+
+  it("keeps an abandoned job beside the rival that outlived it", async () => {
+    const { pool: p, lease, raw } = await leasedWithRival();
+
+    await p.transaction((tx) =>
+      tx.resolveJob(lease.id, {
+        kind: "abandoned",
+        attempt: 1,
+        abandonedAt: at("2026-08-03T10:01:00.000Z"),
+        failure: { code: "renderer-threw", detail: "no" },
+      }),
+    );
+
+    expect(jobIds(raw)).toEqual(["job-1", "job-2"]);
+    expect((await claim(p)).map((next) => next.job.id)).toEqual(["job-2"]);
+  });
+});
+
+describe("an abandoned job", () => {
+  async function abandoned() {
+    const opened = pool({ ids: countingIds() });
+    const record = capture();
+    await appendCapture(opened.pool, record);
+    await enqueue(opened.pool, job({ id: "job-1", subject: record }));
+
+    const [lease] = await claim(opened.pool);
+    if (lease === undefined) throw new Error("expected a lease");
+
+    await opened.pool.transaction((tx) =>
+      tx.resolveJob(lease.id, {
+        kind: "abandoned",
+        attempt: 1,
+        abandonedAt: at("2026-08-03T10:01:00.000Z"),
+        failure: { code: "renderer-threw", detail: "no" },
+      }),
+    );
+
+    return { ...opened, record };
+  }
+
+  /** It holds no slot, so the debt a later mutation owes is still recorded. */
+  it("does not swallow the next mirror job for its item", async () => {
+    const { pool: p, record, raw } = await abandoned();
+
+    await enqueue(p, job({ id: "job-2", subject: record }));
+
+    expect(jobIds(raw)).toEqual(["job-1", "job-2"]);
+    expect((await claim(p)).map((lease) => lease.job.id)).toEqual(["job-2"]);
+  });
+
+  /** The failure it reports is stale once a later write for that item lands. */
+  it("stops being reported once a later write succeeds", async () => {
+    const { pool: p, record, raw } = await abandoned();
+    await enqueue(p, job({ id: "job-2", subject: record }));
+    const [lease] = await claim(p);
+    if (lease === undefined) throw new Error("expected a lease");
+
+    await p.transaction((tx) => tx.resolveJob(lease.id, { kind: "done" }));
+
+    expect(jobIds(raw)).toEqual([]);
+    expect((await p.abandonedWork({ limit: 10 })).values).toEqual([]);
   });
 });

@@ -10,24 +10,28 @@ export type Rendering = {
 };
 
 /**
- * A renderer may be as lossy, opinionated and pretty as it likes: nothing ever
- * parses what it produces, and losslessness rides entirely on the record beside
- * it. It may not throw quietly, though — a broken renderer fails the job.
+ * May be as lossy and opinionated as it likes: nothing ever parses what it
+ * produces, and losslessness rides entirely on the record beside it.
  */
 export type Renderer = (record: MirrorRecord) => Rendering;
 
 export type Renderers = Readonly<Partial<Record<PayloadTypeName, Renderer>>>;
 
+/** What a payload type with no renderer gets. */
+export const renderAsJson: Renderer = (record) => {
+  const content = JSON.stringify(record.item.payload.content, undefined, 2);
+  const fence = longestFence(content);
+
+  return { body: [`${fence}json`, content, fence, ""].join("\n") };
+};
+
 /**
- * What a payload type with no renderer gets. Readable enough to be worth having
- * — the frontmatter above it carries the provenance — and complete, because a
- * payload's content is open JSON and the driver knows no part of it is prose.
+ * A fence long enough to survive its own content. A payload's content is open
+ * JSON that may hold a backtick run of any length, and a fence that content
+ * closes early turns the rest of the file into prose.
  */
-export const renderAsJson: Renderer = (record) => ({
-  body: [
-    "```json",
-    JSON.stringify(record.item.payload.content, undefined, 2),
-    "```",
-    "",
-  ].join("\n"),
-});
+function longestFence(content: string): string {
+  const runs = content.match(/`+/g) ?? [];
+  const longest = runs.reduce((most, run) => Math.max(most, run.length), 0);
+  return "`".repeat(Math.max(3, longest + 1));
+}

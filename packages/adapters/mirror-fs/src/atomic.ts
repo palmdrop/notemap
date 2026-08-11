@@ -7,13 +7,11 @@ export const TEMPORARY_PREFIX = ".notemap-";
 
 /**
  * Writes `contents` so that a crash leaves either the previous complete file or
- * the new one, never a truncated one a rebuild would read as authoritative.
+ * the new one, never a truncated one.
  *
- * The temporary file goes in the target's own directory, because rename is only
- * atomic within a filesystem and a temp directory may be on another. Both the
- * file and the directory are flushed: rename swaps the entry atomically, but on
- * most filesystems the *directory* is not durable until it is synced, which is
- * the difference between a power cut costing nothing and costing the file.
+ * The temporary file goes in the target's own directory: rename is only atomic
+ * within a filesystem. The directory is synced as well as the file, because on
+ * most filesystems the rename is not durable until it is.
  */
 export async function writeAtomically(
   path: string,

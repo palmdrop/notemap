@@ -8,17 +8,12 @@ import type { RoutingRecord } from "./routing";
  * One item's complete durable state: everything a rebuild needs to restore it,
  * and nothing else.
  *
- * The item is an `ItemRecord` rather than an `Item` so that derived state has
- * no way in — `supersededBy` follows from the revision link and a mirror
- * carrying it could disagree with the chain it was rebuilt from.
+ * An `ItemRecord` rather than an `Item`, so derived state has no way in: a
+ * mirrored `supersededBy` could disagree with the chain it was rebuilt from.
  */
 export type MirrorRecord = {
   readonly item: ItemRecord;
-  /**
-   * Every asset the payload's and the artifacts' references reach, resolved:
-   * a reference names an id and a hash, and a rebuild needs the filename,
-   * media type and size that only the asset store holds.
-   */
+  /** Every asset the payload's and the artifacts' references reach, resolved. */
   readonly assets: readonly Asset[];
   readonly artifacts: readonly Artifact[];
   readonly routing: readonly RoutingRecord[];

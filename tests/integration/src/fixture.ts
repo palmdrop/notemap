@@ -163,6 +163,7 @@ export function harness(
 
   const ports: PoolPorts = {
     store,
+    work: store,
     clock,
     ids,
     schemas: createAjvSchemaValidator(),

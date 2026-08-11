@@ -4,7 +4,7 @@ import { join } from "node:path";
 import type { MirrorRecord } from "@notemap/core";
 
 /** Everything a filename may contain, on every filesystem worth supporting. */
-const SAFE = /^[A-Za-z0-9._-]+$/;
+const SAFE = /^[a-z0-9._-]+$/i;
 
 export type MirrorPaths = {
   readonly directory: string;
@@ -13,12 +13,11 @@ export type MirrorPaths = {
 };
 
 /**
- * Where one item's pair lives, from the item alone.
+ * Where one item's pair lives, from the item alone:
+ * `<root>/2026/08/11/T142305-text-abc123.json` and its `.md` beside it.
  *
- * Every component is immutable — the capture time in UTC, the payload type, the
- * id — so the same item resolves to the same path on every machine, forever.
- * That is what lets a rewrite, a removal and a repair address a file directly
- * in a store nothing ever indexes.
+ * Every component is immutable, so the same item resolves to the same path on
+ * every machine, forever.
  */
 export function pathsFor(root: string, record: MirrorRecord): MirrorPaths {
   const captured = new Date(record.item.createdAt);
@@ -42,21 +41,26 @@ export function pathsFor(root: string, record: MirrorRecord): MirrorPaths {
   };
 }
 
-/** What the suffix of an item's pair is, for finding files whose item is gone. */
-export function stemSuffixFor(item: string): string {
-  return `-${filenameSafe(item)}`;
+/** The rendering that belongs to a record file, which shares its stem. */
+export function renderingBeside(record: string): string {
+  return `${record.slice(0, -".json".length)}.md`;
 }
 
 /**
- * A client may mint its own capture id, and nothing stops it containing a
- * separator. Anything unsafe is replaced — and the original is hashed into the
- * name, so two ids that sanitise alike still land in two files. One file per
- * item is the guarantee coalescing is built on.
+ * Anything but a lowercase safe name is replaced *and* given a digest of the
+ * original, so two ids landing on one filename is impossible. Case counts:
+ * `abc` and `ABC` are two items but one file on macOS and Windows.
+ *
+ * The encoding is therefore one-way — a name cannot be turned back into an id,
+ * and code that needs an item's identity reads it from the record.
  */
 function filenameSafe(value: string): string {
-  if (SAFE.test(value) && value !== "." && value !== "..") return value;
+  const lowercase = value.toLowerCase();
+  if (SAFE.test(value) && value === lowercase && !/^\.\.?$/.test(value)) {
+    return value;
+  }
 
-  const replaced = value.replace(/[^A-Za-z0-9._-]/g, "_") || "_";
+  const replaced = lowercase.replace(/[^a-z0-9._-]/g, "_") || "_";
   const digest = createHash("sha256").update(value).digest("hex").slice(0, 8);
   return `${replaced}-${digest}`;
 }

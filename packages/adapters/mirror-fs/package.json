@@ -11,7 +11,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@notemap/core": "workspace:*"
+    "@notemap/core": "workspace:*",
+    "yaml": "^2.9.0"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",

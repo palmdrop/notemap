@@ -19,13 +19,12 @@ import type {
   JobId,
   MintableId,
   PayloadTypeName,
-  PoolStore,
   SourceId,
   TagName,
   Timestamp,
 } from "@notemap/core";
 
-import { createSqlitePoolStore } from "../pool-store";
+import { createSqlitePoolStore, type SqlitePoolStore } from "../pool-store";
 
 export const SCRATCHPAD = "scratchpad" as SourceId;
 export const TEXT = "text" as PayloadTypeName;
@@ -48,7 +47,7 @@ export type StoreOptions = {
 };
 
 export function store(options: StoreOptions = {}): {
-  pool: PoolStore;
+  pool: SqlitePoolStore;
   file: string;
   /** A second connection, for asserting on tables no port method reaches yet. */
   raw: DatabaseSync;
@@ -179,7 +178,7 @@ export function mirrorJob(item: ItemRecord, jobId = `job-${item.id}`): Job {
  * assemble it here rather than repeating it.
  */
 export function appendCapture(
-  pool: PoolStore,
+  pool: SqlitePoolStore,
   record: ItemRecord,
   enqueued: readonly Job[] = [],
   action: Action = captured(record),

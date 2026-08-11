@@ -1,9 +1,6 @@
 import type { WorkOutcome } from "../types/domain/work";
 
-/**
- * What a mirror driver throws when it knows what went wrong, so a host reports
- * the right outcome without knowing which driver it wired.
- */
+/** What a mirror driver throws when it knows what went wrong. */
 export class MirrorWriteFailure extends Error {
   readonly code: string;
   readonly retryable: boolean;
@@ -21,13 +18,7 @@ export class MirrorWriteFailure extends Error {
   }
 }
 
-/**
- * Anything a mirror write threw, as an outcome to report.
- *
- * An unrecognised error is **retryable**. Giving up on work that is genuinely
- * still owed loses material until someone runs a repair; retrying something
- * hopeless costs a row on a surface that already says it needs a person.
- */
+/** Anything a mirror write threw, as an outcome. An unrecognised error is retryable. */
 export function asWorkOutcome(cause: unknown): WorkOutcome {
   if (cause instanceof MirrorWriteFailure) {
     return {
