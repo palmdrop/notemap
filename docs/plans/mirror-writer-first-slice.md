@@ -135,20 +135,30 @@ Core owns the record, its canonical serialisation and its parse (ADR 15).
 
 New package `packages/adapters/mirror-fs`, following the conventions `store-sqlite` set.
 
-- [ ] Path derivation: `pool-mirror/YYYY/MM/DD/<HHMMSS>-<payload-type>-<item-id>.{json,md}`, UTC
+- [x] Path derivation: `pool-mirror/YYYY/MM/DD/THHMMSS-<payload-type>-<item-id>.{json,md}`, UTC
       from the capture time, computable from the item alone — assert that in a test, since the
-      whole naming scheme rests on it
-- [ ] Atomic write: temp file in the target directory, flush, rename. **Record written and
-      flushed before the rendering is attempted**
-- [ ] Renderer registry, wired per payload type at construction; a fixed frontmatter block emitted
+      whole naming scheme rests on it. A client may mint a capture id containing a separator, so
+      an unsafe id is sanitised **and** hashed into the name, keeping one file per item
+- [x] Atomic write: temp file in the target directory, flush, rename. **Record written and
+      flushed before the rendering is attempted.** The directory is synced after the rename too,
+      per the decision above
+- [x] Renderer registry, wired per payload type at construction; a fixed frontmatter block emitted
       by the driver from the record, never by the renderer; default rendering — frontmatter plus a
       fenced JSON block — for an unwired type; a renderer that throws propagates as a
-      non-retryable failure
-- [ ] `remove` for a mirror-removal job: deletes both files, tolerating either being gone already
-- [ ] Tests: the pair lands; a rewrite replaces in place; an interrupted write leaves the previous
+      non-retryable failure. Frontmatter values are emitted as JSON strings, which YAML 1.2 takes
+      verbatim, so a tag containing a colon or a quote cannot break the block
+- [x] `remove` for a mirror-removal job: deletes both files, tolerating either being gone already.
+      *Not foreseen*: it gets a bare id and the item may already be purged, so the path cannot be
+      computed and the tree is walked instead. Purge is rare; the alternative is making a job
+      carry a snapshot of the item it is about
+- [x] *Not in the original task*: `MirrorWriteFailure` and `asWorkOutcome` land in core beside the
+      port, so a host maps a driver's failure to an outcome without knowing which driver it wired.
+      An unrecognised error is retryable — giving up on work still owed costs material, retrying
+      something hopeless costs a log line
+- [x] Tests: the pair lands; a rewrite replaces in place; an interrupted write leaves the previous
       pair intact; an unwired payload type still produces a readable file with provenance
       frontmatter; a throwing renderer leaves the record durable
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 6 — Daemon wiring and the runner *(depends on phases 3 and 5)*
 
