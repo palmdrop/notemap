@@ -8,10 +8,14 @@
 
 # A pool and everything around it (ADR 1). A pool normally lives outside the
 # repo, but dev runs and tests put one here.
-data/
-state/
-pool-mirror/
-assets/
+#
+# Anchored to the root, all of them: unanchored, `assets/` matched at every
+# depth and quietly swallowed `apps/daemon/src/assets/`. A pool under `data/`
+# is covered by `data/` itself.
+/data/
+/state/
+/pool-mirror/
+/assets/
 *.db
 *.db-wal
 *.db-shm
