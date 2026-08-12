@@ -1,6 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
 import { mkdir, open, rename, stat, unlink } from "node:fs/promises";
-import type { FileHandle } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import type {
@@ -74,16 +73,16 @@ export function createFilesystemBlobStore(
     },
 
     open: async (blob, signal) => {
-      const handle = await openIfPresent(at(blob));
-      return handle === undefined ? undefined : chunks(handle, signal);
+      const path = at(blob);
+      return (await exists(path)) ? chunks(path, signal) : undefined;
     },
 
     verify: async (blob): Promise<BlobIntegrity> => {
-      const handle = await openIfPresent(at(blob));
-      if (handle === undefined) return "missing";
+      const path = at(blob);
+      if (!(await exists(path))) return "missing";
 
       const digest = createHash(ALGORITHM);
-      for await (const chunk of chunks(handle)) digest.update(chunk);
+      for await (const chunk of chunks(path)) digest.update(chunk);
 
       return digest.digest("hex") === blob ? "intact" : "drifted";
     },
@@ -108,20 +107,16 @@ async function exists(path: string): Promise<boolean> {
   }
 }
 
-async function openIfPresent(path: string): Promise<FileHandle | undefined> {
-  try {
-    return await open(path, "r");
-  } catch (cause) {
-    if ((cause as NodeJS.ErrnoException).code === "ENOENT") return undefined;
-    throw cause;
-  }
-}
-
-/** A fresh buffer per chunk: a consumer that keeps one must not see it refilled. */
+/**
+ * Opened on the first pull rather than up front, so a stream nobody ever reads
+ * — a refused download, an aborted request — holds no file descriptor. A fresh
+ * buffer per chunk, because a consumer that keeps one must not see it refilled.
+ */
 async function* chunks(
-  handle: FileHandle,
+  path: string,
   signal?: AbortSignal,
 ): AsyncGenerator<Uint8Array> {
+  const handle = await open(path, "r");
   try {
     for (;;) {
       signal?.throwIfAborted();

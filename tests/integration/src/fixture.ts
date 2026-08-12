@@ -4,7 +4,8 @@ import { join } from "node:path";
 
 import {
   createPool,
-  type BlobStore,
+  type Asset,
+  type AssetId,
   type CaptureEnvelope,
   type Clock,
   type Duration,
@@ -21,6 +22,7 @@ import {
   type TagName,
   type Timestamp,
 } from "@notemap/core";
+import { createFilesystemBlobStore } from "@notemap/blob-fs";
 import { createFilesystemMirrorWriter } from "@notemap/mirror-fs";
 import { createAjvSchemaValidator } from "@notemap/schema-ajv";
 import { createSqlitePoolStore } from "@notemap/store-sqlite";
@@ -108,14 +110,6 @@ function absent(port: string): never {
   throw new Error(`no ${port} is wired in these tests`);
 }
 
-const noBlobs: BlobStore = {
-  put: () => absent("blob store"),
-  open: () => absent("blob store"),
-  verify: () => absent("blob store"),
-  delete: () => absent("blob store"),
-  pathFor: () => absent("blob store"),
-};
-
 const noMirrorWriter: MirrorWriter = {
   write: () => absent("mirror writer"),
   remove: () => absent("mirror writer"),
@@ -130,6 +124,8 @@ export type Harness = {
   readonly file: string;
   /** Where the mirror writes, whether or not a real writer is wired. */
   readonly mirrorRoot: string;
+  /** Where the blobs are. A sibling of the two, as a host lays them out. */
+  readonly assetRoot: string;
   readonly cleanup: () => Promise<void>;
 };
 
@@ -152,6 +148,7 @@ export function harness(
   const directory = mkdtempSync(join(tmpdir(), "notemap-integration-"));
   const file = join(directory, "pool.db");
   const mirrorRoot = join(directory, "pool-mirror");
+  const assetRoot = join(directory, "assets");
   const clock = frozenClock();
   const ids = countingIds();
 
@@ -168,7 +165,7 @@ export function harness(
     clock,
     ids,
     schemas: createAjvSchemaValidator(),
-    blobs: noBlobs,
+    blobs: createFilesystemBlobStore({ root: assetRoot }),
     ...(mirroring === "off"
       ? {}
       : {
@@ -189,6 +186,7 @@ export function harness(
     ids,
     file,
     mirrorRoot,
+    assetRoot,
     cleanup: async () => {
       await pool.close();
       rmSync(directory, { recursive: true, force: true });
@@ -203,6 +201,7 @@ type EnvelopeOverrides = {
   readonly text?: string;
   readonly capturedAt?: string;
   readonly tags?: readonly string[];
+  readonly assets?: readonly { slot: string; asset: string }[];
 };
 
 export function envelope(overrides: EnvelopeOverrides = {}): CaptureEnvelope {
@@ -215,8 +214,52 @@ export function envelope(overrides: EnvelopeOverrides = {}): CaptureEnvelope {
       type: TEXT,
       content: { text: overrides.text ?? "a thought" },
       metadata: {},
-      assets: [],
+      assets: (overrides.assets ?? []).map((ref) => ({
+        slot: ref.slot,
+        asset: ref.asset as AssetId,
+      })),
     },
     ...(overrides.tags === undefined ? {} : { tags: overrides.tags.map(tag) }),
   };
+}
+
+export function bytes(value: string): Uint8Array {
+  return new TextEncoder().encode(value);
+}
+
+export async function* streamOf(
+  ...chunks: readonly Uint8Array[]
+): AsyncGenerator<Uint8Array> {
+  for (const chunk of chunks) yield chunk;
+}
+
+export async function collect(
+  stream: AsyncIterable<Uint8Array>,
+): Promise<Uint8Array> {
+  const chunks: Uint8Array[] = [];
+  for await (const chunk of stream) chunks.push(chunk);
+
+  const joined = new Uint8Array(
+    chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0),
+  );
+  let offset = 0;
+  for (const chunk of chunks) {
+    joined.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return joined;
+}
+
+/** Uploads content under a name, and answers the asset that names it. */
+export async function upload(
+  pool: Pool,
+  filename: string,
+  content: Uint8Array,
+  mime = "image/png",
+): Promise<Asset> {
+  const result = await pool.assets.store(streamOf(content), { filename, mime });
+  if (result.kind === "refused") {
+    throw new Error(`upload refused: ${JSON.stringify(result.refusal)}`);
+  }
+  return result.value;
 }

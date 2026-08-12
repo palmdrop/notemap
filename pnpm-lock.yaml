@@ -348,6 +348,9 @@ importers:
 
   tests/integration:
     devDependencies:
+      '@notemap/blob-fs':
+        specifier: workspace:*
+        version: link:../../packages/adapters/blob-fs
       '@notemap/core':
         specifier: workspace:*
         version: link:../../packages/core

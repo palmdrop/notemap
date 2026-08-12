@@ -210,23 +210,25 @@ New package `packages/adapters/blob-fs`, following the conventions `mirror-fs` s
 
 ### Phase 5 — Core owns assets *(depends on phases 3 and 4)*
 
-- [ ] `assets.store`: hash and write the bytes through the blob store, then mint the asset and
+- [x] `assets.store`: hash and write the bytes through the blob store, then mint the asset and
       insert it — I/O first, transaction second, per core.md's rule about what may happen inside one
-- [ ] `assets.get`, `assets.open`, `assets.verify`
-- [ ] Capture resolves every `AssetRef` inside the transaction; an unresolvable one is
+- [x] `assets.get`, `assets.open`, `assets.verify`
+- [x] Capture resolves every `AssetRef` inside the transaction; an unresolvable one is
       `unknown-asset`. This is the TODO left at `packages/core/src/pool/capture.ts:54`
-- [ ] `maintenance.sweepUnreferencedAssets`: delete assets no item references and older than the
+- [x] `maintenance.sweepUnreferencedAssets`: delete assets no item references and older than the
       configured grace, then delete each blob that lost its last asset, and append one
       `assets-released`. Blob deletion is outside the transaction — a crash between the two leaks a
-      file, which is space, where the reverse order loses bytes an asset still names
-- [ ] `mirror.recordFor` resolves assets from the store; `MirrorWriteFailure`'s `asset-missing` goes
-      with it, per phase 1's amendment
-- [ ] Tests: the same bytes under two filenames give two assets and one blob, each resolving to its
+      file, which is space, where the reverse order loses bytes an asset still names. The list is
+      read **inside** the transaction too: read outside it, a capture arriving in between would
+      fail the delete against the foreign key and take the whole run with it
+- [x] `mirror.recordFor` resolves assets from the store; `MirrorWriteFailure`'s `asset-missing` goes
+      with it, per phase 1's amendment *(landed in phase 2, which the type change forced)*
+- [x] Tests: the same bytes under two filenames give two assets and one blob, each resolving to its
       own name; a capture quoting an unknown asset is refused and writes nothing; a referenced asset
       survives the sweep; an unreferenced one survives inside the grace window and is taken with its
       blob outside it; a blob shared by two assets survives one of them going
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint`
-- [ ] `git commit`
+- [x] Verify: `pnpm typecheck && pnpm test && pnpm lint`
+- [x] `git commit`
 
 ### Phase 6 — Upload and download over `/v1` *(depends on phase 5)*
 

@@ -80,6 +80,15 @@ async function append(
       : refused({ kind: "source-item-changed", existing: bySource.id });
   }
 
+  // A read inside the transaction, like every other precondition: an asset
+  // swept between the check and the insert would otherwise leave a reference
+  // to bytes that have gone.
+  for (const ref of envelope.payload.assets) {
+    if ((await tx.asset(ref.asset)) === undefined) {
+      return refused({ kind: "unknown-asset", asset: ref.asset });
+    }
+  }
+
   const by: Agent = { kind: "source", source: envelope.source };
   const record: ItemRecord = {
     id: envelope.id ?? ports.ids.next<ItemId>(),
