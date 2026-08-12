@@ -17,6 +17,7 @@ Design and process
 Code
 
 - Comments are the exception. Do not restate the code, do not explain rejected alternatives, do not point at discussions, ADRs or other docs.
+- Before writing one, two questions: would a reader ask _why_ here, and can the code itself answer it? Write the comment only if the answers are yes and no.
 - Keep files small and grouped by concern, in folders. Tests live beside what they test.
 
 Git
