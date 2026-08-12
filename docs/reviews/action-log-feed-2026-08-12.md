@@ -1,7 +1,7 @@
 # Review: The action log, read end to end
 
 **Date**: 2026-08-12
-**Status**: Open
+**Status**: Resolved
 **Scope**: `agent/action-log-feed` against `main` — `b482361..e63250f`, plus the PR #7 review
 **Also changed here**: `AGENTS.md`, one line under Code (finding 9)
 **Plan**: `docs/plans/action-log-feed.md`
@@ -258,3 +258,59 @@ parse. These entries are the only history the project keeps.
   document.
 - **`?item=` with an empty value filters on the empty string** — answers an empty page, which is
   what "never validated" means.
+
+---
+
+## Resolution
+
+Fixed on `agent/action-log-feed`, rebased onto `3bb0107`. `pnpm -r typecheck`, `pnpm -r test`
+(277 tests), `pnpm lint` and `pnpm format:check` green.
+
+1. **Fixed.** `keysetClause` emits a row value — `(at, id) < (?, ?)` — so both the feed and the log
+   seek to the position instead of scanning the index to it. `EXPLAIN QUERY PLAN` turns
+   `SCAN … USING COVERING INDEX actions_at` into
+   `SEARCH … USING COVERING INDEX actions_at ((at,id)<(?,?))`, and the filtered read picks up
+   `subject=? AND (at,id)<(?,?)` on the composite index rather than seeking on `subject` alone.
+   The bare-instant branch is unchanged. *No test pins the plan*: asserting on
+   `EXPLAIN QUERY PLAN` means keeping a copy of the store's SQL in the test, which passes while
+   the real query drifts. The constraint is stated in the comment instead, which is the weaker
+   guard and the honest one.
+2. **Fixed.** The test is real. A daemon with a mirror wired, a file written where the mirror tree
+   should be, and one drain gives `item-1` a `work-failed` entry beside its `captured` one — the
+   second entry a filtered page boundary needs. It now reads `?limit=1&item=item-1`, asserts
+   `item` survives into `next`, and follows `next` to the `captured` entry. Verified red: dropping
+   `item` from `pageUrl`'s parameters fails it with `expected null to be 'item-1'`.
+3. **Fixed.** `failure: outcome.detail`.
+4. **Fixed.** `.empty` is `display: block`, so the message spans the row instead of the 11rem
+   first column.
+5. **Fixed.** The catch unhides "Load more" — the read that failed is still the next one to make —
+   and the status line ends "— try again".
+6. **Fixed.** The button is labelled with its destination: "read oldest first" while the log is
+   newest-first. The `title` that carried the meaning is gone with it.
+7. **Fixed.** Both stale boxes checked, and the verify box checked with what was actually done
+   written beside it. The three answered unknowns keep their questions and gain their answers.
+   The third bullet closed itself: `3bb0107` on `main` added `apps/daemon/scripts/bundle.test.ts`,
+   which starts the emitted bundle, so a daemon that cannot import is no longer green.
+8. **Fixed.** "Neither an order nor a page belongs to the feed any more, so `FeedOrder` and
+   `FeedPage` become `ReadOrder`, `PageRequest` and `OrderedPage`."
+9. **Fixed.** 57 added comment lines down to 19, 17% of the added TypeScript down to 6.5%. Four
+   survive, the four this finding argued for: why `item` is not validated (route only — the
+   store's copy and `ActionQuery`'s are gone), why `at` is the caller's, why not `Number()`, and
+   the migration's. The false claim is gone. `recordAction` is no longer described as the one
+   place anything appends, because it is not. Two more were trimmed rather than cut, since a
+   reader does ask why: the agent union being wider than a tag's, and `kind` not being an enum.
+   `AGENTS.md` gained the test that sorts them, in `e678d38`.
+
+   Not swept: `ReadOrder`'s doc block in `result.ts`. It predates this branch, which only changed
+   "the feed" to "a surface" in it, and the rationale it carries is the feed's too.
+10. **Fixed.** `pool/reads.ts` is gone; `DEFAULT_ORDER` and `ordered()` live in `pool.ts`, beside
+    the three call sites that were the whole reason for them.
+
+### What is still not verified
+
+The `/log` page has never been rendered. `pnpm dev` works now, and the API half was driven against
+a running daemon — three captures, newest-first, `next` followed past the end, `?item=` narrowing,
+and an unknown `item` answering `200 {"values":[]}`, every entry timed by arrival rather than by
+the `capturedAt` three days earlier. There is no browser in this environment, so findings 4, 5 and
+6 were fixed by reading the same CSS and JavaScript that produced them. That is the weaker half of
+the loop, and it is where the next defect on that page will be.

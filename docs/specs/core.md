@@ -27,10 +27,11 @@
   first by default, ordered and paginated by position and narrowable to one subject. A subject
   the pool no longer holds answers an empty page rather than refusing, which is what a purged
   item's entries need. **Ordering is core's**: a store is handed an order it must honour, where
-  the SQLite driver used to hold the default, and `FeedOrder`/`FeedPage` become `ReadOrder`,
-  `PageRequest` and `OrderedPage` now neither belongs to the feed. Failed attempts at work are
-  logged and successful ones are not, and `ActionLogRefusal` is gone — clearing a purged item's
-  entries is the case clearing exists for. ([plan](../plans/action-log-feed.md))
+  the SQLite driver used to hold the default. Neither an order nor a page belongs to the feed any
+  more, so `FeedOrder` and `FeedPage` become `ReadOrder`, `PageRequest` and `OrderedPage`. Failed
+  attempts at work are logged and successful ones are not, and `ActionLogRefusal` is gone —
+  clearing a purged item's entries is the case clearing exists for.
+  ([plan](../plans/action-log-feed.md))
 
 ---
 

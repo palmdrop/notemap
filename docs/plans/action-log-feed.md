@@ -104,7 +104,7 @@ to it. Nothing here restates ADR 12's reasoning; the spec states observable beha
       surface outside the contract, on the same terms `/docs` is
 - [x] Verify: `pnpm format:check`, and the two specs read back as one contract — every guarantee
       phase 2–5 is verified against is written down
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 2 — Core: the read, and the append discipline *(depends on phase 1)*
 
@@ -187,9 +187,12 @@ to it. Nothing here restates ADR 12's reasoning; the spec states observable beha
 - [x] Daemon README: the third page, and what it is for
 - [x] Tests: `/log` serves the page; it appears nowhere in `GET /v1/openapi.json`, on the same
       terms `/docs` does not
-- [ ] Verify: `pnpm --filter @notemap/daemon test`, then `pnpm dev` — capture something on `/`,
-      see the entry on `/log`, and page past the end of it
-- [ ] `git commit`
+- [x] Verify: `pnpm --filter @notemap/daemon test`, then `pnpm dev` — captured through a running
+      daemon, read the entries back newest-first, followed `next` past the end, narrowed with
+      `item`, and saw an unknown `item` answer `200 {"values":[]}`. *The page itself was never
+      rendered*: no browser here, and reading the CSS instead is what left findings 4 and 5 of
+      [the review](../reviews/action-log-feed-2026-08-12.md) to be found by reading it again
+- [x] `git commit`
 
 ### Phase 6 — End to end, and close *(depends on phase 5)*
 
@@ -205,13 +208,24 @@ to it. Nothing here restates ADR 12's reasoning; the spec states observable beha
 
 ## Unknowns and pending decisions
 
+All three were answered while building. Kept with their answers rather than deleted, since the
+question is what makes the answer mean anything.
+
 - **`ReadOrder` / `OrderedPage` as names.** Settled at implementation; if the rename churns more
   than it clarifies, the fallback is keeping `FeedOrder` and `FeedPage` and reusing them
   unrenamed for a surface that is not the feed — worse names, no behaviour lost.
+  → **Renamed.** `ReadOrder`, `PageRequest` and `OrderedPage`, no alias left behind. The churn
+  was one commit and the split between what a caller asks for and what a store is handed is
+  carrying the guarantee, which the old pair could not have.
 - **`/log` versus `/actions`** as the page path. `/log` does not read like the API route it is
   not. Low stakes, decide while building.
+  → **`/log`.** Two things at `/actions` and `/v1/actions`, one HTML and one JSON, is the
+  confusion the concern named.
 - **Whether a subject on the page links to `/v1/items/:id`.** It is one anchor; the reason not to
   is that a purged item's entries would link to a `404`, which is honest but ugly.
+  → **Neither.** It links to `/log?item=<id>` — the log filtered to that subject, which is what
+  someone clicking an id on a log page is asking for. A purged item's entries answer it, so the
+  `404` the question worried about cannot arise.
 
 ---
 
