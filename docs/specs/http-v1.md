@@ -1,6 +1,6 @@
 # Spec: HTTP API (`/v1`)
 
-**Status**: Draft — the capture-and-feed subset and the action log are settled; the rest is stub
+**Status**: Draft — capture, feed, assets and the action log are settled; the rest is stub
 **Last updated**: 2026-08-12
 **Shipped**:
 
@@ -59,12 +59,20 @@ Settled (2026-08-08): `POST /v1/captures`, `GET /v1/feed`, `GET /v1/items/:id`, 
 envelope and the complete refusal-to-status table, pagination by position, content types, the
 bind address and port, and the OpenAPI document.
 
+Settled (2026-08-11): asset upload and download — `POST /v1/assets`, `GET /v1/assets/:id` and
+`GET /v1/assets/:id/content`, the upload's integrity check and size limit, and which media types
+are served inline.
+
 Settled (2026-08-11): `GET /v1/actions`, and the log page at `/log`.
 
 Still stub, and unwritten below: the queue read, tagging and untagging, suggestions and their
 decisions, artifacts and corrections, routing and destinations, archive and unarchive, purge and
-tombstones, asset upload and download, the wire form of sync delta reads, and authentication.
-Nothing here forecloses them; they get the same treatment when their slice is built.
+tombstones, range requests over asset content, the wire form of sync delta reads, and
+authentication. Nothing here forecloses them; they get the same treatment when their slice is
+built.
+
+**What this surface deliberately does not defend is written down**, rather than left to be
+discovered: [security.md](security.md).
 
 ---
 
@@ -207,6 +215,93 @@ The response is a slice:
 - Both orders may be read from one position. It names a place in the feed, not a direction of
   travel — `newest-first` continues below it, `oldest-first` above it.
 
+### Assets
+
+Bytes go up in a request of their own and come back down under the filename they were uploaded
+with. An asset is minted by the upload and referenced by a later capture; the reference is taken
+when that capture commits, so an upload no capture ever claims is swept
+([core.md](core.md#archive-and-purge)).
+
+#### Upload
+
+`POST /v1/assets` — **the body is the bytes, raw**. Not `multipart/form-data`.
+
+| Header | | |
+|---|---|---|
+| `Content-Type` | required | The asset's media type, recorded and served back verbatim |
+| `Content-Disposition` | required | `attachment; filename="…"`, or `filename*=UTF-8''…` |
+| `Repr-Digest` | optional | RFC 9530, `sha-256=:…:`, checked against the bytes received |
+
+`201 Created` with the `Asset` — `{ "id", "filename", "mime", "blob", "bytes" }` — and
+`Location: /v1/assets/<id>`.
+
+- **A raw body rather than multipart**, because Hono buffers a multipart body in order to parse
+  it, and filename encoding in multipart is a swamp — where `Content-Disposition` has `filename*`
+  for anything outside ASCII and the body streams straight into the hash. The cost is that a
+  form with no JavaScript cannot upload, which nothing in scope needs.
+- **A missing filename or a missing media type is refused, never invented.** A filename is user
+  data ([ADR 13](../adr/0013-assets-are-named-references-to-content-addressed-blobs.md)) and the
+  media type is served back to a browser, so a guess would be a lie the pool then stores. No
+  `Content-Disposition`, or one with no `filename`, is `422 missing-filename`; no `Content-Type`
+  is `415 unsupported-media-type`, the same answer any other bodied request gets for it.
+- **`Repr-Digest` is recomputed server-side and compared before anything is minted**, which is
+  S3's pattern and the one [asset-uploads.md](../research/asset-uploads.md#3-integrity-verification-on-upload)
+  calls load-bearing: the proof is in the comparison, not in either side's number. Only
+  `sha-256` is understood, being the hash notemap computes anyway. A mismatch is
+  `422 digest-mismatch` and stores no asset. Absent, the upload proceeds — the daemon still
+  hashes, it simply has nothing to compare against.
+- **The size limit is enforced against the stream**, not against `Content-Length`, which is a
+  claim. An oversized body is `413 asset-too-large` carrying `max`, and leaves no blob and no
+  asset. The limit is daemon configuration: a cap is interface policy, and core is a primitive
+  API ([core.md](core.md#constraints)).
+- `413` is the one status outside the rule below, and deliberately: a size limit is a transport
+  fact that clients and proxies already act on, and answering `422` would hide it from the layer
+  that could have stopped the upload early.
+- **This is the one `/v1` path whose body is not JSON**, and the media-type guard carves it out
+  by exact path rather than by prefix, so no other route quietly loses it.
+
+#### Download
+
+`GET /v1/assets/{id}` — `200 OK` with the `Asset` as JSON, or `404 no-such-asset`.
+
+`GET /v1/assets/{id}/content` — the bytes.
+
+- `Content-Type` is the media type recorded at upload, served honestly.
+- `Content-Disposition` carries the filename, `filename*=UTF-8''…` encoded, and is `inline` or
+  `attachment` per the allowlist below.
+- `ETag` is the blob hash, and the response is `Cache-Control: private, max-age=31536000,
+  immutable`. An asset id names one blob forever, so a cached copy can never be stale.
+- `X-Content-Type-Options: nosniff` always, and
+  `Content-Security-Policy: default-src 'none'; sandbox`.
+- **Downloading does not verify.** Rehashing a blob to answer every `<img>` is not affordable, so
+  `blob-drifted` cannot arise on a read; drift is what `verify` and deep mirror verification are
+  for. Only two things can go wrong, and both are `404`, distinguished by code: `no-such-asset`
+  for an id the pool does not hold, `blob-missing` for a row whose bytes are gone from disk.
+
+#### Inline or attachment
+
+**Anything may be uploaded; only inert things render.** The allowlist governs disposition alone —
+a zip, an encrypted archive, raw binary all store and download normally.
+
+Served **`inline`**: raster images (`image/png`, `image/jpeg`, `image/gif`, `image/webp`,
+`image/avif`, `image/bmp`, `image/x-icon`), audio (`audio/mpeg`, `audio/mp4`, `audio/aac`,
+`audio/ogg`, `audio/wav`, `audio/webm`, `audio/flac`), video (`video/mp4`, `video/webm`,
+`video/ogg`), and `text/plain`.
+
+Served **`attachment`**: everything else, so a media type nobody has thought about yet downloads
+rather than executes. `text/html`, `application/xhtml+xml`, `image/svg+xml` and the XML types are
+the named dangerous ones. `application/pdf` is an attachment too — a large attack surface, for a
+format that is mostly documents on their way somewhere else.
+
+The list is by **inertness**, not by image-ness, which is why `text/plain` is on it and
+`image/svg+xml` is not.
+
+**SVG is not sanitized.** Sanitizing mutates user data for one media type invisibly, every
+sanitizer is a denylist wearing a parser, and doing it on the server needs a DOM there. It is
+also unnecessary: an SVG loaded through `<img>` executes no script by specification, so a page
+may display one safely, and the danger is top-level navigation — which `attachment` plus the
+sandbox already covers.
+
 ### The action log
 
 `GET /v1/actions`
@@ -272,27 +367,41 @@ Every error, from core or from the daemon, is one shape:
 | `400` | `malformed-envelope` | `issues` (`SchemaIssue[]`) | daemon |
 | `404` | `unknown-route` | `path` | daemon |
 | `404` | `no-such-item` | `item` | daemon |
+| `404` | `no-such-asset` | `asset` | core |
+| `404` | `blob-missing` | `blob` | core |
 | `405` | `method-not-allowed` | `method`, `allow` | daemon (+ `Allow` header) |
 | `409` | `capture-id-conflict` | `existing` | core |
 | `409` | `source-item-changed` | `existing` | core |
+| `413` | `asset-too-large` | `max` | daemon |
 | `415` | `unsupported-media-type` | `contentType` | daemon |
 | `422` | `limit-too-large` | `limit`, `max` | daemon |
 | `422` | `bad-limit` | `limit` | daemon |
 | `422` | `bad-order` | `order`, `allowed` | daemon |
 | `422` | `bad-position` | `after` | daemon |
+| `422` | `missing-filename` | — | daemon |
+| `422` | `digest-mismatch` | `expected`, `actual` | daemon |
 | `422` | `unknown-payload-type` | `type` | core |
 | `422` | `payload-invalid` | `issues` | core |
 | `422` | `missing-asset-slot` | `slot` | core |
 | `422` | `unknown-asset` | `asset` | core |
-| `422` | `asset-hash-mismatch` | `asset`, `expected`, `actual` | core |
 
 The rule behind the table, so a refusal added later has a status without a decision being
 needed: **`409` is for a conflict with something the pool already holds** — the request is
 well-formed and the client may have to reconcile. **`400` is for a body the daemon could not
 read as an envelope at all**, which is a shape problem and never reaches core. **`422` is
-everything else core refused**: the body was understood and the pool declined it. Anything
+everything else core or the daemon refused**: the request was understood and declined. Anything
 outside the table is a bug, and is `500` with no body — a daemon that turns an unexpected
 throw into a domain-looking refusal teaches clients to trust a fiction.
+
+`413 asset-too-large` is the single deliberate exception, for the reason given above: a size
+limit is a fact the transport layer acts on, and hiding it inside `422` would cost a client the
+chance to stop an upload early.
+
+**`asset-hash-mismatch` is gone** (2026-08-11). A payload's asset reference no longer carries a
+blob hash, so there are no longer two numbers for the daemon to disagree about — and every
+failure that refusal claimed to catch resolves elsewhere ([core.md](core.md#the-mirror)).
+Integrity moved to the upload, where the client's number and the server's are genuinely
+independent.
 
 `malformed-envelope` reports its problems as `SchemaIssue` — `{ path, keyword }` — the same
 shape `payload-invalid` uses, because a client rendering one has then rendered both. `path` is
@@ -366,9 +475,16 @@ by nothing in `/v1`, and removable without changing a promise this spec makes.
 
 - [ ] 2026-08-02 — The resource model and endpoint shapes for everything outside the
       capture-and-feed subset, verb by verb.
-- [ ] 2026-08-02 — Asset transfer: upload flow, download, range requests for audio playback.
+- [ ] 2026-08-02 — **Range requests** over `GET /v1/assets/:id/content`. Upload and download are
+      settled; this is what is left of the question. Nothing needs it while assets are images —
+      a browser fetches one whole — and **audio is what will force it**: seeking in a long
+      recording without `Range` means downloading the whole file to hear the last minute of it.
+      Resumable *uploads* are separately out, per
+      [asset-uploads.md](../research/asset-uploads.md#2-resumablechunked-upload-standards).
 - [ ] 2026-08-02 — Authentication: how clients hold credentials, and how the Micropub
-      adapter's OAuth2 expectations relate to the native API. (Moved from core.md.)
+      adapter's OAuth2 expectations relate to the native API. (Moved from core.md.) What the
+      absence of it currently leaves open is enumerated in [security.md](security.md), which is
+      the list this question has to close.
 - [ ] 2026-08-08 — Whether a read may ask for a page *before* a position as well as after it.
       Nothing needs it yet; a feed that can only be walked one way is a limit worth noticing
       before a client works around it.
@@ -421,3 +537,20 @@ by nothing in `/v1`, and removable without changing a promise this spec makes.
 - A `/docs` path naming anything but the vendored Swagger UI files returns `404 unknown-route`,
   and no `/docs` path reaches a file outside the vendored directory.
 - Neither the playground nor the log page appears anywhere in `GET /v1/openapi.json`.
+- Bytes uploaded to `POST /v1/assets` come back from `GET /v1/assets/:id/content` byte for byte,
+  under the filename they were uploaded with, for content that is not valid UTF-8 and for a
+  filename that is not ASCII.
+- The same content uploaded twice under two filenames returns two asset ids sharing one blob
+  hash, and each download returns its own name.
+- An upload with no `Content-Disposition` filename is `422 missing-filename`; one with no
+  `Content-Type` is `415`; neither stores anything.
+- An upload whose `Repr-Digest` disagrees with the bytes received is `422 digest-mismatch` and
+  stores nothing.
+- A body over the configured limit is `413 asset-too-large` and leaves no blob behind, whatever
+  `Content-Length` claimed.
+- A JSON body posted to `/v1/captures` still requires `application/json`, unaffected by the
+  upload path's carve-out.
+- An uploaded `text/html` file is served `Content-Disposition: attachment`; an uploaded
+  `image/png` is served `inline`. Both carry `nosniff` and the sandbox CSP.
+- `GET /v1/assets/:id` for an id the pool does not hold is `404 no-such-asset`; an asset whose
+  blob has been deleted from disk is `404 blob-missing` on its content.

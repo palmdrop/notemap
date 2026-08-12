@@ -183,6 +183,24 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   asset, which is wasted space, rather than a reference to a capture that never arrived, which
   would keep content alive forever. Unreferenced assets are swept after a grace window long
   enough that "just stored" is never mistaken for "abandoned".
+- **Which assets exist is pool state** (decided 2026-08-11,
+  [ADR 16](../adr/0016-the-asset-registry-is-pool-state.md)). An asset — its id, filename, media
+  type, blob hash and size — is held by the store beside the item references that count it, so
+  releasing one moves both counts in a single transaction and the reference is enforced rather
+  than merely observed. The port beneath it is a **blob store** keyed by hash, which knows
+  nothing about names. Before this, no side held the registry, and the sweep's real subject — an
+  asset no item *ever* referenced, because its capture never arrived — could not be named by
+  either.
+- **The sweep's grace window is configuration core is given**, beside the retry policy, and for
+  the same reason: it is an operational knob, not a rule core invents. A sweep with no grace
+  takes an asset whose capture is in flight, since "referenced" and "about to be referenced"
+  look identical to a sweep running at the wrong instant — `git gc`'s reasoning for
+  `gc.pruneExpire`.
+- **Sweeping appends one action, storing appends none.** An asset before its capture belongs to
+  no item, and the capture that references it is the event worth tracing; a sweep is the
+  opposite, and appends a single `assets-released` per run — by agent `notemap`, since nobody
+  asked for it — rather than one per asset. A sweep collecting four hundred orphans must not
+  bury the log it shares with captures.
 - Purge leaves a record of the identity and time of the deletion, and nothing else, so that
   anything holding a copy learns it is gone. That record is itself removed after a retention
   window.
@@ -353,6 +371,14 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   under two names give two assets and one blob, and each download returns the name it was given.
   Both the pool and the mirror reference the same blob; the mirror records the filename beside
   it, since the blob itself is named for a machine.
+- **A payload's asset reference names a slot and an asset, and nothing else** (decided
+  2026-08-11). It once carried the blob hash as well, so that a swapped asset would be caught at
+  capture. With server-minted asset ids that was the client copying back a number the server
+  handed it a moment earlier, and every failure it claimed to catch resolves elsewhere: a swept
+  asset is `unknown-asset`, a rebuilt pool restores asset identities so the id still resolves,
+  and a corrupted blob is invisible to it, because the row and the reference agree — both name
+  the same hash, and the disk is what is wrong. Integrity belongs where the two numbers have a
+  wire between them, which is the upload ([http-v1.md](http-v1.md)).
 - A blob's name is its expected content hash, so a change made outside notemap is detected and
   reported rather than silently absorbed.
 - Reading media is the single exception to never reading the mirror's storage area. Text and
@@ -438,8 +464,11 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   modelling and narrow ports stay, on their own merits: the spec's guarantees are stated as
   states, and a narrow port is what a test can substitute.
 - **Core takes no framework or runtime dependency.** No HTTP, no timers, no configuration
-  sourcing, no filesystem or network access. Storage, mirroring, asset storage, the clock,
-  providers and destinations are all ports. *Clarified 2026-08-04*: this is a rule about
+  sourcing, no filesystem or network access. Storage, mirroring, blob storage, the clock,
+  providers and destinations are all ports. *Amended 2026-08-11*: the media port is a **blob
+  store** — `put`, `open`, `verify`, `delete` and the path a blob is at — keyed by hash and
+  holding no names, because which assets exist is pool state
+  ([ADR 16](../adr/0016-the-asset-registry-is-pool-state.md)). *Clarified 2026-08-04*: this is a rule about
   **reaching the outside world**, not a dependency count. Pure computational libraries — a
   schema validator, an id generator — are fine, and core carries `@types/node` so that runtime
   types such as `AbortSignal` are available. **`fs` is therefore importable and is avoided by
@@ -476,8 +505,8 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   [ADR 1](../adr/0001-pool-is-a-database.md)). It states what it requires of a store —
   all-or-nothing application of a transaction core opens, ordered paginated reads asked for in
   domain terms, unique client-generated capture ids, monotonic `modified_at`,
-  reference-counted asset release, work whose subject may name a purged item — and does not know
-  which store answers. *Amended
+  an asset registry whose references are counted and enforced, work whose subject may name a
+  purged item — and does not know which store answers. *Amended
   2026-08-08*: **that includes the continuation.** A paginated read is continued from a
   **position** — the sort-key fields of the last row handed out, in domain terms — rather than
   from an opaque cursor the store minted, and `PageCursor` is gone
@@ -551,6 +580,10 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 - **[Assets name, blobs store](../adr/0013-assets-are-named-references-to-content-addressed-blobs.md)**
   — a filename is user data and must survive a round trip, so the human name and the
   deduplicated content live at different layers. Supersedes ADR 1's asset addressing.
+- **[The asset registry is pool state](../adr/0016-the-asset-registry-is-pool-state.md)** — with
+  the registry split across a port and the store, the sweep's subject was nameable by neither and
+  a release moved two counts that could not be written together. The rows move into the pool and
+  the port narrows to bytes. ADR 13's model is untouched; only the boundary moves.
 - **[Pagination by domain position](../adr/0014-pagination-by-domain-position.md)** — an opaque
   cursor bought nothing a store's sort key does not already make public, and offsets drop rows
   in a domain where inserts land behind the reader. Supersedes ADR 10's cursor clause.

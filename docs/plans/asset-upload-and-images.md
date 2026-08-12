@@ -1,7 +1,7 @@
 # Asset upload and images
 
 **Date**: 2026-08-11
-**Status**: Todo
+**Status**: In progress
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/mirror.md`, `docs/specs/security.md`
 **Closed**:
 
@@ -127,30 +127,31 @@ than left in a comment.
 
 ### Phase 0 — Branch
 
-- [ ] `git checkout -b agent/asset-upload-and-images`
+- [x] `git checkout -b agent/asset-upload-and-images`
 
 ### Phase 1 — Write the decisions down *(blocks everything)*
 
 Docs only, landing before the code that depends on them. The largest doc phase this project has
 had, which is why it is first rather than last.
 
-- [ ] ADR: the asset registry is pool state, the port carries bytes. Weigh the two-store split it
+- [x] ADR: the asset registry is pool state, the port carries bytes. Weigh the two-store split it
       replaces, and say that ADR 13's model survives intact — only the boundary moves
-- [ ] `core.md`: the port list names a blob store; the asset-reference rules gain the sweep's grace
+- [x] `core.md`: the port list names a blob store; the asset-reference rules gain the sweep's grace
       window as configuration core is given; `AssetRef` carries no hash, and why
-- [ ] `mirror.md`: a record can no longer fail on a missing asset — drop it from the non-retryable
+- [x] `mirror.md`: a record can no longer fail on a missing asset — drop it from the non-retryable
       list and say why the mirror has no blob to be missing
-- [ ] `http-v1.md`: the assets section — upload, download, inline versus attachment, the new
+- [x] `http-v1.md`: the assets section — upload, download, inline versus attachment, the new
       refusals and their statuses, the size limit. `asset-hash-mismatch` leaves the table. Narrow
       the "asset transfer" open question down to range requests, and note that audio seeking is
       what will force them
-- [ ] New `docs/specs/security.md`: what is deliberately undefended and what auth has to close —
+- [x] New `docs/specs/security.md`: what is deliberately undefended and what auth has to close —
       no authentication, the pool as sole boundary, no CORS headers as the only thing stopping
       cross-origin reads, uploaded bytes on the daemon's own origin, no quota beyond the upload cap,
       and the exposure a wider bind permits. `http-v1.md`'s auth open question becomes a pointer
-- [ ] `CONTEXT.md`: check **asset** and **blob** still read true after the boundary moves
-- [ ] Verify: `pnpm lint`; every refusal code in the table has exactly one status
-- [ ] `git commit`
+- [x] `CONTEXT.md`: check **asset** and **blob** still read true after the boundary moves — and
+      **sweep**, which every doc now leans on and none defined
+- [x] Verify: `pnpm lint`; every refusal code in the table has exactly one status
+- [x] `git commit`
 
 ### Phase 2 — Make the types agree with the decisions *(no behaviour; depends on phase 1)*
 

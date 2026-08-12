@@ -111,7 +111,8 @@ domain.
 
 Because a job carries no snapshot, core also answers **the record for an item as it stands now**,
 which is what whatever performs a write asks for at the moment it writes. That is a read of the
-pool, not of the mirror; nothing about it can reach a mirror file.
+pool, not of the mirror; nothing about it can reach a mirror file, and nothing in it can fail —
+an item is either there or it is gone.
 
 ### What makes a write owed
 
@@ -193,18 +194,27 @@ action log.
   indefinitely with capped backoff. The work is genuinely still owed and will eventually
   succeed, and a bounded limit would abandon every pending job at once the first time a synced
   folder went away for a day.
-- A **non-retryable** failure — a renderer that throws, a record that will not serialise, an
-  asset the store no longer has — is abandoned on the first attempt. It will fail identically on
-  every attempt, and retrying forever would keep it off the surface that exists to say something
-  needs a person.
+- A **non-retryable** failure — a renderer that throws, a record that will not serialise — is
+  abandoned on the first attempt. It will fail identically on every attempt, and retrying forever
+  would keep it off the surface that exists to say something needs a person.
 
 **An unrecognised failure is retryable.** That default is deliberate: giving up on work that is
 genuinely still owed loses material until someone runs a repair, where retrying something
 hopeless costs a row on a surface that already says it needs a person. It follows that a case
-worth abandoning has to *say so* — a missing asset is a known fact and carries its own code,
-rather than falling through to the default (decided 2026-08-11). Rebuild takes the opposite
-stance on the same fact, and correctly: a missing blob is reported and never fatal there, because
-by then nothing can be done about it, where the writer still can.
+worth abandoning has to *say so*, rather than falling through to the default (decided
+2026-08-11).
+
+**A missing asset is no longer one of them** (amended 2026-08-11). A record used to be assembled
+by resolving each reference through the asset store, which could answer that it had no such
+asset, so projecting a record was itself a way for a write to fail. Assets are now rows in the
+pool beside the references that count them
+([ADR 16](../adr/0016-the-asset-registry-is-pool-state.md)), and a foreign key makes an
+unresolvable reference impossible — so **the record a write asks for cannot fail**, and
+`asset-missing` leaves the list. A blob's bytes are not in the picture either: the mirror writes
+no blobs. `assets/` is written once by the blob store and shared, and a record names a blob
+rather than carrying it, so nothing about a missing or drifted blob can fail a mirror write.
+Deep verify is what reports one. Rebuild takes the same stance on the same fact, and correctly: a
+missing blob is reported and never fatal, because by then nothing can be done about it.
 
 Abandoned mirror work appears on the same surface as abandoned enrichment
 ([core.md](core.md#enrichment)), so one read answers "what needs me". Repair re-enqueues it, and
@@ -373,6 +383,9 @@ schema churn cheap — does not apply to that pool.
 - **[Assets name, blobs store](../adr/0013-assets-are-named-references-to-content-addressed-blobs.md)**
   — the mirror records each asset's filename beside its blob reference, which is what makes an
   unbrowsable `assets/` acceptable.
+- **[The asset registry is pool state](../adr/0016-the-asset-registry-is-pool-state.md)** — an
+  asset is a row beside the references that count it, so projecting a record resolves them by
+  reading the same pool. The mirror writes no blobs, and a record can no longer fail to be made.
 - **[An append-only action log](../adr/0012-core-keeps-an-append-only-action-log.md)** — the log
   is operational and not mirrored, which is also why the mirror is not an event log and an
   amendment rewrites in place.
