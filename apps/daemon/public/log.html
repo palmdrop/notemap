@@ -107,6 +107,7 @@
         font-family: ui-monospace, monospace;
       }
       .empty {
+        display: block;
         padding: 2rem 0.75rem;
         text-align: center;
         color: var(--dim);
@@ -157,7 +158,6 @@
         say.classList.toggle("bad", bad);
       }
 
-      /** Who did it, in the words the log uses. */
       function agentOf(by) {
         switch (by?.kind) {
           case "person":
@@ -261,15 +261,17 @@
           }
           tell(`${seen} shown`);
         } catch (error) {
-          tell(String(error.message ?? error), true);
+          tell(`${String(error.message ?? error)} — try again`, true);
+          // The read that failed is still the next one to make, so the button
+          // has to come back whether or not it was ever shown.
+          more.hidden = false;
         } finally {
           more.disabled = false;
         }
       }
 
       flip.textContent =
-        order === "newest-first" ? "newest first" : "oldest first";
-      flip.title = "read from the other end";
+        order === "newest-first" ? "read oldest first" : "read newest first";
       flip.addEventListener("click", () => {
         location.href = pageFor({
           order: order === "newest-first" ? "oldest-first" : "newest-first",
