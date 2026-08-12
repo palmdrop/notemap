@@ -4,10 +4,6 @@ import { DEFAULT_LIMIT, MAX_LIMIT, READ_ORDERS } from "../constants";
 import type { PageQuery } from "../types";
 import { parsePosition } from "./positions";
 
-/**
- * The order, limit and position every paginated read takes, refused the four
- * ways all of them refuse. A surface's own parameters are read beside this.
- */
 export function readPageQuery(url: URL): PageQuery {
   const rawOrder = url.searchParams.get("order");
   const rawLimit = url.searchParams.get("limit");

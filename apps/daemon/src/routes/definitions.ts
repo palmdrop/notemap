@@ -32,7 +32,6 @@ function errorResponse(
   };
 }
 
-/** The parameters every paginated read takes, described once. */
 const pageQuery = z.object({
   order: z
     .string()

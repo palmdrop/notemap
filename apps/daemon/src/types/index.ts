@@ -31,7 +31,6 @@ export type DaemonRefusal =
       readonly allow: readonly string[];
     };
 
-/** What every paginated read takes off the query string, or why it was refused. */
 export type PageQuery =
   | {
       readonly ok: true;

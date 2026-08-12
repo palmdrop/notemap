@@ -3,10 +3,7 @@ import { z } from "zod";
 
 import { jsonObject } from "./json";
 
-/**
- * Wider than a tag's agent: work notemap drives on nobody's behalf is
- * attributable to notemap itself, and only the log records it.
- */
+/** Wider than a tag's agent: only the log records work notemap drives on nobody's behalf. */
 const agent = z.union([
   z.object({ kind: z.literal("notemap") }),
   z.object({ kind: z.literal("person") }),
@@ -16,9 +13,7 @@ const agent = z.union([
 
 export const actionSchema = z
   .object({
-    // Not an enum: a kind arrives with the mutation that appends it, and core's
-    // `ActionKind` is the list. Spelling it again here is a second list to
-    // disagree with the first.
+    // Not an enum: `ActionKind` is the list, and a copy here is one to disagree with it.
     kind: z.string(),
     id: z.string(),
     subject: z.string().optional(),
