@@ -9,7 +9,6 @@ import type {
   ActionKind,
   Agent,
   AssetId,
-  BlobHash,
   Clock,
   IdGenerator,
   Item,
@@ -97,7 +96,7 @@ type CaptureOverrides = {
   readonly createdAt?: string;
   readonly contentUpdatedAt?: string;
   readonly tags?: readonly { name: string; by: Agent; addedAt: string }[];
-  readonly assets?: readonly { slot: string; asset: string; hash: string }[];
+  readonly assets?: readonly { slot: string; asset: string }[];
   readonly revisionOf?: string;
 };
 
@@ -114,7 +113,6 @@ export function capture(overrides: CaptureOverrides = {}): ItemRecord {
       assets: (overrides.assets ?? []).map((ref) => ({
         slot: ref.slot,
         asset: ref.asset as AssetId,
-        hash: ref.hash as BlobHash,
       })),
     },
     tags: (overrides.tags ?? []).map((tag) => ({

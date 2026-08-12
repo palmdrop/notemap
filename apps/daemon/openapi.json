@@ -92,15 +92,11 @@
                     },
                     "asset": {
                       "type": "string"
-                    },
-                    "hash": {
-                      "type": "string"
                     }
                   },
                   "required": [
                     "slot",
-                    "asset",
-                    "hash"
+                    "asset"
                   ]
                 }
               }
@@ -279,15 +275,11 @@
                     },
                     "asset": {
                       "type": "string"
-                    },
-                    "hash": {
-                      "type": "string"
                     }
                   },
                   "required": [
                     "slot",
-                    "asset",
-                    "hash"
+                    "asset"
                   ]
                 }
               }
@@ -610,8 +602,7 @@
                             "unknown-payload-type",
                             "payload-invalid",
                             "missing-asset-slot",
-                            "unknown-asset",
-                            "asset-hash-mismatch"
+                            "unknown-asset"
                           ]
                         }
                       },

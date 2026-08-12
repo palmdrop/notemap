@@ -1,10 +1,11 @@
 import type { JsonSchema, JsonValue, SchemaIssue } from "../json";
 import type { OrderedPage, Page, Result, Slice } from "../result";
 import type { Action, ActionQuery } from "../domain/action-log";
-import type { Asset, AssetMeta, BlobIntegrity } from "../domain/asset";
+import type { Asset, BlobIntegrity, StoredBlob } from "../domain/asset";
 import type { Artifact, EnrichmentStatus } from "../domain/enrichment";
 import type {
   AssetId,
+  BlobHash,
   ItemId,
   LeaseId,
   MintableId,
@@ -42,7 +43,7 @@ export type PoolPorts = {
   readonly clock: Clock;
   readonly ids: IdGenerator;
   readonly schemas: SchemaValidator;
-  readonly assets: AssetStore;
+  readonly blobs: BlobStore;
   /** Absent disables the mirror: nothing enqueues mirror jobs. */
   readonly mirrorWriter?: MirrorWriter;
   readonly destinations: readonly DestinationAdapter[];
@@ -61,14 +62,29 @@ export interface SchemaValidator {
   validate(schema: JsonSchema, value: JsonValue): readonly SchemaIssue[];
 }
 
-/** Owns the asset-to-blob count. Which assets an item references is the pool store's. */
-export interface AssetStore {
-  store(bytes: AsyncIterable<Uint8Array>, meta: AssetMeta): Promise<Asset>;
-  /** Resolves a reference before the capture carrying it commits. */
-  get(id: AssetId): Promise<Asset | undefined>;
-  open(id: AssetId, signal?: AbortSignal): Promise<AsyncIterable<Uint8Array>>;
-  verify(id: AssetId): Promise<BlobIntegrity>;
-  release(assets: readonly AssetId[]): Promise<void>;
+/**
+ * Bytes, by the hash of their content. It holds no names and no counts: which
+ * assets exist, and which items reference them, are both the pool store's, so
+ * that releasing an asset moves both counts in one transaction
+ * (ADR 16).
+ */
+export interface BlobStore {
+  /** Hashes what it is given, and answers what it turned out to be. Storing the same bytes twice is one blob. */
+  put(bytes: AsyncIterable<Uint8Array>): Promise<StoredBlob>;
+  /** Absent means the bytes are gone from under a row that still names them. */
+  open(
+    blob: BlobHash,
+    signal?: AbortSignal,
+  ): Promise<AsyncIterable<Uint8Array> | undefined>;
+  verify(blob: BlobHash): Promise<BlobIntegrity>;
+  /** Absent already is the outcome asked for: a sweep that half-ran must be able to finish. */
+  delete(blob: BlobHash): Promise<void>;
+  /**
+   * Where the bytes are, in whatever terms this driver stores them. The layout
+   * is the driver's, and a mirror rendering that wants to point at a blob has
+   * to ask rather than compose one of its own.
+   */
+  pathFor(blob: BlobHash): string;
 }
 
 /**
@@ -151,6 +167,9 @@ export interface PoolReads {
   routingRecords(item: ItemId): Promise<readonly RoutingRecord[]>;
   artifacts(item: ItemId): Promise<readonly Artifact[]>;
   enrichmentStates(item: ItemId): Promise<readonly EnrichmentStatus[]>;
+
+  /** Resolves a reference. Inside a transaction this is what makes a capture's assets a precondition. */
+  asset(id: AssetId): Promise<Asset | undefined>;
 
   /** The pool store owns the item-to-asset count, so only it can find these. */
   unreferencedAssets(

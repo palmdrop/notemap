@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import {
   createPool,
-  type AssetStore,
+  type BlobStore,
   type CaptureEnvelope,
   type Clock,
   type Duration,
@@ -73,6 +73,7 @@ export const CONFIG: PoolConfig = {
     initialBackoff: 1000 as Duration,
     maxBackoff: 60000 as Duration,
   },
+  sweep: { grace: 86_400_000 as Duration },
 };
 
 /** A clock that stands still until a test moves it. */
@@ -107,12 +108,12 @@ function absent(port: string): never {
   throw new Error(`no ${port} is wired in these tests`);
 }
 
-const noAssets: AssetStore = {
-  store: () => absent("asset store"),
-  get: () => absent("asset store"),
-  open: () => absent("asset store"),
-  verify: () => absent("asset store"),
-  release: () => absent("asset store"),
+const noBlobs: BlobStore = {
+  put: () => absent("blob store"),
+  open: () => absent("blob store"),
+  verify: () => absent("blob store"),
+  delete: () => absent("blob store"),
+  pathFor: () => absent("blob store"),
 };
 
 const noMirrorWriter: MirrorWriter = {
@@ -167,7 +168,7 @@ export function harness(
     clock,
     ids,
     schemas: createAjvSchemaValidator(),
-    assets: noAssets,
+    blobs: noBlobs,
     ...(mirroring === "off"
       ? {}
       : {

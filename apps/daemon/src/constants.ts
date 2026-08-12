@@ -20,6 +20,15 @@ export const DEFAULT_RETRY = {
   maxBackoff: 60_000,
 };
 
+/**
+ * A day, following the same reasoning as `gc.pruneExpire`: the window has to be
+ * longer than any plausible gap between an upload and the capture that claims
+ * it, and nothing is paid for making it generous but disk.
+ */
+export const DEFAULT_SWEEP = {
+  graceMs: 86_400_000,
+};
+
 export const SHUTDOWN_GRACE_MS = 2_000;
 
 /**

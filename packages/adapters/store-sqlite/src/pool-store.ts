@@ -175,7 +175,7 @@ export function createSqlitePoolStore(
     VALUES (?, ?, ?, ?, ?)
   `);
   const insertAsset = write.query(`
-    INSERT INTO item_assets (item_id, slot, asset_id, hash) VALUES (?, ?, ?, ?)
+    INSERT INTO item_assets (item_id, slot, asset_id) VALUES (?, ?, ?)
   `);
   const jobs = jobQueue(write, config.ids ?? randomIds);
   const insertAction = write.query(`
@@ -229,7 +229,7 @@ export function createSqlitePoolStore(
         .all(...ids);
       const assetRows = source
         .query<ItemAssetRow, Bindable[]>(
-          `SELECT item_id, slot, asset_id, hash FROM item_assets
+          `SELECT item_id, slot, asset_id FROM item_assets
            WHERE item_id IN (${slots}) ORDER BY slot`,
         )
         .all(...ids);
@@ -422,7 +422,7 @@ export function createSqlitePoolStore(
         }
 
         for (const ref of record.payload.assets) {
-          insertAsset.run(record.id, ref.slot, ref.asset, ref.hash);
+          insertAsset.run(record.id, ref.slot, ref.asset);
         }
 
         const stored = await uncommitted.item(record.id);
@@ -494,6 +494,7 @@ function notYetImplementedReads() {
     suggestions: unimplemented("suggestions"),
     suggestion: unimplemented("suggestion"),
     enrichmentStates: unimplemented("enrichmentStates"),
+    asset: unimplemented("asset"),
     unreferencedAssets: unimplemented("unreferencedAssets"),
     changesSince: unimplemented("changesSince"),
   };

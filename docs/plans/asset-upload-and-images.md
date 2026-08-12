@@ -158,14 +158,19 @@ had, which is why it is first rather than last.
 Each of these is a place the code now contradicts a doc. Assertions change only where a field is
 gone.
 
-- [ ] `BlobStore` replaces `AssetStore` beside the other ports; `PoolPorts.assets` becomes `blobs`
-- [ ] `AssetRef` becomes `{slot, asset}`; `asset-hash-mismatch` leaves `CaptureRefusal` and the
+- [x] `BlobStore` replaces `AssetStore` beside the other ports; `PoolPorts.assets` becomes `blobs`
+- [x] `AssetRef` becomes `{slot, asset}`; `asset-hash-mismatch` leaves `CaptureRefusal` and the
       daemon's status map. The mirror record's serialisation, its parse and the round-trip property
       test follow — the resolved assets beside the payload still carry the blob hash, so a rebuild
       is unaffected
-- [ ] `PoolConfig` gains the sweep's grace window
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint`
-- [ ] `git commit`
+- [x] `PoolConfig` gains the sweep's grace window
+- [x] Not foreseen, and forced: with the port gone, `mirror.recordFor` has nothing to resolve
+      against, so `PoolReads.asset` lands here and the store stubs it `unimplemented` until phase
+      4 — the convention `unreferencedAssets` already used. `item_assets` drops its `hash` column
+      in its own migration, since a `NOT NULL` column cannot be left unwritten for a phase
+- [x] `AssetRefusal` loses `blob-drifted`: reading never rehashes, so nothing can raise it
+- [x] Verify: `pnpm typecheck && pnpm test && pnpm lint`
+- [x] `git commit`
 
 ### Phase 3 — The blob store *(depends on phase 2)*
 

@@ -19,6 +19,7 @@ import {
   DEFAULT_MIRROR,
   DEFAULT_PORT,
   DEFAULT_RETRY,
+  DEFAULT_SWEEP,
 } from "../constants";
 
 export type MirrorConfig = {
@@ -63,6 +64,11 @@ const fileSchema = z.strictObject({
       maxAttempts: z.number().int().positive(),
       initialBackoff: z.number().int().nonnegative(),
       maxBackoff: z.number().int().nonnegative(),
+    })
+    .optional(),
+  sweep: z
+    .strictObject({
+      grace: z.number().int().nonnegative(),
     })
     .optional(),
   sources: z
@@ -178,6 +184,9 @@ export function parseConfig(source: string, from: string): DaemonConfig {
         maxAttempts: retry.maxAttempts,
         initialBackoff: retry.initialBackoff as Duration,
         maxBackoff: retry.maxBackoff as Duration,
+      },
+      sweep: {
+        grace: (file.sweep?.grace ?? DEFAULT_SWEEP.graceMs) as Duration,
       },
     },
   };

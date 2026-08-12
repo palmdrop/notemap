@@ -1,6 +1,6 @@
-import { MirrorWriteFailure } from "../mirror/failure";
 import { projectMirrorRecord } from "../mirror/record";
 import type { PoolPorts } from "../types/api/ports";
+import type { Asset } from "../types/domain/asset";
 import type { AssetId, ItemId } from "../types/domain/ids";
 import type { MirrorRecord } from "../types/domain/mirror";
 
@@ -26,21 +26,15 @@ export async function recordFor(
     ...artifacts.flatMap((artifact) => artifact.assets.map((ref) => ref.asset)),
   ]);
 
-  const assets = await Promise.all(
-    [...referenced].map(async (asset) => {
-      const resolved = await ports.assets.get(asset);
-      if (resolved === undefined) {
-        // Not retryable: the reference is durable and the blob is not coming
-        // back on its own, so retrying forever would hide it from the surface
-        // that exists to ask a person for it.
-        throw new MirrorWriteFailure(
-          "asset-missing",
-          `item ${id} references asset ${asset}, which the asset store does not have`,
-          false,
-        );
-      }
-      return resolved;
-    }),
+  const resolved = await Promise.all(
+    [...referenced].map((asset) => ports.store.asset(asset)),
+  );
+
+  // A foreign key stands under every reference, so an unresolved one is
+  // unreachable. Projecting a record is not where an inconsistency would be
+  // worth discovering: it would fail every mirror write for that item forever.
+  const assets = resolved.filter(
+    (asset): asset is Asset => asset !== undefined,
   );
 
   return projectMirrorRecord(item, assets, artifacts, routing);

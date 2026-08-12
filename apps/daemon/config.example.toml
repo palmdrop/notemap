@@ -28,6 +28,13 @@ maxAttempts = 5
 initialBackoff = 1000 # milliseconds
 maxBackoff = 60000
 
+# An upload whose capture never arrives is eventually swept, along with the blob
+# it was the last asset of. `grace` is how long "just uploaded" is left alone:
+# to a sweep running at the wrong instant, referenced and about-to-be-referenced
+# look identical.
+[sweep]
+grace = 86400000 # milliseconds — one day
+
 # A source needs no declaration to capture; declaring one attaches policy.
 # `web` is the capture page, which hardcodes this id.
 [[sources]]

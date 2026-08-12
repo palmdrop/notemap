@@ -6,7 +6,6 @@ import { jsonObject } from "./json";
 const assetRef = z.object({
   slot: z.string(),
   asset: z.string(),
-  hash: z.string(),
 });
 
 export const payloadSchema = z.object({

@@ -39,6 +39,7 @@ export const CONFIG: PoolConfig = {
     initialBackoff: 1000 as Duration,
     maxBackoff: 60_000 as Duration,
   },
+  sweep: { grace: 86_400_000 as Duration },
 };
 
 export type Daemon = {

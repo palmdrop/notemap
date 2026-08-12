@@ -198,6 +198,27 @@ export const MIGRATIONS: readonly string[] = [
   CREATE INDEX actions_subject ON actions (subject, at, id);
   CREATE INDEX actions_at      ON actions (at, id);
   `,
+
+  `
+  -- A reference no longer carries the blob hash it expected, and SQLite cannot
+  -- drop a column that a NOT NULL constraint stands on. With server-minted asset
+  -- ids the hash was the client handing back a number it had just been given:
+  -- a swapped asset resolves as an unknown one, and a corrupted blob agrees with
+  -- the row, so it caught nothing the rest of the model does not.
+  CREATE TABLE item_assets_next (
+    item_id  TEXT NOT NULL REFERENCES items (id) ON DELETE CASCADE,
+    slot     TEXT NOT NULL,
+    asset_id TEXT NOT NULL,
+    PRIMARY KEY (item_id, slot)
+  ) STRICT;
+
+  INSERT INTO item_assets_next SELECT item_id, slot, asset_id FROM item_assets;
+
+  DROP TABLE item_assets;
+  ALTER TABLE item_assets_next RENAME TO item_assets;
+
+  CREATE INDEX item_assets_asset ON item_assets (asset_id);
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

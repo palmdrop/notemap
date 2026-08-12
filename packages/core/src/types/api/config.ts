@@ -1,3 +1,4 @@
+import type { SweepPolicy } from "../domain/asset";
 import type { EnrichmentDescriptor } from "../domain/enrichment";
 import type { PayloadTypeDescriptor } from "../domain/payload";
 import type { SourceDescriptor } from "../domain/source";
@@ -8,4 +9,5 @@ export type PoolConfig = {
   readonly payloadTypes: readonly PayloadTypeDescriptor[];
   readonly enrichments: readonly EnrichmentDescriptor[];
   readonly retry: RetryPolicy;
+  readonly sweep: SweepPolicy;
 };

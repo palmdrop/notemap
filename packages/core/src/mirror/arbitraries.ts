@@ -66,7 +66,7 @@ const agent = (): fc.Arbitrary<Agent> =>
   );
 
 const assetRef = (): fc.Arbitrary<AssetRef> =>
-  fc.record({ slot: name(), asset: branded(), hash: branded() });
+  fc.record({ slot: name(), asset: branded() });
 
 /** Unique by slot, since one payload cannot fill a slot twice. */
 const assetRefs = (): fc.Arbitrary<AssetRef[]> =>

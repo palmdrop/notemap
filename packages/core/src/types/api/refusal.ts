@@ -29,12 +29,6 @@ export type CaptureRefusal =
     }
   | { readonly kind: "missing-asset-slot"; readonly slot: string }
   | { readonly kind: "unknown-asset"; readonly asset: AssetId }
-  | {
-      readonly kind: "asset-hash-mismatch";
-      readonly asset: AssetId;
-      readonly expected: BlobHash;
-      readonly actual: BlobHash;
-    }
   | { readonly kind: "capture-id-conflict"; readonly existing: ItemId }
   | { readonly kind: "source-item-changed"; readonly existing: ItemId };
 
@@ -97,10 +91,14 @@ export type DeliveryRefusal = PreparationRefusal | AttemptFailure;
 
 export type RoutingRefusal = SubjectRefusal;
 
+/**
+ * No `blob-drifted`: reading does not rehash, so drift cannot be discovered on
+ * the path that would refuse. `verify` is what reports it, and answers an
+ * integrity rather than a refusal.
+ */
 export type AssetRefusal =
   | { readonly kind: "no-such-asset"; readonly asset: AssetId }
-  | { readonly kind: "blob-missing"; readonly blob: BlobHash }
-  | { readonly kind: "blob-drifted"; readonly blob: BlobHash };
+  | { readonly kind: "blob-missing"; readonly blob: BlobHash };
 
 export type LeaseRefusal = {
   readonly kind: "lease-lost";

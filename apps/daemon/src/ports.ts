@@ -5,7 +5,7 @@ import { createAjvSchemaValidator } from "@notemap/schema-ajv";
 import { createSqlitePoolStore } from "@notemap/store-sqlite";
 import {
   createPool,
-  type AssetStore,
+  type BlobStore,
   type Clock,
   type IdGenerator,
   type MintableId,
@@ -31,12 +31,12 @@ function absent(port: string): never {
   throw new Error(`the daemon wires no ${port} yet`);
 }
 
-const noAssets: AssetStore = {
-  store: () => absent("asset store"),
-  get: () => absent("asset store"),
-  open: () => absent("asset store"),
-  verify: () => absent("asset store"),
-  release: () => absent("asset store"),
+const noBlobs: BlobStore = {
+  put: () => absent("blob store"),
+  open: () => absent("blob store"),
+  verify: () => absent("blob store"),
+  delete: () => absent("blob store"),
+  pathFor: () => absent("blob store"),
 };
 
 /**
@@ -72,7 +72,7 @@ export function openPool(
     clock: systemClock,
     ids: uuidV7Ids,
     schemas: createAjvSchemaValidator(),
-    assets: noAssets,
+    blobs: noBlobs,
     ...(mirrorWriter === undefined ? {} : { mirrorWriter }),
     destinations: [],
   };

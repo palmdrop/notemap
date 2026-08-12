@@ -52,7 +52,7 @@ function validate(
     return { kind: "missing-asset-slot", slot: missing };
   }
 
-  // `unknown-asset` and `asset-hash-mismatch` await an AssetStore to resolve against.
+  // `unknown-asset` needs the pool, so it is decided inside the transaction.
   return undefined;
 }
 

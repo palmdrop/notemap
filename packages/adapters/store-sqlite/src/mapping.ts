@@ -5,7 +5,6 @@ import type {
   Agent,
   AssetId,
   AssetRef,
-  BlobHash,
   EnrichmentName,
   Item,
   ItemId,
@@ -83,7 +82,6 @@ export function toItem(
   const assets: AssetRef[] = assetRows.map((asset) => ({
     slot: asset.slot,
     asset: asset.asset_id as AssetId,
-    hash: asset.hash as BlobHash,
   }));
 
   return {

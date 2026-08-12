@@ -12,7 +12,6 @@ export const CAPTURE_STATUS = {
   "payload-invalid": 422,
   "missing-asset-slot": 422,
   "unknown-asset": 422,
-  "asset-hash-mismatch": 422,
 } as const satisfies Record<CaptureRefusal["kind"], number>;
 
 /** Anything wrong with the request body itself. */

@@ -96,7 +96,6 @@ function readAssetRef(value: unknown, at: string): AssetRef {
   return {
     slot: text(row["slot"], `${at}.slot`),
     asset: text(row["asset"], `${at}.asset`) as AssetId,
-    hash: text(row["hash"], `${at}.hash`) as BlobHash,
   };
 }
 
