@@ -18,18 +18,11 @@ export type Page<P = Position> = {
  */
 export type ReadOrder = "newest-first" | "oldest-first";
 
-/** What a caller asks for, leaving the order to core where it does not care. */
 export type PageRequest<P = Position> = Page<P> & {
   readonly order?: ReadOrder;
 };
 
-/**
- * A page whose order is settled, which is the only kind a store is handed: the
- * default is core's, so no driver holds an opinion about which end a read
- * starts from.
- *
- * A position belongs to no order, so one continues a read in either direction.
- */
+/** A position belongs to no order, so one continues a read in either direction. */
 export type OrderedPage<P = Position> = Page<P> & {
   readonly order: ReadOrder;
 };

@@ -97,7 +97,7 @@ export async function complete(
       detail: {
         work: held.job.kind,
         attempt,
-        failure: { code: outcome.detail.code, detail: outcome.detail.detail },
+        failure: outcome.detail,
         ...(held.job.enrichment === undefined
           ? {}
           : { enrichment: held.job.enrichment }),
