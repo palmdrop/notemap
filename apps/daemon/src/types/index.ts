@@ -23,6 +23,13 @@ export type DaemonRefusal =
       readonly allowed: readonly string[];
     }
   | { readonly kind: "bad-position"; readonly after: string }
+  | { readonly kind: "missing-filename" }
+  | {
+      readonly kind: "digest-mismatch";
+      readonly expected: string;
+      readonly actual: string;
+    }
+  | { readonly kind: "asset-too-large"; readonly max: number }
   | { readonly kind: "no-such-item"; readonly item: string }
   | { readonly kind: "unknown-route"; readonly path: string }
   | {

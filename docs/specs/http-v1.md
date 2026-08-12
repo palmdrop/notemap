@@ -247,9 +247,10 @@ when that capture commits, so an upload no capture ever claims is swept
 - **`Repr-Digest` is recomputed server-side and compared before anything is minted**, which is
   S3's pattern and the one [asset-uploads.md](../research/asset-uploads.md#3-integrity-verification-on-upload)
   calls load-bearing: the proof is in the comparison, not in either side's number. Only
-  `sha-256` is understood, being the hash notemap computes anyway. A mismatch is
-  `422 digest-mismatch` and stores no asset. Absent, the upload proceeds — the daemon still
-  hashes, it simply has nothing to compare against.
+  `sha-256` is understood, being the hash notemap computes anyway; an entry naming any other
+  algorithm is **ignored**, which is what RFC 9530 asks of a recipient that does not support one.
+  A mismatch is `422 digest-mismatch` and stores no asset. Absent, the upload proceeds — the
+  daemon still hashes, it simply has nothing to compare against.
 - **The size limit is enforced against the stream**, not against `Content-Length`, which is a
   claim. An oversized body is `413 asset-too-large` carrying `max`, and leaves no blob and no
   asset. The limit is daemon configuration: a cap is interface policy, and core is a primitive

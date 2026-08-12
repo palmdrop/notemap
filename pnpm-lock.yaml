@@ -234,6 +234,9 @@ importers:
       '@hono/zod-openapi':
         specifier: ^1.5.2
         version: 1.5.2(hono@4.13.1)(zod@4.4.3)
+      '@notemap/blob-fs':
+        specifier: workspace:*
+        version: link:../../packages/adapters/blob-fs
       '@notemap/core':
         specifier: workspace:*
         version: link:../../packages/core

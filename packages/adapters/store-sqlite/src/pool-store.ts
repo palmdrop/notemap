@@ -76,7 +76,6 @@ const ITEM_COLUMNS = `
 
 const ASSET_COLUMNS = `id, filename, mime, blob, bytes, stored_at`;
 
-
 /** The write lock serializes this process, so SQLITE_BUSY is only ever a second host. */
 const BUSY_TIMEOUT_MS = 5_000;
 

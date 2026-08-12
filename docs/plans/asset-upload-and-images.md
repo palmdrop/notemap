@@ -232,29 +232,33 @@ New package `packages/adapters/blob-fs`, following the conventions `mirror-fs` s
 
 ### Phase 6 — Upload and download over `/v1` *(depends on phase 5)*
 
-- [ ] Config: the assets root as a sibling of `state/` and `pool-mirror/` under the same data root;
+- [x] Config: the assets root as a sibling of `state/` and `pool-mirror/` under the same data root;
       the upload size limit; the sweep's interval. `config.example.toml` and the daemon README with
       them
-- [ ] Wire the blob store in `ports.ts`, replacing `noAssets`. Unlike the mirror it is not optional:
-      a pool that cannot store bytes cannot capture an image at all
-- [ ] `POST /v1/assets` per D2, the limit enforced against the stream, an oversized upload leaving
-      no blob. `Repr-Digest` checked when present
-- [ ] `requireJsonBody` carves out exactly this path, by path equality, so no other route quietly
+- [x] Wire the blob store in `ports.ts`, replacing `noAssets`. Unlike the mirror it is not optional:
+      a pool that cannot store bytes cannot capture an image at all. `openPool` takes an options
+      object rather than four positional arguments, two of which are now paths
+- [x] `POST /v1/assets` per D2, the limit enforced against the stream, an oversized upload leaving
+      no blob. `Repr-Digest` checked when present, and ignored when it names an algorithm notemap
+      does not compute — which is what RFC 9530 asks of a recipient
+- [x] `requireJsonBody` carves out exactly this path, by path equality, so no other route quietly
       loses the guard
-- [ ] `GET /v1/assets/{id}` for the asset and `GET /v1/assets/{id}/content` for the bytes, per D3:
+- [x] `GET /v1/assets/{id}` for the asset and `GET /v1/assets/{id}/content` for the bytes, per D3:
       the inline allowlist, `nosniff`, the sandbox CSP, the blob hash as `ETag`, and the filename
       encoded for UTF-8 in `Content-Disposition`
-- [ ] The new refusals join the status maps and the OpenAPI document, which is checked in and so
+- [x] The new refusals join the status maps and the OpenAPI document, which is checked in and so
       appears in this commit's diff
-- [ ] A sweep loop beside the mirror runner, shut down with it
-- [ ] Tests: upload then download returns the same bytes and the same filename, over content that is
+- [x] A sweep loop beside the mirror runner, shut down with it
+- [x] The docs page's static-file handler was also called `assetHandler`; renamed
+      `docsFileHandler`, since **asset** is a domain word and two of them is one too many
+- [x] Tests: upload then download returns the same bytes and the same filename, over content that is
       not valid UTF-8; two names over one content; a body over the limit is refused and stores
       nothing; a mismatched `Repr-Digest` is refused; an upload with no filename or no content type
       is refused; JSON posted to `/v1/captures` still requires its content type; an HTML upload
       comes back as an attachment and a PNG inline; an unknown asset is `404`; the checked-in
       OpenAPI document matches the generated one
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint`
-- [ ] `git commit`
+- [x] Verify: `pnpm typecheck && pnpm test && pnpm lint`
+- [x] `git commit`
 
 ### Phase 7 — Images *(depends on phase 6)*
 

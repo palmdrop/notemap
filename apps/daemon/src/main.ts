@@ -5,6 +5,7 @@ import { parseArgs } from "node:util";
 import { serve } from "@hono/node-server";
 
 import { createApp } from "./app";
+import { startSweeper } from "./assets/sweeper";
 import { loadConfig } from "./config/load";
 import { SHUTDOWN_GRACE_MS } from "./constants";
 import { startMirrorRunner } from "./mirror/runner";
@@ -19,25 +20,33 @@ function start(): void {
   const config = loadConfig(values.config);
   mkdirSync(dirname(config.pool), { recursive: true });
 
-  const { pool, mirrorWriter } = openPool(
-    config.pool,
-    config.poolConfig,
-    config.mirror?.root,
-  );
+  const { pool, mirrorWriter } = openPool({
+    file: config.pool,
+    config: config.poolConfig,
+    assetRoot: config.assets.root,
+    ...(config.mirror === undefined ? {} : { mirrorRoot: config.mirror.root }),
+  });
 
   const mirror =
     config.mirror === undefined || mirrorWriter === undefined
       ? undefined
       : startMirrorRunner(pool, mirrorWriter, config.mirror);
 
+  const sweeper = startSweeper(pool, config.sweep);
+
   /** The runner holds a lease while it writes; stopping it first gives it back. */
   const close = async () => {
     await mirror?.stop();
+    await sweeper.stop();
     await pool.close();
   };
 
   const server = serve(
-    { fetch: createApp(pool).fetch, hostname: config.host, port: config.port },
+    {
+      fetch: createApp(pool, config.assets).fetch,
+      hostname: config.host,
+      port: config.port,
+    },
     (address) => {
       console.log(
         `notemap: ${config.pool} on http://${config.host}:${address.port}`,
@@ -47,6 +56,7 @@ function start(): void {
           ? "notemap: no mirror configured — the pool is the only copy"
           : `notemap: mirroring to ${config.mirror.root}`,
       );
+      console.log(`notemap: assets in ${config.assets.root}`);
     },
   );
 

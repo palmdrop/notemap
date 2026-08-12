@@ -475,7 +475,7 @@ describe("GET /v1/actions", () => {
   });
 
   it("carries the filter into next, so a filtered read pages as itself", async () => {
-    const host = started(CONFIG, true);
+    const host = started(CONFIG, { mirroring: true });
     const { app } = host;
 
     await post(app, envelope({ id: "item-1" }));

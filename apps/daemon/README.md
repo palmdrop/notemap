@@ -6,10 +6,11 @@ wires adapters, and translates `/v1` onto the core library
 and nothing reaches the pool except through `createPool`.
 
 The surface it answers is specified in [docs/specs/http-v1.md](../../docs/specs/http-v1.md).
-Today that is the capture-and-feed subset plus the action log: `POST /v1/captures`,
-`GET /v1/feed`, `GET /v1/items/:id`, `GET /v1/actions`, plus `GET /v1/openapi.json`. It also
-serves three pages of its own, outside the contract: the capture page at `/`, the action log at
-`/log`, and an OpenAPI playground at `/docs`.
+Today that is capture, feed, assets and the action log: `POST /v1/captures`, `GET /v1/feed`,
+`GET /v1/items/:id`, `POST /v1/assets`, `GET /v1/assets/:id`, `GET /v1/assets/:id/content`,
+`GET /v1/actions`, plus `GET /v1/openapi.json`. It also serves three pages of its own, outside
+the contract: the capture page at `/`, the action log at `/log`, and an OpenAPI playground at
+`/docs`.
 
 ## Running it
 
@@ -26,11 +27,44 @@ there, rather than coming up with no payload types and refusing every capture in
 
 `daemon.host` and `daemon.port` default to `127.0.0.1` and 4747, and it sends no CORS headers.
 There is no authentication: the pool is the boundary, so binding wider than localhost exposes it
-to whoever can reach the address.
+to whoever can reach the address. What that leaves undefended, in full, is
+[docs/specs/security.md](../../docs/specs/security.md).
 
 `SIGINT` or `SIGTERM` stops it: the listener closes, idle connections go immediately, anything
 still in flight gets two seconds, then the mirror runner stops — giving back any lease it holds
-— and then the host closes the pool it built, and nothing else.
+— then the sweeper, and then the host closes the pool it built, and nothing else.
+
+## Assets
+
+Bytes go up in a request of their own: `POST /v1/assets`, the body raw, `Content-Type` the media
+type and `Content-Disposition` the filename. Both are required and neither is guessed — a
+filename is user data and a media type is served back to a browser, so inventing either would be
+a lie the pool then stores. An optional `Repr-Digest` is recomputed over the bytes received and
+refused on mismatch.
+
+```toml
+[assets]
+root = "~/.local/share/notemap/assets"
+maxUpload = 268435456 # bytes — enforced against the stream, not against Content-Length
+
+[sweep]
+grace = 86400000   # how long an unreferenced asset is left alone
+interval = 3600000 # milliseconds between sweeps
+```
+
+Unlike the mirror, the blob store is **not optional**: a pool that cannot store bytes cannot
+capture an image at all.
+
+An asset's reference is taken when the capture naming it commits, so an upload whose capture
+never arrives is unreferenced — wasted space rather than a reference to something that does not
+exist. The sweeper takes those, and any blob that loses its last asset with them, once `grace`
+has passed. The window exists because to a sweep running at the wrong instant, "referenced" and
+"about to be referenced" look identical.
+
+**Anything may be uploaded; only inert things render.** On the way out, an allowlist decides
+`inline` versus `attachment` — images, audio, video and `text/plain` render in place, and
+everything else, HTML and SVG and PDF included, downloads. Every asset response also carries
+`nosniff` and `default-src 'none'; sandbox`.
 
 ## The mirror
 
@@ -135,11 +169,13 @@ sits at the depth the bundle does. The tests import sources and cannot see this 
 
 ## Notes on the wiring
 
-- **The asset store throws.** It has no adapter yet and nothing can reach it — there are no
-  asset endpoints — and it throws rather than doing nothing, so "unbuilt" cannot quietly become
-  "lossy" the moment it becomes reachable. The mirror writer is different: it is genuinely
-  optional, and its absence is a state core knows about rather than a stub, so a pool wired
-  without one enqueues no mirror jobs instead of accumulating work nothing will claim.
+- **The blob store is wired and not optional**, unlike the mirror writer. The mirror's absence
+  is a state core knows about — a pool wired without one enqueues no mirror jobs rather than
+  accumulating work nothing will claim — where a pool that cannot store bytes simply cannot
+  capture an image.
+- **The upload route is the one `/v1` path whose body is not JSON.** The media-type guard carves
+  it out by exact path rather than by prefix, so a route added under `/v1/assets` later does not
+  quietly inherit the exemption.
 - **The runner holds a timer and nothing else.** Which job is next, whether a failure retries and
   when, and when work is given up on are all core's
   ([ADR 2](../../docs/adr/0002-core-is-a-host-agnostic-library.md)): the host drives *when*, core

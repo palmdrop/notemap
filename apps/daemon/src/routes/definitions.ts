@@ -3,16 +3,19 @@ import { z } from "zod";
 
 import { JSON_MEDIA_TYPE, MAX_LIMIT } from "../constants";
 import {
+  ASSET_STATUS,
   BODY_STATUS,
   CAPTURE_STATUS,
   codesFor,
   PARAMETER_STATUS,
   SUBJECT_STATUS,
+  UPLOAD_STATUS,
 } from "../errors/refusals";
 import { actionSliceSchema } from "../schemas/action";
 import { captureEnvelopeSchema } from "../schemas/envelope";
 import { errorSchema } from "../schemas/error";
 import {
+  assetSchema,
   captureOutcomeSchema,
   feedSliceSchema,
   itemSchema,
@@ -174,11 +177,104 @@ export const itemRoute = createRoute({
   },
 });
 
+const assetId = z.object({
+  id: z.string().openapi({ param: { name: "id", in: "path" } }),
+});
+
+export const assetUploadRoute = createRoute({
+  method: "post",
+  path: "/v1/assets",
+  summary: "Upload bytes",
+  description:
+    "The body is the bytes, raw — not `multipart/form-data`. `Content-Type` is the asset's media type and is served back verbatim; `Content-Disposition` carries the filename, which is stored exactly as given. Anything may be uploaded; what may be rendered in place is decided on the way out.",
+  request: {
+    headers: z.object({
+      "content-disposition": z.string().openapi({
+        description:
+          "`attachment; filename=\"photo.png\"`, or `filename*=UTF-8''…`.",
+        example: 'attachment; filename="photo.png"',
+      }),
+      "repr-digest": z.string().optional().openapi({
+        description:
+          "RFC 9530. Recomputed over the bytes received and refused on mismatch. Only `sha-256` is understood; any other algorithm is ignored.",
+        example: "sha-256=:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=:",
+      }),
+    }),
+    body: {
+      required: true,
+      content: { "*/*": { schema: z.string().openapi({ format: "binary" }) } },
+    },
+  },
+  responses: {
+    201: {
+      description: "Stored. `Location` names the asset.",
+      headers: z.object({
+        Location: z.string().openapi({ example: "/v1/assets/0198f0c2-..." }),
+      }),
+      content: { [JSON_MEDIA_TYPE]: { schema: assetSchema } },
+    },
+    413: errorResponse(
+      "The body was larger than the configured limit. Nothing was stored.",
+      413,
+      UPLOAD_STATUS,
+    ),
+    415: errorResponse("The request carried no media type.", 415, BODY_STATUS),
+    422: errorResponse(
+      "The upload was understood and declined. Nothing was stored.",
+      422,
+      UPLOAD_STATUS,
+    ),
+  },
+});
+
+export const assetRoute = createRoute({
+  method: "get",
+  path: "/v1/assets/{id}",
+  summary: "Read one asset",
+  request: { params: assetId },
+  responses: {
+    200: {
+      description: "The asset.",
+      content: { [JSON_MEDIA_TYPE]: { schema: assetSchema } },
+    },
+    404: errorResponse("No asset has that id.", 404, ASSET_STATUS),
+  },
+});
+
+export const assetContentRoute = createRoute({
+  method: "get",
+  path: "/v1/assets/{id}/content",
+  summary: "Read an asset's bytes",
+  description:
+    "The recorded media type, served honestly, with `nosniff` and a sandbox CSP. `Content-Disposition` is `inline` for media that cannot execute and `attachment` for everything else. `ETag` is the blob hash, and the response is immutable: an asset id names one blob forever.",
+  request: { params: assetId },
+  responses: {
+    200: {
+      description: "The bytes.",
+      headers: z.object({
+        ETag: z.string().openapi({ example: '"e3b0c44298fc1c14..."' }),
+        "Content-Disposition": z
+          .string()
+          .openapi({ example: 'inline; filename="photo.png"' }),
+      }),
+      content: { "*/*": { schema: z.string().openapi({ format: "binary" }) } },
+    },
+    404: errorResponse(
+      "No asset has that id, or its blob is gone from disk.",
+      404,
+      ASSET_STATUS,
+    ),
+  },
+});
+
 export const ROUTES = [
   captureRoute,
   feedRoute,
   itemRoute,
   actionsRoute,
+  assetUploadRoute,
+  assetRoute,
+  assetContentRoute,
 ] as const;
 
 /** OpenAPI writes a path parameter `{id}`; Hono matches it as `:id`. */

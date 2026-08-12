@@ -5,6 +5,8 @@ import { join } from "node:path";
 import type { Hono } from "hono";
 
 import type {
+  AssetId,
+  BlobStore,
   Duration,
   PayloadTypeName,
   PoolConfig,
@@ -12,6 +14,8 @@ import type {
 } from "@notemap/core";
 
 import { createApp } from "../app";
+import { startSweeper } from "../assets/sweeper";
+import { DEFAULT_MAX_UPLOAD_BYTES } from "../constants";
 import { startMirrorRunner } from "../mirror/runner";
 import { openPool } from "../ports";
 
@@ -42,29 +46,54 @@ export const CONFIG: PoolConfig = {
   sweep: { grace: 86_400_000 as Duration },
 };
 
+/** Uploads bytes the way a client does, and answers the response. */
+export async function put(
+  app: Hono,
+  content: string | Uint8Array,
+  headers: Record<string, string>,
+): Promise<Response> {
+  return app.request("/v1/assets", { method: "POST", headers, body: content });
+}
+
 export type Daemon = {
   readonly app: Hono;
   /** Where the mirror would write, whether or not one is wired. */
   readonly mirrorRoot: string;
+  /** Where blobs land. */
+  readonly assetRoot: string;
+  readonly blobs: BlobStore;
   /** Runs every claimable mirror job now. Zero when no mirror is wired. */
   readonly drain: () => Promise<number>;
+  /** Runs a sweep now, whatever the timer would have done. */
+  readonly sweep: () => Promise<readonly AssetId[]>;
   readonly cleanup: () => Promise<void>;
 };
 
 /**
- * The runner is driven by hand rather than by its timer: a test that waits for
- * a poll is a test that fails on a slow machine.
+ * Neither loop is driven by its timer: a test that waits for a poll is a test
+ * that fails on a slow machine.
  */
 const NEVER_POLLS = 60 * 60 * 1000;
 
-export function daemon(config: PoolConfig = CONFIG, mirroring = false): Daemon {
+export type DaemonOptions = {
+  readonly mirroring?: boolean;
+  readonly maxUploadBytes?: number;
+};
+
+export function daemon(
+  config: PoolConfig = CONFIG,
+  options: DaemonOptions = {},
+): Daemon {
   const directory = mkdtempSync(join(tmpdir(), "notemap-daemon-"));
   const mirrorRoot = join(directory, "pool-mirror");
-  const { pool, mirrorWriter } = openPool(
-    join(directory, "pool.db"),
+  const assetRoot = join(directory, "assets");
+
+  const { pool, blobs, mirrorWriter } = openPool({
+    file: join(directory, "pool.db"),
     config,
-    mirroring ? mirrorRoot : undefined,
-  );
+    assetRoot,
+    ...(options.mirroring === true ? { mirrorRoot } : {}),
+  });
 
   const runner =
     mirrorWriter === undefined
@@ -75,12 +104,20 @@ export function daemon(config: PoolConfig = CONFIG, mirroring = false): Daemon {
           batch: 16,
         });
 
+  const sweeper = startSweeper(pool, { intervalMs: NEVER_POLLS });
+
   return {
-    app: createApp(pool),
+    app: createApp(pool, {
+      maxUploadBytes: options.maxUploadBytes ?? DEFAULT_MAX_UPLOAD_BYTES,
+    }),
     mirrorRoot,
+    assetRoot,
+    blobs,
     drain: async () => (await runner?.drain()) ?? 0,
+    sweep: () => sweeper.run(),
     cleanup: async () => {
       await runner?.stop();
+      await sweeper.stop();
       await pool.close();
       rmSync(directory, { recursive: true, force: true });
     },

@@ -9,7 +9,7 @@ import { daemon, envelope, post, type Daemon } from "../testing/fixture";
 const open: Daemon[] = [];
 
 function host(mirroring: boolean): Daemon {
-  const opened = daemon(undefined, mirroring);
+  const opened = daemon(undefined, { mirroring });
   open.push(opened);
   return opened;
 }

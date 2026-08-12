@@ -43,6 +43,17 @@ export const itemSchema = z
   })
   .openapi("Item");
 
+export const assetSchema = z
+  .object({
+    id: z.string(),
+    /** Exactly as uploaded: a filename is user data. */
+    filename: z.string(),
+    mime: z.string(),
+    blob: z.string(),
+    bytes: z.number().int().nonnegative(),
+  })
+  .openapi("Asset");
+
 export const captureOutcomeSchema = z
   .union([
     z.object({ kind: z.literal("captured"), item: itemSchema }),
