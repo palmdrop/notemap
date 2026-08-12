@@ -219,6 +219,50 @@ export const MIGRATIONS: readonly string[] = [
 
   CREATE INDEX item_assets_asset ON item_assets (asset_id);
   `,
+
+  `
+  -- Which assets exist is pool state, so that releasing one moves the
+  -- asset-to-blob count and the item-to-asset count in a single transaction.
+  -- \`stored_at\` is operational and stays here rather than on the domain value,
+  -- the way \`modified_at\` does; it is what the sweep's grace window is measured
+  -- against.
+  CREATE TABLE assets (
+    id        TEXT    NOT NULL PRIMARY KEY,
+    -- Exactly as uploaded: a filename is user data and must survive the round trip.
+    filename  TEXT    NOT NULL,
+    mime      TEXT    NOT NULL,
+    blob      TEXT    NOT NULL,
+    bytes     INTEGER NOT NULL,
+    stored_at INTEGER NOT NULL
+  ) STRICT;
+
+  -- The second refcount: which assets still name a blob.
+  CREATE INDEX assets_blob      ON assets (blob);
+  CREATE INDEX assets_stored_at ON assets (stored_at);
+
+  -- SQLite cannot add a foreign key in place. It restricts rather than cascades:
+  -- releasing an asset an item still references must fail loudly, because
+  -- under-counting frees bytes something still points at.
+  CREATE TABLE item_assets_next (
+    item_id  TEXT NOT NULL REFERENCES items (id) ON DELETE CASCADE,
+    slot     TEXT NOT NULL,
+    asset_id TEXT NOT NULL REFERENCES assets (id),
+    PRIMARY KEY (item_id, slot)
+  ) STRICT;
+
+  -- Nothing could mint an asset before this migration, so every row here names
+  -- one that never existed — which is exactly what the foreign key forbids.
+  -- Carrying them over would fail the migration for the sake of references that
+  -- resolve to nothing.
+  INSERT INTO item_assets_next
+    SELECT item_id, slot, asset_id FROM item_assets
+    WHERE asset_id IN (SELECT id FROM assets);
+
+  DROP TABLE item_assets;
+  ALTER TABLE item_assets_next RENAME TO item_assets;
+
+  CREATE INDEX item_assets_asset ON item_assets (asset_id);
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

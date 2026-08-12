@@ -3,8 +3,10 @@ import type {
   ActionId,
   ActionKind,
   Agent,
+  Asset,
   AssetId,
   AssetRef,
+  BlobHash,
   EnrichmentName,
   Item,
   ItemId,
@@ -22,6 +24,7 @@ import type {
 import type {
   ActionRow,
   AgentColumns,
+  AssetRow,
   ItemAssetRow,
   ItemRow,
   ItemTagRow,
@@ -157,6 +160,16 @@ export function itemParams(
     record.archived === undefined ? null : toMillis(record.archived.archivedAt),
     record.archived?.reason ?? null,
   ];
+}
+
+export function toAsset(row: AssetRow): Asset {
+  return {
+    id: row.id as AssetId,
+    filename: row.filename,
+    mime: row.mime,
+    blob: row.blob as BlobHash,
+    bytes: row.bytes,
+  };
 }
 
 export function toJob(row: JobRow): Job {

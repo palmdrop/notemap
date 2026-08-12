@@ -192,6 +192,16 @@ export interface PoolTx extends PoolReads {
   appendAction(action: Action): Promise<void>;
   enqueue(jobs: readonly Job[]): Promise<void>;
 
+  /** When it was stored is the store's, the way `modifiedAt` is: operational, and not part of the asset. */
+  insertAsset(asset: Asset): Promise<void>;
+
+  /**
+   * Releases assets, and answers the blobs that lost their last one — which are
+   * then the caller's to delete, outside this transaction. Releasing an asset an
+   * item still references fails rather than succeeding quietly.
+   */
+  deleteAssets(assets: readonly AssetId[]): Promise<readonly BlobHash[]>;
+
   /** The job a lease still holds, or nothing if the lease has been taken over. */
   leasedJob(lease: LeaseId): Promise<Lease | undefined>;
   resolveJob(lease: LeaseId, resolution: JobResolution): Promise<void>;

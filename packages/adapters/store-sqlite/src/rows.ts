@@ -36,6 +36,15 @@ export type ItemAssetRow = {
   readonly asset_id: string;
 };
 
+export type AssetRow = {
+  readonly id: string;
+  readonly filename: string;
+  readonly mime: string;
+  readonly blob: string;
+  readonly bytes: number;
+  readonly stored_at: number;
+};
+
 export type JobRow = {
   readonly id: string;
   readonly kind: "enrichment" | "mirror" | "mirror-remove";
@@ -82,6 +91,7 @@ export const TABLE_COLUMNS = {
   ],
   item_tags: ["item_id", "name", "by_kind", "by_ref", "added_at"],
   item_assets: ["item_id", "slot", "asset_id"],
+  assets: ["id", "filename", "mime", "blob", "bytes", "stored_at"],
   jobs: [
     "id",
     "kind",

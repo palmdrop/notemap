@@ -192,19 +192,21 @@ New package `packages/adapters/blob-fs`, following the conventions `mirror-fs` s
 
 ### Phase 4 — Assets are rows *(store; depends on phase 2, parallel to phase 3)*
 
-- [ ] New migration — never edit an existing one. An `assets` table, indexed by blob hash.
+- [x] New migration — never edit an existing one. An `assets` table, indexed by blob hash.
       `item_assets.asset_id` gains a foreign key to it, which SQLite cannot add in place, so the
       table is recreated the way `jobs` was. The FK restricts rather than cascades: releasing an
-      asset an item still references must fail loudly
-- [ ] Reads and writes: resolve an asset by id, insert one, list assets referenced by no item and
+      asset an item still references must fail loudly. Existing references are dropped rather than
+      carried: nothing could mint an asset before this, so every one of them resolves to nothing
+      and would fail the migration
+- [x] Reads and writes: resolve an asset by id, insert one, list assets referenced by no item and
       stored before an instant, and delete a set answering the blob hashes that lost their last
       asset. `unreferencedAssets` stops being `unimplemented` and means what it says
-- [ ] `schema.test.ts` and `rows.ts` stay in agreement
-- [ ] Tests: two assets over one blob; deleting one leaves the blob referenced and both leaves it
+- [x] `schema.test.ts` and `rows.ts` stay in agreement
+- [x] Tests: two assets over one blob; deleting one leaves the blob referenced and both leaves it
       orphaned; an asset an item references cannot be deleted; the sweep list respects the instant
       and excludes anything referenced
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint`
-- [ ] `git commit`
+- [x] Verify: `pnpm typecheck && pnpm test && pnpm lint`
+- [x] `git commit`
 
 ### Phase 5 — Core owns assets *(depends on phases 3 and 4)*
 

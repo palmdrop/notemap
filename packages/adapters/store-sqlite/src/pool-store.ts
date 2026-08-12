@@ -6,6 +6,9 @@ import type {
   Action,
   ActionQuery,
   Artifact,
+  Asset,
+  AssetId,
+  BlobHash,
   ClaimRequest,
   Clock,
   JobResolution,
@@ -33,6 +36,7 @@ import {
   agentColumns,
   itemParams,
   toAction,
+  toAsset,
   toItem,
   toMillis,
   toTimestamp,
@@ -41,6 +45,7 @@ import { abandonedWork, jobQueue } from "./jobs";
 import { LAST_MODIFIED_AT, migrate } from "./migrations";
 import type {
   ActionRow,
+  AssetRow,
   ItemAssetRow,
   ItemRow,
   ItemTagRow,
@@ -68,6 +73,9 @@ const ITEM_COLUMNS = `
   payload_metadata, created_at, content_updated_at, modified_at,
   revision_of, archived_at, archive_reason
 `;
+
+const ASSET_COLUMNS = `id, filename, mime, blob, bytes, stored_at`;
+
 
 /** The write lock serializes this process, so SQLITE_BUSY is only ever a second host. */
 const BUSY_TIMEOUT_MS = 5_000;
@@ -174,9 +182,22 @@ export function createSqlitePoolStore(
     INSERT INTO item_tags (item_id, name, by_kind, by_ref, added_at)
     VALUES (?, ?, ?, ?, ?)
   `);
-  const insertAsset = write.query(`
+  const insertReference = write.query(`
     INSERT INTO item_assets (item_id, slot, asset_id) VALUES (?, ?, ?)
   `);
+  const insertAsset = write.query<
+    never,
+    [string, string, string, string, number, number]
+  >(`
+    INSERT INTO assets (id, filename, mime, blob, bytes, stored_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  const deleteAsset = write.query<never, [string]>(
+    `DELETE FROM assets WHERE id = ?`,
+  );
+  const stillNamed = write.query<{ blob: string }, [string]>(
+    `SELECT blob FROM assets WHERE blob = ? LIMIT 1`,
+  );
   const jobs = jobQueue(write, config.ids ?? randomIds);
   const insertAction = write.query(`
     INSERT INTO actions (id, kind, subject, by_kind, by_ref, at, detail)
@@ -215,6 +236,21 @@ export function createSqlitePoolStore(
     const newestItem = source.query<ItemRow, []>(
       `SELECT ${ITEM_COLUMNS} FROM items ORDER BY created_at DESC, id DESC LIMIT 1`,
     );
+    const assetById = source.query<AssetRow, [string]>(
+      `SELECT ${ASSET_COLUMNS} FROM assets WHERE id = ?`,
+    );
+    /**
+     * The sweep's subject: stored long enough ago that "just uploaded" is not
+     * mistaken for "abandoned", and named by no item at all — not by an item
+     * that has gone, which is purge's, but by none that ever arrived.
+     */
+    const unreferenced = source.query<{ id: string }, [number, number]>(`
+      SELECT id FROM assets
+      WHERE stored_at < ?
+        AND NOT EXISTS (SELECT 1 FROM item_assets WHERE asset_id = assets.id)
+      ORDER BY stored_at, id
+      LIMIT ?
+    `);
 
     function hydrate(rows: readonly ItemRow[]): Item[] {
       if (rows.length === 0) return [];
@@ -309,6 +345,19 @@ export function createSqlitePoolStore(
       // Neither has a table yet, so empty is what an item genuinely has.
       artifacts: async (): Promise<readonly Artifact[]> => [],
       routingRecords: async (): Promise<readonly RoutingRecord[]> => [],
+
+      asset: async (id: AssetId): Promise<Asset | undefined> => {
+        const row = assetById.get(id);
+        return row === undefined ? undefined : toAsset(row);
+      },
+
+      unreferencedAssets: async (
+        olderThan: Timestamp,
+        limit: number,
+      ): Promise<readonly AssetId[]> =>
+        unreferenced
+          .all(toMillis(olderThan), limit)
+          .map((row) => row.id as AssetId),
 
       itemBySourceIdentity: async (
         sourceId: SourceId,
@@ -408,6 +457,8 @@ export function createSqlitePoolStore(
       head: guard(uncommitted.head),
       feed: guard(uncommitted.feed),
       actions: guard(uncommitted.actions),
+      asset: guard(uncommitted.asset),
+      unreferencedAssets: guard(uncommitted.unreferencedAssets),
 
       insertItem: guard(async (record: ItemRecord): Promise<Item> => {
         insertItem.run(...itemParams(record, nextModifiedAt()));
@@ -422,7 +473,7 @@ export function createSqlitePoolStore(
         }
 
         for (const ref of record.payload.assets) {
-          insertAsset.run(record.id, ref.slot, ref.asset);
+          insertReference.run(record.id, ref.slot, ref.asset);
         }
 
         const stored = await uncommitted.item(record.id);
@@ -446,6 +497,41 @@ export function createSqlitePoolStore(
       enqueue: guard(async (enqueued: readonly Job[]): Promise<void> => {
         jobs.enqueue(enqueued);
       }),
+
+      insertAsset: guard(async (asset: Asset): Promise<void> => {
+        insertAsset.run(
+          asset.id,
+          asset.filename,
+          asset.mime,
+          asset.blob,
+          asset.bytes,
+          toMillis(clock.now()),
+        );
+      }),
+
+      /**
+       * The blobs, read before the deletes rather than after: afterwards there
+       * is nothing left to say which blobs the departing assets named.
+       */
+      deleteAssets: guard(
+        async (assets: readonly AssetId[]): Promise<readonly BlobHash[]> => {
+          if (assets.length === 0) return [];
+
+          const slots = placeholders(assets.length);
+          const named = write
+            .query<{ blob: string }, Bindable[]>(
+              `SELECT DISTINCT blob FROM assets WHERE id IN (${slots})`,
+            )
+            .all(...assets);
+
+          for (const asset of assets) deleteAsset.run(asset);
+
+          return named
+            .map((row) => row.blob)
+            .filter((blob) => stillNamed.get(blob) === undefined)
+            .map((blob) => blob as BlobHash);
+        },
+      ),
 
       leasedJob: guard(async (lease: LeaseId) => jobs.leasedJob(lease)),
 
@@ -494,8 +580,6 @@ function notYetImplementedReads() {
     suggestions: unimplemented("suggestions"),
     suggestion: unimplemented("suggestion"),
     enrichmentStates: unimplemented("enrichmentStates"),
-    asset: unimplemented("asset"),
-    unreferencedAssets: unimplemented("unreferencedAssets"),
     changesSince: unimplemented("changesSince"),
   };
 }
