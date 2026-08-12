@@ -20,6 +20,15 @@ export const DEFAULT_RETRY = {
   maxBackoff: 60_000,
 };
 
+/** The grace has to outlast any plausible gap between an upload and its capture. */
+export const DEFAULT_SWEEP = {
+  graceMs: 86_400_000,
+  intervalMs: 3_600_000,
+};
+
+/** Generous enough for a phone photo or a long voice memo. */
+export const DEFAULT_MAX_UPLOAD_BYTES = 256 * 1024 * 1024;
+
 export const SHUTDOWN_GRACE_MS = 2_000;
 
 /**

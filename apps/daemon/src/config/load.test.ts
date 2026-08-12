@@ -5,7 +5,12 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { defaultConfigPath, defaultPoolPath, parseConfig } from "./load";
+import {
+  defaultAssetRoot,
+  defaultConfigPath,
+  defaultPoolPath,
+  parseConfig,
+} from "./load";
 
 const EXAMPLE = fileURLToPath(
   new URL("../../config.example.toml", import.meta.url),
@@ -27,6 +32,12 @@ describe("the example config", () => {
       leaseForMs: 60_000,
       batch: 16,
     });
+    expect(config.assets).toEqual({
+      root: join(homedir(), ".local/share/notemap/assets"),
+      maxUploadBytes: 268_435_456,
+    });
+    expect(config.sweep).toEqual({ intervalMs: 3_600_000 });
+    expect(config.poolConfig.sweep).toEqual({ grace: 86_400_000 });
     expect(config.poolConfig.sources).toEqual([{ id: "web", autoRequest: [] }]);
     expect(config.poolConfig.payloadTypes).toEqual([
       {
@@ -37,6 +48,15 @@ describe("the example config", () => {
           required: ["text"],
           additionalProperties: false,
           properties: { text: { type: "string", minLength: 1 } },
+        },
+      },
+      {
+        name: "image",
+        requiredSlots: ["image"],
+        contentSchema: {
+          type: "object",
+          additionalProperties: false,
+          properties: { caption: { type: "string" } },
         },
       },
     ]);
@@ -51,6 +71,8 @@ describe("what a config may leave out", () => {
     expect(config.pool).toBe(defaultPoolPath());
     // No mirror table is the mirror off, rather than one at a guessed path.
     expect(config.mirror).toBeUndefined();
+    // Assets are not optional, so their absence is a default rather than an off switch.
+    expect(config.assets.root).toBe(defaultAssetRoot());
     expect(config.poolConfig).toMatchObject({
       sources: [],
       payloadTypes: [],

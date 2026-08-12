@@ -3,7 +3,9 @@ import type { Pool } from "../types/api/pool";
 import type { PoolPorts } from "../types/api/ports";
 import type { OrderedPage, PageRequest, ReadOrder } from "../types/result";
 
+import * as assets from "./assets";
 import { capture } from "./capture";
+import * as maintenance from "./maintenance";
 import * as mirror from "./mirror";
 import * as work from "./work";
 
@@ -67,10 +69,10 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
     },
 
     assets: {
-      store: notImplemented("assets.store"),
-      get: notImplemented("assets.get"),
-      open: notImplemented("assets.open"),
-      verify: notImplemented("assets.verify"),
+      store: (bytes, meta) => assets.store(ports, bytes, meta),
+      get: (id) => assets.get(ports, id),
+      open: (id, signal) => assets.open(ports, id, signal),
+      verify: (id) => assets.verify(ports, id),
     },
 
     work: {
@@ -95,9 +97,8 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
     maintenance: {
       verifyMirror: notImplemented("maintenance.verifyMirror"),
       repairMirror: notImplemented("maintenance.repairMirror"),
-      sweepUnreferencedAssets: notImplemented(
-        "maintenance.sweepUnreferencedAssets",
-      ),
+      sweepUnreferencedAssets: () =>
+        maintenance.sweepUnreferencedAssets(config, ports),
     },
 
     close: () => store.close(),

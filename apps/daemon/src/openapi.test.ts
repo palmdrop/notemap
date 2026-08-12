@@ -31,6 +31,9 @@ describe("GET /v1/openapi.json", () => {
     expect(document.openapi).toBe("3.1.0");
     expect(Object.keys(document.paths).sort()).toEqual([
       "/v1/actions",
+      "/v1/assets",
+      "/v1/assets/{id}",
+      "/v1/assets/{id}/content",
       "/v1/captures",
       "/v1/feed",
       "/v1/items/{id}",
@@ -68,5 +71,18 @@ describe("GET /v1/openapi.json", () => {
     expect(
       Object.keys(document.paths["/v1/actions"]?.get?.responses ?? {}).sort(),
     ).toEqual(["200", "422"]);
+    expect(
+      Object.keys(document.paths["/v1/assets"]?.post?.responses ?? {}).sort(),
+    ).toEqual(["201", "413", "415", "422"]);
+    expect(
+      Object.keys(
+        document.paths["/v1/assets/{id}"]?.get?.responses ?? {},
+      ).sort(),
+    ).toEqual(["200", "404"]);
+    expect(
+      Object.keys(
+        document.paths["/v1/assets/{id}/content"]?.get?.responses ?? {},
+      ).sort(),
+    ).toEqual(["200", "404"]);
   });
 });

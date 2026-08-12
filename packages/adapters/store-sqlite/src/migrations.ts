@@ -198,6 +198,59 @@ export const MIGRATIONS: readonly string[] = [
   CREATE INDEX actions_subject ON actions (subject, at, id);
   CREATE INDEX actions_at      ON actions (at, id);
   `,
+
+  `
+  -- A reference no longer carries a blob hash, and SQLite cannot drop a column
+  -- that a NOT NULL constraint stands on.
+  CREATE TABLE item_assets_next (
+    item_id  TEXT NOT NULL REFERENCES items (id) ON DELETE CASCADE,
+    slot     TEXT NOT NULL,
+    asset_id TEXT NOT NULL,
+    PRIMARY KEY (item_id, slot)
+  ) STRICT;
+
+  INSERT INTO item_assets_next SELECT item_id, slot, asset_id FROM item_assets;
+
+  DROP TABLE item_assets;
+  ALTER TABLE item_assets_next RENAME TO item_assets;
+
+  CREATE INDEX item_assets_asset ON item_assets (asset_id);
+  `,
+
+  `
+  -- \`stored_at\` is what the sweep's grace window is measured against.
+  CREATE TABLE assets (
+    id        TEXT    NOT NULL PRIMARY KEY,
+    filename  TEXT    NOT NULL,
+    mime      TEXT    NOT NULL,
+    blob      TEXT    NOT NULL,
+    bytes     INTEGER NOT NULL,
+    stored_at INTEGER NOT NULL
+  ) STRICT;
+
+  CREATE INDEX assets_blob      ON assets (blob);
+  CREATE INDEX assets_stored_at ON assets (stored_at);
+
+  -- SQLite cannot add a foreign key in place. It restricts rather than cascades:
+  -- releasing an asset an item still references must fail loudly.
+  CREATE TABLE item_assets_next (
+    item_id  TEXT NOT NULL REFERENCES items (id) ON DELETE CASCADE,
+    slot     TEXT NOT NULL,
+    asset_id TEXT NOT NULL REFERENCES assets (id),
+    PRIMARY KEY (item_id, slot)
+  ) STRICT;
+
+  -- Nothing could mint an asset before this migration, so every existing row
+  -- names one that never existed — which the foreign key forbids.
+  INSERT INTO item_assets_next
+    SELECT item_id, slot, asset_id FROM item_assets
+    WHERE asset_id IN (SELECT id FROM assets);
+
+  DROP TABLE item_assets;
+  ALTER TABLE item_assets_next RENAME TO item_assets;
+
+  CREATE INDEX item_assets_asset ON item_assets (asset_id);
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

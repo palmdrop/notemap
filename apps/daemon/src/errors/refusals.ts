@@ -1,4 +1,4 @@
-import type { CaptureRefusal } from "@notemap/core";
+import type { AssetRefusal, CaptureRefusal } from "@notemap/core";
 
 import type { DaemonRefusal, ErrorBody } from "../types";
 
@@ -12,7 +12,6 @@ export const CAPTURE_STATUS = {
   "payload-invalid": 422,
   "missing-asset-slot": 422,
   "unknown-asset": 422,
-  "asset-hash-mismatch": 422,
 } as const satisfies Record<CaptureRefusal["kind"], number>;
 
 /** Anything wrong with the request body itself. */
@@ -21,6 +20,25 @@ export const BODY_STATUS = {
   "malformed-envelope": 400,
   "unsupported-media-type": 415,
 } as const;
+
+/**
+ * What the daemon itself refuses about an upload. `413` is the one status
+ * outside the rule the rest of the table follows, and deliberately: a size
+ * limit is a fact the transport layer already acts on, and hiding it inside a
+ * `422` costs a client the chance to stop an upload early.
+ */
+export const UPLOAD_STATUS = {
+  "missing-filename": 422,
+  "bad-digest": 422,
+  "digest-mismatch": 422,
+  "asset-too-large": 413,
+} as const;
+
+/** Reading an asset. Both are `404`, distinguished by code: a read never rehashes, so drift cannot arise. */
+export const ASSET_STATUS = {
+  "no-such-asset": 404,
+  "blob-missing": 404,
+} as const satisfies Record<AssetRefusal["kind"], number>;
 
 /** Anything wrong with a query parameter. */
 export const PARAMETER_STATUS = {
@@ -41,6 +59,7 @@ export const ADDRESS_STATUS = {
 const DAEMON_STATUS = {
   ...BODY_STATUS,
   ...PARAMETER_STATUS,
+  ...UPLOAD_STATUS,
   ...SUBJECT_STATUS,
   ...ADDRESS_STATUS,
 } as const satisfies Record<DaemonRefusal["kind"], number>;
@@ -49,11 +68,17 @@ export function captureStatus(refusal: CaptureRefusal): number {
   return CAPTURE_STATUS[refusal.kind];
 }
 
+export function assetStatus(refusal: AssetRefusal): number {
+  return ASSET_STATUS[refusal.kind];
+}
+
 export function daemonStatus(refusal: DaemonRefusal): number {
   return DAEMON_STATUS[refusal.kind];
 }
 
-export function errorBody(refusal: CaptureRefusal | DaemonRefusal): ErrorBody {
+export function errorBody(
+  refusal: AssetRefusal | CaptureRefusal | DaemonRefusal,
+): ErrorBody {
   const { kind, ...facts } = refusal;
   return { error: { code: kind, ...facts } };
 }

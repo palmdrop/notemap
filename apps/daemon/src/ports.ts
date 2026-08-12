@@ -1,11 +1,12 @@
 import { v7 as uuidv7 } from "uuid";
 
+import { createFilesystemBlobStore } from "@notemap/blob-fs";
 import { createFilesystemMirrorWriter } from "@notemap/mirror-fs";
 import { createAjvSchemaValidator } from "@notemap/schema-ajv";
 import { createSqlitePoolStore } from "@notemap/store-sqlite";
 import {
   createPool,
-  type AssetStore,
+  type BlobStore,
   type Clock,
   type IdGenerator,
   type MintableId,
@@ -16,7 +17,7 @@ import {
   type Timestamp,
 } from "@notemap/core";
 
-import { RENDERERS } from "./mirror/renderers";
+import { renderersFor } from "./mirror/renderers";
 
 export const systemClock: Clock = {
   now: () => new Date().toISOString() as Timestamp,
@@ -26,45 +27,44 @@ export const uuidV7Ids: IdGenerator = {
   next: <T extends MintableId>() => uuidv7() as T,
 };
 
-/** Throws rather than no-ops, so an unbuilt port cannot become a quietly lossy one. */
-function absent(port: string): never {
-  throw new Error(`the daemon wires no ${port} yet`);
-}
-
-const noAssets: AssetStore = {
-  store: () => absent("asset store"),
-  get: () => absent("asset store"),
-  open: () => absent("asset store"),
-  verify: () => absent("asset store"),
-  release: () => absent("asset store"),
+export type OpenPoolConfig = {
+  /** The SQLite file. */
+  readonly file: string;
+  readonly config: PoolConfig;
+  /** Where blobs go. Not optional: a pool that cannot store bytes cannot capture an image. */
+  readonly assetRoot: string;
+  /** Absent disables the mirror, and then capture enqueues nothing. */
+  readonly mirrorRoot?: string;
 };
 
 /**
- * The pool, and the mirror writer it was wired with. The host keeps the writer
- * because the host is what drives it: core records that a write is owed and
- * never performs one.
+ * The pool, and the two drivers the host keeps a handle on: it drives the
+ * mirror writer itself, and the blob store owns the layout a rendering has to
+ * ask about.
  */
 export type OpenPool = {
   readonly pool: Pool;
+  readonly blobs: BlobStore;
   readonly mirrorWriter?: MirrorWriter;
 };
 
-export function openPool(
-  file: string,
-  config: PoolConfig,
-  mirrorRoot?: string,
-): OpenPool {
-  // No root configured is the mirror disabled, and then capture enqueues
-  // nothing rather than piling up work no writer will ever claim.
+export function openPool(options: OpenPoolConfig): OpenPool {
+  const blobs = createFilesystemBlobStore({ root: options.assetRoot });
+
   const mirrorWriter =
-    mirrorRoot === undefined
+    options.mirrorRoot === undefined
       ? undefined
       : createFilesystemMirrorWriter({
-          root: mirrorRoot,
-          renderers: RENDERERS,
+          root: options.mirrorRoot,
+          // The blob layout is the blob driver's, so a rendering that points at
+          // one asks rather than composing a second copy of the scheme.
+          renderers: renderersFor(blobs.pathFor),
         });
 
-  const store = createSqlitePoolStore({ file, clock: systemClock });
+  const store = createSqlitePoolStore({
+    file: options.file,
+    clock: systemClock,
+  });
 
   const ports: PoolPorts = {
     store,
@@ -72,13 +72,14 @@ export function openPool(
     clock: systemClock,
     ids: uuidV7Ids,
     schemas: createAjvSchemaValidator(),
-    assets: noAssets,
+    blobs,
     ...(mirrorWriter === undefined ? {} : { mirrorWriter }),
     destinations: [],
   };
 
   return {
-    pool: createPool(config, ports),
+    pool: createPool(options.config, ports),
+    blobs,
     ...(mirrorWriter === undefined ? {} : { mirrorWriter }),
   };
 }

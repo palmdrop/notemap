@@ -83,14 +83,24 @@ _Avoid_: sync, reconcile, fsck
 **Asset**:
 A named reference to media belonging to a capture — audio, image, page snapshot. Carries the
 filename exactly as it was uploaded and points at the blob holding the bytes. Uploading the same
-bytes twice under two names produces two assets.
+bytes twice under two names produces two assets. Pool state, held beside the item references that
+count it, so an asset an item still references cannot be released.
 _Avoid_: attachment, media file
 
 **Blob**:
 The bytes an asset points at, stored once and addressed by their SHA-256. Named for a machine,
 shared by the pool and the mirror, and freed when the last asset referencing it goes. The layer
-where deduplication happens; a filename never reaches it.
+where deduplication happens; a filename never reaches it, and neither does the store beneath it,
+which knows hashes and bytes and nothing else.
 _Avoid_: object, binary, content
+
+**Sweep**:
+The periodic release of assets no item ever referenced, together with the blobs that lose their
+last asset. Its subject is the upload whose capture never arrived, so it waits out a grace window
+first: to a sweep running at the wrong instant, "referenced" and "about to be referenced" look
+identical. Purge is what releases an asset whose items *went*; the two never overlap. It reaches
+blobs only through the assets that name one, so bytes no asset ever named are deep verify's.
+_Avoid_: garbage collection, cleanup, prune, reap
 
 ### Processing
 

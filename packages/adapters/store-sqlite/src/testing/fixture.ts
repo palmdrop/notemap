@@ -8,6 +8,7 @@ import type {
   ActionId,
   ActionKind,
   Agent,
+  Asset,
   AssetId,
   BlobHash,
   Clock,
@@ -97,7 +98,7 @@ type CaptureOverrides = {
   readonly createdAt?: string;
   readonly contentUpdatedAt?: string;
   readonly tags?: readonly { name: string; by: Agent; addedAt: string }[];
-  readonly assets?: readonly { slot: string; asset: string; hash: string }[];
+  readonly assets?: readonly { slot: string; asset: string }[];
   readonly revisionOf?: string;
 };
 
@@ -114,7 +115,6 @@ export function capture(overrides: CaptureOverrides = {}): ItemRecord {
       assets: (overrides.assets ?? []).map((ref) => ({
         slot: ref.slot,
         asset: ref.asset as AssetId,
-        hash: ref.hash as BlobHash,
       })),
     },
     tags: (overrides.tags ?? []).map((tag) => ({
@@ -130,6 +130,26 @@ export function capture(overrides: CaptureOverrides = {}): ItemRecord {
       ? {}
       : { revisionOf: overrides.revisionOf as ItemId }),
   };
+}
+
+export function asset(overrides: Partial<Asset> = {}): Asset {
+  return {
+    id: (overrides.id ?? "asset-1") as AssetId,
+    filename: overrides.filename ?? "photo.png",
+    mime: overrides.mime ?? "image/png",
+    blob: (overrides.blob ?? "blob-abc") as BlobHash,
+    bytes: overrides.bytes ?? 12,
+  };
+}
+
+/** A foreign key stands under every reference, so a capture's assets exist first. */
+export function putAssets(
+  pool: SqlitePoolStore,
+  ...assets: readonly Asset[]
+): Promise<void> {
+  return pool.transaction(async (tx) => {
+    for (const each of assets) await tx.insertAsset(each);
+  });
 }
 
 /** Carries the original's capture time and source identity; the edit is recorded separately. */

@@ -55,7 +55,7 @@ export function startMirrorRunner(
     const attempted = new Set<string>();
     let resolved = 0;
 
-    for (;;) {
+    while (true) {
       const leases = await pool.work.claim({
         kinds: KINDS,
         limit: config.batch,

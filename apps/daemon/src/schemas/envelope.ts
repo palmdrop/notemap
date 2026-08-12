@@ -3,7 +3,6 @@ import { z } from "zod";
 
 import type {
   AssetId,
-  BlobHash,
   CaptureEnvelope,
   ItemId,
   JsonObject,
@@ -49,7 +48,6 @@ export function toEnvelope(
       assets: parsed.payload.assets.map((ref) => ({
         slot: ref.slot,
         asset: ref.asset as AssetId,
-        hash: ref.hash as BlobHash,
       })),
     },
     ...(parsed.tags === undefined ? {} : { tags: parsed.tags as TagName[] }),

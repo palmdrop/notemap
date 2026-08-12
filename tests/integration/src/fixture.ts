@@ -1,16 +1,21 @@
 import { mkdtempSync, rmSync } from "node:fs";
+import { readdir, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
+  asWorkOutcome,
   createPool,
-  type AssetStore,
+  parseMirrorRecord,
+  type Asset,
+  type AssetId,
   type CaptureEnvelope,
   type Clock,
   type Duration,
   type IdGenerator,
   type MintableId,
   type ItemId,
+  type MirrorRecord,
   type MirrorWriter,
   type PayloadTypeName,
   type Pool,
@@ -21,6 +26,7 @@ import {
   type TagName,
   type Timestamp,
 } from "@notemap/core";
+import { createFilesystemBlobStore } from "@notemap/blob-fs";
 import { createFilesystemMirrorWriter } from "@notemap/mirror-fs";
 import { createAjvSchemaValidator } from "@notemap/schema-ajv";
 import { createSqlitePoolStore } from "@notemap/store-sqlite";
@@ -73,6 +79,7 @@ export const CONFIG: PoolConfig = {
     initialBackoff: 1000 as Duration,
     maxBackoff: 60000 as Duration,
   },
+  sweep: { grace: 86_400_000 as Duration },
 };
 
 /** A clock that stands still until a test moves it. */
@@ -107,14 +114,6 @@ function absent(port: string): never {
   throw new Error(`no ${port} is wired in these tests`);
 }
 
-const noAssets: AssetStore = {
-  store: () => absent("asset store"),
-  get: () => absent("asset store"),
-  open: () => absent("asset store"),
-  verify: () => absent("asset store"),
-  release: () => absent("asset store"),
-};
-
 const noMirrorWriter: MirrorWriter = {
   write: () => absent("mirror writer"),
   remove: () => absent("mirror writer"),
@@ -129,6 +128,8 @@ export type Harness = {
   readonly file: string;
   /** Where the mirror writes, whether or not a real writer is wired. */
   readonly mirrorRoot: string;
+  /** Where the blobs are. A sibling of the two, as a host lays them out. */
+  readonly assetRoot: string;
   readonly cleanup: () => Promise<void>;
 };
 
@@ -151,6 +152,7 @@ export function harness(
   const directory = mkdtempSync(join(tmpdir(), "notemap-integration-"));
   const file = join(directory, "pool.db");
   const mirrorRoot = join(directory, "pool-mirror");
+  const assetRoot = join(directory, "assets");
   const clock = frozenClock();
   const ids = countingIds();
 
@@ -167,7 +169,7 @@ export function harness(
     clock,
     ids,
     schemas: createAjvSchemaValidator(),
-    assets: noAssets,
+    blobs: createFilesystemBlobStore({ root: assetRoot }),
     ...(mirroring === "off"
       ? {}
       : {
@@ -188,6 +190,7 @@ export function harness(
     ids,
     file,
     mirrorRoot,
+    assetRoot,
     cleanup: async () => {
       await pool.close();
       rmSync(directory, { recursive: true, force: true });
@@ -202,6 +205,7 @@ type EnvelopeOverrides = {
   readonly text?: string;
   readonly capturedAt?: string;
   readonly tags?: readonly string[];
+  readonly assets?: readonly { slot: string; asset: string }[];
 };
 
 export function envelope(overrides: EnvelopeOverrides = {}): CaptureEnvelope {
@@ -214,8 +218,115 @@ export function envelope(overrides: EnvelopeOverrides = {}): CaptureEnvelope {
       type: TEXT,
       content: { text: overrides.text ?? "a thought" },
       metadata: {},
-      assets: [],
+      assets: (overrides.assets ?? []).map((ref) => ({
+        slot: ref.slot,
+        asset: ref.asset as AssetId,
+      })),
     },
     ...(overrides.tags === undefined ? {} : { tags: overrides.tags.map(tag) }),
   };
+}
+
+export function bytes(value: string): Uint8Array {
+  return new TextEncoder().encode(value);
+}
+
+export async function* streamOf(
+  ...chunks: readonly Uint8Array[]
+): AsyncGenerator<Uint8Array> {
+  for (const chunk of chunks) yield chunk;
+}
+
+export async function collect(
+  stream: AsyncIterable<Uint8Array>,
+): Promise<Uint8Array> {
+  const chunks: Uint8Array[] = [];
+  for await (const chunk of stream) chunks.push(chunk);
+
+  const joined = new Uint8Array(
+    chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0),
+  );
+  let offset = 0;
+  for (const chunk of chunks) {
+    joined.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return joined;
+}
+
+/** Uploads content under a name, and answers the asset that names it. */
+export function upload(
+  pool: Pool,
+  filename: string,
+  content: Uint8Array,
+  mime = "image/png",
+): Promise<Asset> {
+  return pool.assets.store(streamOf(content), { filename, mime });
+}
+
+export async function filesUnder(root: string): Promise<string[]> {
+  try {
+    const entries = await readdir(root, {
+      recursive: true,
+      withFileTypes: true,
+    });
+    return entries
+      .filter((entry) => entry.isFile())
+      .map((entry) => join(entry.parentPath, entry.name))
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * What the daemon's runner does, in one function: claim, write, report. The
+ * runner itself belongs to the daemon, and this exercises the same path over
+ * the real store and the real driver without one.
+ */
+export function drainWith(
+  harnessed: Harness,
+  writer = createFilesystemMirrorWriter({ root: harnessed.mirrorRoot }),
+) {
+  return async (): Promise<number> => {
+    const attempted = new Set<string>();
+    let resolved = 0;
+
+    while (true) {
+      const leases = await harnessed.pool.work.claim({
+        kinds: ["mirror", "mirror-remove"],
+        limit: 16,
+        leaseFor: 60_000 as Duration,
+      });
+
+      const fresh = leases.filter((lease) => !attempted.has(lease.job.id));
+      for (const lease of leases) {
+        if (!fresh.includes(lease)) await harnessed.pool.work.release(lease.id);
+      }
+      if (fresh.length === 0) return resolved;
+
+      for (const lease of fresh) {
+        attempted.add(lease.job.id);
+        let outcome;
+        try {
+          const record = await harnessed.pool.mirror.recordFor(
+            lease.job.subject,
+          );
+          if (record !== undefined) await writer.write(record);
+          outcome = { kind: "succeeded" } as const;
+        } catch (cause) {
+          outcome = asWorkOutcome(cause);
+        }
+        await harnessed.pool.work.complete(lease.id, outcome);
+        resolved += 1;
+      }
+    }
+  };
+}
+
+export async function storedRecord(root: string): Promise<MirrorRecord> {
+  const files = await filesUnder(root);
+  const path = files.find((each) => each.endsWith(".json"));
+  if (path === undefined) throw new Error(`no record under ${root}`);
+  return parseMirrorRecord(await readFile(path, "utf8"));
 }

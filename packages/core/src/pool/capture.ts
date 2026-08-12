@@ -52,7 +52,7 @@ function validate(
     return { kind: "missing-asset-slot", slot: missing };
   }
 
-  // `unknown-asset` and `asset-hash-mismatch` await an AssetStore to resolve against.
+  // `unknown-asset` needs the pool, so it is decided inside the transaction.
   return undefined;
 }
 
@@ -78,6 +78,15 @@ async function append(
     return isReplayOf(bySource, envelope)
       ? ok({ kind: "already-captured", item: bySource, matchedOn: "source" })
       : refused({ kind: "source-item-changed", existing: bySource.id });
+  }
+
+  // A read inside the transaction, like every other precondition: an asset
+  // swept between the check and the insert would otherwise leave a reference
+  // to bytes that have gone.
+  for (const ref of envelope.payload.assets) {
+    if ((await tx.asset(ref.asset)) === undefined) {
+      return refused({ kind: "unknown-asset", asset: ref.asset });
+    }
   }
 
   const by: Agent = { kind: "source", source: envelope.source };

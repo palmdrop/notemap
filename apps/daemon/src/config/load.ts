@@ -16,9 +16,11 @@ import type {
 
 import {
   DEFAULT_HOST,
+  DEFAULT_MAX_UPLOAD_BYTES,
   DEFAULT_MIRROR,
   DEFAULT_PORT,
   DEFAULT_RETRY,
+  DEFAULT_SWEEP,
 } from "../constants";
 
 export type MirrorConfig = {
@@ -29,6 +31,17 @@ export type MirrorConfig = {
   readonly batch: number;
 };
 
+export type AssetsConfig = {
+  /** The `assets` directory. Not optional: a pool that cannot store bytes cannot capture an image. */
+  readonly root: string;
+  /** Enforced against the stream, because `Content-Length` is a claim. */
+  readonly maxUploadBytes: number;
+};
+
+export type SweepConfig = {
+  readonly intervalMs: number;
+};
+
 export type DaemonConfig = {
   /** The SQLite file the pool lives in. */
   readonly pool: string;
@@ -36,6 +49,8 @@ export type DaemonConfig = {
   readonly port: number;
   /** Absent turns the mirror off: nothing is written and no job is enqueued. */
   readonly mirror?: MirrorConfig;
+  readonly assets: AssetsConfig;
+  readonly sweep: SweepConfig;
   readonly poolConfig: PoolConfig;
 };
 
@@ -63,6 +78,18 @@ const fileSchema = z.strictObject({
       maxAttempts: z.number().int().positive(),
       initialBackoff: z.number().int().nonnegative(),
       maxBackoff: z.number().int().nonnegative(),
+    })
+    .optional(),
+  assets: z
+    .strictObject({
+      root: z.string().min(1).optional(),
+      maxUpload: z.number().int().positive().optional(),
+    })
+    .optional(),
+  sweep: z
+    .strictObject({
+      grace: z.number().int().nonnegative().optional(),
+      interval: z.number().int().positive().optional(),
     })
     .optional(),
   sources: z
@@ -126,6 +153,10 @@ export function defaultMirrorRoot(): string {
   return join(defaultDataRoot(), "pool-mirror");
 }
 
+export function defaultAssetRoot(): string {
+  return join(defaultDataRoot(), "assets");
+}
+
 export function parseConfig(source: string, from: string): DaemonConfig {
   let raw: unknown;
   try {
@@ -160,6 +191,11 @@ export function parseConfig(source: string, from: string): DaemonConfig {
             batch: file.mirror.batch ?? DEFAULT_MIRROR.batch,
           },
         }),
+    assets: {
+      root: resolve(expandHome(file.assets?.root ?? defaultAssetRoot())),
+      maxUploadBytes: file.assets?.maxUpload ?? DEFAULT_MAX_UPLOAD_BYTES,
+    },
+    sweep: { intervalMs: file.sweep?.interval ?? DEFAULT_SWEEP.intervalMs },
     poolConfig: {
       sources: file.sources.map((source) => ({
         id: source.id as SourceId,
@@ -178,6 +214,9 @@ export function parseConfig(source: string, from: string): DaemonConfig {
         maxAttempts: retry.maxAttempts,
         initialBackoff: retry.initialBackoff as Duration,
         maxBackoff: retry.maxBackoff as Duration,
+      },
+      sweep: {
+        grace: (file.sweep?.grace ?? DEFAULT_SWEEP.graceMs) as Duration,
       },
     },
   };

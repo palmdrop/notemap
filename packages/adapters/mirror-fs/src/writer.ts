@@ -18,7 +18,12 @@ import {
   type FrontmatterValue,
 } from "./frontmatter";
 import { pathsFor, renderingBeside } from "./paths";
-import { renderAsJson, type Rendering, type Renderers } from "./renderers";
+import {
+  renderAsJson,
+  type Rendering,
+  type RenderingContext,
+  type Renderers,
+} from "./renderers";
 
 export type FilesystemMirrorConfig = {
   /** The `pool-mirror` directory itself. Created as writes land in it. */
@@ -39,7 +44,10 @@ export function createFilesystemMirrorWriter(
       // Material before presentation: a renderer is host-supplied code, and a
       // bug in it must not keep material out of the mirror.
       await writeAtomically(paths.record, serialiseMirrorRecord(record));
-      await writeAtomically(paths.rendering, render(renderers, record));
+      await writeAtomically(
+        paths.rendering,
+        render(renderers, record, { directory: paths.directory }),
+      );
     },
 
     /** A bare id cannot give a path, so removal walks the tree instead. */
@@ -52,12 +60,16 @@ export function createFilesystemMirrorWriter(
   };
 }
 
-function render(renderers: Renderers, record: MirrorRecord): string {
+function render(
+  renderers: Renderers,
+  record: MirrorRecord,
+  at: RenderingContext,
+): string {
   const renderer = renderers[record.item.payload.type] ?? renderAsJson;
 
   let rendered: Rendering;
   try {
-    rendered = renderer(record);
+    rendered = renderer(record, at);
   } catch (cause) {
     // Non-retryable: it will throw identically on every attempt.
     throw new MirrorWriteFailure(

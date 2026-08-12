@@ -8,6 +8,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@notemap/blob-fs": "workspace:*",
     "@notemap/core": "workspace:*",
     "@notemap/mirror-fs": "workspace:*",
     "@notemap/schema-ajv": "workspace:*",

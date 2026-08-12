@@ -28,6 +28,24 @@ maxAttempts = 5
 initialBackoff = 1000 # milliseconds
 maxBackoff = 60000
 
+# Where blobs go. Unlike the mirror this is not optional: a pool that cannot
+# store bytes cannot capture an image at all. A sibling of `state/` again,
+# because rebuilding needs the mirror and the assets together.
+#
+# The limit is enforced against the bytes as they arrive, not against
+# `Content-Length`, which is a claim.
+[assets]
+root = "~/.local/share/notemap/assets"
+maxUpload = 268435456 # bytes — 256 MiB
+
+# An upload whose capture never arrives is eventually swept, along with the blob
+# it was the last asset of. `grace` is how long "just uploaded" is left alone:
+# to a sweep running at the wrong instant, referenced and about-to-be-referenced
+# look identical.
+[sweep]
+grace = 86400000   # milliseconds — one day
+interval = 3600000 # milliseconds between sweeps
+
 # A source needs no declaration to capture; declaring one attaches policy.
 # `web` is the capture page, which hardcodes this id.
 [[sources]]
@@ -46,3 +64,17 @@ additionalProperties = false
 [payloadTypes.contentSchema.properties.text]
 type = "string"
 minLength = 1
+
+# The first type with a required slot: a capture of this type that names no
+# asset in `image` is refused, and the bytes go up in their own request first.
+# The caption is optional, and the whole of the content.
+[[payloadTypes]]
+name = "image"
+requiredSlots = ["image"]
+
+[payloadTypes.contentSchema]
+type = "object"
+additionalProperties = false
+
+[payloadTypes.contentSchema.properties.caption]
+type = "string"

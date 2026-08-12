@@ -34,7 +34,15 @@ export type ItemAssetRow = {
   readonly item_id: string;
   readonly slot: string;
   readonly asset_id: string;
-  readonly hash: string;
+};
+
+export type AssetRow = {
+  readonly id: string;
+  readonly filename: string;
+  readonly mime: string;
+  readonly blob: string;
+  readonly bytes: number;
+  readonly stored_at: number;
 };
 
 export type JobRow = {
@@ -82,7 +90,8 @@ export const TABLE_COLUMNS = {
     "archive_reason",
   ],
   item_tags: ["item_id", "name", "by_kind", "by_ref", "added_at"],
-  item_assets: ["item_id", "slot", "asset_id", "hash"],
+  item_assets: ["item_id", "slot", "asset_id"],
+  assets: ["id", "filename", "mime", "blob", "bytes", "stored_at"],
   jobs: [
     "id",
     "kind",

@@ -13,10 +13,12 @@ import type { SqlitePoolStore } from "./pool-store";
 
 import {
   appendCapture,
+  asset,
   at,
   capture,
   captured,
   frozenClock,
+  putAssets,
   mirrorJob,
   revisionOf,
   SCRATCHPAD,
@@ -71,8 +73,9 @@ describe("writing a capture", () => {
           addedAt: "2026-08-03T09:00:00.000Z",
         },
       ],
-      assets: [{ slot: "audio", asset: "asset-1", hash: "sha256-abc" }],
+      assets: [{ slot: "audio", asset: "asset-1" }],
     });
+    await putAssets(p, asset({ filename: "interview-with-mum.opus" }));
 
     const stored = await appendCapture(p, record);
 

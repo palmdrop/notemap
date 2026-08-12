@@ -12,7 +12,7 @@ const ASSETS: Record<string, string> = {
   "swagger-ui.css": "text/css; charset=utf-8",
 };
 
-export function assetHandler(context: Context): Response {
+export function docsFileHandler(context: Context): Response {
   const name = context.req.param("file") ?? "";
   const type = ASSETS[name];
   const source =

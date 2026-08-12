@@ -6,7 +6,6 @@ import { jsonObject } from "./json";
 const assetRef = z.object({
   slot: z.string(),
   asset: z.string(),
-  hash: z.string(),
 });
 
 export const payloadSchema = z.object({
@@ -43,6 +42,17 @@ export const itemSchema = z
     supersededBy: z.string().optional(),
   })
   .openapi("Item");
+
+export const assetSchema = z
+  .object({
+    id: z.string(),
+    /** Exactly as uploaded: a filename is user data. */
+    filename: z.string(),
+    mime: z.string(),
+    blob: z.string(),
+    bytes: z.number().int().nonnegative(),
+  })
+  .openapi("Asset");
 
 export const captureOutcomeSchema = z
   .union([

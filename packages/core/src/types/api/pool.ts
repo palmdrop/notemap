@@ -99,10 +99,12 @@ export interface RoutingApi {
 }
 
 export interface AssetsApi {
-  store(
-    bytes: AsyncIterable<Uint8Array>,
-    meta: AssetMeta,
-  ): Promise<Result<Asset, AssetRefusal>>;
+  /**
+   * Answers the asset rather than a result: every way an upload can be declined
+   * — a size cap, a digest that disagrees — is interface policy, and belongs to
+   * the host that set it.
+   */
+  store(bytes: AsyncIterable<Uint8Array>, meta: AssetMeta): Promise<Asset>;
   get(id: AssetId): Promise<Asset | undefined>;
   open(
     id: AssetId,

@@ -101,6 +101,22 @@
         white-space: pre-wrap;
         overflow-wrap: anywhere;
       }
+      li img {
+        display: block;
+        max-width: 100%;
+        border-radius: 0.35rem;
+        margin-bottom: 0.5rem;
+      }
+      .picked {
+        color: var(--dim);
+        font-size: 0.85rem;
+        overflow-wrap: anywhere;
+      }
+      input[type="file"] {
+        font: inherit;
+        font-size: 0.85rem;
+        max-width: 100%;
+      }
       li time {
         display: block;
         margin-top: 0.35rem;
@@ -131,6 +147,15 @@
         aria-label="What to capture"
       ></textarea>
       <div class="row">
+        <input
+          id="file"
+          type="file"
+          accept="image/*"
+          aria-label="A picture to capture"
+        />
+        <span id="picked" class="picked"></span>
+      </div>
+      <div class="row">
         <button type="submit">Capture</button>
         <span id="say" role="status"></span>
       </div>
@@ -141,10 +166,15 @@
 
     <script type="module">
       const SOURCE = "web";
-      const TYPE = "text";
+      const TEXT = "text";
+      const IMAGE = "image";
+      /** The slot `image` captures declare required, per the example config. */
+      const SLOT = "image";
 
       const form = document.getElementById("capture");
       const text = document.getElementById("text");
+      const file = document.getElementById("file");
+      const picked = document.getElementById("picked");
       const say = document.getElementById("say");
       const feed = document.getElementById("feed");
       const more = document.getElementById("more");
@@ -187,6 +217,14 @@
             return "that capture already exists, with different content";
           case "unknown-payload-type":
             return `this daemon has no "${error.type}" payload type configured`;
+          case "missing-asset-slot":
+            return `a capture of this type needs a file in "${error.slot}"`;
+          case "unknown-asset":
+            return "the upload is gone; pick the file again";
+          case "asset-too-large":
+            return `that file is larger than this daemon accepts (${error.max} bytes)`;
+          case "missing-filename":
+            return "the file has no name";
           default:
             return `refused: ${error.code}`;
         }
@@ -195,8 +233,21 @@
       function render(items) {
         for (const item of items) {
           const li = document.createElement("li");
+
+          // Full size: a thumbnail endpoint is deliberately not built. Only
+          // `image` captures: another type's slot may hold anything at all.
+          const refs = item.payload?.type === IMAGE ? item.payload.assets : [];
+          for (const ref of refs ?? []) {
+            const image = document.createElement("img");
+            image.src = `/v1/assets/${encodeURIComponent(ref.asset)}/content`;
+            image.alt = "";
+            image.loading = "lazy";
+            li.append(image);
+          }
+
           const p = document.createElement("p");
-          p.textContent = item.payload?.content?.text ?? "";
+          p.textContent =
+            item.payload?.content?.text ?? item.payload?.content?.caption ?? "";
 
           const when = document.createElement("time");
           when.dateTime = item.createdAt;
@@ -205,6 +256,26 @@
           li.append(p, when);
           feed.append(li);
         }
+      }
+
+      /**
+       * The bytes go up in their own request, and only a `201` is followed by a
+       * capture: two requests where there was one, and the second must not fire
+       * if the first failed.
+       */
+      async function upload(chosen) {
+        const response = await fetch("/v1/assets", {
+          method: "POST",
+          headers: {
+            "content-type": chosen.type || "application/octet-stream",
+            "content-disposition": `attachment; filename*=UTF-8''${encodeURIComponent(chosen.name)}`,
+          },
+          body: chosen,
+        });
+
+        const result = await response.json();
+        if (response.status !== 201) throw new Error(readError(result));
+        return result;
       }
 
       let next = "/v1/feed?limit=25";
@@ -235,18 +306,40 @@
         await loadMore();
       }
 
+      file.addEventListener("change", () => {
+        const chosen = file.files?.[0];
+        picked.textContent = chosen ? `${chosen.name}` : "";
+      });
+
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
 
         const body = text.value;
-        if (body.trim() === "") return;
+        const chosen = file.files?.[0];
+        if (chosen === undefined && body.trim() === "") return;
 
         const id = uuidv7();
         const button = form.querySelector("button");
         button.disabled = true;
-        tell("capturing…");
+        file.disabled = true;
 
         try {
+          let assets = [];
+          if (chosen !== undefined) {
+            tell("uploading…");
+            const asset = await upload(chosen);
+            assets = [{ slot: SLOT, asset: asset.id }];
+          }
+
+          tell("capturing…");
+          const payload =
+            chosen === undefined
+              ? { type: TEXT, content: { text: body } }
+              : {
+                  type: IMAGE,
+                  content: body.trim() === "" ? {} : { caption: body },
+                };
+
           const response = await fetch("/v1/captures", {
             method: "POST",
             headers: { "content-type": "application/json" },
@@ -255,12 +348,7 @@
               source: SOURCE,
               sourceItemId: id,
               capturedAt: new Date().toISOString(),
-              payload: {
-                type: TYPE,
-                content: { text: body },
-                metadata: {},
-                assets: [],
-              },
+              payload: { ...payload, metadata: {}, assets },
             }),
           });
 
@@ -268,6 +356,8 @@
 
           if (response.status === 201) {
             text.value = "";
+            file.value = "";
+            picked.textContent = "";
             tell("captured");
             await reload();
           } else if (response.status === 200) {
@@ -275,10 +365,13 @@
           } else {
             tell(readError(result), true);
           }
-        } catch {
-          tell("the daemon is not reachable", true);
+        } catch (error) {
+          // An upload that failed reports its own refusal verbatim; anything
+          // without one is the daemon being unreachable.
+          tell(error?.message ?? "the daemon is not reachable", true);
         } finally {
           button.disabled = false;
+          file.disabled = false;
         }
       });
 
