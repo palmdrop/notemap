@@ -179,6 +179,15 @@ renderer that throws **fails the job**, so a broken renderer is visible rather t
 degrading into JSON blocks — and because the record is already durable by then, nothing is lost
 while it is broken.
 
+**A rendering may point at a blob, and never copies one** (added 2026-08-11). An image renders as
+a markdown image whose target is the blob's own file, relative to the rendering — `assets/` is
+shared and written once, and a second copy beside the `.md` would double every photo on disk for
+a link. The path scheme is the blob driver's, so the renderer is handed that driver's `pathFor`
+at wiring time and is told which directory it is writing into; the mirror learns no second layout.
+Two things follow and are accepted: a blob file has no extension, so a viewer that guesses by
+suffix will not preview it, and the alt text carries the **filename** — the only place in the
+readable file that says what the bytes were called.
+
 **Frontmatter is the driver's, not the renderer's.** The driver emits a fixed block from the
 record — identity, capture time and source, tags, and the provenance relations of
 [standards.md](../standards.md#identity--provenance-the-cross-app-glue) — and the renderer

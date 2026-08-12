@@ -50,6 +50,15 @@ describe("the example config", () => {
           properties: { text: { type: "string", minLength: 1 } },
         },
       },
+      {
+        name: "image",
+        requiredSlots: ["image"],
+        contentSchema: {
+          type: "object",
+          additionalProperties: false,
+          properties: { caption: { type: "string" } },
+        },
+      },
     ]);
   });
 });

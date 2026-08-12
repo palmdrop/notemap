@@ -17,7 +17,7 @@ import {
   type Timestamp,
 } from "@notemap/core";
 
-import { RENDERERS } from "./mirror/renderers";
+import { renderersFor } from "./mirror/renderers";
 
 export const systemClock: Clock = {
   now: () => new Date().toISOString() as Timestamp,
@@ -57,7 +57,9 @@ export function openPool(options: OpenPoolConfig): OpenPool {
       ? undefined
       : createFilesystemMirrorWriter({
           root: options.mirrorRoot,
-          renderers: RENDERERS,
+          // The blob layout is the blob driver's, so a rendering that points at
+          // one asks rather than composing a second copy of the scheme.
+          renderers: renderersFor(blobs.pathFor),
         });
 
   const store = createSqlitePoolStore({

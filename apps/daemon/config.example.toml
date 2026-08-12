@@ -64,3 +64,17 @@ additionalProperties = false
 [payloadTypes.contentSchema.properties.text]
 type = "string"
 minLength = 1
+
+# The first type with a required slot: a capture of this type that names no
+# asset in `image` is refused, and the bytes go up in their own request first.
+# The caption is optional, and the whole of the content.
+[[payloadTypes]]
+name = "image"
+requiredSlots = ["image"]
+
+[payloadTypes.contentSchema]
+type = "object"
+additionalProperties = false
+
+[payloadTypes.contentSchema.properties.caption]
+type = "string"

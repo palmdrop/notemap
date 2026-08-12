@@ -262,24 +262,32 @@ New package `packages/adapters/blob-fs`, following the conventions `mirror-fs` s
 
 ### Phase 7 — Images *(depends on phase 6)*
 
-- [ ] An `image` payload type in `config.example.toml`: an optional caption in the content, one
+- [x] An `image` payload type in `config.example.toml`: an optional caption in the content, one
       required asset slot. The first configured type with a required slot, so also the first
       exercise of `missing-asset-slot`
-- [ ] A mirror renderer for it, emitting a markdown image whose target is the blob's own path,
+- [x] A mirror renderer for it, emitting a markdown image whose target is the blob's own path,
       relative to the record. The path scheme is the blob driver's, so the driver's `pathFor` is
       handed to the renderer at wiring time rather than the mirror learning a second layout.
       Accepted: a blob file has no extension, and the alt text carries the filename so a person
-      reading the `.md` without notemap can still find and name the bytes
-- [ ] The capture page: pick a file, upload it, capture referencing it, show the images in the feed.
+      reading the `.md` without notemap can still find and name the bytes. `Renderer` gains a
+      second argument — the directory it is writing into — since only the driver knows what a link
+      out of the mirror is relative to
+- [x] The capture page: pick a file, upload it, capture referencing it, show the images in the feed.
       Full size — a thumbnail endpoint is deliberately not built
-- [ ] Verify the assumption D3 rests on: that `Content-Disposition` is a navigation-level directive
-      and a subresource `<img src>` renders an attachment-disposition response anyway. If it does
-      not hold, the fallback is an explicit inline flag on the URL for types the page embeds
-- [ ] Tests: capturing an image leaves a record naming the asset and a rendering pointing at a file
+- [ ] **Not verified**: the assumption D3 rests on — that `Content-Disposition` is a
+      navigation-level directive and a subresource `<img src>` renders an attachment-disposition
+      response anyway. Nothing here can drive a browser. It is also **not load-bearing for this
+      slice**: every raster image type is on the inline allowlist, so the capture page never
+      depends on it. The one case that would is an uploaded **SVG**, which is served `attachment`
+      deliberately. If the assumption fails, an SVG shows as a broken image in the feed and
+      nothing else breaks; the fallback stays as written — an explicit inline flag on the URL for
+      types the page embeds
+- [x] Tests: capturing an image leaves a record naming the asset and a rendering pointing at a file
       that exists; the same item rendered from another timezone resolves to that same file; a
       capture missing the required slot is refused
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint`, and upload one through the capture page
-- [ ] `git commit`
+- [x] Verify: `pnpm typecheck && pnpm test && pnpm lint`. **Not done**: uploading one through the
+      capture page by hand, for the same reason — no browser here
+- [x] `git commit`
 
 ### Phase 8 — End to end *(depends on phase 7)*
 

@@ -10,10 +10,22 @@ export type Rendering = {
 };
 
 /**
+ * Where this rendering is about to be written. A renderer that points at
+ * something outside the mirror — a blob, whose layout is the blob driver's —
+ * needs somewhere to be relative to, and only the driver knows it.
+ */
+export type RenderingContext = {
+  readonly directory: string;
+};
+
+/**
  * May be as lossy and opinionated as it likes: nothing ever parses what it
  * produces, and losslessness rides entirely on the record beside it.
  */
-export type Renderer = (record: MirrorRecord) => Rendering;
+export type Renderer = (
+  record: MirrorRecord,
+  at: RenderingContext,
+) => Rendering;
 
 export type Renderers = Readonly<Partial<Record<PayloadTypeName, Renderer>>>;
 
