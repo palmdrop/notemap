@@ -1,3 +1,5 @@
+import { writeFileSync } from "node:fs";
+
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
@@ -13,10 +15,14 @@ import {
 
 const open: Daemon[] = [];
 
+function started(...args: Parameters<typeof daemon>): Daemon {
+  const host = daemon(...args);
+  open.push(host);
+  return host;
+}
+
 function serving(...args: Parameters<typeof daemon>) {
-  const started = daemon(...args);
-  open.push(started);
-  return started.app;
+  return started(...args).app;
 }
 
 afterEach(async () => {
@@ -469,27 +475,30 @@ describe("GET /v1/actions", () => {
   });
 
   it("carries the filter into next, so a filtered read pages as itself", async () => {
-    const app = serving();
-    const ids = await captureMany(app, 3);
+    const host = started(CONFIG, true);
+    const { app } = host;
 
-    // One entry per item today, so the filtered read that has a next page is
-    // the unfiltered one; what matters here is that the filter survives it.
-    const slice: LogPage = await body(
-      await app.request(`/v1/actions?limit=1&item=${ids[0]}`),
+    await post(app, envelope({ id: "item-1" }));
+    // A file where the mirror tree should be: the write fails, and the failed
+    // attempt gives one item the second entry a filtered page boundary needs.
+    writeFileSync(host.mirrorRoot, "not a directory", "utf8");
+    expect(await host.drain()).toBe(1);
+
+    await post(app, envelope({ id: "item-2" }));
+
+    const first: LogPage = await body(
+      await app.request("/v1/actions?limit=1&item=item-1"),
     );
-
-    expect(slice.values.map((entry) => entry.subject)).toEqual([ids[0]]);
-    expect(slice.next).toBeUndefined();
-
-    const unfiltered: LogPage = await body(
-      await app.request("/v1/actions?limit=1"),
-    );
-    expect(unfiltered.next).toBeDefined();
+    expect(first.values.map((entry) => entry.kind)).toEqual(["work-failed"]);
     expect(
-      new URL(unfiltered.next ?? "", "http://localhost").searchParams.get(
-        "item",
-      ),
-    ).toBeNull();
+      new URL(first.next ?? "", "http://localhost").searchParams.get("item"),
+    ).toBe("item-1");
+
+    const second: LogPage = await body(await app.request(first.next ?? ""));
+    expect(second.values).toEqual([
+      expect.objectContaining({ kind: "captured", subject: "item-1" }),
+    ]);
+    expect(second.next).toBeUndefined();
   });
 
   it("refuses a parameter the way every paginated read does", async () => {
