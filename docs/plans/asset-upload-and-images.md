@@ -176,16 +176,19 @@ gone.
 
 New package `packages/adapters/blob-fs`, following the conventions `mirror-fs` set.
 
-- [ ] Content-addressed write: hash while streaming to a temporary file in the target directory,
-      then rename to `assets/<2-char shard>/<full sha-256>`. Bytes that already exist are the same
+- [x] Content-addressed write: hash while streaming to a temporary file — in the **root**, not the
+      target directory, since the target is not known until the last byte has been hashed; both are
+      under one root, so the rename still stays within a filesystem — then rename to
+      `assets/<2-char shard>/<full sha-256>`. Bytes that already exist are the same
       bytes, so the temporary file is dropped rather than the target rewritten
-- [ ] `open`, `verify` — rehash and compare against the name — `delete`, and `pathFor`, since the
-      layout is this driver's and phase 7's renderer must name a file in it
-- [ ] Tests: two writes of one content leave one file; an interrupted write leaves no blob and no
+- [x] `open`, `verify` — rehash and compare against the name — `delete`, and `pathFor`, since the
+      layout is this driver's and phase 7's renderer must name a file in it. `pathFor` refuses
+      anything that is not a lowercase sha-256, so a hash from outside cannot compose a path
+- [x] Tests: two writes of one content leave one file; an interrupted write leaves no blob and no
       debris; `verify` reports drift after an external edit and absence after a delete; the shard
       path is stable across processes
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint`
-- [ ] `git commit`
+- [x] Verify: `pnpm typecheck && pnpm test && pnpm lint`
+- [x] `git commit`
 
 ### Phase 4 — Assets are rows *(store; depends on phase 2, parallel to phase 3)*
 

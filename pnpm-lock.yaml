@@ -272,6 +272,19 @@ importers:
         specifier: ^3.2.4
         version: 3.2.7(@types/node@24.13.3)(tsx@4.23.5)(yaml@2.9.0)
 
+  packages/adapters/blob-fs:
+    dependencies:
+      '@notemap/core':
+        specifier: workspace:*
+        version: link:../../core
+    devDependencies:
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.13.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/node@24.13.3)(tsx@4.23.5)(yaml@2.9.0)
+
   packages/adapters/mirror-fs:
     dependencies:
       '@notemap/core':
