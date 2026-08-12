@@ -80,7 +80,6 @@ const randomIds: IdGenerator = {
   next: <T extends MintableId>() => randomUUID() as T,
 };
 
-/** How an order reads in SQL: which way the rows run, and which way a position bounds them. */
 function direction(order: ReadOrder): {
   readonly sql: "ASC" | "DESC";
   readonly comparison: "<" | ">";
@@ -100,7 +99,12 @@ function bound(position: Position): Bound {
   };
 }
 
-/** The comparison that continues a read past one position, in whichever direction it runs. */
+/**
+ * The comparison that continues a read past one position, in whichever
+ * direction it runs. A row value rather than the `OR` form that spells out the
+ * same thing: SQLite seeks straight to the position on this, and scans the
+ * index from the end on that, which costs a page its offset in rows.
+ */
 function keysetClause(
   column: string,
   after: Bound,
@@ -111,8 +115,8 @@ function keysetClause(
   }
 
   return {
-    sql: `(${column} ${comparison} ? OR (${column} = ? AND id ${comparison} ?))`,
-    params: [after.at, after.at, after.id],
+    sql: `(${column}, id) ${comparison} (?, ?)`,
+    params: [after.at, after.id],
   };
 }
 
@@ -351,8 +355,6 @@ export function createSqlitePoolStore(
           const clauses: string[] = [];
           const params: Bindable[] = [];
 
-          // No check that the subject names a live item: the log outlives the
-          // material, so a purged item's entries are what this asks for.
           if (query.item !== undefined) {
             clauses.push("subject = ?");
             params.push(query.item);

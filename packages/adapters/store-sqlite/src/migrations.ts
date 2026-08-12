@@ -189,8 +189,9 @@ export const MIGRATIONS: readonly string[] = [
 
   `
   -- The log is now read from either end, and its keyset compares \`(at, id)\`.
-  -- An index on \`at\` alone leaves the tie-break to a sort of everything sharing
-  -- an instant, which is every entry a single transaction appended.
+  -- An index on \`at\` alone cannot answer that comparison: a read seeks on the
+  -- prefix and then sorts every entry sharing an instant, which is every entry
+  -- a single transaction appended.
   DROP INDEX actions_subject;
   DROP INDEX actions_at;
 
