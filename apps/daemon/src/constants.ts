@@ -20,23 +20,13 @@ export const DEFAULT_RETRY = {
   maxBackoff: 60_000,
 };
 
-/**
- * A day of grace, following the same reasoning as `gc.pruneExpire`: the window
- * has to be longer than any plausible gap between an upload and the capture
- * that claims it, and nothing is paid for making it generous but disk. The
- * interval is hourly because nothing waits on a sweep — the space it frees was
- * already wasted, and the only cost of running late is that it stays wasted.
- */
+/** The grace has to outlast any plausible gap between an upload and its capture. */
 export const DEFAULT_SWEEP = {
   graceMs: 86_400_000,
   intervalMs: 3_600_000,
 };
 
-/**
- * A cap on one upload, enforced against the stream rather than against
- * `Content-Length`, which is a claim. Generous enough for a phone photo or a
- * long voice memo, and far short of "fill the disk by accident".
- */
+/** Generous enough for a phone photo or a long voice memo. */
 export const DEFAULT_MAX_UPLOAD_BYTES = 256 * 1024 * 1024;
 
 export const SHUTDOWN_GRACE_MS = 2_000;

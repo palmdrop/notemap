@@ -14,13 +14,9 @@ const renderText: Renderer = (record) => {
 };
 
 /**
- * An image, pointed at the blob itself rather than at a copy: `assets/` is
- * shared, and the mirror writes no bytes of its own. The path scheme is the
- * blob driver's, so it is asked rather than reproduced.
- *
- * Accepted, and the reason the alt text is the filename: a blob file has no
- * extension and is named for a machine, so a person reading the `.md` without
- * notemap needs the record — or this line — to learn what the bytes were called.
+ * Points at the blob itself rather than a copy: `assets/` is shared and the
+ * mirror writes no bytes of its own. The alt text is the filename because a
+ * blob file has no extension and is named for a machine.
  */
 function renderImage(pathFor: (blob: BlobHash) => string): Renderer {
   return (record, at) => {

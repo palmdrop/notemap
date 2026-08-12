@@ -65,8 +65,7 @@ export interface SchemaValidator {
 /**
  * Bytes, by the hash of their content. It holds no names and no counts: which
  * assets exist, and which items reference them, are both the pool store's, so
- * that releasing an asset moves both counts in one transaction
- * (ADR 16).
+ * that releasing an asset moves both counts in one transaction.
  */
 export interface BlobStore {
   /** Hashes what it is given, and answers what it turned out to be. Storing the same bytes twice is one blob. */
@@ -233,8 +232,8 @@ export interface PoolStore extends PoolReads {
  * resolve on `PoolTx` — those mean nothing outside the transaction that caused
  * the work, and so can never live anywhere but the store.
  *
- * A driver may implement this and `PoolStore` as one object, and the SQLite one
- * does. The split says which half would have to move to run the queue
+ * A driver may implement this and `PoolStore` as one object, and every driver
+ * so far does. The split says which half would have to move to run the queue
  * elsewhere, not that it already has.
  */
 export interface WorkQueue {

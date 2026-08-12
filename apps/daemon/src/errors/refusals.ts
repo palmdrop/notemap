@@ -29,6 +29,7 @@ export const BODY_STATUS = {
  */
 export const UPLOAD_STATUS = {
   "missing-filename": 422,
+  "bad-digest": 422,
   "digest-mismatch": 422,
   "asset-too-large": 413,
 } as const;

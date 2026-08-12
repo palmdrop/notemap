@@ -283,14 +283,12 @@ describe("the blobs on disk", () => {
   it("accepts a stream that arrives in pieces", async () => {
     const { pool: p } = pool();
 
-    const result = await p.assets.store(
+    const asset = await p.assets.store(
       streamOf(bytes("one "), bytes("two ")),
       { filename: "counted.txt", mime: "text/plain" },
     );
 
-    expect(result.kind).toBe("ok");
-    if (result.kind !== "ok") return;
-    expect(result.value.bytes).toBe(8);
+    expect(asset.bytes).toBe(8);
   });
 });
 

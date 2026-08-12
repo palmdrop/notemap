@@ -1029,6 +1029,7 @@
                           "type": "string",
                           "enum": [
                             "missing-filename",
+                            "bad-digest",
                             "digest-mismatch"
                           ]
                         }

@@ -234,8 +234,10 @@
         for (const item of items) {
           const li = document.createElement("li");
 
-          // Full size: a thumbnail endpoint is deliberately not built.
-          for (const ref of item.payload?.assets ?? []) {
+          // Full size: a thumbnail endpoint is deliberately not built. Only
+          // `image` captures: another type's slot may hold anything at all.
+          const refs = item.payload?.type === IMAGE ? item.payload.assets : [];
+          for (const ref of refs ?? []) {
             const image = document.createElement("img");
             image.src = `/v1/assets/${encodeURIComponent(ref.asset)}/content`;
             image.alt = "";

@@ -24,6 +24,7 @@ export type DaemonRefusal =
     }
   | { readonly kind: "bad-position"; readonly after: string }
   | { readonly kind: "missing-filename" }
+  | { readonly kind: "bad-digest"; readonly digest: string }
   | {
       readonly kind: "digest-mismatch";
       readonly expected: string;

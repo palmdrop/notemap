@@ -118,7 +118,7 @@ async function* chunks(
 ): AsyncGenerator<Uint8Array> {
   const handle = await open(path, "r");
   try {
-    for (;;) {
+    while (true) {
       signal?.throwIfAborted();
       const buffer = new Uint8Array(CHUNK);
       const { bytesRead } = await handle.read(buffer, 0, CHUNK);

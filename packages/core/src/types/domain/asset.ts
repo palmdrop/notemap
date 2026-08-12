@@ -21,20 +21,11 @@ export type StoredBlob = {
   readonly bytes: number;
 };
 
-/**
- * How long an unreferenced asset is left alone before a sweep may take it. To a
- * sweep running at the wrong instant, "referenced" and "about to be referenced"
- * look identical.
- */
+/** How long an unreferenced asset is left alone before a sweep may take it. */
 export type SweepPolicy = {
   readonly grace: Duration;
 };
 
-/**
- * No hash: with server-minted asset ids it was the client copying back a number
- * the server handed it, and a corrupted blob is invisible to it because the row
- * and the reference agree.
- */
 export type AssetRef = {
   readonly slot: string;
   readonly asset: AssetId;

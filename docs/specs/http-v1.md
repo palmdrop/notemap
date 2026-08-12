@@ -258,6 +258,11 @@ when that capture commits, so an upload no capture ever claims is swept
   algorithm is **ignored**, which is what RFC 9530 asks of a recipient that does not support one.
   A mismatch is `422 digest-mismatch` and stores no asset. Absent, the upload proceeds — the
   daemon still hashes, it simply has nothing to compare against.
+- **A `sha-256` entry that cannot be read is refused, not ignored** — `422 bad-digest`, carrying
+  the header as sent. The RFC's licence to ignore covers an algorithm the recipient does not
+  support, not a supported one whose value is malformed: the value must be a byte sequence,
+  `sha-256=:<32 base64 bytes>:`. Ignoring it would answer `201` to a client that believes its
+  bytes were checked, which is the one outcome an integrity field must never produce.
 - **The size limit is enforced against the stream**, not against `Content-Length`, which is a
   claim. An oversized body is `413 asset-too-large` carrying `max`, and leaves no blob and no
   asset. The limit is daemon configuration: a cap is interface policy, and core is a primitive
@@ -281,6 +286,9 @@ when that capture commits, so an upload no capture ever claims is swept
   immutable`. An asset id names one blob forever, so a cached copy can never be stale.
 - `X-Content-Type-Options: nosniff` always, and
   `Content-Security-Policy: default-src 'none'; sandbox`.
+- **No `Content-Length`.** It could only come from the row, and a read never rehashes, so a blob
+  that drifted in size would advertise a length its bytes disagree with — a truncated transfer
+  where a chunked one fails honestly.
 - **Downloading does not verify.** Rehashing a blob to answer every `<img>` is not affordable, so
   `blob-drifted` cannot arise on a read; drift is what `verify` and deep mirror verification are
   for. Only two things can go wrong, and both are `404`, distinguished by code: `no-such-asset`
@@ -292,9 +300,13 @@ when that capture commits, so an upload no capture ever claims is swept
 a zip, an encrypted archive, raw binary all store and download normally.
 
 Served **`inline`**: raster images (`image/png`, `image/jpeg`, `image/gif`, `image/webp`,
-`image/avif`, `image/bmp`, `image/x-icon`), audio (`audio/mpeg`, `audio/mp4`, `audio/aac`,
-`audio/ogg`, `audio/wav`, `audio/webm`, `audio/flac`), video (`video/mp4`, `video/webm`,
-`video/ogg`), and `text/plain`.
+`image/avif`, `image/bmp`, `image/x-icon`, `image/vnd.microsoft.icon`), audio (`audio/mpeg`,
+`audio/mp4`, `audio/aac`, `audio/ogg`, `audio/wav`, `audio/x-wav`, `audio/vnd.wave`,
+`audio/webm`, `audio/flac`), video (`video/mp4`, `video/webm`, `video/ogg`), and `text/plain`.
+
+Where one format has several registered spellings — ICO and WAV both do — every spelling is
+listed. A missing one is fail-closed, and so downloads rather than rendering, but it is still
+wrong: the media type is the uploader's and notemap does not normalise it.
 
 Served **`attachment`**: everything else, so a media type nobody has thought about yet downloads
 rather than executes. `text/html`, `application/xhtml+xml`, `image/svg+xml` and the XML types are
@@ -387,6 +399,7 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `bad-order` | `order`, `allowed` | daemon |
 | `422` | `bad-position` | `after` | daemon |
 | `422` | `missing-filename` | — | daemon |
+| `422` | `bad-digest` | `digest` | daemon |
 | `422` | `digest-mismatch` | `expected`, `actual` | daemon |
 | `422` | `unknown-payload-type` | `type` | core |
 | `422` | `payload-invalid` | `issues` | core |
@@ -554,11 +567,17 @@ by nothing in `/v1`, and removable without changing a promise this spec makes.
   `Content-Type` is `415`; neither stores anything.
 - An upload whose `Repr-Digest` disagrees with the bytes received is `422 digest-mismatch` and
   stores nothing.
+- A `Repr-Digest` whose `sha-256` value is unreadable — not base64, the wrong length, or missing
+  the byte-sequence colons — is `422 bad-digest` and stores nothing, where one naming only an
+  algorithm notemap does not compute is ignored and the upload succeeds.
 - A body over the configured limit is `413 asset-too-large` and leaves no blob behind, whatever
   `Content-Length` claimed.
 - A JSON body posted to `/v1/captures` still requires `application/json`, unaffected by the
   upload path's carve-out.
 - An uploaded `text/html` file is served `Content-Disposition: attachment`; an uploaded
   `image/png` is served `inline`. Both carry `nosniff` and the sandbox CSP.
+- Every registered spelling of a format on the allowlist is served `inline` — both ICO spellings
+  and all three WAV ones.
+- No asset content response carries a `Content-Length`.
 - `GET /v1/assets/:id` for an id the pool does not hold is `404 no-such-asset`; an asset whose
   blob has been deleted from disk is `404 blob-missing` on its content.

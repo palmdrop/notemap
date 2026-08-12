@@ -98,7 +98,8 @@ _Avoid_: object, binary, content
 The periodic release of assets no item ever referenced, together with the blobs that lose their
 last asset. Its subject is the upload whose capture never arrived, so it waits out a grace window
 first: to a sweep running at the wrong instant, "referenced" and "about to be referenced" look
-identical. Purge is what releases an asset whose items *went*; the two never overlap.
+identical. Purge is what releases an asset whose items *went*; the two never overlap. It reaches
+blobs only through the assets that name one, so bytes no asset ever named are deep verify's.
 _Avoid_: garbage collection, cleanup, prune, reap
 
 ### Processing

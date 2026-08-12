@@ -1,10 +1,7 @@
 /**
- * By inertness, not by image-ness. Anything may be uploaded; the list decides
- * only whether a browser is allowed to render it in place, so a media type
- * nobody has thought about yet downloads rather than executes.
- *
- * `text/plain` is on it and `image/svg+xml` is not, which is the whole point:
- * SVG is a document with a script element.
+ * By inertness, not by image-ness: anything absent from this list downloads
+ * rather than rendering, so a media type nobody has considered yet cannot
+ * execute. `image/svg+xml` is deliberately not on it.
  */
 const INLINE = new Set([
   "image/png",
@@ -14,11 +11,14 @@ const INLINE = new Set([
   "image/avif",
   "image/bmp",
   "image/x-icon",
+  "image/vnd.microsoft.icon",
   "audio/mpeg",
   "audio/mp4",
   "audio/aac",
   "audio/ogg",
   "audio/wav",
+  "audio/x-wav",
+  "audio/vnd.wave",
   "audio/webm",
   "audio/flac",
   "video/mp4",

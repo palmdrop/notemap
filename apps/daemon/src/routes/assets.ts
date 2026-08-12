@@ -1,32 +1,19 @@
-import { createHash } from "node:crypto";
-
 import type { Context } from "hono";
 
-import type { AssetId, Pool } from "@notemap/core";
+import type { Asset, AssetId, Pool } from "@notemap/core";
 
 import {
   contentDisposition,
   filenameFrom,
 } from "../assets/content-disposition";
 import { dispositionFor } from "../assets/disposition";
+import { claimedDigest } from "../assets/repr-digest";
+import { guarded, type UploadLimits } from "../assets/upload";
 import { assetStatus, errorBody } from "../errors/refusals";
+import { RefusedUpload } from "../errors/refused-upload";
 import { json, refuse } from "../utils/responses";
-import type { DaemonRefusal } from "../types";
 
-export type UploadLimits = {
-  readonly maxUploadBytes: number;
-};
-
-/** Thrown out of the body stream, so an upload that is refused mid-flight stores nothing. */
-class RefusedUpload extends Error {
-  readonly refusal: DaemonRefusal;
-
-  constructor(refusal: DaemonRefusal) {
-    super(refusal.kind);
-    this.name = "RefusedUpload";
-    this.refusal = refusal;
-  }
-}
+export type { UploadLimits };
 
 export function assetUploadHandler(pool: Pool, limits: UploadLimits) {
   return async (context: Context): Promise<Response> => {
@@ -38,12 +25,20 @@ export function assetUploadHandler(pool: Pool, limits: UploadLimits) {
     const filename = filenameFrom(context.req.header("content-disposition"));
     if (filename === undefined) return refuse({ kind: "missing-filename" });
 
-    const claimed = sha256From(context.req.header("repr-digest"));
+    const header = context.req.header("repr-digest");
+    const claimed = claimedDigest(header);
+    if (claimed.kind === "unreadable") {
+      return refuse({ kind: "bad-digest", digest: header ?? "" });
+    }
 
-    let result;
+    let asset: Asset;
     try {
-      result = await pool.assets.store(
-        guarded(context.req.raw.body, limits.maxUploadBytes, claimed),
+      asset = await pool.assets.store(
+        guarded(
+          context.req.raw.body,
+          limits.maxUploadBytes,
+          claimed.kind === "sha-256" ? claimed.hex : undefined,
+        ),
         { filename, mime },
       );
     } catch (cause) {
@@ -51,12 +46,8 @@ export function assetUploadHandler(pool: Pool, limits: UploadLimits) {
       throw cause;
     }
 
-    if (result.kind === "refused") {
-      return json(errorBody(result.refusal), assetStatus(result.refusal));
-    }
-
-    return json(result.value, 201, {
-      location: `/v1/assets/${encodeURIComponent(result.value.id)}`,
+    return json(asset, 201, {
+      location: `/v1/assets/${encodeURIComponent(asset.id)}`,
     });
   };
 }
@@ -85,11 +76,13 @@ export function assetContentHandler(pool: Pool) {
       return json(errorBody(opened.refusal), assetStatus(opened.refusal));
     }
 
+    // No `Content-Length`: it would come from the row, and a read never rehashes,
+    // so a blob that drifted in size would advertise a length its bytes disagree
+    // with — a truncated transfer, where a chunked one fails honestly.
     return new Response(webStream(opened.value), {
       status: 200,
       headers: {
         "content-type": asset.mime,
-        "content-length": String(asset.bytes),
         "content-disposition": contentDisposition(
           dispositionFor(asset.mime),
           asset.filename,
@@ -102,62 +95,6 @@ export function assetContentHandler(pool: Pool) {
       },
     });
   };
-}
-
-/**
- * The size limit is checked against the bytes as they arrive rather than
- * against `Content-Length`, which is a claim, and the digest at the end, before
- * the blob store renames anything into place — so a refused upload leaves no
- * blob and no asset.
- */
-async function* guarded(
-  body: ReadableStream<Uint8Array> | null,
-  max: number,
-  claimed: string | undefined,
-): AsyncGenerator<Uint8Array> {
-  const digest = createHash("sha256");
-  let size = 0;
-
-  if (body !== null) {
-    const reader = body.getReader();
-    try {
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        size += value.byteLength;
-        if (size > max) {
-          throw new RefusedUpload({ kind: "asset-too-large", max });
-        }
-
-        digest.update(value);
-        yield value;
-      }
-    } finally {
-      reader.releaseLock();
-    }
-  }
-
-  const actual = digest.digest("hex");
-  if (claimed !== undefined && claimed !== actual) {
-    throw new RefusedUpload({
-      kind: "digest-mismatch",
-      expected: claimed,
-      actual,
-    });
-  }
-}
-
-/**
- * RFC 9530, as hex. An entry naming any other algorithm is ignored, which is
- * what the RFC asks of a recipient that supports none of the ones offered.
- */
-function sha256From(header: string | undefined): string | undefined {
-  const encoded = /(?:^|,)\s*sha-256\s*=\s*:([^:]*):/i.exec(header ?? "")?.[1];
-  if (encoded === undefined) return undefined;
-
-  const decoded = Buffer.from(encoded, "base64");
-  return decoded.byteLength === 32 ? decoded.toString("hex") : undefined;
 }
 
 function webStream(

@@ -255,17 +255,13 @@ export async function collect(
 }
 
 /** Uploads content under a name, and answers the asset that names it. */
-export async function upload(
+export function upload(
   pool: Pool,
   filename: string,
   content: Uint8Array,
   mime = "image/png",
 ): Promise<Asset> {
-  const result = await pool.assets.store(streamOf(content), { filename, mime });
-  if (result.kind === "refused") {
-    throw new Error(`upload refused: ${JSON.stringify(result.refusal)}`);
-  }
-  return result.value;
+  return pool.assets.store(streamOf(content), { filename, mime });
 }
 
 export async function filesUnder(root: string): Promise<string[]> {
@@ -296,7 +292,7 @@ export function drainWith(
     const attempted = new Set<string>();
     let resolved = 0;
 
-    for (;;) {
+    while (true) {
       const leases = await harnessed.pool.work.claim({
         kinds: ["mirror", "mirror-remove"],
         limit: 16,

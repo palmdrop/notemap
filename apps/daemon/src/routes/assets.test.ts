@@ -202,6 +202,30 @@ describe("POST /v1/assets", () => {
     expect(response.status).toBe(201);
   });
 
+  it.each([
+    ["not base64 at all", "sha-256=:!!!!:"],
+    ["too few bytes to be a sha-256", "sha-256=:YWJj:"],
+    ["missing the byte-sequence colons", "sha-256=YWJj"],
+    ["empty", "sha-256=::"],
+  ])("refuses a sha-256 digest that is %s", async (_case, header) => {
+    const started = host();
+
+    const response = await put(started.app, "a picture", {
+      "content-type": "image/png",
+      "content-disposition": attachment("photo.png"),
+      "repr-digest": header,
+    });
+
+    expect(response.status).toBe(422);
+    const body = (await response.json()) as ErrorResponse;
+    expect(body.error.code).toBe("bad-digest");
+    expect(
+      await started.blobs.verify(
+        createHash("sha256").update("a picture").digest("hex") as never,
+      ),
+    ).toBe("missing");
+  });
+
   it("refuses a body over the limit, and leaves no blob behind", async () => {
     const started = host({ maxUploadBytes: 8 });
 
@@ -287,7 +311,6 @@ describe("GET /v1/assets/{id}/content", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe("image/png");
-    expect(response.headers.get("content-length")).toBe("9");
     expect(response.headers.get("etag")).toBe(`"${asset.blob}"`);
     expect(response.headers.get("cache-control")).toBe(
       "private, max-age=31536000, immutable",
@@ -330,6 +353,43 @@ describe("GET /v1/assets/{id}/content", () => {
 
     expect(await served(image.id)).toContain("inline");
     expect(await served(page.id)).toContain("attachment");
+  });
+
+  it.each([
+    ["image/x-icon", "favicon.ico"],
+    ["image/vnd.microsoft.icon", "favicon.ico"],
+    ["audio/wav", "memo.wav"],
+    ["audio/x-wav", "memo.wav"],
+    ["audio/vnd.wave", "memo.wav"],
+  ])("renders %s in place, whichever spelling it arrives under", async (
+    mime,
+    filename,
+  ) => {
+    const started = host();
+    const asset = await upload(started, "some bytes", {
+      "content-type": mime,
+      "content-disposition": attachment(filename),
+    });
+
+    const response = await started.app.request(
+      `/v1/assets/${asset.id}/content`,
+    );
+    expect(response.headers.get("content-disposition")).toContain("inline");
+  });
+
+  it("sends no Content-Length, so a drifted blob cannot truncate a transfer", async () => {
+    const started = host();
+    const asset = await upload(started, "a picture", {
+      "content-type": "image/png",
+      "content-disposition": attachment("photo.png"),
+    });
+
+    const response = await started.app.request(
+      `/v1/assets/${asset.id}/content`,
+    );
+
+    expect(response.headers.get("content-length")).toBeNull();
+    expect(await response.text()).toBe("a picture");
   });
 
   it("makes SVG a download, and a media type nobody thought about too", async () => {

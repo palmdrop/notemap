@@ -9,16 +9,12 @@ import type {
 
 /**
  * How many assets one run takes. The store holds a write lock for the length of
- * a transaction, so a pool that has accumulated thousands of orphans gives them
- * up over several runs rather than stalling every write for one.
+ * a transaction, so a large backlog is given up over several runs rather than
+ * stalling every write for one.
  */
 const PER_RUN = 500;
 
 /**
- * Assets no item ever referenced, and the blobs that lose their last asset with
- * them. The subject is the upload whose capture never arrived; an asset whose
- * items *went* is purge's, and purge is not built.
- *
  * The list is read inside the transaction that deletes it. Read outside, a
  * capture arriving in between would make the delete fail against the foreign
  * key and take the whole run with it.
@@ -40,8 +36,8 @@ export async function sweepUnreferencedAssets(
 
     const blobs = await tx.deleteAssets(assets);
 
-    // One entry per run, not per asset: a sweep taking four hundred orphans
-    // must not bury the log it shares with captures.
+    // One entry per run, not per asset: a large sweep must not bury the log it
+    // shares with captures.
     await tx.appendAction({
       id: ports.ids.next<ActionId>(),
       kind: "assets-released",

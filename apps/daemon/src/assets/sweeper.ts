@@ -27,6 +27,10 @@ export function startSweeper(
   let stopped = false;
 
   function run(): Promise<readonly AssetId[]> {
+    // Stopping is what the host does before closing the pool, so a run started
+    // afterwards would reach a store that has gone.
+    if (stopped) return Promise.resolve([]);
+
     inFlight ??= pool.maintenance.sweepUnreferencedAssets().finally(() => {
       inFlight = undefined;
     });
@@ -34,7 +38,6 @@ export function startSweeper(
   }
 
   timer = setInterval(() => {
-    if (stopped) return;
     void run().catch(onError);
   }, config.intervalMs);
   timer.unref?.();

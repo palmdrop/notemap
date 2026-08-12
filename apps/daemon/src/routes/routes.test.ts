@@ -296,7 +296,7 @@ describe("GET /v1/feed", () => {
     let url = "/v1/feed?limit=2&order=oldest-first";
     let pages = 0;
 
-    for (;;) {
+    while (true) {
       const slice: { values: { id: string }[]; next?: string } = await body(
         await app.request(url),
       );

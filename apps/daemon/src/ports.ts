@@ -38,10 +38,9 @@ export type OpenPoolConfig = {
 };
 
 /**
- * The pool, and the two drivers the host keeps a handle on. The mirror writer,
- * because the host is what drives it: core records that a write is owed and
- * never performs one. The blob store, because its layout is its own and a
- * rendering that points at a blob has to ask it where one is.
+ * The pool, and the two drivers the host keeps a handle on: it drives the
+ * mirror writer itself, and the blob store owns the layout a rendering has to
+ * ask about.
  */
 export type OpenPool = {
   readonly pool: Pool;

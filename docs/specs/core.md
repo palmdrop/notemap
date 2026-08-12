@@ -210,6 +210,12 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   opposite, and appends a single `assets-released` per run — by agent `notemap`, since nobody
   asked for it — rather than one per asset. A sweep collecting four hundred orphans must not
   bury the log it shares with captures.
+- **The sweep reaches assets, and blobs only through them.** `assets.store` writes the bytes
+  before the transaction that mints the row, so a crash between the two leaves a blob no asset
+  ever named — and the sweep enumerates the `assets` table, so nothing it does will ever find
+  one. The same is true of a driver's own debris, such as a temporary file left by a killed
+  write. Both are space rather than loss, and both are **deep verify's** to reclaim, not the
+  sweep's; until that exists, the only thing that reuses those bytes is an identical upload.
 - Purge leaves a record of the identity and time of the deletion, and nothing else, so that
   anything holding a copy learns it is gone. That record is itself removed after a retention
   window.

@@ -8,13 +8,14 @@ import type { Result } from "../types/result";
 /**
  * The bytes are written before the transaction opens, so nothing awaits a disk
  * while the store holds its write lock. A crash between the two leaves a blob
- * no asset names — space, which the next identical upload reuses.
+ * no asset names — space, which no sweep reclaims and the next identical upload
+ * reuses.
  */
 export async function store(
   ports: PoolPorts,
   bytes: AsyncIterable<Uint8Array>,
   meta: AssetMeta,
-): Promise<Result<Asset, AssetRefusal>> {
+): Promise<Asset> {
   const blob = await ports.blobs.put(bytes);
 
   const asset: Asset = {
@@ -27,7 +28,7 @@ export async function store(
 
   await ports.store.transaction((tx) => tx.insertAsset(asset));
 
-  return ok(asset);
+  return asset;
 }
 
 export function get(ports: PoolPorts, id: AssetId): Promise<Asset | undefined> {

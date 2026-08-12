@@ -91,11 +91,6 @@ export type DeliveryRefusal = PreparationRefusal | AttemptFailure;
 
 export type RoutingRefusal = SubjectRefusal;
 
-/**
- * No `blob-drifted`: reading does not rehash, so drift cannot be discovered on
- * the path that would refuse. `verify` is what reports it, and answers an
- * integrity rather than a refusal.
- */
 export type AssetRefusal =
   | { readonly kind: "no-such-asset"; readonly asset: AssetId }
   | { readonly kind: "blob-missing"; readonly blob: BlobHash };
