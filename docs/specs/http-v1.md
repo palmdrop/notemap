@@ -4,13 +4,20 @@
 **Last updated**: 2026-08-12
 **Shipped**:
 
+- 2026-08-12 — **Assets are transferable.** `POST /v1/assets` takes the bytes raw under a required
+  media type and filename, checks an optional `Repr-Digest` against what it received, and enforces
+  a configured size limit against the stream. `GET /v1/assets/:id` answers the asset and
+  `/content` the bytes — served honestly, with `nosniff`, a sandbox CSP, the blob hash as `ETag`
+  and an immutable cache, and `inline` only for media that cannot execute. `asset-hash-mismatch`
+  left the refusal table; `no-such-asset`, `blob-missing`, `asset-too-large`, `missing-filename`
+  and `digest-mismatch` joined it. What none of this defends is now written down in
+  [security.md](security.md). ([plan](../plans/asset-upload-and-images.md))
 - 2026-08-12 — The action log is served: `GET /v1/actions`, newest first by default, paginated by
   position and narrowable with `item` — which is never validated, since the log outlives what it
   describes and an id no item has is an empty page rather than a `404`. The order, limit and
   position parsing is shared with the feed, and `next` carries whatever a surface pages by. A
   page at `/log` renders it, on the same host-surface terms as `/docs`.
   ([plan](../plans/action-log-feed.md))
-
 - 2026-08-10 — The document is served with something that reads it: an OpenAPI playground at
   `/docs`, Swagger UI vendored out of `swagger-ui-dist` by the daemon's build step and pointed
   at `/v1/openapi.json`. Host surface, outside the contract and absent from the document.

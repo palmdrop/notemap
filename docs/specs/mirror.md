@@ -4,6 +4,13 @@
 **Last updated**: 2026-08-12
 **Shipped**:
 
+- 2026-08-12 — **`assets/` is real, and a rendering can point into it.** A local filesystem blob
+  store (`@notemap/blob-fs`) writes content-addressed blobs under `assets/<2-char shard>/<sha-256>`,
+  and the daemon wires it. A record can no longer fail to be made: references resolve against rows
+  in the same pool, so `asset-missing` left the non-retryable list. A renderer is now told which
+  directory it is writing into and may be handed the blob driver's `pathFor`, which is how the
+  `image` type emits a markdown image pointing at the blob itself rather than at a copy.
+  ([plan](../plans/asset-upload-and-images.md))
 - 2026-08-12 — **Frontmatter strings are single-quoted.** The YAML library is now `js-yaml`,
   which ships ESM: `yaml` is CommonJS on node, and the `require("process")` inside it survived
   into the daemon's ESM bundle as a call that throws on load. Values are still quoted without

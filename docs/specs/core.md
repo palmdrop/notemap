@@ -22,6 +22,15 @@
   leasing, and the abandoned-work surface — is a **`WorkQueue`** port separate from `PoolStore`;
   enqueue and resolve stay on the transaction handle, where they have to be.
   ([plan](../plans/mirror-writer-first-slice.md))
+- 2026-08-12 — **Media works end to end.** An asset is now pool state rather than a port's
+  private bookkeeping, and the port beneath it narrowed to a blob store keyed by hash
+  ([ADR 16](../adr/0016-the-asset-registry-is-pool-state.md)). `assets.store`, `get`, `open` and
+  `verify` are built; capture resolves every reference as a read inside its transaction and
+  refuses `unknown-asset`; and `maintenance.sweepUnreferencedAssets` releases assets no item ever
+  referenced, after a grace window core is given as configuration, taking each blob that loses its
+  last asset with them. A payload's asset reference no longer carries a blob hash — with
+  server-minted ids it was the client copying back a number it had just been handed.
+  ([plan](../plans/asset-upload-and-images.md))
 - 2026-08-12 — **The action log is stated, and readable.** It has been half-built since the
   capture slice; what it guarantees is now written down rather than implied, and it reads newest
   first by default, ordered and paginated by position and narrowable to one subject. A subject

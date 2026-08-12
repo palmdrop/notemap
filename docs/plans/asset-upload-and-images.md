@@ -1,7 +1,7 @@
 # Asset upload and images
 
 **Date**: 2026-08-11
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/mirror.md`, `docs/specs/security.md`
 **Closed**:
 
@@ -291,12 +291,14 @@ New package `packages/adapters/blob-fs`, following the conventions `mirror-fs` s
 
 ### Phase 8 — End to end *(depends on phase 7)*
 
-- [ ] Integration tests in `tests/integration/`: upload → capture → drain the mirror queue → pool,
+- [x] Integration tests in `tests/integration/`: upload → capture → drain the mirror queue → pool,
       blob and mirror pair all agree; an upload whose capture never arrives is gone after a sweep
       with the grace wound back, and its blob with it; two items sharing an asset both keep it when
-      one is swept against
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint` from a clean checkout
-- [ ] `git commit`
+      one is swept against. The window is `stored_at < now - grace` **strictly**, so even a zero
+      grace needs the clock to have moved — an asset stored this instant is not older than this
+      instant
+- [x] Verify: `pnpm typecheck && pnpm test && pnpm lint` from a clean checkout
+- [x] `git commit`
 
 ---
 

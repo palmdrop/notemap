@@ -4,6 +4,12 @@
 **Last updated**: 2026-08-12
 **Shipped**:
 
+- 2026-08-12 — This document, written alongside the slice that made it necessary: uploaded bytes
+  now live on the daemon's own origin. The controls it describes ship with it — the inert
+  allowlist deciding `inline` versus `attachment`, `nosniff` and `default-src 'none'; sandbox` on
+  every asset response, and the upload size limit.
+  ([plan](../plans/asset-upload-and-images.md))
+
 ---
 
 ## Outcome

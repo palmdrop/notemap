@@ -1,9 +1,12 @@
 import { mkdtempSync, rmSync } from "node:fs";
+import { readdir, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
+  asWorkOutcome,
   createPool,
+  parseMirrorRecord,
   type Asset,
   type AssetId,
   type CaptureEnvelope,
@@ -12,6 +15,7 @@ import {
   type IdGenerator,
   type MintableId,
   type ItemId,
+  type MirrorRecord,
   type MirrorWriter,
   type PayloadTypeName,
   type Pool,
@@ -262,4 +266,71 @@ export async function upload(
     throw new Error(`upload refused: ${JSON.stringify(result.refusal)}`);
   }
   return result.value;
+}
+
+export async function filesUnder(root: string): Promise<string[]> {
+  try {
+    const entries = await readdir(root, {
+      recursive: true,
+      withFileTypes: true,
+    });
+    return entries
+      .filter((entry) => entry.isFile())
+      .map((entry) => join(entry.parentPath, entry.name))
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * What the daemon's runner does, in one function: claim, write, report. The
+ * runner itself belongs to the daemon, and this exercises the same path over
+ * the real store and the real driver without one.
+ */
+export function drainWith(
+  harnessed: Harness,
+  writer = createFilesystemMirrorWriter({ root: harnessed.mirrorRoot }),
+) {
+  return async (): Promise<number> => {
+    const attempted = new Set<string>();
+    let resolved = 0;
+
+    for (;;) {
+      const leases = await harnessed.pool.work.claim({
+        kinds: ["mirror", "mirror-remove"],
+        limit: 16,
+        leaseFor: 60_000 as Duration,
+      });
+
+      const fresh = leases.filter((lease) => !attempted.has(lease.job.id));
+      for (const lease of leases) {
+        if (!fresh.includes(lease)) await harnessed.pool.work.release(lease.id);
+      }
+      if (fresh.length === 0) return resolved;
+
+      for (const lease of fresh) {
+        attempted.add(lease.job.id);
+        let outcome;
+        try {
+          const record = await harnessed.pool.mirror.recordFor(
+            lease.job.subject,
+          );
+          if (record !== undefined) await writer.write(record);
+          outcome = { kind: "succeeded" } as const;
+        } catch (cause) {
+          outcome = asWorkOutcome(cause);
+        }
+        await harnessed.pool.work.complete(lease.id, outcome);
+        resolved += 1;
+      }
+    }
+  };
+}
+
+export async function storedRecord(root: string): Promise<MirrorRecord> {
+  const files = await filesUnder(root);
+  const path = files.find((each) => each.endsWith(".json"));
+  if (path === undefined) throw new Error(`no record under ${root}`);
+  return parseMirrorRecord(await readFile(path, "utf8"));
 }
