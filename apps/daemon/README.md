@@ -6,9 +6,10 @@ wires adapters, and translates `/v1` onto the core library
 and nothing reaches the pool except through `createPool`.
 
 The surface it answers is specified in [docs/specs/http-v1.md](../../docs/specs/http-v1.md).
-Today that is the capture-and-feed subset: `POST /v1/captures`, `GET /v1/feed`,
-`GET /v1/items/:id`, plus `GET /v1/openapi.json`. It also serves two pages of its own, outside
-the contract: the capture page at `/` and an OpenAPI playground at `/docs`.
+Today that is the capture-and-feed subset plus the action log: `POST /v1/captures`,
+`GET /v1/feed`, `GET /v1/items/:id`, `GET /v1/actions`, plus `GET /v1/openapi.json`. It also
+serves three pages of its own, outside the contract: the capture page at `/`, the action log at
+`/log`, and an OpenAPI playground at `/docs`.
 
 ## Running it
 

@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>notemap — the action log</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --edge: color-mix(in oklab, currentColor 18%, transparent);
+        --dim: color-mix(in oklab, currentColor 60%, transparent);
+        --bad: light-dark(#b3261e, #f2b8b5);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0 auto;
+        padding: 2rem 1rem 4rem;
+        max-width: 52rem;
+        font:
+          16px/1.5 ui-sans-serif,
+          system-ui,
+          sans-serif;
+      }
+      header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+      h1 {
+        font-size: 1.1rem;
+        margin: 0;
+      }
+      a {
+        color: inherit;
+      }
+      .note {
+        color: var(--dim);
+        font-size: 0.8rem;
+      }
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+        font-size: 0.85rem;
+      }
+      button {
+        font: inherit;
+        font-size: 0.85rem;
+        padding: 0.3rem 0.8rem;
+        color: inherit;
+        background: transparent;
+        border: 1px solid var(--edge);
+        border-radius: 0.5rem;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      #say {
+        color: var(--dim);
+      }
+      #say.bad {
+        color: var(--bad);
+      }
+      ol {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 1px;
+        background: var(--edge);
+        border: 1px solid var(--edge);
+        border-radius: 0.5rem;
+        overflow: hidden;
+      }
+      li {
+        display: grid;
+        grid-template-columns: 11rem 1fr;
+        gap: 0.25rem 1rem;
+        padding: 0.6rem 0.75rem;
+        background: Canvas;
+      }
+      time {
+        font-size: 0.8rem;
+        color: var(--dim);
+        font-variant-numeric: tabular-nums;
+      }
+      .kind {
+        font-weight: 600;
+      }
+      .by,
+      .subject,
+      .detail {
+        grid-column: 2;
+        font-size: 0.8rem;
+        color: var(--dim);
+        overflow-wrap: anywhere;
+      }
+      .detail {
+        font-family: ui-monospace, monospace;
+      }
+      .empty {
+        display: block;
+        padding: 2rem 0.75rem;
+        text-align: center;
+        color: var(--dim);
+      }
+      #more {
+        margin-top: 1rem;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>the action log</h1>
+      <span class="note"
+        ><a href="/">capture</a> &middot; <a href="/docs">api</a></span
+      >
+    </header>
+
+    <div class="controls">
+      <button id="flip" type="button"></button>
+      <span id="filter" hidden></span>
+      <span id="say" role="status"></span>
+    </div>
+
+    <ol id="log"></ol>
+    <button id="more" hidden>Load more</button>
+
+    <script type="module">
+      const PAGE = 25;
+
+      const log = document.getElementById("log");
+      const more = document.getElementById("more");
+      const flip = document.getElementById("flip");
+      const filter = document.getElementById("filter");
+      const say = document.getElementById("say");
+
+      const here = new URL(location.href);
+      const item = here.searchParams.get("item") ?? undefined;
+      const order =
+        here.searchParams.get("order") === "oldest-first"
+          ? "oldest-first"
+          : "newest-first";
+
+      function tell(message, bad = false) {
+        say.textContent = message;
+        say.classList.toggle("bad", bad);
+      }
+
+      function agentOf(by) {
+        switch (by?.kind) {
+          case "person":
+            return "by you";
+          case "provider":
+            return `by provider ${by.provider}`;
+          case "source":
+            return `by source ${by.source}`;
+          case "notemap":
+            return "by notemap";
+          default:
+            return "by nobody named";
+        }
+      }
+
+      function pageFor(overrides = {}) {
+        const url = new URL("/log", location.origin);
+        const wanted = { item, order, ...overrides };
+        if (wanted.item !== undefined)
+          url.searchParams.set("item", wanted.item);
+        if (wanted.order !== "newest-first") {
+          url.searchParams.set("order", wanted.order);
+        }
+        return url.pathname + url.search;
+      }
+
+      function render(entries) {
+        for (const entry of entries) {
+          const li = document.createElement("li");
+
+          const when = document.createElement("time");
+          when.dateTime = entry.at;
+          when.textContent = new Date(entry.at).toLocaleString();
+
+          const kind = document.createElement("span");
+          kind.className = "kind";
+          kind.textContent = entry.kind;
+
+          const by = document.createElement("span");
+          by.className = "by";
+          by.textContent = agentOf(entry.by);
+
+          li.append(when, kind, by);
+
+          if (entry.subject !== undefined) {
+            const subject = document.createElement("span");
+            subject.className = "subject";
+            const link = document.createElement("a");
+            link.href = pageFor({ item: entry.subject });
+            link.textContent = entry.subject;
+            subject.append("about ", link);
+            li.append(subject);
+          }
+
+          if (Object.keys(entry.detail ?? {}).length > 0) {
+            const detail = document.createElement("span");
+            detail.className = "detail";
+            detail.textContent = JSON.stringify(entry.detail);
+            li.append(detail);
+          }
+
+          log.append(li);
+        }
+      }
+
+      function first() {
+        const url = new URL("/v1/actions", location.origin);
+        url.searchParams.set("limit", String(PAGE));
+        url.searchParams.set("order", order);
+        if (item !== undefined) url.searchParams.set("item", item);
+        return url.pathname + url.search;
+      }
+
+      let next = first();
+      let seen = 0;
+
+      async function loadMore() {
+        if (!next) return;
+        more.disabled = true;
+
+        try {
+          const response = await fetch(next);
+          const slice = await response.json();
+          if (!response.ok) {
+            throw new Error(slice?.error?.code ?? "something went wrong");
+          }
+
+          render(slice.values);
+          seen += slice.values.length;
+          next = slice.next ?? null;
+          more.hidden = !next;
+
+          if (seen === 0) {
+            const empty = document.createElement("li");
+            empty.className = "empty";
+            empty.textContent =
+              item === undefined
+                ? "nothing has happened yet"
+                : "nothing recorded about that item";
+            log.append(empty);
+          }
+          tell(`${seen} shown`);
+        } catch (error) {
+          tell(`${String(error.message ?? error)} — try again`, true);
+          // The read that failed is still the next one to make, so the button
+          // has to come back whether or not it was ever shown.
+          more.hidden = false;
+        } finally {
+          more.disabled = false;
+        }
+      }
+
+      flip.textContent =
+        order === "newest-first" ? "read oldest first" : "read newest first";
+      flip.addEventListener("click", () => {
+        location.href = pageFor({
+          order: order === "newest-first" ? "oldest-first" : "newest-first",
+        });
+      });
+
+      if (item !== undefined) {
+        filter.hidden = false;
+        const clear = document.createElement("a");
+        clear.href = pageFor({ item: undefined });
+        clear.textContent = "show everything";
+        filter.append(`about ${item} — `, clear);
+      }
+
+      more.addEventListener("click", loadMore);
+      loadMore();
+    </script>
+  </body>
+</html>

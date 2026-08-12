@@ -26,5 +26,8 @@ describe("the public directory", () => {
     expect(readFileSync(join(PUBLIC_DIR, "docs.html"), "utf8")).toContain(
       "/v1/openapi.json",
     );
+    expect(readFileSync(join(PUBLIC_DIR, "log.html"), "utf8")).toContain(
+      "/v1/actions",
+    );
   });
 });

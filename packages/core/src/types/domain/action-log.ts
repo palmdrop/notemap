@@ -32,3 +32,7 @@ export type Action = {
   readonly at: Timestamp;
   readonly detail: JsonObject;
 };
+
+export type ActionQuery = {
+  readonly item?: ItemId;
+};

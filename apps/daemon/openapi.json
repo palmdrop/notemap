@@ -14,30 +14,44 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["captured"]
+                "enum": [
+                  "captured"
+                ]
               },
               "item": {
                 "$ref": "#/components/schemas/Item"
               }
             },
-            "required": ["kind", "item"]
+            "required": [
+              "kind",
+              "item"
+            ]
           },
           {
             "type": "object",
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["already-captured"]
+                "enum": [
+                  "already-captured"
+                ]
               },
               "item": {
                 "$ref": "#/components/schemas/Item"
               },
               "matchedOn": {
                 "type": "string",
-                "enum": ["id", "source"]
+                "enum": [
+                  "id",
+                  "source"
+                ]
               }
             },
-            "required": ["kind", "item", "matchedOn"]
+            "required": [
+              "kind",
+              "item",
+              "matchedOn"
+            ]
           }
         ]
       },
@@ -83,11 +97,20 @@
                       "type": "string"
                     }
                   },
-                  "required": ["slot", "asset", "hash"]
+                  "required": [
+                    "slot",
+                    "asset",
+                    "hash"
+                  ]
                 }
               }
             },
-            "required": ["type", "content", "metadata", "assets"]
+            "required": [
+              "type",
+              "content",
+              "metadata",
+              "assets"
+            ]
           },
           "tags": {
             "type": "array",
@@ -104,36 +127,50 @@
                       "properties": {
                         "kind": {
                           "type": "string",
-                          "enum": ["person"]
+                          "enum": [
+                            "person"
+                          ]
                         }
                       },
-                      "required": ["kind"]
+                      "required": [
+                        "kind"
+                      ]
                     },
                     {
                       "type": "object",
                       "properties": {
                         "kind": {
                           "type": "string",
-                          "enum": ["provider"]
+                          "enum": [
+                            "provider"
+                          ]
                         },
                         "provider": {
                           "type": "string"
                         }
                       },
-                      "required": ["kind", "provider"]
+                      "required": [
+                        "kind",
+                        "provider"
+                      ]
                     },
                     {
                       "type": "object",
                       "properties": {
                         "kind": {
                           "type": "string",
-                          "enum": ["source"]
+                          "enum": [
+                            "source"
+                          ]
                         },
                         "source": {
                           "type": "string"
                         }
                       },
-                      "required": ["kind", "source"]
+                      "required": [
+                        "kind",
+                        "source"
+                      ]
                     }
                   ]
                 },
@@ -141,7 +178,11 @@
                   "type": "string"
                 }
               },
-              "required": ["name", "by", "addedAt"]
+              "required": [
+                "name",
+                "by",
+                "addedAt"
+              ]
             }
           },
           "createdAt": {
@@ -163,7 +204,9 @@
                 "type": "string"
               }
             },
-            "required": ["archivedAt"]
+            "required": [
+              "archivedAt"
+            ]
           },
           "modifiedAt": {
             "type": "string"
@@ -241,11 +284,20 @@
                       "type": "string"
                     }
                   },
-                  "required": ["slot", "asset", "hash"]
+                  "required": [
+                    "slot",
+                    "asset",
+                    "hash"
+                  ]
                 }
               }
             },
-            "required": ["type", "content", "metadata", "assets"]
+            "required": [
+              "type",
+              "content",
+              "metadata",
+              "assets"
+            ]
           },
           "tags": {
             "type": "array",
@@ -255,7 +307,12 @@
             }
           }
         },
-        "required": ["source", "sourceItemId", "capturedAt", "payload"],
+        "required": [
+          "source",
+          "sourceItemId",
+          "capturedAt",
+          "payload"
+        ],
         "additionalProperties": false
       },
       "FeedSlice": {
@@ -273,7 +330,126 @@
             "example": "/v1/feed?order=newest-first&limit=50&after=..."
           }
         },
-        "required": ["values"]
+        "required": [
+          "values"
+        ]
+      },
+      "ActionSlice": {
+        "type": "object",
+        "properties": {
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Action"
+            }
+          },
+          "next": {
+            "type": "string",
+            "description": "A ready-to-fetch relative URL for the next page, carrying the filter. Absent on the last page.",
+            "example": "/v1/actions?order=newest-first&limit=50&after=..."
+          }
+        },
+        "required": [
+          "values"
+        ]
+      },
+      "Action": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "by": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "notemap"
+                    ]
+                  }
+                },
+                "required": [
+                  "kind"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "person"
+                    ]
+                  }
+                },
+                "required": [
+                  "kind"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "provider"
+                    ]
+                  },
+                  "provider": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "provider"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "source"
+                    ]
+                  },
+                  "source": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "source"
+                ]
+              }
+            ]
+          },
+          "at": {
+            "type": "string",
+            "description": "When the pool applied the action, which for a capture is its arrival."
+          },
+          "detail": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Facts about what changed, shaped by the kind."
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "by",
+          "at",
+          "detail"
+        ]
       }
     },
     "parameters": {}
@@ -335,15 +511,22 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["malformed-json", "malformed-envelope"]
+                          "enum": [
+                            "malformed-json",
+                            "malformed-envelope"
+                          ]
                         }
                       },
-                      "required": ["code"],
+                      "required": [
+                        "code"
+                      ],
                       "additionalProperties": {},
                       "description": "The refusal's kind, with its facts beside it."
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -360,15 +543,22 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["capture-id-conflict", "source-item-changed"]
+                          "enum": [
+                            "capture-id-conflict",
+                            "source-item-changed"
+                          ]
                         }
                       },
-                      "required": ["code"],
+                      "required": [
+                        "code"
+                      ],
                       "additionalProperties": {},
                       "description": "The refusal's kind, with its facts beside it."
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -385,15 +575,21 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported-media-type"]
+                          "enum": [
+                            "unsupported-media-type"
+                          ]
                         }
                       },
-                      "required": ["code"],
+                      "required": [
+                        "code"
+                      ],
                       "additionalProperties": {},
                       "description": "The refusal's kind, with its facts beside it."
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -419,12 +615,16 @@
                           ]
                         }
                       },
-                      "required": ["code"],
+                      "required": [
+                        "code"
+                      ],
                       "additionalProperties": {},
                       "description": "The refusal's kind, with its facts beside it."
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -502,12 +702,16 @@
                           ]
                         }
                       },
-                      "required": ["code"],
+                      "required": [
+                        "code"
+                      ],
                       "additionalProperties": {},
                       "description": "The refusal's kind, with its facts beside it."
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -551,15 +755,119 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["no-such-item"]
+                          "enum": [
+                            "no-such-item"
+                          ]
                         }
                       },
-                      "required": ["code"],
+                      "required": [
+                        "code"
+                      ],
                       "additionalProperties": {},
                       "description": "The refusal's kind, with its facts beside it."
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/actions": {
+      "get": {
+        "summary": "Read the action log",
+        "description": "Every action that changed state, newest first by default. Narrow it to one subject with `item`; the log outlives the material, so a purged item's entries are still answered.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "`newest-first` (default) or `oldest-first`.",
+              "example": "newest-first"
+            },
+            "required": false,
+            "description": "`newest-first` (default) or `oldest-first`.",
+            "name": "order",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "1–500. Defaults to 50. A larger value is refused, not clamped.",
+              "example": "50"
+            },
+            "required": false,
+            "description": "1–500. Defaults to 50. A larger value is refused, not clamped.",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "The position to continue from: `<at>,<id>`, or a bare instant as a coarse entry point.",
+              "example": "2026-08-08T09:00:00.000Z,0198f0c2-0000-7000-8000-000000000000"
+            },
+            "required": false,
+            "description": "The position to continue from: `<at>,<id>`, or a bare instant as a coarse entry point.",
+            "name": "after",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Narrows the read to one subject. Never validated: an id no item has answers an empty page, since the log outlives what it describes.",
+              "example": "0198f0c2-0000-7000-8000-000000000000"
+            },
+            "required": false,
+            "description": "Narrows the read to one subject. Never validated: an id no item has answers an empty page, since the log outlives what it describes.",
+            "name": "item",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of the log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionSlice"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter was understood and refused.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "limit-too-large",
+                            "bad-limit",
+                            "bad-order",
+                            "bad-position"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }

@@ -1,4 +1,4 @@
-import type { FeedOrder, Position } from "@notemap/core";
+import type { Position } from "@notemap/core";
 
 import { instant, toTimestamp } from "../schemas/timestamp";
 
@@ -23,15 +23,14 @@ export function formatPosition(position: Position): string {
     : `${position.at},${position.id}`;
 }
 
-export function feedUrl(
-  order: FeedOrder,
-  limit: number,
+export function pageUrl(
+  path: string,
+  parameters: Readonly<Record<string, string>>,
   after: Position,
 ): string {
   const query = new URLSearchParams({
-    order,
-    limit: String(limit),
+    ...parameters,
     after: formatPosition(after),
   });
-  return `/v1/feed?${query.toString()}`;
+  return `${path}?${query.toString()}`;
 }

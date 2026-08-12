@@ -4,13 +4,12 @@ import { DatabaseSync } from "node:sqlite";
 import type {
   AbandonedPosition,
   Action,
+  ActionQuery,
   Artifact,
   ClaimRequest,
   Clock,
   JobResolution,
   RoutingRecord,
-  FeedOrder,
-  FeedPage,
   IdGenerator,
   Item,
   ItemId,
@@ -18,10 +17,12 @@ import type {
   Job,
   LeaseId,
   MintableId,
+  OrderedPage,
   Page,
   PoolStore,
   PoolTx,
   Position,
+  ReadOrder,
   Slice,
   SourceId,
   Timestamp,
@@ -68,8 +69,6 @@ const ITEM_COLUMNS = `
   revision_of, archived_at, archive_reason
 `;
 
-const DEFAULT_ORDER: FeedOrder = "newest-first";
-
 /** The write lock serializes this process, so SQLITE_BUSY is only ever a second host. */
 const BUSY_TIMEOUT_MS = 5_000;
 
@@ -81,6 +80,15 @@ const randomIds: IdGenerator = {
   next: <T extends MintableId>() => randomUUID() as T,
 };
 
+function direction(order: ReadOrder): {
+  readonly sql: "ASC" | "DESC";
+  readonly comparison: "<" | ">";
+} {
+  return order === "newest-first"
+    ? { sql: "DESC", comparison: "<" }
+    : { sql: "ASC", comparison: ">" };
+}
+
 /** A position in the store's own units. */
 type Bound = { readonly at: number; readonly id?: string };
 
@@ -91,7 +99,12 @@ function bound(position: Position): Bound {
   };
 }
 
-/** The comparison that continues a read past one position, in whichever direction it runs. */
+/**
+ * The comparison that continues a read past one position, in whichever
+ * direction it runs. A row value rather than the `OR` form that spells out the
+ * same thing: SQLite seeks straight to the position on this, and scans the
+ * index from the end on that, which costs a page its offset in rows.
+ */
 function keysetClause(
   column: string,
   after: Bound,
@@ -102,8 +115,8 @@ function keysetClause(
   }
 
   return {
-    sql: `(${column} ${comparison} ? OR (${column} = ? AND id ${comparison} ?))`,
-    params: [after.at, after.at, after.id],
+    sql: `(${column}, id) ${comparison} (?, ?)`,
+    params: [after.at, after.id],
   };
 }
 
@@ -306,24 +319,21 @@ export function createSqlitePoolStore(
       /** The newest by capture time, which is what a later capture must beat to seal it. */
       head: async (): Promise<Item | undefined> => one(newestItem.get()),
 
-      feed: async (page: FeedPage): Promise<Slice<Item>> => {
-        const order = page.order ?? DEFAULT_ORDER;
-        const descending = order === "newest-first";
-        const comparison = descending ? "<" : ">";
-        const direction = descending ? "DESC" : "ASC";
+      feed: async (page: OrderedPage): Promise<Slice<Item>> => {
+        const way = direction(page.order);
 
         const { rows, next } = keysetPage(page, (after, limit) => {
           const keyset =
             after === undefined
               ? undefined
-              : keysetClause("created_at", after, comparison);
+              : keysetClause("created_at", after, way.comparison);
           const where = keyset === undefined ? "" : `WHERE ${keyset.sql}`;
           const params: Bindable[] = [...(keyset?.params ?? []), limit];
 
           return source
             .query<ItemRow, Bindable[]>(
               `SELECT ${ITEM_COLUMNS} FROM items ${where}
-               ORDER BY created_at ${direction}, id ${direction} LIMIT ?`,
+               ORDER BY created_at ${way.sql}, id ${way.sql} LIMIT ?`,
             )
             .all(...params)
             .map((row) => ({ ...row, at: row.created_at }));
@@ -336,19 +346,21 @@ export function createSqlitePoolStore(
       },
 
       actions: async (
-        subject: ItemId | undefined,
-        page: Page,
+        query: ActionQuery,
+        page: OrderedPage,
       ): Promise<Slice<Action>> => {
+        const way = direction(page.order);
+
         const { rows, next } = keysetPage(page, (after, limit) => {
           const clauses: string[] = [];
           const params: Bindable[] = [];
 
-          if (subject !== undefined) {
+          if (query.item !== undefined) {
             clauses.push("subject = ?");
-            params.push(subject);
+            params.push(query.item);
           }
           if (after !== undefined) {
-            const keyset = keysetClause("at", after, ">");
+            const keyset = keysetClause("at", after, way.comparison);
             clauses.push(keyset.sql);
             params.push(...keyset.params);
           }
@@ -359,7 +371,7 @@ export function createSqlitePoolStore(
           return source
             .query<ActionRow, Bindable[]>(
               `SELECT id, kind, subject, by_kind, by_ref, at, detail FROM actions
-               ${where} ORDER BY at ASC, id ASC LIMIT ?`,
+               ${where} ORDER BY at ${way.sql}, id ${way.sql} LIMIT ?`,
             )
             .all(...params);
         });

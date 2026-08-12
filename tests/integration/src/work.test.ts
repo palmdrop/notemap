@@ -251,13 +251,27 @@ describe("the action log", () => {
 
     await p.work.complete(lease.id, failed(true, OFFLINE));
 
+    // Newest first, so the attempt precedes the capture that owed it.
     expect(await kindsFor(p, item.id)).toEqual([
-      expect.objectContaining({ kind: "captured" }),
       {
         kind: "work-failed",
         by: { kind: "notemap" },
-        detail: { work: "mirror", attempt: 1, ...OFFLINE },
+        detail: { work: "mirror", attempt: 1, failure: { ...OFFLINE } },
       },
+      expect.objectContaining({ kind: "captured" }),
+    ]);
+  });
+
+  it("records nothing for an attempt that succeeded", async () => {
+    const { pool: p, item } = await owing();
+    const lease = await claimOne(p);
+
+    await p.work.complete(lease.id, { kind: "succeeded" });
+
+    // The write is its own record. An entry beside it would say a second time
+    // what the mirror file already says.
+    expect(await kindsFor(p, item.id)).toEqual([
+      expect.objectContaining({ kind: "captured" }),
     ]);
   });
 
@@ -270,7 +284,7 @@ describe("the action log", () => {
     expect(await kindsFor(p, item.id)).toContainEqual({
       kind: "work-abandoned",
       by: { kind: "notemap" },
-      detail: { work: "mirror", attempt: 1, ...THREW },
+      detail: { work: "mirror", attempt: 1, failure: { ...THREW } },
     });
   });
 });

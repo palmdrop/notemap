@@ -1,7 +1,7 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-08-11
+**Last updated**: 2026-08-12
 **Shipped**:
 
 - 2026-08-08 — A source needs no declaration to capture; `config.sources` is a policy registry
@@ -22,6 +22,16 @@
   leasing, and the abandoned-work surface — is a **`WorkQueue`** port separate from `PoolStore`;
   enqueue and resolve stay on the transaction handle, where they have to be.
   ([plan](../plans/mirror-writer-first-slice.md))
+- 2026-08-12 — **The action log is stated, and readable.** It has been half-built since the
+  capture slice; what it guarantees is now written down rather than implied, and it reads newest
+  first by default, ordered and paginated by position and narrowable to one subject. A subject
+  the pool no longer holds answers an empty page rather than refusing, which is what a purged
+  item's entries need. **Ordering is core's**: a store is handed an order it must honour, where
+  the SQLite driver used to hold the default. Neither an order nor a page belongs to the feed any
+  more, so `FeedOrder` and `FeedPage` become `ReadOrder`, `PageRequest` and `OrderedPage`. Failed
+  attempts at work are logged and successful ones are not, and `ActionLogRefusal` is gone —
+  clearing a purged item's entries is the case clearing exists for.
+  ([plan](../plans/action-log-feed.md))
 
 ---
 
@@ -50,6 +60,8 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   destination including its append-to-an-existing-file form.
 - **The mirror** — lossless write-only mirroring, and rebuild of a pool from mirror + assets.
   On-disk format: [mirror.md](mirror.md).
+- **The action log** — an append-only trace of every mutation, read newest first and paginated.
+  Clearing it is its own operation; retention is undecided.
 - **Intake** — the capture envelope, with stable source identity and source-supplied capture
   time.
 - **Sync** — the domain obligations only: client-generated ids and idempotent operations.
@@ -228,8 +240,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   answer.
 - **A failure is visible, not just recorded.** The failing state carries what went wrong and how
   many attempts have been made; the change bumps the item's `modified_at`, so a syncing client
-  learns about it without polling every item; and every attempt is an entry in the action log
-  ([ADR 12](../adr/0012-core-keeps-an-append-only-action-log.md)). Core additionally exposes
+  learns about it without polling every item; and every **failed** attempt is an entry in the
+  action log ([ADR 12](../adr/0012-core-keeps-an-append-only-action-log.md)) — a successful one is
+  not, per [the action log](#the-action-log) (clarified 2026-08-11). Core additionally exposes
   everything currently abandoned as one readable surface, so a client can show "three things
   need you" without walking the pool. **An abandoned enrichment records when it was abandoned**
   (added 2026-08-08): that surface is a list a person works through, and a list with no order is
@@ -345,6 +358,38 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - Reading media is the single exception to never reading the mirror's storage area. Text and
   state are never read back.
 - An external tool editing or deleting mirror text cannot corrupt the pool.
+
+### The action log
+
+- **Every action that changes state appends an entry**, in the same atomic unit as the change it
+  describes ([ADR 12](../adr/0012-core-keeps-an-append-only-action-log.md)). An entry carries what
+  happened, the agent who did it, the time core applied it, the subject where the action had one,
+  and the facts of what changed.
+- **The kinds are not listed here.** A kind arrives with the mutation that appends it, so the list
+  is core's `ActionKind` and the code is where it is documented; a list kept in two places is one
+  that disagrees with itself.
+- **An entry's detail carries facts, never a sentence** — the rule a refusal follows, for the
+  reason a refusal follows it: core has no locale and no interface, and rendering is the host's.
+- **The log records arrival.** Capture time comes from the source, so the entry is the only record
+  of when the pool actually received something.
+- **Failed attempts at work are logged; successful ones are not** (clarified 2026-08-11). Work
+  that produces material appears in the log as that material — an artifact added, a delivery
+  routed — and an entry beside it would record one event twice. A mirror write is the only success
+  with no product, and the file it wrote is its trace.
+- The log is read **newest first by default**, ordered and paginated by position
+  ([ADR 14](../adr/0014-pagination-by-domain-position.md)), and may be narrowed to one subject.
+  Which end a reader starts from is the reader's, as it is for the feed.
+- **A subject the pool does not hold answers an empty page, not a refusal.** The log outlives the
+  material it describes, so a purged item's entries are exactly what someone asks for, and reads
+  do not refuse.
+- **Clearing the log is its own operation** — one item's entries, or the log entire — and nothing
+  else clears it, purge included. Clearing appends an entry recording that it happened, so a log
+  that has been emptied says so rather than lying by omission.
+- **State is never derived from the log.** It is a record read by a person tracing something;
+  nothing is replayed or rebuilt from it, and nothing in the pool becomes unanswerable if it is
+  cleared.
+- The log is operational state rather than the user's material, so it is not mirrored
+  ([mirror.md](mirror.md)) and a pool rebuilt from its mirror has no history.
 
 ### Intake and sync
 
@@ -538,6 +583,10 @@ Recorded in full under [docs/adr/](../adr/). In brief:
       mirror removal is the case that settled it. What remains is that the asset sweep is
       pool-wide rather than about anything at all, and is not modelled as a job. If it becomes
       one, a job's subject has to say what kind of thing it names rather than being an id.
+- [ ] 2026-08-11 — Action log retention: whether entries expire at all, and whether expiry is per
+      kind. [ADR 12](../adr/0012-core-keeps-an-append-only-action-log.md) left it to be decided
+      when the log's size becomes noticeable in practice. Nothing prunes it today, and the only
+      way to shrink it is the clear operation, which is a decision rather than a policy.
 - [ ] 2026-08-08 — How a revision is ordered against its original in the feed, in a store. This
       spec says a revision carries its original's capture time, so the two tie, and that the tie
       is broken by the revision link: the revision follows the item it supersedes. The SQLite
@@ -600,6 +649,13 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 - Accepting a suggested tag produces a tag attributed to the provider that suggested it;
   removing that tag and re-running enrichment produces a new pending suggestion rather than
   restoring the tag.
+- The entry recording a capture is timed by its arrival, not by the capture time its source
+  reported, and is the only place that arrival appears.
+- An attempt at work that failed appears in the log; one that succeeded does not.
+- The log can be read for an item that has been purged, and answers that item's entries rather
+  than refusing.
+- A position taken from a newest-first read of the log continues an oldest-first read from the
+  same place.
 - A destination refuses a payload type it does not declare support for, rather than delivering
   an approximation, and refuses a capability it never declared at all.
 - A file that is still being written is not ingested until it is complete.

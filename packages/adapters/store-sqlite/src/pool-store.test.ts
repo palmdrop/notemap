@@ -1,7 +1,8 @@
 import type {
-  FeedPage,
+  Action,
   Item,
   ItemId,
+  OrderedPage,
   Page,
   Position,
   Timestamp,
@@ -22,7 +23,9 @@ import {
   store,
 } from "./testing/fixture";
 
-const ALL: Page = { limit: 50 };
+/** The store has no default order, so every read here names one. */
+const ALL: OrderedPage = { limit: 50, order: "newest-first" };
+const ALL_OLDEST: OrderedPage = { limit: 50, order: "oldest-first" };
 
 const ids = (values: readonly Item[]) => values.map((item) => item.id);
 
@@ -96,7 +99,7 @@ describe("writing a capture", () => {
 
     await appendCapture(p, record);
 
-    const logged = await p.actions(record.id, ALL);
+    const logged = await p.actions({ item: record.id }, ALL);
     expect(logged.values).toHaveLength(1);
     expect(logged.values[0]).toMatchObject({
       kind: "captured",
@@ -261,7 +264,7 @@ describe("a transaction", () => {
     ).rejects.toBe(boom);
 
     expect(await p.item(record.id)).toBeUndefined();
-    expect((await p.actions(undefined, ALL)).values).toEqual([]);
+    expect((await p.actions({}, ALL)).values).toEqual([]);
     expect(raw.prepare("select * from jobs").all()).toEqual([]);
   });
 
@@ -424,7 +427,7 @@ describe("the identity checks core makes inside a transaction", () => {
     });
 
     expect(outcome.refused).toBe("already-captured");
-    expect((await p.actions(undefined, ALL)).values).toHaveLength(1);
+    expect((await p.actions({}, ALL)).values).toHaveLength(1);
     expect((await p.item("item-1" as ItemId))?.payload.content).toEqual({
       text: "a thought",
     });
@@ -477,7 +480,7 @@ describe("modifiedAt", () => {
 });
 
 describe("the feed", () => {
-  it("reads newest first by default", async () => {
+  it("reads newest first when asked to", async () => {
     const { pool: p } = pool();
     await appendCapture(
       p,
@@ -516,7 +519,7 @@ describe("the feed", () => {
       capture({ id: "newer", createdAt: "2026-08-03T09:00:00.000Z" }),
     );
 
-    const page: FeedPage = { limit: 50, order: "oldest-first" };
+    const page: OrderedPage = { limit: 50, order: "oldest-first" };
     expect(ids((await p.feed(page)).values)).toEqual(["older", "newer"]);
   });
 
@@ -533,7 +536,7 @@ describe("the feed", () => {
       await appendCapture(p, capture({ id, createdAt }));
     }
 
-    const page: FeedPage = { limit: 50, order: "oldest-first" };
+    const page: OrderedPage = { limit: 50, order: "oldest-first" };
     expect(ids((await p.feed(page)).values)).toEqual(["a", "b", "c"]);
   });
 
@@ -547,7 +550,7 @@ describe("the feed", () => {
       );
     }
 
-    const page: FeedPage = { limit: 2, order: "oldest-first" };
+    const page: OrderedPage = { limit: 2, order: "oldest-first" };
     const first = await p.feed(page);
     const second = await p.feed(nextPage(first.next, page));
 
@@ -562,7 +565,7 @@ describe("the feed", () => {
     const { pool: p } = pool();
     await minutelyItems(p, 5);
 
-    const page: FeedPage = { limit: 2, order: "oldest-first" };
+    const page: OrderedPage = { limit: 2, order: "oldest-first" };
     const first = await p.feed(page);
     expect(ids(first.values)).toEqual(["item-0", "item-1"]);
 
@@ -578,7 +581,7 @@ describe("the feed", () => {
     const { pool: p } = pool();
     await minutelyItems(p, 5);
 
-    const page: FeedPage = { limit: 2 };
+    const page: OrderedPage = { limit: 2, order: "newest-first" };
     const first = await p.feed(page);
     const second = await p.feed(nextPage(first.next, page));
     const third = await p.feed(nextPage(second.next, page));
@@ -595,13 +598,15 @@ describe("the feed", () => {
     await minutelyItems(p, 5);
 
     // The position after ["item-4", "item-3"], read from the newest end.
-    const newest = await p.feed({ limit: 2 });
+    const newest = await p.feed({ limit: 2, order: "newest-first" });
     const from = newest.next;
 
-    expect(ids((await p.feed(nextPage(from, { limit: 2 }))).values)).toEqual([
-      "item-2",
-      "item-1",
-    ]);
+    expect(
+      ids(
+        (await p.feed(nextPage(from, { limit: 2, order: "newest-first" })))
+          .values,
+      ),
+    ).toEqual(["item-2", "item-1"]);
     expect(
       ids(
         (await p.feed(nextPage(from, { limit: 2, order: "oldest-first" })))
@@ -614,7 +619,7 @@ describe("the feed", () => {
     const { pool: p, raw } = pool();
     await minutelyItems(p, 5);
 
-    const page: FeedPage = { limit: 2 };
+    const page: OrderedPage = { limit: 2, order: "newest-first" };
     const first = await p.feed(page);
     // The row the position names, purged between the two reads. A position is
     // compared against, never looked up, so the next page is unaffected.
@@ -628,7 +633,7 @@ describe("the feed", () => {
     const { pool: p } = pool();
     await minutelyItems(p, 5);
 
-    const page: FeedPage = { limit: 50, order: "oldest-first" };
+    const page: OrderedPage = { limit: 50, order: "oldest-first" };
     const from: Position = { at: at("2026-08-03T09:02:00.000Z") };
 
     expect(ids((await p.feed({ ...page, after: from })).values)).toEqual([
@@ -651,7 +656,7 @@ describe("the feed", () => {
     // The cost of an entry point that names no row: the bound is strict on time
     // alone, so both rows at that instant fall outside it.
     const from: Position = { at: at(shared) };
-    const page: FeedPage = { limit: 50, order: "oldest-first", after: from };
+    const page: OrderedPage = { limit: 50, order: "oldest-first", after: from };
 
     expect(ids((await p.feed(page)).values)).toEqual(["c"]);
   });
@@ -661,13 +666,19 @@ describe("the feed", () => {
     await appendCapture(p, capture());
 
     await expect(
-      p.feed({ limit: 1, after: { at: "half past four" as Timestamp } }),
+      p.feed({
+        limit: 1,
+        order: "newest-first",
+        after: { at: "half past four" as Timestamp },
+      }),
     ).rejects.toThrow(/not a parseable timestamp/);
   });
 
   it("refuses a limit that is not a positive count", async () => {
     const { pool: p } = pool();
-    await expect(p.feed({ limit: 0 })).rejects.toThrow(/positive integer/);
+    await expect(p.feed({ limit: 0, order: "newest-first" })).rejects.toThrow(
+      /positive integer/,
+    );
   });
 
   it("hands back an empty slice for an empty pool", async () => {
@@ -698,28 +709,46 @@ describe("the head", () => {
 });
 
 describe("the action log", () => {
-  it("filters by subject, and returns everything without one", async () => {
+  const subjects = (slice: { values: readonly Action[] }) =>
+    slice.values.map((action) => action.subject);
+
+  it("filters by subject, and returns everything without a filter", async () => {
     const { pool: p } = pool();
     await appendCapture(p, capture({ id: "item-1" }));
     await appendCapture(p, capture({ id: "item-2" }));
 
-    expect((await p.actions("item-1" as ItemId, ALL)).values).toHaveLength(1);
-    expect((await p.actions(undefined, ALL)).values).toHaveLength(2);
+    expect(
+      (await p.actions({ item: "item-1" as ItemId }, ALL)).values,
+    ).toHaveLength(1);
+    expect((await p.actions({}, ALL)).values).toHaveLength(2);
+  });
+
+  it("reads from whichever end it is told to", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 3);
+
+    expect(subjects(await p.actions({}, ALL))).toEqual([
+      "item-2",
+      "item-1",
+      "item-0",
+    ]);
+    expect(subjects(await p.actions({}, ALL_OLDEST))).toEqual([
+      "item-0",
+      "item-1",
+      "item-2",
+    ]);
   });
 
   it("paginates through positions, oldest first", async () => {
     const { pool: p } = pool();
     await minutelyItems(p, 5);
 
-    const page: Page = { limit: 2 };
-    const first = await p.actions(undefined, page);
-    const second = await p.actions(undefined, nextPage(first.next, page));
-    const third = await p.actions(undefined, nextPage(second.next, page));
+    const page: OrderedPage = { limit: 2, order: "oldest-first" };
+    const first = await p.actions({}, page);
+    const second = await p.actions({}, nextPage(first.next, page));
+    const third = await p.actions({}, nextPage(second.next, page));
 
-    const subjects = [first, second, third].flatMap((slice) =>
-      slice.values.map((action) => action.subject),
-    );
-    expect(subjects).toEqual([
+    expect([first, second, third].flatMap(subjects)).toEqual([
       "item-0",
       "item-1",
       "item-2",
@@ -727,6 +756,51 @@ describe("the action log", () => {
       "item-4",
     ]);
     expect(third.next).toBeUndefined();
+  });
+
+  it("paginates newest first without repeating or skipping", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 5);
+
+    const page: OrderedPage = { limit: 2, order: "newest-first" };
+    const first = await p.actions({}, page);
+    const second = await p.actions({}, nextPage(first.next, page));
+    const third = await p.actions({}, nextPage(second.next, page));
+
+    expect([first, second, third].flatMap(subjects)).toEqual([
+      "item-4",
+      "item-3",
+      "item-2",
+      "item-1",
+      "item-0",
+    ]);
+    expect(third.next).toBeUndefined();
+  });
+
+  it("reads either order from one position, since it names a place", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 5);
+
+    // The position after the two newest entries.
+    const newest = await p.actions({}, { limit: 2, order: "newest-first" });
+    const from = newest.next;
+
+    expect(
+      subjects(
+        await p.actions(
+          {},
+          nextPage(from, { limit: 2, order: "newest-first" }),
+        ),
+      ),
+    ).toEqual(["item-2", "item-1"]);
+    expect(
+      subjects(
+        await p.actions(
+          {},
+          nextPage(from, { limit: 2, order: "oldest-first" }),
+        ),
+      ),
+    ).toEqual(["item-4"]);
   });
 
   it("keeps the subject filter across a page boundary", async () => {
@@ -743,15 +817,31 @@ describe("the action log", () => {
       });
     });
 
-    const page: Page = { limit: 1 };
-    const first = await p.actions("item-1" as ItemId, page);
-    const second = await p.actions(
-      "item-1" as ItemId,
-      nextPage(first.next, page),
-    );
+    const filter = { item: "item-1" as ItemId };
+    const page: OrderedPage = { limit: 1, order: "oldest-first" };
+    const first = await p.actions(filter, page);
+    const second = await p.actions(filter, nextPage(first.next, page));
 
     expect(second.values.map((action) => action.id)).toEqual(["action-later"]);
     expect(second.next).toBeUndefined();
+
+    const newest = await p.actions(filter, { ...page, order: "newest-first" });
+    expect(newest.values.map((action) => action.id)).toEqual(["action-later"]);
+  });
+
+  it("answers for a subject the pool no longer holds", async () => {
+    const { pool: p, raw } = pool();
+    const record = capture({ id: "item-1" });
+    await appendCapture(p, record);
+
+    // What a purge leaves behind: the item is gone, its entries are not. The
+    // table carries no foreign key precisely so that this read still works.
+    raw.prepare("DELETE FROM items WHERE id = ?").run(record.id);
+
+    expect(await p.item(record.id)).toBeUndefined();
+    expect(subjects(await p.actions({ item: record.id }, ALL))).toEqual([
+      "item-1",
+    ]);
   });
 });
 

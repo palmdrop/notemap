@@ -1,3 +1,5 @@
+import { writeFileSync } from "node:fs";
+
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
@@ -13,10 +15,14 @@ import {
 
 const open: Daemon[] = [];
 
+function started(...args: Parameters<typeof daemon>): Daemon {
+  const host = daemon(...args);
+  open.push(host);
+  return host;
+}
+
 function serving(...args: Parameters<typeof daemon>) {
-  const started = daemon(...args);
-  open.push(started);
-  return started.app;
+  return started(...args).app;
 }
 
 afterEach(async () => {
@@ -401,6 +407,113 @@ describe("GET /v1/feed", () => {
     expect(await body(response)).toEqual({
       error: { code: "bad-position", after: "half past four" },
     });
+  });
+});
+
+describe("GET /v1/actions", () => {
+  type Entry = { kind: string; subject?: string; at: string };
+  type LogPage = { values: Entry[]; next?: string };
+
+  it("reads newest first, timed by arrival rather than by capture time", async () => {
+    const app = serving();
+    const ids = await captureMany(app, 3);
+
+    const response = await app.request("/v1/actions");
+    const slice: LogPage = await body(response);
+
+    expect(response.status).toBe(200);
+    expect(slice.values.map((entry) => entry.subject)).toEqual(
+      [...ids].reverse(),
+    );
+    expect(slice.values.map((entry) => entry.kind)).toEqual([
+      "captured",
+      "captured",
+      "captured",
+    ]);
+    // The captures are timed 09:00, 09:01, 09:02; their entries are not.
+    for (const entry of slice.values) {
+      expect(entry.at.startsWith("2026-08-08T09:0")).toBe(false);
+    }
+  });
+
+  it("narrows to one subject", async () => {
+    const app = serving();
+    const ids = await captureMany(app, 3);
+
+    const slice: LogPage = await body(
+      await app.request(`/v1/actions?item=${ids[1]}`),
+    );
+
+    expect(slice.values.map((entry) => entry.subject)).toEqual([ids[1]]);
+  });
+
+  it("answers an empty page for a subject no item has, never a 404", async () => {
+    const app = serving();
+    await captureMany(app, 1);
+
+    const response = await app.request("/v1/actions?item=never-existed");
+
+    expect(response.status).toBe(200);
+    expect(await body(response)).toEqual({ values: [] });
+  });
+
+  it("pages to exhaustion by following next, without repeating or dropping", async () => {
+    const app = serving();
+    const ids = await captureMany(app, 3);
+
+    const seen: string[] = [];
+    let url = "/v1/actions?limit=1&order=oldest-first";
+
+    for (;;) {
+      const slice: LogPage = await body(await app.request(url));
+      seen.push(...slice.values.map((entry) => entry.subject ?? ""));
+      if (slice.next === undefined) break;
+      url = slice.next;
+    }
+
+    expect(seen).toEqual(ids);
+  });
+
+  it("carries the filter into next, so a filtered read pages as itself", async () => {
+    const host = started(CONFIG, true);
+    const { app } = host;
+
+    await post(app, envelope({ id: "item-1" }));
+    // A file where the mirror tree should be: the write fails, and the failed
+    // attempt gives one item the second entry a filtered page boundary needs.
+    writeFileSync(host.mirrorRoot, "not a directory", "utf8");
+    expect(await host.drain()).toBe(1);
+
+    await post(app, envelope({ id: "item-2" }));
+
+    const first: LogPage = await body(
+      await app.request("/v1/actions?limit=1&item=item-1"),
+    );
+    expect(first.values.map((entry) => entry.kind)).toEqual(["work-failed"]);
+    expect(
+      new URL(first.next ?? "", "http://localhost").searchParams.get("item"),
+    ).toBe("item-1");
+
+    const second: LogPage = await body(await app.request(first.next ?? ""));
+    expect(second.values).toEqual([
+      expect.objectContaining({ kind: "captured", subject: "item-1" }),
+    ]);
+    expect(second.next).toBeUndefined();
+  });
+
+  it("refuses a parameter the way every paginated read does", async () => {
+    const app = serving();
+
+    expect((await app.request("/v1/actions?limit=501")).status).toBe(422);
+    expect(await body(await app.request("/v1/actions?order=sideways"))).toEqual(
+      {
+        error: {
+          code: "bad-order",
+          order: "sideways",
+          allowed: ["newest-first", "oldest-first"],
+        },
+      },
+    );
   });
 });
 

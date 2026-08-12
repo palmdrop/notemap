@@ -436,6 +436,67 @@ describe("the feed", () => {
   });
 });
 
+describe("reading the log", () => {
+  /** Three captures, one minute apart, and so three entries in that order. */
+  async function three(p: Harness["pool"], clock: Harness["clock"]) {
+    const ids: string[] = [];
+    for (let index = 0; index < 3; index += 1) {
+      clock.set(`2026-08-06T15:0${index}:00.000Z`);
+      const id = `item-${index}`;
+      captured(
+        await p.capture(
+          envelope({ id, sourceItemId: id, capturedAt: at(MORNING) }),
+        ),
+      );
+      ids.push(id);
+    }
+    return ids;
+  }
+
+  const MORNING = "2026-08-03T08:00:00.000Z";
+
+  it("reads newest first when the caller says nothing", async () => {
+    const { pool: p, clock } = pool();
+    const ids = await three(p, clock);
+
+    const { values } = await p.actions.all(ALL);
+
+    expect(values.map((action) => action.subject)).toEqual([...ids].reverse());
+  });
+
+  it("pages without repeating, and continues either way from one position", async () => {
+    const { pool: p, clock } = pool();
+    const ids = await three(p, clock);
+
+    const first = await p.actions.all({ limit: 2 });
+    expect(first.values.map((action) => action.subject)).toEqual([
+      ids[2],
+      ids[1],
+    ]);
+    if (first.next === undefined) throw new Error("expected another page");
+
+    const second = await p.actions.all({ limit: 2, after: first.next });
+    expect(second.values.map((action) => action.subject)).toEqual([ids[0]]);
+    expect(second.next).toBeUndefined();
+
+    // The same position, read the other way: what the first page already saw.
+    const back = await p.actions.all({
+      limit: 2,
+      after: first.next,
+      order: "oldest-first",
+    });
+    expect(back.values.map((action) => action.subject)).toEqual([ids[2]]);
+  });
+
+  it("answers for an item the pool never held, rather than refusing", async () => {
+    const { pool: p } = pool();
+
+    await expect(
+      p.actions.forItem("never-existed" as ItemId, ALL),
+    ).resolves.toEqual({ values: [] });
+  });
+});
+
 describe("two pools in one process", () => {
   it("share nothing", async () => {
     const { pool: first } = pool();

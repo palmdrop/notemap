@@ -30,6 +30,7 @@ describe("GET /v1/openapi.json", () => {
     expect(response.status).toBe(200);
     expect(document.openapi).toBe("3.1.0");
     expect(Object.keys(document.paths).sort()).toEqual([
+      "/v1/actions",
       "/v1/captures",
       "/v1/feed",
       "/v1/items/{id}",
@@ -64,5 +65,8 @@ describe("GET /v1/openapi.json", () => {
         document.paths["/v1/items/{id}"]?.get?.responses ?? {},
       ).sort(),
     ).toEqual(["200", "404"]);
+    expect(
+      Object.keys(document.paths["/v1/actions"]?.get?.responses ?? {}).sort(),
+    ).toEqual(["200", "422"]);
   });
 });

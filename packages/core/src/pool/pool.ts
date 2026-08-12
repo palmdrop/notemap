@@ -1,6 +1,7 @@
 import type { PoolConfig } from "../types/api/config";
 import type { Pool } from "../types/api/pool";
 import type { PoolPorts } from "../types/api/ports";
+import type { OrderedPage, PageRequest, ReadOrder } from "../types/result";
 
 import { capture } from "./capture";
 import * as mirror from "./mirror";
@@ -15,6 +16,12 @@ function notImplemented(method: string): () => never {
   return () => {
     throw new Error(`core: ${method} is not implemented yet`);
   };
+}
+
+const DEFAULT_ORDER: ReadOrder = "newest-first";
+
+function ordered<P>(page: PageRequest<P>): OrderedPage<P> {
+  return { ...page, order: page.order ?? DEFAULT_ORDER };
 }
 
 export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
@@ -34,7 +41,7 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
     },
 
     views: {
-      feed: (page) => store.feed(page),
+      feed: (page) => store.feed(ordered(page)),
       queue: notImplemented("views.queue"),
       archived: notImplemented("views.archived"),
     },
@@ -78,8 +85,8 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
     mirror: { recordFor: (item) => mirror.recordFor(ports, item) },
 
     actions: {
-      forItem: (item, page) => store.actions(item, page),
-      all: (page) => store.actions(undefined, page),
+      forItem: (item, page) => store.actions({ item }, ordered(page)),
+      all: (page) => store.actions({}, ordered(page)),
       clear: notImplemented("actions.clear"),
     },
 

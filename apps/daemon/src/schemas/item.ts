@@ -1,7 +1,7 @@
 import "@hono/zod-openapi";
 import { z } from "zod";
 
-const jsonObject = z.record(z.string(), z.unknown());
+import { jsonObject } from "./json";
 
 const assetRef = z.object({
   slot: z.string(),

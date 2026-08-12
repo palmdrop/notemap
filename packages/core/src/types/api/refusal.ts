@@ -107,7 +107,8 @@ export type LeaseRefusal = {
   readonly lease: LeaseId;
 };
 
-export type ActionLogRefusal = SubjectRefusal;
+/** Clearing refuses nothing; the result stays refusal-shaped because every mutation's is. */
+export type ActionLogRefusal = never;
 
 export type RebuildRefusal =
   | { readonly kind: "pool-not-empty" }

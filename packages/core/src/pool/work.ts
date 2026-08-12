@@ -1,13 +1,9 @@
+import { recordAction } from "./actions";
 import { ok, refused } from "../utils/result";
 import type { PoolConfig } from "../types/api/config";
 import type { PoolPorts } from "../types/api/ports";
 import type { LeaseRefusal } from "../types/api/refusal";
-import type {
-  ActionId,
-  Duration,
-  LeaseId,
-  Timestamp,
-} from "../types/domain/ids";
+import type { Duration, LeaseId, Timestamp } from "../types/domain/ids";
 import type { AbandonedPosition } from "../types/domain/position";
 import type {
   AbandonedWork,
@@ -92,8 +88,7 @@ export async function complete(
           },
     );
 
-    await tx.appendAction({
-      id: ports.ids.next<ActionId>(),
+    await recordAction(ports, tx, {
       kind: giveUp ? "work-abandoned" : "work-failed",
       subject: held.job.subject,
       // Nobody asked for this attempt, so nobody but notemap made it.
@@ -102,8 +97,7 @@ export async function complete(
       detail: {
         work: held.job.kind,
         attempt,
-        code: outcome.detail.code,
-        detail: outcome.detail.detail,
+        failure: outcome.detail,
         ...(held.job.enrichment === undefined
           ? {}
           : { enrichment: held.job.enrichment }),

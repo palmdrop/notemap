@@ -4,12 +4,15 @@ import type { Pool } from "@notemap/core";
 
 import { assetHandler } from "./docs/assets";
 import { docsPage } from "./docs/page";
+import { logPage } from "./log/page";
 import { requireJsonBody } from "./middleware/content-type";
 import { methodsFor, notFound } from "./middleware/not-found";
 import { openApiDocument } from "./openapi";
 import { capturePage } from "./page";
+import { actionsHandler } from "./routes/actions";
 import { captureHandler } from "./routes/captures";
 import {
+  actionsRoute,
   captureRoute,
   feedRoute,
   honoPath,
@@ -27,11 +30,16 @@ export function createApp(pool: Pool): Hono {
   app.post(honoPath(captureRoute.path), captureHandler(pool));
   app.get(honoPath(feedRoute.path), feedHandler(pool));
   app.get(honoPath(itemRoute.path), itemHandler(pool));
+  app.get(honoPath(actionsRoute.path), actionsHandler(pool));
 
   app.get("/v1/openapi.json", () => json(openApiDocument(), 200));
 
   app.get("/", (context) =>
     context.html(capturePage(), 200, { "cache-control": "no-cache" }),
+  );
+
+  app.get("/log", (context) =>
+    context.html(logPage(), 200, { "cache-control": "no-cache" }),
   );
 
   app.get("/docs", (context) =>

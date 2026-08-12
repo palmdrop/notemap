@@ -1,4 +1,4 @@
-import type { FeedOrder } from "@notemap/core";
+import type { ReadOrder } from "@notemap/core";
 
 export const JSON_TYPE = "application/json; charset=utf-8";
 export const JSON_MEDIA_TYPE = "application/json";
@@ -6,7 +6,7 @@ export const JSON_MEDIA_TYPE = "application/json";
 export const DEFAULT_HOST = "127.0.0.1";
 export const DEFAULT_PORT = 4747;
 
-export const FEED_ORDERS: readonly FeedOrder[] = [
+export const READ_ORDERS: readonly ReadOrder[] = [
   "newest-first",
   "oldest-first",
 ];
