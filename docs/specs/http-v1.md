@@ -78,6 +78,15 @@ tombstones, range requests over asset content, the wire form of sync delta reads
 authentication. Nothing here forecloses them; they get the same treatment when their slice is
 built.
 
+Two of those are now designed but not yet specified here, and will be written with the slices that
+build them ([queue-drains.md](../plans/queue-drains.md),
+[delivery-machinery.md](../plans/delivery-machinery.md)). What the wire has to express that it does
+not today: a queue read paginated by a **content-time** position rather than the feed's capture-time
+one — the same `<at>,<id>` spelling carrying a different meaning, and so **not interchangeable
+between the two surfaces**; archive and unarchive; routing, whose response may name a delivery that
+has not happened yet; and cancelling one that is pending
+([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)).
+
 **What this surface deliberately does not defend is written down**, rather than left to be
 discovered: [security.md](security.md).
 
