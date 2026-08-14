@@ -5,6 +5,7 @@ import type {
   AbandonedPosition,
   Action,
   ActionQuery,
+  ArchiveState,
   Artifact,
   Asset,
   AssetId,
@@ -35,10 +36,12 @@ import type {
 import {
   agentColumns,
   itemParams,
+  routingRecordParams,
   toAction,
   toAsset,
   toItem,
   toMillis,
+  toRoutingRecord,
   toTimestamp,
 } from "./mapping";
 import { abandonedWork, jobQueue } from "./jobs";
@@ -50,6 +53,7 @@ import type {
   ItemRow,
   ItemTagRow,
   PoolMetaRow,
+  RoutingRecordRow,
 } from "./rows";
 import { placeholders, statements, type Bindable } from "./statements";
 import { writeLock, type Fence } from "./write-lock";
@@ -75,6 +79,30 @@ const ITEM_COLUMNS = `
 `;
 
 const ASSET_COLUMNS = `id, filename, mime, blob, bytes, stored_at`;
+
+const ROUTING_COLUMNS = `
+  id, item_id, target_kind, destination, capability, note, state, at, pointer
+`;
+
+/** What the queue and the archive order on: last touch of content, never of state. */
+const CONTENT_TIME = `COALESCE(content_updated_at, created_at)`;
+
+/**
+ * Unprocessed, unarchived and not superseded. Processed is derived here rather
+ * than stored, so the routing half is an anti-join: a column agreeing with the
+ * routing log is one that can one day disagree with it.
+ */
+const QUEUED = `
+  item.archived_at IS NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM items AS revision WHERE revision.revision_of = item.id
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM routing_records AS routed WHERE routed.item_id = item.id
+  )
+`;
+
+const ARCHIVED = `item.archived_at IS NOT NULL`;
 
 /** The write lock serializes this process, so SQLITE_BUSY is only ever a second host. */
 const BUSY_TIMEOUT_MS = 5_000;
@@ -197,6 +225,23 @@ export function createSqlitePoolStore(
   const stillNamed = write.query<{ blob: string }, [string]>(
     `SELECT blob FROM assets WHERE blob = ? LIMIT 1`,
   );
+  const insertRouting = write.query<
+    never,
+    ReturnType<typeof routingRecordParams>
+  >(`
+    INSERT INTO routing_records (${ROUTING_COLUMNS})
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const setArchive = write.query<
+    never,
+    [number | null, string | null, number, string]
+  >(`
+    UPDATE items SET archived_at = ?, archive_reason = ?, modified_at = ?
+    WHERE id = ?
+  `);
+  const touchItem = write.query<never, [number, string]>(
+    `UPDATE items SET modified_at = ? WHERE id = ?`,
+  );
   const jobs = jobQueue(write, config.ids ?? randomIds);
   const insertAction = write.query(`
     INSERT INTO actions (id, kind, subject, by_kind, by_ref, at, detail)
@@ -250,6 +295,10 @@ export function createSqlitePoolStore(
       ORDER BY stored_at, id
       LIMIT ?
     `);
+    const routingFor = source.query<RoutingRecordRow, [string]>(
+      `SELECT ${ROUTING_COLUMNS} FROM routing_records
+       WHERE item_id = ? ORDER BY at, id`,
+    );
 
     function hydrate(rows: readonly ItemRow[]): Item[] {
       if (rows.length === 0) return [];
@@ -305,6 +354,32 @@ export function createSqlitePoolStore(
     }
 
     /**
+     * The queue and the archive: one key, one direction, and a `WHERE` apiece.
+     * Oldest first is not a default here but the whole of the order — a queue
+     * read that started from the newest end would not be a queue.
+     */
+    function byContentTime(page: Page, where: string): Slice<Item> {
+      const { rows, next } = keysetPage(page, (after, limit) => {
+        const keyset =
+          after === undefined
+            ? undefined
+            : keysetClause(CONTENT_TIME, after, ">");
+        const clauses = [where, ...(keyset === undefined ? [] : [keyset.sql])];
+        const params: Bindable[] = [...(keyset?.params ?? []), limit];
+
+        return source
+          .query<ItemRow & { at: number }, Bindable[]>(
+            `SELECT ${ITEM_COLUMNS}, ${CONTENT_TIME} AS at FROM items AS item
+             WHERE ${clauses.join(" AND ")}
+             ORDER BY ${CONTENT_TIME} ASC, id ASC LIMIT ?`,
+          )
+          .all(...params);
+      });
+
+      return { values: hydrate(rows), ...(next === undefined ? {} : { next }) };
+    }
+
+    /**
      * Keyset, not offset: a row inserted behind the reader cannot make a page
      * skip or repeat.
      */
@@ -341,9 +416,11 @@ export function createSqlitePoolStore(
       abandonedWork: async (page: Page<AbandonedPosition>) =>
         abandonedWork(source, page),
 
-      // Neither has a table yet, so empty is what an item genuinely has.
+      // No table yet, so empty is what an item genuinely has.
       artifacts: async (): Promise<readonly Artifact[]> => [],
-      routingRecords: async (): Promise<readonly RoutingRecord[]> => [],
+
+      routingRecords: async (item: ItemId): Promise<readonly RoutingRecord[]> =>
+        routingFor.all(item).map(toRoutingRecord),
 
       asset: async (id: AssetId): Promise<Asset | undefined> => {
         const row = assetById.get(id);
@@ -392,6 +469,12 @@ export function createSqlitePoolStore(
           ...(next === undefined ? {} : { next }),
         };
       },
+
+      queue: async (page: Page): Promise<Slice<Item>> =>
+        byContentTime(page, QUEUED),
+
+      archived: async (page: Page): Promise<Slice<Item>> =>
+        byContentTime(page, ARCHIVED),
 
       actions: async (
         query: ActionQuery,
@@ -455,6 +538,8 @@ export function createSqlitePoolStore(
       itemBySourceIdentity: guard(uncommitted.itemBySourceIdentity),
       head: guard(uncommitted.head),
       feed: guard(uncommitted.feed),
+      queue: guard(uncommitted.queue),
+      archived: guard(uncommitted.archived),
       actions: guard(uncommitted.actions),
       asset: guard(uncommitted.asset),
       unreferencedAssets: guard(uncommitted.unreferencedAssets),
@@ -481,6 +566,31 @@ export function createSqlitePoolStore(
         }
         return stored;
       }),
+
+      setArchiveState: guard(
+        async (item: ItemId, state?: ArchiveState): Promise<Item> => {
+          setArchive.run(
+            state === undefined ? null : toMillis(state.archivedAt),
+            state?.reason ?? null,
+            nextModifiedAt(),
+            item,
+          );
+
+          const stored = await uncommitted.item(item);
+          if (stored === undefined) {
+            throw new Error(`no item ${item} to set the archive state of`);
+          }
+          return stored;
+        },
+      ),
+
+      insertRoutingRecord: guard(
+        async (record: RoutingRecord): Promise<void> => {
+          insertRouting.run(...routingRecordParams(record));
+          // Routing is a change to the item, and a delta read has to carry it.
+          touchItem.run(nextModifiedAt(), record.item);
+        },
+      ),
 
       appendAction: guard(async (action: Action): Promise<void> => {
         insertAction.run(
@@ -574,8 +684,6 @@ function notYetImplementedReads() {
   return {
     revisionChain: unimplemented("revisionChain"),
     tombstone: unimplemented("tombstone"),
-    queue: unimplemented("queue"),
-    archived: unimplemented("archived"),
     suggestions: unimplemented("suggestions"),
     suggestion: unimplemented("suggestion"),
     enrichmentStates: unimplemented("enrichmentStates"),

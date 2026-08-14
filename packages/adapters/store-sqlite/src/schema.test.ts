@@ -96,6 +96,46 @@ describe("the row types and the migrations agree", () => {
     }
   });
 
+  it("refuses a routing record whose columns disagree with its target", async () => {
+    const opened = store();
+    try {
+      opened.raw.exec("PRAGMA foreign_keys = ON");
+      opened.raw
+        .prepare(
+          `INSERT INTO items (id, source_id, source_item_id, payload_type,
+           payload_content, payload_metadata, created_at, modified_at)
+           VALUES ('item', 'src', 'a', 'text', '{}', '{}', 1, 1)`,
+        )
+        .run();
+
+      const record = opened.raw.prepare(
+        `INSERT INTO routing_records
+           (id, item_id, target_kind, destination, capability, note, state, at)
+         VALUES (?, 'item', ?, ?, ?, ?, 'delivered', 1)`,
+      );
+
+      // A destination target names both halves; a user target names neither,
+      // and is the only one that may carry a note.
+      expect(() => record.run("a", "destination", "vault", null, null)).toThrow(
+        /constraint/i,
+      );
+      expect(() => record.run("b", "user", "vault", "create", null)).toThrow(
+        /constraint/i,
+      );
+      expect(() =>
+        record.run("c", "destination", "vault", "create", "where it went"),
+      ).toThrow(/constraint/i);
+      expect(() =>
+        record.run("d", "destination", "vault", "create", null),
+      ).not.toThrow();
+      expect(() =>
+        record.run("e", "user", null, null, "where it went"),
+      ).not.toThrow();
+    } finally {
+      await opened.cleanup();
+    }
+  });
+
   it("lets two revisions share the source identity they revise", async () => {
     const opened = store();
     try {

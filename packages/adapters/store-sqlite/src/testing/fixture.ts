@@ -20,6 +20,8 @@ import type {
   JobId,
   MintableId,
   PayloadTypeName,
+  RoutingRecord,
+  RoutingRecordId,
   SourceId,
   TagName,
   Timestamp,
@@ -178,6 +180,22 @@ export function captured(
     by: { kind: "source", source: item.source },
     at: item.createdAt,
     detail: {},
+  };
+}
+
+/** A record of the one target that needs no adapter: the user carried it onward. */
+export function markedProcessed(
+  item: ItemRecord,
+  overrides: { id?: string; at?: string; note?: string } = {},
+): RoutingRecord {
+  return {
+    id: (overrides.id ?? `routing-${item.id}`) as RoutingRecordId,
+    item: item.id,
+    target: {
+      kind: "user",
+      ...(overrides.note === undefined ? {} : { note: overrides.note }),
+    },
+    at: at(overrides.at ?? "2026-08-03T10:00:00.000Z"),
   };
 }
 

@@ -5,6 +5,7 @@ import type {
   OrderedPage,
   Page,
   Position,
+  RoutingRecord,
   Timestamp,
 } from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
@@ -19,6 +20,7 @@ import {
   captured,
   frozenClock,
   putAssets,
+  markedProcessed,
   mirrorJob,
   revisionOf,
   SCRATCHPAD,
@@ -849,10 +851,282 @@ describe("the action log", () => {
   });
 });
 
+describe("the queue and the archive", () => {
+  const OLDEST_FIRST: Page = { limit: 50 };
+
+  /** Sets or clears archive state the way core's archive and unarchive do. */
+  function setArchived(
+    p: SqlitePoolStore,
+    item: string,
+    state?: { archivedAt: string; reason?: string },
+  ): Promise<Item> {
+    return p.transaction(async (tx) =>
+      tx.setArchiveState(
+        item as ItemId,
+        state === undefined
+          ? undefined
+          : {
+              archivedAt: at(state.archivedAt),
+              ...(state.reason === undefined ? {} : { reason: state.reason }),
+            },
+      ),
+    );
+  }
+
+  function markProcessed(
+    p: SqlitePoolStore,
+    record: RoutingRecord,
+  ): Promise<void> {
+    return p.transaction((tx) => tx.insertRoutingRecord(record));
+  }
+
+  it("holds every unprocessed item, oldest first", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 3);
+
+    expect(ids((await p.queue(OLDEST_FIRST)).values)).toEqual([
+      "item-0",
+      "item-1",
+      "item-2",
+    ]);
+  });
+
+  it("orders by content time, so a revision resurfaces at the newest end", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 3);
+    const original = capture({
+      id: "item-0",
+      createdAt: "2026-08-03T09:00:00.000Z",
+    });
+    await appendCapture(
+      p,
+      revisionOf(original, {
+        id: "revision",
+        text: "reworded",
+        editedAt: "2026-08-03T11:00:00.000Z",
+      }),
+    );
+
+    expect(ids((await p.queue(OLDEST_FIRST)).values)).toEqual([
+      "item-1",
+      "item-2",
+      "revision",
+    ]);
+  });
+
+  it("moves an archived item out of the queue and into the archive", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 3);
+
+    await setArchived(p, "item-1", {
+      archivedAt: "2026-08-03T12:00:00.000Z",
+      reason: "noise",
+    });
+
+    expect(ids((await p.queue(OLDEST_FIRST)).values)).toEqual([
+      "item-0",
+      "item-2",
+    ]);
+    expect(ids((await p.archived(OLDEST_FIRST)).values)).toEqual(["item-1"]);
+  });
+
+  it("returns an unarchived item to its original position", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 3);
+    const before = ids((await p.queue(OLDEST_FIRST)).values);
+
+    await setArchived(p, "item-1", { archivedAt: "2026-08-03T12:00:00.000Z" });
+    await setArchived(p, "item-1", undefined);
+
+    expect(ids((await p.queue(OLDEST_FIRST)).values)).toEqual(before);
+    expect((await p.archived(OLDEST_FIRST)).values).toEqual([]);
+    expect((await p.item("item-1" as ItemId))?.archived).toBeUndefined();
+  });
+
+  it("drops an item holding a routing record, archived or not", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 3);
+    const routed = capture({ id: "item-1" });
+
+    await markProcessed(p, markedProcessed(routed));
+
+    expect(ids((await p.queue(OLDEST_FIRST)).values)).toEqual([
+      "item-0",
+      "item-2",
+    ]);
+    expect((await p.archived(OLDEST_FIRST)).values).toEqual([]);
+  });
+
+  it("keeps a routed *and* archived item in the archive alone", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 2);
+    const both = capture({ id: "item-0" });
+
+    await markProcessed(p, markedProcessed(both));
+    await setArchived(p, "item-0", { archivedAt: "2026-08-03T12:00:00.000Z" });
+
+    expect(ids((await p.queue(OLDEST_FIRST)).values)).toEqual(["item-1"]);
+    expect(ids((await p.archived(OLDEST_FIRST)).values)).toEqual(["item-0"]);
+  });
+
+  it("shows a superseded item on neither surface", async () => {
+    const { pool: p } = pool();
+    const original = capture({ id: "item-1" });
+    await appendCapture(p, original);
+    await appendCapture(
+      p,
+      revisionOf(original, {
+        id: "revision",
+        text: "reworded",
+        editedAt: "2026-08-04T11:00:00.000Z",
+      }),
+    );
+
+    expect(ids((await p.queue(OLDEST_FIRST)).values)).toEqual(["revision"]);
+    expect((await p.archived(OLDEST_FIRST)).values).toEqual([]);
+  });
+
+  it("paginates without a trailing empty page", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 5);
+
+    const page: Page = { limit: 2 };
+    const first = await p.queue(page);
+    const second = await p.queue(nextPage(first.next, page));
+    const third = await p.queue(nextPage(second.next, page));
+
+    expect(
+      [first, second, third].flatMap((slice) => ids(slice.values)),
+    ).toEqual(["item-0", "item-1", "item-2", "item-3", "item-4"]);
+    expect(third.next).toBeUndefined();
+  });
+
+  it("neither skips nor repeats a row when a capture arrives mid-read", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 4);
+
+    const page: Page = { limit: 2 };
+    const first = await p.queue(page);
+    // New work lands ahead of an oldest-first reader, which is what makes the
+    // keyset sound although the queue reorders under it.
+    await appendCapture(
+      p,
+      capture({ id: "arrived", createdAt: "2026-08-03T09:30:00.000Z" }),
+    );
+    const second = await p.queue(nextPage(first.next, page));
+    const third = await p.queue(nextPage(second.next, page));
+
+    expect(
+      [first, second, third].flatMap((slice) => ids(slice.values)),
+    ).toEqual(["item-0", "item-1", "item-2", "item-3", "arrived"]);
+    expect(third.next).toBeUndefined();
+  });
+
+  it("takes a bare timestamp as a coarse entry point", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 5);
+
+    const from: Position = { at: at("2026-08-03T09:02:00.000Z") };
+
+    expect(ids((await p.queue({ limit: 50, after: from })).values)).toEqual([
+      "item-3",
+      "item-4",
+    ]);
+  });
+
+  it("hands back an empty slice once the queue has drained", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 2);
+
+    await setArchived(p, "item-0", { archivedAt: "2026-08-03T12:00:00.000Z" });
+    await markProcessed(p, markedProcessed(capture({ id: "item-1" })));
+
+    expect(await p.queue(OLDEST_FIRST)).toEqual({ values: [] });
+  });
+});
+
+describe("routing records", () => {
+  it("reads back what was written, oldest first", async () => {
+    const { pool: p } = pool();
+    const record = capture({ id: "item-1" });
+    await appendCapture(p, record);
+
+    await p.transaction(async (tx) => {
+      await tx.insertRoutingRecord(
+        markedProcessed(record, {
+          id: "routing-2",
+          at: "2026-08-03T11:00:00.000Z",
+        }),
+      );
+      await tx.insertRoutingRecord(
+        markedProcessed(record, {
+          id: "routing-1",
+          at: "2026-08-03T10:00:00.000Z",
+          note: "into the vault",
+        }),
+      );
+    });
+
+    expect(await p.routingRecords(record.id)).toEqual([
+      {
+        id: "routing-1",
+        item: "item-1",
+        target: { kind: "user", note: "into the vault" },
+        at: "2026-08-03T10:00:00.000Z",
+      },
+      {
+        id: "routing-2",
+        item: "item-1",
+        target: { kind: "user" },
+        at: "2026-08-03T11:00:00.000Z",
+      },
+    ]);
+  });
+
+  it("bumps the item's modifiedAt, since a delta read has to carry it", async () => {
+    const { pool: p } = pool();
+    const record = capture({ id: "item-1" });
+    const before = await appendCapture(p, record);
+
+    await p.transaction((tx) =>
+      tx.insertRoutingRecord(markedProcessed(record)),
+    );
+
+    const after = await p.item(record.id);
+    expect(Date.parse(after?.modifiedAt ?? "")).toBeGreaterThan(
+      Date.parse(before.modifiedAt),
+    );
+  });
+
+  it("goes when its item does, being the item's own state", async () => {
+    const { pool: p, raw } = pool();
+    const record = capture({ id: "item-1" });
+    await appendCapture(p, record);
+    await p.transaction((tx) =>
+      tx.insertRoutingRecord(markedProcessed(record)),
+    );
+
+    raw.exec("PRAGMA foreign_keys = ON");
+    raw.prepare("DELETE FROM items WHERE id = ?").run(record.id);
+
+    expect(raw.prepare("SELECT * FROM routing_records").all()).toEqual([]);
+  });
+
+  it("answers nothing for an item that has been nowhere", async () => {
+    const { pool: p } = pool();
+    const record = capture({ id: "item-1" });
+    await appendCapture(p, record);
+
+    expect(await p.routingRecords(record.id)).toEqual([]);
+  });
+});
+
 describe("the unbuilt half of the store", () => {
   it("names the method it has not got to yet", async () => {
     const { pool: p } = pool();
-    expect(() => p.queue(ALL)).toThrow(/queue is not implemented/);
+    expect(() => p.revisionChain("item-1" as ItemId)).toThrow(
+      /revisionChain is not implemented/,
+    );
   });
 });
 

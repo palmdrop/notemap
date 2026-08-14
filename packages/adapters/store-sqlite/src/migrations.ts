@@ -300,6 +300,35 @@ export const MIGRATIONS: readonly string[] = [
     ON jobs (abandoned_at, subject_kind, subject_id, kind)
     WHERE abandoned_at IS NOT NULL;
   `,
+
+  `
+  -- Item state, so purge takes it: a routing record says where *this item* went.
+  CREATE TABLE routing_records (
+    id          TEXT    NOT NULL PRIMARY KEY,
+    item_id     TEXT    NOT NULL REFERENCES items (id) ON DELETE CASCADE,
+    target_kind TEXT    NOT NULL CHECK (target_kind IN ('destination', 'user')),
+    -- A destination target names both; a user target names neither.
+    destination TEXT    CHECK ((target_kind = 'destination') = (destination IS NOT NULL)),
+    capability  TEXT    CHECK ((target_kind = 'destination') = (capability IS NOT NULL)),
+    note        TEXT    CHECK (note IS NULL OR target_kind = 'user'),
+    -- \`pending\` is unreachable until delivery ships, and is admitted here so
+    -- that arrival costs no migration over a table holding real records.
+    state       TEXT    NOT NULL CHECK (state IN ('pending', 'delivered')),
+    at          INTEGER NOT NULL,
+    pointer     TEXT
+  ) STRICT;
+
+  -- The queue's routing anti-join. SQLite cannot index a NOT EXISTS, so it rides
+  -- on this rather than on the queue's own index.
+  CREATE INDEX routing_records_item ON routing_records (item_id, at, id);
+
+  -- The queue and the archive both order on content time, which is a revision or
+  -- amendment where there is one and the capture time otherwise. Partial on the
+  -- queue's half: the archive is small and drains nowhere.
+  CREATE INDEX items_queue
+    ON items (COALESCE(content_updated_at, created_at), id)
+    WHERE archived_at IS NULL;
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

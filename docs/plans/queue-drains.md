@@ -85,25 +85,27 @@ Docs before the routes that implement them, as the asset slice did.
 
 ### Phase 2 — The store *(depends on nothing but phase 0)*
 
-- [ ] New migration: `routing_records` — id, item, target kind, destination and capability for a
-      destination target, note for a user target, state, time, pointer. CHECK constraints pair the
-      target kind to the columns that may be set, the way `item_tags` pairs `by_kind` to `by_ref`.
-      **Foreign key to items, `ON DELETE CASCADE`** — a routing record is item state and purge
-      already takes it
-- [ ] Indexes: `routing_records(item_id)`; an expression index on
+- [x] 2026-08-14 New migration: `routing_records` — id, item, target kind, destination and capability
+      for a destination target, note for a user target, state, time, pointer. CHECK constraints pair
+      the target kind to the columns that may be set, the way `item_tags` pairs `by_kind` to
+      `by_ref`. **Foreign key to items, `ON DELETE CASCADE`** — a routing record is item state and
+      purge already takes it
+- [x] 2026-08-14 Indexes: `routing_records(item_id)`; an expression index on
       `(COALESCE(content_updated_at, created_at), id)` over `items`, partial on `archived_at IS
       NULL`, for the queue's ordering
-- [ ] `queue` and `archived` stop being `unimplemented`. Queue: unarchived, not superseded, holding
-      no routing record, oldest first by content time. Archived: archived, ordered the same way.
-      Both keyset-paginated through the existing `keysetPage`
-- [ ] `routingRecords` stops answering `[]` and reads the table
-- [ ] Writes: insert a routing record; set and clear archive state. Both bump `modified_at`
-- [ ] Tests: an archived item leaves the queue and appears in the archive; unarchiving returns it
-      at its original position; an item with a routing record leaves the queue; a superseded item is
-      in neither; purging an item takes its routing records with it. Paging the queue while a new
-      capture arrives never skips or repeats a row — the property `core.md` now claims
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint`
-- [ ] `git commit`
+- [x] 2026-08-14 `queue` and `archived` stop being `unimplemented`. Queue: unarchived, not
+      superseded, holding no routing record, oldest first by content time. Archived: archived,
+      ordered the same way. Both keyset-paginated through the existing `keysetPage`
+- [x] 2026-08-14 `routingRecords` stops answering `[]` and reads the table
+- [x] 2026-08-14 Writes: insert a routing record; set and clear archive state. Both bump
+      `modified_at`
+- [x] 2026-08-14 Tests: an archived item leaves the queue and appears in the archive; unarchiving
+      returns it at its original position; an item with a routing record leaves the queue; a
+      superseded item is in neither; purging an item takes its routing records with it. Paging the
+      queue while a new capture arrives never skips or repeats a row — the property `core.md` now
+      claims
+- [x] 2026-08-14 Verify: `pnpm typecheck && pnpm test && pnpm lint`
+- [x] 2026-08-14 `git commit`
 
 ### Phase 3 — Core *(depends on phase 2)*
 

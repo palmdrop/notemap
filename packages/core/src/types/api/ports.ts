@@ -15,7 +15,7 @@ import type {
   SyncCursor,
   Timestamp,
 } from "../domain/ids";
-import type { Item, ItemRecord } from "../domain/item";
+import type { ArchiveState, Item, ItemRecord } from "../domain/item";
 import type { MirrorRecord } from "../domain/mirror";
 import type { AbandonedPosition } from "../domain/position";
 import type {
@@ -190,6 +190,11 @@ export interface PoolTx extends PoolReads {
   insertItem(record: ItemRecord): Promise<Item>;
   appendAction(action: Action): Promise<void>;
   enqueue(jobs: readonly Job[]): Promise<void>;
+
+  /** Sets the archive state, or clears it when given none. Answers the item as it now stands. */
+  setArchiveState(item: ItemId, state?: ArchiveState): Promise<Item>;
+
+  insertRoutingRecord(record: RoutingRecord): Promise<void>;
 
   /** When it was stored is the store's, the way `modifiedAt` is: operational, and not part of the asset. */
   insertAsset(asset: Asset): Promise<void>;

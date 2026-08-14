@@ -61,6 +61,18 @@ export type JobRow = {
   readonly last_failure_detail: string | null;
 };
 
+export type RoutingRecordRow = {
+  readonly id: string;
+  readonly item_id: string;
+  readonly target_kind: "destination" | "user";
+  readonly destination: string | null;
+  readonly capability: string | null;
+  readonly note: string | null;
+  readonly state: "pending" | "delivered";
+  readonly at: number;
+  readonly pointer: string | null;
+};
+
 export type ActionRow = AgentColumns & {
   readonly id: string;
   readonly kind: string;
@@ -107,6 +119,17 @@ export const TABLE_COLUMNS = {
     "abandoned_at",
     "last_failure_code",
     "last_failure_detail",
+  ],
+  routing_records: [
+    "id",
+    "item_id",
+    "target_kind",
+    "destination",
+    "capability",
+    "note",
+    "state",
+    "at",
+    "pointer",
   ],
   actions: ["id", "kind", "subject", "by_kind", "by_ref", "at", "detail"],
   pool_meta: ["key", "value"],

@@ -10,8 +10,6 @@ import { MIGRATIONS } from "./migrations";
 import { createSqlitePoolStore, type SqlitePoolStore } from "./pool-store";
 import { at } from "./testing/fixture";
 
-const BEFORE_SUBJECT_SPLIT = 6;
-
 const MINUTE = 60_000 as Duration;
 const NOW = at("2026-08-03T10:00:00.000Z");
 const ENQUEUED = Date.parse("2026-08-03T09:00:00.000Z");
@@ -29,18 +27,24 @@ afterEach(async () => {
   }
 });
 
+/**
+ * The schema version this migrates from, pinned rather than counted back from
+ * the end: a migration added later moves the end and would silently retarget
+ * these at a different starting point.
+ */
+const BEFORE_SUBJECT_SPLIT = 6;
+
 /** A pool as it stood before the subject was split, with work already owed. */
 function pooledAtPreviousVersion(): string {
   const directory = mkdtempSync(join(tmpdir(), "notemap-migration-"));
   directories.push(directory);
   const file = join(directory, "pool.db");
 
-  // Pinned, not relative: this exercises the migration that split the subject,
-  // so a later one must not quietly move which migration is under test.
-  const version = BEFORE_SUBJECT_SPLIT;
   const raw = new DatabaseSync(file);
-  for (const migration of MIGRATIONS.slice(0, version)) raw.exec(migration);
-  raw.exec(`PRAGMA user_version = ${version}`);
+  for (const migration of MIGRATIONS.slice(0, BEFORE_SUBJECT_SPLIT)) {
+    raw.exec(migration);
+  }
+  raw.exec(`PRAGMA user_version = ${BEFORE_SUBJECT_SPLIT}`);
 
   const insert = raw.prepare(
     `INSERT INTO jobs
