@@ -330,3 +330,18 @@ export async function storedRecord(root: string): Promise<MirrorRecord> {
   if (path === undefined) throw new Error(`no record under ${root}`);
   return parseMirrorRecord(await readFile(path, "utf8"));
 }
+
+/** Every record the mirror holds, by the item it is about. */
+export async function storedRecords(
+  root: string,
+): Promise<Map<ItemId, MirrorRecord>> {
+  const files = await filesUnder(root);
+  const records = new Map<ItemId, MirrorRecord>();
+
+  for (const path of files.filter((each) => each.endsWith(".json"))) {
+    const record = parseMirrorRecord(await readFile(path, "utf8"));
+    records.set(record.item.id, record);
+  }
+
+  return records;
+}

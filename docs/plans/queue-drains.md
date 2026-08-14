@@ -139,11 +139,11 @@ Docs before the routes that implement them, as the asset slice did.
 
 ### Phase 5 — End to end *(depends on phase 4)*
 
-- [ ] Integration test: capture three, archive one, mark one processed, drain the mirror queue, and
-      find the queue holding exactly one — with the mirror files for all three agreeing with the
-      pool
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint` from a clean checkout
-- [ ] `git commit`
+- [x] 2026-08-14 Integration test: capture three, archive one, mark one processed, drain the mirror
+      queue, and find the queue holding exactly one — with the mirror files for all three agreeing
+      with the pool
+- [x] 2026-08-14 Verify: `pnpm typecheck && pnpm test && pnpm lint` from a clean checkout
+- [x] 2026-08-14 `git commit`
 
 ---
 

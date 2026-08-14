@@ -5,6 +5,7 @@ import {
   drainWith,
   envelope,
   harness,
+  storedRecords,
   type Harness,
   type Mirroring,
 } from "./fixture";
@@ -295,6 +296,37 @@ describe("what the mirror is owed", () => {
     await harnessed.pool.routing.markProcessed(first);
 
     expect(await drainWith(harnessed)()).toBe(0);
+  });
+});
+
+describe("draining a queue end to end", () => {
+  it("leaves one item queued and a mirror agreeing with the pool", async () => {
+    const harnessed = pool("filesystem");
+    const { pool: p } = harnessed;
+    const [archived, processed, left] = await three(p);
+
+    await p.items.archive(archived, "noise");
+    await p.routing.markProcessed(processed, "into the fiction-a vault");
+    await drainWith(harnessed)();
+
+    expect(ids((await p.views.queue(ALL)).values)).toEqual([left]);
+    expect(ids((await p.views.archived(ALL)).values)).toEqual([archived]);
+
+    // Every item, however it left: what is on disk is what the pool would
+    // project for it now, field for field.
+    const mirrored = await storedRecords(harnessed.mirrorRoot);
+    expect([...mirrored.keys()].sort()).toEqual(
+      [archived, processed, left].sort(),
+    );
+    for (const [id, record] of mirrored) {
+      expect(record, id).toEqual(await p.mirror.recordFor(id));
+    }
+
+    expect(mirrored.get(archived)?.item.archived?.reason).toBe("noise");
+    expect(mirrored.get(processed)?.routing).toEqual(
+      await p.routing.recordsFor(processed),
+    );
+    expect(mirrored.get(left)?.routing).toEqual([]);
   });
 });
 
