@@ -1,7 +1,8 @@
 # Spec: HTTP API (`/v1`)
 
-**Status**: Draft — capture, feed, assets and the action log are settled; the rest is stub
-**Last updated**: 2026-08-12
+**Status**: Draft — capture, feed, assets, the action log, the queue and the archive are settled;
+the rest is stub
+**Last updated**: 2026-08-14
 **Shipped**:
 
 - 2026-08-12 — **Assets are transferable.** `POST /v1/assets` takes the bytes raw under a required
@@ -72,19 +73,18 @@ are served inline.
 
 Settled (2026-08-11): `GET /v1/actions`, and the log page at `/log`.
 
-Still stub, and unwritten below: the queue read, tagging and untagging, suggestions and their
-decisions, artifacts and corrections, routing and destinations, archive and unarchive, purge and
-tombstones, range requests over asset content, the wire form of sync delta reads, and
-authentication. Nothing here forecloses them; they get the same treatment when their slice is
-built.
+Settled (2026-08-14): `GET /v1/queue` and `GET /v1/archived`, both paginated by a content-time
+position; archiving and unarchiving an item; marking one processed by hand; and reading an item's
+routing records.
 
-Two of those are now designed but not yet specified here, and will be written with the slices that
-build them ([queue-drains.md](../plans/queue-drains.md),
-[delivery-machinery.md](../plans/delivery-machinery.md)). What the wire has to express that it does
-not today: a queue read paginated by a **content-time** position rather than the feed's capture-time
-one — the same `<at>,<id>` spelling carrying a different meaning, and so **not interchangeable
-between the two surfaces**; archive and unarchive; routing, whose response may name a delivery that
-has not happened yet; and cancelling one that is pending
+Still stub, and unwritten below: tagging and untagging, suggestions and their decisions, artifacts
+and corrections, routing to a destination and the destination list, purge and tombstones, range
+requests over asset content, the wire form of sync delta reads, and authentication. Nothing here
+forecloses them; they get the same treatment when their slice is built.
+
+One of those is designed but not yet specified here, and will be written with the slice that builds
+it ([delivery-machinery.md](../plans/delivery-machinery.md)): routing to a destination, whose
+response may name a delivery that has not happened yet, and cancelling one that is pending
 ([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)).
 
 **What this surface deliberately does not defend is written down**, rather than left to be
@@ -230,6 +230,118 @@ The response is a slice:
   ([ADR 14](../adr/0014-pagination-by-domain-position.md)).
 - Both orders may be read from one position. It names a place in the feed, not a direction of
   travel — `newest-first` continues below it, `oldest-first` above it.
+
+### The queue and the archive
+
+`GET /v1/queue` — every item that is unprocessed, unarchived and not superseded, oldest first.
+
+`GET /v1/archived` — every archived item, in the same order.
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `limit` | `50` | 1–500 |
+| `after` | *(absent)* | The position to continue from |
+
+- **Neither takes `order`.** Oldest first is what makes the queue a queue
+  ([ADR 10](../adr/0010-feed-and-queue-sort-differently.md)), and the archive is the same surface
+  filtered the other way. An `order` parameter is ignored, as any parameter a route does not read
+  is; it is not refused, because it is not a parameter of these surfaces at all.
+- `limit` and `after` mean what they mean on the feed and are refused in the same ways.
+- The response is a slice of items with a `next` URL, on the same terms as the feed's: ready to
+  fetch, and absent on the last page.
+
+**The queue's position is a content time**, spelled `<at>,<id>` exactly as the feed's is: the
+revision or amendment time where an item has one, its capture time otherwise. **The two are not
+interchangeable.** Nothing in the wire form can stop a client handing a feed position to the queue
+— both are an instant and an id — and nothing rejects one, because there is nothing to reject: it
+names an instant, the read is a comparison, and the answer is a page from the wrong place. A
+client pages by following `next`, which is issued by the surface it came from.
+
+The same holds between the queue and the archive, which share a sort key and so do continue each
+other coherently — but an item is in exactly one of them, so a position from either still only
+means something on the surface it was issued for.
+
+- An item leaves the queue when it is archived, when it is routed — including being marked
+  processed by hand — or when a revision supersedes it.
+- **The queue reorders under a reader, and pages are still exact.** Every event that moves an item
+  gives it a content time of now, which places it ahead of a reader walking oldest-first; every
+  event that removes one hides it, and a reader who had not reached it was never meant to see it
+  ([core.md](core.md#the-queue)).
+
+### Archiving
+
+`POST /v1/items/{id}/archive` — hides an item from the queue. The body is optional and carries
+one field:
+
+```json
+{ "reason": "noise" }
+```
+
+`POST /v1/items/{id}/unarchive` — returns it to the queue, at its unchanged position. It takes no
+body.
+
+Both answer `200 OK` with the `Item` as it now stands.
+
+- **Archiving an item that is already archived is refused** — `409 already-archived`, carrying the
+  instant it was archived at. It is not a no-op: archiving carries a reason and a time, so a second
+  archive either overwrites what the first recorded or discards what the second was given, and
+  neither is what the caller asked for. Unarchiving an item that is not archived is refused the
+  same way, `409 not-archived`.
+- This is the opposite call to a capture replay's, deliberately. A replay is a client resending
+  something it may not know arrived; an archive is a fresh decision about a state the caller can
+  already read.
+- An id no item has is `404 no-such-item`.
+- **A body is still JSON.** Both routes are `POST` and so require `application/json` like every
+  other bodied request; an empty body is read as `{}`, so a client with nothing to say sends
+  nothing. A key neither route knows is `400 malformed-envelope`, on the same strictness the
+  capture envelope has.
+
+### Marking an item processed
+
+`POST /v1/items/{id}/mark-processed` — the user carried the content onward themselves. The body is
+optional:
+
+```json
+{ "note": "pasted into the fiction-a vault" }
+```
+
+`200 OK` with the routing record that was appended:
+
+```json
+{
+  "id": "0198f0c2-...",
+  "item": "0198f0c2-...",
+  "target": { "kind": "user", "note": "pasted into the fiction-a vault" },
+  "at": "2026-08-08T09:00:00.123Z"
+}
+```
+
+- **This is routing, whose destination is the user** ([core.md](core.md#the-queue)). The item
+  leaves the queue, stays in the feed, and stays unarchived.
+- **`200` rather than `201`, although a record was created.** A routing record has no URL of its
+  own — an item's records are read as one list — so there is no `Location` to name, and a `201`
+  whose `Location` is absent says less than the record in the body already does.
+- Marking an item processed twice appends two records and is not refused. Nothing about the first
+  says the second did not happen, which is the difference between this and archiving.
+- An archived item may still be marked processed: the archive is a filter, not a terminus.
+- An id no item has is `404 no-such-item`.
+
+### An item's routing records
+
+`GET /v1/items/{id}/routing` — where an item has been.
+
+```json
+{ "values": [ { "id": "0198f0c2-...", "item": "0198f0c2-...",
+                "target": { "kind": "user" }, "at": "2026-08-08T09:00:00.123Z" } ] }
+```
+
+- Not paginated: an item's routing records are a handful, and the list is item state rather than a
+  surface over the pool.
+- **`404 no-such-item` for an id the pool does not hold**, unlike `GET /v1/actions?item=`. Routing
+  records are the item's own state and go when it does, so an empty list for an unknown id would
+  be a claim about an item rather than a filter that matched nothing.
+- A `pointer` is present only where a delivery recorded one, and is best-effort: it says where an
+  item once went, never where it is.
 
 ### Assets
 
@@ -395,12 +507,15 @@ Every error, from core or from the daemon, is one shape:
 | `400` | `malformed-json` | — | daemon |
 | `400` | `malformed-envelope` | `issues` (`SchemaIssue[]`) | daemon |
 | `404` | `unknown-route` | `path` | daemon |
-| `404` | `no-such-item` | `item` | daemon |
+| `404` | `no-such-item` | `item` | daemon, core |
+| `404` | `item-purged` | `item`, `at` | core |
 | `404` | `no-such-asset` | `asset` | core |
 | `404` | `blob-missing` | `blob` | core |
 | `405` | `method-not-allowed` | `method`, `allow` | daemon (+ `Allow` header) |
 | `409` | `capture-id-conflict` | `existing` | core |
 | `409` | `source-item-changed` | `existing` | core |
+| `409` | `already-archived` | `item`, `at` | core |
+| `409` | `not-archived` | `item` | core |
 | `413` | `asset-too-large` | `max` | daemon |
 | `415` | `unsupported-media-type` | `contentType` | daemon |
 | `422` | `limit-too-large` | `limit`, `max` | daemon |
@@ -426,6 +541,10 @@ throw into a domain-looking refusal teaches clients to trust a fiction.
 `413 asset-too-large` is the single deliberate exception, for the reason given above: a size
 limit is a fact the transport layer acts on, and hiding it inside `422` would cost a client the
 chance to stop an upload early.
+
+`item-purged` is in the table because it is part of the refusal a client parses, not because
+anything raises it yet: purge is not built. It is `404` on the same terms as `no-such-item` — from
+a caller's side the item is not there — and carries the instant it went.
 
 **`asset-hash-mismatch` is gone** (2026-08-11). A payload's asset reference no longer carries a
 blob hash, so there are no longer two numbers for the daemon to disagree about — and every
@@ -554,6 +673,20 @@ by nothing in `/v1`, and removable without changing a promise this spec makes.
   with an `Allow` header.
 - `GET /v1/openapi.json` returns a valid OpenAPI 3.1 document describing every route above, and
   it matches the copy checked into the repo.
+- `GET /v1/queue` returns every unprocessed, unarchived, unsuperseded item oldest first, and
+  following `next` until it is absent yields each exactly once with no trailing empty page.
+- Archiving an item removes it from `GET /v1/queue` and adds it to `GET /v1/archived`;
+  unarchiving returns it to the queue between the same two neighbours it had before.
+- Marking an item processed answers a routing record naming the user, removes it from the queue,
+  and leaves it in the feed unarchived; doing it twice answers two records and refuses neither.
+- Archiving an archived item is `409 already-archived` and changes nothing; unarchiving one that
+  is not archived is `409 not-archived`.
+- `POST /v1/items/{id}/archive` with no body at all succeeds, and with a key the route does not
+  know is `400 malformed-envelope`.
+- `GET /v1/items/{id}/routing` answers an item's records, and `404 no-such-item` for an id the
+  pool does not hold.
+- A position taken from `GET /v1/feed` is accepted by `GET /v1/queue` and answers a page from the
+  wrong place rather than a refusal, which is what "not interchangeable" costs.
 - `GET /v1/actions` with no parameters returns the 50 newest entries, newest first, and the entry
   for a capture carries the instant the daemon received it rather than its `capturedAt`.
 - `GET /v1/actions?item=<id>` returns that subject's entries and no others, and following `next`

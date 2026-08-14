@@ -67,21 +67,21 @@ over a table that will by then hold real data.
 
 ### Phase 0 — Branch
 
-- [ ] `git checkout -b agent/queue-drains`
+- [x] 2026-08-14 `git checkout -b agent/queue-drains`
 
 ### Phase 1 — Write the wire down *(blocks phase 4)*
 
 Docs before the routes that implement them, as the asset slice did.
 
-- [ ] `http-v1.md`: `GET /v1/queue` and `GET /v1/archived`; archive and unarchive; marking processed
-      and reading an item's routing records. The queue's position is a **content time**, spelled
-      `<at>,<id>` exactly as the feed's is and meaning something else — say plainly that the two are
-      not interchangeable, since nothing in the wire form can stop a client swapping them
-- [ ] The refusal-to-status table gains whatever these raise. `no-such-item` already has a row;
-      archiving something already archived, and unarchiving something that is not, are refusals —
-      `409` by the table's own rule, being a conflict with what the pool already holds
-- [ ] Verify: `pnpm lint`; every refusal code in the table has exactly one status
-- [ ] `git commit`
+- [x] 2026-08-14 `http-v1.md`: `GET /v1/queue` and `GET /v1/archived`; archive and unarchive; marking
+      processed and reading an item's routing records. The queue's position is a **content time**,
+      spelled `<at>,<id>` exactly as the feed's is and meaning something else — say plainly that the
+      two are not interchangeable, since nothing in the wire form can stop a client swapping them
+- [x] 2026-08-14 The refusal-to-status table gains whatever these raise. `no-such-item` already has
+      a row; archiving something already archived, and unarchiving something that is not, are
+      refusals — `409` by the table's own rule, being a conflict with what the pool already holds
+- [x] 2026-08-14 Verify: `pnpm lint`; every refusal code in the table has exactly one status
+- [x] 2026-08-14 `git commit`
 
 ### Phase 2 — The store *(depends on nothing but phase 0)*
 
