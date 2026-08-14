@@ -1,9 +1,9 @@
 # A job's subject names what it is about
 
 **Date**: 2026-08-13
-**Status**: Todo
+**Status**: Done
 **Spec**: `docs/specs/core.md`
-**Closed**:
+**Closed**: 2026-08-14
 
 ---
 
@@ -99,10 +99,12 @@ me" is one read holds continuously rather than being broken and repaired.
 
 ### Phase 4 — End to end *(depends on phase 3)*
 
-- [ ] `tests/integration/work.test.ts` and `mirror.test.ts` pass unchanged but for subject
+- [x] `tests/integration/work.test.ts` and `mirror.test.ts` pass unchanged but for subject
       construction. If either needed a behavioural edit, something in phases 1–3 was not a refactor
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint` from a clean checkout
-- [ ] `git commit`
+      *(2026-08-14)* — `mirror.test.ts` is untouched. `work.test.ts` has one edit: the abandoned row
+      it asserts on gained `subject`, which is the field phase 1 adds, not a change of behaviour
+- [x] Verify: `pnpm typecheck && pnpm test && pnpm lint` from a clean checkout *(2026-08-14)*
+- [x] `git commit` *(2026-08-14)*
 
 ---
 
@@ -112,9 +114,12 @@ me" is one read holds continuously rather than being broken and repaired.
   job is about an item *and* an enrichment, which is not a subject variant — it is a second axis.
   Keeping it is the conservative read. *Fallback*: leave it; delivery does not need it either way,
   since a delivery job's subject already identifies it uniquely.
+  → **Kept**, as the fallback says. It is a second axis, and the position stays a total order.
 - **Whether SQLite will re-create the `jobs` table again.** It has been re-created once already, for
   the foreign key. Splitting a column may or may not need the same dance. *Fallback*: recreate; the
   migration for it is written and the pattern is established.
+  → **Recreated.** Splitting one column into two is not something `ALTER TABLE` does, and the new
+  table is where the `subject_kind` CHECK belongs anyway.
 
 ---
 
