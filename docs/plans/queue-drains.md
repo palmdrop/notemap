@@ -69,7 +69,7 @@ over a table that will by then hold real data.
 
 - [ ] `git checkout -b agent/queue-drains`
 
-### Phase 1 — Write the wire down *(blocks phase 5)*
+### Phase 1 — Write the wire down *(blocks phase 4)*
 
 Docs before the routes that implement them, as the asset slice did.
 
