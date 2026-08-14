@@ -87,14 +87,15 @@ me" is one read holds continuously rather than being broken and repaired.
 
 ### Phase 3 — Call sites *(depends on phase 2)*
 
-- [ ] `capture.ts` enqueues its mirror job with an item subject
-- [ ] `work.ts` — claim, complete, extend, release and the abandoned surface carry the subject
-      through
-- [ ] `mirror.ts` and the daemon's `mirror/runner.ts`: a mirror job's subject is read as an item.
+- [x] `capture.ts` enqueues its mirror job with an item subject *(2026-08-14)*
+- [x] `work.ts` — claim, complete, extend, release and the abandoned surface carry the subject
+      through *(2026-08-14)* — `complete` resolves the subject to the item the action log keys on
+- [x] `mirror.ts` and the daemon's `mirror/runner.ts`: a mirror job's subject is read as an item.
       The runner reads `lease.job.subject` in two places and both must go through the union rather
-      than assuming an id
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint`
-- [ ] `git commit`
+      than assuming an id *(2026-08-14)* — `mirror.ts` needed nothing: `recordFor` takes an `ItemId`
+      and never sees a job
+- [x] Verify: `pnpm typecheck && pnpm test && pnpm lint` *(2026-08-14)*
+- [x] `git commit` *(2026-08-14)*
 
 ### Phase 4 — End to end *(depends on phase 3)*
 

@@ -90,7 +90,7 @@ export async function complete(
 
     await recordAction(ports, tx, {
       kind: giveUp ? "work-abandoned" : "work-failed",
-      subject: held.job.subject,
+      subject: held.job.subject.item,
       // Nobody asked for this attempt, so nobody but notemap made it.
       by: { kind: "notemap" },
       at,

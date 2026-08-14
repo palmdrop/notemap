@@ -310,7 +310,7 @@ export function drainWith(
         let outcome;
         try {
           const record = await harnessed.pool.mirror.recordFor(
-            lease.job.subject,
+            lease.job.subject.item,
           );
           if (record !== undefined) await writer.write(record);
           outcome = { kind: "succeeded" } as const;

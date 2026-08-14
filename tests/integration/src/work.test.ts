@@ -179,6 +179,7 @@ describe("a non-retryable failure", () => {
     expect(await claim(p)).toEqual([]);
     expect((await p.work.abandoned(ALL)).values).toEqual([
       {
+        subject: { kind: "item", item: item.id },
         item: item.id,
         kind: "mirror",
         attempts: 1,

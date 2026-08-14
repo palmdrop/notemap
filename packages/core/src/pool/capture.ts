@@ -113,7 +113,7 @@ async function append(
       {
         id: ports.ids.next<JobId>(),
         kind: "mirror",
-        subject: item.id,
+        subject: { kind: "item", item: item.id },
         attempt: 0,
         enqueuedAt: at,
       },
