@@ -1,9 +1,9 @@
 # Delivery machinery
 
 **Date**: 2026-08-13
-**Status**: Todo
+**Status**: Done
 **Spec**: `docs/specs/core.md`, `docs/specs/mirror.md`
-**Closed**:
+**Closed**: 2026-08-14
 
 ---
 
@@ -198,6 +198,20 @@ The properties worth testing hardest, because each fails silently:
 ---
 
 ## Notes
+
+Implemented 2026-08-14. Three things landed differently from what is written above, each noted on
+the task and argued in full where the decision lives:
+
+- **The abandoned surface's item is resolved when a job is enqueued, not joined when it is read**
+  ([ADR 18](../adr/0018-a-jobs-subject-names-what-it-is-about.md), amended). A join cannot survive
+  the removal of the reservation it would join to.
+- **The evidence for a vanished attempt is the expired lease on the row**, not `attempt > 0` with no
+  recorded failure ([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md),
+  amended). The stated discriminator cannot see a crash on the first attempt.
+- **A routing record remembers what the delivery targeted.** Nothing else could carry out a delivery
+  that was deferred; `CONTEXT.md` and `core.md`'s routing section say so now.
+
+Original notes:
 
 DO NOT IMPLEMENT until clearly stated by the developer.
 

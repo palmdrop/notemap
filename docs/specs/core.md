@@ -63,6 +63,21 @@
   discard one of them. `routing.route` and `routing.destinations` are still unimplemented; delivery
   is the next slice. ([plan](../plans/queue-drains.md),
   [ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md))
+- 2026-08-14 — **Delivery is machinery, and no duplicate can come out of it.** `routing.route` mints
+  a routing record as a reservation, attempts delivery once inline through a wired destination
+  adapter, and resolves it by what the adapter reported: delivered answers a record and a pointer,
+  a refusal writes nothing, and a destination that could not be reached leaves the record pending
+  and enqueues a **delivery job** — the third job kind, whose subject is the record rather than the
+  item. Retries are bounded and keyed on evidence: a lease that expired with nothing reported is
+  abandoned rather than retried, so every automatic retry is backed by proof that nothing was
+  delivered. Abandoning or cancelling a delivery removes the reservation, which returns the item to
+  the queue, and puts a row naming that item on the abandoned-work surface. A record now carries
+  its **state** and what the delivery **targeted**, because a delivery carried out later is
+  assembled from the record alone; `routing.cancelDelivery` and `routing.deliveryFor` are new, and
+  `routing.destinations` answers what each wired adapter declares. No adapter ships: this is proved
+  against a destination that fails on command.
+  ([plan](../plans/delivery-machinery.md),
+  [ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md))
 
 ---
 
@@ -411,6 +426,13 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   a destination that refuses removes it and the call is refused; a destination that could not be
   reached leaves it pending and enqueues a **delivery job**. A destination that is up therefore
   answers immediately, and only one that was genuinely absent becomes deferred work.
+- **A record remembers what the delivery targeted** (added 2026-08-14), beside the destination and
+  the capability. Under the synchronous model the target was consumed by the one attempt; a delivery
+  that is carried out later has to be assembled from the record alone, and a reservation that could
+  not say what it was pointed at would be a decision nothing could act on.
+- **Core imposes no timeout on the inline attempt.** A default is interface policy, and core is a
+  primitive API; the caller bounds it with the `AbortSignal` that reaches the adapter. A host that
+  passes none waits as long as its destination takes.
 - **Retry is keyed on evidence, not on failure.** `unreachable` is proof that nothing was
   delivered, so a retry cannot duplicate and the job is retried with backoff. `rejected` is proof
   that the destination was reached and refused, so it is abandoned on the first attempt — the same

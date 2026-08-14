@@ -4,6 +4,13 @@
 **Last updated**: 2026-08-14
 **Shipped**:
 
+- 2026-08-14 — **A delivery reaches the mirror when it lands, and not when it is decided.** A
+  routing record carries its state, and only the delivered ones are projected into a record — so an
+  item whose delivery is still pending mirrors as unrouted, and a rebuild from those files would
+  restore it unprocessed rather than restoring a promise nothing is left to keep. Resolving a
+  delivery enqueues the write it owes; minting a reservation enqueues nothing, and abandoning or
+  cancelling one leaves nothing to undo. ([plan](../plans/delivery-machinery.md),
+  [ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md))
 - 2026-08-14 — **Archive state and routing records reach the mirror.** Both were already in the
   record's shape and neither could ever appear in one: nothing could archive an item, and its
   routing read as empty by construction. Archiving, unarchiving and marking an item processed each

@@ -335,6 +335,7 @@ optional:
   "id": "0198f0c2-...",
   "item": "0198f0c2-...",
   "target": { "kind": "user", "note": "pasted into the fiction-a vault" },
+  "state": "delivered",
   "at": "2026-08-08T09:00:00.123Z"
 }
 ```
@@ -355,7 +356,8 @@ optional:
 
 ```json
 { "values": [ { "id": "0198f0c2-...", "item": "0198f0c2-...",
-                "target": { "kind": "user" }, "at": "2026-08-08T09:00:00.123Z" } ] }
+                "target": { "kind": "user" }, "state": "delivered",
+                "at": "2026-08-08T09:00:00.123Z" } ] }
 ```
 
 - Not paginated: an item's routing records are a handful, and the list is item state rather than a
@@ -365,11 +367,11 @@ optional:
   be a claim about an item rather than a filter that matched nothing.
 - A `pointer` is present only where a delivery recorded one, and is best-effort: it says where an
   item once went, never where it is.
-- **Every record read today has been delivered**, since the only way to mint one is to mark an item
-  processed and the user is not a destination to be unreachable. Delivery adds a `state` a client
-  must read rather than taking a record for arrival
-  ([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)), so a client written
-  against this route now should not assume the field's absence means anything.
+- **`state` is `pending` or `delivered`**, and a client may not read a record as arrival without it
+  ([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)). Nothing this surface
+  can reach mints a pending record yet — marking an item processed is delivered by construction —
+  but a record routed to a destination may be one, and the field is the same field.
+  A `destination` target additionally carries the `target` the delivery named there.
 
 ### Assets
 

@@ -85,6 +85,14 @@ out to be about evidence rather than severity:
 The three are distinguishable without a schema addition: a delivery job claimed with `attempt > 0`
 and no recorded failure had a previous attempt that vanished.
 
+*Amended 2026-08-14, implementing this.* That discriminator is not sufficient, and the built one is
+the **expired lease still on the row**. `attempt` counts attempts that *reported*, so a host that
+died on the first attempt leaves `attempt = 0` and is indistinguishable from a fresh job; and a host
+that died on a retry leaves the previous attempt's recorded failure, which reads as an ordinary
+failed attempt. Nothing reaps a lease, so a job that becomes claimable while still holding one had a
+holder that neither reported nor released — which is exactly the case, and needs no schema addition
+either.
+
 Retries are **bounded**, unlike mirror work. `core.md`'s reason for retrying a mirror write forever
 is that giving up does not change the fact that material is unmirrored. Giving up on a delivery
 *does* change something — it hands the decision back, so the person can repair the configuration or
