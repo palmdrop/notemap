@@ -49,6 +49,19 @@
   "what needs me" stays one read. No behaviour changed.
   ([plan](../plans/job-subject-union.md),
   [ADR 18](../adr/0018-a-jobs-subject-names-what-it-is-about.md))
+- 2026-08-14 — **The queue drains.** `items.archive` hides an item and `items.unarchive` returns it
+  at its unchanged position, since neither touches content time; `routing.markProcessed` appends a
+  routing record naming the user and takes the item out of the queue for good. That last one needs
+  none of the delivery machinery — its target is the user, nothing can be unreachable, and the
+  record is born delivered — which is what lets both ways out of the queue exist before a line of
+  retry logic does. `views.queue` and `views.archived` read oldest first from a content-time
+  position and take no order, and **processed is derived** as promised: unarchived, unsuperseded
+  and holding no routing record, three anti-joins the store indexes for rather than denormalises
+  around. Archiving something already archived is **refused** rather than absorbed, and so is
+  unarchiving something that is not: both carry a reason and a time, and a second decision would
+  discard one of them. `routing.route` and `routing.destinations` are still unimplemented; delivery
+  is the next slice. ([plan](../plans/queue-drains.md),
+  [ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md))
 
 ---
 

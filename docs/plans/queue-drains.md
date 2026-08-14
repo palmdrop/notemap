@@ -1,9 +1,9 @@
 # The queue drains
 
 **Date**: 2026-08-13
-**Status**: Todo
+**Status**: Done
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/mirror.md`
-**Closed**:
+**Closed**: 2026-08-14
 
 ---
 
@@ -152,9 +152,13 @@ Docs before the routes that implement them, as the asset slice did.
 - **Whether the queue wants a partial index it cannot have.** SQLite cannot index a `NOT EXISTS`,
   so the routing anti-join rides on `routing_records(item_id)` rather than on the queue's own index.
   *Fallback*: measure before adding anything cleverer; a personal pool is small and the shape is
-  right.
+  right. **Taken.** `EXPLAIN QUERY PLAN` shows the ordering answered by `items_queue` with no sort,
+  and both anti-joins by covering index; the keyset comparison itself scans that index rather than
+  seeking on it, which is the one thing left to measure if a pool ever gets large.
 - **Whether `markProcessed`'s note belongs on the record or in the target.** `RoutingTarget`'s user
   variant already carries `note?`. *Fallback*: leave it there; it is where the type already put it.
+  **Taken**, and the store follows: `note` is a column the CHECK constraint permits only on a user
+  target.
 
 ---
 
