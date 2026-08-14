@@ -119,7 +119,12 @@ me" is one read holds continuously rather than being broken and repaired.
   the foreign key. Splitting a column may or may not need the same dance. *Fallback*: recreate; the
   migration for it is written and the pattern is established.
   → **Recreated.** Splitting one column into two is not something `ALTER TABLE` does, and the new
-  table is where the `subject_kind` CHECK belongs anyway.
+  table is where the `subject_kind` CHECK belongs anyway. **And every later variant costs another
+  rebuild**, since SQLite cannot widen a CHECK in place — `subject_kind IN ('item')` names one value
+  in a column whose whole purpose is that more are coming. Accepted rather than avoided: the `kind`
+  CHECK already behaves this way and has already been rebuilt once for a new job kind, so the cost
+  is the house pattern rather than a surprise. Naming it here because the price is paid by the
+  *next* plan, not this one.
 
 ---
 

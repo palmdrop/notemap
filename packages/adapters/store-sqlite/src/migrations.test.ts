@@ -10,6 +10,8 @@ import { MIGRATIONS } from "./migrations";
 import { createSqlitePoolStore, type SqlitePoolStore } from "./pool-store";
 import { at } from "./testing/fixture";
 
+const BEFORE_SUBJECT_SPLIT = 6;
+
 const MINUTE = 60_000 as Duration;
 const NOW = at("2026-08-03T10:00:00.000Z");
 const ENQUEUED = Date.parse("2026-08-03T09:00:00.000Z");
@@ -33,7 +35,9 @@ function pooledAtPreviousVersion(): string {
   directories.push(directory);
   const file = join(directory, "pool.db");
 
-  const version = MIGRATIONS.length - 1;
+  // Pinned, not relative: this exercises the migration that split the subject,
+  // so a later one must not quietly move which migration is under test.
+  const version = BEFORE_SUBJECT_SPLIT;
   const raw = new DatabaseSync(file);
   for (const migration of MIGRATIONS.slice(0, version)) raw.exec(migration);
   raw.exec(`PRAGMA user_version = ${version}`);

@@ -234,6 +234,33 @@ describe("a non-retryable failure", () => {
     const seen = [...first.values, ...rest.values].map((row) => row.item);
     expect(new Set(seen).size).toBe(3);
   });
+
+  it("pages across work given up on in the same instant", async () => {
+    const { pool: p, clock } = await owing();
+    for (let n = 2; n <= 3; n += 1) {
+      await p.capture(
+        envelope({ sourceItemId: `src-${n}`, capturedAt: secondsIn(n) }),
+      );
+    }
+
+    // One instant for all three, so the position cannot decide on time alone
+    // and has to break the tie on the subject it carries.
+    clock.set(secondsIn(10));
+    for (const lease of await claim(p)) {
+      await p.work.complete(lease.id, failed(false, THREW));
+    }
+
+    const first = await p.work.abandoned({ limit: 2 });
+    expect(first.values).toHaveLength(2);
+    if (first.next === undefined) throw new Error("expected another page");
+
+    const rest = await p.work.abandoned({ limit: 2, after: first.next });
+    expect(rest.values).toHaveLength(1);
+    expect(rest.next).toBeUndefined();
+
+    const seen = [...first.values, ...rest.values].map((row) => row.item);
+    expect(new Set(seen).size).toBe(3);
+  });
 });
 
 describe("the action log", () => {

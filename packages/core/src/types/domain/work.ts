@@ -11,10 +11,6 @@ import type { SuggestionDraft } from "./suggestion";
 
 export type JobKind = "enrichment" | "mirror" | "mirror-remove";
 
-/**
- * What a job is about: which thing, and what kind of thing it is. One variant
- * for now; the second arrives with the work that is about a delivery.
- */
 export type JobSubject = { readonly kind: "item"; readonly item: ItemId };
 
 /** Deliberately partial: what a job carries as input is unsettled. */
@@ -80,7 +76,6 @@ export type JobResolution =
 /** One row of the surface answering "what needs me", for work of any kind. */
 export type AbandonedWork = {
   readonly subject: JobSubject;
-  /** The capture the work concerns, resolved by the store so the surface stays one read. */
   readonly item: ItemId;
   readonly kind: JobKind;
   /** Present for enrichment work only. */

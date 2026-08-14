@@ -284,8 +284,7 @@ export const MIGRATIONS: readonly string[] = [
   DROP TABLE jobs;
   ALTER TABLE jobs_next RENAME TO jobs;
 
-  -- Still at most one *pending* mirror job per item: the pair names the same
-  -- one thing the single column did, so the rule neither narrows nor widens.
+  -- Still at most one *pending* mirror job per item.
   CREATE UNIQUE INDEX jobs_one_pending_mirror
     ON jobs (subject_kind, subject_id, kind)
     WHERE kind IN ('mirror', 'mirror-remove')
