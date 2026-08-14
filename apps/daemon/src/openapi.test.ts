@@ -31,12 +31,18 @@ describe("GET /v1/openapi.json", () => {
     expect(document.openapi).toBe("3.1.0");
     expect(Object.keys(document.paths).sort()).toEqual([
       "/v1/actions",
+      "/v1/archived",
       "/v1/assets",
       "/v1/assets/{id}",
       "/v1/assets/{id}/content",
       "/v1/captures",
       "/v1/feed",
       "/v1/items/{id}",
+      "/v1/items/{id}/archive",
+      "/v1/items/{id}/mark-processed",
+      "/v1/items/{id}/routing",
+      "/v1/items/{id}/unarchive",
+      "/v1/queue",
     ]);
     expect(Object.keys(document.paths["/v1/captures"] ?? {})).toEqual(["post"]);
   });
@@ -66,6 +72,28 @@ describe("GET /v1/openapi.json", () => {
     expect(
       Object.keys(
         document.paths["/v1/items/{id}"]?.get?.responses ?? {},
+      ).sort(),
+    ).toEqual(["200", "404"]);
+    expect(
+      Object.keys(document.paths["/v1/queue"]?.get?.responses ?? {}).sort(),
+    ).toEqual(["200", "422"]);
+    expect(
+      Object.keys(document.paths["/v1/archived"]?.get?.responses ?? {}).sort(),
+    ).toEqual(["200", "422"]);
+    for (const path of ["/v1/items/{id}/archive", "/v1/items/{id}/unarchive"]) {
+      expect(
+        Object.keys(document.paths[path]?.post?.responses ?? {}).sort(),
+        path,
+      ).toEqual(["200", "400", "404", "409", "415"]);
+    }
+    expect(
+      Object.keys(
+        document.paths["/v1/items/{id}/mark-processed"]?.post?.responses ?? {},
+      ).sort(),
+    ).toEqual(["200", "400", "404", "415"]);
+    expect(
+      Object.keys(
+        document.paths["/v1/items/{id}/routing"]?.get?.responses ?? {},
       ).sort(),
     ).toEqual(["200", "404"]);
     expect(

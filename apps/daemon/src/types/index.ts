@@ -42,8 +42,12 @@ export type DaemonRefusal =
 export type PageQuery =
   | {
       readonly ok: true;
-      readonly order: ReadOrder;
       readonly limit: number;
       readonly after?: Position;
     }
+  | { readonly ok: false; readonly refusal: DaemonRefusal };
+
+/** The feed and the log let a reader choose an end; the queue and the archive do not. */
+export type OrderedPageQuery =
+  | (Extract<PageQuery, { ok: true }> & { readonly order: ReadOrder })
   | { readonly ok: false; readonly refusal: DaemonRefusal };

@@ -126,16 +126,16 @@ Docs before the routes that implement them, as the asset slice did.
 
 ### Phase 4 — `/v1` *(depends on phases 1 and 3)*
 
-- [ ] `GET /v1/queue` and `GET /v1/archived`, paginated by position, sharing the limit and position
-      parsing the feed and the log already share. Neither takes `order`
-- [ ] Archive, unarchive, mark-processed and read-routing-records routes
-- [ ] The OpenAPI document, which is checked in and so appears in this commit's diff
-- [ ] Tests: the queue drains to empty as items are archived and marked processed; following `next`
-      yields every queued item exactly once with no trailing empty page; a feed position handed to
-      the queue is accepted and produces a wrong page, which is the documented consequence rather
-      than a bug
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint`
-- [ ] `git commit`
+- [x] 2026-08-14 `GET /v1/queue` and `GET /v1/archived`, paginated by position, sharing the limit and
+      position parsing the feed and the log already share. Neither takes `order`
+- [x] 2026-08-14 Archive, unarchive, mark-processed and read-routing-records routes
+- [x] 2026-08-14 The OpenAPI document, which is checked in and so appears in this commit's diff
+- [x] 2026-08-14 Tests: the queue drains to empty as items are archived and marked processed;
+      following `next` yields every queued item exactly once with no trailing empty page; a feed
+      position handed to the queue is accepted and produces a wrong page, which is the documented
+      consequence rather than a bug
+- [x] 2026-08-14 Verify: `pnpm typecheck && pnpm test && pnpm lint`
+- [x] 2026-08-14 `git commit`
 
 ### Phase 5 — End to end *(depends on phase 4)*
 
