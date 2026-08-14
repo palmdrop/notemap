@@ -1,14 +1,25 @@
 import { recordAction } from "./actions";
+import { enqueueMirrorWrite } from "./mirror";
+import { DELIVERY_FAILURE } from "./routing/delivery";
 import { ok, refused } from "../utils/result";
 import type { PoolConfig } from "../types/api/config";
-import type { PoolPorts } from "../types/api/ports";
+import type { PoolPorts, PoolTx } from "../types/api/ports";
 import type { LeaseRefusal } from "../types/api/refusal";
-import type { Duration, LeaseId, Timestamp } from "../types/domain/ids";
+import type { FailureDetail } from "../types/domain/enrichment";
+import type {
+  Duration,
+  ItemId,
+  LeaseId,
+  RoutingRecordId,
+  Timestamp,
+} from "../types/domain/ids";
 import type { AbandonedPosition } from "../types/domain/position";
 import type {
   AbandonedWork,
   ClaimRequest,
+  Job,
   JobKind,
+  JobSubject,
   Lease,
   RetryPolicy,
   WorkOutcome,
@@ -18,11 +29,31 @@ import type { Page, Result, Slice } from "../types/result";
 /** Mirror attempts have no ceiling, so the doubling needs one before it reaches Infinity. */
 const MAX_DOUBLINGS = 32;
 
-export function claim(
+/**
+ * Work to do, minus the deliveries that must not be tried again.
+ *
+ * A lease that expired with nothing reported is **no evidence**: the previous
+ * holder may have delivered before it died. For work that can be repeated
+ * safely that is a reason to retry; for a delivery it is not, because the domain
+ * cannot tell a retry from a genuine second delivery and the duplicate would be
+ * undetectable. So the claim that finds one ends it instead of handing it out.
+ */
+export async function claim(
   ports: PoolPorts,
   request: ClaimRequest,
 ): Promise<readonly Lease[]> {
-  return ports.work.claim(request, ports.clock.now());
+  const leases = await ports.work.claim(request, ports.clock.now());
+  const claimed: Lease[] = [];
+
+  for (const lease of leases) {
+    if (lease.reclaimed === true && lease.job.kind === "delivery") {
+      await abandonUnknown(ports, lease);
+      continue;
+    }
+    claimed.push(lease);
+  }
+
+  return claimed;
 }
 
 export function extend(
@@ -62,6 +93,15 @@ export async function complete(
     if (held === undefined) return refused({ kind: "lease-lost", lease });
 
     if (outcome.kind === "succeeded" || outcome.kind === "delivered") {
+      if (held.job.subject.kind === "routing-record") {
+        await land(
+          ports,
+          tx,
+          held.job.subject.record,
+          outcome.kind === "delivered" ? outcome.pointer : undefined,
+        );
+      }
+
       await tx.resolveJob(lease, { kind: "done" });
       return ok<void, LeaseRefusal>(undefined);
     }
@@ -88,35 +128,146 @@ export async function complete(
           },
     );
 
-    await recordAction(ports, tx, {
-      kind: giveUp ? "work-abandoned" : "work-failed",
-      ...(held.job.subject.kind === "item"
-        ? { subject: held.job.subject.item }
-        : {}),
-      // Nobody asked for this attempt, so nobody but notemap made it.
-      by: { kind: "notemap" },
+    await concluded(ports, tx, held.job, {
+      attempt,
       at,
-      detail: {
-        work: held.job.kind,
-        attempt,
-        failure: outcome.detail,
-        ...(held.job.enrichment === undefined
-          ? {}
-          : { enrichment: held.job.enrichment }),
-      },
+      giveUp,
+      failure: outcome.detail,
     });
 
     return ok<void, LeaseRefusal>(undefined);
   });
 }
 
-/** Only enrichment is bounded: unmirrored material is owed however many times the write has failed. */
+/**
+ * A delivery that landed: the reservation joins the routing log, the mirror is
+ * owed the write it was not owed while nothing had arrived, and the log gains
+ * the entry that says where the item went.
+ */
+async function land(
+  ports: PoolPorts,
+  tx: PoolTx,
+  id: RoutingRecordId,
+  pointer: string | undefined,
+): Promise<void> {
+  const record = await tx.routingRecord(id);
+  // Cancelled from under the attempt. Nothing is left to resolve, and whoever
+  // removed it left the entry saying so.
+  if (record === undefined) return;
+
+  const at = ports.clock.now();
+  await tx.resolveRoutingRecord(id, pointer);
+  await enqueueMirrorWrite(ports, tx, record.item, at);
+  await recordAction(ports, tx, {
+    kind: "routed",
+    subject: record.item,
+    // The decision was a person's; carrying it out later changes whose it was.
+    by: { kind: "person" },
+    at,
+    detail: {
+      record: id,
+      target: record.target.kind,
+      ...(record.target.kind === "destination"
+        ? {
+            destination: record.target.destination,
+            capability: record.target.capability,
+          }
+        : {}),
+      ...(pointer === undefined ? {} : { pointer }),
+    },
+  });
+}
+
+/**
+ * What an attempt that failed leaves behind. Giving up on a delivery removes
+ * its reservation, which returns the item to the queue at its unchanged content
+ * time: nothing arrived anywhere, and the decision is the person's again.
+ */
+async function concluded(
+  ports: PoolPorts,
+  tx: PoolTx,
+  job: Job,
+  ended: {
+    attempt: number;
+    at: Timestamp;
+    giveUp: boolean;
+    failure: FailureDetail;
+  },
+): Promise<void> {
+  const subject = job.subject;
+  const item = await itemOf(tx, subject);
+
+  if (ended.giveUp && subject.kind === "routing-record") {
+    await tx.removeRoutingRecord(subject.record);
+  }
+
+  await recordAction(ports, tx, {
+    kind: ended.giveUp ? "work-abandoned" : "work-failed",
+    ...(item === undefined ? {} : { subject: item }),
+    // Nobody asked for this attempt, so nobody but notemap made it.
+    by: { kind: "notemap" },
+    at: ended.at,
+    detail: {
+      work: job.kind,
+      attempt: ended.attempt,
+      failure: ended.failure,
+      ...(job.enrichment === undefined ? {} : { enrichment: job.enrichment }),
+      ...(subject.kind === "routing-record" ? { record: subject.record } : {}),
+    },
+  });
+}
+
+/** Read before the record is removed: the log's subject is an item, always. */
+async function itemOf(
+  tx: PoolTx,
+  subject: JobSubject,
+): Promise<ItemId | undefined> {
+  if (subject.kind === "item") return subject.item;
+  return (await tx.routingRecord(subject.record))?.item;
+}
+
+async function abandonUnknown(ports: PoolPorts, lease: Lease): Promise<void> {
+  await ports.store.transaction(async (tx) => {
+    const held = await tx.leasedJob(lease.id);
+    if (held === undefined) return;
+
+    const at = ports.clock.now();
+    const attempt = held.job.attempt + 1;
+    const failure: FailureDetail = {
+      code: DELIVERY_FAILURE.unknown,
+      detail: "a lease expired with no outcome reported",
+    };
+
+    await tx.resolveJob(lease.id, {
+      kind: "abandoned",
+      attempt,
+      abandonedAt: at,
+      failure,
+    });
+    await concluded(ports, tx, held.job, {
+      attempt,
+      at,
+      giveUp: true,
+      failure,
+    });
+  });
+}
+
+/**
+ * Only mirror work is unbounded: unmirrored material is owed however many times
+ * the write has failed, and giving up would not change that. Giving up on a
+ * delivery does change something — it hands the decision back.
+ */
 function exhausted(
   policy: RetryPolicy,
   kind: JobKind,
   attempt: number,
 ): boolean {
-  return kind === "enrichment" && attempt >= policy.maxAttempts;
+  return (
+    kind !== "mirror" &&
+    kind !== "mirror-remove" &&
+    attempt >= policy.maxAttempts
+  );
 }
 
 function backoff(policy: RetryPolicy, attempt: number): Duration {

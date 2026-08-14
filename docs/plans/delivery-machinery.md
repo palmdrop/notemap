@@ -127,21 +127,25 @@ this plan honest about being core work.
 
 ### Phase 5 — Retry and abandonment *(depends on phase 4)*
 
-- [ ] `work.complete` resolves a delivery job: succeeded resolves the reservation and enqueues the
-      mirror job; `failed` with `retryable` backs off; `failed` without abandons
-- [ ] The evidence rule at claim time: a delivery job claimed with `attempt > 0` and no recorded
-      failure had a previous attempt that vanished, and is abandoned with a failure code saying so
-      rather than retried
-- [ ] Abandonment removes the reservation, resurfaces the item, and appends `work-abandoned`
-      subject to the **item**, resolved from the record
-- [ ] Bounded by `RetryPolicy.maxAttempts`, unlike mirror work. The comment on `RetryPolicy` says
-      the bound is enrichment's alone and must stop saying that
-- [ ] Tests: a destination unreachable twice and then up delivers, with one record and one item out
+- [x] `work.complete` resolves a delivery job: succeeded resolves the reservation and enqueues the
+      mirror job; `failed` with `retryable` backs off; `failed` without abandons. `WorkOutcome`
+      gained a `delivered` variant so the pointer a deferred delivery answers has somewhere to go
+      — 2026-08-14
+- [x] The evidence rule at claim time — **keyed on the expired lease still on the row** rather than
+      on `attempt > 0` with no recorded failure, which cannot see a crash on the first attempt and
+      cannot tell a crashed retry from a reported one. See the report; ADR 17 says the other thing
+      — 2026-08-14
+- [x] Abandonment removes the reservation, resurfaces the item, and appends `work-abandoned`
+      subject to the **item**, resolved from the record — 2026-08-14
+- [x] Bounded by `RetryPolicy.maxAttempts`, unlike mirror work. The comment on `RetryPolicy` says
+      the bound is enrichment's alone and must stop saying that — 2026-08-14
+- [x] Tests: a destination unreachable twice and then up delivers, with one record and one item out
       of the queue; one unreachable forever is abandoned at the limit and the item comes back; a
-      lease expiring with nothing reported abandons on the next claim rather than retrying, and is
-      distinguishable on the surface from a refusal
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint`
-- [ ] `git commit`
+      lease expiring with nothing reported abandons on the next claim rather than retrying, hands
+      the destination nothing a second time, and is distinguishable on the surface from a refusal
+      — 2026-08-14
+- [x] Verify: `pnpm typecheck && pnpm test && pnpm lint` — 2026-08-14
+- [x] `git commit` — 2026-08-14
 
 ### Phase 6 — End to end *(depends on phase 5)*
 
