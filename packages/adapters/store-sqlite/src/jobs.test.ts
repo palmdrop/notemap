@@ -42,7 +42,7 @@ function job(overrides: {
   kind?: Job["kind"];
   enqueuedAt?: string;
 }): Job {
-  const subject =
+  const item =
     typeof overrides.subject === "string"
       ? (overrides.subject as ItemId)
       : overrides.subject.id;
@@ -50,7 +50,7 @@ function job(overrides: {
   return {
     id: overrides.id as JobId,
     kind: overrides.kind ?? "mirror",
-    subject,
+    subject: { kind: "item", item },
     attempt: 0,
     enqueuedAt: at(overrides.enqueuedAt ?? "2026-08-03T09:00:00.000Z"),
   };
@@ -343,6 +343,69 @@ describe("leases", () => {
     await p.releaseLease(stale.lease_id as LeaseId);
 
     expect(jobIds(raw)).toEqual(["job-2"]);
+  });
+});
+
+describe("a job's subject", () => {
+  const itemSubject = (record: ItemRecord) => ({
+    kind: "item",
+    item: record.id,
+  });
+
+  it("survives a claim, an extend and a release", async () => {
+    const { pool: p } = pool({ ids: countingIds() });
+    const record = capture();
+    await appendCapture(p, record);
+    await enqueue(p, job({ id: "job-1", subject: record }));
+
+    const [lease] = await claim(p);
+    if (lease === undefined) throw new Error("expected a lease");
+    expect(lease.job.subject).toEqual(itemSubject(record));
+
+    const extended = await p.extendLease(
+      lease.id,
+      at("2026-08-03T10:05:00.000Z"),
+    );
+    expect(extended).toMatchObject({
+      kind: "ok",
+      value: { job: { subject: itemSubject(record) } },
+    });
+
+    await p.releaseLease(lease.id);
+
+    expect((await claim(p)).map((next) => next.job.subject)).toEqual([
+      itemSubject(record),
+    ]);
+  });
+
+  it("is answered beside the item once the work is abandoned", async () => {
+    const { pool: p } = pool({ ids: countingIds() });
+    const record = capture();
+    await appendCapture(p, record);
+    await enqueue(p, job({ id: "job-1", subject: record }));
+
+    const [lease] = await claim(p);
+    if (lease === undefined) throw new Error("expected a lease");
+
+    await p.transaction((tx) =>
+      tx.resolveJob(lease.id, {
+        kind: "abandoned",
+        attempt: 1,
+        abandonedAt: at("2026-08-03T10:01:00.000Z"),
+        failure: { code: "renderer-threw", detail: "no" },
+      }),
+    );
+
+    expect((await p.abandonedWork({ limit: 10 })).values).toEqual([
+      {
+        subject: itemSubject(record),
+        item: record.id,
+        kind: "mirror",
+        attempts: 1,
+        lastFailure: { code: "renderer-threw", detail: "no" },
+        abandonedAt: at("2026-08-03T10:01:00.000Z"),
+      },
+    ]);
   });
 });
 

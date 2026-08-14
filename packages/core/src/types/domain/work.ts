@@ -11,12 +11,14 @@ import type { SuggestionDraft } from "./suggestion";
 
 export type JobKind = "enrichment" | "mirror" | "mirror-remove";
 
+export type JobSubject = { readonly kind: "item"; readonly item: ItemId };
+
 /** Deliberately partial: what a job carries as input is unsettled. */
 export type Job = {
   readonly id: JobId;
   readonly kind: JobKind;
   /** Need not still exist: a purge's mirror-remove outlives the item it names. */
-  readonly subject: ItemId;
+  readonly subject: JobSubject;
   readonly enrichment?: EnrichmentName;
   readonly attempt: number;
   readonly enqueuedAt: Timestamp;
@@ -73,6 +75,7 @@ export type JobResolution =
 
 /** One row of the surface answering "what needs me", for work of any kind. */
 export type AbandonedWork = {
+  readonly subject: JobSubject;
   readonly item: ItemId;
   readonly kind: JobKind;
   /** Present for enrichment work only. */

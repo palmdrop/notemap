@@ -6,7 +6,6 @@ import {
   type ClaimRequest,
   type EnrichmentName,
   type IdGenerator,
-  type ItemId,
   type Job,
   type JobResolution,
   type Lease,
@@ -18,15 +17,22 @@ import {
   type Timestamp,
 } from "@notemap/core";
 
-import { toJob, toMillis, toTimestamp } from "./mapping";
+import {
+  subjectColumns,
+  toJob,
+  toJobSubject,
+  toMillis,
+  toTimestamp,
+} from "./mapping";
 import type { JobRow } from "./rows";
 import type { Bindable, statements } from "./statements";
 
 type Statements = ReturnType<typeof statements>;
 
 const JOB_COLUMNS = `
-  id, kind, subject, enrichment, attempt, enqueued_at, next_attempt_at,
-  lease_id, lease_expires_at, abandoned_at, last_failure_code, last_failure_detail
+  id, kind, subject_kind, subject_id, enrichment, attempt, enqueued_at,
+  next_attempt_at, lease_id, lease_expires_at, abandoned_at,
+  last_failure_code, last_failure_detail
 `;
 
 /** The kinds the one-write-per-item rules apply to. */
@@ -56,9 +62,11 @@ export type JobQueue = {
 export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
   const insert = write.query(`
     INSERT INTO jobs
-      (id, kind, subject, enrichment, attempt, enqueued_at, next_attempt_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT (subject, kind) WHERE ${PENDING_MIRROR} DO NOTHING
+      (id, kind, subject_kind, subject_id, enrichment, attempt, enqueued_at,
+       next_attempt_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT (subject_kind, subject_id, kind) WHERE ${PENDING_MIRROR}
+      DO NOTHING
   `);
 
   const byLease = write.query<JobRow, [string]>(
@@ -90,17 +98,18 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
    * this one back. It writes state read fresh, so it already says everything
    * this job would have.
    */
-  const rival = write.query<{ id: string }, [string, string, string]>(`
+  const rival = write.query<{ id: string }, [string, string, string, string]>(`
     SELECT id FROM jobs
-    WHERE subject = ? AND kind = ? AND id <> ?
+    WHERE subject_kind = ? AND subject_id = ? AND kind = ? AND id <> ?
       AND lease_id IS NULL AND abandoned_at IS NULL
     LIMIT 1
   `);
 
   /** An abandoned job's debt is settled once a later write for its item succeeds. */
-  const clearAbandoned = write.query<never, [string, string]>(`
+  const clearAbandoned = write.query<never, [string, string, string]>(`
     DELETE FROM jobs
-    WHERE subject = ? AND kind = ? AND abandoned_at IS NOT NULL
+    WHERE subject_kind = ? AND subject_id = ? AND kind = ?
+      AND abandoned_at IS NOT NULL
   `);
 
   /**
@@ -129,7 +138,8 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
             kind NOT IN ${MIRROR_KINDS}
             OR NOT EXISTS (
               SELECT 1 FROM jobs AS holder
-              WHERE holder.subject = job.subject
+              WHERE holder.subject_kind = job.subject_kind
+                AND holder.subject_id = job.subject_id
                 AND holder.kind IN ${MIRROR_KINDS}
                 AND holder.id <> job.id
                 AND holder.lease_id IS NOT NULL
@@ -147,7 +157,8 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
   function superseded(row: JobRow): boolean {
     return (
       row.kind !== "enrichment" &&
-      rival.get(row.subject, row.kind, row.id) !== undefined
+      rival.get(row.subject_kind, row.subject_id, row.kind, row.id) !==
+        undefined
     );
   }
 
@@ -158,7 +169,7 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
         insert.run(
           job.id,
           job.kind,
-          job.subject,
+          ...subjectColumns(job.subject),
           job.enrichment ?? null,
           job.attempt,
           at,
@@ -237,7 +248,7 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
       if (resolution.kind === "done") {
         finishJob.run(lease);
         if (row.kind !== "enrichment")
-          clearAbandoned.run(row.subject, row.kind);
+          clearAbandoned.run(row.subject_kind, row.subject_id, row.kind);
         return;
       }
 
@@ -286,7 +297,12 @@ export function abandonedWork(
   const params: Bindable[] = [
     ...(after === undefined
       ? []
-      : [toMillis(after.at), after.item, after.kind, after.enrichment ?? ""]),
+      : [
+          toMillis(after.at),
+          ...subjectColumns(after.subject),
+          after.kind,
+          after.enrichment ?? "",
+        ]),
     // One more than asked for, so exhaustion is known rather than guessed.
     page.limit + 1,
   ];
@@ -311,7 +327,7 @@ export function abandonedWork(
       ? {
           next: {
             at: last.abandonedAt,
-            item: last.item,
+            subject: last.subject,
             kind: last.kind,
             ...(last.enrichment === undefined
               ? {}
@@ -327,17 +343,20 @@ export function abandonedWork(
  * for everything but enrichment work, and a null would make every comparison
  * against it null, so it collapses to the empty string on both sides.
  */
-const ABANDONED_KEY = `(abandoned_at, subject, kind, COALESCE(enrichment, ''))`;
-const ABANDONED_KEYSET = `${ABANDONED_KEY} > (?, ?, ?, ?)`;
-const ABANDONED_ORDER = `abandoned_at ASC, subject ASC, kind ASC, COALESCE(enrichment, '') ASC`;
+const ABANDONED_KEY = `(abandoned_at, subject_kind, subject_id, kind, COALESCE(enrichment, ''))`;
+const ABANDONED_KEYSET = `${ABANDONED_KEY} > (?, ?, ?, ?, ?)`;
+const ABANDONED_ORDER = `abandoned_at ASC, subject_kind ASC, subject_id ASC, kind ASC, COALESCE(enrichment, '') ASC`;
 
 function toAbandonedWork(row: JobRow): AbandonedWork {
   if (row.abandoned_at === null || row.last_failure_code === null) {
     throw new Error(`job ${row.id} is abandoned with nothing saying why`);
   }
 
+  const subject = toJobSubject(row);
+
   return {
-    item: row.subject as ItemId,
+    subject,
+    item: subject.item,
     kind: row.kind,
     ...(row.enrichment === null
       ? {}

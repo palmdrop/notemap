@@ -1,7 +1,7 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-08-12
+**Last updated**: 2026-08-14
 **Shipped**:
 
 - 2026-08-08 — A source needs no declaration to capture; `config.sources` is a policy registry
@@ -41,6 +41,14 @@
   attempts at work are logged and successful ones are not, and `ActionLogRefusal` is gone —
   clearing a purged item's entries is the case clearing exists for.
   ([plan](../plans/action-log-feed.md))
+- 2026-08-14 — **A job says what kind of thing it is about.** `Job.subject` is a tagged union
+  rather than an item id, across core's types, the store port and the SQLite driver, which splits
+  the column into a kind and an id and re-keys the mirror coalescing index onto the pair. One
+  variant ships — `item` — because the shape is what changed here and the second arrives with the
+  work that needs it. The abandoned surface carries the subject **and** the item it concerns, so
+  "what needs me" stays one read. No behaviour changed.
+  ([plan](../plans/job-subject-union.md),
+  [ADR 18](../adr/0018-a-jobs-subject-names-what-it-is-about.md))
 
 ---
 

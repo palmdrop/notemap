@@ -13,6 +13,7 @@ import type {
   ItemRecord,
   Job,
   JobId,
+  JobSubject,
   JsonObject,
   PayloadTypeName,
   ProviderName,
@@ -172,11 +173,24 @@ export function toAsset(row: AssetRow): Asset {
   };
 }
 
+export function toJobSubject(
+  row: Pick<JobRow, "subject_kind" | "subject_id">,
+): JobSubject {
+  return { kind: row.subject_kind, item: row.subject_id as ItemId };
+}
+
+/** The pair a subject is stored as, in the order every statement binds them. */
+export function subjectColumns(
+  subject: JobSubject,
+): [JobRow["subject_kind"], string] {
+  return [subject.kind, subject.item];
+}
+
 export function toJob(row: JobRow): Job {
   return {
     id: row.id as JobId,
     kind: row.kind,
-    subject: row.subject as ItemId,
+    subject: toJobSubject(row),
     ...(row.enrichment === null
       ? {}
       : { enrichment: row.enrichment as EnrichmentName }),

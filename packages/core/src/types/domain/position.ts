@@ -1,5 +1,5 @@
-import type { EnrichmentName, ItemId, Timestamp } from "./ids";
-import type { JobKind } from "./work";
+import type { EnrichmentName, Timestamp } from "./ids";
+import type { JobKind, JobSubject } from "./work";
 
 /**
  * Where a paginated read continues from. Compared against, never looked up, so
@@ -14,7 +14,7 @@ export type Position = {
 /** Abandoned work has no id of its own: it is identified by subject and kind. */
 export type AbandonedPosition = {
   readonly at: Timestamp;
-  readonly item: ItemId;
+  readonly subject: JobSubject;
   readonly kind: JobKind;
   /** Present for enrichment work only. */
   readonly enrichment?: EnrichmentName;
