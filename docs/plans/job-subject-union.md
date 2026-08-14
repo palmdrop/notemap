@@ -51,36 +51,39 @@ me" is one read holds continuously rather than being broken and repaired.
 
 ### Phase 0 — Branch
 
-- [ ] `git checkout -b agent/job-subject-union`
+- [x] `git checkout -b agent/job-subject-union` *(2026-08-14)*
 
 ### Phase 1 — Types *(no behaviour)*
 
-- [ ] `JobSubject` as a tagged union in `types/domain/work.ts`, with the `item` variant only.
-      `Job.subject` takes it
-- [ ] `AbandonedWork` carries both `subject` and the resolved `item`
-- [ ] `AbandonedPosition` keys on the subject, and stays a total order the store can compare —
+- [x] `JobSubject` as a tagged union in `types/domain/work.ts`, with the `item` variant only.
+      `Job.subject` takes it *(2026-08-14)*
+- [x] `AbandonedWork` carries both `subject` and the resolved `item` *(2026-08-14)*
+- [x] `AbandonedPosition` keys on the subject, and stays a total order the store can compare —
       it is `{ at, subject, kind, enrichment? }`, and the `enrichment?` discriminator stays until
-      delivery replaces the reason for it
-- [ ] Verify: `pnpm typecheck` — expect failures at every construction site, which phase 2 and 3 fix
+      delivery replaces the reason for it *(2026-08-14)*
+- [x] Verify: `pnpm typecheck` — expect failures at every construction site, which phase 2 and 3 fix
+      *(2026-08-14)*
 
 ### Phase 2 — The store *(depends on phase 1)*
 
-- [ ] New migration — never edit an existing one. `jobs.subject` splits into `subject_kind` and
+- [x] New migration — never edit an existing one. `jobs.subject` splits into `subject_kind` and
       `subject_id`, both `NOT NULL`, with a CHECK naming the kinds. Existing rows migrate as
-      `('item', subject)`, which is what every one of them is
-- [ ] Re-key `jobs_one_pending_mirror` onto the pair. This is the index that makes coalescing a
+      `('item', subject)`, which is what every one of them is *(2026-08-14)*
+- [x] Re-key `jobs_one_pending_mirror` onto the pair. This is the index that makes coalescing a
       constraint rather than a convention, so it must keep asserting **at most one pending mirror
-      job per item** and not accidentally widen to per-subject-kind
-- [ ] `jobs_subject` and `jobs_abandoned` follow onto the pair
-- [ ] `rows.ts`, `mapping.ts` and `statements.ts` read and write the pair; `schema.test.ts` stays in
-      agreement
-- [ ] `abandonedWork` answers both the subject and the item. With one variant these are the same
-      id, and the query says so plainly rather than pretending to join
-- [ ] Tests: an existing pool with mirror and enrichment jobs migrates with every job still
+      job per item** and not accidentally widen to per-subject-kind *(2026-08-14)*
+- [x] `jobs_subject` and `jobs_abandoned` follow onto the pair *(2026-08-14)*
+- [x] `rows.ts`, `mapping.ts` and `statements.ts` read and write the pair; `schema.test.ts` stays in
+      agreement *(2026-08-14)* — `statements.ts` needed nothing: it binds no column names
+- [x] `abandonedWork` answers both the subject and the item. With one variant these are the same
+      id, and the query says so plainly rather than pretending to join *(2026-08-14)*
+- [x] Tests: an existing pool with mirror and enrichment jobs migrates with every job still
       claimable and still coalescing; the pending-mirror uniqueness still holds; a claim, an extend,
-      a release and an abandon all round-trip the subject
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint`
-- [ ] `git commit`
+      a release and an abandon all round-trip the subject *(2026-08-14)*
+- [x] Verify: `pnpm typecheck && pnpm test && pnpm lint` *(2026-08-14)* — run once the phase 3 call
+      sites were in the tree, since the union lands in phase 1 and nothing compiles until both
+      halves follow it
+- [x] `git commit` *(2026-08-14)*
 
 ### Phase 3 — Call sites *(depends on phase 2)*
 

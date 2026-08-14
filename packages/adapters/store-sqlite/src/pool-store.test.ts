@@ -122,7 +122,8 @@ describe("writing a capture", () => {
       {
         id: job.id,
         kind: "mirror",
-        subject: record.id,
+        subject_kind: "item",
+        subject_id: record.id,
         enrichment: null,
         attempt: 0,
         enqueued_at: Date.parse(record.createdAt),

@@ -185,7 +185,7 @@ export function mirrorJob(item: ItemRecord, jobId = `job-${item.id}`): Job {
   return {
     id: jobId as JobId,
     kind: "mirror",
-    subject: item.id,
+    subject: { kind: "item", item: item.id },
     attempt: 0,
     enqueuedAt: item.createdAt,
   };
