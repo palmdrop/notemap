@@ -22,6 +22,7 @@ import type { MirrorRecord } from "../domain/mirror";
 import type { Payload } from "../domain/payload";
 import type { AbandonedPosition } from "../domain/position";
 import type {
+  Delivery,
   DeliveryRequest,
   DestinationDescriptor,
   RoutingRecord,
@@ -97,7 +98,15 @@ export interface RoutingApi {
   route(
     item: ItemId,
     delivery: DeliveryRequest,
+    /** Bounds the one inline attempt. Core imposes no timeout of its own. */
+    signal?: AbortSignal,
   ): Promise<Result<RoutingRecord, DeliveryRefusal>>;
+  /**
+   * The delivery a pending record's job carries out. A host driving delivery
+   * work asks for this rather than being handed a snapshot, so what leaves is
+   * the item as it now stands.
+   */
+  deliveryFor(record: RoutingRecordId): Promise<Delivery | undefined>;
   /** Calls off a delivery that has not landed, which returns the item to the queue. */
   cancelDelivery(
     record: RoutingRecordId,

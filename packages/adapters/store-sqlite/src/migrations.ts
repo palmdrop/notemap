@@ -391,6 +391,25 @@ export const MIGRATIONS: readonly string[] = [
     ON jobs (abandoned_at, subject_kind, subject_id, kind)
     WHERE abandoned_at IS NOT NULL;
   `,
+
+  `
+  -- What the capability was pointed at. A reservation is attempted again from
+  -- the record alone, so the target is remembered rather than consumed by the
+  -- one attempt \`route\` makes. Only a destination has one.
+  ALTER TABLE routing_records ADD COLUMN target TEXT;
+
+  -- SQLite cannot add a CHECK in place, and one that admitted a delivered
+  -- record with no target would admit a reservation nothing could carry out.
+  CREATE TRIGGER routing_records_target_insert
+    BEFORE INSERT ON routing_records
+    WHEN (NEW.target_kind = 'destination') <> (NEW.target IS NOT NULL)
+    BEGIN SELECT RAISE(ABORT, 'a destination target names what it targeted'); END;
+
+  CREATE TRIGGER routing_records_target_update
+    BEFORE UPDATE ON routing_records
+    WHEN (NEW.target_kind = 'destination') <> (NEW.target IS NOT NULL)
+    BEGIN SELECT RAISE(ABORT, 'a destination target names what it targeted'); END;
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

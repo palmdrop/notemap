@@ -4,13 +4,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
+  asDeliveryWorkOutcome,
   asWorkOutcome,
   createPool,
   parseMirrorRecord,
   type Asset,
   type AssetId,
+  type BlobStore,
   type CaptureEnvelope,
   type Clock,
+  type DestinationAdapter,
   type Duration,
   type IdGenerator,
   type MintableId,
@@ -25,6 +28,7 @@ import {
   type SourceId,
   type TagName,
   type Timestamp,
+  type WorkOutcome,
 } from "@notemap/core";
 import { createFilesystemBlobStore } from "@notemap/blob-fs";
 import { createFilesystemMirrorWriter } from "@notemap/mirror-fs";
@@ -130,6 +134,8 @@ export type Harness = {
   readonly mirrorRoot: string;
   /** Where the blobs are. A sibling of the two, as a host lays them out. */
   readonly assetRoot: string;
+  /** How many blob streams have been opened, which a lazy opener leaves at zero. */
+  readonly blobOpens: () => number;
   readonly cleanup: () => Promise<void>;
 };
 
@@ -148,6 +154,7 @@ export type Mirroring = "stub" | "filesystem" | "off";
 export function harness(
   config: PoolConfig = CONFIG,
   mirroring: Mirroring = "stub",
+  destinations: readonly DestinationAdapter[] = [],
 ): Harness {
   const directory = mkdtempSync(join(tmpdir(), "notemap-integration-"));
   const file = join(directory, "pool.db");
@@ -163,13 +170,15 @@ export function harness(
     ids: countingIds("lease"),
   });
 
+  const blobs = counting(createFilesystemBlobStore({ root: assetRoot }));
+
   const ports: PoolPorts = {
     store,
     work: store,
     clock,
     ids,
     schemas: createAjvSchemaValidator(),
-    blobs: createFilesystemBlobStore({ root: assetRoot }),
+    blobs,
     ...(mirroring === "off"
       ? {}
       : {
@@ -178,7 +187,7 @@ export function harness(
               ? createFilesystemMirrorWriter({ root: mirrorRoot })
               : noMirrorWriter,
         }),
-    destinations: [],
+    destinations,
   };
 
   const pool = createPool(config, ports);
@@ -191,10 +200,24 @@ export function harness(
     file,
     mirrorRoot,
     assetRoot,
+    blobOpens: blobs.opens,
     cleanup: async () => {
       await pool.close();
       rmSync(directory, { recursive: true, force: true });
     },
+  };
+}
+
+/** Wraps a blob store so a test can see whether anything read the bytes. */
+function counting(blobs: BlobStore): BlobStore & { opens: () => number } {
+  let opens = 0;
+  return {
+    ...blobs,
+    open: (blob, signal) => {
+      opens += 1;
+      return blobs.open(blob, signal);
+    },
+    opens: () => opens,
   };
 }
 
@@ -318,6 +341,51 @@ export function drainWith(
         } catch (cause) {
           outcome = asWorkOutcome(cause);
         }
+        await harnessed.pool.work.complete(lease.id, outcome);
+        resolved += 1;
+      }
+    }
+  };
+}
+
+/**
+ * What a host driving delivery work does: claim, ask core what the delivery is
+ * now, hand it to the destination, report what it answered.
+ */
+export function deliverWith(harnessed: Harness, adapter: DestinationAdapter) {
+  return async (): Promise<number> => {
+    const attempted = new Set<string>();
+    let resolved = 0;
+
+    while (true) {
+      const leases = await harnessed.pool.work.claim({
+        kinds: ["delivery"],
+        limit: 16,
+        leaseFor: 60_000 as Duration,
+      });
+
+      const fresh = leases.filter((lease) => !attempted.has(lease.job.id));
+      for (const lease of leases) {
+        if (!fresh.includes(lease)) await harnessed.pool.work.release(lease.id);
+      }
+      if (fresh.length === 0) return resolved;
+
+      for (const lease of fresh) {
+        attempted.add(lease.job.id);
+        const subject = lease.job.subject;
+        if (subject.kind !== "routing-record") {
+          throw new Error("expected work about a delivery");
+        }
+
+        const delivery = await harnessed.pool.routing.deliveryFor(
+          subject.record,
+        );
+        // Nothing left to carry out: the record was cancelled, or its item went.
+        const outcome: WorkOutcome =
+          delivery === undefined
+            ? { kind: "succeeded" }
+            : asDeliveryWorkOutcome(await adapter.deliver(delivery));
+
         await harnessed.pool.work.complete(lease.id, outcome);
         resolved += 1;
       }

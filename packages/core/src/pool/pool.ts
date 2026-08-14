@@ -28,6 +28,7 @@ function ordered<P>(page: PageRequest<P>, fallback: ReadOrder): OrderedPage<P> {
 
 export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
   const { store } = ports;
+  const destinations = routing.indexDestinations(ports.destinations);
 
   return {
     capture: (envelope) => capture(config, ports, envelope),
@@ -62,9 +63,11 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
     },
 
     routing: {
-      destinations: notImplemented("routing.destinations"),
-      route: notImplemented("routing.route"),
-      cancelDelivery: notImplemented("routing.cancelDelivery"),
+      destinations: () => routing.destinations(destinations),
+      route: (item, delivery, signal) =>
+        routing.route(ports, destinations, item, delivery, signal),
+      deliveryFor: (record) => routing.deliveryFor(ports, record),
+      cancelDelivery: (record) => routing.cancelDelivery(ports, record),
       markProcessed: (item, note) => routing.markProcessed(ports, item, note),
       recordsFor: (item) => routing.recordsFor(ports, item),
     },

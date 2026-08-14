@@ -89,34 +89,41 @@ this plan honest about being core work.
 
 ### Phase 3 — A destination that fails on command *(depends on phase 1)*
 
-- [ ] A test double implementing `DestinationAdapter`: declares capabilities, records what it was
+- [x] A test double implementing `DestinationAdapter`: declares capabilities, records what it was
       handed, and is told what to answer — delivered, `unreachable`, `rejected`, or to hang so a
-      lease can expire under it
-- [ ] It asserts what `core.md` promises about a delivery: that every referenced asset arrives with
+      lease can expire under it. It lives in core's `testing/`, reached as `@notemap/core/testing`
+      — the fallback — 2026-08-14
+- [x] It asserts what `core.md` promises about a delivery: that every referenced asset arrives with
       its filename, that opening one yields the bytes, and that a capability wanting no assets
-      causes no stream to be opened
-- [ ] Verify: `pnpm typecheck && pnpm lint`
+      causes no stream to be opened. The double reads or does not read on command; the assertions
+      are in `tests/integration/src/routing.test.ts` — 2026-08-14
+- [x] Verify: `pnpm typecheck && pnpm lint` — 2026-08-14
 
 ### Phase 4 — `route` *(depends on phases 2 and 3)*
 
-- [ ] `routing.destinations`, mapping `describe()` over the wired adapters. **Duplicate
+- [x] `routing.destinations`, mapping `describe()` over the wired adapters. **Duplicate
       `DestinationId` throws at pool construction** — two destinations answering one name is a
-      wiring mistake with no sensible resolution
-- [ ] Validation before anything is written: unknown destination, undeclared capability, unaccepted
-      payload type, and a target failing its `targetSchema` through the `schemas` port
-- [ ] Project the `Delivery`: read the item, its artifacts and its tags, resolve every asset
+      wiring mistake with no sensible resolution — 2026-08-14
+- [x] Validation before anything is written: unknown destination, undeclared capability, unaccepted
+      payload type, and a target failing its `targetSchema` through the `schemas` port —
+      2026-08-14
+- [x] Project the `Delivery`: read the item, its artifacts and its tags, resolve every asset
       reference to an `Asset`, and close each opener over `ports.blobs.open`. Outside any
-      transaction — this is I/O, and the store holds a write lock for a transaction's duration
-- [ ] Mint the reservation, attempt once inline, and resolve per ADR 17's table. The write that
+      transaction — this is I/O, and the store holds a write lock for a transaction's duration —
+      2026-08-14
+- [x] Mint the reservation, attempt once inline, and resolve per ADR 17's table. The write that
       records the outcome re-reads the item inside its transaction: an item purged mid-delivery
-      appends the `routed` action, writes no record, and refuses as purged
-- [ ] A delivered record enqueues a mirror job; a reservation does not, per `mirror.md`
-- [ ] `cancelDelivery`: remove a pending reservation and its job, resurfacing the item. A record
-      that already delivered is refused
-- [ ] Tests: each of the four outcomes end to end; the purge race; a capability accepting a payload
-      type the item does not have; a target the schema rejects; cancelling a delivered record
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint`
-- [ ] `git commit`
+      appends the `routed` action, writes no record, and refuses as purged — 2026-08-14
+- [x] A delivered record enqueues a mirror job; a reservation does not, per `mirror.md` —
+      2026-08-14
+- [x] `cancelDelivery`: remove a pending reservation and its job, resurfacing the item. A record
+      that already delivered is refused, and so is one whose job somebody holds — the fallback —
+      2026-08-14
+- [x] Tests: each of the four outcomes end to end; the purge race; a capability accepting a payload
+      type the item does not have; a target the schema rejects; cancelling a delivered record —
+      2026-08-14
+- [x] Verify: `pnpm typecheck && pnpm test && pnpm lint` — 2026-08-14
+- [x] `git commit` — 2026-08-14
 
 ### Phase 5 — Retry and abandonment *(depends on phase 4)*
 

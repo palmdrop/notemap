@@ -213,6 +213,7 @@ export function reserved(
       kind: "destination",
       destination: "vault" as DestinationId,
       capability: (overrides.capability ?? "create-note") as CapabilityName,
+      target: { path: "inbox/a-thought.md" },
     },
     state: "pending",
     at: at(overrides.at ?? "2026-08-03T10:00:00.000Z"),

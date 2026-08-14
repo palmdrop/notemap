@@ -159,8 +159,9 @@ export const routingRecord = (): fc.Arbitrary<RoutingRecord> =>
             kind: fc.constant("destination" as const),
             destination: branded<never>(),
             capability: branded<never>(),
+            target: jsonObject(),
           },
-          { requiredKeys: ["kind", "destination", "capability"] },
+          { requiredKeys: ["kind", "destination", "capability", "target"] },
         ),
         fc.record(
           { kind: fc.constant("user" as const), note: name() },

@@ -80,6 +80,12 @@ export type RoutingTarget =
       readonly kind: "destination";
       readonly destination: DestinationId;
       readonly capability: CapabilityName;
+      /**
+       * What the capability was pointed at, in its own terms — a path, a file,
+       * a board column. Remembered rather than consumed, because a delivery
+       * that is still pending has to be attempted again from the record alone.
+       */
+      readonly target: JsonObject;
     }
   | { readonly kind: "user"; readonly note?: string };
 

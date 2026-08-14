@@ -84,7 +84,8 @@ const ITEM_COLUMNS = `
 const ASSET_COLUMNS = `id, filename, mime, blob, bytes, stored_at`;
 
 const ROUTING_COLUMNS = `
-  id, item_id, target_kind, destination, capability, note, state, at, pointer
+  id, item_id, target_kind, destination, capability, note, target, state, at,
+  pointer
 `;
 
 /** What the queue and the archive order on: last touch of content, never of state. */
@@ -229,7 +230,7 @@ export function createSqlitePoolStore(
     ReturnType<typeof routingRecordParams>
   >(`
     INSERT INTO routing_records (${ROUTING_COLUMNS})
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const deliverRouting = write.query<never, [string | null, string]>(
     `UPDATE routing_records SET state = 'delivered', pointer = ? WHERE id = ?`,
