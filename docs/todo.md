@@ -1,5 +1,4 @@
 # Developer TODOs
-- [ ] Consider archiving as a routing mechanism - archive is really just moving a capture to a destination managed by notemap internally
 - [ ] Routing arguments - more detailed routing within a destination 
 - [ ] Routing templates - changing or formatting an item on routing, for example, making an item a piece of a TODO list
   - AI templates, where a local model formats an entry that may or may not be properly formatted

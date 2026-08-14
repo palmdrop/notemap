@@ -42,8 +42,12 @@ this spec is unwritten.
   capture twice has no additional effect.
 - Classification and archiving replay idempotently and order-independently; where two clients
   disagree, the later decision wins.
-- **Routing is never replayed from a client queue.** It requires a reachable destination and is
-  performed against the pool directly.
+- **Routing is never replayed from a client queue.** It is performed against the pool directly.
+  *Amended 2026-08-13*: it no longer requires a reachable destination — a decision made against an
+  unreachable one is recorded and delivered later
+  ([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)). What has not changed
+  is that the decision must reach the pool, so a client that cannot reach core cannot route; the
+  outbox carries captures and classification, never deliveries.
 - A client can ask for everything that has changed since a point it names, including purges.
 - **Delta reads are keyed on `modified_at`** (decided 2026-08-02): a server-assigned timestamp
   bumped by every change to an item — content and state alike, including classification,

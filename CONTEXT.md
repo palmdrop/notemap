@@ -33,9 +33,11 @@ drain to zero.
 _Avoid_: inbox, backlog, todo list
 
 **Position**:
-The sort-key fields of the last row a paginated read handed out, named in domain terms — the feed
-continues from a capture time and an id. A parameter of a read, never stored, and never the
-frontend's idea of how far processing has got, which notemap's core does not hold.
+The sort-key fields of the last row a paginated read handed out, named in domain terms. Each
+surface names its own: the feed continues from a capture time and an id, the queue from a content
+time and an id. A parameter of a read, never stored, and never the frontend's idea of how far
+processing has got, which notemap's core does not hold. Positions of two surfaces are not
+interchangeable, being the same shape carrying different meanings.
 _Avoid_: cursor, token, offset, page number
 
 **Head**:
@@ -167,9 +169,10 @@ _Avoid_: event, audit entry, history
 
 **Job**:
 One unit of claimable work core holds but never runs — an enrichment to perform, a mirror record
-to write, a purged item's mirror files to remove. Hosts claim jobs and drive them; core only
-records that there is something to do. A job names what it is about, which may be an item that has
-since been purged.
+to write, a purged item's mirror files to remove, a delivery to attempt. Hosts claim jobs and drive
+them; core only records that there is something to do. A job's **subject** says what kind of thing
+it is about as well as which one, because not every kind of work is about an item — and the thing
+it names may since have been purged.
 _Avoid_: task, queue entry, work item
 
 **Lease**:
@@ -179,8 +182,10 @@ again without cleanup.
 _Avoid_: lock, reservation, claim
 
 **Processed**:
-Said of an item that has been routed or archived. Marking an item processed by hand is routing
-whose destination is the user. Scrolling past an item is a **skip**, which changes nothing.
+Said of an item that has been routed or archived. It is the *decision* that processes an item, so a
+routing record still pending delivery counts, and an item whose delivery is abandoned resurfaces in
+the queue. Marking an item processed by hand is routing whose destination is the user. Scrolling
+past an item is a **skip**, which changes nothing.
 _Avoid_: done, handled, cleared
 
 ### Leaving
@@ -203,13 +208,24 @@ destination needs no change in core.
 _Avoid_: verb, action, method, operation
 
 **Route**:
-To deliver an item to a destination. Non-destructive: the item stays in the feed, and delivery may
-happen more than once, to more than one place.
+To decide that an item belongs at a destination. Non-destructive: the item stays in the feed, and
+an item may be routed more than once, to more than one place. The decision is always a person's,
+and is complete the moment it is made — carrying it out is a **delivery**, which happens after.
 _Avoid_: export, publish, send, file
 
+**Delivery**:
+One attempt to place an item at a destination through one of its capabilities. Everything durable
+about the item is handed to the adapter, which reaches back for nothing. A delivery is **pending**
+until it lands, and then either delivered or abandoned; a person may cancel one that is still
+pending.
+_Avoid_: push, transfer, upload
+
 **Routing record**:
-One entry in the append-only log of deliveries: destination, time, and a best-effort pointer to
-where the item landed. A stale pointer is acceptable.
+One delivery, and the whole of what notemap remembers about it: destination, capability, time, and
+a best-effort pointer to where the item landed. A stale pointer is acceptable. A record begins as a
+**reservation** the moment the decision is made and joins the append-only log when its delivery
+lands; a reservation whose delivery is abandoned or cancelled is removed, since nothing happened to
+record. So a record that is not pending means bytes reached somewhere.
 _Avoid_: routing status, delivery flag
 
 **Archive**:

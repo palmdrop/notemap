@@ -83,7 +83,10 @@ restore that item. It carries
   hash, so a rebuild restores the same asset identities and a human can find the bytes;
 - the item's artifacts, including corrections, each with its attribution and `correctionOf`
   link;
-- the item's routing records;
+- the item's **delivered** routing records — a record still pending delivery is a reservation
+  rather than durable state, and a rebuild that restored one would restore a promise no job
+  exists to keep (added 2026-08-13,
+  [ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md));
 - the item's `modified_at`, recorded for verification only and never restored.
 
 It does not carry suggestions, decided or pending; enrichment states; jobs, leases or the action
@@ -128,6 +131,11 @@ same transaction as the mutation itself. A capture, an amendment, a revision, a 
 removed, an archive or unarchive, an artifact or a correction, a routing record: each leaves the
 pool owing the mirror a write, and a mutation committed with nothing recording that debt would
 never be written and nothing would notice.
+
+**A routing record owes a write when its delivery lands, not when it is decided** (added
+2026-08-13). Minting a reservation changes nothing the mirror carries, so it enqueues nothing;
+resolving one to delivered does, and so does removing a delivered record by purge. A reservation
+that is abandoned or cancelled was never mirrored and leaves nothing to undo.
 
 Jobs **coalesce against pending jobs only**. A mutation arriving while an item already has a
 pending, unleased mirror job adds nothing — that job will write the current state when it runs.
@@ -431,6 +439,9 @@ schema churn cheap — does not apply to that pool.
   pools, as a property test.
 - Tagging, archiving, correcting an artifact and routing each leave the item's mirror files
   matching the pool once the queue drains.
+- A delivery still pending is absent from the item's mirror record, and appears in it once it
+  lands. A pool rebuilt while a delivery was pending holds no record of it, so the item rebuilds
+  unprocessed and returns to the queue.
 - A mutation arriving while an item's mirror write is in flight is written by a subsequent job,
   not absorbed into the one already running.
 - Two mirror writes for one item are never in flight at once.

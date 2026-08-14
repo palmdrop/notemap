@@ -186,7 +186,10 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   reports success; for the one destructive operation that is the wrong trade
   ([ADR 4](../adr/0004-purge-leaves-a-minimal-tombstone.md)). The store therefore places no
   foreign key on a job's subject, following the action log, which already carries a subject
-  without one for the same reason.
+  without one for the same reason. *Amended 2026-08-13*: a subject now says **what kind of thing**
+  it names as well as which one ([ADR 18](../adr/0018-a-jobs-subject-names-what-it-is-about.md)),
+  so mirror removal naming a departed item stops being a special note about a column and becomes an
+  ordinary consequence of subjects naming things that may be gone.
 - **An asset's reference is taken when the capture referencing it commits**, not when its bytes
   are stored (decided 2026-08-04). A client that uploads and then crashes leaves an unreferenced
   asset, which is wasted space, rather than a reference to a capture that never arrived, which
@@ -228,6 +231,13 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   proceeds. **Core does not enforce that warning** (decided 2026-08-03): it exposes an item's
   routing records, and the host or client asks. Core is a primitive API; a confirmation ritual
   is interface policy and belongs where the interface is.
+- **A delivery that lands after its item is purged leaves the trace and not the state** (added
+  2026-08-13). Delivery happens outside any transaction, so an item can be purged between the
+  attempt and the write that records it. The routing record is item state and dies with the item,
+  which is what purge already does to routing records; the action is a trace, and the action log
+  carries no foreign key to items precisely so it outlives them. So the `routed` entry is appended
+  — the only remaining record that bytes left the machine — no record is written, and the call is
+  refused as purged.
 
 ### The queue
 
@@ -242,6 +252,23 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   hand** — the user carried its content onward themselves — is routing: it appends a routing
   record whose destination is the user, with an optional note of where it went. Passing over
   an item changes nothing and is a skip.
+- **It is the decision that processes an item, not the arrival** (added 2026-08-13). A routing
+  record exists from the moment a person routes, so an item leaves the queue even when its
+  delivery is still pending, and returns to it if that delivery is abandoned
+  ([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)). Otherwise the queue
+  would report on whether a destination happened to be reachable rather than on what has been
+  decided.
+- **Processed is derived, never stored** (added 2026-08-13): archived, or holding at least one
+  routing record. This is the treatment `supersededBy` already gets, and for the same reason — the
+  routing log is authoritative about deliveries, and a column agreeing with it is a column that can
+  one day disagree. The cost is an anti-join per queue page, which the store is expected to index
+  for rather than denormalise around.
+- **Keyset pagination is sound although the queue reorders under the reader** (added 2026-08-13).
+  The feed gets this for free, its order never changing; the queue's does, which is the point.
+  Every event that moves an item — a revision, an amendment, a new capture — gives it a content
+  time of *now*, which places it ahead of a reader walking oldest-first. Every event that removes
+  one — routing, archiving, being superseded — hides it, and a reader who had not reached it was
+  never meant to see it. So no page skips a row or repeats one.
 - Core holds no position in the queue. Reads are ordered and paginated, continuing from a
   **position** the caller hands back — the sort key of the last row it saw
   ([ADR 14](../adr/0014-pagination-by-domain-position.md)). Where processing has got to is the
@@ -283,9 +310,13 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   ([ADR 14](../adr/0014-pagination-by-domain-position.md)).
 - **That surface covers work, not only enrichment** (amended 2026-08-11). Mirroring is a job like
   any other and a mirror job that cannot succeed needs the same visibility, so both job kinds
-  report an outcome and the surface is one list of abandoned **work**, keyed by
-  `{ at, item, kind, enrichment? }`. A client answers "what needs me" with one read rather than
-  merging two, and a third job kind later adds no third list.
+  report an outcome and the surface is one list of abandoned **work**. A client answers "what needs
+  me" with one read rather than merging two, and a third job kind later adds no third list.
+  *Amended 2026-08-13*: delivery is that third kind, and it adds no list. A row is keyed by its
+  job's subject, which is no longer always an item
+  ([ADR 18](../adr/0018-a-jobs-subject-names-what-it-is-about.md)) — so a row **also carries the
+  item it concerns**, resolved by the store, because a person working this list needs to know which
+  capture is stuck and the one-read promise is the whole point of the surface.
 - **Mirror work retries differently, and deliberately** (added 2026-08-11). Bounded retry exists
   so an item can answer "is anything still coming?", and for enrichment the answer may honestly
   be no. For mirroring it is always yes: the material exists and is unmirrored, and giving up
@@ -327,15 +358,64 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   rejected: it is filesystem-shaped, and a board, a webhook or a Micropub endpoint does not
   decompose into it. Capability names and target shapes belong to the adapter, the way payload
   types already do, so a new kind of destination needs no change in core.
-- Routing requires the destination to be reachable and may fail; a failed delivery leaves no
-  routing record.
+- **Routing records a decision; delivery carries it out** (amended 2026-08-13,
+  [ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)). This replaces
+  "routing requires the destination to be reachable and may fail; a failed delivery leaves no
+  routing record", which was written when the only destination in prospect was a local filesystem.
+  Most destinations are remote and unreachable for ordinary reasons, and a decision that evaporates
+  because a server was restarting is one the person has to remember to make again.
+- A routing record is minted as a **reservation** the moment the decision is made, and core
+  attempts delivery **once, inline**. Delivered resolves the reservation and fills in the pointer;
+  a destination that refuses removes it and the call is refused; a destination that could not be
+  reached leaves it pending and enqueues a **delivery job**. A destination that is up therefore
+  answers immediately, and only one that was genuinely absent becomes deferred work.
+- **Retry is keyed on evidence, not on failure.** `unreachable` is proof that nothing was
+  delivered, so a retry cannot duplicate and the job is retried with backoff. `rejected` is proof
+  that the destination was reached and refused, so it is abandoned on the first attempt — the same
+  call enrichment makes for a failure reported as not worth retrying. A lease that expired with no
+  outcome reported is **no evidence at all**, and is abandoned rather than retried: a delivery is
+  not idempotent, the domain cannot tell a retry from a genuine second delivery, and the cost of
+  guessing wrong is a duplicate nobody can detect.
+- **Delivery retries are bounded**, unlike mirror work. Mirroring retries forever because giving up
+  does not change the fact that material is unmirrored. Giving up on a delivery does change
+  something: it hands the decision back, so the person can repair their configuration or route
+  somewhere else.
+- **An abandoned or cancelled reservation is removed, and the item resurfaces in the queue** at its
+  unchanged content time. This is not a second exception to the append-only rule: the routing log
+  is append-only, and a reservation is not in it yet. A record joins the log when its delivery
+  lands, so a record that is not pending means bytes reached somewhere. Removing one that never
+  delivered erases no fact.
+- A person may **cancel a pending delivery** before it resolves, by the same path.
 - **A failed delivery is nonetheless recorded**, so a destination failing silently and
   repeatedly is visible rather than invisible. The routing log says where an item went; a
   failed attempt is one kind of entry in the action log
   ([ADR 12](../adr/0012-core-keeps-an-append-only-action-log.md)), not a separate log of its
-  own.
+  own. Abandonment reaches the same surface as every other job kind — see
+  [enrichment](#enrichment) — and an unknown outcome is distinguished there by its failure code, so
+  a host can warn that material may already have arrived before offering to route again. Core does
+  not enforce that warning, on the same terms as the warning before purging a routed item.
+- **A delivery carries everything durable about the item**, and the adapter reaches back for
+  nothing: the payload, the tags with their attribution, the capture and content times, the source,
+  the artifacts, and every asset the payload and artifacts reference, resolved and openable as a
+  stream. It carries neither prior routing records — where else an item went is another
+  destination's business — nor pending suggestions, which are regenerable and meaningless
+  undecided.
+- **The delivery is not the mirror record**, although the two carry nearly the same material. The
+  mirror record's contract is that a pool can be rebuilt from it
+  ([ADR 15](../adr/0015-the-mirror-record-is-authoritative-markdown-is-a-rendering.md)); a change
+  made to serve rebuild would otherwise ripple into every destination adapter, and it carries
+  `modifiedAt`, which no destination can use.
+- **Asset bytes reach an adapter as a stream it is handed, never as a store it reaches into.** An
+  asset id resolves to a blob only through pool state
+  ([ADR 16](../adr/0016-the-asset-registry-is-pool-state.md)), so an adapter given a blob store
+  could not resolve a reference and one given the pool store could read everything. Core resolves,
+  and the adapter receives each asset with its filename and a lazy opener — so a capability that
+  wants no bytes reads none, and a long recording is never buffered.
+- **Which assets share a filename within one capture is the adapter's problem**, as destination
+  layout is, for the same reason a blob's path is the blob driver's.
 - Rules may propose a destination from an item's tags, but **a rule never delivers on its own**.
-  Delivery is always a decision.
+  Delivery is always a decision. Deferring the *execution* of a decision a person has made does not
+  weaken this: no rule decided anything.
 
 ### The mirror
 
@@ -411,6 +491,14 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   that disagrees with itself.
 - **An entry's detail carries facts, never a sentence** — the rule a refusal follows, for the
   reason a refusal follows it: core has no locale and no interface, and rendering is the host's.
+- **Archiving and routing are attributed to an anonymous person** (added 2026-08-13), rather than
+  taking an agent the way tagging does. A tag needs one because accepting a suggestion writes a tag
+  attributed to the provider that suggested it; nothing else can archive or route, since both are
+  always an explicit decision. A signature that cannot express an attribution the model forbids is
+  worth more than one that is uniform, and with no authentication an anonymous person is the whole
+  of what a host could supply anyway.
+- **A delivery's entries are subject to the item**, not to the routing record the job names. Core
+  resolves the one to the other, so reading an item's log still finds every attempt to deliver it.
 - **The log records arrival.** Capture time comes from the source, so the entry is the only record
   of when the pool actually received something.
 - **Failed attempts at work are logged; successful ones are not** (clarified 2026-08-11). Work
@@ -609,6 +697,16 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   payload's content is open-ended JSON, so markdown cannot carry losslessness for most payload
   types. The files divide by audience instead, and nothing ever parses the readable one.
   Supersedes ADR 1's capture-`.md` + state-`.json` split.
+- **[Delivery is asynchronous, and retried only on
+  evidence](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)** — most destinations
+  are remote and unreachable for ordinary reasons, and a decision that evaporates because a server
+  was restarting is one the person must make again. One inline attempt keeps interactive feedback;
+  only a destination genuinely not reached becomes a job. Delivery is not idempotent, so an
+  automatic retry needs proof that nothing was delivered.
+- **[A job's subject names what it is
+  about](../adr/0018-a-jobs-subject-names-what-it-is-about.md)** — an optional field per job kind
+  is a shape that rots, each with its own paired constraint and no way to say which combinations
+  are real. Closes the "must a job be about an item?" question and unblocks the asset sweep.
 
 ---
 
@@ -623,14 +721,28 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 - [ ] 2026-08-02 — Where transcript correction happens: delegated to a provider's own interface,
       or a minimal editor in notemap.
 - [ ] 2026-08-02 — Whether routing copies an asset to the destination or leaves a reference, which
-      probably differs per destination.
+      probably differs per destination. *Half closed 2026-08-13*: the filesystem destination
+      **copies**, because a reference into notemap's blob layout breaks the moment notemap moves,
+      and a vault has to keep working without it. The mechanism is settled generally — an adapter
+      is handed each asset with its filename and a lazy stream — so what remains is whether any
+      destination ever wants a reference instead.
 - [ ] 2026-08-02 — Multiple pools per user, and multi-user operation. Nothing decided forecloses
       either; neither is designed.
-- [ ] 2026-08-11 — Whether a unit of work is ever about something other than *an item*. The
-      "must a job's subject be a live item?" half of this closed on 2026-08-11: it need not, and
-      mirror removal is the case that settled it. What remains is that the asset sweep is
-      pool-wide rather than about anything at all, and is not modelled as a job. If it becomes
-      one, a job's subject has to say what kind of thing it names rather than being an id.
+- [x] 2026-08-11 — Whether a unit of work is ever about something other than *an item*.
+      **Closed 2026-08-13**: it is. A delivery job is about a delivery, and a job's subject now says
+      what kind of thing it names ([ADR 18](../adr/0018-a-jobs-subject-names-what-it-is-about.md)).
+      The asset sweep, which prompted the question, is still not modelled as a job — but nothing in
+      the model stops it now, and whether a pool-wide unit of work wants a subject variant of its
+      own or no subject at all is the case that will say.
+- [ ] 2026-08-13 — What a destination names a file, when the domain has no title. A capture is an
+      open-JSON payload and nothing in it is a title, so the filesystem destination derives from
+      the first line of text and falls back to the item id. Serviceable for text, ugly for
+      everything else. A title is plausibly an artifact — an enrichment could produce one — which
+      would answer this and several routing-template questions in `todo.md` at once.
+- [ ] 2026-08-13 — Whether a capability may declare itself idempotent, and so opt into retrying a
+      delivery whose outcome is unknown. ADR 17 abandons those deliberately, being conservative for
+      adapters that can promise nothing. A content-addressed store or an API taking an idempotency
+      key could promise more.
 - [ ] 2026-08-11 — Action log retention: whether entries expire at all, and whether expiry is per
       kind. [ADR 12](../adr/0012-core-keeps-an-append-only-action-log.md) left it to be decided
       when the log's size becomes noticeable in practice. Nothing prunes it today, and the only
@@ -662,6 +774,23 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 - An item that has been routed no longer appears in the queue and still appears in the feed,
   with a record of where it went.
 - An item routed to two destinations carries two routing records.
+- Routing to a reachable destination answers a delivered record with a pointer, and enqueues no
+  job.
+- Routing to an unreachable destination answers a pending record, leaves the item out of the queue,
+  and enqueues a delivery job that succeeds once the destination returns.
+- A destination that refuses a delivery abandons it on the first attempt, leaves no routing record,
+  and leaves the item in the queue.
+- A delivery abandoned after exhausting its retries removes its routing record, returns the item to
+  the queue at its original position, and appears on the abandoned-work surface naming that item.
+- A delivery whose lease expired with no outcome reported is abandoned rather than retried, and is
+  distinguishable on that surface from one the destination refused.
+- Cancelling a pending delivery removes its record and returns the item to the queue.
+- An item purged while a delivery of it is in flight has the delivery's `routed` entry in its
+  action log and no routing record, and the call is refused as purged.
+- An adapter receives every asset the payload and artifacts reference, under the filename it was
+  uploaded with, and can read the bytes without reaching any store.
+- A capability that accepts no asset-bearing payload type never causes an asset stream to be
+  opened.
 - An archived item does not appear in the queue, does appear in the archive, and can still be
   routed from there.
 - An item marked processed by hand leaves the queue, stays in the feed unarchived, and carries
