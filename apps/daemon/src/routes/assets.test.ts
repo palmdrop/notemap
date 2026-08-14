@@ -361,21 +361,21 @@ describe("GET /v1/assets/{id}/content", () => {
     ["audio/wav", "memo.wav"],
     ["audio/x-wav", "memo.wav"],
     ["audio/vnd.wave", "memo.wav"],
-  ])("renders %s in place, whichever spelling it arrives under", async (
-    mime,
-    filename,
-  ) => {
-    const started = host();
-    const asset = await upload(started, "some bytes", {
-      "content-type": mime,
-      "content-disposition": attachment(filename),
-    });
+  ])(
+    "renders %s in place, whichever spelling it arrives under",
+    async (mime, filename) => {
+      const started = host();
+      const asset = await upload(started, "some bytes", {
+        "content-type": mime,
+        "content-disposition": attachment(filename),
+      });
 
-    const response = await started.app.request(
-      `/v1/assets/${asset.id}/content`,
-    );
-    expect(response.headers.get("content-disposition")).toContain("inline");
-  });
+      const response = await started.app.request(
+        `/v1/assets/${asset.id}/content`,
+      );
+      expect(response.headers.get("content-disposition")).toContain("inline");
+    },
+  );
 
   it("sends no Content-Length, so a drifted blob cannot truncate a transfer", async () => {
     const started = host();
