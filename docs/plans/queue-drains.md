@@ -109,20 +109,20 @@ Docs before the routes that implement them, as the asset slice did.
 
 ### Phase 3 — Core *(depends on phase 2)*
 
-- [ ] `items.archive` and `items.unarchive`. Each writes the state, bumps `modified_at`, enqueues a
-      mirror job — archive state is mirrored material — and appends `archived` or `unarchived` by an
-      anonymous person
-- [ ] `routing.markProcessed`: mint a routing record targeting the user, delivered, with the
-      optional note. Mirror job and a `routed` action, same transaction
-- [ ] `routing.recordsFor`
-- [ ] `views.queue` and `views.archived`, taking a `Page` and no order — oldest first is what makes
-      the queue a queue ([ADR 10](../adr/0010-feed-and-queue-sort-differently.md))
-- [ ] Tests: archiving an archived item is refused and changes nothing, as is unarchiving one that
-      is not archived; marking processed twice
+- [x] 2026-08-14 `items.archive` and `items.unarchive`. Each writes the state, bumps `modified_at`,
+      enqueues a mirror job — archive state is mirrored material — and appends `archived` or
+      `unarchived` by an anonymous person
+- [x] 2026-08-14 `routing.markProcessed`: mint a routing record targeting the user, delivered, with
+      the optional note. Mirror job and a `routed` action, same transaction
+- [x] 2026-08-14 `routing.recordsFor`
+- [x] 2026-08-14 `views.queue` and `views.archived`, taking a `Page` and no order — oldest first is
+      what makes the queue a queue ([ADR 10](../adr/0010-feed-and-queue-sort-differently.md))
+- [x] 2026-08-14 Tests: archiving an archived item is refused and changes nothing, as is unarchiving
+      one that is not archived; marking processed twice
       leaves two records and the item processed either way; an archived item can still be marked
       processed; the mirror record for a marked item carries the routing record
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint`
-- [ ] `git commit`
+- [x] 2026-08-14 Verify: `pnpm typecheck && pnpm test && pnpm lint`
+- [x] 2026-08-14 `git commit`
 
 ### Phase 4 — `/v1` *(depends on phases 1 and 3)*
 

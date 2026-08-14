@@ -1,13 +1,14 @@
 import { dequal } from "dequal";
 
 import { recordAction } from "./actions";
+import { enqueueMirrorWrite } from "./mirror";
 import { ok, refused } from "../utils/result";
 import type { PoolConfig } from "../types/api/config";
 import type { PoolPorts, PoolTx } from "../types/api/ports";
 import type { CaptureRefusal } from "../types/api/refusal";
 import type { Agent } from "../types/domain/agent";
 import type { CaptureEnvelope, CaptureOutcome } from "../types/domain/capture";
-import type { ItemId, JobId } from "../types/domain/ids";
+import type { ItemId } from "../types/domain/ids";
 import type { Item, ItemRecord } from "../types/domain/item";
 import type { Payload } from "../types/domain/payload";
 import type { Result } from "../types/result";
@@ -106,19 +107,7 @@ async function append(
   const item = await tx.insertItem(record);
   const at = ports.clock.now();
 
-  // In the same transaction as the item: one committed with nothing recording
-  // that its mirror is owed would never be written, and nothing would notice.
-  if (ports.mirrorWriter !== undefined) {
-    await tx.enqueue([
-      {
-        id: ports.ids.next<JobId>(),
-        kind: "mirror",
-        subject: { kind: "item", item: item.id },
-        attempt: 0,
-        enqueuedAt: at,
-      },
-    ]);
-  }
+  await enqueueMirrorWrite(ports, tx, item.id, at);
 
   await recordAction(ports, tx, {
     kind: "captured",

@@ -3,10 +3,12 @@ import type { Pool } from "../types/api/pool";
 import type { PoolPorts } from "../types/api/ports";
 import type { OrderedPage, PageRequest, ReadOrder } from "../types/result";
 
+import * as archive from "./archive";
 import * as assets from "./assets";
 import { capture } from "./capture";
 import * as maintenance from "./maintenance";
 import * as mirror from "./mirror";
+import * as routing from "./routing";
 import * as work from "./work";
 
 /**
@@ -37,15 +39,16 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
       edit: notImplemented("items.edit"),
       tag: notImplemented("items.tag"),
       untag: notImplemented("items.untag"),
-      archive: notImplemented("items.archive"),
-      unarchive: notImplemented("items.unarchive"),
+      archive: (id, reason) => archive.archive(ports, id, reason),
+      unarchive: (id) => archive.unarchive(ports, id),
       purge: notImplemented("items.purge"),
     },
 
     views: {
       feed: (page) => store.feed(ordered(page)),
-      queue: notImplemented("views.queue"),
-      archived: notImplemented("views.archived"),
+      // Neither takes an order: oldest first is what makes a queue a queue.
+      queue: (page) => store.queue(page),
+      archived: (page) => store.archived(page),
     },
 
     suggestions: {
@@ -64,8 +67,8 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
     routing: {
       destinations: notImplemented("routing.destinations"),
       route: notImplemented("routing.route"),
-      markProcessed: notImplemented("routing.markProcessed"),
-      recordsFor: notImplemented("routing.recordsFor"),
+      markProcessed: (item, note) => routing.markProcessed(ports, item, note),
+      recordsFor: (item) => routing.recordsFor(ports, item),
     },
 
     assets: {

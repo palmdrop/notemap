@@ -43,7 +43,19 @@ export type EditRefusal =
 
 export type TagRefusal = SubjectRefusal;
 
-export type ArchiveRefusal = SubjectRefusal;
+/**
+ * Neither half is a no-op. Archiving carries a reason and a time, so a second
+ * archive either overwrites what the first recorded or discards what the second
+ * was given — and the caller asked for neither.
+ */
+export type ArchiveRefusal =
+  | SubjectRefusal
+  | {
+      readonly kind: "already-archived";
+      readonly item: ItemId;
+      readonly at: Timestamp;
+    }
+  | { readonly kind: "not-archived"; readonly item: ItemId };
 
 export type PurgeRefusal = SubjectRefusal;
 
