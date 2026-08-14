@@ -167,10 +167,11 @@ export const routingRecord = (): fc.Arbitrary<RoutingRecord> =>
           { requiredKeys: ["kind"] },
         ),
       ),
+      state: fc.constantFrom("pending" as const, "delivered" as const),
       at: stamp(),
       pointer: name(),
     },
-    { requiredKeys: ["id", "item", "target", "at"] },
+    { requiredKeys: ["id", "item", "target", "state", "at"] },
   );
 
 export type PoolState = {

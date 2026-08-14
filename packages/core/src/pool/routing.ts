@@ -22,6 +22,7 @@ export function markProcessed(
       id: ports.ids.next<RoutingRecordId>(),
       item: id,
       target: { kind: "user", ...(note === undefined ? {} : { note }) },
+      state: "delivered",
       at,
     };
 

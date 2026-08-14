@@ -16,7 +16,9 @@ import {
   at,
   capture,
   countingIds,
+  deliveryJob,
   mirrorJob,
+  reserved,
   store,
 } from "./testing/fixture";
 
@@ -406,6 +408,95 @@ describe("a job's subject", () => {
         abandonedAt: at("2026-08-03T10:01:00.000Z"),
       },
     ]);
+  });
+});
+
+describe("work about a routing record", () => {
+  async function reservedAndOwed() {
+    const opened = pool({ ids: countingIds() });
+    const record = capture();
+    await appendCapture(opened.pool, record);
+
+    const reservation = reserved(record);
+    await opened.pool.transaction(async (tx) => {
+      await tx.insertRoutingRecord(reservation);
+      await tx.enqueue([deliveryJob(reservation, "job-1")]);
+    });
+
+    return { ...opened, record, reservation };
+  }
+
+  it("carries the record it is about, and not the item", async () => {
+    const { pool: p, reservation } = await reservedAndOwed();
+
+    const [lease] = await claim(p, { kinds: ["delivery"] });
+
+    expect(lease?.job.subject).toEqual({
+      kind: "routing-record",
+      record: reservation.id,
+    });
+  });
+
+  /**
+   * The reservation is gone by the time anyone reads this row — abandoning a
+   * delivery removes it — so the item is resolved when the job is enqueued
+   * rather than joined here. A person working the list needs to know which
+   * capture is stuck.
+   */
+  it("names the item on the abandoned surface once its record is gone", async () => {
+    const { pool: p, record, reservation } = await reservedAndOwed();
+    const [lease] = await claim(p, { kinds: ["delivery"] });
+    if (lease === undefined) throw new Error("expected a lease");
+
+    await p.transaction(async (tx) => {
+      await tx.resolveJob(lease.id, {
+        kind: "abandoned",
+        attempt: 3,
+        abandonedAt: at("2026-08-03T10:01:00.000Z"),
+        failure: { code: "unreachable", detail: "ECONNREFUSED" },
+      });
+      await tx.removeRoutingRecord(reservation.id);
+    });
+
+    expect((await p.abandonedWork({ limit: 10 })).values).toEqual([
+      {
+        subject: { kind: "routing-record", record: reservation.id },
+        item: record.id,
+        kind: "delivery",
+        attempts: 3,
+        lastFailure: { code: "unreachable", detail: "ECONNREFUSED" },
+        abandonedAt: at("2026-08-03T10:01:00.000Z"),
+      },
+    ]);
+  });
+
+  it("refuses to be enqueued about a record no decision minted", async () => {
+    const { pool: p } = pool();
+    const record = capture();
+    await appendCapture(p, record);
+
+    await expect(
+      enqueue(p, deliveryJob(reserved(record), "job-1")),
+    ).rejects.toThrow(/no routing record/);
+  });
+
+  it("is withdrawn with its reservation, unless somebody holds it", async () => {
+    const { pool: p, reservation } = await reservedAndOwed();
+    const subject = {
+      kind: "routing-record" as const,
+      record: reservation.id,
+    };
+
+    const [lease] = await claim(p, { kinds: ["delivery"] });
+    expect(lease).toBeDefined();
+    expect(await p.transaction((tx) => tx.withdrawWork(subject))).toBe("held");
+
+    await p.releaseLease(lease?.id ?? ("none" as LeaseId));
+
+    expect(await p.transaction((tx) => tx.withdrawWork(subject))).toBe(
+      "withdrawn",
+    );
+    expect(await claim(p, { kinds: ["delivery"] })).toEqual([]);
   });
 });
 

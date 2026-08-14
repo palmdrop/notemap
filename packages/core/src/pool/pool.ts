@@ -64,6 +64,7 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
     routing: {
       destinations: notImplemented("routing.destinations"),
       route: notImplemented("routing.route"),
+      cancelDelivery: notImplemented("routing.cancelDelivery"),
       markProcessed: (item, note) => routing.markProcessed(ports, item, note),
       recordsFor: (item) => routing.recordsFor(ports, item),
     },

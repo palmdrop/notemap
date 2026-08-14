@@ -307,11 +307,12 @@ export function drainWith(
 
       for (const lease of fresh) {
         attempted.add(lease.job.id);
+        const subject = lease.job.subject;
+        if (subject.kind !== "item") throw new Error("expected item work");
+
         let outcome;
         try {
-          const record = await harnessed.pool.mirror.recordFor(
-            lease.job.subject.item,
-          );
+          const record = await harnessed.pool.mirror.recordFor(subject.item);
           if (record !== undefined) await writer.write(record);
           outcome = { kind: "succeeded" } as const;
         } catch (cause) {

@@ -1,11 +1,13 @@
 import type {
   Action,
+  Duration,
   Item,
   ItemId,
   OrderedPage,
   Page,
   Position,
   RoutingRecord,
+  RoutingRecordId,
   Timestamp,
 } from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
@@ -18,10 +20,12 @@ import {
   at,
   capture,
   captured,
+  deliveryJob,
   frozenClock,
   putAssets,
   markedProcessed,
   mirrorJob,
+  reserved,
   revisionOf,
   SCRATCHPAD,
   store,
@@ -126,6 +130,7 @@ describe("writing a capture", () => {
         kind: "mirror",
         subject_kind: "item",
         subject_id: record.id,
+        subject_item: record.id,
         enrichment: null,
         attempt: 0,
         enqueued_at: Date.parse(record.createdAt),
@@ -1157,12 +1162,14 @@ describe("routing records", () => {
         id: "routing-1",
         item: "item-1",
         target: { kind: "user", note: "into the vault" },
+        state: "delivered",
         at: "2026-08-03T10:00:00.000Z",
       },
       {
         id: "routing-2",
         item: "item-1",
         target: { kind: "user" },
+        state: "delivered",
         at: "2026-08-03T11:00:00.000Z",
       },
     ]);
@@ -1203,6 +1210,104 @@ describe("routing records", () => {
     await appendCapture(p, record);
 
     expect(await p.routingRecords(record.id)).toEqual([]);
+  });
+});
+
+describe("reservations", () => {
+  const OLDEST_FIRST: OrderedPage = { limit: 50, order: "oldest-first" };
+
+  async function reservedItem(overrides: { id?: string } = {}) {
+    const opened = pool();
+    const record = capture({ id: overrides.id ?? "item-1" });
+    await appendCapture(opened.pool, record);
+    const reservation = reserved(record);
+    await opened.pool.transaction((tx) => tx.insertRoutingRecord(reservation));
+    return { ...opened, record, reservation };
+  }
+
+  /**
+   * It is the decision that processes an item, not the arrival: an item whose
+   * delivery is still pending has left the queue.
+   */
+  it("keeps its item out of the queue although nothing has arrived", async () => {
+    const { pool: p } = await reservedItem();
+
+    expect((await p.queue(OLDEST_FIRST)).values).toEqual([]);
+  });
+
+  it("puts the item back when it is removed", async () => {
+    const { pool: p, reservation } = await reservedItem();
+
+    await p.transaction((tx) => tx.removeRoutingRecord(reservation.id));
+
+    expect(ids((await p.queue(OLDEST_FIRST)).values)).toEqual(["item-1"]);
+    expect(await p.routingRecords("item-1" as ItemId)).toEqual([]);
+  });
+
+  it("returns the item at its unchanged position", async () => {
+    const { pool: p, reservation } = await reservedItem();
+    await appendCapture(
+      p,
+      capture({ id: "item-2", createdAt: "2026-08-03T09:30:00.000Z" }),
+    );
+
+    await p.transaction((tx) => tx.removeRoutingRecord(reservation.id));
+
+    expect(ids((await p.queue(OLDEST_FIRST)).values)).toEqual([
+      "item-1",
+      "item-2",
+    ]);
+  });
+
+  it("becomes delivered, with wherever it landed", async () => {
+    const { pool: p, reservation } = await reservedItem();
+
+    await p.transaction((tx) =>
+      tx.resolveRoutingRecord(reservation.id, "vault/a-thought.md"),
+    );
+
+    expect(await p.routingRecord(reservation.id)).toEqual({
+      ...reservation,
+      state: "delivered",
+      pointer: "vault/a-thought.md",
+    });
+  });
+
+  it("answers nothing for a record no decision minted", async () => {
+    const { pool: p } = pool();
+
+    expect(await p.routingRecord("nobody" as RoutingRecordId)).toBeUndefined();
+  });
+
+  /** Two destinations for one item are two decisions, and neither absorbs the other. */
+  it("coexists with a second reservation of the same item", async () => {
+    const { pool: p, record } = await reservedItem();
+    const second = reserved(record, {
+      id: "routing-2",
+      at: "2026-08-03T10:30:00.000Z",
+      capability: "append-to-file",
+    });
+
+    await p.transaction(async (tx) => {
+      await tx.insertRoutingRecord(second);
+      await tx.enqueue([
+        deliveryJob(reserved(record), "job-1"),
+        deliveryJob(second, "job-2"),
+      ]);
+    });
+
+    expect((await p.routingRecords(record.id)).map((each) => each.id)).toEqual([
+      "routing-item-1",
+      "routing-2",
+    ]);
+    expect(
+      (
+        await p.claim(
+          { kinds: ["delivery"], limit: 10, leaseFor: 60_000 as Duration },
+          at("2026-08-03T12:00:00.000Z"),
+        )
+      ).map((lease) => lease.job.id),
+    ).toEqual(["job-1", "job-2"]);
   });
 });
 

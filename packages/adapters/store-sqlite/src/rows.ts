@@ -47,9 +47,11 @@ export type AssetRow = {
 
 export type JobRow = {
   readonly id: string;
-  readonly kind: "enrichment" | "mirror" | "mirror-remove";
-  readonly subject_kind: "item";
+  readonly kind: "enrichment" | "mirror" | "mirror-remove" | "delivery";
+  readonly subject_kind: "item" | "routing-record";
   readonly subject_id: string;
+  /** The capture the work concerns, which outlives a subject that may be removed. */
+  readonly subject_item: string;
   readonly enrichment: string | null;
   readonly attempt: number;
   readonly enqueued_at: number;
@@ -110,6 +112,7 @@ export const TABLE_COLUMNS = {
     "kind",
     "subject_kind",
     "subject_id",
+    "subject_item",
     "enrichment",
     "attempt",
     "enqueued_at",

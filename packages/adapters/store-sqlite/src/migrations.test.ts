@@ -200,16 +200,17 @@ describe("splitting a job's subject into a kind and an id", () => {
     try {
       const insert = raw.prepare(
         `INSERT INTO jobs
-           (id, kind, subject_kind, subject_id, attempt, enqueued_at, next_attempt_at)
-         VALUES (?, 'mirror', 'item', ?, 0, ?, ?)`,
+           (id, kind, subject_kind, subject_id, subject_item, attempt,
+            enqueued_at, next_attempt_at)
+         VALUES (?, 'mirror', 'item', ?, ?, 0, ?, ?)`,
       );
 
-      expect(() => insert.run("rival", "item-1", ENQUEUED, ENQUEUED)).toThrow(
-        /UNIQUE|constraint/i,
-      );
+      expect(() =>
+        insert.run("rival", "item-1", "item-1", ENQUEUED, ENQUEUED),
+      ).toThrow(/UNIQUE|constraint/i);
       // The rule is per item, not per kind of subject.
       expect(() =>
-        insert.run("elsewhere", "item-2", ENQUEUED, ENQUEUED),
+        insert.run("elsewhere", "item-2", "item-2", ENQUEUED, ENQUEUED),
       ).not.toThrow();
     } finally {
       raw.close();

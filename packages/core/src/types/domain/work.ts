@@ -5,13 +5,20 @@ import type {
   ItemId,
   JobId,
   LeaseId,
+  RoutingRecordId,
   Timestamp,
 } from "./ids";
 import type { SuggestionDraft } from "./suggestion";
 
-export type JobKind = "enrichment" | "mirror" | "mirror-remove";
+export type JobKind = "enrichment" | "mirror" | "mirror-remove" | "delivery";
 
-export type JobSubject = { readonly kind: "item"; readonly item: ItemId };
+/**
+ * Two pending deliveries of one item are two jobs, so a delivery names the
+ * record it carries out rather than the item that record is about.
+ */
+export type JobSubject =
+  | { readonly kind: "item"; readonly item: ItemId }
+  | { readonly kind: "routing-record"; readonly record: RoutingRecordId };
 
 /** Deliberately partial: what a job carries as input is unsettled. */
 export type Job = {
@@ -34,11 +41,18 @@ export type Lease = {
   readonly id: LeaseId;
   readonly job: Job;
   readonly expiresAt: Timestamp;
+  /**
+   * Present when this claim took over a lease that expired with nothing
+   * reported. What the previous holder did is unknown, which for work that
+   * cannot be repeated safely is not the same as knowing it did nothing.
+   */
+  readonly reclaimed?: true;
 };
 
-/** Two successes rather than one, because only enrichment produces material. */
+/** Three successes rather than one: only enrichment produces material, and only a delivery lands somewhere. */
 export type WorkOutcome =
   | { readonly kind: "succeeded" }
+  | { readonly kind: "delivered"; readonly pointer?: string }
   | {
       readonly kind: "enriched";
       readonly artifacts: readonly ArtifactDraft[];
@@ -50,12 +64,19 @@ export type WorkOutcome =
       readonly detail: FailureDetail;
     };
 
-/** `maxAttempts` bounds enrichment only: a retryable mirror failure retries forever. */
+/** `maxAttempts` bounds enrichment and delivery: a retryable mirror failure retries forever. */
 export type RetryPolicy = {
   readonly maxAttempts: number;
   readonly initialBackoff: Duration;
   readonly maxBackoff: Duration;
 };
+
+/**
+ * What became of the work outstanding about a subject when it was called off.
+ * **Held** is not a failure: somebody's attempt may be underway, and its
+ * outcome is not the caller's to decide.
+ */
+export type WorkWithdrawal = "withdrawn" | "held";
 
 /** What core decided a finished attempt means. The store applies it and holds no policy of its own. */
 export type JobResolution =
@@ -76,6 +97,10 @@ export type JobResolution =
 /** One row of the surface answering "what needs me", for work of any kind. */
 export type AbandonedWork = {
   readonly subject: JobSubject;
+  /**
+   * Outlives the subject: an abandoned delivery's record is removed, and the
+   * row reporting it still has to name a capture.
+   */
   readonly item: ItemId;
   readonly kind: JobKind;
   /** Present for enrichment work only. */

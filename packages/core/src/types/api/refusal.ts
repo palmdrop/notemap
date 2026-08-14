@@ -9,6 +9,7 @@ import type {
   ItemId,
   LeaseId,
   PayloadTypeName,
+  RoutingRecordId,
   SuggestionId,
   Timestamp,
 } from "../domain/ids";
@@ -94,7 +95,18 @@ export type AttemptFailure =
   | { readonly kind: "unreachable"; readonly detail: string }
   | { readonly kind: "rejected-by-destination"; readonly detail: string };
 
-export type DeliveryRefusal = PreparationRefusal | AttemptFailure;
+/**
+ * A record that is not pending has already delivered, and there is nothing left
+ * to call off; a delivery somebody holds a lease on may be halfway through one,
+ * and its outcome is not the canceller's to decide.
+ */
+export type CancelRefusal =
+  | { readonly kind: "no-such-record"; readonly record: RoutingRecordId }
+  | { readonly kind: "not-pending"; readonly record: RoutingRecordId }
+  | { readonly kind: "delivery-in-flight"; readonly record: RoutingRecordId };
+
+export type DeliveryRefusal =
+  PreparationRefusal | AttemptFailure | CancelRefusal;
 
 export type RoutingRefusal = SubjectRefusal;
 

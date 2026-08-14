@@ -11,7 +11,9 @@ import type {
   Asset,
   AssetId,
   BlobHash,
+  CapabilityName,
   Clock,
+  DestinationId,
   IdGenerator,
   Item,
   ItemId,
@@ -194,7 +196,39 @@ export function markedProcessed(
       kind: "user",
       ...(overrides.note === undefined ? {} : { note: overrides.note }),
     },
+    state: "delivered",
     at: at(overrides.at ?? "2026-08-03T10:00:00.000Z"),
+  };
+}
+
+/** A reservation: what a decision mints before anything has arrived anywhere. */
+export function reserved(
+  item: ItemRecord,
+  overrides: { id?: string; at?: string; capability?: string } = {},
+): RoutingRecord {
+  return {
+    id: (overrides.id ?? `routing-${item.id}`) as RoutingRecordId,
+    item: item.id,
+    target: {
+      kind: "destination",
+      destination: "vault" as DestinationId,
+      capability: (overrides.capability ?? "create-note") as CapabilityName,
+    },
+    state: "pending",
+    at: at(overrides.at ?? "2026-08-03T10:00:00.000Z"),
+  };
+}
+
+export function deliveryJob(
+  record: RoutingRecord,
+  jobId = `job-${record.id}`,
+): Job {
+  return {
+    id: jobId as JobId,
+    kind: "delivery",
+    subject: { kind: "routing-record", record: record.id },
+    attempt: 0,
+    enqueuedAt: record.at,
   };
 }
 

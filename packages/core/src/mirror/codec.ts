@@ -20,7 +20,11 @@ import type {
 import type { ArchiveState, ItemRecord, Tag } from "../types/domain/item";
 import type { MirrorRecord } from "../types/domain/mirror";
 import type { Payload } from "../types/domain/payload";
-import type { RoutingRecord, RoutingTarget } from "../types/domain/routing";
+import type {
+  RoutingRecord,
+  RoutingRecordState,
+  RoutingTarget,
+} from "../types/domain/routing";
 
 /**
  * The record as bytes. Keys are sorted at every depth, including inside the
@@ -176,9 +180,23 @@ function readRouting(value: unknown, at: string): RoutingRecord {
     id: text(row["id"], `${at}.id`) as RoutingRecordId,
     item: text(row["item"], `${at}.item`) as ItemId,
     target: readTarget(row["target"], `${at}.target`),
+    state: readState(row["state"], `${at}.state`),
     at: stamp(row["at"], `${at}.at`),
     ...present("pointer", row, at, text),
   };
+}
+
+/**
+ * Read rather than assumed, although the mirror only ever writes delivered
+ * records: a file saying `pending` is a mirror that cannot be trusted about
+ * what arrived, and salvaging it as delivered would invent an arrival.
+ */
+function readState(value: unknown, at: string): RoutingRecordState {
+  const spelling = text(value, at);
+  if (spelling !== "pending" && spelling !== "delivered") {
+    reject(at, "a routing record state");
+  }
+  return spelling;
 }
 
 function readTarget(value: unknown, at: string): RoutingTarget {

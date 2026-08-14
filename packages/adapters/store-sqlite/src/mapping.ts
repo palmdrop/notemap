@@ -182,14 +182,19 @@ export function toAsset(row: AssetRow): Asset {
 export function toJobSubject(
   row: Pick<JobRow, "subject_kind" | "subject_id">,
 ): JobSubject {
-  return { kind: row.subject_kind, item: row.subject_id as ItemId };
+  return row.subject_kind === "item"
+    ? { kind: "item", item: row.subject_id as ItemId }
+    : { kind: "routing-record", record: row.subject_id as RoutingRecordId };
 }
 
 /** The pair a subject is stored as, in the order every statement binds them. */
 export function subjectColumns(
   subject: JobSubject,
 ): [JobRow["subject_kind"], string] {
-  return [subject.kind, subject.item];
+  return [
+    subject.kind,
+    subject.kind === "item" ? subject.item : subject.record,
+  ];
 }
 
 export function toJob(row: JobRow): Job {
@@ -205,14 +210,12 @@ export function toJob(row: JobRow): Job {
   };
 }
 
-/** Nothing here can produce a `pending` record: its target is the user, and there is nothing to reach. */
-const DELIVERED = "delivered" satisfies RoutingRecordRow["state"];
-
 export function toRoutingRecord(row: RoutingRecordRow): RoutingRecord {
   return {
     id: row.id as RoutingRecordId,
     item: row.item_id as ItemId,
     target: toRoutingTarget(row),
+    state: row.state,
     at: toTimestamp(row.at),
     ...(row.pointer === null ? {} : { pointer: row.pointer }),
   };
@@ -253,7 +256,7 @@ export function routingRecordParams(
     target.kind === "destination" ? target.destination : null,
     target.kind === "destination" ? target.capability : null,
     target.kind === "user" ? (target.note ?? null) : null,
-    DELIVERED,
+    record.state,
     toMillis(record.at),
     record.pointer ?? null,
   ];

@@ -61,7 +61,7 @@ export async function complete(
     const held = await tx.leasedJob(lease);
     if (held === undefined) return refused({ kind: "lease-lost", lease });
 
-    if (outcome.kind === "succeeded") {
+    if (outcome.kind === "succeeded" || outcome.kind === "delivered") {
       await tx.resolveJob(lease, { kind: "done" });
       return ok<void, LeaseRefusal>(undefined);
     }
@@ -90,7 +90,9 @@ export async function complete(
 
     await recordAction(ports, tx, {
       kind: giveUp ? "work-abandoned" : "work-failed",
-      subject: held.job.subject.item,
+      ...(held.job.subject.kind === "item"
+        ? { subject: held.job.subject.item }
+        : {}),
       // Nobody asked for this attempt, so nobody but notemap made it.
       by: { kind: "notemap" },
       at,

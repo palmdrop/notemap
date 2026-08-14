@@ -10,6 +10,7 @@ import type {
   LeaseId,
   MintableId,
   ProviderName,
+  RoutingRecordId,
   SourceId,
   SuggestionId,
   SyncCursor,
@@ -31,8 +32,10 @@ import type {
   ClaimRequest,
   Job,
   JobResolution,
+  JobSubject,
   Lease,
   WorkOutcome,
+  WorkWithdrawal,
 } from "../domain/work";
 import type { LeaseRefusal } from "./refusal";
 
@@ -164,6 +167,7 @@ export interface PoolReads {
   suggestions(item: ItemId): Promise<readonly Suggestion[]>;
   suggestion(id: SuggestionId): Promise<Suggestion | undefined>;
   routingRecords(item: ItemId): Promise<readonly RoutingRecord[]>;
+  routingRecord(id: RoutingRecordId): Promise<RoutingRecord | undefined>;
   artifacts(item: ItemId): Promise<readonly Artifact[]>;
   enrichmentStates(item: ItemId): Promise<readonly EnrichmentStatus[]>;
 
@@ -194,6 +198,25 @@ export interface PoolTx extends PoolReads {
   setArchiveState(item: ItemId, state?: ArchiveState): Promise<Item>;
 
   insertRoutingRecord(record: RoutingRecord): Promise<void>;
+
+  /** Resolves a reservation to delivered, with a best-effort pointer to where it landed. */
+  resolveRoutingRecord(
+    record: RoutingRecordId,
+    pointer?: string,
+  ): Promise<void>;
+
+  /**
+   * Removes a reservation, returning its item to the queue. Only ever a record
+   * that never delivered: the routing log is append-only, and a reservation is
+   * not in it yet.
+   */
+  removeRoutingRecord(record: RoutingRecordId): Promise<void>;
+
+  /**
+   * Removes the work outstanding about a subject, unless somebody holds a lease
+   * on it.
+   */
+  withdrawWork(subject: JobSubject): Promise<WorkWithdrawal>;
 
   /** When it was stored is the store's, the way `modifiedAt` is: operational, and not part of the asset. */
   insertAsset(asset: Asset): Promise<void>;

@@ -12,6 +12,7 @@ import type {
   EnrichmentName,
   ItemId,
   LeaseId,
+  RoutingRecordId,
   SuggestionId,
   SyncCursor,
   TagName,
@@ -88,10 +89,19 @@ export interface EnrichmentApi {
 
 export interface RoutingApi {
   destinations(): Promise<readonly DestinationDescriptor[]>;
+  /**
+   * Answers the record the decision minted, which may still be **pending**: a
+   * destination that could not be reached leaves the delivery to a job. Read
+   * the state rather than reading a record as arrival.
+   */
   route(
     item: ItemId,
     delivery: DeliveryRequest,
   ): Promise<Result<RoutingRecord, DeliveryRefusal>>;
+  /** Calls off a delivery that has not landed, which returns the item to the queue. */
+  cancelDelivery(
+    record: RoutingRecordId,
+  ): Promise<Result<void, DeliveryRefusal>>;
   markProcessed(
     item: ItemId,
     note?: string,

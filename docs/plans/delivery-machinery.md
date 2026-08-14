@@ -53,34 +53,39 @@ this plan honest about being core work.
 
 ### Phase 0 — Branch
 
-- [ ] `git checkout -b agent/delivery-machinery`
+- [x] `git checkout -b agent/delivery-machinery` — 2026-08-14
 
 ### Phase 1 — Types *(no behaviour)*
 
-- [ ] `JobSubject` gains its `routing-record` variant, and `JobKind` gains `delivery`. This is the
-      second variant [job-subject-union.md](job-subject-union.md) deliberately left unbuilt
-- [ ] `RoutingRecord` gains its state — pending or delivered — beside the pointer it already has
-- [ ] `Delivery` becomes the rich type: payload, tags with attribution, capture and content times,
+- [x] `JobSubject` gains its `routing-record` variant, and `JobKind` gains `delivery`. This is the
+      second variant [job-subject-union.md](job-subject-union.md) deliberately left unbuilt —
+      2026-08-14
+- [x] `RoutingRecord` gains its state — pending or delivered — beside the pointer it already has.
+      The mirror record carries the delivered ones only, which the projection now enforces —
+      2026-08-14
+- [x] `Delivery` becomes the rich type: payload, tags with attribution, capture and content times,
       source, artifacts, and `DeliveredAsset[]` — each `{ slot, asset, open(signal?) }`, sorted by
-      slot. It is **not** `MirrorRecord`, for the reason `core.md` now gives
-- [ ] `RoutingApi` gains `cancelDelivery`; `DeliveryRefusal` gains whatever cancelling and a
-      not-pending record need
-- [ ] Verify: `pnpm typecheck`
+      slot. It is **not** `MirrorRecord`, for the reason `core.md` now gives — 2026-08-14
+- [x] `RoutingApi` gains `cancelDelivery`; `DeliveryRefusal` gains whatever cancelling and a
+      not-pending record need — 2026-08-14
+- [x] Verify: `pnpm typecheck` — 2026-08-14
 
 ### Phase 2 — The store *(depends on phase 1)*
 
-- [ ] Migration: `routing_records.state` admits `pending`; the `jobs` kind CHECK admits `delivery`
-- [ ] A delivery job's subject is a routing record. The **coalescing index must not reach it** —
+- [x] Migration: the `jobs` kind CHECK admits `delivery` and its subject kind admits
+      `routing-record`; `routing_records.state` already admitted `pending` — 2026-08-14
+- [x] A delivery job's subject is a routing record. The **coalescing index must not reach it** —
       `jobs_one_pending_mirror` is about mirror kinds and stays that way, and two pending deliveries
-      of one item are two legitimate jobs
-- [ ] Resolve a reservation to delivered with its pointer; remove one
-- [ ] `abandonedWork` earns its join: for a delivery job, resolve the routing record to the item it
-      belongs to, so the surface still names a capture
-- [ ] Tests: a pending record keeps its item out of the queue; removing one puts it back; two
+      of one item are two legitimate jobs — 2026-08-14
+- [x] Resolve a reservation to delivered with its pointer; remove one — 2026-08-14
+- [x] `abandonedWork` names the item for a delivery job — **resolved when the job is enqueued
+      rather than joined at read time**, because abandoning a delivery removes the record a join
+      would need. See the report; ADR 18 says "join" — 2026-08-14
+- [x] Tests: a pending record keeps its item out of the queue; removing one puts it back; two
       pending deliveries of one item coexist; the abandoned surface names the item for a delivery
-      job whose subject is a record
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint`
-- [ ] `git commit`
+      job whose subject is a record — 2026-08-14
+- [x] Verify: `pnpm typecheck && pnpm test && pnpm lint` — 2026-08-14
+- [x] `git commit` — 2026-08-14
 
 ### Phase 3 — A destination that fails on command *(depends on phase 1)*
 
