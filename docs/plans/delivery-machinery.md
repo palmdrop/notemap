@@ -149,14 +149,15 @@ this plan honest about being core work.
 
 ### Phase 6 — End to end *(depends on phase 5)*
 
-- [ ] Integration tests: route to a destination that is down, watch the item stay out of the queue,
+- [x] Integration tests: route to a destination that is down, watch the item stay out of the queue,
       bring it up, drain, and find the record delivered and the mirror carrying it. Then the same
       with a destination that never comes up, and find the item back in the queue and a row on the
-      abandoned surface
-- [ ] A pool rebuilt while a delivery was pending holds no record of it and rebuilds the item
-      unprocessed — the consequence `mirror.md` now states
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint` from a clean checkout
-- [ ] `git commit`
+      abandoned surface — 2026-08-14
+- [x] A pool rebuilt while a delivery was pending holds no record of it and rebuilds the item
+      unprocessed — the consequence `mirror.md` now states. Rebuild is not built, so this is proved
+      where it is decided: the record on disk carries no pending delivery — 2026-08-14
+- [x] Verify: `pnpm typecheck && pnpm test && pnpm lint` from a clean checkout — 2026-08-14
+- [x] `git commit` — 2026-08-14
 
 ---
 

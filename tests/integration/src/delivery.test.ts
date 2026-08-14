@@ -12,7 +12,15 @@ import type {
 import { fakeCapability, fakeDestination } from "@notemap/core/testing";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { at, deliverWith, envelope, harness, type Harness } from "./fixture";
+import {
+  at,
+  deliverWith,
+  drainWith,
+  envelope,
+  harness,
+  storedRecords,
+  type Harness,
+} from "./fixture";
 
 const ALL: Page = { limit: 50 };
 const MINUTE = 60_000 as Duration;
@@ -272,6 +280,58 @@ describe("two deliveries of one item", () => {
     );
     expect(states).toEqual(["delivered", "pending"]);
     expect(ids((await opened.pool.views.queue(ALL)).values)).toEqual([]);
+  });
+});
+
+/**
+ * The mirror as a person who has lost notemap would find it. A pending delivery
+ * is a reservation rather than durable state, so a rebuild from these files
+ * restores the item unprocessed and returns it to the queue — the promise
+ * nothing is left to keep is never restored.
+ */
+describe("what reaches the mirror on disk", () => {
+  it("carries the delivery once it lands, and not before", async () => {
+    const opened = await pending();
+    const drain = drainWith(opened);
+    await drain();
+
+    expect(
+      (await storedRecords(opened.mirrorRoot)).get(opened.item)?.routing,
+    ).toEqual([]);
+
+    opened.destination.answers(DELIVERED);
+    minutesLater(opened, 1);
+    await opened.deliver();
+    await drain();
+
+    const mirrored = (await storedRecords(opened.mirrorRoot)).get(opened.item);
+    expect(mirrored?.routing).toEqual([
+      { ...opened.record, state: "delivered", pointer: DELIVERED.pointer },
+    ]);
+    expect(mirrored).toEqual(await opened.pool.mirror.recordFor(opened.item));
+  });
+
+  it("holds no record of a delivery that was given up on", async () => {
+    const opened = await pending();
+    const drain = drainWith(opened);
+    await drain();
+
+    for (let minute = 1; minute <= 6; minute += 1) {
+      minutesLater(opened, minute);
+      await opened.deliver();
+    }
+    await drain();
+
+    expect(
+      (await storedRecords(opened.mirrorRoot)).get(opened.item)?.routing,
+    ).toEqual([]);
+    expect(ids((await opened.pool.views.queue(ALL)).values)).toEqual([
+      opened.item,
+    ]);
+    expect((await abandonedRows(opened.pool))[0]).toMatchObject({
+      item: opened.item,
+      kind: "delivery",
+    });
   });
 });
 
