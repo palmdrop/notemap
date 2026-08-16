@@ -310,10 +310,11 @@ Both answer `200 OK` with the `Item` as it now stands.
   something it may not know arrived; an archive is a fresh decision about a state the caller can
   already read.
 - An id no item has is `404 no-such-item`.
-- **A body is still JSON.** Both routes are `POST` and so require `application/json` like every
-  other bodied request; an empty body is read as `{}`, so a client with nothing to say sends
-  nothing. A key neither route knows is `400 malformed-envelope`, on the same strictness the
-  capture envelope has.
+- **A body is still JSON, and no body is a body of `{}`.** A client with nothing to say sends
+  nothing — no body and no `content-type`, which is what a bare `POST` is — and the route reads
+  `{}`. Sending a body means sending `application/json` like every other bodied request; anything
+  else is `415 unsupported-media-type`. A key neither route knows is `400 malformed-envelope`, on
+  the same strictness the capture envelope has.
 
 ### Marking an item processed
 

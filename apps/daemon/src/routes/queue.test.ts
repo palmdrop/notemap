@@ -267,6 +267,31 @@ describe("archiving over the wire", () => {
     });
   });
 
+  it("takes a request with no body and no content type", async () => {
+    const app = serving();
+    const [first] = await captureMany(app, 1);
+
+    for (const path of [
+      `/v1/items/${first}/archive`,
+      `/v1/items/${first}/unarchive`,
+      `/v1/items/${first}/mark-processed`,
+    ]) {
+      const response = await app.request(path, { method: "POST" });
+      expect(response.status, path).toBe(200);
+    }
+  });
+
+  it("still refuses a captures body that names no media type", async () => {
+    const app = serving();
+
+    const response = await app.request("/v1/captures", { method: "POST" });
+
+    expect(response.status).toBe(415);
+    expect(await body(response)).toEqual({
+      error: { code: "unsupported-media-type", contentType: "" },
+    });
+  });
+
   it("refuses a body that is not JSON, and one that is not JSON at all", async () => {
     const app = serving();
     const [first] = await captureMany(app, 1);
