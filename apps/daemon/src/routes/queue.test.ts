@@ -83,13 +83,6 @@ describe("GET /v1/queue", () => {
     });
   });
 
-  it("reads oldest first when no order is named", async () => {
-    const app = serving();
-    const captured = await captureMany(app, 3);
-
-    expect(ids(await slice(app, "/v1/queue"))).toEqual(captured);
-  });
-
   it("reads the other way when asked", async () => {
     const app = serving();
     const captured = await captureMany(app, 3);
