@@ -43,7 +43,14 @@ export type EditRefusal =
 
 export type TagRefusal = SubjectRefusal;
 
-export type ArchiveRefusal = SubjectRefusal;
+export type ArchiveRefusal =
+  | SubjectRefusal
+  | {
+      readonly kind: "already-archived";
+      readonly item: ItemId;
+      readonly at: Timestamp;
+    }
+  | { readonly kind: "not-archived"; readonly item: ItemId };
 
 export type PurgeRefusal = SubjectRefusal;
 

@@ -65,7 +65,7 @@ export const captureOutcomeSchema = z
   ])
   .openapi("CaptureOutcome");
 
-export const feedSliceSchema = z
+export const itemSliceSchema = z
   .object({
     values: z.array(itemSchema),
     next: z.string().optional().openapi({
@@ -74,4 +74,4 @@ export const feedSliceSchema = z
       example: "/v1/feed?order=newest-first&limit=50&after=...",
     }),
   })
-  .openapi("FeedSlice");
+  .openapi("ItemSlice");

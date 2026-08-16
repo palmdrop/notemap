@@ -1,9 +1,9 @@
 # The queue drains
 
 **Date**: 2026-08-13
-**Status**: Todo
+**Status**: Done
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/mirror.md`
-**Closed**:
+**Closed**: 2026-08-14
 
 ---
 
@@ -67,81 +67,83 @@ over a table that will by then hold real data.
 
 ### Phase 0 — Branch
 
-- [ ] `git checkout -b agent/queue-drains`
+- [x] 2026-08-14 `git checkout -b agent/queue-drains`
 
 ### Phase 1 — Write the wire down *(blocks phase 4)*
 
 Docs before the routes that implement them, as the asset slice did.
 
-- [ ] `http-v1.md`: `GET /v1/queue` and `GET /v1/archived`; archive and unarchive; marking processed
-      and reading an item's routing records. The queue's position is a **content time**, spelled
-      `<at>,<id>` exactly as the feed's is and meaning something else — say plainly that the two are
-      not interchangeable, since nothing in the wire form can stop a client swapping them
-- [ ] The refusal-to-status table gains whatever these raise. `no-such-item` already has a row;
-      archiving something already archived, and unarchiving something that is not, are refusals —
-      `409` by the table's own rule, being a conflict with what the pool already holds
-- [ ] Verify: `pnpm lint`; every refusal code in the table has exactly one status
-- [ ] `git commit`
+- [x] 2026-08-14 `http-v1.md`: `GET /v1/queue` and `GET /v1/archived`; archive and unarchive; marking
+      processed and reading an item's routing records. The queue's position is a **content time**,
+      spelled `<at>,<id>` exactly as the feed's is and meaning something else — say plainly that the
+      two are not interchangeable, since nothing in the wire form can stop a client swapping them
+- [x] 2026-08-14 The refusal-to-status table gains whatever these raise. `no-such-item` already has
+      a row; archiving something already archived, and unarchiving something that is not, are
+      refusals — `409` by the table's own rule, being a conflict with what the pool already holds
+- [x] 2026-08-14 Verify: `pnpm lint`; every refusal code in the table has exactly one status
+- [x] 2026-08-14 `git commit`
 
 ### Phase 2 — The store *(depends on nothing but phase 0)*
 
-- [ ] New migration: `routing_records` — id, item, target kind, destination and capability for a
-      destination target, note for a user target, state, time, pointer. CHECK constraints pair the
-      target kind to the columns that may be set, the way `item_tags` pairs `by_kind` to `by_ref`.
-      **Foreign key to items, `ON DELETE CASCADE`** — a routing record is item state and purge
-      already takes it
-- [ ] Indexes: `routing_records(item_id)`; an expression index on
+- [x] 2026-08-14 New migration: `routing_records` — id, item, target kind, destination and capability
+      for a destination target, note for a user target, state, time, pointer. CHECK constraints pair
+      the target kind to the columns that may be set, the way `item_tags` pairs `by_kind` to
+      `by_ref`. **Foreign key to items, `ON DELETE CASCADE`** — a routing record is item state and
+      purge already takes it
+- [x] 2026-08-14 Indexes: `routing_records(item_id)`; an expression index on
       `(COALESCE(content_updated_at, created_at), id)` over `items`, partial on `archived_at IS
       NULL`, for the queue's ordering
-- [ ] `queue` and `archived` stop being `unimplemented`. Queue: unarchived, not superseded, holding
-      no routing record, oldest first by content time. Archived: archived, ordered the same way.
-      Both keyset-paginated through the existing `keysetPage`
-- [ ] `routingRecords` stops answering `[]` and reads the table
-- [ ] Writes: insert a routing record; set and clear archive state. Both bump `modified_at`
-- [ ] Tests: an archived item leaves the queue and appears in the archive; unarchiving returns it
-      at its original position; an item with a routing record leaves the queue; a superseded item is
-      in neither; purging an item takes its routing records with it. Paging the queue while a new
-      capture arrives never skips or repeats a row — the property `core.md` now claims
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint`
-- [ ] `git commit`
+- [x] 2026-08-14 `queue` and `archived` stop being `unimplemented`. Queue: unarchived, not
+      superseded, holding no routing record, oldest first by content time. Archived: archived,
+      ordered the same way. Both keyset-paginated through the existing `keysetPage`
+- [x] 2026-08-14 `routingRecords` stops answering `[]` and reads the table
+- [x] 2026-08-14 Writes: insert a routing record; set and clear archive state. Both bump
+      `modified_at`
+- [x] 2026-08-14 Tests: an archived item leaves the queue and appears in the archive; unarchiving
+      returns it at its original position; an item with a routing record leaves the queue; a
+      superseded item is in neither; purging an item takes its routing records with it. Paging the
+      queue while a new capture arrives never skips or repeats a row — the property `core.md` now
+      claims
+- [x] 2026-08-14 Verify: `pnpm typecheck && pnpm test && pnpm lint`
+- [x] 2026-08-14 `git commit`
 
 ### Phase 3 — Core *(depends on phase 2)*
 
-- [ ] `items.archive` and `items.unarchive`. Each writes the state, bumps `modified_at`, enqueues a
-      mirror job — archive state is mirrored material — and appends `archived` or `unarchived` by an
-      anonymous person
-- [ ] `routing.markProcessed`: mint a routing record targeting the user, delivered, with the
-      optional note. Mirror job and a `routed` action, same transaction
-- [ ] `routing.recordsFor`
-- [ ] `views.queue` and `views.archived`, taking a `Page` and no order — oldest first is what makes
-      the queue a queue ([ADR 10](../adr/0010-feed-and-queue-sort-differently.md))
-- [ ] Tests: archiving an archived item is refused and changes nothing, as is unarchiving one that
-      is not archived; marking processed twice
+- [x] 2026-08-14 `items.archive` and `items.unarchive`. Each writes the state, bumps `modified_at`,
+      enqueues a mirror job — archive state is mirrored material — and appends `archived` or
+      `unarchived` by an anonymous person
+- [x] 2026-08-14 `routing.markProcessed`: mint a routing record targeting the user, delivered, with
+      the optional note. Mirror job and a `routed` action, same transaction
+- [x] 2026-08-14 `routing.recordsFor`
+- [x] 2026-08-14 `views.queue` and `views.archived`, taking a `Page` and no order — oldest first is
+      what makes the queue a queue ([ADR 10](../adr/0010-feed-and-queue-sort-differently.md))
+- [x] 2026-08-14 Tests: archiving an archived item is refused and changes nothing, as is unarchiving
+      one that is not archived; marking processed twice
       leaves two records and the item processed either way; an archived item can still be marked
       processed; the mirror record for a marked item carries the routing record
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint`
-- [ ] `git commit`
+- [x] 2026-08-14 Verify: `pnpm typecheck && pnpm test && pnpm lint`
+- [x] 2026-08-14 `git commit`
 
 ### Phase 4 — `/v1` *(depends on phases 1 and 3)*
 
-- [ ] `GET /v1/queue` and `GET /v1/archived`, paginated by position, sharing the limit and position
-      parsing the feed and the log already share. Neither takes `order`
-- [ ] Archive, unarchive, mark-processed and read-routing-records routes
-- [ ] The OpenAPI document, which is checked in and so appears in this commit's diff
-- [ ] Tests: the queue drains to empty as items are archived and marked processed; following `next`
-      yields every queued item exactly once with no trailing empty page; a feed position handed to
-      the queue is accepted and produces a wrong page, which is the documented consequence rather
-      than a bug
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint`
-- [ ] `git commit`
+- [x] 2026-08-14 `GET /v1/queue` and `GET /v1/archived`, paginated by position, sharing the limit and
+      position parsing the feed and the log already share. Neither takes `order`
+- [x] 2026-08-14 Archive, unarchive, mark-processed and read-routing-records routes
+- [x] 2026-08-14 The OpenAPI document, which is checked in and so appears in this commit's diff
+- [x] 2026-08-14 Tests: the queue drains to empty as items are archived and marked processed;
+      following `next` yields every queued item exactly once with no trailing empty page; a feed
+      position handed to the queue is accepted and produces a wrong page, which is the documented
+      consequence rather than a bug
+- [x] 2026-08-14 Verify: `pnpm typecheck && pnpm test && pnpm lint`
+- [x] 2026-08-14 `git commit`
 
 ### Phase 5 — End to end *(depends on phase 4)*
 
-- [ ] Integration test: capture three, archive one, mark one processed, drain the mirror queue, and
-      find the queue holding exactly one — with the mirror files for all three agreeing with the
-      pool
-- [ ] Verify: `pnpm typecheck && pnpm test && pnpm lint` from a clean checkout
-- [ ] `git commit`
+- [x] 2026-08-14 Integration test: capture three, archive one, mark one processed, drain the mirror
+      queue, and find the queue holding exactly one — with the mirror files for all three agreeing
+      with the pool
+- [x] 2026-08-14 Verify: `pnpm typecheck && pnpm test && pnpm lint` from a clean checkout
+- [x] 2026-08-14 `git commit`
 
 ---
 
@@ -150,9 +152,17 @@ Docs before the routes that implement them, as the asset slice did.
 - **Whether the queue wants a partial index it cannot have.** SQLite cannot index a `NOT EXISTS`,
   so the routing anti-join rides on `routing_records(item_id)` rather than on the queue's own index.
   *Fallback*: measure before adding anything cleverer; a personal pool is small and the shape is
-  right.
+  right. **Taken.** `EXPLAIN QUERY PLAN` shows the ordering answered by `items_queue` with no sort,
+  and both anti-joins by covering index; the keyset comparison itself scans that index rather than
+  seeking on it, which is the one thing left to measure if a pool ever gets large.
+- **Amended 2026-08-17, on review.** `items_queue` being partial on `archived_at IS NULL` left the
+  archive able to use nothing — a full table scan and a sort for every page, keyset pages included.
+  It now has the mirror index on the other half of the predicate: the queue drains to zero and the
+  archive is the half that accumulates, so it was the wrong one to leave unindexed.
 - **Whether `markProcessed`'s note belongs on the record or in the target.** `RoutingTarget`'s user
   variant already carries `note?`. *Fallback*: leave it there; it is where the type already put it.
+  **Taken**, and the store follows: `note` is a column the CHECK constraint permits only on a user
+  target.
 
 ---
 

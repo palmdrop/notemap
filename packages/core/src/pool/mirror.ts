@@ -1,8 +1,27 @@
 import { projectMirrorRecord } from "../mirror/record";
-import type { PoolPorts } from "../types/api/ports";
+import type { PoolPorts, PoolTx } from "../types/api/ports";
 import type { Asset } from "../types/domain/asset";
-import type { AssetId, ItemId } from "../types/domain/ids";
+import type { AssetId, ItemId, JobId, Timestamp } from "../types/domain/ids";
 import type { MirrorRecord } from "../types/domain/mirror";
+
+export async function enqueueMirrorWrite(
+  ports: PoolPorts,
+  tx: PoolTx,
+  item: ItemId,
+  at: Timestamp,
+): Promise<void> {
+  if (ports.mirrorWriter === undefined) return;
+
+  await tx.enqueue([
+    {
+      id: ports.ids.next<JobId>(),
+      kind: "mirror",
+      subject: { kind: "item", item },
+      attempt: 0,
+      enqueuedAt: at,
+    },
+  ]);
+}
 
 /**
  * An item's durable state as the mirror would carry it. A read of the *pool*,

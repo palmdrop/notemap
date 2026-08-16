@@ -7,6 +7,8 @@ import type {
   AssetId,
   AssetRef,
   BlobHash,
+  CapabilityName,
+  DestinationId,
   EnrichmentName,
   Item,
   ItemId,
@@ -17,6 +19,9 @@ import type {
   JsonObject,
   PayloadTypeName,
   ProviderName,
+  RoutingRecord,
+  RoutingRecordId,
+  RoutingTarget,
   SourceId,
   TagName,
   Timestamp,
@@ -30,6 +35,7 @@ import type {
   ItemRow,
   ItemTagRow,
   JobRow,
+  RoutingRecordRow,
 } from "./rows";
 
 export function toMillis(value: Timestamp): number {
@@ -197,6 +203,60 @@ export function toJob(row: JobRow): Job {
     attempt: row.attempt,
     enqueuedAt: toTimestamp(row.enqueued_at),
   };
+}
+
+/** Nothing here can produce a `pending` record: its target is the user, and there is nothing to reach. */
+const DELIVERED = "delivered" satisfies RoutingRecordRow["state"];
+
+export function toRoutingRecord(row: RoutingRecordRow): RoutingRecord {
+  return {
+    id: row.id as RoutingRecordId,
+    item: row.item_id as ItemId,
+    target: toRoutingTarget(row),
+    at: toTimestamp(row.at),
+    ...(row.pointer === null ? {} : { pointer: row.pointer }),
+  };
+}
+
+function toRoutingTarget(row: RoutingRecordRow): RoutingTarget {
+  if (row.target_kind === "user") {
+    return { kind: "user", ...(row.note === null ? {} : { note: row.note }) };
+  }
+
+  return {
+    kind: "destination",
+    destination: row.destination as DestinationId,
+    capability: row.capability as CapabilityName,
+  };
+}
+
+/** The bound parameters for inserting a routing record, in the order the statement declares. */
+export function routingRecordParams(
+  record: RoutingRecord,
+): [
+  string,
+  string,
+  RoutingRecordRow["target_kind"],
+  string | null,
+  string | null,
+  string | null,
+  RoutingRecordRow["state"],
+  number,
+  string | null,
+] {
+  const target = record.target;
+
+  return [
+    record.id,
+    record.item,
+    target.kind,
+    target.kind === "destination" ? target.destination : null,
+    target.kind === "destination" ? target.capability : null,
+    target.kind === "user" ? (target.note ?? null) : null,
+    DELIVERED,
+    toMillis(record.at),
+    record.pointer ?? null,
+  ];
 }
 
 export function toAction(row: ActionRow): Action {

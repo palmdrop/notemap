@@ -16,9 +16,12 @@ import {
   assetUploadHandler,
   type UploadLimits,
 } from "./routes/assets";
+import { archiveHandler, unarchiveHandler } from "./routes/archive";
 import { captureHandler } from "./routes/captures";
 import {
   actionsRoute,
+  archivedRoute,
+  archiveRoute,
   assetContentRoute,
   assetRoute,
   assetUploadRoute,
@@ -26,9 +29,15 @@ import {
   feedRoute,
   honoPath,
   itemRoute,
+  markProcessedRoute,
+  queueRoute,
+  routingRecordsRoute,
+  unarchiveRoute,
 } from "./routes/definitions";
 import { feedHandler } from "./routes/feed";
 import { itemHandler } from "./routes/items";
+import { itemViewHandler } from "./routes/queue";
+import { markProcessedHandler, routingRecordsHandler } from "./routes/routing";
 import { json, refuse } from "./utils/responses";
 
 export function createApp(pool: Pool, limits: UploadLimits): Hono {
@@ -38,7 +47,13 @@ export function createApp(pool: Pool, limits: UploadLimits): Hono {
 
   app.post(honoPath(captureRoute.path), captureHandler(pool));
   app.get(honoPath(feedRoute.path), feedHandler(pool));
+  app.get(honoPath(queueRoute.path), itemViewHandler(pool, "queue"));
+  app.get(honoPath(archivedRoute.path), itemViewHandler(pool, "archived"));
   app.get(honoPath(itemRoute.path), itemHandler(pool));
+  app.post(honoPath(archiveRoute.path), archiveHandler(pool));
+  app.post(honoPath(unarchiveRoute.path), unarchiveHandler(pool));
+  app.post(honoPath(markProcessedRoute.path), markProcessedHandler(pool));
+  app.get(honoPath(routingRecordsRoute.path), routingRecordsHandler(pool));
   app.get(honoPath(actionsRoute.path), actionsHandler(pool));
 
   app.post(honoPath(assetUploadRoute.path), assetUploadHandler(pool, limits));

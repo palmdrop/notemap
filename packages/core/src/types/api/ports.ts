@@ -15,7 +15,7 @@ import type {
   SyncCursor,
   Timestamp,
 } from "../domain/ids";
-import type { Item, ItemRecord } from "../domain/item";
+import type { ArchiveState, Item, ItemRecord } from "../domain/item";
 import type { MirrorRecord } from "../domain/mirror";
 import type { AbandonedPosition } from "../domain/position";
 import type {
@@ -158,8 +158,8 @@ export interface PoolReads {
   tombstone(id: ItemId): Promise<Tombstone | undefined>;
 
   feed(page: OrderedPage): Promise<Slice<Item>>;
-  queue(page: Page): Promise<Slice<Item>>;
-  archived(page: Page): Promise<Slice<Item>>;
+  queue(page: OrderedPage): Promise<Slice<Item>>;
+  archived(page: OrderedPage): Promise<Slice<Item>>;
 
   suggestions(item: ItemId): Promise<readonly Suggestion[]>;
   suggestion(id: SuggestionId): Promise<Suggestion | undefined>;
@@ -190,6 +190,10 @@ export interface PoolTx extends PoolReads {
   insertItem(record: ItemRecord): Promise<Item>;
   appendAction(action: Action): Promise<void>;
   enqueue(jobs: readonly Job[]): Promise<void>;
+
+  setArchiveState(item: ItemId, state?: ArchiveState): Promise<Item>;
+
+  insertRoutingRecord(record: RoutingRecord): Promise<void>;
 
   /** When it was stored is the store's, the way `modifiedAt` is: operational, and not part of the asset. */
   insertAsset(asset: Asset): Promise<void>;

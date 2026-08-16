@@ -3,23 +3,34 @@ import { z } from "zod";
 
 import { JSON_MEDIA_TYPE, MAX_LIMIT } from "../constants";
 import {
+  ARCHIVE_STATUS,
   ASSET_STATUS,
   BODY_STATUS,
   CAPTURE_STATUS,
   codesFor,
   PARAMETER_STATUS,
+  ROUTING_STATUS,
   SUBJECT_STATUS,
   UPLOAD_STATUS,
 } from "../errors/refusals";
 import { actionSliceSchema } from "../schemas/action";
+import {
+  archiveRequestSchema,
+  unarchiveRequestSchema,
+} from "../schemas/archive";
 import { captureEnvelopeSchema } from "../schemas/envelope";
 import { errorSchema } from "../schemas/error";
 import {
   assetSchema,
   captureOutcomeSchema,
-  feedSliceSchema,
   itemSchema,
+  itemSliceSchema,
 } from "../schemas/item";
+import {
+  markProcessedRequestSchema,
+  routingRecordSchema,
+  routingRecordsSchema,
+} from "../schemas/routing";
 import type { StatusMap } from "../errors/refusals";
 
 function errorResponse(
@@ -60,6 +71,17 @@ const pageQuery = z.object({
       description:
         "The position to continue from: `<at>,<id>`, or a bare instant as a coarse entry point.",
       example: "2026-08-08T09:00:00.000Z,0198f0c2-0000-7000-8000-000000000000",
+    }),
+});
+
+const itemViewQuery = pageQuery.extend({
+  order: z
+    .string()
+    .optional()
+    .openapi({
+      param: { name: "order", in: "query" },
+      description: "`oldest-first` (default) or `newest-first`.",
+      example: "oldest-first",
     }),
 });
 
@@ -129,7 +151,47 @@ export const feedRoute = createRoute({
   responses: {
     200: {
       description: "A page of the feed.",
-      content: { [JSON_MEDIA_TYPE]: { schema: feedSliceSchema } },
+      content: { [JSON_MEDIA_TYPE]: { schema: itemSliceSchema } },
+    },
+    422: errorResponse(
+      "A parameter was understood and refused.",
+      422,
+      PARAMETER_STATUS,
+    ),
+  },
+});
+
+export const queueRoute = createRoute({
+  method: "get",
+  path: "/v1/queue",
+  summary: "Read the queue",
+  description:
+    "Every item that is unprocessed, unarchived and not superseded, oldest first by default. Paginated by a **content-time** position, which is spelled like the feed's and means something else: the two are not interchangeable.",
+  request: { query: itemViewQuery },
+  responses: {
+    200: {
+      description: "A page of the queue.",
+      content: { [JSON_MEDIA_TYPE]: { schema: itemSliceSchema } },
+    },
+    422: errorResponse(
+      "A parameter was understood and refused.",
+      422,
+      PARAMETER_STATUS,
+    ),
+  },
+});
+
+export const archivedRoute = createRoute({
+  method: "get",
+  path: "/v1/archived",
+  summary: "Read the archive",
+  description:
+    "Every archived item, on the queue's key and default. Archiving hides an item from the queue; it stays in the feed and stays processable.",
+  request: { query: itemViewQuery },
+  responses: {
+    200: {
+      description: "A page of the archive.",
+      content: { [JSON_MEDIA_TYPE]: { schema: itemSliceSchema } },
     },
     422: errorResponse(
       "A parameter was understood and refused.",
@@ -172,6 +234,113 @@ export const itemRoute = createRoute({
     200: {
       description: "The item.",
       content: { [JSON_MEDIA_TYPE]: { schema: itemSchema } },
+    },
+    404: errorResponse("No item has that id.", 404, SUBJECT_STATUS),
+  },
+});
+
+const itemId = z.object({
+  id: z.string().openapi({ param: { name: "id", in: "path" } }),
+});
+
+export const archiveRoute = createRoute({
+  method: "post",
+  path: "/v1/items/{id}/archive",
+  summary: "Archive an item",
+  description:
+    "Hides the item from the queue. It stays in the feed and stays processable. Archiving one that is already archived is refused rather than absorbed: a second archive would overwrite the reason and time the first recorded.",
+  request: {
+    params: itemId,
+    body: {
+      required: false,
+      content: { [JSON_MEDIA_TYPE]: { schema: archiveRequestSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "The item, now archived.",
+      content: { [JSON_MEDIA_TYPE]: { schema: itemSchema } },
+    },
+    400: errorResponse(
+      "The body could not be read as this request.",
+      400,
+      BODY_STATUS,
+    ),
+    404: errorResponse("No item has that id.", 404, ARCHIVE_STATUS),
+    409: errorResponse("The item is already archived.", 409, ARCHIVE_STATUS),
+    415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
+  },
+});
+
+export const unarchiveRoute = createRoute({
+  method: "post",
+  path: "/v1/items/{id}/unarchive",
+  summary: "Unarchive an item",
+  description:
+    "Returns the item to the queue at its unchanged position, since archiving never moved it. Unarchiving one that is not archived is refused.",
+  request: {
+    params: itemId,
+    body: {
+      required: false,
+      content: { [JSON_MEDIA_TYPE]: { schema: unarchiveRequestSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "The item, no longer archived.",
+      content: { [JSON_MEDIA_TYPE]: { schema: itemSchema } },
+    },
+    400: errorResponse(
+      "The body could not be read as this request.",
+      400,
+      BODY_STATUS,
+    ),
+    404: errorResponse("No item has that id.", 404, ARCHIVE_STATUS),
+    409: errorResponse("The item is not archived.", 409, ARCHIVE_STATUS),
+    415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
+  },
+});
+
+export const markProcessedRoute = createRoute({
+  method: "post",
+  path: "/v1/items/{id}/mark-processed",
+  summary: "Mark an item processed by hand",
+  description:
+    "The user carried the content onward themselves. This is routing whose destination is the user: it appends a routing record, takes the item out of the queue, and leaves it in the feed unarchived. Doing it twice appends two records and is not refused.",
+  request: {
+    params: itemId,
+    body: {
+      required: false,
+      content: { [JSON_MEDIA_TYPE]: { schema: markProcessedRequestSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description:
+        "The routing record that was appended. A record has no URL of its own, so there is nothing for a 201 to name.",
+      content: { [JSON_MEDIA_TYPE]: { schema: routingRecordSchema } },
+    },
+    400: errorResponse(
+      "The body could not be read as this request.",
+      400,
+      BODY_STATUS,
+    ),
+    404: errorResponse("No item has that id.", 404, ROUTING_STATUS),
+    415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
+  },
+});
+
+export const routingRecordsRoute = createRoute({
+  method: "get",
+  path: "/v1/items/{id}/routing",
+  summary: "Read where an item has been",
+  description:
+    "An item's routing records, oldest first. Not paginated: they are item state rather than a surface over the pool, and go when the item does.",
+  request: { params: itemId },
+  responses: {
+    200: {
+      description: "The item's routing records.",
+      content: { [JSON_MEDIA_TYPE]: { schema: routingRecordsSchema } },
     },
     404: errorResponse("No item has that id.", 404, SUBJECT_STATUS),
   },
@@ -270,7 +439,13 @@ export const assetContentRoute = createRoute({
 export const ROUTES = [
   captureRoute,
   feedRoute,
+  queueRoute,
+  archivedRoute,
   itemRoute,
+  archiveRoute,
+  unarchiveRoute,
+  markProcessedRoute,
+  routingRecordsRoute,
   actionsRoute,
   assetUploadRoute,
   assetRoute,

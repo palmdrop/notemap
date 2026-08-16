@@ -62,8 +62,9 @@ export interface ItemsApi {
 
 export interface ViewsApi {
   feed(page: PageRequest): Promise<Slice<Item>>;
-  queue(page: Page): Promise<Slice<Item>>;
-  archived(page: Page): Promise<Slice<Item>>;
+  /** Oldest first unless asked otherwise, which is the only way it differs from the feed. */
+  queue(page: PageRequest): Promise<Slice<Item>>;
+  archived(page: PageRequest): Promise<Slice<Item>>;
 }
 
 export interface SuggestionsApi {

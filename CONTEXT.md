@@ -28,8 +28,10 @@ ever lost.
 _Avoid_: timeline, stream, history
 
 **Queue**:
-The pool read as unprocessed, unarchived items, oldest first. A view, not a place. Its job is to
-drain to zero.
+The pool read as unprocessed, unarchived items, ordered by last touch so a revised item resurfaces
+where it will be met. A view, not a place. Its job is to drain to zero. Oldest first is the
+default and the reason it is a queue, but which end a reader starts from is the reader's, as it is
+for the feed.
 _Avoid_: inbox, backlog, todo list
 
 **Position**:
@@ -202,8 +204,9 @@ _Avoid_: plugin, connector, integration
 
 **Capability**:
 One thing an adapter can do — create a note, append into an existing file, post to a board
-column. Names itself, says which payload types it accepts, and carries a schema for what a
-delivery must target. Core matches and refuses; it holds no list of its own, so a new kind of
+column. Names itself, says which payload types it accepts, and carries a schema for the
+**arguments** a delivery must supply: where it goes, and anything else that shapes it, such as a
+template or a format. Core matches and refuses; it holds no list of its own, so a new kind of
 destination needs no change in core.
 _Avoid_: verb, action, method, operation
 
@@ -217,7 +220,9 @@ _Avoid_: export, publish, send, file
 One attempt to place an item at a destination through one of its capabilities. Everything durable
 about the item is handed to the adapter, which reaches back for nothing. A delivery is **pending**
 until it lands, and then either delivered or abandoned; a person may cancel one that is still
-pending.
+pending. Reshaping the item into the destination's dialect happens here, inside the delivery, and
+never to the capture — so one item reaches several destinations in several forms and none of them
+is the item.
 _Avoid_: push, transfer, upload
 
 **Routing record**:
@@ -225,7 +230,9 @@ One delivery, and the whole of what notemap remembers about it: destination, cap
 a best-effort pointer to where the item landed. A stale pointer is acceptable. A record begins as a
 **reservation** the moment the decision is made and joins the append-only log when its delivery
 lands; a reservation whose delivery is abandoned or cancelled is removed, since nothing happened to
-record. So a record that is not pending means bytes reached somewhere.
+record. So a record that is not pending means bytes reached somewhere. Where a destination
+reshaped the item on its way out, the record may also name **what was delivered**, so the pool can
+answer what it sent and not only where.
 _Avoid_: routing status, delivery flag
 
 **Archive**:

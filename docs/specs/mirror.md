@@ -1,9 +1,15 @@
 # Spec: The mirror on disk
 
 **Status**: Draft
-**Last updated**: 2026-08-12
+**Last updated**: 2026-08-14
 **Shipped**:
 
+- 2026-08-14 — **Archive state and routing records reach the mirror.** Both were already in the
+  record's shape and neither could ever appear in one: nothing could archive an item, and its
+  routing read as empty by construction. Archiving, unarchiving and marking an item processed each
+  enqueue the write they owe, in the transaction that caused them, and a record now carries the
+  routing log the pool actually holds. The debt rule needed no change to cover them, which is what
+  it was widened for. ([plan](../plans/queue-drains.md))
 - 2026-08-12 — **`assets/` is real, and a rendering can point into it.** A local filesystem blob
   store (`@notemap/blob-fs`) writes content-addressed blobs under `assets/<2-char shard>/<sha-256>`,
   and the daemon wires it. A record can no longer fail to be made: references resolve against rows

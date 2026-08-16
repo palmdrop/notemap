@@ -1,7 +1,7 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-08-14
+**Last updated**: 2026-08-17
 **Shipped**:
 
 - 2026-08-08 — A source needs no declaration to capture; `config.sources` is a policy registry
@@ -49,6 +49,20 @@
   "what needs me" stays one read. No behaviour changed.
   ([plan](../plans/job-subject-union.md),
   [ADR 18](../adr/0018-a-jobs-subject-names-what-it-is-about.md))
+- 2026-08-14 — **The queue drains.** `items.archive` hides an item and `items.unarchive` returns it
+  at its unchanged position, since neither touches content time; `routing.markProcessed` appends a
+  routing record naming the user and takes the item out of the queue for good. That last one needs
+  none of the delivery machinery — its target is the user, nothing can be unreachable, and the
+  record is born delivered — which is what lets both ways out of the queue exist before a line of
+  retry logic does. `views.queue` and `views.archived` read oldest first from a content-time
+  position and take no order *(reversed 2026-08-17: which end a reader starts from is the
+  reader's)*, and **processed is derived** as promised: unarchived, unsuperseded
+  and holding no routing record, three anti-joins the store indexes for rather than denormalises
+  around. Archiving something already archived is **refused** rather than absorbed, and so is
+  unarchiving something that is not: both carry a reason and a time, and a second decision would
+  discard one of them. `routing.route` and `routing.destinations` are still unimplemented; delivery
+  is the next slice. ([plan](../plans/queue-drains.md),
+  [ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md))
 
 ---
 
@@ -183,6 +197,13 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - Archiving is always an explicit decision, and may carry a reason. **Unarchiving is likewise an
   explicit action** (decided 2026-08-03): an archived item returns to the queue, at its
   unchanged position, since archiving never moved it.
+- **The archive excludes nothing** (decided 2026-08-17): every archived item is in it, superseded
+  or routed alike. It filters on one axis, which is the one archiving acts on. The queue's
+  exclusions say what is not worth working on now; the archive is not a work list but the record
+  of what was set aside, and an item dropped from it for having a revision would be reachable from
+  the feed alone. So an archived item a revision points at sits in the archive while that revision
+  sits in the queue — two items, one of which says which it is, since `supersededBy` is read off
+  the item wherever it appears.
 - **Purge** is the only destructive operation. It removes the item, its entire revision chain,
   its enrichment, its routing records, its mirror files and its assets — an asset only when no
   remaining item references it, and the blob beneath it only when no remaining asset does.
@@ -249,8 +270,15 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 
 ### The queue
 
-- The queue presents items that are unprocessed, unarchived and not superseded, oldest first,
-  ordered by last touch so that a revised item resurfaces where it will be encountered.
+- The queue presents items that are unprocessed, unarchived and not superseded, ordered by last
+  touch so that a revised item resurfaces where it will be encountered.
+- **Which end the queue starts from is the reader's** (decided 2026-08-17), oldest first by
+  default. This reverses "the queue does not take an order" and supersedes that clause of
+  [ADR 10](../adr/0010-feed-and-queue-sort-differently.md), on the argument that ADR already made
+  for the feed and then declined to follow one surface further: what a client shows first is
+  interface policy, and core imposes none. A person clearing a backlog may reasonably want the
+  newest captures first, and refusing them buys the domain nothing. What makes it a queue is the
+  **key** — last touch — which is unchanged.
 - **Last touch means content time**: the revision or amendment time where one exists
   (`content_updated_at`), the capture time otherwise (`created_at`). Classification, routing,
   archiving and enrichment never move an item in the queue.
@@ -276,7 +304,13 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   Every event that moves an item — a revision, an amendment, a new capture — gives it a content
   time of *now*, which places it ahead of a reader walking oldest-first. Every event that removes
   one — routing, archiving, being superseded — hides it, and a reader who had not reached it was
-  never meant to see it. So no page skips a row or repeats one.
+  never meant to see it. So no event that moves an item can make a page skip a row or repeat one.
+- **An item returned to the queue behind a reader is seen on that reader's next pass, not this
+  one** (added 2026-08-17). Returning is a third kind of event, neither a move nor a removal: it
+  puts an item back at the content time it left with, which may be behind a reader who has already
+  paged past that position, and the rest of that reader's walk will not carry it. Unarchiving is
+  one such event and an abandoned or cancelled delivery is another. A fresh read always shows it,
+  and a queue is a work list rather than a stream: an item that has just come back is not urgent.
 - Core holds no position in the queue. Reads are ordered and paginated, continuing from a
   **position** the caller hands back — the sort key of the last row it saw
   ([ADR 14](../adr/0014-pagination-by-domain-position.md)). Where processing has got to is the
@@ -421,6 +455,29 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   wants no bytes reads none, and a long recording is never buffered.
 - **Which assets share a filename within one capture is the adapter's problem**, as destination
   layout is, for the same reason a blob's path is the blob driver's.
+- **A destination may reshape an item on its way out, and never reshapes the item** (added
+  2026-08-17, [ADR 19](../adr/0019-a-destination-converts-and-the-delivery-records-what-went.md)).
+  Templates and format conversion — including a local model rewriting a loose capture into a list
+  entry — happen inside the delivery, where the dialect already lives. Amending the capture into
+  the destination's shape first is not an option: one item may go to three destinations in three
+  dialects, so the last to route would win and the original would be gone.
+- **Conversion needs no state of its own.** A delivery mid-conversion is a pending reservation, the
+  job holds its lease, and a slow one extends it. A host that dies mid-conversion lands on the
+  unknown-outcome rule and is abandoned rather than retried, exactly as any other delivery is.
+- **A delivery may report what it delivered**, and the routing record names those bytes, so the
+  pool can answer what it sent and not only where. It is optional — a destination posting to an API
+  may have nothing meaningful to keep — and it belongs to the delivery rather than the item,
+  because two destinations with two templates produce two outputs from one item. Routing records
+  are mirrored, so a rebuild restores it.
+- **A destination is asked what it can do, and may need to go and look** (added 2026-08-17).
+  Describing a destination is asynchronous: a vault whose templates are files, a board whose
+  columns come from an API, or another pool cannot answer from a constant fixed at wiring time. A
+  destination that cannot describe itself is reported as such rather than omitted silently, since a
+  missing destination and an unreachable one are different answers to a person looking for one.
+- **A capability's accepted payload types may be a wildcard**, for a destination whose fallback
+  genuinely handles anything. It is a promise rather than a shrug: claiming it trades away the
+  refusal core would otherwise make up front, so what would have been an immediate
+  `payload-type-unsupported` becomes a delivery that is attempted and rejected.
 - Rules may propose a destination from an item's tags, but **a rule never delivers on its own**.
   Delivery is always a decision. Deferring the *execution* of a decision a person has made does not
   weaken this: no rule decided anything.
@@ -715,6 +772,11 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   about](../adr/0018-a-jobs-subject-names-what-it-is-about.md)** — an optional field per job kind
   is a shape that rots, each with its own paired constraint and no way to say which combinations
   are real. Closes the "must a job be about an item?" question and unblocks the asset sweep.
+- **[A destination converts, and the delivery records what
+  went](../adr/0019-a-destination-converts-and-the-delivery-records-what-went.md)** — one item goes
+  to many destinations in many dialects, so amending the capture into any one of them is a dead
+  end. The reshaping belongs to the delivery, which is already asynchronous and leased, and the
+  bytes that landed are recorded so provenance covers *what* and not only *where*. Not built.
 
 ---
 
@@ -813,6 +875,8 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   reached. The warning itself is the host's; core's obligation is that the records are
   available to ask for.
 - An archived item can be unarchived, and returns to the queue at its original position.
+- The queue read newest first answers the same items as oldest first, in the opposite order, and a
+  position taken from one continues the other from the same place.
 - A pool rebuilt from its mirror and assets is equivalent to the original: same items, same
   order, same classification, same artifacts and corrections, same routing records.
 - Deleting or editing a mirror text file leaves the pool unaffected.

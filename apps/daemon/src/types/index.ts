@@ -42,8 +42,11 @@ export type DaemonRefusal =
 export type PageQuery =
   | {
       readonly ok: true;
-      readonly order: ReadOrder;
       readonly limit: number;
       readonly after?: Position;
     }
+  | { readonly ok: false; readonly refusal: DaemonRefusal };
+
+export type OrderedPageQuery =
+  | (Extract<PageQuery, { ok: true }> & { readonly order: ReadOrder })
   | { readonly ok: false; readonly refusal: DaemonRefusal };

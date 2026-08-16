@@ -1,4 +1,9 @@
-import type { AssetRefusal, CaptureRefusal } from "@notemap/core";
+import type {
+  ArchiveRefusal,
+  AssetRefusal,
+  CaptureRefusal,
+  RoutingRefusal,
+} from "@notemap/core";
 
 import type { DaemonRefusal, ErrorBody } from "../types";
 
@@ -40,6 +45,19 @@ export const ASSET_STATUS = {
   "blob-missing": 404,
 } as const satisfies Record<AssetRefusal["kind"], number>;
 
+/** `item-purged` is part of the refusal a client parses; purge is not built. */
+export const ARCHIVE_STATUS = {
+  "no-such-item": 404,
+  "item-purged": 404,
+  "already-archived": 409,
+  "not-archived": 409,
+} as const satisfies Record<ArchiveRefusal["kind"], number>;
+
+export const ROUTING_STATUS = {
+  "no-such-item": 404,
+  "item-purged": 404,
+} as const satisfies Record<RoutingRefusal["kind"], number>;
+
 /** Anything wrong with a query parameter. */
 export const PARAMETER_STATUS = {
   "limit-too-large": 422,
@@ -72,12 +90,25 @@ export function assetStatus(refusal: AssetRefusal): number {
   return ASSET_STATUS[refusal.kind];
 }
 
+export function archiveStatus(refusal: ArchiveRefusal): number {
+  return ARCHIVE_STATUS[refusal.kind];
+}
+
+export function routingStatus(refusal: RoutingRefusal): number {
+  return ROUTING_STATUS[refusal.kind];
+}
+
 export function daemonStatus(refusal: DaemonRefusal): number {
   return DAEMON_STATUS[refusal.kind];
 }
 
 export function errorBody(
-  refusal: AssetRefusal | CaptureRefusal | DaemonRefusal,
+  refusal:
+    | ArchiveRefusal
+    | AssetRefusal
+    | CaptureRefusal
+    | DaemonRefusal
+    | RoutingRefusal,
 ): ErrorBody {
   const { kind, ...facts } = refusal;
   return { error: { code: kind, ...facts } };
