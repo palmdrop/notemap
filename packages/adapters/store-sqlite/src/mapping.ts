@@ -205,11 +205,7 @@ export function toJob(row: JobRow): Job {
   };
 }
 
-/**
- * Every record core can mint today is born delivered: its target is the user,
- * and there is nothing to reach. The column admits `pending` for the delivery
- * that will write it, and nothing here can produce one.
- */
+/** Nothing here can produce a `pending` record: its target is the user, and there is nothing to reach. */
 const DELIVERED = "delivered" satisfies RoutingRecordRow["state"];
 
 export function toRoutingRecord(row: RoutingRecordRow): RoutingRecord {

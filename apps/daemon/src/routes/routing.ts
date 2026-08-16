@@ -18,8 +18,6 @@ export function markProcessedHandler(pool: Pool) {
       body.value.note,
     );
 
-    // 200 rather than 201: a routing record has no URL of its own, so there is
-    // no `Location` to name and the body already says everything a 201 would.
     return result.kind === "refused"
       ? json(errorBody(result.refusal), routingStatus(result.refusal))
       : json(result.value, 200);

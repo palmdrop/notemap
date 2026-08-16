@@ -22,10 +22,6 @@ function notImplemented(method: string): () => never {
   };
 }
 
-/**
- * A reader who names no order gets the end their surface opens at: the newest
- * thing for a feed being read, the oldest for a queue being drained.
- */
 function ordered<P>(page: PageRequest<P>, fallback: ReadOrder): OrderedPage<P> {
   return { ...page, order: page.order ?? fallback };
 }

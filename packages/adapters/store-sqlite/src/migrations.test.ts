@@ -17,6 +17,13 @@ const ENQUEUED = Date.parse("2026-08-03T09:00:00.000Z");
 /** The three columns only an abandoned job fills, in the order they are bound. */
 const NEVER = [null, null, null] as const;
 
+/**
+ * The schema version this migrates from, pinned rather than counted back from
+ * the end: a migration added later moves the end and would silently retarget
+ * these at a different starting point.
+ */
+const BEFORE_SUBJECT_SPLIT = 6;
+
 const directories: string[] = [];
 const opened: SqlitePoolStore[] = [];
 
@@ -26,13 +33,6 @@ afterEach(async () => {
     rmSync(directory, { recursive: true, force: true });
   }
 });
-
-/**
- * The schema version this migrates from, pinned rather than counted back from
- * the end: a migration added later moves the end and would silently retarget
- * these at a different starting point.
- */
-const BEFORE_SUBJECT_SPLIT = 6;
 
 /** A pool as it stood before the subject was split, with work already owed. */
 function pooledAtPreviousVersion(): string {

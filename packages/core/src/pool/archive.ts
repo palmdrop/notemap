@@ -57,8 +57,6 @@ export function unarchive(
     }
 
     const at = ports.clock.now();
-    // The content time is untouched, which is what returns the item to the
-    // queue at the position it left from.
     const restored = await tx.setArchiveState(id);
 
     await enqueueMirrorWrite(ports, tx, id, at);

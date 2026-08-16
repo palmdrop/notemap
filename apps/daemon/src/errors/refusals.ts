@@ -45,11 +45,7 @@ export const ASSET_STATUS = {
   "blob-missing": 404,
 } as const satisfies Record<AssetRefusal["kind"], number>;
 
-/**
- * Archiving. Both `409`s are a conflict with what the pool already holds:
- * archiving twice, or unarchiving something that never was. `item-purged` is
- * here because it is part of the refusal a client parses; purge is not built.
- */
+/** `item-purged` is part of the refusal a client parses; purge is not built. */
 export const ARCHIVE_STATUS = {
   "no-such-item": 404,
   "item-purged": 404,
@@ -57,7 +53,6 @@ export const ARCHIVE_STATUS = {
   "not-archived": 409,
 } as const satisfies Record<ArchiveRefusal["kind"], number>;
 
-/** Marking an item processed refuses only about its subject. */
 export const ROUTING_STATUS = {
   "no-such-item": 404,
   "item-purged": 404,

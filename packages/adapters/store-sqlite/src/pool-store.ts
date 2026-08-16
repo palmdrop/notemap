@@ -87,11 +87,6 @@ const ROUTING_COLUMNS = `
 /** What the queue and the archive order on: last touch of content, never of state. */
 const CONTENT_TIME = `COALESCE(content_updated_at, created_at)`;
 
-/**
- * Unprocessed, unarchived and not superseded. Processed is derived here rather
- * than stored, so the routing half is an anti-join: a column agreeing with the
- * routing log is one that can one day disagree with it.
- */
 const QUEUED = `
   item.archived_at IS NULL
   AND NOT EXISTS (
@@ -137,8 +132,9 @@ function bound(position: Position): Bound {
 /**
  * The comparison that continues a read past one position, in whichever
  * direction it runs. A row value rather than the `OR` form that spells out the
- * same thing: SQLite seeks straight to the position on this, and scans the
- * index from the end on that, which costs a page its offset in rows.
+ * same thing: SQLite seeks straight to the position on plain columns, where the
+ * `OR` form scans the index from the end and costs a page its offset in rows.
+ * On an expression index — the queue's and the archive's — neither seeks.
  */
 function keysetClause(
   column: string,
@@ -353,7 +349,6 @@ export function createSqlitePoolStore(
       return row === undefined ? undefined : hydrate([row])[0];
     }
 
-    /** The queue and the archive: one key, one order, and a `WHERE` apiece. */
     function byContentTime(page: OrderedPage, where: string): Slice<Item> {
       const way = direction(page.order);
 

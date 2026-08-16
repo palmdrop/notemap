@@ -65,7 +65,6 @@ export const captureOutcomeSchema = z
   ])
   .openapi("CaptureOutcome");
 
-/** One shape for every paginated read of items: the feed, the queue, the archive. */
 export const itemSliceSchema = z
   .object({
     values: z.array(itemSchema),

@@ -7,11 +7,7 @@ import type { ItemId, RoutingRecordId } from "../types/domain/ids";
 import type { RoutingRecord } from "../types/domain/routing";
 import type { Result } from "../types/result";
 
-/**
- * Routing whose destination is the user: they carried the content onward
- * themselves. There is nothing to reach and nothing to be unreachable, so the
- * record is born delivered and no delivery is attempted.
- */
+/** There is nothing to reach, so the record is born delivered and no delivery is attempted. */
 export function markProcessed(
   ports: PoolPorts,
   id: ItemId,
@@ -34,6 +30,7 @@ export function markProcessed(
     await recordAction(ports, tx, {
       kind: "routed",
       subject: id,
+      // Nothing but a person routes, so there is no attribution to take.
       by: { kind: "person" },
       at,
       detail: { record: record.id, target: record.target.kind },

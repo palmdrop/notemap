@@ -191,7 +191,6 @@ export interface PoolTx extends PoolReads {
   appendAction(action: Action): Promise<void>;
   enqueue(jobs: readonly Job[]): Promise<void>;
 
-  /** Sets the archive state, or clears it when given none. Answers the item as it now stands. */
   setArchiveState(item: ItemId, state?: ArchiveState): Promise<Item>;
 
   insertRoutingRecord(record: RoutingRecord): Promise<void>;

@@ -183,7 +183,6 @@ export function captured(
   };
 }
 
-/** A record of the one target that needs no adapter: the user carried it onward. */
 export function markedProcessed(
   item: ItemRecord,
   overrides: { id?: string; at?: string; note?: string } = {},

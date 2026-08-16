@@ -33,7 +33,9 @@ function matches(declared: string, path: string): boolean {
   return (
     pattern.length === actual.length &&
     pattern.every((segment, index) =>
-      segment.startsWith("{") ? actual[index] !== "" : segment === actual[index],
+      segment.startsWith("{")
+        ? actual[index] !== ""
+        : segment === actual[index],
     )
   );
 }

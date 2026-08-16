@@ -9,10 +9,8 @@ export type ReadBody<T> =
   | { readonly ok: false; readonly refusal: DaemonRefusal };
 
 /**
- * A JSON body a route may be sent nothing of. An empty body is read as `{}`
- * rather than refused: a decision with nothing to add carries no fields, and
- * making the client send `{}` would be ceremony over a route that takes a path
- * and an id.
+ * An empty body is read as `{}` rather than refused. Capture does not use this:
+ * its body is mandatory, and an empty one is malformed rather than absent.
  */
 export async function readBody<T>(
   context: Context,

@@ -43,11 +43,6 @@ export type EditRefusal =
 
 export type TagRefusal = SubjectRefusal;
 
-/**
- * Neither half is a no-op. Archiving carries a reason and a time, so a second
- * archive either overwrites what the first recorded or discards what the second
- * was given — and the caller asked for neither.
- */
 export type ArchiveRefusal =
   | SubjectRefusal
   | {

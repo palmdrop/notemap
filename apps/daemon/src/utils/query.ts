@@ -4,7 +4,6 @@ import { DEFAULT_LIMIT, MAX_LIMIT, READ_ORDERS } from "../constants";
 import type { OrderedPageQuery, PageQuery } from "../types";
 import { parsePosition } from "./positions";
 
-/** How far and from where — everything a paginated read takes but the direction. */
 export function readPage(url: URL): PageQuery {
   const rawLimit = url.searchParams.get("limit");
   const rawAfter = url.searchParams.get("after");
@@ -35,7 +34,6 @@ export function readPage(url: URL): PageQuery {
   return { ok: true, limit, after };
 }
 
-/** `fallback` is the end a surface opens at when the client names none. */
 export function readPageQuery(
   url: URL,
   fallback: ReadOrder = "newest-first",

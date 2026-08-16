@@ -4,12 +4,6 @@ import type { Asset } from "../types/domain/asset";
 import type { AssetId, ItemId, JobId, Timestamp } from "../types/domain/ids";
 import type { MirrorRecord } from "../types/domain/mirror";
 
-/**
- * The write a mutation owes, enqueued in the transaction that caused it: a
- * change committed with nothing recording that its mirror is owed would never
- * be written, and nothing would notice. A pool wired without a writer owes
- * nothing.
- */
 export async function enqueueMirrorWrite(
   ports: PoolPorts,
   tx: PoolTx,

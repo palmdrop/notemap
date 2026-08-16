@@ -312,8 +312,6 @@ describe("draining a queue end to end", () => {
     expect(ids((await p.views.queue(ALL)).values)).toEqual([left]);
     expect(ids((await p.views.archived(ALL)).values)).toEqual([archived]);
 
-    // Every item, however it left: what is on disk is what the pool would
-    // project for it now, field for field.
     const mirrored = await storedRecords(harnessed.mirrorRoot);
     expect([...mirrored.keys()].sort()).toEqual(
       [archived, processed, left].sort(),
@@ -337,8 +335,6 @@ describe("the queue under a reader", () => {
 
     const page: Page = { limit: 1 };
     const first = await p.views.queue(page);
-    // The row the reader has not reached yet, taken out from under it. It was
-    // never meant to be seen once it was processed.
     await p.items.archive(second);
 
     if (first.next === undefined) throw new Error("expected another page");

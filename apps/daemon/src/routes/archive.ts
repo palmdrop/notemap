@@ -26,8 +26,6 @@ export function archiveHandler(pool: Pool) {
 
 export function unarchiveHandler(pool: Pool) {
   return async (context: Context): Promise<Response> => {
-    // Strict and empty: unarchiving says one thing, and a key beside it is a
-    // client believing this route takes something it does not.
     const body = await readBody(context, unarchiveRequestSchema);
     if (!body.ok) return refuse(body.refusal);
 

@@ -74,7 +74,6 @@ const pageQuery = z.object({
     }),
 });
 
-/** Same parameters as the feed; only the direction they default to differs. */
 const surfaceQuery = pageQuery.extend({
   order: z
     .string()
