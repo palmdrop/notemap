@@ -13,3 +13,4 @@
 - [ ] Consider redis for jobs in the future. Move the jobs managed out of the store port, let it be its own. Could be a piece of the store db, could be external. (Feel like I reimplement a lot of tried and tested things here.
   - same for pool/work, all the jobs management. Is there existing tools we could use for this instead?
 - [ ] Allow a user to have multiple pools? Use case: I route some captures to another pool, where I do more granular routing.
+- [ ] When purge lands: `GET /v1/items/:id/routing` reads the item and then its records, two reads on two connection states, so an item purged between them answers `200 {"values":[]}` — the claim about an item the existence check is there to avoid. Either one core method answering both, or the route accepting the window deliberately.

@@ -1057,6 +1057,28 @@ describe("the queue and the archive", () => {
     expect(third.next).toBeUndefined();
   });
 
+  it("breaks a tie on content time by id, without repeating or dropping", async () => {
+    const { pool: p } = pool();
+    // One instant for all three, so only the id tie-break orders them.
+    for (const id of ["c", "a", "b"]) {
+      await appendCapture(
+        p,
+        capture({ id, createdAt: "2026-08-03T09:00:00.000Z" }),
+      );
+    }
+
+    const page: OrderedPage = { limit: 2, order: "oldest-first" };
+    const first = await p.queue(page);
+    const second = await p.queue(nextPage(first.next, page));
+
+    expect([...ids(first.values), ...ids(second.values)]).toEqual([
+      "a",
+      "b",
+      "c",
+    ]);
+    expect(second.next).toBeUndefined();
+  });
+
   it("misses a row unarchived behind the reader, and hands it to the next read", async () => {
     const { pool: p } = pool();
     await minutelyItems(p, 4);
