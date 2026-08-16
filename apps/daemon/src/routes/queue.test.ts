@@ -100,13 +100,45 @@ describe("GET /v1/queue", () => {
     });
   });
 
-  it("ignores an order, since oldest first is what a queue is", async () => {
+  it("reads oldest first when no order is named", async () => {
+    const app = serving();
+    const captured = await captureMany(app, 3);
+
+    expect(ids(await slice(app, "/v1/queue"))).toEqual(captured);
+  });
+
+  it("reads the other way when asked", async () => {
     const app = serving();
     const captured = await captureMany(app, 3);
 
     expect(ids(await slice(app, "/v1/queue?order=newest-first"))).toEqual(
-      captured,
+      [...captured].reverse(),
     );
+  });
+
+  it("refuses an order that is neither", async () => {
+    const app = serving();
+
+    const response = await app.request("/v1/queue?order=sideways");
+
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({
+      error: {
+        code: "bad-order",
+        order: "sideways",
+        allowed: ["newest-first", "oldest-first"],
+      },
+    });
+  });
+
+  it("carries the order it was read in on the next page", async () => {
+    const app = serving();
+    await captureMany(app, 3);
+
+    const response = await app.request("/v1/queue?order=newest-first&limit=2");
+    const body = (await response.json()) as { next?: string };
+
+    expect(body.next).toContain("order=newest-first");
   });
 
   it("accepts a feed position and answers a page from the wrong place", async () => {

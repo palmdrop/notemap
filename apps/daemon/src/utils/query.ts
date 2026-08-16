@@ -35,9 +35,13 @@ export function readPage(url: URL): PageQuery {
   return { ok: true, limit, after };
 }
 
-export function readPageQuery(url: URL): OrderedPageQuery {
+/** `fallback` is the end a surface opens at when the client names none. */
+export function readPageQuery(
+  url: URL,
+  fallback: ReadOrder = "newest-first",
+): OrderedPageQuery {
   const rawOrder = url.searchParams.get("order");
-  const order = (rawOrder ?? READ_ORDERS[0]) as ReadOrder;
+  const order = (rawOrder ?? fallback) as ReadOrder;
   if (!READ_ORDERS.includes(order)) {
     return {
       ok: false,

@@ -353,17 +353,15 @@ export function createSqlitePoolStore(
       return row === undefined ? undefined : hydrate([row])[0];
     }
 
-    /**
-     * The queue and the archive: one key, one direction, and a `WHERE` apiece.
-     * Oldest first is not a default here but the whole of the order — a queue
-     * read that started from the newest end would not be a queue.
-     */
-    function byContentTime(page: Page, where: string): Slice<Item> {
+    /** The queue and the archive: one key, one order, and a `WHERE` apiece. */
+    function byContentTime(page: OrderedPage, where: string): Slice<Item> {
+      const way = direction(page.order);
+
       const { rows, next } = keysetPage(page, (after, limit) => {
         const keyset =
           after === undefined
             ? undefined
-            : keysetClause(CONTENT_TIME, after, ">");
+            : keysetClause(CONTENT_TIME, after, way.comparison);
         const clauses = [where, ...(keyset === undefined ? [] : [keyset.sql])];
         const params: Bindable[] = [...(keyset?.params ?? []), limit];
 
@@ -371,7 +369,7 @@ export function createSqlitePoolStore(
           .query<ItemRow & { at: number }, Bindable[]>(
             `SELECT ${ITEM_COLUMNS}, ${CONTENT_TIME} AS at FROM items AS item
              WHERE ${clauses.join(" AND ")}
-             ORDER BY ${CONTENT_TIME} ASC, id ASC LIMIT ?`,
+             ORDER BY ${CONTENT_TIME} ${way.sql}, id ${way.sql} LIMIT ?`,
           )
           .all(...params);
       });
@@ -470,10 +468,10 @@ export function createSqlitePoolStore(
         };
       },
 
-      queue: async (page: Page): Promise<Slice<Item>> =>
+      queue: async (page: OrderedPage): Promise<Slice<Item>> =>
         byContentTime(page, QUEUED),
 
-      archived: async (page: Page): Promise<Slice<Item>> =>
+      archived: async (page: OrderedPage): Promise<Slice<Item>> =>
         byContentTime(page, ARCHIVED),
 
       actions: async (

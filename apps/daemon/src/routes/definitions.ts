@@ -74,8 +74,17 @@ const pageQuery = z.object({
     }),
 });
 
-/** The queue and the archive take no order; oldest first is what they are. */
-const surfaceQuery = pageQuery.omit({ order: true });
+/** Same parameters as the feed; only the direction they default to differs. */
+const surfaceQuery = pageQuery.extend({
+  order: z
+    .string()
+    .optional()
+    .openapi({
+      param: { name: "order", in: "query" },
+      description: "`oldest-first` (default) or `newest-first`.",
+      example: "oldest-first",
+    }),
+});
 
 const actionsQuery = pageQuery.extend({
   item: z
@@ -158,7 +167,7 @@ export const queueRoute = createRoute({
   path: "/v1/queue",
   summary: "Read the queue",
   description:
-    "Every item that is unprocessed, unarchived and not superseded, oldest first. Paginated by a **content-time** position, which is spelled like the feed's and means something else: the two are not interchangeable.",
+    "Every item that is unprocessed, unarchived and not superseded, oldest first by default. Paginated by a **content-time** position, which is spelled like the feed's and means something else: the two are not interchangeable.",
   request: { query: surfaceQuery },
   responses: {
     200: {
@@ -178,7 +187,7 @@ export const archivedRoute = createRoute({
   path: "/v1/archived",
   summary: "Read the archive",
   description:
-    "Every archived item, in the queue's order. Archiving hides an item from the queue; it stays in the feed and stays processable.",
+    "Every archived item, on the queue's key and default. Archiving hides an item from the queue; it stays in the feed and stays processable.",
   request: { query: surfaceQuery },
   responses: {
     200: {

@@ -22,10 +22,12 @@ function notImplemented(method: string): () => never {
   };
 }
 
-const DEFAULT_ORDER: ReadOrder = "newest-first";
-
-function ordered<P>(page: PageRequest<P>): OrderedPage<P> {
-  return { ...page, order: page.order ?? DEFAULT_ORDER };
+/**
+ * A reader who names no order gets the end their surface opens at: the newest
+ * thing for a feed being read, the oldest for a queue being drained.
+ */
+function ordered<P>(page: PageRequest<P>, fallback: ReadOrder): OrderedPage<P> {
+  return { ...page, order: page.order ?? fallback };
 }
 
 export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
@@ -45,10 +47,9 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
     },
 
     views: {
-      feed: (page) => store.feed(ordered(page)),
-      // Neither takes an order: oldest first is what makes a queue a queue.
-      queue: (page) => store.queue(page),
-      archived: (page) => store.archived(page),
+      feed: (page) => store.feed(ordered(page, "newest-first")),
+      queue: (page) => store.queue(ordered(page, "oldest-first")),
+      archived: (page) => store.archived(ordered(page, "oldest-first")),
     },
 
     suggestions: {
@@ -90,8 +91,9 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
     mirror: { recordFor: (item) => mirror.recordFor(ports, item) },
 
     actions: {
-      forItem: (item, page) => store.actions({ item }, ordered(page)),
-      all: (page) => store.actions({}, ordered(page)),
+      forItem: (item, page) =>
+        store.actions({ item }, ordered(page, "newest-first")),
+      all: (page) => store.actions({}, ordered(page, "newest-first")),
       clear: notImplemented("actions.clear"),
     },
 

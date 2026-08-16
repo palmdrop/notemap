@@ -848,8 +848,19 @@
     "/v1/queue": {
       "get": {
         "summary": "Read the queue",
-        "description": "Every item that is unprocessed, unarchived and not superseded, oldest first. Paginated by a **content-time** position, which is spelled like the feed's and means something else: the two are not interchangeable.",
+        "description": "Every item that is unprocessed, unarchived and not superseded, oldest first by default. Paginated by a **content-time** position, which is spelled like the feed's and means something else: the two are not interchangeable.",
         "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "`oldest-first` (default) or `newest-first`.",
+              "example": "oldest-first"
+            },
+            "required": false,
+            "description": "`oldest-first` (default) or `newest-first`.",
+            "name": "order",
+            "in": "query"
+          },
           {
             "schema": {
               "type": "string",
@@ -924,8 +935,19 @@
     "/v1/archived": {
       "get": {
         "summary": "Read the archive",
-        "description": "Every archived item, in the queue's order. Archiving hides an item from the queue; it stays in the feed and stays processable.",
+        "description": "Every archived item, on the queue's key and default. Archiving hides an item from the queue; it stays in the feed and stays processable.",
         "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "`oldest-first` (default) or `newest-first`.",
+              "example": "oldest-first"
+            },
+            "required": false,
+            "description": "`oldest-first` (default) or `newest-first`.",
+            "name": "order",
+            "in": "query"
+          },
           {
             "schema": {
               "type": "string",

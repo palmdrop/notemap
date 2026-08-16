@@ -158,8 +158,8 @@ export interface PoolReads {
   tombstone(id: ItemId): Promise<Tombstone | undefined>;
 
   feed(page: OrderedPage): Promise<Slice<Item>>;
-  queue(page: Page): Promise<Slice<Item>>;
-  archived(page: Page): Promise<Slice<Item>>;
+  queue(page: OrderedPage): Promise<Slice<Item>>;
+  archived(page: OrderedPage): Promise<Slice<Item>>;
 
   suggestions(item: ItemId): Promise<readonly Suggestion[]>;
   suggestion(id: SuggestionId): Promise<Suggestion | undefined>;

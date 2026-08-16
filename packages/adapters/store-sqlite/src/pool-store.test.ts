@@ -852,7 +852,8 @@ describe("the action log", () => {
 });
 
 describe("the queue and the archive", () => {
-  const OLDEST_FIRST: Page = { limit: 50 };
+  const OLDEST_FIRST: OrderedPage = { limit: 50, order: "oldest-first" };
+  const NEWEST_FIRST: OrderedPage = { limit: 50, order: "newest-first" };
 
   /** Sets or clears archive state the way core's archive and unarchive do. */
   function setArchived(
@@ -889,6 +890,40 @@ describe("the queue and the archive", () => {
       "item-1",
       "item-2",
     ]);
+  });
+
+  it("answers the same items from the other end when asked", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 3);
+
+    const oldest = ids((await p.queue(OLDEST_FIRST)).values);
+    const newest = ids((await p.queue(NEWEST_FIRST)).values);
+
+    expect(newest).toEqual([...oldest].reverse());
+  });
+
+  it("continues either order from one position", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 4);
+
+    const oldest = await p.queue({ limit: 2, order: "oldest-first" });
+    const from = oldest.next;
+    if (from === undefined) throw new Error("expected another page");
+
+    // The same place, read both ways: forward finds what is left, backward
+    // finds what the first page already handed out.
+    expect(
+      ids(
+        (await p.queue({ limit: 50, order: "oldest-first", after: from }))
+          .values,
+      ),
+    ).toEqual(["item-2", "item-3"]);
+    expect(
+      ids(
+        (await p.queue({ limit: 50, order: "newest-first", after: from }))
+          .values,
+      ),
+    ).toEqual(["item-0"]);
   });
 
   it("orders by content time, so a revision resurfaces at the newest end", async () => {
@@ -990,7 +1025,7 @@ describe("the queue and the archive", () => {
     const { pool: p } = pool();
     await minutelyItems(p, 5);
 
-    const page: Page = { limit: 2 };
+    const page: OrderedPage = { limit: 2, order: "oldest-first" };
     const first = await p.queue(page);
     const second = await p.queue(nextPage(first.next, page));
     const third = await p.queue(nextPage(second.next, page));
@@ -1005,7 +1040,7 @@ describe("the queue and the archive", () => {
     const { pool: p } = pool();
     await minutelyItems(p, 4);
 
-    const page: Page = { limit: 2 };
+    const page: OrderedPage = { limit: 2, order: "oldest-first" };
     const first = await p.queue(page);
     // New work lands ahead of an oldest-first reader, which is what makes the
     // keyset sound although the queue reorders under it.
@@ -1028,10 +1063,12 @@ describe("the queue and the archive", () => {
 
     const from: Position = { at: at("2026-08-03T09:02:00.000Z") };
 
-    expect(ids((await p.queue({ limit: 50, after: from })).values)).toEqual([
-      "item-3",
-      "item-4",
-    ]);
+    expect(
+      ids(
+        (await p.queue({ limit: 50, order: "oldest-first", after: from }))
+          .values,
+      ),
+    ).toEqual(["item-3", "item-4"]);
   });
 
   it("hands back an empty slice once the queue has drained", async () => {
