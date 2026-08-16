@@ -36,6 +36,18 @@ is actually about. Direction was never the decision; it was an unexamined defaul
 with one. **The queue stays ascending** and takes no order, because oldest-first is what makes
 it a queue.
 
+*Superseded 2026-08-17 for that last clause only.* The queue **takes an order too**, defaulting
+to oldest-first. The argument is the one this ADR already made for the feed on 2026-08-06 and
+then declined to follow one surface further: what a client shows first is interface policy, and
+core imposes none ([core.md](../specs/core.md#constraints)). "Oldest-first is what makes it a
+queue" describes the default, not a constraint worth enforcing — a person clearing a backlog may
+reasonably want to triage the newest captures first, and refusing them that buys nothing the
+domain needs. What still makes it a queue is the **key** — last touch, so a revised item
+resurfaces where it will be met — and that is untouched.
+
+The direction was never load-bearing here either. It was, again, an unexamined default riding
+along with a decision about the key.
+
 *Amended 2026-08-02*: `updated` means **content time only** — a revision or an amendment — and
 is named `content_updated_at` to say so. A separate `modified_at`, bumped by every change
 including classification, routing, archiving and deciding on a suggestion, exists for sync delta reads

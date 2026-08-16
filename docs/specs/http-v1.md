@@ -244,20 +244,24 @@ The response is a slice:
 
 ### The queue and the archive
 
-`GET /v1/queue` — every item that is unprocessed, unarchived and not superseded, oldest first.
+`GET /v1/queue` — every item that is unprocessed, unarchived and not superseded, oldest first by
+default.
 
-`GET /v1/archived` — every archived item, in the same order.
+`GET /v1/archived` — every archived item, on the same key and the same default.
 
 | Parameter | Default | Meaning |
 |---|---|---|
+| `order` | `oldest-first` | `oldest-first` or `newest-first` |
 | `limit` | `50` | 1–500 |
 | `after` | *(absent)* | The position to continue from |
 
-- **Neither takes `order`.** Oldest first is what makes the queue a queue
-  ([ADR 10](../adr/0010-feed-and-queue-sort-differently.md)), and the archive is the same surface
-  filtered the other way. An `order` parameter is ignored, as any parameter a route does not read
-  is; it is not refused, because it is not a parameter of these surfaces at all.
-- `limit` and `after` mean what they mean on the feed and are refused in the same ways.
+- **Both take `order`, defaulting to oldest first** (decided 2026-08-17). Oldest first is what
+  makes the queue a queue and stays the default, but which end a reader starts from is the
+  reader's, as it is for the feed and the log — a person clearing a backlog may want the newest
+  captures first, and core imposes no interface policy
+  ([ADR 10](../adr/0010-feed-and-queue-sort-differently.md), superseded in part).
+- `order`, `limit` and `after` mean what they mean on the feed and are refused in the same ways: an
+  `order` that is neither value is `422 bad-order` carrying the ones that are.
 - The response is a slice of items with a `next` URL, on the same terms as the feed's: ready to
   fetch, and absent on the last page.
 

@@ -262,8 +262,15 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 
 ### The queue
 
-- The queue presents items that are unprocessed, unarchived and not superseded, oldest first,
-  ordered by last touch so that a revised item resurfaces where it will be encountered.
+- The queue presents items that are unprocessed, unarchived and not superseded, ordered by last
+  touch so that a revised item resurfaces where it will be encountered.
+- **Which end the queue starts from is the reader's** (decided 2026-08-17), oldest first by
+  default. This reverses "the queue does not take an order" and supersedes that clause of
+  [ADR 10](../adr/0010-feed-and-queue-sort-differently.md), on the argument that ADR already made
+  for the feed and then declined to follow one surface further: what a client shows first is
+  interface policy, and core imposes none. A person clearing a backlog may reasonably want the
+  newest captures first, and refusing them buys the domain nothing. What makes it a queue is the
+  **key** — last touch — which is unchanged.
 - **Last touch means content time**: the revision or amendment time where one exists
   (`content_updated_at`), the capture time otherwise (`created_at`). Classification, routing,
   archiving and enrichment never move an item in the queue.
@@ -434,6 +441,29 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   wants no bytes reads none, and a long recording is never buffered.
 - **Which assets share a filename within one capture is the adapter's problem**, as destination
   layout is, for the same reason a blob's path is the blob driver's.
+- **A destination may reshape an item on its way out, and never reshapes the item** (added
+  2026-08-17, [ADR 19](../adr/0019-a-destination-converts-and-the-delivery-records-what-went.md)).
+  Templates and format conversion — including a local model rewriting a loose capture into a list
+  entry — happen inside the delivery, where the dialect already lives. Amending the capture into
+  the destination's shape first is not an option: one item may go to three destinations in three
+  dialects, so the last to route would win and the original would be gone.
+- **Conversion needs no state of its own.** A delivery mid-conversion is a pending reservation, the
+  job holds its lease, and a slow one extends it. A host that dies mid-conversion lands on the
+  unknown-outcome rule and is abandoned rather than retried, exactly as any other delivery is.
+- **A delivery may report what it delivered**, and the routing record names those bytes, so the
+  pool can answer what it sent and not only where. It is optional — a destination posting to an API
+  may have nothing meaningful to keep — and it belongs to the delivery rather than the item,
+  because two destinations with two templates produce two outputs from one item. Routing records
+  are mirrored, so a rebuild restores it.
+- **A destination is asked what it can do, and may need to go and look** (added 2026-08-17).
+  Describing a destination is asynchronous: a vault whose templates are files, a board whose
+  columns come from an API, or another pool cannot answer from a constant fixed at wiring time. A
+  destination that cannot describe itself is reported as such rather than omitted silently, since a
+  missing destination and an unreachable one are different answers to a person looking for one.
+- **A capability's accepted payload types may be a wildcard**, for a destination whose fallback
+  genuinely handles anything. It is a promise rather than a shrug: claiming it trades away the
+  refusal core would otherwise make up front, so what would have been an immediate
+  `payload-type-unsupported` becomes a delivery that is attempted and rejected.
 - Rules may propose a destination from an item's tags, but **a rule never delivers on its own**.
   Delivery is always a decision. Deferring the *execution* of a decision a person has made does not
   weaken this: no rule decided anything.
@@ -728,6 +758,11 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   about](../adr/0018-a-jobs-subject-names-what-it-is-about.md)** — an optional field per job kind
   is a shape that rots, each with its own paired constraint and no way to say which combinations
   are real. Closes the "must a job be about an item?" question and unblocks the asset sweep.
+- **[A destination converts, and the delivery records what
+  went](../adr/0019-a-destination-converts-and-the-delivery-records-what-went.md)** — one item goes
+  to many destinations in many dialects, so amending the capture into any one of them is a dead
+  end. The reshaping belongs to the delivery, which is already asynchronous and leased, and the
+  bytes that landed are recorded so provenance covers *what* and not only *where*. Not built.
 
 ---
 
@@ -826,6 +861,8 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   reached. The warning itself is the host's; core's obligation is that the records are
   available to ask for.
 - An archived item can be unarchived, and returns to the queue at its original position.
+- The queue read newest first answers the same items as oldest first, in the opposite order, and a
+  position taken from one continues the other from the same place.
 - A pool rebuilt from its mirror and assets is equivalent to the original: same items, same
   order, same classification, same artifacts and corrections, same routing records.
 - Deleting or editing a mirror text file leaves the pool unaffected.
