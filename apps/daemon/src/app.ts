@@ -36,7 +36,7 @@ import {
 } from "./routes/definitions";
 import { feedHandler } from "./routes/feed";
 import { itemHandler } from "./routes/items";
-import { surfaceHandler } from "./routes/queue";
+import { itemViewHandler } from "./routes/queue";
 import { markProcessedHandler, routingRecordsHandler } from "./routes/routing";
 import { json, refuse } from "./utils/responses";
 
@@ -47,8 +47,8 @@ export function createApp(pool: Pool, limits: UploadLimits): Hono {
 
   app.post(honoPath(captureRoute.path), captureHandler(pool));
   app.get(honoPath(feedRoute.path), feedHandler(pool));
-  app.get(honoPath(queueRoute.path), surfaceHandler(pool, "queue"));
-  app.get(honoPath(archivedRoute.path), surfaceHandler(pool, "archived"));
+  app.get(honoPath(queueRoute.path), itemViewHandler(pool, "queue"));
+  app.get(honoPath(archivedRoute.path), itemViewHandler(pool, "archived"));
   app.get(honoPath(itemRoute.path), itemHandler(pool));
   app.post(honoPath(archiveRoute.path), archiveHandler(pool));
   app.post(honoPath(unarchiveRoute.path), unarchiveHandler(pool));

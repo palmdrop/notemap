@@ -74,7 +74,7 @@ const pageQuery = z.object({
     }),
 });
 
-const surfaceQuery = pageQuery.extend({
+const itemViewQuery = pageQuery.extend({
   order: z
     .string()
     .optional()
@@ -167,7 +167,7 @@ export const queueRoute = createRoute({
   summary: "Read the queue",
   description:
     "Every item that is unprocessed, unarchived and not superseded, oldest first by default. Paginated by a **content-time** position, which is spelled like the feed's and means something else: the two are not interchangeable.",
-  request: { query: surfaceQuery },
+  request: { query: itemViewQuery },
   responses: {
     200: {
       description: "A page of the queue.",
@@ -187,7 +187,7 @@ export const archivedRoute = createRoute({
   summary: "Read the archive",
   description:
     "Every archived item, on the queue's key and default. Archiving hides an item from the queue; it stays in the feed and stays processable.",
-  request: { query: surfaceQuery },
+  request: { query: itemViewQuery },
   responses: {
     200: {
       description: "A page of the archive.",

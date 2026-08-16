@@ -158,6 +158,32 @@ export async function post(app: Hono, body: unknown): Promise<Response> {
   });
 }
 
+/** A decision a client posts: the body is optional, as those routes declare it. */
+export async function send(
+  app: Hono,
+  path: string,
+  content?: unknown,
+): Promise<Response> {
+  return app.request(path, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    ...(content === undefined ? {} : { body: JSON.stringify(content) }),
+  });
+}
+
+export type Slice = { values: { id: string }[]; next?: string };
+
+/** A paginated read that must have succeeded, since no test asserts about a page it failed to get. */
+export async function slice(app: Hono, url: string): Promise<Slice> {
+  const response = await app.request(url);
+  if (response.status !== 200) {
+    throw new Error(`${url}: ${response.status} ${await response.text()}`);
+  }
+  return (await response.json()) as Slice;
+}
+
+export const ids = (page: Slice) => page.values.map((item) => item.id);
+
 /** Captures `count` items one minute apart, oldest first, and returns their ids. */
 export async function captureMany(app: Hono, count: number): Promise<string[]> {
   const ids: string[] = [];
