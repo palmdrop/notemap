@@ -323,11 +323,16 @@ export const MIGRATIONS: readonly string[] = [
   CREATE INDEX routing_records_item ON routing_records (item_id, at, id);
 
   -- The queue and the archive both order on content time, which is a revision or
-  -- amendment where there is one and the capture time otherwise. Partial on the
-  -- queue's half: the archive is small and drains nowhere.
+  -- amendment where there is one and the capture time otherwise. One partial
+  -- index each: the two halves cover the table once between them, and the
+  -- archive is the half that accumulates.
   CREATE INDEX items_queue
     ON items (COALESCE(content_updated_at, created_at), id)
     WHERE archived_at IS NULL;
+
+  CREATE INDEX items_archived
+    ON items (COALESCE(content_updated_at, created_at), id)
+    WHERE archived_at IS NOT NULL;
   `,
 ];
 

@@ -196,6 +196,13 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - Archiving is always an explicit decision, and may carry a reason. **Unarchiving is likewise an
   explicit action** (decided 2026-08-03): an archived item returns to the queue, at its
   unchanged position, since archiving never moved it.
+- **The archive excludes nothing** (decided 2026-08-17): every archived item is in it, superseded
+  or routed alike. It filters on one axis, which is the one archiving acts on. The queue's
+  exclusions say what is not worth working on now; the archive is not a work list but the record
+  of what was set aside, and an item dropped from it for having a revision would be reachable from
+  the feed alone. So an archived item a revision points at sits in the archive while that revision
+  sits in the queue — two items, one of which says which it is, since `supersededBy` is read off
+  the item wherever it appears.
 - **Purge** is the only destructive operation. It removes the item, its entire revision chain,
   its enrichment, its routing records, its mirror files and its assets — an asset only when no
   remaining item references it, and the blob beneath it only when no remaining asset does.

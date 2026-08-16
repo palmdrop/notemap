@@ -277,7 +277,9 @@ other coherently — but an item is in exactly one of them, so a position from e
 means something on the surface it was issued for.
 
 - An item leaves the queue when it is archived, when it is routed — including being marked
-  processed by hand — or when a revision supersedes it.
+  processed by hand — or when a revision supersedes it. `GET /v1/archived` makes none of those
+  exclusions: every archived item is there, superseded or routed alike
+  ([core.md](core.md#archive-and-purge)).
 - **The queue reorders under a reader, and no event that moves an item costs it a row.** Every
   event that moves an item gives it a content time of now, which places it ahead of a reader
   walking oldest-first; every event that removes one hides it, and a reader who had not reached it
