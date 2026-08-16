@@ -1,8 +1,10 @@
 <script lang="ts">
+  import CaptureForm from "$components/capture/CaptureForm.svelte";
+  import FeedList from "$components/feed/Feed.svelte";
+  import { createFeed } from "$lib/feed/feed.svelte";
 
-  import { getFeed } from '$lib/api';
-
-  getFeed().then(data => console.log(data));
+  const feed = createFeed();
 </script>
 
-<h1>Notemap</h1>
+<CaptureForm oncaptured={(item) => feed.prepend(item)} />
+<FeedList {feed} />

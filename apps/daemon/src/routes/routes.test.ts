@@ -559,35 +559,6 @@ describe("routing", () => {
   });
 });
 
-describe("the capture page", () => {
-  it("is served at the root, as HTML", async () => {
-    const app = serving();
-
-    const response = await app.request("/");
-    const page = await response.text();
-
-    expect(response.status).toBe(200);
-    expect(response.headers.get("content-type")).toMatch(/^text\/html/);
-    expect(page).toContain("<title>notemap</title>");
-  });
-
-  it("posts to the endpoints this daemon actually answers", async () => {
-    const page = await (await serving().request("/")).text();
-
-    expect(page).toContain("/v1/captures");
-    expect(page).toContain("/v1/feed");
-    // The source id the example config declares, which the page hardcodes.
-    expect(page).toContain('const SOURCE = "web"');
-  });
-
-  it("is a known path, so the wrong method is 405 rather than 404", async () => {
-    const response = await serving().request("/", { method: "DELETE" });
-
-    expect(response.status).toBe(405);
-    expect(response.headers.get("allow")).toBe("GET, OPTIONS");
-  });
-});
-
 describe("the instants a capture may name", () => {
   it("normalises an offset to UTC before the pool sees it", async () => {
     const app = serving();

@@ -1,15 +1,8 @@
 <script lang="ts">
-  import Item from "$components/item/Item.svelte";
-  import type { PageProps } from "./$types";
-  let { data }: PageProps = $props();
+  import FeedList from "$components/feed/Feed.svelte";
+  import { createFeed } from "$lib/feed/feed.svelte";
 
-  $effect(() => {
-    console.log("feed", data.feed);
-  });
+  const feed = createFeed();
 </script>
 
-<h1>Feed</h1>
-
-{#each data.feed as item}
-  <Item item={item} />
-{/each}
+<FeedList {feed} />

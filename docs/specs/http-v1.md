@@ -145,11 +145,16 @@ discovered: [security.md](security.md).
   header is the moment to reconsider authentication rather than a convenience. Binding wider
   than localhost exposes an unauthenticated pool to whoever can reach the address — the
   configuration allows it, and nothing in `/v1` defends it.
-- The capture page is served at `/`, the action log page at `/log`, and the playground at
-  `/docs`. Everything the API itself answers is under `/v1`.
-- An unknown path is `404 unknown-route`. A known path with the wrong method is `405`, carrying
-  an `Allow` header listing the methods that path does answer. `OPTIONS` is one of them, and is
-  answered `204` with the same `Allow`.
+- The app is served at `/`, the action log page at `/log`, and the playground at `/docs`.
+  Everything the API itself answers is under `/v1`.
+- An unknown path **under `/v1`** is `404 unknown-route`. A known path with the wrong method is
+  `405`, carrying an `Allow` header listing the methods that path does answer. `OPTIONS` is one
+  of them, and is answered `204` with the same `Allow`.
+- **An unknown path outside `/v1` answers the app's shell**, `200 text/html`, so that the app
+  can route it in the browser — its own paths exist nowhere else. A path carrying a file
+  extension is exempt and stays a `404`: answering the shell there hands a browser HTML where
+  its own markup told it to expect a script. A daemon built without an app answers `404` to
+  both, and serves `/v1` unchanged.
 
 ### Instants
 
@@ -212,8 +217,8 @@ passive source that is re-read rather than replayed omits `id` and supplies its 
 
 `GET /v1/items/:id` — `200 OK` with the `Item` verbatim, or `404 no-such-item`.
 
-In the subset because the capture page needs to read back what it just wrote, and because
-`Location` on a `201` that resolves to nothing is a lie.
+In the subset because the app needs to read back what it just wrote, and because `Location` on a
+`201` that resolves to nothing is a lie.
 
 ### The feed
 
@@ -816,8 +821,8 @@ by nothing in `/v1`, and removable without changing a promise this spec makes.
 - **Daemon configuration is TOML** (decided 2026-08-08): comments survive a hand-edit, and it
   is the format a self-hosted single-file config is least annoying to write by hand. The host
   reads it; core takes it as data ([core.md](core.md#constraints)).
-- The daemon mints UUIDv7 with the `uuid` package. The static capture page hand-rolls v7 inline
-  — a build step for one function would cost more than the function does.
+- The daemon mints UUIDv7 with the `uuid` package. The app hand-rolls v7 inline — one function
+  is cheaper than a dependency shipped to the browser.
 
 ---
 
