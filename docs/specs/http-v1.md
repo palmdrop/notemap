@@ -278,9 +278,13 @@ means something on the surface it was issued for.
 
 - An item leaves the queue when it is archived, when it is routed — including being marked
   processed by hand — or when a revision supersedes it.
-- **The queue reorders under a reader, and pages are still exact.** Every event that moves an item
-  gives it a content time of now, which places it ahead of a reader walking oldest-first; every
-  event that removes one hides it, and a reader who had not reached it was never meant to see it
+- **The queue reorders under a reader, and no event that moves an item costs it a row.** Every
+  event that moves an item gives it a content time of now, which places it ahead of a reader
+  walking oldest-first; every event that removes one hides it, and a reader who had not reached it
+  was never meant to see it.
+- **An item returned to the queue is seen on the next read rather than this one.** Unarchiving
+  puts an item back at the position it left with, which may be behind a reader who has already
+  paged past it; that reader's remaining pages will not carry it, and a fresh read will
   ([core.md](core.md#the-queue)).
 
 ### Archiving

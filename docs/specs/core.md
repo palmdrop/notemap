@@ -296,7 +296,13 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   Every event that moves an item — a revision, an amendment, a new capture — gives it a content
   time of *now*, which places it ahead of a reader walking oldest-first. Every event that removes
   one — routing, archiving, being superseded — hides it, and a reader who had not reached it was
-  never meant to see it. So no page skips a row or repeats one.
+  never meant to see it. So no event that moves an item can make a page skip a row or repeat one.
+- **An item returned to the queue behind a reader is seen on that reader's next pass, not this
+  one** (added 2026-08-17). Returning is a third kind of event, neither a move nor a removal: it
+  puts an item back at the content time it left with, which may be behind a reader who has already
+  paged past that position, and the rest of that reader's walk will not carry it. Unarchiving is
+  one such event and an abandoned or cancelled delivery is another. A fresh read always shows it,
+  and a queue is a work list rather than a stream: an item that has just come back is not urgent.
 - Core holds no position in the queue. Reads are ordered and paginated, continuing from a
   **position** the caller hands back — the sort key of the last row it saw
   ([ADR 14](../adr/0014-pagination-by-domain-position.md)). Where processing has got to is the

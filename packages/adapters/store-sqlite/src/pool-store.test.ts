@@ -1057,6 +1057,32 @@ describe("the queue and the archive", () => {
     expect(third.next).toBeUndefined();
   });
 
+  it("misses a row unarchived behind the reader, and hands it to the next read", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 4);
+    await setArchived(p, "item-1", { archivedAt: "2026-08-03T12:00:00.000Z" });
+
+    const page: OrderedPage = { limit: 2, order: "oldest-first" };
+    const first = await p.queue(page);
+    // Unarchiving restores the content time the item left with, which is behind
+    // a reader that has already paged past it.
+    await setArchived(p, "item-1", undefined);
+    const second = await p.queue(nextPage(first.next, page));
+
+    expect([first, second].flatMap((slice) => ids(slice.values))).toEqual([
+      "item-0",
+      "item-2",
+      "item-3",
+    ]);
+    expect(second.next).toBeUndefined();
+    expect(ids((await p.queue(OLDEST_FIRST)).values)).toEqual([
+      "item-0",
+      "item-1",
+      "item-2",
+      "item-3",
+    ]);
+  });
+
   it("takes a bare timestamp as a coarse entry point", async () => {
     const { pool: p } = pool();
     await minutelyItems(p, 5);
