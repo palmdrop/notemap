@@ -2,14 +2,15 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue and the archive are settled;
 the rest is stub
-**Last updated**: 2026-08-14
+**Last updated**: 2026-08-17
 **Shipped**:
 
 - 2026-08-14 — **The queue and the archive are served, and so are the decisions that drain them.**
   `GET /v1/queue` and `GET /v1/archived` page oldest first from a **content-time** position, which
   is spelled exactly like the feed's and means something else — nothing in the wire form can tell
   the two apart, so the consequence is written down rather than defended against. Neither takes an
-  `order`. `POST /v1/items/:id/archive`, `/unarchive` and `/mark-processed` each take an optional
+  `order` *(reversed 2026-08-17: both do, defaulting to oldest first)*.
+  `POST /v1/items/:id/archive`, `/unarchive` and `/mark-processed` each take an optional
   strict JSON body, so a decision with nothing to add sends nothing, and
   `GET /v1/items/:id/routing` answers where an item has been — refusing an id the pool does not
   hold, unlike the action log, because routing records are the item's own state and go when it

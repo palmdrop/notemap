@@ -1,7 +1,7 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-08-14
+**Last updated**: 2026-08-17
 **Shipped**:
 
 - 2026-08-08 — A source needs no declaration to capture; `config.sources` is a policy registry
@@ -55,7 +55,8 @@
   none of the delivery machinery — its target is the user, nothing can be unreachable, and the
   record is born delivered — which is what lets both ways out of the queue exist before a line of
   retry logic does. `views.queue` and `views.archived` read oldest first from a content-time
-  position and take no order, and **processed is derived** as promised: unarchived, unsuperseded
+  position and take no order *(reversed 2026-08-17: which end a reader starts from is the
+  reader's)*, and **processed is derived** as promised: unarchived, unsuperseded
   and holding no routing record, three anti-joins the store indexes for rather than denormalises
   around. Archiving something already archived is **refused** rather than absorbed, and so is
   unarchiving something that is not: both carry a reason and a time, and a second decision would

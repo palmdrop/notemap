@@ -1,7 +1,11 @@
 # Review: The queue drains
 
 **Date**: 2026-08-15
-**Status**: Open
+**Status**: Resolved — both bugs fixed, the archive indexed and its exclusions decided, the
+comment sweep done, and `Surface` renamed to `ItemView`. Three findings are deliberately not
+acted on: the `readBody`/capture split (6) is documented rather than unified, `ItemSlice`'s
+example (8) was overtaken by the queue gaining an order, and the workflow (14) is not this
+branch's file. See the Resolution below.
 **Scope**: PR #10, `main..agent/queue-drains` — `7cedbae`
 **Plan**: `docs/plans/queue-drains.md`
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/mirror.md`
@@ -478,7 +482,60 @@ right now it is neither.
 
 ## Resolution
 
-<!--
-Add once findings are addressed, and flip **Status** above. One numbered entry per finding,
-mirroring its number. Mark each: Fixed / Mitigated / Won't fix (reason).
--->
+1. **Fixed** (docs). Both spec bullets now claim only what holds — no event that *moves* an item
+   can cost a page a row — and each carries a second bullet for the third kind of event, written
+   for returning in general rather than unarchive alone, since ADR 17 commits to the same shape.
+   The store has the test beside the existing one: page 1, unarchive behind the reader, page on,
+   and the row appears only on a fresh read. The code is unchanged.
+2. **Fixed**. The guard no longer keys on the method alone. A request whose route declares an
+   optional body and which carries no body — no `transfer-encoding`, and either a zero-length body
+   or no body stream at all — passes without a `content-type`. Which routes those are is filtered
+   out of `ROUTES`, so the guard and the OpenAPI document cannot disagree. Capture keeps `415` for
+   a bodyless `POST`, every route keeps it for a non-empty body under the wrong type, and
+   `http-v1.md`'s two sentences now agree. Tested in `middleware/content-type.test.ts`.
+3. **Fixed** (comment). `keysetClause` now says the seek is the feed's plain columns' and that
+   neither form seeks on an expression index. The query is untouched; the column is finding 3's
+   later fix and is not taken now.
+4. **Fixed**. `items_archived` mirrors `items_queue` on the other half of the partial predicate.
+   Measured after: both pages of the archive are `SCAN item USING INDEX items_archived` with no
+   temp b-tree, where before they were `SCAN item` plus a sort. It goes into migration 8, which is
+   this branch's own and unreleased.
+5. **Fixed** — decided rather than deferred. The archive excludes nothing: it filters on the one
+   axis archiving acts on, so an archived item a revision points at stays in the archive while the
+   revision sits in the queue. Dropping it would leave it reachable from the feed alone, which is
+   the surface for what is never lost rather than for what was set aside — and `supersededBy` is
+   read off the item wherever it appears, so nothing about the pair is hidden from a client. Stated
+   in `core.md`'s archive section and echoed in `http-v1.md`.
+6. **Mitigated**. `readBody` keeps its empty-body semantics and its docblock now carries the fact
+   that was missing: capture does not use it, because its body is mandatory and an empty one is
+   malformed rather than absent. No `required` flag, and no second reader — one call site is not
+   yet a shape.
+7. **Fixed**. The queue now has the feed's twin: three items at one instant, paged at `limit=2`,
+   each returned once in id order.
+8. **Won't fix**. Overtaken by `839a444`: all three surfaces sharing `itemSliceSchema` take an
+   `order`, so `order=newest-first` in the example is no longer a parameter two of them refuse.
+   What is left is that a shared schema illustrates `next` with one surface's URL, and a concrete
+   example beats a neutral one.
+9. **Mitigated**. Recorded in `docs/todo.md` against purge, which is where the window opens: either
+   one core method answering both questions, or accepting it deliberately.
+10. **Fixed**. `http-v1.md`'s routing-records section says every record read today has been
+    delivered and that delivery adds a `state` a client must read, so nothing written against the
+    route now assumes what ADR 17 forbids.
+11. **Fixed**. `BEFORE_SUBJECT_SPLIT` sits with the file's other constants; the comment moved with
+    it.
+12. **Fixed**. Every comment on the delete list is gone, every trim is trimmed, and every keeper
+    kept. Three were wrong rather than merely redundant and are named in the commit. The comments
+    `b637dc3` and `839a444` added were judged against the same bar: the surface-query, `ordered`
+    and `fallback` docblocks go, `PoolReads.queue`'s stays, since the default order it names is
+    invisible in the signature. `by: { kind: "person" }` is now explained in both files that
+    hardcode it.
+13. **Won't fix**, as the review recommends: no handler wrapper. `answer` and `itemIdFrom` are not
+    taken here either — both are pure subtractions and both are cheaper once the fourth bodied
+    route exists to shape them.
+14. **Won't fix here**. `verify.yml` is not in this branch's diff. The duplicate `push`/
+    `pull_request` runs and the missing `concurrency` group are real and cheap, but they belong to
+    a change against `main` rather than to this PR.
+15. **Fixed**. `ItemView`, in the `Extract` form, with `itemViewHandler` and `itemViewQuery`
+    following it. `queue.test.ts` is split three ways beside what each file tests — `queue.ts`,
+    `archive.ts`, `routing.ts` — with the media-type cases moved next to the guard and the shared
+    client helpers moved into the daemon fixture.

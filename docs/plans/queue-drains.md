@@ -155,6 +155,10 @@ Docs before the routes that implement them, as the asset slice did.
   right. **Taken.** `EXPLAIN QUERY PLAN` shows the ordering answered by `items_queue` with no sort,
   and both anti-joins by covering index; the keyset comparison itself scans that index rather than
   seeking on it, which is the one thing left to measure if a pool ever gets large.
+- **Amended 2026-08-17, on review.** `items_queue` being partial on `archived_at IS NULL` left the
+  archive able to use nothing — a full table scan and a sort for every page, keyset pages included.
+  It now has the mirror index on the other half of the predicate: the queue drains to zero and the
+  archive is the half that accumulates, so it was the wrong one to leave unindexed.
 - **Whether `markProcessed`'s note belongs on the record or in the target.** `RoutingTarget`'s user
   variant already carries `note?`. *Fallback*: leave it there; it is where the type already put it.
   **Taken**, and the store follows: `note` is a column the CHECK constraint permits only on a user
