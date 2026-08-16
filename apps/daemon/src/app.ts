@@ -7,6 +7,7 @@ import { docsPage } from "./docs/page";
 import { logPage } from "./log/page";
 import { requireJsonBody } from "./middleware/content-type";
 import { methodsFor, notFound } from "./middleware/not-found";
+import { corsMiddleware } from "./middleware/cors";
 import { openApiDocument } from "./openapi";
 import { capturePage } from "./page";
 import { actionsHandler } from "./routes/actions";
@@ -53,6 +54,7 @@ export function createApp(pool: Pool, limits: UploadLimits): Hono {
   const app = new Hono();
 
   app.use("/v1/*", requireJsonBody);
+  app.use("/v1/*", corsMiddleware);
 
   app.post(honoPath(captureRoute.path), captureHandler(pool));
   app.get(honoPath(feedRoute.path), feedHandler(pool));
