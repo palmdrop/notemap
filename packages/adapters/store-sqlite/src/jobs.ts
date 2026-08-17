@@ -6,8 +6,10 @@ import {
   type ClaimRequest,
   type EnrichmentName,
   type IdGenerator,
+  type ItemId,
   type Job,
   type JobResolution,
+  type JobSubject,
   type Lease,
   type LeaseId,
   type LeaseRefusal,
@@ -15,6 +17,7 @@ import {
   type Result,
   type Slice,
   type Timestamp,
+  type WorkWithdrawal,
 } from "@notemap/core";
 
 import {
@@ -30,13 +33,17 @@ import type { Bindable, statements } from "./statements";
 type Statements = ReturnType<typeof statements>;
 
 const JOB_COLUMNS = `
-  id, kind, subject_kind, subject_id, enrichment, attempt, enqueued_at,
-  next_attempt_at, lease_id, lease_expires_at, abandoned_at,
+  id, kind, subject_kind, subject_id, subject_item, enrichment, attempt,
+  enqueued_at, next_attempt_at, lease_id, lease_expires_at, abandoned_at,
   last_failure_code, last_failure_detail
 `;
 
 /** The kinds the one-write-per-item rules apply to. */
 const MIRROR_KINDS = `('mirror', 'mirror-remove')`;
+
+function mirrors(kind: JobRow["kind"]): boolean {
+  return kind === "mirror" || kind === "mirror-remove";
+}
 
 /**
  * Matched against the partial index of the same name, so only it can be
@@ -57,17 +64,38 @@ export type JobQueue = {
   releaseLease(lease: LeaseId): Result<void, LeaseRefusal>;
   leasedJob(lease: LeaseId): Lease | undefined;
   resolveJob(lease: LeaseId, resolution: JobResolution): void;
+  withdrawWork(subject: JobSubject): WorkWithdrawal;
 };
 
 export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
   const insert = write.query(`
     INSERT INTO jobs
-      (id, kind, subject_kind, subject_id, enrichment, attempt, enqueued_at,
-       next_attempt_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      (id, kind, subject_kind, subject_id, subject_item, enrichment, attempt,
+       enqueued_at, next_attempt_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT (subject_kind, subject_id, kind) WHERE ${PENDING_MIRROR}
       DO NOTHING
   `);
+
+  /** A delivery job outlives the reservation it names, so the link cannot be a join at read time. */
+  const itemOfRecord = write.query<{ item_id: string }, [string]>(
+    `SELECT item_id FROM routing_records WHERE id = ?`,
+  );
+
+  function subjectItem(subject: JobSubject): string {
+    if (subject.kind === "item") return subject.item;
+
+    const row = itemOfRecord.get(subject.record);
+    if (row === undefined) {
+      throw new Error(`no routing record ${subject.record} for work about one`);
+    }
+    return row.item_id;
+  }
+
+  const outstanding = write.query<
+    { id: string; lease_id: string | null },
+    [string, string]
+  >(`SELECT id, lease_id FROM jobs WHERE subject_kind = ? AND subject_id = ?`);
 
   const byLease = write.query<JobRow, [string]>(
     `SELECT ${JOB_COLUMNS} FROM jobs WHERE lease_id = ?`,
@@ -156,7 +184,7 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
   /** Whether a pending job for this item already says everything this one would. */
   function superseded(row: JobRow): boolean {
     return (
-      row.kind !== "enrichment" &&
+      mirrors(row.kind) &&
       rival.get(row.subject_kind, row.subject_id, row.kind, row.id) !==
         undefined
     );
@@ -170,6 +198,7 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
           job.id,
           job.kind,
           ...subjectColumns(job.subject),
+          subjectItem(job.subject),
           job.enrichment ?? null,
           job.attempt,
           at,
@@ -202,7 +231,14 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
 
         const id = ids.next<LeaseId>();
         takeLease.run(id, expiresMs, row.id);
-        leases.push({ id, job: toJob(row), expiresAt });
+        leases.push({
+          id,
+          job: toJob(row),
+          expiresAt,
+          // Nothing reaps a lease, so one still on the row is the evidence
+          // that its holder neither reported nor released.
+          ...(row.lease_id === null ? {} : { reclaimed: true as const }),
+        });
       }
 
       return leases;
@@ -247,7 +283,7 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
 
       if (resolution.kind === "done") {
         finishJob.run(lease);
-        if (row.kind !== "enrichment")
+        if (mirrors(row.kind))
           clearAbandoned.run(row.subject_kind, row.subject_id, row.kind);
         return;
       }
@@ -279,6 +315,18 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
           toMillis(at),
           lease,
         );
+    },
+
+    /**
+     * An expired lease counts as held: its holder may be halfway through the
+     * attempt nobody has heard about.
+     */
+    withdrawWork: (subject) => {
+      const rows = outstanding.all(...subjectColumns(subject));
+      if (rows.some((row) => row.lease_id !== null)) return "held";
+
+      for (const row of rows) deleteJob.run(row.id);
+      return "withdrawn";
     },
   };
 }
@@ -352,11 +400,9 @@ function toAbandonedWork(row: JobRow): AbandonedWork {
     throw new Error(`job ${row.id} is abandoned with nothing saying why`);
   }
 
-  const subject = toJobSubject(row);
-
   return {
-    subject,
-    item: subject.item,
+    subject: toJobSubject(row),
+    item: row.subject_item as ItemId,
     kind: row.kind,
     ...(row.enrichment === null
       ? {}

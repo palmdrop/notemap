@@ -334,6 +334,82 @@ export const MIGRATIONS: readonly string[] = [
     ON items (COALESCE(content_updated_at, created_at), id)
     WHERE archived_at IS NOT NULL;
   `,
+
+  `
+  -- A delivery is work about a routing record, so a subject is no longer always
+  -- an item — and neither CHECK can be widened in place.
+  --
+  -- \`subject_item\` is resolved when the job is enqueued because it outlives the
+  -- subject: an abandoned delivery's reservation is removed, and the surface
+  -- reporting the abandonment still has to name the capture that is stuck.
+  CREATE TABLE jobs_next (
+    id                  TEXT    NOT NULL PRIMARY KEY,
+    kind                TEXT    NOT NULL
+                        CHECK (kind IN ('enrichment', 'mirror', 'mirror-remove',
+                                        'delivery')),
+    subject_kind        TEXT    NOT NULL
+                        CHECK (subject_kind IN ('item', 'routing-record')),
+    subject_id          TEXT    NOT NULL,
+    subject_item        TEXT    NOT NULL,
+    enrichment          TEXT    CHECK ((kind = 'enrichment') = (enrichment IS NOT NULL)),
+    attempt             INTEGER NOT NULL,
+    enqueued_at         INTEGER NOT NULL,
+    next_attempt_at     INTEGER NOT NULL,
+    lease_id            TEXT,
+    lease_expires_at    INTEGER CHECK ((lease_id IS NULL) = (lease_expires_at IS NULL)),
+    abandoned_at        INTEGER,
+    last_failure_code   TEXT,
+    last_failure_detail TEXT
+                        CHECK ((last_failure_code IS NULL) = (last_failure_detail IS NULL))
+  ) STRICT;
+
+  INSERT INTO jobs_next
+    (id, kind, subject_kind, subject_id, subject_item, enrichment, attempt,
+     enqueued_at, next_attempt_at, lease_id, lease_expires_at, abandoned_at,
+     last_failure_code, last_failure_detail)
+    SELECT id, kind, subject_kind, subject_id, subject_id, enrichment, attempt,
+           enqueued_at, next_attempt_at, lease_id, lease_expires_at, abandoned_at,
+           last_failure_code, last_failure_detail FROM jobs;
+
+  DROP TABLE jobs;
+  ALTER TABLE jobs_next RENAME TO jobs;
+
+  -- Still about mirror kinds alone. Two pending deliveries of one item are two
+  -- legitimate jobs, and they name two records rather than colliding on one.
+  CREATE UNIQUE INDEX jobs_one_pending_mirror
+    ON jobs (subject_kind, subject_id, kind)
+    WHERE kind IN ('mirror', 'mirror-remove')
+      AND lease_id IS NULL
+      AND abandoned_at IS NULL;
+
+  CREATE UNIQUE INDEX jobs_lease ON jobs (lease_id) WHERE lease_id IS NOT NULL;
+
+  CREATE INDEX jobs_claimable ON jobs (kind, next_attempt_at, enqueued_at, id);
+  CREATE INDEX jobs_subject   ON jobs (subject_kind, subject_id, kind);
+
+  CREATE INDEX jobs_abandoned
+    ON jobs (abandoned_at, subject_kind, subject_id, kind)
+    WHERE abandoned_at IS NOT NULL;
+  `,
+
+  `
+  -- What the capability was pointed at. A reservation is attempted again from
+  -- the record alone, so the target is remembered rather than consumed by the
+  -- one attempt \`route\` makes. Only a destination has one.
+  ALTER TABLE routing_records ADD COLUMN target TEXT;
+
+  -- SQLite cannot add a CHECK in place, and one that admitted a delivered
+  -- record with no target would admit a reservation nothing could carry out.
+  CREATE TRIGGER routing_records_target_insert
+    BEFORE INSERT ON routing_records
+    WHEN (NEW.target_kind = 'destination') <> (NEW.target IS NOT NULL)
+    BEGIN SELECT RAISE(ABORT, 'a destination target names what it targeted'); END;
+
+  CREATE TRIGGER routing_records_target_update
+    BEFORE UPDATE ON routing_records
+    WHEN (NEW.target_kind = 'destination') <> (NEW.target IS NOT NULL)
+    BEGIN SELECT RAISE(ABORT, 'a destination target names what it targeted'); END;
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

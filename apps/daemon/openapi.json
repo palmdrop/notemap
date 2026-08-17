@@ -366,12 +366,17 @@
                   },
                   "capability": {
                     "type": "string"
+                  },
+                  "target": {
+                    "type": "object",
+                    "additionalProperties": {}
                   }
                 },
                 "required": [
                   "kind",
                   "destination",
-                  "capability"
+                  "capability",
+                  "target"
                 ]
               },
               {
@@ -393,6 +398,13 @@
               }
             ]
           },
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "delivered"
+            ]
+          },
           "at": {
             "type": "string"
           },
@@ -404,6 +416,7 @@
           "id",
           "item",
           "target",
+          "state",
           "at"
         ]
       },

@@ -12,6 +12,7 @@ import type {
   EnrichmentName,
   ItemId,
   LeaseId,
+  RoutingRecordId,
   SuggestionId,
   SyncCursor,
   TagName,
@@ -21,6 +22,7 @@ import type { MirrorRecord } from "../domain/mirror";
 import type { Payload } from "../domain/payload";
 import type { AbandonedPosition } from "../domain/position";
 import type {
+  Delivery,
   DeliveryRequest,
   DestinationDescriptor,
   RoutingRecord,
@@ -40,6 +42,8 @@ import type {
   ArtifactRefusal,
   AssetRefusal,
   CaptureRefusal,
+  CancelRefusal,
+  CompletionRefusal,
   DeliveryRefusal,
   EditRefusal,
   EnrichmentRefusal,
@@ -88,10 +92,17 @@ export interface EnrichmentApi {
 
 export interface RoutingApi {
   destinations(): Promise<readonly DestinationDescriptor[]>;
+  /** The record it answers may be pending: read the state rather than reading a record as arrival. */
   route(
     item: ItemId,
     delivery: DeliveryRequest,
+    /** Bounds the one inline attempt. Core imposes no timeout of its own. */
+    signal?: AbortSignal,
   ): Promise<Result<RoutingRecord, DeliveryRefusal>>;
+  /** Projected on demand rather than handed over as a snapshot, so what leaves is the item as it now stands. */
+  deliveryFor(record: RoutingRecordId): Promise<Delivery | undefined>;
+  /** Returns the item to the queue. */
+  cancelDelivery(record: RoutingRecordId): Promise<Result<void, CancelRefusal>>;
   markProcessed(
     item: ItemId,
     note?: string,
@@ -119,7 +130,7 @@ export interface WorkApi {
   complete(
     lease: LeaseId,
     outcome: WorkOutcome,
-  ): Promise<Result<void, LeaseRefusal>>;
+  ): Promise<Result<void, CompletionRefusal>>;
   extend(lease: LeaseId, by: Duration): Promise<Result<Lease, LeaseRefusal>>;
   release(lease: LeaseId): Promise<Result<void, LeaseRefusal>>;
 

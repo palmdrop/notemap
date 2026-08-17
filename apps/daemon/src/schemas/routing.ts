@@ -1,6 +1,8 @@
 import "@hono/zod-openapi";
 import { z } from "zod";
 
+import { jsonObject } from "./json";
+
 export const markProcessedRequestSchema = z
   .strictObject({
     note: z.string().min(1).optional().openapi({
@@ -19,9 +21,13 @@ export const routingRecordSchema = z
         kind: z.literal("destination"),
         destination: z.string(),
         capability: z.string(),
+        /** What the capability was pointed at, in its own terms. */
+        target: jsonObject,
       }),
       z.object({ kind: z.literal("user"), note: z.string().optional() }),
     ]),
+    /** A pending record is a delivery that has not landed; anything else has. */
+    state: z.enum(["pending", "delivered"]),
     at: z.string(),
     /** Best-effort: where the item once went, never where it is. */
     pointer: z.string().optional(),

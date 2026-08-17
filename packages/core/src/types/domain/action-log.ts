@@ -17,6 +17,7 @@ export type ActionKind =
   | "unarchived"
   | "routed"
   | "delivery-failed"
+  | "delivery-cancelled"
   | "enrichment-requested"
   | "work-failed"
   | "work-abandoned"

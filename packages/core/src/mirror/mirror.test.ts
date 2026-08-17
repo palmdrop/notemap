@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { Asset } from "../types/domain/asset";
 import type { ItemId, Timestamp } from "../types/domain/ids";
 import type { Item } from "../types/domain/item";
+import type { RoutingRecord } from "../types/domain/routing";
 
 import { poolState, type PoolState } from "./arbitraries";
 import { parseMirrorRecord, serialiseMirrorRecord } from "./codec";
@@ -155,6 +156,25 @@ describe("what the record leaves out", () => {
     expect(serialiseMirrorRecord(record)).not.toContain("supersededBy");
     // The revision link itself is material and stays.
     expect(record.item.revisionOf).toBe("item-0");
+  });
+
+  it("carries a delivered routing record and leaves a pending one out", () => {
+    const delivered: RoutingRecord = {
+      id: "routing-1" as RoutingRecord["id"],
+      item: "item-1" as ItemId,
+      target: { kind: "user" },
+      state: "delivered",
+      at: at("2026-08-11T09:00:00.000Z"),
+    };
+    const pending: RoutingRecord = {
+      ...delivered,
+      id: "routing-2" as RoutingRecord["id"],
+      state: "pending",
+    };
+
+    const record = projectMirrorRecord(anItem(), [], [], [delivered, pending]);
+
+    expect(record.routing).toEqual([delivered]);
   });
 
   it("carries modifiedAt, which verify compares and rebuild ignores", () => {

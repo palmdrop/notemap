@@ -64,6 +64,13 @@ places, and both resolve toward keeping the caller's life unchanged:
 - **`AbandonedWork` keeps a resolved `item` beside the subject.** The store joins the routing
   record for delivery jobs. Any other answer turns "three things need you" into one read plus a
   lookup per row, which is the thing `core.md` wrote the one-read promise against.
+  *Amended 2026-08-14, implementing delivery.* The store resolves the item when the job is
+  **enqueued** rather than joining at read time, and keeps it on the row. A join cannot work: an
+  abandoned delivery's reservation is removed
+  ([ADR 17](0017-delivery-is-asynchronous-and-retried-on-evidence.md)), so by the time anyone reads
+  the row reporting that abandonment there is nothing left to join to — and that row is precisely
+  the one a person needs the item for. A record's item never changes, so resolving it early is the
+  same fact, read earlier.
 - **`Action.subject` stays an `ItemId`.** Core resolves the record to its item inside the
   transaction it is already opening. Widening the log's subject to the same union would break the
   `item` filter, the actions table's column and every entry already written, for entries a person

@@ -27,7 +27,9 @@ export function projectMirrorRecord(
     artifacts: [...artifacts]
       .map(canonicalArtifact)
       .sort(byKey((artifact) => artifact.id)),
-    routing: [...routing]
+    // A rebuild that restored a reservation would restore a promise no job exists to keep.
+    routing: routing
+      .filter((entry) => entry.state === "delivered")
       .map(canonicalRouting)
       .sort(byKey((entry) => entry.id)),
     modifiedAt: instant(modifiedAt),

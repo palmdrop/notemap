@@ -159,18 +159,20 @@ export const routingRecord = (): fc.Arbitrary<RoutingRecord> =>
             kind: fc.constant("destination" as const),
             destination: branded<never>(),
             capability: branded<never>(),
+            target: jsonObject(),
           },
-          { requiredKeys: ["kind", "destination", "capability"] },
+          { requiredKeys: ["kind", "destination", "capability", "target"] },
         ),
         fc.record(
           { kind: fc.constant("user" as const), note: name() },
           { requiredKeys: ["kind"] },
         ),
       ),
+      state: fc.constantFrom("pending" as const, "delivered" as const),
       at: stamp(),
       pointer: name(),
     },
-    { requiredKeys: ["id", "item", "target", "at"] },
+    { requiredKeys: ["id", "item", "target", "state", "at"] },
   );
 
 export type PoolState = {

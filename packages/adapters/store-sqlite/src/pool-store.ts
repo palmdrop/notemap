@@ -13,7 +13,9 @@ import type {
   ClaimRequest,
   Clock,
   JobResolution,
+  JobSubject,
   RoutingRecord,
+  RoutingRecordId,
   IdGenerator,
   Item,
   ItemId,
@@ -31,6 +33,7 @@ import type {
   SourceId,
   Timestamp,
   WorkQueue,
+  WorkWithdrawal,
 } from "@notemap/core";
 
 import {
@@ -81,7 +84,8 @@ const ITEM_COLUMNS = `
 const ASSET_COLUMNS = `id, filename, mime, blob, bytes, stored_at`;
 
 const ROUTING_COLUMNS = `
-  id, item_id, target_kind, destination, capability, note, state, at, pointer
+  id, item_id, target_kind, destination, capability, note, target, state, at,
+  pointer
 `;
 
 /** What the queue and the archive order on: last touch of content, never of state. */
@@ -226,8 +230,18 @@ export function createSqlitePoolStore(
     ReturnType<typeof routingRecordParams>
   >(`
     INSERT INTO routing_records (${ROUTING_COLUMNS})
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
+  const deliverRouting = write.query<never, [string | null, string]>(
+    `UPDATE routing_records SET state = 'delivered', pointer = ? WHERE id = ?`,
+  );
+  const deleteRouting = write.query<never, [string]>(
+    `DELETE FROM routing_records WHERE id = ?`,
+  );
+  /** Read before a removal, so the item can still be touched after the record goes. */
+  const routingItem = write.query<{ item_id: string }, [string]>(
+    `SELECT item_id FROM routing_records WHERE id = ?`,
+  );
   const setArchive = write.query<
     never,
     [number | null, string | null, number, string]
@@ -294,6 +308,9 @@ export function createSqlitePoolStore(
     const routingFor = source.query<RoutingRecordRow, [string]>(
       `SELECT ${ROUTING_COLUMNS} FROM routing_records
        WHERE item_id = ? ORDER BY at, id`,
+    );
+    const routingById = source.query<RoutingRecordRow, [string]>(
+      `SELECT ${ROUTING_COLUMNS} FROM routing_records WHERE id = ?`,
     );
 
     function hydrate(rows: readonly ItemRow[]): Item[] {
@@ -415,6 +432,13 @@ export function createSqlitePoolStore(
       routingRecords: async (item: ItemId): Promise<readonly RoutingRecord[]> =>
         routingFor.all(item).map(toRoutingRecord),
 
+      routingRecord: async (
+        id: RoutingRecordId,
+      ): Promise<RoutingRecord | undefined> => {
+        const row = routingById.get(id);
+        return row === undefined ? undefined : toRoutingRecord(row);
+      },
+
       asset: async (id: AssetId): Promise<Asset | undefined> => {
         const row = assetById.get(id);
         return row === undefined ? undefined : toAsset(row);
@@ -528,6 +552,7 @@ export function createSqlitePoolStore(
       item: guard(uncommitted.item),
       artifacts: guard(uncommitted.artifacts),
       routingRecords: guard(uncommitted.routingRecords),
+      routingRecord: guard(uncommitted.routingRecord),
       itemBySourceIdentity: guard(uncommitted.itemBySourceIdentity),
       head: guard(uncommitted.head),
       feed: guard(uncommitted.feed),
@@ -583,6 +608,34 @@ export function createSqlitePoolStore(
           // Routing is a change to the item, and a delta read has to carry it.
           touchItem.run(nextModifiedAt(), record.item);
         },
+      ),
+
+      resolveRoutingRecord: guard(
+        async (record: RoutingRecordId, pointer?: string): Promise<void> => {
+          const row = routingItem.get(record);
+          if (row === undefined) {
+            throw new Error(`no routing record ${record} to resolve`);
+          }
+
+          deliverRouting.run(pointer ?? null, record);
+          touchItem.run(nextModifiedAt(), row.item_id);
+        },
+      ),
+
+      removeRoutingRecord: guard(
+        async (record: RoutingRecordId): Promise<void> => {
+          const row = routingItem.get(record);
+          if (row === undefined) return;
+
+          deleteRouting.run(record);
+          // The item is back in the queue, which is a change a delta carries.
+          touchItem.run(nextModifiedAt(), row.item_id);
+        },
+      ),
+
+      withdrawWork: guard(
+        async (subject: JobSubject): Promise<WorkWithdrawal> =>
+          jobs.withdrawWork(subject),
       ),
 
       appendAction: guard(async (action: Action): Promise<void> => {

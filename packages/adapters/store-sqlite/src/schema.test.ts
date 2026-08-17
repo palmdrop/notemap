@@ -110,26 +110,40 @@ describe("the row types and the migrations agree", () => {
 
       const record = opened.raw.prepare(
         `INSERT INTO routing_records
-           (id, item_id, target_kind, destination, capability, note, state, at)
-         VALUES (?, 'item', ?, ?, ?, ?, 'delivered', 1)`,
+           (id, item_id, target_kind, destination, capability, note, target,
+            state, at)
+         VALUES (?, 'item', ?, ?, ?, ?, ?, 'delivered', 1)`,
       );
+      const targeted = JSON.stringify({ path: "inbox/a.md" });
 
-      // A destination target names both halves; a user target names neither,
-      // and is the only one that may carry a note.
-      expect(() => record.run("a", "destination", "vault", null, null)).toThrow(
-        /constraint/i,
-      );
-      expect(() => record.run("b", "user", "vault", "create", null)).toThrow(
-        /constraint/i,
-      );
+      // Args are (id, target_kind, destination, capability, note, target).
       expect(() =>
-        record.run("c", "destination", "vault", "create", "where it went"),
+        record.run("a", "destination", "vault", null, null, targeted),
       ).toThrow(/constraint/i);
       expect(() =>
-        record.run("d", "destination", "vault", "create", null),
+        record.run("b", "user", "vault", "create", null, null),
+      ).toThrow(/constraint/i);
+      expect(() =>
+        record.run(
+          "c",
+          "destination",
+          "vault",
+          "create",
+          "where it went",
+          targeted,
+        ),
+      ).toThrow(/constraint/i);
+      expect(() =>
+        record.run("d", "destination", "vault", "create", null, null),
+      ).toThrow(/names what it targeted/);
+      expect(() =>
+        record.run("e", "user", null, null, "where it went", targeted),
+      ).toThrow(/names what it targeted/);
+      expect(() =>
+        record.run("f", "destination", "vault", "create", null, targeted),
       ).not.toThrow();
       expect(() =>
-        record.run("e", "user", null, null, "where it went"),
+        record.run("g", "user", null, null, "where it went", null),
       ).not.toThrow();
     } finally {
       await opened.cleanup();

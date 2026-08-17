@@ -10,6 +10,7 @@ import type {
   LeaseId,
   MintableId,
   ProviderName,
+  RoutingRecordId,
   SourceId,
   SuggestionId,
   SyncCursor,
@@ -31,8 +32,10 @@ import type {
   ClaimRequest,
   Job,
   JobResolution,
+  JobSubject,
   Lease,
   WorkOutcome,
+  WorkWithdrawal,
 } from "../domain/work";
 import type { LeaseRefusal } from "./refusal";
 
@@ -164,6 +167,7 @@ export interface PoolReads {
   suggestions(item: ItemId): Promise<readonly Suggestion[]>;
   suggestion(id: SuggestionId): Promise<Suggestion | undefined>;
   routingRecords(item: ItemId): Promise<readonly RoutingRecord[]>;
+  routingRecord(id: RoutingRecordId): Promise<RoutingRecord | undefined>;
   artifacts(item: ItemId): Promise<readonly Artifact[]>;
   enrichmentStates(item: ItemId): Promise<readonly EnrichmentStatus[]>;
 
@@ -194,6 +198,21 @@ export interface PoolTx extends PoolReads {
   setArchiveState(item: ItemId, state?: ArchiveState): Promise<Item>;
 
   insertRoutingRecord(record: RoutingRecord): Promise<void>;
+
+  /** Throws on a record that is not there: resolving one that has gone is a lost write. */
+  resolveRoutingRecord(
+    record: RoutingRecordId,
+    pointer?: string,
+  ): Promise<void>;
+
+  /**
+   * Only ever a record that never delivered: a reservation is not in the
+   * append-only log yet. Removing one that has already gone is not an error —
+   * a delivery abandoned after being cancelled asks for exactly that.
+   */
+  removeRoutingRecord(record: RoutingRecordId): Promise<void>;
+
+  withdrawWork(subject: JobSubject): Promise<WorkWithdrawal>;
 
   /** When it was stored is the store's, the way `modifiedAt` is: operational, and not part of the asset. */
   insertAsset(asset: Asset): Promise<void>;
