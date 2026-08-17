@@ -92,11 +92,38 @@ describe("classification over the wire", () => {
     ).toBe(404);
   });
 
-  it("refuses a body with no tag in it, and a key it does not know", async () => {
+  it("answers 409 for an item a revision supersedes, either way round", async () => {
+    const app = serving();
+    const [first] = await captureMany(app, 2);
+    await send(app, `/v1/items/${first}/tag`, { tag: "kind/quote" });
+
+    const edited = await send(app, `/v1/items/${first}/edit`, {
+      type: "text",
+      content: { text: "a second thought" },
+      metadata: {},
+      assets: [],
+    });
+    const { revision } = (await body(edited)) as { revision: { id: string } };
+
+    const tagged = await send(app, `/v1/items/${first}/tag`, { tag: "kind/n" });
+    expect(tagged.status).toBe(409);
+    expect(await body(tagged)).toEqual({
+      error: { code: "item-superseded", by: revision.id },
+    });
+    expect(
+      (await send(app, `/v1/items/${first}/untag`, { tag: "kind/quote" }))
+        .status,
+    ).toBe(409);
+  });
+
+  it("refuses a body with no tag in it, a key it does not know, and blank space", async () => {
     const app = serving();
     const [first] = await captureMany(app, 1);
 
     expect((await send(app, `/v1/items/${first}/tag`)).status).toBe(400);
+    expect(
+      (await send(app, `/v1/items/${first}/tag`, { tag: "   " })).status,
+    ).toBe(400);
     expect(
       await body(await send(app, `/v1/items/${first}/tag`, { tag: "a", x: 1 })),
     ).toMatchObject({

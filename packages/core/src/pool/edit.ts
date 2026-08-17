@@ -22,8 +22,7 @@ export function edit(
     const item = await tx.item(id);
     if (item === undefined) return refused({ kind: "no-such-item", item: id });
 
-    // Edits go to the end of the chain: allowing this would fork it into two
-    // revisions of one original, both live, with nothing saying which is current.
+    // Two live revisions of one original, with nothing saying which is current.
     if (item.supersededBy !== undefined) {
       return refused({ kind: "item-superseded", by: item.supersededBy });
     }
@@ -49,9 +48,8 @@ async function validate(
   }
 
   const invalid = checkPayload(config, ports, payload);
-  // The type is the item's own, so it was configured when the capture arrived.
-  // A host that has since dropped it leaves no schema to check against, and an
-  // edit that keeps the type the pool already holds is not where that is caught.
+  // A host that has dropped the type since the capture leaves no schema to check
+  // against, which an edit keeping the type the pool holds is not where to catch.
   if (invalid !== undefined && invalid.kind !== "unknown-payload-type") {
     return invalid;
   }
@@ -59,12 +57,7 @@ async function validate(
   return checkAssets(tx, payload);
 }
 
-/**
- * Whether a later capture has taken the head, or the item has been processed —
- * either seals it, and an edit is a revision from then on. Only a capture that
- * becomes the *new head* seals it: intake placed earlier in the feed by its
- * source time does not, and there is no timeout.
- */
+/** Only a capture that becomes the *new head* seals an item. There is no timeout. */
 async function sealed(tx: PoolTx, item: Item): Promise<boolean> {
   if (item.archived !== undefined) return true;
   if ((await tx.routingRecords(item.id)).length > 0) return true;
@@ -86,8 +79,6 @@ async function amend(
   await recordAction(ports, tx, {
     kind: "amended",
     subject: item.id,
-    // Nothing but a person edits: enrichment produces material beside a capture
-    // and never changes it.
     by: { kind: "person" },
     at,
     detail: {},
@@ -106,8 +97,7 @@ async function revise(
 
   const revision = await tx.insertItem({
     id: ports.ids.next<ItemId>(),
-    // A revision is a new item but not a new capture: no source produced it, so
-    // it mints no identity of its own and keeps the capture time it revises.
+    // No source produced this, so it mints no identity and keeps the time it revises.
     source: item.source,
     sourceItemId: item.sourceItemId,
     payload,
@@ -115,12 +105,10 @@ async function revise(
     createdAt: item.createdAt,
     contentUpdatedAt: at,
     revisionOf: item.id,
-    // Archive state and routing records stay behind, so the revision starts
-    // unprocessed and resurfaces in the queue.
+    // Archive state and routing records stay behind: a revision starts unprocessed.
   });
 
-  // Both: the revision is new material, and the original is superseded, which
-  // moved its `modifiedAt` and so what the mirror holds for it.
+  // The original moved too: being superseded took it out of the queue.
   await enqueueMirrorWrite(ports, tx, revision.id, at);
   await enqueueMirrorWrite(ports, tx, item.id, at);
 

@@ -72,10 +72,9 @@ export const captureOutcomeSchema = z
   ])
   .openapi("CaptureOutcome");
 
-/** The body of an edit: the payload verbatim, the way a capture's body is the envelope. */
 export const editRequestSchema = payloadSchema.openapi("EditRequest");
 
-/** Where an untrusted payload becomes a domain value, for whichever route read it. */
+/** Field by field because every one of them is branded or narrowed. */
 export function toPayload(parsed: z.infer<typeof payloadSchema>): Payload {
   return {
     type: parsed.type as PayloadTypeName,

@@ -39,7 +39,7 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
       get: (id) => store.item(id),
       edit: (id, payload) => edit(config, ports, id, payload),
       tag: (id, name, by) => tags.tag(ports, id, name, by),
-      untag: (id, name) => tags.untag(ports, id, name),
+      untag: (id, name, by) => tags.untag(ports, id, name, by),
       archive: (id, reason) => archive.archive(ports, id, reason),
       unarchive: (id) => archive.unarchive(ports, id),
       purge: notImplemented("items.purge"),

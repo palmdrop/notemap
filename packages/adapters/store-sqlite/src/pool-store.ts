@@ -85,10 +85,7 @@ const ITEM_COLUMNS = `
   revision_of, archived_at, archive_reason
 `;
 
-/**
- * What orders the feed beside `created_at`, which a revision shares with the
- * item it supersedes. The link places one after the other; an id may not.
- */
+/** What orders the feed beside `created_at`, which a revision shares with its original. */
 const CHAIN_COLUMNS = `root_id, revision_depth`;
 
 /** Total on its own: one row is one place in one chain. */
@@ -344,10 +341,8 @@ export function createSqlitePoolStore(
     );
 
     /**
-     * The feed continues from a position naming a row, and orders on a key that
-     * row carries. A row that has since gone is read as the root of its own
-     * chain, which is what it was unless it was a revision — and a purge that
-     * took one took the chain with it, so nothing better is left to read.
+     * A row that has since gone is read as the root of its own chain: a purge
+     * that took a revision took its chain with it, so nothing better is left.
      */
     function feedKeyset(
       after: Bound,
@@ -651,9 +646,8 @@ export function createSqlitePoolStore(
         insertItem.run(...itemParams(record, nextModifiedAt(), chain(record)));
 
         if (record.revisionOf !== undefined) {
-          // Being superseded is a change to the original — it leaves the queue
-          // — and a delta read that missed it would leave a client showing work
-          // that has moved on.
+          // Being superseded takes the original out of the queue, which a delta
+          // read that missed it would leave a client still showing.
           touchItem.run(nextModifiedAt(), record.revisionOf);
         }
 
@@ -709,8 +703,7 @@ export function createSqlitePoolStore(
             item,
           );
 
-          // Replaced rather than reconciled: the references are the payload's,
-          // and an amendment may drop a slot as readily as add one.
+          // An amendment may drop a slot as readily as add one.
           dropReferences.run(item);
           for (const ref of payload.assets) {
             insertReference.run(item, ref.slot, ref.asset);

@@ -404,6 +404,9 @@ that logic out of the one place it is meant to live.
   queue; a tag and its own untag still resolve by client operation-time.
 - An edit of an item that turns out no longer to be the head is shown as a revision, matching what
   the pool recorded, not as the in-place amendment the client optimistically drew.
+- An amended item is re-ranked by the content time the pool gave it rather than left where it was
+  drawn, and so leaves a queue window that no longer reaches it — the pool's next page carries it,
+  which is what a reload would show anyway.
 - Archiving is available with the pool unreachable; routing and marking-processed-by-hand are not,
   and the interface says why rather than queuing them.
 - A tag added on one device and the same tag removed on another resolve to whichever the person did

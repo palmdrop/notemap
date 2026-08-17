@@ -179,12 +179,17 @@ export function revised(
 /**
  * Replaces the optimistic copy with what the pool recorded, and puts the item
  * on the right side of the queue: the pool decides whether it is still work.
+ * Re-ranked rather than left where it was, because an amendment moves an item
+ * to the newest end — which may be past what this page has read, and the pool's
+ * next page is then what carries it.
  */
 export function settle(state: ClientState, item: Item): ClientState {
   const items = cached(state, [item]);
-  const ids = item.archived
-    ? without(state.queue.ids, item.id)
-    : intoQueue(state.queue, item.id, items);
+  const drained = withIds(state.queue, without(state.queue.ids, item.id));
+  const ids =
+    item.archived !== undefined || item.supersededBy !== undefined
+      ? drained.ids
+      : intoQueue(drained, item.id, items);
 
   return { ...state, items, queue: withIds(state.queue, ids) };
 }

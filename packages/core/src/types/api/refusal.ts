@@ -35,9 +35,8 @@ export type CaptureRefusal =
   | { readonly kind: "source-item-changed"; readonly existing: ItemId };
 
 /**
- * An edit may change an attached file, so it is refused everything a capture's
- * assets are refused for. It cannot refuse `unknown-payload-type`: the type it
- * carries is the item's own, and one that differs is `payload-type-changed`.
+ * Everything a capture's payload is refused for, less `unknown-payload-type`: the
+ * type an edit carries is the item's own, and one that differs is a change.
  */
 export type EditRefusal =
   | SubjectRefusal
@@ -50,7 +49,12 @@ export type EditRefusal =
   | { readonly kind: "missing-asset-slot"; readonly slot: string }
   | { readonly kind: "unknown-asset"; readonly asset: AssetId };
 
-export type TagRefusal = SubjectRefusal;
+/**
+ * A tag on a superseded item is attached where nobody reads it: the revision does
+ * not inherit what arrives after it was made.
+ */
+export type TagRefusal =
+  SubjectRefusal | { readonly kind: "item-superseded"; readonly by: ItemId };
 
 export type ArchiveRefusal =
   | SubjectRefusal

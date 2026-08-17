@@ -6,14 +6,9 @@ import type { Operation, OperationKind } from "./operations";
 
 type Of<K extends OperationKind> = Extract<Operation, { kind: K }>;
 
-/**
- * How the pool's answer replaces the guess. `revert` undoes the optimistic
- * apply, for an outcome that took a different shape from the one drawn — an
- * edit the pool recorded as a revision where the client showed an amendment.
- */
+/** `revert` is for an outcome that took a different shape from the one drawn. */
 export type Settlement = (state: ClientState, revert: Undo) => ClientState;
 
-/** The ordinary settlement: the pool answered with the item, which replaces the copy. */
 export function replacing(item: Item): Settlement {
   return (state) => settle(state, item);
 }

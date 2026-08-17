@@ -9,10 +9,7 @@ function sameTag(one: { tag: string }, other: Operation): boolean {
   return "tag" in other && one.tag === other.tag;
 }
 
-/**
- * Classification never moves an item, so neither half touches a list: the
- * cached copy changes and the queue is left exactly where it was.
- */
+/** Classification never moves an item, so neither half touches a list. */
 function reclassified(
   state: ClientState,
   item: string,
@@ -25,7 +22,15 @@ function reclassified(
 
   return {
     state: { ...state, items: cached(state, [changed]) },
-    undo: (current) => ({ ...current, items: cached(current, [previous]) }),
+    undo: (current) => {
+      const held = current.items.get(item);
+      return held === undefined
+        ? current
+        : {
+            ...current,
+            items: cached(current, [{ ...held, tags: previous.tags }]),
+          };
+    },
   };
 }
 
@@ -57,8 +62,7 @@ export const tag: Handler<"tag"> = {
     reclassified(state, operation.item, (held) =>
       held.some((each) => each.name === operation.tag)
         ? held
-        : // The agent is the pool's to record; a client has none to claim.
-          [
+        : [
             ...held,
             { name: operation.tag, by: { kind: "person" }, addedAt: at },
           ],

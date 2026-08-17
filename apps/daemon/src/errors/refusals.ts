@@ -57,10 +57,11 @@ export const ARCHIVE_STATUS = {
   "not-archived": 409,
 } as const satisfies Record<ArchiveRefusal["kind"], number>;
 
-/** Both halves absorb a call for what the item already says, so only the subject refuses. */
+/** Both halves absorb a call for what the item already says, so nothing else declines. */
 export const TAG_STATUS = {
   "no-such-item": 404,
   "item-purged": 404,
+  "item-superseded": 409,
 } as const satisfies Record<TagRefusal["kind"], number>;
 
 /**

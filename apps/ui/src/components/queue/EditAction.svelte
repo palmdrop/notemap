@@ -13,10 +13,6 @@
     open = true;
   }
 
-  /**
-   * The pool decides whether this lands as an amendment or a revision, so
-   * nothing here says which — the list simply shows what it recorded.
-   */
   function save(event: SubmitEvent) {
     event.preventDefault();
     open = false;

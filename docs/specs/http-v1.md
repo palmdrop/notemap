@@ -378,14 +378,15 @@ Both answer `200 OK` with the `Item` as it now stands.
   answers it unchanged too. This is the opposite call to archiving's, and
   [core.md](core.md#classification) gives the argument: a tag's name is the whole of the request,
   where an archive carries a reason a second decision would discard.
-- **The wire carries no agent.** A tag records which agent added it, but with no authentication
-  there is nobody for a client to claim to be, so a tag added through `/v1` is an anonymous person —
-  the treatment archiving and routing already get ([core.md](core.md#the-action-log)). The
-  attribution that is not a person's is written by *accepting a suggestion*, which is core's own
-  call rather than something a route is told.
-- An id no item has is `404 no-such-item`.
+- **The wire carries no agent**, though core takes one for either half. With no authentication
+  there is nobody for a client to claim to be, so a tag added or removed through `/v1` is an
+  anonymous person — the treatment archiving and routing already get
+  ([core.md](core.md#the-action-log)). The attribution that is not a person's is written by
+  *accepting a suggestion*, which is core's own call rather than something a route is told.
+- An id no item has is `404 no-such-item`, and an item a revision supersedes is
+  `409 item-superseded` carrying that revision's id — classify the revision instead.
 - The body is required and strict: no `tag` is `400 malformed-envelope`, and so is a key the route
-  does not know.
+  does not know. `tag` is trimmed, and one that is empty or all whitespace is refused the same way.
 
 ### Editing an item
 
@@ -995,8 +996,11 @@ by nothing in `/v1`, and removable without changing a promise this spec makes.
 - `GET /v1/items/{id}/routing` answers an item's records, and `404 no-such-item` for an id the
   pool does not hold.
 - `POST /v1/items/{id}/tag` answers the item carrying the tag, attributed to an anonymous person; a
-  tag with a slash in it round-trips; and tagging or untagging for what the item already says
-  answers `200` with the item unchanged rather than a refusal.
+  tag with a slash in it round-trips; a tag that is empty or all whitespace is
+  `400 malformed-envelope`; and tagging or untagging for what the item already says answers `200`
+  with the item unchanged rather than a refusal.
+- Tagging or untagging an item a revision supersedes is `409 item-superseded` carrying that
+  revision's id.
 - `POST /v1/items/{id}/edit` on the newest unprocessed item answers `{ "kind": "amended" }` and the
   item keeps its id; the same call once a later capture exists answers `{ "kind": "revised" }`, and
   the queue holds the revision where the original was.

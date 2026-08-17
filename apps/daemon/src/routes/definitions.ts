@@ -334,6 +334,11 @@ export const tagRoute = createRoute({
       BODY_STATUS,
     ),
     404: errorResponse("No item has that id.", 404, TAG_STATUS),
+    409: errorResponse(
+      "A revision already supersedes the item; classify that instead.",
+      409,
+      TAG_STATUS,
+    ),
     415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
   },
 });
@@ -362,6 +367,11 @@ export const untagRoute = createRoute({
       BODY_STATUS,
     ),
     404: errorResponse("No item has that id.", 404, TAG_STATUS),
+    409: errorResponse(
+      "A revision already supersedes the item; classify that instead.",
+      409,
+      TAG_STATUS,
+    ),
     415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
   },
 });

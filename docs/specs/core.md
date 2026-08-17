@@ -261,9 +261,16 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   (`project/fiction-a`, `kind/quote`) rather than structure.
 - There is no item type and no project entity. Payload type is mechanical, derived from what
   arrived, and is not classification.
+- A tag name carries **at least one non-whitespace character**; nothing else is asked of it.
 - Every tag records **which agent added it** — a person, or the named provider whose suggestion
-  was accepted.
+  was accepted. **Removing one records an agent too** (decided 2026-08-17): who classified is a
+  fact about the pool, and core does not get to assume that only a person ever untags merely
+  because only a person does today.
 - Classifying an item does not remove it from the queue.
+- **A superseded item is refused, both halves** (decided 2026-08-17), carrying the id of the
+  revision. Classification goes to the end of the chain as editing does: a revision does not
+  inherit a tag that arrives after it was made, so a tag on the item it superseded is attached
+  where nobody reads it.
 - **Both halves are idempotent** (decided 2026-08-17). Adding a tag an item already carries leaves
   the attribution and time it has; removing one it does not carry changes nothing. Neither absorbed
   call appends an action or owes the mirror a write, because nothing changed. This is the opposite

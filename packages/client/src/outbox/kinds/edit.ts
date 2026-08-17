@@ -7,11 +7,7 @@ import { replacing, type Handler, type Settlement } from "../handler";
 export const edit: Handler<"edit"> = {
   target: (operation) => operation.item,
 
-  /**
-   * Drawn as an amendment, always: the client cannot know whether it still
-   * holds the head, and an amendment is the shape the person just asked for.
-   * The pool may answer with a revision, which the settlement reconciles.
-   */
+  /** Always an amendment: the client cannot know whether it still holds the head. */
   apply(state, operation, at): Applied {
     const previous = state.items.get(operation.item);
     if (previous === undefined) return unchanged(state);
@@ -24,7 +20,23 @@ export const edit: Handler<"edit"> = {
 
     return {
       state: { ...state, items: cached(state, [amended]) },
-      undo: (current) => ({ ...current, items: cached(current, [previous]) }),
+      // Only what this wrote goes back: a settlement reverts long after the
+      // apply, and a tag drawn since is not this guess's to discard.
+      undo: (current) => {
+        const held = current.items.get(operation.item);
+        if (held === undefined) return current;
+
+        const { contentUpdatedAt: _drawn, ...rest } = held;
+        const restored: Item = {
+          ...rest,
+          payload: previous.payload,
+          ...(previous.contentUpdatedAt === undefined
+            ? {}
+            : { contentUpdatedAt: previous.contentUpdatedAt }),
+        };
+
+        return { ...current, items: cached(current, [restored]) };
+      },
     };
   },
 
@@ -38,9 +50,7 @@ export const edit: Handler<"edit"> = {
 
     if (outcome.kind === "amended") return replacing(outcome.item);
 
-    // The pool revised where the client drew an amendment. The guess goes back
-    // before the revision takes its place, or the original would keep content
-    // it never carried.
+    // The guess goes back first, or the original keeps content it never carried.
     const revision = outcome.revision;
     return (state: ClientState, revert) =>
       revised(revert(state), operation.item, revision);

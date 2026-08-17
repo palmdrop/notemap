@@ -210,11 +210,7 @@ export interface PoolTx extends PoolReads {
   addTag(item: ItemId, tag: Tag): Promise<Item>;
   removeTag(item: ItemId, tag: TagName): Promise<Item>;
 
-  /**
-   * Amendment of the head, which is one row rather than a new item. `at` is the
-   * content time it takes, which is what moves it in the queue. A revision needs
-   * nothing here: `insertItem` already carries `revisionOf`.
-   */
+  /** `at` is the content time the row takes, which is what moves it in the queue. */
   amendItem(item: ItemId, payload: Payload, at: Timestamp): Promise<Item>;
 
   insertRoutingRecord(record: RoutingRecord): Promise<void>;

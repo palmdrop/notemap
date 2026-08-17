@@ -666,6 +666,23 @@ export interface paths {
                         };
                     };
                 };
+                /** @description A revision already supersedes the item; classify that instead. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "item-superseded";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
                 /** @description The body was not JSON. */
                 415: {
                     headers: {
@@ -756,6 +773,23 @@ export interface paths {
                             error: {
                                 /** @enum {string} */
                                 code: "no-such-item" | "item-purged";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description A revision already supersedes the item; classify that instead. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "item-superseded";
                             } & {
                                 [key: string]: unknown;
                             };

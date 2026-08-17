@@ -413,17 +413,11 @@ export const MIGRATIONS: readonly string[] = [
 
   `
   -- The feed's sort key. A revision carries its original's capture time, so the
-  -- two tie on \`created_at\` and an id may not break the tie: the revision link
-  -- is what places one after the other. \`root_id\` is the capture at the foot of
-  -- a chain and \`revision_depth\` the distance from it, so the pair orders a
-  -- chain internally and orders unrelated items by their root, which is the
-  -- arbitrary-but-stable key the tie between them is allowed to break on.
+  -- two tie on \`created_at\` and only the revision link may break that tie.
   --
-  -- Derived, and stored anyway: unlike \`superseded\` or \`processed\`, this is
-  -- written once with the row from a link that is never rewritten afterwards —
-  -- purge takes a whole chain — so there is no later state for it to disagree
-  -- with. Computing it per read means a recursive walk of the table on every
-  -- page of the one surface that accumulates forever.
+  -- Derived, and stored anyway: it is written once with the row, from a link that
+  -- is never rewritten — purge takes a whole chain — so no later state can
+  -- disagree with it. Per read it would be a recursive walk of the whole table.
   ALTER TABLE items ADD COLUMN root_id        TEXT    NOT NULL DEFAULT '';
   ALTER TABLE items ADD COLUMN revision_depth INTEGER NOT NULL DEFAULT 0;
 

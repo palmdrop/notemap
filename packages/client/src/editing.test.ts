@@ -186,6 +186,31 @@ describe("amend versus revise", () => {
     expect(original?.payload.content["text"]).toBe("one");
   });
 
+  it("keeps a superseded original out of the queue when a later answer names it", async () => {
+    const revision: Item = {
+      ...anItem("two"),
+      payload: payload("edited"),
+      revisionOf: "one",
+    };
+
+    const { client } = await overOne((request) =>
+      routeOf(request) === "POST /v1/items/one/edit"
+        ? json(200, { kind: "revised", revision, supersedes: "one" })
+        : json(200, { ...anItem("one"), supersededBy: "two" }),
+    );
+
+    await client.edit("one", payload("edited"));
+    await client.drain();
+    expect(ids(read(client.queue))).toEqual(["two"]);
+
+    // An operation still naming the original settles with the item the pool
+    // holds, which says it is superseded — so it does not come back as work.
+    await client.tag("one", "kind/quote");
+    await client.drain();
+
+    expect(ids(read(client.queue))).toEqual(["two"]);
+  });
+
   it("rolls a refused edit back and says why", async () => {
     const { client } = await overOne(() => refusal(409, "item-superseded"));
 

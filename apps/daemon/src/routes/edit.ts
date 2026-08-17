@@ -14,8 +14,6 @@ export function editHandler(pool: Pool) {
 
     const id = context.req.param("id") ?? "";
 
-    // The client says what the content should be; whether that lands as an
-    // amendment or a revision is the pool's, read off the answer.
     const result = await pool.items.edit(id as ItemId, toPayload(body.value));
 
     return result.kind === "refused"

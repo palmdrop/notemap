@@ -10,10 +10,7 @@ import type { Result } from "../types/result";
 
 type TagResult = Result<Item, TagRefusal>;
 
-/**
- * Classification never moves an item: `content_updated_at` is untouched, so a
- * tagged item keeps its place in the queue rather than resurfacing.
- */
+/** `content_updated_at` is untouched, so a tagged item keeps its place in the queue. */
 export function tag(
   ports: PoolPorts,
   id: ItemId,
@@ -23,9 +20,11 @@ export function tag(
   return ports.store.transaction(async (tx) => {
     const item = await tx.item(id);
     if (item === undefined) return refused({ kind: "no-such-item", item: id });
+    if (item.supersededBy !== undefined) {
+      return refused({ kind: "item-superseded", by: item.supersededBy });
+    }
 
-    // The item already says this, so the first attribution stands and there is
-    // no change to log or to mirror.
+    // The first attribution stands, and nothing changed to log or to mirror.
     if (item.tags.some((held) => held.name === name)) return ok(item);
 
     const at = ports.clock.now();
@@ -48,10 +47,15 @@ export function untag(
   ports: PoolPorts,
   id: ItemId,
   name: TagName,
+  by: Agent,
 ): Promise<TagResult> {
   return ports.store.transaction(async (tx) => {
     const item = await tx.item(id);
     if (item === undefined) return refused({ kind: "no-such-item", item: id });
+    if (item.supersededBy !== undefined) {
+      return refused({ kind: "item-superseded", by: item.supersededBy });
+    }
+
     if (!item.tags.some((held) => held.name === name)) return ok(item);
 
     const at = ports.clock.now();
@@ -61,8 +65,7 @@ export function untag(
     await recordAction(ports, tx, {
       kind: "untagged",
       subject: id,
-      // A tag names the agent that added it; removing one is always a person's.
-      by: { kind: "person" },
+      by,
       at,
       detail: { tag: name },
     });
