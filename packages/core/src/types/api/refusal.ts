@@ -54,7 +54,9 @@ export type EditRefusal =
  * not inherit what arrives after it was made.
  */
 export type TagRefusal =
-  SubjectRefusal | { readonly kind: "item-superseded"; readonly by: ItemId };
+  | SubjectRefusal
+  | { readonly kind: "item-superseded"; readonly by: ItemId }
+  | { readonly kind: "tag-invalid"; readonly tag: string };
 
 export type ArchiveRefusal =
   | SubjectRefusal

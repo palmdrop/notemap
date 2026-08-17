@@ -700,6 +700,23 @@ export interface paths {
                         };
                     };
                 };
+                /** @description The tag was declined. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "tag-invalid";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
             };
         };
         delete?: never;
@@ -807,6 +824,23 @@ export interface paths {
                             error: {
                                 /** @enum {string} */
                                 code: "unsupported-media-type";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The tag was declined. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "tag-invalid";
                             } & {
                                 [key: string]: unknown;
                             };

@@ -178,9 +178,12 @@ findings are recorded below the numbered ones, since they had no entry above.
 1. **Fixed.** `settle` drops an item from the queue on `supersededBy` as well as `archived`, so an
    operation settling against a revised original no longer resurrects it. Covered by a client test
    that tags an original after the pool has superseded it.
-2. **Deferred.** Re-targeting operations still queued against an original onto its revision is a
-   `client.md` decision and its own slice. Finding 3 makes the case visible in the meantime: the
-   queued operation is now refused rather than silently applied to an item nobody reads.
+2. **Deferred, planned.** Re-targeting operations still queued against an original onto its
+   revision is a `client.md` decision and its own slice:
+   [client-follows-supersession.md](../plans/client-follows-supersession.md). Finding 3 makes the
+   case visible in the meantime — the queued operation is refused rather than silently applied to
+   an item nobody reads — and the refusal carries the revision's id, which is what that plan
+   recovers from.
 3. **Fixed.** `TagRefusal` gained `item-superseded`, both halves refuse it, `409` in the refusal
    table, and `core.md`'s classification section states the rule.
 4. **Fixed.** The `edit` and tag undos restore only the fields they wrote, rather than the whole
@@ -192,8 +195,11 @@ findings are recorded below the numbered ones, since they had no entry above.
 6. **Won't fix — the finding is wrong.** The required-slot list comes from the payload-type
    descriptor, so when the type is unconfigured there is no slot list to check against either.
    Nothing is skipped that could be checked.
-7. **Fixed.** The route trims `tag` and refuses one that is empty or all whitespace; `core.md` says
-   what a tag name must carry.
+7. **Fixed, in core rather than at the route.** Core trims the name and refuses one that trims to
+   nothing (`tag-invalid`, `422`); the route no longer polices it. Normalising at the wire would
+   have left the absorb behaviour broken off-wire, since core decides idempotency by comparing the
+   name against what is stored. A capture's tags are trimmed on the same path, and a blank one is
+   dropped rather than costing the whole capture.
 
 From the PR review:
 
@@ -209,8 +215,6 @@ From the PR review:
     nothing, so ignoring it breaks a fresh clone's typecheck — and a test now regenerates it from
     `openapi.json` and fails on drift, which is how `openapi.json` itself is already guarded.
 
-Still open, raised while working the above and not yet decided:
-
-- **`items.edit` hardcodes `by: { kind: "person" }`** in both `amend` and `revise`, which is the
-  same shape finding 8 rejected in `untag`. Left alone deliberately: it changes a signature the
-  developer has not seen, and the review comment named `tags.ts` only.
+12. **Fixed.** `items.edit` takes the agent that made the edit, in both `amend` and `revise` —
+    the same shape finding 8 rejected in `untag`, raised separately because it changed a signature
+    the developer had not seen, and confirmed. `core.md`'s editing section records it.

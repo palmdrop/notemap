@@ -10,13 +10,26 @@ import type { Result } from "../types/result";
 
 type TagResult = Result<Item, TagRefusal>;
 
+/**
+ * Trimmed here rather than at a caller, because absorbing a tag the item already
+ * carries is a comparison against what is stored: normalise anywhere else and
+ * `" kind/quote"` writes a second tag beside `"kind/quote"`.
+ */
+export function normalised(name: TagName): TagName | undefined {
+  const trimmed = name.trim() as TagName;
+  return trimmed === "" ? undefined : trimmed;
+}
+
 /** `content_updated_at` is untouched, so a tagged item keeps its place in the queue. */
-export function tag(
+export async function tag(
   ports: PoolPorts,
   id: ItemId,
   name: TagName,
   by: Agent,
 ): Promise<TagResult> {
+  const tag = normalised(name);
+  if (tag === undefined) return refused({ kind: "tag-invalid", tag: name });
+
   return ports.store.transaction(async (tx) => {
     const item = await tx.item(id);
     if (item === undefined) return refused({ kind: "no-such-item", item: id });
@@ -25,10 +38,10 @@ export function tag(
     }
 
     // The first attribution stands, and nothing changed to log or to mirror.
-    if (item.tags.some((held) => held.name === name)) return ok(item);
+    if (item.tags.some((held) => held.name === tag)) return ok(item);
 
     const at = ports.clock.now();
-    const tagged = await tx.addTag(id, { name, by, addedAt: at });
+    const tagged = await tx.addTag(id, { name: tag, by, addedAt: at });
 
     await enqueueMirrorWrite(ports, tx, id, at);
     await recordAction(ports, tx, {
@@ -36,19 +49,22 @@ export function tag(
       subject: id,
       by,
       at,
-      detail: { tag: name },
+      detail: { tag },
     });
 
     return ok(tagged);
   });
 }
 
-export function untag(
+export async function untag(
   ports: PoolPorts,
   id: ItemId,
   name: TagName,
   by: Agent,
 ): Promise<TagResult> {
+  const tag = normalised(name);
+  if (tag === undefined) return refused({ kind: "tag-invalid", tag: name });
+
   return ports.store.transaction(async (tx) => {
     const item = await tx.item(id);
     if (item === undefined) return refused({ kind: "no-such-item", item: id });
@@ -56,10 +72,10 @@ export function untag(
       return refused({ kind: "item-superseded", by: item.supersededBy });
     }
 
-    if (!item.tags.some((held) => held.name === name)) return ok(item);
+    if (!item.tags.some((held) => held.name === tag)) return ok(item);
 
     const at = ports.clock.now();
-    const untagged = await tx.removeTag(id, name);
+    const untagged = await tx.removeTag(id, tag);
 
     await enqueueMirrorWrite(ports, tx, id, at);
     await recordAction(ports, tx, {
@@ -67,7 +83,7 @@ export function untag(
       subject: id,
       by,
       at,
-      detail: { tag: name },
+      detail: { tag },
     });
 
     return ok(untagged);

@@ -3,6 +3,7 @@ import { enqueueMirrorWrite } from "./mirror";
 import { checkAssets, checkPayload } from "./payload";
 import { ok, refused } from "../utils/result";
 import type { PoolConfig } from "../types/api/config";
+import type { Agent } from "../types/domain/agent";
 import type { PoolPorts, PoolTx } from "../types/api/ports";
 import type { EditRefusal } from "../types/api/refusal";
 import type { ItemId } from "../types/domain/ids";
@@ -17,6 +18,7 @@ export function edit(
   ports: PoolPorts,
   id: ItemId,
   payload: Payload,
+  by: Agent,
 ): Promise<EditResult> {
   return ports.store.transaction(async (tx) => {
     const item = await tx.item(id);
@@ -31,8 +33,8 @@ export function edit(
     if (invalid !== undefined) return refused(invalid);
 
     return (await sealed(tx, item))
-      ? revise(ports, tx, item, payload)
-      : amend(ports, tx, item, payload);
+      ? revise(ports, tx, item, payload, by)
+      : amend(ports, tx, item, payload, by);
   });
 }
 
@@ -71,6 +73,7 @@ async function amend(
   tx: PoolTx,
   item: Item,
   payload: Payload,
+  by: Agent,
 ): Promise<EditResult> {
   const at = ports.clock.now();
   const amended = await tx.amendItem(item.id, payload, at);
@@ -79,7 +82,7 @@ async function amend(
   await recordAction(ports, tx, {
     kind: "amended",
     subject: item.id,
-    by: { kind: "person" },
+    by,
     at,
     detail: {},
   });
@@ -92,6 +95,7 @@ async function revise(
   tx: PoolTx,
   item: Item,
   payload: Payload,
+  by: Agent,
 ): Promise<EditResult> {
   const at = ports.clock.now();
 
@@ -115,7 +119,7 @@ async function revise(
   await recordAction(ports, tx, {
     kind: "revised",
     subject: item.id,
-    by: { kind: "person" },
+    by,
     at,
     detail: { revision: revision.id },
   });

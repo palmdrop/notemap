@@ -116,14 +116,16 @@ describe("classification over the wire", () => {
     ).toBe(409);
   });
 
-  it("refuses a body with no tag in it, a key it does not know, and blank space", async () => {
+  it("refuses a body with no tag in it, a key it does not know, and a blank tag", async () => {
     const app = serving();
     const [first] = await captureMany(app, 1);
 
     expect((await send(app, `/v1/items/${first}/tag`)).status).toBe(400);
-    expect(
-      (await send(app, `/v1/items/${first}/tag`, { tag: "   " })).status,
-    ).toBe(400);
+    const blank = await send(app, `/v1/items/${first}/tag`, { tag: "   " });
+    expect(blank.status).toBe(422);
+    expect(await body(blank)).toEqual({
+      error: { code: "tag-invalid", tag: "   " },
+    });
     expect(
       await body(await send(app, `/v1/items/${first}/tag`, { tag: "a", x: 1 })),
     ).toMatchObject({

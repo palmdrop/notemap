@@ -250,6 +250,8 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   The revision is new material; the original is superseded, which takes it out of the queue, so
   its `modified_at` moves and a delta read that missed it would leave a client showing work that
   has gone.
+- **An edit records the agent that made it** (decided 2026-08-17), as classification does. Only a
+  person edits today, but that is a fact about what exists rather than a rule core enforces.
 - Amending or revising an item invalidates the enrichment attached to the old content, which
   becomes eligible to run again. *Nothing runs enrichment yet, so this is a rule with no
   observable effect today; it is carried out by the slice that builds enrichment, not by the one
@@ -261,7 +263,11 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   (`project/fiction-a`, `kind/quote`) rather than structure.
 - There is no item type and no project entity. Payload type is mechanical, derived from what
   arrived, and is not classification.
-- A tag name carries **at least one non-whitespace character**; nothing else is asked of it.
+- A tag name is **trimmed and must carry at least one non-whitespace character**; nothing else is
+  asked of it. Core normalises rather than a caller, because absorbing a tag the item already has
+  is a comparison against what is stored — normalise anywhere else and `" kind/quote"` writes a
+  second tag beside `"kind/quote"`. One that trims to nothing is refused; one a **capture**
+  carried is dropped instead, since a whole capture is not lost over a stray tag.
 - Every tag records **which agent added it** — a person, or the named provider whose suggestion
   was accepted. **Removing one records an agent too** (decided 2026-08-17): who classified is a
   fact about the pool, and core does not get to assume that only a person ever untags merely

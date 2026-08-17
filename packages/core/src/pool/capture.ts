@@ -3,6 +3,7 @@ import { dequal } from "dequal";
 import { recordAction } from "./actions";
 import { enqueueMirrorWrite } from "./mirror";
 import { checkAssets, checkPayload } from "./payload";
+import { normalised } from "./tags";
 import { ok, refused } from "../utils/result";
 import type { PoolConfig } from "../types/api/config";
 import type { PoolPorts, PoolTx } from "../types/api/ports";
@@ -72,11 +73,13 @@ async function append(
     source: envelope.source,
     sourceItemId: envelope.sourceItemId,
     payload: envelope.payload,
-    tags: (envelope.tags ?? []).map((name) => ({
-      name,
-      by,
-      addedAt: envelope.capturedAt,
-    })),
+    // Dropped rather than refused: a whole capture is not lost over a stray tag.
+    tags: (envelope.tags ?? []).flatMap((name) => {
+      const tag = normalised(name);
+      return tag === undefined
+        ? []
+        : [{ name: tag, by, addedAt: envelope.capturedAt }];
+    }),
     createdAt: envelope.capturedAt,
   };
 

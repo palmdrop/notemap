@@ -75,6 +75,7 @@ const SAID: {
   "payload-type-unsupported":
     "that destination does not accept this kind of item",
   "rejected-by-destination": "the destination refused it",
+  "tag-invalid": "a tag needs something in it",
   "source-item-changed": "that capture already exists, with different content",
   "target-invalid": "that destination needs a different target",
   "unknown-asset": "the upload is gone; pick the file again",

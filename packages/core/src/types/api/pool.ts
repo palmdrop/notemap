@@ -56,7 +56,11 @@ import type {
 
 export interface ItemsApi {
   get(id: ItemId): Promise<Item | undefined>;
-  edit(id: ItemId, payload: Payload): Promise<Result<EditOutcome, EditRefusal>>;
+  edit(
+    id: ItemId,
+    payload: Payload,
+    by: Agent,
+  ): Promise<Result<EditOutcome, EditRefusal>>;
   tag(id: ItemId, tag: TagName, by: Agent): Promise<Result<Item, TagRefusal>>;
   untag(id: ItemId, tag: TagName, by: Agent): Promise<Result<Item, TagRefusal>>;
   archive(id: ItemId, reason?: string): Promise<Result<Item, ArchiveRefusal>>;

@@ -174,10 +174,11 @@ describe("tagging", () => {
     await captured(p, { id: "item-1", capturedAt: "2026-08-06T09:01:00.000Z" });
 
     const outcome = succeeded(
-      await p.items.edit(item.id, {
-        ...item.payload,
-        content: { text: "a second thought" },
-      }),
+      await p.items.edit(
+        item.id,
+        { ...item.payload, content: { text: "a second thought" } },
+        PERSON,
+      ),
     );
     if (outcome.kind !== "revised") throw new Error("expected a revision");
 
@@ -198,6 +199,43 @@ describe("tagging", () => {
         succeeded(await p.items.untag(outcome.revision.id, KIND_QUOTE, PERSON)),
       ),
     ).toEqual([]);
+  });
+
+  it("trims a tag, so the same name is one tag however it is spelled", async () => {
+    const { pool: p } = pool();
+    const item = await captured(p);
+
+    await p.items.tag(item.id, tag("  kind/quote  "), PERSON);
+    const again = succeeded(await p.items.tag(item.id, KIND_QUOTE, PERSON));
+
+    expect(names(again)).toEqual([KIND_QUOTE]);
+    // Absorbed, so the untrimmed spelling matched what is stored.
+    expect(
+      succeeded(await p.items.untag(item.id, tag(" kind/quote"), PERSON)),
+    ).toMatchObject({ tags: [] });
+  });
+
+  it("refuses a tag with nothing in it, either way round", async () => {
+    const { pool: p } = pool();
+    const item = await captured(p);
+
+    for (const blank of ["", "   "]) {
+      expect(await p.items.tag(item.id, tag(blank), PERSON)).toMatchObject({
+        kind: "refused",
+        refusal: { kind: "tag-invalid", tag: blank },
+      });
+      expect(await p.items.untag(item.id, tag(blank), PERSON)).toMatchObject({
+        kind: "refused",
+        refusal: { kind: "tag-invalid", tag: blank },
+      });
+    }
+  });
+
+  it("drops a blank tag a capture carried rather than losing the capture", async () => {
+    const { pool: p } = pool();
+    const item = await captured(p, { tags: ["  kind/quote ", "   "] });
+
+    expect(names(item)).toEqual([KIND_QUOTE]);
   });
 
   it("records the agent that removed a tag, which need not be a person", async () => {

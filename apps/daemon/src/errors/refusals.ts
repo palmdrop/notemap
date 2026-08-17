@@ -62,6 +62,7 @@ export const TAG_STATUS = {
   "no-such-item": 404,
   "item-purged": 404,
   "item-superseded": 409,
+  "tag-invalid": 422,
 } as const satisfies Record<TagRefusal["kind"], number>;
 
 /**

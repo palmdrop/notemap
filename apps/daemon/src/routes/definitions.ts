@@ -340,6 +340,7 @@ export const tagRoute = createRoute({
       TAG_STATUS,
     ),
     415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
+    422: errorResponse("The tag was declined.", 422, TAG_STATUS),
   },
 });
 
@@ -373,6 +374,7 @@ export const untagRoute = createRoute({
       TAG_STATUS,
     ),
     415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
+    422: errorResponse("The tag was declined.", 422, TAG_STATUS),
   },
 });
 

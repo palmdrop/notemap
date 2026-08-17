@@ -14,7 +14,9 @@ export function editHandler(pool: Pool) {
 
     const id = context.req.param("id") ?? "";
 
-    const result = await pool.items.edit(id as ItemId, toPayload(body.value));
+    const result = await pool.items.edit(id as ItemId, toPayload(body.value), {
+      kind: "person",
+    });
 
     return result.kind === "refused"
       ? json(errorBody(result.refusal), editStatus(result.refusal))

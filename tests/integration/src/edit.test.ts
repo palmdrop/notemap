@@ -13,6 +13,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { envelope, harness, tag, TEXT, upload, type Harness } from "./fixture";
 
+const PERSON = { kind: "person" } as const;
 const ALL: Page = { limit: 50 };
 const OLDEST: PageRequest = { limit: 50, order: "oldest-first" };
 
@@ -97,7 +98,7 @@ describe("amending the head", () => {
     opened.clock.set("2026-08-06T10:00:00.000Z");
 
     const outcome = succeeded(
-      await p.items.edit(item.id, text("a second thought")),
+      await p.items.edit(item.id, text("a second thought"), PERSON),
     );
 
     expect(outcome).toMatchObject({ kind: "amended" });
@@ -119,7 +120,7 @@ describe("amending the head", () => {
     opened.clock.set("2026-08-06T10:00:00.000Z");
 
     // The second is the head, so this amends rather than revising.
-    await p.items.edit(second.id, text("edited"));
+    await p.items.edit(second.id, text("edited"), PERSON);
 
     expect(ids((await p.views.queue(ALL)).values)).toEqual([
       first.id,
@@ -137,7 +138,7 @@ describe("amending the head", () => {
     });
 
     expect(
-      succeeded(await p.items.edit(item.id, text("still open"))),
+      succeeded(await p.items.edit(item.id, text("still open"), PERSON)),
     ).toMatchObject({ kind: "amended" });
   });
 
@@ -146,7 +147,9 @@ describe("amending the head", () => {
     const archived = await captured(p);
     await p.items.archive(archived.id);
 
-    const outcome = succeeded(await p.items.edit(archived.id, text("alive")));
+    const outcome = succeeded(
+      await p.items.edit(archived.id, text("alive"), PERSON),
+    );
 
     expect(outcome.kind).toBe("revised");
     // Editing says the item is alive again: the archive state stays behind.
@@ -159,7 +162,9 @@ describe("amending the head", () => {
     const item = await captured(p);
     await p.routing.markProcessed(item.id, "pasted into the vault");
 
-    const outcome = succeeded(await p.items.edit(item.id, text("again")));
+    const outcome = succeeded(
+      await p.items.edit(item.id, text("again"), PERSON),
+    );
 
     expect(outcome.kind).toBe("revised");
     // The records are the original's history and stay with it, so the revision
@@ -177,7 +182,7 @@ describe("appending a revision", () => {
     opened.clock.set("2026-08-06T10:00:00.000Z");
 
     const revised = revision(
-      succeeded(await p.items.edit(item.id, text("a second thought"))),
+      succeeded(await p.items.edit(item.id, text("a second thought"), PERSON)),
     );
 
     expect(revised.id).not.toBe(item.id);
@@ -199,7 +204,9 @@ describe("appending a revision", () => {
       provider: "tagger" as never,
     });
 
-    const revised = revision(succeeded(await p.items.edit(item.id, text("x"))));
+    const revised = revision(
+      succeeded(await p.items.edit(item.id, text("x"), PERSON)),
+    );
 
     expect(revised.tags).toEqual([
       {
@@ -215,7 +222,9 @@ describe("appending a revision", () => {
     const { pool: p } = opened;
     const item = await sealed(opened);
 
-    const revised = revision(succeeded(await p.items.edit(item.id, text("x"))));
+    const revised = revision(
+      succeeded(await p.items.edit(item.id, text("x"), PERSON)),
+    );
 
     // Minted ids sort ahead of the ids these captures were given, so an order
     // that broke the tie on id would put the revision first.
@@ -236,7 +245,9 @@ describe("appending a revision", () => {
     const opened = pool();
     const { pool: p } = opened;
     const item = await sealed(opened);
-    const revised = revision(succeeded(await p.items.edit(item.id, text("x"))));
+    const revised = revision(
+      succeeded(await p.items.edit(item.id, text("x"), PERSON)),
+    );
 
     const seen: ItemId[] = [];
     let after: Position | undefined;
@@ -271,7 +282,9 @@ describe("appending a revision", () => {
     const { pool: p } = opened;
     const item = await sealed(opened);
 
-    const revised = revision(succeeded(await p.items.edit(item.id, text("x"))));
+    const revised = revision(
+      succeeded(await p.items.edit(item.id, text("x"), PERSON)),
+    );
 
     expect((await p.items.get(item.id))?.supersededBy).toBe(revised.id);
     expect(ids((await p.views.queue(ALL)).values)).toEqual([
@@ -288,8 +301,12 @@ describe("appending a revision", () => {
     // A revision carries the capture time it revises, so it never overtakes the
     // capture that sealed it: the head is still `item-1`, and editing again
     // extends the chain rather than amending its end.
-    const second = revision(succeeded(await p.items.edit(item.id, text("x"))));
-    const third = revision(succeeded(await p.items.edit(second.id, text("y"))));
+    const second = revision(
+      succeeded(await p.items.edit(item.id, text("x"), PERSON)),
+    );
+    const third = revision(
+      succeeded(await p.items.edit(second.id, text("y"), PERSON)),
+    );
 
     expect(third.revisionOf).toBe(second.id);
     expect(ids((await p.views.feed(OLDEST)).values)).toEqual([
@@ -308,9 +325,11 @@ describe("appending a revision", () => {
     const opened = pool();
     const { pool: p } = opened;
     const item = await sealed(opened);
-    const revised = revision(succeeded(await p.items.edit(item.id, text("x"))));
+    const revised = revision(
+      succeeded(await p.items.edit(item.id, text("x"), PERSON)),
+    );
 
-    expect(await p.items.edit(item.id, text("y"))).toMatchObject({
+    expect(await p.items.edit(item.id, text("y"), PERSON)).toMatchObject({
       kind: "refused",
       refusal: { kind: "item-superseded", by: revised.id },
     });
@@ -322,7 +341,7 @@ describe("what an edit refuses", () => {
     const { pool: p } = pool();
     const missing = "nobody" as ItemId;
 
-    expect(await p.items.edit(missing, text("x"))).toMatchObject({
+    expect(await p.items.edit(missing, text("x"), PERSON)).toMatchObject({
       kind: "refused",
       refusal: { kind: "no-such-item", item: missing },
     });
@@ -332,12 +351,16 @@ describe("what an edit refuses", () => {
     const { pool: p } = pool();
     const item = await captured(p);
 
-    const refused = await p.items.edit(item.id, {
-      type: TEXT,
-      content: { text: 7 },
-      metadata: {},
-      assets: [],
-    });
+    const refused = await p.items.edit(
+      item.id,
+      {
+        type: TEXT,
+        content: { text: 7 },
+        metadata: {},
+        assets: [],
+      },
+      PERSON,
+    );
 
     expect(refused).toMatchObject({
       kind: "refused",
@@ -353,12 +376,16 @@ describe("what an edit refuses", () => {
     const item = await captured(p);
 
     expect(
-      await p.items.edit(item.id, {
-        type: "note" as typeof TEXT,
-        content: { body: "different" },
-        metadata: {},
-        assets: [],
-      }),
+      await p.items.edit(
+        item.id,
+        {
+          type: "note" as typeof TEXT,
+          content: { body: "different" },
+          metadata: {},
+          assets: [],
+        },
+        PERSON,
+      ),
     ).toMatchObject({
       kind: "refused",
       refusal: { kind: "payload-type-changed", from: TEXT },
@@ -372,12 +399,16 @@ describe("what an edit refuses", () => {
       assets: [{ slot: "image", asset: stored.id }],
     });
 
-    const refused = await p.items.edit(item.id, {
-      type: TEXT,
-      content: { text: "a thought" },
-      metadata: {},
-      assets: [{ slot: "image", asset: "no-such-asset" as typeof stored.id }],
-    });
+    const refused = await p.items.edit(
+      item.id,
+      {
+        type: TEXT,
+        content: { text: "a thought" },
+        metadata: {},
+        assets: [{ slot: "image", asset: "no-such-asset" as typeof stored.id }],
+      },
+      PERSON,
+    );
 
     expect(refused).toMatchObject({
       kind: "refused",
@@ -395,7 +426,7 @@ describe("what an edit refuses", () => {
       assets: [{ slot: "image", asset: stored.id }],
     });
 
-    await p.items.edit(item.id, text("no picture after all"));
+    await p.items.edit(item.id, text("no picture after all"), PERSON);
 
     expect((await p.items.get(item.id))?.payload.assets).toEqual([]);
   });
@@ -407,7 +438,7 @@ describe("what an edit leaves behind", () => {
     const item = await captured(p);
     await takeMirrorWork(p);
 
-    await p.items.edit(item.id, text("edited"));
+    await p.items.edit(item.id, text("edited"), PERSON);
 
     expect(await takeMirrorWork(p)).toEqual([item.id]);
     const logged = await p.actions.forItem(item.id, OLDEST);
@@ -424,7 +455,9 @@ describe("what an edit leaves behind", () => {
     const item = await sealed(opened);
     await takeMirrorWork(p);
 
-    const revised = revision(succeeded(await p.items.edit(item.id, text("x"))));
+    const revised = revision(
+      succeeded(await p.items.edit(item.id, text("x"), PERSON)),
+    );
 
     // The original as well: it is superseded now, which is a change a client
     // reading deltas has to learn about.
@@ -447,7 +480,9 @@ describe("what an edit leaves behind", () => {
     const item = await sealed(opened);
     await p.items.tag(item.id, tag("kind/quote"), { kind: "person" });
 
-    const revised = revision(succeeded(await p.items.edit(item.id, text("x"))));
+    const revised = revision(
+      succeeded(await p.items.edit(item.id, text("x"), PERSON)),
+    );
 
     const record = await p.mirror.recordFor(revised.id);
     expect(record?.item.revisionOf).toBe(item.id);

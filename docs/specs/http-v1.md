@@ -386,7 +386,8 @@ Both answer `200 OK` with the `Item` as it now stands.
 - An id no item has is `404 no-such-item`, and an item a revision supersedes is
   `409 item-superseded` carrying that revision's id — classify the revision instead.
 - The body is required and strict: no `tag` is `400 malformed-envelope`, and so is a key the route
-  does not know. `tag` is trimmed, and one that is empty or all whitespace is refused the same way.
+  does not know. The route does not police the tag itself: core trims it, and one that trims to
+  nothing is `422 tag-invalid` carrying what was sent.
 
 ### Editing an item
 
@@ -806,6 +807,7 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `missing-filename` | — | daemon |
 | `422` | `bad-digest` | `digest` | daemon |
 | `422` | `digest-mismatch` | `expected`, `actual` | daemon |
+| `422` | `tag-invalid` | `tag` | core |
 | `422` | `unknown-payload-type` | `type` | core |
 | `422` | `payload-invalid` | `issues` | core |
 | `422` | `payload-type-changed` | `from` | core |
@@ -996,9 +998,9 @@ by nothing in `/v1`, and removable without changing a promise this spec makes.
 - `GET /v1/items/{id}/routing` answers an item's records, and `404 no-such-item` for an id the
   pool does not hold.
 - `POST /v1/items/{id}/tag` answers the item carrying the tag, attributed to an anonymous person; a
-  tag with a slash in it round-trips; a tag that is empty or all whitespace is
-  `400 malformed-envelope`; and tagging or untagging for what the item already says answers `200`
-  with the item unchanged rather than a refusal.
+  tag with a slash in it round-trips; a tag that trims to nothing is `422 tag-invalid`; and tagging
+  or untagging for what the item already says answers `200` with the item unchanged rather than a
+  refusal.
 - Tagging or untagging an item a revision supersedes is `409 item-superseded` carrying that
   revision's id.
 - `POST /v1/items/{id}/edit` on the newest unprocessed item answers `{ "kind": "amended" }` and the
