@@ -36,13 +36,16 @@ describe("GET /v1/openapi.json", () => {
       "/v1/assets/{id}",
       "/v1/assets/{id}/content",
       "/v1/captures",
+      "/v1/destinations",
       "/v1/feed",
       "/v1/items/{id}",
       "/v1/items/{id}/archive",
       "/v1/items/{id}/mark-processed",
+      "/v1/items/{id}/route",
       "/v1/items/{id}/routing",
       "/v1/items/{id}/unarchive",
       "/v1/queue",
+      "/v1/routing/{record}/cancel",
     ]);
     expect(Object.keys(document.paths["/v1/captures"] ?? {})).toEqual(["post"]);
   });

@@ -1,10 +1,22 @@
 # Spec: HTTP API (`/v1`)
 
-**Status**: Draft — capture, feed, assets, the action log, the queue and the archive are settled;
-the rest is stub
+**Status**: Draft — capture, feed, assets, the action log, the queue, the archive and routing to a
+destination are settled; the rest is stub
 **Last updated**: 2026-08-17
 **Shipped**:
 
+- 2026-08-14 — **Items can be routed out over the wire.** `GET /v1/destinations` reports what each
+  wired adapter declares, capabilities and target schemas and all, so a client builds a target from
+  the destination's own terms rather than from anything `/v1` holds.
+  `POST /v1/items/{id}/route` records the decision and attempts the delivery inline — and **may
+  answer a record that has not landed**, which is written down rather than left to be discovered:
+  `state` is `pending` when the destination could not be reached, and a client reading a record as
+  arrival is wrong exactly when one is down.
+  `POST /v1/routing/{record}/cancel` calls off a pending delivery and answers `204`, being the one
+  path that names a single routing record. `PreparationRefusal`, `AttemptFailure` and
+  `CancelRefusal` joined the refusal table, all decided by the status rule already written; two of
+  them are there without being raisable, `unreachable` because a destination that was never reached
+  is a `200`. ([plan](../plans/destination-fs.md))
 - 2026-08-14 — **The queue and the archive are served, and so are the decisions that drain them.**
   `GET /v1/queue` and `GET /v1/archived` page oldest first from a **content-time** position, which
   is spelled exactly like the feed's and means something else — nothing in the wire form can tell
@@ -89,15 +101,14 @@ Settled (2026-08-14): `GET /v1/queue` and `GET /v1/archived`, both paginated by 
 position; archiving and unarchiving an item; marking one processed by hand; and reading an item's
 routing records.
 
-Still stub, and unwritten below: tagging and untagging, suggestions and their decisions, artifacts
-and corrections, routing to a destination and the destination list, purge and tombstones, range
-requests over asset content, the wire form of sync delta reads, and authentication. Nothing here
-forecloses them; they get the same treatment when their slice is built.
-
-One of those is designed but not yet specified here, and will be written with the slice that builds
-it ([delivery-machinery.md](../plans/delivery-machinery.md)): routing to a destination, whose
-response may name a delivery that has not happened yet, and cancelling one that is pending
+Settled (2026-08-14): `GET /v1/destinations`, `POST /v1/items/{id}/route` — whose response may name
+a delivery that has not happened yet — and `POST /v1/routing/{record}/cancel`
 ([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)).
+
+Still stub, and unwritten below: tagging and untagging, suggestions and their decisions, artifacts
+and corrections, purge and tombstones, range requests over asset content, the wire form of sync
+delta reads, and authentication. Nothing here forecloses them; they get the same treatment when
+their slice is built.
 
 **What this surface deliberately does not defend is written down**, rather than left to be
 discovered: [security.md](security.md).
@@ -350,6 +361,118 @@ optional:
 - An archived item may still be marked processed: the archive is a filter, not a terminus.
 - An id no item has is `404 no-such-item`.
 
+### Destinations
+
+`GET /v1/destinations` — what the daemon has wired, and what each one can be asked to do.
+
+```json
+{
+  "values": [
+    {
+      "id": "vault",
+      "capabilities": [
+        {
+          "name": "create-file",
+          "accepts": ["text", "image"],
+          "targetSchema": {
+            "type": "object",
+            "required": ["directory"],
+            "properties": {
+              "directory": { "type": "string" },
+              "filename": { "type": "string" }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+- **The capabilities are the destination's, not core's** ([core.md](core.md#routing)). This route
+  reports what each wired adapter declared and holds no list of its own, so a new kind of
+  destination adds a capability here without changing `/v1`.
+- `targetSchema` is JSON Schema, and is the whole of what a client needs to build the `target` a
+  delivery must supply. A target that does not satisfy it is refused before anything is attempted.
+- Not paginated and never refused: destinations come from daemon configuration, and there are as
+  many as a person wrote down. An empty `values` means none is wired, which is a configuration
+  fact rather than an error.
+- Wiring a destination is a restart, so the list is stable for the life of a connection.
+
+### Routing an item to a destination
+
+`POST /v1/items/{id}/route` — the decision that this item belongs at that destination.
+
+```json
+{
+  "destination": "vault",
+  "capability": "create-file",
+  "target": { "directory": "inbox", "filename": "a-thought.md" }
+}
+```
+
+`200 OK` with the routing record the decision minted:
+
+```json
+{
+  "id": "0198f0c2-...",
+  "item": "0198f0c2-...",
+  "target": {
+    "kind": "destination",
+    "destination": "vault",
+    "capability": "create-file",
+    "target": { "directory": "inbox", "filename": "a-thought.md" }
+  },
+  "state": "delivered",
+  "at": "2026-08-08T09:00:00.123Z",
+  "pointer": "inbox/a-thought.md"
+}
+```
+
+- **A `200` here may name a delivery that has not happened.** `state` is `pending` when the
+  destination could not be reached: the decision is recorded, the item leaves the queue, and a job
+  carries the delivery out later ([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)).
+  A client that reads a record as arrival is wrong exactly when a destination is down, which is
+  the case it matters in. `pointer` is absent until something has landed.
+- **The call blocks for one delivery attempt**, which is what buys the interactive answer. Core
+  imposes no timeout and neither does the daemon; a client that wants one abandons the request.
+- **A destination that was reached and refused writes nothing** — `422 rejected-by-destination`,
+  carrying the destination's own `detail` verbatim. No record is minted and the item stays in the
+  queue, because a refusal is proof that nothing arrived and will be refused identically next time.
+- **An attempt that neither answered nor refused is `422 delivery-outcome-unknown`**, carrying the
+  `detail` core has. No record is minted and the item stays in the queue, but unlike a refusal this
+  is not proof that nothing arrived: the material may be at the destination already, and a client
+  routing again should say so to whoever is deciding ([core.md](core.md#routing-and-delivery)).
+- `200` rather than `201`, on the same terms as marking an item processed: an item's routing
+  records are read as one list, so there is no `Location` to name.
+- Routing one item twice appends two records and is not refused. It is a decision, not a replay.
+- An archived item may still be routed: the archive is a filter, not a terminus.
+- **`unreachable` is in the refusal table and cannot be raised here.** A destination that was never
+  reached is a `200` carrying a pending record, which is the whole point of ADR 17; the code exists
+  because it is part of the refusal union a client parses.
+- A destination the daemon has not wired is `422 unknown-destination`; a capability that
+  destination never declared is `422 capability-undeclared`; a payload type it does not accept is
+  `422 payload-type-unsupported`, carrying the types it does; a `target` that does not satisfy the
+  capability's schema is `422 target-invalid`, carrying `issues` in the same shape
+  `payload-invalid` uses. None of them touches the destination.
+- An id no item has is `404 no-such-item`.
+
+### Cancelling a pending delivery
+
+`POST /v1/routing/{record}/cancel` — calling off a delivery that has not landed. It takes no body.
+
+- `204 No Content`. The reservation is removed and the item returns to the queue at its unchanged
+  content time, so there is nothing left to answer with.
+- **This is the one path that names a single routing record.** Records are still read as an item's
+  list; cancelling is the one operation about exactly one of them, and it needs a name for it.
+- **There is no "retry by hand" and no route for one.** The record is gone and the item is back in
+  the queue, so routing it again *is* the retry.
+- A record that has already delivered is `409 not-pending` — there is nothing left to call off.
+- A record a host currently holds a lease on is `409 delivery-in-flight`: that attempt may be
+  halfway through, and its outcome is not the canceller's to decide. Trying again after the lease
+  expires succeeds.
+- An id no record has is `404 no-such-record`.
+
 ### An item's routing records
 
 `GET /v1/items/{id}/routing` — where an item has been.
@@ -368,10 +491,13 @@ optional:
 - A `pointer` is present only where a delivery recorded one, and is best-effort: it says where an
   item once went, never where it is.
 - **`state` is `pending` or `delivered`**, and a client may not read a record as arrival without it
-  ([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)). Nothing this surface
-  can reach mints a pending record yet — marking an item processed is delivered by construction —
-  but a record routed to a destination may be one, and the field is the same field.
-  A `destination` target additionally carries the `target` the delivery named there.
+  ([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)). Marking an item
+  processed is delivered by construction; a record routed to a destination may be either, and the
+  field is the same field. A `destination` target additionally carries the `target` the delivery
+  named there, because a delivery that has not landed is attempted again from the record alone.
+- A record that is pending disappears rather than changing state if its delivery is abandoned or
+  cancelled, and the item returns to the queue. So a record this route answers at all either has
+  delivered or is still going to be tried.
 
 ### Assets
 
@@ -541,11 +667,14 @@ Every error, from core or from the daemon, is one shape:
 | `404` | `item-purged` | `item`, `at` | core |
 | `404` | `no-such-asset` | `asset` | core |
 | `404` | `blob-missing` | `blob` | core |
+| `404` | `no-such-record` | `record` | core |
 | `405` | `method-not-allowed` | `method`, `allow` | daemon (+ `Allow` header) |
 | `409` | `capture-id-conflict` | `existing` | core |
 | `409` | `source-item-changed` | `existing` | core |
 | `409` | `already-archived` | `item`, `at` | core |
 | `409` | `not-archived` | `item` | core |
+| `409` | `not-pending` | `record` | core |
+| `409` | `delivery-in-flight` | `record` | core |
 | `413` | `asset-too-large` | `max` | daemon |
 | `415` | `unsupported-media-type` | `contentType` | daemon |
 | `422` | `limit-too-large` | `limit`, `max` | daemon |
@@ -559,6 +688,13 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `payload-invalid` | `issues` | core |
 | `422` | `missing-asset-slot` | `slot` | core |
 | `422` | `unknown-asset` | `asset` | core |
+| `422` | `unknown-destination` | `destination` | core |
+| `422` | `capability-undeclared` | `capability` | core |
+| `422` | `payload-type-unsupported` | `type`, `accepts` | core |
+| `422` | `target-invalid` | `issues` | core |
+| `422` | `rejected-by-destination` | `detail` | core |
+| `422` | `delivery-outcome-unknown` | `detail` | core |
+| `422` | `unreachable` | `detail` | core |
 
 The rule behind the table, so a refusal added later has a status without a decision being
 needed: **`409` is for a conflict with something the pool already holds** — the request is
@@ -575,6 +711,19 @@ chance to stop an upload early.
 `item-purged` is in the table because it is part of the refusal a client parses, not because
 anything raises it yet: purge is not built. It is `404` on the same terms as `no-such-item` — from
 a caller's side the item is not there — and carries the instant it went.
+
+**`unreachable` is in the table and cannot be raised**, for a different reason: a destination that
+was never reached answers `200` with a pending record rather than a refusal
+([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)). It is part of the same
+union as `rejected-by-destination` and `delivery-outcome-unknown`, so a client parsing one parses
+all three, and each is `422` by the rule — the request was understood and something declined it.
+None of them gets a status of its own for being a third party's answer rather than notemap's: they
+are told apart by `code`, and no client can act differently on a status it cannot influence.
+
+The three routing-record refusals follow the rule unchanged. `no-such-record` is `404` for a record
+the pool does not hold. `not-pending` and `delivery-in-flight` are both `409`: the first conflicts
+with a delivery that already landed, the second with a lease somebody else holds, and in each case
+the caller may have to reconcile with a state they can read.
 
 **`asset-hash-mismatch` is gone** (2026-08-11). A payload's asset reference no longer carries a
 blob hash, so there are no longer two numbers for the daemon to disagree about — and every
@@ -715,6 +864,21 @@ by nothing in `/v1`, and removable without changing a promise this spec makes.
   know is `400 malformed-envelope`.
 - `GET /v1/items/{id}/routing` answers an item's records, and `404 no-such-item` for an id the
   pool does not hold.
+- `GET /v1/destinations` answers every wired destination with its capabilities, each carrying the
+  payload types it accepts and the JSON Schema of the target it needs.
+- `POST /v1/items/{id}/route` to a reachable destination answers `200` with a `delivered` record
+  and a pointer, and removes the item from `GET /v1/queue`.
+- The same call to a destination that cannot be reached answers `200` with a `pending` record and
+  no pointer, and the item is out of the queue although nothing has arrived.
+- A capability the destination never declared is `422 capability-undeclared` and the destination is
+  never called; a `target` that does not satisfy its schema is `422 target-invalid` with `issues`.
+- A destination that refuses the delivery is `422 rejected-by-destination` carrying its own detail,
+  leaves no routing record, and leaves the item in the queue.
+- An attempt whose outcome nobody can state is `422 delivery-outcome-unknown`, on the same terms
+  except that the material may have arrived.
+- `POST /v1/routing/{record}/cancel` on a pending record answers `204`, removes it from
+  `GET /v1/items/{id}/routing`, and returns the item to `GET /v1/queue`; on a delivered record it
+  is `409 not-pending`, and on an id no record has it is `404 no-such-record`.
 - A position taken from `GET /v1/feed` is accepted by `GET /v1/queue` and answers a page from the
   wrong place rather than a refusal, which is what "not interchangeable" costs.
 - `GET /v1/actions` with no parameters returns the 50 newest entries, newest first, and the entry

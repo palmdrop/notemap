@@ -6,8 +6,10 @@ import {
   ARCHIVE_STATUS,
   ASSET_STATUS,
   BODY_STATUS,
+  CANCEL_STATUS,
   CAPTURE_STATUS,
   codesFor,
+  DELIVERY_STATUS,
   PARAMETER_STATUS,
   ROUTING_STATUS,
   SUBJECT_STATUS,
@@ -27,7 +29,9 @@ import {
   itemSliceSchema,
 } from "../schemas/item";
 import {
+  destinationsSchema,
   markProcessedRequestSchema,
+  routeRequestSchema,
   routingRecordSchema,
   routingRecordsSchema,
 } from "../schemas/routing";
@@ -346,6 +350,76 @@ export const routingRecordsRoute = createRoute({
   },
 });
 
+export const destinationsRoute = createRoute({
+  method: "get",
+  path: "/v1/destinations",
+  summary: "Read the configured destinations",
+  description:
+    "What each wired destination declares it can do. Core holds no list of capabilities of its own, so this is the adapters' own answer. `targetSchema` is JSON Schema and is the whole of what a client needs to build a `target`.",
+  responses: {
+    200: {
+      description: "Every destination, with its capabilities.",
+      content: { [JSON_MEDIA_TYPE]: { schema: destinationsSchema } },
+    },
+  },
+});
+
+export const routeItemRoute = createRoute({
+  method: "post",
+  path: "/v1/items/{id}/route",
+  summary: "Route an item to a destination",
+  description:
+    "Records the decision and attempts the delivery once, inline. **The record answered may name a delivery that has not happened**: `state` is `pending` when the destination could not be reached, and a job carries it out later. A destination that was reached and refused writes nothing.",
+  request: {
+    params: itemId,
+    body: {
+      required: true,
+      content: { [JSON_MEDIA_TYPE]: { schema: routeRequestSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description:
+        "The routing record. Read `state` rather than reading a record as arrival.",
+      content: { [JSON_MEDIA_TYPE]: { schema: routingRecordSchema } },
+    },
+    400: errorResponse(
+      "The body could not be read as this request.",
+      400,
+      BODY_STATUS,
+    ),
+    404: errorResponse("No item has that id.", 404, ROUTING_STATUS),
+    415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
+    422: errorResponse(
+      "The destination, the capability, the payload type or the target was declined. Nothing was written.",
+      422,
+      DELIVERY_STATUS,
+    ),
+  },
+});
+
+export const cancelDeliveryRoute = createRoute({
+  method: "post",
+  path: "/v1/routing/{record}/cancel",
+  summary: "Cancel a pending delivery",
+  description:
+    "Removes a reservation whose delivery has not landed, which returns the item to the queue at its unchanged content time. Routing it again is what a retry by hand is, so there is no route for one.",
+  request: {
+    params: z.object({
+      record: z.string().openapi({ param: { name: "record", in: "path" } }),
+    }),
+  },
+  responses: {
+    204: { description: "Called off. The item is back in the queue." },
+    404: errorResponse("No record has that id.", 404, CANCEL_STATUS),
+    409: errorResponse(
+      "The record has already delivered, or a host is holding a lease on it.",
+      409,
+      CANCEL_STATUS,
+    ),
+  },
+});
+
 const assetId = z.object({
   id: z.string().openapi({ param: { name: "id", in: "path" } }),
 });
@@ -446,6 +520,9 @@ export const ROUTES = [
   unarchiveRoute,
   markProcessedRoute,
   routingRecordsRoute,
+  destinationsRoute,
+  routeItemRoute,
+  cancelDeliveryRoute,
   actionsRoute,
   assetUploadRoute,
   assetRoute,

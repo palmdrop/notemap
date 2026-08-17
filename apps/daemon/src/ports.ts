@@ -1,6 +1,7 @@
 import { v7 as uuidv7 } from "uuid";
 
 import { createFilesystemBlobStore } from "@notemap/blob-fs";
+import { createFilesystemDestination } from "@notemap/destination-fs";
 import { createFilesystemMirrorWriter } from "@notemap/mirror-fs";
 import { createAjvSchemaValidator } from "@notemap/schema-ajv";
 import { createSqlitePoolStore } from "@notemap/store-sqlite";
@@ -8,6 +9,7 @@ import {
   createPool,
   type BlobStore,
   type Clock,
+  type DestinationAdapter,
   type IdGenerator,
   type MintableId,
   type MirrorWriter,
@@ -17,6 +19,8 @@ import {
   type Timestamp,
 } from "@notemap/core";
 
+import type { DestinationConfig } from "./config/load";
+import { destinationRenderers } from "./destinations/renderers";
 import { renderersFor } from "./mirror/renderers";
 
 export const systemClock: Clock = {
@@ -35,21 +39,33 @@ export type OpenPoolConfig = {
   readonly assetRoot: string;
   /** Absent disables the mirror, and then capture enqueues nothing. */
   readonly mirrorRoot?: string;
+  readonly destinations?: readonly DestinationConfig[];
 };
 
 /**
- * The pool, and the two drivers the host keeps a handle on: it drives the
- * mirror writer itself, and the blob store owns the layout a rendering has to
- * ask about.
+ * The pool, and the drivers the host keeps a handle on: it drives the mirror
+ * writer and the delivery runner itself, and the blob store owns the layout a
+ * rendering has to ask about.
  */
 export type OpenPool = {
   readonly pool: Pool;
   readonly blobs: BlobStore;
   readonly mirrorWriter?: MirrorWriter;
+  readonly destinations: readonly DestinationAdapter[];
 };
 
 export function openPool(options: OpenPoolConfig): OpenPool {
   const blobs = createFilesystemBlobStore({ root: options.assetRoot });
+
+  const renderers = destinationRenderers();
+  const destinations = (options.destinations ?? []).map((destination) =>
+    createFilesystemDestination({
+      id: destination.id,
+      root: destination.root,
+      accepts: destination.accepts,
+      renderers,
+    }),
+  );
 
   const mirrorWriter =
     options.mirrorRoot === undefined
@@ -74,12 +90,15 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     schemas: createAjvSchemaValidator(),
     blobs,
     ...(mirrorWriter === undefined ? {} : { mirrorWriter }),
-    destinations: [],
+    destinations,
   };
 
   return {
+    // A duplicate destination id throws here, which is the only moment it can
+    // be caught: a pool with two of one id could not say which a record meant.
     pool: createPool(options.config, ports),
     blobs,
     ...(mirrorWriter === undefined ? {} : { mirrorWriter }),
+    destinations,
   };
 }

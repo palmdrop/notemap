@@ -1,7 +1,9 @@
 import type {
   ArchiveRefusal,
   AssetRefusal,
+  CancelRefusal,
   CaptureRefusal,
+  DeliveryRefusal,
   RoutingRefusal,
 } from "@notemap/core";
 
@@ -58,6 +60,33 @@ export const ROUTING_STATUS = {
   "item-purged": 404,
 } as const satisfies Record<RoutingRefusal["kind"], number>;
 
+/**
+ * Routing to a destination. Everything the pool understood and declined is
+ * `422`.
+ *
+ * `unreachable` is here and cannot be raised: a destination that was never
+ * reached answers `200` with a pending record. It is part of the union a client
+ * parses, so it is part of the table.
+ */
+export const DELIVERY_STATUS = {
+  "no-such-item": 404,
+  "item-purged": 404,
+  "unknown-destination": 422,
+  "capability-undeclared": 422,
+  "payload-type-unsupported": 422,
+  "target-invalid": 422,
+  "rejected-by-destination": 422,
+  "delivery-outcome-unknown": 422,
+  unreachable: 422,
+} as const satisfies Record<DeliveryRefusal["kind"], number>;
+
+/** The two `409`s conflict with state the caller can already read — a record that has landed, and one somebody holds a lease on. */
+export const CANCEL_STATUS = {
+  "no-such-record": 404,
+  "not-pending": 409,
+  "delivery-in-flight": 409,
+} as const satisfies Record<CancelRefusal["kind"], number>;
+
 /** Anything wrong with a query parameter. */
 export const PARAMETER_STATUS = {
   "limit-too-large": 422,
@@ -98,6 +127,14 @@ export function routingStatus(refusal: RoutingRefusal): number {
   return ROUTING_STATUS[refusal.kind];
 }
 
+export function deliveryStatus(refusal: DeliveryRefusal): number {
+  return DELIVERY_STATUS[refusal.kind];
+}
+
+export function cancelStatus(refusal: CancelRefusal): number {
+  return CANCEL_STATUS[refusal.kind];
+}
+
 export function daemonStatus(refusal: DaemonRefusal): number {
   return DAEMON_STATUS[refusal.kind];
 }
@@ -106,8 +143,10 @@ export function errorBody(
   refusal:
     | ArchiveRefusal
     | AssetRefusal
+    | CancelRefusal
     | CaptureRefusal
     | DaemonRefusal
+    | DeliveryRefusal
     | RoutingRefusal,
 ): ErrorBody {
   const { kind, ...facts } = refusal;

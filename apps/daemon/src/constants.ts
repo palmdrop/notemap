@@ -41,3 +41,16 @@ export const DEFAULT_MIRROR = {
   leaseMs: 60_000,
   batch: 16,
 };
+
+/**
+ * Slower than the mirror's, and with a longer lease. A delivery that could not
+ * be carried out inline is waiting on something outside this machine, so
+ * hammering it every second buys nothing — and the lease has to outlast a
+ * destination that is merely slow, because a lease that expires mid-delivery
+ * is abandoned rather than retried.
+ */
+export const DEFAULT_DELIVERY = {
+  pollMs: 5_000,
+  leaseMs: 300_000,
+  batch: 4,
+};

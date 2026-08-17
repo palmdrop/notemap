@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -7,6 +7,7 @@ import type { Hono } from "hono";
 import type {
   AssetId,
   BlobStore,
+  DestinationId,
   Duration,
   PayloadTypeName,
   PoolConfig,
@@ -16,6 +17,7 @@ import type {
 import { createApp } from "../app";
 import { startSweeper } from "../assets/sweeper";
 import { DEFAULT_MAX_UPLOAD_BYTES } from "../constants";
+import { startDeliveryRunner } from "../destinations/runner";
 import { startMirrorRunner } from "../mirror/runner";
 import { openPool } from "../ports";
 
@@ -61,9 +63,13 @@ export type Daemon = {
   readonly mirrorRoot: string;
   /** Where blobs land. */
   readonly assetRoot: string;
+  /** The folder a wired destination writes into, whether or not it exists. */
+  readonly vaultRoot: string;
   readonly blobs: BlobStore;
   /** Runs every claimable mirror job now. Zero when no mirror is wired. */
   readonly drain: () => Promise<number>;
+  /** Runs every claimable delivery now. Zero when no destination is wired. */
+  readonly deliver: () => Promise<number>;
   /** Runs a sweep now, whatever the timer would have done. */
   readonly sweep: () => Promise<readonly AssetId[]>;
   readonly cleanup: () => Promise<void>;
@@ -78,6 +84,11 @@ const NEVER_POLLS = 60 * 60 * 1000;
 export type DaemonOptions = {
   readonly mirroring?: boolean;
   readonly maxUploadBytes?: number;
+  /**
+   * Wires a filesystem destination `vault` over `vaultRoot`. **`missing`** wires
+   * one whose folder is not there, which is what an unmounted drive looks like.
+   */
+  readonly vault?: "ready" | "missing";
 };
 
 export function daemon(
@@ -87,18 +98,40 @@ export function daemon(
   const directory = mkdtempSync(join(tmpdir(), "notemap-daemon-"));
   const mirrorRoot = join(directory, "pool-mirror");
   const assetRoot = join(directory, "assets");
+  const vaultRoot = join(directory, "vault");
+  if (options.vault === "ready") mkdirSync(vaultRoot, { recursive: true });
 
-  const { pool, blobs, mirrorWriter } = openPool({
+  const { pool, blobs, mirrorWriter, destinations } = openPool({
     file: join(directory, "pool.db"),
     config,
     assetRoot,
     ...(options.mirroring === true ? { mirrorRoot } : {}),
+    destinations:
+      options.vault === undefined
+        ? []
+        : [
+            {
+              id: "vault" as DestinationId,
+              kind: "filesystem",
+              root: vaultRoot,
+              accepts: config.payloadTypes.map((type) => type.name),
+            },
+          ],
   });
 
   const runner =
     mirrorWriter === undefined
       ? undefined
       : startMirrorRunner(pool, mirrorWriter, {
+          pollIntervalMs: NEVER_POLLS,
+          leaseForMs: 60_000 as Duration,
+          batch: 16,
+        });
+
+  const deliveries =
+    destinations.length === 0
+      ? undefined
+      : startDeliveryRunner(pool, destinations, {
           pollIntervalMs: NEVER_POLLS,
           leaseForMs: 60_000 as Duration,
           batch: 16,
@@ -112,11 +145,14 @@ export function daemon(
     }),
     mirrorRoot,
     assetRoot,
+    vaultRoot,
     blobs,
     drain: async () => (await runner?.drain()) ?? 0,
+    deliver: async () => (await deliveries?.drain()) ?? 0,
     sweep: () => sweeper.run(),
     cleanup: async () => {
       await runner?.stop();
+      await deliveries?.stop();
       await sweeper.stop();
       await pool.close();
       rmSync(directory, { recursive: true, force: true });

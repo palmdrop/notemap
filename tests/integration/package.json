@@ -10,6 +10,7 @@
   "devDependencies": {
     "@notemap/blob-fs": "workspace:*",
     "@notemap/core": "workspace:*",
+    "@notemap/destination-fs": "workspace:*",
     "@notemap/mirror-fs": "workspace:*",
     "@notemap/schema-ajv": "workspace:*",
     "@notemap/store-sqlite": "workspace:*",
