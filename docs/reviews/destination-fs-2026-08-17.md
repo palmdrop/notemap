@@ -255,10 +255,11 @@ Addressed 2026-08-17, together with the GitHub review on
   rule that would forbid it repo-wide is still open; see below.
 - **Destinations from the UI** — recorded in `docs/todo.md`.
 
-### Still open
+### Decided against
 
-- **A rule for uninitialised `let`.** TypeScript has no flag: `let x;` is an evolving `any` that
-  `noImplicitAny` permits by design. `@typescript-eslint/init-declarations` forbids it, but flags
-  **28 sites in 20 files** across every package — 19 of them annotated mutable state such as
-  `let timer: NodeJS.Timeout | undefined;`, which is not the pattern the review objected to. Not
-  enabled, pending a decision.
+- **A lint rule for uninitialised `let`.** TypeScript has no flag for it: `let x;` is an evolving
+  `any` that `noImplicitAny` permits by design. `@typescript-eslint/init-declarations` would forbid
+  it, but flags **28 sites in 20 files** across every package, and 19 are annotated mutable state
+  such as `let timer: NodeJS.Timeout | undefined;` — not the pattern the review objected to. The
+  rule buys one real catch for a repo-wide refactor of unrelated code, so it stays off
+  (decided 2026-08-17). The `let rendered;` that prompted it is gone either way.
