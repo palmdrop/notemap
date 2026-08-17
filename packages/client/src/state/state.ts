@@ -137,14 +137,59 @@ export function returned(state: ClientState, id: ItemId): ClientState {
 }
 
 /**
+ * Places a revision beside the item it supersedes, rather than at either end.
+ * The feed reads newest first and a revision carries its original's capture
+ * time, so the two tie and the revision sits immediately ahead of it; the
+ * original leaves the queue superseded and the revision takes its place there
+ * by rank.
+ */
+export function revised(
+  state: ClientState,
+  supersedes: ItemId,
+  revision: Item,
+): ClientState {
+  const original = state.items.get(supersedes);
+  const items = cached(state, [
+    ...(original === undefined
+      ? []
+      : [{ ...original, supersededBy: revision.id }]),
+    revision,
+  ]);
+
+  const at = state.feed.ids.indexOf(supersedes);
+  const feed =
+    at === -1 || state.feed.ids.includes(revision.id)
+      ? state.feed.ids
+      : [
+          ...state.feed.ids.slice(0, at),
+          revision.id,
+          ...state.feed.ids.slice(at),
+        ];
+
+  const drained = withIds(state.queue, without(state.queue.ids, supersedes));
+
+  return {
+    ...state,
+    items,
+    feed: withIds(state.feed, feed),
+    queue: withIds(drained, intoQueue(drained, revision.id, items)),
+  };
+}
+
+/**
  * Replaces the optimistic copy with what the pool recorded, and puts the item
  * on the right side of the queue: the pool decides whether it is still work.
+ * Re-ranked rather than left where it was, because an amendment moves an item
+ * to the newest end — which may be past what this page has read, and the pool's
+ * next page is then what carries it.
  */
 export function settle(state: ClientState, item: Item): ClientState {
   const items = cached(state, [item]);
-  const ids = item.archived
-    ? without(state.queue.ids, item.id)
-    : intoQueue(state.queue, item.id, items);
+  const drained = withIds(state.queue, without(state.queue.ids, item.id));
+  const ids =
+    item.archived !== undefined || item.supersededBy !== undefined
+      ? drained.ids
+      : intoQueue(drained, item.id, items);
 
   return { ...state, items, queue: withIds(state.queue, ids) };
 }

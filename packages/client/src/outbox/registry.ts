@@ -1,18 +1,14 @@
 import type { Api } from "../api/http";
-import type { Item, ItemId } from "../api/types";
+import type { ItemId } from "../api/types";
 import { Unencodable } from "../errors";
 import type { Applied } from "../state/applied";
 import type { ClientState } from "../state/state";
-import type { Handler } from "./handler";
+import type { Handler, Settlement } from "./handler";
 import { archive } from "./kinds/archive";
 import { capture } from "./kinds/capture";
-import {
-  acceptSuggestion,
-  edit,
-  rejectSuggestion,
-  tag,
-  untag,
-} from "./kinds/deferred";
+import { acceptSuggestion, rejectSuggestion } from "./kinds/deferred";
+import { edit } from "./kinds/edit";
+import { tag, untag } from "./kinds/tags";
 import { unarchive } from "./kinds/unarchive";
 import type { Operation, OperationKind } from "./operations";
 
@@ -65,13 +61,13 @@ export function applyOperation(
 }
 
 /**
- * Sends one operation and answers the item the pool recorded, which replaces the
- * optimistic copy.
+ * Sends one operation and answers how the pool's reply replaces the guess the
+ * client drew.
  */
 export async function sendOperation(
   api: Api,
   operation: Operation,
-): Promise<Item> {
+): Promise<Settlement> {
   const send = handlerFor(operation).send;
   if (send === undefined) throw new Unencodable(operation.kind);
 

@@ -4,7 +4,9 @@ import type {
   CancelRefusal,
   CaptureRefusal,
   DeliveryRefusal,
+  EditRefusal,
   RoutingRefusal,
+  TagRefusal,
 } from "@notemap/core";
 
 import type { DaemonRefusal, ErrorBody } from "../types";
@@ -54,6 +56,29 @@ export const ARCHIVE_STATUS = {
   "already-archived": 409,
   "not-archived": 409,
 } as const satisfies Record<ArchiveRefusal["kind"], number>;
+
+/** Both halves absorb a call for what the item already says, so nothing else declines. */
+export const TAG_STATUS = {
+  "no-such-item": 404,
+  "item-purged": 404,
+  "item-superseded": 409,
+  "tag-invalid": 422,
+} as const satisfies Record<TagRefusal["kind"], number>;
+
+/**
+ * `item-superseded` is `409`: the caller conflicts with a revision the pool
+ * already holds and has to reconcile by editing that instead. The rest are
+ * `422`, the request having been understood and declined.
+ */
+export const EDIT_STATUS = {
+  "no-such-item": 404,
+  "item-purged": 404,
+  "item-superseded": 409,
+  "payload-invalid": 422,
+  "payload-type-changed": 422,
+  "missing-asset-slot": 422,
+  "unknown-asset": 422,
+} as const satisfies Record<EditRefusal["kind"], number>;
 
 export const ROUTING_STATUS = {
   "no-such-item": 404,
@@ -123,6 +148,14 @@ export function archiveStatus(refusal: ArchiveRefusal): number {
   return ARCHIVE_STATUS[refusal.kind];
 }
 
+export function tagStatus(refusal: TagRefusal): number {
+  return TAG_STATUS[refusal.kind];
+}
+
+export function editStatus(refusal: EditRefusal): number {
+  return EDIT_STATUS[refusal.kind];
+}
+
 export function routingStatus(refusal: RoutingRefusal): number {
   return ROUTING_STATUS[refusal.kind];
 }
@@ -147,7 +180,9 @@ export function errorBody(
     | CaptureRefusal
     | DaemonRefusal
     | DeliveryRefusal
-    | RoutingRefusal,
+    | EditRefusal
+    | RoutingRefusal
+    | TagRefusal,
 ): ErrorBody {
   const { kind, ...facts } = refusal;
   return { error: { code: kind, ...facts } };

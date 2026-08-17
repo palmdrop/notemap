@@ -1,10 +1,17 @@
 import type { Api } from "../api/http";
 import type { Item, ItemId } from "../api/types";
-import type { Applied } from "../state/applied";
-import type { ClientState } from "../state/state";
+import type { Applied, Undo } from "../state/applied";
+import { settle, type ClientState } from "../state/state";
 import type { Operation, OperationKind } from "./operations";
 
 type Of<K extends OperationKind> = Extract<Operation, { kind: K }>;
+
+/** `revert` is for an outcome that took a different shape from the one drawn. */
+export type Settlement = (state: ClientState, revert: Undo) => ClientState;
+
+export function replacing(item: Item): Settlement {
+  return (state) => settle(state, item);
+}
 
 /**
  * Everything one operation knows about itself. `apply` and `send` are absent for
@@ -26,5 +33,5 @@ export type Handler<K extends OperationKind> = {
     operation: Of<K>,
     at: string,
   ) => Applied;
-  readonly send?: (api: Api, operation: Of<K>) => Promise<Item>;
+  readonly send?: (api: Api, operation: Of<K>) => Promise<Settlement>;
 };

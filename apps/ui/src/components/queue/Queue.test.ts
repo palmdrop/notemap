@@ -53,7 +53,7 @@ test("archives with the pool unreachable, and disables what it cannot queue", as
   expect(disabled("Route…")).toBe(true);
   expect(disabled("Archive")).toBe(false);
   expect(
-    screen.getByText("routing needs the daemon; archiving does not"),
+    screen.getByText("routing needs the daemon; triage does not"),
   ).toBeDefined();
 
   await fireEvent.click(screen.getByRole("button", { name: "Archive" }));

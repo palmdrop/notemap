@@ -10,9 +10,11 @@ import {
   CAPTURE_STATUS,
   codesFor,
   DELIVERY_STATUS,
+  EDIT_STATUS,
   PARAMETER_STATUS,
   ROUTING_STATUS,
   SUBJECT_STATUS,
+  TAG_STATUS,
   UPLOAD_STATUS,
 } from "../errors/refusals";
 import { actionSliceSchema } from "../schemas/action";
@@ -25,6 +27,8 @@ import { errorSchema } from "../schemas/error";
 import {
   assetSchema,
   captureOutcomeSchema,
+  editOutcomeSchema,
+  editRequestSchema,
   itemSchema,
   itemSliceSchema,
 } from "../schemas/item";
@@ -35,6 +39,7 @@ import {
   routingRecordSchema,
   routingRecordsSchema,
 } from "../schemas/routing";
+import { tagRequestSchema } from "../schemas/tags";
 import type { StatusMap } from "../errors/refusals";
 
 function errorResponse(
@@ -305,6 +310,109 @@ export const unarchiveRoute = createRoute({
   },
 });
 
+export const tagRoute = createRoute({
+  method: "post",
+  path: "/v1/items/{id}/tag",
+  summary: "Tag an item",
+  description:
+    "Adds one tag. Classification does not move an item, so a tagged item keeps its place in the queue. A tag the item already carries is absorbed rather than refused, keeping the attribution and time it has: a tag's name is the whole of the request, unlike an archive's reason.",
+  request: {
+    params: itemId,
+    body: {
+      required: true,
+      content: { [JSON_MEDIA_TYPE]: { schema: tagRequestSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "The item, as it now stands.",
+      content: { [JSON_MEDIA_TYPE]: { schema: itemSchema } },
+    },
+    400: errorResponse(
+      "The body could not be read as this request.",
+      400,
+      BODY_STATUS,
+    ),
+    404: errorResponse("No item has that id.", 404, TAG_STATUS),
+    409: errorResponse(
+      "A revision already supersedes the item; classify that instead.",
+      409,
+      TAG_STATUS,
+    ),
+    415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
+    422: errorResponse("The tag was declined.", 422, TAG_STATUS),
+  },
+});
+
+export const untagRoute = createRoute({
+  method: "post",
+  path: "/v1/items/{id}/untag",
+  summary: "Remove a tag from an item",
+  description:
+    "Removes one tag. A tag the item does not carry is absorbed rather than refused, on the same terms as adding one it already has.",
+  request: {
+    params: itemId,
+    body: {
+      required: true,
+      content: { [JSON_MEDIA_TYPE]: { schema: tagRequestSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "The item, as it now stands.",
+      content: { [JSON_MEDIA_TYPE]: { schema: itemSchema } },
+    },
+    400: errorResponse(
+      "The body could not be read as this request.",
+      400,
+      BODY_STATUS,
+    ),
+    404: errorResponse("No item has that id.", 404, TAG_STATUS),
+    409: errorResponse(
+      "A revision already supersedes the item; classify that instead.",
+      409,
+      TAG_STATUS,
+    ),
+    415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
+    422: errorResponse("The tag was declined.", 422, TAG_STATUS),
+  },
+});
+
+export const editRoute = createRoute({
+  method: "post",
+  path: "/v1/items/{id}/edit",
+  summary: "Edit an item's content",
+  description:
+    "Changes what the capture says. The pool decides the shape: an in-place **amendment** while the item is the newest in the feed and unprocessed, an appended **revision** otherwise. The client does not say which it wants and cannot know, so the outcome is read off the answer.",
+  request: {
+    params: itemId,
+    body: {
+      required: true,
+      content: { [JSON_MEDIA_TYPE]: { schema: editRequestSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description:
+        "What the edit became: the amended item, or the revision and the item it supersedes.",
+      content: { [JSON_MEDIA_TYPE]: { schema: editOutcomeSchema } },
+    },
+    400: errorResponse(
+      "The body could not be read as this request.",
+      400,
+      BODY_STATUS,
+    ),
+    404: errorResponse("No item has that id.", 404, EDIT_STATUS),
+    409: errorResponse(
+      "A revision already supersedes the item; edit that instead.",
+      409,
+      EDIT_STATUS,
+    ),
+    415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
+    422: errorResponse("The payload was declined.", 422, EDIT_STATUS),
+  },
+});
+
 export const markProcessedRoute = createRoute({
   method: "post",
   path: "/v1/items/{id}/mark-processed",
@@ -518,6 +626,9 @@ export const ROUTES = [
   itemRoute,
   archiveRoute,
   unarchiveRoute,
+  tagRoute,
+  untagRoute,
+  editRoute,
   markProcessedRoute,
   routingRecordsRoute,
   destinationsRoute,

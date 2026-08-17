@@ -15,10 +15,12 @@ import type {
   SourceId,
   SuggestionId,
   SyncCursor,
+  TagName,
   Timestamp,
 } from "../domain/ids";
-import type { ArchiveState, Item, ItemRecord } from "../domain/item";
+import type { ArchiveState, Item, ItemRecord, Tag } from "../domain/item";
 import type { MirrorRecord } from "../domain/mirror";
+import type { Payload } from "../domain/payload";
 import type { AbandonedPosition } from "../domain/position";
 import type {
   Delivery,
@@ -203,6 +205,13 @@ export interface PoolTx extends PoolReads {
   enqueue(jobs: readonly Job[]): Promise<void>;
 
   setArchiveState(item: ItemId, state?: ArchiveState): Promise<Item>;
+
+  /** Whether the item already carries the tag is core's to read and decide on. */
+  addTag(item: ItemId, tag: Tag): Promise<Item>;
+  removeTag(item: ItemId, tag: TagName): Promise<Item>;
+
+  /** `at` is the content time the row takes, which is what moves it in the queue. */
+  amendItem(item: ItemId, payload: Payload, at: Timestamp): Promise<Item>;
 
   insertRoutingRecord(record: RoutingRecord): Promise<void>;
 

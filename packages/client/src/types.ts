@@ -3,6 +3,7 @@ import type {
   Destination,
   Item,
   ItemId,
+  Payload,
   RouteRequest,
   RoutingRecord,
 } from "./api/types";
@@ -60,6 +61,17 @@ export interface Client {
   capture(input: CaptureInput): Promise<Item>;
   archive(item: ItemId, reason?: string): Promise<void>;
   unarchive(item: ItemId): Promise<void>;
+  tag(item: ItemId, tag: string): Promise<void>;
+  untag(item: ItemId, tag: string): Promise<void>;
+
+  /**
+   * Changes what an item says. Whether that lands as an amendment or a revision
+   * is the pool's call, and the client reconciles to whichever it recorded — so
+   * this answers when the operation is applied, not when the shape is known.
+   */
+  edit(item: ItemId, payload: Payload): Promise<void>;
+  /** The payload an edit would carry for new words, whichever slot holds them. */
+  saying(item: Item, said: string): Payload;
 
   /**
    * Bytes cannot be applied optimistically — the pool mints the id the capture

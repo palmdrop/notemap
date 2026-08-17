@@ -6,9 +6,11 @@ import type { OrderedPage, PageRequest, ReadOrder } from "../types/result";
 import * as archive from "./archive";
 import * as assets from "./assets";
 import { capture } from "./capture";
+import { edit } from "./edit";
 import * as maintenance from "./maintenance";
 import * as mirror from "./mirror";
 import * as routing from "./routing";
+import * as tags from "./tags";
 import * as work from "./work";
 
 /**
@@ -35,9 +37,9 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
 
     items: {
       get: (id) => store.item(id),
-      edit: notImplemented("items.edit"),
-      tag: notImplemented("items.tag"),
-      untag: notImplemented("items.untag"),
+      edit: (id, payload, by) => edit(config, ports, id, payload, by),
+      tag: (id, name, by) => tags.tag(ports, id, name, by),
+      untag: (id, name, by) => tags.untag(ports, id, name, by),
       archive: (id, reason) => archive.archive(ports, id, reason),
       unarchive: (id) => archive.unarchive(ports, id),
       purge: notImplemented("items.purge"),

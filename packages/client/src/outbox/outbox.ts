@@ -1,9 +1,9 @@
-import type { Item } from "../api/types";
 import { saidBy, Unreachable } from "../errors";
 import type { Writable } from "../observable/observable";
 import type { ClientStore } from "../ports/store";
 import type { Undo } from "../state/applied";
-import { settle, type ClientState } from "../state/state";
+import type { ClientState } from "../state/state";
+import type { Settlement } from "./handler";
 import type { Operation, OperationId, PendingOperation } from "./operations";
 import { applyOperation, opposes, targetOf } from "./registry";
 
@@ -16,7 +16,7 @@ export type Outbox = {
 export type OutboxDeps = {
   readonly state: Writable<ClientState>;
   readonly store: ClientStore;
-  readonly send: (operation: Operation) => Promise<Item>;
+  readonly send: (operation: Operation) => Promise<Settlement>;
   readonly now: () => string;
   readonly mint: () => OperationId;
 };
@@ -92,8 +92,9 @@ export function createOutbox(deps: OutboxDeps): Outbox {
     await record({ ...entry, state: "sending" });
 
     try {
-      const item = await deps.send(entry.operation);
-      deps.state.update((state) => settle(state, item));
+      const settlement = await deps.send(entry.operation);
+      const revert = undos.get(entry.id) ?? ((state: ClientState) => state);
+      deps.state.update((state) => settlement(state, revert));
       await drop(entry.id);
     } catch (error) {
       if (error instanceof Unreachable) {

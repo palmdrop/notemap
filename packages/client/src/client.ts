@@ -3,6 +3,7 @@ import { v7 as uuidv7 } from "uuid";
 import { createApi, answered } from "./api/http";
 import type { Item, ItemId } from "./api/types";
 import { envelopeFor, optimisticItem } from "./capture/envelope";
+import { rewritten, saidIn } from "./capture/says";
 import { Refused } from "./errors";
 import { derived, writable } from "./observable/observable";
 import { createOutbox } from "./outbox/outbox";
@@ -118,6 +119,19 @@ export function createClient(config: ClientConfig): Client {
 
     unarchive: (item) => mutate({ kind: "unarchive", item }),
 
+    tag: (item, tag) => mutate({ kind: "tag", item, tag }),
+    untag: (item, tag) => mutate({ kind: "untag", item, tag }),
+
+    /**
+     * Enqueued the same way whether the capture has been handed over or not:
+     * the outbox rewrites an un-sent capture in place and sends a domain edit
+     * once it cannot, which is where the seal falls.
+     */
+    edit: (item, payload) => mutate({ kind: "edit", item, payload }),
+
+    /** What an edit starts from: the payload as it stands, with new words in it. */
+    saying: (item, said) => rewritten(item.payload, said),
+
     uploadAsset: (file: File) =>
       answered(
         api.POST("/v1/assets", {
@@ -136,11 +150,7 @@ export function createClient(config: ClientConfig): Client {
 
     assetContent: (asset) => transport.assetUrl(asset),
 
-    says: (item) => {
-      const said =
-        item.payload.content["text"] ?? item.payload.content["caption"];
-      return typeof said === "string" ? said : "";
-    },
+    says: (item) => saidIn(item.payload),
 
     /** Only `image` captures: another payload type's slot may hold anything at all. */
     images: (item) =>

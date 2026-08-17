@@ -40,10 +40,13 @@ describe("GET /v1/openapi.json", () => {
       "/v1/feed",
       "/v1/items/{id}",
       "/v1/items/{id}/archive",
+      "/v1/items/{id}/edit",
       "/v1/items/{id}/mark-processed",
       "/v1/items/{id}/route",
       "/v1/items/{id}/routing",
+      "/v1/items/{id}/tag",
       "/v1/items/{id}/unarchive",
+      "/v1/items/{id}/untag",
       "/v1/queue",
       "/v1/routing/{record}/cancel",
     ]);

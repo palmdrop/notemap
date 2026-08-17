@@ -113,6 +113,19 @@
   the decision's, a destination's own idea of when it received something is no longer asked for, and
   purge is told to find an item's jobs by the item rather than the subject.
   ([review](../reviews/delivery-machinery-2026-08-17.md))
+- 2026-08-17 — **Items can be edited and classified.** `items.tag` and `items.untag` are built over
+  the `item_tags` table that was already there: every tag records the agent that added it,
+  classifying moves nothing in the queue, and **both halves absorb** a call asking for what the item
+  already says — the opposite of archiving's, because a tag's name is the whole of the request where
+  an archive carries a reason a second decision would discard. `items.edit` decides between the two
+  outcomes core already typed: **amend in place** while the item is the newest in the feed and
+  unprocessed, **append a revision** otherwise, carrying the original's capture time, source
+  identity and tags with their attribution and leaving archive state and routing records behind. A
+  revision ties with its original in the feed and follows it **by the link, never by an id**, which
+  the SQLite driver pays for with a chain key beside `created_at` rather than a recursive walk per
+  page. `EditRefusal` gained the two asset refusals a capture has, since an edit may change an
+  attached file. Enrichment invalidation is stated and deliberately not carried out: nothing runs
+  enrichment to invalidate. ([plan](../plans/editing-and-classification.md))
 
 ---
 
@@ -227,8 +240,22 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   accepted, even before a response arrives.
 - Where a client cannot know whether it still holds the head, its in-place edit is
   re-evaluated on arrival and recorded as a revision if the item is no longer the head.
+- **An edit is refused what a capture's payload is refused for** (stated 2026-08-17), less the
+  one refusal it cannot raise. Editing may change an attached file as readily as the text, so a
+  content that fails its schema, a required slot left empty and a reference to an asset the pool
+  does not hold are refused exactly as at capture. A payload type it does not know is not among
+  them: the type an edit carries is the item's own, since one that differs is already refused as
+  `payload-type-changed`.
+- **Both outcomes touch two items, and a revision owes two mirror writes** (stated 2026-08-17).
+  The revision is new material; the original is superseded, which takes it out of the queue, so
+  its `modified_at` moves and a delta read that missed it would leave a client showing work that
+  has gone.
+- **An edit records the agent that made it** (decided 2026-08-17), as classification does. Only a
+  person edits today, but that is a fact about what exists rather than a rule core enforces.
 - Amending or revising an item invalidates the enrichment attached to the old content, which
-  becomes eligible to run again.
+  becomes eligible to run again. *Nothing runs enrichment yet, so this is a rule with no
+  observable effect today; it is carried out by the slice that builds enrichment, not by the one
+  that built editing.*
 
 ### Classification
 
@@ -236,9 +263,28 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   (`project/fiction-a`, `kind/quote`) rather than structure.
 - There is no item type and no project entity. Payload type is mechanical, derived from what
   arrived, and is not classification.
+- A tag name is **trimmed and must carry at least one non-whitespace character**; nothing else is
+  asked of it. Core normalises rather than a caller, because absorbing a tag the item already has
+  is a comparison against what is stored — normalise anywhere else and `" kind/quote"` writes a
+  second tag beside `"kind/quote"`. One that trims to nothing is refused; one a **capture**
+  carried is dropped instead, since a whole capture is not lost over a stray tag.
 - Every tag records **which agent added it** — a person, or the named provider whose suggestion
-  was accepted.
+  was accepted. **Removing one records an agent too** (decided 2026-08-17): who classified is a
+  fact about the pool, and core does not get to assume that only a person ever untags merely
+  because only a person does today.
 - Classifying an item does not remove it from the queue.
+- **A superseded item is refused, both halves** (decided 2026-08-17), carrying the id of the
+  revision. Classification goes to the end of the chain as editing does: a revision does not
+  inherit a tag that arrives after it was made, so a tag on the item it superseded is attached
+  where nobody reads it.
+- **Both halves are idempotent** (decided 2026-08-17). Adding a tag an item already carries leaves
+  the attribution and time it has; removing one it does not carry changes nothing. Neither absorbed
+  call appends an action or owes the mirror a write, because nothing changed. This is the opposite
+  call to archiving's, and what separates them is what the caller supplies: an archive carries a
+  reason, so a second one either overwrites what the first recorded or discards what the second was
+  given. A tag's name is the whole of the request, and `by` is not something the caller chooses over
+  again — so the first agent there stands, and a person's tag is not silently reattributed to the
+  provider whose suggestion arrives after it.
 
 ### Archive and purge
 

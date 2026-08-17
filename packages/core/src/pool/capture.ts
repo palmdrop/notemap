@@ -2,6 +2,8 @@ import { dequal } from "dequal";
 
 import { recordAction } from "./actions";
 import { enqueueMirrorWrite } from "./mirror";
+import { checkAssets, checkPayload } from "./payload";
+import { normalised } from "./tags";
 import { ok, refused } from "../utils/result";
 import type { PoolConfig } from "../types/api/config";
 import type { PoolPorts, PoolTx } from "../types/api/ports";
@@ -33,28 +35,9 @@ function validate(
   envelope: CaptureEnvelope,
 ): CaptureRefusal | undefined {
   // `config.sources` is a policy registry, not a guest list: a source absent
-  // from it captures normally, with no policy attached.
-  const type = config.payloadTypes.find(
-    (known) => known.name === envelope.payload.type,
-  );
-  if (type === undefined) {
-    return { kind: "unknown-payload-type", type: envelope.payload.type };
-  }
-
-  const issues = ports.schemas.validate(
-    type.contentSchema,
-    envelope.payload.content,
-  );
-  if (issues.length > 0) return { kind: "payload-invalid", issues };
-
-  const filled = new Set(envelope.payload.assets.map((ref) => ref.slot));
-  const missing = type.requiredSlots.find((slot) => !filled.has(slot));
-  if (missing !== undefined) {
-    return { kind: "missing-asset-slot", slot: missing };
-  }
-
-  // `unknown-asset` needs the pool, so it is decided inside the transaction.
-  return undefined;
+  // from it captures normally, with no policy attached. `unknown-asset` needs
+  // the pool, so it is decided inside the transaction.
+  return checkPayload(config, ports, envelope.payload);
 }
 
 async function append(
@@ -81,14 +64,8 @@ async function append(
       : refused({ kind: "source-item-changed", existing: bySource.id });
   }
 
-  // A read inside the transaction, like every other precondition: an asset
-  // swept between the check and the insert would otherwise leave a reference
-  // to bytes that have gone.
-  for (const ref of envelope.payload.assets) {
-    if ((await tx.asset(ref.asset)) === undefined) {
-      return refused({ kind: "unknown-asset", asset: ref.asset });
-    }
-  }
+  const unknown = await checkAssets(tx, envelope.payload);
+  if (unknown !== undefined) return refused(unknown);
 
   const by: Agent = { kind: "source", source: envelope.source };
   const record: ItemRecord = {
@@ -96,11 +73,13 @@ async function append(
     source: envelope.source,
     sourceItemId: envelope.sourceItemId,
     payload: envelope.payload,
-    tags: (envelope.tags ?? []).map((name) => ({
-      name,
-      by,
-      addedAt: envelope.capturedAt,
-    })),
+    // Dropped rather than refused: a whole capture is not lost over a stray tag.
+    tags: (envelope.tags ?? []).flatMap((name) => {
+      const tag = normalised(name);
+      return tag === undefined
+        ? []
+        : [{ name: tag, by, addedAt: envelope.capturedAt }];
+    }),
     createdAt: envelope.capturedAt,
   };
 

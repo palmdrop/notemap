@@ -1,9 +1,20 @@
 # Spec: HTTP API (`/v1`)
 
-**Status**: Draft — capture, feed, assets, the action log, the queue, the archive and routing to a
-destination are settled; the rest is stub
+**Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
+editing and routing to a destination are settled; the rest is stub
 **Last updated**: 2026-08-17
 **Shipped**:
+
+- 2026-08-17 — **Tagging, untagging and editing are on the wire.**
+  `POST /v1/items/{id}/tag` and `/untag` carry the tag in the **body**, because a namespaced tag has
+  a slash in it and a path segment cannot hold one without an encoding every layer has to agree to
+  leave alone; both absorb a call for what the item already says rather than refusing it, and
+  neither carries an agent — with no authentication a tag added here is an anonymous person, as
+  archiving and routing already are. `POST /v1/items/{id}/edit` takes the payload **verbatim** and
+  answers the `EditOutcome`, so a client reads amend-versus-revise off the pool rather than
+  declaring an intent it cannot know is still true. `item-superseded` joined the refusal table at
+  `409` and `payload-type-changed` at `422`, both by the rule already written.
+  ([plan](../plans/editing-and-classification.md))
 
 - 2026-08-17 — **The document is what the client's refusals are checked against.** Every code the
   document declares now has a reading in the client, derived from the generated types rather than
@@ -113,10 +124,13 @@ Settled (2026-08-14): `GET /v1/destinations`, `POST /v1/items/{id}/route` — wh
 a delivery that has not happened yet — and `POST /v1/routing/{record}/cancel`
 ([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)).
 
-Still stub, and unwritten below: tagging and untagging, suggestions and their decisions, artifacts
-and corrections, purge and tombstones, range requests over asset content, the wire form of sync
-delta reads, and authentication. Nothing here forecloses them; they get the same treatment when
-their slice is built.
+Settled (2026-08-17): `POST /v1/items/{id}/tag` and `/untag`, and `POST /v1/items/{id}/edit`,
+whose answer says whether the edit became an amendment or a revision.
+
+Still stub, and unwritten below: suggestions and their decisions, artifacts and corrections, purge
+and tombstones, range requests over asset content, the wire form of sync delta reads, and
+authentication. Nothing here forecloses them; they get the same treatment when their slice is
+built.
 
 **What this surface deliberately does not defend is written down**, rather than left to be
 discovered: [security.md](security.md).
@@ -342,6 +356,82 @@ Both answer `200 OK` with the `Item` as it now stands.
   `{}`. Sending a body means sending `application/json` like every other bodied request; anything
   else is `415 unsupported-media-type`. A key neither route knows is `400 malformed-envelope`, on
   the same strictness the capture envelope has.
+
+### Classifying an item
+
+`POST /v1/items/{id}/tag` and `POST /v1/items/{id}/untag` — the whole of classification. Both take
+the same body:
+
+```json
+{ "tag": "project/fiction-a" }
+```
+
+Both answer `200 OK` with the `Item` as it now stands.
+
+- **The tag is in the body, not in the path.** Namespacing is convention rather than structure
+  ([core.md](core.md#classification)), so `project/fiction-a` is one tag with a slash in it — and a
+  path segment cannot carry one without a percent-encoding that every layer between the client and
+  the route has to agree not to decode. A body has no such problem, and untagging is a `POST` rather
+  than a `DELETE` for the same reason: there is no resource path to delete.
+- **Neither half is refused for asking what the item already says.** Adding a tag it carries answers
+  the item unchanged, keeping the attribution and time it has; removing one it does not carry
+  answers it unchanged too. This is the opposite call to archiving's, and
+  [core.md](core.md#classification) gives the argument: a tag's name is the whole of the request,
+  where an archive carries a reason a second decision would discard.
+- **The wire carries no agent**, though core takes one for either half. With no authentication
+  there is nobody for a client to claim to be, so a tag added or removed through `/v1` is an
+  anonymous person — the treatment archiving and routing already get
+  ([core.md](core.md#the-action-log)). The attribution that is not a person's is written by
+  *accepting a suggestion*, which is core's own call rather than something a route is told.
+- An id no item has is `404 no-such-item`, and an item a revision supersedes is
+  `409 item-superseded` carrying that revision's id — classify the revision instead.
+- The body is required and strict: no `tag` is `400 malformed-envelope`, and so is a key the route
+  does not know. The route does not police the tag itself: core trims it, and one that trims to
+  nothing is `422 tag-invalid` carrying what was sent.
+
+### Editing an item
+
+`POST /v1/items/{id}/edit` — a change to what the capture says. The body is core's `Payload`
+**verbatim**, exactly as it appears inside a capture envelope:
+
+```json
+{ "type": "text", "content": { "text": "a second thought" },
+  "metadata": {}, "assets": [] }
+```
+
+`200 OK` with the outcome, which says which of the two shapes the edit took:
+
+```json
+{ "kind": "amended", "item": { … } }
+```
+
+```json
+{ "kind": "revised", "revision": { … }, "supersedes": "0198f0c2-..." }
+```
+
+- **The client does not say which it wants, and the pool decides** — an in-place **amendment**
+  while the item is the newest in the feed and unprocessed, an appended **revision** otherwise
+  ([core.md](core.md#editing), [ADR 11](../adr/0011-in-place-amendment-of-the-head.md)). A client
+  cannot know whether it still holds the head: a capture may have arrived from another device
+  between its last read and this call. So the request carries no intent to honour, and the outcome
+  is read off the answer rather than predicted — which is what
+  [client.md](client.md#editing-and-the-hand-over-seal) already told a client to do.
+- **A revision is a new item with a new id**, carrying the original's capture time and source
+  identity and its tags with their attribution, and no archive state or routing records. It ties
+  with the original in the feed and follows it there by the link rather than by the id
+  ([core.md](core.md#editing)).
+- `200` rather than `201`, although a revision creates an item. The outcome carries the whole item,
+  and a client that wants its URL has its id; a `Location` on the amended half would name the item
+  the request already named.
+- **Editing an item a revision supersedes is `409 item-superseded`**, carrying the id of the
+  revision. Edits go to the end of the chain, and the caller reconciles by editing that instead.
+- **An edit is refused what a capture's payload is refused for**, less one: a `content` that fails
+  its type's schema is `422 payload-invalid`, a required slot left empty is
+  `422 missing-asset-slot`, and a reference to an asset the pool does not hold is
+  `422 unknown-asset`. There is no `unknown-payload-type`, because a `type` that is not the item's
+  own is `422 payload-type-changed` first, carrying the type it was captured as.
+- An id no item has is `404 no-such-item`.
+- The body is required: a bare `POST` is `400 malformed-envelope` rather than an empty payload.
 
 ### Marking an item processed
 
@@ -705,6 +795,7 @@ Every error, from core or from the daemon, is one shape:
 | `409` | `source-item-changed` | `existing` | core |
 | `409` | `already-archived` | `item`, `at` | core |
 | `409` | `not-archived` | `item` | core |
+| `409` | `item-superseded` | `by` | core |
 | `409` | `not-pending` | `record` | core |
 | `409` | `delivery-in-flight` | `record` | core |
 | `413` | `asset-too-large` | `max` | daemon |
@@ -716,8 +807,10 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `missing-filename` | — | daemon |
 | `422` | `bad-digest` | `digest` | daemon |
 | `422` | `digest-mismatch` | `expected`, `actual` | daemon |
+| `422` | `tag-invalid` | `tag` | core |
 | `422` | `unknown-payload-type` | `type` | core |
 | `422` | `payload-invalid` | `issues` | core |
+| `422` | `payload-type-changed` | `from` | core |
 | `422` | `missing-asset-slot` | `slot` | core |
 | `422` | `unknown-asset` | `asset` | core |
 | `422` | `unknown-destination` | `destination` | core |
@@ -739,6 +832,11 @@ throw into a domain-looking refusal teaches clients to trust a fiction.
 `413 asset-too-large` is the single deliberate exception, for the reason given above: a size
 limit is a fact the transport layer acts on, and hiding it inside `422` would cost a client the
 chance to stop an upload early.
+
+`item-superseded` is `409` and `payload-type-changed` is `422` by the rule unchanged. The first
+conflicts with a revision the pool already holds, which the caller has to reconcile with by editing
+that instead; the second is a request that was understood and declined, since the type an edit
+carries is the item's own and a different one is not an edit of it.
 
 `item-purged` is in the table because it is part of the refusal a client parses, not because
 anything raises it yet: purge is not built. It is `404` on the same terms as `no-such-item` — from
@@ -899,6 +997,17 @@ by nothing in `/v1`, and removable without changing a promise this spec makes.
   know is `400 malformed-envelope`.
 - `GET /v1/items/{id}/routing` answers an item's records, and `404 no-such-item` for an id the
   pool does not hold.
+- `POST /v1/items/{id}/tag` answers the item carrying the tag, attributed to an anonymous person; a
+  tag with a slash in it round-trips; a tag that trims to nothing is `422 tag-invalid`; and tagging
+  or untagging for what the item already says answers `200` with the item unchanged rather than a
+  refusal.
+- Tagging or untagging an item a revision supersedes is `409 item-superseded` carrying that
+  revision's id.
+- `POST /v1/items/{id}/edit` on the newest unprocessed item answers `{ "kind": "amended" }` and the
+  item keeps its id; the same call once a later capture exists answers `{ "kind": "revised" }`, and
+  the queue holds the revision where the original was.
+- Editing an item that a revision supersedes is `409 item-superseded` carrying that revision's id,
+  and a payload naming a different type is `422 payload-type-changed`; neither changes anything.
 - `GET /v1/destinations` answers every wired destination with its capabilities, each carrying the
   payload types it accepts and the JSON Schema of the target it needs.
 - `POST /v1/items/{id}/route` to a reachable destination answers `200` with a `delivered` record

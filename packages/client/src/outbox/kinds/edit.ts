@@ -1,0 +1,58 @@
+import { answered } from "../../api/http";
+import type { Item } from "../../api/types";
+import { unchanged, type Applied } from "../../state/applied";
+import { cached, revised, type ClientState } from "../../state/state";
+import { replacing, type Handler, type Settlement } from "../handler";
+
+export const edit: Handler<"edit"> = {
+  target: (operation) => operation.item,
+
+  /** Always an amendment: the client cannot know whether it still holds the head. */
+  apply(state, operation, at): Applied {
+    const previous = state.items.get(operation.item);
+    if (previous === undefined) return unchanged(state);
+
+    const amended: Item = {
+      ...previous,
+      payload: operation.payload,
+      contentUpdatedAt: at,
+    };
+
+    return {
+      state: { ...state, items: cached(state, [amended]) },
+      // Only what this wrote goes back: a settlement reverts long after the
+      // apply, and a tag drawn since is not this guess's to discard.
+      undo: (current) => {
+        const held = current.items.get(operation.item);
+        if (held === undefined) return current;
+
+        const { contentUpdatedAt: _drawn, ...rest } = held;
+        const restored: Item = {
+          ...rest,
+          payload: previous.payload,
+          ...(previous.contentUpdatedAt === undefined
+            ? {}
+            : { contentUpdatedAt: previous.contentUpdatedAt }),
+        };
+
+        return { ...current, items: cached(current, [restored]) };
+      },
+    };
+  },
+
+  async send(api, operation): Promise<Settlement> {
+    const outcome = await answered(
+      api.POST("/v1/items/{id}/edit", {
+        params: { path: { id: operation.item } },
+        body: operation.payload,
+      }),
+    );
+
+    if (outcome.kind === "amended") return replacing(outcome.item);
+
+    // The guess goes back first, or the original keeps content it never carried.
+    const revision = outcome.revision;
+    return (state: ClientState, revert) =>
+      revised(revert(state), operation.item, revision);
+  },
+};
