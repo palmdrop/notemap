@@ -73,4 +73,23 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // The shared client is written once and drawn by every shell, so a UI
+    // framework reaching it would drag the state logic back into one platform.
+    files: ["packages/client/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["svelte", "svelte/*", "react", "react-dom", "vue"],
+              message:
+                "the client imports no UI framework; the shell adapts its observables.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 );

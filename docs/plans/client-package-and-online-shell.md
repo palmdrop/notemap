@@ -1,7 +1,7 @@
 # Client package and online shell
 
 **Date**: 2026-08-17
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: In progress <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/client.md`
 **Closed**:
 
@@ -29,34 +29,35 @@ writes must say so rather than imply the whole contract landed.
 
 ### Phase 0 — Branch
 
-- [ ] Create branch `agent/client-package-and-online-shell`.
+- [-] Create branch `agent/client-package-and-online-shell` _(dropped — worked on `ui`, at the
+      developer's instruction)_.
 
 ### Phase 1 — Scaffold `@notemap/client` and move the wire types
 
 Depends on: nothing. Establishes the package and its ports so later phases have somewhere to land.
 No behaviour yet.
 
-- [ ] Add `packages/client` as a workspace package (`@notemap/client`), matching the conventions of
+- [x] Add `packages/client` as a workspace package (`@notemap/client`), matching the conventions of
       `packages/core` — `type: module`, `exports` pointing at `src/index.ts`, `typecheck` and `test`
-      scripts, `vitest`.
-- [ ] Move `openapi-fetch` and `openapi-typescript` from `apps/ui` into this package, along with the
-      `codegen` script and its generated output. The client owns the HTTP surface and the domain
-      view-models; the shell owns neither.
-- [ ] Point `codegen` at the daemon's committed document by relative path
+      scripts, `vitest`. _(2026-08-17)_
+- [x] Add `openapi-fetch`, `openapi-typescript` and the `codegen` script to this package. The client
+      owns the HTTP surface and the domain view-models; the shell owns neither. _(2026-08-17 —
+      `apps/ui` keeps its copies until Phase 3 stops using them, so that every commit typechecks)_
+- [x] Point `codegen` at the daemon's committed document by relative path
       (`../../apps/daemon/openapi.json`). The daemon generates that document from its route
       definitions and is where the wire's truth lives, so the arrow points at it rather than at a
-      shared copy.
-- [ ] **Commit the generated types.** `apps/ui/.gitignore` ignores `generated.d.ts` today, which is
+      shared copy. _(2026-08-17)_
+- [x] **Commit the generated types.** `apps/ui/.gitignore` ignores `generated.d.ts` today, which is
       invisible only because `apps/ui` has no `typecheck` script. `packages/client` will have one and
       CI runs no codegen step, so the generated file must be tracked or `pnpm typecheck` fails on a
-      fresh clone.
-- [ ] Define the two ports as interfaces: `Transport` (reaching `/v1`) and `ClientStore` (where the
+      fresh clone. _(2026-08-17 — tracked, and excluded from eslint and prettier instead)_
+- [x] Define the two ports as interfaces: `Transport` (reaching `/v1`) and `ClientStore` (where the
       outbox and cache live), per
-      [client.md](../specs/client.md#the-ports--the-seam-for-offline).
-- [ ] Define the client's public surface: a `createClient({ transport, store })` factory returning
+      [client.md](../specs/client.md#the-ports--the-seam-for-offline). _(2026-08-17)_
+- [x] Define the client's public surface: a `createClient({ transport, store })` factory returning
       read surfaces exposed as `subscribe()`-shaped observables plus the mutation methods. Types and
-      signatures only in this phase.
-- [ ] `git commit`.
+      signatures only in this phase. _(2026-08-17)_
+- [x] `git commit`. _(2026-08-17)_
 
 **Verify:** `pnpm --filter @notemap/client typecheck` and `pnpm --filter @notemap/client test` pass
 (green with a placeholder in-memory `ClientStore` test); `git ls-files` lists the generated types;
