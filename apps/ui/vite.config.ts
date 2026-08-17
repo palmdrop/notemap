@@ -3,7 +3,8 @@ import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
 import adapter from "@sveltejs/adapter-static";
 import { sveltekit } from "@sveltejs/kit/vite";
-import { defineConfig, loadEnv } from "vite";
+import { loadEnv } from "vite";
+import { defineConfig } from "vitest/config";
 
 /** The workspace root, so one `.env` answers for every package that wants it. */
 const envDir = fileURLToPath(new URL("../..", import.meta.url));
@@ -14,6 +15,13 @@ export default defineConfig(({ mode }) => {
 
   return {
     envDir,
+
+    // Svelte publishes a browser build behind an export condition, and a test
+    // run resolves node's by default — which is the server compiler.
+    ...(process.env["VITEST"] === undefined
+      ? {}
+      : { resolve: { conditions: ["browser"] } }),
+
     plugins: [
       tailwindcss(),
       sveltekit({
@@ -28,6 +36,11 @@ export default defineConfig(({ mode }) => {
         adapter: adapter({ fallback: "index.html" }),
       }),
     ],
+    test: {
+      environment: "jsdom",
+      setupFiles: ["./src/testing/dom.ts"],
+    },
+
     server: {
       // `@notemap/client` is a workspace package served from its TypeScript
       // source in dev, so the dev server has to read outside `apps/ui`.

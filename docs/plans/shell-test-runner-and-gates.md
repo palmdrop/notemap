@@ -85,17 +85,17 @@ concern, so it lands and is verified on its own.
 
 Depends on: Phase 2. One smoke test only — this phase proves the harness, not the behaviour.
 
-- [ ] Add vitest to `apps/ui`, configured through the SvelteKit vite plugin so `$lib`, `$components`
+- [x] Add vitest to `apps/ui`, configured through the SvelteKit vite plugin so `$lib`, `$components`
       and Svelte 5 runes resolve the way they do in the app.
-- [ ] Add a DOM environment and a component testing library compatible with the workspace's vitest
+- [x] Add a DOM environment and a component testing library compatible with the workspace's vitest
       major. See Unknowns — browser mode is not free here.
-- [ ] Add a `test` script. CI's `pnpm test` is `pnpm -r test`, so the workflow needs no edit.
-- [ ] Stub the DOM gaps the current components already hit: `window.scrollTo`, which jsdom does not
+- [x] Add a `test` script. CI's `pnpm test` is `pnpm -r test`, so the workflow needs no edit.
+- [x] Stub the DOM gaps the current components already hit: `window.scrollTo`, which jsdom does not
       implement, and `navigator.onLine` plus the `online`/`offline` events `reachable.svelte.ts`
       listens for.
-- [ ] Write one test that renders a component against a mock `Transport`. `@notemap/client` already
+- [x] Write one test that renders a component against a mock `Transport`. `@notemap/client` already
       exports one from `./testing`; the shell should use that rather than mint a second.
-- [ ] `git commit`.
+- [x] `git commit`.
 
 **Verify:** `pnpm --filter @notemap/ui test` green; root `pnpm test` runs it; CI green on the branch.
 
@@ -120,11 +120,13 @@ Depends on: Phase 3. Only the criteria that are the shell's — what it draws, e
 
 ## Unknowns
 
-- **Browser mode or jsdom.** The browser-mode Svelte testing package requires a vitest major above
-  the one this workspace pins, so adopting it means bumping vitest across the daemon, core, every
-  adapter, the integration suite and `packages/client` — well beyond this plan. Fallback: jsdom on
-  the current vitest now, and revisit if jsdom's gaps (no layout, no real scrolling, no
-  `IntersectionObserver`) start costing more than the bump would.
+- **Browser mode or jsdom.** **jsdom**, as the fallback said — but not on the workspace's vitest.
+  `apps/ui` is on vite 8 and vitest 3 bundles vite 7's types, so a `test` block in `vite.config.ts`
+  fails `svelte-check` on mismatched plugin types; the app runs **vitest 4** and every other package
+  stays on 3. Mixed majors in one workspace is the cost, and each package runs its own binary. That
+  no longer blocks browser mode by version — what blocks it now is wanting a real browser in CI,
+  which is still the wrong trade for what these tests assert. Revisit if jsdom's gaps (no layout, no
+  real scrolling, no `IntersectionObserver`) start costing more.
 - **Context injection versus module mocking** (Phase 2). **Resolved: the fallback.** Each test file
   mocks `$lib/client`, no production code changed, and the shell keeps an import-time singleton —
   revisited when a second shell or a second client instance forces it.
