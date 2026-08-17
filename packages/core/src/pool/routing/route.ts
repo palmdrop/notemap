@@ -202,7 +202,6 @@ function failed(
   });
 }
 
-
 async function deliver(
   ports: PoolPorts,
   tx: PoolTx,
