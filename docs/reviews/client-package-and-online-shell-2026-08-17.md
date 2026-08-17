@@ -1,7 +1,7 @@
 # Review: Client package and online shell
 
 **Date**: 2026-08-17
-**Status**: Open <!-- Open | Partially addressed | Resolved -->
+**Status**: Partially addressed <!-- Open | Partially addressed | Resolved -->
 **Scope**: `packages/client/`, `apps/ui/`, `apps/daemon/src/ui/`, `docs/specs/client.md`
 **Plan**: `docs/plans/client-package-and-online-shell.md`
 **Spec**: `docs/specs/client.md`
@@ -271,8 +271,47 @@ declaration under two keys.
 
 ## Resolution
 
-<!--
-Add once findings are addressed, and flip **Status** above. One numbered entry per finding,
-mirroring its number. Mark each: Fixed / Mitigated / Won't fix (reason).
-Until this section exists and **Status** is updated, the findings count as open.
--->
+Addressed on `ui` under [client-review-fixes.md](../plans/client-review-fixes.md), alongside the
+comments on PR #13.
+
+1. **Fixed.** A successful `route` or `markProcessed` takes the item out of the queue in the client;
+   core derives processed as holding no routing record, so the returned record is the pool's answer.
+   Both shell `loadQueue()` calls are gone. Regression test confirmed failing beforehand.
+2. **Fixed.** An optimistic insert lands only inside the window a page has read, keyed on the pool's
+   own position (`<at>,<id>`) rather than the last loaded id — so it keeps answering once every row
+   in the window has left. Applies to capture, unarchive and settle.
+3. **Fixed.** `client.md` now names core's three kinds of event, including returning at unchanged
+   content time, and says plainly that the returned case is the one the client places itself.
+4. **Partly fixed.** `uploadAsset` goes through the typed client, joins `baseUrl` and is tested
+   against the mock transport. `assetContent` still hands the browser a URL; recorded as an open
+   question in client.md, to be answered by the shell that needs it.
+5. **Deferred.** Carried whole into [shell-test-runner-and-gates.md](../plans/shell-test-runner-and-gates.md),
+   widened by one — prettier cannot parse `.svelte` either. Neither confirmed bug was in the shell.
+6. **Fixed.** The shell drains on the browser's `online` event. Rehydration — the larger half — is an
+   open question in client.md naming the undo problem it forces.
+7. **Fixed.** The opposing-operation guard consults `inflight`, so an operation a drain has claimed
+   cannot be cancelled out before `send` records it. Regression test confirmed failing beforehand.
+8. **Fixed.** The outbox surface is on `/feed`. An `unreachable` entry still offers only Retry, which
+   the reconnect drain in 6 makes far less sticky; leaving it is deliberate, since dismissing one
+   would discard a capture the person made.
+9. **Fixed.** `client.says(item)` derives it once in the client; both components read that.
+10. **Fixed.** `HEAD` is answered wherever `GET` is, with a test.
+11. **Fixed.** A 5xx is `Unreachable`, 4xx stays `Refused`. Accepted consequence, stated at the time:
+    a reproducible daemon 500 now retries on each drain.
+12. **Partly fixed.** `recordsFor` and `cancel` have tests. `cancel` still does not return the item
+    to the queue — left unfixed on purpose, and it is the case finding 3's third event describes.
+13. **Fixed.** `onlyBuiltDependencies` removed; `allowBuilds` already said it.
+14. **Recorded.** Rehydration is an open question in client.md, with the closure problem named so the
+    offline plan inherits both halves. The shell comment that claimed a durable store was all offline
+    needed from that file is corrected.
+
+**From PR #13**, in the same pass: `uuid` replaces the hand-rolled v7 and `http-v1.md`'s note
+arguing for hand-rolling is revised; the observable seam is RxJS behind a facade that hands out
+observables with no `error` or `complete`, with an eslint rule keeping the subject types in one file;
+refusal codes are typed off the generated document and all thirty-three have a reading, where
+fourteen previously reached a person as `refused: <code>`; `robots.txt` disallows crawling; the
+scaffold README is replaced. Comments that restated the code are gone and the ones answering a *why*
+stayed.
+
+**Still open, by agreement**: the `outbox/encode.ts` and `state/apply.ts` switch shape, to be judged
+once these fixes are in and the switches can be seen at their real size.

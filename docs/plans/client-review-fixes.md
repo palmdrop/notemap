@@ -1,9 +1,9 @@
 # Client review fixes
 
 **Date**: 2026-08-17
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/client.md`, `docs/specs/http-v1.md`
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-08-17
 
 ---
 
@@ -33,20 +33,20 @@ the branch that PR reviews.
 Depends on: nothing. Foundational — every later phase touches files this one rewrites, so it goes
 first and alone.
 
-- [ ] Add `rxjs` to `packages/client`. Rewrite `observable/observable.ts` over `BehaviorSubject`.
-- [ ] **Keep the subject private and hand out `Observable<T>`.** `error()` and `complete()` are
+- [x] Add `rxjs` to `packages/client`. Rewrite `observable/observable.ts` over `BehaviorSubject`.
+- [x] **Keep the subject private and hand out `Observable<T>`.** `error()` and `complete()` are
       `Subject`'s, not `Observable`'s, so no holder of an exposed surface can terminate one. This is
       the guard, and it is a type rather than a discipline.
-- [ ] Give `derived` a change guard so a surface stops recomputing when an unrelated part of
+- [x] Give `derived` a change guard so a surface stops recomputing when an unrelated part of
       `ClientState` moves.
-- [ ] Rewrite `state/persist.ts` over operators — it currently detects change by comparing against a
+- [x] Rewrite `state/persist.ts` over operators — it currently detects change by comparing against a
       captured variable and orders writes through a rolling promise, both of which are operators.
-- [ ] Add a `no-restricted-imports` rule barring the subject types from anywhere but
+- [x] Add a `no-restricted-imports` rule barring the subject types from anywhere but
       `src/observable/`, in the idiom `eslint.config.js` already uses for `packages/core` and
       `packages/client`. Operators stay importable everywhere.
-- [ ] Keep the state subject and any effect stream separate objects, so a failing drain cannot take
+- [x] Keep the state subject and any effect stream separate objects, so a failing drain cannot take
       state with it.
-- [ ] `git commit`.
+- [x] `git commit`.
 
 **Verify:** `pnpm --filter @notemap/client test` and `typecheck` green; `pnpm --filter @notemap/ui check`
 green with the shell's `$feed`/`$queue` untouched; tests pin that a throwing subscriber neither tears
@@ -57,15 +57,15 @@ an unrelated slice of state changes.
 
 Depends on: Phase 1.
 
-- [ ] **Finding 1.** A successful `route` or `markProcessed` takes the item out of the queue — the
+- [x] **Finding 1.** A successful `route` or `markProcessed` takes the item out of the queue — the
       pool has decided it is processed. Delete both shell `loadQueue()` calls that were standing in
       for this. `cancel` returning an item to the queue stays unfixed and recorded (finding 12).
-- [ ] **Finding 2.** An optimistic insert lands in the queue list only when its rank falls inside the
+- [x] **Finding 2.** An optimistic insert lands in the queue list only when its rank falls inside the
       loaded window; beyond the horizon it is cached and left for a later page to carry. Applies to
       capture, unarchive and the settle path alike.
-- [ ] **Finding 7.** The opposing-operation guard consults `inflight` as well as the recorded state,
+- [x] **Finding 7.** The opposing-operation guard consults `inflight` as well as the recorded state,
       so an operation a drain has already claimed cannot be cancelled out from under it.
-- [ ] `git commit`.
+- [x] `git commit`.
 
 **Verify:** a test per finding — routing removes the row; a capture made against a partially loaded
 queue does not sort ahead of an older item arriving on the next page; an operation claimed by a drain
@@ -75,14 +75,14 @@ is not dropped by an opposing enqueue.
 
 Depends on: Phase 1.
 
-- [ ] **PR comment on `errors.ts`.** Derive the refusal-code union from the generated document rather
+- [x] **PR comment on `errors.ts`.** Derive the refusal-code union from the generated document rather
       than hand-listing it, so a code the daemon adds cannot silently fall through. See Unknowns for
       the fallback if the type-level walk does not hold.
-- [ ] Give the codes that currently have no sentence one. Twelve reach the person as
-      `refused: <code>` today, one of which a test asserts as expected output.
-- [ ] **Finding 11.** A 5xx becomes `Unreachable` — the pool did not decide — while 4xx stays
+- [x] Give the codes that currently have no sentence one. Fourteen of the thirty-three reach the
+      person as `refused: <code>` today, one of which a test asserts as expected output.
+- [x] **Finding 11.** A 5xx becomes `Unreachable` — the pool did not decide — while 4xx stays
       `Refused`. Accepted consequence: a reproducible daemon 500 now retries on each drain.
-- [ ] `git commit`.
+- [x] `git commit`.
 
 **Verify:** removing a sentence fails typecheck; a 502 leaves the operation in the outbox with its
 optimistic state, a 422 rolls it back.
@@ -91,18 +91,18 @@ optimistic state, a 422 rolls it back.
 
 Depends on: Phases 1–3. Independent of each other; grouped because each is small.
 
-- [ ] **PR comment on `uuid.ts`.** Take the dependency, drop the hand-rolled v7, and rewrite the
+- [x] **PR comment on `uuid.ts`.** Take the dependency, drop the hand-rolled v7, and rewrite the
       `http-v1.md` note that argued for hand-rolling.
-- [ ] **Finding 4.** `uploadAsset` goes through the typed client so it joins `baseUrl` like every
+- [x] **Finding 4.** `uploadAsset` goes through the typed client so it joins `baseUrl` like every
       other call and can be tested against a mock transport. `assetContent` stays a hole and becomes
       an open question in client.md.
-- [ ] **Finding 6.** The shell drains on the browser's `online` event.
-- [ ] **Findings 8–10, 12, 13.** The outbox surface on the feed route; the item's text derived in the
+- [x] **Finding 6.** The shell drains on the browser's `online` event.
+- [x] **Findings 8–10, 12, 13.** The outbox surface on the feed route; the item's text derived in the
       client rather than twice in the shell; `HEAD` answered where `GET` is; tests for the two
       untested routing calls; the duplicated pnpm workspace key.
-- [ ] **PR comments.** `robots.txt` disallows crawling; `README.md` says what the app is in a few
+- [x] **PR comments.** `robots.txt` disallows crawling; `README.md` says what the app is in a few
       lines; comments that restate the code go, comments that answer a *why* the code cannot stay.
-- [ ] `git commit`.
+- [x] `git commit`.
 
 **Verify:** `uploadAsset` has a test against the mock transport; going offline and back drains
 without a click; `curl -I` on the app root answers 200.
@@ -111,16 +111,16 @@ without a click; `curl -I` on the app root answers 200.
 
 Depends on: Phases 1–4. Last, so it describes what actually landed.
 
-- [ ] **Finding 3.** client.md's queue section gains core.md's third kind of event — returning, at
+- [x] **Finding 3.** client.md's queue section gains core.md's third kind of event — returning, at
       unchanged content time — and loses the claim that the client needs no special handling for it.
-- [ ] client.md's framework-agnosticism constraint changes from "no reactivity library" to nothing
+- [x] client.md's framework-agnosticism constraint changes from "no reactivity library" to nothing
       framework-tied, and records the `Observable`-not-`Subject` guarantee as the reason a shared
       reactive dependency is safe here.
-- [ ] **Finding 14.** An open question for rehydration, naming the undo problem it forces — an outbox
+- [x] **Finding 14.** An open question for rehydration, naming the undo problem it forces — an outbox
       read back from a store has no reversals, because they are closures.
-- [ ] An open question for asset URLs escaping the transport.
-- [ ] Fill the review's Resolution section, one entry per finding, and set its Status.
-- [ ] `git commit`.
+- [x] An open question for asset URLs escaping the transport.
+- [x] Fill the review's Resolution section, one entry per finding, and set its Status.
+- [x] `git commit`.
 
 **Verify:** every finding number appears in the review's Resolution; no spec still states something
 the code contradicts.

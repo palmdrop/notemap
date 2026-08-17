@@ -4,6 +4,14 @@
 **Last updated**: 2026-08-17
 **Shipped**:
 
+- 2026-08-17 — **Review fixes.** The queue now empties when the pool records a routing decision and
+  places an optimistic item only inside the window a page has read; the observable seam is RxJS,
+  handed out as observables a shell cannot end; every refusal `/v1` declares has a reading, checked
+  against the document by the compiler; and a 5xx reads as undecided rather than as a refusal. The
+  queue's third kind of event, the framework-agnosticism constraint and two offline gaps are
+  described above as they now stand. See [client-review-fixes.md](../plans/client-review-fixes.md)
+  and [client-package-and-online-shell-2026-08-17.md](../reviews/client-package-and-online-shell-2026-08-17.md).
+
 - 2026-08-17 — `@notemap/client` holds the outbox, the cache and the state over them behind a
   `subscribe()` seam, written against a `Transport` and a `ClientStore`, and `apps/ui` is a shell
   that draws it and holds no state logic. Capture, the feed, the queue, archive and unarchive are
@@ -112,11 +120,19 @@ processed — routed or archived — which the pool decides, not the scroll.
   never synced and never a **position** in the domain sense ([CONTEXT.md](../../CONTEXT.md) reserves
   that word, and warns it is "never the frontend's idea of how far processing has got"). A scroll
   offset does not translate across devices or viewports, so nothing tries to carry it between them.
-- **The list reorders under the reader, and that is sound.** Every event that moves an item gives
-  it a content time of now, placing it at the newest end, ahead of a reader working the oldest;
-  every event that removes one hides it ([core.md](core.md#the-queue)). Fresh and resurfaced work
-  therefore accumulates at the far end while the oldest drains, and the client renders that
-  without special handling.
+- **The list reorders under the reader, and that is sound.** There are three kinds of event
+  ([core.md](core.md#the-queue)). One **moves** an item — a revision, an amendment, a new capture —
+  giving it a content time of now, which places it at the newest end, ahead of a reader working the
+  oldest. One **removes** it — routing, archiving, being superseded — and a reader who had not
+  reached it was never meant to see it. The third **returns** it, at the content time it left with:
+  an unarchive, or an abandoned delivery, which may land *behind* a reader who has already paged
+  past that position. Fresh work therefore accumulates at the far end while the oldest drains, and
+  returned work reappears where it was.
+- **A returned item is the one case the client places itself.** Because it comes back at an
+  unchanged content time rather than at the newest end, the client inserts it by rank, and only
+  inside the window a page has actually read — past that, the pool's own next page carries it. A
+  client that appended to the end of its window would sort a returned or freshly captured item
+  ahead of older work still to be read.
 
 ### The outbox
 
@@ -213,9 +229,10 @@ discipline ([ADR 8](../adr/0008-adapters-are-in-process-and-wired-by-the-host.md
 
 **Today the online client wires a trivial pair** — a direct `fetch` transport and an in-memory
 store — and drains the outbox as fast as the network answers. **The offline slice supplies durable
-adapters**, not a new client: a store that persists across a restart, and a transport that reports
-reachability so the outbox drains on reconnect. Because the seam is here from the first line,
-offline is a matter of wiring, not a rewrite.
+adapters**: a store that persists across a restart, and a transport that reports reachability so the
+outbox drains on more than the browser's own `online` event. The seam being here from the first line
+is what makes those adapters drop in rather than fork the client — but it is not the whole of
+offline, and the open questions below name what is still missing.
 
 **The cache's shape**, so the port serves the working set rather than an arbitrary blob: the
 **queue is the offline working set**, cached as the local source of truth a person triages against;
@@ -249,8 +266,12 @@ that logic out of the one place it is meant to live.
   authentication ([security.md](security.md)).
 - **One mutation path.** Online and offline are the same path with a different drain speed. A
   feature that exists only online, or only offline, is a smell.
-- **The shared client is framework-agnostic.** It imports no UI framework and no reactivity
-  library; the shell adapts.
+- **The shared client is framework-agnostic.** It imports no UI framework; the shell adapts. A
+  reactivity library is allowed where it is tied to no framework — the seam is RxJS, whose
+  observables Svelte reads with `$` and any other framework adapts in a few lines. What is *not*
+  allowed is a surface a shell can end: the subject stays private, and what leaves is an
+  `Observable`, which has no `error` or `complete` to call. An ended surface never emits again, and
+  a refusal is a value the client records, never a stream failure.
 - **Every mutation carries a client operation-time.** The outbox stamps it whether or not the pool
   needs it yet, so the last-write-wins key exists before the sync slice that consumes it.
 
@@ -299,6 +320,17 @@ that logic out of the one place it is meant to live.
 - [ ] 2026-08-17 — How an `edit` operation still in the outbox coalesces with a later `edit` of the
       same item, once edits can queue offline. Trivial while the drain is immediate; a real question
       once it is not.
+- [ ] 2026-08-17 — **How a client reads its store back on start.** The ports write the outbox and
+      the cache but nothing reads them, so a durable adapter would persist faithfully and restore
+      nothing. Rehydration is not only wiring: a reversal is a closure, so an outbox read back from
+      a store has nothing to roll back to, and replaying it safely means reconstructing reversals
+      from the cache — or deciding that a refusal after a restart is reported without a rollback.
+      Answered with the durable pair, not before it.
+- [ ] 2026-08-17 — **How assets reach a shell whose transport is not `fetch`.** An asset URL is
+      handed to the browser to fetch itself, which is the one place the client speaks to the pool
+      around the `Transport` port rather than through it. It is correct for a web shell and wrong
+      for a native one; object URLs and their lifetimes, or a shell-supplied resolver, are the
+      candidates. Forced by the second shell, not by this one.
 
 ---
 

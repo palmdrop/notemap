@@ -5,6 +5,12 @@ destination are settled; the rest is stub
 **Last updated**: 2026-08-17
 **Shipped**:
 
+- 2026-08-17 — **The document is what the client's refusals are checked against.** Every code the
+  document declares now has a reading in the client, derived from the generated types rather than
+  listed by hand, so adding a code to a route obliges a client to say what it means. The UUIDv7 note
+  below is revised: minting comes from a package on both sides of the wire. See
+  [client-review-fixes.md](../plans/client-review-fixes.md).
+
 - 2026-08-14 — **Items can be routed out over the wire.** `GET /v1/destinations` reports what each
   wired adapter declares, capabilities and target schemas and all, so a client builds a target from
   the destination's own terms rather than from anything `/v1` holds.
@@ -821,8 +827,10 @@ by nothing in `/v1`, and removable without changing a promise this spec makes.
 - **Daemon configuration is TOML** (decided 2026-08-08): comments survive a hand-edit, and it
   is the format a self-hosted single-file config is least annoying to write by hand. The host
   reads it; core takes it as data ([core.md](core.md#constraints)).
-- The daemon mints UUIDv7 with the `uuid` package. The app hand-rolls v7 inline — one function
-  is cheaper than a dependency shipped to the browser.
+- **UUIDv7 comes from the `uuid` package everywhere** (revised 2026-08-17). The client hand-rolled
+  one inline on the argument that a function is cheaper than a dependency in the browser; it ships
+  `openapi-fetch` and `rxjs` to the browser regardless, so the argument was not a live one, and a
+  minted id is the wrong place to keep a bit-twiddling implementation of our own.
 
 ---
 
