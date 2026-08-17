@@ -39,8 +39,12 @@ export interface RoutingApi {
   route(item: ItemId, request: RouteRequest): Promise<RoutingRecord>;
   markProcessed(item: ItemId, note?: string): Promise<RoutingRecord>;
   recordsFor(item: ItemId): Promise<readonly RoutingRecord[]>;
-  /** Withdraws a decision whose delivery has not happened yet. */
-  cancel(record: RoutingRecord["id"]): Promise<void>;
+  /**
+   * Withdraws a decision whose delivery has not happened yet. Takes the item as
+   * well as the record, because whether it is work again depends on the records
+   * it still holds and the pool answers nothing on a cancel.
+   */
+  cancel(record: RoutingRecord["id"], item: ItemId): Promise<void>;
 }
 
 export interface Client {

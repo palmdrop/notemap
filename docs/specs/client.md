@@ -172,6 +172,11 @@ asymmetry is deliberate and the interface makes it visible: an archive is availa
 route or a mark-done is disabled until the pool is reachable, rather than queued into a promise the
 outbox cannot keep.
 
+A recorded decision takes the item out of the queue, and **withdrawing one puts it back only if the
+item holds no other**: processed is derived from holding no routing record ([core.md](core.md#the-queue)),
+never stored, so a client that assumed a cancel always returns an item would show work that the pool
+still considers done. The client asks rather than assumes.
+
 **Draining and reconciliation.** An operation is applied optimistically, then confirmed against the
 pool's answer:
 

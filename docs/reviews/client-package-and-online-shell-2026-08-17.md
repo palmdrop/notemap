@@ -1,7 +1,7 @@
 # Review: Client package and online shell
 
 **Date**: 2026-08-17
-**Status**: Partially addressed <!-- Open | Partially addressed | Resolved -->
+**Status**: Resolved <!-- Open | Partially addressed | Resolved -->
 **Scope**: `packages/client/`, `apps/ui/`, `apps/daemon/src/ui/`, `docs/specs/client.md`
 **Plan**: `docs/plans/client-package-and-online-shell.md`
 **Spec**: `docs/specs/client.md`
@@ -300,8 +300,11 @@ comments on PR #13.
 10. **Fixed.** `HEAD` is answered wherever `GET` is, with a test.
 11. **Fixed.** A 5xx is `Unreachable`, 4xx stays `Refused`. Accepted consequence, stated at the time:
     a reproducible daemon 500 now retries on each drain.
-12. **Partly fixed.** `recordsFor` and `cancel` have tests. `cancel` still does not return the item
-    to the queue — left unfixed on purpose, and it is the case finding 3's third event describes.
+12. **Fixed.** `recordsFor` and `cancel` have tests. `cancel` now returns the item to the queue at
+    its unchanged content time — finding 3's third event — but only when the item holds no other
+    record, because processed is derived rather than stored. It takes the item alongside the record,
+    since the pool answers nothing on a cancel. No shell surface calls it yet; the client is correct
+    ahead of the item surface that will.
 13. **Fixed.** `onlyBuiltDependencies` removed; `allowBuilds` already said it.
 14. **Recorded.** Rehydration is an open question in client.md, with the closure problem named so the
     offline plan inherits both halves. The shell comment that claimed a durable store was all offline
@@ -315,5 +318,11 @@ fourteen previously reached a person as `refused: <code>`; `robots.txt` disallow
 scaffold README is replaced. Comments that restated the code are gone and the ones answering a *why*
 stayed.
 
-**Still open, by agreement**: the `outbox/encode.ts` and `state/apply.ts` switch shape, to be judged
-once these fixes are in and the switches can be seen at their real size.
+**Since resolved**: the `outbox/encode.ts` and `state/apply.ts` switch shape, which was judged once
+the rest had landed. Each operation now answers for itself behind a table the compiler checks; the
+switches' real fault was the `default:` arm, which let a ninth kind compile and throw at runtime.
+
+**Left standing, by agreement**, to be resurfaced when needed rather than planned now: the offline
+slice (rehydration and a durable store), suggestions and enrichment, purge, and the item surface —
+tags, enrichment state, suggestions and routing records drawn, which is what would give `cancel` and
+`recordsFor` a caller.

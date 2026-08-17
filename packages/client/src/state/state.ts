@@ -126,6 +126,17 @@ export function processed(state: ClientState, id: ItemId): ClientState {
 }
 
 /**
+ * A withdrawn decision puts the item back at the content time it left with,
+ * rather than at the newest end — core's third kind of queue event.
+ */
+export function returned(state: ClientState, id: ItemId): ClientState {
+  return {
+    ...state,
+    queue: withIds(state.queue, intoQueue(state.queue, id, state.items)),
+  };
+}
+
+/**
  * Replaces the optimistic copy with what the pool recorded, and puts the item
  * on the right side of the queue: the pool decides whether it is still work.
  */

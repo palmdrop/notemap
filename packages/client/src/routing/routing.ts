@@ -1,11 +1,12 @@
 import { acknowledged, answered, type Api } from "../api/http";
-import type { ItemId } from "../api/types";
+import type { ItemId, RoutingRecord } from "../api/types";
 import type { RoutingApi } from "../types";
 
 export type RoutingDeps = {
   readonly api: Api;
   /** A recorded decision takes the item out of the queue; the pool decided it. */
   readonly processed: (item: ItemId) => void;
+  readonly returned: (item: ItemId) => void;
 };
 
 /**
@@ -15,6 +16,12 @@ export type RoutingDeps = {
  */
 export function createRouting(deps: RoutingDeps): RoutingApi {
   const { api } = deps;
+
+  function recordsFor(item: ItemId): Promise<readonly RoutingRecord[]> {
+    return answered(
+      api.GET("/v1/items/{id}/routing", { params: { path: { id: item } } }),
+    ).then((answer) => answer.values);
+  }
 
   return {
     async destinations() {
@@ -44,18 +51,18 @@ export function createRouting(deps: RoutingDeps): RoutingApi {
       return record;
     },
 
-    async recordsFor(item) {
-      const answer = await answered(
-        api.GET("/v1/items/{id}/routing", { params: { path: { id: item } } }),
-      );
-      return answer.values;
-    },
+    recordsFor,
 
-    cancel: (record) =>
-      acknowledged(
+    async cancel(record, item) {
+      await acknowledged(
         api.POST("/v1/routing/{record}/cancel", {
           params: { path: { record } },
         }),
-      ),
+      );
+
+      // The pool deletes the record rather than marking it, and processed is
+      // derived from holding none — so an item routed twice is still not work.
+      if ((await recordsFor(item)).length === 0) deps.returned(item);
+    },
   };
 }

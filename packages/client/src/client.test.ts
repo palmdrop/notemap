@@ -337,21 +337,65 @@ describe("routing", () => {
     await expect(client.routing.recordsFor("one")).resolves.toHaveLength(1);
   });
 
-  it("withdraws a decision the pool has not delivered yet", async () => {
-    const { client, transport } = clientOver(
-      () => new Response(null, { status: 204 }),
-    );
+  const aRecord = (id: string) =>
+    json(200, { id, item: "one", state: "pending", at: "now" });
 
-    await expect(client.routing.cancel("record-1")).resolves.toBeUndefined();
-    expect(routeOf(transport.sent[0]!)).toBe(
+  /** A pool holding `held` records for `one`, and a queue of it alone. */
+  function poolHolding(held: () => readonly string[]) {
+    return clientOver((request) => {
+      const route = routeOf(request);
+      if (route === "GET /v1/queue") {
+        return json(200, { values: [anItem("one")] });
+      }
+      if (route === "GET /v1/items/one/routing") {
+        return json(200, {
+          values: held().map((id) => ({
+            id,
+            item: "one",
+            state: "pending",
+            at: "now",
+          })),
+        });
+      }
+      if (route === "POST /v1/routing/record-1/cancel") {
+        return new Response(null, { status: 204 });
+      }
+      return aRecord("record-1");
+    });
+  }
+
+  it("makes the item work again when its only decision is withdrawn", async () => {
+    let records = ["record-1"];
+    const { client, transport } = poolHolding(() => records);
+
+    await client.loadQueue();
+    await client.routing.markProcessed("one");
+    expect(read(client.queue).items).toEqual([]);
+
+    // The pool deletes a cancelled record rather than marking it.
+    records = [];
+    await client.routing.cancel("record-1", "one");
+
+    expect(read(client.queue).items.map((item) => item.id)).toEqual(["one"]);
+    expect(transport.sent.map(routeOf)).toContain(
       "POST /v1/routing/record-1/cancel",
     );
+  });
+
+  it("leaves it out of the queue while it still holds another decision", async () => {
+    const { client } = poolHolding(() => ["record-2"]);
+
+    await client.loadQueue();
+    await client.routing.markProcessed("one");
+    await client.routing.cancel("record-1", "one");
+
+    expect(read(client.queue).items).toEqual([]);
   });
 
   it("refuses to withdraw one already in flight", async () => {
     const { client } = clientOver(() => refusal(409, "delivery-in-flight"));
 
-    await expect(client.routing.cancel("record-1")).rejects.toThrow(
+    await expect(client.routing.cancel("record-1", "one")).rejects.toThrow(
       "that delivery has already started; it cannot be called back",
     );
   });
