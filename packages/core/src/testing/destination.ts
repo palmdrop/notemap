@@ -109,11 +109,15 @@ export function fakeDestination(
 
       if (answer.kind !== "hang") return answer;
 
-      // A host that never came back: the signal is the only way out.
+      // A host that never came back: the signal is the only way out, and a
+      // signal already aborted fires no event to wait for.
       return new Promise<DeliveryOutcome>((_resolve, reject) => {
-        signal?.addEventListener("abort", () =>
-          reject(new Error("the destination was still thinking")),
-        );
+        const giveUp = () =>
+          reject(new Error("the destination was still thinking"));
+
+        if (signal === undefined) return;
+        if (signal.aborted) return giveUp();
+        signal.addEventListener("abort", giveUp, { once: true });
       });
     },
 

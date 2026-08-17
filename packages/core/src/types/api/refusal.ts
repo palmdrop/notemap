@@ -91,9 +91,14 @@ export type PreparationRefusal =
       readonly issues: readonly SchemaIssue[];
     };
 
+/**
+ * `delivery-outcome-unknown` is the one a host warns on: the attempt neither
+ * answered nor refused, so the material may be at the destination already.
+ */
 export type AttemptFailure =
   | { readonly kind: "unreachable"; readonly detail: string }
-  | { readonly kind: "rejected-by-destination"; readonly detail: string };
+  | { readonly kind: "rejected-by-destination"; readonly detail: string }
+  | { readonly kind: "delivery-outcome-unknown"; readonly detail: string };
 
 /** Whoever holds a lease may be halfway through the attempt, and its outcome is not the canceller's to decide. */
 export type CancelRefusal =

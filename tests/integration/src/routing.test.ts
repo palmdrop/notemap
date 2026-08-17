@@ -356,6 +356,84 @@ describe("an item purged while its delivery was in flight", () => {
   });
 });
 
+/**
+ * Aborting stops the waiting, not the destination, so the bytes may be there
+ * already. Nothing may be retried on that, and the person about to route again
+ * has to be able to find out that it happened.
+ */
+describe("an inline attempt that never answers", () => {
+  it("refuses as unknown, writes no record, and leaves the item in the queue", async () => {
+    const opened = pooled({ answer: { kind: "hang" } });
+    const item = await capture(opened.pool);
+    const bounded = AbortSignal.abort();
+
+    const outcome = await opened.pool.routing.route(item, request(), bounded);
+
+    expect(outcome).toMatchObject({
+      refusal: { kind: "delivery-outcome-unknown" },
+    });
+    expect(await opened.pool.routing.recordsFor(item)).toEqual([]);
+    expect(ids((await opened.pool.views.queue(ALL)).values)).toEqual([item]);
+  });
+
+  it("leaves the attempt on the log, under the code that warrants a check", async () => {
+    const opened = pooled({ answer: { kind: "hang" } });
+    const item = await capture(opened.pool);
+
+    // Aborted while waiting, rather than before: the other way a host bounds it.
+    await opened.pool.routing.route(item, request(), AbortSignal.timeout(5));
+
+    const logged = await opened.pool.actions.forItem(item, {
+      limit: 50,
+      order: "newest-first",
+    });
+    expect(logged.values[0]).toMatchObject({
+      kind: "delivery-failed",
+      detail: {
+        destination: VAULT,
+        failure: { code: "delivery-outcome-unknown" },
+      },
+    });
+  });
+
+  it("enqueues nothing, so no machinery hands the destination a second copy", async () => {
+    const opened = pooled({ answer: { kind: "hang" } });
+    const item = await capture(opened.pool);
+
+    await opened.pool.routing.route(item, request(), AbortSignal.abort());
+    opened.destination.answers(DELIVERED);
+
+    expect(await deliverWith(opened, opened.destination)()).toBe(0);
+    expect(opened.destination.received).toHaveLength(1);
+  });
+
+  /** An adapter that throws is the same unknown: core cannot see how far it got. */
+  it("treats an adapter that throws the same way, carrying its message", async () => {
+    const throwing: DestinationAdapter = {
+      describe: () => ({
+        id: VAULT,
+        capabilities: [
+          fakeCapability({ name: "create-note", targetSchema: PATH_SCHEMA }),
+        ],
+      }),
+      deliver: () => {
+        throw new Error("socket closed mid-write");
+      },
+    };
+    const opened = harness(undefined, "stub", [throwing]);
+    open.push(opened);
+    const item = await capture(opened.pool);
+
+    expect(await opened.pool.routing.route(item, request())).toEqual({
+      kind: "refused",
+      refusal: {
+        kind: "delivery-outcome-unknown",
+        detail: "socket closed mid-write",
+      },
+    });
+  });
+});
+
 describe("cancelling a delivery", () => {
   async function pending() {
     const opened = pooled({ answer: UNREACHABLE });

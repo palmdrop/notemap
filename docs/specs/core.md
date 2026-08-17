@@ -78,6 +78,13 @@
   against a destination that fails on command.
   ([plan](../plans/delivery-machinery.md),
   [ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md))
+- 2026-08-17 — **An inline attempt that throws is unknown, not failed.** `routing.route` was letting
+  an adapter's exception — including the caller's own `AbortSignal` firing — unwind the call with
+  nothing written, so material that may have reached the destination left no trace and the person
+  re-routing was never warned. It is now refused as `delivery-outcome-unknown` and appended to the
+  log under the same code, on the terms the evidence rule already set for a vanished attempt. A host
+  that dies mid-attempt inline still leaves nothing, which the routing section now states as a
+  limit. ([review](../reviews/delivery-machinery-2026-08-17.md))
 
 ---
 
@@ -433,6 +440,21 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - **Core imposes no timeout on the inline attempt.** A default is interface policy, and core is a
   primitive API; the caller bounds it with the `AbortSignal` that reaches the adapter. A host that
   passes none waits as long as its destination takes.
+- **An inline attempt that neither answers nor refuses is refused as unknown** (added 2026-08-17).
+  An adapter that throws, or a caller's signal firing mid-attempt, proves nothing either way —
+  aborting stops the waiting, not the destination — so the call is refused as
+  `delivery-outcome-unknown`, no routing record is written, and the item stays in the queue it never
+  left. Nothing is enqueued, because the same evidence rule that abandons a vanished attempt forbids
+  retrying this one. The attempt is appended to the action log under the same code, so a person
+  about to route again can find out that material may already have arrived.
+- **A host that dies during an inline attempt leaves no trace, and this is a known limit.** The
+  deferred path survives it because a reservation and its job are durable before the attempt begins;
+  inline there is nothing written yet, and nothing can record a crash after the fact. The item is
+  left in the queue, which is the safe direction — what is lost is the warning, not the material.
+  Closing it would mean minting the reservation, its job and its lease before the attempt and
+  resolving them after, which is a different shape from the one
+  [ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md) settled and would want a
+  decision of its own.
 - **Retry is keyed on evidence, not on failure.** `unreachable` is proof that nothing was
   delivered, so a retry cannot duplicate and the job is retried with backoff. `rejected` is proof
   that the destination was reached and refused, so it is abandoned on the first attempt — the same

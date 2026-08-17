@@ -1,7 +1,7 @@
 # Review: Delivery machinery
 
 **Date**: 2026-08-17
-**Status**: Open
+**Status**: Partially addressed
 **Scope**: `agent/delivery-machinery` — `packages/core/src/pool/routing/`, `packages/core/src/pool/work.ts`, `packages/core/src/testing/`, `packages/adapters/store-sqlite/`, `tests/integration/src/{routing,delivery}.test.ts`
 **Plan**: `docs/plans/delivery-machinery.md`
 **Spec**: `docs/specs/core.md`, `docs/specs/mirror.md`
@@ -223,4 +223,16 @@ reading one will assume the other.
 
 ## Resolution
 
-<!-- Add once findings are addressed, and flip **Status** above. -->
+1. **Fixed**, as far as an inline attempt can be. The adapter call is wrapped; a throw — the
+   caller's `AbortSignal` included — is refused as `delivery-outcome-unknown`, appended to the log
+   under the same code, and enqueues nothing. No record is written and the item stays in the queue
+   it never left. `core.md` gained both the rule and the limit that remains: a host that *dies*
+   during an inline attempt still leaves nothing, because nothing is durable before the attempt
+   begins. Closing that would mean minting the reservation, its job and its lease up front, which
+   reverses ADR 17's sequencing and wants a decision of its own rather than a review fix.
+
+   Writing the test found that the `hang` answer never worked: it waited on the `abort` event, so a
+   signal that was already aborted hung forever. Fixed in the same change — the finding's point
+   about a capability nothing exercises, demonstrated.
+
+Findings 2–12 remain open.

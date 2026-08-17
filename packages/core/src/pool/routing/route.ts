@@ -3,6 +3,8 @@ import { enqueueMirrorWrite } from "../mirror";
 import { ok, refused } from "../../utils/result";
 import type { PoolPorts, PoolTx } from "../../types/api/ports";
 import type { DeliveryRefusal } from "../../types/api/refusal";
+import type { FailureDetail } from "../../types/domain/enrichment";
+import type { JsonObject } from "../../types/json";
 import type {
   ItemId,
   JobId,
@@ -82,7 +84,12 @@ export async function route(
     at: ports.clock.now(),
   };
 
-  const outcome = await wired.adapter.deliver(delivery, signal);
+  let outcome: DeliveryOutcome;
+  try {
+    outcome = await wired.adapter.deliver(delivery, signal);
+  } catch (cause) {
+    return unresolved(ports, record, cause);
+  }
 
   return ports.store.transaction(async (tx) => {
     // Purged while the adapter had the bytes: the record dies with the item,
@@ -112,52 +119,91 @@ export async function route(
   });
 }
 
+/**
+ * The adapter neither answered nor refused, so whether anything arrived is not
+ * knowable: aborting stops the waiting, not the destination. Nothing is retried
+ * and no record is written — the item never left the queue — but the attempt
+ * goes on the log, because somebody about to route again has to be able to find
+ * it. A host that dies here rather than throwing leaves nothing at all, which
+ * `core.md` says plainly.
+ */
+function unresolved(
+  ports: PoolPorts,
+  record: RoutingRecord,
+  cause: unknown,
+): Promise<Routed> {
+  const detail = cause instanceof Error ? cause.message : String(cause);
+
+  return ports.store.transaction(async (tx) => {
+    await failed(ports, tx, record, {
+      code: DELIVERY_FAILURE.unknown,
+      detail,
+    });
+
+    return refused<RoutingRecord, DeliveryRefusal>({
+      kind: DELIVERY_FAILURE.unknown,
+      detail,
+    });
+  });
+}
+
 async function trace(
   ports: PoolPorts,
   tx: PoolTx,
   record: RoutingRecord,
   outcome: DeliveryOutcome,
 ): Promise<void> {
-  const target = record.target;
-  const where =
-    target.kind === "destination"
-      ? { destination: target.destination, capability: target.capability }
-      : {};
-
-  if (outcome.kind === "delivered") {
-    await recordAction(ports, tx, {
-      kind: "routed",
-      subject: record.item,
-      by: { kind: "person" },
-      at: record.at,
-      detail: {
-        record: record.id,
-        target: target.kind,
-        ...where,
-        ...(outcome.pointer === undefined ? {} : { pointer: outcome.pointer }),
-      },
+  if (outcome.kind !== "delivered") {
+    await failed(ports, tx, record, {
+      code:
+        outcome.kind === "unreachable"
+          ? DELIVERY_FAILURE.unreachable
+          : DELIVERY_FAILURE.rejected,
+      detail: outcome.detail,
     });
     return;
   }
 
+  const target = record.target;
   await recordAction(ports, tx, {
+    kind: "routed",
+    subject: record.item,
+    by: { kind: "person" },
+    at: record.at,
+    detail: {
+      record: record.id,
+      target: target.kind,
+      ...whereItWent(record),
+      ...(outcome.pointer === undefined ? {} : { pointer: outcome.pointer }),
+    },
+  });
+}
+
+function failed(
+  ports: PoolPorts,
+  tx: PoolTx,
+  record: RoutingRecord,
+  failure: FailureDetail,
+): Promise<void> {
+  return recordAction(ports, tx, {
     kind: "delivery-failed",
     subject: record.item,
     by: { kind: "person" },
     at: record.at,
     detail: {
       record: record.id,
-      ...where,
+      ...whereItWent(record),
       attempt: 1,
-      failure: {
-        code:
-          outcome.kind === "unreachable"
-            ? DELIVERY_FAILURE.unreachable
-            : DELIVERY_FAILURE.rejected,
-        detail: outcome.detail,
-      },
+      failure,
     },
   });
+}
+
+function whereItWent(record: RoutingRecord): JsonObject {
+  const target = record.target;
+  return target.kind === "destination"
+    ? { destination: target.destination, capability: target.capability }
+    : {};
 }
 
 async function deliver(
