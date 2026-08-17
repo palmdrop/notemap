@@ -472,55 +472,92 @@ optional:
 
 ### Destinations
 
-`GET /v1/destinations` — what the daemon has wired, and what each one can be asked to do.
+`GET /v1/destinations` — the destinations the pool holds. A read of pool state
+([ADR 20](../adr/0020-destinations-are-pool-state.md)): it answers at once, cannot fail, and
+probes nothing.
 
 ```json
 {
   "values": [
     {
-      "kind": "described",
-      "id": "vault",
-      "capabilities": [
-        {
-          "name": "create-file",
-          "accepts": ["text", "image"],
-          "targetSchema": {
-            "type": "object",
-            "required": ["directory"],
-            "properties": {
-              "directory": { "type": "string" },
-              "filename": { "type": "string" }
-            }
-          }
-        }
-      ]
-    },
-    {
-      "kind": "undescribable",
-      "id": "board",
-      "detail": "connect ECONNREFUSED 127.0.0.1:8443"
+      "id": "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
+      "name": "Vault",
+      "kind": "filesystem",
+      "settings": { "root": "~/notes", "accepts": ["text", "image"] },
+      "retired": false
     }
   ]
 }
 ```
 
+`GET /v1/destinations/{id}/description` — what that one can be asked to do, asked now.
+
+```json
+{
+  "kind": "described",
+  "capabilities": [
+    {
+      "name": "create-file",
+      "accepts": ["text", "image"],
+      "targetSchema": {
+        "type": "object",
+        "required": ["directory"],
+        "properties": {
+          "directory": { "type": "string" },
+          "filename": { "type": "string" }
+        }
+      }
+    }
+  ]
+}
+```
+
+- **The two reads are split because they are different animals.** What a destination *is* comes
+  from the pool; what it can *do* is I/O against the outside world that may hang or fail. Fusing
+  them made listing destinations probe every one of them, so a settings screen — or a routing
+  picker — stalled on an unmounted drive. The list fills instantly and only the chosen destination
+  is asked.
 - **The capabilities are the destination's, not core's** ([core.md](core.md#routing)). This route
-  reports what each wired adapter declared and holds no list of its own, so a new kind of
+  reports what the adapter for that kind declared and holds no list of its own, so a new kind of
   destination adds a capability here without changing `/v1`.
 - `targetSchema` is JSON Schema, and is the whole of what a client needs to build the `target` a
   delivery must supply. A target that does not satisfy it is refused before anything is attempted.
 - **A destination is asked what it can do, and may have to go and look**
-  ([core.md](core.md#routing)). One that could not answer is listed as `undescribable` with the
-  reason, rather than dropped: a destination that is missing and one that is unreachable are
-  different answers to a person looking for it. A client renders it as present and unavailable, and
-  cannot build a target for it until it describes itself again.
-- One destination failing to describe itself does not fail the read. The list still carries every
-  other, since a board that is down is no reason to hide a vault that is not.
-- Not paginated and never refused: destinations come from daemon configuration, and there are as
-  many as a person wrote down. An empty `values` means none is wired, which is a configuration
-  fact rather than an error.
-- Wiring a destination is a restart, so *which* destinations are listed is stable for the life of a
-  connection. What each can do is not: capabilities are re-read per request.
+  ([core.md](core.md#routing)). One that could not answer is `undescribable` with the reason; one
+  whose kind no adapter is registered for, or whose settings no longer satisfy that kind's schema,
+  is `unusable` with the reason. Neither is dropped: missing, unreachable and unusable are three
+  different answers to a person looking for a destination. A client renders the last two as present
+  and unavailable, and cannot build a target until the destination describes itself again.
+- Retired destinations are listed. A client shows them as not offered for routing rather than
+  hiding them, because a record may still name one.
+- Not paginated and never refused: there are as many destinations as a person made. An empty
+  `values` means none exists, which is a fact rather than an error.
+- **Which destinations exist is no longer stable for the life of a connection** (revised
+  2026-08-17). It was, when wiring one meant a restart. A client re-reads rather than caching for
+  the session, and what each can do is re-read per request as it always was.
+
+`POST /v1/destinations` — create one, from a name, a kind and that kind's settings. The id is
+minted and answered; a name is a label and need not be unique.
+
+`PATCH /v1/destinations/{id}` — change the name or the settings. The kind is fixed: changing it
+would make one destination two, and a record cannot tell which it meant.
+
+`POST /v1/destinations/{id}/retire` and `/unretire` — stop offering it for new routing, or offer it
+again. Neither touches a delivery already decided.
+
+`DELETE /v1/destinations/{id}` — allowed only where no routing record has ever named it, and
+`409 destination-in-use` where one has, which names retirement as what to do instead.
+
+`GET /v1/destination-kinds` — every kind the daemon has an adapter for, each with a
+`settingsSchema` a client builds its form from. The same arrangement as `targetSchema`, one level
+up: the daemon publishes what a kind needs and holds no opinion about how it is asked for.
+
+- Settings are validated against the kind's schema on create and on edit, and a failure is
+  `422` carrying the schema issues — the same shape a bad target gets.
+- **Writes are online-only, and the client makes that visible** ([client.md](client.md)). They are
+  not in the outbox: whether a root exists, and whether settings satisfy the kind registry the
+  daemon is actually running, are questions only the daemon can answer.
+- Routing to a retired or unusable destination is refused, with which of the two it was.
 
 ### Routing an item to a destination
 
@@ -528,7 +565,7 @@ optional:
 
 ```json
 {
-  "destination": "vault",
+  "destination": "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
   "capability": "create-file",
   "target": { "directory": "inbox", "filename": "a-thought.md" }
 }
@@ -542,7 +579,7 @@ optional:
   "item": "0198f0c2-...",
   "target": {
     "kind": "destination",
-    "destination": "vault",
+    "destination": "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
     "capability": "create-file",
     "target": { "directory": "inbox", "filename": "a-thought.md" }
   },
@@ -931,6 +968,16 @@ by nothing in `/v1`, and removable without changing a promise this spec makes.
 - **Daemon configuration is TOML** (decided 2026-08-08): comments survive a hand-edit, and it
   is the format a self-hosted single-file config is least annoying to write by hand. The host
   reads it; core takes it as data ([core.md](core.md#constraints)).
+- **The daemon never writes its own config file** (decided 2026-08-17,
+  [ADR 20](../adr/0020-destinations-are-pool-state.md)). A machine write flattens it — parse and
+  re-emit returns the values and drops every comment, which is what the format was chosen for. What
+  a person edits from the UI is pool state, and what stays in the file is how the daemon runs:
+  paths, ports, mirror, sweep, delivery cadence, payload types, sources and enrichments.
+- **An unrecognised key warns; a value that cannot be honoured refuses** (decided 2026-08-17).
+  Unknown keys and tables are named in a startup warning and ignored, so an upgrade or a downgrade
+  never leaves the daemon unable to start over a block it does not know. A key it does know, with a
+  value out of range or of the wrong type, still fails: dropping it silently would leave a running
+  daemon that does not match the file a person wrote.
 - **UUIDv7 comes from the `uuid` package everywhere** (revised 2026-08-17). The client hand-rolled
   one inline on the argument that a function is cheaper than a dependency in the browser; it ships
   `openapi-fetch` and `rxjs` to the browser regardless, so the argument was not a live one, and a

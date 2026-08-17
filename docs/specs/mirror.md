@@ -108,6 +108,19 @@ derived, `supersededBy` included. This is the material-not-operational rule of 2
 to: what the user kept is mirrored, how notemap ran is not. A rebuilt pool therefore has no
 history and no rejection signal, and both losses are accepted.
 
+**Destinations are mirrored too, and are the mirror's one non-item unit** (added 2026-08-17,
+[ADR 20](../adr/0020-destinations-are-pool-state.md)). A destination is pool state rather than
+configuration, and a delivered routing record names one, so a mirror that carried only items would
+rebuild a pool whose records refer to destinations it cannot produce. The unit is the destination
+itself — id, name, kind, settings, retired — and **retired ones are carried**, because being
+retired is exactly the state of a destination that records still name. A write is owed when one
+changes, on the same terms as an item's, and verify and repair reach it the same way.
+
+It is the one place the material-not-operational rule needs stating rather than reading off: a
+destination is something the user set up and would otherwise recreate by hand, which puts it on the
+material side, while the delivery cadence that drives it stays in `config.toml` and is not
+mirrored.
+
 **Media is stored once**, in `assets/`, referenced by both the pool and the mirror. Blobs are
 content-addressed and sharded by hash prefix
 ([ADR 13](../adr/0013-assets-are-named-references-to-content-addressed-blobs.md)); a blob's name

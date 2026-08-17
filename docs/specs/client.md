@@ -199,6 +199,14 @@ asymmetry is deliberate and the interface makes it visible: an archive is availa
 route or a mark-done is disabled until the pool is reachable, rather than queued into a promise the
 outbox cannot keep.
 
+**Editing destinations is the second exception, on the same terms** (added 2026-08-17,
+[ADR 20](../adr/0020-destinations-are-pool-state.md)). Destinations are pool state and a client
+reads them like anything else, cached for display. Creating, editing, retiring and deleting one are
+not in the outbox: whether a root exists, and whether settings satisfy the kind registry the daemon
+is actually running, are questions only the daemon can answer, so an offline edit would validate
+against a cached schema and hand back an acceptance the pool may then refuse. The settings screen is
+readable offline and its controls are disabled, like a route.
+
 A recorded decision takes the item out of the queue, and **withdrawing one puts it back only if the
 item holds no other**: processed is derived from holding no routing record ([core.md](core.md#the-queue)),
 never stored, so a client that assumed a cancel always returns an item would show work that the pool
