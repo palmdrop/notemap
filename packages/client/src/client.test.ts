@@ -484,6 +484,23 @@ describe("an asset", () => {
     await expect(client.uploadAsset(file())).rejects.toBeInstanceOf(Refused);
   });
 
+  it("asks the transport where its bytes are, rather than building a URL", () => {
+    const transport = mockTransport(() => json(200, {}));
+    const client = createClient({ transport, store: createMemoryStore() });
+    const item = {
+      ...anItem("one"),
+      payload: {
+        type: "image",
+        content: {},
+        metadata: {},
+        assets: [{ slot: "image", asset: "an asset/1" }],
+      },
+    };
+
+    expect(client.images(item)).toEqual([transport.assetUrl("an asset/1")]);
+    expect(client.assetContent("an asset/1")).toContain("an%20asset%2F1");
+  });
+
   it("reads what an item says, whichever slot holds it", () => {
     const { client } = clientOver(() => json(200, {}));
 

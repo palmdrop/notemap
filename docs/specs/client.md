@@ -4,6 +4,12 @@
 **Last updated**: 2026-08-17
 **Shipped**:
 
+- 2026-08-17 — **The operation vocabulary answers for itself, and the transport owns asset URLs.**
+  Each operation carries its target, opposition, optimistic apply and encoder in one place behind a
+  table the compiler checks, so a kind cannot be declared without an answer; and
+  `Transport.assetUrl` makes where an asset's bytes live the shell's answer rather than a URL the
+  client builds. See [client-review-fixes.md](../plans/client-review-fixes.md).
+
 - 2026-08-17 — **Review fixes.** The queue now empties when the pool records a routing decision and
   places an optimistic item only inside the window a page has read; the observable seam is RxJS,
   handed out as observables a shell cannot end; every refusal `/v1` declares has a reading, checked
@@ -141,6 +147,14 @@ so the interface never waits, and drained to the pool — immediately when the p
 reconnect when it is not. The online client is the offline client with a fast drain; there is one
 mutation path, not two.
 
+**The vocabulary is closed, and each operation answers for itself.** There are eight, listed below,
+and the list is this spec's to change — not something that grows as routes are added. Each carries
+what it knows in one place: which item it is about, what opposes it, how it applies to the cache and
+how it reverses, and how it reaches the wire. An operation the vocabulary names but core does not
+implement simply has no encoder and no apply, and the client refuses it. The engine holds no
+knowledge of any particular operation, and a kind declared without an answer fails the build rather
+than throwing when someone reaches it.
+
 **The vocabulary.** An operation is one of:
 
 - `capture` — a new item;
@@ -222,7 +236,11 @@ discipline ([ADR 8](../adr/0008-adapters-are-in-process-and-wired-by-the-host.md
 
 - **`Transport`** — how the client reaches `/v1`. A same-origin `fetch` in the web SPA; whatever a
   native shell binds. The client speaks the HTTP surface through it and knows nothing of the
-  origin, the proxy, or a credential a shell might one day carry.
+  origin, the proxy, or a credential a shell might one day carry. **Including where an asset's bytes
+  are**: an `<img>` fetches for itself and carries no header the transport would add, so the URL is
+  the port's answer rather than one the client concatenates. A shell that is not a browser on the
+  pool's origin — a native build, or a browser pointed at an authenticated remote daemon — answers it
+  differently, and that is the whole reason it sits here.
 - **`ClientStore`** — where the outbox and the cache live. A web shell backs it with the browser's
   own storage; a native shell with a file or a database. The client reads and writes the outbox and
   the cache through it and never names a storage engine.
@@ -326,11 +344,10 @@ that logic out of the one place it is meant to live.
       a store has nothing to roll back to, and replaying it safely means reconstructing reversals
       from the cache — or deciding that a refusal after a restart is reported without a rollback.
       Answered with the durable pair, not before it.
-- [ ] 2026-08-17 — **How assets reach a shell whose transport is not `fetch`.** An asset URL is
-      handed to the browser to fetch itself, which is the one place the client speaks to the pool
-      around the `Transport` port rather than through it. It is correct for a web shell and wrong
-      for a native one; object URLs and their lifetimes, or a shell-supplied resolver, are the
-      candidates. Forced by the second shell, not by this one.
+- [ ] 2026-08-17 — **What a non-browser shell puts behind `Transport.assetUrl`.** The port asks the
+      shell where an asset's bytes are, which is the seam; what a native shell answers with — a custom
+      protocol, an object URL and the lifetime that implies, a local cache path — is for the shell that
+      first needs one. The web answer is a URL on the pool's own origin.
 
 ---
 

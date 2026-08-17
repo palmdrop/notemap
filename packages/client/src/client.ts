@@ -6,7 +6,7 @@ import { envelopeFor, optimisticItem } from "./capture/envelope";
 import { Refused } from "./errors";
 import { derived, writable } from "./observable/observable";
 import { createOutbox } from "./outbox/outbox";
-import { sendOperation } from "./outbox/encode";
+import { sendOperation } from "./outbox/registry";
 import { createRouting } from "./routing/routing";
 import { persistItems } from "./state/persist";
 import { cached, emptyState, processed, type ClientState } from "./state/state";
@@ -55,10 +55,6 @@ export function createClient(config: ClientConfig): Client {
     now,
     mint: uuidv7,
   });
-
-  function assetContent(asset: string): string {
-    return `${transport.baseUrl}/v1/assets/${encodeURIComponent(asset)}/content`;
-  }
 
   async function mutate(operation: Parameters<typeof outbox.enqueue>[0]) {
     await outbox.enqueue(operation);
@@ -132,7 +128,7 @@ export function createClient(config: ClientConfig): Client {
         }),
       ),
 
-    assetContent,
+    assetContent: (asset) => transport.assetUrl(asset),
 
     says: (item) => {
       const said =
@@ -143,7 +139,9 @@ export function createClient(config: ClientConfig): Client {
     /** Only `image` captures: another payload type's slot may hold anything at all. */
     images: (item) =>
       item.payload.type === IMAGE
-        ? item.payload.assets.map((reference) => assetContent(reference.asset))
+        ? item.payload.assets.map((reference) =>
+            transport.assetUrl(reference.asset),
+          )
         : [],
 
     routing: createRouting({

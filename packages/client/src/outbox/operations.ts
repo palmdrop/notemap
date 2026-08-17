@@ -45,30 +45,3 @@ export type PendingOperation = {
   readonly state: OperationState;
   readonly failure?: string;
 };
-
-/** Which item an operation is about, and therefore what it drains in order with. */
-export function targetOf(operation: Operation): ItemId {
-  return operation.kind === "capture" ? operation.envelope.id : operation.item;
-}
-
-const OPPOSED: Partial<Record<OperationKind, OperationKind>> = {
-  archive: "unarchive",
-  unarchive: "archive",
-  tag: "untag",
-  untag: "tag",
-};
-
-/**
- * Two operations that undo each other on the same target. Everything else is
- * commutative and needs no clock: adding two tags in either order gives both.
- */
-export function opposes(one: Operation, other: Operation): boolean {
-  if (OPPOSED[one.kind] !== other.kind) return false;
-  if (targetOf(one) !== targetOf(other)) return false;
-
-  const sameTag =
-    (one.kind === "tag" || one.kind === "untag") &&
-    (other.kind === "tag" || other.kind === "untag");
-
-  return sameTag ? one.tag === other.tag : true;
-}

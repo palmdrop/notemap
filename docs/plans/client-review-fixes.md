@@ -17,9 +17,9 @@ Two exceptions, both deferred with a home rather than dropped:
 
 - **Finding 5** — the shell's verification gates and test runner, carried into
   [shell-test-runner-and-gates.md](shell-test-runner-and-gates.md).
-- **The operation switch shape** (`outbox/encode.ts`, `state/apply.ts`) — raised on the PR, and the
-  previous plan's own Unknown anticipated it. Taken up after these fixes land, when the switches can
-  be judged at their real size rather than their current one.
+- ~~**The operation switch shape**~~ — done after the rest, in Phase 6: each operation now answers
+  for itself behind a table the compiler checks. The switches' real fault was not length but the
+  `default:` arm, which let a ninth kind compile and throw at runtime instead.
 
 Work happens on `ui`, not a fresh branch: these are corrections to open PR #13, and they belong on
 the branch that PR reviews.
@@ -124,6 +124,24 @@ Depends on: Phases 1–4. Last, so it describes what actually landed.
 
 **Verify:** every finding number appears in the review's Resolution; no spec still states something
 the code contradicts.
+
+### Phase 6 — Each operation answers for itself
+
+Depends on: Phases 1–5. Agreed after them, once the switches could be judged at size.
+
+- [x] Give each operation one module holding its target, opposition, optimistic apply and reversal,
+      and its encoder — behind a table the compiler checks, so a kind declared without an answer stops
+      the build rather than throwing when someone reaches it. `outbox/encode.ts` and `state/apply.ts`
+      and their `default:` arms are gone.
+- [x] Operations stay plain data: `PendingOperation` persists to the store, so behaviour cannot ride
+      on the operation itself.
+- [x] Make where an asset's bytes live a `Transport` answer rather than a URL the client builds — an
+      `<img>` carries no header a transport would add, so a remote authenticated daemon breaks a
+      concatenated URL as surely as a native shell does.
+- [x] `git commit`.
+
+**Verify:** adding a ninth operation kind fails typecheck (it compiled silently before); all client
+tests pass unchanged, since none of this is a behaviour change.
 
 ---
 

@@ -29,6 +29,9 @@ export function mockTransport(handler: Handler): MockTransport {
     baseUrl: POOL,
     sent,
 
+    assetUrl: (asset) =>
+      `${POOL}/v1/assets/${encodeURIComponent(asset)}/content`,
+
     unreachable(next) {
       failing = next;
     },

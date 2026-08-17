@@ -2,15 +2,10 @@ import type { Item } from "../api/types";
 import { saidBy, Unreachable } from "../errors";
 import type { Writable } from "../observable/observable";
 import type { ClientStore } from "../ports/store";
-import { applyOperation, type Undo } from "../state/apply";
+import type { Undo } from "../state/applied";
 import { settle, type ClientState } from "../state/state";
-import {
-  opposes,
-  targetOf,
-  type Operation,
-  type OperationId,
-  type PendingOperation,
-} from "./operations";
+import type { Operation, OperationId, PendingOperation } from "./operations";
+import { applyOperation, opposes, targetOf } from "./registry";
 
 export type Outbox = {
   enqueue(operation: Operation): Promise<void>;

@@ -282,9 +282,11 @@ comments on PR #13.
    in the window has left. Applies to capture, unarchive and settle.
 3. **Fixed.** `client.md` now names core's three kinds of event, including returning at unchanged
    content time, and says plainly that the returned case is the one the client places itself.
-4. **Partly fixed.** `uploadAsset` goes through the typed client, joins `baseUrl` and is tested
-   against the mock transport. `assetContent` still hands the browser a URL; recorded as an open
-   question in client.md, to be answered by the shell that needs it.
+4. **Fixed.** `uploadAsset` goes through the typed client, joins `baseUrl` and is tested against the
+   mock transport. Asset URLs are now `Transport.assetUrl` — the port answers where an asset's bytes
+   are, because an `<img>` fetches for itself and carries no header a transport would add, so auth on
+   a remote daemon breaks a concatenated URL just as a native shell does. What a non-browser shell
+   puts behind it is an open question in client.md; the seam is not.
 5. **Deferred.** Carried whole into [shell-test-runner-and-gates.md](../plans/shell-test-runner-and-gates.md),
    widened by one — prettier cannot parse `.svelte` either. Neither confirmed bug was in the shell.
 6. **Fixed.** The shell drains on the browser's `online` event. Rehydration — the larger half — is an

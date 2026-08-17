@@ -2,11 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { createApi } from "../api/http";
 import { Unencodable } from "../errors";
-import { applyOperation } from "../state/apply";
 import { emptyState } from "../state/state";
 import { mockTransport } from "../testing/transport";
-import { sendOperation } from "./encode";
-import { opposes, targetOf, type Operation } from "./operations";
+import type { Operation } from "./operations";
+import { applyOperation, opposes, sendOperation, targetOf } from "./registry";
 
 const AT = "2026-08-17T12:00:00.000Z";
 
