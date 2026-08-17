@@ -24,6 +24,10 @@ about a fake. This plan closes that seam, and fills the holes the core suite has
 test that asserts a domain rule is a slow duplicate of a fast test; these assert only what none of
 those can — that the pieces agree.
 
+**Run deliberately, not routinely.** The full-stack suite boots a daemon per test and binds a real
+port, so it is not part of `pnpm -r test` and not part of finishing an ordinary feature. It is what
+you run after a change that crosses the layers, and what CI runs on every push.
+
 **Black box, by construction.** The suite starts the daemon the way a user does — a config file and
 `node apps/daemon/dist/main.js` — and touches nothing but the CLI, that file, and `/v1`. Measured:
 113ms from spawn to answering, 3ms from `SIGTERM` to exit. There is no in-process harness and
@@ -71,17 +75,23 @@ Depends on: Phase 1.
       `@notemap/client` and `@notemap/seed`. It is a sibling of `tests/integration` rather than part
       of it: that package exists to drive core through adapters with no host in sight, and its
       README says so. It does not depend on `@notemap/daemon` — it runs the built binary.
+- [ ] The package has **no `test` script**. `pnpm -r test` runs what a change is normally verified
+      by, and a suite that boots a daemon per test and binds a real port is not that. It gets
+      `test:stack`, which `pnpm -r test` skips for want of the script, and a root `pnpm test:stack`
+      that names it. `typecheck` stays, so the package is never invisible to the compiler.
 - [ ] A vitest `globalSetup` that builds the daemon, so the suite cannot run against a stale or
       missing `dist/`.
 - [ ] Harness: temp directories for pool, assets, mirror and vault, a config file written into them
       with `mirror.pollInterval` and `delivery.pollInterval` low, and a teardown that `SIGTERM`s the
       child and waits for it. A failed start prints the child's stderr — a suite that reports
       "connection refused" and nothing else is a suite nobody can debug.
-- [ ] Pick the port in the harness. `port = 0` is not an option: the config schema takes 1–65535, so
-      the OS cannot hand out an ephemeral one. Probe by binding a socket on 0, take what it was
-      given, close it, and write that into the config — then treat the daemon's own "port is already
-      in use" exit as a retry rather than a failure, since the probe leaves a window and vitest runs
-      files in parallel.
+- [ ] One fixed port, 4748 by default — beside the daemon's own 4747, so a suite run never fights
+      the daemon `pnpm dev` left running. `NOTEMAP_TEST_PORT` in the root `.env` overrides it,
+      alongside the `NOTEMAP_PORT` that is already there, and `.env.example` documents it. A port
+      that is busy fails the run with a message naming the variable to set; the harness does not
+      hunt for a free one, because a suite that quietly moves is a suite that hides what is running.
+- [ ] `fileParallelism: false` for this package. One port and one pool means one daemon at a time,
+      and vitest runs files in parallel by default.
 - [ ] Wait for the daemon's own startup line on stdout, which already names the address it bound,
       and confirm with one request. A poll loop against a port that is not open yet cannot tell
       "still starting" from "died on the way up".
@@ -105,9 +115,16 @@ Depends on: Phase 1.
       every one waits for something to appear. A test that asserts something has *not* happened yet
       is asserting on a race; where a negative matters — a delivery still owed, an operation still
       pending — it is asserted after a positive fence the daemon has demonstrably passed.
+- [ ] A line in `AGENTS.md`, under Verification: `pnpm test:stack` is not part of finishing a
+      feature. Run it after a change that crosses the layers — the HTTP surface, the host's wiring,
+      the client's transport, the config file — or when asked, and run `pnpm -r --silent test`
+      otherwise.
+- [ ] A CI job of its own in `.github/workflows/verify.yml`, after the existing one. Keeping the
+      suite out of the local default is about an agent's context and a developer's patience;
+      neither applies to a clean runner, and a suite nothing runs is a suite that rots.
 - [ ] `git commit`.
 
-**Verify:** `pnpm --filter @notemap/full-stack-tests test` green; `pgrep -f notemap-daemon` finds
+**Verify:** `pnpm test:stack` green; `pnpm -r test` does not run it; `pgrep -f notemap-daemon` finds
 nothing afterwards; each journey fails loudly, not silently, when the daemon never started.
 
 ### Phase 3 — Fill the core suite's gaps
@@ -135,6 +152,7 @@ Depends on: Phases 1–3.
 - [ ] `tests/full-stack/README.md`: what it covers that the other suites cannot, and why it runs the
       binary rather than importing the host.
 - [ ] `tests/seed/README.md`, and a line in `apps/daemon/README.md` about `pnpm seed`.
+- [ ] `NOTEMAP_TEST_PORT` in `.env.example`, saying what it is for and when to change it.
 - [ ] A paragraph in `tests/integration/README.md` distinguishing it from the new package, so the
       next person picks the right one.
 - [ ] `Shipped:` entries in `docs/specs/client.md`, `docs/specs/http-v1.md` and `docs/specs/core.md`.
