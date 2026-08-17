@@ -17,7 +17,8 @@
         <span class="break-words">
           {held.operation.kind}: {held.failure}
           {#if held.state === "unreachable"}
-            <em class="not-italic text-neutral-500">— waiting for the daemon</em>
+            <em class="text-neutral-500 not-italic">— waiting for the daemon</em
+            >
           {/if}
         </span>
 

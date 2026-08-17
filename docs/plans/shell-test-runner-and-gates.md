@@ -1,7 +1,7 @@
 # Shell test runner and verification gates
 
 **Date**: 2026-08-17
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: In progress <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/client.md`
 **Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
 
@@ -30,29 +30,30 @@ plan closes a verification hole; it does not move domain coverage into the app.
 
 ### Phase 0 — Branch
 
-- [ ] Create branch `agent/shell-test-runner-and-gates`.
+- [x] Create branch `agent/shell-test-runner-and-gates`.
 
 ### Phase 1 — Close the three gates that need no runner
 
 Depends on: nothing. The shell is currently outside typecheck, lint **and** formatting; none of
 that needs a test framework to fix, and CI picks all three up with no workflow change.
 
-- [ ] Add a `typecheck` script to `apps/ui` aliasing the existing `check`, so root `pnpm typecheck`
+- [x] Add a `typecheck` script to `apps/ui` aliasing the existing `check`, so root `pnpm typecheck`
       stops reporting "10 of 11 workspace projects" and `.github/workflows/verify.yml` covers the
       shell. This is the invisibility Phase 1 of the previous plan fixed for `packages/client` and
       left standing for the app.
-- [ ] Add `eslint-plugin-svelte` and wire it for `**/*.svelte` in `eslint.config.js`. `eslint .`
+- [x] Add `eslint-plugin-svelte` and wire it for `**/*.svelte` in `eslint.config.js`. `eslint .`
       matches no `.svelte` file today, so every component in the repo is unlinted. The plugin's
       current release supports the repo's eslint and Svelte majors.
-- [ ] Add `prettier-plugin-svelte`. Prettier cannot infer a parser for `.svelte` at all, so
+- [x] Add `prettier-plugin-svelte`. Prettier cannot infer a parser for `.svelte` at all, so
       `prettier --check .` skips every one silently — running it on a single file reports "No parser
       could be inferred" while the directory run passes.
-- [ ] Load `prettier-plugin-tailwindcss` from a prettier config. It is a devDependency of `apps/ui`
+- [x] Load `prettier-plugin-tailwindcss` from a prettier config. It is a devDependency of `apps/ui`
       that no config references, so class ordering in the shell is unenforced.
-- [ ] Clear whatever the three gates report on their first run.
-- [ ] `git commit`.
+- [x] Clear whatever the three gates report on their first run.
+- [x] `git commit`.
 
-**Verify:** root `pnpm typecheck` covers 11 of 11 projects; `pnpm exec eslint` on a `.svelte` file
+**Verify:** root `pnpm typecheck` runs `apps/ui` (the "10 of 11" line counts non-root workspace
+projects, not coverage — it read the same before and after); `pnpm exec eslint` on a `.svelte` file
 parses and reports rather than skipping; `pnpm exec prettier --check` on a `.svelte` file no longer
 says "No parser could be inferred"; `pnpm lint`, `pnpm format:check` and `pnpm typecheck` are green;
 CI is green on the branch.
