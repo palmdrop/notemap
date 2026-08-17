@@ -375,8 +375,55 @@ describe("reading a surface", () => {
     await client.loadFeed();
 
     const state: ListState = read(client.feed);
-    expect(state.failure).toBe("refused: bad-limit");
+    expect(state.failure).toBe(
+      "the app asked for a page size this daemon will not serve",
+    );
     expect(state.loading).toBe(false);
+  });
+
+  it("falls back to naming a code the document does not declare", async () => {
+    const { client } = clientOver(() => refusal(422, "invented-by-a-proxy"));
+
+    await client.loadFeed();
+
+    expect(read(client.feed).failure).toBe("refused: invented-by-a-proxy");
+  });
+});
+
+describe("a pool that did not decide", () => {
+  it("keeps a 5xx out of the refusal grammar and drains again", async () => {
+    let broken = true;
+    const { client } = clientOver(async (request) => {
+      if (broken) return json(500, { error: { code: "internal" } });
+
+      const body = (await request.json()) as { id: string };
+      return captured(anItem(body.id));
+    });
+
+    const optimistic = await client.capture({ channel: "web", text: "held" });
+    await client.drain();
+
+    expect(read(client.outbox)[0]?.state).toBe("unreachable");
+    expect(read(client.outbox)[0]?.failure).toBe(
+      "the daemon is having trouble; this will be tried again",
+    );
+    expect(read(client.feed).items.map((item) => item.id)).toEqual([
+      optimistic.id,
+    ]);
+
+    broken = false;
+    await client.drain();
+    expect(read(client.outbox)).toEqual([]);
+  });
+
+  it("still rolls back a 4xx, which is the pool saying no", async () => {
+    const { client } = clientOver(() => refusal(409, "capture-id-conflict"));
+
+    await client.capture({ channel: "web", text: "conflicting" });
+    await client.drain();
+
+    expect(read(client.feed).items).toEqual([]);
+    expect(read(client.outbox)[0]?.state).toBe("refused");
   });
 });
 

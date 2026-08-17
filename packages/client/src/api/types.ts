@@ -1,4 +1,23 @@
-import type { components } from "./generated";
+import type { components, paths } from "./generated";
+
+type Verb = "get" | "post" | "put" | "delete" | "patch";
+type OperationOf<T> = T extends object
+  ? NonNullable<T[Extract<keyof T, Verb>]>
+  : never;
+type ResponsesOf<T> = T extends { responses: infer R } ? R : never;
+type BodyOf<T> = T extends object ? T[keyof T] : never;
+type JsonOf<T> = T extends { content: { "application/json": infer B } }
+  ? B
+  : never;
+type CodeOf<T> = T extends { error: { code: infer C } } ? C : never;
+
+/**
+ * Every refusal `/v1` can answer with, walked out of the document rather than
+ * listed by hand, so a code the daemon adds cannot go unnoticed here.
+ */
+export type RefusalCode = CodeOf<
+  JsonOf<BodyOf<ResponsesOf<OperationOf<paths[keyof paths]>>>>
+>;
 
 export type Item = components["schemas"]["Item"];
 export type ItemSlice = components["schemas"]["ItemSlice"];
