@@ -63,19 +63,23 @@ CI is green on the branch.
 Depends on: Phase 1. This is the actual blocker, and it is a production change rather than a test
 concern, so it lands and is verified on its own.
 
-- [ ] `apps/ui/src/lib/client.ts` exports a module-level singleton constructed at import time, and
+- [x] `apps/ui/src/lib/client.ts` exports a module-level singleton constructed at import time, and
       every component imports it directly. No test can give a component a different `Transport`
       without reaching around the module system.
-- [ ] Decide between Svelte context — the client created once in `+layout.svelte` and read by an
-      accessor — and per-file module mocking. Context matches client.md's rule that the shell
-      supplies the ports and keeps the singleton out of the component graph; module mocking changes
-      no production code but puts a mock factory in every test file. See Unknowns.
-- [ ] Whichever is chosen, stop components reaching for a module-level singleton, or record
-      explicitly that they still do and why.
-- [ ] `git commit`.
+- [x] Decide between Svelte context — the client created once in `+layout.svelte` and read by an
+      accessor — and per-file module mocking. **Decided: module mocking** (2026-08-17). Context is
+      the cleaner shape and remains the one client.md implies, but it touches every component on a
+      branch whose point is verification, and a mocked module gives the tests the same substitution
+      for now.
+- [x] Whichever is chosen, stop components reaching for a module-level singleton, or record
+      explicitly that they still do and why. **They still do**: `$lib/client.ts` constructs the
+      ports at import time and every component imports that instance. Tests replace the module with
+      `vi.mock("$lib/client")`, so the ports are substitutable from a test and nowhere else.
+      Revisit when a second shell, or a second client instance in one shell, forces the injection.
+- [x] `git commit`.
 
-**Verify:** `pnpm --filter @notemap/ui check` and `vite build` succeed; against a running daemon and
-`vite dev`, capture, feed, queue, archive and routing all still behave as they did before the change.
+**Verify:** no production code changed, so there is nothing to re-verify by hand; `pnpm --filter
+@notemap/ui check` and the gates from Phase 1 stay green.
 
 ### Phase 3 — Stand the runner up
 
@@ -121,11 +125,9 @@ Depends on: Phase 3. Only the criteria that are the shell's — what it draws, e
   adapter, the integration suite and `packages/client` — well beyond this plan. Fallback: jsdom on
   the current vitest now, and revisit if jsdom's gaps (no layout, no real scrolling, no
   `IntersectionObserver`) start costing more than the bump would.
-- **Context injection versus module mocking** (Phase 2). Context is the cleaner shape and the one
-  client.md implies, but it touches every component in a branch whose point is verification.
-  Fallback: mock `$lib/client` per test file, change no production code, and record that the shell
-  keeps an import-time singleton — then revisit when a second shell or a second client instance
-  forces it.
+- **Context injection versus module mocking** (Phase 2). **Resolved: the fallback.** Each test file
+  mocks `$lib/client`, no production code changed, and the shell keeps an import-time singleton —
+  revisited when a second shell or a second client instance forces it.
 - **How much the first lint and format runs report.** Neither gate has ever run on a `.svelte` file
   here. Fallback: if the volume is large, land the plugin wiring and the resulting reformat as two
   separate commits so the mechanical diff stays reviewable, and disable specific rules with a note
