@@ -24,6 +24,10 @@ about a fake. This plan closes that seam, and fills the holes the core suite has
 test that asserts a domain rule is a slow duplicate of a fast test; these assert only what none of
 those can — that the pieces agree.
 
+The browser is above this plan's ceiling: "full stack" here ends at `@notemap/client`, and covering
+the shell means Playwright, a browser in CI and a different kind of flake. That gets its own plan,
+on top of the harness and seeder this one builds.
+
 **Run deliberately, not routinely.** The full-stack suite boots a daemon per test and binds a real
 port, so it is not part of `pnpm -r test` and not part of finishing an ordinary feature. It is what
 you run after a change that crosses the layers, and what CI runs on every push.
@@ -115,6 +119,11 @@ Depends on: Phase 1.
       every one waits for something to appear. A test that asserts something has *not* happened yet
       is asserting on a race; where a negative matters — a delivery still owed, an operation still
       pending — it is asserted after a positive fence the daemon has demonstrably passed.
+- [ ] A test that the committed `apps/daemon/openapi.json` is what the daemon serves. It lands in
+      `apps/daemon`'s own suite over `app.request`, not here: `packages/client` generates its types
+      from that file, so a stale one silently invalidates them, and a drift check is worth nothing
+      if it only runs on demand. Response bodies are not validated against the document — the routes
+      own their shapes and already test them.
 - [ ] A line in `AGENTS.md`, under Verification: `pnpm test:stack` is not part of finishing a
       feature. Run it after a change that crosses the layers — the HTTP surface, the host's wiring,
       the client's transport, the config file — or when asked, and run `pnpm -r --silent test`
