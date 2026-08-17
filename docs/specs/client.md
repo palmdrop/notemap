@@ -4,6 +4,15 @@
 **Last updated**: 2026-08-17
 **Shipped**:
 
+- 2026-08-17 — **The shell's half of the acceptance criteria is executable.** `apps/ui` has a test
+  runner and is covered by the same lint, format and typecheck commands as every other package, and
+  what the shell draws, enables and disables — an optimistic capture before the pool answers, a
+  refusal shown and dismissed, archive available while routing and mark-processed are disabled and
+  say why, the scroll mark restored without reaching the pool, and a typed note and a picture
+  stamping different capture channels — is asserted by tests rather than walked by hand. Nothing in
+  the client contract changed. See
+  [shell-test-runner-and-gates.md](../plans/shell-test-runner-and-gates.md).
+
 - 2026-08-17 — **The operation vocabulary answers for itself, and the transport owns asset URLs.**
   Each operation carries its target, opposition, optimistic apply and encoder in one place behind a
   table the compiler checks, so a kind cannot be declared without an answer; and

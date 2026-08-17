@@ -176,10 +176,12 @@ client-routed deep link both answer the shell same-origin; `curl` an asset and c
   without a wire. If carrying an un-encodable operation in the type turns out to complicate the
   engine rather than document it, drop it to a comment-free enum extension in
   [editing-and-classification.md](editing-and-classification.md) instead.
-- **Whether `apps/ui` needs a test runner.** It has none, and root `pnpm test` would skip it. Phases
-  3 and 4 add rendering behaviour worth a test. Fallback: if adding `vitest` to a SvelteKit app
-  proves fiddly, keep shell coverage to the manual verify steps above and say so, rather than
-  claiming tests that do not run.
+- **Whether `apps/ui` needs a test runner.** **Answered: yes** (2026-08-17,
+  [shell-test-runner-and-gates.md](shell-test-runner-and-gates.md)). vitest through the SvelteKit
+  vite plugin on jsdom, and the shell's half of client.md's acceptance criteria — what it draws,
+  enables and disables — is asserted rather than walked by hand. The load-bearing state tests stay
+  in `packages/client`. The same plan closed the three gates the shell was outside: lint, format and
+  root `typecheck`.
 - **Whether the daemon needs any change here.** Source-per-channel needs none — core accepts any
   source id undeclared ([core.md](../specs/core.md#intake-and-sync)); declaring a channel in
   `config.example.toml` only attaches policy. If policy demonstration is wanted, add the channels to

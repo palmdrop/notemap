@@ -1,0 +1,4 @@
+{
+  "plugins": ["prettier-plugin-svelte", "prettier-plugin-tailwindcss"],
+  "tailwindStylesheet": "apps/ui/src/routes/layout.css"
+}

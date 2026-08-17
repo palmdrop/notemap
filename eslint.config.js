@@ -1,4 +1,5 @@
 import js from "@eslint/js";
+import svelte from "eslint-plugin-svelte";
 import tseslint from "typescript-eslint";
 import prettier from "eslint-config-prettier";
 
@@ -34,7 +35,9 @@ export default tseslint.config(
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  ...svelte.configs.recommended,
   prettier,
+  ...svelte.configs.prettier,
   {
     // Omitting fields by destructuring rest is how a projection stays
     // exhaustive; the discarded bindings are the point, not an oversight.
@@ -43,6 +46,23 @@ export default tseslint.config(
         "error",
         { ignoreRestSiblings: true },
       ],
+    },
+  },
+  {
+    // The shell writes its components in TypeScript, which the Svelte parser
+    // only reads when it is handed the TypeScript one for the script block.
+    files: ["**/*.svelte"],
+    languageOptions: {
+      parserOptions: { parser: tseslint.parser },
+    },
+    rules: {
+      // What typescript-eslint already turns off for `.ts`: the compiler knows
+      // the DOM lib, and `svelte-check` is what runs it over a component.
+      "no-undef": "off",
+
+      // `resolve()` exists for a base path, and the shell is served from the
+      // origin root — two of its links leave SvelteKit for the daemon entirely.
+      "svelte/no-navigation-without-resolve": "off",
     },
   },
   {
