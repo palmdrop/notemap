@@ -139,10 +139,13 @@ export function daemon(
 
   const sweeper = startSweeper(pool, { intervalMs: NEVER_POLLS });
 
+  const app = createApp(pool, {
+    maxUploadBytes: options.maxUploadBytes ?? DEFAULT_MAX_UPLOAD_BYTES,
+  });
+  const answered = trackResponses(app);
+
   return {
-    app: createApp(pool, {
-      maxUploadBytes: options.maxUploadBytes ?? DEFAULT_MAX_UPLOAD_BYTES,
-    }),
+    app,
     mirrorRoot,
     assetRoot,
     vaultRoot,
@@ -151,11 +154,39 @@ export function daemon(
     deliver: async () => (await deliveries?.drain()) ?? 0,
     sweep: () => sweeper.run(),
     cleanup: async () => {
+      await answered.close();
       await runner?.stop();
       await deliveries?.stop();
       await sweeper.stop();
       await pool.close();
       rmSync(directory, { recursive: true, force: true });
+    },
+  };
+}
+
+/**
+ * An asset's bytes are streamed off an open file, and a body nobody reads holds
+ * that descriptor until the collector gets to it — which Node reports as an
+ * error, in whichever test happened to be running. A test asserting on headers
+ * has no reason to read the body, so the fixture cancels what it left.
+ */
+function trackResponses(app: Hono): { close: () => Promise<void> } {
+  const answered = new Set<Response>();
+  const request = app.request.bind(app);
+
+  app.request = async (...args: Parameters<typeof request>) => {
+    const response = await request(...args);
+    answered.add(response);
+    return response;
+  };
+
+  return {
+    close: async () => {
+      const unread = [...answered].filter(
+        (response) => !response.bodyUsed && response.body !== null,
+      );
+      answered.clear();
+      await Promise.all(unread.map((response) => response.body?.cancel()));
     },
   };
 }

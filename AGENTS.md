@@ -29,6 +29,8 @@ Git
 Verification
 
 - Run typecheck, tests and linters when you finish a feature or a larger test.
+- Run tests as `pnpm -r --silent test`, which prints nothing at all; on a non-zero exit, re-run
+  the failing package without `--silent` to see why.
 - Resolve every issue before you commit or state that you are done.
 
 ---
@@ -103,4 +105,10 @@ what they test.
 ## Verification
 
 When you are done implementing a feature, or making a larger test, run typecheck, tests and linters. 
-Resolve any issues before commiting or stating that you are done. 
+Resolve any issues before commiting or stating that you are done.
+
+Run the tests as `pnpm -r --silent test`. It prints nothing — not even the failures — and says
+what happened through its exit code alone, which is all a green run has to say and is worth the
+few lines a full run spends per package. When it exits non-zero, re-run the package that failed
+without `--silent`, or run `pnpm test` in full, and read it there. This is for agents, whose
+context the noise costs; run them however you like by hand. 
