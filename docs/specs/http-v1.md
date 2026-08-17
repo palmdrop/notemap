@@ -1,9 +1,20 @@
 # Spec: HTTP API (`/v1`)
 
-**Status**: Draft — capture, feed, assets, the action log, the queue, the archive and routing to a
-destination are settled; the rest is stub
+**Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
+editing and routing to a destination are settled; the rest is stub
 **Last updated**: 2026-08-17
 **Shipped**:
+
+- 2026-08-17 — **Tagging, untagging and editing are on the wire.**
+  `POST /v1/items/{id}/tag` and `/untag` carry the tag in the **body**, because a namespaced tag has
+  a slash in it and a path segment cannot hold one without an encoding every layer has to agree to
+  leave alone; both absorb a call for what the item already says rather than refusing it, and
+  neither carries an agent — with no authentication a tag added here is an anonymous person, as
+  archiving and routing already are. `POST /v1/items/{id}/edit` takes the payload **verbatim** and
+  answers the `EditOutcome`, so a client reads amend-versus-revise off the pool rather than
+  declaring an intent it cannot know is still true. `item-superseded` joined the refusal table at
+  `409` and `payload-type-changed` at `422`, both by the rule already written.
+  ([plan](../plans/editing-and-classification.md))
 
 - 2026-08-17 — **The document is what the client's refusals are checked against.** Every code the
   document declares now has a reading in the client, derived from the generated types rather than

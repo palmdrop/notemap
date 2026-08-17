@@ -4,6 +4,17 @@
 **Last updated**: 2026-08-17
 **Shipped**:
 
+- 2026-08-17 — **Editing and classification reach the pool.** `tag`, `untag` and `edit` are outbox
+  operations now, applied at once and reconciled with what the pool recorded — and an `edit` is the
+  first operation whose answer may take a different shape from the guess, so a handler settles the
+  pool's reply rather than merely handing back an item: an optimistic amendment is reversed before
+  the revision the pool recorded takes its place. **The hand-over seal has no window in the
+  outbox**, which is the one thing this spec had wrong: every mutation drains, so a capture is
+  claimed and sent in the turn it is enqueued, and an attempt that failed at the socket cannot be
+  told from a lost response. The pre-hand-over draft is the shell's compose surface, and the
+  client's `edit` is always a domain edit. The queue offers tags and an edit box, neither disabled
+  offline. ([plan](../plans/editing-and-classification.md))
+
 - 2026-08-17 — **The shell's half of the acceptance criteria is executable.** `apps/ui` has a test
   runner and is covered by the same lint, format and typecheck commands as every other package, and
   what the shell draws, enables and disables — an optimistic capture before the pool answers, a

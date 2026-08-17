@@ -1,9 +1,9 @@
 # Editing and classification
 
 **Date**: 2026-08-17
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`
-**Closed**:
+**Closed**: 2026-08-17
 
 ---
 
@@ -43,7 +43,7 @@ and shares nothing with editing but a neighbouring line in `pool.ts`.
 
 ### Phase 0 — Branch
 
-- [ ] Create branch `agent/editing-and-classification`.
+- [x] Create branch `agent/editing-and-classification`.
 
 ### Phase 1 — Classification through the stack
 
@@ -51,15 +51,15 @@ Depends on: nothing. Tags are the smaller of the two and prove the port-then-cor
 before editing needs it. The sqlite store already has an `item_tags` table with the columns core's
 `Tag` needs, so no migration is expected.
 
-- [ ] Add the tag writes to `PoolTx`. The interface is deliberately partial and grows one slice at a
+- [x] Add the tag writes to `PoolTx`. The interface is deliberately partial and grows one slice at a
       time, so add what tagging needs and no more.
-- [ ] Implement them in `@notemap/store-sqlite` over the existing `item_tags` table.
-- [ ] Implement `items.tag` and `items.untag` in core: every tag records **which agent added it**,
+- [x] Implement them in `@notemap/store-sqlite` over the existing `item_tags` table.
+- [x] Implement `items.tag` and `items.untag` in core: every tag records **which agent added it**,
       classifying does not remove an item from the queue, and both refuse under `TagRefusal` when the
       subject is missing or purged.
-- [ ] Append an action for each, and enqueue a mirror job — tags are mirrored material
+- [x] Append an action for each, and enqueue a mirror job — tags are mirrored material
       ([core.md](../specs/core.md#the-mirror)).
-- [ ] `git commit`.
+- [x] `git commit`.
 
 **Verify:** `pnpm --filter @notemap/core test` and `pnpm --filter @notemap/store-sqlite test` green,
 covering: a tag round-trips with its agent and time; tagging twice is idempotent rather than
@@ -70,20 +70,20 @@ stays in the queue; and each operation leaves an action and a pending mirror job
 
 Depends on: Phase 1, for the port-widening pattern. The harder half: one operation with two outcomes.
 
-- [ ] Add the in-place item update `PoolTx` needs for amendment. A revision needs no new write —
+- [x] Add the in-place item update `PoolTx` needs for amendment. A revision needs no new write —
       `insertItem` already carries `revisionOf`.
-- [ ] Implement it in `@notemap/store-sqlite`.
-- [ ] Implement `items.edit`, choosing between the two outcomes core already types
+- [x] Implement it in `@notemap/store-sqlite`.
+- [x] Implement `items.edit`, choosing between the two outcomes core already types
       (`EditOutcome`): **amend in place** when the item is the newest in the feed and still
       unprocessed, **append a revision** otherwise. Only a capture that becomes the new head seals
       it; there is no timeout.
-- [ ] Carry the revision rules `core.md` sets out: it keeps the original's capture time and source
+- [x] Carry the revision rules `core.md` sets out: it keeps the original's capture time and source
       identity, tags carry over with their attribution, routing records and archive state do not, and
       it starts unprocessed.
-- [ ] Refuse under `EditRefusal`: a superseded item is `item-superseded`, a payload that fails its
+- [x] Refuse under `EditRefusal`: a superseded item is `item-superseded`, a payload that fails its
       schema is `payload-invalid`, and a changed payload type is `payload-type-changed`.
-- [ ] Append an action and enqueue a mirror job for either outcome.
-- [ ] `git commit`.
+- [x] Append an action and enqueue a mirror job for either outcome.
+- [x] `git commit`.
 
 **Verify:** `pnpm --filter @notemap/core test` green, covering: editing the unprocessed head amends
 in place; editing once a later capture has taken the head appends a revision; a revision ties with
@@ -97,13 +97,13 @@ pending mirror job.
 Depends on: Phases 1 and 2. `http-v1.md` currently lists tagging and untagging as still stub and does
 not mention editing at all — the spec and the routes land together.
 
-- [ ] Write the tagging, untagging and editing sections into
+- [x] Write the tagging, untagging and editing sections into
       [http-v1.md](../specs/http-v1.md), and move them out of its still-stub list.
-- [ ] Add the new refusals to its refusal-to-status table. `payload-invalid` is already there at
+- [x] Add the new refusals to its refusal-to-status table. `payload-invalid` is already there at
       `422`; `item-superseded` and `payload-type-changed` are not.
-- [ ] Implement the routes in `apps/daemon`, following the existing route modules, and regenerate
+- [x] Implement the routes in `apps/daemon`, following the existing route modules, and regenerate
       `openapi.json`.
-- [ ] `git commit`.
+- [x] `git commit`.
 
 **Verify:** daemon route tests alongside the existing ones cover each route's success and each
 refusal's status; `pnpm --filter @notemap/daemon test` green; the regenerated `openapi.json` is
@@ -115,16 +115,16 @@ Depends on: Phase 3, and on
 [client-package-and-online-shell.md](client-package-and-online-shell.md) having landed the outbox
 engine. This phase adds encoders to an engine that already exists.
 
-- [ ] Encode `tag`, `untag` and `edit` as outbox operations against the new routes, reusing the
+- [x] Encode `tag`, `untag` and `edit` as outbox operations against the new routes, reusing the
       engine's optimistic apply, in-order drain, rollback and operation-time ordering unchanged.
-- [ ] Implement the **hand-over edit seal**: a pending capture is edited freely in place while its
+- [x] Implement the **hand-over edit seal**: a pending capture is edited freely in place while its
       `capture` operation is still un-sent and may be discarded; the `POST` seals it, and an edit
       after that is sent as a domain `edit`, per
       [client.md](../specs/client.md#editing-and-the-hand-over-seal).
-- [ ] Reconcile amend-versus-revise from the pool's ack rather than predicting it — the optimistic
+- [x] Reconcile amend-versus-revise from the pool's ack rather than predicting it — the optimistic
       view may show an amendment and settle into a revision.
-- [ ] Offer tagging on an item and editing in the shell.
-- [ ] `git commit`.
+- [x] Offer tagging on an item and editing in the shell.
+- [x] `git commit`.
 
 **Verify:** `pnpm --filter @notemap/client test` covers the seal (free edit before send, domain edit
 after) and reconciling an optimistic amendment into a revision, against a mock `Transport`. Against a
@@ -135,22 +135,19 @@ it in place; editing an older one visibly becomes a revision.
 
 ## Unknowns
 
-- **Whether amendment needs a distinct store write or is an `insertItem` variant.** Named in Phase 2
-  as an in-place update because the head is one row. Fallback: if the store's item shape makes an
-  update awkward, express amendment as a replace within the transaction — the outcome core reports
-  is unchanged either way.
-- **How a client's in-place edit is re-evaluated on arrival.** `core.md` says an edit from a client
-  that cannot know whether it still holds the head is recorded as a revision if it no longer does.
-  Whether the wire needs to carry the client's intent, or the pool simply decides from current state,
-  is settled in Phase 3. Fallback: the pool decides unilaterally; the client already treats the
-  outcome as the pool's call.
-- **Tag idempotency semantics.** Whether re-tagging is a no-op or refreshes the attribution and time.
-  `core.md` does not say. Phase 1 assumes no-op; if that is wrong, say so and amend `core.md` in the
-  same change rather than encoding a second answer in the store.
-- **Whether editing invalidates enrichment observably.** `core.md` says amending or revising
-  invalidates enrichment attached to the old content, which becomes eligible to run again. Nothing
-  runs enrichment yet, so this is a no-op today. Fallback: implement the invalidation only when the
-  enrichment slice exists, and record here that Phase 2 deliberately left it.
+- **Whether amendment needs a distinct store write or is an `insertItem` variant.** *Settled: a
+  distinct write.* `PoolTx.amendItem` updates the row and replaces its asset references.
+- **How a client's in-place edit is re-evaluated on arrival.** *Settled: the pool decides
+  unilaterally.* `POST /v1/items/{id}/edit` carries a payload and no intent, and answers the
+  `EditOutcome`; the client reconciles to it.
+- **Tag idempotency semantics.** *Settled: both halves absorb.* Re-tagging keeps the attribution
+  and time the item has, and untagging what is not there changes nothing; neither logs or owes the
+  mirror anything. `core.md`'s classification section now argues it against archiving's opposite
+  call. This reverses one line of Phase 1's verify, which expected untagging an absent tag to
+  refuse: refusing one direction while absorbing the other treats the same fact two ways.
+- **Whether editing invalidates enrichment observably.** *Settled: deliberately left.* Nothing runs
+  enrichment, so there is nothing to invalidate; `core.md` now says so beside the rule, and the
+  enrichment slice carries it out.
 
 ---
 
@@ -161,6 +158,24 @@ ALWAYS CREATE TESTS for the behavior implemented, unless appropriate tests alrea
 Phases 1 and 2 carry the load: the amend-versus-revise decision, the revision's carry-over rules and
 the ordering of a revision against its original are where this can quietly go wrong, and none of them
 needs a daemon.
+
+---
+
+## What did not go as written
+
+- **The hand-over seal has no window in the outbox.** `client.md` had a pending capture edited
+  freely "while the `capture` operation still sits un-sent"; every mutation drains, so a capture is
+  claimed and sent in the turn it is enqueued, and an attempt that failed at the socket cannot be
+  told from a lost response. The draft is the shell's compose surface instead, and the client's
+  `edit` is always a domain edit. `client.md` is amended, and the decision it records — free edits
+  end at hand-over, not ack — is unchanged.
+- **`EditRefusal` gained the two asset refusals** a capture already has, since an edit may change an
+  attached file and an unchecked reference would surface as a `500`.
+- **The feed needed a sort key.** Placing a revision after its original by the link rather than the
+  id is not free: the SQLite driver now carries the chain a row is in and its distance from the
+  root, written once from `revision_of`.
+- **Purge is out of scope, so `item-purged` cannot be raised.** Phase 1's verify asked for tagging a
+  purged item to refuse; nothing can purge, so the tests cover `no-such-item` instead.
 
 ---
 

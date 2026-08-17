@@ -113,6 +113,19 @@
   the decision's, a destination's own idea of when it received something is no longer asked for, and
   purge is told to find an item's jobs by the item rather than the subject.
   ([review](../reviews/delivery-machinery-2026-08-17.md))
+- 2026-08-17 — **Items can be edited and classified.** `items.tag` and `items.untag` are built over
+  the `item_tags` table that was already there: every tag records the agent that added it,
+  classifying moves nothing in the queue, and **both halves absorb** a call asking for what the item
+  already says — the opposite of archiving's, because a tag's name is the whole of the request where
+  an archive carries a reason a second decision would discard. `items.edit` decides between the two
+  outcomes core already typed: **amend in place** while the item is the newest in the feed and
+  unprocessed, **append a revision** otherwise, carrying the original's capture time, source
+  identity and tags with their attribution and leaving archive state and routing records behind. A
+  revision ties with its original in the feed and follows it **by the link, never by an id**, which
+  the SQLite driver pays for with a chain key beside `created_at` rather than a recursive walk per
+  page. `EditRefusal` gained the two asset refusals a capture has, since an edit may change an
+  attached file. Enrichment invalidation is stated and deliberately not carried out: nothing runs
+  enrichment to invalidate. ([plan](../plans/editing-and-classification.md))
 
 ---
 
