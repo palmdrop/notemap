@@ -410,6 +410,30 @@ export const MIGRATIONS: readonly string[] = [
     WHEN (NEW.target_kind = 'destination') <> (NEW.target IS NOT NULL)
     BEGIN SELECT RAISE(ABORT, 'a destination target names what it targeted'); END;
   `,
+
+  `
+  -- The feed's sort key. A revision carries its original's capture time, so the
+  -- two tie on \`created_at\` and an id may not break the tie: the revision link
+  -- is what places one after the other. \`root_id\` is the capture at the foot of
+  -- a chain and \`revision_depth\` the distance from it, so the pair orders a
+  -- chain internally and orders unrelated items by their root, which is the
+  -- arbitrary-but-stable key the tie between them is allowed to break on.
+  --
+  -- Derived, and stored anyway: unlike \`superseded\` or \`processed\`, this is
+  -- written once with the row from a link that is never rewritten afterwards —
+  -- purge takes a whole chain — so there is no later state for it to disagree
+  -- with. Computing it per read means a recursive walk of the table on every
+  -- page of the one surface that accumulates forever.
+  ALTER TABLE items ADD COLUMN root_id        TEXT    NOT NULL DEFAULT '';
+  ALTER TABLE items ADD COLUMN revision_depth INTEGER NOT NULL DEFAULT 0;
+
+  -- Nothing could write a revision before this migration, so every existing row
+  -- is the root of its own chain.
+  UPDATE items SET root_id = id;
+
+  DROP INDEX items_feed;
+  CREATE INDEX items_feed ON items (created_at, root_id, revision_depth);
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

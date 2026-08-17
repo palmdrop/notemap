@@ -227,8 +227,20 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   accepted, even before a response arrives.
 - Where a client cannot know whether it still holds the head, its in-place edit is
   re-evaluated on arrival and recorded as a revision if the item is no longer the head.
+- **An edit is refused what a capture's payload is refused for** (stated 2026-08-17), less the
+  one refusal it cannot raise. Editing may change an attached file as readily as the text, so a
+  content that fails its schema, a required slot left empty and a reference to an asset the pool
+  does not hold are refused exactly as at capture. A payload type it does not know is not among
+  them: the type an edit carries is the item's own, since one that differs is already refused as
+  `payload-type-changed`.
+- **Both outcomes touch two items, and a revision owes two mirror writes** (stated 2026-08-17).
+  The revision is new material; the original is superseded, which takes it out of the queue, so
+  its `modified_at` moves and a delta read that missed it would leave a client showing work that
+  has gone.
 - Amending or revising an item invalidates the enrichment attached to the old content, which
-  becomes eligible to run again.
+  becomes eligible to run again. *Nothing runs enrichment yet, so this is a rule with no
+  observable effect today; it is carried out by the slice that builds enrichment, not by the one
+  that built editing.*
 
 ### Classification
 

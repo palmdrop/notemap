@@ -25,6 +25,7 @@ import type {
   MintableId,
   OrderedPage,
   Page,
+  Payload,
   PoolStore,
   PoolTx,
   Position,
@@ -54,6 +55,7 @@ import { LAST_MODIFIED_AT, migrate } from "./migrations";
 import type {
   ActionRow,
   AssetRow,
+  ChainColumns,
   ItemAssetRow,
   ItemRow,
   ItemTagRow,
@@ -82,6 +84,15 @@ const ITEM_COLUMNS = `
   payload_metadata, created_at, content_updated_at, modified_at,
   revision_of, archived_at, archive_reason
 `;
+
+/**
+ * What orders the feed beside `created_at`, which a revision shares with the
+ * item it supersedes. The link places one after the other; an id may not.
+ */
+const CHAIN_COLUMNS = `root_id, revision_depth`;
+
+/** Total on its own: one row is one place in one chain. */
+const FEED_KEY = `created_at, root_id, revision_depth`;
 
 const ASSET_COLUMNS = `id, filename, mime, blob, bytes, stored_at`;
 
@@ -204,9 +215,24 @@ export function createSqlitePoolStore(
   const clock = config.clock ?? systemClock;
 
   const insertItem = write.query(`
-    INSERT INTO items (${ITEM_COLUMNS})
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO items (${ITEM_COLUMNS}, root_id, revision_depth)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
+  const chainOf = write.query<ChainColumns, [string]>(
+    `SELECT ${CHAIN_COLUMNS} FROM items WHERE id = ?`,
+  );
+  const amend = write.query<
+    never,
+    [string, string, string, number, number, string]
+  >(`
+    UPDATE items
+    SET payload_type = ?, payload_content = ?, payload_metadata = ?,
+        content_updated_at = ?, modified_at = ?
+    WHERE id = ?
+  `);
+  const dropReferences = write.query<never, [string]>(
+    `DELETE FROM item_assets WHERE item_id = ?`,
+  );
   const insertTag = write.query(`
     INSERT INTO item_tags (item_id, name, by_kind, by_ref, added_at)
     VALUES (?, ?, ?, ?, ?)
@@ -270,6 +296,23 @@ export function createSqlitePoolStore(
     ON CONFLICT (key) DO UPDATE SET value = excluded.value
   `);
 
+  /** Where a row sits in its revision chain, taken from the one it revises. */
+  function chain(record: ItemRecord): ChainColumns {
+    if (record.revisionOf === undefined) {
+      return { root_id: record.id, revision_depth: 0 };
+    }
+
+    const original = chainOf.get(record.revisionOf);
+    if (original === undefined) {
+      throw new Error(`no item ${record.revisionOf} to revise`);
+    }
+
+    return {
+      root_id: original.root_id,
+      revision_depth: original.revision_depth + 1,
+    };
+  }
+
   function nextModifiedAt(): number {
     const previous = lastModifiedAt.get(LAST_MODIFIED_AT);
     const next = Math.max(toMillis(clock.now()), (previous?.value ?? 0) + 1);
@@ -293,8 +336,37 @@ export function createSqlitePoolStore(
        WHERE source_id = ? AND source_item_id = ? AND revision_of IS NULL`,
     );
     const newestItem = source.query<ItemRow, []>(
-      `SELECT ${ITEM_COLUMNS} FROM items ORDER BY created_at DESC, id DESC LIMIT 1`,
+      `SELECT ${ITEM_COLUMNS} FROM items
+       ORDER BY created_at DESC, root_id DESC, revision_depth DESC LIMIT 1`,
     );
+    const chainAt = source.query<ChainColumns, [string]>(
+      `SELECT ${CHAIN_COLUMNS} FROM items WHERE id = ?`,
+    );
+
+    /**
+     * The feed continues from a position naming a row, and orders on a key that
+     * row carries. A row that has since gone is read as the root of its own
+     * chain, which is what it was unless it was a revision — and a purge that
+     * took one took the chain with it, so nothing better is left to read.
+     */
+    function feedKeyset(
+      after: Bound,
+      comparison: "<" | ">",
+    ): { readonly sql: string; readonly params: Bindable[] } {
+      if (after.id === undefined) {
+        return { sql: `created_at ${comparison} ?`, params: [after.at] };
+      }
+
+      const chain = chainAt.get(after.id) ?? {
+        root_id: after.id,
+        revision_depth: 0,
+      };
+
+      return {
+        sql: `(${FEED_KEY}) ${comparison} (?, ?, ?)`,
+        params: [after.at, chain.root_id, chain.revision_depth],
+      };
+    }
     const assetById = source.query<AssetRow, [string]>(
       `SELECT ${ASSET_COLUMNS} FROM assets WHERE id = ?`,
     );
@@ -471,16 +543,15 @@ export function createSqlitePoolStore(
 
         const { rows, next } = keysetPage(page, (after, limit) => {
           const keyset =
-            after === undefined
-              ? undefined
-              : keysetClause("created_at", after, way.comparison);
+            after === undefined ? undefined : feedKeyset(after, way.comparison);
           const where = keyset === undefined ? "" : `WHERE ${keyset.sql}`;
           const params: Bindable[] = [...(keyset?.params ?? []), limit];
 
           return source
             .query<ItemRow, Bindable[]>(
               `SELECT ${ITEM_COLUMNS} FROM items ${where}
-               ORDER BY created_at ${way.sql}, id ${way.sql} LIMIT ?`,
+               ORDER BY created_at ${way.sql}, root_id ${way.sql},
+                        revision_depth ${way.sql} LIMIT ?`,
             )
             .all(...params)
             .map((row) => ({ ...row, at: row.created_at }));
@@ -577,7 +648,14 @@ export function createSqlitePoolStore(
       unreferencedAssets: guard(uncommitted.unreferencedAssets),
 
       insertItem: guard(async (record: ItemRecord): Promise<Item> => {
-        insertItem.run(...itemParams(record, nextModifiedAt()));
+        insertItem.run(...itemParams(record, nextModifiedAt(), chain(record)));
+
+        if (record.revisionOf !== undefined) {
+          // Being superseded is a change to the original — it leaves the queue
+          // — and a delta read that missed it would leave a client showing work
+          // that has moved on.
+          touchItem.run(nextModifiedAt(), record.revisionOf);
+        }
 
         for (const tag of record.tags) {
           insertTag.run(
@@ -612,6 +690,34 @@ export function createSqlitePoolStore(
           if (stored === undefined) {
             throw new Error(`no item ${item} to set the archive state of`);
           }
+          return stored;
+        },
+      ),
+
+      amendItem: guard(
+        async (
+          item: ItemId,
+          payload: Payload,
+          at: Timestamp,
+        ): Promise<Item> => {
+          amend.run(
+            payload.type,
+            JSON.stringify(payload.content),
+            JSON.stringify(payload.metadata),
+            toMillis(at),
+            nextModifiedAt(),
+            item,
+          );
+
+          // Replaced rather than reconciled: the references are the payload's,
+          // and an amendment may drop a slot as readily as add one.
+          dropReferences.run(item);
+          for (const ref of payload.assets) {
+            insertReference.run(item, ref.slot, ref.asset);
+          }
+
+          const stored = await uncommitted.item(item);
+          if (stored === undefined) throw new Error(`no item ${item} to amend`);
           return stored;
         },
       ),

@@ -6,6 +6,7 @@ import type { OrderedPage, PageRequest, ReadOrder } from "../types/result";
 import * as archive from "./archive";
 import * as assets from "./assets";
 import { capture } from "./capture";
+import { edit } from "./edit";
 import * as maintenance from "./maintenance";
 import * as mirror from "./mirror";
 import * as routing from "./routing";
@@ -36,7 +37,7 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
 
     items: {
       get: (id) => store.item(id),
-      edit: notImplemented("items.edit"),
+      edit: (id, payload) => edit(config, ports, id, payload),
       tag: (id, name, by) => tags.tag(ports, id, name, by),
       untag: (id, name) => tags.untag(ports, id, name),
       archive: (id, reason) => archive.archive(ports, id, reason),

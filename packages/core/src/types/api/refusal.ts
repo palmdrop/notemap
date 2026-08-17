@@ -34,6 +34,11 @@ export type CaptureRefusal =
   | { readonly kind: "capture-id-conflict"; readonly existing: ItemId }
   | { readonly kind: "source-item-changed"; readonly existing: ItemId };
 
+/**
+ * An edit may change an attached file, so it is refused everything a capture's
+ * assets are refused for. It cannot refuse `unknown-payload-type`: the type it
+ * carries is the item's own, and one that differs is `payload-type-changed`.
+ */
 export type EditRefusal =
   | SubjectRefusal
   | {
@@ -41,7 +46,9 @@ export type EditRefusal =
       readonly issues: readonly SchemaIssue[];
     }
   | { readonly kind: "payload-type-changed"; readonly from: PayloadTypeName }
-  | { readonly kind: "item-superseded"; readonly by: ItemId };
+  | { readonly kind: "item-superseded"; readonly by: ItemId }
+  | { readonly kind: "missing-asset-slot"; readonly slot: string }
+  | { readonly kind: "unknown-asset"; readonly asset: AssetId };
 
 export type TagRefusal = SubjectRefusal;
 
