@@ -1,5 +1,5 @@
 # Developer TODOs
-
+- [ ] Consider allowing in-place edits to notes IF they have not been routed. If they are routed, editing becomes revision only, with a new capture entry to process. 
 - [ ] Routing arguments - more detailed routing within a destination. The mechanism already exists: a capability's `targetSchema` is a JSON Schema the adapter publishes and core validates, so an adapter wanting a template name, a format, a column or a priority just declares one. What is left is making those schemas good enough to build a form from - titles, descriptions, defaults, enums - and saying so in the spec, so adapters bother.
 - [ ] Routing templates - changing or formatting an item on routing, for example, making an item a piece of a TODO list
   - AI templates, where a local model formats an entry that may or may not be properly formatted
