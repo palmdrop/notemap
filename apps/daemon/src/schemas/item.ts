@@ -1,6 +1,13 @@
 import "@hono/zod-openapi";
 import { z } from "zod";
 
+import type {
+  AssetId,
+  JsonObject,
+  Payload,
+  PayloadTypeName,
+} from "@notemap/core";
+
 import { jsonObject } from "./json";
 
 const assetRef = z.object({
@@ -64,6 +71,33 @@ export const captureOutcomeSchema = z
     }),
   ])
   .openapi("CaptureOutcome");
+
+/** The body of an edit: the payload verbatim, the way a capture's body is the envelope. */
+export const editRequestSchema = payloadSchema.openapi("EditRequest");
+
+/** Where an untrusted payload becomes a domain value, for whichever route read it. */
+export function toPayload(parsed: z.infer<typeof payloadSchema>): Payload {
+  return {
+    type: parsed.type as PayloadTypeName,
+    content: parsed.content as JsonObject,
+    metadata: parsed.metadata as JsonObject,
+    assets: parsed.assets.map((ref) => ({
+      slot: ref.slot,
+      asset: ref.asset as AssetId,
+    })),
+  };
+}
+
+export const editOutcomeSchema = z
+  .union([
+    z.object({ kind: z.literal("amended"), item: itemSchema }),
+    z.object({
+      kind: z.literal("revised"),
+      revision: itemSchema,
+      supersedes: z.string(),
+    }),
+  ])
+  .openapi("EditOutcome");
 
 export const itemSliceSchema = z
   .object({

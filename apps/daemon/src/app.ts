@@ -17,6 +17,7 @@ import {
 } from "./routes/assets";
 import { archiveHandler, unarchiveHandler } from "./routes/archive";
 import { captureHandler } from "./routes/captures";
+import { editHandler } from "./routes/edit";
 import {
   actionsRoute,
   archivedRoute,
@@ -27,6 +28,7 @@ import {
   cancelDeliveryRoute,
   captureRoute,
   destinationsRoute,
+  editRoute,
   feedRoute,
   honoPath,
   itemRoute,
@@ -34,11 +36,14 @@ import {
   queueRoute,
   routeItemRoute,
   routingRecordsRoute,
+  tagRoute,
   unarchiveRoute,
+  untagRoute,
 } from "./routes/definitions";
 import { feedHandler } from "./routes/feed";
 import { itemHandler } from "./routes/items";
 import { itemViewHandler } from "./routes/queue";
+import { tagHandler } from "./routes/tags";
 import {
   cancelDeliveryHandler,
   destinationsHandler,
@@ -61,6 +66,9 @@ export function createApp(pool: Pool, limits: UploadLimits): Hono {
   app.get(honoPath(itemRoute.path), itemHandler(pool));
   app.post(honoPath(archiveRoute.path), archiveHandler(pool));
   app.post(honoPath(unarchiveRoute.path), unarchiveHandler(pool));
+  app.post(honoPath(tagRoute.path), tagHandler(pool, "tag"));
+  app.post(honoPath(untagRoute.path), tagHandler(pool, "untag"));
+  app.post(honoPath(editRoute.path), editHandler(pool));
   app.post(honoPath(markProcessedRoute.path), markProcessedHandler(pool));
   app.get(honoPath(routingRecordsRoute.path), routingRecordsHandler(pool));
   app.get(honoPath(destinationsRoute.path), destinationsHandler(pool));
