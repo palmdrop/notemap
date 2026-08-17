@@ -2,6 +2,19 @@ import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import prettier from "eslint-config-prettier";
 
+const FRAMEWORKS = {
+  group: ["svelte", "svelte/*", "react", "react-dom", "vue"],
+  message:
+    "the client imports no UI framework; the shell adapts its observables.",
+};
+
+const SUBJECTS = {
+  name: "rxjs",
+  importNames: ["Subject", "BehaviorSubject", "ReplaySubject", "AsyncSubject"],
+  message:
+    "a subject can be ended; keep it inside observable/ and pass an Observable.",
+};
+
 export default tseslint.config(
   // Everything generated, none of it ours to lint: the daemon's esbuild bundle
   // and what its build copies into `public/`, the app's vite output and
@@ -76,20 +89,20 @@ export default tseslint.config(
   {
     // The shared client is written once and drawn by every shell, so a UI
     // framework reaching it would drag the state logic back into one platform.
+    // A subject can be ended, and an ended surface never emits again: they stay
+    // inside `observable/`, which hands out observables that have no such method.
     files: ["packages/client/**/*.ts"],
     rules: {
       "no-restricted-imports": [
         "error",
-        {
-          patterns: [
-            {
-              group: ["svelte", "svelte/*", "react", "react-dom", "vue"],
-              message:
-                "the client imports no UI framework; the shell adapts its observables.",
-            },
-          ],
-        },
+        { patterns: [FRAMEWORKS], paths: [SUBJECTS] },
       ],
+    },
+  },
+  {
+    files: ["packages/client/src/observable/*.ts"],
+    rules: {
+      "no-restricted-imports": ["error", { patterns: [FRAMEWORKS] }],
     },
   },
 );

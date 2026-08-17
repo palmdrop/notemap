@@ -1,49 +1,41 @@
-export type Subscriber<T> = (value: T) => void;
-export type Unsubscribe = () => void;
+import {
+  BehaviorSubject,
+  distinctUntilChanged,
+  map,
+  type Observable,
+} from "rxjs";
 
 /**
- * The whole seam between the client's state and a shell. `subscribe` calls back
- * at once with the current value, which is what lets Svelte read one with `$`
- * and any other framework adapt it in a few lines.
+ * The seam between the client's state and a shell. `subscribe` calls back at
+ * once with the current value, which is what lets Svelte read one with `$` and
+ * any other framework adapt it in a few lines.
+ *
+ * The subject stays inside `writable`. `error` and `complete` belong to it and
+ * not to the `Observable` handed out, so nothing downstream can end a surface
+ * the whole interface is drawn from.
  */
-export interface Readable<T> {
-  subscribe(run: Subscriber<T>): Unsubscribe;
-}
-
-export interface Writable<T> extends Readable<T> {
+export interface Writable<T> {
   get(): T;
   set(value: T): void;
   update(change: (value: T) => T): void;
+  readonly changes: Observable<T>;
 }
 
 export function writable<T>(initial: T): Writable<T> {
-  let current = initial;
-  const subscribers = new Set<Subscriber<T>>();
-
-  function set(value: T): void {
-    current = value;
-    for (const run of [...subscribers]) run(current);
-  }
+  const subject = new BehaviorSubject(initial);
 
   return {
-    get: () => current,
-    set,
-    update: (change) => set(change(current)),
-    subscribe(run) {
-      subscribers.add(run);
-      run(current);
-      return () => {
-        subscribers.delete(run);
-      };
-    },
+    get: () => subject.getValue(),
+    set: (value) => subject.next(value),
+    update: (change) => subject.next(change(subject.getValue())),
+    changes: subject.asObservable(),
   };
 }
 
 export function derived<T, U>(
-  source: Readable<T>,
+  source: Observable<T>,
   project: (value: T) => U,
-): Readable<U> {
-  return {
-    subscribe: (run) => source.subscribe((value) => run(project(value))),
-  };
+  same?: (one: U, other: U) => boolean,
+): Observable<U> {
+  return source.pipe(map(project), distinctUntilChanged(same));
 }

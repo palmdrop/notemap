@@ -7,12 +7,7 @@ export * from "./adapters/fetch-transport";
 export * from "./adapters/memory-store";
 export { uuidv7 } from "./capture/uuid";
 
-export type {
-  Readable,
-  Subscriber,
-  Unsubscribe,
-  Writable,
-} from "./observable/observable";
+export type { Writable } from "./observable/observable";
 
 export type {
   Operation,

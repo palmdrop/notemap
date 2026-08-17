@@ -19,14 +19,14 @@ export function reachable() {
     window.addEventListener("online", up);
     window.addEventListener("offline", down);
 
-    const stop = client.outbox.subscribe((outbox) => {
+    const held = client.outbox.subscribe((outbox) => {
       failing = outbox.some((held) => held.state === "unreachable");
     });
 
     return () => {
       window.removeEventListener("online", up);
       window.removeEventListener("offline", down);
-      stop();
+      held.unsubscribe();
     };
   });
 

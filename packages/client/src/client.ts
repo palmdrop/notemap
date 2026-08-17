@@ -14,6 +14,17 @@ import type { Client, ClientConfig, ListState } from "./types";
 
 const IMAGE = "image";
 
+/** A projection rebuilds its array every time, so identity alone never matches. */
+function sameList(one: ListState, other: ListState): boolean {
+  return (
+    one.loading === other.loading &&
+    one.more === other.more &&
+    one.failure === other.failure &&
+    one.items.length === other.items.length &&
+    one.items.every((item, at) => item === other.items[at])
+  );
+}
+
 function listOf(state: ClientState, surface: Surface): ListState {
   const page = state[surface];
   const items = page.ids
@@ -54,9 +65,17 @@ export function createClient(config: ClientConfig): Client {
   }
 
   return {
-    feed: derived(state, (current) => listOf(current, "feed")),
-    queue: derived(state, (current) => listOf(current, "queue")),
-    outbox: derived(state, (current) => current.outbox),
+    feed: derived(
+      state.changes,
+      (current) => listOf(current, "feed"),
+      sameList,
+    ),
+    queue: derived(
+      state.changes,
+      (current) => listOf(current, "queue"),
+      sameList,
+    ),
+    outbox: derived(state.changes, (current) => current.outbox),
 
     loadFeed: () => loadMore(state, api, "feed"),
     loadQueue: () => loadMore(state, api, "queue"),

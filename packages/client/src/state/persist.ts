@@ -1,3 +1,13 @@
+import {
+  catchError,
+  concatMap,
+  distinctUntilChanged,
+  EMPTY,
+  from,
+  map,
+  pairwise,
+} from "rxjs";
+
 import type { Item, ItemId } from "../api/types";
 import type { Writable } from "../observable/observable";
 import type { ClientStore } from "../ports/store";
@@ -5,33 +15,37 @@ import type { ClientState } from "./state";
 
 /**
  * Mirrors the cache into the store as it changes, rather than making every path
- * that touches an item remember to write it. Writes are chained so a durable
- * adapter sees them in the order they happened.
+ * that touches an item remember to write it. `concatMap` is what keeps a
+ * durable adapter seeing the writes in the order they happened.
  */
 export function persistItems(
   state: Writable<ClientState>,
   store: ClientStore,
 ): void {
-  let known = state.get().items;
-  let writing: Promise<unknown> = Promise.resolve();
+  state.changes
+    .pipe(
+      map((current) => current.items),
+      distinctUntilChanged(),
+      pairwise(),
+      // The store is a mirror of the cache, so a write that fails must not stop
+      // the ones after it. Reporting one is the durable adapter's to answer.
+      concatMap(([before, after]) =>
+        from(write(store, before, after)).pipe(catchError(() => EMPTY)),
+      ),
+    )
+    .subscribe();
+}
 
-  state.subscribe((current) => {
-    if (current.items === known) return;
+async function write(
+  store: ClientStore,
+  before: ReadonlyMap<ItemId, Item>,
+  after: ReadonlyMap<ItemId, Item>,
+): Promise<void> {
+  const changed = [...after.values()].filter(
+    (item) => before.get(item.id) !== item,
+  );
+  const gone = [...before.keys()].filter((id) => !after.has(id));
 
-    const changed: Item[] = [];
-    for (const item of current.items.values()) {
-      if (known.get(item.id) !== item) changed.push(item);
-    }
-
-    const gone: ItemId[] = [];
-    for (const id of known.keys()) {
-      if (!current.items.has(id)) gone.push(id);
-    }
-
-    known = current.items;
-    writing = writing.then(async () => {
-      if (changed.length > 0) await store.writeItems(changed);
-      if (gone.length > 0) await store.removeItems(gone);
-    });
-  });
+  if (changed.length > 0) await store.writeItems(changed);
+  if (gone.length > 0) await store.removeItems(gone);
 }

@@ -1,10 +1,10 @@
+import type { Observable } from "rxjs";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import type { Item } from "./api/types";
 import { createMemoryStore } from "./adapters/memory-store";
 import { createClient } from "./client";
 import { Refused, Unreachable } from "./errors";
-import type { Readable } from "./observable/observable";
 import type { PendingOperation } from "./outbox/operations";
 import { anItem, routeOf, stoppedClock } from "./testing/pool";
 import {
@@ -15,11 +15,13 @@ import {
 } from "./testing/transport";
 import type { ListState } from "./types";
 
-function read<T>(source: Readable<T>): T {
+function read<T>(source: Observable<T>): T {
   let seen: T | undefined;
-  source.subscribe((value) => {
-    seen = value;
-  })();
+  source
+    .subscribe((value) => {
+      seen = value;
+    })
+    .unsubscribe();
   return seen as T;
 }
 

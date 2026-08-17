@@ -6,7 +6,8 @@ import type {
   RouteRequest,
   RoutingRecord,
 } from "./api/types";
-import type { Readable } from "./observable/observable";
+import type { Observable } from "rxjs";
+
 import type { OperationId, PendingOperation } from "./outbox/operations";
 import type { ClientStore } from "./ports/store";
 import type { Transport } from "./ports/transport";
@@ -43,9 +44,9 @@ export interface RoutingApi {
 }
 
 export interface Client {
-  readonly feed: Readable<ListState>;
-  readonly queue: Readable<ListState>;
-  readonly outbox: Readable<readonly PendingOperation[]>;
+  readonly feed: Observable<ListState>;
+  readonly queue: Observable<ListState>;
+  readonly outbox: Observable<readonly PendingOperation[]>;
 
   loadFeed(): Promise<void>;
   loadQueue(): Promise<void>;
