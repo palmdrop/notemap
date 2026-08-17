@@ -247,3 +247,22 @@ _Avoid_: delete, dismiss, trash
 To irreversibly remove an item, its whole revision chain, its assets and its enrichment. The one
 destructive operation, and the one exception to the append-only rule.
 _Avoid_: hard delete, wipe, erase
+
+### The client
+
+**Client**:
+A satellite of one pool, holding an outbox of pending mutations and a cache of recent items, and
+reaching the pool only through `/v1`. One pool, many clients; the shared client logic is the same
+across them.
+_Avoid_: app, frontend, device
+
+**Shell**:
+The platform wrapper a client runs inside — the web SPA, the Tauri desktop or mobile build. Only
+the shell differs between platforms; the client it wraps does not.
+_Avoid_: platform, wrapper, host
+
+**Outbox**:
+A client's ordered set of pending mutations, held locally and drained to the pool — at once when
+it can reach it, on reconnect when it cannot. Carries captures and classification, never
+deliveries: a client that cannot reach the pool cannot route.
+_Avoid_: sync queue, pending queue, queue

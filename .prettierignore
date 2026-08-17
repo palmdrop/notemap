@@ -2,4 +2,11 @@
 docs/
 pnpm-lock.yaml
 apps/daemon/openapi.json
-apps/daemon/public/vendor/
+
+# Generated: build output, SvelteKit's sync glue, and the OpenAPI document
+# as types. Regenerated on demand, and none of it hand-edited.
+**/build/
+**/dist/
+**/.svelte-kit/
+**/generated.d.ts
+apps/daemon/public/

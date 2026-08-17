@@ -20,9 +20,6 @@ describe("the public directory", () => {
   });
 
   it("holds the pages the daemon serves", () => {
-    expect(readFileSync(join(PUBLIC_DIR, "index.html"), "utf8")).toContain(
-      "/v1/captures",
-    );
     expect(readFileSync(join(PUBLIC_DIR, "docs.html"), "utf8")).toContain(
       "/v1/openapi.json",
     );

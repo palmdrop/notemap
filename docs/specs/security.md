@@ -94,6 +94,14 @@ another origin from reading the pool of a user who happens to be running the dae
   back; it is written down because it is the sharpest edge on this list.
 - **Adding a CORS header is the moment to reconsider authentication**, not a convenience to
   reach for. Any origin allowed to read is an origin allowed to read everything.
+- **The client stays same-origin so the header never has to exist.** In production the daemon
+  serves the app from its own origin ([http-v1.md](http-v1.md#transport)); in development the app's
+  dev server proxies `/v1` to the daemon rather than calling it across origins, so both are
+  same-origin and the no-CORS property holds unchanged ([client.md](client.md)). **A shell that
+  cannot be same-origin is where this reopens**: a native or mobile build, or a browser build
+  pointed at a remote daemon, is cross-origin to `/v1` by nature and is exactly the wider-bind case
+  above — it needs authentication, not a CORS header, and is the trigger for the open question below
+  rather than a reason to relax this one.
 
 The playground at `/docs` works because it is same-origin — served by the daemon it calls
 ([http-v1.md](http-v1.md#the-playground)). A playground anywhere else could render the document

@@ -79,9 +79,13 @@ this spec is unwritten.
 
 ## Open questions
 
-- [ ] 2026-08-02 — The clock behind last-write-wins: arrival time or client-supplied
+- [x] 2026-08-02 — The clock behind last-write-wins: arrival time or client-supplied
       operation time, and what happens when a stale offline decision replays after a newer
-      one made elsewhere.
+      one made elsewhere. **The clock is decided (2026-08-17): client operation-time**, stamped
+      when the person acted, so an offline decision is not clobbered merely for syncing late
+      ([client.md](client.md#the-outbox)). What stays open here is the **wire** that carries the
+      stamp and how the pool applies it — a stale offline decision loses to a newer one by its
+      own earlier stamp, but the delta/replay surface that expresses this is unbuilt.
 - [ ] 2026-08-02 — "Idempotent and order-independent" versus last-write-wins: LWW requires an
       order, so the precise claim needs pinning down.
 - [ ] 2026-08-11 — Rebuild interaction: what a client *does* once it detects a rebuild. Detection

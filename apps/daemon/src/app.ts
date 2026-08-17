@@ -8,7 +8,6 @@ import { logPage } from "./log/page";
 import { requireJsonBody } from "./middleware/content-type";
 import { methodsFor, notFound } from "./middleware/not-found";
 import { openApiDocument } from "./openapi";
-import { capturePage } from "./page";
 import { actionsHandler } from "./routes/actions";
 import {
   assetContentHandler,
@@ -47,6 +46,7 @@ import {
   routeHandler,
   routingRecordsHandler,
 } from "./routes/routing";
+import { serveUi } from "./ui/serve";
 import { json, refuse } from "./utils/responses";
 
 export function createApp(pool: Pool, limits: UploadLimits): Hono {
@@ -74,10 +74,6 @@ export function createApp(pool: Pool, limits: UploadLimits): Hono {
 
   app.get("/v1/openapi.json", () => json(openApiDocument(), 200));
 
-  app.get("/", (context) =>
-    context.html(capturePage(), 200, { "cache-control": "no-cache" }),
-  );
-
   app.get("/log", (context) =>
     context.html(logPage(), 200, { "cache-control": "no-cache" }),
   );
@@ -99,7 +95,7 @@ export function createApp(pool: Pool, limits: UploadLimits): Hono {
         });
   });
 
-  app.notFound(notFound(app));
+  app.notFound(serveUi(notFound(app)));
 
   // An unexpected throw is a bug. Answering it in the refusal grammar would
   // teach clients to trust a fiction.

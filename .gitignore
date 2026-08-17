@@ -26,6 +26,9 @@
 # Swagger UI, copied out of node_modules by the daemon's build step.
 apps/daemon/public/vendor/
 
+# The app, copied out of apps/ui/build by the daemon's build step.
+apps/daemon/public/ui/
+
 # Node / TypeScript (pnpm). pnpm-lock.yaml is committed on purpose — do not add it here.
 node_modules/
 .pnpm-store/

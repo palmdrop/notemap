@@ -5,6 +5,12 @@ destination are settled; the rest is stub
 **Last updated**: 2026-08-17
 **Shipped**:
 
+- 2026-08-17 — **The document is what the client's refusals are checked against.** Every code the
+  document declares now has a reading in the client, derived from the generated types rather than
+  listed by hand, so adding a code to a route obliges a client to say what it means. The UUIDv7 note
+  below is revised: minting comes from a package on both sides of the wire. See
+  [client-review-fixes.md](../plans/client-review-fixes.md).
+
 - 2026-08-14 — **Items can be routed out over the wire.** `GET /v1/destinations` reports what each
   wired adapter declares, capabilities and target schemas and all, so a client builds a target from
   the destination's own terms rather than from anything `/v1` holds.
@@ -145,11 +151,16 @@ discovered: [security.md](security.md).
   header is the moment to reconsider authentication rather than a convenience. Binding wider
   than localhost exposes an unauthenticated pool to whoever can reach the address — the
   configuration allows it, and nothing in `/v1` defends it.
-- The capture page is served at `/`, the action log page at `/log`, and the playground at
-  `/docs`. Everything the API itself answers is under `/v1`.
-- An unknown path is `404 unknown-route`. A known path with the wrong method is `405`, carrying
-  an `Allow` header listing the methods that path does answer. `OPTIONS` is one of them, and is
-  answered `204` with the same `Allow`.
+- The app is served at `/`, the action log page at `/log`, and the playground at `/docs`.
+  Everything the API itself answers is under `/v1`.
+- An unknown path **under `/v1`** is `404 unknown-route`. A known path with the wrong method is
+  `405`, carrying an `Allow` header listing the methods that path does answer. `OPTIONS` is one
+  of them, and is answered `204` with the same `Allow`.
+- **An unknown path outside `/v1` answers the app's shell**, `200 text/html`, so that the app
+  can route it in the browser — its own paths exist nowhere else. A path carrying a file
+  extension is exempt and stays a `404`: answering the shell there hands a browser HTML where
+  its own markup told it to expect a script. A daemon built without an app answers `404` to
+  both, and serves `/v1` unchanged.
 
 ### Instants
 
@@ -212,8 +223,8 @@ passive source that is re-read rather than replayed omits `id` and supplies its 
 
 `GET /v1/items/:id` — `200 OK` with the `Item` verbatim, or `404 no-such-item`.
 
-In the subset because the capture page needs to read back what it just wrote, and because
-`Location` on a `201` that resolves to nothing is a lie.
+In the subset because the app needs to read back what it just wrote, and because `Location` on a
+`201` that resolves to nothing is a lie.
 
 ### The feed
 
@@ -816,8 +827,10 @@ by nothing in `/v1`, and removable without changing a promise this spec makes.
 - **Daemon configuration is TOML** (decided 2026-08-08): comments survive a hand-edit, and it
   is the format a self-hosted single-file config is least annoying to write by hand. The host
   reads it; core takes it as data ([core.md](core.md#constraints)).
-- The daemon mints UUIDv7 with the `uuid` package. The static capture page hand-rolls v7 inline
-  — a build step for one function would cost more than the function does.
+- **UUIDv7 comes from the `uuid` package everywhere** (revised 2026-08-17). The client hand-rolled
+  one inline on the argument that a function is cheaper than a dependency in the browser; it ships
+  `openapi-fetch` and `rxjs` to the browser regardless, so the argument was not a live one, and a
+  minted id is the wrong place to keep a bit-twiddling implementation of our own.
 
 ---
 

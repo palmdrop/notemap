@@ -78,9 +78,16 @@ leaseFor = 300000   # how long a claimed delivery is held before anyone may reta
 batch = 4           # deliveries claimed per pass
 
 # A source needs no declaration to capture; declaring one attaches policy.
-# `web` is the capture page, which hardcodes this id.
+#
+# A source is the capture *channel*, not the shell: the web app stamps a typed
+# note and a picture differently, so that policy can differ between them even
+# though one page sent both.
 [[sources]]
-id = "web"
+id = "web-manual"
+autoRequest = []
+
+[[sources]]
+id = "web-image"
 autoRequest = []
 
 [[payloadTypes]]

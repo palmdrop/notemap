@@ -44,7 +44,10 @@ describe("the example config", () => {
     });
     expect(config.destinations).toEqual([]);
     expect(config.poolConfig.sweep).toEqual({ grace: 86_400_000 });
-    expect(config.poolConfig.sources).toEqual([{ id: "web", autoRequest: [] }]);
+    expect(config.poolConfig.sources).toEqual([
+      { id: "web-manual", autoRequest: [] },
+      { id: "web-image", autoRequest: [] },
+    ]);
     expect(config.poolConfig.payloadTypes).toEqual([
       {
         name: "text",
