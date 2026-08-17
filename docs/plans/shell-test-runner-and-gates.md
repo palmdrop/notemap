@@ -126,13 +126,14 @@ Depends on: Phase 3. Only the criteria that are the shell's — what it draws, e
 
 ## Unknowns
 
-- **Browser mode or jsdom.** **jsdom**, as the fallback said — but not on the workspace's vitest.
-  `apps/ui` is on vite 8 and vitest 3 bundles vite 7's types, so a `test` block in `vite.config.ts`
-  fails `svelte-check` on mismatched plugin types; the app runs **vitest 4** and every other package
-  stays on 3. Mixed majors in one workspace is the cost, and each package runs its own binary. That
-  no longer blocks browser mode by version — what blocks it now is wanting a real browser in CI,
-  which is still the wrong trade for what these tests assert. Revisit if jsdom's gaps (no layout, no
-  real scrolling, no `IntersectionObserver`) start costing more.
+- **Browser mode or jsdom.** **jsdom**, as the fallback said — but the vitest bump the plan ruled
+  out happened anyway, because `apps/ui` is on vite 8 and vitest 3 bundles vite 7's types, so a
+  `test` block in `vite.config.ts` fails `svelte-check` on mismatched plugin types. The whole
+  workspace is on **vitest 4**: nothing configures a runner beyond `vitest run`, so none of what v4
+  removed was in use, and all 650 tests passed unchanged. Version no longer blocks browser mode —
+  what blocks it is wanting a real browser in CI, still the wrong trade for what these tests assert.
+  Revisit if jsdom's gaps (no layout, no real scrolling, no `IntersectionObserver`) start costing
+  more.
 - **Context injection versus module mocking** (Phase 2). **Resolved: the fallback.** Each test file
   mocks `$lib/client`, no production code changed, and the shell keeps an import-time singleton —
   revisited when a second shell or a second client instance forces it.

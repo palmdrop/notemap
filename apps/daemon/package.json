@@ -31,6 +31,6 @@
     "@types/node": "^24.10.1",
     "esbuild": "^0.28.0",
     "swagger-ui-dist": "^5.32.12",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.10"
   }
 }
