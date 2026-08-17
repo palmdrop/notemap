@@ -1,8 +1,11 @@
 export * from "./api/types";
+export * from "./client";
 export * from "./errors";
 export * from "./types";
 
+export * from "./adapters/fetch-transport";
 export * from "./adapters/memory-store";
+export { uuidv7 } from "./capture/uuid";
 
 export type {
   Readable,

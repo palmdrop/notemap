@@ -68,27 +68,27 @@ root `pnpm typecheck` is green after a clean `pnpm install` with no codegen run.
 Depends on: Phase 1. Implements the mutation path and read surfaces against the ports, tested
 entirely against a mock `Transport` so no daemon is needed.
 
-- [ ] Implement the **outbox engine** over an abstract operation: optimistic apply to the cache,
+- [x] Implement the **outbox engine** over an abstract operation: optimistic apply to the cache,
       immediate drain through `Transport`, and reconciliation — replace-on-success,
       roll-back-and-surface on refusal, in-order per item. The engine is written once and is
       indifferent to which operations exist.
-- [ ] Stamp every operation with a client **operation-time**, and resolve opposing operations on one
+- [x] Stamp every operation with a client **operation-time**, and resolve opposing operations on one
       target last-write-wins by that stamp, per
       [client.md](../specs/client.md#the-outbox).
-- [ ] Encode the operations whose routes are live: `capture`, `archive`, `unarchive`. Declare
+- [x] Encode the operations whose routes are live: `capture`, `archive`, `unarchive`. Declare
       `edit`, `tag`/`untag` and `accept-`/`reject-suggestion` in the operation type with **no
       encoder**, so the vocabulary is visible and adding one later is a wire detail rather than a
       reshape. Do not mock a wire that does not exist.
-- [ ] Implement **routing as a direct call, never an outbox operation** — `destinations`, `route`,
+- [x] Implement **routing as a direct call, never an outbox operation** — `destinations`, `route`,
       `mark-processed`, `cancel` and an item's routing records go straight to `Transport` and fail
       loudly when it is unreachable, per
       [client.md](../specs/client.md#the-outbox).
-- [ ] Implement the **read surfaces**: feed (capture-time position, follow `next`) and queue
+- [x] Implement the **read surfaces**: feed (capture-time position, follow `next`) and queue
       (oldest-first list; no skip; no processing position).
-- [ ] Absorb the client-minting helper (`uuidv7`) and the capture-envelope assembly currently in
+- [x] Absorb the client-minting helper (`uuidv7`) and the capture-envelope assembly currently in
       `apps/ui/src/lib`.
-- [ ] Ship the trivial default pair: a `fetch`-backed `Transport` and an in-memory `ClientStore`.
-- [ ] `git commit`.
+- [x] Ship the trivial default pair: a `fetch`-backed `Transport` and an in-memory `ClientStore`.
+- [x] `git commit`.
 
 **Verify:** package unit tests, against a mock `Transport`, cover optimistic apply then reconcile on
 ack; refusal rollback; in-order drain per item; opposing-op last-write-wins by operation-time;

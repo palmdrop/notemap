@@ -38,6 +38,8 @@ export interface RoutingApi {
   route(item: ItemId, request: RouteRequest): Promise<RoutingRecord>;
   markProcessed(item: ItemId, note?: string): Promise<RoutingRecord>;
   recordsFor(item: ItemId): Promise<readonly RoutingRecord[]>;
+  /** Withdraws a decision whose delivery has not happened yet. */
+  cancel(record: RoutingRecord["id"]): Promise<void>;
 }
 
 export interface Client {
@@ -60,6 +62,7 @@ export interface Client {
    */
   uploadAsset(file: File): Promise<Asset>;
   assetContent(asset: AssetId): string;
+  images(item: Item): readonly string[];
 
   readonly routing: RoutingApi;
 
@@ -72,6 +75,6 @@ export interface Client {
 export type ClientConfig = {
   readonly transport: Transport;
   readonly store: ClientStore;
-  /** How many items a read asks for at a time. */
-  readonly pageSize?: number;
+  /** The clock that stamps an operation-time. A port, so a test can hold it still. */
+  readonly now?: () => string;
 };
