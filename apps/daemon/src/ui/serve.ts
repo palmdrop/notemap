@@ -65,11 +65,10 @@ export function serveUi(fallthrough: NotFoundHandler): NotFoundHandler {
   return (context) => {
     const path = new URL(context.req.url).pathname;
 
-    if (
-      context.req.method !== "GET" ||
-      path === "/v1" ||
-      path.startsWith("/v1/")
-    ) {
+    const reading =
+      context.req.method === "GET" || context.req.method === "HEAD";
+
+    if (!reading || path === "/v1" || path.startsWith("/v1/")) {
       return fallthrough(context);
     }
 

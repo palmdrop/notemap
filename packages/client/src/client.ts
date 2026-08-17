@@ -1,8 +1,9 @@
+import { v7 as uuidv7 } from "uuid";
+
 import { createApi, answered } from "./api/http";
-import type { Asset, Item, ItemId } from "./api/types";
+import type { Item, ItemId } from "./api/types";
 import { envelopeFor, optimisticItem } from "./capture/envelope";
-import { uuidv7 } from "./capture/uuid";
-import { readRefusal, Refused, Unreachable } from "./errors";
+import { Refused } from "./errors";
 import { derived, writable } from "./observable/observable";
 import { createOutbox } from "./outbox/outbox";
 import { sendOperation } from "./outbox/encode";
@@ -115,29 +116,29 @@ export function createClient(config: ClientConfig): Client {
 
     unarchive: (item) => mutate({ kind: "unarchive", item }),
 
-    async uploadAsset(file: File) {
-      const request = new Request(`${transport.baseUrl}/v1/assets`, {
-        method: "POST",
-        headers: {
-          "content-type": file.type || "application/octet-stream",
-          "content-disposition": `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`,
-        },
-        body: file,
-      });
-
-      let response: Response;
-      try {
-        response = await transport.fetch(request);
-      } catch (cause) {
-        throw new Unreachable(cause);
-      }
-
-      const body: unknown = await response.json();
-      if (response.status !== 201) throw readRefusal(body);
-      return body as Asset;
-    },
+    uploadAsset: (file: File) =>
+      answered(
+        api.POST("/v1/assets", {
+          params: {
+            header: {
+              "content-disposition": `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`,
+            },
+          },
+          headers: { "content-type": file.type || "application/octet-stream" },
+          // The body is the bytes, raw. Serialising them would be the one thing
+          // this route does not want.
+          body: file as unknown as string,
+          bodySerializer: (body: unknown) => body as BodyInit,
+        }),
+      ),
 
     assetContent,
+
+    says: (item) => {
+      const said =
+        item.payload.content["text"] ?? item.payload.content["caption"];
+      return typeof said === "string" ? said : "";
+    },
 
     /** Only `image` captures: another payload type's slot may hold anything at all. */
     images: (item) =>

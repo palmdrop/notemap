@@ -14,7 +14,12 @@ export function reachable() {
   onMount(() => {
     online = navigator.onLine;
 
-    const up = () => (online = true);
+    // Coming back is the moment the outbox has been waiting for; nothing else
+    // will ask, so a capture made offline would sit until the next mutation.
+    const up = () => {
+      online = true;
+      void client.drain();
+    };
     const down = () => (online = false);
     window.addEventListener("online", up);
     window.addEventListener("offline", down);

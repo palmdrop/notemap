@@ -5,7 +5,6 @@ export * from "./types";
 
 export * from "./adapters/fetch-transport";
 export * from "./adapters/memory-store";
-export { uuidv7 } from "./capture/uuid";
 
 export type { Writable } from "./observable/observable";
 

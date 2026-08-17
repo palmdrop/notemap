@@ -327,6 +327,35 @@ describe("routing", () => {
     expect(read(client.outbox)).toEqual([]);
   });
 
+  it("reads an item's routing records", async () => {
+    const { client } = clientOver(() =>
+      json(200, {
+        values: [{ id: "record-1", item: "one", state: "pending", at: "now" }],
+      }),
+    );
+
+    await expect(client.routing.recordsFor("one")).resolves.toHaveLength(1);
+  });
+
+  it("withdraws a decision the pool has not delivered yet", async () => {
+    const { client, transport } = clientOver(
+      () => new Response(null, { status: 204 }),
+    );
+
+    await expect(client.routing.cancel("record-1")).resolves.toBeUndefined();
+    expect(routeOf(transport.sent[0]!)).toBe(
+      "POST /v1/routing/record-1/cancel",
+    );
+  });
+
+  it("refuses to withdraw one already in flight", async () => {
+    const { client } = clientOver(() => refusal(409, "delivery-in-flight"));
+
+    await expect(client.routing.cancel("record-1")).rejects.toThrow(
+      "that delivery has already started; it cannot be called back",
+    );
+  });
+
   it("surfaces a destination's refusal as itself", async () => {
     const { client } = clientOver(() => refusal(422, "unknown-destination"));
 
@@ -424,6 +453,58 @@ describe("a pool that did not decide", () => {
 
     expect(read(client.feed).items).toEqual([]);
     expect(read(client.outbox)[0]?.state).toBe("refused");
+  });
+});
+
+describe("an asset", () => {
+  const file = () =>
+    new File([new Uint8Array([1, 2, 3])], "a photo.png", { type: "image/png" });
+
+  it("goes up as raw bytes, through the transport, naming its file", async () => {
+    const { client, transport } = clientOver(() =>
+      json(201, { id: "asset-1", mediaType: "image/png", bytes: 3 }),
+    );
+
+    await expect(client.uploadAsset(file())).resolves.toMatchObject({
+      id: "asset-1",
+    });
+
+    const sent = transport.sent[0]!;
+    expect(routeOf(sent)).toBe("POST /v1/assets");
+    expect(sent.headers.get("content-type")).toBe("image/png");
+    expect(sent.headers.get("content-disposition")).toContain("a%20photo.png");
+    expect(new Uint8Array(await sent.arrayBuffer())).toEqual(
+      new Uint8Array([1, 2, 3]),
+    );
+  });
+
+  it("surfaces a refusal rather than handing back a body that is not an asset", async () => {
+    const { client } = clientOver(() => refusal(413, "asset-too-large"));
+
+    await expect(client.uploadAsset(file())).rejects.toBeInstanceOf(Refused);
+  });
+
+  it("reads what an item says, whichever slot holds it", () => {
+    const { client } = clientOver(() => json(200, {}));
+
+    expect(client.says(anItem("one"))).toBe("one");
+    expect(
+      client.says({
+        ...anItem("two"),
+        payload: {
+          type: "image",
+          content: { caption: "a caption" },
+          metadata: {},
+          assets: [],
+        },
+      }),
+    ).toBe("a caption");
+    expect(
+      client.says({
+        ...anItem("three"),
+        payload: { type: "voice", content: {}, metadata: {}, assets: [] },
+      }),
+    ).toBe("");
   });
 });
 

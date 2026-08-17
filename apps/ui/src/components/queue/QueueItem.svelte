@@ -9,9 +9,7 @@
   let said = $state("");
 
   const images = $derived(client.images(item));
-  const text = $derived(
-    (item.payload.content.text ?? item.payload.content.caption ?? "") as string,
-  );
+  const text = $derived(client.says(item));
 
   async function markDone() {
     said = "marking…";

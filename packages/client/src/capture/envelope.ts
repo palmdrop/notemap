@@ -38,7 +38,6 @@ export function envelopeFor(
   };
 }
 
-/** What the feed shows until the pool answers with the item it actually recorded. */
 export function optimisticItem(envelope: CaptureEnvelope): Item {
   return {
     id: envelope.id,

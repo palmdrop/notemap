@@ -101,7 +101,6 @@ export function cached(
   return items;
 }
 
-/** Drops an item from the cache and from every list that named it. */
 export function forget(state: ClientState, id: ItemId): ClientState {
   const items = new Map(state.items);
   items.delete(id);

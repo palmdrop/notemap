@@ -64,12 +64,13 @@ export interface Client {
   uploadAsset(file: File): Promise<Asset>;
   assetContent(asset: AssetId): string;
   images(item: Item): readonly string[];
+  /** What an item reads as. Which slot holds that is the payload type's business. */
+  says(item: Item): string;
 
   readonly routing: RoutingApi;
 
-  /** Drains what is pending. Called on every mutation, and again to retry. */
+  /** Called on every mutation, and again to retry what is still pending. */
   drain(): Promise<void>;
-  /** Forgets a refused operation once the person has read it. */
   dismiss(operation: OperationId): Promise<void>;
 }
 

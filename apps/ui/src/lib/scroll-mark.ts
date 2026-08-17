@@ -1,7 +1,6 @@
 /**
- * Where the person had scrolled, kept for this shell alone. It is not a
- * position in the domain sense: it never reaches the pool and does not
- * translate to another device or another viewport, so nothing carries it.
+ * Not a position in the domain sense: a scroll offset does not translate to
+ * another device or viewport, so it never leaves this shell.
  */
 const KEY = "notemap:scroll";
 

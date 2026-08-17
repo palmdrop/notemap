@@ -2,7 +2,6 @@ import type { Item, ItemId } from "../api/types";
 import type { OperationId, PendingOperation } from "../outbox/operations";
 import type { ClientStore } from "../ports/store";
 
-/** The online pair's half: nothing survives a reload, and nothing is meant to. */
 export function createMemoryStore(): ClientStore {
   const operations = new Map<OperationId, PendingOperation>();
   const items = new Map<ItemId, Item>();

@@ -13,5 +13,3 @@ allowBuilds:
   esbuild: true
 minimumReleaseAgeExclude:
   - "@hono/zod-openapi@1.5.2"
-onlyBuiltDependencies:
-  - esbuild

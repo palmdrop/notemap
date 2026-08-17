@@ -12,8 +12,9 @@ import {
 const baseUrl = import.meta.env.VITE_API_URL ?? "";
 
 /**
- * The web shell's ports. The store is in-memory, so nothing survives a reload
- * yet; making it durable is the whole of what offline needs from this file.
+ * The web shell's ports. The store is in-memory, so nothing survives a reload:
+ * offline needs a durable one here *and* a client that reads it back on start,
+ * which is not wired yet.
  */
 export const client = createClient({
   transport: createFetchTransport(baseUrl),

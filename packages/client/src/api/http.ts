@@ -52,7 +52,6 @@ export async function answered<T>(call: Promise<Answer<T>>): Promise<T> {
   return answer.data;
 }
 
-/** For a route that answers no content: nothing to read, only a refusal to catch. */
 export async function acknowledged(
   call: Promise<Answer<unknown>>,
 ): Promise<void> {

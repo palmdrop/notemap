@@ -17,7 +17,6 @@ export function routeOf(request: Request): string {
   return `${request.method} ${new URL(request.url).pathname}`;
 }
 
-/** A clock a test holds still, and moves when it wants to. */
 export function stoppedClock(start = "2026-08-17T12:00:00.000Z") {
   let at = start;
   return {

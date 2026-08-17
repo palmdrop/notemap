@@ -6,9 +6,7 @@
   let { item }: { item: Item } = $props();
 
   const images = $derived(client.images(item));
-  const said = $derived(
-    (item.payload.content.text ?? item.payload.content.caption ?? "") as string,
-  );
+  const said = $derived(client.says(item));
 </script>
 
 <li class="bg-white p-3 dark:bg-neutral-900">

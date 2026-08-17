@@ -41,6 +41,17 @@ describe("serving the app", () => {
     expect(await response.text()).not.toContain("@notemap/daemon");
   });
 
+  it("answers HEAD wherever it answers GET", async () => {
+    const serving = app();
+    const read = await serving.request("/");
+    const looked = await serving.request("/", { method: "HEAD" });
+
+    expect(looked.status).toBe(read.status);
+    expect(looked.headers.get("content-type")).toBe(
+      read.headers.get("content-type"),
+    );
+  });
+
   it("still refuses a method the daemon does not answer", async () => {
     const response = await app().request("/v1/feed", { method: "DELETE" });
 
