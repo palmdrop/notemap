@@ -1,9 +1,9 @@
 # Client package and online shell
 
 **Date**: 2026-08-17
-**Status**: In progress <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/client.md`
-**Closed**:
+**Closed**: 2026-08-17
 
 ---
 
@@ -142,12 +142,12 @@ stopped, archive still applies locally while the routing action is disabled and 
 Depends on: Phase 4. The same-origin serving pipeline itself landed in `bb72d31`; this closes the
 one gap left.
 
-- [ ] Add a root `build` script so `pnpm build` produces a daemon serving the current shell. The root
+- [x] Add a root `build` script so `pnpm build` produces a daemon serving the current shell. The root
       `package.json` has none today.
-- [ ] Confirm the existing pipeline still holds end to end: `apps/ui` build →
+- [x] Confirm the existing pipeline still holds end to end: `apps/ui` build →
       `apps/daemon/scripts/bundle-ui.ts` → daemon serves the shell at `/`, unknown non-`/v1` paths
       answer the shell, and a daemon built without the app still serves `/v1`.
-- [ ] `git commit`.
+- [x] `git commit`.
 
 **Verify:** `pnpm build` from a clean tree, then start the daemon with no dev server; `/` and a
 client-routed deep link both answer the shell same-origin; `curl` an asset and confirm no

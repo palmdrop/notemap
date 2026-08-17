@@ -4,6 +4,17 @@
 **Last updated**: 2026-08-17
 **Shipped**:
 
+- 2026-08-17 — `@notemap/client` holds the outbox, the cache and the state over them behind a
+  `subscribe()` seam, written against a `Transport` and a `ClientStore`, and `apps/ui` is a shell
+  that draws it and holds no state logic. Capture, the feed, the queue, archive and unarchive are
+  live end to end; routing reaches the pool directly and is disabled rather than queued when it
+  cannot. See [client-package-and-online-shell.md](../plans/client-package-and-online-shell.md).
+
+  **Not shipped, and not for want of a wire**: editing and the hand-over seal, tagging and
+  untagging, and suggestion decisions. All of them are `notImplemented` in core, so the client
+  names them in its vocabulary and refuses to send them rather than guessing a route.
+  [editing-and-classification.md](../plans/editing-and-classification.md) starts where they do.
+
 ---
 
 ## Outcome
