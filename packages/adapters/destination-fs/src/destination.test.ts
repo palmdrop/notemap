@@ -1,11 +1,18 @@
-import { chmod, mkdir, readFile, symlink, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  lstat,
+  mkdir,
+  readFile,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { join } from "node:path";
 
 import type { DestinationAdapter, PayloadTypeName } from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createFilesystemDestination } from "./destination";
-import type { Renderer } from "./renderers";
+import { linkTo, type Renderer } from "./renderers";
 import {
   bytes,
   delivery,
@@ -28,7 +35,9 @@ const renderText: Renderer = (each) => ({
 
 /** Links every asset it was handed, so the names they landed under are visible. */
 const renderWithAssets: Renderer = (each, where) => ({
-  body: [...where.assets.values()].map((name) => `![](${name})`).join("\n"),
+  body: [...where.assets.values()]
+    .map((name) => `![](${linkTo(name)})`)
+    .join("\n"),
 });
 
 type Vault = {
@@ -69,7 +78,7 @@ async function noVault(): Promise<Vault> {
 describe("what it says it can do", () => {
   it("declares both capabilities over the payload types it was given", async () => {
     const { destination } = await vault();
-    const described = destination.describe();
+    const described = await destination.describe();
 
     expect(described.id).toBe(VAULT);
     expect(described.capabilities.map((each) => each.name)).toEqual([
@@ -278,6 +287,23 @@ describe("appending to a file", () => {
     );
   });
 
+  it("writes through a symlink inside the vault rather than replacing it", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    await mkdir(join(path, "days"), { recursive: true });
+    await writeFile(join(path, "days", "monday.md"), "# Monday\n");
+    await symlink(join(path, "days", "monday.md"), join(path, "daily.md"));
+
+    await destination.deliver(
+      delivery({ capability: "append-to-file", target: { path: "daily.md" } }),
+    );
+
+    // The real file got it, and the link is still a link.
+    expect(await readFile(join(path, "days", "monday.md"), "utf8")).toBe(
+      "# Monday\n\na thought\n",
+    );
+    expect((await lstat(join(path, "daily.md"))).isSymbolicLink()).toBe(true);
+  });
+
   it("appends at the end when the target names no heading", async () => {
     const { path, destination } = await vault({ text: renderText });
     await writeFile(join(path, "daily.md"), "# Monday\n");
@@ -367,6 +393,25 @@ describe("assets", () => {
 
     expect(await readFile(join(path, "photo.png"), "utf8")).toBe("theirs");
     expect(await readFile(join(path, "photo-1.png"), "utf8")).toBe("ours");
+  });
+
+  it("links an asset whose name has spaces so the link still resolves", async () => {
+    const { path, destination } = await vault({ image: renderWithAssets });
+
+    await destination.deliver(
+      delivery({
+        type: "image" as PayloadTypeName,
+        target: { directory: "", filename: "a.md" },
+        assets: [
+          deliveredAsset("one", "Screenshot 2026-08-14.png", bytes("ours")),
+        ],
+      }),
+    );
+
+    // A bare destination would end at the first space, taking the link with it.
+    expect(await readFile(join(path, "a.md"), "utf8")).toContain(
+      "![](<Screenshot 2026-08-14.png>)",
+    );
   });
 
   it("flattens an asset filename that is a path out of the destination", async () => {

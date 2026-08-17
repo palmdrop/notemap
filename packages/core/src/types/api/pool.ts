@@ -24,7 +24,7 @@ import type { AbandonedPosition } from "../domain/position";
 import type {
   Delivery,
   DeliveryRequest,
-  DestinationDescriptor,
+  DestinationReport,
   RoutingRecord,
 } from "../domain/routing";
 import type { Suggestion } from "../domain/suggestion";
@@ -91,7 +91,7 @@ export interface EnrichmentApi {
 }
 
 export interface RoutingApi {
-  destinations(): Promise<readonly DestinationDescriptor[]>;
+  destinations(signal?: AbortSignal): Promise<readonly DestinationReport[]>;
   /** The record it answers may be pending: read the state rather than reading a record as arrival. */
   route(
     item: ItemId,

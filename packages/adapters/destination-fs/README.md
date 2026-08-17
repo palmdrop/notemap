@@ -44,6 +44,9 @@ file is then ours.
   `rename` precisely because `link` refuses an existing name where `rename` replaces it silently.
 - **A partial file is never visible.** Everything is written to a temporary file in the target's own
   directory, synced, and then linked or renamed into place.
+- **A symlink is never replaced.** Appending resolves the target first, so a note that is a link
+  into a dated folder gets the fragment in the real file and stays a link. One pointing out of the
+  root is refused before any of that.
 - **The root is never created.** A root that is not there is reported as unreachable, so the
   delivery is retried rather than a folder being conjured where somebody's vault was meant to be.
 
@@ -67,6 +70,10 @@ throws away a decision somebody made.
 
 ## One writer per file, and who is outside that promise
 
+Section handling is a line walk with a regular expression rather than a Markdown parser, so a `#`
+inside a fenced code block reads as a heading. Moving it onto a real Markdown library is a `TODO` in
+`sections.ts`.
+
 Appending reads the file, inserts, and writes it back. **This is not atomic against a concurrent
 editor.** One writer per file is the standing rule and this adapter is it, but a person with the
 vault open in an editor is outside that promise: their unsaved buffer will overwrite whatever
@@ -83,7 +90,9 @@ no renderer still gets a readable file: the provenance frontmatter, its content 
 block, and a link to each asset that landed beside it.
 
 The renderer is handed the directory the note is going into and the name each asset ended up under,
-because a name may have been suffixed to avoid taking a file that was already there.
+because a name may have been suffixed to avoid taking a file that was already there. Link to one
+with `linkTo`: an uploaded filename may carry spaces, and a bare CommonMark destination ends at the
+first one.
 
 Frontmatter carries the item id, the capture source, the payload type, the capture and content
 times, the tags, and `derived_from` as a `urn:commons:item:` URI — which is what lets a note that

@@ -3,19 +3,13 @@ import { join } from "node:path";
 import type { DeliveredAsset } from "@notemap/core";
 
 import { createFile } from "./atomic";
+import { Refused } from "./errors";
 import { alternatives, oneSegment } from "./paths";
 
 /**
  * Every asset written into `directory` under the name it was uploaded with, and
- * what each one ended up being called — keyed by slot, so a renderer can link
- * to it.
- *
- * A name that is taken is suffixed rather than overwritten, whether the file
- * that holds it came from this delivery or was already in the vault. Nothing
- * here replaces anything: the destination is somebody else's data.
- *
- * Nothing is opened where nothing is handed over, which is what the lazy opener
- * on a `DeliveredAsset` exists for.
+ * what each ended up called, keyed by slot. A name that is taken is suffixed
+ * rather than overwritten, whoever took it.
  */
 export async function placeAssets(
   directory: string,
@@ -54,5 +48,5 @@ async function place(
     }
   }
 
-  throw new Error(`every name near ${wanted} is taken in ${directory}`);
+  throw new Refused(`every name near ${wanted} is taken in ${directory}`);
 }

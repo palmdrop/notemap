@@ -1,4 +1,4 @@
-import type { Renderer, Renderers } from "@notemap/destination-fs";
+import { linkTo, type Renderer, type Renderers } from "@notemap/destination-fs";
 import type { PayloadTypeName } from "@notemap/core";
 
 /**
@@ -7,7 +7,10 @@ import type { PayloadTypeName } from "@notemap/core";
  */
 const renderText: Renderer = (delivery) => {
   const text = delivery.payload.content["text"];
-  return { body: `${typeof text === "string" ? text : ""}\n` };
+  if (typeof text !== "string") {
+    throw new Error("a text capture with no text");
+  }
+  return { body: `${text}\n` };
 };
 
 /**
@@ -19,7 +22,7 @@ const renderImage: Renderer = (delivery, at) => {
   const images = delivery.payload.assets
     .map((reference) => at.assets.get(reference.slot))
     .filter((name): name is string => name !== undefined)
-    .map((name) => `![${name}](${name})`);
+    .map((name) => `![${name}](${linkTo(name)})`);
 
   const caption = delivery.payload.content["caption"];
   const lines =

@@ -14,9 +14,11 @@ destination are settled; the rest is stub
   arrival is wrong exactly when one is down.
   `POST /v1/routing/{record}/cancel` calls off a pending delivery and answers `204`, being the one
   path that names a single routing record. `PreparationRefusal`, `AttemptFailure` and
-  `CancelRefusal` joined the refusal table, all decided by the status rule already written; two of
-  them are there without being raisable, `unreachable` because a destination that was never reached
-  is a `200`. ([plan](../plans/destination-fs.md))
+  `CancelRefusal` joined the refusal table, all decided by the status rule already written.
+  *(Amended 2026-08-17: describing a destination is asynchronous, as `core.md` already required, so
+  `GET /v1/destinations` reports one that could not answer as `undescribable` rather than dropping
+  it, and `POST /route` refuses `422 unreachable` when it cannot read a destination's capabilities
+  at all.)* ([plan](../plans/destination-fs.md))
 - 2026-08-14 — **The queue and the archive are served, and so are the decisions that drain them.**
   `GET /v1/queue` and `GET /v1/archived` page oldest first from a **content-time** position, which
   is spelled exactly like the feed's and means something else — nothing in the wire form can tell
@@ -369,6 +371,7 @@ optional:
 {
   "values": [
     {
+      "kind": "described",
       "id": "vault",
       "capabilities": [
         {
@@ -384,6 +387,11 @@ optional:
           }
         }
       ]
+    },
+    {
+      "kind": "undescribable",
+      "id": "board",
+      "detail": "connect ECONNREFUSED 127.0.0.1:8443"
     }
   ]
 }
@@ -394,10 +402,18 @@ optional:
   destination adds a capability here without changing `/v1`.
 - `targetSchema` is JSON Schema, and is the whole of what a client needs to build the `target` a
   delivery must supply. A target that does not satisfy it is refused before anything is attempted.
+- **A destination is asked what it can do, and may have to go and look**
+  ([core.md](core.md#routing)). One that could not answer is listed as `undescribable` with the
+  reason, rather than dropped: a destination that is missing and one that is unreachable are
+  different answers to a person looking for it. A client renders it as present and unavailable, and
+  cannot build a target for it until it describes itself again.
+- One destination failing to describe itself does not fail the read. The list still carries every
+  other, since a board that is down is no reason to hide a vault that is not.
 - Not paginated and never refused: destinations come from daemon configuration, and there are as
   many as a person wrote down. An empty `values` means none is wired, which is a configuration
   fact rather than an error.
-- Wiring a destination is a restart, so the list is stable for the life of a connection.
+- Wiring a destination is a restart, so *which* destinations are listed is stable for the life of a
+  connection. What each can do is not: capabilities are re-read per request.
 
 ### Routing an item to a destination
 
@@ -439,6 +455,11 @@ optional:
 - **A destination that was reached and refused writes nothing** — `422 rejected-by-destination`,
   carrying the destination's own `detail` verbatim. No record is minted and the item stays in the
   queue, because a refusal is proof that nothing arrived and will be refused identically next time.
+- **A destination that could not say what it accepts is `422 unreachable`**, carrying the reason.
+  No target can be checked against capabilities nobody could read, and nothing is attempted or
+  written, so this refuses rather than reserving — a record minted here would carry a target nobody
+  validated. This is the one way `unreachable` is raised on this route; a destination that fails
+  during the *attempt* still answers `200` with a pending record.
 - **An attempt that neither answered nor refused is `422 delivery-outcome-unknown`**, carrying the
   `detail` core has. No record is minted and the item stays in the queue, but unlike a refusal this
   is not proof that nothing arrived: the material may be at the destination already, and a client
@@ -447,9 +468,9 @@ optional:
   records are read as one list, so there is no `Location` to name.
 - Routing one item twice appends two records and is not refused. It is a decision, not a replay.
 - An archived item may still be routed: the archive is a filter, not a terminus.
-- **`unreachable` is in the refusal table and cannot be raised here.** A destination that was never
-  reached is a `200` carrying a pending record, which is the whole point of ADR 17; the code exists
-  because it is part of the refusal union a client parses.
+- **A destination that failed during the attempt is a `200` carrying a pending record**, which is
+  the whole point of ADR 17. Only a destination that could not be asked what it accepts refuses,
+  and it refuses before anything is attempted.
 - A destination the daemon has not wired is `422 unknown-destination`; a capability that
   destination never declared is `422 capability-undeclared`; a payload type it does not accept is
   `422 payload-type-unsupported`, carrying the types it does; a `target` that does not satisfy the
@@ -712,8 +733,9 @@ chance to stop an upload early.
 anything raises it yet: purge is not built. It is `404` on the same terms as `no-such-item` — from
 a caller's side the item is not there — and carries the instant it went.
 
-**`unreachable` is in the table and cannot be raised**, for a different reason: a destination that
-was never reached answers `200` with a pending record rather than a refusal
+**`unreachable` is raised only before an attempt**: a destination that could not be asked what it
+accepts refuses with it, while one that fails during the delivery answers `200` with a pending
+record rather than a refusal
 ([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)). It is part of the same
 union as `rejected-by-destination` and `delivery-outcome-unknown`, so a client parsing one parses
 all three, and each is `422` by the rule — the request was understood and something declined it.

@@ -54,3 +54,6 @@ export const DEFAULT_DELIVERY = {
   leaseMs: 300_000,
   batch: 4,
 };
+
+/** How much of a lease is kept back for reporting the outcome the attempt produced. */
+export const DELIVERY_REPORT_MARGIN_MS = 5_000;

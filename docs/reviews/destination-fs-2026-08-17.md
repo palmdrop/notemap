@@ -1,7 +1,7 @@
 # Review: The filesystem destination
 
 **Date**: 2026-08-17
-**Status**: Open
+**Status**: Resolved
 **Scope**: `packages/adapters/destination-fs/`, `apps/daemon/src/{destinations,work,config,routes,errors}/`, `tests/integration/src/destination.test.ts`
 **Plan**: `docs/plans/destination-fs.md`
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`
@@ -215,4 +215,50 @@ falling through rather than by saying so; `Refused` is the class that means "the
 
 ## Resolution
 
-<!-- Add once findings are addressed, and flip **Status** above. -->
+Addressed 2026-08-17, together with the GitHub review on
+[PR #12](https://github.com/palmdrop/notemap/pull/12).
+
+1. **Fixed.** `linkTo` in `renderers.ts` puts a name that would end a bare destination early into
+   the angle-bracket form, and leaves one that would not alone. Narrower than reported: `oneSegment`
+   strips parentheses, so only whitespace can reach a link. Tested with a spaced filename.
+2. **Fixed.** `deliveryFor` and the adapter lookup moved into `prepare`, which answers a
+   **retryable** failure rather than throwing — the evidence rule permits a retry because nothing
+   was attempted. Two tests cover it, one of them asserting the drain resolves rather than rejects.
+3. **Fixed.** The attempt gets `AbortSignal.timeout` set to the lease less
+   `DELIVERY_REPORT_MARGIN_MS`, so the outcome is reported while the lease is still held.
+4. **Fixed.** `adapterFor` in `ports.ts` switches on `kind` with no default, so a second kind fails
+   to build until it is wired.
+5. **Fixed.** `replaceFile` resolves through `realpath` before writing, so an append lands in the
+   real file and the link stays a link. `createFile` and `replaceFile` now share `throughTemporary`,
+   which is the GitHub review's request in the same place.
+6. **Won't fix, deliberately** — `422` stands, and the spec now states the rule it follows. The
+   `unreachable` line changed for a different reason: an asynchronous `describe` makes it raisable
+   before an attempt, which is written down in `http-v1.md`.
+7. **Fixed.** The plan's Notes record the wider errno list.
+8. **Fixed.** The `clock` parameter is gone from `pooled()`.
+9. **Fixed.** `renderText` throws rather than writing an empty note; a renderer that throws is
+   already `rejected`.
+10. **Mitigated.** `sections.ts` carries a `TODO` naming the Markdown library that would settle it,
+    and the README says so. Not fixed now, at the developer's direction.
+11. **Fixed.** `Refused` moved to `errors.ts` and `assets.ts` throws it.
+
+### From the GitHub review
+
+- **Comments** — rationale duplicated in the README or the plan is cut throughout the adapter; what
+  is left answers a why the code cannot.
+- **`describe` should be async** — done, and it turned out `core.md` had required it since the
+  destination section was written. The implementation had contradicted a shipped spec statement,
+  which this review missed. Identity moved to `adapter.id`; a destination that cannot describe
+  itself is now reported rather than dropped, which the same spec sentence required.
+- **`atomic.ts` duplication** — shared through `throughTemporary`, with finding 5.
+- **`let rendered` has no type** — the site is gone, restructured into `renderOrRefuse`. The lint
+  rule that would forbid it repo-wide is still open; see below.
+- **Destinations from the UI** — recorded in `docs/todo.md`.
+
+### Still open
+
+- **A rule for uninitialised `let`.** TypeScript has no flag: `let x;` is an evolving `any` that
+  `noImplicitAny` permits by design. `@typescript-eslint/init-declarations` forbids it, but flags
+  **28 sites in 20 files** across every package — 19 of them annotated mutable state such as
+  `let timer: NodeJS.Timeout | undefined;`, which is not the pattern the review objected to. Not
+  enabled, pending a decision.

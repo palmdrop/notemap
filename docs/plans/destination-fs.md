@@ -209,6 +209,20 @@ Two things landed differently from what is written above, both deliberate:
 - **Phase 4's "a directory the daemon cannot write is refused"** is not what the decision above
   says. An unwritable directory is `unreachable`, so it answers a **pending** record; the test that
   asserts a refusal carrying the destination's own detail uses a traversal instead.
+- **The unreachable errnos are wider than the decision names.** `EROFS`, `ENOSPC` and `EIO` report
+  `unreachable` alongside `EACCES` and `EPERM`, on the same asymmetry: a full disk and a read-only
+  mount are both fixed from outside, and abandoning on them throws away a decision.
+
+Reviewed 2026-08-17 ([review](../reviews/destination-fs-2026-08-17.md)), and three things changed
+after it:
+
+- **`describe` is asynchronous**, which `core.md` had required since the destination section was
+  written and the implementation had not followed. Identity moved onto the adapter as `id` so a
+  duplicate is still caught at wiring time, and capabilities are read per call.
+- **A destination that cannot describe itself is reported, not dropped** — the same spec sentence
+  said so, and `GET /v1/destinations` now carries a `kind` for it.
+- **The deferred attempt is bounded** by a signal timed under the lease, because a lease that
+  expires with nothing reported is abandoned rather than retried.
 
 DO NOT IMPLEMENT until clearly stated by the developer.
 

@@ -1,7 +1,10 @@
 import { v7 as uuidv7 } from "uuid";
 
 import { createFilesystemBlobStore } from "@notemap/blob-fs";
-import { createFilesystemDestination } from "@notemap/destination-fs";
+import {
+  createFilesystemDestination,
+  type Renderers,
+} from "@notemap/destination-fs";
 import { createFilesystemMirrorWriter } from "@notemap/mirror-fs";
 import { createAjvSchemaValidator } from "@notemap/schema-ajv";
 import { createSqlitePoolStore } from "@notemap/store-sqlite";
@@ -59,12 +62,7 @@ export function openPool(options: OpenPoolConfig): OpenPool {
 
   const renderers = destinationRenderers();
   const destinations = (options.destinations ?? []).map((destination) =>
-    createFilesystemDestination({
-      id: destination.id,
-      root: destination.root,
-      accepts: destination.accepts,
-      renderers,
-    }),
+    adapterFor(destination, renderers),
   );
 
   const mirrorWriter =
@@ -101,4 +99,20 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     ...(mirrorWriter === undefined ? {} : { mirrorWriter }),
     destinations,
   };
+}
+
+/** Exhaustive on `kind`, so a destination kind added to the config fails to build until it is wired. */
+function adapterFor(
+  destination: DestinationConfig,
+  renderers: Renderers,
+): DestinationAdapter {
+  switch (destination.kind) {
+    case "filesystem":
+      return createFilesystemDestination({
+        id: destination.id,
+        root: destination.root,
+        accepts: destination.accepts,
+        renderers,
+      });
+  }
 }

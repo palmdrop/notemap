@@ -9,30 +9,39 @@ export type Rendering = {
   readonly frontmatter?: ReadonlyMap<string, FrontmatterValue>;
 };
 
-/**
- * Where this note is about to be written, and what its assets ended up being
- * called beside it — keyed by slot, because a name may have been suffixed to
- * avoid taking a file that was already there.
- */
+/** Assets are keyed by slot, because a name may have been suffixed to avoid one already there. */
 export type RenderingContext = {
   readonly directory: string;
   readonly assets: ReadonlyMap<string, string>;
 };
 
-/**
- * A destination's own dialect. Nothing at the far end parses what this
- * produces, so it may be as lossy and opinionated as the vault it writes for.
- */
+/** A destination's own dialect: nothing at the far end parses it, so it may be as lossy as the vault wants. */
 export type Renderer = (delivery: Delivery, at: RenderingContext) => Rendering;
 
 export type Renderers = Readonly<Partial<Record<PayloadTypeName, Renderer>>>;
+
+/** Anything that ends a bare CommonMark link destination early, or is not allowed in one. */
+const NEEDS_BRACKETS = /[\s()<>\\]/;
+
+/**
+ * A link to a file this adapter wrote. An asset keeps the name it was uploaded
+ * with, and a space or a parenthesis in one ends a bare destination early — so
+ * a name that carries either goes in the angle-bracket form instead.
+ */
+export function linkTo(name: string): string {
+  return NEEDS_BRACKETS.test(name)
+    ? `<${name.replace(/[<>\\]/g, (each) => `\\${each}`)}>`
+    : name;
+}
 
 /** What a payload type with no renderer gets. */
 export const renderAsJson: Renderer = (delivery, at) => {
   const content = JSON.stringify(delivery.payload.content, undefined, 2);
   const fence = longestFence(content);
 
-  const links = [...at.assets.values()].map((name) => `- [${name}](${name})`);
+  const links = [...at.assets.values()].map(
+    (name) => `- [${name}](${linkTo(name)})`,
+  );
   const lines = [`${fence}json`, content, fence, ""];
 
   return {

@@ -1,7 +1,11 @@
 import { recordAction } from "../actions";
 import { enqueueMirrorWrite } from "../mirror";
 import { ok, refused } from "../../utils/result";
-import type { PoolPorts, PoolTx } from "../../types/api/ports";
+import type {
+  DestinationAdapter,
+  PoolPorts,
+  PoolTx,
+} from "../../types/api/ports";
 import type { CancelRefusal, DeliveryRefusal } from "../../types/api/refusal";
 import type { FailureDetail } from "../../types/domain/enrichment";
 import type {
@@ -13,6 +17,7 @@ import type {
 import type {
   DeliveryOutcome,
   DeliveryRequest,
+  DestinationDescriptor,
   RoutingRecord,
 } from "../../types/domain/routing";
 import type { Result } from "../../types/result";
@@ -38,15 +43,18 @@ export async function route(
   request: DeliveryRequest,
   signal?: AbortSignal,
 ): Promise<Routed> {
-  const wired = destinations.get(request.destination);
-  if (wired === undefined) {
+  const adapter = destinations.get(request.destination);
+  if (adapter === undefined) {
     return refused({
       kind: "unknown-destination",
       destination: request.destination,
     });
   }
 
-  const capability = wired.descriptor.capabilities.find(
+  const described = await describeOrRefuse(adapter, signal);
+  if (described.kind === "refused") return described;
+
+  const capability = described.value.capabilities.find(
     (each) => each.name === request.capability,
   );
   if (capability === undefined) {
@@ -89,7 +97,7 @@ export async function route(
 
   let outcome: DeliveryOutcome;
   try {
-    outcome = await wired.adapter.deliver(delivery, signal);
+    outcome = await adapter.deliver(delivery, signal);
   } catch (cause) {
     return unresolved(ports, record, cause);
   }
@@ -120,6 +128,26 @@ export async function route(
         });
     }
   });
+}
+
+/**
+ * A destination that cannot say what it accepts cannot have a target checked
+ * against it. Nothing has been attempted and nothing written, so this refuses
+ * rather than reserving: a record minted here would carry a target nobody
+ * validated, and every retry would refuse it again.
+ */
+async function describeOrRefuse(
+  adapter: DestinationAdapter,
+  signal?: AbortSignal,
+): Promise<Result<DestinationDescriptor, DeliveryRefusal>> {
+  try {
+    return ok(await adapter.describe(signal));
+  } catch (cause) {
+    return refused({
+      kind: "unreachable",
+      detail: cause instanceof Error ? cause.message : String(cause),
+    });
+  }
 }
 
 /**

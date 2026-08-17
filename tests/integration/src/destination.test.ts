@@ -64,14 +64,13 @@ function vault(): { readonly root: string } {
 }
 
 /** A pool wired to a real folder on disk, mirroring for real as well. */
-function pooled(root: string, clock?: Harness["clock"]): Harness {
+function pooled(root: string): Harness {
   const opened = harness(undefined, "filesystem", [
     createFilesystemDestination({
       id: VAULT,
       root,
       accepts: [TEXT, NOTE],
       renderers,
-      ...(clock === undefined ? {} : { clock }),
     }),
   ]);
   open.push(opened.cleanup);

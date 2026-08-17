@@ -4,14 +4,7 @@ import { oneSegment } from "./paths";
 
 const MAX_STEM = 60;
 
-/**
- * What to call a note nobody named.
- *
- * The derivation is weak, and knowingly: **the domain has no title**. The first
- * line of whatever string the payload carries is the best guess available, and
- * the item id is what is left when there is none — which is what a capture with
- * no prose gets, and it is ugly.
- */
+/** What to call a note nobody named. Weak, knowingly: **the domain has no title**. */
 export function deriveFilename(delivery: Delivery): string {
   const line = firstLine(delivery.payload.content);
   const stem = oneSegment(line.slice(0, MAX_STEM), delivery.item);

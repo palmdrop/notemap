@@ -91,6 +91,11 @@
   compared, and the deepest existing part of it read back through the filesystem, so a symlink out
   is caught as well as an absolute path or a `..`. Nothing is overwritten either — a file is created
   with a hard link, which refuses a name that is taken and still appears whole or not at all.
+  *(Amended 2026-08-17: `describe` is asynchronous, as the destination section already required.
+  Identity moved onto the adapter as `id`, so a duplicate is still caught at wiring time while
+  capabilities are re-read per call; `routing.destinations` answers a report per destination, and
+  one that could not describe itself is reported rather than dropped; and `routing.route` refuses
+  `unreachable` when it cannot read capabilities to check a target against.)*
   ([plan](../plans/destination-fs.md))
 - 2026-08-17 — **An inline attempt that throws is unknown, not failed.** `routing.route` was letting
   an adapter's exception — including the caller's own `AbortSignal` firing — unwind the call with

@@ -6,6 +6,7 @@ import type { Artifact, EnrichmentStatus } from "../domain/enrichment";
 import type {
   AssetId,
   BlobHash,
+  DestinationId,
   ItemId,
   LeaseId,
   MintableId,
@@ -136,8 +137,14 @@ export interface MirrorReader {
   entries(): AsyncIterable<MirrorEntry>;
 }
 
+/**
+ * Identity is static and capabilities are not: a destination may have to ask
+ * something outside this process what it can currently accept, so `describe`
+ * is answered per read while `id` stays what a record was written against.
+ */
 export interface DestinationAdapter {
-  describe(): DestinationDescriptor;
+  readonly id: DestinationId;
+  describe(signal?: AbortSignal): Promise<DestinationDescriptor>;
   deliver(delivery: Delivery, signal?: AbortSignal): Promise<DeliveryOutcome>;
 }
 

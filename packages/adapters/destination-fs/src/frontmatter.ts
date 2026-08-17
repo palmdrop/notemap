@@ -5,12 +5,8 @@ import type { Delivery } from "@notemap/core";
 export type FrontmatterValue = string | number | boolean | readonly string[];
 
 /**
- * Where each of a delivery's fields goes in the frontmatter, or `null` where it
- * deliberately goes nowhere. Keyed by `Delivery`, so a field added to the
- * domain fails to compile until someone decides which of the two it is.
- *
- * Which destination a note reached is not among them: the file is at that
- * destination, and a vault does not need telling where it is.
+ * Keyed by `Delivery`, so a field added to the domain fails to compile until
+ * someone decides where it goes — `null` meaning deliberately nowhere.
  */
 const KEYS = {
   item: "id",
@@ -26,10 +22,7 @@ const KEYS = {
   assets: null,
 } as const satisfies Record<keyof Delivery, string | null>;
 
-/**
- * What lets a note that has left notemap still be traced back to the capture it
- * came from — the one thing a file at a destination cannot recover for itself.
- */
+/** The one thing a file at a destination cannot recover for itself. */
 const PROVENANCE = {
   attribution: "wasAttributedTo",
   origin: "derived_from",

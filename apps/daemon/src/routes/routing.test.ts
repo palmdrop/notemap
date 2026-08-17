@@ -137,6 +137,7 @@ describe("GET /v1/destinations", () => {
       await host.app.request("/v1/destinations"),
     )) as {
       values: {
+        kind: string;
         id: string;
         capabilities: {
           name: string;
@@ -147,6 +148,7 @@ describe("GET /v1/destinations", () => {
     };
 
     expect(answered.values).toHaveLength(1);
+    expect(answered.values[0]?.kind).toBe("described");
     expect(answered.values[0]?.id).toBe("vault");
     expect(answered.values[0]?.capabilities.map((each) => each.name)).toEqual([
       "create-file",

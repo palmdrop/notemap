@@ -461,21 +461,54 @@
         ]
       },
       "Destination": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "described"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "capabilities": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Capability"
+                }
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "capabilities"
+            ]
           },
-          "capabilities": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Capability"
-            }
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "undescribable"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "detail"
+            ]
           }
-        },
-        "required": [
-          "id",
-          "capabilities"
         ]
       },
       "Capability": {

@@ -9,12 +9,7 @@ import type {
 export const CREATE_FILE = "create-file" as CapabilityName;
 export const APPEND_TO_FILE = "append-to-file" as CapabilityName;
 
-/**
- * `directory` is required and may be empty, which names the destination root
- * itself. `filename` is optional because a person filing one item often wants
- * to name the note and a person clearing a queue does not; the adapter derives
- * one when it is absent.
- */
+/** An empty `directory` names the root itself; an absent `filename` is derived. */
 const CREATE_FILE_TARGET: JsonSchema = {
   type: "object",
   required: ["directory"],
@@ -55,12 +50,7 @@ export type AppendToFileTarget = {
   readonly heading?: string;
 };
 
-/**
- * Core validates a target against the schema above before any of this is
- * reached, and a job carrying one out reads it back from a record that was
- * validated then. These read it anyway rather than casting: what a record holds
- * is JSON, and a schema that once passed is not a type.
- */
+/** Read rather than cast: a schema that passed once is not a type, and a record holds JSON. */
 export function asCreateFileTarget(
   target: JsonObject,
 ): CreateFileTarget | undefined {

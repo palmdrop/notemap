@@ -11,6 +11,7 @@ import type {
 
 import { placeAssets } from "./assets";
 import { createFile, replaceFile } from "./atomic";
+import { Refused } from "./errors";
 import {
   APPEND_TO_FILE,
   asAppendToFileTarget,
@@ -22,30 +23,23 @@ import { deriveFilename } from "./filename";
 import { FIXED_KEYS, fixedFrontmatter, toYaml } from "./frontmatter";
 import type { FrontmatterValue } from "./frontmatter";
 import { contain, realRootOf, type Contained } from "./paths";
-import { renderAsJson, type Renderers } from "./renderers";
+import {
+  renderAsJson,
+  type Renderers,
+  type Rendering,
+  type RenderingContext,
+} from "./renderers";
 import { insertUnder } from "./sections";
 
 export type FilesystemDestinationConfig = {
   readonly id: DestinationId;
-  /**
-   * The directory the destination *is*. Never created: a root that is not there
-   * is a drive that is not mounted far more often than it is a typo, and this
-   * adapter does not conjure somebody's vault.
-   */
+  /** The directory the destination *is*. Never created. */
   readonly root: string;
-  /** The payload types both capabilities accept. Every type has a rendering. */
   readonly accepts: readonly PayloadTypeName[];
   /** By payload type. A type with no renderer gets the default rendering. */
   readonly renderers?: Renderers;
 };
 
-/**
- * Errnos that say the destination was not reachable rather than that the
- * delivery was wrong. A permission bit wrongly retried is bounded by
- * `maxAttempts` and ends up abandoned in front of a person, which is where it
- * was going anyway; an unmounted drive wrongly abandoned throws away a decision.
- * Only one of the two mistakes corrects itself.
- */
 const UNREACHABLE: readonly string[] = [
   "EACCES",
   "EPERM",
@@ -53,9 +47,6 @@ const UNREACHABLE: readonly string[] = [
   "ENOSPC",
   "EIO",
 ];
-
-/** What the adapter itself decided, as opposed to what the filesystem said. */
-class Refused extends Error {}
 
 export function createFilesystemDestination(
   config: FilesystemDestinationConfig,
@@ -68,22 +59,16 @@ export function createFilesystemDestination(
   };
 
   return {
-    describe: () => descriptor,
+    id: config.id,
+    describe: () => Promise.resolve(descriptor),
 
     deliver: async (delivery, signal): Promise<DeliveryOutcome> => {
-      let realRoot: string;
-      try {
-        realRoot = await realRootOf(config.root);
-        if (!(await stat(realRoot)).isDirectory()) {
-          return unreachable(`${config.root} is not a directory`);
-        }
-      } catch (cause) {
-        return unreachable(`${config.root}: ${why(cause)}`);
-      }
+      const reached = await reachRoot(config.root);
+      if (typeof reached !== "string") return reached;
 
       try {
         const landed = await carryOut(
-          { realRoot, renderers },
+          { realRoot: reached, renderers },
           delivery,
           signal,
         );
@@ -93,6 +78,18 @@ export function createFilesystemDestination(
       }
     },
   };
+}
+
+/** The root as the filesystem holds it, or why it could not be reached. */
+async function reachRoot(root: string): Promise<string | DeliveryOutcome> {
+  try {
+    const realRoot = await realRootOf(root);
+    return (await stat(realRoot)).isDirectory()
+      ? realRoot
+      : unreachable(`${root} is not a directory`);
+  } catch (cause) {
+    return unreachable(`${root}: ${why(cause)}`);
+  }
 }
 
 type Wiring = {
@@ -115,13 +112,7 @@ function carryOut(
   }
 }
 
-/**
- * A note that is already there is refused before an asset is written, which is
- * the case that actually happens and costs the vault nothing. The link that
- * finally creates the file is what guarantees nothing is replaced; if it loses
- * a race, the assets beside it stay — debris, in exchange for never
- * overwriting.
- */
+/** An asset written before a `link` that then loses a race is left as debris, in exchange for never overwriting. */
 async function createNote(
   wiring: Wiring,
   delivery: Delivery,
@@ -147,11 +138,7 @@ async function createNote(
   return note.relative;
 }
 
-/**
- * **Not atomic against a concurrent editor.** One writer per file is the
- * standing rule and this adapter is it, but a person with the vault open is
- * outside that promise: their unsaved buffer will overwrite this on save.
- */
+/** **Not atomic against a concurrent editor**: an open editor's buffer will overwrite this on save. */
 async function appendToNote(
   wiring: Wiring,
   delivery: Delivery,
@@ -197,19 +184,9 @@ async function locate(realRoot: string, target: string): Promise<Contained> {
 function render(
   renderers: Renderers,
   delivery: Delivery,
-  at: { directory: string; assets: ReadonlyMap<string, string> },
+  at: RenderingContext,
 ): { frontmatter: string; body: string } {
-  const renderer = renderers[delivery.payload.type] ?? renderAsJson;
-
-  let rendered;
-  try {
-    rendered = renderer(delivery, at);
-  } catch (cause) {
-    // It will throw identically on every attempt, so retrying is pointless.
-    throw new Refused(
-      `the renderer for ${delivery.payload.type} threw: ${why(cause)}`,
-    );
-  }
+  const rendered = renderOrRefuse(renderers, delivery, at);
 
   const entries = new Map<string, FrontmatterValue>(fixedFrontmatter(delivery));
   for (const [key, value] of rendered.frontmatter ?? []) {
@@ -217,6 +194,22 @@ function render(
   }
 
   return { frontmatter: toYaml(entries), body: rendered.body };
+}
+
+function renderOrRefuse(
+  renderers: Renderers,
+  delivery: Delivery,
+  at: RenderingContext,
+): Rendering {
+  const renderer = renderers[delivery.payload.type] ?? renderAsJson;
+  try {
+    return renderer(delivery, at);
+  } catch (cause) {
+    // It will throw identically on every attempt, so retrying is pointless.
+    throw new Refused(
+      `the renderer for ${delivery.payload.type} threw: ${why(cause)}`,
+    );
+  }
 }
 
 async function exists(path: string): Promise<boolean> {

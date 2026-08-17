@@ -99,7 +99,8 @@ export function fakeDestination(
   }
 
   return {
-    describe: () => descriptor,
+    id: descriptor.id,
+    describe: () => Promise.resolve(descriptor),
 
     deliver: async (delivery, signal) => {
       const answer = once.shift() ?? standing;

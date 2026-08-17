@@ -1,56 +1,51 @@
 import { randomBytes } from "node:crypto";
-import { link, mkdir, open, rename, unlink } from "node:fs/promises";
+import { link, mkdir, open, realpath, rename, unlink } from "node:fs/promises";
 import type { FileHandle } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 
 /** What a crashed delivery leaves behind, and what nothing here ever adopts. */
 export const TEMPORARY_PREFIX = ".notemap-";
 
-/**
- * Creates `path` with these bytes, and fails rather than replacing a file that
- * is there.
- *
- * `link` rather than `rename`, which is what the mirror uses: rename replaces
- * its target silently, and this writes into somebody's own vault. The hard link
- * gives both properties at once — it is refused with `EEXIST` if the name is
- * taken, and the file appears whole or not at all.
- */
-export async function createFile(
+/** `link` rather than `rename`: rename replaces its target silently, and this is somebody's own vault. */
+export function createFile(
   path: string,
   contents: string | AsyncIterable<Uint8Array>,
 ): Promise<void> {
-  const directory = dirname(path);
-  await mkdir(directory, { recursive: true });
-
-  const temporary = temporaryBeside(path);
-  try {
-    await write(temporary, contents);
-    await link(temporary, path);
-  } finally {
-    await unlink(temporary).catch(() => undefined);
-  }
-
-  await syncDirectory(directory);
+  return throughTemporary(path, contents, link);
 }
 
 /**
- * Replaces `path`, which the caller has already decided it owns. A crash leaves
- * the previous complete file or the new one, never a truncated one.
+ * Replaces `path`, which the caller has already decided it owns. Renaming over
+ * a symlink would replace the link rather than write through it, so the target
+ * is resolved first and the real file is what gets replaced.
  */
 export async function replaceFile(
   path: string,
   contents: string,
 ): Promise<void> {
+  const real = await realpath(path).catch(() => path);
+  return throughTemporary(real, contents, rename);
+}
+
+/**
+ * Written beside its target and put in place by one call, so a crash leaves the
+ * previous file or the new one and never a half-written one. The temporary is
+ * removed whichever way that call goes.
+ */
+async function throughTemporary(
+  path: string,
+  contents: string | AsyncIterable<Uint8Array>,
+  place: (temporary: string, to: string) => Promise<void>,
+): Promise<void> {
   const directory = dirname(path);
   await mkdir(directory, { recursive: true });
 
   const temporary = temporaryBeside(path);
   try {
     await write(temporary, contents);
-    await rename(temporary, path);
-  } catch (cause) {
+    await place(temporary, path);
+  } finally {
     await unlink(temporary).catch(() => undefined);
-    throw cause;
   }
 
   await syncDirectory(directory);
@@ -87,18 +82,13 @@ async function drain(
 }
 
 async function syncDirectory(directory: string): Promise<void> {
-  let handle;
-  try {
-    handle = await open(directory, "r");
-  } catch {
-    // Not every platform lets a directory be opened; the write still happened.
-    return;
-  }
+  // Not every platform lets a directory be opened, and some refuse fsync on
+  // one; the write has still happened either way.
+  const handle = await open(directory, "r").catch(() => undefined);
+  if (handle === undefined) return;
 
   try {
-    await handle.sync();
-  } catch {
-    // Likewise: some filesystems refuse fsync on a directory.
+    await handle.sync().catch(() => undefined);
   } finally {
     await handle.close();
   }

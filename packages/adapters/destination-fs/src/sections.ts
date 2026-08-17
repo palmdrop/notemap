@@ -1,17 +1,14 @@
+/**
+ * TODO: move to a real Markdown library. This walks lines with a regex, so a
+ * `#` inside a fenced code block reads as a heading and a fragment can land
+ * inside the fence. An AST would settle that and the heading matching with it.
+ */
 const HEADING = /^(#{1,6})\s+(.*?)\s*$/;
 
 /** The level a heading this adapter has to write itself gets. */
 const OWN_LEVEL = "##";
 
-/**
- * `fragment` placed into `existing`, at the end of the named heading's section
- * or at the end of the file.
- *
- * A heading that is not there is written rather than refused: the motivating
- * case is a daily note whose sections appear as things are filed into them, and
- * a delivery that failed because a person had not typed a heading yet would be
- * a chore rather than a safeguard.
- */
+/** A heading that is not there is written rather than refused: sections of a daily note appear as things are filed into them. */
 export function insertUnder(
   existing: string,
   fragment: string,

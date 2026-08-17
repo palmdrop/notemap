@@ -66,7 +66,19 @@ export const capabilitySchema = z
   .openapi("Capability");
 
 export const destinationSchema = z
-  .object({ id: z.string(), capabilities: z.array(capabilitySchema) })
+  .union([
+    z.object({
+      kind: z.literal("described"),
+      id: z.string(),
+      capabilities: z.array(capabilitySchema),
+    }),
+    z.object({
+      kind: z.literal("undescribable"),
+      id: z.string(),
+      /** Why it could not say. It is wired, so it is listed rather than dropped. */
+      detail: z.string(),
+    }),
+  ])
   .openapi("Destination");
 
 export const destinationsSchema = z
