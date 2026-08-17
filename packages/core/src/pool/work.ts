@@ -30,13 +30,10 @@ import type { Page, Result, Slice } from "../types/result";
 const MAX_DOUBLINGS = 32;
 
 /**
- * Work to do, minus the deliveries that must not be tried again.
- *
- * A lease that expired with nothing reported is **no evidence**: the previous
- * holder may have delivered before it died. For work that can be repeated
- * safely that is a reason to retry; for a delivery it is not, because the domain
- * cannot tell a retry from a genuine second delivery and the duplicate would be
- * undetectable. So the claim that finds one ends it instead of handing it out.
+ * A lease that expired with nothing reported is no evidence: the previous holder
+ * may have delivered before it died. Repeatable work retries on that; a delivery
+ * cannot, because nothing downstream could tell the duplicate from a second
+ * decision. So a claim that finds one ends it instead of handing it out.
  */
 export async function claim(
   ports: PoolPorts,
@@ -139,11 +136,7 @@ export async function complete(
   });
 }
 
-/**
- * A delivery that landed: the reservation joins the routing log, the mirror is
- * owed the write it was not owed while nothing had arrived, and the log gains
- * the entry that says where the item went.
- */
+/** The mirror is owed the write it was not owed while nothing had arrived. */
 async function land(
   ports: PoolPorts,
   tx: PoolTx,
@@ -151,8 +144,7 @@ async function land(
   pointer: string | undefined,
 ): Promise<void> {
   const record = await tx.routingRecord(id);
-  // Cancelled from under the attempt. Nothing is left to resolve, and whoever
-  // removed it left the entry saying so.
+  // Cancelled from under the attempt, and whoever removed it left the entry saying so.
   if (record === undefined) return;
 
   const at = ports.clock.now();
@@ -161,7 +153,6 @@ async function land(
   await recordAction(ports, tx, {
     kind: "routed",
     subject: record.item,
-    // The decision was a person's; carrying it out later changes whose it was.
     by: { kind: "person" },
     at,
     detail: {
@@ -179,9 +170,8 @@ async function land(
 }
 
 /**
- * What an attempt that failed leaves behind. Giving up on a delivery removes
- * its reservation, which returns the item to the queue at its unchanged content
- * time: nothing arrived anywhere, and the decision is the person's again.
+ * Giving up on a delivery removes its reservation, which returns the item to the
+ * queue: nothing arrived anywhere, and the decision is the person's again.
  */
 async function concluded(
   ports: PoolPorts,
@@ -254,9 +244,8 @@ async function abandonUnknown(ports: PoolPorts, lease: Lease): Promise<void> {
 }
 
 /**
- * Only mirror work is unbounded: unmirrored material is owed however many times
- * the write has failed, and giving up would not change that. Giving up on a
- * delivery does change something — it hands the decision back.
+ * Only mirror work is unbounded: giving up would not change that material is
+ * unmirrored, where giving up on a delivery hands the decision back.
  */
 function exhausted(
   policy: RetryPolicy,

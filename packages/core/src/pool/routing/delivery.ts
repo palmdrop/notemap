@@ -10,20 +10,13 @@ import type {
 } from "../../types/domain/routing";
 import type { WorkOutcome } from "../../types/domain/work";
 
-/**
- * The codes a delivery failure is reported under. A person reading the
- * abandoned surface has to be able to tell a destination that refused from one
- * that was never reached from an attempt whose outcome nobody knows — the last
- * being the one that warrants checking the vault before routing again.
- */
+/** The abandoned surface has to keep these apart: only the last warrants checking the destination. */
 export const DELIVERY_FAILURE = {
   unreachable: "unreachable",
   rejected: "rejected-by-destination",
-  /** The one that warrants checking the destination before routing again. */
   unknown: "delivery-outcome-unknown",
 } as const;
 
-/** What a host reports for an attempt a destination has answered. */
 export function asDeliveryWorkOutcome(outcome: DeliveryOutcome): WorkOutcome {
   switch (outcome.kind) {
     case "delivered":
@@ -49,11 +42,7 @@ export function asDeliveryWorkOutcome(outcome: DeliveryOutcome): WorkOutcome {
   }
 }
 
-/**
- * The delivery a pending record's job carries out, projected fresh from the
- * pool the way a mirror write reads the item it is about. Absent where there is
- * nothing left to carry out: the record was cancelled, or its item was purged.
- */
+/** Absent where there is nothing left to carry out: the record was cancelled, or its item purged. */
 export async function deliveryFor(
   ports: PoolPorts,
   id: RoutingRecordId,
@@ -73,11 +62,7 @@ export async function deliveryFor(
   });
 }
 
-/**
- * Everything durable about an item, resolved outside any transaction: this
- * reads assets and closes over the blob store, and the store holds a write lock
- * for a transaction's duration.
- */
+/** Called outside any transaction: this reads assets, and the store holds a write lock throughout one. */
 export async function projectDelivery(
   ports: PoolPorts,
   item: Item,
@@ -98,8 +83,7 @@ export async function projectDelivery(
     seen.add(key);
 
     const asset = await ports.store.asset(reference.asset);
-    // A foreign key stands under every reference a payload holds; an artifact's
-    // are the same rows. Nothing resolvable is dropped here.
+    // A foreign key stands under every reference, so nothing resolvable is dropped here.
     if (asset === undefined) continue;
 
     assets.push({
@@ -128,7 +112,6 @@ export async function projectDelivery(
   };
 }
 
-/** Opened when the adapter asks and not before, so a capability wanting no bytes reads none. */
 async function openAsset(
   ports: PoolPorts,
   asset: Asset,

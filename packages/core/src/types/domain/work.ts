@@ -49,7 +49,6 @@ export type Lease = {
   readonly reclaimed?: true;
 };
 
-/** Three successes rather than one: only enrichment produces material, and only a delivery lands somewhere. */
 export type WorkOutcome =
   | { readonly kind: "succeeded" }
   | { readonly kind: "delivered"; readonly pointer?: string }
@@ -64,18 +63,14 @@ export type WorkOutcome =
       readonly detail: FailureDetail;
     };
 
-/** `maxAttempts` bounds enrichment and delivery: a retryable mirror failure retries forever. */
+/** `maxAttempts` does not bound mirror work: a retryable mirror failure retries forever. */
 export type RetryPolicy = {
   readonly maxAttempts: number;
   readonly initialBackoff: Duration;
   readonly maxBackoff: Duration;
 };
 
-/**
- * What became of the work outstanding about a subject when it was called off.
- * **Held** is not a failure: somebody's attempt may be underway, and its
- * outcome is not the caller's to decide.
- */
+/** Held is not a failure: an attempt may be underway, and its outcome is not the caller's to decide. */
 export type WorkWithdrawal = "withdrawn" | "held";
 
 /** What core decided a finished attempt means. The store applies it and holds no policy of its own. */
@@ -97,10 +92,7 @@ export type JobResolution =
 /** One row of the surface answering "what needs me", for work of any kind. */
 export type AbandonedWork = {
   readonly subject: JobSubject;
-  /**
-   * Outlives the subject: an abandoned delivery's record is removed, and the
-   * row reporting it still has to name a capture.
-   */
+  /** Outlives the subject: an abandoned delivery's record is removed, and this row still names a capture. */
   readonly item: ItemId;
   readonly kind: JobKind;
   /** Present for enrichment work only. */

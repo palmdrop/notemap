@@ -14,19 +14,13 @@ import type {
 } from "../types/domain/routing";
 
 /**
- * A destination that fails on command.
- *
- * The three outcomes delivery exists to get right are `unreachable`, `rejected`
- * and a host that dies mid-attempt. A real filesystem is never unreachable and
- * rarely refuses, so it would exercise one of the three; this exercises all of
- * them, and records what it was handed so a test can assert that an adapter
- * receives every asset whole without reaching into any store.
+ * A destination that fails on command. A real filesystem is never unreachable
+ * and rarely refuses, so it would exercise one of the three outcomes delivery
+ * exists to get right; this exercises all of them.
  */
 
-/** What the destination does with the next delivery it is handed. */
 export type ScriptedAnswer = DeliveryOutcome | { readonly kind: "hang" };
 
-/** One asset as it arrived: the name it was uploaded under, and its bytes. */
 export type ReceivedAsset = {
   readonly slot: string;
   readonly filename: string;
@@ -40,21 +34,17 @@ export type Received = {
 };
 
 export type FakeDestination = DestinationAdapter & {
-  /** Everything it has been handed, oldest first. The array is live. */
+  /** Oldest first, and live: it grows as more is handed over. */
   readonly received: readonly Received[];
-  /** What it answers from here on. */
   answers(next: ScriptedAnswer): void;
-  /** What it answers to the next delivery only, ahead of the standing answer. */
+  /** Takes precedence over the standing answer, for one delivery. */
   answersOnce(next: ScriptedAnswer): void;
 };
 
 export type FakeDestinationOptions = {
   readonly id?: DestinationId;
   readonly capabilities?: readonly Capability[];
-  /**
-   * Whether it reads the assets it is handed. A capability that wants no bytes
-   * opens no stream, which is the property the lazy opener exists for.
-   */
+  /** Whether it reads the assets it is handed, which is what proves the opener lazy. */
   readonly reads?: boolean;
   readonly answer?: ScriptedAnswer;
 };
@@ -119,8 +109,7 @@ export function fakeDestination(
 
       if (answer.kind !== "hang") return answer;
 
-      // A host that never came back. The signal is the only way out, which is
-      // what a caller bounding the attempt would use.
+      // A host that never came back: the signal is the only way out.
       return new Promise<DeliveryOutcome>((_resolve, reject) => {
         signal?.addEventListener("abort", () =>
           reject(new Error("the destination was still thinking")),

@@ -238,7 +238,7 @@ export function createSqlitePoolStore(
   const deleteRouting = write.query<never, [string]>(
     `DELETE FROM routing_records WHERE id = ?`,
   );
-  /** Which item a record belongs to, so a write can touch it before or after the record goes. */
+  /** Read before a removal, so the item can still be touched after the record goes. */
   const routingItem = write.query<{ item_id: string }, [string]>(
     `SELECT item_id FROM routing_records WHERE id = ?`,
   );

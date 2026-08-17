@@ -186,11 +186,7 @@ function readRouting(value: unknown, at: string): RoutingRecord {
   };
 }
 
-/**
- * Read rather than assumed, although the mirror only ever writes delivered
- * records: a file saying `pending` is a mirror that cannot be trusted about
- * what arrived, and salvaging it as delivered would invent an arrival.
- */
+/** Read rather than assumed: salvaging a file that says `pending` would invent an arrival. */
 function readState(value: unknown, at: string): RoutingRecordState {
   const spelling = text(value, at);
   if (spelling !== "pending" && spelling !== "delivered") {

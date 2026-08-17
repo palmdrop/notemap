@@ -1279,7 +1279,6 @@ describe("reservations", () => {
     expect(await p.routingRecord("nobody" as RoutingRecordId)).toBeUndefined();
   });
 
-  /** Two destinations for one item are two decisions, and neither absorbs the other. */
   it("coexists with a second reservation of the same item", async () => {
     const { pool: p, record } = await reservedItem();
     const second = reserved(record, {

@@ -95,11 +95,7 @@ export type AttemptFailure =
   | { readonly kind: "unreachable"; readonly detail: string }
   | { readonly kind: "rejected-by-destination"; readonly detail: string };
 
-/**
- * A record that is not pending has already delivered, and there is nothing left
- * to call off; a delivery somebody holds a lease on may be halfway through one,
- * and its outcome is not the canceller's to decide.
- */
+/** Whoever holds a lease may be halfway through the attempt, and its outcome is not the canceller's to decide. */
 export type CancelRefusal =
   | { readonly kind: "no-such-record"; readonly record: RoutingRecordId }
   | { readonly kind: "not-pending"; readonly record: RoutingRecordId }

@@ -1,6 +1,5 @@
 export * from "./pool";
 
-// What a host driving delivery work needs, and nothing else of routing's:
-// core owns which code each failure is reported under, because the abandoned
-// surface's promise that they are distinguishable rests on it.
+// Core owns which code each failure is reported under, so a host driving
+// delivery work reports through these rather than inventing its own.
 export { asDeliveryWorkOutcome, DELIVERY_FAILURE } from "./routing/delivery";

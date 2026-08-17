@@ -158,7 +158,6 @@ describe("what the record leaves out", () => {
     expect(record.item.revisionOf).toBe("item-0");
   });
 
-  /** A rebuild that restored one would restore a promise no job exists to keep. */
   it("carries a delivered routing record and leaves a pending one out", () => {
     const delivered: RoutingRecord = {
       id: "routing-1" as RoutingRecord["id"],

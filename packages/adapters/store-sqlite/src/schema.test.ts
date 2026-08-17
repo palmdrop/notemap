@@ -116,8 +116,7 @@ describe("the row types and the migrations agree", () => {
       );
       const targeted = JSON.stringify({ path: "inbox/a.md" });
 
-      // A destination target names all three halves; a user target names none
-      // of them, and is the only one that may carry a note.
+      // Args are (id, target_kind, destination, capability, note, target).
       expect(() =>
         record.run("a", "destination", "vault", null, null, targeted),
       ).toThrow(/constraint/i);

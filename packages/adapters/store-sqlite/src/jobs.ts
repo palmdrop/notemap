@@ -77,11 +77,7 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
       DO NOTHING
   `);
 
-  /**
-   * The item a subject concerns, read when the job is enqueued. A delivery job
-   * outlives the reservation it names — abandoning one removes it — so the link
-   * cannot be a join at read time.
-   */
+  /** A delivery job outlives the reservation it names, so the link cannot be a join at read time. */
   const itemOfRecord = write.query<{ item_id: string }, [string]>(
     `SELECT item_id FROM routing_records WHERE id = ?`,
   );
@@ -239,9 +235,8 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
           id,
           job: toJob(row),
           expiresAt,
-          // A lease still on the row is one that expired without its holder
-          // reporting or releasing: nothing reaps a lease, so the row itself
-          // is the evidence that an attempt vanished.
+          // Nothing reaps a lease, so one still on the row is the evidence
+          // that its holder neither reported nor released.
           ...(row.lease_id === null ? {} : { reclaimed: true as const }),
         });
       }
@@ -323,9 +318,8 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
     },
 
     /**
-     * A lease ends by being taken from you rather than by the clock passing, so
-     * a job that is leased at all is somebody's — an expired lease included,
-     * whose holder may be halfway through the attempt nobody has heard about.
+     * An expired lease counts as held: its holder may be halfway through the
+     * attempt nobody has heard about.
      */
     withdrawWork: (subject) => {
       const rows = outstanding.all(...subjectColumns(subject));
@@ -408,8 +402,6 @@ function toAbandonedWork(row: JobRow): AbandonedWork {
 
   return {
     subject: toJobSubject(row),
-    // Resolved when the job was enqueued: a delivery's reservation is removed
-    // when it is abandoned, and this row is the report of that abandonment.
     item: row.subject_item as ItemId,
     kind: row.kind,
     ...(row.enrichment === null

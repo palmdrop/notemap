@@ -201,7 +201,6 @@ export function markedProcessed(
   };
 }
 
-/** A reservation: what a decision mints before anything has arrived anywhere. */
 export function reserved(
   item: ItemRecord,
   overrides: { id?: string; at?: string; capability?: string } = {},

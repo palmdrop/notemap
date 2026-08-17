@@ -90,24 +90,16 @@ export interface EnrichmentApi {
 
 export interface RoutingApi {
   destinations(): Promise<readonly DestinationDescriptor[]>;
-  /**
-   * Answers the record the decision minted, which may still be **pending**: a
-   * destination that could not be reached leaves the delivery to a job. Read
-   * the state rather than reading a record as arrival.
-   */
+  /** The record it answers may be pending: read the state rather than reading a record as arrival. */
   route(
     item: ItemId,
     delivery: DeliveryRequest,
     /** Bounds the one inline attempt. Core imposes no timeout of its own. */
     signal?: AbortSignal,
   ): Promise<Result<RoutingRecord, DeliveryRefusal>>;
-  /**
-   * The delivery a pending record's job carries out. A host driving delivery
-   * work asks for this rather than being handed a snapshot, so what leaves is
-   * the item as it now stands.
-   */
+  /** Projected on demand rather than handed over as a snapshot, so what leaves is the item as it now stands. */
   deliveryFor(record: RoutingRecordId): Promise<Delivery | undefined>;
-  /** Calls off a delivery that has not landed, which returns the item to the queue. */
+  /** Returns the item to the queue. */
   cancelDelivery(
     record: RoutingRecordId,
   ): Promise<Result<void, DeliveryRefusal>>;

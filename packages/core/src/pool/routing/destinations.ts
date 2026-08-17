@@ -7,14 +7,9 @@ export type WiredDestination = {
   readonly descriptor: DestinationDescriptor;
 };
 
-/** The destinations a pool was wired with, by the name each answers to. */
 export type DestinationIndex = ReadonlyMap<DestinationId, WiredDestination>;
 
-/**
- * Built once, when the pool is. Two destinations answering to one name is a
- * wiring mistake with no sensible resolution — whichever one a delivery reached
- * would be arbitrary — so it is refused where it can still be corrected.
- */
+/** Built once, with the pool, so a duplicate name is refused where it can still be corrected. */
 export function indexDestinations(
   adapters: readonly DestinationAdapter[],
 ): DestinationIndex {

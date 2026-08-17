@@ -21,14 +21,10 @@ import type { DestinationIndex } from "./destinations";
 type Routed = Result<RoutingRecord, DeliveryRefusal>;
 
 /**
- * A person's decision, and one attempt to carry it out.
- *
- * Everything that can be checked is checked before anything is written or
- * attempted, because this is interactive: a typo'd target is worth refusing
- * while the person is still looking at the item. Then the adapter is called
- * **outside any transaction**, and what it answered decides what is written —
- * delivered resolves it, a refusal leaves nothing behind, and a destination
- * that was never reached leaves a reservation and a job.
+ * Everything checkable is checked before anything is written or attempted,
+ * because this is interactive: a typo'd target is worth refusing while the
+ * person is still looking at the item. The adapter is then called outside any
+ * transaction.
  */
 export async function route(
   ports: PoolPorts,
@@ -89,9 +85,8 @@ export async function route(
   const outcome = await wired.adapter.deliver(delivery, signal);
 
   return ports.store.transaction(async (tx) => {
-    // The item may have been purged while the adapter had the bytes. The
-    // record is item state and dies with the item; the entry saying bytes left
-    // the machine is a trace, and the log outlives what it describes.
+    // Purged while the adapter had the bytes: the record dies with the item,
+    // but the entry saying bytes left the machine outlives it.
     const present = (await tx.item(item)) !== undefined;
 
     await trace(ports, tx, record, outcome);
@@ -117,7 +112,6 @@ export async function route(
   });
 }
 
-/** What happened, whether or not there is state left to record it against. */
 async function trace(
   ports: PoolPorts,
   tx: PoolTx,
@@ -134,7 +128,6 @@ async function trace(
     await recordAction(ports, tx, {
       kind: "routed",
       subject: record.item,
-      // Nothing but a person routes, so there is no attribution to take.
       by: { kind: "person" },
       at: record.at,
       detail: {
@@ -186,9 +179,8 @@ async function deliver(
 }
 
 /**
- * The decision stands although nothing arrived: `unreachable` is proof that
- * nothing was delivered, so a job may retry it without duplicating. The mirror
- * is owed nothing yet — a reservation is not durable state.
+ * `unreachable` is proof that nothing was delivered, so a job may retry without
+ * duplicating. The mirror is owed nothing yet: a reservation is not durable state.
  */
 async function reserve(
   ports: PoolPorts,
@@ -210,9 +202,8 @@ async function reserve(
 }
 
 /**
- * Calling off a delivery that has not landed. The reservation is removed and
- * the item returns to the queue at its unchanged content time — routing it
- * again is what a retry by hand is, so there is no operation for one.
+ * The item returns to the queue at its unchanged content time. Routing it again
+ * is what a retry by hand is, so there is no operation for one.
  */
 export function cancelDelivery(
   ports: PoolPorts,
