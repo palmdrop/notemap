@@ -2,7 +2,7 @@ import { answered } from "../../api/http";
 import { optimisticItem } from "../../capture/envelope";
 import type { Applied } from "../../state/applied";
 import { cached, forget, intoQueue, withIds } from "../../state/state";
-import type { Handler } from "../handler";
+import { replacing, type Handler } from "../handler";
 
 export const capture: Handler<"capture"> = {
   target: (operation) => operation.envelope.id,
@@ -26,6 +26,6 @@ export const capture: Handler<"capture"> = {
     const outcome = await answered(
       api.POST("/v1/captures", { body: operation.envelope }),
     );
-    return outcome.item;
+    return replacing(outcome.item);
   },
 };

@@ -2,7 +2,7 @@ import { answered } from "../../api/http";
 import type { Item, ItemId } from "../../api/types";
 import { unchanged, type Applied } from "../../state/applied";
 import { cached, withIds, without } from "../../state/state";
-import type { Handler } from "../handler";
+import { replacing, type Handler } from "../handler";
 
 function replaced(
   ids: readonly ItemId[],
@@ -50,12 +50,15 @@ export const archive: Handler<"archive"> = {
     };
   },
 
-  send: (api, operation) =>
-    answered(
-      api.POST("/v1/items/{id}/archive", {
-        params: { path: { id: operation.item } },
-        body:
-          operation.reason === undefined ? {} : { reason: operation.reason },
-      }),
-    ),
+  async send(api, operation) {
+    return replacing(
+      await answered(
+        api.POST("/v1/items/{id}/archive", {
+          params: { path: { id: operation.item } },
+          body:
+            operation.reason === undefined ? {} : { reason: operation.reason },
+        }),
+      ),
+    );
+  },
 };

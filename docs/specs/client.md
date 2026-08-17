@@ -160,7 +160,8 @@ mutation path, not two.
 and the list is this spec's to change — not something that grows as routes are added. Each carries
 what it knows in one place: which item it is about, what opposes it, how it applies to the cache and
 how it reverses, and how it reaches the wire. An operation the vocabulary names but core does not
-implement simply has no encoder and no apply, and the client refuses it. The engine holds no
+implement simply has no encoder and no apply, and the client refuses it — which is now only the two
+suggestion decisions. The engine holds no
 knowledge of any particular operation, and a kind declared without an answer fails the build rather
 than throwing when someone reaches it.
 
@@ -190,7 +191,10 @@ still considers done. The client asks rather than assumes.
 pool's answer:
 
 - On success the client replaces its optimistic state with what the pool returned. The pool is
-  authoritative; the optimistic copy was a guess held only until the truth arrived.
+  authoritative; the optimistic copy was a guess held only until the truth arrived. **A guess the
+  pool answered differently is reversed first** (added 2026-08-17): an `edit` is drawn as an
+  amendment, and where the pool recorded a revision the amendment is undone before the revision
+  takes its place — otherwise the original would keep content it never carried.
 - On a **refusal** ([http-v1.md](http-v1.md#errors)) the client rolls the operation back and
   surfaces the refusal. Core reports facts, not sentences; rendering the message is the client's.
 - Operations against one item drain **in order**, so a `tag` never overtakes the `capture` that
@@ -212,9 +216,14 @@ the last-write-wins clock; the wire that carries the stamp is that spec's to def
 A capture is the client's own until it reaches the pool, and immutable once it does
 ([core.md](core.md#editing)). The client draws the line exactly where core does:
 
-- **Before hand-over** — while the `capture` operation still sits un-sent in the outbox — the
-  person edits it freely, in place, and the edits coalesce. It is not in the pool, so there is no
-  revision and nothing to reconcile. The person may also discard it, and nothing ever happened.
+- **Before hand-over the draft is the shell's** *(amended 2026-08-17)*. The person edits it freely
+  and may discard it, and nothing ever happened — but it is a **draft in the compose surface**,
+  not a `capture` operation waiting in the outbox. This clause used to place that window in the
+  outbox, and there is no such window: every mutation drains, so a capture is claimed and sent in
+  the turn it is enqueued. Nor does being offline make one, since an attempt that failed at the
+  socket cannot be told from a lost response — which is the very case the seal exists for. So the
+  outbox never holds a capture that may still be rewritten, and the client offers no free edit of
+  one.
 - **Hand-over seals it.** The moment the operation is sent — the `POST`, not the `201` — the
   capture must be treated as accepted, even before the response arrives
   ([core.md](core.md#editing)). A capture is id-addressed and idempotent, so a dropped *response*
@@ -326,9 +335,12 @@ that logic out of the one place it is meant to live.
 - **Outbox-first and optimistic** (2026-08-17): every mutation is an outbox operation applied at
   once and reconciled with the pool, so there is one mutation path and offline adds persistence
   rather than a parallel one.
-- **Free edits end at hand-over, not ack** (2026-08-17, [core.md](core.md#editing)): a pending
-  capture is edited in place only while un-sent; the `POST` seals it, because a dropped response can
-  hide a capture the pool already holds and re-sending an edited body is refused.
+- **Free edits end at hand-over, not ack** (2026-08-17, [core.md](core.md#editing)): a capture is
+  edited in place only before it is handed over; the `POST` seals it, because a dropped response can
+  hide a capture the pool already holds and re-sending an edited body is refused. *Amended
+  2026-08-17*: the pre-hand-over draft lives in the shell rather than in the outbox, because an
+  eager drain leaves no window there and a failed attempt is indistinguishable from a lost
+  response. The decision is unchanged; where the draft sits is not.
 - **Last-write-wins is ordered by client operation-time** (2026-08-17): the stamp the person's
   device made when they acted is the key, so an offline decision is not clobbered merely for syncing
   late. Pins [sync.md](sync.md)'s open question.
@@ -375,9 +387,10 @@ that logic out of the one place it is meant to live.
   the pool or shared with another device.
 - Capturing while the pool is unreachable leaves the item in the outbox, applied to the local view;
   it reaches the pool on reconnect, exactly once, under the id it was given.
-- A pending capture can be edited in place and discarded before it is sent; after it is sent, the
-  same edit is offered only as a domain edit and the interface never re-sends a changed body under
-  the original id.
+- A draft can be edited and discarded before it is captured; once it is, the same edit is offered
+  only as a domain edit and the interface never re-sends a changed body under the original id.
+- A tag added to an item appears before the pool answers and leaves the item where it was in the
+  queue; a tag and its own untag still resolve by client operation-time.
 - An edit of an item that turns out no longer to be the head is shown as a revision, matching what
   the pool recorded, not as the in-place amendment the client optimistically drew.
 - Archiving is available with the pool unreachable; routing and marking-processed-by-hand are not,

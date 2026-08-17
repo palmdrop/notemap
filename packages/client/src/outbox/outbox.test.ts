@@ -6,6 +6,7 @@ import { Refused, Unreachable } from "../errors";
 import { writable, type Writable } from "../observable/observable";
 import { cached, emptyState, withIds, type ClientState } from "../state/state";
 import { anItem, stoppedClock } from "../testing/pool";
+import { replacing, type Settlement } from "./handler";
 import type { Operation } from "./operations";
 import { createOutbox } from "./outbox";
 
@@ -15,6 +16,9 @@ const clock = stoppedClock();
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 type Outcome = { readonly item?: Item; readonly error?: unknown };
+
+const answering = (outcome: Outcome): Settlement =>
+  replacing(outcome.item as Item);
 
 /**
  * The engine with the network held open, so a test decides when — and whether —
@@ -50,10 +54,10 @@ function engineOver(items: readonly Item[]) {
     mint: () => `op-${(minted += 1)}`,
     send: (operation) => {
       sent.push(operation);
-      return new Promise<Item>((resolve, reject) => {
+      return new Promise<Settlement>((resolve, reject) => {
         waiting.push((outcome) =>
           outcome.error === undefined
-            ? resolve(outcome.item as Item)
+            ? resolve(answering(outcome))
             : reject(outcome.error),
         );
       });

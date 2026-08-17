@@ -1,7 +1,7 @@
 import { answered } from "../../api/http";
 import { unchanged, type Applied } from "../../state/applied";
 import { cached, intoQueue, withIds, without } from "../../state/state";
-import type { Handler } from "../handler";
+import { replacing, type Handler } from "../handler";
 
 export const unarchive: Handler<"unarchive"> = {
   target: (operation) => operation.item,
@@ -34,11 +34,14 @@ export const unarchive: Handler<"unarchive"> = {
     };
   },
 
-  send: (api, operation) =>
-    answered(
-      api.POST("/v1/items/{id}/unarchive", {
-        params: { path: { id: operation.item } },
-        body: {},
-      }),
-    ),
+  async send(api, operation) {
+    return replacing(
+      await answered(
+        api.POST("/v1/items/{id}/unarchive", {
+          params: { path: { id: operation.item } },
+          body: {},
+        }),
+      ),
+    );
+  },
 };

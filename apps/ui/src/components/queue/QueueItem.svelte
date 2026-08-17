@@ -1,7 +1,9 @@
 <script lang="ts">
   import { saidBy, type Item } from "@notemap/client";
 
+  import EditAction from "$components/queue/EditAction.svelte";
   import RouteAction from "$components/queue/RouteAction.svelte";
+  import Tags from "$components/queue/Tags.svelte";
   import { client } from "$lib/client";
 
   let { item, offline }: { item: Item; offline: boolean } = $props();
@@ -30,9 +32,11 @@
     <p class="m-0 break-words whitespace-pre-wrap">{text}</p>
   {/if}
 
+  <Tags {item} />
+
   <div class="flex flex-wrap items-baseline gap-3 text-sm">
-    <!-- An archive replays from the outbox; a delivery cannot, so it is not
-         offered rather than promised. -->
+    <!-- An archive, an edit and a tag replay from the outbox; a delivery
+         cannot, so it is not offered rather than promised. -->
     <button
       type="button"
       onclick={() => void client.archive(item.id)}
@@ -50,11 +54,13 @@
       Mark done
     </button>
 
+    <EditAction {item} />
+
     <RouteAction item={item.id} disabled={offline} />
 
     {#if offline}
       <span class="text-neutral-500 dark:text-neutral-400">
-        routing needs the daemon; archiving does not
+        routing needs the daemon; triage does not
       </span>
     {/if}
 

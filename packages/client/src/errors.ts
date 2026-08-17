@@ -57,6 +57,7 @@ const SAID: {
     "the delivery may or may not have happened; check the destination",
   "digest-mismatch": "the upload arrived corrupted; pick the file again",
   "item-purged": "that item was purged",
+  "item-superseded": "a newer version of that item has replaced it",
   "limit-too-large":
     "the app asked for more at once than this daemon will serve",
   "malformed-envelope": "the app sent a capture this daemon cannot read",
@@ -70,6 +71,7 @@ const SAID: {
   "not-archived": "that item is not archived",
   "not-pending": "that delivery has already been decided",
   "payload-invalid": "nothing to capture",
+  "payload-type-changed": "an edit cannot change what kind of thing this is",
   "payload-type-unsupported":
     "that destination does not accept this kind of item",
   "rejected-by-destination": "the destination refused it",

@@ -10,13 +10,6 @@ import { applyOperation, opposes, sendOperation, targetOf } from "./registry";
 const AT = "2026-08-17T12:00:00.000Z";
 
 const WITHOUT_A_ROUTE: readonly Operation[] = [
-  {
-    kind: "edit",
-    item: "one",
-    payload: { type: "text", content: {}, metadata: {}, assets: [] },
-  },
-  { kind: "tag", item: "one", tag: "kind/quote" },
-  { kind: "untag", item: "one", tag: "kind/quote" },
   { kind: "accept-suggestion", item: "one", suggestion: "s-1" },
   { kind: "reject-suggestion", item: "one", suggestion: "s-1" },
 ];
