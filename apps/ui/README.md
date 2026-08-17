@@ -14,5 +14,6 @@ pnpm --filter @notemap/daemon start   # the pool, on NOTEMAP_PORT
 pnpm --filter @notemap/ui dev         # this, proxying to it
 
 pnpm --filter @notemap/ui check       # svelte-check
+pnpm --filter @notemap/ui test        # vitest, on jsdom
 pnpm build                            # a daemon that serves this app at /
 ```

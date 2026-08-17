@@ -1,9 +1,9 @@
 # Shell test runner and verification gates
 
 **Date**: 2026-08-17
-**Status**: In progress <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/client.md`
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-08-17
 
 ---
 
@@ -103,15 +103,21 @@ Depends on: Phase 2. One smoke test only — this phase proves the harness, not 
 
 Depends on: Phase 3. Only the criteria that are the shell's — what it draws, enables and disables.
 
-- [ ] A capture appears before the pool answers, and the form clears.
-- [ ] A refusal is shown and can be dismissed.
-- [ ] Archive stays available with the pool unreachable, while routing and mark-processed are
+- [x] A capture appears before the pool answers, and the form clears.
+      `CaptureForm.test.ts` — "draws a capture before the pool answers, and clears the form".
+- [x] A refusal is shown and can be dismissed.
+      `Outbox.test.ts` — "shows what the pool refused, and lets it be dismissed".
+- [x] Archive stays available with the pool unreachable, while routing and mark-processed are
       disabled and say why — the asymmetry client.md calls deliberate and requires be visible.
-- [ ] The scroll mark restores a view on reload and never reaches the pool.
-- [ ] A typed note and a picture stamp different capture channels.
-- [ ] Update the previous plan's Unknown to record what was decided, and add the Resolution entry for
+      `Queue.test.ts` — "archives with the pool unreachable, and disables what it cannot queue",
+      driven by `navigator.onLine` and a transport that rejects, so `reachable()` is under test too.
+- [x] The scroll mark restores a view on reload and never reaches the pool.
+      `Queue.test.ts` — "puts the view back where the person left it, without asking the pool".
+- [x] A typed note and a picture stamp different capture channels.
+      `CaptureForm.test.ts` — "stamps a typed note and a picture with different channels".
+- [x] Update the previous plan's Unknown to record what was decided, and add the Resolution entry for
       finding 5 to the review.
-- [ ] `git commit`.
+- [x] `git commit`.
 
 **Verify:** each criterion above names a test that asserts it; `pnpm test`, `pnpm typecheck`,
 `pnpm lint` and `pnpm format:check` green; CI green.
@@ -130,20 +136,20 @@ Depends on: Phase 3. Only the criteria that are the shell's — what it draws, e
 - **Context injection versus module mocking** (Phase 2). **Resolved: the fallback.** Each test file
   mocks `$lib/client`, no production code changed, and the shell keeps an import-time singleton —
   revisited when a second shell or a second client instance forces it.
-- **How much the first lint and format runs report.** Neither gate has ever run on a `.svelte` file
-  here. Fallback: if the volume is large, land the plugin wiring and the resulting reformat as two
-  separate commits so the mechanical diff stays reviewable, and disable specific rules with a note
-  rather than reformatting the shell mid-plan.
-- **Whether SvelteKit's `$app/*` modules need stubbing.** No current component imports one, but
-  `goto` and `page` arrive with the first real navigation. Fallback: stub them when the first test
-  needs one; it is a known, well-documented pattern rather than a design question.
-- **Whether `reachable.svelte.ts` is drivable from a test.** It reads `navigator.onLine` inside
-  `onMount` and listens on `window`. Fallback: if redefining that in jsdom proves awkward, assert the
-  asymmetry through the `offline` prop `QueueItem` already takes, and cover `reachable()` itself as a
-  plain unit rather than through a component.
-- **Whether `svelte-check` and `eslint-plugin-svelte` overlap enough to make one redundant.** They
-  answer different questions — types versus lint rules — but the report may say otherwise. Fallback:
-  keep both; a duplicated diagnostic is cheaper than a missing one.
+- **How much the first lint and format runs report.** **Little.** Format: two files, five lines.
+  Lint: fourteen errors of three kinds — DOM globals read as undefined, which is what
+  typescript-eslint already turns off for `.ts` and `svelte-check` answers properly; and
+  `svelte/no-navigation-without-resolve` on every link in the layout, which is a base-path rule for
+  an app served from the origin root. Both are off for `**/*.svelte` with a note in the config, per
+  the fallback. One commit, no reformat.
+- **Whether SvelteKit's `$app/*` modules need stubbing.** **Not yet** — no component imports one and
+  no test needed one.
+- **Whether `reachable.svelte.ts` is drivable from a test.** **It is.** Redefining
+  `navigator.onLine` and dispatching the event is three lines in the DOM setup, so the asymmetry is
+  asserted through `Queue` with the browser offline rather than through `QueueItem`'s prop.
+- **Whether `svelte-check` and `eslint-plugin-svelte` overlap enough to make one redundant.** **No
+  overlap in what they reported** — the only place they met was `no-undef`, which the compiler
+  answers better, so it is off for components. Both stay.
 
 ---
 

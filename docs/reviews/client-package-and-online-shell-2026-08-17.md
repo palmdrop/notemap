@@ -287,8 +287,14 @@ comments on PR #13.
    are, because an `<img>` fetches for itself and carries no header a transport would add, so auth on
    a remote daemon breaks a concatenated URL just as a native shell does. What a non-browser shell
    puts behind it is an open question in client.md; the seam is not.
-5. **Deferred.** Carried whole into [shell-test-runner-and-gates.md](../plans/shell-test-runner-and-gates.md),
-   widened by one — prettier cannot parse `.svelte` either. Neither confirmed bug was in the shell.
+5. **Fixed** (2026-08-17), on `agent/shell-test-runner-and-gates` rather than here. All three gates
+   reach the shell: `apps/ui` has a `typecheck` script the root command runs, eslint parses
+   `.svelte` through `eslint-plugin-svelte`, and prettier through `prettier-plugin-svelte` — which
+   also picked up the tailwind class sorter that was a devDependency no config referenced. The shell
+   has a runner (vitest on jsdom) and the shell's half of client.md's acceptance criteria is
+   asserted by it. The client stays an import-time singleton that tests replace with `vi.mock`;
+   Svelte context is still the cleaner shape and is recorded as deferred, not rejected. Neither
+   confirmed bug was in the shell, and no shell test would have caught either.
 6. **Fixed.** The shell drains on the browser's `online` event. Rehydration — the larger half — is an
    open question in client.md naming the undo problem it forces.
 7. **Fixed.** The opposing-operation guard consults `inflight`, so an operation a drain has claimed
