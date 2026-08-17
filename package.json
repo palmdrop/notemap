@@ -6,7 +6,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "pnpm --filter @notemap/daemon start",
+    "dev": "node scripts/dev.ts",
     "build": "pnpm --filter @notemap/ui build && pnpm --filter @notemap/daemon build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
