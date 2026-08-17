@@ -24,6 +24,19 @@ export type DestinationDescriptor = {
   readonly capabilities: readonly Capability[];
 };
 
+/**
+ * What a wired destination answered when asked. A destination that could not
+ * say is reported rather than dropped: one that is missing and one that is
+ * unreachable are different answers to a person looking for it.
+ */
+export type DestinationReport =
+  | ({ readonly kind: "described" } & DestinationDescriptor)
+  | {
+      readonly kind: "undescribable";
+      readonly id: DestinationId;
+      readonly detail: string;
+    };
+
 export type DeliveryRequest = {
   readonly destination: DestinationId;
   readonly capability: CapabilityName;

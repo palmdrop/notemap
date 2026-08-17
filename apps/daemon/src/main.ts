@@ -8,6 +8,7 @@ import { createApp } from "./app";
 import { startSweeper } from "./assets/sweeper";
 import { loadConfig } from "./config/load";
 import { SHUTDOWN_GRACE_MS } from "./constants";
+import { startDeliveryRunner } from "./destinations/runner";
 import { startMirrorRunner } from "./mirror/runner";
 import { openPool } from "./ports";
 
@@ -20,11 +21,12 @@ function start(): void {
   const config = loadConfig(values.config);
   mkdirSync(dirname(config.pool), { recursive: true });
 
-  const { pool, mirrorWriter } = openPool({
+  const { pool, mirrorWriter, destinations } = openPool({
     file: config.pool,
     config: config.poolConfig,
     assetRoot: config.assets.root,
     ...(config.mirror === undefined ? {} : { mirrorRoot: config.mirror.root }),
+    destinations: config.destinations,
   });
 
   const mirror =
@@ -32,11 +34,19 @@ function start(): void {
       ? undefined
       : startMirrorRunner(pool, mirrorWriter, config.mirror);
 
+  // No destinations means no delivery job can ever exist, so there is nothing
+  // for a runner to claim.
+  const delivery =
+    destinations.length === 0
+      ? undefined
+      : startDeliveryRunner(pool, destinations, config.delivery);
+
   const sweeper = startSweeper(pool, config.sweep);
 
-  /** The runner holds a lease while it writes; stopping it first gives it back. */
+  /** A runner holds a lease while it works; stopping it first gives it back. */
   const close = async () => {
     await mirror?.stop();
+    await delivery?.stop();
     await sweeper.stop();
     await pool.close();
   };
@@ -57,6 +67,11 @@ function start(): void {
           : `notemap: mirroring to ${config.mirror.root}`,
       );
       console.log(`notemap: assets in ${config.assets.root}`);
+      console.log(
+        config.destinations.length === 0
+          ? "notemap: no destinations configured — nothing can be routed out"
+          : `notemap: destinations ${config.destinations.map((each) => each.id).join(", ")}`,
+      );
     },
   );
 

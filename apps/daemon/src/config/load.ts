@@ -6,6 +6,7 @@ import { parse as parseToml } from "smol-toml";
 import { z } from "zod";
 
 import type {
+  DestinationId,
   Duration,
   EnrichmentName,
   JsonSchema,
@@ -15,6 +16,7 @@ import type {
 } from "@notemap/core";
 
 import {
+  DEFAULT_DELIVERY,
   DEFAULT_HOST,
   DEFAULT_MAX_UPLOAD_BYTES,
   DEFAULT_MIRROR,
@@ -42,6 +44,20 @@ export type SweepConfig = {
   readonly intervalMs: number;
 };
 
+/**
+ * One destination a person configured. `kind` names the adapter; only the
+ * filesystem one exists, and an unknown kind is refused rather than ignored,
+ * because a destination that silently is not there is a decision that silently
+ * goes nowhere.
+ */
+export type DestinationConfig = {
+  readonly id: DestinationId;
+  readonly kind: "filesystem";
+  /** The folder the destination is. Never created by the daemon. */
+  readonly root: string;
+  readonly accepts: readonly PayloadTypeName[];
+};
+
 export type DaemonConfig = {
   /** The SQLite file the pool lives in. */
   readonly pool: string;
@@ -51,7 +67,16 @@ export type DaemonConfig = {
   readonly mirror?: MirrorConfig;
   readonly assets: AssetsConfig;
   readonly sweep: SweepConfig;
+  readonly destinations: readonly DestinationConfig[];
+  /** The cadence the delivery runner claims at. Unused where no destination is wired. */
+  readonly delivery: DeliveryConfig;
   readonly poolConfig: PoolConfig;
+};
+
+export type DeliveryConfig = {
+  readonly pollIntervalMs: number;
+  readonly leaseForMs: Duration;
+  readonly batch: number;
 };
 
 const jsonSchema = z.record(z.string(), z.unknown());
@@ -90,6 +115,23 @@ const fileSchema = z.strictObject({
     .strictObject({
       grace: z.number().int().nonnegative().optional(),
       interval: z.number().int().positive().optional(),
+    })
+    .optional(),
+  destinations: z
+    .array(
+      z.strictObject({
+        id: z.string().min(1),
+        kind: z.enum(["filesystem"]),
+        root: z.string().min(1),
+        accepts: z.array(z.string()).optional(),
+      }),
+    )
+    .default([]),
+  delivery: z
+    .strictObject({
+      pollInterval: z.number().int().positive().optional(),
+      leaseFor: z.number().int().positive().optional(),
+      batch: z.number().int().positive().optional(),
     })
     .optional(),
   sources: z
@@ -176,6 +218,13 @@ export function parseConfig(source: string, from: string): DaemonConfig {
   const file = parsed.data;
   const retry = file.retry ?? DEFAULT_RETRY;
 
+  // Every payload type has a rendering — the fenced-JSON fallback is the floor —
+  // so a filesystem destination that was not told what it takes takes everything
+  // the pool knows about, rather than silently refusing an image.
+  const everyPayloadType = file.payloadTypes.map(
+    (type) => type.name as PayloadTypeName,
+  );
+
   return {
     pool: resolve(expandHome(file.daemon?.pool ?? defaultPoolPath())),
     host: file.daemon?.host ?? DEFAULT_HOST,
@@ -196,6 +245,20 @@ export function parseConfig(source: string, from: string): DaemonConfig {
       maxUploadBytes: file.assets?.maxUpload ?? DEFAULT_MAX_UPLOAD_BYTES,
     },
     sweep: { intervalMs: file.sweep?.interval ?? DEFAULT_SWEEP.intervalMs },
+    destinations: file.destinations.map((destination) => ({
+      id: destination.id as DestinationId,
+      kind: destination.kind,
+      root: resolve(expandHome(destination.root)),
+      accepts:
+        (destination.accepts as PayloadTypeName[] | undefined) ??
+        everyPayloadType,
+    })),
+    delivery: {
+      pollIntervalMs: file.delivery?.pollInterval ?? DEFAULT_DELIVERY.pollMs,
+      leaseForMs: (file.delivery?.leaseFor ??
+        DEFAULT_DELIVERY.leaseMs) as Duration,
+      batch: file.delivery?.batch ?? DEFAULT_DELIVERY.batch,
+    },
     poolConfig: {
       sources: file.sources.map((source) => ({
         id: source.id as SourceId,

@@ -1,0 +1,21 @@
+{
+  "name": "@notemap/destination-fs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@notemap/core": "workspace:*",
+    "js-yaml": "^5.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "vitest": "^3.2.4"
+  }
+}

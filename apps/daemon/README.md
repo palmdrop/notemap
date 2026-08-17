@@ -31,8 +31,9 @@ to whoever can reach the address. What that leaves undefended, in full, is
 [docs/specs/security.md](../../docs/specs/security.md).
 
 `SIGINT` or `SIGTERM` stops it: the listener closes, idle connections go immediately, anything
-still in flight gets two seconds, then the mirror runner stops — giving back any lease it holds
-— then the sweeper, and then the host closes the pool it built, and nothing else.
+still in flight gets two seconds, then the mirror runner stops — giving back any lease it holds —
+then the delivery runner, then the sweeper, and then the host closes the pool it built, and nothing
+else.
 
 ## Assets
 
@@ -65,6 +66,52 @@ has passed. The window exists because to a sweep running at the wrong instant, "
 `inline` versus `attachment` — images, audio, video and `text/plain` render in place, and
 everything else, HTML and SVG and PDF included, downloads. Every asset response also carries
 `nosniff` and `default-src 'none'; sandbox`.
+
+## Destinations
+
+Items are routed **out** to destinations, which the daemon wires from configuration. One kind
+exists: a folder on disk ([@notemap/destination-fs](../../packages/adapters/destination-fs/)).
+
+```toml
+[[destinations]]
+id = "vault"
+kind = "filesystem"
+root = "~/notes"
+accepts = ["text", "image"] # optional; defaults to every payload type declared
+
+[delivery]
+pollInterval = 5000 # milliseconds between claims for deliveries that are owed
+leaseFor = 300000   # how long a claimed delivery is held before anyone may retake it
+batch = 4
+```
+
+`GET /v1/destinations` reports what each one declared. Two capabilities per folder:
+`create-file`, which takes `{ directory, filename? }` and refuses rather than overwriting, and
+`append-to-file`, which takes `{ path, heading? }` and creates both the file and the heading when
+they are missing. The filename is derived from the first line of the payload when the target names
+none — weak, because the domain has no title.
+
+**The root must already exist.** The daemon never creates one: a root that is not there is an
+unmounted drive far more often than it is a typo, and the adapter reports it as unreachable so the
+decision is kept and retried rather than a folder being conjured where a vault was meant to be. The
+same is true of a permission error.
+
+**Appending is not safe against a file you have open in an editor.** One writer per file is the
+standing rule and this adapter is it; an unsaved buffer in Obsidian is outside that promise and will
+overwrite whatever landed.
+
+`POST /v1/items/{id}/route` attempts the delivery once inline, so a folder that is there answers
+immediately with a delivered record and a pointer. One that is not leaves a **pending** record and a
+job, which the delivery runner retries with backoff until it lands or `retry.maxAttempts` is spent —
+after which the record is removed, the item returns to the queue, and the failure appears on the
+abandoned-work surface. A client must read `state` rather than reading a record as arrival.
+
+Two things are never retried, deliberately: a destination that was reached and *refused* — a
+traversal, a file already there — and a delivery whose lease expired with nothing reported, because
+nobody can say whether those bytes landed.
+
+Nothing a delivery names can escape `root`. Absolute paths, `..` and symlinks leaving the folder are
+resolved and refused, and an asset filename is flattened to one segment before it is used.
 
 ## The mirror
 
@@ -176,11 +223,15 @@ sits at the depth the bundle does. The tests import sources and cannot see this 
 - **The upload route is the one `/v1` path whose body is not JSON.** The media-type guard carves
   it out by exact path rather than by prefix, so a route added under `/v1/assets` later does not
   quietly inherit the exemption.
-- **The runner holds a timer and nothing else.** Which job is next, whether a failure retries and
+- **A runner holds a timer and nothing else.** Which job is next, whether a failure retries and
   when, and when work is given up on are all core's
   ([ADR 2](../../docs/adr/0002-core-is-a-host-agnostic-library.md)): the host drives *when*, core
   owns the state. Polling rather than being kicked from the capture route is the boring choice
   and needs no signal from a route handler.
+- **The mirror and the delivery runner are one loop**, in `work/runner.ts`. Claiming, the
+  one-attempt-per-drain guard, the single-flight drain and the timer are identical; what a job *is*
+  is the only difference, and it arrives as a `perform`. The two configure different cadences
+  because the work is different — a delivery is waiting on something outside this machine.
 - **Routes are documented in `routes/definitions.ts` and handled in `routes/*.ts`**, rather than
   through `@hono/zod-openapi`'s `app.openapi()`. That helper types each handler against the
   responses its route declares, which fights an API answering every refusal through one helper,

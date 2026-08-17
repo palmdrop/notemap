@@ -37,6 +37,12 @@ describe("the example config", () => {
       maxUploadBytes: 268_435_456,
     });
     expect(config.sweep).toEqual({ intervalMs: 3_600_000 });
+    expect(config.delivery).toEqual({
+      pollIntervalMs: 5_000,
+      leaseForMs: 300_000,
+      batch: 4,
+    });
+    expect(config.destinations).toEqual([]);
     expect(config.poolConfig.sweep).toEqual({ grace: 86_400_000 });
     expect(config.poolConfig.sources).toEqual([{ id: "web", autoRequest: [] }]);
     expect(config.poolConfig.payloadTypes).toEqual([
@@ -90,6 +96,69 @@ describe("what a config may leave out", () => {
     `);
 
     expect(config.poolConfig.payloadTypes[0]?.requiredSlots).toEqual([]);
+  });
+});
+
+describe("destinations", () => {
+  it("resolves the root and takes every payload type when told none", () => {
+    const config = parse(`
+      [[payloadTypes]]
+      name = "text"
+      [payloadTypes.contentSchema]
+      type = "object"
+
+      [[payloadTypes]]
+      name = "image"
+      [payloadTypes.contentSchema]
+      type = "object"
+
+      [[destinations]]
+      id = "vault"
+      kind = "filesystem"
+      root = "~/notes"
+    `);
+
+    expect(config.destinations).toEqual([
+      {
+        id: "vault",
+        kind: "filesystem",
+        root: join(homedir(), "notes"),
+        accepts: ["text", "image"],
+      },
+    ]);
+  });
+
+  it("narrows to the types it was told, where it was told some", () => {
+    const config = parse(`
+      [[destinations]]
+      id = "vault"
+      kind = "filesystem"
+      root = "/tmp/vault"
+      accepts = ["text"]
+    `);
+
+    expect(config.destinations[0]?.accepts).toEqual(["text"]);
+  });
+
+  it("refuses a kind no adapter answers to, rather than skipping it", () => {
+    expect(() =>
+      parse(`
+        [[destinations]]
+        id = "vault"
+        kind = "webdav"
+        root = "/tmp/vault"
+      `),
+    ).toThrow(/kind/);
+  });
+
+  it("refuses a destination with no root", () => {
+    expect(() =>
+      parse(`
+        [[destinations]]
+        id = "vault"
+        kind = "filesystem"
+      `),
+    ).toThrow(/root/);
   });
 });
 

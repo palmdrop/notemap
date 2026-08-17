@@ -37,3 +37,50 @@ export const routingRecordSchema = z
 export const routingRecordsSchema = z
   .object({ values: z.array(routingRecordSchema) })
   .openapi("RoutingRecords");
+
+export const routeRequestSchema = z
+  .strictObject({
+    destination: z.string().min(1).openapi({
+      description: "One of the ids `GET /v1/destinations` reports.",
+      example: "vault",
+    }),
+    capability: z.string().min(1).openapi({
+      description: "One the destination declared. Anything else is refused.",
+      example: "create-file",
+    }),
+    target: jsonObject.openapi({
+      description:
+        "What the capability is pointed at, in its own terms. Must satisfy the capability's `targetSchema`.",
+      example: { directory: "inbox", filename: "a-thought.md" },
+    }),
+  })
+  .openapi("RouteRequest");
+
+export const capabilitySchema = z
+  .object({
+    name: z.string(),
+    accepts: z.array(z.string()),
+    /** JSON Schema: the whole of what a client needs to build a target. */
+    targetSchema: jsonObject,
+  })
+  .openapi("Capability");
+
+export const destinationSchema = z
+  .union([
+    z.object({
+      kind: z.literal("described"),
+      id: z.string(),
+      capabilities: z.array(capabilitySchema),
+    }),
+    z.object({
+      kind: z.literal("undescribable"),
+      id: z.string(),
+      /** Why it could not say. It is wired, so it is listed rather than dropped. */
+      detail: z.string(),
+    }),
+  ])
+  .openapi("Destination");
+
+export const destinationsSchema = z
+  .object({ values: z.array(destinationSchema) })
+  .openapi("Destinations");

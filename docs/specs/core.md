@@ -78,6 +78,25 @@
   against a destination that fails on command.
   ([plan](../plans/delivery-machinery.md),
   [ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md))
+- 2026-08-14 — **Items leave, and land in a folder.** The first destination adapter ships:
+  `@notemap/destination-fs` declares `create-file` and `append-to-file` over a configured root,
+  renders a delivery as CommonMark under provenance frontmatter, and writes every asset beside the
+  note under the name it was uploaded with — closing the copy-or-reference question for this
+  destination in favour of a copy. The daemon wires destinations from configuration, and a delivery
+  runner beside the mirror runner drives what could not be carried out inline; the two share one
+  loop, differing only in what a job is. A missing or unwritable root reports **unreachable**, so a
+  decision made against an unmounted drive is kept and retried; a traversal, a file already there
+  and a target of the wrong shape report **rejected**, which is abandoned at once. Nothing a
+  delivery names can escape the root: the target is resolved against the root's real path and
+  compared, and the deepest existing part of it read back through the filesystem, so a symlink out
+  is caught as well as an absolute path or a `..`. Nothing is overwritten either — a file is created
+  with a hard link, which refuses a name that is taken and still appears whole or not at all.
+  *(Amended 2026-08-17: `describe` is asynchronous, as the destination section already required.
+  Identity moved onto the adapter as `id`, so a duplicate is still caught at wiring time while
+  capabilities are re-read per call; `routing.destinations` answers a report per destination, and
+  one that could not describe itself is reported rather than dropped; and `routing.route` refuses
+  `unreachable` when it cannot read capabilities to check a target against.)*
+  ([plan](../plans/destination-fs.md))
 - 2026-08-17 — **An inline attempt that throws is unknown, not failed.** `routing.route` was letting
   an adapter's exception — including the caller's own `AbortSignal` firing — unwind the call with
   nothing written, so material that may have reached the destination left no trace and the person

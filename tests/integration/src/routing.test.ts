@@ -317,18 +317,57 @@ describe("what routing refuses before it attempts anything", () => {
  * and dies with the item; the entry saying bytes left the machine is a trace,
  * and the log carries no foreign key precisely so it outlives what it describes.
  */
+describe("a destination that cannot say what it can do", () => {
+  const undescribable: DestinationAdapter = {
+    id: VAULT,
+    describe: () => Promise.reject(new Error("the board is not answering")),
+    deliver: () => Promise.resolve(DELIVERED),
+  };
+
+  it("is listed as undescribable rather than dropped from the list", async () => {
+    const opened = harness(undefined, "stub", [undescribable]);
+    open.push(opened);
+
+    // Missing and unreachable are different answers to somebody looking for it.
+    expect(await opened.pool.routing.destinations()).toEqual([
+      {
+        kind: "undescribable",
+        id: VAULT,
+        detail: "the board is not answering",
+      },
+    ]);
+  });
+
+  it("refuses a route to it, since no target can be checked against nothing", async () => {
+    const opened = harness(undefined, "stub", [undescribable]);
+    open.push(opened);
+    const item = await capture(opened.pool);
+
+    const outcome = await opened.pool.routing.route(item, request());
+
+    expect(outcome).toEqual({
+      kind: "refused",
+      refusal: { kind: "unreachable", detail: "the board is not answering" },
+    });
+    // Nothing was attempted, so the item never left the queue.
+    expect(await opened.pool.routing.recordsFor(item)).toEqual([]);
+  });
+});
+
 describe("an item purged while its delivery was in flight", () => {
   it("keeps the routed entry, writes no record, and refuses as purged", async () => {
     // Purge is not built, so the item goes the way a purge would take it —
     // and it goes *during* the attempt, which is the whole of the race.
     let purge = (): void => {};
     const adapter: DestinationAdapter = {
-      describe: () => ({
-        id: VAULT,
-        capabilities: [
-          fakeCapability({ name: "create-note", targetSchema: PATH_SCHEMA }),
-        ],
-      }),
+      id: VAULT,
+      describe: () =>
+        Promise.resolve({
+          id: VAULT,
+          capabilities: [
+            fakeCapability({ name: "create-note", targetSchema: PATH_SCHEMA }),
+          ],
+        }),
       deliver: async () => {
         purge();
         return DELIVERED;
@@ -408,12 +447,14 @@ describe("an inline attempt that never answers", () => {
   /** An adapter that throws is the same unknown: core cannot see how far it got. */
   it("treats an adapter that throws the same way, carrying its message", async () => {
     const throwing: DestinationAdapter = {
-      describe: () => ({
-        id: VAULT,
-        capabilities: [
-          fakeCapability({ name: "create-note", targetSchema: PATH_SCHEMA }),
-        ],
-      }),
+      id: VAULT,
+      describe: () =>
+        Promise.resolve({
+          id: VAULT,
+          capabilities: [
+            fakeCapability({ name: "create-note", targetSchema: PATH_SCHEMA }),
+          ],
+        }),
       deliver: () => {
         throw new Error("socket closed mid-write");
       },
