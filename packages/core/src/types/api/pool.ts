@@ -42,6 +42,8 @@ import type {
   ArtifactRefusal,
   AssetRefusal,
   CaptureRefusal,
+  CancelRefusal,
+  CompletionRefusal,
   DeliveryRefusal,
   EditRefusal,
   EnrichmentRefusal,
@@ -100,9 +102,7 @@ export interface RoutingApi {
   /** Projected on demand rather than handed over as a snapshot, so what leaves is the item as it now stands. */
   deliveryFor(record: RoutingRecordId): Promise<Delivery | undefined>;
   /** Returns the item to the queue. */
-  cancelDelivery(
-    record: RoutingRecordId,
-  ): Promise<Result<void, DeliveryRefusal>>;
+  cancelDelivery(record: RoutingRecordId): Promise<Result<void, CancelRefusal>>;
   markProcessed(
     item: ItemId,
     note?: string,
@@ -130,7 +130,7 @@ export interface WorkApi {
   complete(
     lease: LeaseId,
     outcome: WorkOutcome,
-  ): Promise<Result<void, LeaseRefusal>>;
+  ): Promise<Result<void, CompletionRefusal>>;
   extend(lease: LeaseId, by: Duration): Promise<Result<Lease, LeaseRefusal>>;
   release(lease: LeaseId): Promise<Result<void, LeaseRefusal>>;
 

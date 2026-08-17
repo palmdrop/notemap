@@ -37,7 +37,6 @@ const UNREACHABLE = { kind: "unreachable", detail: "ECONNREFUSED" } as const;
 
 const DELIVERED = {
   kind: "delivered",
-  at: at("2026-08-06T09:05:00.000Z"),
   pointer: "vault/inbox/a-thought.md",
 } as const;
 
@@ -144,8 +143,9 @@ describe("a destination that never comes back", () => {
     const opened = await pending();
     const { pool } = opened;
 
-    // `maxAttempts` is five, and the inline attempt is not one of the job's.
-    for (let minute = 1; minute <= 6; minute += 1) {
+    // `maxAttempts` is five and the inline attempt was the first of them, so
+    // four more exhaust it.
+    for (let minute = 1; minute <= 4; minute += 1) {
       minutesLater(opened, minute);
       await opened.deliver();
     }
@@ -159,9 +159,51 @@ describe("a destination that never comes back", () => {
         kind: "delivery",
         attempts: 5,
         lastFailure: { code: "unreachable", detail: "ECONNREFUSED" },
-        abandonedAt: at("2026-08-06T09:05:00.000Z"),
+        abandonedAt: at("2026-08-06T09:04:00.000Z"),
       },
     ]);
+  });
+
+  /**
+   * The number on the surface is the number of times the destination was
+   * handed this material, which is the number that matters for something that
+   * cannot be repeated safely.
+   */
+  it("counts the inline attempt among the ones it reports", async () => {
+    const opened = await pending();
+
+    for (let minute = 1; minute <= 4; minute += 1) {
+      minutesLater(opened, minute);
+      await opened.deliver();
+    }
+
+    expect(opened.destination.received).toHaveLength(5);
+    expect((await abandonedRows(opened.pool))[0]?.attempts).toBe(5);
+  });
+
+  /** One sequence of attempts, under one kind, numbered once each. */
+  it("reads as one run of attempts rather than two", async () => {
+    const opened = await pending();
+
+    for (let minute = 1; minute <= 4; minute += 1) {
+      minutesLater(opened, minute);
+      await opened.deliver();
+    }
+
+    const logged = await opened.pool.actions.forItem(opened.item, {
+      limit: 50,
+      order: "oldest-first",
+    });
+    const attempts = logged.values.filter(
+      (action) => action.kind === "delivery-failed",
+    );
+
+    expect(attempts.map((each) => each.detail["attempt"])).toEqual([
+      1, 2, 3, 4, 5,
+    ]);
+    expect(
+      logged.values.filter((action) => action.kind === "work-failed"),
+    ).toEqual([]);
   });
 
   it("records the abandonment against the item, which is what a person reads", async () => {
@@ -175,8 +217,9 @@ describe("a destination that never comes back", () => {
       limit: 50,
       order: "newest-first",
     });
-    expect(logged.values[0]).toMatchObject({
-      kind: "work-abandoned",
+    expect(
+      logged.values.find((action) => action.kind === "work-abandoned"),
+    ).toMatchObject({
       by: { kind: "notemap" },
       detail: { work: "delivery", record: opened.record.id },
     });
@@ -259,6 +302,56 @@ describe("a delivery whose host died holding it", () => {
         detail: "a lease expired with no outcome reported",
       },
     });
+  });
+});
+
+/**
+ * Ending a vanished delivery is not work the caller asked for, and a claim that
+ * came back short of what it asked for reads as a drained queue.
+ */
+describe("claiming past a delivery that has to be ended", () => {
+  it("fills the page it was asked for rather than answering short", async () => {
+    const opened = await pending();
+    const second = await opened.pool.routing.route(opened.item, {
+      ...REQUEST,
+      target: { path: "inbox/again.md" },
+    });
+    if (second.kind === "refused") throw new Error("expected a reservation");
+
+    // One of the two is left with a lease nobody reports on.
+    await opened.pool.work.claim({
+      kinds: ["delivery"],
+      limit: 1,
+      leaseFor: MINUTE,
+    });
+    minutesLater(opened, 2);
+
+    const claimed = await opened.pool.work.claim({
+      kinds: ["delivery"],
+      limit: 2,
+      leaseFor: MINUTE,
+    });
+
+    expect(claimed).toHaveLength(1);
+    expect(await abandonedRows(opened.pool)).toHaveLength(1);
+  });
+});
+
+/** Nothing is left to carry out, and handing one over would invite a second copy. */
+describe("the delivery a resolved record asks for", () => {
+  it("is absent once the record has delivered", async () => {
+    const opened = await pending();
+    expect(
+      await opened.pool.routing.deliveryFor(opened.record.id),
+    ).toBeDefined();
+
+    opened.destination.answers(DELIVERED);
+    minutesLater(opened, 1);
+    await opened.deliver();
+
+    expect(
+      await opened.pool.routing.deliveryFor(opened.record.id),
+    ).toBeUndefined();
   });
 });
 

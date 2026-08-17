@@ -227,7 +227,8 @@ _Avoid_: push, transfer, upload
 
 **Routing record**:
 One delivery, and the whole of what notemap remembers about it: destination, capability, what the
-delivery targeted there, time, and a best-effort pointer to where the item landed. A stale pointer
+delivery targeted there, the time the decision was made, and a best-effort pointer to where the item
+landed. A stale pointer
 is acceptable. The target is remembered rather than consumed, because a delivery that has not landed
 is attempted again from the record alone. A record begins as a
 **reservation** the moment the decision is made and joins the append-only log when its delivery

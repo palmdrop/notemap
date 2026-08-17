@@ -4,7 +4,6 @@ import type {
   CapabilityName,
   DestinationId,
   PayloadTypeName,
-  Timestamp,
 } from "../types/domain/ids";
 import type {
   Capability,
@@ -79,7 +78,6 @@ export function fakeDestination(
   const once: ScriptedAnswer[] = [];
   let standing: ScriptedAnswer = options.answer ?? {
     kind: "delivered",
-    at: "2026-01-01T00:00:00.000Z" as Timestamp,
     pointer: "somewhere",
   };
 

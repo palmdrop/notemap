@@ -85,6 +85,15 @@
   log under the same code, on the terms the evidence rule already set for a vanished attempt. A host
   that dies mid-attempt inline still leaves nothing, which the routing section now states as a
   limit. ([review](../reviews/delivery-machinery-2026-08-17.md))
+- 2026-08-17 — **The rest of the delivery review.** One run of attempts on a destination now reads
+  as one run: the inline attempt is the first, `maxAttempts` bounds the total handed over rather
+  than the job's share of it, and every failure appends the same kind of entry under one numbering.
+  Reporting an outcome a job cannot have produced is refused instead of passing as a success; a
+  claim that has to end a vanished delivery refills the page it was asked for; and asking for the
+  delivery of a record that already landed answers nothing. A routing record's time is stated to be
+  the decision's, a destination's own idea of when it received something is no longer asked for, and
+  purge is told to find an item's jobs by the item rather than the subject.
+  ([review](../reviews/delivery-machinery-2026-08-17.md))
 
 ---
 
@@ -241,6 +250,11 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   it names as well as which one ([ADR 18](../adr/0018-a-jobs-subject-names-what-it-is-about.md)),
   so mirror removal naming a departed item stops being a special note about a column and becomes an
   ordinary consequence of subjects naming things that may be gone.
+- **Purge finds an item's jobs by the item each one concerns**, which is not always the thing its
+  subject names (stated 2026-08-17). A delivery job's subject is a routing record, so deleting an
+  item's outstanding work by subject would walk straight past the deliveries of it — leaving jobs
+  pointed at records that were about to cascade away. Every job carries the item it concerns beside
+  its subject, resolved when it was enqueued, and that is what purge deletes on.
 - **An asset's reference is taken when the capture referencing it commits**, not when its bytes
   are stored (decided 2026-08-04). A client that uploads and then crashes leaves an unreferenced
   asset, which is wasted space, rather than a reference to a capture that never arrived, which
@@ -381,6 +395,10 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   ([ADR 18](../adr/0018-a-jobs-subject-names-what-it-is-about.md)) — so a row **also carries the
   item it concerns**, resolved by the store, because a person working this list needs to know which
   capture is stuck and the one-read promise is the whole point of the surface.
+- **An outcome the job cannot have produced is refused** (added 2026-08-17), rather than being read
+  as a plain success. A pointer reported for a mirror write, or artifacts for a delivery, means a
+  host has confused two pieces of work, and the outcome that would be dropped is the one the work
+  existed to produce. The lease is left held and the job untouched, so the report can be made again.
 - **Mirror work retries differently, and deliberately** (added 2026-08-11). Bounded retry exists
   so an item can answer "is anything still coming?", and for enrichment the answer may honestly
   be no. For mirroring it is always yes: the material exists and is unmirrored, and giving up
@@ -433,6 +451,11 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   a destination that refuses removes it and the call is refused; a destination that could not be
   reached leaves it pending and enqueues a **delivery job**. A destination that is up therefore
   answers immediately, and only one that was genuinely absent becomes deferred work.
+- **A record's time is when the decision was made**, not when the bytes arrived (stated 2026-08-17).
+  The two were the same thing until a delivery could be deferred, and they are now days apart at the
+  extreme. The decision is what the record exists to remember, and it is what orders an item's
+  records; where a delivery landed is what the pointer is for. A destination's own idea of when it
+  received something is not kept, since no reader was found for it that the pointer does not serve.
 - **A record remembers what the delivery targeted** (added 2026-08-14), beside the destination and
   the capability. Under the synchronous model the target was consumed by the one attempt; a delivery
   that is carried out later has to be assembled from the record alone, and a reservation that could
@@ -466,6 +489,16 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   does not change the fact that material is unmirrored. Giving up on a delivery does change
   something: it hands the decision back, so the person can repair their configuration or route
   somewhere else.
+- **The inline attempt is the first attempt** (added 2026-08-17), and the bound counts it. What
+  `maxAttempts` limits is the number of times a destination is handed one item's material, which for
+  something that cannot be repeated safely is the number worth bounding — not how much of that
+  happened to be done by a job. So the count a person reads on the abandoned surface is the count
+  that was made.
+- **Every failed attempt at a delivery appends the same kind of entry**, whether it was the inline
+  one or a job's, numbered in one sequence. A person reading an item's history is reading one run of
+  attempts on one destination; splitting it by which side of the queue it happened on would be
+  recording an implementation detail as though it were a fact about the item. Giving up appends
+  `work-abandoned` beside the last of them, which is what every kind of work lands on.
 - **An abandoned or cancelled reservation is removed, and the item resurfaces in the queue** at its
   unchanged content time. This is not a second exception to the append-only rule: the routing log
   is append-only, and a reservation is not in it yet. A record joins the log when its delivery

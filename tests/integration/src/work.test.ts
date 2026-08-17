@@ -317,6 +317,34 @@ describe("the action log", () => {
   });
 });
 
+/** The outcome that was dropped is the one the work was for, so it is refused rather than ignored. */
+describe("an outcome the job cannot have produced", () => {
+  it("refuses a delivered pointer reported for a mirror write", async () => {
+    const { pool: p } = await owing();
+    const lease = await claimOne(p);
+
+    expect(
+      await p.work.complete(lease.id, {
+        kind: "delivered",
+        pointer: "vault/inbox/a.md",
+      }),
+    ).toEqual({
+      kind: "refused",
+      refusal: { kind: "wrong-outcome", lease: lease.id, work: "mirror" },
+    });
+  });
+
+  it("leaves the job claimable, since nothing was recorded about it", async () => {
+    const { pool: p } = await owing();
+    const lease = await claimOne(p);
+
+    await p.work.complete(lease.id, { kind: "delivered" });
+    await p.work.release(lease.id);
+
+    expect((await claimOne(p)).job.id).toBe(lease.job.id);
+  });
+});
+
 describe("leases", () => {
   it("extends the one it holds by the time it asks for", async () => {
     const { pool: p } = await owing();

@@ -199,12 +199,17 @@ export interface PoolTx extends PoolReads {
 
   insertRoutingRecord(record: RoutingRecord): Promise<void>;
 
+  /** Throws on a record that is not there: resolving one that has gone is a lost write. */
   resolveRoutingRecord(
     record: RoutingRecordId,
     pointer?: string,
   ): Promise<void>;
 
-  /** Only ever a record that never delivered: a reservation is not in the append-only log yet. */
+  /**
+   * Only ever a record that never delivered: a reservation is not in the
+   * append-only log yet. Removing one that has already gone is not an error —
+   * a delivery abandoned after being cancelled asks for exactly that.
+   */
   removeRoutingRecord(record: RoutingRecordId): Promise<void>;
 
   withdrawWork(subject: JobSubject): Promise<WorkWithdrawal>;

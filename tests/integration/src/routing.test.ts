@@ -15,7 +15,6 @@ import { fakeCapability, fakeDestination } from "@notemap/core/testing";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
-  at,
   bytes,
   deliverWith,
   drainWith,
@@ -88,7 +87,6 @@ function request(path = "inbox/a-thought.md") {
 
 const DELIVERED = {
   kind: "delivered",
-  at: at("2026-08-06T09:00:01.000Z"),
   pointer: "vault/inbox/a-thought.md",
 } as const;
 

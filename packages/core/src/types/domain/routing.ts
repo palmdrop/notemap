@@ -54,11 +54,7 @@ export type Delivery = {
 };
 
 export type DeliveryOutcome =
-  | {
-      readonly kind: "delivered";
-      readonly pointer?: string;
-      readonly at: Timestamp;
-    }
+  | { readonly kind: "delivered"; readonly pointer?: string }
   | { readonly kind: "unreachable"; readonly detail: string }
   | { readonly kind: "rejected"; readonly detail: string };
 

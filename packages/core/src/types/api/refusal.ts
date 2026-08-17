@@ -1,4 +1,5 @@
 import type { SchemaIssue } from "../json";
+import type { JobKind } from "../domain/work";
 import type {
   ArtifactId,
   AssetId,
@@ -106,8 +107,7 @@ export type CancelRefusal =
   | { readonly kind: "not-pending"; readonly record: RoutingRecordId }
   | { readonly kind: "delivery-in-flight"; readonly record: RoutingRecordId };
 
-export type DeliveryRefusal =
-  PreparationRefusal | AttemptFailure | CancelRefusal;
+export type DeliveryRefusal = PreparationRefusal | AttemptFailure;
 
 export type RoutingRefusal = SubjectRefusal;
 
@@ -119,6 +119,19 @@ export type LeaseRefusal = {
   readonly kind: "lease-lost";
   readonly lease: LeaseId;
 };
+
+/**
+ * `wrong-outcome` is a caller reporting something the job cannot have produced —
+ * a pointer for a mirror write, artifacts for a delivery. Refused rather than
+ * ignored, because the outcome that was dropped is the one the work was for.
+ */
+export type CompletionRefusal =
+  | LeaseRefusal
+  | {
+      readonly kind: "wrong-outcome";
+      readonly lease: LeaseId;
+      readonly work: JobKind;
+    };
 
 /** Clearing refuses nothing; the result stays refusal-shaped because every mutation's is. */
 export type ActionLogRefusal = never;

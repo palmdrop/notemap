@@ -1,7 +1,7 @@
 # Review: Delivery machinery
 
 **Date**: 2026-08-17
-**Status**: Partially addressed
+**Status**: Resolved
 **Scope**: `agent/delivery-machinery` — `packages/core/src/pool/routing/`, `packages/core/src/pool/work.ts`, `packages/core/src/testing/`, `packages/adapters/store-sqlite/`, `tests/integration/src/{routing,delivery}.test.ts`
 **Plan**: `docs/plans/delivery-machinery.md`
 **Spec**: `docs/specs/core.md`, `docs/specs/mirror.md`
@@ -235,4 +235,52 @@ reading one will assume the other.
    signal that was already aborted hung forever. Fixed in the same change — the finding's point
    about a capability nothing exercises, demonstrated.
 
-Findings 2–12 remain open.
+2. **Fixed.** The delivery job is enqueued at `attempt: 1`, so the job's numbering carries on from
+   the inline attempt instead of restarting; and a failed attempt on a delivery appends
+   `delivery-failed` whichever side of the queue it happened on, with `work-abandoned` beside the
+   last one. An item routed at a destination that stays down now reads `delivery-failed` 1 through
+   5 and one `work-abandoned`, where it read a `delivery-failed(1)`, a `work-failed(1)` and three
+   more `work-failed`. `AbandonedWork.attempts` counts the same 5, so the number on the surface is
+   the number of times the destination was handed the material. `core.md` states both.
+
+3. **Fixed.** `DeliveryOutcome.delivered.at` is gone. Nothing read it, and the record's time is the
+   decision's (finding 4), so there was no home for a destination's own idea of when it received
+   something — and no reader for one that the pointer does not serve. Stated in `core.md` rather
+   than left as an absence.
+
+4. **Fixed**, as documentation. `RoutingRecord.at` is the time the decision was made, and `land`
+   still does not revise it. `CONTEXT.md` and `core.md`'s routing section say so, with the reason:
+   the decision is what the record exists to remember, and it is what orders an item's records.
+
+5. **Fixed.** `deliveryFor` guards on `state === "pending"` beside the two checks it already made,
+   which is what its own doc comment claimed.
+
+6. **Fixed**, as documentation, since purge is still unbuilt. `core.md`'s purge section now says
+   that an item's jobs are found by the item each concerns rather than by the subject, and why:
+   a delivery job's subject is a routing record, so deleting by subject walks past exactly the jobs
+   that are about to point at nothing.
+
+7. **Fixed.** `DeliveryRefusal` is `PreparationRefusal | AttemptFailure` again, and
+   `cancelDelivery` answers `CancelRefusal`. Neither operation now declares refusals it cannot
+   produce.
+
+8. **Fixed.** `work.complete` refuses `wrong-outcome` when the outcome could not have come from
+   that job — a pointer for a mirror write, artifacts for a delivery. The lease stays held and the
+   job untouched, so the report can be made again once the caller has it right. `LeaseRefusal` was
+   left alone and `CompletionRefusal` added beside it, so `extend` and `release` keep their narrow
+   type — the same criticism as finding 7, applied to the fix for finding 8.
+
+9. **Fixed.** `claim` refills the page after dropping the deliveries it ended. The loop terminates
+   because a row it just ended holds this claim's own lease and is not offered again.
+
+10. **Fixed.** Leases are collected first and abandoned after, and a failure while abandoning
+    releases the ones that would otherwise have been stranded before rethrowing.
+
+11. **Won't fix.** The pre-image is in pushed history and the PR is open, so removing it means a
+    force-push that `AGENTS.md` forbids. The file at HEAD is text; only those two commits' diffs
+    are unreadable, and squashing them at merge would clear it.
+
+12. **Fixed**, as a stated contract rather than a behaviour change. `resolveRoutingRecord` throws on
+    a record that is not there because resolving one that has gone is a lost write;
+    `removeRoutingRecord` is idempotent because a delivery abandoned after being cancelled asks for
+    exactly that. Both now say so on the port.

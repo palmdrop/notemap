@@ -7,8 +7,10 @@ import type {
   Delivery,
   DeliveryOutcome,
   DeliveryRequest,
+  RoutingRecord,
 } from "../../types/domain/routing";
 import type { WorkOutcome } from "../../types/domain/work";
+import type { JsonObject } from "../../types/json";
 
 /** The abandoned surface has to keep these apart: only the last warrants checking the destination. */
 export const DELIVERY_FAILURE = {
@@ -16,6 +18,14 @@ export const DELIVERY_FAILURE = {
   rejected: "rejected-by-destination",
   unknown: "delivery-outcome-unknown",
 } as const;
+
+/** Where an entry about a record says it was going, for the two places that log one. */
+export function destinationDetail(record: RoutingRecord): JsonObject {
+  const target = record.target;
+  return target.kind === "destination"
+    ? { destination: target.destination, capability: target.capability }
+    : {};
+}
 
 export function asDeliveryWorkOutcome(outcome: DeliveryOutcome): WorkOutcome {
   switch (outcome.kind) {
@@ -42,13 +52,20 @@ export function asDeliveryWorkOutcome(outcome: DeliveryOutcome): WorkOutcome {
   }
 }
 
-/** Absent where there is nothing left to carry out: the record was cancelled, or its item purged. */
+/**
+ * Absent where there is nothing left to carry out: the record was cancelled,
+ * its item purged, or the delivery already landed.
+ */
 export async function deliveryFor(
   ports: PoolPorts,
   id: RoutingRecordId,
 ): Promise<Delivery | undefined> {
   const record = await ports.store.routingRecord(id);
-  if (record === undefined || record.target.kind !== "destination") {
+  if (
+    record === undefined ||
+    record.state !== "pending" ||
+    record.target.kind !== "destination"
+  ) {
     return undefined;
   }
 

@@ -1,14 +1,13 @@
 import { recordAction } from "./actions";
 import { enqueueMirrorWrite } from "./mirror";
-import { DELIVERY_FAILURE } from "./routing/delivery";
+import { DELIVERY_FAILURE, destinationDetail } from "./routing/delivery";
 import { ok, refused } from "../utils/result";
 import type { PoolConfig } from "../types/api/config";
 import type { PoolPorts, PoolTx } from "../types/api/ports";
-import type { LeaseRefusal } from "../types/api/refusal";
+import type { CompletionRefusal, LeaseRefusal } from "../types/api/refusal";
 import type { FailureDetail } from "../types/domain/enrichment";
 import type {
   Duration,
-  ItemId,
   LeaseId,
   RoutingRecordId,
   Timestamp,
@@ -19,12 +18,12 @@ import type {
   ClaimRequest,
   Job,
   JobKind,
-  JobSubject,
   Lease,
   RetryPolicy,
   WorkOutcome,
 } from "../types/domain/work";
 import type { Page, Result, Slice } from "../types/result";
+import type { JsonObject } from "../types/json";
 
 /** Mirror attempts have no ceiling, so the doubling needs one before it reaches Infinity. */
 const MAX_DOUBLINGS = 32;
@@ -39,15 +38,31 @@ export async function claim(
   ports: PoolPorts,
   request: ClaimRequest,
 ): Promise<readonly Lease[]> {
-  const leases = await ports.work.claim(request, ports.clock.now());
   const claimed: Lease[] = [];
+  const vanished: Lease[] = [];
 
-  for (const lease of leases) {
-    if (lease.reclaimed === true && lease.job.kind === "delivery") {
-      await abandonUnknown(ports, lease);
-      continue;
+  // Ending a vanished delivery must not cost the caller a slot it asked for,
+  // so what was dropped is claimed again. The rows just ended hold this
+  // claim's own lease and are not offered twice, which is what stops the loop.
+  while (claimed.length < request.limit) {
+    const leases = await ports.work.claim(
+      { ...request, limit: request.limit - claimed.length },
+      ports.clock.now(),
+    );
+    if (leases.length === 0) break;
+
+    for (const lease of leases) {
+      const ended = lease.reclaimed === true && lease.job.kind === "delivery";
+      (ended ? vanished : claimed).push(lease);
     }
-    claimed.push(lease);
+  }
+
+  try {
+    for (const lease of vanished) await abandonUnknown(ports, lease);
+  } catch (cause) {
+    // Nothing is handed out that the caller will not hear about again.
+    for (const lease of claimed) await ports.work.releaseLease(lease.id);
+    throw cause;
   }
 
   return claimed;
@@ -80,7 +95,7 @@ export async function complete(
   ports: PoolPorts,
   lease: LeaseId,
   outcome: WorkOutcome,
-): Promise<Result<void, LeaseRefusal>> {
+): Promise<Result<void, CompletionRefusal>> {
   if (outcome.kind === "enriched") {
     throw new Error("core: recording enrichment output is not implemented yet");
   }
@@ -88,6 +103,15 @@ export async function complete(
   return ports.store.transaction(async (tx) => {
     const held = await tx.leasedJob(lease);
     if (held === undefined) return refused({ kind: "lease-lost", lease });
+
+    const delivery = held.job.subject.kind === "routing-record";
+    if (outcome.kind === "delivered" && !delivery) {
+      return refused<void, CompletionRefusal>({
+        kind: "wrong-outcome",
+        lease,
+        work: held.job.kind,
+      });
+    }
 
     if (outcome.kind === "succeeded" || outcome.kind === "delivered") {
       if (held.job.subject.kind === "routing-record") {
@@ -100,7 +124,7 @@ export async function complete(
       }
 
       await tx.resolveJob(lease, { kind: "done" });
-      return ok<void, LeaseRefusal>(undefined);
+      return ok<void, CompletionRefusal>(undefined);
     }
 
     const attempt = held.job.attempt + 1;
@@ -132,7 +156,7 @@ export async function complete(
       failure: outcome.detail,
     });
 
-    return ok<void, LeaseRefusal>(undefined);
+    return ok<void, CompletionRefusal>(undefined);
   });
 }
 
@@ -185,35 +209,67 @@ async function concluded(
   },
 ): Promise<void> {
   const subject = job.subject;
-  const item = await itemOf(tx, subject);
+  // Read before the removal below: the log's subject is an item, always.
+  const record =
+    subject.kind === "routing-record"
+      ? await tx.routingRecord(subject.record)
+      : undefined;
+  const item = subject.kind === "item" ? subject.item : record?.item;
 
   if (ended.giveUp && subject.kind === "routing-record") {
     await tx.removeRoutingRecord(subject.record);
   }
 
+  // One sequence of attempts reads as one kind of entry, whether the attempt
+  // was the inline one or a job's. The end of the road adds `work-abandoned`
+  // beside it, which is what every kind of work lands on.
+  if (record !== undefined) {
+    await recordAction(ports, tx, {
+      kind: "delivery-failed",
+      subject: record.item,
+      by: { kind: "notemap" },
+      at: ended.at,
+      detail: {
+        record: record.id,
+        ...destinationDetail(record),
+        attempt: ended.attempt,
+        failure: ended.failure,
+      },
+    });
+  } else if (!ended.giveUp) {
+    await recordAction(ports, tx, {
+      kind: "work-failed",
+      ...(item === undefined ? {} : { subject: item }),
+      // Nobody asked for this attempt, so nobody but notemap made it.
+      by: { kind: "notemap" },
+      at: ended.at,
+      detail: workDetail(job, ended),
+    });
+  }
+
+  if (!ended.giveUp) return;
+
   await recordAction(ports, tx, {
-    kind: ended.giveUp ? "work-abandoned" : "work-failed",
+    kind: "work-abandoned",
     ...(item === undefined ? {} : { subject: item }),
-    // Nobody asked for this attempt, so nobody but notemap made it.
     by: { kind: "notemap" },
     at: ended.at,
-    detail: {
-      work: job.kind,
-      attempt: ended.attempt,
-      failure: ended.failure,
-      ...(job.enrichment === undefined ? {} : { enrichment: job.enrichment }),
-      ...(subject.kind === "routing-record" ? { record: subject.record } : {}),
-    },
+    detail: workDetail(job, ended),
   });
 }
 
-/** Read before the record is removed: the log's subject is an item, always. */
-async function itemOf(
-  tx: PoolTx,
-  subject: JobSubject,
-): Promise<ItemId | undefined> {
-  if (subject.kind === "item") return subject.item;
-  return (await tx.routingRecord(subject.record))?.item;
+function workDetail(
+  job: Job,
+  ended: { attempt: number; failure: FailureDetail },
+): JsonObject {
+  const subject = job.subject;
+  return {
+    work: job.kind,
+    attempt: ended.attempt,
+    failure: ended.failure,
+    ...(job.enrichment === undefined ? {} : { enrichment: job.enrichment }),
+    ...(subject.kind === "routing-record" ? { record: subject.record } : {}),
+  };
 }
 
 async function abandonUnknown(ports: PoolPorts, lease: Lease): Promise<void> {

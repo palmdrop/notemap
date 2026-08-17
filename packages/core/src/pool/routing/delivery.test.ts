@@ -110,7 +110,6 @@ describe("what an attempt's outcome becomes for the queue", () => {
     expect(
       asDeliveryWorkOutcome({
         kind: "delivered",
-        at: "2026-08-06T09:05:00.000Z" as Timestamp,
         pointer: "vault/inbox/a.md",
       }),
     ).toEqual({ kind: "delivered", pointer: "vault/inbox/a.md" });
@@ -120,7 +119,6 @@ describe("what an attempt's outcome becomes for the queue", () => {
     expect(
       asDeliveryWorkOutcome({
         kind: "delivered",
-        at: "2026-08-06T09:05:00.000Z" as Timestamp,
       }),
     ).toEqual({ kind: "delivered" });
   });

@@ -2,9 +2,8 @@ import { recordAction } from "../actions";
 import { enqueueMirrorWrite } from "../mirror";
 import { ok, refused } from "../../utils/result";
 import type { PoolPorts, PoolTx } from "../../types/api/ports";
-import type { DeliveryRefusal } from "../../types/api/refusal";
+import type { CancelRefusal, DeliveryRefusal } from "../../types/api/refusal";
 import type { FailureDetail } from "../../types/domain/enrichment";
-import type { JsonObject } from "../../types/json";
 import type {
   ItemId,
   JobId,
@@ -17,7 +16,11 @@ import type {
   RoutingRecord,
 } from "../../types/domain/routing";
 import type { Result } from "../../types/result";
-import { DELIVERY_FAILURE, projectDelivery } from "./delivery";
+import {
+  DELIVERY_FAILURE,
+  destinationDetail,
+  projectDelivery,
+} from "./delivery";
 import type { DestinationIndex } from "./destinations";
 
 type Routed = Result<RoutingRecord, DeliveryRefusal>;
@@ -173,7 +176,7 @@ async function trace(
     detail: {
       record: record.id,
       target: target.kind,
-      ...whereItWent(record),
+      ...destinationDetail(record),
       ...(outcome.pointer === undefined ? {} : { pointer: outcome.pointer }),
     },
   });
@@ -192,19 +195,13 @@ function failed(
     at: record.at,
     detail: {
       record: record.id,
-      ...whereItWent(record),
+      ...destinationDetail(record),
       attempt: 1,
       failure,
     },
   });
 }
 
-function whereItWent(record: RoutingRecord): JsonObject {
-  const target = record.target;
-  return target.kind === "destination"
-    ? { destination: target.destination, capability: target.capability }
-    : {};
-}
 
 async function deliver(
   ports: PoolPorts,
@@ -239,7 +236,9 @@ async function reserve(
       id: ports.ids.next<JobId>(),
       kind: "delivery",
       subject: { kind: "routing-record", record: record.id },
-      attempt: 0,
+      // The inline attempt was the first, so the job's numbering carries on
+      // from it and `maxAttempts` bounds the destination's total handling.
+      attempt: 1,
       enqueuedAt: record.at,
     },
   ]);
@@ -254,7 +253,7 @@ async function reserve(
 export function cancelDelivery(
   ports: PoolPorts,
   id: RoutingRecordId,
-): Promise<Result<void, DeliveryRefusal>> {
+): Promise<Result<void, CancelRefusal>> {
   return ports.store.transaction(async (tx) => {
     const record = await tx.routingRecord(id);
     if (record === undefined) {
@@ -275,7 +274,7 @@ export function cancelDelivery(
     await tx.removeRoutingRecord(id);
     await appendCancelled(ports, tx, record.item, id, ports.clock.now());
 
-    return ok<void, DeliveryRefusal>(undefined);
+    return ok<void, CancelRefusal>(undefined);
   });
 }
 
