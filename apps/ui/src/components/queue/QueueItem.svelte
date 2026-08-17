@@ -17,7 +17,6 @@
     said = "marking…";
     try {
       await client.routing.markProcessed(item.id);
-      await client.loadQueue();
     } catch (error) {
       said = saidBy(error);
     }

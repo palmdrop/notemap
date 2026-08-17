@@ -60,12 +60,14 @@ export function createOutbox(deps: OutboxDeps): Outbox {
 
   async function enqueue(operation: Operation): Promise<void> {
     const at = deps.now();
-    const opposed = deps.state
-      .get()
-      .outbox.filter(
-        (held) =>
-          held.state !== "sending" && opposes(held.operation, operation),
-      );
+    const opposed = deps.state.get().outbox.filter(
+      (held) =>
+        held.state !== "sending" &&
+        // A drain claims an operation a turn before it is recorded as
+        // sending, and what has been handed over cannot be taken back.
+        !inflight.has(held.id) &&
+        opposes(held.operation, operation),
+    );
 
     // The stamp the person's device made when they acted is the key, so an
     // operation they made earlier does not win by arriving later.

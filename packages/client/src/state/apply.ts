@@ -5,7 +5,7 @@ import type { Operation } from "../outbox/operations";
 import {
   cached,
   forget,
-  insertOldestFirst,
+  intoQueue,
   withIds,
   without,
   type ClientState,
@@ -51,10 +51,7 @@ function applyCapture(state: ClientState, item: Item): Applied {
       ...state,
       items,
       feed: withIds(state.feed, [item.id, ...state.feed.ids]),
-      queue: withIds(
-        state.queue,
-        insertOldestFirst(state.queue.ids, item.id, items),
-      ),
+      queue: withIds(state.queue, intoQueue(state.queue, item.id, items)),
     },
     undo: (current) => forget(current, item.id),
   };
@@ -114,10 +111,7 @@ function applyUnarchive(state: ClientState, id: ItemId): Applied {
     state: {
       ...state,
       items,
-      queue: withIds(
-        state.queue,
-        insertOldestFirst(state.queue.ids, id, items),
-      ),
+      queue: withIds(state.queue, intoQueue(state.queue, id, items)),
     },
     undo: (current) => ({
       ...current,

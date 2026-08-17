@@ -218,6 +218,55 @@ describe("the queue", () => {
     expect(read(client.outbox)[0]?.failure).toBe("that item is not here");
   });
 
+  it("takes an item out of the list once the pool records a decision", async () => {
+    const { client } = clientOver((request) =>
+      routeOf(request) === "GET /v1/queue"
+        ? queued(anItem("one"), anItem("two"))
+        : json(200, {
+            id: "record-1",
+            item: "one",
+            state: "delivered",
+            at: "now",
+          }),
+    );
+
+    await client.loadQueue();
+    await client.routing.markProcessed("one");
+
+    expect(read(client.queue).items.map((item) => item.id)).toEqual(["two"]);
+    // Out of the queue, not out of the pool: the feed reads everything.
+    expect(await client.item("one")).toBeDefined();
+  });
+
+  it("leaves a capture beyond the loaded window for a later page to carry", async () => {
+    const { client } = clientOver(async (request) => {
+      if (routeOf(request) !== "GET /v1/queue") {
+        return captured(anItem(((await request.json()) as { id: string }).id));
+      }
+
+      return new URL(request.url).searchParams.get("after") === null
+        ? json(200, {
+            values: [anItem("old", { createdAt: "2020-01-01T00:00:00.000Z" })],
+            next: "/v1/queue?after=2020-01-01T00:00:00.000Z,old&order=oldest-first",
+          })
+        : json(200, {
+            values: [anItem("less-old", { createdAt: "2021-01-01T00:00:00Z" })],
+          });
+    });
+
+    await client.loadQueue();
+    const fresh = await client.capture({ channel: "web", text: "new" });
+
+    expect(read(client.queue).items.map((item) => item.id)).toEqual(["old"]);
+
+    await client.loadQueue();
+    expect(read(client.queue).items.map((item) => item.id)).toEqual([
+      "old",
+      "less-old",
+    ]);
+    expect(read(client.feed).items.map((item) => item.id)).toEqual([fresh.id]);
+  });
+
   it("carries a new capture to the far end, where fresh work accumulates", async () => {
     const { client } = clientOver(async (request) =>
       routeOf(request) === "GET /v1/queue"

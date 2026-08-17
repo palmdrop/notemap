@@ -41,21 +41,47 @@ export function queueRank(item: Item): string {
   return `${contentTime(item)}|${item.id}`;
 }
 
-export function insertOldestFirst(
-  ids: readonly ItemId[],
+/**
+ * Whether an item falls inside what a page has actually read. The pool's
+ * position is `<at>,<id>` — the last row it handed over — so it answers this
+ * exactly, and goes on answering it once every row in the window has left.
+ */
+function loaded(page: ListPage, item: Item): boolean {
+  if (page.exhausted) return true;
+  if (page.after === undefined) return false;
+
+  const comma = page.after.indexOf(",");
+  const at = comma === -1 ? page.after : page.after.slice(0, comma);
+  const id = comma === -1 ? undefined : page.after.slice(comma + 1);
+
+  const time = contentTime(item);
+  return time === at ? id === undefined || item.id <= id : time < at;
+}
+
+/**
+ * Places an item in the queue by its rank, and only where the list actually
+ * reaches. Past that the pool's own next page carries it: appending to the end
+ * of a window would sort it ahead of the older items still to be read.
+ */
+export function intoQueue(
+  page: ListPage,
   id: ItemId,
   items: ReadonlyMap<ItemId, Item>,
 ): readonly ItemId[] {
   const inserted = items.get(id);
-  if (inserted === undefined || ids.includes(id)) return ids;
+  if (inserted === undefined || page.ids.includes(id)) return page.ids;
+  if (!loaded(page, inserted)) return page.ids;
 
   const rank = queueRank(inserted);
-  const at = ids.findIndex((held) => {
+
+  const at = page.ids.findIndex((held) => {
     const item = items.get(held);
     return item !== undefined && queueRank(item) > rank;
   });
 
-  return at === -1 ? [...ids, id] : [...ids.slice(0, at), id, ...ids.slice(at)];
+  return at === -1
+    ? [...page.ids, id]
+    : [...page.ids.slice(0, at), id, ...page.ids.slice(at)];
 }
 
 export function withIds(page: ListPage, ids: readonly ItemId[]): ListPage {
@@ -89,6 +115,18 @@ export function forget(state: ClientState, id: ItemId): ClientState {
 }
 
 /**
+ * The pool has recorded a routing decision, so the item is out of the queue —
+ * core derives processed as holding no routing record. It stays in the cache
+ * and in the feed, which read everything.
+ */
+export function processed(state: ClientState, id: ItemId): ClientState {
+  return {
+    ...state,
+    queue: withIds(state.queue, without(state.queue.ids, id)),
+  };
+}
+
+/**
  * Replaces the optimistic copy with what the pool recorded, and puts the item
  * on the right side of the queue: the pool decides whether it is still work.
  */
@@ -96,7 +134,7 @@ export function settle(state: ClientState, item: Item): ClientState {
   const items = cached(state, [item]);
   const ids = item.archived
     ? without(state.queue.ids, item.id)
-    : insertOldestFirst(state.queue.ids, item.id, items);
+    : intoQueue(state.queue, item.id, items);
 
   return { ...state, items, queue: withIds(state.queue, ids) };
 }

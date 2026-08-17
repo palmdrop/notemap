@@ -68,7 +68,6 @@
         ),
       });
       said = `routed — ${record.state}`;
-      await client.loadQueue();
     } catch (error) {
       said = saidBy(error);
     } finally {

@@ -29,12 +29,16 @@ function engineOver(items: readonly Item[]) {
     ...empty,
     items: cached(empty, items),
   });
+  // The whole queue, so an item leaving and coming back is inside the window.
   state.update((current) => ({
     ...current,
-    queue: withIds(
-      current.queue,
-      items.map((item) => item.id),
-    ),
+    queue: {
+      ...withIds(
+        current.queue,
+        items.map((item) => item.id),
+      ),
+      exhausted: true,
+    },
   }));
 
   let minted = 0;
@@ -117,6 +121,23 @@ describe("opposing operations still in the outbox", () => {
 });
 
 describe("an operation already handed over", () => {
+  it("does not cancel with a later one, even before it is recorded as sending", async () => {
+    const { outbox, state, sent } = engineOver([anItem("one")]);
+
+    await outbox.enqueue(ARCHIVE);
+    // Claimed by the drain, but `send` has not yet written `sending`.
+    void outbox.drain();
+    expect(state.get().outbox[0]?.state).toBe("pending");
+
+    clock.set("2026-08-17T12:00:02.000Z");
+    await outbox.enqueue(UNARCHIVE);
+
+    expect(sent).toEqual([ARCHIVE]);
+    expect(state.get().outbox.map((held) => held.operation.kind)).toContain(
+      "unarchive",
+    );
+  });
+
   it("does not cancel with a later one: the pool has it, so both go", async () => {
     const { outbox, sent, answer } = engineOver([anItem("one")]);
 

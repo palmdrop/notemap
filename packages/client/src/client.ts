@@ -8,7 +8,7 @@ import { createOutbox } from "./outbox/outbox";
 import { sendOperation } from "./outbox/encode";
 import { createRouting } from "./routing/routing";
 import { persistItems } from "./state/persist";
-import { cached, emptyState, type ClientState } from "./state/state";
+import { cached, emptyState, processed, type ClientState } from "./state/state";
 import { loadMore, type Surface } from "./surfaces/reads";
 import type { Client, ClientConfig, ListState } from "./types";
 
@@ -145,7 +145,10 @@ export function createClient(config: ClientConfig): Client {
         ? item.payload.assets.map((reference) => assetContent(reference.asset))
         : [],
 
-    routing: createRouting(api),
+    routing: createRouting({
+      api,
+      processed: (item) => state.update((current) => processed(current, item)),
+    }),
 
     drain: () => outbox.drain(),
     dismiss: (operation) => outbox.dismiss(operation),
