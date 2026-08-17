@@ -31,6 +31,8 @@ import type {
   ReadOrder,
   Slice,
   SourceId,
+  Tag,
+  TagName,
   Timestamp,
   WorkQueue,
   WorkWithdrawal,
@@ -209,6 +211,9 @@ export function createSqlitePoolStore(
     INSERT INTO item_tags (item_id, name, by_kind, by_ref, added_at)
     VALUES (?, ?, ?, ?, ?)
   `);
+  const deleteTag = write.query<never, [string, string]>(
+    `DELETE FROM item_tags WHERE item_id = ? AND name = ?`,
+  );
   const insertReference = write.query(`
     INSERT INTO item_assets (item_id, slot, asset_id) VALUES (?, ?, ?)
   `);
@@ -546,6 +551,15 @@ export function createSqlitePoolStore(
       };
     };
 
+    /** A change to an item that owns no column of its own, then the row it left. */
+    async function touched(item: ItemId, what: string): Promise<Item> {
+      touchItem.run(nextModifiedAt(), item);
+
+      const stored = await uncommitted.item(item);
+      if (stored === undefined) throw new Error(`no item ${item} to ${what}`);
+      return stored;
+    }
+
     return {
       ...notYetImplementedReads(),
 
@@ -601,6 +615,21 @@ export function createSqlitePoolStore(
           return stored;
         },
       ),
+
+      addTag: guard(async (item: ItemId, added: Tag): Promise<Item> => {
+        insertTag.run(
+          item,
+          added.name,
+          ...agentColumns(added.by),
+          toMillis(added.addedAt),
+        );
+        return touched(item, "add a tag to");
+      }),
+
+      removeTag: guard(async (item: ItemId, name: TagName): Promise<Item> => {
+        deleteTag.run(item, name);
+        return touched(item, "remove a tag from");
+      }),
 
       insertRoutingRecord: guard(
         async (record: RoutingRecord): Promise<void> => {

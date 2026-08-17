@@ -239,6 +239,14 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - Every tag records **which agent added it** — a person, or the named provider whose suggestion
   was accepted.
 - Classifying an item does not remove it from the queue.
+- **Both halves are idempotent** (decided 2026-08-17). Adding a tag an item already carries leaves
+  the attribution and time it has; removing one it does not carry changes nothing. Neither absorbed
+  call appends an action or owes the mirror a write, because nothing changed. This is the opposite
+  call to archiving's, and what separates them is what the caller supplies: an archive carries a
+  reason, so a second one either overwrites what the first recorded or discards what the second was
+  given. A tag's name is the whole of the request, and `by` is not something the caller chooses over
+  again — so the first agent there stands, and a person's tag is not silently reattributed to the
+  provider whose suggestion arrives after it.
 
 ### Archive and purge
 

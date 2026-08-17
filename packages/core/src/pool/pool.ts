@@ -9,6 +9,7 @@ import { capture } from "./capture";
 import * as maintenance from "./maintenance";
 import * as mirror from "./mirror";
 import * as routing from "./routing";
+import * as tags from "./tags";
 import * as work from "./work";
 
 /**
@@ -36,8 +37,8 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
     items: {
       get: (id) => store.item(id),
       edit: notImplemented("items.edit"),
-      tag: notImplemented("items.tag"),
-      untag: notImplemented("items.untag"),
+      tag: (id, name, by) => tags.tag(ports, id, name, by),
+      untag: (id, name) => tags.untag(ports, id, name),
       archive: (id, reason) => archive.archive(ports, id, reason),
       unarchive: (id) => archive.unarchive(ports, id),
       purge: notImplemented("items.purge"),
