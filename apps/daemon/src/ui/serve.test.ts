@@ -36,9 +36,7 @@ describe("serving the app", () => {
   });
 
   it("does not read outside the app directory", async () => {
-    const response = await app().request(
-      "/%2e%2e%2f%2e%2e%2fpackage.json",
-    );
+    const response = await app().request("/%2e%2e%2f%2e%2e%2fpackage.json");
 
     expect(await response.text()).not.toContain("@notemap/daemon");
   });

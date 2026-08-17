@@ -7,7 +7,18 @@ export default tseslint.config(
   // out of node_modules: both generated, and neither ours to lint.
   // `.claude/` holds agent scratch, including worktrees that are whole copies
   // of this repo — linting one lints everything twice.
-  { ignores: ["docs/", ".claude/", "**/dist/", "apps/daemon/public/vendor/"] },
+  // `.svelte-kit/` is SvelteKit's generated types and glue, rewritten on every
+  // `svelte-kit sync`, and `generated.d.ts` is the OpenAPI document as types.
+  {
+    ignores: [
+      "docs/",
+      ".claude/",
+      "**/dist/",
+      "**/.svelte-kit/",
+      "**/generated.d.ts",
+      "apps/daemon/public/vendor/",
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   prettier,

@@ -9,10 +9,12 @@ export const UI_DIR = join(PUBLIC_DIR, "ui");
 
 const SHELL = join(UI_DIR, "index.html");
 
+const HTML = "text/html; charset=utf-8";
+
 /** Everything the build emits. An unlisted extension downloads rather than renders. */
 const TYPES: Record<string, string> = {
   ".css": "text/css; charset=utf-8",
-  ".html": "text/html; charset=utf-8",
+  ".html": HTML,
   ".ico": "image/x-icon",
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
@@ -88,8 +90,6 @@ export function serveUi(fallthrough: NotFoundHandler): NotFoundHandler {
     if (extname(path) !== "") return fallthrough(context);
 
     const shell = readCachedBytes(SHELL);
-    return shell === undefined
-      ? fallthrough(context)
-      : served(shell, TYPES[".html"]);
+    return shell === undefined ? fallthrough(context) : served(shell, HTML);
   };
 }

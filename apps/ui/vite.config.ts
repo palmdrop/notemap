@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       sveltekit({
         alias: {
-          "$components": "./src/components",
+          $components: "./src/components",
         },
         compilerOptions: {
           // Force runes mode for the project, except for libraries. Can be removed in svelte 6.
