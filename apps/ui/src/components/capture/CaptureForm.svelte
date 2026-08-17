@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { capture, saidBy, upload, type Item } from "$lib/api";
+  import { saidBy } from "@notemap/client";
 
-  let { oncaptured }: { oncaptured: (item: Item) => void } = $props();
+  import { PICTURE, TYPED } from "$lib/channels";
+  import { client } from "$lib/client";
 
   let text = $state("");
   let chosen = $state<File | undefined>(undefined);
@@ -25,32 +26,26 @@
 
     busy = true;
     try {
+      // The bytes are a round trip whatever happens: the pool mints the id the
+      // capture then references, so there is nothing to apply optimistically.
       let asset: string | undefined;
       if (chosen !== undefined) {
         tell("uploading…");
-        asset = (await upload(chosen)).id;
+        asset = (await client.uploadAsset(chosen)).id;
       }
 
-      tell("capturing…");
-      const outcome = await capture({
+      await client.capture({
+        channel: chosen === undefined ? TYPED : PICTURE,
         text,
         ...(asset === undefined ? {} : { asset }),
       });
-
-      if (outcome.kind === "already-captured") {
-        tell(`already captured (matched on ${outcome.matchedOn})`);
-        return;
-      }
 
       text = "";
       chosen = undefined;
       picker.value = "";
       tell("captured");
-      oncaptured(outcome.item);
     } catch (error) {
-      // An upload that failed reports its own refusal verbatim; anything
-      // without one is the daemon being unreachable.
-      tell(saidBy(error) || "the daemon is not reachable", true);
+      tell(saidBy(error), true);
     } finally {
       busy = false;
     }

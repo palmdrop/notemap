@@ -3,20 +3,20 @@ import tseslint from "typescript-eslint";
 import prettier from "eslint-config-prettier";
 
 export default tseslint.config(
-  // `dist/` is the daemon's esbuild bundle and `vendor/` is Swagger UI copied
-  // out of node_modules: both generated, and neither ours to lint.
+  // Everything generated, none of it ours to lint: the daemon's esbuild bundle
+  // and what its build copies into `public/`, the app's vite output and
+  // SvelteKit's `sync` glue, and the OpenAPI document as types.
   // `.claude/` holds agent scratch, including worktrees that are whole copies
   // of this repo — linting one lints everything twice.
-  // `.svelte-kit/` is SvelteKit's generated types and glue, rewritten on every
-  // `svelte-kit sync`, and `generated.d.ts` is the OpenAPI document as types.
   {
     ignores: [
       "docs/",
       ".claude/",
       "**/dist/",
+      "**/build/",
       "**/.svelte-kit/",
       "**/generated.d.ts",
-      "apps/daemon/public/vendor/",
+      "apps/daemon/public/",
     ],
   },
   js.configs.recommended,

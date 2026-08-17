@@ -1,9 +1,11 @@
 <script lang="ts">
-  import { imagesIn, type Item } from "$lib/api";
+  import type { Item } from "@notemap/client";
+
+  import { client } from "$lib/client";
 
   let { item }: { item: Item } = $props();
 
-  const images = $derived(imagesIn(item));
+  const images = $derived(client.images(item));
   const said = $derived(
     (item.payload.content.text ?? item.payload.content.caption ?? "") as string,
   );

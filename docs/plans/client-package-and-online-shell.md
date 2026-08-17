@@ -99,16 +99,16 @@ queued when the transport reports unreachable. `pnpm --filter @notemap/client te
 
 Depends on: Phase 2. Every route this phase needs is live today.
 
-- [ ] Delete `apps/ui/src/lib/api/*` and `apps/ui/src/lib/feed/feed.svelte.ts`, replacing them with a
+- [x] Delete `apps/ui/src/lib/api/*` and `apps/ui/src/lib/feed/feed.svelte.ts`, replacing them with a
       thin Svelte adaptation of the client's observables. The shell reads client state and holds no
       state logic of its own.
-- [ ] Wire the web shell's ports: a same-origin `fetch` `Transport` keeping the `baseUrl` rule
+- [x] Wire the web shell's ports: a same-origin `fetch` `Transport` keeping the `baseUrl` rule
       already established in `api/client.ts`, and the in-memory `ClientStore`.
-- [ ] Rework `CaptureForm`, `Feed` and `Item` to call client methods and render client state; a
+- [x] Rework `CaptureForm`, `Feed` and `Item` to call client methods and render client state; a
       capture appears optimistically with no round trip.
-- [ ] Stamp the capture **source per channel** (e.g. `web-manual`, `web-image`) rather than a single
+- [x] Stamp the capture **source per channel** (e.g. `web-manual`, `web-image`) rather than a single
       hardcoded `web`, per [client.md](../specs/client.md#source-identity).
-- [ ] `git commit`.
+- [x] `git commit`.
 
 **Verify:** `pnpm --filter @notemap/ui check` and `vite build` succeed; `git grep` finds no
 `openapi-fetch` import under `apps/ui`; running the daemon plus `vite dev`, a capture appears

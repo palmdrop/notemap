@@ -280,9 +280,9 @@ importers:
 
   apps/ui:
     dependencies:
-      openapi-fetch:
-        specifier: ^0.17.0
-        version: 0.17.0
+      '@notemap/client':
+        specifier: workspace:*
+        version: link:../../packages/client
     devDependencies:
       '@sveltejs/adapter-static':
         specifier: ^3.0.10
@@ -299,9 +299,6 @@ importers:
       '@tailwindcss/vite':
         specifier: ^4.3.0
         version: 4.3.3(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.5)(yaml@2.9.0))
-      openapi-typescript:
-        specifier: ^7.13.0
-        version: 7.13.0(typescript@6.0.3)
       prettier-plugin-tailwindcss:
         specifier: ^0.8.0
         version: 0.8.1(prettier@3.9.6)

@@ -1,10 +1,9 @@
 <script lang="ts">
   import CaptureForm from "$components/capture/CaptureForm.svelte";
   import FeedList from "$components/feed/Feed.svelte";
-  import { createFeed } from "$lib/feed/feed.svelte";
-
-  const feed = createFeed();
+  import Outbox from "$components/outbox/Outbox.svelte";
 </script>
 
-<CaptureForm oncaptured={(item) => feed.prepend(item)} />
-<FeedList {feed} />
+<CaptureForm />
+<Outbox />
+<FeedList />

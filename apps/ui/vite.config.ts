@@ -29,6 +29,10 @@ export default defineConfig(({ mode }) => {
       }),
     ],
     server: {
+      // `@notemap/client` is a workspace package served from its TypeScript
+      // source in dev, so the dev server has to read outside `apps/ui`.
+      fs: { allow: [envDir] },
+
       // In production the daemon serves this app from its own origin. Proxying
       // rather than calling it across origins keeps dev the same shape, which
       // is what lets the daemon send no CORS headers at all.
