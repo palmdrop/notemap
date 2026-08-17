@@ -10,7 +10,10 @@
       <a href="/">notemap</a>
     </h1>
     <span class="text-xs text-neutral-500 dark:text-neutral-400">
-      online only — a capture needs the daemon reachable ·
+      <a href="/queue" class="underline">queue</a>
+      ·
+      <a href="/feed" class="underline">feed</a>
+      ·
       <!-- The daemon serves these, not this app: let the browser leave. -->
       <a href="/log" data-sveltekit-reload class="underline">log</a>
       ·

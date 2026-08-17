@@ -1,0 +1,38 @@
+import { onMount } from "svelte";
+
+import { client } from "./client";
+
+/**
+ * Whether the pool looks reachable, which is all a shell can honestly say: the
+ * transport reports no reachability yet, so this is the browser's own opinion
+ * plus whatever the outbox has already failed to send.
+ */
+export function reachable() {
+  let online = $state(true);
+  let failing = $state(false);
+
+  onMount(() => {
+    online = navigator.onLine;
+
+    const up = () => (online = true);
+    const down = () => (online = false);
+    window.addEventListener("online", up);
+    window.addEventListener("offline", down);
+
+    const stop = client.outbox.subscribe((outbox) => {
+      failing = outbox.some((held) => held.state === "unreachable");
+    });
+
+    return () => {
+      window.removeEventListener("online", up);
+      window.removeEventListener("offline", down);
+      stop();
+    };
+  });
+
+  return {
+    get yes() {
+      return online && !failing;
+    },
+  };
+}

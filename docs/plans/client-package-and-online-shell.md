@@ -120,17 +120,17 @@ visibly.
 Depends on: Phase 3. `GET /v1/queue`, archive, unarchive, `mark-processed`, `route` and
 `GET /v1/destinations` are all live in the daemon today.
 
-- [ ] Wire the queue as one scrollable oldest-first list, per
+- [x] Wire the queue as one scrollable oldest-first list, per
       [client.md](../specs/client.md#the-queue). No skip action, and no client-held processing
       position.
-- [ ] Keep a **scroll mark** as local per-shell view state that restores the view on reload and is
+- [x] Keep a **scroll mark** as local per-shell view state that restores the view on reload and is
       never sent to the pool.
-- [ ] Wire archive and unarchive through the outbox: the item leaves the list optimistically and
+- [x] Wire archive and unarchive through the outbox: the item leaves the list optimistically and
       settles on the pool's answer.
-- [ ] Wire routing and mark-processed as direct calls, and **make the asymmetry visible**: archive
+- [x] Wire routing and mark-processed as direct calls, and **make the asymmetry visible**: archive
       stays available when the pool is unreachable, routing and mark-processed are disabled with a
       reason rather than queued into a promise the outbox cannot keep.
-- [ ] `git commit`.
+- [x] `git commit`.
 
 **Verify:** against a running daemon, archiving an item removes it from the queue and it stays in the
 feed; unarchiving returns it at its unchanged position; routing an item to a configured destination
