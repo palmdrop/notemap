@@ -25,6 +25,15 @@ const OPTIONAL_BODIES: readonly string[] = (ROUTES as readonly Declared[])
   .filter((route) => route.request?.body?.required === false)
   .map((route) => route.path);
 
+/**
+ * Routes that declare no body at all — `POST .../retire` is the whole request.
+ * Nothing here reads one, so there is no media type to be wrong about, and a
+ * client that framed its empty request differently is not making a mistake.
+ */
+const NO_BODIES: readonly string[] = (ROUTES as readonly Declared[])
+  .filter((route) => route.request?.body === undefined)
+  .map((route) => route.path);
+
 /** `{id}` stands for one non-empty segment, as it does to the router. */
 function matches(declared: string, path: string): boolean {
   const pattern = declared.split("/");
@@ -44,6 +53,10 @@ function bodyIsOptional(path: string): boolean {
   return OPTIONAL_BODIES.some((declared) => matches(declared, path));
 }
 
+function takesNoBody(path: string): boolean {
+  return NO_BODIES.some((declared) => matches(declared, path));
+}
+
 /**
  * Framing, not content: under the node server a bodyless request still carries
  * a readable stream, so the headers are what say whether anything is coming.
@@ -60,6 +73,7 @@ export const requireJsonBody: MiddlewareHandler = async (context, next) => {
 
   const path = new URL(context.req.url).pathname;
   if (RAW_BODIES.has(path)) return next();
+  if (takesNoBody(path)) return next();
   if (bodyIsOptional(path) && !carriesBody(context.req.raw)) return next();
 
   const contentType = context.req.header("content-type") ?? "";

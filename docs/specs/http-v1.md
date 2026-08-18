@@ -1,9 +1,20 @@
 # Spec: HTTP API (`/v1`)
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
-editing and routing to a destination are settled; the rest is stub
+editing, destinations and routing to one are settled; the rest is stub
 **Last updated**: 2026-08-18
 **Shipped**:
+
+- 2026-08-18 — **Destinations are edited over `/v1`, and wiring one is no longer a restart.**
+  `GET /v1/destinations` answers rows the pool holds — instantly, unpaginated, retired ones
+  included, probing nothing — and what one can *do* moves to
+  `GET /v1/destinations/{id}/description`, so a settings screen never stalls on an unmounted drive.
+  Create, edit, retire, unretire and delete sit beside them, with `GET /v1/destination-kinds`
+  publishing the schema a client builds its form from. `[[destinations]]` leaves `config.toml`,
+  and an unrecognised key there is now named in a startup warning and ignored rather than refusing
+  to start — while a key the daemon knows, with a value it cannot honour, still refuses.
+  ([plan](../plans/destinations-in-the-pool.md),
+  [ADR 20](../adr/0020-destinations-are-pool-state.md))
 
 - 2026-08-17 — **Tagging, untagging and editing are on the wire.**
   `POST /v1/items/{id}/tag` and `/untag` carry the tag in the **body**, because a namespaced tag has

@@ -1,9 +1,17 @@
 # Spec: The mirror on disk
 
 **Status**: Draft
-**Last updated**: 2026-08-14
+**Last updated**: 2026-08-18
 **Shipped**:
 
+- 2026-08-18 — **The mirror carries destinations, its first non-item unit.** A delivered routing
+  record names a destination, so a mirror of items alone would rebuild a pool whose records refer to
+  destinations it cannot produce. A destination record is defined and serialised beside the item
+  record, retired ones included; a write is owed whenever one changes and a removal when one is
+  deleted, on the same terms as an item's; and the filesystem driver writes them under their own
+  directory. Verify and repair still do not exist, so they do not reach them yet.
+  ([plan](../plans/destinations-in-the-pool.md),
+  [ADR 20](../adr/0020-destinations-are-pool-state.md))
 - 2026-08-14 — **A delivery reaches the mirror when it lands, and not when it is decided.** A
   routing record carries its state, and only the delivered ones are projected into a record — so an
   item whose delivery is still pending mirrors as unrouted, and a rebuild from those files would

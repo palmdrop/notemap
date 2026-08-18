@@ -4,6 +4,17 @@
 **Last updated**: 2026-08-18
 **Shipped**:
 
+- 2026-08-18 — **A destination is pool state, and the port is per kind.** One is a row a person
+  creates, renames, retires and deletes through the pool's own API, each mutation appending to the
+  action log; `PoolPorts.destinations` and the per-destination adapter are replaced by one
+  `Destinations` port that takes the destination as a parameter, so an edit takes effect on the next
+  call. A kind publishes the schema its settings must satisfy and core refuses with the issues. A
+  kind nothing speaks, or settings that no longer satisfy one, is **unusable** — reported beside
+  described and undescribable, refused for routing, and left untouched. A deferred delivery resolves
+  its destination when it runs and carries unusable on `unreachable` terms; retirement stops the
+  next decision and nothing already decided.
+  ([plan](../plans/destinations-in-the-pool.md),
+  [ADR 20](../adr/0020-destinations-are-pool-state.md))
 - 2026-08-08 — A source needs no declaration to capture; `config.sources` is a policy registry
   rather than a guest list, and `unknown-source` is gone. The `SchemaValidator` port has its
   first real implementation (`@notemap/schema-ajv`), and the first host — the daemon — drives a

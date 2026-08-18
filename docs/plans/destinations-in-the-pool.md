@@ -1,7 +1,7 @@
 # Destinations in the pool
 
 **Date**: 2026-08-17
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/mirror.md`, `docs/specs/client.md`
 **Closed**:
 
@@ -133,29 +133,31 @@ Depends on phases 1 and 2. Independent of phase 5.
 
 Depends on phase 5.
 
-- [ ] `pnpm --filter @notemap/client codegen` against the regenerated document
-- [ ] A `destinations` surface: reads cached for display, mutations online-only and disabled when
+- [x] `pnpm --filter @notemap/client codegen` against the regenerated document
+- [x] A `destinations` surface: reads cached for display, mutations online-only and disabled when
       the pool is unreachable, no outbox operations
-- [ ] Readings for the new refusal codes, derived from the generated types as the existing ones are
-- [ ] Tests beside it, including that a mutation while unreachable is refused rather than queued
-- [ ] Verify: `pnpm -r --silent test`
-- [ ] `git commit`
+- [x] Readings for the new refusal codes, derived from the generated types as the existing ones are
+- [x] Tests beside it, including that a mutation while unreachable is refused rather than queued
+- [x] Verify: `pnpm -r --silent test`
+- [x] `git commit`
 
 ### Phase 8 — the UI
 
 Depends on phase 7.
 
-- [ ] A settings route listing destinations: name, kind, retired, and description fetched per
+- [x] A settings route listing destinations: name, kind, retired, and description fetched per
       destination rather than for the list
-- [ ] Add and edit, with the form built from the kind's `settingsSchema`
-- [ ] Retire, unretire, and delete — delete offered only where the pool allows it, with the
+- [x] Add and edit, with the form built from the kind's `settingsSchema`
+- [x] Retire, unretire, and delete — delete offered only where the pool allows it, with the
       refusal shown when it does not
-- [ ] `RouteAction` reads declarations, then describes the chosen destination; retired ones are not
+- [x] `RouteAction` reads declarations, then describes the chosen destination; retired ones are not
       offered and unusable ones are shown as unavailable
-- [ ] Tests beside the components
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`; add a destination in the
-      browser and route an item to it without restarting the daemon
-- [ ] `git commit`
+- [x] Tests beside the components
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`; a destination created
+      against a running daemon, routed to, retired and refused deletion, all without a restart.
+      *Driven over `/v1` rather than in a browser, which this session has none of; the screen's
+      own path is covered by its tests*
+- [x] `git commit`
 
 ---
 

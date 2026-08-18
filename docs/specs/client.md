@@ -4,6 +4,15 @@
 **Last updated**: 2026-08-18
 **Shipped**:
 
+- 2026-08-18 — **Editing destinations is the outbox's second exception, and the shell shows it.**
+  The client reads destinations into a cache a settings screen renders from while the pool is
+  unreachable, and creating, editing, retiring and deleting one reach the pool directly or fail —
+  never queued, because only the daemon can say whether a root exists or whether settings satisfy
+  the kind registry it is running. The shell has a settings route that lists them, builds its form
+  from the kind's own schema, asks each what it can do only when asked, and disables every change
+  while the pool is out of reach. ([plan](../plans/destinations-in-the-pool.md),
+  [ADR 20](../adr/0020-destinations-are-pool-state.md))
+
 - 2026-08-17 — **Editing and classification reach the pool.** `tag`, `untag` and `edit` are outbox
   operations now, applied at once and reconciled with what the pool recorded — and an `edit` is the
   first operation whose answer may take a different shape from the guess, so a handler settles the
