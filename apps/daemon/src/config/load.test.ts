@@ -16,7 +16,10 @@ const EXAMPLE = fileURLToPath(
   new URL("../../config.example.toml", import.meta.url),
 );
 
-const parse = (source: string) => parseConfig(source, "test.toml");
+const parse = (source: string) => parseConfig(source, "test.toml").config;
+
+/** What the daemon ignored, which is a warning rather than a refusal. */
+const ignored = (source: string) => parseConfig(source, "test.toml").warnings;
 
 describe("the example config", () => {
   it("is a config this daemon can load", () => {
@@ -42,7 +45,6 @@ describe("the example config", () => {
       leaseForMs: 300_000,
       batch: 4,
     });
-    expect(config.destinations).toEqual([]);
     expect(config.poolConfig.sweep).toEqual({ grace: 86_400_000 });
     expect(config.poolConfig.sources).toEqual([
       { id: "web-manual", autoRequest: [] },
@@ -102,66 +104,64 @@ describe("what a config may leave out", () => {
   });
 });
 
-describe("destinations", () => {
-  it("resolves the root and takes every payload type when told none", () => {
-    const config = parse(`
-      [[payloadTypes]]
-      name = "text"
-      [payloadTypes.contentSchema]
-      type = "object"
-
-      [[payloadTypes]]
-      name = "image"
-      [payloadTypes.contentSchema]
-      type = "object"
-
+/**
+ * An upgrade or a downgrade must never leave the daemon unable to start over a
+ * block it does not know, and a stale `[[destinations]]` is now exactly that:
+ * destinations moved into the pool, and this file no longer describes them.
+ */
+describe("a key this daemon does not know", () => {
+  it("is ignored, and named so a person can find it", () => {
+    const source = `
       [[destinations]]
       id = "vault"
       kind = "filesystem"
       root = "~/notes"
-    `);
+    `;
 
-    expect(config.destinations).toEqual([
-      {
-        id: "vault",
-        kind: "filesystem",
-        root: join(homedir(), "notes"),
-        accepts: ["text", "image"],
-      },
+    expect(ignored(source)).toEqual(["destinations"]);
+    expect(parse(source).port).toBe(4747);
+  });
+
+  it("names it by its whole path, table and all", () => {
+    expect(ignored(`[daemon]\nprot = 4747`)).toEqual(["daemon.prot"]);
+    expect(ignored(`[mirror]\nroot = "/tmp/m"\nsweep = 1`)).toEqual([
+      "mirror.sweep",
     ]);
   });
 
-  it("narrows to the types it was told, where it was told some", () => {
-    const config = parse(`
-      [[destinations]]
-      id = "vault"
-      kind = "filesystem"
-      root = "/tmp/vault"
-      accepts = ["text"]
-    `);
-
-    expect(config.destinations[0]?.accepts).toEqual(["text"]);
+  it("names one inside a list, by the entry it was in", () => {
+    expect(ignored(`[[sources]]\nid = "web"\nautoTag = ["a"]`)).toEqual([
+      "sources.0.autoTag",
+    ]);
   });
 
-  it("refuses a kind no adapter answers to, rather than skipping it", () => {
-    expect(() =>
-      parse(`
-        [[destinations]]
-        id = "vault"
-        kind = "webdav"
-        root = "/tmp/vault"
-      `),
-    ).toThrow(/kind/);
+  it("names every one of them, rather than stopping at the first", () => {
+    expect(ignored(`[daemon]\nprot = 1\nhostname = "x"`)).toEqual([
+      "daemon.prot",
+      "daemon.hostname",
+    ]);
   });
 
-  it("refuses a destination with no root", () => {
-    expect(() =>
-      parse(`
-        [[destinations]]
-        id = "vault"
-        kind = "filesystem"
-      `),
-    ).toThrow(/root/);
+  /** A schema is open JSON, so nothing in one is a key this daemon could know. */
+  it("leaves a payload type's content schema alone", () => {
+    const source = `
+      [[payloadTypes]]
+      name = "text"
+      [payloadTypes.contentSchema]
+      type = "object"
+      [payloadTypes.contentSchema.properties.text]
+      type = "string"
+    `;
+
+    expect(ignored(source)).toEqual([]);
+    expect(parse(source).poolConfig.payloadTypes[0]?.contentSchema).toEqual({
+      type: "object",
+      properties: { text: { type: "string" } },
+    });
+  });
+
+  it("says nothing about a file it understood entirely", () => {
+    expect(ignored(readFileSync(EXAMPLE, "utf8"))).toEqual([]);
   });
 });
 
@@ -170,8 +170,13 @@ describe("a config the daemon will not run on", () => {
     expect(() => parse("[daemon")).toThrow(/test\.toml is not valid TOML/);
   });
 
-  it("names the key it did not expect", () => {
-    expect(() => parse(`[daemon]\nprot = 4747`)).toThrow(/daemon.*prot/s);
+  /** Dropping it silently would leave a daemon that does not match the file. */
+  it("still refuses a key it knows whose value it cannot honour", () => {
+    expect(() => parse(`[daemon]\nport = "4747"`)).toThrow(/port/);
+  });
+
+  it("refuses that value even where an unknown key sits beside it", () => {
+    expect(() => parse(`[daemon]\nprot = 1\nport = 70000`)).toThrow(/port/);
   });
 
   it("refuses a port that is not one", () => {
