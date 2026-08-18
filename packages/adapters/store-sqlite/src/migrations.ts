@@ -428,6 +428,75 @@ export const MIGRATIONS: readonly string[] = [
   DROP INDEX items_feed;
   CREATE INDEX items_feed ON items (created_at, root_id, revision_depth);
   `,
+
+  `
+  -- Destinations become pool state: a routing record's \`destination\` refers to
+  -- a row rather than into a text file a person can delete a paragraph from.
+  -- \`settings\` is the kind's own JSON, opaque here and to core alike.
+  CREATE TABLE destinations (
+    id          TEXT    NOT NULL PRIMARY KEY,
+    name        TEXT    NOT NULL,
+    kind        TEXT    NOT NULL,
+    settings    TEXT    NOT NULL,
+    retired_at  INTEGER,
+    created_at  INTEGER NOT NULL,
+    modified_at INTEGER NOT NULL
+  ) STRICT;
+
+  CREATE INDEX destinations_created_at ON destinations (created_at, id);
+
+  -- Every destination a record already names, minted so the reference below has
+  -- something to point at. The id becomes the name, and the kind is one nothing
+  -- registers an adapter for: it reports unusable, and the history stays
+  -- readable rather than being dropped for having come from a config file.
+  INSERT INTO destinations
+    (id, name, kind, settings, retired_at, created_at, modified_at)
+    SELECT destination, destination, 'unconfigured', '{}', NULL, MIN(at), MIN(at)
+    FROM routing_records
+    WHERE destination IS NOT NULL
+    GROUP BY destination;
+
+  -- SQLite can add neither a foreign key nor a CHECK in place, so the table is
+  -- rebuilt for the key — and the trigger pair that stood in for the CHECK on
+  -- \`target\` becomes the CHECK it was always meant to be. A destination row
+  -- written before that column existed carried no target, and read as \`{}\`
+  -- everywhere; it is written as \`{}\` here so the constraint can stand.
+  CREATE TABLE routing_records_next (
+    id          TEXT    NOT NULL PRIMARY KEY,
+    item_id     TEXT    NOT NULL REFERENCES items (id) ON DELETE CASCADE,
+    target_kind TEXT    NOT NULL CHECK (target_kind IN ('destination', 'user')),
+    -- RESTRICT rather than CASCADE: a destination a record has ever named can
+    -- never stop resolving, so the in-use refusal is the schema's rather than a
+    -- check the code has to remember.
+    destination TEXT    REFERENCES destinations (id) ON DELETE RESTRICT
+                CHECK ((target_kind = 'destination') = (destination IS NOT NULL)),
+    capability  TEXT    CHECK ((target_kind = 'destination') = (capability IS NOT NULL)),
+    note        TEXT    CHECK (note IS NULL OR target_kind = 'user'),
+    target      TEXT    CHECK ((target_kind = 'destination') = (target IS NOT NULL)),
+    state       TEXT    NOT NULL CHECK (state IN ('pending', 'delivered')),
+    at          INTEGER NOT NULL,
+    pointer     TEXT
+  ) STRICT;
+
+  INSERT INTO routing_records_next
+    (id, item_id, target_kind, destination, capability, note, target, state, at,
+     pointer)
+    SELECT id, item_id, target_kind, destination, capability, note,
+           CASE WHEN target_kind = 'destination' THEN COALESCE(target, '{}') END,
+           state, at, pointer
+    FROM routing_records;
+
+  DROP TABLE routing_records;
+  ALTER TABLE routing_records_next RENAME TO routing_records;
+
+  CREATE INDEX routing_records_item ON routing_records (item_id, at, id);
+
+  -- What "has any routing record ever named this" seeks on, which is both the
+  -- deletion refusal's read and the foreign key's own.
+  CREATE INDEX routing_records_destination
+    ON routing_records (destination)
+    WHERE destination IS NOT NULL;
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

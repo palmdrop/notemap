@@ -14,6 +14,8 @@ import type {
   CapabilityName,
   Clock,
   DestinationId,
+  DestinationKindName,
+  DestinationRecord,
   IdGenerator,
   Item,
   ItemId,
@@ -144,6 +146,40 @@ export function asset(overrides: Partial<Asset> = {}): Asset {
     blob: (overrides.blob ?? "blob-abc") as BlobHash,
     bytes: overrides.bytes ?? 12,
   };
+}
+
+export const VAULT = "vault" as DestinationId;
+
+export function destination(
+  overrides: {
+    id?: string;
+    name?: string;
+    kind?: string;
+    settings?: Record<string, string>;
+    retiredAt?: string;
+    createdAt?: string;
+  } = {},
+): DestinationRecord {
+  return {
+    id: (overrides.id ?? VAULT) as DestinationId,
+    name: overrides.name ?? "Vault",
+    kind: (overrides.kind ?? "filesystem") as DestinationKindName,
+    settings: overrides.settings ?? { root: "~/notes" },
+    ...(overrides.retiredAt === undefined
+      ? {}
+      : { retiredAt: at(overrides.retiredAt) }),
+    createdAt: at(overrides.createdAt ?? "2026-08-03T08:00:00.000Z"),
+  };
+}
+
+/** A foreign key stands under every record naming one, so a destination exists first. */
+export function putDestinations(
+  pool: SqlitePoolStore,
+  ...destinations: readonly DestinationRecord[]
+): Promise<void> {
+  return pool.transaction(async (tx) => {
+    for (const each of destinations) await tx.insertDestination(each);
+  });
 }
 
 /** A foreign key stands under every reference, so a capture's assets exist first. */

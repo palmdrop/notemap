@@ -8,7 +8,10 @@ import type {
   AssetRef,
   BlobHash,
   CapabilityName,
+  Destination,
   DestinationId,
+  DestinationKindName,
+  DestinationRecord,
   EnrichmentName,
   Item,
   ItemId,
@@ -32,6 +35,7 @@ import type {
   AgentColumns,
   AssetRow,
   ChainColumns,
+  DestinationRow,
   ItemAssetRow,
   ItemRow,
   ItemTagRow,
@@ -280,4 +284,34 @@ export function toAction(row: ActionRow): Action {
     at: toTimestamp(row.at),
     detail: parseJson(row.detail),
   };
+}
+
+export function toDestination(row: DestinationRow): Destination {
+  return {
+    id: row.id as DestinationId,
+    name: row.name,
+    kind: row.kind as DestinationKindName,
+    settings: parseJson(row.settings),
+    ...(row.retired_at === null
+      ? {}
+      : { retiredAt: toTimestamp(row.retired_at) }),
+    createdAt: toTimestamp(row.created_at),
+    modifiedAt: toTimestamp(row.modified_at),
+  };
+}
+
+/** The bound parameters for writing a destination, in the order the statements declare. */
+export function destinationParams(
+  record: DestinationRecord,
+  modifiedAt: number,
+): [string, string, string, string, number | null, number, number] {
+  return [
+    record.id,
+    record.name,
+    record.kind,
+    JSON.stringify(record.settings),
+    record.retiredAt === undefined ? null : toMillis(record.retiredAt),
+    toMillis(record.createdAt),
+    modifiedAt,
+  ];
 }

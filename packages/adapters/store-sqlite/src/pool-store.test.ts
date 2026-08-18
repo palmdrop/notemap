@@ -21,10 +21,12 @@ import {
   capture,
   captured,
   deliveryJob,
+  destination,
   frozenClock,
-  putAssets,
   markedProcessed,
   mirrorJob,
+  putAssets,
+  putDestinations,
   reserved,
   revisionOf,
   SCRATCHPAD,
@@ -1219,6 +1221,7 @@ describe("reservations", () => {
   async function reservedItem(overrides: { id?: string } = {}) {
     const opened = pool();
     const record = capture({ id: overrides.id ?? "item-1" });
+    await putDestinations(opened.pool, destination());
     await appendCapture(opened.pool, record);
     const reservation = reserved(record);
     await opened.pool.transaction((tx) => tx.insertRoutingRecord(reservation));

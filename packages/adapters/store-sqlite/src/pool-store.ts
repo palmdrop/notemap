@@ -12,6 +12,9 @@ import type {
   BlobHash,
   ClaimRequest,
   Clock,
+  Destination,
+  DestinationId,
+  DestinationRecord,
   JobResolution,
   JobSubject,
   RoutingRecord,
@@ -41,10 +44,12 @@ import type {
 
 import {
   agentColumns,
+  destinationParams,
   itemParams,
   routingRecordParams,
   toAction,
   toAsset,
+  toDestination,
   toItem,
   toMillis,
   toRoutingRecord,
@@ -56,6 +61,7 @@ import type {
   ActionRow,
   AssetRow,
   ChainColumns,
+  DestinationRow,
   ItemAssetRow,
   ItemRow,
   ItemTagRow,
@@ -92,6 +98,10 @@ const CHAIN_COLUMNS = `root_id, revision_depth`;
 const FEED_KEY = `created_at, root_id, revision_depth`;
 
 const ASSET_COLUMNS = `id, filename, mime, blob, bytes, stored_at`;
+
+const DESTINATION_COLUMNS = `
+  id, name, kind, settings, retired_at, created_at, modified_at
+`;
 
 const ROUTING_COLUMNS = `
   id, item_id, target_kind, destination, capability, note, target, state, at,
@@ -254,6 +264,25 @@ export function createSqlitePoolStore(
   const stillNamed = write.query<{ blob: string }, [string]>(
     `SELECT blob FROM assets WHERE blob = ? LIMIT 1`,
   );
+  const insertDestination = write.query<
+    never,
+    ReturnType<typeof destinationParams>
+  >(`
+    INSERT INTO destinations (${DESTINATION_COLUMNS})
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+  const updateDestination = write.query<
+    never,
+    [string, string, string, number | null, number, number, string]
+  >(`
+    UPDATE destinations
+    SET name = ?, kind = ?, settings = ?, retired_at = ?, created_at = ?,
+        modified_at = ?
+    WHERE id = ?
+  `);
+  const deleteDestination = write.query<never, [string]>(
+    `DELETE FROM destinations WHERE id = ?`,
+  );
   const insertRouting = write.query<
     never,
     ReturnType<typeof routingRecordParams>
@@ -385,6 +414,17 @@ export function createSqlitePoolStore(
     const routingById = source.query<RoutingRecordRow, [string]>(
       `SELECT ${ROUTING_COLUMNS} FROM routing_records WHERE id = ?`,
     );
+    const everyDestination = source.query<DestinationRow, []>(
+      `SELECT ${DESTINATION_COLUMNS} FROM destinations
+       ORDER BY created_at, id`,
+    );
+    const destinationById = source.query<DestinationRow, [string]>(
+      `SELECT ${DESTINATION_COLUMNS} FROM destinations WHERE id = ?`,
+    );
+    /** A reservation counts as much as a delivered record: both name it. */
+    const namedBy = source.query<{ one: number }, [string]>(
+      `SELECT 1 AS one FROM routing_records WHERE destination = ? LIMIT 1`,
+    );
 
     function hydrate(rows: readonly ItemRow[]): Item[] {
       if (rows.length === 0) return [];
@@ -512,6 +552,19 @@ export function createSqlitePoolStore(
         return row === undefined ? undefined : toRoutingRecord(row);
       },
 
+      destinations: async (): Promise<readonly Destination[]> =>
+        everyDestination.all().map(toDestination),
+
+      destination: async (
+        id: DestinationId,
+      ): Promise<Destination | undefined> => {
+        const row = destinationById.get(id);
+        return row === undefined ? undefined : toDestination(row);
+      },
+
+      destinationEverNamed: async (id: DestinationId): Promise<boolean> =>
+        namedBy.get(id) !== undefined,
+
       asset: async (id: AssetId): Promise<Asset | undefined> => {
         const row = assetById.get(id);
         return row === undefined ? undefined : toAsset(row);
@@ -607,6 +660,14 @@ export function createSqlitePoolStore(
   const committed = on(false);
   const uncommitted = on(true);
 
+  async function readDestinationBack(id: DestinationId): Promise<Destination> {
+    const stored = await uncommitted.destination(id);
+    if (stored === undefined) {
+      throw new Error(`no destination ${id} to read back`);
+    }
+    return stored;
+  }
+
   /** Built per transaction, because every method has to consult that transaction's fence. */
   function poolTx(fence: Fence): PoolTx {
     const guard = <A extends unknown[], R>(
@@ -634,6 +695,9 @@ export function createSqlitePoolStore(
       artifacts: guard(uncommitted.artifacts),
       routingRecords: guard(uncommitted.routingRecords),
       routingRecord: guard(uncommitted.routingRecord),
+      destinations: guard(uncommitted.destinations),
+      destination: guard(uncommitted.destination),
+      destinationEverNamed: guard(uncommitted.destinationEverNamed),
       itemBySourceIdentity: guard(uncommitted.itemBySourceIdentity),
       head: guard(uncommitted.head),
       feed: guard(uncommitted.feed),
@@ -729,6 +793,26 @@ export function createSqlitePoolStore(
       removeTag: guard(async (item: ItemId, name: TagName): Promise<Item> => {
         deleteTag.run(item, name);
         return touched(item, "remove a tag from");
+      }),
+
+      insertDestination: guard(
+        async (record: DestinationRecord): Promise<Destination> => {
+          insertDestination.run(...destinationParams(record, nextModifiedAt()));
+          return readDestinationBack(record.id);
+        },
+      ),
+
+      updateDestination: guard(
+        async (record: DestinationRecord): Promise<Destination> => {
+          const [id, ...rest] = destinationParams(record, nextModifiedAt());
+          updateDestination.run(...rest, id);
+          return readDestinationBack(record.id);
+        },
+      ),
+
+      /** The foreign key refuses one a record names, which is the rule itself. */
+      deleteDestination: guard(async (id: DestinationId): Promise<void> => {
+        deleteDestination.run(id);
       }),
 
       insertRoutingRecord: guard(

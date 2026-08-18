@@ -108,6 +108,14 @@ describe("the row types and the migrations agree", () => {
         )
         .run();
 
+      opened.raw
+        .prepare(
+          `INSERT INTO destinations
+             (id, name, kind, settings, created_at, modified_at)
+           VALUES ('vault', 'Vault', 'filesystem', '{}', 1, 1)`,
+        )
+        .run();
+
       const record = opened.raw.prepare(
         `INSERT INTO routing_records
            (id, item_id, target_kind, destination, capability, note, target,
@@ -135,16 +143,91 @@ describe("the row types and the migrations agree", () => {
       ).toThrow(/constraint/i);
       expect(() =>
         record.run("d", "destination", "vault", "create", null, null),
-      ).toThrow(/names what it targeted/);
+      ).toThrow(/constraint/i);
       expect(() =>
         record.run("e", "user", null, null, "where it went", targeted),
-      ).toThrow(/names what it targeted/);
+      ).toThrow(/constraint/i);
       expect(() =>
         record.run("f", "destination", "vault", "create", null, targeted),
       ).not.toThrow();
       expect(() =>
         record.run("g", "user", null, null, "where it went", null),
       ).not.toThrow();
+    } finally {
+      await opened.cleanup();
+    }
+  });
+
+  /**
+   * The in-use refusal is the schema's, not a check core has to remember: a
+   * routing record's destination is a reference, and it must go on resolving.
+   */
+  it("refuses to delete a destination a routing record names", async () => {
+    const opened = store();
+    try {
+      opened.raw.exec("PRAGMA foreign_keys = ON");
+      opened.raw
+        .prepare(
+          `INSERT INTO items (id, source_id, source_item_id, payload_type,
+           payload_content, payload_metadata, created_at, modified_at)
+           VALUES ('item', 'src', 'a', 'text', '{}', '{}', 1, 1)`,
+        )
+        .run();
+      opened.raw
+        .prepare(
+          `INSERT INTO destinations
+             (id, name, kind, settings, created_at, modified_at)
+           VALUES ('vault', 'Vault', 'filesystem', '{}', 1, 1)`,
+        )
+        .run();
+
+      const remove = opened.raw.prepare(
+        "DELETE FROM destinations WHERE id = 'vault'",
+      );
+      expect(() => remove.run()).not.toThrow();
+
+      opened.raw
+        .prepare(
+          `INSERT INTO destinations
+             (id, name, kind, settings, created_at, modified_at)
+           VALUES ('vault', 'Vault', 'filesystem', '{}', 1, 1)`,
+        )
+        .run();
+      opened.raw
+        .prepare(
+          `INSERT INTO routing_records
+             (id, item_id, target_kind, destination, capability, target, state, at)
+           VALUES ('r', 'item', 'destination', 'vault', 'create', '{}', 'pending', 1)`,
+        )
+        .run();
+
+      expect(() => remove.run()).toThrow(/FOREIGN KEY/i);
+    } finally {
+      await opened.cleanup();
+    }
+  });
+
+  it("refuses a record naming a destination the pool does not hold", async () => {
+    const opened = store();
+    try {
+      opened.raw.exec("PRAGMA foreign_keys = ON");
+      opened.raw
+        .prepare(
+          `INSERT INTO items (id, source_id, source_item_id, payload_type,
+           payload_content, payload_metadata, created_at, modified_at)
+           VALUES ('item', 'src', 'a', 'text', '{}', '{}', 1, 1)`,
+        )
+        .run();
+
+      expect(() =>
+        opened.raw
+          .prepare(
+            `INSERT INTO routing_records
+               (id, item_id, target_kind, destination, capability, target, state, at)
+             VALUES ('r', 'item', 'destination', 'ghost', 'create', '{}', 'pending', 1)`,
+          )
+          .run(),
+      ).toThrow(/FOREIGN KEY/i);
     } finally {
       await opened.cleanup();
     }
