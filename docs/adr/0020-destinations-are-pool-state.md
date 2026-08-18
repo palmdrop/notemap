@@ -1,7 +1,8 @@
 # 20. Destinations are pool state; the port is per kind
 
 **Date**: 2026-08-17
-**Status**: Proposed
+**Status**: Accepted — replaces `PoolPorts.destinations` and the `[[destinations]]` block in
+[core.md](../specs/core.md#routing) and [http-v1.md](../specs/http-v1.md)
 **Deciders**: palmdrop, with Claude
 
 ---
