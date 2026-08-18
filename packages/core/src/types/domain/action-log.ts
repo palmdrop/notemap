@@ -18,6 +18,12 @@ export type ActionKind =
   | "routed"
   | "delivery-failed"
   | "delivery-cancelled"
+  | "destination-created"
+  | "destination-renamed"
+  | "destination-reconfigured"
+  | "destination-retired"
+  | "destination-unretired"
+  | "destination-deleted"
   | "enrichment-requested"
   | "work-failed"
   | "work-abandoned"
@@ -28,6 +34,7 @@ export type ActionKind =
 export type Action = {
   readonly id: ActionId;
   readonly kind: ActionKind;
+  /** Absent for work that is not about an item — a destination names itself in `detail`. */
   readonly subject?: ItemId;
   readonly by: Agent;
   readonly at: Timestamp;

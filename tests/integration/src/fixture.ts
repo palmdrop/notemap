@@ -13,7 +13,10 @@ import {
   type BlobStore,
   type CaptureEnvelope,
   type Clock,
-  type DestinationAdapter,
+  type Destination,
+  type DestinationId,
+  type DestinationKindName,
+  type Destinations,
   type Duration,
   type IdGenerator,
   type MintableId,
@@ -123,6 +126,13 @@ const noMirrorWriter: MirrorWriter = {
   remove: () => absent("mirror writer"),
 };
 
+/** A pool that can hold destinations and reach none: nothing speaks any kind. */
+const noDestinations: Destinations = {
+  kinds: () => [],
+  describe: () => absent("destination kind"),
+  deliver: () => absent("destination kind"),
+};
+
 export type Harness = {
   readonly pool: Pool;
   /** Reachable so a test can stand in for a mutation core cannot perform yet. */
@@ -139,7 +149,19 @@ export type Harness = {
   readonly blobOpens: () => number;
   /** Closes this pool and opens another over the same files, as a restart does. */
   readonly reopen: () => Promise<Harness>;
+  /** Writes a destination row, which is what a routing record refers to. */
+  readonly putDestination: (
+    overrides?: DestinationOverrides,
+  ) => Promise<Destination>;
   readonly cleanup: () => Promise<void>;
+};
+
+export type DestinationOverrides = {
+  readonly id?: string;
+  readonly name?: string;
+  readonly kind?: string;
+  readonly settings?: Record<string, string>;
+  readonly retiredAt?: string;
 };
 
 /**
@@ -157,7 +179,7 @@ export type Mirroring = "stub" | "filesystem" | "off";
 export function harness(
   config: PoolConfig = CONFIG,
   mirroring: Mirroring = "stub",
-  destinations: readonly DestinationAdapter[] = [],
+  destinations: Destinations = noDestinations,
 ): Harness {
   return over(
     mkdtempSync(join(tmpdir(), "notemap-integration-")),
@@ -171,7 +193,7 @@ function over(
   directory: string,
   config: PoolConfig,
   mirroring: Mirroring,
-  destinations: readonly DestinationAdapter[],
+  destinations: Destinations,
 ): Harness {
   const file = join(directory, "pool.db");
   const mirrorRoot = join(directory, "pool-mirror");
@@ -230,6 +252,19 @@ function over(
       handedOver = true;
       return over(directory, config, mirroring, destinations);
     },
+    putDestination: (overrides = {}) =>
+      store.transaction((tx) =>
+        tx.insertDestination({
+          id: (overrides.id ?? "vault") as DestinationId,
+          name: overrides.name ?? "Vault",
+          kind: (overrides.kind ?? "fake") as DestinationKindName,
+          settings: overrides.settings ?? {},
+          ...(overrides.retiredAt === undefined
+            ? {}
+            : { retiredAt: at(overrides.retiredAt) }),
+          createdAt: clock.now(),
+        }),
+      ),
     cleanup: async () => {
       await pool.close();
       if (handedOver) return;
@@ -382,7 +417,7 @@ export function drainWith(
  * What a host driving delivery work does: claim, ask core what the delivery is
  * now, hand it to the destination, report what it answered.
  */
-export function deliverWith(harnessed: Harness, adapter: DestinationAdapter) {
+export function deliverWith(harnessed: Harness, destinations: Destinations) {
   return async (): Promise<number> => {
     const attempted = new Set<string>();
     let resolved = 0;
@@ -407,14 +442,26 @@ export function deliverWith(harnessed: Harness, adapter: DestinationAdapter) {
           throw new Error("expected work about a delivery");
         }
 
-        const delivery = await harnessed.pool.routing.deliveryFor(
+        const attemptable = await harnessed.pool.routing.deliveryFor(
           subject.record,
         );
         // Nothing left to carry out: the record was cancelled, or its item went.
+        // Unusable is proof nothing was delivered, so it carries on the same
+        // terms as unreachable rather than being an outcome of its own.
         const outcome: WorkOutcome =
-          delivery === undefined
+          attemptable === undefined
             ? { kind: "succeeded" }
-            : asDeliveryWorkOutcome(await adapter.deliver(delivery));
+            : attemptable.kind === "unusable"
+              ? asDeliveryWorkOutcome({
+                  kind: "unreachable",
+                  detail: attemptable.detail,
+                })
+              : asDeliveryWorkOutcome(
+                  await destinations.deliver(
+                    attemptable.destination,
+                    attemptable.delivery,
+                  ),
+                );
 
         await harnessed.pool.work.complete(lease.id, outcome);
         resolved += 1;

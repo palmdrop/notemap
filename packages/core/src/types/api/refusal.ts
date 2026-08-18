@@ -6,6 +6,7 @@ import type {
   BlobHash,
   CapabilityName,
   DestinationId,
+  DestinationKindName,
   EnrichmentName,
   ItemId,
   LeaseId,
@@ -85,6 +86,48 @@ export type ArtifactRefusal = {
   readonly artifact: ArtifactId;
 };
 
+/** Every way a destination can be refused before anything is attempted. */
+export type DestinationRefusal =
+  | {
+      readonly kind: "unknown-destination";
+      readonly destination: DestinationId;
+    }
+  | {
+      readonly kind: "unknown-destination-kind";
+      readonly destinationKind: DestinationKindName;
+    }
+  | {
+      readonly kind: "invalid-destination-settings";
+      readonly issues: readonly SchemaIssue[];
+    };
+
+/** Retirement carries the instant it happened, which a second one would overwrite. */
+export type RetireRefusal =
+  | {
+      readonly kind: "unknown-destination";
+      readonly destination: DestinationId;
+    }
+  | {
+      readonly kind: "already-retired";
+      readonly destination: DestinationId;
+      readonly at: Timestamp;
+    }
+  | { readonly kind: "not-retired"; readonly destination: DestinationId };
+
+/**
+ * Retiring is what removal means for a destination a record has ever named, so
+ * the refusal names the destination the caller should retire instead.
+ */
+export type DestinationDeletionRefusal =
+  | {
+      readonly kind: "unknown-destination";
+      readonly destination: DestinationId;
+    }
+  | {
+      readonly kind: "destination-in-use";
+      readonly destination: DestinationId;
+    };
+
 export type PreparationRefusal =
   | SubjectRefusal
   | {
@@ -103,6 +146,15 @@ export type PreparationRefusal =
   | {
       readonly kind: "target-invalid";
       readonly issues: readonly SchemaIssue[];
+    }
+  | {
+      readonly kind: "destination-retired";
+      readonly destination: DestinationId;
+    }
+  | {
+      readonly kind: "destination-unusable";
+      readonly destination: DestinationId;
+      readonly detail: string;
     };
 
 /**

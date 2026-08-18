@@ -4,10 +4,17 @@ import type { Action } from "../domain/action-log";
 import type { Agent } from "../domain/agent";
 import type { Asset, AssetMeta, BlobIntegrity } from "../domain/asset";
 import type { CaptureEnvelope, CaptureOutcome } from "../domain/capture";
+import type {
+  Destination,
+  DestinationDraft,
+  DestinationKind,
+  DestinationReport,
+} from "../domain/destination";
 import type { Artifact, EnrichmentStatus } from "../domain/enrichment";
 import type {
   ArtifactId,
   AssetId,
+  DestinationId,
   Duration,
   EnrichmentName,
   ItemId,
@@ -22,9 +29,8 @@ import type { MirrorRecord } from "../domain/mirror";
 import type { Payload } from "../domain/payload";
 import type { AbandonedPosition } from "../domain/position";
 import type {
-  Delivery,
+  AttemptableDelivery,
   DeliveryRequest,
-  DestinationReport,
   RoutingRecord,
 } from "../domain/routing";
 import type { Suggestion } from "../domain/suggestion";
@@ -45,10 +51,13 @@ import type {
   CancelRefusal,
   CompletionRefusal,
   DeliveryRefusal,
+  DestinationDeletionRefusal,
+  DestinationRefusal,
   EditRefusal,
   EnrichmentRefusal,
   LeaseRefusal,
   PurgeRefusal,
+  RetireRefusal,
   RoutingRefusal,
   SuggestionRefusal,
   TagRefusal,
@@ -94,8 +103,42 @@ export interface EnrichmentApi {
   ): Promise<Result<Artifact, ArtifactRefusal>>;
 }
 
+/**
+ * Destinations are pool state, so this is a lifecycle rather than a read of
+ * configuration. `list` is a read of the pool — instant, and it probes nothing;
+ * `describe` is the one call that reaches the outside world.
+ */
+export interface DestinationsApi {
+  /** Retired ones included: a record may still name one. */
+  list(): Promise<readonly Destination[]>;
+  /** Absent means no destination has that id. */
+  describe(
+    id: DestinationId,
+    signal?: AbortSignal,
+  ): Promise<DestinationReport | undefined>;
+  /** Every kind the host wired an adapter for, with the schema its settings must satisfy. */
+  kinds(): readonly DestinationKind[];
+
+  create(
+    draft: DestinationDraft,
+  ): Promise<Result<Destination, DestinationRefusal>>;
+  rename(
+    id: DestinationId,
+    name: string,
+  ): Promise<Result<Destination, DestinationRefusal>>;
+  reconfigure(
+    id: DestinationId,
+    settings: JsonObject,
+  ): Promise<Result<Destination, DestinationRefusal>>;
+
+  retire(id: DestinationId): Promise<Result<Destination, RetireRefusal>>;
+  unretire(id: DestinationId): Promise<Result<Destination, RetireRefusal>>;
+
+  /** Allowed only where no routing record has ever named it. */
+  delete(id: DestinationId): Promise<Result<void, DestinationDeletionRefusal>>;
+}
+
 export interface RoutingApi {
-  destinations(signal?: AbortSignal): Promise<readonly DestinationReport[]>;
   /** The record it answers may be pending: read the state rather than reading a record as arrival. */
   route(
     item: ItemId,
@@ -103,8 +146,14 @@ export interface RoutingApi {
     /** Bounds the one inline attempt. Core imposes no timeout of its own. */
     signal?: AbortSignal,
   ): Promise<Result<RoutingRecord, DeliveryRefusal>>;
-  /** Projected on demand rather than handed over as a snapshot, so what leaves is the item as it now stands. */
-  deliveryFor(record: RoutingRecordId): Promise<Delivery | undefined>;
+  /**
+   * Projected on demand rather than handed over as a snapshot, so what leaves
+   * is the item as it now stands and the destination as it now is. Absent where
+   * there is nothing left to carry out.
+   */
+  deliveryFor(
+    record: RoutingRecordId,
+  ): Promise<AttemptableDelivery | undefined>;
   /** Returns the item to the queue. */
   cancelDelivery(record: RoutingRecordId): Promise<Result<void, CancelRefusal>>;
   markProcessed(
@@ -191,6 +240,7 @@ export interface Pool {
   readonly views: ViewsApi;
   readonly suggestions: SuggestionsApi;
   readonly enrichment: EnrichmentApi;
+  readonly destinations: DestinationsApi;
   readonly routing: RoutingApi;
   readonly assets: AssetsApi;
   readonly work: WorkApi;

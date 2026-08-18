@@ -12,6 +12,7 @@ import type {
   Page,
   RoutingRecord,
 } from "@notemap/core";
+import { destinationRegistry } from "@notemap/core";
 import {
   createFilesystemDestination,
   type Renderers,
@@ -63,17 +64,19 @@ function vault(): { readonly root: string } {
   return { root: join(directory, "vault") };
 }
 
-/** A pool wired to a real folder on disk, mirroring for real as well. */
-function pooled(root: string): Harness {
-  const opened = harness(undefined, "filesystem", [
-    createFilesystemDestination({
-      id: VAULT,
-      root,
-      accepts: [TEXT, NOTE],
-      renderers,
-    }),
-  ]);
+const FILESYSTEM = destinationRegistry([
+  createFilesystemDestination({ renderers, accepts: [TEXT, NOTE] }),
+]);
+
+/** A pool holding one destination that is a real folder on disk, mirroring for real as well. */
+async function pooled(root: string): Promise<Harness> {
+  const opened = harness(undefined, "filesystem", FILESYSTEM);
   open.push(opened.cleanup);
+  await opened.putDestination({
+    id: VAULT,
+    kind: "filesystem",
+    settings: { root },
+  });
   return opened;
 }
 
@@ -111,7 +114,7 @@ describe("a capture leaving for a folder on disk", () => {
     const { root } = vault();
     await mkdir(root, { recursive: true });
 
-    const opened = pooled(root);
+    const opened = await pooled(root);
     const drain = drainWith(opened);
 
     const picture = await upload(opened.pool, "photo.png", bytes("PNG-BYTES"));
@@ -183,7 +186,7 @@ describe("a capture leaving for a folder on disk", () => {
     const { root } = vault();
     await mkdir(root, { recursive: true });
 
-    const opened = pooled(root);
+    const opened = await pooled(root);
     const picture = await upload(opened.pool, "photo.png", bytes("PNG-BYTES"));
     const item = await captured(opened, {
       id: "item-image" as ItemId,
@@ -214,16 +217,8 @@ describe("a vault that cannot be written, and then can", () => {
     await chmod(root, 0o500);
     open.push(() => chmod(root, 0o700));
 
-    const opened = pooled(root);
-    const deliver = deliverWith(
-      opened,
-      createFilesystemDestination({
-        id: VAULT,
-        root,
-        accepts: [TEXT, NOTE],
-        renderers,
-      }),
-    );
+    const opened = await pooled(root);
+    const deliver = deliverWith(opened, FILESYSTEM);
 
     const item = await captured(opened, envelope({ id: "item-1" }));
     const record = await route(opened, item, {

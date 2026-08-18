@@ -2,8 +2,8 @@ import { DatabaseSync } from "node:sqlite";
 
 import type {
   CapabilityName,
-  DestinationAdapter,
   DestinationId,
+  Destinations,
   Duration,
   Item,
   ItemId,
@@ -11,7 +11,11 @@ import type {
   Pool,
   RoutingRecordId,
 } from "@notemap/core";
-import { fakeCapability, fakeDestination } from "@notemap/core/testing";
+import {
+  fakeCapability,
+  fakeDestinations,
+  fakeKind,
+} from "@notemap/core/testing";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
@@ -41,20 +45,39 @@ afterEach(async () => {
   await Promise.all(open.splice(0).map((it) => it.cleanup()));
 });
 
-/** A pool wired with one destination that answers whatever the test tells it to. */
-function pooled(
-  options: Parameters<typeof fakeDestination>[0] = {},
+const CAPABILITIES = [
+  fakeCapability({ name: "create-note", targetSchema: PATH_SCHEMA }),
+];
+
+/**
+ * A pool holding one destination, whose kind answers whatever the test tells it
+ * to. The row is written first: a routing record refers to it.
+ */
+async function pooled(
+  options: Parameters<typeof fakeDestinations>[0] = {},
   mirroring: Parameters<typeof harness>[1] = "stub",
 ) {
-  const destination = fakeDestination({
-    capabilities: [
-      fakeCapability({ name: "create-note", targetSchema: PATH_SCHEMA }),
-    ],
+  const destination = fakeDestinations({
+    capabilities: CAPABILITIES,
     ...options,
   });
-  const opened = harness(undefined, mirroring, [destination]);
+  const opened = harness(undefined, mirroring, destination);
   open.push(opened);
+  await opened.putDestination({ id: VAULT });
   return { ...opened, destination };
+}
+
+/** A pool holding one destination whose kind the test wrote by hand. */
+async function pooledWith(kind: Partial<Destinations>) {
+  const opened = harness(undefined, "stub", {
+    kinds: () => [fakeKind()],
+    describe: () => Promise.resolve({ capabilities: CAPABILITIES }),
+    deliver: () => Promise.resolve(DELIVERED),
+    ...kind,
+  });
+  open.push(opened);
+  await opened.putDestination({ id: VAULT });
+  return opened;
 }
 
 function captured(result: Awaited<ReturnType<Pool["capture"]>>): Item {
@@ -98,7 +121,7 @@ const UNREACHABLE = { kind: "unreachable", detail: "ECONNREFUSED" } as const;
 
 describe("routing to a destination that is up", () => {
   it("answers a delivered record with its pointer, and enqueues no delivery job", async () => {
-    const opened = pooled();
+    const opened = await pooled();
     const { pool } = opened;
     opened.destination.answers(DELIVERED);
     const item = await capture(pool);
@@ -121,7 +144,7 @@ describe("routing to a destination that is up", () => {
   });
 
   it("hands the destination everything durable about the item", async () => {
-    const opened = pooled();
+    const opened = await pooled();
     const { pool } = opened;
     const item = await capture(pool);
 
@@ -143,7 +166,7 @@ describe("routing to a destination that is up", () => {
   });
 
   it("records the routing in the log and owes the mirror a write", async () => {
-    const opened = pooled(undefined, "filesystem");
+    const opened = await pooled(undefined, "filesystem");
     const { pool } = opened;
     const item = await capture(pool);
     await drainWith(opened)();
@@ -166,7 +189,7 @@ describe("routing to a destination that is up", () => {
 
 describe("routing to a destination that refuses", () => {
   it("refuses the call, writes no record, and leaves the item in the queue", async () => {
-    const opened = pooled();
+    const opened = await pooled();
     const { pool } = opened;
     opened.destination.answers({ kind: "rejected", detail: "not a vault" });
     const item = await capture(pool);
@@ -182,7 +205,7 @@ describe("routing to a destination that refuses", () => {
   });
 
   it("leaves the failed attempt in the log", async () => {
-    const opened = pooled();
+    const opened = await pooled();
     const { pool } = opened;
     opened.destination.answers({ kind: "rejected", detail: "not a vault" });
     const item = await capture(pool);
@@ -205,7 +228,7 @@ describe("routing to a destination that refuses", () => {
 
 describe("routing to a destination that could not be reached", () => {
   it("answers a pending record, takes the item out of the queue, and enqueues a job", async () => {
-    const opened = pooled({ answer: UNREACHABLE });
+    const opened = await pooled({ answer: UNREACHABLE });
     const { pool } = opened;
     const item = await capture(pool);
 
@@ -226,7 +249,7 @@ describe("routing to a destination that could not be reached", () => {
   });
 
   it("owes the mirror nothing, since a reservation is not durable state", async () => {
-    const opened = pooled({ answer: UNREACHABLE }, "filesystem");
+    const opened = await pooled({ answer: UNREACHABLE }, "filesystem");
     const { pool } = opened;
     const item = await capture(pool);
     await drainWith(opened)();
@@ -240,7 +263,7 @@ describe("routing to a destination that could not be reached", () => {
 
 describe("what routing refuses before it attempts anything", () => {
   it("a destination nothing is wired as", async () => {
-    const { pool, destination } = pooled();
+    const { pool, destination } = await pooled();
     const item = await capture(pool);
 
     const refusal = await pool.routing.route(item, {
@@ -255,7 +278,7 @@ describe("what routing refuses before it attempts anything", () => {
   });
 
   it("a capability the destination never declared", async () => {
-    const { pool } = pooled();
+    const { pool } = await pooled();
     const item = await capture(pool);
 
     expect(
@@ -269,7 +292,7 @@ describe("what routing refuses before it attempts anything", () => {
   });
 
   it("a payload type the capability does not accept", async () => {
-    const { pool } = pooled({
+    const { pool } = await pooled({
       capabilities: [
         fakeCapability({
           name: "create-note",
@@ -290,7 +313,7 @@ describe("what routing refuses before it attempts anything", () => {
   });
 
   it("a target its capability's schema rejects", async () => {
-    const { pool, destination } = pooled();
+    const { pool, destination } = await pooled();
     const item = await capture(pool);
 
     const refusal = await pool.routing.route(item, {
@@ -303,7 +326,7 @@ describe("what routing refuses before it attempts anything", () => {
   });
 
   it("an id no item has", async () => {
-    const { pool } = pooled();
+    const { pool } = await pooled();
 
     expect(
       await pool.routing.route("nobody" as ItemId, request()),
@@ -318,29 +341,25 @@ describe("what routing refuses before it attempts anything", () => {
  * and the log carries no foreign key precisely so it outlives what it describes.
  */
 describe("a destination that cannot say what it can do", () => {
-  const undescribable: DestinationAdapter = {
-    id: VAULT,
+  const undescribable = {
     describe: () => Promise.reject(new Error("the board is not answering")),
-    deliver: () => Promise.resolve(DELIVERED),
   };
 
-  it("is listed as undescribable rather than dropped from the list", async () => {
-    const opened = harness(undefined, "stub", [undescribable]);
-    open.push(opened);
+  it("is reported as undescribable rather than dropped from the list", async () => {
+    const opened = await pooledWith(undescribable);
 
     // Missing and unreachable are different answers to somebody looking for it.
-    expect(await opened.pool.routing.destinations()).toEqual([
-      {
-        kind: "undescribable",
-        id: VAULT,
-        detail: "the board is not answering",
-      },
-    ]);
+    expect(
+      (await opened.pool.destinations.list()).map((each) => each.id),
+    ).toEqual([VAULT]);
+    expect(await opened.pool.destinations.describe(VAULT)).toEqual({
+      kind: "undescribable",
+      detail: "the board is not answering",
+    });
   });
 
   it("refuses a route to it, since no target can be checked against nothing", async () => {
-    const opened = harness(undefined, "stub", [undescribable]);
-    open.push(opened);
+    const opened = await pooledWith(undescribable);
     const item = await capture(opened.pool);
 
     const outcome = await opened.pool.routing.route(item, request());
@@ -359,23 +378,12 @@ describe("an item purged while its delivery was in flight", () => {
     // Purge is not built, so the item goes the way a purge would take it —
     // and it goes *during* the attempt, which is the whole of the race.
     let purge = (): void => {};
-    const adapter: DestinationAdapter = {
-      id: VAULT,
-      describe: () =>
-        Promise.resolve({
-          id: VAULT,
-          capabilities: [
-            fakeCapability({ name: "create-note", targetSchema: PATH_SCHEMA }),
-          ],
-        }),
+    const opened = await pooledWith({
       deliver: async () => {
         purge();
         return DELIVERED;
       },
-    };
-
-    const opened = harness(undefined, "stub", [adapter]);
-    open.push(opened);
+    });
     const item = await capture(opened.pool);
     purge = () => removeItem(opened.file, item);
 
@@ -400,7 +408,7 @@ describe("an item purged while its delivery was in flight", () => {
  */
 describe("an inline attempt that never answers", () => {
   it("refuses as unknown, writes no record, and leaves the item in the queue", async () => {
-    const opened = pooled({ answer: { kind: "hang" } });
+    const opened = await pooled({ answer: { kind: "hang" } });
     const item = await capture(opened.pool);
     const bounded = AbortSignal.abort();
 
@@ -414,7 +422,7 @@ describe("an inline attempt that never answers", () => {
   });
 
   it("leaves the attempt on the log, under the code that warrants a check", async () => {
-    const opened = pooled({ answer: { kind: "hang" } });
+    const opened = await pooled({ answer: { kind: "hang" } });
     const item = await capture(opened.pool);
 
     // Aborted while waiting, rather than before: the other way a host bounds it.
@@ -434,7 +442,7 @@ describe("an inline attempt that never answers", () => {
   });
 
   it("enqueues nothing, so no machinery hands the destination a second copy", async () => {
-    const opened = pooled({ answer: { kind: "hang" } });
+    const opened = await pooled({ answer: { kind: "hang" } });
     const item = await capture(opened.pool);
 
     await opened.pool.routing.route(item, request(), AbortSignal.abort());
@@ -446,21 +454,11 @@ describe("an inline attempt that never answers", () => {
 
   /** An adapter that throws is the same unknown: core cannot see how far it got. */
   it("treats an adapter that throws the same way, carrying its message", async () => {
-    const throwing: DestinationAdapter = {
-      id: VAULT,
-      describe: () =>
-        Promise.resolve({
-          id: VAULT,
-          capabilities: [
-            fakeCapability({ name: "create-note", targetSchema: PATH_SCHEMA }),
-          ],
-        }),
+    const opened = await pooledWith({
       deliver: () => {
         throw new Error("socket closed mid-write");
       },
-    };
-    const opened = harness(undefined, "stub", [throwing]);
-    open.push(opened);
+    });
     const item = await capture(opened.pool);
 
     expect(await opened.pool.routing.route(item, request())).toEqual({
@@ -475,7 +473,7 @@ describe("an inline attempt that never answers", () => {
 
 describe("cancelling a delivery", () => {
   async function pending() {
-    const opened = pooled({ answer: UNREACHABLE });
+    const opened = await pooled({ answer: UNREACHABLE });
     const item = await capture(opened.pool);
     const record = succeeded(await opened.pool.routing.route(item, request()));
     return { ...opened, item, record };
@@ -517,7 +515,7 @@ describe("cancelling a delivery", () => {
   });
 
   it("refuses a record that already delivered, which is not a promise to break", async () => {
-    const opened = pooled();
+    const opened = await pooled();
     const { pool } = opened;
     const item = await capture(pool);
     const record = succeeded(await pool.routing.route(item, request()));
@@ -529,7 +527,7 @@ describe("cancelling a delivery", () => {
   });
 
   it("refuses a record no decision minted", async () => {
-    const { pool } = pooled();
+    const { pool } = await pooled();
 
     expect(
       await pool.routing.cancelDelivery("nobody" as RoutingRecordId),
@@ -555,7 +553,7 @@ describe("the assets a delivery carries", () => {
   };
 
   async function withAssets(reads: boolean) {
-    const opened = pooled({
+    const opened = await pooled({
       reads,
       capabilities: [
         fakeCapability({

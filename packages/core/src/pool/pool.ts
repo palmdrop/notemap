@@ -5,6 +5,7 @@ import type { OrderedPage, PageRequest, ReadOrder } from "../types/result";
 
 import * as archive from "./archive";
 import * as assets from "./assets";
+import * as destinations from "./destinations";
 import { capture } from "./capture";
 import { edit } from "./edit";
 import * as maintenance from "./maintenance";
@@ -30,7 +31,6 @@ function ordered<P>(page: PageRequest<P>, fallback: ReadOrder): OrderedPage<P> {
 
 export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
   const { store } = ports;
-  const destinations = routing.indexDestinations(ports.destinations);
 
   return {
     capture: (envelope) => capture(config, ports, envelope),
@@ -64,10 +64,22 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
       correct: notImplemented("enrichment.correct"),
     },
 
+    destinations: {
+      list: () => destinations.list(ports),
+      describe: (id, signal) => destinations.describe(ports, id, signal),
+      kinds: () => ports.destinations.kinds(),
+      create: (draft) => destinations.create(ports, draft),
+      rename: (id, name) => destinations.rename(ports, id, name),
+      reconfigure: (id, settings) =>
+        destinations.reconfigure(ports, id, settings),
+      retire: (id) => destinations.retire(ports, id),
+      unretire: (id) => destinations.unretire(ports, id),
+      delete: (id) => destinations.remove(ports, id),
+    },
+
     routing: {
-      destinations: () => routing.destinations(destinations),
       route: (item, delivery, signal) =>
-        routing.route(ports, destinations, item, delivery, signal),
+        routing.route(ports, item, delivery, signal),
       deliveryFor: (record) => routing.deliveryFor(ports, record),
       cancelDelivery: (record) => routing.cancelDelivery(ports, record),
       markProcessed: (item, note) => routing.markProcessed(ports, item, note),
