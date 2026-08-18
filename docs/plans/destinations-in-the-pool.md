@@ -1,7 +1,7 @@
 # Destinations in the pool
 
 **Date**: 2026-08-17
-**Status**: Todo
+**Status**: In progress
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/mirror.md`, `docs/specs/client.md`
 **Closed**:
 
@@ -23,93 +23,93 @@ start. Decided in [ADR 20](../adr/0020-destinations-are-pool-state.md).
 
 Depends on nothing. The rest of the plan depends on this.
 
-- [ ] Branch `agent/destinations-in-the-pool` (already carries the ADR and the spec edits)
-- [ ] `Destination` in `types/domain`: id, name, kind, settings, `retiredAt`, timestamps.
+- [x] Branch `agent/destinations-in-the-pool` (already carries the ADR and the spec edits)
+- [x] `Destination` in `types/domain`: id, name, kind, settings, `retiredAt`, timestamps.
       `DestinationId` joins `MintableId`; `DestinationKindName` is a new brand
-- [ ] Replace `PoolPorts.destinations` with a `Destinations` port — `kinds()`,
+- [x] Replace `PoolPorts.destinations` with a `Destinations` port — `kinds()`,
       `describe(destination, signal?)`, `deliver(destination, delivery, signal?)`. Delete
       `DestinationAdapter`, `indexDestinations` and its duplicate-id throw
-- [ ] `DestinationKind` descriptor: name plus `settingsSchema`, validated through the existing
+- [x] `DestinationKind` descriptor: name plus `settingsSchema`, validated through the existing
       `SchemaValidator` on create and on edit, refused with the schema issues
-- [ ] `DestinationReport` gains `unusable` beside `described` and `undescribable`: no adapter for
+- [x] `DestinationReport` gains `unusable` beside `described` and `undescribable`: no adapter for
       the kind, or settings that no longer satisfy its schema
-- [ ] Pool API: `destinations.list()`, `create`, `rename`, `reconfigure`, `retire`, `unretire`,
+- [x] Pool API: `destinations.list()`, `create`, `rename`, `reconfigure`, `retire`, `unretire`,
       `delete`, `describe(id)`. Every mutation appends an action and returns a result that may
       refuse
-- [ ] `route` resolves the destination by id and refuses `destination-retired` and
+- [x] `route` resolves the destination by id and refuses `destination-retired` and
       `destination-unusable`; `delete` refuses `destination-in-use`
-- [ ] Store port: the destination reads and writes, and "has any routing record ever named this"
-- [ ] Delivery jobs resolve the destination row when they run, and treat unusable as proof nothing
+- [x] Store port: the destination reads and writes, and "has any routing record ever named this"
+- [x] Delivery jobs resolve the destination row when they run, and treat unusable as proof nothing
       was delivered — retried on `unreachable` terms, bounded, then abandoned
-- [ ] Tests: a fake kind registry in `core/src/testing`, covering settings refusal, unusable
+- [x] Tests: a fake kind registry in `core/src/testing`, covering settings refusal, unusable
       reporting, retire leaving a pending delivery alone, delete refused when referenced
-- [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
+- [x] `git commit`
 
 ### Phase 2 — the table (store-sqlite)
 
 Depends on phase 1's store port.
 
-- [ ] Migration: `destinations` table, unique id, `retired_at` nullable, settings as JSON text
-- [ ] Migration: `routing_records.destination` becomes a foreign key with `ON DELETE RESTRICT`, so
+- [x] Migration: `destinations` table, unique id, `retired_at` nullable, settings as JSON text
+- [x] Migration: `routing_records.destination` becomes a foreign key with `ON DELETE RESTRICT`, so
       the in-use refusal is the schema's rather than a check the code has to remember. See the
       unknown below about existing rows
-- [ ] Statements and row mapping for the new reads and writes
-- [ ] Tests beside the driver, including that deleting a referenced destination is refused by the
+- [x] Statements and row mapping for the new reads and writes
+- [x] Tests beside the driver, including that deleting a referenced destination is refused by the
       database and not only by core
-- [ ] Verify: `pnpm -r --silent test`; open a scratch pool and confirm `PRAGMA foreign_key_check`
+- [x] Verify: `pnpm -r --silent test`; open a scratch pool and confirm `PRAGMA foreign_key_check`
       is clean after a route
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 3 — the filesystem kind (destination-fs)
 
 Depends on phase 1's port shape. Independent of phase 2.
 
-- [ ] `createFilesystemDestination(config)` becomes a kind module: no id, no construction, a
+- [x] `createFilesystemDestination(config)` becomes a kind module: no id, no construction, a
       `settingsSchema` for `root` and `accepts`, and `describe`/`deliver` taking the destination
-- [ ] `accepts` moves from adapter construction into the kind's settings; capabilities are
+- [x] `accepts` moves from adapter construction into the kind's settings; capabilities are
       computed from the destination it is handed
-- [ ] Renderers stay wired by the host, since they are not a person's setting
-- [ ] Tests: the existing suite, re-pointed at the new signatures, plus settings that fail the
+- [x] Renderers stay wired by the host, since they are not a person's setting
+- [x] Tests: the existing suite, re-pointed at the new signatures, plus settings that fail the
       schema
-- [ ] Verify: `pnpm -r --silent test`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`
+- [x] `git commit`
 
 ### Phase 4 — wiring and configuration (daemon)
 
 Depends on phases 1–3.
 
-- [ ] `ports.ts` registers the kind registry — one adapter per kind — and stops mapping config into
+- [x] `ports.ts` registers the kind registry — one adapter per kind — and stops mapping config into
       adapters; `adapterFor` goes
-- [ ] `config/load.ts`: `destinations` leaves the schema and `DestinationConfig` goes
-- [ ] Unknown keys and tables warn by name at startup and are ignored; a recognised key with a bad
+- [x] `config/load.ts`: `destinations` leaves the schema and `DestinationConfig` goes
+- [x] Unknown keys and tables warn by name at startup and are ignored; a recognised key with a bad
       value still refuses. `strictObject` becomes a strip with a report of what it stripped
-- [ ] `config.example.toml`: the destinations block goes, replaced by a line saying where they live
+- [x] `config.example.toml`: the destinations block goes, replaced by a line saying where they live
       now; the delivery table stays
-- [ ] Startup log names the destinations the pool holds, not the ones config wired
-- [ ] Tests: config tests for the warning path and for a bad value still failing
-- [ ] Verify: `pnpm -r --silent test`; start the daemon against a config carrying a stale
+- [x] Startup log names the destinations the pool holds, not the ones config wired
+- [x] Tests: config tests for the warning path and for a bad value still failing
+- [x] Verify: `pnpm -r --silent test`; start the daemon against a config carrying a stale
       `[[destinations]]` block and see it start with a warning
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 5 — the wire (daemon routes, OpenAPI)
 
 Depends on phase 4.
 
-- [ ] `GET /v1/destinations` answers declarations from the pool — instant, unpaginated, retired
+- [x] `GET /v1/destinations` answers declarations from the pool — instant, unpaginated, retired
       ones included
-- [ ] `GET /v1/destinations/{id}/description` probes one and answers described, undescribable or
+- [x] `GET /v1/destinations/{id}/description` probes one and answers described, undescribable or
       unusable
-- [ ] `POST /v1/destinations`, `PATCH /v1/destinations/{id}`, `POST .../retire`, `POST
+- [x] `POST /v1/destinations`, `PATCH /v1/destinations/{id}`, `POST .../retire`, `POST
       .../unretire`, `DELETE /v1/destinations/{id}`
-- [ ] `GET /v1/destination-kinds` publishes each kind's `settingsSchema`
-- [ ] Refusal table: `destination-in-use` at `409`, `unknown-destination-kind` and
+- [x] `GET /v1/destination-kinds` publishes each kind's `settingsSchema`
+- [x] Refusal table: `destination-in-use` at `409`, `unknown-destination-kind` and
       `invalid-destination-settings` at `422`, `destination-retired` and `destination-unusable`
       where `route` refuses them
-- [ ] Regenerate `apps/daemon/openapi.json`
-- [ ] Tests beside the routes, including that listing destinations makes no adapter call
-- [ ] Verify: `pnpm -r --silent test`; the `/docs` playground drives create → route → retire
-- [ ] `git commit`
+- [x] Regenerate `apps/daemon/openapi.json`
+- [x] Tests beside the routes, including that listing destinations makes no adapter call
+- [x] Verify: `pnpm -r --silent test`; the `/docs` playground drives create → route → retire
+- [x] `git commit`
 
 ### Phase 6 — the mirror
 

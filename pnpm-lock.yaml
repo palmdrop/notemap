@@ -361,6 +361,9 @@ importers:
         specifier: ^5.2.3
         version: 5.2.3
     devDependencies:
+      '@notemap/schema-ajv':
+        specifier: workspace:*
+        version: link:../schema-ajv
       '@types/node':
         specifier: ^24.10.1
         version: 24.13.3

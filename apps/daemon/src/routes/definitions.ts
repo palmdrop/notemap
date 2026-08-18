@@ -10,8 +10,11 @@ import {
   CAPTURE_STATUS,
   codesFor,
   DELIVERY_STATUS,
+  DESTINATION_DELETION_STATUS,
+  DESTINATION_STATUS,
   EDIT_STATUS,
   PARAMETER_STATUS,
+  RETIRE_STATUS,
   ROUTING_STATUS,
   SUBJECT_STATUS,
   TAG_STATUS,
@@ -22,6 +25,14 @@ import {
   archiveRequestSchema,
   unarchiveRequestSchema,
 } from "../schemas/archive";
+import {
+  createDestinationRequestSchema,
+  destinationDescriptionSchema,
+  destinationKindsSchema,
+  destinationSchema,
+  destinationsSchema,
+  updateDestinationRequestSchema,
+} from "../schemas/destination";
 import { captureEnvelopeSchema } from "../schemas/envelope";
 import { errorSchema } from "../schemas/error";
 import {
@@ -33,7 +44,6 @@ import {
   itemSliceSchema,
 } from "../schemas/item";
 import {
-  destinationsSchema,
   markProcessedRequestSchema,
   routeRequestSchema,
   routingRecordSchema,
@@ -458,17 +468,180 @@ export const routingRecordsRoute = createRoute({
   },
 });
 
+const destinationId = z.object({
+  id: z.string().openapi({ param: { name: "id", in: "path" } }),
+});
+
 export const destinationsRoute = createRoute({
   method: "get",
   path: "/v1/destinations",
-  summary: "Read the configured destinations",
+  summary: "Read the destinations the pool holds",
   description:
-    "What each wired destination declares it can do. Core holds no list of capabilities of its own, so this is the adapters' own answer. `targetSchema` is JSON Schema and is the whole of what a client needs to build a `target`.",
+    "A read of pool state: it answers at once, cannot fail, and probes nothing. Retired ones are listed, since a routing record may still name one. Not paginated: there are as many destinations as a person made. Which destinations exist is **not** stable for the life of a connection — a client re-reads rather than caching for the session.",
   responses: {
     200: {
-      description: "Every destination, with its capabilities.",
+      description: "Every destination the pool holds.",
       content: { [JSON_MEDIA_TYPE]: { schema: destinationsSchema } },
     },
+  },
+});
+
+export const destinationDescriptionRoute = createRoute({
+  method: "get",
+  path: "/v1/destinations/{id}/description",
+  summary: "Ask one destination what it can do",
+  description:
+    "Split from the list because they are different animals: what a destination *is* comes from the pool, and what it can *do* is I/O that may hang or fail. `described` carries the capabilities the adapter declared; `undescribable` went and looked and could not say; `unusable` could not be asked at all — no adapter speaks its kind, or its settings no longer satisfy that kind. `targetSchema` is JSON Schema and is the whole of what a client needs to build a `target`.",
+  request: { params: destinationId },
+  responses: {
+    200: {
+      description: "What it answered.",
+      content: {
+        [JSON_MEDIA_TYPE]: { schema: destinationDescriptionSchema },
+      },
+    },
+    404: errorResponse("No destination has that id.", 404, DESTINATION_STATUS),
+  },
+});
+
+export const destinationKindsRoute = createRoute({
+  method: "get",
+  path: "/v1/destination-kinds",
+  summary: "Read the destination kinds this daemon has an adapter for",
+  description:
+    "Each with the `settingsSchema` a destination of that kind must satisfy, which is what a client builds its form from. The same arrangement as a capability's `targetSchema`, one level up: the daemon publishes what a kind needs and holds no opinion about how it is asked for.",
+  responses: {
+    200: {
+      description: "Every kind, with the schema its settings must satisfy.",
+      content: { [JSON_MEDIA_TYPE]: { schema: destinationKindsSchema } },
+    },
+  },
+});
+
+export const createDestinationRoute = createRoute({
+  method: "post",
+  path: "/v1/destinations",
+  summary: "Create a destination",
+  description:
+    "From a name, a kind and that kind's settings. The id is minted and answered; a name is a label and need not be unique. Settings are validated against the kind's `settingsSchema` and a failure carries the schema issues.",
+  request: {
+    body: {
+      required: true,
+      content: {
+        [JSON_MEDIA_TYPE]: { schema: createDestinationRequestSchema },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: "Created. `Location` names the destination.",
+      headers: z.object({
+        Location: z
+          .string()
+          .openapi({ example: "/v1/destinations/019a3f2c-..." }),
+      }),
+      content: { [JSON_MEDIA_TYPE]: { schema: destinationSchema } },
+    },
+    400: errorResponse(
+      "The body could not be read as this request.",
+      400,
+      BODY_STATUS,
+    ),
+    415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
+    422: errorResponse(
+      "The kind is not one this daemon has, or the settings do not satisfy it.",
+      422,
+      DESTINATION_STATUS,
+    ),
+  },
+});
+
+export const updateDestinationRoute = createRoute({
+  method: "patch",
+  path: "/v1/destinations/{id}",
+  summary: "Change a destination's name or settings",
+  description:
+    "The kind is fixed: changing it would make one destination two, and a record cannot tell which it meant. Renaming is free, because a record names the id. Last write wins.",
+  request: {
+    params: destinationId,
+    body: {
+      required: true,
+      content: {
+        [JSON_MEDIA_TYPE]: { schema: updateDestinationRequestSchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "The destination as it now stands.",
+      content: { [JSON_MEDIA_TYPE]: { schema: destinationSchema } },
+    },
+    400: errorResponse(
+      "The body could not be read as this request.",
+      400,
+      BODY_STATUS,
+    ),
+    404: errorResponse("No destination has that id.", 404, DESTINATION_STATUS),
+    415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
+    422: errorResponse(
+      "The settings do not satisfy the kind's schema. Nothing was written.",
+      422,
+      DESTINATION_STATUS,
+    ),
+  },
+});
+
+export const retireDestinationRoute = createRoute({
+  method: "post",
+  path: "/v1/destinations/{id}/retire",
+  summary: "Stop offering a destination for new routing",
+  description:
+    "Reversible, and nothing already decided is disturbed: records keep resolving and a pending delivery still lands. Retiring one that is already retired is refused rather than absorbed, since a second would overwrite the instant the first recorded.",
+  request: { params: destinationId },
+  responses: {
+    200: {
+      description: "The destination, now retired.",
+      content: { [JSON_MEDIA_TYPE]: { schema: destinationSchema } },
+    },
+    404: errorResponse("No destination has that id.", 404, RETIRE_STATUS),
+    409: errorResponse("It is already retired.", 409, RETIRE_STATUS),
+  },
+});
+
+export const unretireDestinationRoute = createRoute({
+  method: "post",
+  path: "/v1/destinations/{id}/unretire",
+  summary: "Offer a retired destination again",
+  request: { params: destinationId },
+  responses: {
+    200: {
+      description: "The destination, offered again.",
+      content: { [JSON_MEDIA_TYPE]: { schema: destinationSchema } },
+    },
+    404: errorResponse("No destination has that id.", 404, RETIRE_STATUS),
+    409: errorResponse("It is not retired.", 409, RETIRE_STATUS),
+  },
+});
+
+export const deleteDestinationRoute = createRoute({
+  method: "delete",
+  path: "/v1/destinations/{id}",
+  summary: "Delete a destination no record has ever named",
+  description:
+    "A typo need not become permanent furniture. Anything a routing record has ever named can never stop resolving, and is refused with `destination-in-use`, which names retirement as what to do instead.",
+  request: { params: destinationId },
+  responses: {
+    204: { description: "Gone. Nothing ever named it." },
+    404: errorResponse(
+      "No destination has that id.",
+      404,
+      DESTINATION_DELETION_STATUS,
+    ),
+    409: errorResponse(
+      "A routing record names it. Retire it instead.",
+      409,
+      DESTINATION_DELETION_STATUS,
+    ),
   },
 });
 
@@ -497,6 +670,11 @@ export const routeItemRoute = createRoute({
       BODY_STATUS,
     ),
     404: errorResponse("No item has that id.", 404, ROUTING_STATUS),
+    409: errorResponse(
+      "The destination is retired, or the running code cannot make sense of it. Nothing was written.",
+      409,
+      DELIVERY_STATUS,
+    ),
     415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
     422: errorResponse(
       "The destination, the capability, the payload type or the target was declined. Nothing was written.",
@@ -632,6 +810,13 @@ export const ROUTES = [
   markProcessedRoute,
   routingRecordsRoute,
   destinationsRoute,
+  createDestinationRoute,
+  destinationKindsRoute,
+  destinationDescriptionRoute,
+  updateDestinationRoute,
+  retireDestinationRoute,
+  unretireDestinationRoute,
+  deleteDestinationRoute,
   routeItemRoute,
   cancelDeliveryRoute,
   actionsRoute,

@@ -4,7 +4,10 @@ import type {
   CancelRefusal,
   CaptureRefusal,
   DeliveryRefusal,
+  DestinationDeletionRefusal,
+  DestinationRefusal,
   EditRefusal,
+  RetireRefusal,
   RoutingRefusal,
   TagRefusal,
 } from "@notemap/core";
@@ -103,7 +106,34 @@ export const DELIVERY_STATUS = {
   "rejected-by-destination": 422,
   "delivery-outcome-unknown": 422,
   unreachable: 422,
+  // Both are about the destination rather than the request, and both are
+  // answered by editing the destination rather than the route.
+  "destination-retired": 409,
+  "destination-unusable": 409,
 } as const satisfies Record<DeliveryRefusal["kind"], number>;
+
+/**
+ * Creating or editing a destination. `404` is the id, `422` is everything the
+ * daemon understood and declined about what it was asked to hold.
+ */
+export const DESTINATION_STATUS = {
+  "unknown-destination": 404,
+  "unknown-destination-kind": 422,
+  "invalid-destination-settings": 422,
+} as const satisfies Record<DestinationRefusal["kind"], number>;
+
+/** Retirement carries the instant it happened, which a second one would overwrite. */
+export const RETIRE_STATUS = {
+  "unknown-destination": 404,
+  "already-retired": 409,
+  "not-retired": 409,
+} as const satisfies Record<RetireRefusal["kind"], number>;
+
+/** `409` names retirement as what to do instead of deleting. */
+export const DESTINATION_DELETION_STATUS = {
+  "unknown-destination": 404,
+  "destination-in-use": 409,
+} as const satisfies Record<DestinationDeletionRefusal["kind"], number>;
 
 /** The two `409`s conflict with state the caller can already read — a record that has landed, and one somebody holds a lease on. */
 export const CANCEL_STATUS = {
@@ -168,6 +198,20 @@ export function cancelStatus(refusal: CancelRefusal): number {
   return CANCEL_STATUS[refusal.kind];
 }
 
+export function destinationStatus(refusal: DestinationRefusal): number {
+  return DESTINATION_STATUS[refusal.kind];
+}
+
+export function retireStatus(refusal: RetireRefusal): number {
+  return RETIRE_STATUS[refusal.kind];
+}
+
+export function destinationDeletionStatus(
+  refusal: DestinationDeletionRefusal,
+): number {
+  return DESTINATION_DELETION_STATUS[refusal.kind];
+}
+
 export function daemonStatus(refusal: DaemonRefusal): number {
   return DAEMON_STATUS[refusal.kind];
 }
@@ -180,7 +224,10 @@ export function errorBody(
     | CaptureRefusal
     | DaemonRefusal
     | DeliveryRefusal
+    | DestinationDeletionRefusal
+    | DestinationRefusal
     | EditRefusal
+    | RetireRefusal
     | RoutingRefusal
     | TagRefusal,
 ): ErrorBody {

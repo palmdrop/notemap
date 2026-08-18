@@ -42,7 +42,7 @@ export const routeRequestSchema = z
   .strictObject({
     destination: z.string().min(1).openapi({
       description: "One of the ids `GET /v1/destinations` reports.",
-      example: "vault",
+      example: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
     }),
     capability: z.string().min(1).openapi({
       description: "One the destination declared. Anything else is refused.",
@@ -64,23 +64,3 @@ export const capabilitySchema = z
     targetSchema: jsonObject,
   })
   .openapi("Capability");
-
-export const destinationSchema = z
-  .union([
-    z.object({
-      kind: z.literal("described"),
-      id: z.string(),
-      capabilities: z.array(capabilitySchema),
-    }),
-    z.object({
-      kind: z.literal("undescribable"),
-      id: z.string(),
-      /** Why it could not say. It is wired, so it is listed rather than dropped. */
-      detail: z.string(),
-    }),
-  ])
-  .openapi("Destination");
-
-export const destinationsSchema = z
-  .object({ values: z.array(destinationSchema) })
-  .openapi("Destinations");

@@ -3,8 +3,11 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import type { Destination } from "@notemap/core";
+
 import {
   captureMany,
+  createVault,
   daemon,
   ids,
   send,
@@ -18,10 +21,23 @@ afterEach(async () => {
   await Promise.all(open.splice(0).map((it) => it.cleanup()));
 });
 
-function serving(vault?: "ready" | "missing"): Daemon {
-  const host = daemon(undefined, vault === undefined ? {} : { vault });
+function serving(): Daemon {
+  const host = daemon();
   open.push(host);
   return host;
+}
+
+type Vaulted = Daemon & { readonly vault: Destination };
+
+/**
+ * A pool holding one filesystem destination over the daemon's own folder.
+ * **`missing`** points it at one that is not there, which is what an unmounted
+ * drive looks like.
+ */
+async function vaulted(where: "ready" | "missing"): Promise<Vaulted> {
+  const host = daemon(undefined, { vault: where });
+  open.push(host);
+  return { ...host, vault: await createVault(host) };
 }
 
 type Record_ = {
@@ -33,18 +49,18 @@ type Record_ = {
 };
 
 async function route(
-  host: Daemon,
+  host: Vaulted,
   item: string,
   target: unknown = { directory: "inbox", filename: "a-thought.md" },
 ): Promise<Response> {
   return send(host.app, `/v1/items/${item}/route`, {
-    destination: "vault",
+    destination: host.vault.id,
     capability: "create-file",
     target,
   });
 }
 
-async function only(host: Daemon): Promise<string> {
+async function only(host: Pick<Daemon, "app">): Promise<string> {
   const [item] = await captureMany(host.app, 1);
   if (item === undefined) throw new Error("expected a capture");
   return item;
@@ -52,7 +68,7 @@ async function only(host: Daemon): Promise<string> {
 
 const body = (response: Response) => response.json() as Promise<never>;
 
-const queued = async (host: Daemon): Promise<string[]> =>
+const queued = async (host: Pick<Daemon, "app">): Promise<string[]> =>
   ids(await slice(host.app, "/v1/queue"));
 
 describe("marking an item processed over the wire", () => {
@@ -129,49 +145,9 @@ describe("GET /v1/items/:id/routing", () => {
   });
 });
 
-describe("GET /v1/destinations", () => {
-  it("answers what each wired adapter declares", async () => {
-    const host = serving("ready");
-
-    const answered = (await body(
-      await host.app.request("/v1/destinations"),
-    )) as {
-      values: {
-        kind: string;
-        id: string;
-        capabilities: {
-          name: string;
-          accepts: string[];
-          targetSchema: object;
-        }[];
-      }[];
-    };
-
-    expect(answered.values).toHaveLength(1);
-    expect(answered.values[0]?.kind).toBe("described");
-    expect(answered.values[0]?.id).toBe("vault");
-    expect(answered.values[0]?.capabilities.map((each) => each.name)).toEqual([
-      "create-file",
-      "append-to-file",
-    ]);
-    expect(answered.values[0]?.capabilities[0]?.accepts).toEqual(["text"]);
-    expect(answered.values[0]?.capabilities[0]?.targetSchema).toMatchObject({
-      required: ["directory"],
-    });
-  });
-
-  it("answers an empty list where none is wired, rather than refusing", async () => {
-    const host = serving();
-
-    const response = await host.app.request("/v1/destinations");
-    expect(response.status).toBe(200);
-    expect(await body(response)).toEqual({ values: [] });
-  });
-});
-
 describe("POST /v1/items/{id}/route", () => {
   it("delivers to a folder that is there, and names the file it landed at", async () => {
-    const host = serving("ready");
+    const host = await vaulted("ready");
     const item = await only(host);
 
     const response = await route(host, item);
@@ -182,7 +158,7 @@ describe("POST /v1/items/{id}/route", () => {
       item,
       state: "delivered",
       pointer: "inbox/a-thought.md",
-      target: { kind: "destination", destination: "vault" },
+      target: { kind: "destination", destination: host.vault.id },
     });
 
     const written = await readFile(
@@ -194,7 +170,7 @@ describe("POST /v1/items/{id}/route", () => {
   });
 
   it("answers a pending record for a folder that is not there, and keeps the decision", async () => {
-    const host = serving("missing");
+    const host = await vaulted("missing");
     const item = await only(host);
 
     const record = (await body(await route(host, item))) as Record_;
@@ -206,7 +182,7 @@ describe("POST /v1/items/{id}/route", () => {
   });
 
   it("refuses a traversal with the destination's own detail, and writes nothing", async () => {
-    const host = serving("ready");
+    const host = await vaulted("ready");
     const item = await only(host);
 
     const response = await route(host, item, {
@@ -223,11 +199,11 @@ describe("POST /v1/items/{id}/route", () => {
   });
 
   it("refuses a capability the destination never declared, without touching the disk", async () => {
-    const host = serving("ready");
+    const host = await vaulted("ready");
     const item = await only(host);
 
     const response = await send(host.app, `/v1/items/${item}/route`, {
-      destination: "vault",
+      destination: host.vault.id,
       capability: "post-to-board",
       target: {},
     });
@@ -239,8 +215,8 @@ describe("POST /v1/items/{id}/route", () => {
     expect(await queued(host)).toEqual([item]);
   });
 
-  it("refuses a destination nobody wired", async () => {
-    const host = serving("ready");
+  it("refuses an id no destination has", async () => {
+    const host = await vaulted("ready");
     const item = await only(host);
 
     const response = await send(host.app, `/v1/items/${item}/route`, {
@@ -256,7 +232,7 @@ describe("POST /v1/items/{id}/route", () => {
   });
 
   it("refuses a target the capability's schema does not accept", async () => {
-    const host = serving("ready");
+    const host = await vaulted("ready");
     const item = await only(host);
 
     const response = await route(host, item, { folder: "inbox" });
@@ -268,7 +244,7 @@ describe("POST /v1/items/{id}/route", () => {
   });
 
   it("is 404 for an id no item has", async () => {
-    const host = serving("ready");
+    const host = await vaulted("ready");
 
     const response = await route(host, "nobody");
     expect(response.status).toBe(404);
@@ -278,11 +254,11 @@ describe("POST /v1/items/{id}/route", () => {
   });
 
   it("refuses a body with a key it does not know", async () => {
-    const host = serving("ready");
+    const host = await vaulted("ready");
     const item = await only(host);
 
     const response = await send(host.app, `/v1/items/${item}/route`, {
-      destination: "vault",
+      destination: host.vault.id,
       capability: "create-file",
       target: {},
       when: "now",
@@ -294,11 +270,11 @@ describe("POST /v1/items/{id}/route", () => {
 
 describe("POST /v1/routing/{record}/cancel", () => {
   async function pending(): Promise<{
-    host: Daemon;
+    host: Vaulted;
     item: string;
     record: string;
   }> {
-    const host = serving("missing");
+    const host = await vaulted("missing");
     const item = await only(host);
     const record = (await body(await route(host, item))) as Record_;
     if (record.state !== "pending") throw new Error("expected a reservation");
@@ -320,7 +296,7 @@ describe("POST /v1/routing/{record}/cancel", () => {
   });
 
   it("refuses a record that has already delivered", async () => {
-    const host = serving("ready");
+    const host = await vaulted("ready");
     const item = await only(host);
     const record = (await body(await route(host, item))) as Record_;
 
@@ -332,7 +308,7 @@ describe("POST /v1/routing/{record}/cancel", () => {
   });
 
   it("is 404 for an id no record has", async () => {
-    const host = serving("ready");
+    const host = await vaulted("ready");
 
     const response = await send(host.app, "/v1/routing/nobody/cancel");
     expect(response.status).toBe(404);
@@ -344,7 +320,7 @@ describe("POST /v1/routing/{record}/cancel", () => {
 
 describe("a delivery the runner picks up", () => {
   it("lands once the folder appears, and fills the pointer in", async () => {
-    const host = serving("missing");
+    const host = await vaulted("missing");
     const item = await only(host);
     const record = (await body(await route(host, item))) as Record_;
     expect(record.state).toBe("pending");

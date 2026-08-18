@@ -27,6 +27,10 @@ import {
   assetUploadRoute,
   cancelDeliveryRoute,
   captureRoute,
+  createDestinationRoute,
+  deleteDestinationRoute,
+  destinationDescriptionRoute,
+  destinationKindsRoute,
   destinationsRoute,
   editRoute,
   feedRoute,
@@ -34,19 +38,30 @@ import {
   itemRoute,
   markProcessedRoute,
   queueRoute,
+  retireDestinationRoute,
   routeItemRoute,
   routingRecordsRoute,
   tagRoute,
   unarchiveRoute,
+  unretireDestinationRoute,
   untagRoute,
+  updateDestinationRoute,
 } from "./routes/definitions";
+import {
+  createDestinationHandler,
+  deleteDestinationHandler,
+  destinationDescriptionHandler,
+  destinationKindsHandler,
+  destinationsHandler,
+  retireDestinationHandler,
+  updateDestinationHandler,
+} from "./routes/destinations";
 import { feedHandler } from "./routes/feed";
 import { itemHandler } from "./routes/items";
 import { itemViewHandler } from "./routes/queue";
 import { tagHandler } from "./routes/tags";
 import {
   cancelDeliveryHandler,
-  destinationsHandler,
   markProcessedHandler,
   routeHandler,
   routingRecordsHandler,
@@ -72,6 +87,31 @@ export function createApp(pool: Pool, limits: UploadLimits): Hono {
   app.post(honoPath(markProcessedRoute.path), markProcessedHandler(pool));
   app.get(honoPath(routingRecordsRoute.path), routingRecordsHandler(pool));
   app.get(honoPath(destinationsRoute.path), destinationsHandler(pool));
+  app.post(
+    honoPath(createDestinationRoute.path),
+    createDestinationHandler(pool),
+  );
+  app.get(honoPath(destinationKindsRoute.path), destinationKindsHandler(pool));
+  app.get(
+    honoPath(destinationDescriptionRoute.path),
+    destinationDescriptionHandler(pool),
+  );
+  app.patch(
+    honoPath(updateDestinationRoute.path),
+    updateDestinationHandler(pool),
+  );
+  app.post(
+    honoPath(retireDestinationRoute.path),
+    retireDestinationHandler(pool, false),
+  );
+  app.post(
+    honoPath(unretireDestinationRoute.path),
+    retireDestinationHandler(pool, true),
+  );
+  app.delete(
+    honoPath(deleteDestinationRoute.path),
+    deleteDestinationHandler(pool),
+  );
   app.post(honoPath(routeItemRoute.path), routeHandler(pool));
   app.post(honoPath(cancelDeliveryRoute.path), cancelDeliveryHandler(pool));
   app.get(honoPath(actionsRoute.path), actionsHandler(pool));
