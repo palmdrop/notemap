@@ -7,6 +7,7 @@
   },
   "scripts": {
     "dev": "node scripts/dev.ts",
+    "seed": "node scripts/seed.ts",
     "build": "pnpm --filter @notemap/ui build && pnpm --filter @notemap/daemon build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@notemap/seed": "workspace:*",
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-svelte": "^3.23.0",

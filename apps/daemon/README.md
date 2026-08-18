@@ -31,6 +31,11 @@ There is no authentication: the pool is the boundary, so binding wider than loca
 to whoever can reach the address. What that leaves undefended, in full, is
 [docs/specs/security.md](../../docs/specs/security.md).
 
+`pnpm seed` fills a running daemon with something to look at — a handful of captures in every
+state, over `/v1` and nothing else. It takes `--url` and otherwise assumes this daemon on its
+default port; [tests/seed](../../tests/seed/README.md) says what it leaves behind and which
+destinations it expects to find.
+
 `SIGINT` or `SIGTERM` stops it: the listener closes, idle connections go immediately, anything
 still in flight gets two seconds, then the mirror runner stops — giving back any lease it holds —
 then the delivery runner, then the sweeper, and then the host closes the pool it built, and nothing
