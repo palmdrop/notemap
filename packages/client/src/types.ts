@@ -1,11 +1,16 @@
 import type {
   Asset,
+  CreateDestinationRequest,
   Destination,
+  DestinationDescription,
+  DestinationId,
+  DestinationKind,
   Item,
   ItemId,
   Payload,
   RouteRequest,
   RoutingRecord,
+  UpdateDestinationRequest,
 } from "./api/types";
 import type { Observable } from "rxjs";
 
@@ -35,8 +40,35 @@ type AssetId = Asset["id"];
  * decision to deliver cannot be replayed from a client that was offline when it
  * was made. A shell disables these rather than queuing them.
  */
+/**
+ * The outbox's second exception, on routing's terms: whether a root exists, and
+ * whether settings satisfy the kind registry the daemon is actually running,
+ * are questions only the daemon can answer. A shell disables these rather than
+ * queuing them, and reads the cached list meanwhile.
+ */
+export interface DestinationsApi {
+  /** What was last read, for a screen to render while the pool is unreachable. */
+  readonly all: Observable<readonly Destination[]>;
+
+  /** Fills the cache `all` answers from, and answers the same list. */
+  load(): Promise<readonly Destination[]>;
+  /** Every kind the daemon has an adapter for, with the schema a form is built from. */
+  kinds(): Promise<readonly DestinationKind[]>;
+  /** What one can do, asked now. The only call here that reaches past the pool. */
+  describe(id: DestinationId): Promise<DestinationDescription>;
+
+  create(request: CreateDestinationRequest): Promise<Destination>;
+  update(
+    id: DestinationId,
+    changes: UpdateDestinationRequest,
+  ): Promise<Destination>;
+  retire(id: DestinationId): Promise<Destination>;
+  unretire(id: DestinationId): Promise<Destination>;
+  /** Refused by the pool where a routing record has ever named it. */
+  delete(id: DestinationId): Promise<void>;
+}
+
 export interface RoutingApi {
-  destinations(): Promise<readonly Destination[]>;
   route(item: ItemId, request: RouteRequest): Promise<RoutingRecord>;
   markProcessed(item: ItemId, note?: string): Promise<RoutingRecord>;
   recordsFor(item: ItemId): Promise<readonly RoutingRecord[]>;
@@ -84,6 +116,7 @@ export interface Client {
   says(item: Item): string;
 
   readonly routing: RoutingApi;
+  readonly destinations: DestinationsApi;
 
   /** Called on every mutation, and again to retry what is still pending. */
   drain(): Promise<void>;

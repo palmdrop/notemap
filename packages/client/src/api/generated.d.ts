@@ -1147,8 +1147,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Read the configured destinations
-         * @description What each wired destination declares it can do. Core holds no list of capabilities of its own, so this is the adapters' own answer. `targetSchema` is JSON Schema and is the whole of what a client needs to build a `target`.
+         * Read the destinations the pool holds
+         * @description A read of pool state: it answers at once, cannot fail, and probes nothing. Retired ones are listed, since a routing record may still name one. Not paginated: there are as many destinations as a person made. Which destinations exist is **not** stable for the life of a connection — a client re-reads rather than caching for the session.
          */
         get: {
             parameters: {
@@ -1159,7 +1159,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Every destination, with its capabilities. */
+                /** @description Every destination the pool holds. */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1171,7 +1171,500 @@ export interface paths {
             };
         };
         put?: never;
+        /**
+         * Create a destination
+         * @description From a name, a kind and that kind's settings. The id is minted and answered; a name is a label and need not be unique. Settings are validated against the kind's `settingsSchema` and a failure carries the schema issues.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateDestinationRequest"];
+                };
+            };
+            responses: {
+                /** @description Created. `Location` names the destination. */
+                201: {
+                    headers: {
+                        Location: string;
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Destination"];
+                    };
+                };
+                /** @description The body could not be read as this request. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "malformed-json" | "malformed-envelope";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The body was not JSON. */
+                415: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unsupported-media-type";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The kind is not one this daemon has, or the settings do not satisfy it. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unknown-destination-kind" | "invalid-destination-settings";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/destination-kinds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the destination kinds this daemon has an adapter for
+         * @description Each with the `settingsSchema` a destination of that kind must satisfy, which is what a client builds its form from. The same arrangement as a capability's `targetSchema`, one level up: the daemon publishes what a kind needs and holds no opinion about how it is asked for.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Every kind, with the schema its settings must satisfy. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DestinationKinds"];
+                    };
+                };
+            };
+        };
+        put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/destinations/{id}/description": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ask one destination what it can do
+         * @description Split from the list because they are different animals: what a destination *is* comes from the pool, and what it can *do* is I/O that may hang or fail. `described` carries the capabilities the adapter declared; `undescribable` went and looked and could not say; `unusable` could not be asked at all — no adapter speaks its kind, or its settings no longer satisfy that kind. `targetSchema` is JSON Schema and is the whole of what a client needs to build a `target`.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What it answered. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DestinationDescription"];
+                    };
+                };
+                /** @description No destination has that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unknown-destination";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/destinations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a destination no record has ever named
+         * @description A typo need not become permanent furniture. Anything a routing record has ever named can never stop resolving, and is refused with `destination-in-use`, which names retirement as what to do instead.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Gone. Nothing ever named it. */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description No destination has that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unknown-destination";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description A routing record names it. Retire it instead. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "destination-in-use";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * Change a destination's name or settings
+         * @description The kind is fixed: changing it would make one destination two, and a record cannot tell which it meant. Renaming is free, because a record names the id. Last write wins.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateDestinationRequest"];
+                };
+            };
+            responses: {
+                /** @description The destination as it now stands. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Destination"];
+                    };
+                };
+                /** @description The body could not be read as this request. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "malformed-json" | "malformed-envelope";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description No destination has that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unknown-destination";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The body was not JSON. */
+                415: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unsupported-media-type";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The settings do not satisfy the kind's schema. Nothing was written. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unknown-destination-kind" | "invalid-destination-settings";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/v1/destinations/{id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop offering a destination for new routing
+         * @description Reversible, and nothing already decided is disturbed: records keep resolving and a pending delivery still lands. Retiring one that is already retired is refused rather than absorbed, since a second would overwrite the instant the first recorded.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The destination, now retired. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Destination"];
+                    };
+                };
+                /** @description No destination has that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unknown-destination";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description It is already retired. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "already-retired" | "not-retired";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/destinations/{id}/unretire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Offer a retired destination again */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The destination, offered again. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Destination"];
+                    };
+                };
+                /** @description No destination has that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unknown-destination";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description It is not retired. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "already-retired" | "not-retired";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -1243,6 +1736,23 @@ export interface paths {
                             error: {
                                 /** @enum {string} */
                                 code: "no-such-item" | "item-purged";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The destination is retired, or the running code cannot make sense of it. Nothing was written. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "destination-retired" | "destination-unusable";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -1799,14 +2309,59 @@ export interface components {
             values: components["schemas"]["Destination"][];
         };
         Destination: {
+            id: string;
+            name: string;
+            kind: string;
+            settings: {
+                [key: string]: unknown;
+            };
+            retired: boolean;
+        };
+        CreateDestinationRequest: {
+            /**
+             * @description What a person calls it. Changeable, and need not be unique.
+             * @example Vault
+             */
+            name: string;
+            /**
+             * @description One of the names `GET /v1/destination-kinds` reports.
+             * @example filesystem
+             */
+            kind: string;
+            /**
+             * @description Must satisfy that kind's `settingsSchema`.
+             * @example {
+             *       "root": "~/notes",
+             *       "accepts": [
+             *         "text",
+             *         "image"
+             *       ]
+             *     }
+             */
+            settings: {
+                [key: string]: unknown;
+            };
+        };
+        DestinationKinds: {
+            values: components["schemas"]["DestinationKind"][];
+        };
+        DestinationKind: {
+            name: string;
+            settingsSchema: {
+                [key: string]: unknown;
+            };
+        };
+        DestinationDescription: {
             /** @enum {string} */
             kind: "described";
-            id: string;
             capabilities: components["schemas"]["Capability"][];
         } | {
             /** @enum {string} */
             kind: "undescribable";
-            id: string;
+            detail: string;
+        } | {
+            /** @enum {string} */
+            kind: "unusable";
             detail: string;
         };
         Capability: {
@@ -1816,10 +2371,16 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        UpdateDestinationRequest: {
+            name?: string;
+            settings?: {
+                [key: string]: unknown;
+            };
+        };
         RouteRequest: {
             /**
              * @description One of the ids `GET /v1/destinations` reports.
-             * @example vault
+             * @example 019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77
              */
             destination: string;
             /**

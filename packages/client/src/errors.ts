@@ -42,6 +42,7 @@ const SAID: {
   readonly [C in RefusalCode]: string | ((facts: Facts) => string);
 } = {
   "already-archived": "that item is already archived",
+  "already-retired": "that destination is already retired",
   "asset-too-large": (facts) =>
     `that file is larger than this daemon accepts (${String(facts["max"])} bytes)`,
   "bad-digest": "the upload's checksum is not readable",
@@ -55,7 +56,15 @@ const SAID: {
     "that delivery has already started; it cannot be called back",
   "delivery-outcome-unknown":
     "the delivery may or may not have happened; check the destination",
+  "destination-in-use":
+    "something has already been sent there, so it cannot be deleted; retire it instead",
+  "destination-retired":
+    "that destination is retired; offer it again to route to it",
+  "destination-unusable":
+    "this daemon cannot make sense of that destination's settings",
   "digest-mismatch": "the upload arrived corrupted; pick the file again",
+  "invalid-destination-settings":
+    "those settings are not ones this daemon can use",
   "item-purged": "that item was purged",
   "item-superseded": "a newer version of that item has replaced it",
   "limit-too-large":
@@ -69,6 +78,7 @@ const SAID: {
   "no-such-item": "that item is not here",
   "no-such-record": "that routing record is not here",
   "not-archived": "that item is not archived",
+  "not-retired": "that destination is not retired",
   "not-pending": "that delivery has already been decided",
   "payload-invalid": "nothing to capture",
   "payload-type-changed": "an edit cannot change what kind of thing this is",
@@ -79,7 +89,9 @@ const SAID: {
   "source-item-changed": "that capture already exists, with different content",
   "target-invalid": "that destination needs a different target",
   "unknown-asset": "the upload is gone; pick the file again",
-  "unknown-destination": "this daemon has no such destination configured",
+  "unknown-destination": "that destination is not here",
+  "unknown-destination-kind": (facts) =>
+    `this daemon has no adapter for "${String(facts["destinationKind"])}" destinations`,
   "unknown-payload-type": (facts) =>
     `this daemon has no "${String(facts["type"])}" payload type configured`,
   unreachable: "the destination could not be reached",

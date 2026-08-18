@@ -24,11 +24,6 @@ export function createRouting(deps: RoutingDeps): RoutingApi {
   }
 
   return {
-    async destinations() {
-      const answer = await answered(api.GET("/v1/destinations"));
-      return answer.values;
-    },
-
     async route(item, request) {
       const record = await answered(
         api.POST("/v1/items/{id}/route", {

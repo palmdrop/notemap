@@ -1,4 +1,4 @@
-import type { Item, ItemId } from "../api/types";
+import type { Destination, DestinationId, Item, ItemId } from "../api/types";
 import type { PendingOperation } from "../outbox/operations";
 
 export type ListPage = {
@@ -15,6 +15,12 @@ export type ClientState = {
   readonly feed: ListPage;
   readonly queue: ListPage;
   readonly outbox: readonly PendingOperation[];
+  /**
+   * Held for display, in the order the pool answered. Editing one is
+   * online-only, but reading a settings screen is not, so what was last seen is
+   * what an unreachable pool shows.
+   */
+  readonly destinations: readonly Destination[];
 };
 
 const EMPTY_PAGE: ListPage = { ids: [], exhausted: false, loading: false };
@@ -25,6 +31,30 @@ export function emptyState(): ClientState {
     feed: EMPTY_PAGE,
     queue: EMPTY_PAGE,
     outbox: [],
+    destinations: [],
+  };
+}
+
+/** One destination replaced where it stood, appended where it is new, or dropped. */
+export function settledDestination(
+  state: ClientState,
+  id: DestinationId,
+  held: Destination | undefined,
+): ClientState {
+  if (held === undefined) {
+    return {
+      ...state,
+      destinations: state.destinations.filter((each) => each.id !== id),
+    };
+  }
+
+  const at = state.destinations.findIndex((each) => each.id === id);
+  return {
+    ...state,
+    destinations:
+      at === -1
+        ? [...state.destinations, held]
+        : state.destinations.with(at, held),
   };
 }
 

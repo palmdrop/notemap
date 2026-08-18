@@ -38,9 +38,17 @@ export type CaptureEnvelope = WireCaptureEnvelope & {
 export type CaptureOutcome = components["schemas"]["CaptureOutcome"];
 
 export type Destination = components["schemas"]["Destination"];
+export type DestinationKind = components["schemas"]["DestinationKind"];
+export type DestinationDescription =
+  components["schemas"]["DestinationDescription"];
+export type CreateDestinationRequest =
+  components["schemas"]["CreateDestinationRequest"];
+export type UpdateDestinationRequest =
+  components["schemas"]["UpdateDestinationRequest"];
 export type Capability = components["schemas"]["Capability"];
 export type RouteRequest = components["schemas"]["RouteRequest"];
 export type RoutingRecord = components["schemas"]["RoutingRecord"];
 
 export type ItemId = Item["id"];
 export type AssetId = Asset["id"];
+export type DestinationId = Destination["id"];
