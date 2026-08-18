@@ -48,7 +48,7 @@ const SAID = [
 ];
 
 /** A one-pixel PNG, so what is uploaded is an image rather than a pretend one. */
-const PIXEL = Uint8Array.from(
+const PIXEL: Uint8Array<ArrayBuffer> = Uint8Array.from(
   atob(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
   ),

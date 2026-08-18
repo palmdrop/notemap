@@ -11,6 +11,7 @@
     "build": "pnpm --filter @notemap/ui build && pnpm --filter @notemap/daemon build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
+    "test:stack": "pnpm --filter @notemap/full-stack-tests test:stack",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

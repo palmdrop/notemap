@@ -119,11 +119,10 @@ Depends on: Phase 1.
       every one waits for something to appear. A test that asserts something has *not* happened yet
       is asserting on a race; where a negative matters — a delivery still owed, an operation still
       pending — it is asserted after a positive fence the daemon has demonstrably passed.
-- [ ] A test that the committed `apps/daemon/openapi.json` is what the daemon serves. It lands in
-      `apps/daemon`'s own suite over `app.request`, not here: `packages/client` generates its types
-      from that file, so a stale one silently invalidates them, and a drift check is worth nothing
-      if it only runs on demand. Response bodies are not validated against the document — the routes
-      own their shapes and already test them.
+- [x] A test that the committed `apps/daemon/openapi.json` is what the daemon serves _(2026-08-18 —
+      already there: `openapi.test.ts` asserts it. What nothing checks is the step after it, so the
+      CI job runs `codegen` and fails on a diff: `packages/client`'s generated types can be stale
+      against a document that is itself current.)_
 - [ ] A line in `AGENTS.md`, under Verification: `pnpm test:stack` is not part of finishing a
       feature. Run it after a change that crosses the layers — the HTTP surface, the host's wiring,
       the client's transport, the config file — or when asked, and run `pnpm -r --silent test`

@@ -37,3 +37,34 @@ jobs:
 
       - name: Run test
         run: pnpm test
+
+  stack:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # A document the daemon serves can be current while the types generated
+      # from it are not, and nothing in a test run would notice.
+      - name: Check the client's generated types are current
+        run: |
+          pnpm --filter @notemap/client codegen
+          git diff --exit-code packages/client/src/api/generated.d.ts
+
+      - name: Run the full-stack suite
+        run: pnpm test:stack

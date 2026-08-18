@@ -18,7 +18,7 @@ export type Http = {
   readonly upload: (
     filename: string,
     mime: string,
-    bytes: Uint8Array,
+    bytes: Uint8Array<ArrayBuffer>,
   ) => Promise<Asset>;
 };
 
