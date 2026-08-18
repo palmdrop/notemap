@@ -1,9 +1,9 @@
 # Complete integration tests
 
 **Date**: 2026-08-17
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/client.md`, `docs/specs/http-v1.md`, `docs/specs/core.md`
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-08-18
 
 ---
 
@@ -155,7 +155,7 @@ Depends on: nothing. Independent of Phases 1–2 and can land before or after th
       guarantee here to assert. A mirror record never reaches the blob store, which `assets.test.ts`
       already pins, and a read never rehashes by design, so such a test would enshrine the absence
       of detection. Whether delivery should verify is a design question, not a missing test.)_
-- [ ] `git commit`.
+- [x] `git commit`.
 
 **Verify:** `pnpm --filter @notemap/integration-tests test` green, and each new test fails when the
 behaviour it names is broken (check by breaking it locally, not by trusting the green).
@@ -164,14 +164,14 @@ behaviour it names is broken (check by breaking it locally, not by trusting the 
 
 Depends on: Phases 1–3.
 
-- [ ] `tests/full-stack/README.md`: what it covers that the other suites cannot, and why it runs the
+- [x] `tests/full-stack/README.md`: what it covers that the other suites cannot, and why it runs the
       binary rather than importing the host.
-- [ ] `tests/seed/README.md`, and a line in `apps/daemon/README.md` about `pnpm seed`.
-- [ ] `NOTEMAP_TEST_PORT` in `.env.example`, saying what it is for and when to change it.
-- [ ] A paragraph in `tests/integration/README.md` distinguishing it from the new package, so the
+- [x] `tests/seed/README.md`, and a line in `apps/daemon/README.md` about `pnpm seed`.
+- [x] `NOTEMAP_TEST_PORT` in `.env.example`, saying what it is for and when to change it.
+- [x] A paragraph in `tests/integration/README.md` distinguishing it from the new package, so the
       next person picks the right one.
-- [ ] `Shipped:` entries in `docs/specs/client.md`, `docs/specs/http-v1.md` and `docs/specs/core.md`.
-- [ ] `git commit`.
+- [x] `Shipped:` entries in `docs/specs/client.md`, `docs/specs/http-v1.md` and `docs/specs/core.md`.
+- [x] `git commit`.
 
 **Verify:** root `pnpm typecheck`, `pnpm lint`, `pnpm format:check` and `pnpm -r test` are green;
 CI green on the branch.

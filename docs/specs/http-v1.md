@@ -2,7 +2,7 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing and routing to a destination are settled; the rest is stub
-**Last updated**: 2026-08-17
+**Last updated**: 2026-08-18
 **Shipped**:
 
 - 2026-08-17 — **Tagging, untagging and editing are on the wire.**
@@ -77,6 +77,12 @@ editing and routing to a destination are settled; the rest is stub
   daemon that answers these routes is
   [capture-feed-mvp.md](../plans/capture-feed-mvp.md) phase 3.
   ([plan](../plans/http-v1-subset-and-positions.md))
+- 2026-08-18 — **The surface is exercised end to end.** A seeder fills a pool over `/v1` alone —
+  queued, processed, archived, an image with its bytes, and one item routed to each destination the
+  daemon reports — and backs both the full-stack suite and `pnpm seed` for a development pool. CI
+  now also regenerates the client's types from the OpenAPI document and fails on a diff, so a
+  document that is current cannot sit beside types that are not.
+  (plan: `docs/plans/complete-integration-tests.md`)
 
 ---
 

@@ -1,7 +1,7 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is a designed seam, unbuilt
-**Last updated**: 2026-08-17
+**Last updated**: 2026-08-18
 **Shipped**:
 
 - 2026-08-17 — **Editing and classification reach the pool.** `tag`, `untag` and `edit` are outbox
@@ -48,6 +48,12 @@
   untagging, and suggestion decisions. All of them are `notImplemented` in core, so the client
   names them in its vocabulary and refuses to send them rather than guessing a route.
   [editing-and-classification.md](../plans/editing-and-classification.md) starts where they do.
+- 2026-08-18 — **The client is driven against a real daemon.** A full-stack suite starts the daemon
+  binary over temp directories and drives it with this client over `createFetchTransport`: capture
+  and feed, an asset uploaded and fetched back from the URL the client reports, archiving, and an
+  outbox that filled up while the daemon was dead replaying exactly once when it came back. What was
+  agreed between a mock transport and a Hono app in process is now agreed over a socket.
+  (plan: `docs/plans/complete-integration-tests.md`)
 
 ---
 

@@ -1,7 +1,7 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-08-17
+**Last updated**: 2026-08-18
 **Shipped**:
 
 - 2026-08-08 — A source needs no declaration to capture; `config.sources` is a policy registry
@@ -126,6 +126,10 @@
   page. `EditRefusal` gained the two asset refusals a capture has, since an edit may change an
   attached file. Enrichment invalidation is stated and deliberately not carried out: nothing runs
   enrichment to invalidate. ([plan](../plans/editing-and-classification.md))
+- 2026-08-18 — **A pool that is opened again.** Core through real adapters is now driven across a
+  restart: what was captured is there, work that was owed is still owed, and a lease a dead host
+  held is taken back only once it has run out. Two concurrent claimants never share a job.
+  (plan: `docs/plans/complete-integration-tests.md`)
 
 ---
 

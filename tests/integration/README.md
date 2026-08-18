@@ -16,3 +16,9 @@ generator that counts. They are test doubles on purpose — a pinned clock and a
 sequence are what make the assertions readable. When a real one ships it becomes a package and
 this fixture drops it, which is what happened to the toy schema validator: these tests now
 validate through `@notemap/schema-ajv`.
+
+Above this sits [`tests/full-stack`](../full-stack/README.md), which starts the daemon binary and
+drives it with the real client over HTTP. The line between them: if a test would pass with no host
+in the picture, it belongs here, where it costs milliseconds; if it is about the client and the
+daemon agreeing, it belongs there, where a daemon is started to prove it.
+
