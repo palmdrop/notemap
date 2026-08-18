@@ -130,12 +130,15 @@ export type Harness = {
   readonly clock: ReturnType<typeof frozenClock>;
   readonly ids: ReturnType<typeof countingIds>;
   readonly file: string;
+  readonly directory: string;
   /** Where the mirror writes, whether or not a real writer is wired. */
   readonly mirrorRoot: string;
   /** Where the blobs are. A sibling of the two, as a host lays them out. */
   readonly assetRoot: string;
   /** How many blob streams have been opened, which a lazy opener leaves at zero. */
   readonly blobOpens: () => number;
+  /** Closes this pool and opens another over the same files, as a restart does. */
+  readonly reopen: () => Promise<Harness>;
   readonly cleanup: () => Promise<void>;
 };
 
@@ -156,7 +159,20 @@ export function harness(
   mirroring: Mirroring = "stub",
   destinations: readonly DestinationAdapter[] = [],
 ): Harness {
-  const directory = mkdtempSync(join(tmpdir(), "notemap-integration-"));
+  return over(
+    mkdtempSync(join(tmpdir(), "notemap-integration-")),
+    config,
+    mirroring,
+    destinations,
+  );
+}
+
+function over(
+  directory: string,
+  config: PoolConfig,
+  mirroring: Mirroring,
+  destinations: readonly DestinationAdapter[],
+): Harness {
   const file = join(directory, "pool.db");
   const mirrorRoot = join(directory, "pool-mirror");
   const assetRoot = join(directory, "assets");
@@ -192,17 +208,31 @@ export function harness(
 
   const pool = createPool(config, ports);
 
+  /**
+   * Only the last harness over these files may delete them: an earlier one
+   * cleaning up concurrently would pull the database out from under a pool that
+   * is still open over it.
+   */
+  let handedOver = false;
+
   return {
     pool,
     store,
     clock,
     ids,
     file,
+    directory,
     mirrorRoot,
     assetRoot,
     blobOpens: blobs.opens,
+    reopen: async () => {
+      await pool.close();
+      handedOver = true;
+      return over(directory, config, mirroring, destinations);
+    },
     cleanup: async () => {
       await pool.close();
+      if (handedOver) return;
       rmSync(directory, { recursive: true, force: true });
     },
   };

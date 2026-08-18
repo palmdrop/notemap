@@ -182,6 +182,7 @@ export function createSqlitePoolStore(
 ): SqlitePoolStore {
   const writer = new DatabaseSync(config.file);
   let reader = writer;
+  let shut = false;
   try {
     writer.exec("PRAGMA foreign_keys = ON");
     writer.exec(`PRAGMA busy_timeout = ${BUSY_TIMEOUT_MS}`);
@@ -842,7 +843,15 @@ export function createSqlitePoolStore(
     releaseLease: (lease: LeaseId) =>
       writes.transact(async () => jobs.releaseLease(lease)),
 
+    /**
+     * A host closes on the signal it was sent, and may be sent it twice, or
+     * close on an error path and again on the way out. The second close is the
+     * same statement as the first, so it answers rather than throwing.
+     */
     close: async () => {
+      if (shut) return;
+      shut = true;
+
       if (reader !== writer) reader.close();
       writer.close();
     },

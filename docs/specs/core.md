@@ -1,7 +1,7 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-08-17
+**Last updated**: 2026-08-18
 **Shipped**:
 
 - 2026-08-08 — A source needs no declaration to capture; `config.sources` is a policy registry
@@ -126,6 +126,11 @@
   page. `EditRefusal` gained the two asset refusals a capture has, since an edit may change an
   attached file. Enrichment invalidation is stated and deliberately not carried out: nothing runs
   enrichment to invalidate. ([plan](../plans/editing-and-classification.md))
+- 2026-08-18 — **A pool that is opened again.** Core through real adapters is now driven across a
+  restart: what was captured is there, work that was owed is still owed, and a lease a dead host
+  held is taken back only once it has run out. Two concurrent claimants never share a job. Closing
+  a pool twice answers rather than throwing, which a host sent the same signal twice was relying on
+  without knowing it. (plan: `docs/plans/complete-integration-tests.md`)
 
 ---
 
@@ -808,7 +813,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   (amended 2026-08-06): a clock and an id generator have nothing to release, and a method that
   does nothing on most implementations is one a host learns to ignore. Which ports hold
   something open is core's to know — the host wires the ports and closes the pool, and closes
-  nothing else itself.
+  nothing else itself. **Closing twice is not an error** (amended 2026-08-18): a host sent the
+  same signal twice, or closing on an error path and again on the way out, is stating what it
+  already stated, and a port that declares `close()` answers a repeat rather than throwing.
 - **The host wires adapters.** Core imports no adapter. Calls are in-process; there is no IPC.
 - Repository layout separates the domain, the adapters and the hosts.
 - **Core is storage-agnostic** (amended 2026-08-03,

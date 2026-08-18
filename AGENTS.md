@@ -31,6 +31,8 @@ Verification
 - Run typecheck, tests and linters when you finish a feature or a larger test.
 - Run tests as `pnpm -r --silent test`, which prints nothing at all; on a non-zero exit, re-run
   the failing package without `--silent` to see why.
+- `pnpm test:stack` is not part of finishing a feature. Run it after a change that crosses the
+  layers — the HTTP surface, the host's wiring, the client's transport, the config file.
 - Resolve every issue before you commit or state that you are done.
 
 ---
@@ -106,6 +108,12 @@ what they test.
 
 When you are done implementing a feature, or making a larger test, run typecheck, tests and linters. 
 Resolve any issues before commiting or stating that you are done.
+
+The full-stack suite is deliberately outside all of that. `pnpm -r test` skips it for want of a
+`test` script, and `pnpm test:stack` runs it: a daemon spawned per test, on a real port, driven by
+a real client. Run it after a change that crosses the layers — the HTTP surface, the host's wiring,
+the client's transport, the config file — or when asked, and leave it alone otherwise. CI runs it
+on every push, which is what keeps it honest without anyone paying for it locally.
 
 Run the tests as `pnpm -r --silent test`. It prints nothing — not even the failures — and says
 what happened through its exit code alone, which is all a green run has to say and is worth the

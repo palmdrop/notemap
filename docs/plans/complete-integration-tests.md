@@ -1,9 +1,9 @@
 # Complete integration tests
 
 **Date**: 2026-08-17
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/client.md`, `docs/specs/http-v1.md`, `docs/specs/core.md`
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-08-18
 
 ---
 
@@ -43,7 +43,7 @@ you run after a change that crosses the layers, and what CI runs on every push.
 
 ### Phase 0 — Branch
 
-- [ ] Create branch `agent/complete-integration-tests`.
+- [x] Create branch `agent/complete-integration-tests`.
 
 ### Phase 1 — A seeder over `/v1`
 
@@ -53,20 +53,21 @@ The seeder speaks HTTP, not the pool API. That is what lets one module serve bot
 running development daemon; a pool-level seeder could do neither without opening the SQLite file
 the daemon already holds.
 
-- [ ] New workspace package `tests/seed` (`@notemap/seed`), picked up by `pnpm -r` through the
+- [x] New workspace package `tests/seed` (`@notemap/seed`), picked up by `pnpm -r` through the
       existing `tests/*` entry in `pnpm-workspace.yaml`.
-- [ ] `seed(baseUrl, options)` captures a pool into the states worth asserting against: items in
+- [x] `seed(baseUrl, options)` captures a pool into the states worth asserting against: items in
       the feed, items with an uploaded asset attached, items marked processed, archived items, an
       item routed to a destination that is up, and an item whose delivery is owed to a destination
       that is down. All of it is reachable over `/v1`; the destinations themselves are not, so the
       README states which the daemon it seeds must have configured.
-- [ ] Every write goes through `/v1` with `fetch`; no import of `@notemap/core`, no file written
+- [x] Every write goes through `/v1` with `fetch`; no import of `@notemap/core`, no file written
       behind the daemon's back.
-- [ ] Deterministic by default: a `seed` option fixes the captured ids and timestamps, so a test
-      can assert on them and a second run produces the same pool.
-- [ ] Root `scripts/seed.ts`, `pnpm seed`, pointing at `http://127.0.0.1:4747` by default and
+- [x] Deterministic always, not by option: the ids and timestamps are fixed, so a test can assert
+      on them and a second run matches the pool the first one left. An `offset` shifts both, for a
+      caller that wants a second seeding to add rather than match.
+- [x] Root `scripts/seed.ts`, `pnpm seed`, pointing at `http://127.0.0.1:4747` by default and
       taking `--url`. Sibling of `scripts/dev.ts`; document both in the daemon README.
-- [ ] `git commit`.
+- [x] `git commit`.
 
 **Verify:** `pnpm seed` against a daemon started by `pnpm dev` fills the shell's feed and queue in
 the browser; running it twice produces no duplicates and no errors.
@@ -75,63 +76,62 @@ the browser; running it twice produces no duplicates and no errors.
 
 Depends on: Phase 1.
 
-- [ ] New workspace package `tests/full-stack` (`@notemap/full-stack-tests`), depending on
+- [x] New workspace package `tests/full-stack` (`@notemap/full-stack-tests`), depending on
       `@notemap/client` and `@notemap/seed`. It is a sibling of `tests/integration` rather than part
       of it: that package exists to drive core through adapters with no host in sight, and its
       README says so. It does not depend on `@notemap/daemon` — it runs the built binary.
-- [ ] The package has **no `test` script**. `pnpm -r test` runs what a change is normally verified
+- [x] The package has **no `test` script**. `pnpm -r test` runs what a change is normally verified
       by, and a suite that boots a daemon per test and binds a real port is not that. It gets
       `test:stack`, which `pnpm -r test` skips for want of the script, and a root `pnpm test:stack`
       that names it. `typecheck` stays, so the package is never invisible to the compiler.
-- [ ] A vitest `globalSetup` that builds the daemon, so the suite cannot run against a stale or
+- [x] A vitest `globalSetup` that builds the daemon, so the suite cannot run against a stale or
       missing `dist/`.
-- [ ] Harness: temp directories for pool, assets, mirror and vault, a config file written into them
+- [x] Harness: temp directories for pool, assets, mirror and vault, a config file written into them
       with `mirror.pollInterval` and `delivery.pollInterval` low, and a teardown that `SIGTERM`s the
       child and waits for it. A failed start prints the child's stderr — a suite that reports
       "connection refused" and nothing else is a suite nobody can debug.
-- [ ] One fixed port, 4748 by default — beside the daemon's own 4747, so a suite run never fights
+- [x] One fixed port, 4748 by default — beside the daemon's own 4747, so a suite run never fights
       the daemon `pnpm dev` left running. `NOTEMAP_TEST_PORT` in the root `.env` overrides it,
       alongside the `NOTEMAP_PORT` that is already there, and `.env.example` documents it. A port
       that is busy fails the run with a message naming the variable to set; the harness does not
       hunt for a free one, because a suite that quietly moves is a suite that hides what is running.
-- [ ] `fileParallelism: false` for this package. One port and one pool means one daemon at a time,
+- [x] `fileParallelism: false` for this package. One port and one pool means one daemon at a time,
       and vitest runs files in parallel by default.
-- [ ] Wait for the daemon's own startup line on stdout, which already names the address it bound,
+- [x] Wait for the daemon's own startup line on stdout, which already names the address it bound,
       and confirm with one request. A poll loop against a port that is not open yet cannot tell
       "still starting" from "died on the way up".
-- [ ] A client per test: `createFetchTransport(baseUrl)` over `createMemoryStore()`.
-- [ ] Journey: capture through the client, read it back on `/v1/feed`, and see the client's own
+- [x] A client per test: `createFetchTransport(baseUrl)` over `createMemoryStore()`.
+- [x] Journey: capture through the client, read it back on `/v1/feed`, and see the client's own
       feed observable hold what the daemon returned.
-- [ ] Journey: upload bytes with `uploadAsset`, capture an image referencing the asset, fetch the
+- [x] Journey: upload bytes with `uploadAsset`, capture an image referencing the asset, fetch the
       URL `assetContent` produces, and get the bytes back.
-- [ ] Journey: process an item and wait for the mirror record to appear on disk — written by the
+- [x] Journey: process an item and wait for the mirror record to appear on disk — written by the
       daemon's own runner on its own timer, with nothing draining it.
-- [ ] Journey: route an item to a filesystem destination and wait for the vault file, likewise
+- [x] Journey: route an item to a filesystem destination and wait for the vault file, likewise
       undriven.
-- [ ] Journey: archive, and see the item leave the queue on both sides.
-- [ ] Journey: the outbox. Mutate while the daemon is dead, see the operation stay pending and the
+- [x] Journey: archive, and see the item leave the queue on both sides.
+- [x] Journey: the outbox. Mutate while the daemon is dead, see the operation stay pending and the
       client report it unreachable, start a daemon again over the same directories, `drain()`, and
       see the mutation land exactly once.
-- [ ] Journey: shutdown and restart. `SIGTERM` ends the process cleanly, and what was captured is
+- [x] Journey: shutdown and restart. `SIGTERM` ends the process cleanly, and what was captured is
       there when it comes back — which is also the only test that the config file, the host wiring
       and `main.ts` work at all.
-- [ ] Every wait is a bounded poll-until with a clear timeout message, never a fixed sleep, and
+- [x] Every wait is a bounded poll-until with a clear timeout message, never a fixed sleep, and
       every one waits for something to appear. A test that asserts something has *not* happened yet
       is asserting on a race; where a negative matters — a delivery still owed, an operation still
       pending — it is asserted after a positive fence the daemon has demonstrably passed.
-- [ ] A test that the committed `apps/daemon/openapi.json` is what the daemon serves. It lands in
-      `apps/daemon`'s own suite over `app.request`, not here: `packages/client` generates its types
-      from that file, so a stale one silently invalidates them, and a drift check is worth nothing
-      if it only runs on demand. Response bodies are not validated against the document — the routes
-      own their shapes and already test them.
-- [ ] A line in `AGENTS.md`, under Verification: `pnpm test:stack` is not part of finishing a
+- [x] A test that the committed `apps/daemon/openapi.json` is what the daemon serves _(2026-08-18 —
+      already there: `openapi.test.ts` asserts it. What nothing checks is the step after it, so the
+      CI job runs `codegen` and fails on a diff: `packages/client`'s generated types can be stale
+      against a document that is itself current.)_
+- [x] A line in `AGENTS.md`, under Verification: `pnpm test:stack` is not part of finishing a
       feature. Run it after a change that crosses the layers — the HTTP surface, the host's wiring,
       the client's transport, the config file — or when asked, and run `pnpm -r --silent test`
       otherwise.
-- [ ] A CI job of its own in `.github/workflows/verify.yml`, after the existing one. Keeping the
+- [x] A CI job of its own in `.github/workflows/verify.yml`, after the existing one. Keeping the
       suite out of the local default is about an agent's context and a developer's patience;
       neither applies to a clean runner, and a suite nothing runs is a suite that rots.
-- [ ] `git commit`.
+- [x] `git commit`.
 
 **Verify:** `pnpm test:stack` green; `pnpm -r test` does not run it; `pgrep -f notemap-daemon` finds
 nothing afterwards; each journey fails loudly, not silently, when the daemon never started.
@@ -140,16 +140,23 @@ nothing afterwards; each journey fails loudly, not silently, when the daemon nev
 
 Depends on: nothing. Independent of Phases 1–2 and can land before or after them.
 
-- [ ] A pool closed and opened again over the same file: what was captured is there, and work that
-      was owed is still owed. Nothing in `tests/integration` reopens a store today.
+- [x] A pool closed and opened again over the same file: what was captured is there, and work that
+      was owed is still owed _(2026-08-18)_. The fixture grew a `reopen`, and closing is idempotent
+      now — the driver throws on a second close, which a reopened harness would otherwise hit.
 - [-] Enrichments _(dropped — core does not implement them: `pool.ts` wires `statusOf`, `request`,
       `artifactsFor` and `correct` to `notImplemented`, and recording enrichment output throws.
       There is nothing to drive.)_
-- [ ] The sweep at its boundary: an unreferenced asset inside `grace` survives, the same asset
-      after `grace` does not, driven by moving the frozen clock.
-- [ ] A second claimant against a held lease, and the same claimant after the lease expires.
-- [ ] A blob that drifted under a delivery and under a mirror write, not only under `verify`.
-- [ ] `git commit`.
+- [-] The sweep at its boundary _(dropped — already covered: `assets.test.ts` has "leaves an upload
+      alone inside the grace window" and "takes an upload no capture ever claimed", both driven by
+      the frozen clock.)_
+- [x] A second claimant against a held lease, and the same claimant after the lease expires
+      _(2026-08-18 — two concurrent claims never share a job, and a lease a dead host held is taken
+      back only once it has run out.)_
+- [-] A blob that drifted under a delivery and under a mirror write _(dropped — there is no
+      guarantee here to assert. A mirror record never reaches the blob store, which `assets.test.ts`
+      already pins, and a read never rehashes by design, so such a test would enshrine the absence
+      of detection. Whether delivery should verify is a design question, not a missing test.)_
+- [x] `git commit`.
 
 **Verify:** `pnpm --filter @notemap/integration-tests test` green, and each new test fails when the
 behaviour it names is broken (check by breaking it locally, not by trusting the green).
@@ -158,14 +165,14 @@ behaviour it names is broken (check by breaking it locally, not by trusting the 
 
 Depends on: Phases 1–3.
 
-- [ ] `tests/full-stack/README.md`: what it covers that the other suites cannot, and why it runs the
+- [x] `tests/full-stack/README.md`: what it covers that the other suites cannot, and why it runs the
       binary rather than importing the host.
-- [ ] `tests/seed/README.md`, and a line in `apps/daemon/README.md` about `pnpm seed`.
-- [ ] `NOTEMAP_TEST_PORT` in `.env.example`, saying what it is for and when to change it.
-- [ ] A paragraph in `tests/integration/README.md` distinguishing it from the new package, so the
+- [x] `tests/seed/README.md`, and a line in `apps/daemon/README.md` about `pnpm seed`.
+- [x] `NOTEMAP_TEST_PORT` in `.env.example`, saying what it is for and when to change it.
+- [x] A paragraph in `tests/integration/README.md` distinguishing it from the new package, so the
       next person picks the right one.
-- [ ] `Shipped:` entries in `docs/specs/client.md`, `docs/specs/http-v1.md` and `docs/specs/core.md`.
-- [ ] `git commit`.
+- [x] `Shipped:` entries in `docs/specs/client.md`, `docs/specs/http-v1.md` and `docs/specs/core.md`.
+- [x] `git commit`.
 
 **Verify:** root `pnpm typecheck`, `pnpm lint`, `pnpm format:check` and `pnpm -r test` are green;
 CI green on the branch.
