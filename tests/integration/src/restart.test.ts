@@ -111,3 +111,14 @@ describe("two claimants over one pool", () => {
     expect(new Set(claimed).size).toBe(2);
   });
 });
+
+describe("a pool closed twice", () => {
+  it("is the same statement twice, not an error the second time", async () => {
+    const opened = pool();
+    await opened.pool.capture(envelope({ id: "item-1" }));
+
+    await opened.pool.close();
+
+    await expect(opened.pool.close()).resolves.toBeUndefined();
+  });
+});

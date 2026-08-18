@@ -1331,3 +1331,13 @@ describe("two stores in one process", () => {
     expect(await other.pool.item(record.id)).toBeUndefined();
   });
 });
+
+describe("closing", () => {
+  it("answers a second close rather than throwing at whoever asked twice", async () => {
+    const { pool: p } = pool();
+
+    await p.close();
+
+    await expect(p.close()).resolves.toBeUndefined();
+  });
+});

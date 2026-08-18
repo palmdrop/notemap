@@ -208,15 +208,6 @@ function over(
 
   const pool = createPool(config, ports);
 
-  // A pool closed twice throws from the driver, and a reopened harness leaves
-  // the first one closed but still registered for cleanup.
-  let closed = false;
-  const close = async () => {
-    if (closed) return;
-    closed = true;
-    await pool.close();
-  };
-
   return {
     pool,
     store,
@@ -228,11 +219,11 @@ function over(
     assetRoot,
     blobOpens: blobs.opens,
     reopen: async () => {
-      await close();
+      await pool.close();
       return over(directory, config, mirroring, destinations);
     },
     cleanup: async () => {
-      await close();
+      await pool.close();
       rmSync(directory, { recursive: true, force: true });
     },
   };
