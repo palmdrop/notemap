@@ -21,4 +21,3 @@ Above this sits [`tests/full-stack`](../full-stack/README.md), which starts the 
 drives it with the real client over HTTP. The line between them: if a test would pass with no host
 in the picture, it belongs here, where it costs milliseconds; if it is about the client and the
 daemon agreeing, it belongs there, where a daemon is started to prove it.
-

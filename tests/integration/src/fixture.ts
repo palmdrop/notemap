@@ -208,6 +208,13 @@ function over(
 
   const pool = createPool(config, ports);
 
+  /**
+   * Only the last harness over these files may delete them: an earlier one
+   * cleaning up concurrently would pull the database out from under a pool that
+   * is still open over it.
+   */
+  let handedOver = false;
+
   return {
     pool,
     store,
@@ -220,10 +227,12 @@ function over(
     blobOpens: blobs.opens,
     reopen: async () => {
       await pool.close();
+      handedOver = true;
       return over(directory, config, mirroring, destinations);
     },
     cleanup: async () => {
       await pool.close();
+      if (handedOver) return;
       rmSync(directory, { recursive: true, force: true });
     },
   };

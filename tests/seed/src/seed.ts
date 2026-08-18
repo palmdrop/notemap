@@ -193,8 +193,12 @@ async function routeEach(
   const { values } = await http.get<Destinations>("/v1/destinations");
   const sent: { item: string; destination: string }[] = [];
 
-  for (const [index, destination] of values.entries()) {
-    const item = items[index];
+  // An item is spent only when a destination takes it, so a skipped
+  // destination leaves it for the next one rather than using it up.
+  let next = 0;
+
+  for (const destination of values) {
+    const item = items[next];
     if (item === undefined) break;
     if (
       destination.kind !== "described" ||
@@ -202,6 +206,7 @@ async function routeEach(
     ) {
       continue;
     }
+    next += 1;
 
     const records = await http.get<RoutingRecords>(`/v1/items/${item}/routing`);
     if (records.values.length === 0) {

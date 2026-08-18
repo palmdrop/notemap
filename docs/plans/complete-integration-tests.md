@@ -62,8 +62,9 @@ the daemon already holds.
       README states which the daemon it seeds must have configured.
 - [x] Every write goes through `/v1` with `fetch`; no import of `@notemap/core`, no file written
       behind the daemon's back.
-- [x] Deterministic by default: a `seed` option fixes the captured ids and timestamps, so a test
-      can assert on them and a second run produces the same pool.
+- [x] Deterministic always, not by option: the ids and timestamps are fixed, so a test can assert
+      on them and a second run matches the pool the first one left. An `offset` shifts both, for a
+      caller that wants a second seeding to add rather than match.
 - [x] Root `scripts/seed.ts`, `pnpm seed`, pointing at `http://127.0.0.1:4747` by default and
       taking `--url`. Sibling of `scripts/dev.ts`; document both in the daemon README.
 - [x] `git commit`.

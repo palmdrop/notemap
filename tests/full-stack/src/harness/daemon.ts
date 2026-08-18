@@ -68,7 +68,15 @@ async function start(on: World): Promise<Running> {
   child.stdout.on("data", collect);
   child.stderr.on("data", collect);
 
-  const url = await ready(child, on, () => said);
+  /**
+   * A daemon that never announced itself is still a daemon holding the port,
+   * and nothing has a handle on it yet — so it is stopped here rather than by
+   * the teardown that only learns about a start which succeeded.
+   */
+  const url = await ready(child, on, () => said).catch(async (cause: Error) => {
+    await stop(child);
+    throw cause;
+  });
 
   return {
     url,
