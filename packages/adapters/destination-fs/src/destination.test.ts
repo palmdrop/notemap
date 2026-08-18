@@ -8,7 +8,12 @@ import {
 } from "node:fs/promises";
 import { join } from "node:path";
 
-import type { DestinationAdapter, PayloadTypeName } from "@notemap/core";
+import type {
+  Delivery,
+  DeliveryOutcome,
+  DestinationDescriptor,
+  PayloadTypeName,
+} from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createFilesystemDestination } from "./destination";
@@ -17,10 +22,10 @@ import {
   bytes,
   delivery,
   deliveredAsset,
+  destinationRow,
   filesUnder,
   root,
   TEXT,
-  VAULT,
 } from "./testing/fixture";
 
 const cleanups: Array<() => void> = [];
@@ -40,10 +45,33 @@ const renderWithAssets: Renderer = (each, where) => ({
     .join("\n"),
 });
 
+/**
+ * The kind, with one destination row already bound to it. The row is a
+ * parameter of every call, so the tests hold it once here rather than at each.
+ */
+type Bound = {
+  describe(): Promise<DestinationDescriptor>;
+  deliver(delivery: Delivery, signal?: AbortSignal): Promise<DeliveryOutcome>;
+};
+
 type Vault = {
   readonly path: string;
-  readonly destination: DestinationAdapter;
+  readonly destination: Bound;
 };
+
+function bind(
+  path: string,
+  accepts: readonly PayloadTypeName[],
+  renderers: Record<string, Renderer>,
+): Bound {
+  const kind = createFilesystemDestination({ renderers });
+  const row = destinationRow({ root: path, accepts });
+
+  return {
+    describe: () => kind.describe(row),
+    deliver: (each, signal) => kind.deliver(row, each, signal),
+  };
+}
 
 async function vault(renderers: Record<string, Renderer> = {}): Promise<Vault> {
   const made = root();
@@ -52,12 +80,7 @@ async function vault(renderers: Record<string, Renderer> = {}): Promise<Vault> {
 
   return {
     path: made.path,
-    destination: createFilesystemDestination({
-      id: VAULT,
-      root: made.path,
-      accepts: [TEXT, "image" as PayloadTypeName],
-      renderers,
-    }),
+    destination: bind(made.path, [TEXT, "image" as PayloadTypeName], renderers),
   };
 }
 
@@ -65,14 +88,7 @@ async function noVault(): Promise<Vault> {
   const made = root();
   cleanups.push(made.cleanup);
 
-  return {
-    path: made.path,
-    destination: createFilesystemDestination({
-      id: VAULT,
-      root: made.path,
-      accepts: [TEXT],
-    }),
-  };
+  return { path: made.path, destination: bind(made.path, [TEXT], {}) };
 }
 
 describe("what it says it can do", () => {
@@ -80,7 +96,6 @@ describe("what it says it can do", () => {
     const { destination } = await vault();
     const described = await destination.describe();
 
-    expect(described.id).toBe(VAULT);
     expect(described.capabilities.map((each) => each.name)).toEqual([
       "create-file",
       "append-to-file",

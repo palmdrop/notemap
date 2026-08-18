@@ -15,6 +15,7 @@
     "js-yaml": "^5.2.3"
   },
   "devDependencies": {
+    "@notemap/schema-ajv": "workspace:*",
     "@types/node": "^24.10.1",
     "vitest": "^4.1.10"
   }

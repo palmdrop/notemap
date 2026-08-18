@@ -4,8 +4,8 @@ import { dirname, join } from "node:path";
 import type {
   Delivery,
   DeliveryOutcome,
-  DestinationAdapter,
-  DestinationId,
+  Destination,
+  DestinationKindAdapter,
   PayloadTypeName,
 } from "@notemap/core";
 
@@ -29,15 +29,27 @@ import {
   type Rendering,
   type RenderingContext,
 } from "./renderers";
+import {
+  asFilesystemSettings,
+  FILESYSTEM,
+  FILESYSTEM_SETTINGS,
+} from "./settings";
 import { insertUnder } from "./sections";
 
+/**
+ * What the host wires, which is everything about the kind that is not a
+ * person's to fill in. A renderer is code rather than a setting, so it stays
+ * here and out of the settings schema.
+ */
 export type FilesystemDestinationConfig = {
-  readonly id: DestinationId;
-  /** The directory the destination *is*. Never created. */
-  readonly root: string;
-  readonly accepts: readonly PayloadTypeName[];
   /** By payload type. A type with no renderer gets the default rendering. */
   readonly renderers?: Renderers;
+  /**
+   * What a destination naming no `accepts` takes. Every payload type has a
+   * rendering — the fenced-JSON fallback is the floor — so a folder that was
+   * not told what it holds holds everything the pool knows about.
+   */
+  readonly accepts?: readonly PayloadTypeName[];
 };
 
 const UNREACHABLE: readonly string[] = [
@@ -49,21 +61,40 @@ const UNREACHABLE: readonly string[] = [
 ];
 
 export function createFilesystemDestination(
-  config: FilesystemDestinationConfig,
-): DestinationAdapter {
+  config: FilesystemDestinationConfig = {},
+): DestinationKindAdapter {
   const renderers = config.renderers ?? {};
-
-  const descriptor = {
-    id: config.id,
-    capabilities: capabilitiesFor(config.accepts),
-  };
+  const fallback = config.accepts ?? [];
 
   return {
-    id: config.id,
-    describe: () => Promise.resolve(descriptor),
+    name: FILESYSTEM,
+    settingsSchema: FILESYSTEM_SETTINGS,
 
-    deliver: async (delivery, signal): Promise<DeliveryOutcome> => {
-      const reached = await reachRoot(config.root);
+    /**
+     * Never looks at the filesystem. A root that is not mounted is something a
+     * delivery discovers and retries past; refusing to describe it would turn a
+     * decision worth reserving into one that cannot be made at all.
+     */
+    describe: (destination) => {
+      const settings = asFilesystemSettings(destination.settings);
+      return settings === undefined
+        ? Promise.reject(unreadable(destination))
+        : Promise.resolve({
+            capabilities: capabilitiesFor(settings.accepts ?? fallback),
+          });
+    },
+
+    deliver: async (
+      destination,
+      delivery,
+      signal,
+    ): Promise<DeliveryOutcome> => {
+      const settings = asFilesystemSettings(destination.settings);
+      if (settings === undefined) {
+        return { kind: "rejected", detail: why(unreadable(destination)) };
+      }
+
+      const reached = await reachRoot(settings.root);
       if (typeof reached !== "string") return reached;
 
       try {
@@ -78,6 +109,11 @@ export function createFilesystemDestination(
       }
     },
   };
+}
+
+/** Core checks settings against the schema first, so this is the two disagreeing. */
+function unreadable(destination: Destination): Error {
+  return new Error(`${destination.name} has no readable filesystem settings`);
 }
 
 /** The root as the filesystem holds it, or why it could not be reached. */
