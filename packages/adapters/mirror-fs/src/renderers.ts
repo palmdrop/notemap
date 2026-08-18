@@ -1,4 +1,4 @@
-import type { MirrorRecord, PayloadTypeName } from "@notemap/core";
+import type { ItemMirrorRecord, PayloadTypeName } from "@notemap/core";
 
 import type { FrontmatterValue } from "./frontmatter";
 
@@ -23,7 +23,7 @@ export type RenderingContext = {
  * produces, and losslessness rides entirely on the record beside it.
  */
 export type Renderer = (
-  record: MirrorRecord,
+  record: ItemMirrorRecord,
   at: RenderingContext,
 ) => Rendering;
 

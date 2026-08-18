@@ -102,7 +102,7 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
       abandoned: (page) => work.abandoned(ports, page),
     },
 
-    mirror: { recordFor: (item) => mirror.recordFor(ports, item) },
+    mirror: { recordFor: (subject) => mirror.recordFor(ports, subject) },
 
     actions: {
       forItem: (item, page) =>

@@ -8,6 +8,7 @@ import type {
   BlobHash,
   CapabilityName,
   DestinationId,
+  DestinationKindName,
   EnrichmentName,
   ItemId,
   PayloadTypeName,
@@ -17,6 +18,7 @@ import type {
   TagName,
   Timestamp,
 } from "../types/domain/ids";
+import type { DestinationRecord } from "../types/domain/destination";
 import type { ArchiveState, ItemRecord, Tag } from "../types/domain/item";
 import type { MirrorRecord } from "../types/domain/mirror";
 import type { Payload } from "../types/domain/payload";
@@ -35,21 +37,47 @@ export function serialiseMirrorRecord(record: MirrorRecord): string {
 }
 
 /** Rejects rather than salvages: a half-record would let verify call a mirror healthy that cannot rebuild. */
-export function parseMirrorRecord(text: string): MirrorRecord {
+export function parseMirrorRecord(source: string): MirrorRecord {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(text);
+    parsed = JSON.parse(source);
   } catch (cause) {
     throw new TypeError(`not a mirror record: ${String(cause)}`, { cause });
   }
 
   const root = object(parsed, "the record");
+  const kind = text(root["kind"], "kind");
+
+  switch (kind) {
+    case "item":
+      return {
+        kind: "item",
+        item: readItem(root["item"], "item"),
+        assets: list(root["assets"], "assets", readAsset),
+        artifacts: list(root["artifacts"], "artifacts", readArtifact),
+        routing: list(root["routing"], "routing", readRouting),
+        modifiedAt: stamp(root["modifiedAt"], "modifiedAt"),
+      };
+    case "destination":
+      return {
+        kind: "destination",
+        destination: readDestination(root["destination"], "destination"),
+        modifiedAt: stamp(root["modifiedAt"], "modifiedAt"),
+      };
+    default:
+      reject("kind", "a mirror record kind");
+  }
+}
+
+function readDestination(value: unknown, at: string): DestinationRecord {
+  const row = object(value, at);
   return {
-    item: readItem(root["item"], "item"),
-    assets: list(root["assets"], "assets", readAsset),
-    artifacts: list(root["artifacts"], "artifacts", readArtifact),
-    routing: list(root["routing"], "routing", readRouting),
-    modifiedAt: stamp(root["modifiedAt"], "modifiedAt"),
+    id: text(row["id"], `${at}.id`) as DestinationId,
+    name: text(row["name"], `${at}.name`),
+    kind: text(row["kind"], `${at}.kind`) as DestinationKindName,
+    settings: object(row["settings"], `${at}.settings`) as JsonObject,
+    ...present("retiredAt", row, at, stamp),
+    createdAt: stamp(row["createdAt"], `${at}.createdAt`),
   };
 }
 

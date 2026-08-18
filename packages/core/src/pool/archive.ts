@@ -31,7 +31,7 @@ export function archive(
       ...(reason === undefined ? {} : { reason }),
     });
 
-    await enqueueMirrorWrite(ports, tx, id, at);
+    await enqueueMirrorWrite(ports, tx, { kind: "item", item: id }, at);
     await recordAction(ports, tx, {
       kind: "archived",
       subject: id,
@@ -59,7 +59,7 @@ export function unarchive(
     const at = ports.clock.now();
     const restored = await tx.setArchiveState(id);
 
-    await enqueueMirrorWrite(ports, tx, id, at);
+    await enqueueMirrorWrite(ports, tx, { kind: "item", item: id }, at);
     await recordAction(ports, tx, {
       kind: "unarchived",
       subject: id,

@@ -65,10 +65,14 @@ export type DestinationRow = {
 export type JobRow = {
   readonly id: string;
   readonly kind: "enrichment" | "mirror" | "mirror-remove" | "delivery";
-  readonly subject_kind: "item" | "routing-record";
+  readonly subject_kind: "item" | "routing-record" | "destination";
   readonly subject_id: string;
-  /** The capture the work concerns, which outlives a subject that may be removed. */
-  readonly subject_item: string;
+  /**
+   * The capture the work concerns, which outlives a subject that may be
+   * removed. Null for work about no capture at all, which a destination's
+   * mirror write is.
+   */
+  readonly subject_item: string | null;
   readonly enrichment: string | null;
   readonly attempt: number;
   readonly enqueued_at: number;

@@ -25,7 +25,7 @@ import type {
   DestinationRecord,
 } from "../domain/destination";
 import type { ArchiveState, Item, ItemRecord, Tag } from "../domain/item";
-import type { MirrorRecord } from "../domain/mirror";
+import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
 import type { Payload } from "../domain/payload";
 import type { AbandonedPosition } from "../domain/position";
 import type {
@@ -103,8 +103,8 @@ export interface BlobStore {
  */
 export interface MirrorWriter {
   write(record: MirrorRecord): Promise<void>;
-  /** The item may already be purged, so this is given a bare id. */
-  remove(item: ItemId): Promise<void>;
+  /** What it names may already be gone, so this is given a bare subject. */
+  remove(subject: MirrorSubject): Promise<void>;
 }
 
 /**

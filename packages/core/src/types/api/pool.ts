@@ -25,7 +25,7 @@ import type {
   TagName,
 } from "../domain/ids";
 import type { EditOutcome, Item } from "../domain/item";
-import type { MirrorRecord } from "../domain/mirror";
+import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
 import type { Payload } from "../domain/payload";
 import type { AbandonedPosition } from "../domain/position";
 import type {
@@ -204,8 +204,8 @@ export interface SyncApi {
 }
 
 export interface MirrorApi {
-  /** What the mirror would write for this item now, or nothing if it is gone. */
-  recordFor(item: ItemId): Promise<MirrorRecord | undefined>;
+  /** What the mirror would write for this now, or nothing if it has gone. */
+  recordFor(subject: MirrorSubject): Promise<MirrorRecord | undefined>;
 }
 
 export type MirrorReport = {

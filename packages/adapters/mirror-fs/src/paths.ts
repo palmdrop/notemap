@@ -1,10 +1,13 @@
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 
-import type { MirrorRecord } from "@notemap/core";
+import type { DestinationId, ItemMirrorRecord } from "@notemap/core";
 
 /** Everything a filename may contain, on every filesystem worth supporting. */
 const SAFE = /^[a-z0-9._-]+$/i;
+
+/** The mirror's one non-item unit, kept apart from the day it would land under. */
+export const DESTINATIONS = "destinations";
 
 export type MirrorPaths = {
   readonly directory: string;
@@ -19,7 +22,7 @@ export type MirrorPaths = {
  * Every component is immutable, so the same item resolves to the same path on
  * every machine, forever.
  */
-export function pathsFor(root: string, record: MirrorRecord): MirrorPaths {
+export function pathsFor(root: string, record: ItemMirrorRecord): MirrorPaths {
   const captured = new Date(record.item.createdAt);
   const directory = join(
     root,
@@ -39,6 +42,18 @@ export function pathsFor(root: string, record: MirrorRecord): MirrorPaths {
     record: join(directory, `${stem}.json`),
     rendering: join(directory, `${stem}.md`),
   };
+}
+
+/**
+ * Where one destination's record lives. Its id is minted and immutable, so
+ * unlike an item it needs no path composed of the things about it that cannot
+ * change: `<root>/destinations/019a3f2c-....json`.
+ *
+ * No rendering beside it. A rendering exists because an item's payload is not
+ * readable as JSON by a person who has lost notemap; five fields are.
+ */
+export function destinationPathFor(root: string, id: DestinationId): string {
+  return join(root, DESTINATIONS, `${filenameSafe(id)}.json`);
 }
 
 /** The rendering that belongs to a record file, which shares its stem. */

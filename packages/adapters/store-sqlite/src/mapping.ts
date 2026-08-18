@@ -192,19 +192,34 @@ export function toAsset(row: AssetRow): Asset {
 export function toJobSubject(
   row: Pick<JobRow, "subject_kind" | "subject_id">,
 ): JobSubject {
-  return row.subject_kind === "item"
-    ? { kind: "item", item: row.subject_id as ItemId }
-    : { kind: "routing-record", record: row.subject_id as RoutingRecordId };
+  switch (row.subject_kind) {
+    case "item":
+      return { kind: "item", item: row.subject_id as ItemId };
+    case "routing-record":
+      return {
+        kind: "routing-record",
+        record: row.subject_id as RoutingRecordId,
+      };
+    case "destination":
+      return {
+        kind: "destination",
+        destination: row.subject_id as DestinationId,
+      };
+  }
 }
 
 /** The pair a subject is stored as, in the order every statement binds them. */
 export function subjectColumns(
   subject: JobSubject,
 ): [JobRow["subject_kind"], string] {
-  return [
-    subject.kind,
-    subject.kind === "item" ? subject.item : subject.record,
-  ];
+  switch (subject.kind) {
+    case "item":
+      return ["item", subject.item];
+    case "routing-record":
+      return ["routing-record", subject.record];
+    case "destination":
+      return ["destination", subject.destination];
+  }
 }
 
 export function toJob(row: JobRow): Job {

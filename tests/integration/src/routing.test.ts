@@ -24,6 +24,7 @@ import {
   drainWith,
   envelope,
   harness,
+  itemRecord,
   upload,
   type Harness,
 } from "./fixture";
@@ -183,7 +184,7 @@ describe("routing to a destination that is up", () => {
       detail: { record: record.id, destination: VAULT },
     });
     expect(await drainWith(opened)()).toBe(1);
-    expect((await pool.mirror.recordFor(item))?.routing).toEqual([record]);
+    expect((await itemRecord(pool, item))?.routing).toEqual([record]);
   });
 });
 
@@ -257,7 +258,7 @@ describe("routing to a destination that could not be reached", () => {
     await pool.routing.route(item, request());
 
     expect(await drainWith(opened)()).toBe(0);
-    expect((await pool.mirror.recordFor(item))?.routing).toEqual([]);
+    expect((await itemRecord(pool, item))?.routing).toEqual([]);
   });
 });
 
@@ -618,6 +619,26 @@ describe("the assets a delivery carries", () => {
 
     expect(opened.destination.received[0]?.delivery.assets).toHaveLength(2);
     expect(opened.blobOpens()).toBe(before);
+  });
+});
+
+/**
+ * A routing record's destination is a real reference now, so the check the
+ * schema makes is worth making from outside it: nothing a route writes may name
+ * a row that is not there.
+ */
+describe("what a route leaves in the database", () => {
+  it("leaves every reference resolving", async () => {
+    const opened = await pooled();
+    const item = await capture(opened.pool);
+    await opened.pool.routing.route(item, request());
+
+    const raw = new DatabaseSync(opened.file, { readOnly: true });
+    try {
+      expect(raw.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
+    } finally {
+      raw.close();
+    }
   });
 });
 

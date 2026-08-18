@@ -257,7 +257,12 @@ async function deliver(
   };
 
   await tx.insertRoutingRecord(delivered);
-  await enqueueMirrorWrite(ports, tx, record.item, record.at);
+  await enqueueMirrorWrite(
+    ports,
+    tx,
+    { kind: "item", item: record.item },
+    record.at,
+  );
 
   return ok(delivered);
 }

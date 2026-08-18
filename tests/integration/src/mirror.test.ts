@@ -1,13 +1,15 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import {
+  parseMirrorRecord,
   type Duration,
   type Item,
   type JobId,
   type Lease,
   type Pool,
 } from "@notemap/core";
+import { FAKE_KIND, fakeDestinations } from "@notemap/core/testing";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
@@ -16,6 +18,7 @@ import {
   envelope,
   filesUnder,
   harness,
+  itemRecord,
   storedRecord,
   type Harness,
   type Mirroring,
@@ -52,7 +55,7 @@ describe("capture to disk", () => {
     expect(await drainWith(harnessed)()).toBe(1);
 
     const stored = await storedRecord(harnessed.mirrorRoot);
-    expect(stored).toEqual(await harnessed.pool.mirror.recordFor(item.id));
+    expect(stored).toEqual(await itemRecord(harnessed.pool, item.id));
     expect(stored.item.id).toBe(item.id);
     expect(stored.item.payload.content).toEqual({ text: "worth keeping" });
     expect(stored.modifiedAt).toBe(item.modifiedAt);
@@ -242,5 +245,114 @@ describe("a mutation arriving while a write is in flight", () => {
     });
 
     expect(second).toEqual([]);
+  });
+});
+
+/**
+ * The mirror's one non-item unit. A delivered routing record names a
+ * destination, so a mirror that carried only items would rebuild a pool whose
+ * records refer to destinations it cannot produce.
+ */
+describe("a destination on disk", () => {
+  function pooled(): Harness {
+    const opened = harness(undefined, "filesystem", fakeDestinations());
+    open.push(opened);
+    return opened;
+  }
+
+  async function vault(harnessed: Harness) {
+    const created = await harnessed.pool.destinations.create({
+      name: "Vault",
+      kind: FAKE_KIND,
+      settings: {},
+    });
+    if (created.kind === "refused") {
+      throw new Error(`refused: ${JSON.stringify(created.refusal)}`);
+    }
+    return created.value;
+  }
+
+  const files = (harnessed: Harness) => filesUnder(harnessed.mirrorRoot);
+
+  it("owes a write the moment it is created, and lands a file of its own", async () => {
+    const harnessed = pooled();
+    const created = await vault(harnessed);
+
+    expect(await drainWith(harnessed)()).toBe(1);
+
+    expect(await files(harnessed)).toEqual([
+      join(harnessed.mirrorRoot, "destinations", `${created.id}.json`),
+    ]);
+    expect(
+      await harnessed.pool.mirror.recordFor({
+        kind: "destination",
+        destination: created.id,
+      }),
+    ).toMatchObject({ kind: "destination", destination: { name: "Vault" } });
+  });
+
+  it("owes another on every edit, and the file says what the pool says", async () => {
+    const harnessed = pooled();
+    const created = await vault(harnessed);
+    await drainWith(harnessed)();
+
+    await harnessed.pool.destinations.rename(created.id, "Second brain");
+    expect(await drainWith(harnessed)()).toBe(1);
+
+    const stored = parseMirrorRecord(
+      await readFile(
+        join(harnessed.mirrorRoot, "destinations", `${created.id}.json`),
+        "utf8",
+      ),
+    );
+    if (stored.kind !== "destination")
+      throw new Error("expected a destination");
+    expect(stored.destination.name).toBe("Second brain");
+  });
+
+  /** Being retired is exactly the state of a destination that records still name. */
+  it("carries a retired one rather than dropping it", async () => {
+    const harnessed = pooled();
+    const created = await vault(harnessed);
+    await harnessed.pool.destinations.retire(created.id);
+
+    await drainWith(harnessed)();
+
+    const stored = parseMirrorRecord(
+      await readFile(
+        join(harnessed.mirrorRoot, "destinations", `${created.id}.json`),
+        "utf8",
+      ),
+    );
+    if (stored.kind !== "destination")
+      throw new Error("expected a destination");
+    expect(stored.destination.retiredAt).toBeDefined();
+  });
+
+  it("takes its file with it when it is deleted", async () => {
+    const harnessed = pooled();
+    const created = await vault(harnessed);
+    await drainWith(harnessed)();
+
+    expect((await harnessed.pool.destinations.delete(created.id)).kind).toBe(
+      "ok",
+    );
+    expect(await drainWith(harnessed)()).toBe(1);
+
+    expect(await files(harnessed)).toEqual([]);
+  });
+
+  it("writes beside items rather than instead of them", async () => {
+    const harnessed = pooled();
+    const created = await vault(harnessed);
+    captured(await harnessed.pool.capture(envelope({ text: "a thought" })));
+
+    await drainWith(harnessed)();
+
+    const written = await files(harnessed);
+    expect(written).toContain(
+      join(harnessed.mirrorRoot, "destinations", `${created.id}.json`),
+    );
+    expect(written.filter((path) => path.endsWith(".md"))).toHaveLength(1);
   });
 });

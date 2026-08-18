@@ -1,4 +1,5 @@
 import { recordAction } from "../actions";
+import { enqueueMirrorRemove, enqueueMirrorWrite } from "../mirror";
 import { ok, refused } from "../../utils/result";
 import type { PoolPorts, PoolTx } from "../../types/api/ports";
 import type {
@@ -59,7 +60,7 @@ export function create(
     };
 
     const stored = await tx.insertDestination(record);
-    await trace(ports, tx, "destination-created", stored, at, {
+    await changed(ports, tx, "destination-created", stored, at, {
       name: stored.name,
       destinationKind: stored.kind,
     });
@@ -85,7 +86,7 @@ export function rename(
 
     const at = ports.clock.now();
     const stored = await tx.updateDestination({ ...record(held), name });
-    await trace(ports, tx, "destination-renamed", stored, at, {
+    await changed(ports, tx, "destination-renamed", stored, at, {
       from: held.name,
       name,
     });
@@ -131,7 +132,7 @@ export function reconfigure(
 
     const at = ports.clock.now();
     const stored = await tx.updateDestination({ ...record(held), settings });
-    await trace(ports, tx, "destination-reconfigured", stored, at, {});
+    await changed(ports, tx, "destination-reconfigured", stored, at);
 
     return ok<Destination, DestinationRefusal>(stored);
   });
@@ -160,7 +161,7 @@ export function retire(ports: PoolPorts, id: DestinationId): Promise<Retired> {
       ...record(held),
       retiredAt: at,
     });
-    await trace(ports, tx, "destination-retired", stored, at, {});
+    await changed(ports, tx, "destination-retired", stored, at);
 
     return ok<Destination, RetireRefusal>(stored);
   });
@@ -188,7 +189,7 @@ export function unretire(
     const at = ports.clock.now();
     const { retiredAt: _retired, ...offered } = record(held);
     const stored = await tx.updateDestination(offered);
-    await trace(ports, tx, "destination-unretired", stored, at, {});
+    await changed(ports, tx, "destination-unretired", stored, at);
 
     return ok<Destination, RetireRefusal>(stored);
   });
@@ -222,10 +223,7 @@ export function remove(
     await tx.deleteDestination(id);
     // The entry outlives the row, as an item's does: what happened is not
     // erased by erasing what it happened to.
-    await trace(ports, tx, "destination-deleted", held, at, {
-      name: held.name,
-      destinationKind: held.kind,
-    });
+    await removed(ports, tx, held, at);
 
     return ok<void, DestinationDeletionRefusal>(undefined);
   });
@@ -238,9 +236,46 @@ function record(held: Destination): DestinationRecord {
 }
 
 /**
- * A destination is not an item, so the entry carries no subject and names the
- * destination in its detail instead.
+ * What every change to a destination owes: an entry, and the mirror write the
+ * new state makes due. A destination is not an item, so the entry carries no
+ * subject and names the destination in its detail instead.
  */
+async function changed(
+  ports: PoolPorts,
+  tx: PoolTx,
+  kind: ActionKind,
+  destination: Destination,
+  at: Timestamp,
+  detail: JsonObject = {},
+): Promise<void> {
+  await trace(ports, tx, kind, destination, at, detail);
+  await enqueueMirrorWrite(
+    ports,
+    tx,
+    { kind: "destination", destination: destination.id },
+    at,
+  );
+}
+
+/** The row has gone, so what the mirror holds about it is owed a removal instead. */
+async function removed(
+  ports: PoolPorts,
+  tx: PoolTx,
+  destination: Destination,
+  at: Timestamp,
+): Promise<void> {
+  await trace(ports, tx, "destination-deleted", destination, at, {
+    name: destination.name,
+    destinationKind: destination.kind,
+  });
+  await enqueueMirrorRemove(
+    ports,
+    tx,
+    { kind: "destination", destination: destination.id },
+    at,
+  );
+}
+
 function trace(
   ports: PoolPorts,
   tx: PoolTx,

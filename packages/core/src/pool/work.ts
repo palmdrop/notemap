@@ -173,7 +173,7 @@ async function land(
 
   const at = ports.clock.now();
   await tx.resolveRoutingRecord(id, pointer);
-  await enqueueMirrorWrite(ports, tx, record.item, at);
+  await enqueueMirrorWrite(ports, tx, { kind: "item", item: record.item }, at);
   await recordAction(ports, tx, {
     kind: "routed",
     subject: record.item,

@@ -115,16 +115,19 @@ Depends on phase 4.
 
 Depends on phases 1 and 2. Independent of phase 5.
 
-- [ ] The destination record: core defines it and its canonical serialisation, beside the item
+- [x] The destination record: core defines it and its canonical serialisation, beside the item
       record. Retired destinations are carried
-- [ ] A write is owed when a destination changes; the job's subject names a destination
+- [x] A write is owed when a destination changes; the job's subject names a destination
       ([ADR 18](../adr/0018-a-jobs-subject-names-what-it-is-about.md))
-- [ ] `mirror-fs` writes them under their own directory, atomically, as item records are
-- [ ] Verify and repair reach destination records
-- [ ] Tests: the round-trip property test grows destinations; verify reports a hand-deleted
-      destination record as drift
-- [ ] Verify: `pnpm -r --silent test`; a scratch pool's mirror holds a file per destination
-- [ ] `git commit`
+- [x] `mirror-fs` writes them under their own directory, atomically, as item records are
+- [ ] ~~Verify and repair reach destination records~~ — **not done, and not doable here**: neither
+      verify nor repair is built (`maintenance.verifyMirror` and `repairMirror` still throw
+      `not implemented`, and [mirror.md](../specs/mirror.md) says so). Whoever builds them reaches
+      destination records at the same time; nothing here stands in the way
+- [x] Tests: the round-trip property test grows destinations. *The drift half of this task belongs
+      to verify, above, and is deferred with it*
+- [x] Verify: `pnpm -r --silent test`; a scratch pool's mirror holds a file per destination
+- [x] `git commit`
 
 ### Phase 7 — the client
 

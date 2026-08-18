@@ -18,6 +18,7 @@ import {
   drainWith,
   envelope,
   harness,
+  itemRecord,
   storedRecords,
   type Harness,
 } from "./fixture";
@@ -117,7 +118,7 @@ describe("a destination that comes back", () => {
     minutesLater(opened, 1);
     await opened.deliver();
 
-    const mirrored = await opened.pool.mirror.recordFor(opened.item);
+    const mirrored = await itemRecord(opened.pool, opened.item);
     expect(mirrored?.routing.map((each) => each.state)).toEqual(["delivered"]);
   });
 
@@ -233,9 +234,7 @@ describe("a destination that never comes back", () => {
       await opened.deliver();
     }
 
-    expect((await opened.pool.mirror.recordFor(opened.item))?.routing).toEqual(
-      [],
-    );
+    expect((await itemRecord(opened.pool, opened.item))?.routing).toEqual([]);
   });
 });
 
@@ -402,7 +401,7 @@ describe("what reaches the mirror on disk", () => {
     expect(mirrored?.routing).toEqual([
       { ...opened.record, state: "delivered", pointer: DELIVERED.pointer },
     ]);
-    expect(mirrored).toEqual(await opened.pool.mirror.recordFor(opened.item));
+    expect(mirrored).toEqual(await itemRecord(opened.pool, opened.item));
   });
 
   it("holds no record of a delivery that was given up on", async () => {

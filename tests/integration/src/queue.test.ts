@@ -5,6 +5,7 @@ import {
   drainWith,
   envelope,
   harness,
+  itemRecord,
   storedRecords,
   type Harness,
   type Mirroring,
@@ -271,7 +272,7 @@ describe("what the mirror is owed", () => {
     );
     await drain();
 
-    const mirrored = await harnessed.pool.mirror.recordFor(first);
+    const mirrored = await itemRecord(harnessed.pool, first);
     expect(mirrored?.routing).toEqual([record]);
   });
 
@@ -284,7 +285,7 @@ describe("what the mirror is owed", () => {
     await harnessed.pool.items.archive(first, "noise");
     expect(await drain()).toBe(1);
 
-    const mirrored = await harnessed.pool.mirror.recordFor(first);
+    const mirrored = await itemRecord(harnessed.pool, first);
     expect(mirrored?.item.archived?.reason).toBe("noise");
   });
 
@@ -317,7 +318,7 @@ describe("draining a queue end to end", () => {
       [archived, processed, left].sort(),
     );
     for (const [id, record] of mirrored) {
-      expect(record, id).toEqual(await p.mirror.recordFor(id));
+      expect(record, id).toEqual(await itemRecord(p, id));
     }
 
     expect(mirrored.get(archived)?.item.archived?.reason).toBe("noise");

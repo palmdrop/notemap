@@ -3,6 +3,7 @@ import fc from "fast-check";
 import type { JsonObject } from "../types/json";
 import type { Agent } from "../types/domain/agent";
 import type { Asset, AssetRef } from "../types/domain/asset";
+import type { Destination } from "../types/domain/destination";
 import type { Artifact } from "../types/domain/enrichment";
 import type { Timestamp } from "../types/domain/ids";
 import type { Item } from "../types/domain/item";
@@ -173,6 +174,30 @@ export const routingRecord = (): fc.Arbitrary<RoutingRecord> =>
       pointer: name(),
     },
     { requiredKeys: ["id", "item", "target", "state", "at"] },
+  );
+
+/** The mirror's other unit, whose losslessness the same property covers. */
+export const destination = (): fc.Arbitrary<Destination> =>
+  fc.record(
+    {
+      id: branded(),
+      name: name(),
+      kind: branded(),
+      settings: jsonObject(),
+      retiredAt: stamp(),
+      createdAt: stamp(),
+      modifiedAt: stamp(),
+    },
+    {
+      requiredKeys: [
+        "id",
+        "name",
+        "kind",
+        "settings",
+        "createdAt",
+        "modifiedAt",
+      ],
+    },
   );
 
 export type PoolState = {

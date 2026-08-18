@@ -1,6 +1,6 @@
 import { dump } from "js-yaml";
 
-import type { ItemRecord, MirrorRecord } from "@notemap/core";
+import type { ItemMirrorRecord, ItemRecord } from "@notemap/core";
 
 export type FrontmatterValue = string | number | boolean | readonly string[];
 
@@ -32,7 +32,7 @@ export const FIXED_KEYS: readonly string[] = [
 ];
 
 export function fixedFrontmatter(
-  record: MirrorRecord,
+  record: ItemMirrorRecord,
 ): Map<string, FrontmatterValue> {
   const item = record.item;
   const entries = new Map<string, FrontmatterValue>([

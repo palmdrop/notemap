@@ -3,10 +3,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
+  projectDestinationRecord,
   projectMirrorRecord,
+  type Destination,
+  type DestinationId,
+  type DestinationKindName,
+  type DestinationMirrorRecord,
   type Item,
   type ItemId,
-  type MirrorRecord,
+  type ItemMirrorRecord,
   type PayloadTypeName,
   type SourceId,
   type TagName,
@@ -66,6 +71,35 @@ export function item(overrides: ItemOverrides = {}): Item {
   };
 }
 
-export function record(overrides: ItemOverrides = {}): MirrorRecord {
+export function record(overrides: ItemOverrides = {}): ItemMirrorRecord {
   return projectMirrorRecord(item(overrides), [], [], []);
+}
+
+type DestinationOverrides = {
+  readonly id?: string;
+  readonly name?: string;
+  readonly kind?: string;
+  readonly settings?: Record<string, string>;
+  readonly retiredAt?: string;
+};
+
+export function destination(overrides: DestinationOverrides = {}): Destination {
+  const createdAt = at("2026-08-17T09:00:00.000Z");
+  return {
+    id: (overrides.id ?? "vault") as DestinationId,
+    name: overrides.name ?? "Vault",
+    kind: (overrides.kind ?? "filesystem") as DestinationKindName,
+    settings: overrides.settings ?? { root: "~/notes" },
+    ...(overrides.retiredAt === undefined
+      ? {}
+      : { retiredAt: at(overrides.retiredAt) }),
+    createdAt,
+    modifiedAt: createdAt,
+  };
+}
+
+export function destinationRecord(
+  overrides: DestinationOverrides = {},
+): DestinationMirrorRecord {
+  return projectDestinationRecord(destination(overrides));
 }

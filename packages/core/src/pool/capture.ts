@@ -86,7 +86,7 @@ async function append(
   const item = await tx.insertItem(record);
   const at = ports.clock.now();
 
-  await enqueueMirrorWrite(ports, tx, item.id, at);
+  await enqueueMirrorWrite(ports, tx, { kind: "item", item: item.id }, at);
 
   await recordAction(ports, tx, {
     kind: "captured",
