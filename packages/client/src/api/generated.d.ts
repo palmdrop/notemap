@@ -2331,11 +2331,7 @@ export interface components {
             /**
              * @description Must satisfy that kind's `settingsSchema`.
              * @example {
-             *       "root": "~/notes",
-             *       "accepts": [
-             *         "text",
-             *         "image"
-             *       ]
+             *       "root": "~/notes"
              *     }
              */
             settings: {

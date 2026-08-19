@@ -1,7 +1,7 @@
 /**
- * A form from a JSON Schema, for the two shapes notemap's schemas use: a string
- * and a list of strings. Anything else is offered as a string, which the pool
- * then refuses with the reason rather than the field being hidden.
+ * A form from a JSON Schema, for the two shapes a settings schema may take: a
+ * string and a list of strings. Anything else is offered as a string, which the
+ * pool then refuses with the reason rather than the field being hidden.
  */
 export type Field = {
   readonly name: string;

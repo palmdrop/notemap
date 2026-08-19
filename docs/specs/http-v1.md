@@ -494,7 +494,7 @@ probes nothing.
       "id": "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
       "name": "Vault",
       "kind": "filesystem",
-      "settings": { "root": "~/notes", "accepts": ["text", "image"] },
+      "settings": { "root": "~/notes" },
       "retired": false
     }
   ]

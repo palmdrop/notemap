@@ -141,7 +141,7 @@ describe("POST /v1/destinations", () => {
   it("refuses settings the kind's schema declines, carrying the issues", async () => {
     const host = serving();
 
-    const response = await create(host, { settings: { accepts: ["text"] } });
+    const response = await create(host, { settings: { depth: 2 } });
 
     expect(response.status).toBe(422);
     const refused = (await body(response)) as {

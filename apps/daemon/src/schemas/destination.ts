@@ -65,7 +65,7 @@ export const createDestinationRequestSchema = z
     }),
     settings: jsonObject.openapi({
       description: "Must satisfy that kind's `settingsSchema`.",
-      example: { root: "~/notes", accepts: ["text", "image"] },
+      example: { root: "~/notes" },
     }),
   })
   .openapi("CreateDestinationRequest");
