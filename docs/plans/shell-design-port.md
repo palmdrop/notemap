@@ -3,6 +3,7 @@
 **Date**: 2026-08-20
 **Status**: Todo
 **Spec**: `docs/specs/shell.md`
+**Reference**: `docs/design/` — the rendered design, its stylesheet, and shots at 1440 and 390
 **Closed**:
 
 ---
@@ -161,7 +162,8 @@ Depends on 3, 4, 5.
   no suggestions, in a control shaped to take them.
 - **Settings has no way in.** Navigation is two surfaces and settings is neither.
 - **The composer is absolutely positioned in the mockup and does not push the page taller.** The
-  real register has to reserve that height.
+  real register has to reserve that height. Visible in `docs/design/shots/queue-1440.png`, where the
+  spine stops before the composer does.
 - **The spec and glossary changes this plan is written against sit on `agent/shell-design`** and
   are not merged. This plan's branch depends on them.
 

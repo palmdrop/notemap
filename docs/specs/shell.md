@@ -165,8 +165,8 @@ Three conditions, and the current shell paints two of them the same colour.
   outbox.
 - **Pending** is quiet: the chrome, plus a mark on the row it is about. It is the ordinary state of
   a mutation and it heals itself.
-- **Refused** is loud. It gets a real place carrying what was refused, why, and a way to dismiss
-  it, because it is the only one of the three that will not resolve without a person. It is not
+- **Refused** is loud. It gets a fixed place in the bottom-left corner carrying what was refused,
+  why, and a way to dismiss it — the left corner because the right is where a composer lives, because it is the only one of the three that will not resolve without a person. It is not
   drawn in the same shape as pending work.
 
 ### Draining
@@ -221,6 +221,10 @@ reused, and nothing is distinguished by being bigger.
 on four sides. There is **one line weight**. A separator between captures begins where the content
 column begins — clear of the timestamps — and runs right until it meets the spine, so every capture
 makes one T-junction against it.
+
+**The register has a measure.** The content column is capped at a comfortable reading width and
+the page does not sprawl to fill a desktop. The only thing that widens the shell is a composer
+opening beside the register, which needs the room.
 
 **The spine is on the right.** A vertical rule runs down the outer edge of the register. When a
 routing composer is open it is also the divider between the register and the composer, and a small
