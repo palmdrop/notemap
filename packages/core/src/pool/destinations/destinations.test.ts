@@ -28,11 +28,12 @@ import type {
   Timestamp,
 } from "../../types/domain/ids";
 import type { Item } from "../../types/domain/item";
+import type { Job } from "../../types/domain/work";
 import type { RoutingRecord } from "../../types/domain/routing";
 import type { JsonObject, JsonSchema } from "../../types/json";
 import { deliveryFor } from "../routing/delivery";
 
-import { create, reconfigure, remove, retire, unretire } from "./lifecycle";
+import { create, edit, remove, retire, unretire } from "./lifecycle";
 import { describe as describeOne, list } from "./reports";
 
 const FILESYSTEM = "filesystem" as DestinationKindName;
@@ -65,6 +66,7 @@ type Wiring = {
 type Wired = PoolPorts & {
   readonly held: ReadonlyMap<DestinationId, Destination>;
   readonly appended: readonly Action[];
+  readonly enqueued: readonly Job[];
   readonly adapters: ReturnType<typeof fakeDestinations>;
 };
 
@@ -81,6 +83,7 @@ function ports(wiring: Wiring = {}): Wired {
     (wiring.items ?? []).map((each) => [each.id, each]),
   );
   const appended: Action[] = [];
+  const enqueued: Job[] = [];
 
   let minted = 0;
   let ticks = 0;
@@ -135,6 +138,9 @@ function ports(wiring: Wiring = {}): Wired {
     appendAction: async (action: Action) => {
       appended.push(action);
     },
+    enqueue: async (jobs: readonly Job[]) => {
+      enqueued.push(...jobs);
+    },
   } as unknown as PoolTx;
 
   const store = {
@@ -145,10 +151,12 @@ function ports(wiring: Wiring = {}): Wired {
   return {
     held,
     appended,
+    enqueued,
     adapters,
     store,
     schemas,
     destinations: adapters,
+    mirrorWriter: {} as PoolPorts["mirrorWriter"],
     clock: {
       now: () => `2026-08-17T11:00:0${String(ticks++)}.000Z` as Timestamp,
     },
@@ -156,6 +164,22 @@ function ports(wiring: Wiring = {}): Wired {
       next: <T extends MintableId>() => `minted-${String(++minted)}` as T,
     },
   } as unknown as Wired;
+}
+
+/** What the log says happened to one destination, in order. */
+function kinds(wired: Wired, id: string): readonly string[] {
+  return wired.appended
+    .filter((action) => action.detail?.["destination"] === id)
+    .map((action) => action.kind);
+}
+
+function mirrorWritesFor(wired: Wired, id: string): number {
+  return wired.enqueued.filter(
+    (job) =>
+      job.kind === "mirror" &&
+      job.subject.kind === "destination" &&
+      job.subject.destination === id,
+  ).length;
 }
 
 describe("creating a destination", () => {
@@ -400,7 +424,9 @@ describe("editing a destination", () => {
     });
 
     expect(
-      await reconfigure(wired, "vault" as DestinationId, { accepts: [] }),
+      await edit(wired, "vault" as DestinationId, {
+        settings: { accepts: [] },
+      }),
     ).toEqual({
       kind: "refused",
       refusal: {
@@ -420,10 +446,81 @@ describe("editing a destination", () => {
     });
 
     expect(
-      await reconfigure(wired, "old" as DestinationId, { column: "inbox" }),
+      await edit(wired, "old" as DestinationId, {
+        settings: { column: "inbox" },
+      }),
     ).toEqual({
       kind: "refused",
       refusal: { kind: "unknown-destination-kind", destinationKind: "kanban" },
     });
+  });
+
+  /** A rename cannot be checked against the kind, so it does not ask. */
+  it("renames one whose kind nothing here speaks", async () => {
+    const wired = ports({
+      destinations: [fakeDestinationRow({ id: "old", kind: "kanban" })],
+    });
+
+    const renamed = await edit(wired, "old" as DestinationId, {
+      name: "The old board",
+    });
+
+    expect(renamed).toMatchObject({
+      kind: "ok",
+      value: { name: "The old board" },
+    });
+    expect(kinds(wired, "old")).toEqual(["destination-renamed"]);
+  });
+
+  it("changes both halves in one go, appending an entry for each", async () => {
+    const wired = ports({
+      destinations: [
+        fakeDestinationRow({
+          id: "vault",
+          kind: FILESYSTEM,
+          settings: { root: "~/notes" },
+        }),
+      ],
+      kinds: [{ name: FILESYSTEM, settingsSchema: ROOT_REQUIRED }],
+    });
+
+    const edited = await edit(wired, "vault" as DestinationId, {
+      name: "Second brain",
+      settings: { root: "~/second-brain" },
+    });
+
+    expect(edited).toMatchObject({
+      kind: "ok",
+      value: { name: "Second brain", settings: { root: "~/second-brain" } },
+    });
+    expect(kinds(wired, "vault")).toEqual([
+      "destination-reconfigured",
+      "destination-renamed",
+    ]);
+    expect(mirrorWritesFor(wired, "vault")).toBe(1);
+  });
+
+  /** A save from a form that changed nothing is not a change. */
+  it("writes nothing where neither half differs", async () => {
+    const wired = ports({
+      destinations: [
+        fakeDestinationRow({
+          id: "vault",
+          name: "Vault",
+          kind: FILESYSTEM,
+          settings: { root: "~/notes" },
+        }),
+      ],
+      kinds: [{ name: FILESYSTEM, settingsSchema: ROOT_REQUIRED }],
+    });
+
+    const edited = await edit(wired, "vault" as DestinationId, {
+      name: "Vault",
+      settings: { root: "~/notes" },
+    });
+
+    expect(edited).toMatchObject({ kind: "ok" });
+    expect(kinds(wired, "vault")).toEqual([]);
+    expect(mirrorWritesFor(wired, "vault")).toBe(0);
   });
 });

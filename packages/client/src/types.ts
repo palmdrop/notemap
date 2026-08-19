@@ -36,11 +36,6 @@ export type CaptureInput = {
 type AssetId = Asset["id"];
 
 /**
- * Routing reaches the pool directly and is never an outbox operation: a
- * decision to deliver cannot be replayed from a client that was offline when it
- * was made. A shell disables these rather than queuing them.
- */
-/**
  * The outbox's second exception, on routing's terms: whether a root exists, and
  * whether settings satisfy the kind registry the daemon is actually running,
  * are questions only the daemon can answer. A shell disables these rather than
@@ -68,6 +63,11 @@ export interface DestinationsApi {
   delete(id: DestinationId): Promise<void>;
 }
 
+/**
+ * Routing reaches the pool directly and is never an outbox operation: a
+ * decision to deliver cannot be replayed from a client that was offline when it
+ * was made. A shell disables these rather than queuing them.
+ */
 export interface RoutingApi {
   route(item: ItemId, request: RouteRequest): Promise<RoutingRecord>;
   markProcessed(item: ItemId, note?: string): Promise<RoutingRecord>;

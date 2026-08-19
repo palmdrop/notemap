@@ -430,8 +430,6 @@ export const MIGRATIONS: readonly string[] = [
   `,
 
   `
-  -- Destinations become pool state: a routing record's \`destination\` refers to
-  -- a row rather than into a text file a person can delete a paragraph from.
   -- \`settings\` is the kind's own JSON, opaque here and to core alike.
   CREATE TABLE destinations (
     id          TEXT    NOT NULL PRIMARY KEY,
@@ -446,9 +444,8 @@ export const MIGRATIONS: readonly string[] = [
   CREATE INDEX destinations_created_at ON destinations (created_at, id);
 
   -- Every destination a record already names, minted so the reference below has
-  -- something to point at. The id becomes the name, and the kind is one nothing
-  -- registers an adapter for: it reports unusable, and the history stays
-  -- readable rather than being dropped for having come from a config file.
+  -- something to point at. The kind is one nothing registers an adapter for, so
+  -- it reports unusable rather than the history being dropped.
   INSERT INTO destinations
     (id, name, kind, settings, retired_at, created_at, modified_at)
     SELECT destination, destination, 'unconfigured', '{}', NULL, MIN(at), MIN(at)
@@ -457,10 +454,9 @@ export const MIGRATIONS: readonly string[] = [
     GROUP BY destination;
 
   -- SQLite can add neither a foreign key nor a CHECK in place, so the table is
-  -- rebuilt for the key — and the trigger pair that stood in for the CHECK on
-  -- \`target\` becomes the CHECK it was always meant to be. A destination row
-  -- written before that column existed carried no target, and read as \`{}\`
-  -- everywhere; it is written as \`{}\` here so the constraint can stand.
+  -- rebuilt for both, and the trigger pair standing in for the CHECK on
+  -- \`target\` goes. A row written before that column existed carried no target
+  -- and read as \`{}\` everywhere, so it is written as \`{}\` here.
   CREATE TABLE routing_records_next (
     id          TEXT    NOT NULL PRIMARY KEY,
     item_id     TEXT    NOT NULL REFERENCES items (id) ON DELETE CASCADE,
@@ -499,10 +495,8 @@ export const MIGRATIONS: readonly string[] = [
   `,
 
   `
-  -- The mirror carries destinations, so a job's subject is no longer always an
-  -- item or a record about one — and neither the CHECK nor \`subject_item\`'s
-  -- NOT NULL can be relaxed in place. A destination's mirror write is about no
-  -- capture at all, which is what makes the column nullable.
+  -- A destination's mirror write is about no capture at all, and neither the
+  -- CHECK nor \`subject_item\`'s NOT NULL can be relaxed in place.
   --
   -- No foreign key to \`destinations\`: a \`mirror-remove\` outlives the row it
   -- names, exactly as one for a purged item outlives the item.

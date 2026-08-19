@@ -200,3 +200,35 @@ test("reads while the pool is unreachable, and disables every change", async () 
     screen.getByText(/destinations can be read but not changed/),
   ).toBeDefined();
 });
+
+/** A screen opened while the daemon was down would otherwise have no form to add one with. */
+test("asks again for the kinds once the daemon is reachable", async () => {
+  online(false);
+  serving([], {
+    "GET /v1/destination-kinds": () => json(503, { error: { code: "x" } }),
+  });
+  render(Destinations);
+
+  await vi.waitFor(() => {
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Add a destination",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+  });
+
+  serving([]);
+  online(true);
+
+  await vi.waitFor(() => {
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Add a destination",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(false);
+  });
+});

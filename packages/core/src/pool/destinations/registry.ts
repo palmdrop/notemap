@@ -4,11 +4,7 @@ import type {
 } from "../../types/api/ports";
 import type { Destination } from "../../types/domain/destination";
 
-/**
- * The port, over one adapter per kind. Which adapters a pool gets is the host's;
- * dispatching to the one that speaks a row's kind is the same in every host, so
- * it is not.
- */
+/** The port, over one adapter per kind. */
 export function destinationRegistry(
   adapters: readonly DestinationKindAdapter[],
 ): Destinations {
@@ -19,8 +15,8 @@ export function destinationRegistry(
 
   const reach = (destination: Destination): DestinationKindAdapter => {
     const adapter = byKind.get(destination.kind);
-    // A kind nothing speaks is reported as unusable and never asked, so this is
-    // a registry that disagrees with the list it published.
+    // Unreachable unless the registry disagrees with the kinds it published:
+    // a kind nothing speaks is reported as unusable rather than asked.
     if (adapter === undefined) {
       throw new Error(`no adapter is registered for ${destination.kind}`);
     }

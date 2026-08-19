@@ -296,7 +296,9 @@ describe("a destination on disk", () => {
     const created = await vault(harnessed);
     await drainWith(harnessed)();
 
-    await harnessed.pool.destinations.rename(created.id, "Second brain");
+    await harnessed.pool.destinations.edit(created.id, {
+      name: "Second brain",
+    });
     expect(await drainWith(harnessed)()).toBe(1);
 
     const stored = parseMirrorRecord(

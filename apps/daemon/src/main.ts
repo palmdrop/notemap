@@ -37,8 +37,8 @@ function start(): void {
       ? undefined
       : startMirrorRunner(pool, mirrorWriter, config.mirror);
 
-  // Always: a destination is a row a person may add at any moment, so there is
-  // no longer a startup fact that says no delivery job can exist.
+  // Unconditional: a destination is a row a person may add at any moment, so
+  // no startup fact says a delivery job cannot exist.
   const delivery = startDeliveryRunner(pool, destinations, config.delivery);
 
   const sweeper = startSweeper(pool, config.sweep);
@@ -68,8 +68,6 @@ function start(): void {
       );
       console.log(`notemap: assets in ${config.assets.root}`);
 
-      // The pool's, not the file's: destinations are state a person edits from
-      // the UI, and this is a snapshot of them rather than what was wired.
       void pool.destinations.list().then((held) => {
         console.log(
           held.length === 0

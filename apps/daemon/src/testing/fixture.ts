@@ -88,9 +88,8 @@ export type DaemonOptions = {
   readonly mirroring?: boolean;
   readonly maxUploadBytes?: number;
   /**
-   * Makes the folder `vaultRoot` names before the pool opens. A destination
-   * pointed at one that is not there is what an unmounted drive looks like, so
-   * leaving it out is a case rather than an omission.
+   * Makes the folder `vaultRoot` names before the pool opens. Leaving it out is
+   * a case rather than an omission: it is what an unmounted drive looks like.
    */
   readonly vault?: "ready" | "missing";
 };
@@ -121,8 +120,6 @@ export function daemon(
           batch: 16,
         });
 
-  // Always: a destination is a row a person may add at any moment, so there is
-  // no startup fact that says no delivery job can exist.
   const deliveries = startDeliveryRunner(pool, destinations, {
     pollIntervalMs: NEVER_POLLS,
     leaseForMs: 60_000 as Duration,
@@ -157,11 +154,7 @@ export function daemon(
   };
 }
 
-/**
- * A filesystem destination over the daemon's own `vaultRoot`, created the way a
- * person creates one. There is no configuration to wire it into: a destination
- * is a row, and this is what putting one there looks like.
- */
+/** A filesystem destination over the daemon's own `vaultRoot`, created the way a person does. */
 export async function createVault(
   host: Daemon,
   overrides: { name?: string; root?: string } = {},

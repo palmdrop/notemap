@@ -1,8 +1,7 @@
 /**
- * A form from a JSON Schema, for the two shapes notemap's schemas actually use:
- * a string, and a list of strings. Anything else is offered as a string and
- * sent as one, which the pool then refuses with the reason — better than
- * hiding a field a person has no other way to fill in.
+ * A form from a JSON Schema, for the two shapes notemap's schemas use: a string
+ * and a list of strings. Anything else is offered as a string, which the pool
+ * then refuses with the reason rather than the field being hidden.
  */
 export type Field = {
   readonly name: string;
@@ -57,11 +56,7 @@ export function valuesFrom(
   return filled;
 }
 
-/**
- * The other direction: values a person already has, back into what an input
- * holds. Keyed by what is there rather than by the fields, so a value under a
- * key the schema has since dropped is still shown rather than silently lost.
- */
+/** The other direction: values a person already has, back into what an input holds. */
 export function typedFrom(
   values: Record<string, unknown> | undefined,
 ): Record<string, string> {

@@ -145,10 +145,6 @@ export interface MirrorReader {
 }
 
 /**
- * The adapters the host wired, one per kind. The destination is a parameter
- * rather than a constructor argument, so there is no instance to cache and
- * nothing to invalidate when a row is edited: the next call carries the new row.
- *
  * Neither `describe` nor `deliver` is ever handed a destination whose kind is
  * absent from `kinds()`: core reports that as unusable rather than asking.
  */
@@ -165,10 +161,6 @@ export interface Destinations {
   ): Promise<DeliveryOutcome>;
 }
 
-/**
- * One kind's adapter, as a host registers it. The port above is the registry
- * over these; core never sees one on its own.
- */
 export interface DestinationKindAdapter extends DestinationKind {
   describe(
     destination: Destination,
@@ -212,11 +204,7 @@ export interface PoolReads {
   /** Every destination the pool holds, retired ones included, oldest first. */
   destinations(): Promise<readonly Destination[]>;
   destination(id: DestinationId): Promise<Destination | undefined>;
-  /**
-   * Whether any routing record has ever named this destination. Deletion is
-   * refused where one has, and a delivered record is not the only kind that
-   * counts: a reservation still to land names it too.
-   */
+  /** A reservation still to land counts as much as a delivered record: both name it. */
   destinationEverNamed(id: DestinationId): Promise<boolean>;
   artifacts(item: ItemId): Promise<readonly Artifact[]>;
   enrichmentStates(item: ItemId): Promise<readonly EnrichmentStatus[]>;
@@ -272,10 +260,7 @@ export interface PoolTx extends PoolReads {
   insertDestination(record: DestinationRecord): Promise<Destination>;
   /** Every field a person may change is written at once; the store owns `modifiedAt`. */
   updateDestination(record: DestinationRecord): Promise<Destination>;
-  /**
-   * Refused by the store where a routing record names it, so the rule stands on
-   * the schema rather than on a check the code has to remember.
-   */
+  /** Refused by the store itself where a routing record names it. */
   deleteDestination(id: DestinationId): Promise<void>;
 
   withdrawWork(subject: JobSubject): Promise<WorkWithdrawal>;

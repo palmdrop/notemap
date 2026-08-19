@@ -550,8 +550,10 @@ probes nothing.
 `POST /v1/destinations` — create one, from a name, a kind and that kind's settings. The id is
 minted and answered; a name is a label and need not be unique.
 
-`PATCH /v1/destinations/{id}` — change the name or the settings. The kind is fixed: changing it
-would make one destination two, and a record cannot tell which it meant.
+`PATCH /v1/destinations/{id}` — change the name, the settings, or both, in one operation: two
+would leave an edit half-applied. The kind is fixed: changing it would make one destination two,
+and a record cannot tell which it meant. A half that arrives unchanged is not a change, and
+appends nothing.
 
 `POST /v1/destinations/{id}/retire` and `/unretire` — stop offering it for new routing, or offer it
 again. Neither touches a delivery already decided.
@@ -844,6 +846,7 @@ Every error, from core or from the daemon, is one shape:
 | `404` | `no-such-asset` | `asset` | core |
 | `404` | `blob-missing` | `blob` | core |
 | `404` | `no-such-record` | `record` | core |
+| `404` | `unknown-destination` | `destination` | core (on `/v1/destinations/{id}`) |
 | `405` | `method-not-allowed` | `method`, `allow` | daemon (+ `Allow` header) |
 | `409` | `capture-id-conflict` | `existing` | core |
 | `409` | `source-item-changed` | `existing` | core |
@@ -852,6 +855,11 @@ Every error, from core or from the daemon, is one shape:
 | `409` | `item-superseded` | `by` | core |
 | `409` | `not-pending` | `record` | core |
 | `409` | `delivery-in-flight` | `record` | core |
+| `409` | `already-retired` | `destination`, `at` | core |
+| `409` | `not-retired` | `destination` | core |
+| `409` | `destination-in-use` | `destination` | core |
+| `409` | `destination-retired` | `destination` | core |
+| `409` | `destination-unusable` | `destination`, `detail` | core |
 | `413` | `asset-too-large` | `max` | daemon |
 | `415` | `unsupported-media-type` | `contentType` | daemon |
 | `422` | `limit-too-large` | `limit`, `max` | daemon |
@@ -867,7 +875,9 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `payload-type-changed` | `from` | core |
 | `422` | `missing-asset-slot` | `slot` | core |
 | `422` | `unknown-asset` | `asset` | core |
-| `422` | `unknown-destination` | `destination` | core |
+| `422` | `unknown-destination` | `destination` | core (routing an item) |
+| `422` | `unknown-destination-kind` | `destinationKind` | core |
+| `422` | `invalid-destination-settings` | `issues` | core |
 | `422` | `capability-undeclared` | `capability` | core |
 | `422` | `payload-type-unsupported` | `type`, `accepts` | core |
 | `422` | `target-invalid` | `issues` | core |
@@ -882,6 +892,11 @@ read as an envelope at all**, which is a shape problem and never reaches core. *
 everything else core or the daemon refused**: the request was understood and declined. Anything
 outside the table is a bug, and is `500` with no body — a daemon that turns an unexpected
 throw into a domain-looking refusal teaches clients to trust a fiction.
+
+`unknown-destination` is the one code the table carries twice, and the rule says which is which:
+where the id is what the request is *about* — every `/v1/destinations/{id}` route — it is `404`,
+the answer a missing item gets. Where it is a fact *inside* a request about something else, as it
+is when routing an item, the request was understood and declined, so it is `422`.
 
 `413 asset-too-large` is the single deliberate exception, for the reason given above: a size
 limit is a fact the transport layer acts on, and hiding it inside `422` would cost a client the

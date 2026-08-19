@@ -491,6 +491,49 @@ describe("a root that is not there", () => {
   });
 });
 
+describe("the root a person wrote", () => {
+  it("takes ~ for their home rather than a folder named ~", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    await mkdir(join(made.path, "notes"), { recursive: true });
+
+    const home = process.env["HOME"];
+    process.env["HOME"] = made.path;
+    try {
+      const destination = bind("~/notes", [TEXT], { text: renderText });
+      expect(
+        await destination.deliver(
+          delivery({ target: { directory: "", filename: "a.md" } }),
+        ),
+      ).toMatchObject({ kind: "delivered" });
+      expect(await filesUnder(join(made.path, "notes"))).toEqual(["a.md"]);
+    } finally {
+      if (home === undefined) delete process.env["HOME"];
+      else process.env["HOME"] = home;
+    }
+  });
+
+  it("resolves a relative one against where the daemon runs, once", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    await mkdir(made.path, { recursive: true });
+
+    const where = process.cwd();
+    process.chdir(made.path);
+    try {
+      const destination = bind(".", [TEXT], { text: renderText });
+      expect(
+        await destination.deliver(
+          delivery({ target: { directory: "", filename: "a.md" } }),
+        ),
+      ).toMatchObject({ kind: "delivered" });
+    } finally {
+      process.chdir(where);
+    }
+    expect(await filesUnder(made.path)).toEqual(["a.md"]);
+  });
+});
+
 describe("a root that cannot be written", () => {
   it("is unreachable too: a permission bit that is fixed makes the delivery land", async () => {
     const { path, destination } = await vault({ text: renderText });

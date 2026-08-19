@@ -14,18 +14,12 @@ export type DestinationsDeps = {
   readonly api: Api;
   /** The cache a screen renders from, which every call here keeps current. */
   readonly all: Observable<readonly Destination[]>;
-  /** Replaces the cached list. */
   readonly cached: (destinations: readonly Destination[]) => void;
   /** Replaces or drops one, so a mutation does not cost a second read. */
   readonly settled: (id: DestinationId, held?: Destination) => void;
 };
 
-/**
- * None of this is an outbox operation. Whether a root exists, and whether
- * settings satisfy the kind registry the daemon is actually running, are
- * questions only the daemon can answer — so an offline edit would validate
- * against a cached schema and hand back an acceptance the pool may then refuse.
- */
+/** None of this is an outbox operation: an offline edit would accept what the pool may refuse. */
 export function createDestinations(deps: DestinationsDeps): DestinationsApi {
   const { api } = deps;
 

@@ -116,9 +116,11 @@ export async function route(
   }
 
   return ports.store.transaction(async (tx) => {
-    // Purged while the adapter had the bytes: the record dies with the item,
-    // but the entry saying bytes left the machine outlives it.
+    // Read back while the adapter had the bytes: the record cannot be written
+    // without either of them, but the entry saying bytes left the machine
+    // outlives both.
     const present = (await tx.item(item)) !== undefined;
+    const held = await tx.destination(request.destination);
 
     await trace(ports, tx, record, outcome);
     if (!present) {
@@ -126,6 +128,12 @@ export async function route(
         kind: "item-purged",
         item,
         at: record.at,
+      });
+    }
+    if (held === undefined) {
+      return refused<RoutingRecord, DeliveryRefusal>({
+        kind: "unknown-destination",
+        destination: request.destination,
       });
     }
 

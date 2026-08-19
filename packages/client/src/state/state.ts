@@ -15,11 +15,7 @@ export type ClientState = {
   readonly feed: ListPage;
   readonly queue: ListPage;
   readonly outbox: readonly PendingOperation[];
-  /**
-   * Held for display, in the order the pool answered. Editing one is
-   * online-only, but reading a settings screen is not, so what was last seen is
-   * what an unreachable pool shows.
-   */
+  /** Held for display in the order the pool answered: a settings screen reads while offline. */
   readonly destinations: readonly Destination[];
 };
 

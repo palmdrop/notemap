@@ -33,9 +33,10 @@ Depends on nothing. The rest of the plan depends on this.
       `SchemaValidator` on create and on edit, refused with the schema issues
 - [x] `DestinationReport` gains `unusable` beside `described` and `undescribable`: no adapter for
       the kind, or settings that no longer satisfy its schema
-- [x] Pool API: `destinations.list()`, `create`, `rename`, `reconfigure`, `retire`, `unretire`,
-      `delete`, `describe(id)`. Every mutation appends an action and returns a result that may
-      refuse
+- [x] Pool API: `destinations.list()`, `create`, `edit`, `retire`, `unretire`, `delete`,
+      `describe(id)`. Every mutation appends an action and returns a result that may refuse.
+      *`rename` and `reconfigure` became one `edit` in review: two calls left a shell that sends
+      both halves with an edit half-applied*
 - [x] `route` resolves the destination by id and refuses `destination-retired` and
       `destination-unusable`; `delete` refuses `destination-in-use`
 - [x] Store port: the destination reads and writes, and "has any routing record ever named this"

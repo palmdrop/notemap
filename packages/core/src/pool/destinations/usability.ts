@@ -6,12 +6,7 @@ import type {
 import type { DestinationKindName } from "../../types/domain/ids";
 import type { SchemaIssue } from "../../types/json";
 
-/**
- * Whether the running code can make sense of a destination at all. A row it
- * cannot is reported rather than hidden or dropped: the code that understood it
- * may come back, and the person who wrote it cannot reach the row to fix it
- * otherwise.
- */
+/** Whether the running code can make sense of a destination at all. */
 export type Usability =
   | { readonly kind: "usable"; readonly declared: DestinationKind }
   | { readonly kind: "unusable"; readonly detail: string };

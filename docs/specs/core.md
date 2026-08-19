@@ -534,6 +534,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   ([ADR 8](../adr/0008-adapters-are-in-process-and-wired-by-the-host.md)): the destination is
   handed to the adapter with the delivery, and there is no per-destination instance to build,
   cache or invalidate. An edit takes effect on the next call.
+- **Name and settings change together or not at all** — one `edit`, one transaction, one entry per
+  half that actually differs. Two operations would leave a shell that sends both with an edit
+  half-applied, and a save that changed nothing appending that it had.
 - **A destination is retired, not removed** — reversibly, which stops it being offered for new
   routing and disturbs nothing already decided. Deletion is refused for any destination a routing
   record has ever named, and allowed for one none has, so a mistyped destination need not become

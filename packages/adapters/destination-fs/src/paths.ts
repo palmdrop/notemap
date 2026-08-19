@@ -1,4 +1,5 @@
 import { realpath } from "node:fs/promises";
+import { homedir } from "node:os";
 import { dirname, relative, resolve, sep } from "node:path";
 
 /**
@@ -15,9 +16,22 @@ export type Containment =
   | { readonly kind: "contained"; readonly path: Contained }
   | { readonly kind: "refused"; readonly detail: string };
 
+/**
+ * A person writes `~/notes` and means their home; a bare `notes` means the
+ * directory the daemon happens to have been started in, which is nobody's
+ * intent, so it is resolved once here rather than left to the syscall.
+ */
+export function rootPath(root: string): string {
+  const expanded =
+    root === "~" || root.startsWith(`~${sep}`) || root.startsWith("~/")
+      ? `${homedir()}${root.slice(1)}`
+      : root;
+  return resolve(expanded);
+}
+
 /** Every containment check compares against this: a resolved path against a symlinked root would refuse everything. */
 export function realRootOf(root: string): Promise<string> {
-  return realpath(root);
+  return realpath(rootPath(root));
 }
 
 /**

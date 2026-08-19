@@ -24,11 +24,7 @@ export type Destination = DestinationRecord & {
   readonly modifiedAt: Timestamp;
 };
 
-/**
- * What the host has an adapter for, and what a destination of that kind must
- * supply. Core holds no list of kinds: it asks the port and validates against
- * whatever the port publishes, so a new kind needs no change here.
- */
+/** Core holds no list of kinds: it validates against whatever the port publishes. */
 export type DestinationKind = {
   readonly name: DestinationKindName;
   readonly settingsSchema: JsonSchema;
@@ -45,11 +41,9 @@ export type DestinationDescriptor = {
 };
 
 /**
- * What a destination answered when asked. Three ways of not answering, kept
- * apart because they are different answers to a person looking for one:
- * `undescribable` went and looked and could not say, and `unusable` could not
- * be asked at all — no adapter is registered for its kind, or its settings no
- * longer satisfy that kind's schema. The row is left exactly as it is.
+ * `undescribable` went and looked and could not say; `unusable` could not be
+ * asked at all — nothing speaks its kind, or its settings no longer satisfy
+ * that kind's schema.
  */
 export type DestinationReport =
   | ({ readonly kind: "described" } & DestinationDescriptor)
@@ -61,4 +55,10 @@ export type DestinationDraft = {
   readonly name: string;
   readonly kind: DestinationKindName;
   readonly settings: JsonObject;
+};
+
+/** What a person may change afterwards. The kind is not among them. */
+export type DestinationChanges = {
+  readonly name?: string;
+  readonly settings?: JsonObject;
 };

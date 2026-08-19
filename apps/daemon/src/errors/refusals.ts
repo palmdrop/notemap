@@ -106,16 +106,11 @@ export const DELIVERY_STATUS = {
   "rejected-by-destination": 422,
   "delivery-outcome-unknown": 422,
   unreachable: 422,
-  // Both are about the destination rather than the request, and both are
-  // answered by editing the destination rather than the route.
   "destination-retired": 409,
   "destination-unusable": 409,
 } as const satisfies Record<DeliveryRefusal["kind"], number>;
 
-/**
- * Creating or editing a destination. `404` is the id, `422` is everything the
- * daemon understood and declined about what it was asked to hold.
- */
+/** `404` is the id itself; `422` is what it was asked to hold. */
 export const DESTINATION_STATUS = {
   "unknown-destination": 404,
   "unknown-destination-kind": 422,

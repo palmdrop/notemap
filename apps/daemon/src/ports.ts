@@ -57,9 +57,8 @@ export type OpenPool = {
 export function openPool(options: OpenPoolConfig): OpenPool {
   const blobs = createFilesystemBlobStore({ root: options.assetRoot });
 
-  // Every payload type has a rendering — the fenced-JSON fallback is the floor —
-  // so a folder that was not told what it holds holds everything the pool knows
-  // about, rather than silently refusing an image.
+  // Every payload type has a rendering, the fenced-JSON fallback being the
+  // floor, so a folder that was not told what it holds takes everything.
   const everyPayloadType = options.config.payloadTypes.map(
     (type) => type.name as PayloadTypeName,
   );

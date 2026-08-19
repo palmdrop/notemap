@@ -36,19 +36,11 @@ import {
 } from "./settings";
 import { insertUnder } from "./sections";
 
-/**
- * What the host wires, which is everything about the kind that is not a
- * person's to fill in. A renderer is code rather than a setting, so it stays
- * here and out of the settings schema.
- */
+/** What the host wires: a renderer is code rather than a person's setting, so it is not in the schema. */
 export type FilesystemDestinationConfig = {
   /** By payload type. A type with no renderer gets the default rendering. */
   readonly renderers?: Renderers;
-  /**
-   * What a destination naming no `accepts` takes. Every payload type has a
-   * rendering — the fenced-JSON fallback is the floor — so a folder that was
-   * not told what it holds holds everything the pool knows about.
-   */
+  /** What a destination naming no `accepts` takes. */
   readonly accepts?: readonly PayloadTypeName[];
 };
 
@@ -71,8 +63,8 @@ export function createFilesystemDestination(
     settingsSchema: FILESYSTEM_SETTINGS,
 
     /**
-     * Never looks at the filesystem. A root that is not mounted is something a
-     * delivery discovers and retries past; refusing to describe it would turn a
+     * Never looks at the filesystem: an unmounted root is something a delivery
+     * discovers and retries past, and refusing to describe it would turn a
      * decision worth reserving into one that cannot be made at all.
      */
     describe: (destination) => {

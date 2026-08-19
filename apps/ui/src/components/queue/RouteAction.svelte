@@ -31,9 +31,11 @@
     fieldsOf(capabilities.find((one) => one.name === capability)?.targetSchema),
   );
 
+  // Which destinations exist is not stable for the life of a connection, so
+  // opening the picker reads them again rather than trusting what it holds.
   async function reveal() {
     open = !open;
-    if (!open || $destinations.length > 0) return;
+    if (!open) return;
 
     try {
       await client.destinations.load();
@@ -42,10 +44,7 @@
     }
   }
 
-  /**
-   * The list says what exists; only this says what one can do, and it is I/O
-   * that may hang on an unmounted drive — so it happens for the one chosen.
-   */
+  /** I/O that may hang on an unmounted drive, so it happens for the chosen one alone. */
   async function choose(id: string) {
     chosen = id === "" ? undefined : id;
     described = undefined;

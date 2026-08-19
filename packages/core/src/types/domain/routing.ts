@@ -43,10 +43,9 @@ export type Delivery = {
 };
 
 /**
- * What a deferred delivery finds when it goes to carry out a reservation. The
- * destination is resolved then rather than at the decision, so a root corrected
- * after a failure is why the retry succeeds. One that has become unusable is
- * proof that nothing was delivered, and is carried on `unreachable` terms.
+ * What a deferred delivery finds when it goes to carry out a reservation: the
+ * destination as it now is, so a root corrected after a failure is why the
+ * retry succeeds. Unusable is proof that nothing was delivered.
  */
 export type AttemptableDelivery =
   | {

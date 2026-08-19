@@ -295,6 +295,7 @@ its last asset does, by the asset store.
 notemap/
   state/notemap.db                 <- authoritative, never synced
   pool-mirror/YYYY/MM/DD/          <- write-only: one .json + one .md per item
+  pool-mirror/destinations/        <- one .json per destination, no rendering
   assets/<hash-prefix>/            <- blobs, single copy, content-addressed
 ```
 
@@ -310,6 +311,12 @@ pool-mirror/2026/08/11/T142305-text-<item-id>.md
 Directory and time prefix come from the item's capture time **in UTC**; the type is the payload
 type; the id is the item's. Every component is immutable, so **the path is computable from the
 item alone**, identically on every machine, forever.
+
+A destination's file is `pool-mirror/destinations/<destination-id>.json`, and there is no rendering
+beside it: the id is minted and immutable, so unlike an item it needs no path composed of the
+things about it that cannot change, and its five fields are readable as JSON by a person who has
+lost notemap. The directory sits beside the years rather than under one, since a destination
+belongs to no day.
 
 Ids are client-minted and may hold anything, so the id in the filename is a **one-way encoding**
 (stated 2026-08-11): anything but a lowercase safe name is replaced *and* given a digest of the

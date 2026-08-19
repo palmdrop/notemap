@@ -5,10 +5,7 @@ import type { DestinationId, ItemId, Timestamp } from "./ids";
 import type { ItemRecord } from "./item";
 import type { RoutingRecord } from "./routing";
 
-/**
- * What one mirror record is about. A routing record is never one: it is part of
- * the item's record rather than a unit of its own.
- */
+/** A routing record is never one: it is part of the item's record rather than a unit. */
 export type MirrorSubject =
   | { readonly kind: "item"; readonly item: ItemId }
   | { readonly kind: "destination"; readonly destination: DestinationId };
@@ -32,11 +29,9 @@ export type ItemMirrorRecord = {
 };
 
 /**
- * The mirror's one non-item unit. A delivered routing record names a
- * destination, so a mirror carrying only items would rebuild a pool whose
- * records refer to destinations it cannot produce. Retired ones are carried,
- * because being retired is exactly the state of a destination records still
- * name.
+ * The mirror's one non-item unit, without which a rebuild would restore records
+ * naming destinations it cannot produce. Retired ones are carried: that is
+ * exactly the state of a destination records still name.
  */
 export type DestinationMirrorRecord = {
   readonly kind: "destination";

@@ -23,11 +23,8 @@
     done: () => void;
   } = $props();
 
-  /**
-   * The props are where the form starts rather than what it holds: the parent
-   * mounts one per destination, so `editing` does not change under somebody
-   * who is typing.
-   */
+  // Where the form starts rather than what it holds, so nothing changes under
+  // somebody who is typing.
   let name = $state(untrack(() => editing?.name ?? ""));
   let typed = $state(untrack(() => typedFrom(editing?.settings)));
   let said = $state("");

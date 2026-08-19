@@ -59,6 +59,30 @@ describe("the media type a body arrives under", () => {
     expect(framed.status).toBe(200);
   });
 
+  it("still holds a bodied route sharing its path with a bodyless one", async () => {
+    const host = daemon();
+    open.push(host);
+    const vault = await createVault(host);
+
+    const created = await host.app.request("/v1/destinations", {
+      method: "POST",
+      headers: { "content-type": "text/plain" },
+      body: JSON.stringify({
+        name: "Second",
+        kind: "filesystem",
+        settings: { root: host.vaultRoot },
+      }),
+    });
+    expect(created.status).toBe(415);
+
+    const edited = await host.app.request(`/v1/destinations/${vault.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "text/plain" },
+      body: JSON.stringify({ name: "Renamed" }),
+    });
+    expect(edited.status).toBe(415);
+  });
+
   it("refuses a bare POST where the body is required", async () => {
     const app = serving();
 

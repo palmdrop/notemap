@@ -69,9 +69,7 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
       describe: (id, signal) => destinations.describe(ports, id, signal),
       kinds: () => ports.destinations.kinds(),
       create: (draft) => destinations.create(ports, draft),
-      rename: (id, name) => destinations.rename(ports, id, name),
-      reconfigure: (id, settings) =>
-        destinations.reconfigure(ports, id, settings),
+      edit: (id, changes) => destinations.edit(ports, id, changes),
       retire: (id) => destinations.retire(ports, id),
       unretire: (id) => destinations.unretire(ports, id),
       delete: (id) => destinations.remove(ports, id),

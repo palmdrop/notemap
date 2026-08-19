@@ -1,3 +1,4 @@
+import { canonicalJson } from "../utils/json";
 import type { JsonObject } from "../types/json";
 import type { Agent } from "../types/domain/agent";
 import type { Asset, AssetRef } from "../types/domain/asset";
@@ -28,12 +29,9 @@ import type {
   RoutingTarget,
 } from "../types/domain/routing";
 
-/**
- * The record as bytes. Keys are sorted at every depth, including inside the
- * open JSON of a payload's content, so one state has one serialisation.
- */
+/** Sorted at every depth, including inside a payload's open JSON, so one state has one serialisation. */
 export function serialiseMirrorRecord(record: MirrorRecord): string {
-  return `${JSON.stringify(record, sortedKeys, 2)}\n`;
+  return `${canonicalJson(record, 2)}\n`;
 }
 
 /** Rejects rather than salvages: a half-record would let verify call a mirror healthy that cannot rebuild. */
@@ -79,18 +77,6 @@ function readDestination(value: unknown, at: string): DestinationRecord {
     ...present("retiredAt", row, at, stamp),
     createdAt: stamp(row["createdAt"], `${at}.createdAt`),
   };
-}
-
-function sortedKeys(_key: string, value: unknown): unknown {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    return value;
-  }
-
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).sort(([a], [b]) =>
-      a < b ? -1 : a > b ? 1 : 0,
-    ),
-  );
 }
 
 function readItem(value: unknown, at: string): ItemRecord {

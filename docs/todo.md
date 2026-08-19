@@ -8,12 +8,10 @@
 - [ ] Routing auto-processing - routing a note to a specific destination converts it to a specified format. A todo list, a prose paragraph, a markdown image link, whatever. The format could be a templating language, or natural language, with an LLM in the loop, or a mix. ADR 19 answers _where the work happens_; the interesting half is still open - **preview**. Composing a routing decision with a template means wanting to see the result before committing, which is a third method on the destination port and needs the conversion to be repeatable enough that a preview means something.
 - [ ] Routing rules - core.md has carried "how rules are expressed, how fan-out to several destinations is presented, and whether a rule may ever be trusted to fire unattended" since 2026-08-02. Capture templates that auto-route are the first thing to touch it: choosing a template _is_ a person's decision to route, made early, which is how it survives "a rule never delivers on its own" - but that sentence wants writing deliberately rather than discovering later.
 - [ ] Reconsider revisions: maybe they should appear in the original place of the note, or that should be a filter option. User can choose to view the queue in order of creation, modification, etc. Revisions appear in place of original, but in the db, they are different entries.
-- [ ] Destinations from the UI — **decided, unbuilt**. They become pool state, edited over `/v1`,
-  with one adapter per kind and the destination handed in as a parameter
-  ([ADR 20](adr/0020-destinations-are-pool-state.md)). Specs are updated; core, the store, the
-  daemon, the client and the UI are not, and `[[destinations]]` is still in `load.ts` and the
-  example config. Sources deliberately did not follow: their only policy is `autoRequest`, which
-  nothing reads until enrichment exists.
+- [ ] Verify and repair reach destination records. The mirror carries them
+  ([ADR 20](adr/0020-destinations-are-pool-state.md)), but neither verify nor repair exists to
+  reach anything, so a mirror holding a stale or missing destination record has nothing that would
+  notice. Whoever builds them builds this at the same time.
 - [ ] Consider capture templates: on capture time, I select a capture format which auto-tags and auto-routes (optionally) the finished capture when it is committed.
 - [ ] Certain feed views allow me to view all revisions, all entries, open to see
 - [ ] Consider redis for jobs in the future. Move the jobs managed out of the store port, let it be its own. Could be a piece of the store db, could be external. (Feel like I reimplement a lot of tried and tested things here.

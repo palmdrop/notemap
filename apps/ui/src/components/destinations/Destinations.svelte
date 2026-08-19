@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-
   import {
     saidBy,
     type Destination,
@@ -20,21 +18,22 @@
   let editing = $state<string | undefined>(undefined);
   let said = $state("");
 
-  /**
-   * Fetched per destination rather than for the list: what one *is* comes from
-   * the pool, and what it can *do* is I/O that may hang on an unmounted drive.
-   */
+  /** Per destination rather than for the list: what one can do is I/O that may hang. */
   let described = $state<Record<string, DestinationDescription>>({});
 
-  onMount(() => {
-    void (async () => {
-      try {
-        [kinds] = [await client.destinations.kinds()];
-        await client.destinations.load();
-      } catch (error) {
-        said = saidBy(error);
-      }
-    })();
+  async function read() {
+    try {
+      [kinds] = [await client.destinations.kinds()];
+      await client.destinations.load();
+    } catch (error) {
+      said = saidBy(error);
+    }
+  }
+
+  // A screen opened while the daemon was down has no kinds and so no form to
+  // add one with; coming back is the only moment anything will ask again.
+  $effect(() => {
+    if (pool.yes && kinds.length === 0) void read();
   });
 
   async function attempt(what: () => Promise<unknown>) {

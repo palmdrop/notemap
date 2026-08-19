@@ -6,7 +6,7 @@ import type { DestinationId, ItemMirrorRecord } from "@notemap/core";
 /** Everything a filename may contain, on every filesystem worth supporting. */
 const SAFE = /^[a-z0-9._-]+$/i;
 
-/** The mirror's one non-item unit, kept apart from the day it would land under. */
+/** Beside the years rather than under one: a destination belongs to no day. */
 export const DESTINATIONS = "destinations";
 
 export type MirrorPaths = {
@@ -44,14 +44,6 @@ export function pathsFor(root: string, record: ItemMirrorRecord): MirrorPaths {
   };
 }
 
-/**
- * Where one destination's record lives. Its id is minted and immutable, so
- * unlike an item it needs no path composed of the things about it that cannot
- * change: `<root>/destinations/019a3f2c-....json`.
- *
- * No rendering beside it. A rendering exists because an item's payload is not
- * readable as JSON by a person who has lost notemap; five fields are.
- */
 export function destinationPathFor(root: string, id: DestinationId): string {
   return join(root, DESTINATIONS, `${filenameSafe(id)}.json`);
 }

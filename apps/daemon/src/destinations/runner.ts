@@ -54,17 +54,15 @@ export function startDeliveryRunner(
 
   async function prepare(record: RoutingRecordId): Promise<Prepared> {
     try {
-      // Read fresh rather than from a snapshot, so what leaves is the item as
-      // it now stands and the destination as it now is. Absent means there is
-      // nothing left to carry out: the record was cancelled, its item was
-      // purged, or it has already landed.
+      // Absent means there is nothing left to carry out: the record was
+      // cancelled, its item purged, or it has already landed.
       const attemptable = await pool.routing.deliveryFor(record);
       if (attemptable === undefined) {
         return { kind: "settled", outcome: { kind: "succeeded" } };
       }
 
-      // Nothing was delivered, and an edit may yet fix it, so this carries on
-      // the same terms as unreachable: retried, bounded, then abandoned.
+      // Nothing was delivered and an edit may yet fix it, so it carries on
+      // unreachable's terms: retried, bounded, then abandoned.
       if (attemptable.kind === "unusable") {
         return {
           kind: "settled",

@@ -1,5 +1,6 @@
 import { recordAction } from "../actions";
 import { enqueueMirrorRemove, enqueueMirrorWrite } from "../mirror";
+import { sameJson } from "../../utils/json";
 import { ok, refused } from "../../utils/result";
 import type { PoolPorts, PoolTx } from "../../types/api/ports";
 import type {
@@ -9,6 +10,7 @@ import type {
 } from "../../types/api/refusal";
 import type {
   Destination,
+  DestinationChanges,
   DestinationDraft,
   DestinationRecord,
 } from "../../types/domain/destination";
@@ -69,11 +71,11 @@ export function create(
   });
 }
 
-/** Free, because a routing record names the id and never the name. */
-export function rename(
+/** Settings of a kind no adapter is registered for cannot be checked, so they cannot be edited. */
+export function edit(
   ports: PoolPorts,
   id: DestinationId,
-  name: string,
+  changes: DestinationChanges,
 ): Promise<Edited> {
   return ports.store.transaction(async (tx) => {
     const held = await tx.destination(id);
@@ -84,61 +86,60 @@ export function rename(
       });
     }
 
+    if (changes.settings !== undefined) {
+      const declined = unfit(ports, held, changes.settings);
+      if (declined !== undefined) {
+        return refused<Destination, DestinationRefusal>(declined);
+      }
+    }
+
+    const renamed = changes.name !== undefined && changes.name !== held.name;
+    const reconfigured =
+      changes.settings !== undefined &&
+      !sameJson(changes.settings, held.settings);
+    if (!renamed && !reconfigured) {
+      return ok<Destination, DestinationRefusal>(held);
+    }
+
     const at = ports.clock.now();
-    const stored = await tx.updateDestination({ ...record(held), name });
-    await changed(ports, tx, "destination-renamed", stored, at, {
-      from: held.name,
-      name,
+    const stored = await tx.updateDestination({
+      ...record(held),
+      ...(renamed ? { name: changes.name as string } : {}),
+      ...(reconfigured ? { settings: changes.settings as JsonObject } : {}),
     });
 
+    if (reconfigured) {
+      await trace(ports, tx, "destination-reconfigured", stored, at, {});
+    }
+    if (renamed) {
+      await trace(ports, tx, "destination-renamed", stored, at, {
+        from: held.name,
+        name: stored.name,
+      });
+    }
+    await owedToMirror(ports, tx, stored, at);
+
     return ok<Destination, DestinationRefusal>(stored);
   });
 }
 
-/**
- * The kind is fixed: changing it would make one destination two, and a record
- * cannot tell which it meant. Settings of a kind no adapter is registered for
- * cannot be checked, so they cannot be edited either.
- */
-export function reconfigure(
+function unfit(
   ports: PoolPorts,
-  id: DestinationId,
+  held: Destination,
   settings: JsonObject,
-): Promise<Edited> {
-  return ports.store.transaction(async (tx) => {
-    const held = await tx.destination(id);
-    if (held === undefined) {
-      return refused<Destination, DestinationRefusal>({
-        kind: "unknown-destination",
-        destination: id,
-      });
-    }
+): DestinationRefusal | undefined {
+  const declared = declaredKind(ports, held.kind);
+  if (declared === undefined) {
+    return { kind: "unknown-destination-kind", destinationKind: held.kind };
+  }
 
-    const declared = declaredKind(ports, held.kind);
-    if (declared === undefined) {
-      return refused<Destination, DestinationRefusal>({
-        kind: "unknown-destination-kind",
-        destinationKind: held.kind,
-      });
-    }
-
-    const issues = ports.schemas.validate(declared.settingsSchema, settings);
-    if (issues.length > 0) {
-      return refused<Destination, DestinationRefusal>({
-        kind: "invalid-destination-settings",
-        issues,
-      });
-    }
-
-    const at = ports.clock.now();
-    const stored = await tx.updateDestination({ ...record(held), settings });
-    await changed(ports, tx, "destination-reconfigured", stored, at);
-
-    return ok<Destination, DestinationRefusal>(stored);
-  });
+  const issues = ports.schemas.validate(declared.settingsSchema, settings);
+  return issues.length > 0
+    ? { kind: "invalid-destination-settings", issues }
+    : undefined;
 }
 
-/** Stops it being offered for new routing. Nothing already decided is disturbed. */
+/** Nothing already decided is disturbed: a reservation still lands. */
 export function retire(ports: PoolPorts, id: DestinationId): Promise<Retired> {
   return ports.store.transaction(async (tx) => {
     const held = await tx.destination(id);
@@ -195,10 +196,7 @@ export function unretire(
   });
 }
 
-/**
- * A typo need not become permanent furniture; anything a record has ever named
- * can never stop resolving, and is retired instead.
- */
+/** Anything a record has ever named can never stop resolving, and is retired instead. */
 export function remove(
   ports: PoolPorts,
   id: DestinationId,
@@ -221,8 +219,6 @@ export function remove(
 
     const at = ports.clock.now();
     await tx.deleteDestination(id);
-    // The entry outlives the row, as an item's does: what happened is not
-    // erased by erasing what it happened to.
     await removed(ports, tx, held, at);
 
     return ok<void, DestinationDeletionRefusal>(undefined);
@@ -235,11 +231,6 @@ function record(held: Destination): DestinationRecord {
   return fields;
 }
 
-/**
- * What every change to a destination owes: an entry, and the mirror write the
- * new state makes due. A destination is not an item, so the entry carries no
- * subject and names the destination in its detail instead.
- */
 async function changed(
   ports: PoolPorts,
   tx: PoolTx,
@@ -249,7 +240,16 @@ async function changed(
   detail: JsonObject = {},
 ): Promise<void> {
   await trace(ports, tx, kind, destination, at, detail);
-  await enqueueMirrorWrite(
+  await owedToMirror(ports, tx, destination, at);
+}
+
+function owedToMirror(
+  ports: PoolPorts,
+  tx: PoolTx,
+  destination: Destination,
+  at: Timestamp,
+): Promise<void> {
+  return enqueueMirrorWrite(
     ports,
     tx,
     { kind: "destination", destination: destination.id },
@@ -276,6 +276,7 @@ async function removed(
   );
 }
 
+/** A destination is not an item, so an entry names it in its detail rather than as its subject. */
 function trace(
   ports: PoolPorts,
   tx: PoolTx,

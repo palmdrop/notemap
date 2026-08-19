@@ -46,11 +46,6 @@ maxUpload = 268435456 # bytes — 256 MiB
 grace = 86400000   # milliseconds — one day
 interval = 3600000 # milliseconds between sweeps
 
-# Destinations are not here. They are pool state — add, rename, retire and
-# delete them from the UI, or through `/v1/destinations`, with no restart and no
-# editor. A `[[destinations]]` block left over from an older notemap is ignored
-# with a warning at startup rather than refused.
-
 # How often deliveries that could not be carried out inline are retried. Slower
 # than the mirror, and with a longer lease: a delivery is waiting on something
 # outside this machine, and a lease that expires mid-delivery is abandoned

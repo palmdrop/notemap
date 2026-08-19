@@ -4,7 +4,6 @@ import type {
   Destination,
   DestinationId,
   DestinationKindName,
-  DestinationRefusal,
   JsonObject,
   Pool,
 } from "@notemap/core";
@@ -74,14 +73,6 @@ export function createDestinationHandler(pool: Pool) {
   };
 }
 
-/**
- * The kind is fixed, so this changes a name, settings, or both. Each is its own
- * operation in the pool and appends its own entry: two things changed.
- *
- * Settings go first because they are the half that can be refused for what it
- * says. Renaming afterwards can only fail on an id that has just gone, so a
- * request that is declined leaves nothing half-applied.
- */
 export function updateDestinationHandler(pool: Pool) {
   return async (context: Context): Promise<Response> => {
     const body = await readBody(context, updateDestinationRequestSchema);
@@ -89,37 +80,16 @@ export function updateDestinationHandler(pool: Pool) {
 
     const id = (context.req.param("id") ?? "") as DestinationId;
     const { name, settings } = body.value;
-    let edited: Destination | undefined;
 
-    if (settings !== undefined) {
-      const reconfigured = await pool.destinations.reconfigure(
-        id,
-        settings as JsonObject,
-      );
-      if (reconfigured.kind === "refused")
-        return declined(reconfigured.refusal);
-      edited = reconfigured.value;
-    }
+    const edited = await pool.destinations.edit(id, {
+      ...(name === undefined ? {} : { name }),
+      ...(settings === undefined ? {} : { settings: settings as JsonObject }),
+    });
 
-    if (name !== undefined) {
-      const renamed = await pool.destinations.rename(id, name);
-      if (renamed.kind === "refused") return declined(renamed.refusal);
-      edited = renamed.value;
-    }
-
-    // The body carries one or the other; the schema refuses one carrying neither.
-    if (edited === undefined) {
-      return refuse({
-        kind: "malformed-envelope",
-        issues: [{ path: "/", keyword: "anyOf" }],
-      });
-    }
-    return json(declared(edited), 200);
+    return edited.kind === "refused"
+      ? json(errorBody(edited.refusal), destinationStatus(edited.refusal))
+      : json(declared(edited.value), 200);
   };
-}
-
-function declined(refusal: DestinationRefusal): Response {
-  return json(errorBody(refusal), destinationStatus(refusal));
 }
 
 export function retireDestinationHandler(pool: Pool, offer: boolean) {

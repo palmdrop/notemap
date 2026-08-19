@@ -6,6 +6,7 @@ import type { Asset, AssetMeta, BlobIntegrity } from "../domain/asset";
 import type { CaptureEnvelope, CaptureOutcome } from "../domain/capture";
 import type {
   Destination,
+  DestinationChanges,
   DestinationDraft,
   DestinationKind,
   DestinationReport,
@@ -103,15 +104,10 @@ export interface EnrichmentApi {
   ): Promise<Result<Artifact, ArtifactRefusal>>;
 }
 
-/**
- * Destinations are pool state, so this is a lifecycle rather than a read of
- * configuration. `list` is a read of the pool — instant, and it probes nothing;
- * `describe` is the one call that reaches the outside world.
- */
 export interface DestinationsApi {
-  /** Retired ones included: a record may still name one. */
+  /** Instant and probing nothing; retired ones included, since a record may still name one. */
   list(): Promise<readonly Destination[]>;
-  /** Absent means no destination has that id. */
+  /** The one call that reaches the outside world. Absent means no destination has that id. */
   describe(
     id: DestinationId,
     signal?: AbortSignal,
@@ -122,13 +118,14 @@ export interface DestinationsApi {
   create(
     draft: DestinationDraft,
   ): Promise<Result<Destination, DestinationRefusal>>;
-  rename(
+  /**
+   * Name, settings or both, in one transaction: two calls would leave an edit
+   * half-applied. The kind is not among them, and a half that arrives
+   * unchanged appends nothing.
+   */
+  edit(
     id: DestinationId,
-    name: string,
-  ): Promise<Result<Destination, DestinationRefusal>>;
-  reconfigure(
-    id: DestinationId,
-    settings: JsonObject,
+    changes: DestinationChanges,
   ): Promise<Result<Destination, DestinationRefusal>>;
 
   retire(id: DestinationId): Promise<Result<Destination, RetireRefusal>>;

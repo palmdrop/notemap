@@ -75,29 +75,30 @@ everything else, HTML and SVG and PDF included, downloads. Every asset response 
 
 ## Destinations
 
-Items are routed **out** to destinations, which the daemon wires from configuration. One kind
-exists: a folder on disk ([@notemap/destination-fs](../../packages/adapters/destination-fs/)).
+Items are routed **out** to destinations, which are **pool state** rather than configuration
+([ADR 20](../../docs/adr/0020-destinations-are-pool-state.md)): they are added, renamed, retired
+and deleted from the UI or over `/v1/destinations`, with no restart. The daemon wires one adapter
+per **kind**, and one kind exists — a folder on disk
+([@notemap/destination-fs](../../packages/adapters/destination-fs/)), whose settings are a `root`
+and an optional `accepts` defaulting to every payload type declared in the config. What stays in
+`config.toml` is the cadence deliveries are retried at:
 
 ```toml
-[[destinations]]
-id = "vault"
-kind = "filesystem"
-root = "~/notes"
-accepts = ["text", "image"] # optional; defaults to every payload type declared
-
 [delivery]
 pollInterval = 5000 # milliseconds between claims for deliveries that are owed
 leaseFor = 300000   # how long a claimed delivery is held before anyone may retake it
 batch = 4
 ```
 
-`GET /v1/destinations` reports what each one declared. Two capabilities per folder:
+`GET /v1/destinations` lists what the pool holds and probes nothing;
+`GET /v1/destinations/{id}/description` asks one what it can do. Two capabilities per folder:
 `create-file`, which takes `{ directory, filename? }` and refuses rather than overwriting, and
 `append-to-file`, which takes `{ path, heading? }` and creates both the file and the heading when
 they are missing. The filename is derived from the first line of the payload when the target names
 none — weak, because the domain has no title.
 
-**The root must already exist.** The daemon never creates one: a root that is not there is an
+**The root must already exist**, and `~` in one means the home of whoever the daemon runs as. The
+daemon never creates one: a root that is not there is an
 unmounted drive far more often than it is a typo, and the adapter reports it as unreachable so the
 decision is kept and retried rather than a folder being conjured where a vault was meant to be. The
 same is true of a permission error.

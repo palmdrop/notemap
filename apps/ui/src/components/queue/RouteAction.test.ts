@@ -85,6 +85,23 @@ test("reads the declarations, and describes only what was chosen", async () => {
   ]);
 });
 
+/** Which destinations exist is not stable for the life of a connection. */
+test("reads the list again each time the picker is opened", async () => {
+  serving([aDestination()]);
+
+  draw();
+  await reveal();
+  await screen.findByRole("option", { name: "Vault" });
+
+  await reveal();
+  await reveal();
+  await vi.waitFor(() => {
+    expect(asked().filter((route) => route === "GET /v1/destinations")).toEqual(
+      ["GET /v1/destinations", "GET /v1/destinations"],
+    );
+  });
+});
+
 test("does not offer a retired destination for new routing", async () => {
   serving([
     aDestination({ retired: true }),
