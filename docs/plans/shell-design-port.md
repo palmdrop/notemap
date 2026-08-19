@@ -17,6 +17,62 @@ class string describing the same thing appears in two places.
 
 ---
 
+## The system, in one place
+
+Everything below is visible in `docs/design/` — that directory is the reference and needs no
+build, no network and no account. Read it before phase 1. `docs/specs/shell.md` says *why*; this
+says *what*, so that nothing has to be inferred from a screenshot.
+
+**How to use the reference.** Open `docs/design/queue.html` and `feed.html` directly over `file://`.
+Compare your own output against `docs/design/shots/` by running the same headless command against
+`pnpm dev` — the command is in `docs/design/README.md`. Check 1440 and 390 both; the layout changes
+at two breakpoints and only one of them is visible on a desktop. The mockups are static HTML with
+no state and no data: copy the *system*, never a class name.
+
+**Surfaces.** Two. The queue is the root route and carries capture as its first row. The feed is
+everything the pool holds. Settings exists but is not in the navigation (see unknowns).
+
+**Frame.** Sheet → column → bar, then the stage. The column is capped at a reading measure; the
+only thing that widens it is a composer opening beside the register. The bar is one row: wordmark,
+the two surface links, and reachability pushed to the right.
+
+**The register.** A grid of two columns — a fixed left column and the content — with the spine, a
+one-pixel ink rule, down its right edge. A separator between captures starts where the content
+column starts and runs right *past* the register's padding to meet the spine, making one junction
+per capture. Nothing is boxed; nothing has a border on four sides.
+
+**The row.** Left column: the date over the time, then the state word in the feed. Right column:
+the payload, then a label/value pair per field — `tags`, `edited`, `routing`, `sent` — and the
+action row last. The left column is the label column; that is the whole idea.
+
+**Two breakpoints.**
+- **56rem** — the composer stops sitting beside the row and becomes a block inside it, below the
+  note. Nothing hides the register.
+- **34rem** — the row becomes a single column. The stamp is a header line across the full width
+  with the state word beside it, a label shrinks to its own width and sits inline before its
+  value, unlabelled content spans the whole measure, and separators run edge to edge.
+
+**Tokens.** Four colours — paper, ink, muted ink, accent. Two faces — the browser's `serif` for
+prose and `monospace` for everything the interface says; the wordmark is the serif in small caps.
+Two sizes — one for every monospace element, one step larger for prose, and nothing else. Four
+measures — the row's gutter and gap, the spine's padding, the composer panel's width.
+
+**Four idioms, and no others.**
+- **Inversion** (ink fill, paper text) means *current or chosen*: the nav's surface, a chosen
+  destination or capability, a feed row's state word.
+- **Accent fill** means *the action*: `capture`, `route`. One per context.
+- **Accent** alone means *attend to this*: the refusal block, the connector arrow marking a
+  routing in play, a link under the cursor.
+- **Muted ink** means *placeholder, unavailable, or finished*: an empty value, an unavailable
+  destination, the prose of a routed or archived row.
+
+**The primitives to build**, which is the inventory phase 2 is asking for: sheet, column, bar, nav,
+reachability; register, row, label cell, value cell, content cell, separator; stamp, state word;
+prose, clamp and its cue, figure; action, primary action, action row, tag, tag set, order selector,
+load-more foot; composer with its group, option, tree and commit; the refusal block.
+
+---
+
 ## Tasks
 
 ### 1 — Tokens and faces

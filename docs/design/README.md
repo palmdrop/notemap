@@ -10,7 +10,7 @@ plan](../plans/shell-design-port.md) is written against; the prose account of
 | `shell.css` | Every token and every component style. What becomes `@theme` plus the primitives. |
 | `queue.html` | The queue, with capture as its first row and a routing composer open beside one item. |
 | `feed.html` | The feed, including a routed item, an archived one, and a clamped long note. |
-| `shots/` | Rendered at 1440 and at 390, so a change can be compared without opening a browser. |
+| `shots/` | Both surfaces rendered at 1440 and at 390, so a change can be compared without opening a browser. |
 
 Open either page directly — `file://` works, there is nothing to serve.
 

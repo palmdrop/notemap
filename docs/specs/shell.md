@@ -212,6 +212,12 @@ alignment on a warm ground rather than a cold grey one.
 share: a fixed column of times, a wide column of content, and a margin carrying marks. The row
 reads as a dated entry in a ledger, which is why the capture time is its title.
 
+**Below 34rem the row is a single column.** A timestamp column costs a quarter of a phone screen
+and leaves the prose too narrow to read. So the stamp becomes a header line across the row — date,
+time, and the state word beside them — a field's label shrinks to its own width and sits inline
+before its value, and anything unlabelled takes the full measure. The columns still say what a
+thing is; they stop reserving space to do it.
+
 **Two columns do the work that type hierarchy usually does.** A fixed left column names what a
 thing is; a wide right column holds it. Collapsed, the left column carries the date over the time.
 Opened, that same column becomes the field-name column — `tags`, `edited`, `routing`. One system,
