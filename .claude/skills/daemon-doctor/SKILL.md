@@ -6,9 +6,11 @@ disable-model-invocation: true
 
 # Daemon doctor
 
-The dev daemon on this machine drifts from the repo in three ways at once: a **stale build**, a
+The dev daemon on this machine drifts from the repo in three places: a **stale build**, a
 `~/.config/notemap/config.toml` written against an older schema, and a `~/.local/share/notemap`
-laid out to an older default. Reconcile all three, then prove it.
+laid out to an older default. Check all three and reconcile what has actually drifted, then prove
+it. Expect to find some of them already current — reporting "nothing to do here" is a result, and
+a better one than a migration invented to fill the section.
 
 This pool is a throwaway dev server. Preserving its data is worth a `mv`, and worth nothing more.
 
@@ -25,13 +27,16 @@ A build failure is a code problem, not a daemon problem. Report it and stop.
 `~/.config/notemap/config.toml` is the file to change. Two things in the repo describe what it
 may hold, and they answer different questions:
 
-- `apps/daemon/src/config/load.ts` — `fileSchema` decides what is **valid**. It is a
-  `strictObject`, so a key the code has since dropped makes the daemon refuse to start outright.
+- `apps/daemon/src/config/load.ts` — `fileSchema` decides what is **valid**. It is a plain
+  `z.object`, so a key the code has since dropped is stripped rather than fatal: the daemon starts
+  and logs `ignoring <key>, which this daemon does not know`. What does refuse to start is a bad
+  *value* under a key it still knows.
 - `apps/daemon/config.example.toml` — decides the **shape and defaults** a current config has.
 
 Work through the user's config against both:
 
-- A key the schema no longer accepts → remove it.
+- A key the schema no longer accepts → remove it. Nothing reads it, so this buys no behaviour;
+  it stops the config from claiming to configure something it does not.
 - A table the example has that the config lacks → add it, with the example's values. `[mirror]`
   is the one that matters: absent means the mirror is off, and then the database is the only copy
   of everything.
@@ -46,7 +51,8 @@ repointed — and you have listed the changes you made.
 ## 3. Reconcile the layout
 
 Read the resolved `daemon.pool` and `mirror.root` out of the config, then look at what is actually
-under `~/.local/share/notemap`.
+under `~/.local/share/notemap`. A dev box that was last set up recently has no drift here at all;
+that is the common case, not a sign you looked in the wrong place.
 
 Move the tree **whole**. The pool and its mirror are one backup unit and a rebuild needs both, so
 they move together or not at all. Carry `-wal` and `-shm` alongside the database.
@@ -64,10 +70,15 @@ The daemon binds `daemon.port` from the config, so the port is the handle.
 ```sh
 fuser -k <port>/tcp                     # whatever holds it now
 mkdir -p ~/.local/state/notemap
-node apps/daemon/dist/main.js > ~/.local/state/notemap/daemon.log 2>&1 &
+setsid nohup node apps/daemon/dist/main.js > ~/.local/state/notemap/daemon.log 2>&1 &
 ```
 
-Poll `GET /v1/openapi.json` until it answers.
+`setsid nohup` matters: a bare `&` leaves the daemon in the process group of the shell the tool
+call runs in, and it dies when that call returns.
+
+Poll `GET /v1/openapi.json` until it answers, then read the log. Its first lines name the pool,
+the mirror root, the asset root and the destinations, which is where step 2 and step 3 either show
+up or do not — including any key still being ignored.
 
 If the user had `pnpm dev` running in their own terminal, this killed it. Say so in the report —
 their terminal will be showing a dead process.
