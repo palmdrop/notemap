@@ -69,7 +69,9 @@ Depends on phase 1's port shape. Independent of phase 2.
 - [x] `createFilesystemDestination(config)` becomes a kind module: no id, no construction, a
       `settingsSchema` for `root` and `accepts`, and `describe`/`deliver` taking the destination
 - [x] `accepts` moves from adapter construction into the kind's settings; capabilities are
-      computed from the destination it is handed
+      computed from the destination it is handed. *Reversed 2026-08-19: it went back to
+      construction. Every payload type has a rendering, so what a folder takes is the host's and
+      the settings are a `root` and nothing else*
 - [x] Renderers stay wired by the host, since they are not a person's setting
 - [x] Tests: the existing suite, re-pointed at the new signatures, plus settings that fail the
       schema

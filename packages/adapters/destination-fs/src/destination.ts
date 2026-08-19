@@ -56,7 +56,6 @@ export function createFilesystemDestination(
   config: FilesystemDestinationConfig,
 ): DestinationKindAdapter {
   const renderers = config.renderers ?? {};
-  const accepts = config.accepts;
 
   return {
     name: FILESYSTEM,
@@ -72,7 +71,7 @@ export function createFilesystemDestination(
       return settings === undefined
         ? Promise.reject(unreadable(destination))
         : Promise.resolve({
-            capabilities: capabilitiesFor(accepts),
+            capabilities: capabilitiesFor(config.accepts),
           });
     },
 

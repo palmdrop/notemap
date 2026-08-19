@@ -81,8 +81,9 @@ and deleted from the UI or over `/v1/destinations`, with no restart. The daemon 
 per **kind**, and one kind exists — a folder on disk
 ([@notemap/destination-fs](../../packages/adapters/destination-fs/)), whose settings are a `root`
 and nothing else. What a folder takes is every payload type declared in the config, which the
-daemon hands the kind rather than asking a person to repeat. What stays in `config.toml` is the
-cadence deliveries are retried at:
+daemon hands the kind rather than asking a person to repeat — one folder taking less than another
+would be routing policy rather than something the folder cannot do. What stays in `config.toml` is
+the cadence deliveries are retried at:
 
 ```toml
 [delivery]
