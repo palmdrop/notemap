@@ -36,12 +36,12 @@ import {
 } from "./settings";
 import { insertUnder } from "./sections";
 
-/** What the host wires: a renderer is code rather than a person's setting, so it is not in the schema. */
+/** What the host wires: neither a renderer nor the payload types that exist is a person's setting. */
 export type FilesystemDestinationConfig = {
   /** By payload type. A type with no renderer gets the default rendering. */
   readonly renderers?: Renderers;
-  /** What a destination naming no `accepts` takes. */
-  readonly accepts?: readonly PayloadTypeName[];
+  /** What every destination of this kind takes. */
+  readonly accepts: readonly PayloadTypeName[];
 };
 
 const UNREACHABLE: readonly string[] = [
@@ -53,10 +53,10 @@ const UNREACHABLE: readonly string[] = [
 ];
 
 export function createFilesystemDestination(
-  config: FilesystemDestinationConfig = {},
+  config: FilesystemDestinationConfig,
 ): DestinationKindAdapter {
   const renderers = config.renderers ?? {};
-  const fallback = config.accepts ?? [];
+  const accepts = config.accepts;
 
   return {
     name: FILESYSTEM,
@@ -72,7 +72,7 @@ export function createFilesystemDestination(
       return settings === undefined
         ? Promise.reject(unreadable(destination))
         : Promise.resolve({
-            capabilities: capabilitiesFor(settings.accepts ?? fallback),
+            capabilities: capabilitiesFor(accepts),
           });
     },
 

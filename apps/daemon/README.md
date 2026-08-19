@@ -80,8 +80,9 @@ Items are routed **out** to destinations, which are **pool state** rather than c
 and deleted from the UI or over `/v1/destinations`, with no restart. The daemon wires one adapter
 per **kind**, and one kind exists — a folder on disk
 ([@notemap/destination-fs](../../packages/adapters/destination-fs/)), whose settings are a `root`
-and an optional `accepts` defaulting to every payload type declared in the config. What stays in
-`config.toml` is the cadence deliveries are retried at:
+and nothing else. What a folder takes is every payload type declared in the config, which the
+daemon hands the kind rather than asking a person to repeat. What stays in `config.toml` is the
+cadence deliveries are retried at:
 
 ```toml
 [delivery]

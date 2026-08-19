@@ -18,7 +18,6 @@ const FILESYSTEM = {
     required: ["root"],
     properties: {
       root: { type: "string" },
-      accepts: { type: "array", items: { type: "string" } },
     },
   },
 };
@@ -127,9 +126,6 @@ test("adds one from the kind's own schema", async () => {
   });
   await fireEvent.input(screen.getByLabelText("root"), {
     target: { value: "~/second-brain" },
-  });
-  await fireEvent.input(screen.getByLabelText("accepts"), {
-    target: { value: "text, image" },
   });
   await fireEvent.click(screen.getByRole("button", { name: "Add" }));
 

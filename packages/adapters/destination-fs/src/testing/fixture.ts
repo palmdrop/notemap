@@ -29,20 +29,12 @@ export function at(value: string): Timestamp {
 }
 
 /** A destination row of this kind, which is what every call is handed. */
-export function destinationRow(settings: {
-  root: string;
-  accepts?: readonly PayloadTypeName[];
-}): Destination {
+export function destinationRow(settings: { root: string }): Destination {
   return {
     id: VAULT,
     name: "Vault",
     kind: "filesystem" as DestinationKindName,
-    settings: {
-      root: settings.root,
-      ...(settings.accepts === undefined
-        ? {}
-        : { accepts: [...settings.accepts] }),
-    },
+    settings: { root: settings.root },
     createdAt: at("2026-08-11T09:00:00.000Z"),
     modifiedAt: at("2026-08-11T09:00:00.000Z"),
   };

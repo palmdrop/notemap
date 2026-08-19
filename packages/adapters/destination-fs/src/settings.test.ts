@@ -19,13 +19,12 @@ function issues(settings: JsonObject): readonly string[] {
  * so it is checked against the same validator the daemon runs.
  */
 describe("the settings a filesystem destination publishes", () => {
-  it("accepts a root on its own, and a root with what it takes", () => {
+  it("accepts a root, which is the whole of it", () => {
     expect(issues({ root: "~/notes" })).toEqual([]);
-    expect(issues({ root: "~/notes", accepts: ["text", "image"] })).toEqual([]);
   });
 
   it("refuses settings with no root, which is the whole of what it is", () => {
-    expect(issues({ accepts: ["text"] })).toEqual(["/root required"]);
+    expect(issues({})).toEqual(["/root required"]);
     expect(issues({ root: "" })).toEqual(["/root minLength"]);
   });
 
@@ -35,12 +34,10 @@ describe("the settings a filesystem destination publishes", () => {
     ]);
   });
 
-  it("refuses payload types that are not names", () => {
-    expect(issues({ root: "~/notes", accepts: "text" })).toEqual([
-      "/accepts type",
-    ]);
-    expect(issues({ root: "~/notes", accepts: [3] })).toEqual([
-      "/accepts/0 type",
+  /** What a destination takes is the host's, so naming it is a key like any other. */
+  it("refuses payload types a person tried to name", () => {
+    expect(issues({ root: "~/notes", accepts: ["text"] })).toEqual([
+      "/accepts additionalProperties",
     ]);
   });
 });
@@ -51,25 +48,17 @@ describe("reading settings back off a row", () => {
     expect(asFilesystemSettings({ root: "~/notes" })).toEqual({
       root: "~/notes",
     });
-    expect(
-      asFilesystemSettings({ root: "~/notes", accepts: ["text"] }),
-    ).toEqual({ root: "~/notes", accepts: ["text"] });
   });
 
   it("refuses everything the schema refuses", () => {
     expect(asFilesystemSettings({})).toBeUndefined();
     expect(asFilesystemSettings({ root: "" })).toBeUndefined();
-    expect(
-      asFilesystemSettings({ root: "~/notes", accepts: 3 }),
-    ).toBeUndefined();
-    expect(
-      asFilesystemSettings({ root: "~/notes", accepts: [3] }),
-    ).toBeUndefined();
+    expect(asFilesystemSettings({ root: 3 })).toBeUndefined();
   });
 });
 
 describe("a row whose settings the reader cannot make sense of", () => {
-  const kind = createFilesystemDestination();
+  const kind = createFilesystemDestination({ accepts: [TEXT] });
   const broken = { ...destinationRow({ root: "~/notes" }), settings: {} };
 
   it("cannot say what it can do", async () => {
@@ -87,8 +76,8 @@ describe("a row whose settings the reader cannot make sense of", () => {
   });
 });
 
-describe("what a destination takes when it names nothing", () => {
-  it("falls back to what the host said a folder can hold", async () => {
+describe("what a destination takes", () => {
+  it("is what the host said a folder can hold, on every row of the kind", async () => {
     const kind = createFilesystemDestination({ accepts: [TEXT] });
     const described = await kind.describe(destinationRow({ root: "/tmp" }));
 

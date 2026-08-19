@@ -64,8 +64,8 @@ function bind(
   accepts: readonly PayloadTypeName[],
   renderers: Record<string, Renderer>,
 ): Bound {
-  const kind = createFilesystemDestination({ renderers });
-  const row = destinationRow({ root: path, accepts });
+  const kind = createFilesystemDestination({ renderers, accepts });
+  const row = destinationRow({ root: path });
 
   return {
     describe: () => kind.describe(row),
