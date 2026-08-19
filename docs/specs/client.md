@@ -1,7 +1,7 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is a designed seam, unbuilt
-**Last updated**: 2026-08-18
+**Last updated**: 2026-08-20
 **Shipped**:
 
 - 2026-08-20 — **Which end a reader starts from reaches the client.** `ListPage` carries an order,

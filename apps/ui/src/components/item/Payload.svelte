@@ -14,7 +14,13 @@
 </script>
 
 {#each images as image (image)}
-  <img src={image} alt="" loading="lazy" class="mb-2 block max-w-full" />
+  <!-- Bounded in both directions: a tall photograph would otherwise swallow the list. -->
+  <img
+    src={image}
+    alt=""
+    loading="lazy"
+    class="mb-2 block max-h-96 max-w-full object-contain object-left"
+  />
 {/each}
 
 {#if text !== ""}
