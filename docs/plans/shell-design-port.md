@@ -69,7 +69,8 @@ measures — the row's gutter and gap, the spine's padding, the composer panel's
 **The primitives to build**, which is the inventory phase 2 is asking for: sheet, column, bar, nav,
 reachability; register, row, label cell, value cell, content cell, separator; stamp, state word;
 prose, clamp and its cue, figure; action, primary action, action row, tag, tag set, order selector,
-load-more foot; composer with its group, option, tree and commit; the refusal block.
+load-more foot; composer with its group, option and commit; the refusal block. Not the folder
+tree — phase 4 says not to build it and nothing can enumerate a destination's folders.
 
 ---
 
@@ -103,25 +104,25 @@ Depends on nothing. The whole visual system, before anything is rebuilt against 
 
 Depends on 1. Structure with no domain knowledge, in `src/components/primitives/`.
 
-- [ ] Decide the two reuse mechanisms and where the line is. **A Svelte component** owns anything
+- [x] Decide the two reuse mechanisms and where the line is. **A Svelte component** owns anything
       with markup — its classes are written once, inside it. **An `@utility` in `layout.css`** owns
       a pattern of utilities with no markup of its own, used by components that do not share a
       shape. Nothing else repeats a class string; `@apply` sprawl is not the answer here.
-- [ ] Build the frame: sheet, column, bar, nav, reachability state.
-- [ ] Build the register: register (the spine), row (the two-column grid), the label / value /
+- [x] Build the frame: sheet, column, bar, nav, reachability state.
+- [x] Build the register: register (the spine), row (the two-column grid), the label / value /
       content cells, the separator that starts at the content column and meets the spine.
-- [ ] Build the marks: stamp (date over time), the inverted state word, the inverted current-item
+- [x] Build the marks: stamp (date over time), the inverted state word, the inverted current-item
       idiom shared by nav, chosen option and state word.
-- [ ] Build the text: the prose face with its paragraph indents, the clamp and its "+ n lines" cue,
+- [x] Build the text: the prose face with its paragraph indents, the clamp and its "+ n lines" cue,
       the figure placeholder for an asset.
-- [ ] Build the controls: action, primary action, action row, tag, tag set, mono value and its
+- [x] Build the controls: action, primary action, action row, tag, tag set, mono value and its
       empty variant, the order selector, the load-more foot.
-- [ ] Build the alarm: the fixed corner block a refusal lives in.
-- [ ] Add the gate that keeps this honest: a check that no file under `src/components` or
+- [x] Build the alarm: the fixed corner block a refusal lives in.
+- [x] Add the gate that keeps this honest: a check that no file under `src/components` or
       `src/routes` contains a raw colour, a `dark:` variant, a font family or a hex/oklch literal.
       A failing grep is a failing test.
-- [ ] Test each primitive for the contract it promises, not for its class list.
-- [ ] `git commit`.
+- [x] Test each primitive for the contract it promises, not for its class list.
+- [x] `git commit`.
 
 ### 3 — The queue
 

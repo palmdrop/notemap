@@ -12,6 +12,7 @@
   --color-*: initial;
   --font-*: initial;
   --text-*: initial;
+  --breakpoint-*: initial;
 
   --color-paper: light-dark(oklch(0.972 0.009 85), oklch(0.185 0.008 60));
   --color-ink: light-dark(oklch(0.24 0.013 55), oklch(0.93 0.006 85));
@@ -29,13 +30,28 @@
   --spacing-gap: 1.4rem;
   --spacing-spine: 1.4rem;
   --spacing-panel: 25rem;
+  --spacing-measure: 44rem;
+
+  --breakpoint-narrow: 34rem;
+  --breakpoint-aside: 56rem;
 }
 
 /* One column: a gutter this wide would leave the prose too narrow to read. */
-@media (width <= 34rem) {
+@media (width < 34rem) {
   :root {
     --spacing-gap: 0.8rem;
   }
+}
+
+/**
+ * Ink fill, paper text: this is the current one, or the chosen one. Bled by its
+ * own padding so the text still sits on the column it belongs to.
+ */
+@utility inverted {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  padding-inline: 0.375rem;
+  margin-inline: -0.375rem;
 }
 
 @layer base {
