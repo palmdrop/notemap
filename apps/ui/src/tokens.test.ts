@@ -13,18 +13,9 @@ const DEFINITIONS = "layout.css";
  * when it is empty this file is the whole rule and nothing may be added to it.
  */
 const UNPORTED: readonly string[] = [
-  "components/capture/CaptureForm.svelte",
   "components/destinations/DestinationForm.svelte",
   "components/destinations/Destinations.svelte",
-  "components/feed/Feed.svelte",
-  "components/item/Item.svelte",
-  "components/outbox/Outbox.svelte",
-  "components/queue/EditAction.svelte",
-  "components/queue/Queue.svelte",
-  "components/queue/QueueItem.svelte",
   "components/queue/RouteAction.svelte",
-  "components/queue/Tags.svelte",
-  "routes/+layout.svelte",
 ];
 
 const FORBIDDEN: readonly { what: string; found: RegExp }[] = [

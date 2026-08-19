@@ -1,10 +1,8 @@
 <script lang="ts">
   export type Order = "oldest-first" | "newest-first";
 
-  let {
-    order,
-    onchoose,
-  }: { order: Order; onchoose: (order: Order) => void } = $props();
+  let { order, onchoose }: { order: Order; onchoose: (order: Order) => void } =
+    $props();
 
   const words: Record<Order, string> = {
     "oldest-first": "oldest",

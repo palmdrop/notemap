@@ -13,7 +13,9 @@
 
 <div class="font-prose text-prose {muted ? 'text-ink-muted' : ''}">
   {#each paragraphs as paragraph, at (at)}
-    <p class="m-0 break-words whitespace-pre-wrap {at > 0 ? 'indent-[3ch]' : ''}">
+    <p
+      class="m-0 break-words whitespace-pre-wrap {at > 0 ? 'indent-[3ch]' : ''}"
+    >
       {paragraph}
     </p>
   {/each}

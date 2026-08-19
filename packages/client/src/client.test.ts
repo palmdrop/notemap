@@ -461,6 +461,91 @@ describe("reading a surface", () => {
 
     expect(read(client.feed).failure).toBe("refused: invented-by-a-proxy");
   });
+
+  it("starts each surface from the end its default names", async () => {
+    const asked: (string | null)[] = [];
+    const { client } = clientOver((request) => {
+      asked.push(new URL(request.url).searchParams.get("order"));
+      return json(200, { values: [] });
+    });
+
+    await client.loadQueue();
+    await client.loadFeed();
+
+    expect(asked).toEqual(["oldest-first", "newest-first"]);
+    expect(read(client.queue).order).toBe("oldest-first");
+    expect(read(client.feed).order).toBe("newest-first");
+  });
+
+  it("turns a surface around and reads it again from the start", async () => {
+    const asked: string[] = [];
+    const { client } = clientOver((request) => {
+      const query = new URL(request.url).searchParams;
+      asked.push(`${query.get("order")}/${query.get("after") ?? "-"}`);
+
+      return query.get("order") === "oldest-first"
+        ? json(200, {
+            values: [anItem("oldest")],
+            next: "/v1/queue?after=oldest&order=oldest-first",
+          })
+        : json(200, { values: [anItem("newest")] });
+    });
+
+    await client.loadQueue();
+    expect(read(client.queue).items.map((item) => item.id)).toEqual(["oldest"]);
+
+    await client.loadQueue("newest-first");
+
+    expect(asked).toEqual(["oldest-first/-", "newest-first/-"]);
+    expect(read(client.queue).items.map((item) => item.id)).toEqual(["newest"]);
+    expect(read(client.queue).order).toBe("newest-first");
+  });
+
+  it("goes on paging when the order it is given is the one it is already in", async () => {
+    const asked: (string | null)[] = [];
+    const { client } = clientOver((request) => {
+      const after = new URL(request.url).searchParams.get("after");
+      asked.push(after);
+
+      return after === null
+        ? json(200, {
+            values: [anItem("one")],
+            next: "/v1/queue?after=one&order=oldest-first",
+          })
+        : json(200, { values: [anItem("two")] });
+    });
+
+    await client.loadQueue("oldest-first");
+    await client.loadQueue("oldest-first");
+
+    expect(asked).toEqual([null, "one"]);
+    expect(read(client.queue).items.map((item) => item.id)).toEqual([
+      "one",
+      "two",
+    ]);
+  });
+
+  it("places a returned item by rank in whichever order the queue is being read", async () => {
+    const { client } = clientOver(async (request) =>
+      routeOf(request) === "GET /v1/queue"
+        ? json(200, {
+            values: [
+              anItem("newer", { createdAt: "2022-01-01T00:00:00.000Z" }),
+              anItem("older", { createdAt: "2020-01-01T00:00:00.000Z" }),
+            ],
+          })
+        : captured(anItem(((await request.json()) as { id: string }).id)),
+    );
+
+    await client.loadQueue("newest-first");
+    const fresh = await client.capture({ channel: "web", text: "new" });
+
+    expect(read(client.queue).items.map((item) => item.id)).toEqual([
+      fresh.id,
+      "newer",
+      "older",
+    ]);
+  });
 });
 
 describe("a pool that did not decide", () => {

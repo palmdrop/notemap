@@ -18,9 +18,16 @@ import type { OperationId, PendingOperation } from "./outbox/operations";
 import type { ClientStore } from "./ports/store";
 import type { Transport } from "./ports/transport";
 
+/**
+ * Which end of a surface a reader starts from. Oldest first is why the queue is
+ * a queue, but the choice is the reader's, and it is the reader's on the feed too.
+ */
+export type Order = "oldest-first" | "newest-first";
+
 /** A paginated read surface. Where a reader has scrolled is the shell's, never this. */
 export type ListState = {
   readonly items: readonly Item[];
+  readonly order: Order;
   readonly loading: boolean;
   readonly more: boolean;
   readonly failure?: string;
@@ -85,8 +92,12 @@ export interface Client {
   readonly queue: Observable<ListState>;
   readonly outbox: Observable<readonly PendingOperation[]>;
 
-  loadFeed(): Promise<void>;
-  loadQueue(): Promise<void>;
+  /**
+   * Reads the next page. Naming an order the surface is not already in turns it
+   * around and starts again, because a position belongs to the order that made it.
+   */
+  loadFeed(order?: Order): Promise<void>;
+  loadQueue(order?: Order): Promise<void>;
   item(id: ItemId): Promise<Item | undefined>;
 
   /** Answers as soon as the operation is applied, not when the pool agrees. */

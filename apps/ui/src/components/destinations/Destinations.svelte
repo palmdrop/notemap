@@ -61,31 +61,31 @@
   }
 </script>
 
-<h2 class="mt-8 text-base font-medium">Destinations</h2>
+<h2 class="text-base mt-8 font-medium">Destinations</h2>
 
 {#if !pool.yes}
-  <p class="mt-2 text-sm text-neutral-500 dark:text-neutral-400" role="status">
+  <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-2" role="status">
     the daemon is not reachable; destinations can be read but not changed
   </p>
 {/if}
 
 {#if said !== ""}
-  <p class="mt-2 text-sm text-red-700 dark:text-red-300" role="status">
+  <p class="text-sm text-red-700 dark:text-red-300 mt-2" role="status">
     {said}
   </p>
 {/if}
 
 {#if $destinations.length === 0}
-  <p class="mt-4 text-sm text-neutral-500 dark:text-neutral-400">
+  <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-4">
     No destinations yet.
   </p>
 {:else}
   <ul class="mt-4 grid list-none gap-4 p-0">
     {#each $destinations as one (one.id)}
-      <li class="grid gap-1 border-t pt-3 text-sm">
+      <li class="text-sm grid gap-1 border-t pt-3">
         <span class="font-medium">
           {one.name}
-          <span class="font-normal text-neutral-500 dark:text-neutral-400">
+          <span class="text-neutral-500 dark:text-neutral-400 font-normal">
             · {one.kind}{one.retired ? " · retired" : ""}
           </span>
         </span>
@@ -158,7 +158,7 @@
     type="button"
     disabled={!pool.yes || kinds.length === 0}
     onclick={() => (adding = true)}
-    class="mt-4 rounded-lg border px-4 py-1.5 text-sm disabled:opacity-50"
+    class="text-sm mt-4 rounded-lg border px-4 py-1.5 disabled:opacity-50"
   >
     Add a destination
   </button>

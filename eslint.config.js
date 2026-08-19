@@ -49,9 +49,9 @@ export default tseslint.config(
     },
   },
   {
-    // The shell writes its components in TypeScript, which the Svelte parser
-    // only reads when it is handed the TypeScript one for the script block.
-    files: ["**/*.svelte"],
+    // The shell writes its components and its rune modules in TypeScript, which
+    // the Svelte parser only reads when it is handed the TypeScript one.
+    files: ["**/*.svelte", "**/*.svelte.ts"],
     languageOptions: {
       parserOptions: { parser: tseslint.parser },
     },

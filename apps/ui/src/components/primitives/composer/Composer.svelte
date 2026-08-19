@@ -17,7 +17,12 @@
 >
   <div class="flex items-baseline justify-between gap-4">
     <span>{title}</span>
-    <button type="button" aria-label="Close" onclick={onclose} class="hover:text-accent">
+    <button
+      type="button"
+      aria-label="Close"
+      onclick={onclose}
+      class="hover:text-accent"
+    >
       ×
     </button>
   </div>

@@ -59,7 +59,7 @@
   }
 </script>
 
-<form onsubmit={submit} class="mt-3 grid gap-2 text-sm">
+<form onsubmit={submit} class="text-sm mt-3 grid gap-2">
   <input
     bind:value={name}
     placeholder="Name"

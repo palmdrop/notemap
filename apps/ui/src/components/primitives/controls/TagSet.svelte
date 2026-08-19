@@ -23,7 +23,9 @@
   }
 </script>
 
-<div class="col-start-2 flex min-w-0 flex-wrap items-baseline gap-x-4 font-mono">
+<div
+  class="col-start-2 flex min-w-0 flex-wrap items-baseline gap-x-4 font-mono"
+>
   {#each names as name (name)}
     <Tag {name} onremove={() => onremove(name)} />
   {/each}

@@ -128,21 +128,21 @@ Depends on 1. Structure with no domain knowledge, in `src/components/primitives/
 
 Depends on 2. The surface notemap opens on.
 
-- [ ] Make the queue the root route and drop capture's own route. Settings needs a way in — see
+- [x] Make the queue the root route and drop capture's own route. Settings needs a way in — see
       unknowns.
-- [ ] Rebuild capture as the register's first row: current date and time in the left column, the
+- [x] Rebuild capture as the register's first row: current date and time in the left column, the
       field in the right, `capture` and `attach` in the action row. It must keep working with the
       pool unreachable.
-- [ ] Rebuild the queue rows against the primitives: capture time, prose, tags always visible and
+- [x] Rebuild the queue rows against the primitives: capture time, prose, tags always visible and
       addable, the order selector, load more.
-- [ ] Design the empty state as a surface rather than a sentence — it is the thing the queue exists
+- [x] Design the empty state as a surface rather than a sentence — it is the thing the queue exists
       to reach.
-- [ ] Opened row: `edited`, `routing`, and the actions. No source, no heading, no revision or
+- [x] Opened row: `edited`, `routing`, and the actions. No source, no heading, no revision or
       touched marks.
-- [ ] Keep the existing behavioural tests passing — optimistic capture, offline disablement, the
+- [x] Keep the existing behavioural tests passing — optimistic capture, offline disablement, the
       scroll mark — and add tests for what the register newly promises.
-- [ ] Verify: `pnpm -r --silent test`, `pnpm --filter @notemap/ui check`.
-- [ ] `git commit`.
+- [x] Verify: `pnpm -r --silent test`, `pnpm --filter @notemap/ui check`.
+- [x] `git commit`.
 
 ### 4 — The routing composer
 

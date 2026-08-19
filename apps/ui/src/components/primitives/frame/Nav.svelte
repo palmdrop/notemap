@@ -5,7 +5,7 @@
     $props();
 </script>
 
-<nav class="flex gap-4" aria-label="Surfaces">
+<nav class="flex gap-4 max-narrow:gap-3" aria-label="Surfaces">
   {#each surfaces as surface (surface.href)}
     <a
       href={surface.href}

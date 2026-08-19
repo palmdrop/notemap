@@ -28,6 +28,7 @@ const IMAGE = "image";
 function sameList(one: ListState, other: ListState): boolean {
   return (
     one.loading === other.loading &&
+    one.order === other.order &&
     one.more === other.more &&
     one.failure === other.failure &&
     one.items.length === other.items.length &&
@@ -43,6 +44,7 @@ function listOf(state: ClientState, surface: Surface): ListState {
 
   return {
     items,
+    order: page.order,
     loading: page.loading,
     more: !page.exhausted,
     ...(page.failure === undefined ? {} : { failure: page.failure }),
@@ -83,8 +85,8 @@ export function createClient(config: ClientConfig): Client {
     ),
     outbox: derived(state.changes, (current) => current.outbox),
 
-    loadFeed: () => loadMore(state, api, "feed"),
-    loadQueue: () => loadMore(state, api, "queue"),
+    loadFeed: (order) => loadMore(state, api, "feed", order),
+    loadQueue: (order) => loadMore(state, api, "queue", order),
 
     async item(id: ItemId) {
       try {

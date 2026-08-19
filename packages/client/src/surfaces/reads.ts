@@ -2,7 +2,13 @@ import { answered, type Api } from "../api/http";
 import type { ItemSlice } from "../api/types";
 import { saidBy } from "../errors";
 import type { Writable } from "../observable/observable";
-import { cached, type ClientState, type ListPage } from "../state/state";
+import {
+  cached,
+  emptyPage,
+  type ClientState,
+  type ListPage,
+} from "../state/state";
+import type { Order } from "../types";
 
 const PAGE = 25;
 
@@ -13,13 +19,10 @@ function positionIn(next: string): string | undefined {
   return new URL(next, "http://pool").searchParams.get("after") ?? undefined;
 }
 
-function read(
-  api: Api,
-  surface: Surface,
-  after: string | undefined,
-): Promise<ItemSlice> {
+function read(api: Api, surface: Surface, page: ListPage): Promise<ItemSlice> {
+  const after = page.after;
   const query = {
-    order: surface === "feed" ? "newest-first" : "oldest-first",
+    order: page.order,
     limit: String(PAGE),
     ...(after === undefined ? {} : { after }),
   };
@@ -44,6 +47,7 @@ function extended(page: ListPage, slice: ItemSlice): ListPage {
   const next = slice.next === undefined ? undefined : positionIn(slice.next);
 
   return {
+    order: page.order,
     ids: [...page.ids, ...arriving],
     exhausted: slice.next === undefined,
     loading: false,
@@ -60,17 +64,20 @@ export async function loadMore(
   state: Writable<ClientState>,
   api: Api,
   surface: Surface,
+  order?: Order,
 ): Promise<void> {
-  const page = state.get()[surface];
+  const held = state.get()[surface];
+
+  // Turning the surface around invalidates the position it was walking, so the
+  // page starts again rather than stitching two orders together.
+  const page =
+    order === undefined || order === held.order ? held : emptyPage(order);
   if (page.loading || page.exhausted) return;
 
-  state.update((current) => ({
-    ...current,
-    [surface]: loading(current[surface]),
-  }));
+  state.update((current) => ({ ...current, [surface]: loading(page) }));
 
   try {
-    const slice = await read(api, surface, page.after);
+    const slice = await read(api, surface, page);
     state.update((current) => ({
       ...current,
       items: cached(current, slice.values),

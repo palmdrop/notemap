@@ -142,8 +142,10 @@ A client presents four surfaces, each a thin projection of core:
 - **The feed** — the pool read chronologically and completely ([core.md](core.md)), newest first
   by default, paginated by a capture-time **position** and walked by following the `next` link
   [http-v1.md](http-v1.md) hands back. A read surface: it never drains.
-- **The queue** — the pool read as unprocessed, unarchived items, oldest first. Presented as **one
-  scrollable list** (see [the queue](#the-queue)).
+- **The queue** — the pool read as unprocessed, unarchived items, oldest first by default.
+  Presented as **one scrollable list** (see [the queue](#the-queue)).
+- **An order** — which end of a surface a reader starts from. A default per surface and a
+  parameter of a read, never a stored preference.
 - **An item** — its payload, tags, enrichment state, suggestions and routing records, and the
   actions that process it.
 
@@ -174,7 +176,14 @@ processed — routed or archived — which the pool decides, not the scroll.
   unchanged content time rather than at the newest end, the client inserts it by rank, and only
   inside the window a page has actually read — past that, the pool's own next page carries it. A
   client that appended to the end of its window would sort a returned or freshly captured item
-  ahead of older work still to be read.
+  ahead of older work still to be read. It places by rank in whichever **order** the surface is
+  being read, not in the default one.
+- **Which end a reader starts from is the reader's**, on the queue as on the feed
+  ([CONTEXT.md](../../CONTEXT.md)). Each surface has a default — oldest first for the queue, which
+  is why it is a queue, newest first for the feed — and a read may name another. Naming an order
+  the surface is not already in **turns it around and reads it again from the start**: a position
+  belongs to the order that produced it, and two orders cannot be stitched into one list. The order
+  a surface is in is part of what it reports, so a control can draw it.
 
 ### The outbox
 

@@ -48,7 +48,7 @@ test("a tag is added by name, trimmed, and an empty one is not added at all", as
 
   await open();
   await fireEvent.submit(
-    (screen.getByLabelText("Add a tag").closest("form") as HTMLFormElement),
+    screen.getByLabelText("Add a tag").closest("form") as HTMLFormElement,
   );
   expect(added).toHaveBeenCalledTimes(1);
 });

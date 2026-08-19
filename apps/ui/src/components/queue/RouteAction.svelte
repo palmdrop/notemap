@@ -85,7 +85,7 @@
 </button>
 
 {#if open}
-  <div class="mt-2 grid gap-2 text-sm">
+  <div class="text-sm mt-2 grid gap-2">
     <select
       value={chosen ?? ""}
       onchange={(event) => void choose(event.currentTarget.value)}

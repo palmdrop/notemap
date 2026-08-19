@@ -5,11 +5,11 @@
 </script>
 
 <div
-  class="flex items-baseline gap-6 border-b border-ink pb-3 font-mono text-mono"
+  class="flex flex-wrap items-baseline gap-x-6 gap-y-1 border-b border-ink pb-3 font-mono text-mono max-narrow:gap-x-4"
 >
   <a
     href="/"
-    class="font-prose lowercase tracking-widest [font-variant-caps:small-caps]"
+    class="font-prose tracking-widest lowercase [font-variant-caps:small-caps]"
   >
     notemap
   </a>

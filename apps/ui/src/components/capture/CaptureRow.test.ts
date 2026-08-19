@@ -6,7 +6,7 @@ import { anItem, json, routeOf } from "@notemap/client/testing";
 import Feed from "$components/feed/Feed.svelte";
 
 import { pool } from "../../testing/pool";
-import CaptureForm from "./CaptureForm.svelte";
+import CaptureRow from "./CaptureRow.svelte";
 
 vi.mock("$lib/client", () => import("../../testing/pool"));
 
@@ -17,7 +17,7 @@ const empty = json(200, { values: [] });
 async function capture(text: string) {
   const written = screen.getByLabelText("What to capture");
   await fireEvent.input(written, { target: { value: text } });
-  await fireEvent.click(screen.getByRole("button", { name: "Capture" }));
+  await fireEvent.click(screen.getByRole("button", { name: "capture" }));
   return written as HTMLTextAreaElement;
 }
 
@@ -40,7 +40,7 @@ test("draws a capture before the pool answers, and clears the form", async () =>
   });
 
   render(Feed);
-  render(CaptureForm);
+  render(CaptureRow);
 
   const written = await capture("before any round trip");
 
@@ -67,7 +67,7 @@ test("stamps a typed note and a picture with different channels", async () => {
     });
   });
 
-  render(CaptureForm);
+  render(CaptureRow);
 
   await capture("a typed note");
 

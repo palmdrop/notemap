@@ -7,11 +7,13 @@
    */
   let {
     primary = false,
+    submit = false,
     disabled = false,
     onclick,
     children,
   }: {
     primary?: boolean;
+    submit?: boolean;
     disabled?: boolean;
     onclick?: () => void;
     children: Snippet;
@@ -19,7 +21,7 @@
 </script>
 
 <button
-  type="button"
+  type={submit ? "submit" : "button"}
   {disabled}
   {onclick}
   class="font-mono disabled:text-ink-muted {primary

@@ -10,9 +10,10 @@ test("a chosen option reads back as chosen", () => {
     onchoose: vi.fn(),
   });
 
-  expect(
-    screen.getByRole("button", { name: /obsidian vault/ }),
-  ).toHaveProperty("ariaPressed", "true");
+  expect(screen.getByRole("button", { name: /obsidian vault/ })).toHaveProperty(
+    "ariaPressed",
+    "true",
+  );
 });
 
 test("an unavailable option stays in the list and says why", () => {

@@ -46,8 +46,8 @@ fills in. It does not name a colour or a font; those come out of the design sess
 - **Enrichment.** Suggestions and artifacts are not on the wire — `Item` carries no enrichment
   field and the two suggestion operations have no encoder — so there is nothing to draw and no
   slot is guessed at.
-- **New client behaviour**, with one named exception: the reader's order control is drawn here and
-  built in the port, because the client hardcodes the order per surface today.
+- **New client behaviour**, with one named exception: the reader's order control, drawn here and
+  built in the port, which carried the parameter into `@notemap/client`.
 
 ---
 
@@ -60,7 +60,9 @@ two-pane desktop, no bottom bar, no sheet.
 
 Navigation names **two** surfaces — the queue and the feed. Capture is not one of them: it is the
 first row of the queue. Settings holds the destination list and the exits to the daemon's `/log`
-and `/docs`, which are not app surfaces and do not sit beside them as equals.
+and `/docs`, which are not app surfaces and do not sit beside them as equals. **Settings sits at
+the bar's right end**, after the reachability mark, with the other thing that is true of the shell
+rather than of a surface — not beside the two surfaces as a third.
 
 The chrome also carries the two things that are true of the shell rather than of any item: whether
 the pool is reachable, and whether any operation has been refused.
@@ -177,8 +179,9 @@ statement that more exists, and **the empty state is designed as the thing you w
 toward**, not as a grey apology.
 
 Both surfaces draw the reader's **order control**. Which end a reader starts from is the reader's,
-for the queue as for the feed ([CONTEXT.md](../../CONTEXT.md)); the client hardcodes it today, and
-closing that is the port's work.
+for the queue as for the feed ([CONTEXT.md](../../CONTEXT.md)). Turning a surface around reads it
+again from that end ([client.md](client.md#the-queue)) — a position belongs to the order that made
+it — so the control is a choice of order, not a re-sort of what is on screen.
 
 ### Content
 
@@ -312,9 +315,6 @@ the page a person actually reads. Three-character indents on successive paragrap
 - [ ] 2026-08-19 — **Which markdown library, and whether captured markdown is sanitised before
       rendering.** A library choice is the developer's. `@tailwindcss/typography` is already a
       dependency and unused.
-- [ ] 2026-08-19 — **The order control needs a client change.** `reads.ts` fixes the order per
-      surface and `loadFeed` / `loadQueue` take no arguments. The design draws the control; the
-      port either carries that parameter and amends [client.md](client.md), or ships a stub.
 - [ ] 2026-08-19 — **`/log` and `/docs` remain in the daemon's own visual language.** Restyling
       them is the daemon's work and nobody has claimed it.
 - [ ] 2026-08-19 — **Nothing can enumerate a destination's folders.** The composer draws a folder
@@ -322,8 +322,6 @@ the page a person actually reads. Three-character indents on successive paragrap
       Either the adapter publishes an enum it refreshes at describe time, or the destination port
       gains a method for asking — which is the same seam [todo.md](../todo.md) predicts for preview,
       so it would have two callers.
-- [ ] 2026-08-20 — **Settings has no way in.** Navigation is two surfaces and settings is neither.
-      It needs a place in the bar, or somewhere else deliberate.
 - [ ] 2026-08-19 — **A pending operation has no visible mark.** The spine's markers were removed as
       clutter, and pending was the visible half of the offline story. Candidates: inverting the
       row's timestamp, or a word in the row's left column.

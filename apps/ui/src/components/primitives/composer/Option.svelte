@@ -24,7 +24,10 @@
   class="flex w-full items-baseline gap-2.5 py-px text-left"
 >
   <span aria-hidden="true" class="w-[1ch] flex-none">{chosen ? "▸" : ""}</span>
-  <span class:inverted={chosen} class={why === undefined ? "" : "text-ink-muted"}>
+  <span
+    class:inverted={chosen}
+    class={why === undefined ? "" : "text-ink-muted"}
+  >
     {label}
   </span>
   {#if why !== undefined}
