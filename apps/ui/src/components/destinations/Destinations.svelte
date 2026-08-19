@@ -7,6 +7,14 @@
   } from "@notemap/client";
 
   import DestinationForm from "$components/destinations/DestinationForm.svelte";
+  import Action from "$components/primitives/controls/Action.svelte";
+  import ActionRow from "$components/primitives/controls/ActionRow.svelte";
+  import Content from "$components/primitives/register/Content.svelte";
+  import Foot from "$components/primitives/register/Foot.svelte";
+  import Label from "$components/primitives/register/Label.svelte";
+  import Row from "$components/primitives/register/Row.svelte";
+  import Separator from "$components/primitives/register/Separator.svelte";
+  import Value from "$components/primitives/register/Value.svelte";
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
 
@@ -61,105 +69,111 @@
   }
 </script>
 
-<h2 class="text-base mt-8 font-medium">Destinations</h2>
-
 {#if !pool.yes}
-  <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-2" role="status">
-    the daemon is not reachable; destinations can be read but not changed
-  </p>
+  <Row>
+    <Label name="daemon" />
+    <Value>
+      <span role="status" class="text-accent">
+        destinations can be read but not changed
+      </span>
+    </Value>
+  </Row>
 {/if}
 
 {#if said !== ""}
-  <p class="text-sm text-red-700 dark:text-red-300 mt-2" role="status">
-    {said}
-  </p>
+  <Row>
+    <Label name="refused" />
+    <Value>
+      <span role="status" class="text-accent">{said}</span>
+    </Value>
+  </Row>
 {/if}
 
 {#if $destinations.length === 0}
-  <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-4">
-    No destinations yet.
-  </p>
-{:else}
-  <ul class="mt-4 grid list-none gap-4 p-0">
-    {#each $destinations as one (one.id)}
-      <li class="text-sm grid gap-1 border-t pt-3">
-        <span class="font-medium">
-          {one.name}
-          <span class="text-neutral-500 dark:text-neutral-400 font-normal">
-            · {one.kind}{one.retired ? " · retired" : ""}
-          </span>
-        </span>
-
-        <div class="flex flex-wrap gap-3">
-          <button
-            type="button"
-            onclick={() => void check(one)}
-            class="underline"
-          >
-            Check
-          </button>
-          <button
-            type="button"
-            disabled={!pool.yes}
-            onclick={() => (editing = editing === one.id ? undefined : one.id)}
-            class="underline disabled:opacity-50"
-          >
-            Edit
-          </button>
-          <button
-            type="button"
-            disabled={!pool.yes}
-            onclick={() =>
-              void attempt(() =>
-                one.retired
-                  ? client.destinations.unretire(one.id)
-                  : client.destinations.retire(one.id),
-              )}
-            class="underline disabled:opacity-50"
-          >
-            {one.retired ? "Offer again" : "Retire"}
-          </button>
-          <!-- Offered whatever the pool will say: only it knows whether a
-               record has ever named this, and its refusal is the answer. -->
-          <button
-            type="button"
-            disabled={!pool.yes}
-            onclick={() =>
-              void attempt(() => client.destinations.delete(one.id))}
-            class="underline disabled:opacity-50"
-          >
-            Delete
-          </button>
-        </div>
-
-        {#if described[one.id] !== undefined}
-          <span class="text-neutral-500 dark:text-neutral-400">
-            {summary(described[one.id])}
-          </span>
-        {/if}
-
-        {#if editing === one.id}
-          <DestinationForm
-            {kinds}
-            editing={one}
-            disabled={!pool.yes}
-            done={() => (editing = undefined)}
-          />
-        {/if}
-      </li>
-    {/each}
-  </ul>
+  <Row>
+    <Label name="destinations" />
+    <Value empty>none yet</Value>
+  </Row>
 {/if}
 
+{#each $destinations as one (one.id)}
+  <Separator />
+  <Row>
+    <Label name="name" />
+    <Value>{one.name}</Value>
+
+    <Label name="kind" />
+    <Value>{one.kind}{one.retired ? " · retired" : ""}</Value>
+
+    <Label name="can" />
+    <Value empty={described[one.id] === undefined}>
+      {described[one.id] === undefined ? "unasked" : summary(described[one.id])}
+    </Value>
+
+    <Label />
+    <ActionRow>
+      <Action onclick={() => void check(one)}>check</Action>
+      <Action
+        disabled={!pool.yes}
+        onclick={() => (editing = editing === one.id ? undefined : one.id)}
+      >
+        edit
+      </Action>
+      <Action
+        disabled={!pool.yes}
+        onclick={() =>
+          void attempt(() =>
+            one.retired
+              ? client.destinations.unretire(one.id)
+              : client.destinations.retire(one.id),
+          )}
+      >
+        {one.retired ? "offer again" : "retire"}
+      </Action>
+      <!-- Offered whatever the pool will say: only it knows whether a record
+           has ever named this, and its refusal is the answer. -->
+      <Action
+        disabled={!pool.yes}
+        onclick={() => void attempt(() => client.destinations.delete(one.id))}
+      >
+        delete
+      </Action>
+    </ActionRow>
+
+    {#if editing === one.id}
+      <Label />
+      <Content>
+        <DestinationForm
+          {kinds}
+          editing={one}
+          disabled={!pool.yes}
+          done={() => (editing = undefined)}
+        />
+      </Content>
+    {/if}
+  </Row>
+{/each}
+
+<Separator />
+
 {#if adding}
-  <DestinationForm {kinds} disabled={!pool.yes} done={() => (adding = false)} />
+  <Row>
+    <Label name="new" />
+    <Content>
+      <DestinationForm
+        {kinds}
+        disabled={!pool.yes}
+        done={() => (adding = false)}
+      />
+    </Content>
+  </Row>
 {:else}
-  <button
-    type="button"
-    disabled={!pool.yes || kinds.length === 0}
-    onclick={() => (adding = true)}
-    class="text-sm mt-4 rounded-lg border px-4 py-1.5 disabled:opacity-50"
-  >
-    Add a destination
-  </button>
+  <Foot>
+    <Action
+      disabled={!pool.yes || kinds.length === 0}
+      onclick={() => (adding = true)}
+    >
+      add a destination
+    </Action>
+  </Foot>
 {/if}

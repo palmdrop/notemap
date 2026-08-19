@@ -2,7 +2,7 @@
   import { saidBy, type Item, type RoutingRecord } from "@notemap/client";
 
   import Edit from "$components/item/Edit.svelte";
-  import RouteAction from "$components/queue/RouteAction.svelte";
+  import RoutingComposer from "$components/routing/RoutingComposer.svelte";
   import Payload from "$components/item/Payload.svelte";
   import Tags from "$components/item/Tags.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
@@ -12,7 +12,10 @@
   import Row from "$components/primitives/register/Row.svelte";
   import Value from "$components/primitives/register/Value.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
+  import StateWord from "$components/primitives/marks/StateWord.svelte";
   import { client } from "$lib/client";
+  import { composing } from "$lib/composing.svelte";
+  import { became, finished } from "$lib/lineage";
   import { wentTo } from "$lib/routing";
   import { briefly } from "$lib/stamp";
 
@@ -29,6 +32,7 @@
   } = $props();
 
   let editing = $state(false);
+  let reserve = $state(0);
   let said = $state("");
   let records = $state<readonly RoutingRecord[]>([]);
 
@@ -45,6 +49,8 @@
       }
     })();
   });
+
+  const word = $derived(became(item));
 
   const destinations = client.destinations.all;
 
@@ -68,14 +74,18 @@
   }
 </script>
 
-<Row>
-  <Stamp at={item.createdAt} {opened} {onopen} />
+<Row {reserve}>
+  <Stamp at={item.createdAt} {opened} {onopen}>
+    {#if word !== undefined}
+      <StateWord {word} />
+    {/if}
+  </Stamp>
 
   <Content>
     {#if editing}
       <Edit {item} ondone={() => (editing = false)} />
     {:else}
-      <Payload {item} />
+      <Payload {item} muted={finished(item)} />
     {/if}
   </Content>
 
@@ -97,7 +107,13 @@
     <ActionRow>
       <!-- An archive, an edit and a tag replay from the outbox; a delivery
            cannot, so it is not offered rather than promised. -->
-      <RouteAction item={item.id} disabled={offline} />
+      <Action
+        primary
+        disabled={offline}
+        onclick={() => composing.begin(item.id)}
+      >
+        route
+      </Action>
       <Action disabled={offline} onclick={markDone}>mark done</Action>
       <Action onclick={() => void client.archive(item.id)}>archive</Action>
       <Action onclick={() => (editing = !editing)}>edit</Action>
@@ -106,5 +122,13 @@
         <span role="status" class="text-ink-muted">{said}</span>
       {/if}
     </ActionRow>
+  {/if}
+
+  {#if composing.item === item.id}
+    <RoutingComposer
+      item={item.id}
+      onclose={() => composing.end()}
+      onreserve={(height) => (reserve = height)}
+    />
   {/if}
 </Row>

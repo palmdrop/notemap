@@ -148,46 +148,46 @@ Depends on 2. The surface notemap opens on.
 
 Depends on 3. Replaces `RouteAction` entirely.
 
-- [ ] Build the composer as a component of the row it belongs to, positioned beside it with its
+- [x] Build the composer as a component of the row it belongs to, positioned beside it with its
       first line level with the note's, and a connector crossing the spine at that row.
-- [ ] Below the breakpoint it becomes a block inside the row instead — the item stays readable
+- [x] Below the breakpoint it becomes a block inside the row instead — the item stays readable
       above the decision, and nothing hides the register.
-- [ ] Step it: where, then that destination's capabilities, then the target its schema asks for.
+- [x] Step it: where, then that destination's capabilities, then the target its schema asks for.
       A settled step stays visible with its choice marked.
-- [ ] Only the chosen destination is described. An unavailable one says so with its reason and
+- [x] Only the chosen destination is described. An unavailable one says so with its reason and
       stays in the list.
-- [ ] Leave a place above `where` for a decision that arrives pre-filled with an attribution, and
+- [x] Leave a place above `where` for a decision that arrives pre-filled with an attribution, and
       put nothing in it. Rules, capture templates and suggestions all produce that shape and none
       of them exists yet.
-- [ ] Do not build the folder tree — see unknowns.
-- [ ] Test: composing a decision, an unavailable destination, a capability with no target fields.
-- [ ] `git commit`.
+- [x] Do not build the folder tree — see unknowns.
+- [x] Test: composing a decision, an unavailable destination, a capability with no target fields.
+- [x] `git commit`.
 
 ### 5 — The feed
 
 Depends on 2. Everything the pool holds, read completely.
 
-- [ ] Rebuild the feed rows against the same primitives — the register is one design, not two.
-- [ ] Tags stay editable on every feed row, including an archived one.
-- [ ] Say what became of an item: the state word in the left column, the `sent` line for a routed
+- [x] Rebuild the feed rows against the same primitives — the register is one design, not two.
+- [x] Tags stay editable on every feed row, including an archived one.
+- [x] Say what became of an item: the state word in the left column, the `sent` line for a routed
       one, `unarchive` on an archived one, and muted prose on both.
-- [ ] Ship the archived half regardless — `archived` is on the item. The routed half waits on the
+- [x] Ship the archived half regardless — `archived` is on the item. The routed half waits on the
       backend carrying routing state (see dependencies).
-- [ ] Test: an archived row reads as archived and can be unarchived; tags can be changed on a
+- [x] Test: an archived row reads as archived and can be unarchived; tags can be changed on a
       finished row.
-- [ ] `git commit`.
+- [x] `git commit`.
 
 ### 6 — Sweep and gates
 
 Depends on 3, 4, 5.
 
-- [ ] Bring settings and destinations onto the tokens and primitives. It is out of the design's
+- [x] Bring settings and destinations onto the tokens and primitives. It is out of the design's
       scope but it must not be the one screen still wearing the old utility soup.
-- [ ] Delete every leftover ad-hoc class string; the raw-value gate from phase 2 must pass across
+- [x] Delete every leftover ad-hoc class string; the raw-value gate from phase 2 must pass across
       the whole app.
-- [ ] Verify: `pnpm -r --silent test`, `pnpm --filter @notemap/ui check`, the repo's linters, and
+- [x] Verify: `pnpm -r --silent test`, `pnpm --filter @notemap/ui check`, the repo's linters, and
       `pnpm test:stack` — this crosses the HTTP surface and the client's transport.
-- [ ] `git commit`.
+- [x] `git commit`.
 
 ---
 

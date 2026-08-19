@@ -60,7 +60,7 @@ test("archives with the pool unreachable, and disables what it cannot queue", as
     (screen.getByRole("button", { name }) as HTMLButtonElement).disabled;
 
   expect(disabled("mark done")).toBe(true);
-  expect(disabled("Route…")).toBe(true);
+  expect(disabled("route")).toBe(true);
   expect(disabled("archive")).toBe(false);
 
   await fireEvent.click(screen.getByRole("button", { name: "archive" }));

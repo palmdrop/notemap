@@ -8,15 +8,8 @@ const src = join(process.cwd(), "src");
 /** The one file allowed to name a value, because it is where the roles are defined. */
 const DEFINITIONS = "layout.css";
 
-/**
- * Still wearing the utility soup the port replaces. The list only ever shrinks;
- * when it is empty this file is the whole rule and nothing may be added to it.
- */
-const UNPORTED: readonly string[] = [
-  "components/destinations/DestinationForm.svelte",
-  "components/destinations/Destinations.svelte",
-  "components/queue/RouteAction.svelte",
-];
+/** Empty, and it stays empty: nothing may be added to it. */
+const UNPORTED: readonly string[] = [];
 
 const FORBIDDEN: readonly { what: string; found: RegExp }[] = [
   {

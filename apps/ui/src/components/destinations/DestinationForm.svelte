@@ -7,6 +7,7 @@
     type DestinationKind,
   } from "@notemap/client";
 
+  import Action from "$components/primitives/controls/Action.svelte";
   import { client } from "$lib/client";
   import { fieldsOf, typedFrom, valuesFrom } from "$lib/schema-form";
 
@@ -59,13 +60,13 @@
   }
 </script>
 
-<form onsubmit={submit} class="text-sm mt-3 grid gap-2">
+<form onsubmit={submit} class="grid gap-3 font-mono">
   <input
     bind:value={name}
-    placeholder="Name"
+    placeholder="name"
     aria-label="Name"
     required
-    class="rounded border px-2 py-1"
+    class="border-b border-ink bg-transparent font-mono placeholder:text-ink-muted"
   />
 
   {#if editing === undefined}
@@ -73,7 +74,7 @@
       bind:value={chosen}
       onchange={() => (typed = {})}
       aria-label="Kind"
-      class="rounded border px-2 py-1"
+      class="cursor-pointer appearance-none border-b border-ink bg-transparent font-mono"
     >
       {#each kinds as one (one.name)}
         <option value={one.name}>{one.name}</option>
@@ -82,7 +83,7 @@
   {:else}
     <!-- Changing it would make one destination two, and a record cannot tell
          which it meant. -->
-    <p class="text-neutral-500 dark:text-neutral-400">Kind: {editing.kind}</p>
+    <span class="text-ink-muted">kind: {editing.kind}</span>
   {/if}
 
   {#each fields as field (field.name)}
@@ -90,24 +91,17 @@
       bind:value={typed[field.name]}
       placeholder={field.required ? `${field.name} (required)` : field.name}
       aria-label={field.name}
-      class="rounded border px-2 py-1"
+      class="border-b border-ink bg-transparent font-mono placeholder:text-ink-muted"
     />
   {/each}
 
-  <div class="flex gap-2">
-    <button
-      type="submit"
-      disabled={busy || disabled}
-      class="rounded border px-3 py-1 disabled:opacity-50"
-    >
-      {editing === undefined ? "Add" : "Save"}
-    </button>
-    <button type="button" onclick={done} class="px-3 py-1 underline">
-      Cancel
-    </button>
+  <div class="flex gap-x-gap">
+    <Action primary submit disabled={busy || disabled}>
+      {editing === undefined ? "add" : "save"}
+    </Action>
+    <Action onclick={done}>cancel</Action>
+    {#if said !== ""}
+      <span role="status" class="text-accent">{said}</span>
+    {/if}
   </div>
-
-  {#if said !== ""}
-    <span role="status" class="text-red-700 dark:text-red-300">{said}</span>
-  {/if}
 </form>

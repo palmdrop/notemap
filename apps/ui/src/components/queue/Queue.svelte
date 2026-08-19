@@ -43,10 +43,20 @@
     // only where to put the view back on reload.
     const remember = () => writeMark(SURFACE, window.scrollY);
     window.addEventListener("scroll", remember, { passive: true });
-    return () => window.removeEventListener("scroll", remember);
+    return () => {
+      window.removeEventListener("scroll", remember);
+      composing.end();
+    };
   });
 
+  /** Collapsing or leaving a row abandons whatever was being composed on it. */
+  function show(id: string) {
+    composing.end();
+    opened = opened === id ? undefined : id;
+  }
+
   function turn(order: Order) {
+    composing.end();
     opened = undefined;
     void client.loadQueue(order);
   }
@@ -88,7 +98,7 @@
       {item}
       opened={opened === item.id}
       offline={!pool.yes}
-      onopen={() => (opened = opened === item.id ? undefined : item.id)}
+      onopen={() => show(item.id)}
     />
   {/each}
 
