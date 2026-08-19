@@ -108,7 +108,8 @@ will eventually replay is [sync.md](sync.md).
   daemon and holds no credential. A shell that cannot be same-origin is where that question
   reopens, and it is named in [security.md](security.md), not answered here.
 - **Visual design.** Component trees, styling, layout and the choice of UI framework are the
-  shell's. This spec names surfaces and behaviour, never markup.
+  shell's. This spec names surfaces and behaviour, never markup. The web shell's half is
+  [shell.md](shell.md).
 - **Routing rules, enrichment providers, destinations.** A client presents what core exposes; it
   invents no domain of its own.
 

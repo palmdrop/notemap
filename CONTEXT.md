@@ -285,8 +285,26 @@ The platform wrapper a client runs inside — the web SPA, the Tauri desktop or 
 the shell differs between platforms; the client it wraps does not.
 _Avoid_: platform, wrapper, host
 
+**Surface**:
+One of the ways a client presents the pool — capture, the feed, the queue, an item. A projection
+with its own reading and its own position, not a screen: a shell may draw two surfaces on one
+screen, or one surface across several.
+_Avoid_: screen, page, view, tab
+
 **Outbox**:
 A client's ordered set of pending mutations, held locally and drained to the pool — at once when
 it can reach it, on reconnect when it cannot. Carries captures and classification, never
 deliveries: a client that cannot reach the pool cannot route.
 _Avoid_: sync queue, pending queue, queue
+
+**Pending**:
+Said of an outbox operation applied to a client's cache and not yet drained to the pool. The
+ordinary state of every mutation and a self-healing one — it drains when the pool is next
+reachable — so it is never a failure and is never dressed as one.
+_Avoid_: unsynced, unsaved, queued, offline
+
+**Refused**:
+Said of an outbox operation the pool answered no to. Terminal without a person: waiting will not
+drain it, and the client's cache is left holding something the pool never accepted, so it is shown
+and dismissed rather than retried.
+_Avoid_: failed, error, rejected (reserved for suggestions)
