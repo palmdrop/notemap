@@ -1,7 +1,7 @@
 # Port the designed shell into apps/ui
 
 **Date**: 2026-08-20
-**Status**: Todo
+**Status**: In progress
 **Spec**: `docs/specs/shell.md`
 **Reference**: `docs/design/` — the rendered design, its stylesheet, and shots at 1440 and 390
 **Closed**:
@@ -79,25 +79,25 @@ load-more foot; composer with its group, option, tree and commit; the refusal bl
 
 Depends on nothing. The whole visual system, before anything is rebuilt against it.
 
-- [ ] Create branch `agent/shell-design-port`.
-- [ ] Use the browser's own `serif` and `monospace` — no webfont, no font server, nothing to
+- [x] Create branch `agent/shell-design-port`.
+- [x] Use the browser's own `serif` and `monospace` — no webfont, no font server, nothing to
       self-host. The wordmark is the serif in small caps. The design is carried by the columns, the
       single line weight and the two sizes, not by a particular face.
-- [ ] Define the token roles in `apps/ui/src/routes/layout.css` as `@theme`: the two paper/ink
+- [x] Define the token roles in `apps/ui/src/routes/layout.css` as `@theme`: the two paper/ink
       colours plus muted ink and the accent; the three faces; the two sizes (mono, prose); the
       layout measures the register depends on — gutter, gap, spine, composer panel. Tailwind v4
       turns each into both a variable and a utility, which is the mechanism the "no raw values"
       rule below relies on.
-- [ ] Name the accent by role, not by hue. It means *action or alarm*; a component asking for
+- [x] Name the accent by role, not by hue. It means *action or alarm*; a component asking for
       "red" is a component that will misuse it.
-- [ ] Settle what happens to dark. `layout.css` currently declares `color-scheme: light dark` and
+- [x] Settle what happens to dark. `layout.css` currently declares `color-scheme: light dark` and
       no dark palette was designed, so today the shell claims a theme it does not have. Either
       define dark values against the same roles or stop claiming it — not both.
-- [ ] Remove `@tailwindcss/typography` if the prose renderer does not use it, or keep it and drive
+- [x] Remove `@tailwindcss/typography` if the prose renderer does not use it, or keep it and drive
       it from the tokens. It is currently a dependency that nothing imports.
-- [ ] Verify: `pnpm --filter @notemap/ui build` succeeds and the existing app renders in the new
+- [x] Verify: `pnpm --filter @notemap/ui build` succeeds and the existing app renders in the new
       palette, however badly composed it still looks.
-- [ ] `git commit`.
+- [x] `git commit`.
 
 ### 2 — Primitives
 
