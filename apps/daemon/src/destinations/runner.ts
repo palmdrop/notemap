@@ -2,8 +2,8 @@ import {
   asDeliveryWorkOutcome,
   DELIVERY_FAILURE,
   type Delivery,
-  type DestinationAdapter,
-  type DestinationId,
+  type Destination,
+  type Destinations,
   type JobKind,
   type Lease,
   type Pool,
@@ -30,14 +30,10 @@ export type DeliveryRunner = Runner;
  */
 export function startDeliveryRunner(
   pool: Pool,
-  adapters: readonly DestinationAdapter[],
+  destinations: Destinations,
   config: DeliveryRunnerConfig,
   onError?: (cause: unknown) => void,
 ): DeliveryRunner {
-  const byId = new Map<DestinationId, DestinationAdapter>(
-    adapters.map((adapter) => [adapter.id, adapter]),
-  );
-
   /**
    * The attempt has to finish while the lease is still held: a lease that
    * expires with nothing reported is abandoned rather than retried, so an
@@ -51,37 +47,37 @@ export function startDeliveryRunner(
   type Prepared =
     | {
         readonly kind: "ready";
+        readonly destination: Destination;
         readonly delivery: Delivery;
-        readonly adapter: DestinationAdapter;
       }
     | { readonly kind: "settled"; readonly outcome: WorkOutcome };
 
   async function prepare(record: RoutingRecordId): Promise<Prepared> {
     try {
-      // Read fresh rather than from a snapshot, so what leaves is the item as
-      // it now stands. Absent means there is nothing left to carry out: the
-      // record was cancelled, its item was purged, or it has already landed.
-      const delivery = await pool.routing.deliveryFor(record);
-      if (delivery === undefined) {
+      // Absent means there is nothing left to carry out: the record was
+      // cancelled, its item purged, or it has already landed.
+      const attemptable = await pool.routing.deliveryFor(record);
+      if (attemptable === undefined) {
         return { kind: "settled", outcome: { kind: "succeeded" } };
       }
 
-      const adapter = byId.get(delivery.destination);
-      if (adapter === undefined) {
+      // Nothing was delivered and an edit may yet fix it, so it carries on
+      // unreachable's terms: retried, bounded, then abandoned.
+      if (attemptable.kind === "unusable") {
         return {
           kind: "settled",
-          outcome: {
-            kind: "failed",
-            retryable: false,
-            detail: {
-              code: "unknown-destination",
-              detail: `${delivery.destination} is no longer wired`,
-            },
-          },
+          outcome: asDeliveryWorkOutcome({
+            kind: "unreachable",
+            detail: attemptable.detail,
+          }),
         };
       }
 
-      return { kind: "ready", delivery, adapter };
+      return {
+        kind: "ready",
+        destination: attemptable.destination,
+        delivery: attemptable.delivery,
+      };
     } catch (cause) {
       // Nothing was attempted, so the evidence rule permits a retry — and this
       // has to answer rather than throw, because a throw here would leave the
@@ -104,10 +100,14 @@ export function startDeliveryRunner(
     const prepared = await prepare(subject.record);
     if (prepared.kind === "settled") return prepared.outcome;
 
-    const { adapter, delivery } = prepared;
+    const { destination, delivery } = prepared;
     try {
       return asDeliveryWorkOutcome(
-        await adapter.deliver(delivery, AbortSignal.timeout(attemptMs)),
+        await destinations.deliver(
+          destination,
+          delivery,
+          AbortSignal.timeout(attemptMs),
+        ),
       );
     } catch (cause) {
       // An adapter that threw rather than answering reported nothing, and the

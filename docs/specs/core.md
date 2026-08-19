@@ -4,6 +4,17 @@
 **Last updated**: 2026-08-18
 **Shipped**:
 
+- 2026-08-18 — **A destination is pool state, and the port is per kind.** One is a row a person
+  creates, renames, retires and deletes through the pool's own API, each mutation appending to the
+  action log; `PoolPorts.destinations` and the per-destination adapter are replaced by one
+  `Destinations` port that takes the destination as a parameter, so an edit takes effect on the next
+  call. A kind publishes the schema its settings must satisfy and core refuses with the issues. A
+  kind nothing speaks, or settings that no longer satisfy one, is **unusable** — reported beside
+  described and undescribable, refused for routing, and left untouched. A deferred delivery resolves
+  its destination when it runs and carries unusable on `unreachable` terms; retirement stops the
+  next decision and nothing already decided.
+  ([plan](../plans/destinations-in-the-pool.md),
+  [ADR 20](../adr/0020-destinations-are-pool-state.md))
 - 2026-08-08 — A source needs no declaration to capture; `config.sources` is a policy registry
   rather than a guest list, and `unknown-source` is gone. The `SchemaValidator` port has its
   first real implementation (`@notemap/schema-ajv`), and the first host — the daemon — drives a
@@ -510,6 +521,38 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   rejected: it is filesystem-shaped, and a board, a webhook or a Micropub endpoint does not
   decompose into it. Capability names and target shapes belong to the adapter, the way payload
   types already do, so a new kind of destination needs no change in core.
+- **A destination is pool state** (decided 2026-08-17,
+  [ADR 20](../adr/0020-destinations-are-pool-state.md)). One is a row: a minted id, a name a person
+  can change, a **kind**, that kind's settings, and whether it is retired. It was configuration the
+  host read and handed over, which left a routing record's `destination` referring into a text file
+  a person could delete a paragraph from. Creating, editing, retiring and deleting one are
+  operations like any other, and each appends to the action log.
+- **A kind publishes the schema for its settings**, and core validates against it and refuses with
+  facts — the same arrangement as a capability's target schema, one level up. Core holds no list of
+  kinds, so a new kind of destination still needs no change in core. The host registers **one
+  adapter per kind**, not one per destination
+  ([ADR 8](../adr/0008-adapters-are-in-process-and-wired-by-the-host.md)): the destination is
+  handed to the adapter with the delivery, and there is no per-destination instance to build,
+  cache or invalidate. An edit takes effect on the next call.
+- **Name and settings change together or not at all** — one `edit`, one transaction, one entry per
+  half that actually differs. Two operations would leave a shell that sends both with an edit
+  half-applied, and a save that changed nothing appending that it had.
+- **A destination is retired, not removed** — reversibly, which stops it being offered for new
+  routing and disturbs nothing already decided. Deletion is refused for any destination a routing
+  record has ever named, and allowed for one none has, so a mistyped destination need not become
+  permanent furniture while a used one can never stop resolving. Renaming is free, because a record
+  names the id.
+- **A destination the running code cannot make sense of is reported, never dropped** — a kind no
+  adapter is registered for, or settings that no longer satisfy that kind's schema, is **unusable**
+  with a reason, beside described and undescribable. Routing to it is refused. The row is left
+  exactly as it is, because the code that understood it may come back and the person who wrote it
+  cannot reach the row to fix it otherwise.
+- **A deferred delivery resolves its destination when it runs**, not when the decision was made: a
+  root corrected after a failure is why the retry succeeds. A destination that has become unusable
+  is proof that nothing was delivered, so the job retries on the same terms as `unreachable` and is
+  eventually abandoned, handing the decision back.
+- **Retiring a destination does not touch a delivery already decided.** A reservation still lands;
+  what retirement stops is the next decision.
 - **Routing records a decision; delivery carries it out** (amended 2026-08-13,
   [ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)). This replaces
   "routing requires the destination to be reachable and may fail; a failed delivery leaves no
@@ -745,6 +788,13 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   spell, and refusing a capture for a paperwork reason is the wrong trade for a tool whose
   first job is that capture always works. The accepted cost: a typo'd source id mints a
   parallel identity rather than being caught, which shows up in attribution.
+- **Source policy stays in configuration for now** (noted 2026-08-17). Destinations became pool
+  state ([ADR 20](../adr/0020-destinations-are-pool-state.md)) and sources did not follow, because
+  the whole of source policy is `autoRequest` and nothing reads it until enrichment exists. When it
+  does, policy moves on the same pattern — with one difference that matters: a source is
+  **discovered** rather than created, since capturing under an id is what brings one into
+  existence, so the surface lists the sources that have captured and attaches policy to them. There
+  is no create.
 - **Every capture is identified twice: by its own id, and by its source's id for it**
   (decided 2026-08-04). Both are unique, and they answer different questions. The capture id
   makes replay harmless for a client that captured while unreachable. The source identity makes
@@ -790,7 +840,11 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   convention, not by tooling.** The seam is a design rule that review defends; it was never
   worth a hand-rolled type to keep a compiler error.
 - **Core takes configuration as data but never sources it.** The host reads config and secrets;
-  core evaluates rules.
+  core evaluates rules. *Clarified 2026-08-17*: a **destination is not configuration** and never
+  was, really — it is state a person creates, a record refers to and a rebuild restores, so it is
+  the pool's ([ADR 20](../adr/0020-destinations-are-pool-state.md)). What the host still reads and
+  hands over is policy about how the pool runs: payload types, sources, enrichments, retry and
+  sweep.
 - **Core is a primitive API** (decided 2026-08-03). It exposes operations and the facts needed
   to decide on them; it does not impose interface policy. Confirmation prompts, warnings,
   batching and processing rituals belong to the host or client.

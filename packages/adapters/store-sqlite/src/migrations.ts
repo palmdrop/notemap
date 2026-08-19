@@ -428,6 +428,128 @@ export const MIGRATIONS: readonly string[] = [
   DROP INDEX items_feed;
   CREATE INDEX items_feed ON items (created_at, root_id, revision_depth);
   `,
+
+  `
+  -- \`settings\` is the kind's own JSON, opaque here and to core alike.
+  CREATE TABLE destinations (
+    id          TEXT    NOT NULL PRIMARY KEY,
+    name        TEXT    NOT NULL,
+    kind        TEXT    NOT NULL,
+    settings    TEXT    NOT NULL,
+    retired_at  INTEGER,
+    created_at  INTEGER NOT NULL,
+    modified_at INTEGER NOT NULL
+  ) STRICT;
+
+  CREATE INDEX destinations_created_at ON destinations (created_at, id);
+
+  -- Every destination a record already names, minted so the reference below has
+  -- something to point at. The kind is one nothing registers an adapter for, so
+  -- it reports unusable rather than the history being dropped.
+  INSERT INTO destinations
+    (id, name, kind, settings, retired_at, created_at, modified_at)
+    SELECT destination, destination, 'unconfigured', '{}', NULL, MIN(at), MIN(at)
+    FROM routing_records
+    WHERE destination IS NOT NULL
+    GROUP BY destination;
+
+  -- SQLite can add neither a foreign key nor a CHECK in place, so the table is
+  -- rebuilt for both, and the trigger pair standing in for the CHECK on
+  -- \`target\` goes. A row written before that column existed carried no target
+  -- and read as \`{}\` everywhere, so it is written as \`{}\` here.
+  CREATE TABLE routing_records_next (
+    id          TEXT    NOT NULL PRIMARY KEY,
+    item_id     TEXT    NOT NULL REFERENCES items (id) ON DELETE CASCADE,
+    target_kind TEXT    NOT NULL CHECK (target_kind IN ('destination', 'user')),
+    -- RESTRICT rather than CASCADE: a destination a record has ever named can
+    -- never stop resolving, so the in-use refusal is the schema's rather than a
+    -- check the code has to remember.
+    destination TEXT    REFERENCES destinations (id) ON DELETE RESTRICT
+                CHECK ((target_kind = 'destination') = (destination IS NOT NULL)),
+    capability  TEXT    CHECK ((target_kind = 'destination') = (capability IS NOT NULL)),
+    note        TEXT    CHECK (note IS NULL OR target_kind = 'user'),
+    target      TEXT    CHECK ((target_kind = 'destination') = (target IS NOT NULL)),
+    state       TEXT    NOT NULL CHECK (state IN ('pending', 'delivered')),
+    at          INTEGER NOT NULL,
+    pointer     TEXT
+  ) STRICT;
+
+  INSERT INTO routing_records_next
+    (id, item_id, target_kind, destination, capability, note, target, state, at,
+     pointer)
+    SELECT id, item_id, target_kind, destination, capability, note,
+           CASE WHEN target_kind = 'destination' THEN COALESCE(target, '{}') END,
+           state, at, pointer
+    FROM routing_records;
+
+  DROP TABLE routing_records;
+  ALTER TABLE routing_records_next RENAME TO routing_records;
+
+  CREATE INDEX routing_records_item ON routing_records (item_id, at, id);
+
+  -- What "has any routing record ever named this" seeks on, which is both the
+  -- deletion refusal's read and the foreign key's own.
+  CREATE INDEX routing_records_destination
+    ON routing_records (destination)
+    WHERE destination IS NOT NULL;
+  `,
+
+  `
+  -- A destination's mirror write is about no capture at all, and neither the
+  -- CHECK nor \`subject_item\`'s NOT NULL can be relaxed in place.
+  --
+  -- No foreign key to \`destinations\`: a \`mirror-remove\` outlives the row it
+  -- names, exactly as one for a purged item outlives the item.
+  CREATE TABLE jobs_next (
+    id                  TEXT    NOT NULL PRIMARY KEY,
+    kind                TEXT    NOT NULL
+                        CHECK (kind IN ('enrichment', 'mirror', 'mirror-remove',
+                                        'delivery')),
+    subject_kind        TEXT    NOT NULL
+                        CHECK (subject_kind IN ('item', 'routing-record',
+                                                'destination')),
+    subject_id          TEXT    NOT NULL,
+    subject_item        TEXT    CHECK ((subject_kind = 'destination') = (subject_item IS NULL)),
+    enrichment          TEXT    CHECK ((kind = 'enrichment') = (enrichment IS NOT NULL)),
+    attempt             INTEGER NOT NULL,
+    enqueued_at         INTEGER NOT NULL,
+    next_attempt_at     INTEGER NOT NULL,
+    lease_id            TEXT,
+    lease_expires_at    INTEGER CHECK ((lease_id IS NULL) = (lease_expires_at IS NULL)),
+    abandoned_at        INTEGER,
+    last_failure_code   TEXT,
+    last_failure_detail TEXT
+                        CHECK ((last_failure_code IS NULL) = (last_failure_detail IS NULL))
+  ) STRICT;
+
+  INSERT INTO jobs_next
+    (id, kind, subject_kind, subject_id, subject_item, enrichment, attempt,
+     enqueued_at, next_attempt_at, lease_id, lease_expires_at, abandoned_at,
+     last_failure_code, last_failure_detail)
+    SELECT id, kind, subject_kind, subject_id, subject_item, enrichment, attempt,
+           enqueued_at, next_attempt_at, lease_id, lease_expires_at, abandoned_at,
+           last_failure_code, last_failure_detail FROM jobs;
+
+  DROP TABLE jobs;
+  ALTER TABLE jobs_next RENAME TO jobs;
+
+  -- Still at most one *pending* mirror job per subject, which now reaches a
+  -- destination as well as an item.
+  CREATE UNIQUE INDEX jobs_one_pending_mirror
+    ON jobs (subject_kind, subject_id, kind)
+    WHERE kind IN ('mirror', 'mirror-remove')
+      AND lease_id IS NULL
+      AND abandoned_at IS NULL;
+
+  CREATE UNIQUE INDEX jobs_lease ON jobs (lease_id) WHERE lease_id IS NOT NULL;
+
+  CREATE INDEX jobs_claimable ON jobs (kind, next_attempt_at, enqueued_at, id);
+  CREATE INDEX jobs_subject   ON jobs (subject_kind, subject_id, kind);
+
+  CREATE INDEX jobs_abandoned
+    ON jobs (abandoned_at, subject_kind, subject_id, kind)
+    WHERE abandoned_at IS NOT NULL;
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

@@ -1,9 +1,17 @@
 # Spec: The mirror on disk
 
 **Status**: Draft
-**Last updated**: 2026-08-14
+**Last updated**: 2026-08-18
 **Shipped**:
 
+- 2026-08-18 — **The mirror carries destinations, its first non-item unit.** A delivered routing
+  record names a destination, so a mirror of items alone would rebuild a pool whose records refer to
+  destinations it cannot produce. A destination record is defined and serialised beside the item
+  record, retired ones included; a write is owed whenever one changes and a removal when one is
+  deleted, on the same terms as an item's; and the filesystem driver writes them under their own
+  directory. Verify and repair still do not exist, so they do not reach them yet.
+  ([plan](../plans/destinations-in-the-pool.md),
+  [ADR 20](../adr/0020-destinations-are-pool-state.md))
 - 2026-08-14 — **A delivery reaches the mirror when it lands, and not when it is decided.** A
   routing record carries its state, and only the delivered ones are projected into a record — so an
   item whose delivery is still pending mirrors as unrouted, and a rebuild from those files would
@@ -107,6 +115,19 @@ log ([ADR 12](../adr/0012-core-keeps-an-append-only-action-log.md)); tombstones;
 derived, `supersededBy` included. This is the material-not-operational rule of 2026-08-03 held
 to: what the user kept is mirrored, how notemap ran is not. A rebuilt pool therefore has no
 history and no rejection signal, and both losses are accepted.
+
+**Destinations are mirrored too, and are the mirror's one non-item unit** (added 2026-08-17,
+[ADR 20](../adr/0020-destinations-are-pool-state.md)). A destination is pool state rather than
+configuration, and a delivered routing record names one, so a mirror that carried only items would
+rebuild a pool whose records refer to destinations it cannot produce. The unit is the destination
+itself — id, name, kind, settings, retired — and **retired ones are carried**, because being
+retired is exactly the state of a destination that records still name. A write is owed when one
+changes, on the same terms as an item's, and verify and repair reach it the same way.
+
+It is the one place the material-not-operational rule needs stating rather than reading off: a
+destination is something the user set up and would otherwise recreate by hand, which puts it on the
+material side, while the delivery cadence that drives it stays in `config.toml` and is not
+mirrored.
 
 **Media is stored once**, in `assets/`, referenced by both the pool and the mirror. Blobs are
 content-addressed and sharded by hash prefix
@@ -274,6 +295,7 @@ its last asset does, by the asset store.
 notemap/
   state/notemap.db                 <- authoritative, never synced
   pool-mirror/YYYY/MM/DD/          <- write-only: one .json + one .md per item
+  pool-mirror/destinations/        <- one .json per destination, no rendering
   assets/<hash-prefix>/            <- blobs, single copy, content-addressed
 ```
 
@@ -289,6 +311,12 @@ pool-mirror/2026/08/11/T142305-text-<item-id>.md
 Directory and time prefix come from the item's capture time **in UTC**; the type is the payload
 type; the id is the item's. Every component is immutable, so **the path is computable from the
 item alone**, identically on every machine, forever.
+
+A destination's file is `pool-mirror/destinations/<destination-id>.json`, and there is no rendering
+beside it: the id is minted and immutable, so unlike an item it needs no path composed of the
+things about it that cannot change, and its five fields are readable as JSON by a person who has
+lost notemap. The directory sits beside the years rather than under one, since a destination
+belongs to no day.
 
 Ids are client-minted and may hold anything, so the id in the filename is a **one-way encoding**
 (stated 2026-08-11): anything but a lowercase safe name is replaced *and* given a digest of the

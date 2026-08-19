@@ -82,7 +82,9 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
     `SELECT item_id FROM routing_records WHERE id = ?`,
   );
 
-  function subjectItem(subject: JobSubject): string {
+  function subjectItem(subject: JobSubject): string | null {
+    // A destination belongs to no capture, so there is none to resolve.
+    if (subject.kind === "destination") return null;
     if (subject.kind === "item") return subject.item;
 
     const row = itemOfRecord.get(subject.record);
@@ -402,7 +404,7 @@ function toAbandonedWork(row: JobRow): AbandonedWork {
 
   return {
     subject: toJobSubject(row),
-    item: row.subject_item as ItemId,
+    ...(row.subject_item === null ? {} : { item: row.subject_item as ItemId }),
     kind: row.kind,
     ...(row.enrichment === null
       ? {}

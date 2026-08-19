@@ -9,7 +9,7 @@ import type {
   Pool,
   RoutingRecord,
 } from "@notemap/core";
-import { fakeCapability, fakeDestination } from "@notemap/core/testing";
+import { fakeCapability, fakeDestinations } from "@notemap/core/testing";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
@@ -18,6 +18,7 @@ import {
   drainWith,
   envelope,
   harness,
+  itemRecord,
   storedRecords,
   type Harness,
 } from "./fixture";
@@ -53,12 +54,13 @@ const ids = (values: readonly Item[]) => values.map((item) => item.id);
  * an item that has left the queue although nothing has arrived.
  */
 async function pending() {
-  const destination = fakeDestination({
+  const destination = fakeDestinations({
     answer: UNREACHABLE,
     capabilities: [fakeCapability({ name: "create-note" })],
   });
-  const opened = harness(undefined, "filesystem", [destination]);
+  const opened = harness(undefined, "filesystem", destination);
   open.push(opened);
+  await opened.putDestination({ id: VAULT });
 
   const captured = await opened.pool.capture(envelope({ id: "item-1" }));
   if (captured.kind === "refused") throw new Error("expected a capture");
@@ -116,7 +118,7 @@ describe("a destination that comes back", () => {
     minutesLater(opened, 1);
     await opened.deliver();
 
-    const mirrored = await opened.pool.mirror.recordFor(opened.item);
+    const mirrored = await itemRecord(opened.pool, opened.item);
     expect(mirrored?.routing.map((each) => each.state)).toEqual(["delivered"]);
   });
 
@@ -232,9 +234,7 @@ describe("a destination that never comes back", () => {
       await opened.deliver();
     }
 
-    expect((await opened.pool.mirror.recordFor(opened.item))?.routing).toEqual(
-      [],
-    );
+    expect((await itemRecord(opened.pool, opened.item))?.routing).toEqual([]);
   });
 });
 
@@ -401,7 +401,7 @@ describe("what reaches the mirror on disk", () => {
     expect(mirrored?.routing).toEqual([
       { ...opened.record, state: "delivered", pointer: DELIVERED.pointer },
     ]);
-    expect(mirrored).toEqual(await opened.pool.mirror.recordFor(opened.item));
+    expect(mirrored).toEqual(await itemRecord(opened.pool, opened.item));
   });
 
   it("holds no record of a delivery that was given up on", async () => {

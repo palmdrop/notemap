@@ -9,7 +9,9 @@ import type {
   CapabilityName,
   Delivery,
   DeliveredAsset,
+  Destination,
   DestinationId,
+  DestinationKindName,
   ItemId,
   JsonObject,
   PayloadTypeName,
@@ -24,6 +26,26 @@ export const VAULT = "vault" as DestinationId;
 
 export function at(value: string): Timestamp {
   return value as Timestamp;
+}
+
+/** A destination row of this kind, which is what every call is handed. */
+export function destinationRow(settings: {
+  root: string;
+  accepts?: readonly PayloadTypeName[];
+}): Destination {
+  return {
+    id: VAULT,
+    name: "Vault",
+    kind: "filesystem" as DestinationKindName,
+    settings: {
+      root: settings.root,
+      ...(settings.accepts === undefined
+        ? {}
+        : { accepts: [...settings.accepts] }),
+    },
+    createdAt: at("2026-08-11T09:00:00.000Z"),
+    modifiedAt: at("2026-08-11T09:00:00.000Z"),
+  };
 }
 
 export function root(): { path: string; cleanup: () => void } {

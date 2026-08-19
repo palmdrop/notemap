@@ -22,6 +22,14 @@ _Avoid_: note, memo, entry, card
 The original payload of an item exactly as it entered, plus the act of it entering. Immutable.
 _Avoid_: original, raw note
 
+**Source**:
+The channel a capture came in through — a shell's typed note, its picture, a watched folder, a
+polled inbox. Finer than the app that sent it, because policy is what the distinction is for: one
+page may stamp two sources. Recorded on every item, along with that source's own id for what it
+sent, so re-reading a source cannot duplicate. A source needs no declaration to capture; declaring
+one only attaches policy.
+_Avoid_: channel, origin, importer, client
+
 **Feed**:
 The pool read chronologically and completely. Accumulates forever; its job is that nothing is
 ever lost.
@@ -194,12 +202,28 @@ _Avoid_: done, handled, cleared
 
 **Destination**:
 Anywhere an item can be delivered — a vault, a single file, a board, another app. Notemap does not
-own destinations and does not know their shape.
+own the place and does not know its shape, but it does own the destination: one is pool state, with
+a name a person can change and a **kind** that says how it is reached. What a routing record names,
+which is why a destination is never removed once one has named it.
 _Avoid_: target, sink, output
 
+**Destination kind**:
+What a destination is reached *by* — filesystem, and later a board or a published feed. Names the
+adapter, and publishes the schema for the **settings** a destination of that kind must supply: a
+folder, a host, a token. A kind the running code does not have makes a destination **unusable**,
+which is reported rather than hiding it.
+_Avoid_: type, driver, backend, provider
+
+**Retired**:
+Said of a destination that is no longer offered for new routing. Reversible, and nothing already
+decided is disturbed: records keep resolving and a pending delivery still lands. It is archive's
+counterpart for destinations rather than items, which is why it is not called archive.
+_Avoid_: disabled, archived, deleted, inactive
+
 **Adapter**:
-The code that speaks one destination's or one provider's protocol. Adapters declare the
-capabilities they offer.
+The code that speaks one destination kind's or one provider's protocol. Adapters declare the
+capabilities they offer. One adapter per kind, not per destination: the destination is handed to it
+and it reaches back for nothing.
 _Avoid_: plugin, connector, integration
 
 **Capability**:

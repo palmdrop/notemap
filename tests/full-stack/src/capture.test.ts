@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { seed } from "@notemap/seed";
 
-import { daemons, MANUAL, read } from "./harness/index.ts";
+import { daemons, MANUAL, read, vaults } from "./harness/index.ts";
 
 const daemon = daemons();
 
@@ -44,8 +44,17 @@ describe("a capture made by the client", () => {
 
   it("shares a pool with everything the seeder put there", async () => {
     const running = await daemon();
+
+    // Destinations are pool state, so the seeder finds none unless a pool was
+    // given some: these are what it routes its last two items to.
+    const vault = await vaults(running);
     const seeded = await seed(running.url);
     const client = running.client;
+
+    expect(seeded.routed.map((each) => each.destination)).toEqual([
+      vault.up,
+      vault.down,
+    ]);
 
     await client.loadFeed();
     await client.loadQueue();

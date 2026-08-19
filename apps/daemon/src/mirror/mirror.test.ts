@@ -54,6 +54,7 @@ describe("capturing through HTTP, with a mirror wired", () => {
     }
 
     const stored = parseMirrorRecord(await readFile(record, "utf8"));
+    if (stored.kind !== "item") throw new Error("expected an item record");
     expect(stored.item.payload.content).toEqual({
       text: "the mirror is the point",
     });

@@ -1,13 +1,16 @@
-import { projectMirrorRecord } from "../mirror/record";
+import {
+  projectDestinationRecord,
+  projectMirrorRecord,
+} from "../mirror/record";
 import type { PoolPorts, PoolTx } from "../types/api/ports";
 import type { Asset } from "../types/domain/asset";
-import type { AssetId, ItemId, JobId, Timestamp } from "../types/domain/ids";
-import type { MirrorRecord } from "../types/domain/mirror";
+import type { AssetId, JobId, Timestamp } from "../types/domain/ids";
+import type { MirrorRecord, MirrorSubject } from "../types/domain/mirror";
 
 export async function enqueueMirrorWrite(
   ports: PoolPorts,
   tx: PoolTx,
-  item: ItemId,
+  subject: MirrorSubject,
   at: Timestamp,
 ): Promise<void> {
   if (ports.mirrorWriter === undefined) return;
@@ -16,7 +19,27 @@ export async function enqueueMirrorWrite(
     {
       id: ports.ids.next<JobId>(),
       kind: "mirror",
-      subject: { kind: "item", item },
+      subject,
+      attempt: 0,
+      enqueuedAt: at,
+    },
+  ]);
+}
+
+/** What the mirror holds about something that has gone: nothing, once this runs. */
+export async function enqueueMirrorRemove(
+  ports: PoolPorts,
+  tx: PoolTx,
+  subject: MirrorSubject,
+  at: Timestamp,
+): Promise<void> {
+  if (ports.mirrorWriter === undefined) return;
+
+  await tx.enqueue([
+    {
+      id: ports.ids.next<JobId>(),
+      kind: "mirror-remove",
+      subject,
       attempt: 0,
       enqueuedAt: at,
     },
@@ -24,14 +47,35 @@ export async function enqueueMirrorWrite(
 }
 
 /**
- * An item's durable state as the mirror would carry it. A read of the *pool*,
- * not of the mirror: a job carries no snapshot, so a write asks for the state
- * at the moment it writes.
+ * Durable state as the mirror would carry it. A read of the *pool*, not of the
+ * mirror: a job carries no snapshot, so a write asks for the state at the
+ * moment it writes. Absent means the subject has gone, and removing its files
+ * is the other job's.
  */
 export async function recordFor(
   ports: PoolPorts,
-  id: ItemId,
+  subject: MirrorSubject,
 ): Promise<MirrorRecord | undefined> {
+  return subject.kind === "destination"
+    ? destinationRecord(ports, subject)
+    : itemRecord(ports, subject);
+}
+
+async function destinationRecord(
+  ports: PoolPorts,
+  subject: Extract<MirrorSubject, { kind: "destination" }>,
+): Promise<MirrorRecord | undefined> {
+  const destination = await ports.store.destination(subject.destination);
+  return destination === undefined
+    ? undefined
+    : projectDestinationRecord(destination);
+}
+
+async function itemRecord(
+  ports: PoolPorts,
+  subject: Extract<MirrorSubject, { kind: "item" }>,
+): Promise<MirrorRecord | undefined> {
+  const id = subject.item;
   const item = await ports.store.item(id);
   if (item === undefined) return undefined;
 

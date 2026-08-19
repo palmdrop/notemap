@@ -17,7 +17,9 @@ import {
   capture,
   countingIds,
   deliveryJob,
+  destination,
   mirrorJob,
+  putDestinations,
   reserved,
   store,
 } from "./testing/fixture";
@@ -415,6 +417,7 @@ describe("work about a routing record", () => {
   async function reservedAndOwed() {
     const opened = pool({ ids: countingIds() });
     const record = capture();
+    await putDestinations(opened.pool, destination());
     await appendCapture(opened.pool, record);
 
     const reservation = reserved(record);

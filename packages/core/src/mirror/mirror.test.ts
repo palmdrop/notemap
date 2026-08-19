@@ -6,9 +6,9 @@ import type { ItemId, Timestamp } from "../types/domain/ids";
 import type { Item } from "../types/domain/item";
 import type { RoutingRecord } from "../types/domain/routing";
 
-import { poolState, type PoolState } from "./arbitraries";
+import { destination, poolState, type PoolState } from "./arbitraries";
 import { parseMirrorRecord, serialiseMirrorRecord } from "./codec";
-import { projectMirrorRecord } from "./record";
+import { projectDestinationRecord, projectMirrorRecord } from "./record";
 
 const project = (state: PoolState) =>
   projectMirrorRecord(state.item, state.assets, state.artifacts, state.routing);
@@ -58,6 +58,33 @@ describe("the record round trips", () => {
     fc.assert(
       fc.property(poolState(), (state) => {
         const once = serialiseMirrorRecord(project(state));
+        expect(serialiseMirrorRecord(parseMirrorRecord(once))).toBe(once);
+      }),
+      { numRuns: 500 },
+    );
+  });
+
+  /**
+   * The mirror's other unit joins the same property rather than getting a
+   * parallel one: what the claim rests on is that no record loses a field, and
+   * a destination is a record.
+   */
+  it("carries a destination whole, retirement and all", () => {
+    fc.assert(
+      fc.property(destination(), (held) => {
+        const record = projectDestinationRecord(held);
+        expect(parseMirrorRecord(serialiseMirrorRecord(record))).toEqual(
+          record,
+        );
+      }),
+      { numRuns: 500 },
+    );
+  });
+
+  it("keeps a destination byte for byte a second time round", () => {
+    fc.assert(
+      fc.property(destination(), (held) => {
+        const once = serialiseMirrorRecord(projectDestinationRecord(held));
         expect(serialiseMirrorRecord(parseMirrorRecord(once))).toBe(once);
       }),
       { numRuns: 500 },

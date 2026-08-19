@@ -1,19 +1,21 @@
-import type { DestinationAdapter } from "../types/api/ports";
-import type { JsonSchema } from "../types/json";
+import type { Destinations } from "../types/api/ports";
+import type { JsonObject, JsonSchema } from "../types/json";
+import type {
+  Capability,
+  Destination,
+  DestinationKind,
+} from "../types/domain/destination";
 import type {
   CapabilityName,
   DestinationId,
+  DestinationKindName,
   PayloadTypeName,
+  Timestamp,
 } from "../types/domain/ids";
-import type {
-  Capability,
-  Delivery,
-  DeliveryOutcome,
-  DestinationDescriptor,
-} from "../types/domain/routing";
+import type { Delivery, DeliveryOutcome } from "../types/domain/routing";
 
 /**
- * A destination that fails on command. A real filesystem is never unreachable
+ * A kind registry that fails on command. A real filesystem is never unreachable
  * and rarely refuses, so it would exercise one of the three outcomes delivery
  * exists to get right; this exercises all of them.
  */
@@ -27,21 +29,24 @@ export type ReceivedAsset = {
 };
 
 export type Received = {
+  readonly destination: Destination;
   readonly delivery: Delivery;
-  /** Read only where the destination was told to want bytes. */
+  /** Read only where the registry was told to want bytes. */
   readonly assets: readonly ReceivedAsset[];
 };
 
-export type FakeDestination = DestinationAdapter & {
+export type FakeDestinations = Destinations & {
   /** Oldest first, and live: it grows as more is handed over. */
   readonly received: readonly Received[];
   answers(next: ScriptedAnswer): void;
   /** Takes precedence over the standing answer, for one delivery. */
   answersOnce(next: ScriptedAnswer): void;
+  /** What `describe` throws with, which is what an undescribable destination is. */
+  cannotDescribe(detail: string | undefined): void;
 };
 
-export type FakeDestinationOptions = {
-  readonly id?: DestinationId;
+export type FakeDestinationsOptions = {
+  readonly kinds?: readonly DestinationKind[];
   readonly capabilities?: readonly Capability[];
   /** Whether it reads the assets it is handed, which is what proves the opener lazy. */
   readonly reads?: boolean;
@@ -49,6 +54,20 @@ export type FakeDestinationOptions = {
 };
 
 const ANY_TARGET: JsonSchema = { type: "object" };
+
+export const FAKE_KIND = "fake" as DestinationKindName;
+
+/** Anything at all, so a test that is not about settings never has to supply any. */
+export const ANY_SETTINGS: JsonSchema = { type: "object" };
+
+export function fakeKind(
+  overrides: { name?: string; settingsSchema?: JsonSchema } = {},
+): DestinationKind {
+  return {
+    name: (overrides.name ?? FAKE_KIND) as DestinationKindName,
+    settingsSchema: overrides.settingsSchema ?? ANY_SETTINGS,
+  };
+}
 
 export function fakeCapability(
   overrides: {
@@ -66,13 +85,36 @@ export function fakeCapability(
   };
 }
 
-export function fakeDestination(
-  options: FakeDestinationOptions = {},
-): FakeDestination {
-  const descriptor: DestinationDescriptor = {
-    id: (options.id ?? "vault") as DestinationId,
-    capabilities: options.capabilities ?? [fakeCapability()],
+export function fakeDestinationRow(
+  overrides: {
+    id?: string;
+    name?: string;
+    kind?: string;
+    settings?: JsonObject;
+    retiredAt?: string;
+    at?: string;
+  } = {},
+): Destination {
+  const at = (overrides.at ?? "2026-08-17T09:00:00.000Z") as Timestamp;
+
+  return {
+    id: (overrides.id ?? "vault") as DestinationId,
+    name: overrides.name ?? "Vault",
+    kind: (overrides.kind ?? FAKE_KIND) as DestinationKindName,
+    settings: overrides.settings ?? {},
+    ...(overrides.retiredAt === undefined
+      ? {}
+      : { retiredAt: overrides.retiredAt as Timestamp }),
+    createdAt: at,
+    modifiedAt: at,
   };
+}
+
+export function fakeDestinations(
+  options: FakeDestinationsOptions = {},
+): FakeDestinations {
+  const kinds = options.kinds ?? [fakeKind()];
+  const capabilities = options.capabilities ?? [fakeCapability()];
 
   const received: Received[] = [];
   const once: ScriptedAnswer[] = [];
@@ -80,6 +122,7 @@ export function fakeDestination(
     kind: "delivered",
     pointer: "somewhere",
   };
+  let undescribable: string | undefined;
 
   async function read(
     delivery: Delivery,
@@ -99,12 +142,20 @@ export function fakeDestination(
   }
 
   return {
-    id: descriptor.id,
-    describe: () => Promise.resolve(descriptor),
+    kinds: () => kinds,
 
-    deliver: async (delivery, signal) => {
+    describe: () =>
+      undescribable === undefined
+        ? Promise.resolve({ capabilities })
+        : Promise.reject(new Error(undescribable)),
+
+    deliver: async (destination, delivery, signal) => {
       const answer = once.shift() ?? standing;
-      received.push({ delivery, assets: await read(delivery, signal) });
+      received.push({
+        destination,
+        delivery,
+        assets: await read(delivery, signal),
+      });
 
       if (answer.kind !== "hang") return answer;
 
@@ -126,6 +177,9 @@ export function fakeDestination(
     },
     answersOnce: (next) => {
       once.push(next);
+    },
+    cannotDescribe: (detail) => {
+      undescribable = detail;
     },
   };
 }

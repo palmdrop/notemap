@@ -1,3 +1,4 @@
+import { canonicalJson } from "../utils/json";
 import type { JsonObject } from "../types/json";
 import type { Agent } from "../types/domain/agent";
 import type { Asset, AssetRef } from "../types/domain/asset";
@@ -8,6 +9,7 @@ import type {
   BlobHash,
   CapabilityName,
   DestinationId,
+  DestinationKindName,
   EnrichmentName,
   ItemId,
   PayloadTypeName,
@@ -17,6 +19,7 @@ import type {
   TagName,
   Timestamp,
 } from "../types/domain/ids";
+import type { DestinationRecord } from "../types/domain/destination";
 import type { ArchiveState, ItemRecord, Tag } from "../types/domain/item";
 import type { MirrorRecord } from "../types/domain/mirror";
 import type { Payload } from "../types/domain/payload";
@@ -26,43 +29,54 @@ import type {
   RoutingTarget,
 } from "../types/domain/routing";
 
-/**
- * The record as bytes. Keys are sorted at every depth, including inside the
- * open JSON of a payload's content, so one state has one serialisation.
- */
+/** Sorted at every depth, including inside a payload's open JSON, so one state has one serialisation. */
 export function serialiseMirrorRecord(record: MirrorRecord): string {
-  return `${JSON.stringify(record, sortedKeys, 2)}\n`;
+  return `${canonicalJson(record, 2)}\n`;
 }
 
 /** Rejects rather than salvages: a half-record would let verify call a mirror healthy that cannot rebuild. */
-export function parseMirrorRecord(text: string): MirrorRecord {
+export function parseMirrorRecord(source: string): MirrorRecord {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(text);
+    parsed = JSON.parse(source);
   } catch (cause) {
     throw new TypeError(`not a mirror record: ${String(cause)}`, { cause });
   }
 
   const root = object(parsed, "the record");
-  return {
-    item: readItem(root["item"], "item"),
-    assets: list(root["assets"], "assets", readAsset),
-    artifacts: list(root["artifacts"], "artifacts", readArtifact),
-    routing: list(root["routing"], "routing", readRouting),
-    modifiedAt: stamp(root["modifiedAt"], "modifiedAt"),
-  };
+  const kind = text(root["kind"], "kind");
+
+  switch (kind) {
+    case "item":
+      return {
+        kind: "item",
+        item: readItem(root["item"], "item"),
+        assets: list(root["assets"], "assets", readAsset),
+        artifacts: list(root["artifacts"], "artifacts", readArtifact),
+        routing: list(root["routing"], "routing", readRouting),
+        modifiedAt: stamp(root["modifiedAt"], "modifiedAt"),
+      };
+    case "destination":
+      return {
+        kind: "destination",
+        destination: readDestination(root["destination"], "destination"),
+        modifiedAt: stamp(root["modifiedAt"], "modifiedAt"),
+      };
+    default:
+      reject("kind", "a mirror record kind");
+  }
 }
 
-function sortedKeys(_key: string, value: unknown): unknown {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    return value;
-  }
-
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).sort(([a], [b]) =>
-      a < b ? -1 : a > b ? 1 : 0,
-    ),
-  );
+function readDestination(value: unknown, at: string): DestinationRecord {
+  const row = object(value, at);
+  return {
+    id: text(row["id"], `${at}.id`) as DestinationId,
+    name: text(row["name"], `${at}.name`),
+    kind: text(row["kind"], `${at}.kind`) as DestinationKindName,
+    settings: object(row["settings"], `${at}.settings`) as JsonObject,
+    ...present("retiredAt", row, at, stamp),
+    createdAt: stamp(row["createdAt"], `${at}.createdAt`),
+  };
 }
 
 function readItem(value: unknown, at: string): ItemRecord {

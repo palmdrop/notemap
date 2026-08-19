@@ -18,14 +18,19 @@ import type {
   TagName,
   Timestamp,
 } from "../domain/ids";
+import type {
+  Destination,
+  DestinationDescriptor,
+  DestinationKind,
+  DestinationRecord,
+} from "../domain/destination";
 import type { ArchiveState, Item, ItemRecord, Tag } from "../domain/item";
-import type { MirrorRecord } from "../domain/mirror";
+import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
 import type { Payload } from "../domain/payload";
 import type { AbandonedPosition } from "../domain/position";
 import type {
   Delivery,
   DeliveryOutcome,
-  DestinationDescriptor,
   RoutingRecord,
 } from "../domain/routing";
 import type { Suggestion } from "../domain/suggestion";
@@ -52,7 +57,7 @@ export type PoolPorts = {
   readonly blobs: BlobStore;
   /** Absent disables the mirror: nothing enqueues mirror jobs. */
   readonly mirrorWriter?: MirrorWriter;
-  readonly destinations: readonly DestinationAdapter[];
+  readonly destinations: Destinations;
 };
 
 export interface Clock {
@@ -98,8 +103,8 @@ export interface BlobStore {
  */
 export interface MirrorWriter {
   write(record: MirrorRecord): Promise<void>;
-  /** The item may already be purged, so this is given a bare id. */
-  remove(item: ItemId): Promise<void>;
+  /** What it names may already be gone, so this is given a bare subject. */
+  remove(subject: MirrorSubject): Promise<void>;
 }
 
 /**
@@ -140,14 +145,32 @@ export interface MirrorReader {
 }
 
 /**
- * Identity is static and capabilities are not: a destination may have to ask
- * something outside this process what it can currently accept, so `describe`
- * is answered per read while `id` stays what a record was written against.
+ * Neither `describe` nor `deliver` is ever handed a destination whose kind is
+ * absent from `kinds()`: core reports that as unusable rather than asking.
  */
-export interface DestinationAdapter {
-  readonly id: DestinationId;
-  describe(signal?: AbortSignal): Promise<DestinationDescriptor>;
-  deliver(delivery: Delivery, signal?: AbortSignal): Promise<DeliveryOutcome>;
+export interface Destinations {
+  kinds(): readonly DestinationKind[];
+  describe(
+    destination: Destination,
+    signal?: AbortSignal,
+  ): Promise<DestinationDescriptor>;
+  deliver(
+    destination: Destination,
+    delivery: Delivery,
+    signal?: AbortSignal,
+  ): Promise<DeliveryOutcome>;
+}
+
+export interface DestinationKindAdapter extends DestinationKind {
+  describe(
+    destination: Destination,
+    signal?: AbortSignal,
+  ): Promise<DestinationDescriptor>;
+  deliver(
+    destination: Destination,
+    delivery: Delivery,
+    signal?: AbortSignal,
+  ): Promise<DeliveryOutcome>;
 }
 
 export interface ProviderAdapter {
@@ -177,6 +200,12 @@ export interface PoolReads {
   suggestion(id: SuggestionId): Promise<Suggestion | undefined>;
   routingRecords(item: ItemId): Promise<readonly RoutingRecord[]>;
   routingRecord(id: RoutingRecordId): Promise<RoutingRecord | undefined>;
+
+  /** Every destination the pool holds, retired ones included, oldest first. */
+  destinations(): Promise<readonly Destination[]>;
+  destination(id: DestinationId): Promise<Destination | undefined>;
+  /** A reservation still to land counts as much as a delivered record: both name it. */
+  destinationEverNamed(id: DestinationId): Promise<boolean>;
   artifacts(item: ItemId): Promise<readonly Artifact[]>;
   enrichmentStates(item: ItemId): Promise<readonly EnrichmentStatus[]>;
 
@@ -227,6 +256,12 @@ export interface PoolTx extends PoolReads {
    * a delivery abandoned after being cancelled asks for exactly that.
    */
   removeRoutingRecord(record: RoutingRecordId): Promise<void>;
+
+  insertDestination(record: DestinationRecord): Promise<Destination>;
+  /** Every field a person may change is written at once; the store owns `modifiedAt`. */
+  updateDestination(record: DestinationRecord): Promise<Destination>;
+  /** Refused by the store itself where a routing record names it. */
+  deleteDestination(id: DestinationId): Promise<void>;
 
   withdrawWork(subject: JobSubject): Promise<WorkWithdrawal>;
 

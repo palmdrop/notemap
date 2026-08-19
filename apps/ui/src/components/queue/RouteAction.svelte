@@ -1,54 +1,60 @@
 <script lang="ts">
-  import { saidBy, type Capability, type Destination } from "@notemap/client";
+  import {
+    saidBy,
+    type Capability,
+    type DestinationDescription,
+  } from "@notemap/client";
 
   import { client } from "$lib/client";
+  import { fieldsOf, valuesFrom } from "$lib/schema-form";
 
   let { item, disabled }: { item: string; disabled: boolean } = $props();
 
+  const destinations = client.destinations.all;
+
   let open = $state(false);
-  let destinations = $state<readonly Destination[]>([]);
   let chosen = $state<string | undefined>(undefined);
+  let described = $state<DestinationDescription | undefined>(undefined);
   let capability = $state<string | undefined>(undefined);
   let target = $state<Record<string, string>>({});
   let said = $state("");
   let busy = $state(false);
 
-  const described = $derived(
-    destinations.filter((one) => one.kind === "described"),
-  );
+  /** Retired means no longer offered for new routing; it stays in the list. */
+  const offered = $derived($destinations.filter((one) => !one.retired));
 
-  const capabilities = $derived(
-    described.find((one) => one.id === chosen)?.capabilities ?? [],
+  const capabilities = $derived<readonly Capability[]>(
+    described?.kind === "described" ? described.capabilities : [],
   );
 
   const fields = $derived(
-    fieldsOf(capabilities.find((one) => one.name === capability)),
+    fieldsOf(capabilities.find((one) => one.name === capability)?.targetSchema),
   );
 
-  /** A capability's target schema is the whole of what a client needs to build one. */
-  function fieldsOf(
-    one: Capability | undefined,
-  ): readonly { name: string; required: boolean }[] {
-    const schema = one?.targetSchema;
-    const properties = schema?.["properties"];
-    if (properties === null || typeof properties !== "object") return [];
-
-    const required = Array.isArray(schema?.["required"])
-      ? (schema["required"] as unknown[])
-      : [];
-
-    return Object.keys(properties).map((name) => ({
-      name,
-      required: required.includes(name),
-    }));
-  }
-
+  // Which destinations exist is not stable for the life of a connection, so
+  // opening the picker reads them again rather than trusting what it holds.
   async function reveal() {
     open = !open;
-    if (!open || destinations.length > 0) return;
+    if (!open) return;
 
     try {
-      destinations = await client.routing.destinations();
+      await client.destinations.load();
+    } catch (error) {
+      said = saidBy(error);
+    }
+  }
+
+  /** I/O that may hang on an unmounted drive, so it happens for the chosen one alone. */
+  async function choose(id: string) {
+    chosen = id === "" ? undefined : id;
+    described = undefined;
+    capability = undefined;
+    target = {};
+    if (chosen === undefined) return;
+
+    said = "";
+    try {
+      described = await client.destinations.describe(chosen);
     } catch (error) {
       said = saidBy(error);
     }
@@ -63,9 +69,7 @@
       const record = await client.routing.route(item, {
         destination: chosen,
         capability,
-        target: Object.fromEntries(
-          Object.entries(target).filter(([, value]) => value !== ""),
-        ),
+        target: valuesFrom(fields, target),
       });
       said = `routed — ${record.state}`;
     } catch (error) {
@@ -82,16 +86,37 @@
 
 {#if open}
   <div class="mt-2 grid gap-2 text-sm">
-    <select bind:value={chosen} class="rounded border px-2 py-1">
-      <option value={undefined}>Pick a destination</option>
-      {#each described as one (one.id)}
-        <option value={one.id}>{one.id}</option>
+    <select
+      value={chosen ?? ""}
+      onchange={(event) => void choose(event.currentTarget.value)}
+      aria-label="Destination"
+      class="rounded border px-2 py-1"
+    >
+      <option value="">Pick a destination</option>
+      {#each offered as one (one.id)}
+        <option value={one.id}>{one.name}</option>
       {/each}
     </select>
 
+    {#if described !== undefined && described.kind !== "described"}
+      <!-- Present and unavailable: a client cannot build a target until it
+           describes itself again. -->
+      <span role="status" class="text-neutral-500 dark:text-neutral-400">
+        unavailable — {described.detail}
+      </span>
+    {/if}
+
     {#if capabilities.length > 0}
-      <select bind:value={capability} class="rounded border px-2 py-1">
-        <option value={undefined}>Pick what to do</option>
+      <select
+        value={capability ?? ""}
+        onchange={(event) => {
+          capability = event.currentTarget.value || undefined;
+          target = {};
+        }}
+        aria-label="Capability"
+        class="rounded border px-2 py-1"
+      >
+        <option value="">Pick what to do</option>
         {#each capabilities as one (one.name)}
           <option value={one.name}>{one.name}</option>
         {/each}

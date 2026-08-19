@@ -6,6 +6,7 @@ import { envelopeFor, optimisticItem } from "./capture/envelope";
 import { rewritten, saidIn } from "./capture/says";
 import { Refused } from "./errors";
 import { derived, writable } from "./observable/observable";
+import { createDestinations } from "./destinations/destinations";
 import { createOutbox } from "./outbox/outbox";
 import { sendOperation } from "./outbox/registry";
 import { createRouting } from "./routing/routing";
@@ -15,6 +16,7 @@ import {
   emptyState,
   processed,
   returned,
+  settledDestination,
   type ClientState,
 } from "./state/state";
 import { loadMore, type Surface } from "./surfaces/reads";
@@ -164,6 +166,15 @@ export function createClient(config: ClientConfig): Client {
       api,
       processed: (item) => state.update((current) => processed(current, item)),
       returned: (item) => state.update((current) => returned(current, item)),
+    }),
+
+    destinations: createDestinations({
+      api,
+      all: derived(state.changes, (current) => current.destinations),
+      cached: (destinations) =>
+        state.update((current) => ({ ...current, destinations })),
+      settled: (id, held) =>
+        state.update((current) => settledDestination(current, id, held)),
     }),
 
     drain: () => outbox.drain(),

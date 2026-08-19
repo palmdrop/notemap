@@ -8,7 +8,7 @@ import type {
 } from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { envelope, harness, tag, type Harness } from "./fixture";
+import { envelope, harness, itemRecord, tag, type Harness } from "./fixture";
 
 const ALL: Page = { limit: 50 };
 const KIND_QUOTE = tag("kind/quote");
@@ -293,7 +293,7 @@ describe("tagging", () => {
 
     await p.items.tag(item.id, KIND_QUOTE, { kind: "person" });
 
-    const record = await p.mirror.recordFor(item.id);
+    const record = await itemRecord(p, item.id);
     expect(record?.item.tags).toEqual([
       {
         name: KIND_QUOTE,

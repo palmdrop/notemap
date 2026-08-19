@@ -1,8 +1,10 @@
+import { usability } from "../destinations/usability";
 import type { PoolPorts } from "../../types/api/ports";
 import type { Asset } from "../../types/domain/asset";
 import type { RoutingRecordId } from "../../types/domain/ids";
 import type { Item } from "../../types/domain/item";
 import type {
+  AttemptableDelivery,
   DeliveredAsset,
   Delivery,
   DeliveryOutcome,
@@ -54,12 +56,14 @@ export function asDeliveryWorkOutcome(outcome: DeliveryOutcome): WorkOutcome {
 
 /**
  * Absent where there is nothing left to carry out: the record was cancelled,
- * its item purged, or the delivery already landed.
+ * its item purged, or the delivery already landed. The destination is resolved
+ * here rather than at the decision, so an edit made after a failure is what the
+ * retry runs against.
  */
 export async function deliveryFor(
   ports: PoolPorts,
   id: RoutingRecordId,
-): Promise<Delivery | undefined> {
+): Promise<AttemptableDelivery | undefined> {
   const record = await ports.store.routingRecord(id);
   if (
     record === undefined ||
@@ -72,11 +76,29 @@ export async function deliveryFor(
   const item = await ports.store.item(record.item);
   if (item === undefined) return undefined;
 
-  return projectDelivery(ports, item, {
+  const destination = await ports.store.destination(record.target.destination);
+  if (destination === undefined) {
+    // Nothing a record names can be deleted, so this is a pool that lost a row.
+    return {
+      kind: "unusable",
+      detail: `${record.target.destination} is no longer in the pool`,
+    };
+  }
+
+  // Retirement is deliberately not consulted: it stops the next decision, not
+  // a delivery already decided.
+  const usable = usability(ports, destination);
+  if (usable.kind === "unusable") {
+    return { kind: "unusable", detail: usable.detail };
+  }
+
+  const delivery = await projectDelivery(ports, item, {
     destination: record.target.destination,
     capability: record.target.capability,
     target: record.target.target,
   });
+
+  return { kind: "ready", destination, delivery };
 }
 
 /** Called outside any transaction: this reads assets, and the store holds a write lock throughout one. */

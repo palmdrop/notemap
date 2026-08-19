@@ -5,15 +5,33 @@ import {
   asWorkOutcome,
   parseMirrorRecord,
   type ItemId,
+  type ItemMirrorRecord,
   type PayloadTypeName,
 } from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { TEMPORARY_PREFIX } from "./atomic";
-import { pathsFor } from "./paths";
+import { destinationPathFor, pathsFor } from "./paths";
 import type { Renderer } from "./renderers";
-import { root, record, TEXT, at } from "./testing/fixture";
+import {
+  root,
+  record,
+  destination,
+  destinationRecord,
+  TEXT,
+  at,
+} from "./testing/fixture";
 import { createFilesystemMirrorWriter } from "./writer";
+
+/** What a file holds, where a test is about an item's record and not the union. */
+async function storedItem(path: string): Promise<ItemMirrorRecord> {
+  const stored = parseMirrorRecord(await readFile(path, "utf8"));
+  if (stored.kind !== "item") throw new Error(`${path} is not an item record`);
+  return stored;
+}
+
+const anItem = (item: string) =>
+  ({ kind: "item", item: item as ItemId }) as const;
 
 const cleanups: (() => void)[] = [];
 
@@ -127,9 +145,7 @@ describe("rewriting", () => {
     const files = await everyFile(where);
     expect(files).toHaveLength(2);
 
-    const stored = parseMirrorRecord(
-      await readFile(pathsFor(where, record()).record, "utf8"),
-    );
+    const stored = await storedItem(pathsFor(where, record()).record);
     expect(stored.item.payload.content).toEqual({ text: "second" });
     expect(stored.item.tags.map((tag) => tag.name)).toEqual(["kind/quote"]);
   });
@@ -151,7 +167,7 @@ describe("rewriting", () => {
       "utf8",
     );
 
-    const stored = parseMirrorRecord(await readFile(paths.record, "utf8"));
+    const stored = await storedItem(paths.record);
     expect(stored.item.payload.content).toEqual({ text: "first" });
   });
 });
@@ -306,7 +322,7 @@ describe("removing", () => {
     const { root: where, writer } = mirror();
     await writer.write(record());
 
-    await writer.remove("item-1" as ItemId);
+    await writer.remove(anItem("item-1"));
 
     expect(await everyFile(where)).toEqual([]);
   });
@@ -316,7 +332,7 @@ describe("removing", () => {
     await writer.write(record({ id: "item-1" }));
     await writer.write(record({ id: "item-2" }));
 
-    await writer.remove("item-1" as ItemId);
+    await writer.remove(anItem("item-1"));
 
     expect(await everyFile(where)).toEqual([
       pathsFor(where, record({ id: "item-2" })).record,
@@ -328,7 +344,7 @@ describe("removing", () => {
     const { writer } = mirror();
 
     await expect(
-      writer.remove("never-written" as ItemId),
+      writer.remove(anItem("never-written")),
     ).resolves.toBeUndefined();
   });
 
@@ -336,7 +352,7 @@ describe("removing", () => {
     const { root: where, writer } = mirror();
     await writer.write(record({ type: "canvas" as PayloadTypeName }));
 
-    await writer.remove("item-1" as ItemId);
+    await writer.remove(anItem("item-1"));
 
     expect(await everyFile(where)).toEqual([]);
   });
@@ -350,7 +366,7 @@ describe("removing", () => {
     await writer.write(record({ id: "b" }));
     await writer.write(record({ id: "a-b" }));
 
-    await writer.remove("b" as ItemId);
+    await writer.remove(anItem("b"));
 
     expect(await everyFile(where)).toEqual([
       pathsFor(where, record({ id: "a-b" })).record,
@@ -364,7 +380,7 @@ describe("removing", () => {
     const debris = join(where, "2026", "08", "11", "T142305-text-junk.json");
     await writeFile(debris, "{ not a record", "utf8");
 
-    await writer.remove("item-1" as ItemId);
+    await writer.remove(anItem("item-1"));
 
     expect(await everyFile(where)).toEqual([debris]);
   });
@@ -395,5 +411,105 @@ describe("timestamps", () => {
 
     expect(block).toContain("captured_at: '2026-08-11T14:23:05.000Z'");
     expect(at("2026-08-11T14:23:05.000Z")).toBe(written.item.createdAt);
+  });
+});
+
+/**
+ * The mirror's one non-item unit. A delivered routing record names a
+ * destination, so a mirror that carried only items would rebuild a pool whose
+ * records refer to destinations it cannot produce.
+ */
+describe("a destination", () => {
+  it("lands under its own directory, as a record and nothing else", async () => {
+    const { root: where, writer } = mirror();
+    const written = destinationRecord();
+
+    await writer.write(written);
+
+    const path = destinationPathFor(where, destination().id);
+    expect(path).toBe(join(where, "destinations", "vault.json"));
+    expect(await everyFile(where)).toEqual([path]);
+  });
+
+  it("round trips through the file byte for byte", async () => {
+    const { root: where, writer } = mirror();
+    const written = destinationRecord({
+      settings: { root: "~/notes" },
+      retiredAt: "2026-08-18T09:00:00.000Z",
+    });
+
+    await writer.write(written);
+    const text = await readFile(
+      destinationPathFor(where, destination().id),
+      "utf8",
+    );
+
+    expect(parseMirrorRecord(text)).toEqual(written);
+    expect(text.endsWith("\n")).toBe(true);
+  });
+
+  /** Being retired is exactly the state of a destination that records still name. */
+  it("is carried retired rather than dropped", async () => {
+    const { root: where, writer } = mirror();
+
+    await writer.write(
+      destinationRecord({ retiredAt: "2026-08-18T09:00:00.000Z" }),
+    );
+
+    const stored = parseMirrorRecord(
+      await readFile(destinationPathFor(where, destination().id), "utf8"),
+    );
+    if (stored.kind !== "destination")
+      throw new Error("expected a destination");
+    expect(stored.destination.retiredAt).toBe("2026-08-18T09:00:00.000Z");
+  });
+
+  it("replaces its record in place rather than accumulating", async () => {
+    const { root: where, writer } = mirror();
+
+    await writer.write(destinationRecord({ name: "Vault" }));
+    await writer.write(destinationRecord({ name: "Second brain" }));
+
+    expect(await everyFile(where)).toHaveLength(1);
+    const stored = parseMirrorRecord(
+      await readFile(destinationPathFor(where, destination().id), "utf8"),
+    );
+    if (stored.kind !== "destination")
+      throw new Error("expected a destination");
+    expect(stored.destination.name).toBe("Second brain");
+  });
+
+  it("keeps two apart whose ids sanitise alike", () => {
+    expect(destinationPathFor("/m", destination({ id: "a/b" }).id)).not.toBe(
+      destinationPathFor("/m", destination({ id: "a:b" }).id),
+    );
+  });
+
+  it("goes when it is removed, and removing one that never landed is fine", async () => {
+    const { root: where, writer } = mirror();
+    await writer.write(destinationRecord());
+
+    await writer.remove({ kind: "destination", destination: destination().id });
+    expect(await everyFile(where)).toEqual([]);
+
+    await expect(
+      writer.remove({
+        kind: "destination",
+        destination: destination({ id: "never-written" }).id,
+      }),
+    ).resolves.toBeUndefined();
+  });
+
+  /** Removing an item walks the tree, and must not mistake a destination for one. */
+  it("survives an item removal that finds it while walking", async () => {
+    const { root: where, writer } = mirror();
+    await writer.write(destinationRecord());
+    await writer.write(record({ id: "item-1" }));
+
+    await writer.remove(anItem("item-1"));
+
+    expect(await everyFile(where)).toEqual([
+      destinationPathFor(where, destination().id),
+    ]);
   });
 });

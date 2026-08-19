@@ -6,7 +6,6 @@ import { parse as parseToml } from "smol-toml";
 import { z } from "zod";
 
 import type {
-  DestinationId,
   Duration,
   EnrichmentName,
   JsonSchema,
@@ -44,20 +43,6 @@ export type SweepConfig = {
   readonly intervalMs: number;
 };
 
-/**
- * One destination a person configured. `kind` names the adapter; only the
- * filesystem one exists, and an unknown kind is refused rather than ignored,
- * because a destination that silently is not there is a decision that silently
- * goes nowhere.
- */
-export type DestinationConfig = {
-  readonly id: DestinationId;
-  readonly kind: "filesystem";
-  /** The folder the destination is. Never created by the daemon. */
-  readonly root: string;
-  readonly accepts: readonly PayloadTypeName[];
-};
-
 export type DaemonConfig = {
   /** The SQLite file the pool lives in. */
   readonly pool: string;
@@ -67,8 +52,7 @@ export type DaemonConfig = {
   readonly mirror?: MirrorConfig;
   readonly assets: AssetsConfig;
   readonly sweep: SweepConfig;
-  readonly destinations: readonly DestinationConfig[];
-  /** The cadence the delivery runner claims at. Unused where no destination is wired. */
+  /** The cadence the delivery runner claims at. Destinations are pool state, not this file's. */
   readonly delivery: DeliveryConfig;
   readonly poolConfig: PoolConfig;
 };
@@ -82,16 +66,16 @@ export type DeliveryConfig = {
 const jsonSchema = z.record(z.string(), z.unknown());
 
 /** Keys are core's own names. Absent lists mean empty. */
-const fileSchema = z.strictObject({
+const fileSchema = z.object({
   daemon: z
-    .strictObject({
+    .object({
       pool: z.string().optional(),
       host: z.string().min(1).optional(),
       port: z.number().int().min(1).max(65535).optional(),
     })
     .optional(),
   mirror: z
-    .strictObject({
+    .object({
       root: z.string().min(1),
       pollInterval: z.number().int().positive().optional(),
       leaseFor: z.number().int().positive().optional(),
@@ -99,36 +83,26 @@ const fileSchema = z.strictObject({
     })
     .optional(),
   retry: z
-    .strictObject({
+    .object({
       maxAttempts: z.number().int().positive(),
       initialBackoff: z.number().int().nonnegative(),
       maxBackoff: z.number().int().nonnegative(),
     })
     .optional(),
   assets: z
-    .strictObject({
+    .object({
       root: z.string().min(1).optional(),
       maxUpload: z.number().int().positive().optional(),
     })
     .optional(),
   sweep: z
-    .strictObject({
+    .object({
       grace: z.number().int().nonnegative().optional(),
       interval: z.number().int().positive().optional(),
     })
     .optional(),
-  destinations: z
-    .array(
-      z.strictObject({
-        id: z.string().min(1),
-        kind: z.enum(["filesystem"]),
-        root: z.string().min(1),
-        accepts: z.array(z.string()).optional(),
-      }),
-    )
-    .default([]),
   delivery: z
-    .strictObject({
+    .object({
       pollInterval: z.number().int().positive().optional(),
       leaseFor: z.number().int().positive().optional(),
       batch: z.number().int().positive().optional(),
@@ -136,7 +110,7 @@ const fileSchema = z.strictObject({
     .optional(),
   sources: z
     .array(
-      z.strictObject({
+      z.object({
         id: z.string().min(1),
         autoRequest: z.array(z.string()).default([]),
       }),
@@ -144,7 +118,7 @@ const fileSchema = z.strictObject({
     .default([]),
   payloadTypes: z
     .array(
-      z.strictObject({
+      z.object({
         name: z.string().min(1),
         contentSchema: jsonSchema,
         requiredSlots: z.array(z.string()).default([]),
@@ -153,7 +127,7 @@ const fileSchema = z.strictObject({
     .default([]),
   enrichments: z
     .array(
-      z.strictObject({
+      z.object({
         name: z.string().min(1),
         appliesTo: z.array(z.string()).default([]),
       }),
@@ -199,14 +173,23 @@ export function defaultAssetRoot(): string {
   return join(defaultDataRoot(), "assets");
 }
 
-export function parseConfig(source: string, from: string): DaemonConfig {
-  let raw: unknown;
-  try {
-    raw = parseToml(source);
-  } catch (cause) {
-    throw new Error(`${from} is not valid TOML: ${String(cause)}`, { cause });
-  }
+/** The config, and every key the daemon did not know and ignored. */
+export type LoadedConfig = {
+  readonly config: DaemonConfig;
+  /** Every key that was dropped, by name. */
+  readonly warnings: readonly string[];
+};
 
+type ConfigFile = z.infer<typeof fileSchema>;
+
+/**
+ * The schema strips what it does not know; what was stripped is read off the
+ * parse rather than off a second list of keys, which would drift from it.
+ */
+function tolerate(
+  raw: unknown,
+  from: string,
+): { file: ConfigFile; stripped: readonly string[] } {
   const parsed = fileSchema.safeParse(raw);
   if (!parsed.success) {
     const where = parsed.error.issues
@@ -215,17 +198,44 @@ export function parseConfig(source: string, from: string): DaemonConfig {
     throw new Error(`${from} is not a notemap config: ${where}`);
   }
 
-  const file = parsed.data;
+  return { file: parsed.data, stripped: droppedKeys(raw, parsed.data) };
+}
+
+/** Every key in `raw` that `kept` no longer has, by its whole path. */
+function droppedKeys(raw: unknown, kept: unknown, at: string[] = []): string[] {
+  if (Array.isArray(raw) && Array.isArray(kept)) {
+    return raw.flatMap((each, index) =>
+      index < kept.length
+        ? droppedKeys(each, kept[index], [...at, String(index)])
+        : [],
+    );
+  }
+
+  if (!isTable(raw) || !isTable(kept)) return [];
+
+  return Object.entries(raw).flatMap(([key, value]) =>
+    key in kept
+      ? droppedKeys(value, kept[key], [...at, key])
+      : [[...at, key].join(".")],
+  );
+}
+
+function isTable(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function parseConfig(source: string, from: string): LoadedConfig {
+  let raw: unknown;
+  try {
+    raw = parseToml(source);
+  } catch (cause) {
+    throw new Error(`${from} is not valid TOML: ${String(cause)}`, { cause });
+  }
+
+  const { file, stripped } = tolerate(raw, from);
   const retry = file.retry ?? DEFAULT_RETRY;
 
-  // Every payload type has a rendering — the fenced-JSON fallback is the floor —
-  // so a filesystem destination that was not told what it takes takes everything
-  // the pool knows about, rather than silently refusing an image.
-  const everyPayloadType = file.payloadTypes.map(
-    (type) => type.name as PayloadTypeName,
-  );
-
-  return {
+  const config: DaemonConfig = {
     pool: resolve(expandHome(file.daemon?.pool ?? defaultPoolPath())),
     host: file.daemon?.host ?? DEFAULT_HOST,
     port: file.daemon?.port ?? DEFAULT_PORT,
@@ -245,14 +255,6 @@ export function parseConfig(source: string, from: string): DaemonConfig {
       maxUploadBytes: file.assets?.maxUpload ?? DEFAULT_MAX_UPLOAD_BYTES,
     },
     sweep: { intervalMs: file.sweep?.interval ?? DEFAULT_SWEEP.intervalMs },
-    destinations: file.destinations.map((destination) => ({
-      id: destination.id as DestinationId,
-      kind: destination.kind,
-      root: resolve(expandHome(destination.root)),
-      accepts:
-        (destination.accepts as PayloadTypeName[] | undefined) ??
-        everyPayloadType,
-    })),
     delivery: {
       pollIntervalMs: file.delivery?.pollInterval ?? DEFAULT_DELIVERY.pollMs,
       leaseForMs: (file.delivery?.leaseFor ??
@@ -283,9 +285,11 @@ export function parseConfig(source: string, from: string): DaemonConfig {
       },
     },
   };
+
+  return { config, warnings: stripped };
 }
 
-export function loadConfig(path = defaultConfigPath()): DaemonConfig {
+export function loadConfig(path = defaultConfigPath()): LoadedConfig {
   let source: string;
   try {
     source = readFileSync(path, "utf8");

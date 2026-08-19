@@ -9,6 +9,7 @@ import {
   collect,
   envelope,
   harness,
+  itemRecord,
   streamOf,
   upload,
   type Harness,
@@ -246,7 +247,7 @@ describe("the mirror record", () => {
     );
     if (captured.kind !== "ok") throw new Error("expected a capture");
 
-    const record = await p.mirror.recordFor(captured.value.item.id);
+    const record = await itemRecord(p, captured.value.item.id);
 
     expect(record?.assets).toEqual([asset]);
   });
@@ -261,9 +262,9 @@ describe("the mirror record", () => {
 
     await rm(assetRoot, { recursive: true });
 
-    await expect(
-      p.mirror.recordFor(captured.value.item.id),
-    ).resolves.toMatchObject({ assets: [asset] });
+    await expect(itemRecord(p, captured.value.item.id)).resolves.toMatchObject({
+      assets: [asset],
+    });
   });
 });
 

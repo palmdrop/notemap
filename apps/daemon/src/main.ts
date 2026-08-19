@@ -18,7 +18,11 @@ function start(): void {
     strict: true,
   });
 
-  const config = loadConfig(values.config);
+  const { config, warnings } = loadConfig(values.config);
+  for (const key of warnings) {
+    console.warn(`notemap: ignoring ${key}, which this daemon does not know`);
+  }
+
   mkdirSync(dirname(config.pool), { recursive: true });
 
   const { pool, mirrorWriter, destinations } = openPool({
@@ -26,7 +30,6 @@ function start(): void {
     config: config.poolConfig,
     assetRoot: config.assets.root,
     ...(config.mirror === undefined ? {} : { mirrorRoot: config.mirror.root }),
-    destinations: config.destinations,
   });
 
   const mirror =
@@ -34,19 +37,16 @@ function start(): void {
       ? undefined
       : startMirrorRunner(pool, mirrorWriter, config.mirror);
 
-  // No destinations means no delivery job can ever exist, so there is nothing
-  // for a runner to claim.
-  const delivery =
-    destinations.length === 0
-      ? undefined
-      : startDeliveryRunner(pool, destinations, config.delivery);
+  // Unconditional: a destination is a row a person may add at any moment, so
+  // no startup fact says a delivery job cannot exist.
+  const delivery = startDeliveryRunner(pool, destinations, config.delivery);
 
   const sweeper = startSweeper(pool, config.sweep);
 
   /** A runner holds a lease while it works; stopping it first gives it back. */
   const close = async () => {
     await mirror?.stop();
-    await delivery?.stop();
+    await delivery.stop();
     await sweeper.stop();
     await pool.close();
   };
@@ -67,11 +67,14 @@ function start(): void {
           : `notemap: mirroring to ${config.mirror.root}`,
       );
       console.log(`notemap: assets in ${config.assets.root}`);
-      console.log(
-        config.destinations.length === 0
-          ? "notemap: no destinations configured — nothing can be routed out"
-          : `notemap: destinations ${config.destinations.map((each) => each.id).join(", ")}`,
-      );
+
+      void pool.destinations.list().then((held) => {
+        console.log(
+          held.length === 0
+            ? "notemap: no destinations yet — add one to route anything out"
+            : `notemap: destinations ${held.map((each) => each.name).join(", ")}`,
+        );
+      });
     },
   );
 

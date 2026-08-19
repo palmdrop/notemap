@@ -43,7 +43,7 @@ export async function tag(
     const at = ports.clock.now();
     const tagged = await tx.addTag(id, { name: tag, by, addedAt: at });
 
-    await enqueueMirrorWrite(ports, tx, id, at);
+    await enqueueMirrorWrite(ports, tx, { kind: "item", item: id }, at);
     await recordAction(ports, tx, {
       kind: "tagged",
       subject: id,
@@ -77,7 +77,7 @@ export async function untag(
     const at = ports.clock.now();
     const untagged = await tx.removeTag(id, tag);
 
-    await enqueueMirrorWrite(ports, tx, id, at);
+    await enqueueMirrorWrite(ports, tx, { kind: "item", item: id }, at);
     await recordAction(ports, tx, {
       kind: "untagged",
       subject: id,

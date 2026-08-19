@@ -11,7 +11,15 @@ import type {
 } from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { envelope, harness, tag, TEXT, upload, type Harness } from "./fixture";
+import {
+  envelope,
+  harness,
+  itemRecord,
+  tag,
+  TEXT,
+  upload,
+  type Harness,
+} from "./fixture";
 
 const PERSON = { kind: "person" } as const;
 const ALL: Page = { limit: 50 };
@@ -484,7 +492,7 @@ describe("what an edit leaves behind", () => {
       succeeded(await p.items.edit(item.id, text("x"), PERSON)),
     );
 
-    const record = await p.mirror.recordFor(revised.id);
+    const record = await itemRecord(p, revised.id);
     expect(record?.item.revisionOf).toBe(item.id);
     expect(record?.item.tags.map((held) => held.name)).toEqual(["kind/quote"]);
     expect(record?.item.createdAt).toBe(item.createdAt);

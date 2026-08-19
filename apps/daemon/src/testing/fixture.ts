@@ -7,9 +7,10 @@ import type { Hono } from "hono";
 import type {
   AssetId,
   BlobStore,
-  DestinationId,
+  Destination,
   Duration,
   PayloadTypeName,
+  Pool,
   PoolConfig,
   SourceId,
 } from "@notemap/core";
@@ -59,6 +60,8 @@ export async function put(
 
 export type Daemon = {
   readonly app: Hono;
+  /** Reachable so a test can set up pool state `/v1` has no route for yet. */
+  readonly pool: Pool;
   /** Where the mirror would write, whether or not one is wired. */
   readonly mirrorRoot: string;
   /** Where blobs land. */
@@ -68,7 +71,7 @@ export type Daemon = {
   readonly blobs: BlobStore;
   /** Runs every claimable mirror job now. Zero when no mirror is wired. */
   readonly drain: () => Promise<number>;
-  /** Runs every claimable delivery now. Zero when no destination is wired. */
+  /** Runs every claimable delivery now. Zero when nothing is owed. */
   readonly deliver: () => Promise<number>;
   /** Runs a sweep now, whatever the timer would have done. */
   readonly sweep: () => Promise<readonly AssetId[]>;
@@ -85,8 +88,8 @@ export type DaemonOptions = {
   readonly mirroring?: boolean;
   readonly maxUploadBytes?: number;
   /**
-   * Wires a filesystem destination `vault` over `vaultRoot`. **`missing`** wires
-   * one whose folder is not there, which is what an unmounted drive looks like.
+   * Makes the folder `vaultRoot` names before the pool opens. Leaving it out is
+   * a case rather than an omission: it is what an unmounted drive looks like.
    */
   readonly vault?: "ready" | "missing";
 };
@@ -106,17 +109,6 @@ export function daemon(
     config,
     assetRoot,
     ...(options.mirroring === true ? { mirrorRoot } : {}),
-    destinations:
-      options.vault === undefined
-        ? []
-        : [
-            {
-              id: "vault" as DestinationId,
-              kind: "filesystem",
-              root: vaultRoot,
-              accepts: config.payloadTypes.map((type) => type.name),
-            },
-          ],
   });
 
   const runner =
@@ -128,14 +120,11 @@ export function daemon(
           batch: 16,
         });
 
-  const deliveries =
-    destinations.length === 0
-      ? undefined
-      : startDeliveryRunner(pool, destinations, {
-          pollIntervalMs: NEVER_POLLS,
-          leaseForMs: 60_000 as Duration,
-          batch: 16,
-        });
+  const deliveries = startDeliveryRunner(pool, destinations, {
+    pollIntervalMs: NEVER_POLLS,
+    leaseForMs: 60_000 as Duration,
+    batch: 16,
+  });
 
   const sweeper = startSweeper(pool, { intervalMs: NEVER_POLLS });
 
@@ -146,22 +135,40 @@ export function daemon(
 
   return {
     app,
+    pool,
     mirrorRoot,
     assetRoot,
     vaultRoot,
     blobs,
     drain: async () => (await runner?.drain()) ?? 0,
-    deliver: async () => (await deliveries?.drain()) ?? 0,
+    deliver: () => deliveries.drain(),
     sweep: () => sweeper.run(),
     cleanup: async () => {
       await answered.close();
       await runner?.stop();
-      await deliveries?.stop();
+      await deliveries.stop();
       await sweeper.stop();
       await pool.close();
       rmSync(directory, { recursive: true, force: true });
     },
   };
+}
+
+/** A filesystem destination over the daemon's own `vaultRoot`, created the way a person does. */
+export async function createVault(
+  host: Daemon,
+  overrides: { name?: string; root?: string } = {},
+): Promise<Destination> {
+  const created = await host.pool.destinations.create({
+    name: overrides.name ?? "Vault",
+    kind: "filesystem" as Destination["kind"],
+    settings: { root: overrides.root ?? host.vaultRoot },
+  });
+
+  if (created.kind === "refused") {
+    throw new Error(`refused: ${JSON.stringify(created.refusal)}`);
+  }
+  return created.value;
 }
 
 /**

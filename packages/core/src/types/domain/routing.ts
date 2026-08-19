@@ -1,41 +1,17 @@
-import type { JsonObject, JsonSchema } from "../json";
+import type { JsonObject } from "../json";
 import type { Asset } from "./asset";
+import type { Destination } from "./destination";
 import type { Artifact } from "./enrichment";
 import type {
   CapabilityName,
   DestinationId,
   ItemId,
-  PayloadTypeName,
   RoutingRecordId,
   SourceId,
   Timestamp,
 } from "./ids";
 import type { Tag } from "./item";
 import type { Payload } from "./payload";
-
-export type Capability = {
-  readonly name: CapabilityName;
-  readonly accepts: readonly PayloadTypeName[];
-  readonly targetSchema: JsonSchema;
-};
-
-export type DestinationDescriptor = {
-  readonly id: DestinationId;
-  readonly capabilities: readonly Capability[];
-};
-
-/**
- * What a wired destination answered when asked. A destination that could not
- * say is reported rather than dropped: one that is missing and one that is
- * unreachable are different answers to a person looking for it.
- */
-export type DestinationReport =
-  | ({ readonly kind: "described" } & DestinationDescriptor)
-  | {
-      readonly kind: "undescribable";
-      readonly id: DestinationId;
-      readonly detail: string;
-    };
 
 export type DeliveryRequest = {
   readonly destination: DestinationId;
@@ -65,6 +41,19 @@ export type Delivery = {
   /** Every asset the payload and the artifacts reference, in slot order. */
   readonly assets: readonly DeliveredAsset[];
 };
+
+/**
+ * What a deferred delivery finds when it goes to carry out a reservation: the
+ * destination as it now is, so a root corrected after a failure is why the
+ * retry succeeds. Unusable is proof that nothing was delivered.
+ */
+export type AttemptableDelivery =
+  | {
+      readonly kind: "ready";
+      readonly destination: Destination;
+      readonly delivery: Delivery;
+    }
+  | { readonly kind: "unusable"; readonly detail: string };
 
 export type DeliveryOutcome =
   | { readonly kind: "delivered"; readonly pointer?: string }

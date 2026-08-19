@@ -1,7 +1,12 @@
 import type { Hono } from "hono";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { captureMany, daemon, type Daemon } from "../testing/fixture";
+import {
+  captureMany,
+  createVault,
+  daemon,
+  type Daemon,
+} from "../testing/fixture";
 
 const open: Daemon[] = [];
 
@@ -30,6 +35,52 @@ describe("the media type a body arrives under", () => {
       const response = await app.request(path, { method: "POST" });
       expect(response.status, path).toBe(200);
     }
+  });
+
+  /**
+   * A route that declares no body reads none, so there is no media type to be
+   * wrong about. `curl -X POST` with nothing to send declares no length either,
+   * and under the node server that is indistinguishable from a body arriving.
+   */
+  it("lets a POST through on a route that takes no body, however it was framed", async () => {
+    const host = daemon();
+    open.push(host);
+    const vault = await createVault(host);
+
+    const bare = await host.app.request(`/v1/destinations/${vault.id}/retire`, {
+      method: "POST",
+    });
+    expect(bare.status).toBe(200);
+
+    const framed = await host.app.request(
+      `/v1/destinations/${vault.id}/unretire`,
+      { method: "POST", body: "" },
+    );
+    expect(framed.status).toBe(200);
+  });
+
+  it("still holds a bodied route sharing its path with a bodyless one", async () => {
+    const host = daemon();
+    open.push(host);
+    const vault = await createVault(host);
+
+    const created = await host.app.request("/v1/destinations", {
+      method: "POST",
+      headers: { "content-type": "text/plain" },
+      body: JSON.stringify({
+        name: "Second",
+        kind: "filesystem",
+        settings: { root: host.vaultRoot },
+      }),
+    });
+    expect(created.status).toBe(415);
+
+    const edited = await host.app.request(`/v1/destinations/${vault.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "text/plain" },
+      body: JSON.stringify({ name: "Renamed" }),
+    });
+    expect(edited.status).toBe(415);
   });
 
   it("refuses a bare POST where the body is required", async () => {

@@ -8,6 +8,7 @@ import type {
   RoutingRecordId,
   Timestamp,
 } from "./ids";
+import type { MirrorSubject } from "./mirror";
 import type { SuggestionDraft } from "./suggestion";
 
 export type JobKind = "enrichment" | "mirror" | "mirror-remove" | "delivery";
@@ -17,7 +18,7 @@ export type JobKind = "enrichment" | "mirror" | "mirror-remove" | "delivery";
  * record it carries out rather than the item that record is about.
  */
 export type JobSubject =
-  | { readonly kind: "item"; readonly item: ItemId }
+  | MirrorSubject
   | { readonly kind: "routing-record"; readonly record: RoutingRecordId };
 
 /** Deliberately partial: what a job carries as input is unsettled. */
@@ -92,8 +93,12 @@ export type JobResolution =
 /** One row of the surface answering "what needs me", for work of any kind. */
 export type AbandonedWork = {
   readonly subject: JobSubject;
-  /** Outlives the subject: an abandoned delivery's record is removed, and this row still names a capture. */
-  readonly item: ItemId;
+  /**
+   * Outlives the subject: an abandoned delivery's record is removed, and this
+   * row still names a capture. Absent for work about no item at all, which a
+   * destination's mirror write is.
+   */
+  readonly item?: ItemId;
   readonly kind: JobKind;
   /** Present for enrichment work only. */
   readonly enrichment?: EnrichmentName;

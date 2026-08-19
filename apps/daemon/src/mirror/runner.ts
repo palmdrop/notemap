@@ -27,16 +27,16 @@ export function startMirrorRunner(
 ): MirrorRunner {
   async function perform(lease: Lease): Promise<WorkOutcome> {
     const subject = lease.job.subject;
-    if (subject.kind !== "item") return wrongSubject(lease);
+    if (subject.kind === "routing-record") return wrongSubject(lease);
 
     try {
       if (lease.job.kind === "mirror-remove") {
-        await writer.remove(subject.item);
+        await writer.remove(subject);
         return { kind: "succeeded" };
       }
 
-      // Gone means nothing left to mirror; removing its files is purge's job.
-      const record = await pool.mirror.recordFor(subject.item);
+      // Gone means nothing left to mirror; removing its files is the other job's.
+      const record = await pool.mirror.recordFor(subject);
       if (record !== undefined) await writer.write(record);
       return { kind: "succeeded" };
     } catch (cause) {

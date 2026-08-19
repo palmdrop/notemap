@@ -2,6 +2,7 @@ export * from "./action-log";
 export * from "./agent";
 export * from "./asset";
 export * from "./capture";
+export * from "./destination";
 export * from "./enrichment";
 export * from "./ids";
 export * from "./item";

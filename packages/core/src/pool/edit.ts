@@ -78,7 +78,7 @@ async function amend(
   const at = ports.clock.now();
   const amended = await tx.amendItem(item.id, payload, at);
 
-  await enqueueMirrorWrite(ports, tx, item.id, at);
+  await enqueueMirrorWrite(ports, tx, { kind: "item", item: item.id }, at);
   await recordAction(ports, tx, {
     kind: "amended",
     subject: item.id,
@@ -113,8 +113,8 @@ async function revise(
   });
 
   // The original moved too: being superseded took it out of the queue.
-  await enqueueMirrorWrite(ports, tx, revision.id, at);
-  await enqueueMirrorWrite(ports, tx, item.id, at);
+  await enqueueMirrorWrite(ports, tx, { kind: "item", item: revision.id }, at);
+  await enqueueMirrorWrite(ports, tx, { kind: "item", item: item.id }, at);
 
   await recordAction(ports, tx, {
     kind: "revised",

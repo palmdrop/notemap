@@ -2,7 +2,7 @@ import { readdir } from "node:fs/promises";
 
 import { describe, expect, it } from "vitest";
 
-import { daemons, DOWN, MANUAL, UP, until } from "./harness/index.ts";
+import { daemons, MANUAL, until, vaults } from "./harness/index.ts";
 
 const daemon = daemons();
 
@@ -15,6 +15,7 @@ describe("a delivery, on the daemon's own timer", () => {
   it("lands in the folder that is there, and stays owed to the one that is not", async () => {
     const running = await daemon();
     const client = running.client;
+    const vault = await vaults(running);
 
     const carried = await client.capture({
       channel: MANUAL,
@@ -28,12 +29,12 @@ describe("a delivery, on the daemon's own timer", () => {
 
     const target = { directory: "inbox", filename: "a-thought.md" };
     await client.routing.route(carried.id, {
-      destination: UP,
+      destination: vault.up,
       capability: "create-file",
       target,
     });
     const owed = await client.routing.route(stranded.id, {
-      destination: DOWN,
+      destination: vault.down,
       capability: "create-file",
       target,
     });

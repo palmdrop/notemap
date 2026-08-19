@@ -8,7 +8,10 @@ import type {
   AssetRef,
   BlobHash,
   CapabilityName,
+  Destination,
   DestinationId,
+  DestinationKindName,
+  DestinationRecord,
   EnrichmentName,
   Item,
   ItemId,
@@ -32,6 +35,7 @@ import type {
   AgentColumns,
   AssetRow,
   ChainColumns,
+  DestinationRow,
   ItemAssetRow,
   ItemRow,
   ItemTagRow,
@@ -188,19 +192,34 @@ export function toAsset(row: AssetRow): Asset {
 export function toJobSubject(
   row: Pick<JobRow, "subject_kind" | "subject_id">,
 ): JobSubject {
-  return row.subject_kind === "item"
-    ? { kind: "item", item: row.subject_id as ItemId }
-    : { kind: "routing-record", record: row.subject_id as RoutingRecordId };
+  switch (row.subject_kind) {
+    case "item":
+      return { kind: "item", item: row.subject_id as ItemId };
+    case "routing-record":
+      return {
+        kind: "routing-record",
+        record: row.subject_id as RoutingRecordId,
+      };
+    case "destination":
+      return {
+        kind: "destination",
+        destination: row.subject_id as DestinationId,
+      };
+  }
 }
 
 /** The pair a subject is stored as, in the order every statement binds them. */
 export function subjectColumns(
   subject: JobSubject,
 ): [JobRow["subject_kind"], string] {
-  return [
-    subject.kind,
-    subject.kind === "item" ? subject.item : subject.record,
-  ];
+  switch (subject.kind) {
+    case "item":
+      return ["item", subject.item];
+    case "routing-record":
+      return ["routing-record", subject.record];
+    case "destination":
+      return ["destination", subject.destination];
+  }
 }
 
 export function toJob(row: JobRow): Job {
@@ -280,4 +299,34 @@ export function toAction(row: ActionRow): Action {
     at: toTimestamp(row.at),
     detail: parseJson(row.detail),
   };
+}
+
+export function toDestination(row: DestinationRow): Destination {
+  return {
+    id: row.id as DestinationId,
+    name: row.name,
+    kind: row.kind as DestinationKindName,
+    settings: parseJson(row.settings),
+    ...(row.retired_at === null
+      ? {}
+      : { retiredAt: toTimestamp(row.retired_at) }),
+    createdAt: toTimestamp(row.created_at),
+    modifiedAt: toTimestamp(row.modified_at),
+  };
+}
+
+/** The bound parameters for writing a destination, in the order the statements declare. */
+export function destinationParams(
+  record: DestinationRecord,
+  modifiedAt: number,
+): [string, string, string, string, number | null, number, number] {
+  return [
+    record.id,
+    record.name,
+    record.kind,
+    JSON.stringify(record.settings),
+    record.retiredAt === undefined ? null : toMillis(record.retiredAt),
+    toMillis(record.createdAt),
+    modifiedAt,
+  ];
 }

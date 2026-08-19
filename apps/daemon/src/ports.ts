@@ -1,28 +1,26 @@
 import { v7 as uuidv7 } from "uuid";
 
 import { createFilesystemBlobStore } from "@notemap/blob-fs";
-import {
-  createFilesystemDestination,
-  type Renderers,
-} from "@notemap/destination-fs";
+import { createFilesystemDestination } from "@notemap/destination-fs";
 import { createFilesystemMirrorWriter } from "@notemap/mirror-fs";
 import { createAjvSchemaValidator } from "@notemap/schema-ajv";
 import { createSqlitePoolStore } from "@notemap/store-sqlite";
 import {
   createPool,
+  destinationRegistry,
   type BlobStore,
   type Clock,
-  type DestinationAdapter,
+  type Destinations,
   type IdGenerator,
   type MintableId,
   type MirrorWriter,
+  type PayloadTypeName,
   type Pool,
   type PoolConfig,
   type PoolPorts,
   type Timestamp,
 } from "@notemap/core";
 
-import type { DestinationConfig } from "./config/load";
 import { destinationRenderers } from "./destinations/renderers";
 import { renderersFor } from "./mirror/renderers";
 
@@ -42,7 +40,6 @@ export type OpenPoolConfig = {
   readonly assetRoot: string;
   /** Absent disables the mirror, and then capture enqueues nothing. */
   readonly mirrorRoot?: string;
-  readonly destinations?: readonly DestinationConfig[];
 };
 
 /**
@@ -54,16 +51,24 @@ export type OpenPool = {
   readonly pool: Pool;
   readonly blobs: BlobStore;
   readonly mirrorWriter?: MirrorWriter;
-  readonly destinations: readonly DestinationAdapter[];
+  readonly destinations: Destinations;
 };
 
 export function openPool(options: OpenPoolConfig): OpenPool {
   const blobs = createFilesystemBlobStore({ root: options.assetRoot });
 
-  const renderers = destinationRenderers();
-  const destinations = (options.destinations ?? []).map((destination) =>
-    adapterFor(destination, renderers),
+  // Every payload type has a rendering, the fenced-JSON fallback being the
+  // floor, so a folder that was not told what it holds takes everything.
+  const everyPayloadType = options.config.payloadTypes.map(
+    (type) => type.name as PayloadTypeName,
   );
+
+  const destinations = destinationRegistry([
+    createFilesystemDestination({
+      renderers: destinationRenderers(),
+      accepts: everyPayloadType,
+    }),
+  ]);
 
   const mirrorWriter =
     options.mirrorRoot === undefined
@@ -92,27 +97,9 @@ export function openPool(options: OpenPoolConfig): OpenPool {
   };
 
   return {
-    // A duplicate destination id throws here, which is the only moment it can
-    // be caught: a pool with two of one id could not say which a record meant.
     pool: createPool(options.config, ports),
     blobs,
     ...(mirrorWriter === undefined ? {} : { mirrorWriter }),
     destinations,
   };
-}
-
-/** Exhaustive on `kind`, so a destination kind added to the config fails to build until it is wired. */
-function adapterFor(
-  destination: DestinationConfig,
-  renderers: Renderers,
-): DestinationAdapter {
-  switch (destination.kind) {
-    case "filesystem":
-      return createFilesystemDestination({
-        id: destination.id,
-        root: destination.root,
-        accepts: destination.accepts,
-        renderers,
-      });
-  }
 }

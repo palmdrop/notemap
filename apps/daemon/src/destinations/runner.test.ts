@@ -1,6 +1,6 @@
 import type {
-  Delivery,
-  DestinationAdapter,
+  AttemptableDelivery,
+  Destinations,
   Duration,
   Lease,
   Pool,
@@ -26,7 +26,7 @@ const lease = {
  * Only the parts the runner reaches: it claims one lease, performs it, and
  * completes it. What `complete` was handed is the whole of what a test asserts.
  */
-function pool(deliveryFor: () => Promise<Delivery | undefined>): {
+function pool(deliveryFor: () => Promise<AttemptableDelivery | undefined>): {
   readonly pool: Pool;
   readonly completed: WorkOutcome[];
 } {
@@ -56,9 +56,9 @@ const config = {
   batch: 4,
 };
 
-const adapter: DestinationAdapter = {
-  id: "vault" as DestinationAdapter["id"],
-  describe: () => Promise.resolve({ id: "vault", capabilities: [] }) as never,
+const destinations: Destinations = {
+  kinds: () => [],
+  describe: () => Promise.resolve({ capabilities: [] }),
   deliver: () => Promise.resolve({ kind: "delivered" }),
 };
 
@@ -67,7 +67,7 @@ describe("a delivery the runner cannot even prepare", () => {
     const { pool: stub, completed } = pool(() =>
       Promise.reject(new Error("database is locked")),
     );
-    const runner = startDeliveryRunner(stub, [adapter], config);
+    const runner = startDeliveryRunner(stub, destinations, config);
 
     // The drain has to answer. A throw here would leave the lease to expire,
     // and an expired delivery lease is abandoned rather than retried.
@@ -85,11 +85,40 @@ describe("a delivery the runner cannot even prepare", () => {
 
   it("succeeds without attempting anything when the record has gone", async () => {
     const { pool: stub, completed } = pool(() => Promise.resolve(undefined));
-    const runner = startDeliveryRunner(stub, [adapter], config);
+    const runner = startDeliveryRunner(stub, destinations, config);
 
     await runner.drain();
     await runner.stop();
 
     expect(completed).toEqual([{ kind: "succeeded" }]);
+  });
+
+  /**
+   * A destination whose kind nothing speaks, or whose settings no longer
+   * satisfy it, is proof that nothing was delivered — so it carries on the same
+   * terms as an unreachable one, and an edit is what makes the retry land.
+   */
+  it("retries a destination that has become unusable rather than giving up", async () => {
+    const { pool: stub, completed } = pool(() =>
+      Promise.resolve({
+        kind: "unusable",
+        detail: "nothing here speaks the kanban kind",
+      }),
+    );
+    const runner = startDeliveryRunner(stub, destinations, config);
+
+    await runner.drain();
+    await runner.stop();
+
+    expect(completed).toEqual([
+      {
+        kind: "failed",
+        retryable: true,
+        detail: {
+          code: "unreachable",
+          detail: "nothing here speaks the kanban kind",
+        },
+      },
+    ]);
   });
 });

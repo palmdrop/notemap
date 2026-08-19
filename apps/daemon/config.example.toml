@@ -46,28 +46,6 @@ maxUpload = 268435456 # bytes — 256 MiB
 grace = 86400000   # milliseconds — one day
 interval = 3600000 # milliseconds between sweeps
 
-# Where items can be routed to. Each is an id, a kind, and a folder that must
-# already exist — the daemon never creates one, because a root that is not there
-# is an unmounted drive far more often than it is a typo, and it reports that as
-# unreachable so the delivery is retried rather than given up on.
-#
-# `accepts` is optional and defaults to every payload type declared below: every
-# type has a rendering, so there is none a folder cannot hold.
-#
-# Two capabilities per destination. `create-file` takes
-# `{ directory, filename? }` and refuses rather than overwriting; `append-to-file`
-# takes `{ path, heading? }`, and creates both the file and the heading when they
-# are missing. Appending is NOT safe against a file you have open in an editor:
-# an unsaved buffer will overwrite whatever landed.
-#
-# Nothing a delivery names can escape `root` — absolute paths, `..` and symlinks
-# leaving the folder are all refused.
-#[[destinations]]
-#id = "vault"
-#kind = "filesystem"
-#root = "~/notes"
-#accepts = ["text", "image"]
-
 # How often deliveries that could not be carried out inline are retried. Slower
 # than the mirror, and with a longer lease: a delivery is waiting on something
 # outside this machine, and a lease that expires mid-delivery is abandoned

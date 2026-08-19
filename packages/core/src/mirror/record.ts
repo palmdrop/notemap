@@ -1,8 +1,12 @@
 import type { Asset } from "../types/domain/asset";
+import type { Destination } from "../types/domain/destination";
 import type { Artifact } from "../types/domain/enrichment";
 import type { Timestamp } from "../types/domain/ids";
 import type { Item, ItemRecord, Tag } from "../types/domain/item";
-import type { MirrorRecord } from "../types/domain/mirror";
+import type {
+  DestinationMirrorRecord,
+  ItemMirrorRecord,
+} from "../types/domain/mirror";
 import type { Payload } from "../types/domain/payload";
 import type { RoutingRecord } from "../types/domain/routing";
 
@@ -18,10 +22,11 @@ export function projectMirrorRecord(
   assets: readonly Asset[],
   artifacts: readonly Artifact[],
   routing: readonly RoutingRecord[],
-): MirrorRecord {
+): ItemMirrorRecord {
   const { modifiedAt, supersededBy, ...record } = item;
 
   return {
+    kind: "item",
     item: canonicalItem(record),
     assets: [...assets].sort(byKey((asset) => asset.id)),
     artifacts: [...artifacts]
@@ -32,6 +37,25 @@ export function projectMirrorRecord(
       .filter((entry) => entry.state === "delivered")
       .map(canonicalRouting)
       .sort(byKey((entry) => entry.id)),
+    modifiedAt: instant(modifiedAt),
+  };
+}
+
+/** A destination's durable state. Nothing about it is unordered, so only its instants are canonicalised. */
+export function projectDestinationRecord(
+  destination: Destination,
+): DestinationMirrorRecord {
+  const { modifiedAt, ...record } = destination;
+
+  return {
+    kind: "destination",
+    destination: {
+      ...record,
+      ...(record.retiredAt === undefined
+        ? {}
+        : { retiredAt: instant(record.retiredAt) }),
+      createdAt: instant(record.createdAt),
+    },
     modifiedAt: instant(modifiedAt),
   };
 }

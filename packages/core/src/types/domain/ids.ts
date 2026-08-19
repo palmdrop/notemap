@@ -10,6 +10,7 @@ export type ArtifactId = Branded<string, "ArtifactId">;
 export type EnrichmentName = Branded<string, "EnrichmentName">;
 export type ProviderName = Branded<string, "ProviderName">;
 export type DestinationId = Branded<string, "DestinationId">;
+export type DestinationKindName = Branded<string, "DestinationKindName">;
 export type CapabilityName = Branded<string, "CapabilityName">;
 export type PayloadTypeName = Branded<string, "PayloadTypeName">;
 export type RoutingRecordId = Branded<string, "RoutingRecordId">;
@@ -28,6 +29,7 @@ export type SyncCursor = Branded<string, "SyncCursor">;
 export type MintableId =
   | ItemId
   | AssetId
+  | DestinationId
   | SuggestionId
   | ArtifactId
   | RoutingRecordId

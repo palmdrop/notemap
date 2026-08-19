@@ -27,7 +27,7 @@ export function markProcessed(
     };
 
     await tx.insertRoutingRecord(record);
-    await enqueueMirrorWrite(ports, tx, id, at);
+    await enqueueMirrorWrite(ports, tx, { kind: "item", item: id }, at);
     await recordAction(ports, tx, {
       kind: "routed",
       subject: id,

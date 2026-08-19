@@ -51,13 +51,28 @@ export type AssetRow = {
   readonly stored_at: number;
 };
 
+export type DestinationRow = {
+  readonly id: string;
+  readonly name: string;
+  readonly kind: string;
+  /** JSON, and the kind's own: the driver never looks inside it. */
+  readonly settings: string;
+  readonly retired_at: number | null;
+  readonly created_at: number;
+  readonly modified_at: number;
+};
+
 export type JobRow = {
   readonly id: string;
   readonly kind: "enrichment" | "mirror" | "mirror-remove" | "delivery";
-  readonly subject_kind: "item" | "routing-record";
+  readonly subject_kind: "item" | "routing-record" | "destination";
   readonly subject_id: string;
-  /** The capture the work concerns, which outlives a subject that may be removed. */
-  readonly subject_item: string;
+  /**
+   * The capture the work concerns, which outlives a subject that may be
+   * removed. Null for work about no capture at all, which a destination's
+   * mirror write is.
+   */
+  readonly subject_item: string | null;
   readonly enrichment: string | null;
   readonly attempt: number;
   readonly enqueued_at: number;
@@ -117,6 +132,15 @@ export const TABLE_COLUMNS = {
   item_tags: ["item_id", "name", "by_kind", "by_ref", "added_at"],
   item_assets: ["item_id", "slot", "asset_id"],
   assets: ["id", "filename", "mime", "blob", "bytes", "stored_at"],
+  destinations: [
+    "id",
+    "name",
+    "kind",
+    "settings",
+    "retired_at",
+    "created_at",
+    "modified_at",
+  ],
   jobs: [
     "id",
     "kind",

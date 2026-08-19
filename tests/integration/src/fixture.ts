@@ -13,11 +13,15 @@ import {
   type BlobStore,
   type CaptureEnvelope,
   type Clock,
-  type DestinationAdapter,
+  type Destination,
+  type DestinationId,
+  type DestinationKindName,
+  type Destinations,
   type Duration,
   type IdGenerator,
   type MintableId,
   type ItemId,
+  type ItemMirrorRecord,
   type MirrorRecord,
   type MirrorWriter,
   type PayloadTypeName,
@@ -123,6 +127,13 @@ const noMirrorWriter: MirrorWriter = {
   remove: () => absent("mirror writer"),
 };
 
+/** A pool that can hold destinations and reach none: nothing speaks any kind. */
+const noDestinations: Destinations = {
+  kinds: () => [],
+  describe: () => absent("destination kind"),
+  deliver: () => absent("destination kind"),
+};
+
 export type Harness = {
   readonly pool: Pool;
   /** Reachable so a test can stand in for a mutation core cannot perform yet. */
@@ -139,7 +150,19 @@ export type Harness = {
   readonly blobOpens: () => number;
   /** Closes this pool and opens another over the same files, as a restart does. */
   readonly reopen: () => Promise<Harness>;
+  /** Writes a destination row, which is what a routing record refers to. */
+  readonly putDestination: (
+    overrides?: DestinationOverrides,
+  ) => Promise<Destination>;
   readonly cleanup: () => Promise<void>;
+};
+
+export type DestinationOverrides = {
+  readonly id?: string;
+  readonly name?: string;
+  readonly kind?: string;
+  readonly settings?: Record<string, string>;
+  readonly retiredAt?: string;
 };
 
 /**
@@ -157,7 +180,7 @@ export type Mirroring = "stub" | "filesystem" | "off";
 export function harness(
   config: PoolConfig = CONFIG,
   mirroring: Mirroring = "stub",
-  destinations: readonly DestinationAdapter[] = [],
+  destinations: Destinations = noDestinations,
 ): Harness {
   return over(
     mkdtempSync(join(tmpdir(), "notemap-integration-")),
@@ -171,7 +194,7 @@ function over(
   directory: string,
   config: PoolConfig,
   mirroring: Mirroring,
-  destinations: readonly DestinationAdapter[],
+  destinations: Destinations,
 ): Harness {
   const file = join(directory, "pool.db");
   const mirrorRoot = join(directory, "pool-mirror");
@@ -230,6 +253,19 @@ function over(
       handedOver = true;
       return over(directory, config, mirroring, destinations);
     },
+    putDestination: (overrides = {}) =>
+      store.transaction((tx) =>
+        tx.insertDestination({
+          id: (overrides.id ?? "vault") as DestinationId,
+          name: overrides.name ?? "Vault",
+          kind: (overrides.kind ?? "fake") as DestinationKindName,
+          settings: overrides.settings ?? {},
+          ...(overrides.retiredAt === undefined
+            ? {}
+            : { retiredAt: at(overrides.retiredAt) }),
+          createdAt: clock.now(),
+        }),
+      ),
     cleanup: async () => {
       await pool.close();
       if (handedOver) return;
@@ -361,12 +397,18 @@ export function drainWith(
       for (const lease of fresh) {
         attempted.add(lease.job.id);
         const subject = lease.job.subject;
-        if (subject.kind !== "item") throw new Error("expected item work");
+        if (subject.kind === "routing-record") {
+          throw new Error("expected work the mirror is about");
+        }
 
         let outcome;
         try {
-          const record = await harnessed.pool.mirror.recordFor(subject.item);
-          if (record !== undefined) await writer.write(record);
+          if (lease.job.kind === "mirror-remove") {
+            await writer.remove(subject);
+          } else {
+            const record = await harnessed.pool.mirror.recordFor(subject);
+            if (record !== undefined) await writer.write(record);
+          }
           outcome = { kind: "succeeded" } as const;
         } catch (cause) {
           outcome = asWorkOutcome(cause);
@@ -382,7 +424,7 @@ export function drainWith(
  * What a host driving delivery work does: claim, ask core what the delivery is
  * now, hand it to the destination, report what it answered.
  */
-export function deliverWith(harnessed: Harness, adapter: DestinationAdapter) {
+export function deliverWith(harnessed: Harness, destinations: Destinations) {
   return async (): Promise<number> => {
     const attempted = new Set<string>();
     let resolved = 0;
@@ -407,14 +449,26 @@ export function deliverWith(harnessed: Harness, adapter: DestinationAdapter) {
           throw new Error("expected work about a delivery");
         }
 
-        const delivery = await harnessed.pool.routing.deliveryFor(
+        const attemptable = await harnessed.pool.routing.deliveryFor(
           subject.record,
         );
         // Nothing left to carry out: the record was cancelled, or its item went.
+        // Unusable is proof nothing was delivered, so it carries on the same
+        // terms as unreachable rather than being an outcome of its own.
         const outcome: WorkOutcome =
-          delivery === undefined
+          attemptable === undefined
             ? { kind: "succeeded" }
-            : asDeliveryWorkOutcome(await adapter.deliver(delivery));
+            : attemptable.kind === "unusable"
+              ? asDeliveryWorkOutcome({
+                  kind: "unreachable",
+                  detail: attemptable.detail,
+                })
+              : asDeliveryWorkOutcome(
+                  await destinations.deliver(
+                    attemptable.destination,
+                    attemptable.delivery,
+                  ),
+                );
 
         await harnessed.pool.work.complete(lease.id, outcome);
         resolved += 1;
@@ -423,23 +477,46 @@ export function deliverWith(harnessed: Harness, adapter: DestinationAdapter) {
   };
 }
 
-export async function storedRecord(root: string): Promise<MirrorRecord> {
+/** What the mirror would write for one item, which is most of what a test asks. */
+export function itemRecordFor(
+  pool: Pool,
+  item: ItemId,
+): Promise<MirrorRecord | undefined> {
+  return pool.mirror.recordFor({ kind: "item", item });
+}
+
+/** What one item's record holds, where a test is about an item and not the union. */
+export async function itemRecord(
+  pool: Pool,
+  item: ItemId,
+): Promise<ItemMirrorRecord | undefined> {
+  const record = await itemRecordFor(pool, item);
+  if (record !== undefined && record.kind !== "item") {
+    throw new Error(`${item} mirrors as something other than an item`);
+  }
+  return record;
+}
+
+export async function storedRecord(root: string): Promise<ItemMirrorRecord> {
   const files = await filesUnder(root);
   const path = files.find((each) => each.endsWith(".json"));
   if (path === undefined) throw new Error(`no record under ${root}`);
-  return parseMirrorRecord(await readFile(path, "utf8"));
+
+  const record = parseMirrorRecord(await readFile(path, "utf8"));
+  if (record.kind !== "item") throw new Error(`${path} is not an item record`);
+  return record;
 }
 
-/** Every record the mirror holds, by the item it is about. */
+/** Every item record the mirror holds, by the item it is about. */
 export async function storedRecords(
   root: string,
-): Promise<Map<ItemId, MirrorRecord>> {
+): Promise<Map<ItemId, ItemMirrorRecord>> {
   const files = await filesUnder(root);
-  const records = new Map<ItemId, MirrorRecord>();
+  const records = new Map<ItemId, ItemMirrorRecord>();
 
   for (const path of files.filter((each) => each.endsWith(".json"))) {
     const record = parseMirrorRecord(await readFile(path, "utf8"));
-    records.set(record.item.id, record);
+    if (record.kind === "item") records.set(record.item.id, record);
   }
 
   return records;

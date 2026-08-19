@@ -1,12 +1,13 @@
 import { recordAction } from "../actions";
+import { usability } from "../destinations/usability";
 import { enqueueMirrorWrite } from "../mirror";
 import { ok, refused } from "../../utils/result";
-import type {
-  DestinationAdapter,
-  PoolPorts,
-  PoolTx,
-} from "../../types/api/ports";
+import type { PoolPorts, PoolTx } from "../../types/api/ports";
 import type { CancelRefusal, DeliveryRefusal } from "../../types/api/refusal";
+import type {
+  Destination,
+  DestinationDescriptor,
+} from "../../types/domain/destination";
 import type { FailureDetail } from "../../types/domain/enrichment";
 import type {
   ItemId,
@@ -17,7 +18,6 @@ import type {
 import type {
   DeliveryOutcome,
   DeliveryRequest,
-  DestinationDescriptor,
   RoutingRecord,
 } from "../../types/domain/routing";
 import type { Result } from "../../types/result";
@@ -26,7 +26,6 @@ import {
   destinationDetail,
   projectDelivery,
 } from "./delivery";
-import type { DestinationIndex } from "./destinations";
 
 type Routed = Result<RoutingRecord, DeliveryRefusal>;
 
@@ -38,20 +37,34 @@ type Routed = Result<RoutingRecord, DeliveryRefusal>;
  */
 export async function route(
   ports: PoolPorts,
-  destinations: DestinationIndex,
   item: ItemId,
   request: DeliveryRequest,
   signal?: AbortSignal,
 ): Promise<Routed> {
-  const adapter = destinations.get(request.destination);
-  if (adapter === undefined) {
+  const destination = await ports.store.destination(request.destination);
+  if (destination === undefined) {
     return refused({
       kind: "unknown-destination",
       destination: request.destination,
     });
   }
+  if (destination.retiredAt !== undefined) {
+    return refused({
+      kind: "destination-retired",
+      destination: destination.id,
+    });
+  }
 
-  const described = await describeOrRefuse(adapter, signal);
+  const usable = usability(ports, destination);
+  if (usable.kind === "unusable") {
+    return refused({
+      kind: "destination-unusable",
+      destination: destination.id,
+      detail: usable.detail,
+    });
+  }
+
+  const described = await describeOrRefuse(ports, destination, signal);
   if (described.kind === "refused") return described;
 
   const capability = described.value.capabilities.find(
@@ -97,15 +110,17 @@ export async function route(
 
   let outcome: DeliveryOutcome;
   try {
-    outcome = await adapter.deliver(delivery, signal);
+    outcome = await ports.destinations.deliver(destination, delivery, signal);
   } catch (cause) {
     return unresolved(ports, record, cause);
   }
 
   return ports.store.transaction(async (tx) => {
-    // Purged while the adapter had the bytes: the record dies with the item,
-    // but the entry saying bytes left the machine outlives it.
+    // Read back while the adapter had the bytes: the record cannot be written
+    // without either of them, but the entry saying bytes left the machine
+    // outlives both.
     const present = (await tx.item(item)) !== undefined;
+    const held = await tx.destination(request.destination);
 
     await trace(ports, tx, record, outcome);
     if (!present) {
@@ -113,6 +128,12 @@ export async function route(
         kind: "item-purged",
         item,
         at: record.at,
+      });
+    }
+    if (held === undefined) {
+      return refused<RoutingRecord, DeliveryRefusal>({
+        kind: "unknown-destination",
+        destination: request.destination,
       });
     }
 
@@ -137,11 +158,12 @@ export async function route(
  * validated, and every retry would refuse it again.
  */
 async function describeOrRefuse(
-  adapter: DestinationAdapter,
+  ports: PoolPorts,
+  destination: Destination,
   signal?: AbortSignal,
 ): Promise<Result<DestinationDescriptor, DeliveryRefusal>> {
   try {
-    return ok(await adapter.describe(signal));
+    return ok(await ports.destinations.describe(destination, signal));
   } catch (cause) {
     return refused({
       kind: "unreachable",
@@ -243,7 +265,12 @@ async function deliver(
   };
 
   await tx.insertRoutingRecord(delivered);
-  await enqueueMirrorWrite(ports, tx, record.item, record.at);
+  await enqueueMirrorWrite(
+    ports,
+    tx,
+    { kind: "item", item: record.item },
+    record.at,
+  );
 
   return ok(delivered);
 }

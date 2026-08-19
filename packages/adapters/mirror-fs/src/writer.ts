@@ -6,7 +6,9 @@ import {
   parseMirrorRecord,
   serialiseMirrorRecord,
   type ItemId,
+  type ItemMirrorRecord,
   type MirrorRecord,
+  type MirrorSubject,
   type MirrorWriter,
 } from "@notemap/core";
 
@@ -17,7 +19,7 @@ import {
   toYaml,
   type FrontmatterValue,
 } from "./frontmatter";
-import { pathsFor, renderingBeside } from "./paths";
+import { destinationPathFor, pathsFor, renderingBeside } from "./paths";
 import {
   renderAsJson,
   type Rendering,
@@ -39,6 +41,14 @@ export function createFilesystemMirrorWriter(
 
   return {
     write: async (record: MirrorRecord): Promise<void> => {
+      if (record.kind === "destination") {
+        await writeAtomically(
+          destinationPathFor(config.root, record.destination.id),
+          serialiseMirrorRecord(record),
+        );
+        return;
+      }
+
       const paths = pathsFor(config.root, record);
 
       // Material before presentation: a renderer is host-supplied code, and a
@@ -50,9 +60,16 @@ export function createFilesystemMirrorWriter(
       );
     },
 
-    /** A bare id cannot give a path, so removal walks the tree instead. */
-    remove: async (item: ItemId): Promise<void> => {
-      for (const record of await recordsFor(config.root, item)) {
+    remove: async (subject: MirrorSubject): Promise<void> => {
+      if (subject.kind === "destination") {
+        await removeIfPresent(
+          destinationPathFor(config.root, subject.destination),
+        );
+        return;
+      }
+
+      // A bare item id cannot give a path, so removal walks the tree instead.
+      for (const record of await recordsFor(config.root, subject.item)) {
         await removeIfPresent(renderingBeside(record));
         await removeIfPresent(record);
       }
@@ -62,7 +79,7 @@ export function createFilesystemMirrorWriter(
 
 function render(
   renderers: Renderers,
-  record: MirrorRecord,
+  record: ItemMirrorRecord,
   at: RenderingContext,
 ): string {
   const renderer = renderers[record.item.payload.type] ?? renderAsJson;
@@ -116,9 +133,8 @@ async function recordsFor(
 
     const path = join(entry.parentPath, entry.name);
     try {
-      if (parseMirrorRecord(await readFile(path, "utf8")).item.id === item) {
-        matched.push(path);
-      }
+      const record = parseMirrorRecord(await readFile(path, "utf8"));
+      if (record.kind === "item" && record.item.id === item) matched.push(path);
     } catch {
       continue;
     }

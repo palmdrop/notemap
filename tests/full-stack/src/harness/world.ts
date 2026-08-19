@@ -8,7 +8,10 @@ export const IMAGE = "image";
 export const MANUAL = "web-manual";
 export const IMAGE_SOURCE = "web-image";
 
-/** The destination whose folder is there, and the one whose folder is not. */
+/**
+ * What the two destinations are called. Names rather than ids: a destination is
+ * a row a person creates, so the id is minted and `vaults()` answers with it.
+ */
 export const UP = "vault-up";
 export const DOWN = "vault-down";
 
@@ -82,8 +85,6 @@ function configFor(
     pool: string;
     assets: string;
     mirror: string;
-    up: string;
-    down: string;
   },
   at: number,
 ): string {
@@ -127,16 +128,5 @@ contentSchema = { type = "object", required = ["text"], additionalProperties = f
 name = "${IMAGE}"
 requiredSlots = ["image"]
 contentSchema = { type = "object", additionalProperties = false, properties = { caption = { type = "string" } } }
-
-[[destinations]]
-id = "${UP}"
-kind = "filesystem"
-root = "${paths.up}"
-
-# Never created: an unmounted drive, which is how a delivery comes to be owed.
-[[destinations]]
-id = "${DOWN}"
-kind = "filesystem"
-root = "${paths.down}"
 `;
 }

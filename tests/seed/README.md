@@ -26,15 +26,18 @@ which the seeder reads as agreement. Seeding the same pool twice therefore chang
 
 ## What it expects to find
 
-Routing is the one part the seeder cannot arrange for itself, because destinations are configuration
-rather than API. It routes one item to each destination `GET /v1/destinations` reports, in order,
-and what that leaves behind is the daemon's business:
+Routing is the one part the seeder leaves to whoever is seeding: destinations are pool state now,
+so they can be made over `/v1` — but which ones a pool should hold is not the seeder's to decide.
+It routes one item to each destination `GET /v1/destinations` reports, in the order the pool holds
+them, asking each what it can do before it sends anything. What that leaves behind is the daemon's
+business:
 
 - a destination whose root exists takes the delivery, and the record reaches `delivered`;
 - a destination whose root does not takes it too — `destination-fs` describes itself without
   touching the disk — and the record stays `pending`, retried, which is the "owed" state;
-- a destination that cannot describe itself at all is skipped, since routing to one is refused.
+- a retired one is passed over, and so is one that answers `undescribable` or `unusable`, since
+  routing to any of the three is refused.
 
-Configure one of each of the first two to get both states. The daemon's own payload types and
+Make one of each of the first two to get both states. The daemon's own payload types and
 sources are likewise its own: the defaults here are `web-manual`, `web-image`, `text` and `image`,
 matching `apps/daemon/config.example.toml`, and every one is an option.

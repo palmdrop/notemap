@@ -13,6 +13,7 @@ const CARRY_BODIES = new Set(["POST", "PUT", "PATCH"]);
 const RAW_BODIES = new Set<string>([assetUploadRoute.path]);
 
 type Declared = {
+  readonly method: string;
   readonly path: string;
   readonly request?: { readonly body?: { readonly required?: boolean } };
 };
@@ -21,13 +22,23 @@ type Declared = {
  * Read off the definitions rather than listed here, so the routes a client may
  * send nothing to are the ones the document says they are.
  */
-const OPTIONAL_BODIES: readonly string[] = (ROUTES as readonly Declared[])
-  .filter((route) => route.request?.body?.required === false)
-  .map((route) => route.path);
+const OPTIONAL_BODIES: readonly Declared[] = (
+  ROUTES as readonly Declared[]
+).filter((route) => route.request?.body?.required === false);
 
-/** `{id}` stands for one non-empty segment, as it does to the router. */
-function matches(declared: string, path: string): boolean {
-  const pattern = declared.split("/");
+/** Routes that declare no body at all — `POST .../retire` is the whole request. */
+const NO_BODIES: readonly Declared[] = (ROUTES as readonly Declared[]).filter(
+  (route) => route.request?.body === undefined,
+);
+
+/**
+ * Method as well as path: one path carries several routes, and the bodyless
+ * `GET /v1/destinations` would otherwise excuse the `POST` beside it.
+ */
+function matches(declared: Declared, method: string, path: string): boolean {
+  if (declared.method.toUpperCase() !== method) return false;
+
+  const pattern = declared.path.split("/");
   const actual = path.split("/");
 
   return (
@@ -40,8 +51,12 @@ function matches(declared: string, path: string): boolean {
   );
 }
 
-function bodyIsOptional(path: string): boolean {
-  return OPTIONAL_BODIES.some((declared) => matches(declared, path));
+function bodyIsOptional(method: string, path: string): boolean {
+  return OPTIONAL_BODIES.some((declared) => matches(declared, method, path));
+}
+
+function takesNoBody(method: string, path: string): boolean {
+  return NO_BODIES.some((declared) => matches(declared, method, path));
 }
 
 /**
@@ -58,9 +73,13 @@ function carriesBody(request: Request): boolean {
 export const requireJsonBody: MiddlewareHandler = async (context, next) => {
   if (!CARRY_BODIES.has(context.req.method)) return next();
 
+  const method = context.req.method;
   const path = new URL(context.req.url).pathname;
   if (RAW_BODIES.has(path)) return next();
-  if (bodyIsOptional(path) && !carriesBody(context.req.raw)) return next();
+  if (takesNoBody(method, path)) return next();
+  if (bodyIsOptional(method, path) && !carriesBody(context.req.raw)) {
+    return next();
+  }
 
   const contentType = context.req.header("content-type") ?? "";
   if (contentType.split(";")[0]?.trim().toLowerCase() !== JSON_MEDIA_TYPE) {

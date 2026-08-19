@@ -53,11 +53,6 @@ export function routingRecordsHandler(pool: Pool) {
   };
 }
 
-export function destinationsHandler(pool: Pool) {
-  return async (): Promise<Response> =>
-    json({ values: await pool.routing.destinations() }, 200);
-}
-
 /**
  * A decision, and one delivery attempt inline. The `200` may carry a record
  * that has not landed — a destination that could not be reached leaves it

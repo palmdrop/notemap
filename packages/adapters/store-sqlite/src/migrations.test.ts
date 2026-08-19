@@ -24,6 +24,12 @@ const NEVER = [null, null, null] as const;
  */
 const BEFORE_SUBJECT_SPLIT = 6;
 
+/** The version a pool was at before destinations became rows of their own. */
+const BEFORE_DESTINATIONS_MOVED = 10;
+
+/** Before that, the version at which a destination record remembered no target. */
+const BEFORE_TARGET_REMEMBERED = 9;
+
 const directories: string[] = [];
 const opened: SqlitePoolStore[] = [];
 
@@ -212,6 +218,140 @@ describe("splitting a job's subject into a kind and an id", () => {
       expect(() =>
         insert.run("elsewhere", "item-2", "item-2", ENQUEUED, ENQUEUED),
       ).not.toThrow();
+    } finally {
+      raw.close();
+    }
+  });
+});
+
+/** A pool whose records name destinations that only ever existed in a config file. */
+function routedAtPreviousVersion(): string {
+  const directory = mkdtempSync(join(tmpdir(), "notemap-migration-"));
+  directories.push(directory);
+  const file = join(directory, "pool.db");
+
+  const raw = new DatabaseSync(file);
+  for (const migration of MIGRATIONS.slice(0, BEFORE_TARGET_REMEMBERED)) {
+    raw.exec(migration);
+  }
+
+  raw
+    .prepare(
+      `INSERT INTO items (id, source_id, source_item_id, payload_type,
+         payload_content, payload_metadata, created_at, modified_at)
+       VALUES ('item-1', 'src', 'a', 'text', '{}', '{}', ?, ?)`,
+    )
+    .run(ENQUEUED, ENQUEUED);
+
+  const untargeted = raw.prepare(
+    `INSERT INTO routing_records
+       (id, item_id, target_kind, destination, capability, note, state, at)
+     VALUES (?, 'item-1', ?, ?, ?, ?, ?, ?)`,
+  );
+
+  // Written before the column existed, and read as `{}` ever since.
+  untargeted.run(
+    "to-vault",
+    "destination",
+    "vault",
+    "create-file",
+    null,
+    "delivered",
+    ENQUEUED,
+  );
+  untargeted.run(
+    "by-hand",
+    "user",
+    null,
+    null,
+    "pasted it",
+    "delivered",
+    ENQUEUED + 2,
+  );
+
+  raw.exec(MIGRATIONS[BEFORE_TARGET_REMEMBERED] ?? "");
+  raw.exec(`PRAGMA user_version = ${BEFORE_DESTINATIONS_MOVED}`);
+
+  raw
+    .prepare(
+      `INSERT INTO routing_records
+         (id, item_id, target_kind, destination, capability, note, target,
+          state, at)
+       VALUES ('again', 'item-1', 'destination', 'vault', 'create-file', NULL,
+               '{}', 'pending', ?)`,
+    )
+    .run(ENQUEUED + 1);
+
+  raw.close();
+  return file;
+}
+
+function destinationRows(file: string) {
+  const raw = new DatabaseSync(file, { readOnly: true });
+  try {
+    return raw
+      .prepare(
+        `SELECT id, name, kind, settings, retired_at, created_at
+                FROM destinations ORDER BY id`,
+      )
+      .all();
+  } finally {
+    raw.close();
+  }
+}
+
+describe("moving destinations into the pool", () => {
+  it("mints a row per destination a record already named, so the history stays readable", () => {
+    const file = routedAtPreviousVersion();
+    migrated(file);
+
+    expect(destinationRows(file)).toEqual([
+      {
+        id: "vault",
+        name: "vault",
+        // Nothing registers an adapter for it, so it reports unusable rather
+        // than being dropped for having come from a config file.
+        kind: "unconfigured",
+        settings: "{}",
+        retired_at: null,
+        created_at: ENQUEUED,
+      },
+    ]);
+  });
+
+  it("leaves every record resolving, target and all", async () => {
+    const file = routedAtPreviousVersion();
+    const pool = migrated(file);
+
+    const records = await pool.routingRecords("item-1" as ItemId);
+    expect(records.map((each) => each.target)).toEqual([
+      {
+        kind: "destination",
+        destination: "vault",
+        capability: "create-file",
+        // Written before the column existed, and read as `{}` ever since.
+        target: {},
+      },
+      {
+        kind: "destination",
+        destination: "vault",
+        capability: "create-file",
+        target: {},
+      },
+      { kind: "user", note: "pasted it" },
+    ]);
+  });
+
+  it("stands the in-use refusal on the schema", () => {
+    const file = routedAtPreviousVersion();
+    migrated(file);
+
+    const raw = new DatabaseSync(file);
+    try {
+      raw.exec("PRAGMA foreign_keys = ON");
+      expect(() =>
+        raw.prepare("DELETE FROM destinations WHERE id = 'vault'").run(),
+      ).toThrow(/FOREIGN KEY/i);
     } finally {
       raw.close();
     }
