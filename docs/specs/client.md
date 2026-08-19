@@ -4,6 +4,13 @@
 **Last updated**: 2026-08-18
 **Shipped**:
 
+- 2026-08-20 — **Which end a reader starts from reaches the client.** `ListPage` carries an order,
+  `loadFeed` and `loadQueue` take one, and a surface reports the order it is in so a control can
+  draw it. Naming an order a surface is not already in turns it around and reads it again from the
+  start, because a position belongs to the order that made it; optimistic placement of a returned
+  or freshly captured item follows the order in force rather than the default.
+  ([plan](../plans/shell-design-port.md))
+
 - 2026-08-18 — **Editing destinations is the outbox's second exception, and the shell shows it.**
   The client reads destinations into a cache a settings screen renders from while the pool is
   unreachable, and creating, editing, retiring and deleting one reach the pool directly or fail —

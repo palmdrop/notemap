@@ -1,10 +1,10 @@
 # Port the designed shell into apps/ui
 
 **Date**: 2026-08-20
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/shell.md`
 **Reference**: `docs/design/` — the rendered design, its stylesheet, and shots at 1440 and 390
-**Closed**:
+**Closed**: 2026-08-20
 
 ---
 

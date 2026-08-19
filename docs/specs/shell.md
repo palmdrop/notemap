@@ -1,8 +1,22 @@
 # Spec: The web shell
 
-**Status**: Draft — designed, not built
-**Last updated**: 2026-08-19
+**Status**: Built
+**Last updated**: 2026-08-20
 **Shipped**:
+
+- 2026-08-20 — **The designed shell is built.** `apps/ui` draws the queue and the feed as one
+  register: two columns, one line weight, ink structure, and the accent reserved for action and
+  alarm. Every colour, face, size and measure is a role defined once in `layout.css`, and the
+  three Tailwind namespaces are cleared so a component naming its own colour does not compile — a
+  test over `src/components` and `src/routes` is the second gate. The queue is the root route and
+  carries capture as its first row; a row opens in place on its own stamp, one at a time, and
+  routing escalates into a composer beside it that steps through where, what to do, and the target
+  the schema asks for. The feed says what became of a row and keeps tags editable on every one of
+  them. A refusal has the bottom-left corner to itself; work merely waiting for the daemon is left
+  to the one mark in the bar. Settings enters at the bar's right end and holds the exits to the
+  daemon's own pages. **Not shipped**: `routed` and the `sent` line, which need routing state on
+  `Item`; the folder tree, which nothing can enumerate; CommonMark, the renderer being unchosen;
+  and a visible mark for pending work. ([plan](../plans/shell-design-port.md))
 
 ---
 
