@@ -31,6 +31,7 @@ data; a class here is a suggestion about structure, not a class to copy into a
 Svelte file. What must survive the port is the *system* — two columns, one line
 weight, one size per face, ink structure, red for action and alarm.
 
-The design was drawn in a Claude Design project, which holds the iterations and
-the discussion. **This directory is canonical**; that project is history and is
-not kept in step.
+The design was drawn in a Claude Design project, which holds every iteration it
+went through. Its current pages carry the same stylesheet and the same markup as
+this directory. **If they ever disagree, this directory wins** — it is the one
+the port is verified against.
