@@ -25,21 +25,23 @@ export type Capability = {
   readonly accepts: readonly string[];
 };
 
-export type Destination =
-  | {
-      readonly kind: "described";
-      readonly id: string;
-      readonly capabilities: readonly Capability[];
-    }
-  | {
-      readonly kind: "undescribable";
-      readonly id: string;
-      readonly detail: string;
-    };
+export type Destination = {
+  readonly id: string;
+  readonly name: string;
+  readonly retired: boolean;
+};
 
 export type Destinations = {
   readonly values: readonly Destination[];
 };
+
+/** What one destination answered when asked, which the list never says. */
+export type DestinationDescription =
+  | { readonly kind: "described"; readonly capabilities: readonly Capability[] }
+  | {
+      readonly kind: "undescribable" | "unusable";
+      readonly detail: string;
+    };
 
 export type RoutingRecords = {
   readonly values: readonly { readonly id: string; readonly state: string }[];

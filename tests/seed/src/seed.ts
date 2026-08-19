@@ -1,6 +1,7 @@
 import { httpAt, HttpFailure, type Http } from "./http.ts";
 import type {
   CaptureOutcome,
+  DestinationDescription,
   Destinations,
   Item,
   RoutingRecords,
@@ -180,9 +181,9 @@ async function captureAnImage(
 }
 
 /**
- * One item per destination, in the order the daemon reports them. A destination
- * that cannot describe itself is skipped: routing to one is refused, because no
- * target can be checked against nothing.
+ * One item per destination, in the order the pool holds them. What a
+ * destination can do is a second read, and one that cannot say is skipped:
+ * routing to it is refused, because no target can be checked against nothing.
  */
 async function routeEach(
   http: Http,
@@ -200,9 +201,14 @@ async function routeEach(
   for (const destination of values) {
     const item = items[next];
     if (item === undefined) break;
+    if (destination.retired) continue;
+
+    const described = await http.get<DestinationDescription>(
+      `/v1/destinations/${destination.id}/description`,
+    );
     if (
-      destination.kind !== "described" ||
-      !destination.capabilities.some((each) => each.name === capability)
+      described.kind !== "described" ||
+      !described.capabilities.some((each) => each.name === capability)
     ) {
       continue;
     }

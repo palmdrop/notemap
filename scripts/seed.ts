@@ -18,6 +18,6 @@ console.log(`  archived   ${seeded.archived.join(", ")}`);
 console.log(`  with image ${seeded.withImage.item}`);
 console.log(
   seeded.routed.length === 0
-    ? "  routed     nothing — the daemon reports no destination that can be described"
+    ? "  routed     nothing — this pool holds no destination that can be described. Make one in the shell's settings, or over POST /v1/destinations, and seed again"
     : `  routed     ${seeded.routed.map((each) => `${each.item} to ${each.destination}`).join(", ")}`,
 );

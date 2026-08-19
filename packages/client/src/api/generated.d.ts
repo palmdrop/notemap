@@ -1426,7 +1426,7 @@ export interface paths {
         head?: never;
         /**
          * Change a destination's name or settings
-         * @description The kind is fixed: changing it would make one destination two, and a record cannot tell which it meant. Renaming is free, because a record names the id. Last write wins.
+         * @description Name, settings or both, in one operation: two would leave an edit half-applied. The kind is fixed: changing it would make one destination two, and a record cannot tell which it meant. Renaming is free, because a record names the id. A half that arrives unchanged appends nothing. Last write wins.
          */
         patch: {
             parameters: {
