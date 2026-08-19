@@ -133,12 +133,14 @@ below. `capabilitiesFor(config.accepts)` says it.
 
 1. **Fixed.** The ticked line in `destinations-in-the-pool.md` carries a dated note saying it was
    reversed and why, in the plan's own style, rather than being rewritten.
-2. **Fixed.** `apps/daemon/README.md` says that one folder taking less than another would be
-   routing policy rather than something the folder cannot do, so the preference has a named home
-   that is not a settings key.
-3. **Won't fix in code.** Greenfield, no migration, and an edit that saves the form the new schema
-   builds repairs the row. Recorded in the PR description so the `unusable` report is not a
-   mystery.
+2. **Fixed.** The PR description already said an opt-out should arrive as an `excludes`, so a
+   newly declared payload type is taken by default; the review was written blind to it. That
+   reasoning is worth more than a PR body's lifetime, so `apps/daemon/README.md` now says one
+   folder taking less than another would be routing policy rather than something the folder
+   cannot do.
+3. **Already answered.** The PR description states it: the row reports `unusable` rather than
+   being dropped, and one save through the edit form clears the key. Greenfield, so no store
+   migration.
 4. **Fixed.** The comment states the rule the code has: a folder takes everything the pool can
    hold.
 5. **Fixed.** "the two shapes a settings schema may take".
