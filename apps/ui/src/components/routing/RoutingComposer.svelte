@@ -95,12 +95,11 @@
     busy = true;
     said = "routing…";
     try {
-      const record = await client.routing.route(item, {
+      await client.routing.route(item, {
         destination: chosen,
         capability,
         target: valuesFrom(fields, target),
       });
-      said = `routed — ${record.state}`;
       onclose();
     } catch (error) {
       said = saidBy(error);

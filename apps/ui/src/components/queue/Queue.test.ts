@@ -4,6 +4,7 @@ import { expect, test, vi } from "vitest";
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { asked, pool } from "../../testing/pool";
+import { briefly } from "$lib/stamp";
 import { online } from "../../testing/dom";
 import Queue from "./Queue.svelte";
 
@@ -66,7 +67,7 @@ test("archives with the pool unreachable, and disables what it cannot queue", as
   await fireEvent.click(screen.getByRole("button", { name: "archive" }));
 
   // The pool never answered it, and the item left the queue all the same.
-  await screen.findByText(/Empty —/);
+  await screen.findByText("zero");
   expect(asked()).toContain("POST /v1/items/one/archive");
 });
 
@@ -93,7 +94,7 @@ test("draws the way to add to the queue even when the queue is empty", async () 
 
   render(Queue);
 
-  expect(await screen.findByText(/Empty —/)).toBeDefined();
+  expect(await screen.findByText("zero")).toBeDefined();
   expect(screen.getByLabelText("What to capture")).toBeDefined();
 });
 
@@ -113,4 +114,67 @@ test("turns the queue around and reads it again from that end", async () => {
       .map((request) => new URL(request.url).searchParams.get("order"));
     expect(orders).toEqual(["oldest-first", "newest-first"]);
   });
+});
+
+test("reads the drained queue as the thing it was working toward", async () => {
+  pool(queued());
+
+  render(Queue);
+
+  // The state word idiom, which is what the register says became of a thing.
+  expect(await screen.findByText("zero")).toBeDefined();
+  expect(screen.getByText(/The queue is empty/)).toBeDefined();
+  expect(screen.queryByText(/Empty —/)).toBeNull();
+});
+
+test("says on the collapsed row when an item was last touched", async () => {
+  const touchedAt = "2026-08-19T22:14:00.000Z";
+
+  pool((request: Request) =>
+    routeOf(request) === "GET /v1/queue"
+      ? json(200, {
+          values: [
+            anItem("touched", {
+              createdAt: "2026-08-01T09:00:00.000Z",
+              contentUpdatedAt: touchedAt,
+            }),
+            anItem("fresh", { createdAt: "2026-08-02T09:00:00.000Z" }),
+          ],
+        })
+      : json(200, { values: [] }),
+  );
+
+  render(Queue);
+  await screen.findByText("touched");
+
+  // The key the queue is ordered by, so it is readable without opening a row.
+  expect(screen.getByText(briefly(touchedAt))).toBeDefined();
+  expect(screen.queryByText("not since capture")).toBeNull();
+
+  await open(1);
+
+  expect(await screen.findByText("not since capture")).toBeDefined();
+});
+
+test("will not turn around while a read is still walking", async () => {
+  let release = () => {};
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+
+  pool(async (request: Request) => {
+    if (routeOf(request) !== "GET /v1/queue") return json(200, { values: [] });
+    await held;
+    return json(200, { values: [anItem("one")] });
+  });
+
+  render(Queue);
+
+  const control = screen.getByLabelText("Order") as HTMLSelectElement;
+  expect(control.disabled).toBe(true);
+
+  release();
+  await screen.findByText("one");
+
+  await vi.waitFor(() => expect(control.disabled).toBe(false));
 });

@@ -1,14 +1,14 @@
 # Spec: The web shell
 
-**Status**: Built
+**Status**: Implemented
 **Last updated**: 2026-08-20
 **Shipped**:
 
 - 2026-08-20 — **The designed shell is built.** `apps/ui` draws the queue and the feed as one
   register: two columns, one line weight, ink structure, and the accent reserved for action and
-  alarm. Every colour, face, size and measure is a role defined once in `layout.css`, and the
+  alarm. Every colour, face, size and measure is a role defined once in `styles/tokens.css`, and the
   three Tailwind namespaces are cleared so a component naming its own colour does not compile — a
-  test over `src/components` and `src/routes` is the second gate. The queue is the root route and
+  test over `src/components`, `src/routes` and `src/styles` is the second gate. The queue is the root route and
   carries capture as its first row; a row opens in place on its own stamp, one at a time, and
   routing escalates into a composer beside it that steps through where, what to do, and the target
   the schema asks for. The feed says what became of a row and keeps tags editable on every one of
@@ -30,7 +30,7 @@ This spec is the shell's half of what [client.md](client.md) deliberately leaves
 trees, styling, layout and the choice of UI framework are the shell's." It names the surfaces'
 shape, the vocabulary the components are written against, and the token roles the visual direction
 fills in. It does not name a colour or a font; those come out of the design session and land in
-`apps/ui/src/routes/layout.css`.
+`apps/ui/src/styles/tokens.css`.
 
 ---
 
@@ -127,9 +127,10 @@ capability and when. Tags stay editable on every row in the feed, including an a
 also offers `unarchive`. A finished row's prose is muted, so live captures stand out while
 scrolling.
 
-**Opened, a row is for triage.** It adds when the item was last **edited**, its **routing
-records**, and the actions — route, mark done, archive, edit. Everything there is cheap and
-reversible.
+**Opened, a row is for triage.** It adds the item's **routing records** and the actions — route,
+mark done, archive, edit. Everything there is cheap and reversible. The **last touch** is not one of
+the additions: it is read collapsed, where it explains the ordering, and only its *absence* — `not
+since capture` — waits for the row to open, having nothing to explain.
 
 **Routing is not one of those, and it does not happen in the row.** It is the only act in the shell
 that composes an object rather than selecting a value: where, then what to do there, then exactly
@@ -214,7 +215,7 @@ names a colour. Both a light and a dark palette are defined against those roles,
 drawn in one of them — the other follows from the definitions rather than from a second design
 pass.
 
-This is what makes the port mechanical: a block of `@theme` in `layout.css`, and components that
+This is what makes the port mechanical: a block of `@theme` in `styles/tokens.css`, and components that
 stop carrying forty inline `dark:` variants.
 
 **Which palette is on is the reader's**, and one small control in the **bottom-right corner** cycles
@@ -226,8 +227,9 @@ preference. The right corner because the left one belongs to a refusal.
 
 ### Visual direction
 
-*Settled 2026-08-19, in the design session, against the references in
-[docs/inspiration/](../inspiration/).*
+*Settled 2026-08-19, in the design session, against a set of visual references held outside the
+repository. What they settled is below; the directory itself is not tracked, so nothing here rests
+on being able to open it.*
 
 **Industrial bones, paper skin.** Technical rather than terminal: strict structure and countable
 alignment on a warm ground rather than a cold grey one.
@@ -287,7 +289,10 @@ the page a person actually reads. Three-character indents on successive paragrap
   new framework, no CSS-in-JS, no component library.
 - **The shell holds no domain logic.** Anything this design implies that the client does not expose
   is a change to `@notemap/client`, made deliberately, not a rule smuggled into a component.
-- Tokens live in `apps/ui/src/routes/layout.css` as `@theme`.
+- Tokens live in `apps/ui/src/styles/tokens.css` as `@theme`. The global stylesheets sit together
+  under `apps/ui/src/styles/` — the roles, the shared `@utility` patterns, and the base layer — and
+  `routes/layout.css` is the import list that pulls them in. `tokens.css` is the one file allowed to
+  name a value, and the gate exempts it by that path.
 - The queue is one scrollable, paginated list. Nothing navigates away to process an item.
 - Only the chosen destination is described; `describe()` may hang.
 - There is no count of the queue and none is invented.
@@ -306,7 +311,10 @@ the page a person actually reads. Three-character indents on successive paragrap
   a flat control set hides the dependency between its parts. It is also the only irreversible act
   in the shell, so it is the one that earns a deliberate surface — which is what "fast capture,
   deliberate processing" already asks for. The composer sits beside its row rather than over it, so
-  the item never leaves the screen.
+  the item never leaves the screen. **The row's height is the contract**: the panel is out of the
+  row's flow, so the row reserves the measured height and the register's second column reserves the
+  width. A composer wider than one panel, or open on two rows at once, is outside what that
+  arrangement holds.
 - **Red is spent on action and alarm, not on structure.** An earlier version made red the
   line-work. At five separators plus a spine it stopped meaning anything; ink carries structure and
   red is reserved for what a person must do or attend to.
@@ -371,4 +379,4 @@ the page a person actually reads. Three-character indents on successive paragrap
 - An unavailable destination reports its reason rather than failing silently or appearing routable.
 - The queue's empty state is a designed surface, not a sentence.
 - No component in `apps/ui` names a colour; every colour comes from a token role defined in
-  `layout.css`, and switching the palette requires no change to a component.
+  `styles/tokens.css`, and switching the palette requires no change to a component.

@@ -26,6 +26,7 @@
 <Register>
   <OrderSelector
     order={$feed.order}
+    reading={$feed.loading}
     onchoose={(order: Order) => void client.loadFeed(order)}
   />
 

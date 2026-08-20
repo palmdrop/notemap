@@ -91,14 +91,18 @@
 
   <Tags {item} />
 
-  {#if opened}
+  <!-- The key the queue is ordered by: without it, an item revised last night
+       sits at the newest end for no visible reason. So it is read on the
+       collapsed row, and only its absence waits for the row to open. -->
+  {#if item.contentUpdatedAt !== undefined}
     <Label name="edited" />
-    <Value empty={item.contentUpdatedAt === undefined}>
-      {item.contentUpdatedAt === undefined
-        ? "not since capture"
-        : briefly(item.contentUpdatedAt)}
-    </Value>
+    <Value>{briefly(item.contentUpdatedAt)}</Value>
+  {:else if opened}
+    <Label name="edited" />
+    <Value empty>not since capture</Value>
+  {/if}
 
+  {#if opened}
     <Label name="routing" />
     <Value empty={routing === ""}>{routing === "" ? "none yet" : routing}</Value
     >

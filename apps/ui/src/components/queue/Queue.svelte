@@ -3,6 +3,7 @@
   import type { Order } from "@notemap/client";
 
   import CaptureRow from "$components/capture/CaptureRow.svelte";
+  import Drained from "$components/queue/Drained.svelte";
   import QueueRow from "$components/queue/QueueRow.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import OrderSelector from "$components/primitives/controls/OrderSelector.svelte";
@@ -12,7 +13,6 @@
   import Register from "$components/primitives/register/Register.svelte";
   import Row from "$components/primitives/register/Row.svelte";
   import Separator from "$components/primitives/register/Separator.svelte";
-  import Prose from "$components/primitives/text/Prose.svelte";
   import { client } from "$lib/client";
   import { composing } from "$lib/composing.svelte";
   import { reachable } from "$lib/reachable.svelte";
@@ -67,7 +67,11 @@
 
   <Separator />
 
-  <OrderSelector order={$queue.order} onchoose={turn} />
+  <OrderSelector
+    order={$queue.order}
+    reading={$queue.loading}
+    onchoose={turn}
+  />
 
   {#if $queue.failure !== undefined}
     <Row>
@@ -80,14 +84,7 @@
   {/if}
 
   {#if drained}
-    <Row>
-      <Label name="queue" />
-      <Content>
-        <Prose
-          text="Empty — everything captured has been processed or has left the pool."
-        />
-      </Content>
-    </Row>
+    <Drained />
   {/if}
 
   {#each $queue.items as item, at (item.id)}

@@ -20,15 +20,19 @@
   } = $props();
 </script>
 
+{#snippet written()}
+  <time datetime={at} class="block whitespace-nowrap max-narrow:inline">
+    {dayOf(at)}
+  </time>
+  <span class="block whitespace-nowrap max-narrow:ml-[1ch] max-narrow:inline">
+    {timeOf(at)}
+  </span>
+{/snippet}
+
 <!-- On one column the stamp is a header line across the whole row. -->
 <div class="col-start-1 font-mono max-narrow:col-span-full">
   {#if onopen === undefined}
-    <time datetime={at} class="block whitespace-nowrap max-narrow:inline">
-      {dayOf(at)}
-    </time>
-    <span class="block whitespace-nowrap max-narrow:ml-[1ch] max-narrow:inline">
-      {timeOf(at)}
-    </span>
+    {@render written()}
   {:else}
     <button
       type="button"
@@ -36,14 +40,7 @@
       aria-expanded={opened === true}
       class="text-left hover:text-accent"
     >
-      <time datetime={at} class="block whitespace-nowrap max-narrow:inline">
-        {dayOf(at)}
-      </time>
-      <span
-        class="block whitespace-nowrap max-narrow:ml-[1ch] max-narrow:inline"
-      >
-        {timeOf(at)}
-      </span>
+      {@render written()}
     </button>
   {/if}
   {@render children?.()}

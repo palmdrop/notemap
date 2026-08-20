@@ -73,7 +73,9 @@
   <Row>
     <Label name="daemon" />
     <Value>
-      <span role="status" class="text-accent">
+      <!-- The chrome already says the pool is out of reach; this names the
+           exception, and an ordinary condition is not painted as an alarm. -->
+      <span role="status" class="text-ink-muted">
         destinations can be read but not changed
       </span>
     </Value>
@@ -82,7 +84,7 @@
 
 {#if said !== ""}
   <Row>
-    <Label name="refused" />
+    <Label name="failed" />
     <Value>
       <span role="status" class="text-accent">{said}</span>
     </Value>

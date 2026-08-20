@@ -18,11 +18,26 @@
   let bad = $state(false);
   let picker: HTMLInputElement;
 
-  /** The stamp is the one the capture will keep, so it cannot go stale on the page. */
+  /**
+   * The row shows a minute and the capture is stamped when it is sent, so the
+   * clock turns over on the minute boundary rather than on an interval that
+   * straddles one — otherwise the row reads 14:07 and the item lands at 14:08.
+   */
   let at = $state(new Date().toISOString());
   onMount(() => {
-    const tick = setInterval(() => (at = new Date().toISOString()), 20_000);
-    return () => clearInterval(tick);
+    let tick: ReturnType<typeof setTimeout>;
+
+    const onward = () => {
+      const now = new Date();
+      at = now.toISOString();
+      tick = setTimeout(
+        onward,
+        60_000 - (now.getSeconds() * 1000 + now.getMilliseconds()),
+      );
+    };
+
+    onward();
+    return () => clearTimeout(tick);
   });
 
   function pick(event: Event) {
