@@ -1,41 +1,65 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import type { Order } from "@notemap/client";
 
-  import Item from "$components/item/Item.svelte";
+  import FeedRow from "$components/feed/FeedRow.svelte";
+  import Action from "$components/primitives/controls/Action.svelte";
+  import OrderSelector from "$components/primitives/controls/OrderSelector.svelte";
+  import Content from "$components/primitives/register/Content.svelte";
+  import Foot from "$components/primitives/register/Foot.svelte";
+  import Label from "$components/primitives/register/Label.svelte";
+  import Register from "$components/primitives/register/Register.svelte";
+  import Row from "$components/primitives/register/Row.svelte";
+  import Separator from "$components/primitives/register/Separator.svelte";
+  import Prose from "$components/primitives/text/Prose.svelte";
   import { client } from "$lib/client";
 
   const feed = client.feed;
 
+  const bare = $derived(
+    !$feed.loading && $feed.failure === undefined && $feed.items.length === 0,
+  );
+
   onMount(() => void client.loadFeed());
 </script>
 
-{#if $feed.failure !== undefined}
-  <p class="mt-4 text-sm text-red-700 dark:text-red-300" role="status">
-    {$feed.failure}
-  </p>
-{/if}
+<Register>
+  <OrderSelector
+    order={$feed.order}
+    reading={$feed.loading}
+    onchoose={(order: Order) => void client.loadFeed(order)}
+  />
 
-{#if $feed.items.length > 0}
-  <ol
-    class="mt-8 grid list-none gap-px overflow-hidden rounded-lg border border-neutral-200 bg-neutral-200 p-0 dark:border-neutral-800 dark:bg-neutral-800"
-  >
-    {#each $feed.items as item (item.id)}
-      <Item {item} />
-    {/each}
-  </ol>
-{:else if !$feed.loading && $feed.failure === undefined}
-  <p class="mt-8 text-sm text-neutral-500 dark:text-neutral-400">
-    Nothing captured yet.
-  </p>
-{/if}
+  {#if $feed.failure !== undefined}
+    <Row>
+      <Label name="feed" />
+      <Content>
+        <span role="status" class="font-mono text-accent">{$feed.failure}</span>
+      </Content>
+    </Row>
+  {/if}
 
-{#if $feed.more}
-  <button
-    type="button"
-    disabled={$feed.loading}
-    onclick={() => void client.loadFeed()}
-    class="mt-4 rounded-lg border border-neutral-300 px-4 py-1.5 disabled:opacity-50 dark:border-neutral-700"
-  >
-    {$feed.loading ? "Loading…" : "Load more"}
-  </button>
-{/if}
+  {#if bare}
+    <Row>
+      <Label name="feed" />
+      <Content>
+        <Prose text="Nothing captured yet." />
+      </Content>
+    </Row>
+  {/if}
+
+  {#each $feed.items as item, at (item.id)}
+    {#if at > 0}
+      <Separator />
+    {/if}
+    <FeedRow {item} />
+  {/each}
+
+  {#if $feed.more}
+    <Foot>
+      <Action disabled={$feed.loading} onclick={() => void client.loadFeed()}>
+        {$feed.loading ? "loading…" : "load more"}
+      </Action>
+    </Foot>
+  {/if}
+</Register>

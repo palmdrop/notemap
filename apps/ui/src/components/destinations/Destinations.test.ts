@@ -89,8 +89,8 @@ test("asks one destination what it can do, on request", async () => {
   });
 
   render(Destinations);
-  await screen.findByRole("button", { name: "Check" });
-  await fireEvent.click(screen.getByRole("button", { name: "Check" }));
+  await screen.findByRole("button", { name: "check" });
+  await fireEvent.click(screen.getByRole("button", { name: "check" }));
 
   await screen.findByText("create-file");
   expect(asked()).toContain(`GET /v1/destinations/${VAULT}/description`);
@@ -106,7 +106,7 @@ test("shows one the daemon cannot make sense of as unusable, and keeps it listed
   });
 
   render(Destinations);
-  await fireEvent.click(await screen.findByRole("button", { name: "Check" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "check" }));
 
   await screen.findByText(/unusable: nothing here speaks the kanban kind/);
   expect(screen.getByText("Vault", { exact: false })).toBeDefined();
@@ -117,7 +117,7 @@ test("adds one from the kind's own schema", async () => {
 
   render(Destinations);
   await fireEvent.click(
-    await screen.findByRole("button", { name: "Add a destination" }),
+    await screen.findByRole("button", { name: "add a destination" }),
   );
 
   // The fields are the kind's, not this component's.
@@ -127,7 +127,7 @@ test("adds one from the kind's own schema", async () => {
   await fireEvent.input(screen.getByLabelText("root"), {
     target: { value: "~/second-brain" },
   });
-  await fireEvent.click(screen.getByRole("button", { name: "Add" }));
+  await fireEvent.click(screen.getByRole("button", { name: "add" }));
 
   await screen.findByText("Second brain", { exact: false });
 
@@ -139,12 +139,12 @@ test("retires one, and offers it again", async () => {
   serving([aDestination()]);
 
   render(Destinations);
-  await fireEvent.click(await screen.findByRole("button", { name: "Retire" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "retire" }));
 
-  const again = await screen.findByRole("button", { name: "Offer again" });
+  const again = await screen.findByRole("button", { name: "offer again" });
   await fireEvent.click(again);
 
-  await screen.findByRole("button", { name: "Retire" });
+  await screen.findByRole("button", { name: "retire" });
   expect(asked()).toContain(`POST /v1/destinations/${VAULT}/retire`);
   expect(asked()).toContain(`POST /v1/destinations/${VAULT}/unretire`);
 });
@@ -157,7 +157,7 @@ test("shows the refusal where the pool will not delete one", async () => {
   });
 
   render(Destinations);
-  await fireEvent.click(await screen.findByRole("button", { name: "Delete" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "delete" }));
 
   await screen.findByText(/retire it instead/);
   expect(screen.getByText("Vault", { exact: false })).toBeDefined();
@@ -170,9 +170,9 @@ test("deletes one nothing has ever named", async () => {
   });
 
   render(Destinations);
-  await fireEvent.click(await screen.findByRole("button", { name: "Delete" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "delete" }));
 
-  await screen.findByText("No destinations yet.");
+  await screen.findByText("none yet");
 });
 
 /** Editing is online-only, and the interface makes that visible rather than queuing it. */
@@ -187,11 +187,11 @@ test("reads while the pool is unreachable, and disables every change", async () 
     (screen.getByRole("button", { name }) as HTMLButtonElement).disabled;
 
   await vi.waitFor(() => {
-    expect(disabled("Edit")).toBe(true);
+    expect(disabled("edit")).toBe(true);
   });
-  expect(disabled("Retire")).toBe(true);
-  expect(disabled("Delete")).toBe(true);
-  expect(disabled("Add a destination")).toBe(true);
+  expect(disabled("retire")).toBe(true);
+  expect(disabled("delete")).toBe(true);
+  expect(disabled("add a destination")).toBe(true);
   expect(
     screen.getByText(/destinations can be read but not changed/),
   ).toBeDefined();
@@ -209,7 +209,7 @@ test("asks again for the kinds once the daemon is reachable", async () => {
     expect(
       (
         screen.getByRole("button", {
-          name: "Add a destination",
+          name: "add a destination",
         }) as HTMLButtonElement
       ).disabled,
     ).toBe(true);
@@ -222,7 +222,7 @@ test("asks again for the kinds once the daemon is reachable", async () => {
     expect(
       (
         screen.getByRole("button", {
-          name: "Add a destination",
+          name: "add a destination",
         }) as HTMLButtonElement
       ).disabled,
     ).toBe(false);

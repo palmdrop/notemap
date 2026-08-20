@@ -1,8 +1,20 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
+  import type { Order } from "@notemap/client";
 
-  import QueueItem from "$components/queue/QueueItem.svelte";
+  import CaptureRow from "$components/capture/CaptureRow.svelte";
+  import Drained from "$components/queue/Drained.svelte";
+  import QueueRow from "$components/queue/QueueRow.svelte";
+  import Action from "$components/primitives/controls/Action.svelte";
+  import OrderSelector from "$components/primitives/controls/OrderSelector.svelte";
+  import Content from "$components/primitives/register/Content.svelte";
+  import Foot from "$components/primitives/register/Foot.svelte";
+  import Label from "$components/primitives/register/Label.svelte";
+  import Register from "$components/primitives/register/Register.svelte";
+  import Row from "$components/primitives/register/Row.svelte";
+  import Separator from "$components/primitives/register/Separator.svelte";
   import { client } from "$lib/client";
+  import { composing } from "$lib/composing.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { readMark, writeMark } from "$lib/scroll-mark";
 
@@ -10,6 +22,15 @@
 
   const queue = client.queue;
   const pool = reachable();
+
+  /** Processing happens in the row, and one row is open at a time. */
+  let opened = $state<string | undefined>(undefined);
+
+  const drained = $derived(
+    !$queue.loading &&
+      $queue.failure === undefined &&
+      $queue.items.length === 0,
+  );
 
   onMount(() => {
     void (async () => {
@@ -22,37 +43,67 @@
     // only where to put the view back on reload.
     const remember = () => writeMark(SURFACE, window.scrollY);
     window.addEventListener("scroll", remember, { passive: true });
-    return () => window.removeEventListener("scroll", remember);
+    return () => {
+      window.removeEventListener("scroll", remember);
+      composing.end();
+    };
   });
+
+  /** Collapsing or leaving a row abandons whatever was being composed on it. */
+  function show(id: string) {
+    composing.end();
+    opened = opened === id ? undefined : id;
+  }
+
+  function turn(order: Order) {
+    composing.end();
+    opened = undefined;
+    void client.loadQueue(order);
+  }
 </script>
 
-{#if $queue.failure !== undefined}
-  <p class="mt-4 text-sm text-red-700 dark:text-red-300" role="status">
-    {$queue.failure}
-  </p>
-{/if}
+<Register aside={composing.open}>
+  <CaptureRow />
 
-{#if $queue.items.length > 0}
-  <ol
-    class="mt-6 grid list-none gap-px overflow-hidden rounded-lg border border-neutral-200 bg-neutral-200 p-0 dark:border-neutral-800 dark:bg-neutral-800"
-  >
-    {#each $queue.items as item (item.id)}
-      <QueueItem {item} offline={!pool.yes} />
-    {/each}
-  </ol>
-{:else if !$queue.loading && $queue.failure === undefined}
-  <p class="mt-6 text-sm text-neutral-500 dark:text-neutral-400">
-    Nothing to process.
-  </p>
-{/if}
+  <Separator />
 
-{#if $queue.more}
-  <button
-    type="button"
-    disabled={$queue.loading}
-    onclick={() => void client.loadQueue()}
-    class="mt-4 rounded-lg border border-neutral-300 px-4 py-1.5 disabled:opacity-50 dark:border-neutral-700"
-  >
-    {$queue.loading ? "Loading…" : "Load more"}
-  </button>
-{/if}
+  <OrderSelector
+    order={$queue.order}
+    reading={$queue.loading}
+    onchoose={turn}
+  />
+
+  {#if $queue.failure !== undefined}
+    <Row>
+      <Label name="queue" />
+      <Content>
+        <span role="status" class="font-mono text-accent">{$queue.failure}</span
+        >
+      </Content>
+    </Row>
+  {/if}
+
+  {#if drained}
+    <Drained />
+  {/if}
+
+  {#each $queue.items as item, at (item.id)}
+    {#if at > 0}
+      <Separator />
+    {/if}
+    <QueueRow
+      {item}
+      opened={opened === item.id}
+      offline={!pool.yes}
+      onopen={() => show(item.id)}
+    />
+  {/each}
+
+  {#if $queue.more}
+    <Foot>
+      <Action disabled={$queue.loading} onclick={() => void client.loadQueue()}>
+        {$queue.loading ? "loading…" : "load more"}
+      </Action>
+    </Foot>
+  {/if}
+</Register>

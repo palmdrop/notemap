@@ -1,7 +1,5 @@
 <script lang="ts">
-  import FeedList from "$components/feed/Feed.svelte";
-  import Outbox from "$components/outbox/Outbox.svelte";
+  import Feed from "$components/feed/Feed.svelte";
 </script>
 
-<Outbox />
-<FeedList />
+<Feed />

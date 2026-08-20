@@ -1,7 +1,9 @@
 import type { Destination, DestinationId, Item, ItemId } from "../api/types";
 import type { PendingOperation } from "../outbox/operations";
+import type { Order } from "../types";
 
 export type ListPage = {
+  readonly order: Order;
   readonly ids: readonly ItemId[];
   /** The position the next read continues from; absent once exhausted. */
   readonly after?: string;
@@ -19,13 +21,15 @@ export type ClientState = {
   readonly destinations: readonly Destination[];
 };
 
-const EMPTY_PAGE: ListPage = { ids: [], exhausted: false, loading: false };
+export function emptyPage(order: Order): ListPage {
+  return { order, ids: [], exhausted: false, loading: false };
+}
 
 export function emptyState(): ClientState {
   return {
     items: new Map(),
-    feed: EMPTY_PAGE,
-    queue: EMPTY_PAGE,
+    feed: emptyPage("newest-first"),
+    queue: emptyPage("oldest-first"),
     outbox: [],
     destinations: [],
   };
@@ -67,6 +71,11 @@ export function queueRank(item: Item): string {
   return `${contentTime(item)}|${item.id}`;
 }
 
+/** Whether one rank sorts later than another in the order a page is being read. */
+function behind(order: Order, one: string, other: string): boolean {
+  return order === "oldest-first" ? one > other : one < other;
+}
+
 /**
  * Whether an item falls inside what a page has actually read. The pool's
  * position is `<at>,<id>` — the last row it handed over — so it answers this
@@ -81,7 +90,8 @@ function loaded(page: ListPage, item: Item): boolean {
   const id = comma === -1 ? undefined : page.after.slice(comma + 1);
 
   const time = contentTime(item);
-  return time === at ? id === undefined || item.id <= id : time < at;
+  if (time === at) return id === undefined || !behind(page.order, item.id, id);
+  return behind(page.order, at, time);
 }
 
 /**
@@ -102,7 +112,7 @@ export function intoQueue(
 
   const at = page.ids.findIndex((held) => {
     const item = items.get(held);
-    return item !== undefined && queueRank(item) > rank;
+    return item !== undefined && behind(page.order, queueRank(item), rank);
   });
 
   return at === -1
