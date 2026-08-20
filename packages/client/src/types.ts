@@ -10,6 +10,7 @@ import type {
   Payload,
   RouteRequest,
   RoutingRecord,
+  TagUse,
   UpdateDestinationRequest,
 } from "./api/types";
 import type { Observable } from "rxjs";
@@ -71,6 +72,17 @@ export interface DestinationsApi {
 }
 
 /**
+ * What a person is offered while they type, never a gate on what may be
+ * written: classification is an outbox operation and tagging works offline.
+ */
+export interface TagsApi {
+  /** Most used first, as the pool last counted it. Empty until `load` has run. */
+  readonly inUse: Observable<readonly TagUse[]>;
+  /** Fills the set `inUse` answers from, and answers the same list. */
+  load(): Promise<readonly TagUse[]>;
+}
+
+/**
  * Routing reaches the pool directly and is never an outbox operation: a
  * decision to deliver cannot be replayed from a client that was offline when it
  * was made. A shell disables these rather than queuing them.
@@ -128,6 +140,7 @@ export interface Client {
 
   readonly routing: RoutingApi;
   readonly destinations: DestinationsApi;
+  readonly tags: TagsApi;
 
   /** Called on every mutation, and again to retry what is still pending. */
   drain(): Promise<void>;

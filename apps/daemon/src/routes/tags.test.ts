@@ -136,3 +136,39 @@ describe("classification over the wire", () => {
     });
   });
 });
+
+describe("the tags in use", () => {
+  it("answers an empty list for a pool that has classified nothing", async () => {
+    const app = serving();
+    await captureMany(app, 1);
+
+    const response = await app.request("/v1/tags");
+
+    expect(response.status).toBe(200);
+    expect(await body(response)).toEqual({ values: [] });
+  });
+
+  it("answers every tag with its count, most used first", async () => {
+    const app = serving();
+    const [first, second] = await captureMany(app, 2);
+    await send(app, `/v1/items/${first}/tag`, { tag: "kind/quote" });
+    await send(app, `/v1/items/${first}/tag`, { tag: "project/fiction-a" });
+    await send(app, `/v1/items/${second}/tag`, { tag: "kind/quote" });
+
+    expect(await body(await app.request("/v1/tags"))).toEqual({
+      values: [
+        { name: "kind/quote", items: 2 },
+        { name: "project/fiction-a", items: 1 },
+      ],
+    });
+  });
+
+  it("drops a tag the last item carrying it lost", async () => {
+    const app = serving();
+    const [first] = await captureMany(app, 1);
+    await send(app, `/v1/items/${first}/tag`, { tag: "kind/quote" });
+    await send(app, `/v1/items/${first}/untag`, { tag: "kind/quote" });
+
+    expect(await body(await app.request("/v1/tags"))).toEqual({ values: [] });
+  });
+});

@@ -3,13 +3,20 @@
 
   let {
     names,
+    offered = [],
     onadd,
     onremove,
   }: {
     names: readonly string[];
+    /** What the pool already carries, most used first. Completion, never a limit. */
+    offered?: readonly string[];
     onadd: (name: string) => void;
     onremove: (name: string) => void;
   } = $props();
+
+  const list = $props.id();
+
+  const completions = $derived(offered.filter((name) => !names.includes(name)));
 
   let adding = $state(false);
   let draft = $state("");
@@ -38,8 +45,14 @@
         autofocus
         onblur={add}
         aria-label="Add a tag"
+        {list}
         class="w-24 border-b border-ink bg-transparent font-mono"
       />
+      <datalist id={list}>
+        {#each completions as name (name)}
+          <option value={name}></option>
+        {/each}
+      </datalist>
     </form>
   {:else}
     <button

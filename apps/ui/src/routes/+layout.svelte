@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { page } from "$app/state";
 
   import Refusals from "$components/outbox/Refusals.svelte";
@@ -8,6 +9,7 @@
   import Nav from "$components/primitives/frame/Nav.svelte";
   import Reachability from "$components/primitives/frame/Reachability.svelte";
   import Sheet from "$components/primitives/frame/Sheet.svelte";
+  import { client } from "$lib/client";
   import { composing } from "$lib/composing.svelte";
   import { reachable } from "$lib/reachable.svelte";
 
@@ -21,6 +23,13 @@
     { href: "/", label: "queue" },
     { href: "/feed", label: "feed" },
   ];
+
+  // Swallowed because an unreachable pool is what the reachability mark is for:
+  // a row then says "a destination" and completion offers less.
+  onMount(() => {
+    void client.destinations.load().catch(() => undefined);
+    void client.tags.load().catch(() => undefined);
+  });
 </script>
 
 <Sheet>

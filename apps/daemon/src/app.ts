@@ -42,6 +42,7 @@ import {
   routeItemRoute,
   routingRecordsRoute,
   tagRoute,
+  tagsInUseRoute,
   unarchiveRoute,
   unretireDestinationRoute,
   untagRoute,
@@ -59,7 +60,7 @@ import {
 import { feedHandler } from "./routes/feed";
 import { itemHandler } from "./routes/items";
 import { itemViewHandler } from "./routes/queue";
-import { tagHandler } from "./routes/tags";
+import { tagHandler, tagsInUseHandler } from "./routes/tags";
 import {
   cancelDeliveryHandler,
   markProcessedHandler,
@@ -83,6 +84,7 @@ export function createApp(pool: Pool, limits: UploadLimits): Hono {
   app.post(honoPath(unarchiveRoute.path), unarchiveHandler(pool));
   app.post(honoPath(tagRoute.path), tagHandler(pool, "tag"));
   app.post(honoPath(untagRoute.path), tagHandler(pool, "untag"));
+  app.get(honoPath(tagsInUseRoute.path), tagsInUseHandler(pool));
   app.post(honoPath(editRoute.path), editHandler(pool));
   app.post(honoPath(markProcessedRoute.path), markProcessedHandler(pool));
   app.get(honoPath(routingRecordsRoute.path), routingRecordsHandler(pool));

@@ -37,6 +37,7 @@ import type {
   SourceId,
   Tag,
   TagName,
+  TagUse,
   Timestamp,
   WorkQueue,
   WorkWithdrawal,
@@ -53,6 +54,7 @@ import {
   toItem,
   toMillis,
   toRoutingRecord,
+  toRoutingSummary,
   toTimestamp,
 } from "./mapping";
 import { abandonedWork, jobQueue } from "./jobs";
@@ -63,10 +65,12 @@ import type {
   ChainColumns,
   DestinationRow,
   ItemAssetRow,
+  ItemRoutingRow,
   ItemRow,
   ItemTagRow,
   PoolMetaRow,
   RoutingRecordRow,
+  TagUseRow,
 } from "./rows";
 import { placeholders, statements, type Bindable } from "./statements";
 import { writeLock, type Fence } from "./write-lock";
@@ -407,6 +411,20 @@ export function createSqlitePoolStore(
       ORDER BY stored_at, id
       LIMIT ?
     `);
+    /**
+     * A superseded item is not counted: tags carry over to a revision, so a
+     * chain would otherwise count its one tag once per link.
+     */
+    const tagsInUse = source.query<TagUseRow, []>(`
+      SELECT tag.name AS name, COUNT(*) AS items
+      FROM item_tags AS tag
+      JOIN items AS item ON item.id = tag.item_id
+      WHERE NOT EXISTS (
+        SELECT 1 FROM items AS revision WHERE revision.revision_of = item.id
+      )
+      GROUP BY tag.name
+      ORDER BY items DESC, name ASC
+    `);
     const routingFor = source.query<RoutingRecordRow, [string]>(
       `SELECT ${ROUTING_COLUMNS} FROM routing_records
        WHERE item_id = ? ORDER BY at, id`,
@@ -448,6 +466,12 @@ export function createSqlitePoolStore(
           `SELECT id, revision_of FROM items WHERE revision_of IN (${slots})`,
         )
         .all(...ids);
+      const routingRows = source
+        .query<ItemRoutingRow, Bindable[]>(
+          `SELECT item_id, target_kind, destination, state FROM routing_records
+           WHERE item_id IN (${slots}) ORDER BY at, id`,
+        )
+        .all(...ids);
 
       const group = <T extends { item_id: string }>(all: readonly T[]) => {
         const byItem = new Map<string, T[]>();
@@ -461,6 +485,7 @@ export function createSqlitePoolStore(
 
       const tags = group(tagRows);
       const assets = group(assetRows);
+      const routing = group(routingRows);
       const supersededBy = new Map(
         revisionRows.map((row) => [row.revision_of, row.id]),
       );
@@ -471,6 +496,7 @@ export function createSqlitePoolStore(
           tags.get(row.id) ?? [],
           assets.get(row.id) ?? [],
           supersededBy.get(row.id),
+          toRoutingSummary(routing.get(row.id) ?? []),
         ),
       );
     }
@@ -541,6 +567,12 @@ export function createSqlitePoolStore(
 
       // No table yet, so empty is what an item genuinely has.
       artifacts: async (): Promise<readonly Artifact[]> => [],
+
+      tagsInUse: async (): Promise<readonly TagUse[]> =>
+        tagsInUse.all().map((row) => ({
+          name: row.name as TagName,
+          items: row.items,
+        })),
 
       routingRecords: async (item: ItemId): Promise<readonly RoutingRecord[]> =>
         routingFor.all(item).map(toRoutingRecord),
@@ -693,6 +725,7 @@ export function createSqlitePoolStore(
 
       item: guard(uncommitted.item),
       artifacts: guard(uncommitted.artifacts),
+      tagsInUse: guard(uncommitted.tagsInUse),
       routingRecords: guard(uncommitted.routingRecords),
       routingRecord: guard(uncommitted.routingRecord),
       destinations: guard(uncommitted.destinations),

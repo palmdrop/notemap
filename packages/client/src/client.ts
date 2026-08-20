@@ -15,10 +15,11 @@ import {
   cached,
   emptyState,
   processed,
-  returned,
   settledDestination,
+  withdrawn,
   type ClientState,
 } from "./state/state";
+import { createTags } from "./tags/tags";
 import { loadMore, type Surface } from "./surfaces/reads";
 import type { Client, ClientConfig, ListState } from "./types";
 
@@ -59,17 +60,56 @@ export function createClient(config: ClientConfig): Client {
 
   persistItems(state, store);
 
+  const tags = createTags({
+    api,
+    inUse: derived(state.changes, (current) => current.tags),
+    cached: (held) => state.update((current) => ({ ...current, tags: held })),
+  });
+
+  let classified = false;
+
   const outbox = createOutbox({
     state,
     store,
-    send: (operation) => sendOperation(api, operation),
+    send: async (operation) => {
+      const settlement = await sendOperation(api, operation);
+      classified ||= operation.kind === "tag" || operation.kind === "untag";
+      return settlement;
+    },
     now,
     mint: uuidv7,
   });
 
+  /**
+   * Classification that reached the pool changes what is in use, and the pool
+   * answering it is proof of reach — so the set is read again, once per drain
+   * rather than once per operation: a backlog of eight tags is one question.
+   * Failing that read leaves the last answer standing, which is what an
+   * unreachable pool leaves anyway.
+   */
+  async function sweep(): Promise<void> {
+    await outbox.drain();
+    if (!classified) return;
+
+    classified = false;
+    await tags.load().catch(() => undefined);
+  }
+
+  /**
+   * Queued rather than concurrent, so awaiting a drain means every mutation
+   * made before it has been attempted — including the drain a mutation starts
+   * on its own and nobody holds.
+   */
+  let draining = Promise.resolve();
+
+  function drain(): Promise<void> {
+    draining = draining.then(sweep, sweep);
+    return draining;
+  }
+
   async function mutate(operation: Parameters<typeof outbox.enqueue>[0]) {
     await outbox.enqueue(operation);
-    void outbox.drain();
+    void drain();
   }
 
   return {
@@ -166,8 +206,10 @@ export function createClient(config: ClientConfig): Client {
 
     routing: createRouting({
       api,
-      processed: (item) => state.update((current) => processed(current, item)),
-      returned: (item) => state.update((current) => returned(current, item)),
+      processed: (item, record) =>
+        state.update((current) => processed(current, item, record)),
+      withdrawn: (item, records) =>
+        state.update((current) => withdrawn(current, item, records)),
     }),
 
     destinations: createDestinations({
@@ -179,7 +221,9 @@ export function createClient(config: ClientConfig): Client {
         state.update((current) => settledDestination(current, id, held)),
     }),
 
-    drain: () => outbox.drain(),
+    tags,
+
+    drain,
     dismiss: (operation) => outbox.dismiss(operation),
   };
 }

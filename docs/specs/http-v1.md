@@ -144,6 +144,9 @@ a delivery that has not happened yet — and `POST /v1/routing/{record}/cancel`
 Settled (2026-08-17): `POST /v1/items/{id}/tag` and `/untag`, and `POST /v1/items/{id}/edit`,
 whose answer says whether the edit became an amendment or a revision.
 
+Settled (2026-08-20): `GET /v1/tags`, and `routing` on the `Item` — a summary of where an item has
+been, carried by every read that answers items.
+
 Still stub, and unwritten below: suggestions and their decisions, artifacts and corrections, purge
 and tombstones, range requests over asset content, the wire form of sync delta reads, and
 authentication. Nothing here forecloses them; they get the same treatment when their slice is
@@ -256,6 +259,25 @@ passive source that is re-read rather than replayed omits `id` and supplies its 
 
 In the subset because the app needs to read back what it just wrote, and because `Location` on a
 `201` that resolves to nothing is a lie.
+
+**An `Item` carries `routing` wherever one is answered** — the item route, the feed, the queue, the
+archive, a capture outcome, an edit outcome:
+
+```json
+{ "routing": { "records": 2, "pending": 1,
+               "to": [ { "kind": "destination", "destination": "0198f0c2-..." },
+                       { "kind": "user" } ] } }
+```
+
+- **Absent where the item has been nowhere**, like `archived` and `supersededBy`, rather than
+  present and zeroed.
+- `to` is **distinct and in the order the records were made**, and names a destination by id: a
+  client resolves the name from `GET /v1/destinations`, which it already reads, and a record's
+  capability, target and pointer are not here.
+- **`pending` is what has not landed**, on the same terms as a record's `state`. It is the whole of
+  what a row can say about arrival; `GET /v1/items/{id}/routing` is what says which record.
+- A summary saying nothing and one saying `records: 0` are the same claim, so only the first is
+  spelled — a cancelled last reservation takes the field away again.
 
 ### The feed
 
@@ -405,6 +427,33 @@ Both answer `200 OK` with the `Item` as it now stands.
 - The body is required and strict: no `tag` is `400 malformed-envelope`, and so is a key the route
   does not know. The route does not police the tag itself: core trims it, and one that trims to
   nothing is `422 tag-invalid` carrying what was sent.
+
+### The tags in use
+
+`GET /v1/tags` — every tag the pool carries, so a client can complete one instead of asking a
+person to remember it.
+
+```json
+{ "values": [ { "name": "kind/quote", "items": 12 } ] }
+```
+
+- **Most used first, then by name**, which is the order a completion list wants and saves every
+  client sorting the same way.
+- **Not paginated and not narrowed.** There is no `prefix` parameter: the set is small, a client
+  holds the whole of it, and filtering it as somebody types is then instant and works once the pool
+  goes out of reach. A `prefix` would be the opposite trade — a request per keystroke, and nothing
+  to complete from offline.
+- **Nothing holds the set small**, and the route does not pretend otherwise: a pool with tens of
+  thousands of distinct tags answers all of them on every read. Adding `prefix` later narrows this
+  shape rather than replacing it, and a client that holds the whole set is the one that would then
+  need changing — which is the trade being taken while a pool is one person's.
+- **The tag and its count are the whole of a row.** When it was last added is in the pool and is
+  not answered: nothing reads it, and a wire field no client consumes is one the next reader has to
+  work out the meaning of.
+- `items` counts the items carrying the tag, **not counting a superseded one**: tags carry over to
+  a revision, so a chain would otherwise count its one tag once per link.
+- This route offers; it never limits. A tag no item carries is simply absent, and
+  `POST /v1/items/{id}/tag` takes any tag that trims to something whether it is here or not.
 
 ### Editing an item
 
@@ -1082,6 +1131,11 @@ by nothing in `/v1`, and removable without changing a promise this spec makes.
   refusal.
 - Tagging or untagging an item a revision supersedes is `409 item-superseded` carrying that
   revision's id.
+- `GET /v1/tags` answers every tag with the number of items carrying it, most used first, and drops
+  one the last item carrying it lost.
+- An item read from `GET /v1/feed` after being routed and marked processed carries
+  `routing: { records: 2, pending: … }` naming both places; one that has been nowhere carries no
+  `routing` at all, and neither does one whose only reservation was cancelled.
 - `POST /v1/items/{id}/edit` on the newest unprocessed item answers `{ "kind": "amended" }` and the
   item keeps its id; the same call once a later capture exists answers `{ "kind": "revised" }`, and
   the queue holds the revision where the original was.

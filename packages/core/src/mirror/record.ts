@@ -23,11 +23,9 @@ export function projectMirrorRecord(
   artifacts: readonly Artifact[],
   routing: readonly RoutingRecord[],
 ): ItemMirrorRecord {
-  const { modifiedAt, supersededBy, ...record } = item;
-
   return {
     kind: "item",
-    item: canonicalItem(record),
+    item: canonicalItem(item),
     assets: [...assets].sort(byKey((asset) => asset.id)),
     artifacts: [...artifacts]
       .map(canonicalArtifact)
@@ -37,7 +35,7 @@ export function projectMirrorRecord(
       .filter((entry) => entry.state === "delivered")
       .map(canonicalRouting)
       .sort(byKey((entry) => entry.id)),
-    modifiedAt: instant(modifiedAt),
+    modifiedAt: instant(item.modifiedAt),
   };
 }
 
@@ -60,21 +58,29 @@ export function projectDestinationRecord(
   };
 }
 
-function canonicalItem(record: ItemRecord): ItemRecord {
+/**
+ * Field by field, and never a spread of what it was handed: an `Item` satisfies
+ * `ItemRecord` structurally, so a spread carries whatever the store derived and
+ * a rebuild restores it as though the pool had stated it.
+ */
+function canonicalItem(item: Item): ItemRecord {
   return {
-    ...record,
-    payload: canonicalPayload(record.payload),
-    tags: [...record.tags].map(canonicalTag).sort(byKey((tag) => tag.name)),
-    createdAt: instant(record.createdAt),
-    ...(record.contentUpdatedAt === undefined
+    id: item.id,
+    source: item.source,
+    sourceItemId: item.sourceItemId,
+    payload: canonicalPayload(item.payload),
+    tags: [...item.tags].map(canonicalTag).sort(byKey((tag) => tag.name)),
+    createdAt: instant(item.createdAt),
+    ...(item.contentUpdatedAt === undefined
       ? {}
-      : { contentUpdatedAt: instant(record.contentUpdatedAt) }),
-    ...(record.archived === undefined
+      : { contentUpdatedAt: instant(item.contentUpdatedAt) }),
+    ...(item.revisionOf === undefined ? {} : { revisionOf: item.revisionOf }),
+    ...(item.archived === undefined
       ? {}
       : {
           archived: {
-            ...record.archived,
-            archivedAt: instant(record.archived.archivedAt),
+            ...item.archived,
+            archivedAt: instant(item.archived.archivedAt),
           },
         }),
   };

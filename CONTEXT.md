@@ -127,6 +127,13 @@ structure: `project/fiction-a`, `kind/quote`. There is no separate item type and
 — both are tags.
 _Avoid_: label, category, keyword, folder
 
+**Tags in use**:
+Every tag the pool carries, each with the number of items carrying it. A reading of what
+classification has produced, never a vocabulary: it is what a person is offered while they type,
+and a tag no item carries simply is not in it. Superseded items are not counted, their tags having
+carried over to the revision that replaced them.
+_Avoid_: tag list, taxonomy, vocabulary, autocomplete
+
 **Payload type**:
 What a capture mechanically *is* — text, voice, link, annotation, table. Determined by what
 arrived, never a judgement. Adapters declare which payload types each of their capabilities
@@ -261,6 +268,13 @@ record. So a record that is not pending means bytes reached somewhere. Where a d
 reshaped the item on its way out, the record may also name **what was delivered**, so the pool can
 answer what it sent and not only where.
 _Avoid_: routing status, delivery flag
+
+**Routing summary**:
+What an item says about its own routing without being asked for its records: how many there are,
+how many are still pending, and the distinct places they name. Derived from the records, carried by
+every read that answers items, and absent where there are none — so a surface reading a page can
+say an item was routed and where, and reads the records themselves only when someone opens one.
+_Avoid_: routing status, routing state, processed flag
 
 **Archive**:
 To hide an item from the queue without deleting it. Presented in the UI as delete when the user

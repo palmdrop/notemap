@@ -154,7 +154,10 @@ A client presents four surfaces, each a thin projection of core:
 - **An order** — which end of a surface a reader starts from. A default per surface and a
   parameter of a read, never a stored preference.
 - **An item** — its payload, tags, enrichment state, suggestions and routing records, and the
-  actions that process it.
+  actions that process it. Every item a surface holds also carries a **routing summary**
+  ([core.md](core.md#routing)) — how many records, how many pending, where they went — so a row
+  says what became of an item without a request of its own; the records themselves are read when
+  a person opens one.
 
 ### The queue
 
@@ -237,6 +240,32 @@ A recorded decision takes the item out of the queue, and **withdrawing one puts 
 item holds no other**: processed is derived from holding no routing record ([core.md](core.md#the-queue)),
 never stored, so a client that assumed a cancel always returns an item would show work that the pool
 still considers done. The client asks rather than assumes.
+
+**A decision is folded into the held item's routing summary as well.** The pool answers the record
+it wrote, so the cached copy is brought up to what a re-read would say at that moment — one more
+record, one more pending where the delivery has not landed, the place it names added if it is new.
+Without it the item stays in the feed drawn as though it had been nowhere until something happened
+to re-read it, which is exactly the row a person just acted on.
+
+**Arrival is not observed.** A record that answered pending and lands later leaves the pool's
+summary at `pending: 0` and the client's saying otherwise, until some surface reads that item again.
+The client neither polls nor is told: delivery is the host's work and nothing on the wire announces
+it. So a row can say a delivery is outstanding after it has arrived, and no row ever claims an
+arrival that did not happen — which is the direction to be wrong in.
+
+**The tags in use are a read cache, on the destinations' terms.** A client holds what
+`GET /v1/tags` last answered and completes from it, so completion costs nothing per keystroke and
+survives the pool going out of reach **within a session**. It is not an outbox operation and it is
+not a vocabulary: classification drains offline as it always did, and a tag nobody has used yet is
+written by typing it. The list is read again once classification reaches the pool — a tag or an
+untag, since either changes what is in use — **once per drain rather than once per operation**, so a
+backlog of eight tags asks one question. The pool having just answered is what says it is reachable.
+
+**Neither cache outlives the session yet.** The `ClientStore` holds items and the outbox; the tags
+and the destinations live in memory, and nothing reads any of it back on start
+([the ports](#the-ports--the-seam-for-offline)). So a client opened cold against an unreachable pool
+completes from nothing and names no destination — the same gap as the unread outbox, and closed by
+the same work.
 
 **Draining and reconciliation.** An operation is applied optimistically, then confirmed against the
 pool's answer:
@@ -451,6 +480,13 @@ that logic out of the one place it is meant to live.
   and the interface says why rather than queuing them.
 - A tag added on one device and the same tag removed on another resolve to whichever the person did
   later by their own clock, not to whichever synced last.
+- A tag field completes from what the pool carries, offers a tag used a moment earlier without a
+  reload, goes on completing from the last list it read once the pool becomes unreachable, and still
+  accepts a tag that is on no list at all. A client opened cold with no pool completes from nothing,
+  which is the unread store rather than this.
+- Eight tags drained together read the tags in use once.
+- An item routed from a surface says where it went on that surface's own row, without a further
+  read.
 - A typed note, a voice memo and a shared link captured from one shell carry three different
   sources.
 - The shared client builds and runs with no UI framework imported, and a shell observes its state

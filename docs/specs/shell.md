@@ -14,9 +14,14 @@
   the schema asks for. The feed says what became of a row and keeps tags editable on every one of
   them. A refusal has the bottom-left corner to itself; work merely waiting for the daemon is left
   to the one mark in the bar. Settings enters at the bar's right end and holds the exits to the
-  daemon's own pages. **Not shipped**: `routed` and the `sent` line, which need routing state on
-  `Item`; the folder tree, which nothing can enumerate; CommonMark, the renderer being unchosen;
-  and a visible mark for pending work. ([plan](../plans/shell-design-port.md))
+  daemon's own pages. **Not shipped**: the folder tree, which nothing can enumerate; CommonMark,
+  the renderer being unchosen; and a visible mark for pending work.
+  ([plan](../plans/shell-design-port.md))
+- 2026-08-20 — **A row says where it went, and a tag field completes.** `Item` carries a routing
+  summary ([core.md](core.md#routing)), so the feed draws `routed` and a `routing` line naming the
+  destinations and what is still pending, without a read per row; the records themselves are still
+  what an opened row reads, and it no longer asks for them where the summary says there are none.
+  The tag chooser completes from `GET /v1/tags` and still takes a name that is on no list.
 
 ---
 
@@ -122,8 +127,11 @@ time.**
 
 **In the feed, a row says what became of it.** The feed is the pool read completely, so routed and
 archived items are in it. The state is an inverted word in the left column, under the time —
-`routed`, `archived` — and a routed row carries a `sent` line naming the destination, the
-capability and when. Tags stay editable on every row in the feed, including an archived one, which
+`routed`, `archived` — and a routed row carries a `routing` line naming the places it went and
+what has not landed yet, which is what the item's routing summary holds
+([core.md](core.md#routing)). The capability and the time belong to a record, so they are the
+opened row's, not the feed's: naming them per row would be a read per row. Tags stay editable on
+every row in the feed, including an archived one, which
 also offers `unarchive`. A finished row's prose is muted, so live captures stand out while
 scrolling.
 
@@ -166,7 +174,11 @@ Tagging is a **chooser over known names with free entry**, not a bare text field
 collapsed row, because it replays from the outbox and is therefore the one processing gesture that
 survives an unreachable pool.
 
-Where the known tag names come from is open (below). The control is designed as though they exist.
+The known names are the **tags in use**, read from `GET /v1/tags` when the shell starts and again
+whenever classification drains ([client.md](client.md#the-outbox)), and filtered locally as the
+person types. They are an offer and never a limit: a name that is on no list is written by typing
+it, and the chooser stays useful once the pool goes out of reach, which is the whole reason tagging
+sits on the collapsed row.
 
 Describing a destination is I/O that can hang on an unmounted drive, so **only the chosen one is
 ever described** — which is why the composer's capabilities are a second step and not a flattened
@@ -337,10 +349,10 @@ the page a person actually reads. Three-character indents on successive paragrap
 
 ## Open questions
 
-- [ ] 2026-08-19 — **Where known tag names come from.** There is no `/v1/tags`, so the tag chooser
-      has no source of truth. Either a route that reads the tags in use — a change to
-      [http-v1.md](http-v1.md) — or a derivation from the client's cache, which is right only for
-      items that happen to be loaded. Until one lands, the chooser offers nothing to choose.
+- [x] 2026-08-19 — **Where known tag names come from.** Answered 2026-08-20: `GET /v1/tags` reads
+      the tags in use ([http-v1.md](http-v1.md#the-tags-in-use)), the client holds the whole set,
+      and the chooser filters it as the person types. The derivation from the client's cache was
+      the rejected half: it is right only for the items that happen to be loaded.
 - [ ] 2026-08-19 — **Which markdown library, and whether captured markdown is sanitised before
       rendering.** A library choice is the developer's. `@tailwindcss/typography` is already a
       dependency and unused.
@@ -376,6 +388,10 @@ the page a person actually reads. Three-character indents on successive paragrap
 - Routing a queued item is reachable in two choices from the opened row when the capability needs
   no target fields.
 - Choosing a destination describes that destination and no other.
+- A feed row that has been routed says so and names where it went, and drawing a page of them costs
+  one read; opening a queue row that has been nowhere costs none.
+- The tag field offers what the pool already carries, offers a tag used a moment ago without a
+  reload, and still accepts one that is on no list.
 - An unavailable destination reports its reason rather than failing silently or appearing routable.
 - The queue's empty state is a designed surface, not a sentence.
 - No component in `apps/ui` names a colour; every colour comes from a token role defined in

@@ -89,6 +89,18 @@ test("opens one row at a time, in place", async () => {
   expect(screen.getAllByRole("button", { name: "archive" })).toHaveLength(1);
 });
 
+/** The queue holds unrouted items, so opening one has nothing to ask about. */
+test("opens a row without asking where an item has never been", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+  await open(0);
+
+  expect(await screen.findByText("none yet")).toBeDefined();
+  expect(asked()).not.toContain("GET /v1/items/one/routing");
+});
+
 test("draws the way to add to the queue even when the queue is empty", async () => {
   pool(queued());
 

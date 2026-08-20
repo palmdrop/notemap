@@ -209,6 +209,9 @@
           },
           "supersededBy": {
             "type": "string"
+          },
+          "routing": {
+            "$ref": "#/components/schemas/RoutingSummary"
           }
         },
         "required": [
@@ -219,6 +222,63 @@
           "tags",
           "createdAt",
           "modifiedAt"
+        ]
+      },
+      "RoutingSummary": {
+        "type": "object",
+        "properties": {
+          "records": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pending": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "to": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "destination"
+                      ]
+                    },
+                    "destination": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "destination"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "user"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "required": [
+          "records",
+          "pending",
+          "to"
         ]
       },
       "CaptureEnvelope": {
@@ -352,6 +412,36 @@
           "tag"
         ],
         "additionalProperties": false
+      },
+      "TagsInUse": {
+        "type": "object",
+        "properties": {
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TagUse"
+            }
+          }
+        },
+        "required": [
+          "values"
+        ]
+      },
+      "TagUse": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "items": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          }
+        },
+        "required": [
+          "name",
+          "items"
+        ]
       },
       "EditOutcome": {
         "anyOf": [
@@ -2133,6 +2223,24 @@
                   "required": [
                     "error"
                   ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tags": {
+      "get": {
+        "summary": "Read the tags the pool carries",
+        "description": "Every tag in use, most used first, so a client completing one holds the whole set and filters it itself. Not paginated and not narrowed. A superseded item is not counted: its tags carried over to the revision that replaced it.",
+        "responses": {
+          "200": {
+            "description": "Every tag the pool carries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagsInUse"
                 }
               }
             }

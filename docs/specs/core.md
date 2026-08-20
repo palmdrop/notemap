@@ -289,6 +289,14 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   fact about the pool, and core does not get to assume that only a person ever untags merely
   because only a person does today.
 - Classifying an item does not remove it from the queue.
+- **The pool answers which tags are in use** (added 2026-08-20), each with the number of items
+  carrying it, most used first and then by name. Not paginated and not narrowed by a
+  prefix: the set is small, and a caller completing a tag holds the whole of it and filters that
+  itself, which is what keeps completion working while the pool is out of reach. **A superseded
+  item is not counted**, because tags carry over to a revision and a chain would otherwise count
+  its one tag once per link. An archived item is counted, being still in the pool. This is a
+  reading of what classification has already produced, never a vocabulary: a tag no item carries
+  does not exist, and nothing here constrains what may be written.
 - **A superseded item is refused, both halves** (decided 2026-08-17), carrying the id of the
   revision. Classification goes to the end of the chain as editing does: a revision does not
   inherit a tag that arrives after it was made, so a tag on the item it superseded is attached
@@ -512,6 +520,14 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   a record of the destination, the time, and a best-effort pointer to where it landed.
 - A pointer may become stale. It records where an item once went, not a guarantee of where it
   is.
+- **An item carries a summary of where it has been** (added 2026-08-20): how many records it
+  holds, how many of those are still pending, and the distinct places they name — a destination
+  by id, or the user. Present only where a record exists, and **derived rather than stored**,
+  which is the treatment `supersededBy` already gets and for the same reason: the routing log is
+  authoritative and a second copy is one that can one day disagree. It is on the item because a
+  surface reads a page of them and cannot ask per row — without it a feed can say an item was
+  archived and cannot say it was routed. The records themselves are still read one item at a
+  time: a capability, a target and a pointer are an item's detail, not a row's.
 - **A destination declares its capabilities** (decided 2026-08-04). Each capability names one
   thing that destination can do, the payload types it accepts for it, and a schema for what a
   delivery must target. A delivery names a capability and supplies a target; core refuses one
@@ -1047,6 +1063,11 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 - An item that has been routed no longer appears in the queue and still appears in the feed,
   with a record of where it went.
 - An item routed to two destinations carries two routing records.
+- An item read from the feed says how many records it holds, how many are pending, and where they
+  went; one that has been nowhere says nothing at all, and one whose last reservation was
+  cancelled says nothing again.
+- The tags in use name every tag the pool carries, counting an archived item and not a superseded
+  one, and drop a tag the last item carrying it lost.
 - Routing to a reachable destination answers a delivered record with a pointer, and enqueues no
   job.
 - Routing to an unreachable destination answers a pending record, leaves the item out of the queue,

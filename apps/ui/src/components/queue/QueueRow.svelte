@@ -4,6 +4,7 @@
   import Edit from "$components/item/Edit.svelte";
   import RoutingComposer from "$components/routing/RoutingComposer.svelte";
   import Payload from "$components/item/Payload.svelte";
+  import Routing from "$components/item/Routing.svelte";
   import Tags from "$components/item/Tags.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import ActionRow from "$components/primitives/controls/ActionRow.svelte";
@@ -36,10 +37,10 @@
   let said = $state("");
   let records = $state<readonly RoutingRecord[]>([]);
 
-  // Only ever for the one row that is open, so this is a request per triage
-  // rather than one per row on the surface.
+  // Only ever for the one row that is open, and only where the item's summary
+  // says there is something to read: a request per triage at the very most.
   $effect(() => {
-    if (!opened || offline) return;
+    if (!opened || offline || item.routing === undefined) return;
 
     void (async () => {
       try {
@@ -103,9 +104,12 @@
   {/if}
 
   {#if opened}
-    <Label name="routing" />
-    <Value empty={routing === ""}>{routing === "" ? "none yet" : routing}</Value
-    >
+    {#if records.length === 0}
+      <Routing summary={item.routing} />
+    {:else}
+      <Label name="routing" />
+      <Value>{routing}</Value>
+    {/if}
 
     <Label />
     <ActionRow>

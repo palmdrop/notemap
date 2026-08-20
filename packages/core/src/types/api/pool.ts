@@ -25,7 +25,7 @@ import type {
   SyncCursor,
   TagName,
 } from "../domain/ids";
-import type { EditOutcome, Item } from "../domain/item";
+import type { EditOutcome, Item, TagUse } from "../domain/item";
 import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
 import type { Payload } from "../domain/payload";
 import type { AbandonedPosition } from "../domain/position";
@@ -83,6 +83,11 @@ export interface ViewsApi {
   /** Oldest first unless asked otherwise, which is the only way it differs from the feed. */
   queue(page: PageRequest): Promise<Slice<Item>>;
   archived(page: PageRequest): Promise<Slice<Item>>;
+}
+
+export interface TagsApi {
+  /** Whole and unnarrowed: a caller completing a tag holds the set and filters it. */
+  inUse(): Promise<readonly TagUse[]>;
 }
 
 export interface SuggestionsApi {
@@ -235,6 +240,7 @@ export interface Pool {
 
   readonly items: ItemsApi;
   readonly views: ViewsApi;
+  readonly tags: TagsApi;
   readonly suggestions: SuggestionsApi;
   readonly enrichment: EnrichmentApi;
   readonly destinations: DestinationsApi;

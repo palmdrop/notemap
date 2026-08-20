@@ -53,6 +53,23 @@ test("a tag is added by name, trimmed, and an empty one is not added at all", as
   expect(added).toHaveBeenCalledTimes(1);
 });
 
+test("the field completes from what is in use, minus what the item carries", async () => {
+  render(TagSet, {
+    names: ["kind/quote"],
+    offered: ["kind/quote", "project/fiction-a"],
+    onadd: vi.fn(),
+    onremove: vi.fn(),
+  });
+
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+
+  const field = screen.getByLabelText("Add a tag") as HTMLInputElement;
+  const list = document.getElementById(field.getAttribute("list") ?? "");
+  expect(
+    [...(list?.children ?? [])].map((one) => one.getAttribute("value")),
+  ).toEqual(["project/fiction-a"]);
+});
+
 test("a tag is removed by name", async () => {
   const removed = vi.fn();
   render(TagSet, {

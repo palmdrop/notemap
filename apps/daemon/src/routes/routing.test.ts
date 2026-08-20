@@ -145,6 +145,76 @@ describe("GET /v1/items/:id/routing", () => {
   });
 });
 
+describe("an item's routing summary, on every row it appears in", () => {
+  type Summary = {
+    records: number;
+    pending: number;
+    to: { kind: string; destination?: string }[];
+  };
+  type Row = { id: string; routing?: Summary };
+
+  async function feedRows(host: Pick<Daemon, "app">): Promise<Row[]> {
+    return (
+      (await body(await host.app.request("/v1/feed"))) as { values: Row[] }
+    ).values;
+  }
+
+  it("is absent on an item that has been nowhere", async () => {
+    const host = serving();
+    await captureMany(host.app, 1);
+
+    expect((await feedRows(host))[0]?.routing).toBeUndefined();
+  });
+
+  it("says how many records there are, how many are pending, and where they went", async () => {
+    const host = await vaulted("missing");
+    const item = await only(host);
+    await route(host, item);
+    await send(host.app, `/v1/items/${item}/mark-processed`, {});
+
+    expect((await feedRows(host))[0]?.routing).toEqual({
+      records: 2,
+      pending: 1,
+      to: [
+        { kind: "destination", destination: host.vault.id },
+        { kind: "user" },
+      ],
+    });
+  });
+
+  /** The queue excludes a routed item, so the surface that shows one is the feed's. */
+  it("is on the item route and the archive as well as the feed", async () => {
+    const host = serving();
+    const item = await only(host);
+    await send(host.app, `/v1/items/${item}/mark-processed`, {});
+    await send(host.app, `/v1/items/${item}/archive`, {});
+
+    const one = (await body(
+      await host.app.request(`/v1/items/${item}`),
+    )) as Row;
+    const archived = (await body(await host.app.request("/v1/archived"))) as {
+      values: Row[];
+    };
+
+    expect(one.routing).toEqual({
+      records: 1,
+      pending: 0,
+      to: [{ kind: "user" }],
+    });
+    expect(archived.values[0]?.routing?.records).toBe(1);
+  });
+
+  it("goes away again when the one reservation is cancelled", async () => {
+    const host = await vaulted("missing");
+    const item = await only(host);
+    const record = (await body(await route(host, item))) as Record_;
+
+    await send(host.app, `/v1/routing/${record.id}/cancel`);
+
+    expect((await feedRows(host))[0]?.routing).toBeUndefined();
+  });
+});
+
 describe("POST /v1/items/{id}/route", () => {
   it("delivers to a folder that is there, and names the file it landed at", async () => {
     const host = await vaulted("ready");
