@@ -10,6 +10,37 @@ function stubScrolling(): void {
   Object.defineProperty(window, "scrollY", { configurable: true, value: 0 });
 }
 
+/**
+ * Node ships a `localStorage` of its own that is inert without a command-line
+ * flag, and it shadows the one jsdom would have given. Stubbed at module scope
+ * because a module that reads it as it loads runs before any `beforeEach`.
+ */
+function stubStorage(): void {
+  const held = new Map<string, string>();
+
+  const storage: Storage = {
+    get length() {
+      return held.size;
+    },
+    key: (at) => [...held.keys()][at] ?? null,
+    getItem: (key) => held.get(key) ?? null,
+    setItem: (key, value) => void held.set(key, String(value)),
+    removeItem: (key) => void held.delete(key),
+    clear: () => held.clear(),
+  };
+
+  Object.defineProperty(globalThis, "localStorage", {
+    configurable: true,
+    value: storage,
+  });
+  Object.defineProperty(window, "localStorage", {
+    configurable: true,
+    value: storage,
+  });
+}
+
+stubStorage();
+
 /** Nothing is ever laid out here, so nothing ever resizes either. */
 function stubResizing(): void {
   window.ResizeObserver = class {
@@ -58,6 +89,8 @@ beforeEach(() => {
   stubResizing();
   online(true);
   sessionStorage.clear();
+  localStorage.clear();
+  delete document.documentElement.dataset["theme"];
 });
 
 afterEach(() => {

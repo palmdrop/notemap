@@ -217,6 +217,13 @@ pass.
 This is what makes the port mechanical: a block of `@theme` in `layout.css`, and components that
 stop carrying forty inline `dark:` variants.
 
+**Which palette is on is the reader's**, and one small control in the **bottom-right corner** cycles
+`auto`, `light`, `dark`. `auto` is the browser's own answer and the default, because it is the only
+one that can be right before a person has said anything. The choice is remembered and applied
+**before first paint**, or the page shows one palette and corrects itself in front of the reader.
+It is the only chrome outside the bar: the bar carries facts about the shell, and this is a
+preference. The right corner because the left one belongs to a refusal.
+
 ### Visual direction
 
 *Settled 2026-08-19, in the design session, against the references in

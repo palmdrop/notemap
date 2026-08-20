@@ -59,6 +59,15 @@
     color-scheme: light dark;
   }
 
+  /* A person's own answer, where they have given one. */
+  :root[data-theme="light"] {
+    color-scheme: light;
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+  }
+
   body {
     background: var(--color-paper);
     color: var(--color-ink);

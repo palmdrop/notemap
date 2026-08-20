@@ -2,6 +2,7 @@
   import { page } from "$app/state";
 
   import Refusals from "$components/outbox/Refusals.svelte";
+  import ThemeToggle from "$components/theme/ThemeToggle.svelte";
   import Bar from "$components/primitives/frame/Bar.svelte";
   import Column from "$components/primitives/frame/Column.svelte";
   import Nav from "$components/primitives/frame/Nav.svelte";
@@ -37,3 +38,4 @@
 </Sheet>
 
 <Refusals />
+<ThemeToggle />

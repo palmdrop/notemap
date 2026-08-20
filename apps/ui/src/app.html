@@ -4,6 +4,15 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="text-scale" content="scale" />
+    <script>
+      // Before first paint, or the page shows the browser's answer and then
+      // corrects itself in front of the reader.
+      {
+        const held = localStorage.getItem("notemap:theme");
+        if (held === "light" || held === "dark")
+          document.documentElement.dataset.theme = held;
+      }
+    </script>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">
