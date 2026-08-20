@@ -436,15 +436,11 @@
           "items": {
             "type": "integer",
             "exclusiveMinimum": 0
-          },
-          "lastUsedAt": {
-            "type": "string"
           }
         },
         "required": [
           "name",
-          "items",
-          "lastUsedAt"
+          "items"
         ]
       },
       "EditOutcome": {

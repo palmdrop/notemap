@@ -91,7 +91,6 @@ function parseJson(value: string): JsonObject {
   return JSON.parse(value) as JsonObject;
 }
 
-/** Ordered by the records themselves, so `to` reads as the item's history does. */
 export function toRoutingSummary(
   rows: readonly ItemRoutingRow[],
 ): RoutingSummary | undefined {

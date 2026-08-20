@@ -106,11 +106,9 @@ export type ItemRoutingRow = {
   readonly state: "pending" | "delivered";
 };
 
-/** One tag as the pool carries it, counted across the items that are not superseded. */
 export type TagUseRow = {
   readonly name: string;
   readonly items: number;
-  readonly last_used_at: number;
 };
 
 export type ActionRow = AgentColumns & {

@@ -27,7 +27,7 @@ export type ClientState = {
   readonly feed: ListPage;
   readonly queue: ListPage;
   readonly outbox: readonly PendingOperation[];
-  /** Held for display in the order the pool answered: a settings screen reads while offline. */
+  /** In the order the pool answered, for a screen to read once it is out of reach. */
   readonly destinations: readonly Destination[];
   /** What completion offers, most used first, as the pool last counted it. */
   readonly tags: readonly TagUse[];
@@ -214,9 +214,10 @@ function withRouting(
 
 /**
  * The pool has recorded a routing decision, so the item is out of the queue —
- * core derives processed as holding no routing record. It stays in the cache
- * and in the feed, which read everything, so the record is folded into what the
- * held copy says about where it has been rather than costing a second read.
+ * core derives processed as holding no routing record. Folded into the held
+ * copy rather than read back, which leaves one thing unobserved: a record that
+ * answered pending and landed later still reads as pending until some surface
+ * reads the item again.
  */
 export function processed(
   state: ClientState,

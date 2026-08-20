@@ -5,8 +5,8 @@ import type { Agent } from "../types/domain/agent";
 import type { Asset, AssetRef } from "../types/domain/asset";
 import type { Destination } from "../types/domain/destination";
 import type { Artifact } from "../types/domain/enrichment";
-import type { Timestamp } from "../types/domain/ids";
-import type { Item } from "../types/domain/item";
+import type { DestinationId, Timestamp } from "../types/domain/ids";
+import type { Item, RoutingSummary } from "../types/domain/item";
 import type { RoutingRecord } from "../types/domain/routing";
 
 /**
@@ -85,6 +85,35 @@ export const asset = (): fc.Arbitrary<Asset> =>
     bytes: fc.nat(),
   });
 
+/** Drawn as the pool derives it: one `to` per record, and `pending` among them. */
+const routingSummary = (): fc.Arbitrary<RoutingSummary> =>
+  fc
+    .array(
+      fc.oneof(
+        fc.record({
+          kind: fc.constant("destination" as const),
+          destination: branded<DestinationId>(),
+        }),
+        fc.record({ kind: fc.constant("user" as const) }),
+      ),
+      { minLength: 1, maxLength: 3 },
+    )
+    .chain((went) =>
+      fc.nat({ max: went.length }).map((pending) => ({
+        records: went.length,
+        pending,
+        to: went.filter(
+          (one, at) =>
+            went.findIndex((other) =>
+              one.kind === "destination"
+                ? other.kind === "destination" &&
+                  other.destination === one.destination
+                : other.kind === "user",
+            ) === at,
+        ),
+      })),
+    );
+
 export const item = (): fc.Arbitrary<Item> =>
   fc.record(
     {
@@ -110,20 +139,7 @@ export const item = (): fc.Arbitrary<Item> =>
       ),
       modifiedAt: stamp(),
       supersededBy: branded(),
-      routing: fc.record({
-        records: fc.integer({ min: 1, max: 3 }),
-        pending: fc.nat({ max: 3 }),
-        to: fc.array(
-          fc.oneof(
-            fc.record({
-              kind: fc.constant("destination" as const),
-              destination: branded<never>(),
-            }),
-            fc.record({ kind: fc.constant("user" as const) }),
-          ),
-          { maxLength: 2 },
-        ),
-      }),
+      routing: routingSummary(),
     },
     {
       requiredKeys: [

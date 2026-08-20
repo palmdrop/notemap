@@ -10,7 +10,6 @@ export const tagUseSchema = z
     name: z.string(),
     /** Items carrying it. A superseded one is not among them. */
     items: z.number().int().positive(),
-    lastUsedAt: z.string(),
   })
   .openapi("TagUse");
 

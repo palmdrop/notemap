@@ -204,7 +204,7 @@ describe("an item's routing summary, on every row it appears in", () => {
     expect(archived.values[0]?.routing?.records).toBe(1);
   });
 
-  it("goes again when the one reservation is cancelled", async () => {
+  it("goes away again when the one reservation is cancelled", async () => {
     const host = await vaulted("missing");
     const item = await only(host);
     const record = (await body(await route(host, item))) as Record_;

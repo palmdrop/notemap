@@ -3,7 +3,7 @@ import { expect, test, vi } from "vitest";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
-import { asked, pool } from "../../testing/pool";
+import { asked, client, pool } from "../../testing/pool";
 import Feed from "./Feed.svelte";
 
 vi.mock("$lib/client", () => import("../../testing/pool"));
@@ -62,8 +62,61 @@ test("keeps tags editable on a finished row", async () => {
   });
 });
 
+/**
+ * The set is the pool's, not the row's, so a tag added on one row has to reach
+ * the field on every other one — which is the whole reason it is read again
+ * once classification drains.
+ */
+test("offers a tag added on one row in the field on another", async () => {
+  let tagged = false;
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/feed") {
+      return json(200, { values: [anItem("one"), anItem("two")] });
+    }
+    if (route === "GET /v1/tags") {
+      return json(200, {
+        values: tagged ? [{ name: "reading", items: 1 }] : [],
+      });
+    }
+    if (route === "POST /v1/items/one/tag") {
+      tagged = true;
+      return json(200, anItem("one"));
+    }
+    return json(200, { values: [] });
+  });
+
+  await client.tags.load();
+  render(Feed);
+  await screen.findByText("one");
+
+  await fireEvent.click(
+    screen.getAllByRole("button", { name: "Add a tag" })[0]!,
+  );
+  const field = screen.getByRole("combobox", { name: "Add a tag" });
+  await fireEvent.input(field, { target: { value: "reading" } });
+  await fireEvent.submit(field.closest("form") as HTMLFormElement);
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/tag");
+  });
+
+  await fireEvent.click(
+    screen.getAllByRole("button", { name: "Add a tag" })[1]!,
+  );
+
+  await vi.waitFor(() => {
+    const opened = screen.getByRole("combobox", {
+      name: "Add a tag",
+    }) as HTMLInputElement;
+    const list = document.getElementById(opened.getAttribute("list") ?? "");
+    expect(
+      [...(list?.children ?? [])].map((one) => one.getAttribute("value")),
+    ).toEqual(["reading"]);
+  });
+});
+
 test("says where a routed row went, without asking for its records", async () => {
-  const app = await import("../../testing/pool");
   pool((request) => {
     if (routeOf(request) === "GET /v1/feed") {
       return json(200, {
@@ -98,7 +151,7 @@ test("says where a routed row went, without asking for its records", async () =>
   });
 
   // The layout reads the destinations once, and every surface names them from it.
-  await app.client.destinations.load();
+  await client.destinations.load();
   render(Feed);
 
   expect(await screen.findByText("routed")).toBeDefined();
@@ -108,7 +161,7 @@ test("says where a routed row went, without asking for its records", async () =>
   expect(asked()).not.toContain("GET /v1/items/sent/routing");
 });
 
-test("names a destination it has not read by its id", async () => {
+test("says a destination it has not read is one, rather than saying its id", async () => {
   pool(
     held(
       anItem("sent", {
@@ -123,7 +176,7 @@ test("names a destination it has not read by its id", async () => {
 
   render(Feed);
 
-  expect(await screen.findByText("vault-1")).toBeDefined();
+  expect(await screen.findByText("a destination")).toBeDefined();
 });
 
 test("marks a revision as one without opening it", async () => {

@@ -35,7 +35,6 @@ const tag = z.object({
 const routingSummary = z
   .object({
     records: z.number().int().nonnegative(),
-    /** Deliveries that have not landed. Never more than `records`. */
     pending: z.number().int().nonnegative(),
     to: z.array(
       z.union([

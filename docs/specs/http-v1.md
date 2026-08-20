@@ -434,16 +434,22 @@ Both answer `200 OK` with the `Item` as it now stands.
 person to remember it.
 
 ```json
-{ "values": [ { "name": "kind/quote", "items": 12,
-                "lastUsedAt": "2026-08-08T09:00:00.123Z" } ] }
+{ "values": [ { "name": "kind/quote", "items": 12 } ] }
 ```
 
 - **Most used first, then by name**, which is the order a completion list wants and saves every
   client sorting the same way.
 - **Not paginated and not narrowed.** There is no `prefix` parameter: the set is small, a client
-  holds the whole of it, and filtering it as somebody types is then instant and works with the pool
-  out of reach. A `prefix` would be the opposite trade — a request per keystroke, and nothing to
-  complete from offline.
+  holds the whole of it, and filtering it as somebody types is then instant and works once the pool
+  goes out of reach. A `prefix` would be the opposite trade — a request per keystroke, and nothing
+  to complete from offline.
+- **Nothing holds the set small**, and the route does not pretend otherwise: a pool with tens of
+  thousands of distinct tags answers all of them on every read. Adding `prefix` later narrows this
+  shape rather than replacing it, and a client that holds the whole set is the one that would then
+  need changing — which is the trade being taken while a pool is one person's.
+- **The tag and its count are the whole of a row.** When it was last added is in the pool and is
+  not answered: nothing reads it, and a wire field no client consumes is one the next reader has to
+  work out the meaning of.
 - `items` counts the items carrying the tag, **not counting a superseded one**: tags carry over to
   a revision, so a chain would otherwise count its one tag once per link.
 - This route offers; it never limits. A tag no item carries is simply absent, and

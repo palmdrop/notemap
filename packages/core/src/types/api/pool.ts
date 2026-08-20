@@ -86,12 +86,7 @@ export interface ViewsApi {
 }
 
 export interface TagsApi {
-  /**
-   * Every tag the pool carries, most used first. Not paginated and not
-   * narrowed: a client completing a tag holds the whole set and filters it
-   * itself, which is what keeps completion working while the pool is out of
-   * reach.
-   */
+  /** Whole and unnarrowed: a caller completing a tag holds the set and filters it. */
   inUse(): Promise<readonly TagUse[]>;
 }
 

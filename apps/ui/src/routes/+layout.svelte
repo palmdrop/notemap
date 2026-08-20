@@ -24,10 +24,8 @@
     { href: "/feed", label: "feed" },
   ];
 
-  // Two pool-wide sets every surface reads from: the destination names a routed
-  // row says, and what a tag field completes from. Failing to read them is the
-  // pool being out of reach, which the reachability mark already says — a row
-  // falls back to the destination's id and completion offers less.
+  // Swallowed because an unreachable pool is what the reachability mark is for:
+  // a row then says "a destination" and completion offers less.
   onMount(() => {
     void client.destinations.load().catch(() => undefined);
     void client.tags.load().catch(() => undefined);

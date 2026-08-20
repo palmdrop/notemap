@@ -155,17 +155,12 @@ describe("the tags in use", () => {
     await send(app, `/v1/items/${first}/tag`, { tag: "project/fiction-a" });
     await send(app, `/v1/items/${second}/tag`, { tag: "kind/quote" });
 
-    const values = (
-      (await body(await app.request("/v1/tags"))) as {
-        values: { name: string; items: number; lastUsedAt: string }[];
-      }
-    ).values;
-
-    expect(values.map((use) => [use.name, use.items])).toEqual([
-      ["kind/quote", 2],
-      ["project/fiction-a", 1],
-    ]);
-    expect(values[0]?.lastUsedAt).toMatch(/^\d{4}-/);
+    expect(await body(await app.request("/v1/tags"))).toEqual({
+      values: [
+        { name: "kind/quote", items: 2 },
+        { name: "project/fiction-a", items: 1 },
+      ],
+    });
   });
 
   it("drops a tag the last item carrying it lost", async () => {

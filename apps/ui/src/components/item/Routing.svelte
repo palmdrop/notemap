@@ -10,9 +10,10 @@
 
   const destinations = client.destinations.all;
 
-  /** A destination read has not arrived, or the pool is out of reach: say the id. */
+  /** An id says nothing a person can read, so an unread destination is unnamed. */
   const nameOf = $derived(
-    (id: string) => $destinations.find((one) => one.id === id)?.name ?? id,
+    (id: string) =>
+      $destinations.find((one) => one.id === id)?.name ?? "a destination",
   );
 </script>
 

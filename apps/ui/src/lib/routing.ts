@@ -10,7 +10,6 @@ export function wentTo(
     : "marked done";
 }
 
-/** The places a row can name without asking for its records, and what has not landed. */
 export function whereItWent(
   summary: RoutingSummary,
   nameOf: (destination: string) => string,

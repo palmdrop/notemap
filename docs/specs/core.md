@@ -290,7 +290,7 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   because only a person does today.
 - Classifying an item does not remove it from the queue.
 - **The pool answers which tags are in use** (added 2026-08-20), each with the number of items
-  carrying it and when it was last added, most used first. Not paginated and not narrowed by a
+  carrying it, most used first and then by name. Not paginated and not narrowed by a
   prefix: the set is small, and a caller completing a tag holds the whole of it and filters that
   itself, which is what keeps completion working while the pool is out of reach. **A superseded
   item is not counted**, because tags carry over to a revision and a chain would otherwise count

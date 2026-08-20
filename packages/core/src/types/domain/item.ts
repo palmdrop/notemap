@@ -23,11 +23,7 @@ export type RoutedTo =
   | { readonly kind: "destination"; readonly destination: DestinationId }
   | { readonly kind: "user" };
 
-/**
- * Where an item went, as much of it as a surface can carry per row. The records
- * themselves are read one item at a time; this says that there are some, that
- * one may not have landed, and where they were aimed.
- */
+/** As much of an item's routing as a surface reading a page of them can carry. */
 export type RoutingSummary = {
   readonly records: number;
   readonly pending: number;
@@ -39,7 +35,6 @@ export type RoutingSummary = {
 export type TagUse = {
   readonly name: TagName;
   readonly items: number;
-  readonly lastUsedAt: Timestamp;
 };
 
 /** What core submits to be written. Excludes every field the store owns or derives. */

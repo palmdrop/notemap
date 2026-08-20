@@ -59,11 +59,9 @@ export function projectDestinationRecord(
 }
 
 /**
- * Field by field, and never a spread of what it was handed: an `Item` is a
- * record plus whatever the store derives, and a derived field the mirror copied
- * would be restored by a rebuild as though the pool had stated it. Named here
- * exactly as the codec's reader names them, so a durable field missing from
- * either list fails the round trip rather than going quietly.
+ * Field by field, and never a spread of what it was handed: an `Item` satisfies
+ * `ItemRecord` structurally, so a spread carries whatever the store derived and
+ * a rebuild restores it as though the pool had stated it.
  */
 function canonicalItem(item: Item): ItemRecord {
   return {

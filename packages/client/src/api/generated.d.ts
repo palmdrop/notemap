@@ -2309,7 +2309,6 @@ export interface components {
         TagUse: {
             name: string;
             items: number;
-            lastUsedAt: string;
         };
         EditOutcome: {
             /** @enum {string} */

@@ -66,23 +66,50 @@ export function createClient(config: ClientConfig): Client {
     cached: (held) => state.update((current) => ({ ...current, tags: held })),
   });
 
+  let classified = false;
+
   const outbox = createOutbox({
     state,
     store,
     send: async (operation) => {
       const settlement = await sendOperation(api, operation);
-      // The pool has just answered, so it is reachable, and a tag the person
-      // has now used is one completion should offer.
-      if (operation.kind === "tag") void tags.load();
+      classified ||= operation.kind === "tag" || operation.kind === "untag";
       return settlement;
     },
     now,
     mint: uuidv7,
   });
 
+  /**
+   * Classification that reached the pool changes what is in use, and the pool
+   * answering it is proof of reach — so the set is read again, once per drain
+   * rather than once per operation: a backlog of eight tags is one question.
+   * Failing that read leaves the last answer standing, which is what an
+   * unreachable pool leaves anyway.
+   */
+  async function sweep(): Promise<void> {
+    await outbox.drain();
+    if (!classified) return;
+
+    classified = false;
+    await tags.load().catch(() => undefined);
+  }
+
+  /**
+   * Queued rather than concurrent, so awaiting a drain means every mutation
+   * made before it has been attempted — including the drain a mutation starts
+   * on its own and nobody holds.
+   */
+  let draining = Promise.resolve();
+
+  function drain(): Promise<void> {
+    draining = draining.then(sweep, sweep);
+    return draining;
+  }
+
   async function mutate(operation: Parameters<typeof outbox.enqueue>[0]) {
     await outbox.enqueue(operation);
-    void outbox.drain();
+    void drain();
   }
 
   return {
@@ -196,7 +223,7 @@ export function createClient(config: ClientConfig): Client {
 
     tags,
 
-    drain: () => outbox.drain(),
+    drain,
     dismiss: (operation) => outbox.dismiss(operation),
   };
 }

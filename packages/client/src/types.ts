@@ -72,9 +72,8 @@ export interface DestinationsApi {
 }
 
 /**
- * Classification is an outbox operation and tagging works offline, so this is
- * only what a person is offered while they type: the pool's own count of what
- * is already in use, never a gate on what may be written.
+ * What a person is offered while they type, never a gate on what may be
+ * written: classification is an outbox operation and tagging works offline.
  */
 export interface TagsApi {
   /** Most used first, as the pool last counted it. Empty until `load` has run. */

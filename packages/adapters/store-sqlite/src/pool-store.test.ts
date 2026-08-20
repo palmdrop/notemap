@@ -1272,7 +1272,7 @@ describe("an item's routing summary", () => {
     });
   });
 
-  it("goes again when a cancelled reservation is removed", async () => {
+  it("goes away again when a cancelled reservation is removed", async () => {
     const record = capture({ id: "item-1" });
     const { pool: p } = await routed(reserved(record));
 
@@ -1340,16 +1340,22 @@ describe("the tags in use", () => {
     );
 
     expect(await p.tagsInUse()).toEqual([
-      {
-        name: "kind/quote",
-        items: 2,
-        lastUsedAt: "2026-08-03T10:00:00.000Z",
-      },
-      {
-        name: "project/a",
-        items: 1,
-        lastUsedAt: "2026-08-03T09:00:00.000Z",
-      },
+      { name: "kind/quote", items: 2 },
+      { name: "project/a", items: 1 },
+    ]);
+  });
+
+  /** Most used first is the order; the name is only what breaks a tie in it. */
+  it("orders two tags of equal weight by name", async () => {
+    const { pool: p } = pool();
+    await appendCapture(
+      p,
+      tagged("item-1", ["project/b", "kind/quote"], "2026-08-03T09:00:00.000Z"),
+    );
+
+    expect((await p.tagsInUse()).map((use) => use.name)).toEqual([
+      "kind/quote",
+      "project/b",
     ]);
   });
 
@@ -1371,13 +1377,7 @@ describe("the tags in use", () => {
       tags: original.tags,
     });
 
-    expect(await p.tagsInUse()).toEqual([
-      {
-        name: "kind/quote",
-        items: 1,
-        lastUsedAt: "2026-08-03T09:00:00.000Z",
-      },
-    ]);
+    expect(await p.tagsInUse()).toEqual([{ name: "kind/quote", items: 1 }]);
   });
 
   it("counts an archived item, which is still in the pool", async () => {

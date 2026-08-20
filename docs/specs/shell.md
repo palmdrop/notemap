@@ -174,10 +174,11 @@ Tagging is a **chooser over known names with free entry**, not a bare text field
 collapsed row, because it replays from the outbox and is therefore the one processing gesture that
 survives an unreachable pool.
 
-The known names are the **tags in use**, read once from `GET /v1/tags` and filtered locally as the
-person types ([client.md](client.md#the-outbox)). They are an offer and never a limit: a name that
-is on no list is written by typing it, and the chooser stays useful with the pool out of reach,
-which is the whole reason tagging sits on the collapsed row.
+The known names are the **tags in use**, read from `GET /v1/tags` when the shell starts and again
+whenever classification drains ([client.md](client.md#the-outbox)), and filtered locally as the
+person types. They are an offer and never a limit: a name that is on no list is written by typing
+it, and the chooser stays useful once the pool goes out of reach, which is the whole reason tagging
+sits on the collapsed row.
 
 Describing a destination is I/O that can hang on an unmounted drive, so **only the chosen one is
 ever described** — which is why the composer's capabilities are a second step and not a flattened

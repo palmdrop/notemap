@@ -416,9 +416,7 @@ export function createSqlitePoolStore(
      * chain would otherwise count its one tag once per link.
      */
     const tagsInUse = source.query<TagUseRow, []>(`
-      SELECT tag.name AS name,
-             COUNT(*) AS items,
-             MAX(tag.added_at) AS last_used_at
+      SELECT tag.name AS name, COUNT(*) AS items
       FROM item_tags AS tag
       JOIN items AS item ON item.id = tag.item_id
       WHERE NOT EXISTS (
@@ -574,7 +572,6 @@ export function createSqlitePoolStore(
         tagsInUse.all().map((row) => ({
           name: row.name as TagName,
           items: row.items,
-          lastUsedAt: toTimestamp(row.last_used_at),
         })),
 
       routingRecords: async (item: ItemId): Promise<readonly RoutingRecord[]> =>
