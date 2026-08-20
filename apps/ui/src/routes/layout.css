@@ -17,7 +17,7 @@
   --color-paper: light-dark(oklch(0.972 0.009 85), oklch(0.185 0.008 60));
   --color-ink: light-dark(oklch(0.24 0.013 55), oklch(0.93 0.006 85));
   --color-ink-muted: light-dark(oklch(0.58 0.011 55), oklch(0.63 0.01 60));
-  --color-accent: light-dark(oklch(0.55 0.215 28), oklch(0.7 0.19 30));
+  --color-accent: light-dark(oklch(0.55 0.215 28), oklch(0.58 0.225 27));
 
   --font-prose: serif;
   --font-mono: monospace;
