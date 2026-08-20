@@ -1,0 +1,18 @@
+/**
+ * Ink fill, paper text: this is the current one, or the chosen one. Bled by its
+ * own padding so the text still sits on the column it belongs to.
+ */
+@utility inverted {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  padding-inline: 0.375rem;
+  margin-inline: -0.375rem;
+}
+
+/**
+ * The room a surface has rather than the room a row has. The drained queue is
+ * the thing the queue exists to reach, so it is not drawn as a notice.
+ */
+@utility cleared {
+  padding-block: 5rem;
+}

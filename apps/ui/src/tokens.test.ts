@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import { expect, test } from "vitest";
@@ -6,7 +6,7 @@ import { expect, test } from "vitest";
 const src = join(process.cwd(), "src");
 
 /** The one file allowed to name a value, because it is where the roles are defined. */
-const DEFINITIONS = "layout.css";
+const DEFINITIONS = join("styles", "tokens.css");
 
 /** Empty, and it stays empty: nothing may be added to it. */
 const UNPORTED: readonly string[] = [];
@@ -37,20 +37,30 @@ const FORBIDDEN: readonly { what: string; found: RegExp }[] = [
 function filesUnder(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const here = join(directory, entry.name);
-    if (entry.isDirectory()) return filesUnder(here);
-    return entry.name === DEFINITIONS ? [] : [here];
+    return entry.isDirectory() ? filesUnder(here) : [here];
   });
 }
 
 const shell = [
   ...filesUnder(join(src, "components")),
   ...filesUnder(join(src, "routes")),
-].map((file) => file.slice(src.length + 1));
+  ...filesUnder(join(src, "styles")),
+]
+  .map((file) => file.slice(src.length + 1))
+  .filter((file) => file !== DEFINITIONS);
 
 const ported = shell.filter((file) => !UNPORTED.includes(file));
 
 test("the shell has files to check at all", () => {
   expect(ported.length).toBeGreaterThan(20);
+});
+
+// The global stylesheets sit outside the component tree, so nothing else would
+// notice if this gate stopped reaching them.
+test("the gate reaches the global styles, and exempts only the roles", () => {
+  expect(ported.filter((file) => file.startsWith("styles"))).not.toEqual([]);
+  expect(ported).not.toContain(DEFINITIONS);
+  expect(existsSync(join(src, DEFINITIONS))).toBe(true);
 });
 
 test("nothing on the unported list has quietly gone away", () => {
