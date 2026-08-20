@@ -54,6 +54,7 @@ describe("GET /v1/openapi.json", () => {
       "/v1/items/{id}/untag",
       "/v1/queue",
       "/v1/routing/{record}/cancel",
+      "/v1/tags",
     ]);
     expect(Object.keys(document.paths["/v1/captures"] ?? {})).toEqual(["post"]);
   });

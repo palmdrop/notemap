@@ -22,8 +22,10 @@ import type {
   JsonObject,
   PayloadTypeName,
   ProviderName,
+  RoutedTo,
   RoutingRecord,
   RoutingRecordId,
+  RoutingSummary,
   RoutingTarget,
   SourceId,
   TagName,
@@ -38,6 +40,7 @@ import type {
   DestinationRow,
   ItemAssetRow,
   ItemRow,
+  ItemRoutingRow,
   ItemTagRow,
   JobRow,
   RoutingRecordRow,
@@ -88,11 +91,35 @@ function parseJson(value: string): JsonObject {
   return JSON.parse(value) as JsonObject;
 }
 
+/** Ordered by the records themselves, so `to` reads as the item's history does. */
+export function toRoutingSummary(
+  rows: readonly ItemRoutingRow[],
+): RoutingSummary | undefined {
+  if (rows.length === 0) return undefined;
+
+  const to = new Map<string, RoutedTo>();
+  for (const row of rows) {
+    const went: RoutedTo =
+      row.target_kind === "destination"
+        ? { kind: "destination", destination: row.destination as DestinationId }
+        : { kind: "user" };
+    const key = went.kind === "user" ? "user" : went.destination;
+    if (!to.has(key)) to.set(key, went);
+  }
+
+  return {
+    records: rows.length,
+    pending: rows.filter((row) => row.state === "pending").length,
+    to: [...to.values()],
+  };
+}
+
 export function toItem(
   row: ItemRow,
   tagRows: readonly ItemTagRow[],
   assetRows: readonly ItemAssetRow[],
   supersededBy: string | undefined,
+  routing: RoutingSummary | undefined,
 ): Item {
   const assets: AssetRef[] = assetRows.map((asset) => ({
     slot: asset.slot,
@@ -135,6 +162,7 @@ export function toItem(
     ...(supersededBy === undefined
       ? {}
       : { supersededBy: supersededBy as ItemId }),
+    ...(routing === undefined ? {} : { routing }),
   };
 }
 

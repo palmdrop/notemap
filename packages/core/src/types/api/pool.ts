@@ -25,7 +25,7 @@ import type {
   SyncCursor,
   TagName,
 } from "../domain/ids";
-import type { EditOutcome, Item } from "../domain/item";
+import type { EditOutcome, Item, TagUse } from "../domain/item";
 import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
 import type { Payload } from "../domain/payload";
 import type { AbandonedPosition } from "../domain/position";
@@ -83,6 +83,16 @@ export interface ViewsApi {
   /** Oldest first unless asked otherwise, which is the only way it differs from the feed. */
   queue(page: PageRequest): Promise<Slice<Item>>;
   archived(page: PageRequest): Promise<Slice<Item>>;
+}
+
+export interface TagsApi {
+  /**
+   * Every tag the pool carries, most used first. Not paginated and not
+   * narrowed: a client completing a tag holds the whole set and filters it
+   * itself, which is what keeps completion working while the pool is out of
+   * reach.
+   */
+  inUse(): Promise<readonly TagUse[]>;
 }
 
 export interface SuggestionsApi {
@@ -235,6 +245,7 @@ export interface Pool {
 
   readonly items: ItemsApi;
   readonly views: ViewsApi;
+  readonly tags: TagsApi;
   readonly suggestions: SuggestionsApi;
   readonly enrichment: EnrichmentApi;
   readonly destinations: DestinationsApi;

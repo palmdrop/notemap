@@ -855,6 +855,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the tags the pool carries
+         * @description Every tag in use, most used first, so a client completing one holds the whole set and filters it itself. Not paginated and not narrowed. A superseded item is not counted: its tags carried over to the revision that replaced it.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Every tag the pool carries. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TagsInUse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/items/{id}/edit": {
         parameters: {
             query?: never;
@@ -2211,6 +2250,19 @@ export interface components {
             };
             modifiedAt: string;
             supersededBy?: string;
+            routing?: components["schemas"]["RoutingSummary"];
+        };
+        RoutingSummary: {
+            records: number;
+            pending: number;
+            to: ({
+                /** @enum {string} */
+                kind: "destination";
+                destination: string;
+            } | {
+                /** @enum {string} */
+                kind: "user";
+            })[];
         };
         CaptureEnvelope: {
             id?: string;
@@ -2250,6 +2302,14 @@ export interface components {
         UnarchiveRequest: Record<string, never>;
         TagRequest: {
             tag: string;
+        };
+        TagsInUse: {
+            values: components["schemas"]["TagUse"][];
+        };
+        TagUse: {
+            name: string;
+            items: number;
+            lastUsedAt: string;
         };
         EditOutcome: {
             /** @enum {string} */

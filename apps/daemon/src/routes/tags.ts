@@ -26,3 +26,8 @@ export function tagHandler(pool: Pool, half: "tag" | "untag") {
       : json(result.value, 200);
   };
 }
+
+export function tagsInUseHandler(pool: Pool) {
+  return async (): Promise<Response> =>
+    json({ values: await pool.tags.inUse() }, 200);
+}

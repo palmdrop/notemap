@@ -110,6 +110,20 @@ export const item = (): fc.Arbitrary<Item> =>
       ),
       modifiedAt: stamp(),
       supersededBy: branded(),
+      routing: fc.record({
+        records: fc.integer({ min: 1, max: 3 }),
+        pending: fc.nat({ max: 3 }),
+        to: fc.array(
+          fc.oneof(
+            fc.record({
+              kind: fc.constant("destination" as const),
+              destination: branded<never>(),
+            }),
+            fc.record({ kind: fc.constant("user" as const) }),
+          ),
+          { maxLength: 2 },
+        ),
+      }),
     },
     {
       requiredKeys: [

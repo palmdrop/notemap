@@ -1,6 +1,16 @@
-import type { Destination, DestinationId, Item, ItemId } from "../api/types";
+import type {
+  Destination,
+  DestinationId,
+  Item,
+  ItemId,
+  RoutingRecord,
+  RoutingSummary,
+  TagUse,
+} from "../api/types";
 import type { PendingOperation } from "../outbox/operations";
 import type { Order } from "../types";
+
+type RoutedTo = RoutingSummary["to"][number];
 
 export type ListPage = {
   readonly order: Order;
@@ -19,6 +29,8 @@ export type ClientState = {
   readonly outbox: readonly PendingOperation[];
   /** Held for display in the order the pool answered: a settings screen reads while offline. */
   readonly destinations: readonly Destination[];
+  /** What completion offers, most used first, as the pool last counted it. */
+  readonly tags: readonly TagUse[];
 };
 
 export function emptyPage(order: Order): ListPage {
@@ -32,6 +44,7 @@ export function emptyState(): ClientState {
     queue: emptyPage("oldest-first"),
     outbox: [],
     destinations: [],
+    tags: [],
   };
 }
 
@@ -149,26 +162,96 @@ export function forget(state: ClientState, id: ItemId): ClientState {
   };
 }
 
+function wentTo(record: RoutingRecord): RoutedTo {
+  return record.target.kind === "destination"
+    ? { kind: "destination", destination: record.target.destination }
+    : { kind: "user" };
+}
+
+/** Distinct, in the order the records were made, as the pool answers it. */
+function targets(
+  held: readonly RoutedTo[],
+  arriving: readonly RoutedTo[],
+): RoutedTo[] {
+  const merged = [...held];
+  for (const went of arriving) {
+    const already = merged.some((each) =>
+      went.kind === "destination"
+        ? each.kind === "destination" && each.destination === went.destination
+        : each.kind === "user",
+    );
+    if (!already) merged.push(went);
+  }
+  return merged;
+}
+
+/** What the pool would answer for these records, so a re-read changes nothing. */
+export function summarise(
+  records: readonly RoutingRecord[],
+): RoutingSummary | undefined {
+  if (records.length === 0) return undefined;
+
+  return {
+    records: records.length,
+    pending: records.filter((record) => record.state === "pending").length,
+    to: targets([], records.map(wentTo)),
+  };
+}
+
+function withRouting(
+  state: ClientState,
+  id: ItemId,
+  routing: RoutingSummary | undefined,
+): ReadonlyMap<ItemId, Item> {
+  const item = state.items.get(id);
+  if (item === undefined) return state.items;
+
+  const { routing: _held, ...rest } = item;
+  return cached(state, [
+    { ...rest, ...(routing === undefined ? {} : { routing }) },
+  ]);
+}
+
 /**
  * The pool has recorded a routing decision, so the item is out of the queue —
  * core derives processed as holding no routing record. It stays in the cache
- * and in the feed, which read everything.
+ * and in the feed, which read everything, so the record is folded into what the
+ * held copy says about where it has been rather than costing a second read.
  */
-export function processed(state: ClientState, id: ItemId): ClientState {
+export function processed(
+  state: ClientState,
+  id: ItemId,
+  record: RoutingRecord,
+): ClientState {
+  const held = state.items.get(id)?.routing;
+
   return {
     ...state,
+    items: withRouting(state, id, {
+      records: (held?.records ?? 0) + 1,
+      pending: (held?.pending ?? 0) + (record.state === "pending" ? 1 : 0),
+      to: targets(held?.to ?? [], [wentTo(record)]),
+    }),
     queue: withIds(state.queue, without(state.queue.ids, id)),
   };
 }
 
 /**
- * A withdrawn decision puts the item back at the content time it left with,
- * rather than at the newest end — core's third kind of queue event.
+ * A withdrawn decision leaves the pool's remaining records, and an item holding
+ * none is work again — back at the content time it left with rather than at the
+ * newest end, which is core's third kind of queue event.
  */
-export function returned(state: ClientState, id: ItemId): ClientState {
+export function withdrawn(
+  state: ClientState,
+  id: ItemId,
+  records: readonly RoutingRecord[],
+): ClientState {
+  const held = { ...state, items: withRouting(state, id, summarise(records)) };
+  if (records.length > 0) return held;
+
   return {
-    ...state,
-    queue: withIds(state.queue, intoQueue(state.queue, id, state.items)),
+    ...held,
+    queue: withIds(held.queue, intoQueue(held.queue, id, held.items)),
   };
 }
 

@@ -154,7 +154,10 @@ A client presents four surfaces, each a thin projection of core:
 - **An order** — which end of a surface a reader starts from. A default per surface and a
   parameter of a read, never a stored preference.
 - **An item** — its payload, tags, enrichment state, suggestions and routing records, and the
-  actions that process it.
+  actions that process it. Every item a surface holds also carries a **routing summary**
+  ([core.md](core.md#routing)) — how many records, how many pending, where they went — so a row
+  says what became of an item without a request of its own; the records themselves are read when
+  a person opens one.
 
 ### The queue
 
@@ -237,6 +240,19 @@ A recorded decision takes the item out of the queue, and **withdrawing one puts 
 item holds no other**: processed is derived from holding no routing record ([core.md](core.md#the-queue)),
 never stored, so a client that assumed a cancel always returns an item would show work that the pool
 still considers done. The client asks rather than assumes.
+
+**A decision is folded into the held item's routing summary as well.** The pool answers the record
+it wrote, so the cached copy is brought up to what a re-read would say — one more record, one more
+pending where the delivery has not landed, the place it names added if it is new. Without it the
+item stays in the feed drawn as though it had been nowhere until something happened to re-read it,
+which is exactly the row a person just acted on.
+
+**The tags in use are a read cache, on the destinations' terms.** A client holds what
+`GET /v1/tags` last answered and completes from it, so completion works with the pool out of reach
+and costs nothing per keystroke. It is not an outbox operation and it is not a vocabulary:
+classification drains offline as it always did, and a tag nobody has used yet is written by typing
+it. The list is read again once a `tag` operation reaches the pool — the pool has just answered, so
+it is reachable, and the tag the person has now used is one completion should offer.
 
 **Draining and reconciliation.** An operation is applied optimistically, then confirmed against the
 pool's answer:
@@ -451,6 +467,11 @@ that logic out of the one place it is meant to live.
   and the interface says why rather than queuing them.
 - A tag added on one device and the same tag removed on another resolve to whichever the person did
   later by their own clock, not to whichever synced last.
+- A tag field completes from what the pool carries, offers a tag used a moment earlier without a
+  reload, goes on completing from the last list it read while the pool is unreachable, and still
+  accepts a tag that is on no list at all.
+- An item routed from a surface says where it went on that surface's own row, without a further
+  read.
 - A typed note, a voice memo and a shared link captured from one shell carry three different
   sources.
 - The shared client builds and runs with no UI framework imported, and a shell observes its state

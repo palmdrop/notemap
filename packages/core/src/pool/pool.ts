@@ -51,6 +51,8 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
       archived: (page) => store.archived(ordered(page, "oldest-first")),
     },
 
+    tags: { inUse: () => store.tagsInUse() },
+
     suggestions: {
       pendingFor: notImplemented("suggestions.pendingFor"),
       accept: notImplemented("suggestions.accept"),

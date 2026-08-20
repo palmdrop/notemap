@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { page } from "$app/state";
 
   import Refusals from "$components/outbox/Refusals.svelte";
@@ -8,6 +9,7 @@
   import Nav from "$components/primitives/frame/Nav.svelte";
   import Reachability from "$components/primitives/frame/Reachability.svelte";
   import Sheet from "$components/primitives/frame/Sheet.svelte";
+  import { client } from "$lib/client";
   import { composing } from "$lib/composing.svelte";
   import { reachable } from "$lib/reachable.svelte";
 
@@ -21,6 +23,15 @@
     { href: "/", label: "queue" },
     { href: "/feed", label: "feed" },
   ];
+
+  // Two pool-wide sets every surface reads from: the destination names a routed
+  // row says, and what a tag field completes from. Failing to read them is the
+  // pool being out of reach, which the reachability mark already says — a row
+  // falls back to the destination's id and completion offers less.
+  onMount(() => {
+    void client.destinations.load().catch(() => undefined);
+    void client.tags.load().catch(() => undefined);
+  });
 </script>
 
 <Sheet>

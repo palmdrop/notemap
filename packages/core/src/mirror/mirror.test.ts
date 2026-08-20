@@ -177,10 +177,15 @@ describe("what the record leaves out", () => {
       anItem({
         supersededBy: "item-2" as ItemId,
         revisionOf: "item-0" as ItemId,
+        routing: { records: 1, pending: 0, to: [{ kind: "user" }] },
       }),
     );
 
-    expect(serialiseMirrorRecord(record)).not.toContain("supersededBy");
+    const written = serialiseMirrorRecord(record);
+    expect(written).not.toContain("supersededBy");
+    // The item's own summary of its records, which the records themselves say.
+    expect(record.item).not.toHaveProperty("routing");
+    expect(written).not.toContain("pending");
     // The revision link itself is material and stays.
     expect(record.item.revisionOf).toBe("item-0");
   });

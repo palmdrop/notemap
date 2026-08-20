@@ -32,6 +32,20 @@ const tag = z.object({
   addedAt: z.string(),
 });
 
+const routingSummary = z
+  .object({
+    records: z.number().int().nonnegative(),
+    /** Deliveries that have not landed. Never more than `records`. */
+    pending: z.number().int().nonnegative(),
+    to: z.array(
+      z.union([
+        z.object({ kind: z.literal("destination"), destination: z.string() }),
+        z.object({ kind: z.literal("user") }),
+      ]),
+    ),
+  })
+  .openapi("RoutingSummary");
+
 export const itemSchema = z
   .object({
     id: z.string(),
@@ -47,6 +61,7 @@ export const itemSchema = z
       .optional(),
     modifiedAt: z.string(),
     supersededBy: z.string().optional(),
+    routing: routingSummary.optional(),
   })
   .openapi("Item");
 

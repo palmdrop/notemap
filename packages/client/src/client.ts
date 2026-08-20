@@ -15,10 +15,11 @@ import {
   cached,
   emptyState,
   processed,
-  returned,
   settledDestination,
+  withdrawn,
   type ClientState,
 } from "./state/state";
+import { createTags } from "./tags/tags";
 import { loadMore, type Surface } from "./surfaces/reads";
 import type { Client, ClientConfig, ListState } from "./types";
 
@@ -59,10 +60,22 @@ export function createClient(config: ClientConfig): Client {
 
   persistItems(state, store);
 
+  const tags = createTags({
+    api,
+    inUse: derived(state.changes, (current) => current.tags),
+    cached: (held) => state.update((current) => ({ ...current, tags: held })),
+  });
+
   const outbox = createOutbox({
     state,
     store,
-    send: (operation) => sendOperation(api, operation),
+    send: async (operation) => {
+      const settlement = await sendOperation(api, operation);
+      // The pool has just answered, so it is reachable, and a tag the person
+      // has now used is one completion should offer.
+      if (operation.kind === "tag") void tags.load();
+      return settlement;
+    },
     now,
     mint: uuidv7,
   });
@@ -166,8 +179,10 @@ export function createClient(config: ClientConfig): Client {
 
     routing: createRouting({
       api,
-      processed: (item) => state.update((current) => processed(current, item)),
-      returned: (item) => state.update((current) => returned(current, item)),
+      processed: (item, record) =>
+        state.update((current) => processed(current, item, record)),
+      withdrawn: (item, records) =>
+        state.update((current) => withdrawn(current, item, records)),
     }),
 
     destinations: createDestinations({
@@ -178,6 +193,8 @@ export function createClient(config: ClientConfig): Client {
       settled: (id, held) =>
         state.update((current) => settledDestination(current, id, held)),
     }),
+
+    tags,
 
     drain: () => outbox.drain(),
     dismiss: (operation) => outbox.dismiss(operation),

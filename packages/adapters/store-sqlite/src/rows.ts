@@ -98,6 +98,21 @@ export type RoutingRecordRow = {
   readonly pointer: string | null;
 };
 
+/** What a page needs of an item's routing records, without their targets. */
+export type ItemRoutingRow = {
+  readonly item_id: string;
+  readonly target_kind: "destination" | "user";
+  readonly destination: string | null;
+  readonly state: "pending" | "delivered";
+};
+
+/** One tag as the pool carries it, counted across the items that are not superseded. */
+export type TagUseRow = {
+  readonly name: string;
+  readonly items: number;
+  readonly last_used_at: number;
+};
+
 export type ActionRow = AgentColumns & {
   readonly id: string;
   readonly kind: string;

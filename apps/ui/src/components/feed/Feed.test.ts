@@ -62,6 +62,70 @@ test("keeps tags editable on a finished row", async () => {
   });
 });
 
+test("says where a routed row went, without asking for its records", async () => {
+  const app = await import("../../testing/pool");
+  pool((request) => {
+    if (routeOf(request) === "GET /v1/feed") {
+      return json(200, {
+        values: [
+          anItem("sent", {
+            routing: {
+              records: 2,
+              pending: 1,
+              to: [
+                { kind: "destination", destination: "vault-1" },
+                { kind: "user" },
+              ],
+            },
+          }),
+        ],
+      });
+    }
+    if (routeOf(request) === "GET /v1/destinations") {
+      return json(200, {
+        values: [
+          {
+            id: "vault-1",
+            name: "Fiction",
+            kind: "filesystem",
+            settings: {},
+            retired: false,
+          },
+        ],
+      });
+    }
+    return json(200, { values: [] });
+  });
+
+  // The layout reads the destinations once, and every surface names them from it.
+  await app.client.destinations.load();
+  render(Feed);
+
+  expect(await screen.findByText("routed")).toBeDefined();
+  expect(
+    await screen.findByText("Fiction, marked done · 1 pending"),
+  ).toBeDefined();
+  expect(asked()).not.toContain("GET /v1/items/sent/routing");
+});
+
+test("names a destination it has not read by its id", async () => {
+  pool(
+    held(
+      anItem("sent", {
+        routing: {
+          records: 1,
+          pending: 0,
+          to: [{ kind: "destination", destination: "vault-1" }],
+        },
+      }),
+    ),
+  );
+
+  render(Feed);
+
+  expect(await screen.findByText("vault-1")).toBeDefined();
+});
+
 test("marks a revision as one without opening it", async () => {
   pool(held(anItem("later", { revisionOf: "earlier" })));
 

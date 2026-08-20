@@ -225,6 +225,7 @@ describe("the queue", () => {
         : json(200, {
             id: "record-1",
             item: "one",
+            target: { kind: "user" },
             state: "delivered",
             at: "now",
           }),
@@ -236,6 +237,38 @@ describe("the queue", () => {
     expect(read(client.queue).items.map((item) => item.id)).toEqual(["two"]);
     // Out of the queue, not out of the pool: the feed reads everything.
     expect(await client.item("one")).toBeDefined();
+  });
+
+  /** The row stays in the feed, and is what a reader sees the decision on. */
+  it("folds the decision into what the held item says about its routing", async () => {
+    const { client } = clientOver((request) => {
+      const route = routeOf(request);
+      if (route === "GET /v1/queue" || route === "GET /v1/feed") {
+        return queued(anItem("one"));
+      }
+      return json(200, {
+        id: "record-1",
+        item: "one",
+        target: { kind: "destination", destination: "vault" },
+        state: "pending",
+        at: "now",
+      });
+    });
+
+    await client.loadFeed();
+    await client.loadQueue();
+    await client.routing.route("one", {
+      destination: "vault",
+      capability: "create-file",
+      target: {},
+    });
+
+    expect(read(client.queue).items).toEqual([]);
+    expect(read(client.feed).items[0]?.routing).toEqual({
+      records: 1,
+      pending: 1,
+      to: [{ kind: "destination", destination: "vault" }],
+    });
   });
 
   it("leaves a capture beyond the loaded window for a later page to carry", async () => {
@@ -313,7 +346,13 @@ describe("draining", () => {
 describe("routing", () => {
   it("reaches the pool directly, and fails rather than queuing when it cannot", async () => {
     const { client, transport } = clientOver(() =>
-      json(200, { id: "record-1", item: "one", state: "pending", at: "now" }),
+      json(200, {
+        id: "record-1",
+        item: "one",
+        target: { kind: "user" },
+        state: "pending",
+        at: "now",
+      }),
     );
 
     await expect(client.routing.markProcessed("one")).resolves.toMatchObject({
@@ -327,18 +366,23 @@ describe("routing", () => {
     expect(read(client.outbox)).toEqual([]);
   });
 
+  const record = (id: string) => ({
+    id,
+    item: "one",
+    target: { kind: "user" },
+    state: "pending",
+    at: "now",
+  });
+
   it("reads an item's routing records", async () => {
     const { client } = clientOver(() =>
-      json(200, {
-        values: [{ id: "record-1", item: "one", state: "pending", at: "now" }],
-      }),
+      json(200, { values: [record("record-1")] }),
     );
 
     await expect(client.routing.recordsFor("one")).resolves.toHaveLength(1);
   });
 
-  const aRecord = (id: string) =>
-    json(200, { id, item: "one", state: "pending", at: "now" });
+  const aRecord = (id: string) => json(200, record(id));
 
   /** A pool holding `held` records for `one`, and a queue of it alone. */
   function poolHolding(held: () => readonly string[]) {
@@ -348,14 +392,7 @@ describe("routing", () => {
         return json(200, { values: [anItem("one")] });
       }
       if (route === "GET /v1/items/one/routing") {
-        return json(200, {
-          values: held().map((id) => ({
-            id,
-            item: "one",
-            state: "pending",
-            at: "now",
-          })),
-        });
+        return json(200, { values: held().map(record) });
       }
       if (route === "POST /v1/routing/record-1/cancel") {
         return new Response(null, { status: 204 });

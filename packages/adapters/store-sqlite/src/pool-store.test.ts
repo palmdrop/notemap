@@ -1,5 +1,6 @@
 import type {
   Action,
+  Agent,
   Duration,
   Item,
   ItemId,
@@ -8,6 +9,7 @@ import type {
   Position,
   RoutingRecord,
   RoutingRecordId,
+  TagName,
   Timestamp,
 } from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
@@ -1212,6 +1214,198 @@ describe("routing records", () => {
     await appendCapture(p, record);
 
     expect(await p.routingRecords(record.id)).toEqual([]);
+  });
+});
+
+describe("an item's routing summary", () => {
+  async function routed(...records: readonly RoutingRecord[]) {
+    const opened = pool();
+    const record = capture({ id: "item-1" });
+    await putDestinations(opened.pool, destination());
+    await appendCapture(opened.pool, record);
+    await opened.pool.transaction(async (tx) => {
+      for (const each of records) await tx.insertRoutingRecord(each);
+    });
+    return { ...opened, record };
+  }
+
+  it("is absent for an item that has been nowhere", async () => {
+    const { pool: p } = pool();
+    const record = capture({ id: "item-1" });
+    await appendCapture(p, record);
+
+    expect((await p.item(record.id))?.routing).toBeUndefined();
+  });
+
+  it("counts the records, the pending ones, and where they went", async () => {
+    const record = capture({ id: "item-1" });
+    const { pool: p } = await routed(
+      reserved(record, { id: "routing-1", at: "2026-08-03T10:00:00.000Z" }),
+      markedProcessed(record, {
+        id: "routing-2",
+        at: "2026-08-03T11:00:00.000Z",
+      }),
+    );
+
+    expect((await p.item(record.id))?.routing).toEqual({
+      records: 2,
+      pending: 1,
+      to: [{ kind: "destination", destination: "vault" }, { kind: "user" }],
+    });
+  });
+
+  it("names a destination once however many records reached it", async () => {
+    const record = capture({ id: "item-1" });
+    const { pool: p } = await routed(
+      reserved(record, { id: "routing-1", at: "2026-08-03T10:00:00.000Z" }),
+      reserved(record, {
+        id: "routing-2",
+        at: "2026-08-03T11:00:00.000Z",
+        capability: "append-file",
+      }),
+    );
+
+    expect((await p.item(record.id))?.routing).toEqual({
+      records: 2,
+      pending: 2,
+      to: [{ kind: "destination", destination: "vault" }],
+    });
+  });
+
+  it("goes again when a cancelled reservation is removed", async () => {
+    const record = capture({ id: "item-1" });
+    const { pool: p } = await routed(reserved(record));
+
+    await p.transaction((tx) =>
+      tx.removeRoutingRecord(`routing-${record.id}` as RoutingRecordId),
+    );
+
+    expect((await p.item(record.id))?.routing).toBeUndefined();
+  });
+
+  it("reaches every row of a page, not only a read of one item", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 2);
+    await p.transaction((tx) =>
+      tx.insertRoutingRecord(markedProcessed(capture({ id: "item-0" }))),
+    );
+
+    const feed = await p.feed(ALL_OLDEST);
+    expect(feed.values.map((item) => item.routing?.records)).toEqual([
+      1,
+      undefined,
+    ]);
+  });
+
+  it("is on an archived item as much as on any other", async () => {
+    const record = capture({ id: "item-1" });
+    const { pool: p } = await routed(markedProcessed(record));
+    await p.transaction((tx) =>
+      tx.setArchiveState(record.id, {
+        archivedAt: at("2026-08-03T12:00:00.000Z"),
+      }),
+    );
+
+    const [archived] = (await p.archived(ALL_OLDEST)).values;
+    expect(archived?.routing?.records).toBe(1);
+  });
+});
+
+describe("the tags in use", () => {
+  const PERSON: Agent = { kind: "person" };
+
+  function tagged(id: string, names: readonly string[], addedAt: string) {
+    return capture({
+      id,
+      tags: names.map((name) => ({ name, by: PERSON, addedAt })),
+    });
+  }
+
+  it("answers nothing for a pool that has classified nothing", async () => {
+    const { pool: p } = pool();
+    await appendCapture(p, capture({ id: "item-1" }));
+
+    expect(await p.tagsInUse()).toEqual([]);
+  });
+
+  it("counts the items carrying each tag, most used first", async () => {
+    const { pool: p } = pool();
+    await appendCapture(
+      p,
+      tagged("item-1", ["kind/quote", "project/a"], "2026-08-03T09:00:00.000Z"),
+    );
+    await appendCapture(
+      p,
+      tagged("item-2", ["kind/quote"], "2026-08-03T10:00:00.000Z"),
+    );
+
+    expect(await p.tagsInUse()).toEqual([
+      {
+        name: "kind/quote",
+        items: 2,
+        lastUsedAt: "2026-08-03T10:00:00.000Z",
+      },
+      {
+        name: "project/a",
+        items: 1,
+        lastUsedAt: "2026-08-03T09:00:00.000Z",
+      },
+    ]);
+  });
+
+  /** Tags carry over to a revision, so counting the chain would count one tag twice. */
+  it("counts a revised item once, at its revision", async () => {
+    const { pool: p } = pool();
+    const original = tagged(
+      "item-1",
+      ["kind/quote"],
+      "2026-08-03T09:00:00.000Z",
+    );
+    await appendCapture(p, original);
+    await appendCapture(p, {
+      ...revisionOf(original, {
+        id: "item-2",
+        text: "a second thought",
+        editedAt: "2026-08-03T10:00:00.000Z",
+      }),
+      tags: original.tags,
+    });
+
+    expect(await p.tagsInUse()).toEqual([
+      {
+        name: "kind/quote",
+        items: 1,
+        lastUsedAt: "2026-08-03T09:00:00.000Z",
+      },
+    ]);
+  });
+
+  it("counts an archived item, which is still in the pool", async () => {
+    const { pool: p } = pool();
+    await appendCapture(
+      p,
+      tagged("item-1", ["kind/quote"], "2026-08-03T09:00:00.000Z"),
+    );
+    await p.transaction((tx) =>
+      tx.setArchiveState("item-1" as ItemId, {
+        archivedAt: at("2026-08-03T12:00:00.000Z"),
+      }),
+    );
+
+    expect((await p.tagsInUse())[0]?.items).toBe(1);
+  });
+
+  it("forgets a tag the last item carrying it lost", async () => {
+    const { pool: p } = pool();
+    await appendCapture(
+      p,
+      tagged("item-1", ["kind/quote"], "2026-08-03T09:00:00.000Z"),
+    );
+    await p.transaction((tx) =>
+      tx.removeTag("item-1" as ItemId, "kind/quote" as TagName),
+    );
+
+    expect(await p.tagsInUse()).toEqual([]);
   });
 });
 

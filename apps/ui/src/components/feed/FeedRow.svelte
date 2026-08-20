@@ -2,6 +2,7 @@
   import type { Item } from "@notemap/client";
 
   import Payload from "$components/item/Payload.svelte";
+  import Routing from "$components/item/Routing.svelte";
   import Tags from "$components/item/Tags.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import ActionRow from "$components/primitives/controls/ActionRow.svelte";
@@ -32,6 +33,10 @@
 
   <!-- Tagging replays from the outbox, so it survives on every row, finished or not. -->
   <Tags {item} />
+
+  {#if item.routing !== undefined}
+    <Routing summary={item.routing} />
+  {/if}
 
   {#if archived}
     <Label />

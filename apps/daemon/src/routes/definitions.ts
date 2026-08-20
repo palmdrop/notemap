@@ -49,7 +49,7 @@ import {
   routingRecordSchema,
   routingRecordsSchema,
 } from "../schemas/routing";
-import { tagRequestSchema } from "../schemas/tags";
+import { tagRequestSchema, tagsInUseSchema } from "../schemas/tags";
 import type { StatusMap } from "../errors/refusals";
 
 function errorResponse(
@@ -217,6 +217,20 @@ export const archivedRoute = createRoute({
       422,
       PARAMETER_STATUS,
     ),
+  },
+});
+
+export const tagsInUseRoute = createRoute({
+  method: "get",
+  path: "/v1/tags",
+  summary: "Read the tags the pool carries",
+  description:
+    "Every tag in use, most used first, so a client completing one holds the whole set and filters it itself. Not paginated and not narrowed. A superseded item is not counted: its tags carried over to the revision that replaced it.",
+  responses: {
+    200: {
+      description: "Every tag the pool carries.",
+      content: { [JSON_MEDIA_TYPE]: { schema: tagsInUseSchema } },
+    },
   },
 });
 
@@ -806,6 +820,7 @@ export const ROUTES = [
   unarchiveRoute,
   tagRoute,
   untagRoute,
+  tagsInUseRoute,
   editRoute,
   markProcessedRoute,
   routingRecordsRoute,

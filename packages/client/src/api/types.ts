@@ -48,6 +48,8 @@ export type UpdateDestinationRequest =
 export type Capability = components["schemas"]["Capability"];
 export type RouteRequest = components["schemas"]["RouteRequest"];
 export type RoutingRecord = components["schemas"]["RoutingRecord"];
+export type RoutingSummary = components["schemas"]["RoutingSummary"];
+export type TagUse = components["schemas"]["TagUse"];
 
 export type ItemId = Item["id"];
 export type AssetId = Asset["id"];

@@ -24,7 +24,13 @@ import type {
   DestinationKind,
   DestinationRecord,
 } from "../domain/destination";
-import type { ArchiveState, Item, ItemRecord, Tag } from "../domain/item";
+import type {
+  ArchiveState,
+  Item,
+  ItemRecord,
+  Tag,
+  TagUse,
+} from "../domain/item";
 import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
 import type { Payload } from "../domain/payload";
 import type { AbandonedPosition } from "../domain/position";
@@ -195,6 +201,9 @@ export interface PoolReads {
   feed(page: OrderedPage): Promise<Slice<Item>>;
   queue(page: OrderedPage): Promise<Slice<Item>>;
   archived(page: OrderedPage): Promise<Slice<Item>>;
+
+  /** Ordered most used first, then by name, so a completion list needs no sort. */
+  tagsInUse(): Promise<readonly TagUse[]>;
 
   suggestions(item: ItemId): Promise<readonly Suggestion[]>;
   suggestion(id: SuggestionId): Promise<Suggestion | undefined>;
