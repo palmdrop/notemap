@@ -501,6 +501,49 @@ describe("reading a surface", () => {
     expect(read(client.queue).order).toBe("newest-first");
   });
 
+  it("refuses to turn around while a read is in flight, rather than stitching the two", async () => {
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    const { client } = clientOver(async (request) => {
+      const query = new URL(request.url).searchParams;
+      if (query.get("order") === "oldest-first") {
+        await held;
+        return json(200, {
+          values: [anItem("oldest")],
+          next: "/v1/queue?after=oldest&order=oldest-first",
+        });
+      }
+      return json(200, { values: [anItem("newest")] });
+    });
+
+    const walking = client.loadQueue();
+    await client.loadQueue("newest-first");
+    release();
+    await walking;
+
+    expect(read(client.queue).order).toBe("oldest-first");
+    expect(read(client.queue).items.map((item) => item.id)).toEqual(["oldest"]);
+  });
+
+  it("turns an exhausted surface around, which is the whole point of the control", async () => {
+    const { client } = clientOver((request) =>
+      new URL(request.url).searchParams.get("order") === "oldest-first"
+        ? json(200, { values: [anItem("oldest")] })
+        : json(200, { values: [anItem("newest")] }),
+    );
+
+    await client.loadQueue();
+    expect(read(client.queue).more).toBe(false);
+
+    await client.loadQueue("newest-first");
+
+    expect(read(client.queue).items.map((item) => item.id)).toEqual(["newest"]);
+    expect(read(client.queue).order).toBe("newest-first");
+  });
+
   it("goes on paging when the order it is given is the one it is already in", async () => {
     const asked: (string | null)[] = [];
     const { client } = clientOver((request) => {

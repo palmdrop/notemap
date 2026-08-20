@@ -68,11 +68,17 @@ export async function loadMore(
 ): Promise<void> {
   const held = state.get()[surface];
 
+  // A read in flight is answering for the page as it was; letting a second one
+  // start would let the first land its rows and its position in whatever the
+  // surface has become. Exhaustion is the held page's alone: turning an
+  // exhausted surface around is the case that has to keep working.
+  if (held.loading) return;
+
   // Turning the surface around invalidates the position it was walking, so the
   // page starts again rather than stitching two orders together.
   const page =
     order === undefined || order === held.order ? held : emptyPage(order);
-  if (page.loading || page.exhausted) return;
+  if (page.exhausted) return;
 
   state.update((current) => ({ ...current, [surface]: loading(page) }));
 
