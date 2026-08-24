@@ -1,7 +1,15 @@
 # 11. Only the head may be amended in place, and only before it is processed
 
 **Date**: 2026-08-02
-**Status**: Accepted
+**Status**: Superseded by [ADR 21](0021-an-item-is-editable-until-it-is-processed.md)
+
+> *Superseded 2026-08-24.* An item is editable in place until it is **processed**, and what a
+> capture time or an unrelated capture does no longer enters into it. The "Bad" consequence below,
+> that a week-old head is still amendable with nothing recorded, turned out to be the whole rule
+> read back honestly rather than an accepted cost, and it is what forced the reopening. Kept for
+> what it weighed: the timeout that was considered and rejected is still rejected, for the reason
+> given here.
+
 
 ---
 

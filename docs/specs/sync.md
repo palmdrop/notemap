@@ -52,16 +52,18 @@ this spec is unwritten.
 - **Delta reads are keyed on `modified_at`** (decided 2026-08-02): a server-assigned timestamp
   bumped by every change to an item — content and state alike, including classification,
   routing, archiving and deciding on a suggestion. It is distinct from `created_at` and
-  `content_updated_at`, which order the feed and queue and record content time only
-  ([core.md](core.md)). The store assigns it monotonically per pool
+  `content_updated_at` — the first orders the feed and the queue, and the second records content
+  time only and orders nothing ([core.md](core.md)). The store assigns it monotonically per pool
   ([ADR 1](../adr/0001-pool-is-a-database.md)), or a client can miss writes that commit out
   of order.
 - Purge propagates as a minimal tombstone — `(id, purged_at)` and nothing else — which is
   itself removed after a retention window
   ([ADR 4](../adr/0004-purge-leaves-a-minimal-tombstone.md)).
-- An in-place amendment of the head arriving from a client that could not know whether it
-  still held the head is re-evaluated on arrival and demoted to a revision if it no longer
-  does ([ADR 11](../adr/0011-in-place-amendment-of-the-head.md)).
+- An in-place amendment arriving from a client that could not know whether the item had been
+  processed since is re-evaluated on arrival and recorded as a revision if it has been
+  ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)). Being revised moves the
+  `modified_at` of the item it was made from as well, which is what keeps a delta reader from
+  showing work that has left the queue.
 - **A rebuilt pool carries a new identity, and that identity is readable** (decided 2026-08-11,
   [mirror.md](mirror.md)). A rebuild restarts the `modified_at` sequence from zero, and a delta
   cursor names that store-internal sequence, so an old cursor is not merely stale — it points

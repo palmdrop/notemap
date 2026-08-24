@@ -19,7 +19,9 @@ merge with each other.
 _Avoid_: note, memo, entry, card
 
 **Capture**:
-The original payload of an item exactly as it entered, plus the act of it entering. Immutable.
+The original payload of an item exactly as it entered, plus the act of it entering. Editable in
+place while its item is unprocessed, and fixed once it is: what left the pool is what the pool
+keeps.
 _Avoid_: original, raw note
 
 **Source**:
@@ -36,33 +38,32 @@ ever lost.
 _Avoid_: timeline, stream, history
 
 **Queue**:
-The pool read as unprocessed, unarchived items, ordered by last touch so a revised item resurfaces
-where it will be met. A view, not a place. Its job is to drain to zero. Oldest first is the
-default and the reason it is a queue, but which end a reader starts from is the reader's, as it is
-for the feed.
+The pool read as the unprocessed items, ordered by capture time. A view, not a place. Its job is
+to drain to zero. Oldest first is the default and the reason it is a queue, but which end a reader
+starts from is the reader's, as it is for the feed. Editing never moves an item within it, because
+the person editing is already looking at it; a revision resurfaces on its own, being a new capture.
 _Avoid_: inbox, backlog, todo list
 
 **Position**:
 The sort-key fields of the last row a paginated read handed out, named in domain terms. Each
-surface names its own: the feed continues from a capture time and an id, the queue from a content
-time and an id. A parameter of a read, never stored, and never the frontend's idea of how far
-processing has got, which notemap's core does not hold. Positions of two surfaces are not
-interchangeable, being the same shape carrying different meanings.
+surface names its own: the feed and the queue both continue from a capture time and an id, the
+abandoned surface from the time it was given up on. A parameter of a read, never stored, and never
+the frontend's idea of how far processing has got, which notemap's core does not hold. A position
+belongs to the ordering it names rather than to the surface that issued it.
 _Avoid_: cursor, token, offset, page number
 
-**Head**:
-The newest item in the feed. The only item that may be amended in place rather than revised.
-_Avoid_: first in the queue (the queue is oldest-first, so its first item is the oldest), latest,
-top
-
 **Revision**:
-A new item that replaces an earlier one, carrying the original capture time plus an edit time.
-Editing appends a revision; it never overwrites.
+An ordinary capture, made by editing a processed item, carrying its own capture time, source and
+id plus a link to what it was made from. The link is a trace, not a replacement: the item it came
+from was delivered or archived and stays exactly as it was. One item may be revised more than once,
+and the revisions are independent of each other.
 _Avoid_: version, update, edit
 
-**Superseded**:
-Said of an item that a later revision points at. Derived from the revision link, never stored.
-_Avoid_: outdated, replaced, stale
+**Revised into**:
+Said of an item that one or more revisions were made from. Derived from the revision links, never
+stored. It processes the item, which is why a further edit appends another revision rather than
+changing it.
+_Avoid_: superseded, outdated, replaced, stale
 
 **Mirror**:
 The complete plain-file copy of the pool that notemap writes and never reads, except to rebuild a
@@ -130,8 +131,8 @@ _Avoid_: label, category, keyword, folder
 **Tags in use**:
 Every tag the pool carries, each with the number of items carrying it. A reading of what
 classification has produced, never a vocabulary: it is what a person is offered while they type,
-and a tag no item carries simply is not in it. Superseded items are not counted, their tags having
-carried over to the revision that replaced them.
+and a tag no item carries simply is not in it. An item that was revised still counts: it is a real
+item still carrying its tags, and the revision that copied them is another one.
 _Avoid_: tag list, taxonomy, vocabulary, autocomplete
 
 **Payload type**:
@@ -199,10 +200,11 @@ again without cleanup.
 _Avoid_: lock, reservation, claim
 
 **Processed**:
-Said of an item that has been routed or archived. It is the *decision* that processes an item, so a
-routing record still pending delivery counts, and an item whose delivery is abandoned resurfaces in
-the queue. Marking an item processed by hand is routing whose destination is the user. Scrolling
-past an item is a **skip**, which changes nothing.
+Said of an item that has been routed, archived or revised. It is the *decision* that processes an
+item, so a routing record still pending delivery counts, and an item whose delivery is abandoned
+resurfaces in the queue. Marking an item processed by hand is routing whose destination is the
+user. Scrolling past an item is a **skip**, which changes nothing. Processed is also what fixes a
+capture: an unprocessed item is edited in place, a processed one is revised.
 _Avoid_: done, handled, cleared
 
 ### Leaving
@@ -282,8 +284,9 @@ means "this is noise"; the item stays in the feed and stays processable.
 _Avoid_: delete, dismiss, trash
 
 **Purge**:
-To irreversibly remove an item, its whole revision chain, its assets and its enrichment. The one
-destructive operation, and the one exception to the append-only rule.
+To irreversibly remove one item, its assets and its enrichment. Revisions made from it are items in
+their own right and stay, their link left pointing at a tombstone. The one destructive operation,
+and the one exception to the append-only rule.
 _Avoid_: hard delete, wipe, erase
 
 ### The client

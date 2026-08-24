@@ -116,14 +116,19 @@ time.**
 - **Tags**, always, and addable here. Tagging replays from the outbox, which makes it the one
   processing gesture that survives an unreachable pool, and it is cheap enough to do while
   scanning.
-- **Revision lineage** — that this is a revision of something, or that it has been replaced — and
-  **archived**, where either applies. Without these the feed shows the same note three times and
-  explains nothing. Where a revision *sorts* is not settled here; see
-  [todo.md](../todo.md).
+- **Revision lineage** — that this is a revision of something, or that something was revised from
+  it — and **archived**, where either applies. Without these the feed shows the same note three
+  times and explains nothing. *Amended 2026-08-24*: a revision no longer replaces what it names, so
+  the word on the older row says it was revised rather than that it is stale
+  ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)), and an item may have been
+  revised more than once. Where a revision **sorts** is settled: at its own capture time, like any
+  capture. Drawing it beside what it came from is this shell's to choose, by grouping on the link.
 - A **pending** mark when an outbox operation about this item has not yet drained.
-- On the queue only, the **last touch** when it differs from the capture time, because that is the
-  key the queue is ordered by and an item revised last night sits at the newest end for no visible
-  reason otherwise.
+- The **last touch** when it differs from the capture time, on any surface. *Amended 2026-08-24*:
+  it no longer orders the queue
+  ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)), so it stops explaining
+  where a row sits and becomes a plain fact about the note — worth more now that an unprocessed
+  item can be edited in place any number of times with nothing else recording that it changed.
 
 **In the feed, a row says what became of it.** The feed is the pool read completely, so routed and
 archived items are in it. The state is an inverted word in the left column, under the time —
@@ -137,8 +142,8 @@ scrolling.
 
 **Opened, a row is for triage.** It adds the item's **routing records** and the actions — route,
 mark done, archive, edit. Everything there is cheap and reversible. The **last touch** is not one of
-the additions: it is read collapsed, where it explains the ordering, and only its *absence* — `not
-since capture` — waits for the row to open, having nothing to explain.
+the additions: it is read collapsed, and only its *absence* — `not since capture` — waits for the
+row to open, having nothing to say.
 
 **Routing is not one of those, and it does not happen in the row.** It is the only act in the shell
 that composes an object rather than selecting a value: where, then what to do there, then exactly

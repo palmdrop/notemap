@@ -1,7 +1,7 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-08-18
+**Last updated**: 2026-08-24
 **Shipped**:
 
 - 2026-08-18 — **A destination is pool state, and the port is per kind.** One is a row a person
@@ -67,7 +67,7 @@
   record is born delivered — which is what lets both ways out of the queue exist before a line of
   retry logic does. `views.queue` and `views.archived` read oldest first from a content-time
   position and take no order *(reversed 2026-08-17: which end a reader starts from is the
-  reader's)*, and **processed is derived** as promised: unarchived, unsuperseded
+  reader's)*, and **processed is derived** as promised: unarchived, unrevised
   and holding no routing record, three anti-joins the store indexes for rather than denormalises
   around. Archiving something already archived is **refused** rather than absorbed, and so is
   unarchiving something that is not: both carry a reason and a time, and a second decision would
@@ -203,7 +203,7 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - Every capture entering the pool becomes an **item** and is never lost. Routing, archiving and
   classification are all non-destructive.
 - The feed presents every item chronologically by capture time, complete, including archived
-  and superseded items. **Which end it starts from is the reader's** (decided 2026-08-06):
+  items and the items revisions were made from. **Which end it starts from is the reader's** (decided 2026-08-06):
   the feed takes an order, newest first by default. The queue does not — oldest first is what
   makes it a queue ([ADR 10](../adr/0010-feed-and-queue-sort-differently.md)).
 - **Capture time comes from the source, never from arrival.** A note written offline and synced
@@ -217,61 +217,78 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 
 ### Editing
 
-- **A revision is about content, and only content.** Editing the capture's content — its text,
-  or an attached file — appends a revision. Classification, archiving, routing and
-  accepting a suggestion change an item's state in place and never produce a revision.
-- Editing an item **appends a revision**: a new item linked to the one it replaces, carrying
-  the original capture time plus the time of the edit.
-- **A revision carries the source identity of the capture it revises** (decided 2026-08-06).
-  It is a new item but not a new capture: no source produced it, so it mints no identity of its
-  own. Source identity is unique per capture, and a revision is exempt — the uniqueness exists
-  so that re-reading a source cannot duplicate, which a revision cannot do.
-- A revision is a clone with a link: **tags carry over**, keeping their attribution.
-  **Routing records do not** — they are the original's history and stay with it. The revision
-  therefore starts unprocessed and resurfaces in the queue, whether or not the original was
-  routed.
-- Nothing that triggers routing carries over either. A proposed destination is a
-  **suggestion**, not a tag
-  ([ADR 6](../adr/0006-enrichment-splits-into-suggestions-and-artifacts.md)), and pending
-  suggestions attach to one item: rules re-propose against the revision's tags.
-- A revision of an archived item is **not archived** — editing says the item is alive again.
-  The same holds for routing, per the above; archive and routing state both stay behind.
-- An item is **superseded** when a later revision points at it. This is derived from the link,
-  never stored, and superseded items are excluded from the queue.
-- **Ids never order a revision against its original** (decided 2026-08-06). A revision carries
-  its original's capture time, so the two tie in the feed, and ids are not guaranteed to sort
-  by mint order — see intake. Wherever the tie matters — feed order, finding the head — a
-  revision's place comes from the revision link: it follows the item it supersedes. Ties
-  between unrelated items may break on any stable key, id included, since no meaning rides on
-  them.
-- **Editing a superseded item is refused** (decided 2026-08-04). Allowing it would fork the
-  revision chain into two revisions of one original, both live in the queue, with nothing to
-  say which is current. Edits go to the end of the chain.
-- The single exception is **amendment of the head**: the newest item in the feed may be edited
-  in place while it is still unprocessed. **Only a capture that becomes the new head seals
-  it** — intake placed earlier in the feed by its source time, such as a file import or an
-  offline sync, does not. There is no timeout.
+*Specified 2026-08-24, not built. The pool still seals on the head rule
+([ADR 11](../adr/0011-in-place-amendment-of-the-head.md)) and a revision still carries its
+original's capture time. This section describes what replaces both, and the code follows in its own
+change.*
+
+- **An item is editable in place while it is unprocessed, and revised once it is processed.**
+  Processed means routed, archived or revised, so editability and queue membership are one
+  predicate read two ways: everything in the queue is a person's to change, and nothing else is.
+- **A revision is about content, and only content.** Editing the capture's content, its text or an
+  attached file, is what this section describes. Classification, archiving, routing and accepting
+  a suggestion change an item's state in place and never produce a revision.
+- **Only a decision about the item seals it.** Capturing something else does not, and neither does
+  time passing. What fixes a capture is that a copy of it went somewhere notemap does not own, or
+  that the person declared themselves done with it by archiving it or by rewriting it into
+  something new.
+- **A revision is an ordinary capture carrying a link.** It mints its own id, its own capture time
+  of now, and its own source identity from whoever made it. The link, `revisionOf`, is a trace,
+  and it is the only thing that distinguishes a revision from anything else that arrives. A
+  revision is not a newer version of what it names and does not replace it: the item it came from
+  was delivered or set aside and stays exactly as it was.
+- Tags carry over to a revision, keeping their attribution. **Routing records, archive state and
+  enrichment do not**, belonging to the item they were made about. A revision therefore starts
+  unprocessed and appears in the queue whether or not the item it came from was routed.
+- Nothing that triggers routing carries over either. A proposed destination is a **suggestion**,
+  not a tag ([ADR 6](../adr/0006-enrichment-splits-into-suggestions-and-artifacts.md)), and
+  pending suggestions attach to one item: rules re-propose against the revision's tags.
+- **An item may be revised more than once**, and the revisions are independent captures that
+  happen to share an ancestor. There is no chain and no current end, so nothing has to say which
+  of them is authoritative. What the item they came from says about them is `revisedInto`, derived
+  from the links and never stored, and it is what processes that item.
+- **A revision does not sit where its ancestor sits.** It carries its own capture time, so the
+  feed places it when the person wrote it and the queue does the same. A surface wanting to draw a
+  revision beside what it came from groups on the link, which is interface policy and not core's.
+- **An in-place amendment does not move an item in the queue**, whose key is capture time.
+  Resurfacing exists so a person meets an item again, and the person amending one is looking at it
+  already; a revision resurfaces on its own by being new. `content_updated_at` still records when
+  the content last changed, for the mirror's rendering and for a surface that wants to say so, and
+  orders nothing.
+- **The payload type may not change**, on either outcome. An edit changes what a capture says, not
+  what it is, and the answer must not depend on whether the pool amends or revises, which an
+  offline caller cannot always know.
+- **An edit is refused what a capture's payload is refused for**, less the one refusal it cannot
+  raise. Editing may change an attached file as readily as the text, so content that fails its
+  schema, a required slot left empty and a reference to an asset the pool does not hold are
+  refused exactly as at capture. A payload type the host does not know is not among them, since a
+  type differing from the item's own is already refused as `payload-type-changed`.
+- **The pool decides which outcome an edit gets, and the caller reads it off the answer.** A
+  caller can usually predict it now, everything the seal derives from riding on the item it
+  already holds, but another client may have routed that item since. Deciding server-side is what
+  keeps an edit made against a stale view a quiet revision rather than a refusal, and a refusal
+  needs a person where a revision does not.
+- **An edit carries an envelope, because a revision is a capture.** It names the source and that
+  source's own id, which is what makes a retried edit idempotent: a revision is matched for replay
+  exactly as a capture is, so an edit resent after a lost response answers with the revision it
+  already made instead of making a second one. An amendment needs no such match, writing the same
+  payload twice being the same as writing it once.
 - A client may freely amend or discard a capture that core has not yet accepted. Immutability
-  begins at the pool. Once a capture has been handed over for delivery it must be treated as
-  accepted, even before a response arrives.
-- Where a client cannot know whether it still holds the head, its in-place edit is
-  re-evaluated on arrival and recorded as a revision if the item is no longer the head.
-- **An edit is refused what a capture's payload is refused for** (stated 2026-08-17), less the
-  one refusal it cannot raise. Editing may change an attached file as readily as the text, so a
-  content that fails its schema, a required slot left empty and a reference to an asset the pool
-  does not hold are refused exactly as at capture. A payload type it does not know is not among
-  them: the type an edit carries is the item's own, since one that differs is already refused as
-  `payload-type-changed`.
-- **Both outcomes touch two items, and a revision owes two mirror writes** (stated 2026-08-17).
-  The revision is new material; the original is superseded, which takes it out of the queue, so
-  its `modified_at` moves and a delta read that missed it would leave a client showing work that
-  has gone.
-- **An edit records the agent that made it** (decided 2026-08-17), as classification does. Only a
-  person edits today, but that is a fact about what exists rather than a rule core enforces.
-- Amending or revising an item invalidates the enrichment attached to the old content, which
-  becomes eligible to run again. *Nothing runs enrichment yet, so this is a rule with no
-  observable effect today; it is carried out by the slice that builds enrichment, not by the one
-  that built editing.*
+  begins at the pool, and then only once the pool has been told the item is done with. Once a
+  capture has been handed over for delivery it must be treated as accepted, even before a response
+  arrives.
+- **Both outcomes touch two items, and a revision owes two mirror writes.** The revision is new
+  material; the item it came from is now processed, which takes it out of the queue, so its
+  `modified_at` moves and a delta read that missed it would leave a client showing work that has
+  gone. Its mirror record is unchanged in substance, `revisedInto` being derived and never
+  mirrored, but the record carries a `modifiedAt` that verify compares.
+- **An edit records the agent that made it**, as classification does. Only a person edits today,
+  but that is a fact about what exists rather than a rule core enforces.
+- **An amendment invalidates exactly the enrichment whose declared needs it changed.** An
+  enrichment whose needs are untouched does not re-run, so editing the text beside a transcript
+  leaves the transcript and the corrections made to it alone. *Nothing runs enrichment yet and the
+  needs mechanism is unbuilt ([ADR 7](../adr/0007-enrichment-steps-declare-their-needs.md)); this
+  binds the slice that builds it rather than describing anything observable today.*
 
 ### Classification
 
@@ -292,15 +309,20 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - **The pool answers which tags are in use** (added 2026-08-20), each with the number of items
   carrying it, most used first and then by name. Not paginated and not narrowed by a
   prefix: the set is small, and a caller completing a tag holds the whole of it and filters that
-  itself, which is what keeps completion working while the pool is out of reach. **A superseded
-  item is not counted**, because tags carry over to a revision and a chain would otherwise count
-  its one tag once per link. An archived item is counted, being still in the pool. This is a
+  itself, which is what keeps completion working while the pool is out of reach. **Every item that
+  exists is counted** (amended 2026-08-24), archived and revised alike. Tags do carry over to a
+  revision, so a tag is counted once for the item it came from and once for the revision, which is
+  correct: those are two items and both carry it. The exclusion this replaces was for a revision
+  chain, where the same note counted once per link, and there is no chain any more. This is a
   reading of what classification has already produced, never a vocabulary: a tag no item carries
   does not exist, and nothing here constrains what may be written.
-- **A superseded item is refused, both halves** (decided 2026-08-17), carrying the id of the
-  revision. Classification goes to the end of the chain as editing does: a revision does not
-  inherit a tag that arrives after it was made, so a tag on the item it superseded is attached
-  where nobody reads it.
+- **Any item that exists may be classified** (decided 2026-08-24), including a processed one.
+  Classification is not content, so nothing that seals a capture reaches it, and re-filing a note
+  after sending it is an ordinary thing to want. This reverses the 2026-08-17 refusal of both
+  halves on a revised item, whose argument was that the tag would land where nobody reads it: the
+  item a revision was made from is a real item in the feed carrying its own routing records, and a
+  tag on it is read exactly where it was put. A revision still does not inherit a tag that arrives
+  after it was made, being a separate capture.
 - **Both halves are idempotent** (decided 2026-08-17). Adding a tag an item already carries leaves
   the attribution and time it has; removing one it does not carry changes nothing. Neither absorbed
   call appends an action or owes the mirror a write, because nothing changed. This is the opposite
@@ -317,16 +339,27 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - Archiving is always an explicit decision, and may carry a reason. **Unarchiving is likewise an
   explicit action** (decided 2026-08-03): an archived item returns to the queue, at its
   unchanged position, since archiving never moved it.
-- **The archive excludes nothing** (decided 2026-08-17): every archived item is in it, superseded
-  or routed alike. It filters on one axis, which is the one archiving acts on. The queue's
-  exclusions say what is not worth working on now; the archive is not a work list but the record
-  of what was set aside, and an item dropped from it for having a revision would be reachable from
-  the feed alone. So an archived item a revision points at sits in the archive while that revision
-  sits in the queue — two items, one of which says which it is, since `supersededBy` is read off
-  the item wherever it appears.
-- **Purge** is the only destructive operation. It removes the item, its entire revision chain,
-  its enrichment, its routing records, its mirror files and its assets — an asset only when no
-  remaining item references it, and the blob beneath it only when no remaining asset does.
+- **The archive excludes nothing** (decided 2026-08-17): every archived item is in it, revised or
+  routed alike. It filters on one axis, which is the one archiving acts on. The queue's exclusions
+  say what is not worth working on now; the archive is not a work list but the record of what was
+  set aside, and an item dropped from it for having a revision would be reachable from the feed
+  alone. So an archived item a revision was made from sits in the archive while that revision sits
+  in the queue — two items, one of which says which it is, since `revisedInto` is read off the item
+  wherever it appears.
+- **Purge** is the only destructive operation. It removes one item, its enrichment, its routing
+  records, its mirror files and its assets — an asset only when no remaining item references it,
+  and the blob beneath it only when no remaining asset does.
+- **Purge takes one item and no more** (decided 2026-08-24). A revision made from the purged item
+  is a capture in its own right, which may since have been tagged, routed and revised again, so
+  taking it along would destroy work nobody asked to lose. Its `revisionOf` is left pointing at the
+  tombstone ([ADR 4](../adr/0004-purge-leaves-a-minimal-tombstone.md)), which is enough to say the
+  thing it came from was purged. This replaces removing the whole revision chain, which was right
+  while a chain was one note spread over several rows.
+- **Core does not warn, and does not refuse an entangled item.** Every fact a person needs before
+  purging rides on the item already — `revisedInto`, and the routing summary saying how many places
+  it reached — so a shell can say what will be left behind and what will not, in its own words.
+  Making core refuse without an acknowledgement would put interface policy in the one place that
+  holds none.
 - **A job's subject may outlive the item it names** (decided 2026-08-11), which closes the open
   question of 2026-08-06. Removing an item's mirror files is work about an item that no longer
   exists, so purge deletes the item's outstanding jobs explicitly and enqueues a mirror-removal
@@ -395,22 +428,27 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 
 ### The queue
 
-- The queue presents items that are unprocessed, unarchived and not superseded, ordered by last
-  touch so that a revised item resurfaces where it will be encountered.
+- The queue presents the items that are unprocessed, ordered by capture time. Unprocessed is the
+  whole of it: an archived item, a routed one and one that has been revised are all processed, and
+  each is excluded by the same clause rather than by a list of exceptions.
 - **Which end the queue starts from is the reader's** (decided 2026-08-17), oldest first by
   default. This reverses "the queue does not take an order" and supersedes that clause of
   [ADR 10](../adr/0010-feed-and-queue-sort-differently.md), on the argument that ADR already made
   for the feed and then declined to follow one surface further: what a client shows first is
   interface policy, and core imposes none. A person clearing a backlog may reasonably want the
   newest captures first, and refusing them buys the domain nothing. What makes it a queue is the
-  **key** — last touch — which is unchanged.
-- **Last touch means content time**: the revision or amendment time where one exists
-  (`content_updated_at`), the capture time otherwise (`created_at`). Classification, routing,
-  archiving and enrichment never move an item in the queue.
+  **key**, and that the queue drains.
+- **The key is capture time** (decided 2026-08-24), the same one the feed uses, so the queue and
+  the feed are one ordering read through two filters. Nothing an item undergoes moves it: not
+  classification, routing, archiving or enrichment, and not editing either. This replaces last
+  touch, which existed so a revised item resurfaced where it would be met and is no longer needed
+  for it, a revision now being a new capture that arrives at the newest end by its own time.
+  `content_updated_at` survives as a record of when content last changed, read by the mirror's
+  rendering and by any surface that wants to say so, and orders nothing.
 - A third timestamp, `modified_at`, records the last change of any kind — content or state —
   and exists for sync delta reads only ([sync.md](sync.md)). It never affects ordering.
-- An item is **processed** when it has been routed or archived. Being **marked processed by
-  hand** — the user carried its content onward themselves — is routing: it appends a routing
+- An item is **processed** when it has been routed, archived or revised. Being **marked processed
+  by hand** — the user carried its content onward themselves — is routing: it appends a routing
   record whose destination is the user, with an optional note of where it went. Passing over
   an item changes nothing and is a skip.
 - **It is the decision that processes an item, not the arrival** (added 2026-08-13). A routing
@@ -419,20 +457,21 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   ([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)). Otherwise the queue
   would report on whether a destination happened to be reachable rather than on what has been
   decided.
-- **Processed is derived, never stored** (added 2026-08-13): archived, or holding at least one
-  routing record. This is the treatment `supersededBy` already gets, and for the same reason — the
-  routing log is authoritative about deliveries, and a column agreeing with it is a column that can
-  one day disagree. The cost is an anti-join per queue page, which the store is expected to index
+- **Processed is derived, never stored** (added 2026-08-13, third clause added 2026-08-24):
+  archived, holding at least one routing record, or holding at least one revision. This is the
+  treatment `revisedInto` already gets, and for the same reason — the routing log is authoritative
+  about deliveries, and a column agreeing with it is a column that can one day disagree. The cost is an anti-join per queue page, which the store is expected to index
   for rather than denormalise around.
 - **Keyset pagination is sound although the queue reorders under the reader** (added 2026-08-13).
   The feed gets this for free, its order never changing; the queue's does, which is the point.
-  Every event that moves an item — a revision, an amendment, a new capture — gives it a content
-  time of *now*, which places it ahead of a reader walking oldest-first. Every event that removes
-  one — routing, archiving, being superseded — hides it, and a reader who had not reached it was
-  never meant to see it. So no event that moves an item can make a page skip a row or repeat one.
+  Nothing moves an item within the queue at all now that the key is capture time, so the only
+  events are arrivals and removals. An arrival, whether a capture or a revision, carries a capture
+  time of *now* and lands ahead of a reader walking oldest-first. A removal, whether routing,
+  archiving or being revised, hides an item a reader who had not reached it was never meant to
+  see. Neither can make a page skip a row or repeat one.
 - **An item returned to the queue behind a reader is seen on that reader's next pass, not this
   one** (added 2026-08-17). Returning is a third kind of event, neither a move nor a removal: it
-  puts an item back at the content time it left with, which may be behind a reader who has already
+  puts an item back at the capture time it left with, which may be behind a reader who has already
   paged past that position, and the rest of that reader's walk will not carry it. Unarchiving is
   one such event and an abandoned or cancelled delivery is another. A fresh read always shows it,
   and a queue is a work list rather than a stream: an item that has just come back is not urgent.
@@ -523,7 +562,7 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - **An item carries a summary of where it has been** (added 2026-08-20): how many records it
   holds, how many of those are still pending, and the distinct places they name — a destination
   by id, or the user. Present only where a record exists, and **derived rather than stored**,
-  which is the treatment `supersededBy` already gets and for the same reason: the routing log is
+  which is the treatment `revisedInto` already gets and for the same reason: the routing log is
   authoritative and a second copy is one that can one day disagree. It is on the item because a
   surface reads a page of them and cannot ask per row — without it a feed can say an item was
   archived and cannot say it was routed. The records themselves are still read one item at a
@@ -958,9 +997,13 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 - **[Versioned API, mutable until the first real pool](../adr/0009-versioned-api-mutable-until-first-real-pool.md)**
   — the freeze is triggered by a checkable event, not by a feeling.
 - **[Feed and queue sort differently](../adr/0010-feed-and-queue-sort-differently.md)** — each
-  surface gets the order its job requires.
+  surface gets the order its job requires. *Its key clause is superseded by
+  [ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)*: both surfaces now sort by
+  capture time, and the queue's job is done by its filter rather than by a second key.
 - **[In-place amendment of the head](../adr/0011-in-place-amendment-of-the-head.md)** — starting
-  a new thought ends the previous one; no timer.
+  a new thought ends the previous one; no timer. *Superseded by
+  [ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)*: what seals a capture is a
+  decision about that capture, not the arrival of an unrelated one.
 - **[An append-only action log](../adr/0012-core-keeps-an-append-only-action-log.md)** — every
   mutation is recorded for tracing; state stays authoritative and nothing is ever derived from
   the log.
@@ -996,6 +1039,12 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   to many destinations in many dialects, so amending the capture into any one of them is a dead
   end. The reshaping belongs to the delivery, which is already asynchronous and leased, and the
   bytes that landed are recorded so provenance covers *what* and not only *where*. Not built.
+- **[An item is editable until it is
+  processed](../adr/0021-an-item-is-editable-until-it-is-processed.md)** — immutability is owed to
+  the copy that left, so nothing but routing, archiving or being revised fixes a capture. A
+  revision stops being a version of an item and becomes an ordinary capture holding a trace, which
+  removes the feed tie, the revision chain and the head rule together. Supersedes ADR 11 and ADR
+  10's key clause.
 
 ---
 
@@ -1036,17 +1085,12 @@ Recorded in full under [docs/adr/](../adr/). In brief:
       kind. [ADR 12](../adr/0012-core-keeps-an-append-only-action-log.md) left it to be decided
       when the log's size becomes noticeable in practice. Nothing prunes it today, and the only
       way to shrink it is the clear operation, which is a decision rather than a policy.
-- [ ] 2026-08-08 — How a revision is ordered against its original in the feed, in a store. This
-      spec says a revision carries its original's capture time, so the two tie, and that the tie
-      is broken by the revision link: the revision follows the item it supersedes. The SQLite
-      driver breaks it on `(created_at, id)`, which agrees with the link **only when ids sort by
-      mint order** — true for the UUIDv7s core mints, and not guaranteed for the arbitrary ids a
-      client is allowed to supply. A client minting `aaa` for a revision of `zzz` would see the
-      revision before its original. The candidates are ordering on the chain explicitly, which
-      is a recursive query on every feed page, or narrowing what an id may be, which contradicts
-      "any unique id is accepted". Not urgent — nothing revises yet — but the pagination
-      position is `(createdAt, id)`, so whatever this becomes, it has to stay a total order the
-      position can name.
+- [x] 2026-08-08, closed 2026-08-24 — How a revision is ordered against its original in the feed.
+      The question existed because a revision carried its original's capture time, so the two tied
+      and the tie had to be broken by the revision link; the driver answered it by denormalising
+      `root_id` and `revision_depth` into the feed key, which this spec never recorded. Both the
+      question and that answer are gone: a revision carries its own capture time and ties with
+      nothing, so `(created_at, id)` is a total order again and the chain columns come out.
 
 ---
 
@@ -1055,19 +1099,25 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 - A capture submitted twice with the same client-generated id produces exactly one item.
 - A capture whose source reports a capture time three days old appears at its chronological
   position in the feed, not at the position its arrival would give it.
-- Editing a non-head item leaves the original readable in the feed and excludes it from the
-  queue; the revision appears in the queue.
-- Editing the head while unprocessed changes it in place and creates no revision. Capturing a
-  new head first causes the same edit to produce a revision instead; an intake whose capture
-  time places it earlier in the feed seals nothing.
+- Editing an unprocessed item changes it in place and creates no revision, however old the item
+  is and whatever has been captured since. Its position in the queue does not change.
+- Editing a processed item appends a revision: an item with its own id, its own capture time of
+  now and its own source identity, appearing at the newest end of the feed and in the queue, while
+  the item it came from stays readable and unchanged where it was.
+- Editing that same processed item a second time appends a second revision. Both name it, it names
+  both, and neither is treated as the current one.
+- An edit resent after a lost response answers with the revision it already made, and the pool
+  holds one revision rather than two.
 - An item that has been routed no longer appears in the queue and still appears in the feed,
   with a record of where it went.
 - An item routed to two destinations carries two routing records.
 - An item read from the feed says how many records it holds, how many are pending, and where they
   went; one that has been nowhere says nothing at all, and one whose last reservation was
   cancelled says nothing again.
-- The tags in use name every tag the pool carries, counting an archived item and not a superseded
-  one, and drop a tag the last item carrying it lost.
+- The tags in use name every tag the pool carries, counting an archived item and a revised one
+  alike, and drop a tag the last item carrying it lost.
+- Tagging an item that has been routed and revised succeeds, and the tag does not appear on the
+  revision.
 - Routing to a reachable destination answers a delivered record with a pointer, and enqueues no
   job.
 - Routing to an unreachable destination answers a pending record, leaves the item out of the queue,
@@ -1089,15 +1139,19 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   routed from there.
 - An item marked processed by hand leaves the queue, stays in the feed unarchived, and carries
   a routing record naming the user as destination.
-- Editing a routed item produces a revision that carries the original's tags with their
-  attribution, carries none of its routing records, and appears in the queue; the original
-  keeps its routing records.
+- Editing a routed item produces a revision that carries its tags with their attribution, carries
+  none of its routing records or archive state, and appears in the queue; the item it came from
+  keeps its routing records and stays out of the queue.
+- Cancelling the only delivery of an item that has not been revised returns it to the queue and
+  makes it editable in place again. Doing the same to an item that has been revised returns it to
+  neither.
 - Accepting a tag on an item does not change its position in the queue.
-- Purging an item removes every revision of it, its assets where unreferenced, and its mirror
-  files; a client that had cached it learns it is gone on its next sync.
-- Purging an item that has been routed exposes, before proceeding, the specific destinations it
-  reached. The warning itself is the host's; core's obligation is that the records are
-  available to ask for.
+- Purging an item removes that item alone, its assets where unreferenced, and its mirror files; a
+  client that had cached it learns it is gone on its next sync. A revision made from it survives,
+  in the queue, its `revisionOf` naming a tombstone.
+- Purging an item that has been routed or revised exposes, before proceeding, the destinations it
+  reached and the revisions made from it. The warning itself is the host's; core's obligation is
+  that both are on the item without asking for them.
 - An archived item can be unarchived, and returns to the queue at its original position.
 - The queue read newest first answers the same items as oldest first, in the opposite order, and a
   position taken from one continues the other from the same place.

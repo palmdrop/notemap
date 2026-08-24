@@ -175,15 +175,17 @@ processed — routed or archived — which the pool decides, not the scroll.
   that word, and warns it is "never the frontend's idea of how far processing has got"). A scroll
   offset does not translate across devices or viewports, so nothing tries to carry it between them.
 - **The list reorders under the reader, and that is sound.** There are three kinds of event
-  ([core.md](core.md#the-queue)). One **moves** an item — a revision, an amendment, a new capture —
-  giving it a content time of now, which places it at the newest end, ahead of a reader working the
-  oldest. One **removes** it — routing, archiving, being superseded — and a reader who had not
-  reached it was never meant to see it. The third **returns** it, at the content time it left with:
+  ([core.md](core.md#the-queue)), and none of them moves an item, the key being capture time
+  *(amended 2026-08-24)*. One **arrives** — a capture, or a revision, which is a capture — carrying
+  a capture time of now, which places it at the newest end, ahead of a reader working the oldest.
+  One **removes** an item — routing, archiving, being revised from — and a reader who had not
+  reached it was never meant to see it. The third **returns** it, at the capture time it left with:
   an unarchive, or an abandoned delivery, which may land *behind* a reader who has already paged
   past that position. Fresh work therefore accumulates at the far end while the oldest drains, and
-  returned work reappears where it was.
+  returned work reappears where it was. An amendment is none of the three: it changes what a row
+  says and never where it sits.
 - **A returned item is the one case the client places itself.** Because it comes back at an
-  unchanged content time rather than at the newest end, the client inserts it by rank, and only
+  unchanged capture time rather than at the newest end, the client inserts it by rank, and only
   inside the window a page has actually read — past that, the pool's own next page carries it. A
   client that appended to the end of its window would sort a returned or freshly captured item
   ahead of older work still to be read. It places by rank in whichever **order** the surface is
@@ -311,11 +313,18 @@ A capture is the client's own until it reaches the pool, and immutable once it d
   refused `capture-id-conflict` ([http-v1.md](http-v1.md#errors)). Editing after hand-over is
   therefore unsafe, and the client does not offer it as a free edit.
 - **After the seal, an edit is a domain edit.** The client sends an `edit` and lets the pool
-  decide its shape: an in-place amendment if the item is still the unprocessed head, a revision
-  otherwise. A client cannot know whether it still holds the head, so it treats amend-versus-revise
-  as the pool's call and reconciles to whatever the pool recorded on the operation's ack
-  ([ADR 11](../adr/0011-in-place-amendment-of-the-head.md)). The optimistic view may show an
-  amendment and settle into a revision; the client shows the reconciled result, not its guess.
+  decide its shape: an in-place amendment while the item is unprocessed, a revision once it is
+  routed, archived or revised
+  ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)). *Amended 2026-08-24*: the
+  client can now usually predict which it will get, since `archived`, `routing` and `revisedInto`
+  all ride on the item it holds, but another client may have routed that item since the last read.
+  So it still treats amend-versus-revise as the pool's call and reconciles to whatever the ack
+  recorded. The optimistic view may show an amendment and settle into a revision; the client shows
+  the reconciled result, not its guess.
+- **An edit carries the client's own source identity**, as a capture does, and the same one on
+  every retry of that edit. This is what makes a retried edit idempotent: the pool matches a
+  revision for replay exactly as it matches a capture, so a lost response costs a duplicate
+  revision only if the client mints a fresh id for the resend.
 
 ### Source identity
 
@@ -471,11 +480,10 @@ that logic out of the one place it is meant to live.
   only as a domain edit and the interface never re-sends a changed body under the original id.
 - A tag added to an item appears before the pool answers and leaves the item where it was in the
   queue; a tag and its own untag still resolve by client operation-time.
-- An edit of an item that turns out no longer to be the head is shown as a revision, matching what
-  the pool recorded, not as the in-place amendment the client optimistically drew.
-- An amended item is re-ranked by the content time the pool gave it rather than left where it was
-  drawn, and so leaves a queue window that no longer reaches it — the pool's next page carries it,
-  which is what a reload would show anyway.
+- An edit of an item that turns out to have been processed since is shown as a revision, matching
+  what the pool recorded, not as the in-place amendment the client optimistically drew.
+- An amended item stays where it was drawn in the queue, and an edit retried after a lost response
+  leaves one revision rather than two.
 - Archiving is available with the pool unreachable; routing and marking-processed-by-hand are not,
   and the interface says why rather than queuing them.
 - A tag added on one device and the same tag removed on another resolve to whichever the person did

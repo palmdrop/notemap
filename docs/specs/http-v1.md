@@ -269,7 +269,7 @@ archive, a capture outcome, an edit outcome:
                        { "kind": "user" } ] } }
 ```
 
-- **Absent where the item has been nowhere**, like `archived` and `supersededBy`, rather than
+- **Absent where the item has been nowhere**, like `archived` and `revisedInto`, rather than
   present and zeroed.
 - `to` is **distinct and in the order the records were made**, and names a destination by id: a
   client resolves the name from `GET /v1/destinations`, which it already reads, and a record's
@@ -322,8 +322,8 @@ The response is a slice:
 
 ### The queue and the archive
 
-`GET /v1/queue` — every item that is unprocessed, unarchived and not superseded, oldest first by
-default.
+`GET /v1/queue` — every item that is unprocessed, oldest first by default. Unprocessed is the
+whole of the filter: archived, routed and revised items are all processed.
 
 `GET /v1/archived` — every archived item, on the same key and the same default.
 
@@ -343,25 +343,25 @@ default.
 - The response is a slice of items with a `next` URL, on the same terms as the feed's: ready to
   fetch, and absent on the last page.
 
-**The queue's position is a content time**, spelled `<at>,<id>` exactly as the feed's is: the
-revision or amendment time where an item has one, its capture time otherwise. **The two are not
-interchangeable.** Nothing in the wire form can stop a client handing a feed position to the queue
-— both are an instant and an id — and nothing rejects one, because there is nothing to reject: it
-names an instant, the read is a comparison, and the answer is a page from the wrong place. A
-client pages by following `next`, which is issued by the surface it came from.
+**The queue's position is a capture time** (amended 2026-08-24), spelled `<at>,<id>` exactly as
+the feed's is and meaning the same thing. The queue, the feed and the archive are now one ordering
+read through three filters, so a position taken from any of them continues any other from the same
+place. It says less than it looks: an item is in exactly one of the queue and the archive, so a
+position carried across still lands where it belongs in the order and answers about a different
+set. A client pages by following `next`, which is issued by the surface it came from.
 
-The same holds between the queue and the archive, which share a sort key and so do continue each
-other coherently — but an item is in exactly one of them, so a position from either still only
-means something on the surface it was issued for.
+This replaces the content-time key, which existed so that a revised item resurfaced where it would
+be met. A revision is an ordinary capture now and arrives at the newest end by its own time, so the
+second key is no longer buying anything ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)).
 
 - An item leaves the queue when it is archived, when it is routed — including being marked
-  processed by hand — or when a revision supersedes it. `GET /v1/archived` makes none of those
-  exclusions: every archived item is there, superseded or routed alike
+  processed by hand — or when something is revised from it. `GET /v1/archived` makes none of those
+  exclusions: every archived item is there, revised or routed alike
   ([core.md](core.md#archive-and-purge)).
-- **The queue reorders under a reader, and no event that moves an item costs it a row.** Every
-  event that moves an item gives it a content time of now, which places it ahead of a reader
-  walking oldest-first; every event that removes one hides it, and a reader who had not reached it
-  was never meant to see it.
+- **The queue reorders under a reader, and no event costs it a row.** Nothing moves an item within
+  the queue any more, the key being capture time, so the events are arrivals and removals. An
+  arrival lands ahead of a reader walking oldest-first; a removal hides an item that reader was
+  never meant to see.
 - **An item returned to the queue is seen on the next read rather than this one.** Unarchiving
   puts an item back at the position it left with, which may be behind a reader who has already
   paged past it; that reader's remaining pages will not carry it, and a fresh read will
@@ -422,8 +422,9 @@ Both answer `200 OK` with the `Item` as it now stands.
   anonymous person — the treatment archiving and routing already get
   ([core.md](core.md#the-action-log)). The attribution that is not a person's is written by
   *accepting a suggestion*, which is core's own call rather than something a route is told.
-- An id no item has is `404 no-such-item`, and an item a revision supersedes is
-  `409 item-superseded` carrying that revision's id — classify the revision instead.
+- An id no item has is `404 no-such-item`. **A processed item is classified like any other**
+  (amended 2026-08-24): classification is not content, so nothing that seals a capture reaches it,
+  and `409 item-superseded` is gone from this route with the word it was named for.
 - The body is required and strict: no `tag` is `400 malformed-envelope`, and so is a key the route
   does not know. The route does not police the tag itself: core trims it, and one that trims to
   nothing is `422 tag-invalid` carrying what was sent.
@@ -450,19 +451,22 @@ person to remember it.
 - **The tag and its count are the whole of a row.** When it was last added is in the pool and is
   not answered: nothing reads it, and a wire field no client consumes is one the next reader has to
   work out the meaning of.
-- `items` counts the items carrying the tag, **not counting a superseded one**: tags carry over to
-  a revision, so a chain would otherwise count its one tag once per link.
+- `items` counts every item carrying the tag (amended 2026-08-24), archived and revised alike.
+  Tags carry over to a revision, so a tag is counted for the item it came from and again for the
+  revision, which is two items both carrying it. The exclusion this replaces was for a revision
+  chain counting one note once per link, and there is no chain any more.
 - This route offers; it never limits. A tag no item carries is simply absent, and
   `POST /v1/items/{id}/tag` takes any tag that trims to something whether it is here or not.
 
 ### Editing an item
 
-`POST /v1/items/{id}/edit` — a change to what the capture says. The body is core's `Payload`
-**verbatim**, exactly as it appears inside a capture envelope:
+`POST /v1/items/{id}/edit` — a change to what the capture says. The body is a capture envelope
+(amended 2026-08-24): the source making the edit, that source's own id for it, and the payload.
 
 ```json
-{ "type": "text", "content": { "text": "a second thought" },
-  "metadata": {}, "assets": [] }
+{ "source": "shell/web", "sourceItemId": "01K3...-edit-1",
+  "payload": { "type": "text", "content": { "text": "a second thought" },
+               "metadata": {}, "assets": [] } }
 ```
 
 `200 OK` with the outcome, which says which of the two shapes the edit took:
@@ -472,25 +476,35 @@ person to remember it.
 ```
 
 ```json
-{ "kind": "revised", "revision": { … }, "supersedes": "0198f0c2-..." }
+{ "kind": "revised", "revision": { … }, "revisionOf": "0198f0c2-..." }
 ```
 
 - **The client does not say which it wants, and the pool decides** — an in-place **amendment**
-  while the item is the newest in the feed and unprocessed, an appended **revision** otherwise
-  ([core.md](core.md#editing), [ADR 11](../adr/0011-in-place-amendment-of-the-head.md)). A client
-  cannot know whether it still holds the head: a capture may have arrived from another device
-  between its last read and this call. So the request carries no intent to honour, and the outcome
-  is read off the answer rather than predicted — which is what
-  [client.md](client.md#editing-and-the-hand-over-seal) already told a client to do.
-- **A revision is a new item with a new id**, carrying the original's capture time and source
-  identity and its tags with their attribution, and no archive state or routing records. It ties
-  with the original in the feed and follows it there by the link rather than by the id
-  ([core.md](core.md#editing)).
+  while the item is unprocessed, an appended **revision** once it is routed, archived or revised
+  ([core.md](core.md#editing),
+  [ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)). A client can usually predict
+  which it will get, everything the seal derives from riding on the item it already holds, but
+  another client may have routed that item since its last read. So the request carries no intent to
+  honour, and the outcome is read off the answer — which is what
+  [client.md](client.md#editing-and-the-hand-over-seal) already told a client to do, and which
+  keeps an edit made against a stale view a quiet revision rather than a refusal a person has to
+  clear.
+- **A revision is an ordinary capture with a new id**, carrying its own capture time of now and its
+  own source identity from the envelope, plus the tags of the item it came from with their
+  attribution, and no archive state or routing records. It sits in the feed at its own time rather
+  than beside what it names ([core.md](core.md#editing)).
+- **The envelope is what makes a retried edit safe.** A revision is matched for replay on
+  `(source, sourceItemId)` exactly as a capture is, so an edit resent after a lost response answers
+  with the revision it already made instead of appending a second one. An amendment needs no match,
+  writing the same payload twice being the same as writing it once.
+- **An item may be revised more than once.** The revisions are independent captures sharing an
+  ancestor; neither is the current one, and the item they came from names both.
 - `200` rather than `201`, although a revision creates an item. The outcome carries the whole item,
   and a client that wants its URL has its id; a `Location` on the amended half would name the item
   the request already named.
-- **Editing an item a revision supersedes is `409 item-superseded`**, carrying the id of the
-  revision. Edits go to the end of the chain, and the caller reconciles by editing that instead.
+- **Editing an item something was revised from appends another revision** (amended 2026-08-24)
+  rather than answering `409 item-superseded`, which is gone. Being revised is one of the three
+  things that process an item, and a processed item is revised rather than refused.
 - **An edit is refused what a capture's payload is refused for**, less one: a `content` that fails
   its type's schema is `422 payload-invalid`, a required slot left empty is
   `422 missing-asset-slot`, and a reference to an asset the pool does not hold is
@@ -901,7 +915,6 @@ Every error, from core or from the daemon, is one shape:
 | `409` | `source-item-changed` | `existing` | core |
 | `409` | `already-archived` | `item`, `at` | core |
 | `409` | `not-archived` | `item` | core |
-| `409` | `item-superseded` | `by` | core |
 | `409` | `not-pending` | `record` | core |
 | `409` | `delivery-in-flight` | `record` | core |
 | `409` | `already-retired` | `destination`, `at` | core |
@@ -951,10 +964,11 @@ is when routing an item, the request was understood and declined, so it is `422`
 limit is a fact the transport layer acts on, and hiding it inside `422` would cost a client the
 chance to stop an upload early.
 
-`item-superseded` is `409` and `payload-type-changed` is `422` by the rule unchanged. The first
-conflicts with a revision the pool already holds, which the caller has to reconcile with by editing
-that instead; the second is a request that was understood and declined, since the type an edit
-carries is the item's own and a different one is not an edit of it.
+`payload-type-changed` is `422` by the rule unchanged: a request that was understood and declined,
+since the type an edit carries is the item's own and a different one is not an edit of it.
+`item-superseded` left the table on 2026-08-24 with the rule it enforced — an item something was
+revised from is edited into another revision and classified like any other item, so there is no
+conflict left for a `409` to report.
 
 `item-purged` is in the table because it is part of the refusal a client parses, not because
 anything raises it yet: purge is not built. It is `404` on the same terms as `no-such-item` — from
@@ -1113,8 +1127,9 @@ by nothing in `/v1`, and removable without changing a promise this spec makes.
   with an `Allow` header.
 - `GET /v1/openapi.json` returns a valid OpenAPI 3.1 document describing every route above, and
   it matches the copy checked into the repo.
-- `GET /v1/queue` returns every unprocessed, unarchived, unsuperseded item oldest first, and
-  following `next` until it is absent yields each exactly once with no trailing empty page.
+- `GET /v1/queue` returns every unprocessed item oldest first — excluding the archived, the routed
+  and those something was revised from — and following `next` until it is absent yields each
+  exactly once with no trailing empty page.
 - Archiving an item removes it from `GET /v1/queue` and adds it to `GET /v1/archived`;
   unarchiving returns it to the queue between the same two neighbours it had before.
 - Marking an item processed answers a routing record naming the user, removes it from the queue,
@@ -1129,18 +1144,23 @@ by nothing in `/v1`, and removable without changing a promise this spec makes.
   tag with a slash in it round-trips; a tag that trims to nothing is `422 tag-invalid`; and tagging
   or untagging for what the item already says answers `200` with the item unchanged rather than a
   refusal.
-- Tagging or untagging an item a revision supersedes is `409 item-superseded` carrying that
-  revision's id.
+- Tagging or untagging an item that has been routed, archived or revised succeeds, and the tag
+  does not appear on any revision made from it.
 - `GET /v1/tags` answers every tag with the number of items carrying it, most used first, and drops
   one the last item carrying it lost.
 - An item read from `GET /v1/feed` after being routed and marked processed carries
   `routing: { records: 2, pending: … }` naming both places; one that has been nowhere carries no
   `routing` at all, and neither does one whose only reservation was cancelled.
-- `POST /v1/items/{id}/edit` on the newest unprocessed item answers `{ "kind": "amended" }` and the
-  item keeps its id; the same call once a later capture exists answers `{ "kind": "revised" }`, and
-  the queue holds the revision where the original was.
-- Editing an item that a revision supersedes is `409 item-superseded` carrying that revision's id,
-  and a payload naming a different type is `422 payload-type-changed`; neither changes anything.
+- `POST /v1/items/{id}/edit` on an unprocessed item answers `{ "kind": "amended" }`, the item keeps
+  its id, and its place in the queue is unchanged — however old it is, and whatever has been
+  captured since.
+- The same call on a routed item answers `{ "kind": "revised" }` with a revision carrying a new id
+  and a capture time of now, which the queue holds at its newest end while the routed item stays
+  where it was.
+- Repeating that call with the same `sourceItemId` answers the revision already made; repeating it
+  with a fresh one appends a second, independent revision.
+- A payload naming a different type is `422 payload-type-changed` and changes nothing, on either
+  outcome.
 - `GET /v1/destinations` answers every wired destination with its capabilities, each carrying the
   payload types it accepts and the JSON Schema of the target it needs.
 - `POST /v1/items/{id}/route` to a reachable destination answers `200` with a `delivered` record
