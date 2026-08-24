@@ -1,9 +1,9 @@
 # The queue is two columns, and routing is a modal over them
 
 **Date**: 2026-08-24
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-08-24
 
 ---
 
@@ -47,49 +47,49 @@ reserve room for it.
 
 ### 1 — Tokens and the frame
 
-- [ ] Branch `agent/queue-two-column-rail`.
-- [ ] `styles/tokens.css`: `--spacing-rail`, `--spacing-fact`, `--spacing-modal`; `--spacing-measure`
+- [x] Branch `agent/queue-two-column-rail`.
+- [x] `styles/tokens.css`: `--spacing-rail`, `--spacing-fact`, `--spacing-modal`; `--spacing-measure`
       becomes the frame's cap rather than the register's; `--spacing-spine` and `--spacing-panel`
       go. One breakpoint, `--breakpoint-narrow: 44rem`, where the rail narrows; `--breakpoint-aside`
       goes with the composer that needed it.
-- [ ] `Column` loses `wide`: nothing widens the page any more. `Sheet` matches the sketch's padding.
-- [ ] `Bar`: furl toggle, waiting count, reachability, settings, order.
-- [ ] `lib/rail.svelte.ts` — furled or not, remembered like the theme.
-- [ ] `lib/waiting.svelte.ts` — how many outbox operations have not drained.
-- [ ] Commit.
+- [x] `Column` loses `wide`: nothing widens the page any more. `Sheet` matches the sketch's padding.
+- [x] `Bar`: furl toggle, waiting count, reachability, settings, order.
+- [x] `lib/rail.svelte.ts` — furled or not, remembered like the theme.
+- [x] `lib/waiting.svelte.ts` — how many outbox operations have not drained.
+- [x] Commit.
 
 ### 2 — The register
 
-- [ ] `Register` becomes the grid itself, and furls its first column to nothing.
-- [ ] `Rail` and `Body` — the two cells one item drops into the grid, with the rule across the top,
+- [x] `Register` becomes the grid itself, and furls its first column to nothing.
+- [x] `Rail` and `Body` — the two cells one item drops into the grid, with the rule across the top,
       the lit wash, and the accent edge on an open body.
-- [ ] `Facts`/`Fact` replace `Label`/`Value`. `Separator`, `Row`, `Content` go.
-- [ ] `Stamp` puts the time beside the date and stacks it on a phone.
-- [ ] `Foot` sits in the content column.
-- [ ] Commit.
+- [x] `Facts`/`Fact` replace `Label`/`Value`. `Separator`, `Row`, `Content` go.
+- [x] `Stamp` puts the time beside the date and stacks it on a phone.
+- [x] `Foot` sits in the content column.
+- [x] Commit.
 
 ### 3 — The surfaces
 
-- [ ] `CaptureRow`, `QueueRow`, `Drained`, `FeedRow` emit a rail and a body.
-- [ ] The rail carries the stamp, the state word where there is one, tags, where it went, and — on
+- [x] `CaptureRow`, `QueueRow`, `Drained`, `FeedRow` emit a rail and a body.
+- [x] The rail carries the stamp, the state word where there is one, tags, where it went, and — on
       the open row — payload type, edited, source, id.
-- [ ] Clicking anywhere in either cell opens the row; the stamp stays the button that says so.
-- [ ] Commit.
+- [x] Clicking anywhere in either cell opens the row; the stamp stays the button that says so.
+- [x] Commit.
 
 ### 4 — Routing as a modal
 
-- [ ] `Modal` replaces `Composer` and `Connector`: veil, panel, title, the subject it is about,
+- [x] `Modal` replaces `Composer` and `Connector`: veil, panel, title, the subject it is about,
       dismissed by the veil, the ×, or Escape.
-- [ ] `RoutingComposer` renders into it; the surface owns which item is being routed, so
+- [x] `RoutingComposer` renders into it; the surface owns which item is being routed, so
       `lib/composing.svelte.ts` goes.
-- [ ] Commit.
+- [x] Commit.
 
 ### 5 — Docs and gates
 
-- [ ] `docs/specs/shell.md`: the rail, the furl, the modal, the waiting mark, and the death of the
+- [x] `docs/specs/shell.md`: the rail, the furl, the modal, the waiting mark, and the death of the
       spine. Close the pending-mark open question.
-- [ ] Typecheck, tests, lint. `pnpm test:stack` is not needed — nothing crosses the layers.
-- [ ] Commit.
+- [x] Typecheck, tests, lint. `pnpm test:stack` is not needed — nothing crosses the layers.
+- [x] Commit.
 
 ---
 
