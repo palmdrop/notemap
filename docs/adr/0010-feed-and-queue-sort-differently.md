@@ -1,7 +1,16 @@
 # 10. The feed and the queue sort differently
 
 **Date**: 2026-08-02
-**Status**: Accepted
+**Status**: Accepted, key clause superseded by
+[ADR 21](0021-an-item-is-editable-until-it-is-processed.md)
+
+> *Superseded 2026-08-24, for the key alone.* The queue sorts by capture time now, as the feed
+> does, so the two surfaces are one ordering read through two filters. The reason this ADR gives
+> for the queue's own key, that a revised item should resurface where it will be met, survives
+> without it: a revision is an ordinary capture and arrives at the newest end by its own time. What
+> this ADR settles about the feed's key, and about direction being the reader's on both surfaces,
+> is untouched.
+
 
 ---
 

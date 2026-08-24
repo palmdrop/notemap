@@ -112,7 +112,7 @@ restore that item. It carries
 
 It does not carry suggestions, decided or pending; enrichment states; jobs, leases or the action
 log ([ADR 12](../adr/0012-core-keeps-an-append-only-action-log.md)); tombstones; or anything
-derived, `supersededBy` included. This is the material-not-operational rule of 2026-08-03 held
+derived, `revisedInto` included. This is the material-not-operational rule of 2026-08-03 held
 to: what the user kept is mirrored, how notemap ran is not. A rebuilt pool therefore has no
 history and no rejection signal, and both losses are accepted.
 
@@ -334,9 +334,12 @@ when and what rather than what it is about. The mirror's promise is that materia
 findable, which is the same narrowing ADR 13 already accepted for `assets/`. The exact capture
 time is in the filename, the frontmatter and the record.
 
-Amending the head **rewrites the pair in place**. Appending would only make sense if the mirror
-were an event log, which ADR 12 deliberately keeps it from being, and an amendment overwrites
-content the pool no longer holds either.
+Amending an item **rewrites the pair in place**. Appending would only make sense if the mirror were
+an event log, which ADR 12 deliberately keeps it from being, and an amendment overwrites content
+the pool no longer holds either. *Amended 2026-08-24*: amendment is now the ordinary way an
+unprocessed item changes rather than a courtesy window on the newest one
+([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)), so the mirror is rewritten in
+place far more often. Nothing about the pair changes; only how often the job runs.
 
 Because mirror text is never read, `pool-mirror/` is safe inside a synced folder. Neither half is
 portable alone: **the backup unit is the whole `notemap/` directory**, and rebuilding needs the

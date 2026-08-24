@@ -1,5 +1,19 @@
 # Developer TODOs
-- [ ] Consider allowing in-place edits to notes IF they have not been routed. If they are routed, editing becomes revision only, with a new capture entry to process. 
+- [ ] **Build ADR 21.** The specs describe an item that is editable until it is processed; the code
+  still seals on the head rule. The gap, in one place: `sealed()` loses the head clause and gains a
+  revisions one; `revisionOf` stays and `supersededBy` becomes `revisedInto`, a list; a revision
+  mints its own capture time and source identity, so `/v1/items/{id}/edit` takes an envelope and
+  reuses capture's replay check; the queue key becomes `created_at`, which drops `root_id`,
+  `revision_depth`, their index, `chain()`, `chainAt` and the chain lookup in `feedKeyset`;
+  `PoolTx.head()` and `newestItem` go; the `item-superseded` refusal goes with its 409 mapping and
+  its client message; the `revision_of IS NULL` carve-out in source lookup goes; tags-in-use stops
+  excluding revised items; and the client's `revised()` placement logic goes. Enrichment
+  invalidation is specified per declared need and has nothing to invalidate yet.
+- [x] Consider allowing in-place edits to notes IF they have not been routed. Settled 2026-08-24 in
+  [ADR 21](adr/0021-an-item-is-editable-until-it-is-processed.md), one clause wider than this line
+  asked for: an item is editable while it is **unprocessed**, which is routed, archived or revised.
+  A revision stopped being a version of an item and became an ordinary capture holding a trace.
+  Specified across core.md, http-v1.md, client.md, sync.md, mirror.md and shell.md; **not built**.
 - [ ] Routing arguments - more detailed routing within a destination. The mechanism already exists: a capability's `targetSchema` is a JSON Schema the adapter publishes and core validates, so an adapter wanting a template name, a format, a column or a priority just declares one. What is left is making those schemas good enough to build a form from - titles, descriptions, defaults, enums - and saying so in the spec, so adapters bother.
   - This has a caller now. The routing composer builds the target step from `targetSchema`, so a
     schema with nothing in it renders as unlabelled text inputs; an enum would render as the same
@@ -7,10 +21,21 @@
 - [ ] Routing templates - changing or formatting an item on routing, for example, making an item a piece of a TODO list
   - AI templates, where a local model formats an entry that may or may not be properly formatted
   - Shape settled in [ADR 19](adr/0019-a-destination-converts-and-the-delivery-records-what-went.md): the destination converts a copy, the work happens inside the delivery, and the bytes that landed come back to be stored on the routing record. Open: whether a template is configured in the delivery's arguments or in destination config, and whether a template is itself a thing a person edits.
-- [ ] Routing edits - being able to freely edit an item as it is routed. Settled: **amend, then route**, two operations that already exist - a frontend can make it one smooth gesture with no new architecture. Rewriting the capture _because of where it is going_ is a dead end, and ADR 19 records why so it does not get proposed again. Open: what happens to the amendment if the routing decision it was made for is then abandoned.
+- [ ] Routing edits - being able to freely edit an item as it is routed. Settled: **amend, then route**, two operations that already exist - a frontend can make it one smooth gesture with no new architecture. Rewriting the capture _because of where it is going_ is a dead end, and ADR 19 records why so it does not get proposed again. Open no longer, as of 2026-08-24: the amendment stands, because it was an amendment of an
+  unprocessed item and the routing that sealed it never landed. Cancelling the reservation removes
+  it, so the item is unprocessed again and editable in place again — unless something was revised
+  from it meanwhile, which seals it for good, since rewriting it would leave that revision's trace
+  naming content which never produced it
+  ([ADR 21](adr/0021-an-item-is-editable-until-it-is-processed.md)).
 - [ ] Routing auto-processing - routing a note to a specific destination converts it to a specified format. A todo list, a prose paragraph, a markdown image link, whatever. The format could be a templating language, or natural language, with an LLM in the loop, or a mix. ADR 19 answers _where the work happens_; the interesting half is still open - **preview**. Composing a routing decision with a template means wanting to see the result before committing, which is a third method on the destination port and needs the conversion to be repeatable enough that a preview means something.
 - [ ] Routing rules - core.md has carried "how rules are expressed, how fan-out to several destinations is presented, and whether a rule may ever be trusted to fire unattended" since 2026-08-02. Capture templates that auto-route are the first thing to touch it: choosing a template _is_ a person's decision to route, made early, which is how it survives "a rule never delivers on its own" - but that sentence wants writing deliberately rather than discovering later.
-- [ ] Reconsider revisions: maybe they should appear in the original place of the note, or that should be a filter option. User can choose to view the queue in order of creation, modification, etc. Revisions appear in place of original, but in the db, they are different entries.
+- [ ] Reconsider where revisions *appear*. Half-answered on 2026-08-24: a revision now carries its
+  own capture time, so it sorts at the moment it was written and no longer ties with what it came
+  from — which is what removed the chain columns from the feed key. Showing it beside its ancestor
+  is therefore a client-side grouping on `revisionOf`, best-effort across page boundaries, and no
+  longer something the pool can do for a surface. Still open: whether the shell does that grouping
+  by default, and whether ordering the queue by last touch comes back as a **reader's option** now
+  that it is no longer the key.
 - [ ] Verify and repair reach destination records. The mirror carries them
   ([ADR 20](adr/0020-destinations-are-pool-state.md)), but neither verify nor repair exists to
   reach anything, so a mirror holding a stale or missing destination record has nothing that would
@@ -36,7 +61,7 @@
   `GET /v1/items/:id/routing` per row. A slice across [core.md](specs/core.md) and
   [http-v1.md](specs/http-v1.md) first, then the client and the shell — the shell's half is drawn
   and waiting. Decided 2026-08-20 that the answer is to carry it rather than work around it.
-- [ ] `GET /v1/tags` — the tag chooser has nothing to choose from. No route reads the tags in use,
+- [x] `GET /v1/tags` — the tag chooser has nothing to choose from. No route reads the tags in use,
   so the shell offers free entry into a control already shaped to take suggestions. Wants a core
   read, the route, and a client cache. Open: whether it carries counts, which is the difference
   between a chooser and a tag manager; and whether it answers for the whole pool or for a surface.
