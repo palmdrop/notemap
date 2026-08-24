@@ -192,6 +192,9 @@ This one goes first. Three plans wait on it, in this order:
 3. [shell-offline-marks](shell-offline-marks.md) — the pending mark, the incomplete-surface mark,
    and a picture drawn before it is sent. Phase 5 of this plan touches the same rows.
 
+[offline-capture-rollout](offline-capture-rollout.md) sequences all four into pull requests and says
+where each one may be split.
+
 ---
 
 ## Testing
