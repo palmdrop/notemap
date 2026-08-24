@@ -5,7 +5,7 @@ import { createMemoryStore } from "../adapters/memory-store";
 import type { Destination } from "../api/types";
 import { createClient } from "../client";
 import { Refused, Unreachable } from "../errors";
-import { routeOf } from "../testing/pool";
+import { EDITS, routeOf } from "../testing/pool";
 import {
   json,
   mockTransport,
@@ -25,7 +25,11 @@ function read<T>(source: Observable<T>): T {
 
 function clientOver(handler: Handler) {
   const transport = mockTransport(handler);
-  const client = createClient({ transport, store: createMemoryStore() });
+  const client = createClient({
+    transport,
+    store: createMemoryStore(),
+    source: EDITS,
+  });
   return { client, transport };
 }
 

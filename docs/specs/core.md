@@ -4,6 +4,16 @@
 **Last updated**: 2026-08-24
 **Shipped**:
 
+- 2026-08-24 — **An item is editable until it is processed.** The seal is now a decision about the
+  item — routed, archived or something revised from it — rather than a later capture taking the
+  head, so an unprocessed capture is a person's to rewrite however old it is, and an amendment
+  moves nothing. A revision became an ordinary capture carrying a trace: its own id, its own
+  capture time, its own source identity from the edit's envelope, which is what lets a retried edit
+  be matched for replay the way a capture is. `supersededBy` became `revisedInto`, a list, and one
+  item may be revised any number of times; the head rule, the revision chain and the
+  `item-superseded` refusal are gone. ([plan](../plans/editable-until-processed.md),
+  [ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md))
+
 - 2026-08-18 — **A destination is pool state, and the port is per kind.** One is a row a person
   creates, renames, retires and deletes through the pool's own API, each mutation appending to the
   action log; `PoolPorts.destinations` and the per-destination adapter are replaced by one
@@ -216,11 +226,6 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   so re-reading a source cannot produce a duplicate.
 
 ### Editing
-
-*Specified 2026-08-24, not built. The pool still seals on the head rule
-([ADR 11](../adr/0011-in-place-amendment-of-the-head.md)) and a revision still carries its
-original's capture time. This section describes what replaces both, and the code follows in its own
-change.*
 
 - **An item is editable in place while it is unprocessed, and revised once it is processed.**
   Processed means routed, archived or revised, so editability and queue membership are one

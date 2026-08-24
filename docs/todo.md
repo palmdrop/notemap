@@ -1,20 +1,11 @@
 # Developer TODOs
 - [ ] Consider full POC: inbox via Memos app, routing to complex obsidian project. Router should be able to advertise folders, and keep track of custom tags that exist for auto-routing. 
-- [ ] **Build ADR 21.** The specs describe an item that is editable until it is processed; the code
-  still seals on the head rule. The gap, in one place: `sealed()` loses the head clause and gains a
-  revisions one; `revisionOf` stays and `supersededBy` becomes `revisedInto`, a list; a revision
-  mints its own capture time and source identity, so `/v1/items/{id}/edit` takes an envelope and
-  reuses capture's replay check; the queue key becomes `created_at`, which drops `root_id`,
-  `revision_depth`, their index, `chain()`, `chainAt` and the chain lookup in `feedKeyset`;
-  `PoolTx.head()` and `newestItem` go; the `item-superseded` refusal goes with its 409 mapping and
-  its client message; the `revision_of IS NULL` carve-out in source lookup goes; tags-in-use stops
-  excluding revised items; and the client's `revised()` placement logic goes. Enrichment
-  invalidation is specified per declared need and has nothing to invalidate yet.
 - [x] Consider allowing in-place edits to notes IF they have not been routed. Settled 2026-08-24 in
   [ADR 21](adr/0021-an-item-is-editable-until-it-is-processed.md), one clause wider than this line
   asked for: an item is editable while it is **unprocessed**, which is routed, archived or revised.
   A revision stopped being a version of an item and became an ordinary capture holding a trace.
-  Specified across core.md, http-v1.md, client.md, sync.md, mirror.md and shell.md; **not built**.
+  Specified across core.md, http-v1.md, client.md, sync.md, mirror.md and shell.md, and built on
+  2026-08-24 ([plan](plans/editable-until-processed.md)).
 - [ ] Routing arguments - more detailed routing within a destination. The mechanism already exists: a capability's `targetSchema` is a JSON Schema the adapter publishes and core validates, so an adapter wanting a template name, a format, a column or a priority just declares one. What is left is making those schemas good enough to build a form from - titles, descriptions, defaults, enums - and saying so in the spec, so adapters bother.
   - This has a caller now. The routing composer builds the target step from `targetSchema`, so a
     schema with nothing in it renders as unlabelled text inputs; an enum would render as the same

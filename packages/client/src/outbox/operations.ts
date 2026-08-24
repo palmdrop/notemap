@@ -1,4 +1,4 @@
-import type { CaptureEnvelope, ItemId, Payload } from "../api/types";
+import type { CaptureEnvelope, EditEnvelope, ItemId } from "../api/types";
 
 export type OperationId = string;
 
@@ -15,7 +15,12 @@ export type Operation =
       readonly reason?: string;
     }
   | { readonly kind: "unarchive"; readonly item: ItemId }
-  | { readonly kind: "edit"; readonly item: ItemId; readonly payload: Payload }
+  | {
+      readonly kind: "edit";
+      readonly item: ItemId;
+      /** Minted once with the operation: reusing it is what makes a retry one revision. */
+      readonly envelope: EditEnvelope;
+    }
   | { readonly kind: "tag"; readonly item: ItemId; readonly tag: string }
   | { readonly kind: "untag"; readonly item: ItemId; readonly tag: string }
   | {

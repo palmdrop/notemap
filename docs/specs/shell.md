@@ -26,6 +26,13 @@
   toggle, the order control, and `N waiting` — the outbox count that answers the pending mark this
   spec had been carrying as an open question. **Not shipped**: `record` beside `capture`, nothing
   capturing audio. ([plan](../plans/queue-two-column-rail.md))
+- 2026-08-24 — **A row says it was revised, and offers the edit only where there is one to make.**
+  The word on the older row is `revised` rather than `superseded`, since a revision does not replace
+  what it names, and the edit action is drawn from `archived`, `routing` and `revisedInto` on the
+  row itself. The last touch stopped being described as what the queue is ordered by and reads as
+  what it is: the only record that an unprocessed note was rewritten.
+  ([plan](../plans/editable-until-processed.md),
+  [ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md))
 - 2026-08-20 — **The designed shell is built.** `apps/ui` draws the queue and the feed as one
   register: two columns, one line weight, ink structure, and the accent reserved for action and
   alarm. Every colour, face, size and measure is a role defined once in `styles/tokens.css`, and the

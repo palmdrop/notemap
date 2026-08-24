@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createMemoryStore } from "./adapters/memory-store";
 import type { Item } from "./api/types";
 import { createClient } from "./client";
-import { anItem, routeOf, stoppedClock } from "./testing/pool";
+import { anItem, EDITS, routeOf, stoppedClock } from "./testing/pool";
 import {
   json,
   mockTransport,
@@ -31,6 +31,7 @@ function clientOver(handler: Handler) {
     transport,
     store: createMemoryStore(),
     now: clock.now,
+    source: EDITS,
   });
   return { client, transport };
 }
@@ -152,7 +153,7 @@ describe("amend versus revise", () => {
     };
 
     const { client } = await overOne(() =>
-      json(200, { kind: "revised", revision, supersedes: "one" }),
+      json(200, { kind: "revised", revision, revisionOf: "one" }),
     );
 
     await client.edit("one", payload("edited"));
@@ -175,7 +176,7 @@ describe("amend versus revise", () => {
 
     const { client } = await overOne((request) =>
       routeOf(request) === "POST /v1/items/one/edit"
-        ? json(200, { kind: "revised", revision, supersedes: "one" })
+        ? json(200, { kind: "revised", revision, revisionOf: "one" })
         : json(200, anItem("one")),
     );
 
@@ -186,7 +187,7 @@ describe("amend versus revise", () => {
     expect(original?.payload.content["text"]).toBe("one");
   });
 
-  it("keeps a superseded original out of the queue when a later answer names it", async () => {
+  it("keeps the item a revision was made from out of the queue", async () => {
     const revision: Item = {
       ...anItem("two"),
       payload: payload("edited"),
@@ -195,24 +196,104 @@ describe("amend versus revise", () => {
 
     const { client } = await overOne((request) =>
       routeOf(request) === "POST /v1/items/one/edit"
-        ? json(200, { kind: "revised", revision, supersedes: "one" })
-        : json(200, { ...anItem("one"), supersededBy: "two" }),
+        ? json(200, { kind: "revised", revision, revisionOf: "one" })
+        : json(200, { ...anItem("one"), revisedInto: ["two"] }),
     );
 
     await client.edit("one", payload("edited"));
     await client.drain();
     expect(ids(read(client.queue))).toEqual(["two"]);
 
-    // An operation still naming the original settles with the item the pool
-    // holds, which says it is superseded — so it does not come back as work.
+    // An operation still naming it settles with the item the pool holds, which
+    // names a revision — so it does not come back as work.
     await client.tag("one", "kind/quote");
     await client.drain();
 
     expect(ids(read(client.queue))).toEqual(["two"]);
   });
 
+  it("leaves an amended item where it was drawn in the queue", async () => {
+    const { client } = await clientOver((request) =>
+      routeOf(request) === "GET /v1/queue"
+        ? json(200, {
+            values: [
+              anItem("one"),
+              { ...anItem("two"), createdAt: "2026-08-17T11:00:00.000Z" },
+            ],
+          })
+        : json(200, {
+            kind: "amended",
+            item: {
+              ...anItem("one"),
+              payload: payload("edited"),
+              contentUpdatedAt: "2026-08-17T13:00:00.000Z",
+            },
+          }),
+    );
+    await client.loadQueue();
+
+    await client.edit("one", payload("edited"));
+    await client.drain();
+
+    // The last touch is later than either capture time and moves nothing.
+    expect(ids(read(client.queue))).toEqual(["one", "two"]);
+  });
+
+  it("claims one identity across every retry, so a retried edit is one revision", async () => {
+    const revision: Item = {
+      ...anItem("two"),
+      payload: payload("edited"),
+      revisionOf: "one",
+    };
+
+    const { client, transport } = await overOne(() =>
+      json(200, { kind: "revised", revision, revisionOf: "one" }),
+    );
+
+    transport.unreachable(true);
+    await client.edit("one", payload("edited"));
+    await client.drain();
+    transport.unreachable(false);
+    await client.drain();
+
+    const edits = transport.sent.filter(
+      (request) => routeOf(request) === "POST /v1/items/one/edit",
+    );
+    const identities = await Promise.all(
+      edits.map(
+        async (request) =>
+          ((await request.json()) as { source: string; sourceItemId: string })
+            .sourceItemId,
+      ),
+    );
+
+    expect(edits.length).toBeGreaterThan(1);
+    expect(new Set(identities).size).toBe(1);
+  });
+
+  it("carries the client's own source, not the item's", async () => {
+    const { client, transport } = await overOne(() =>
+      json(200, {
+        kind: "amended",
+        item: { ...anItem("one"), payload: payload("edited") },
+      }),
+    );
+
+    await client.edit("one", payload("edited"));
+    await client.drain();
+
+    const sent = transport.sent.find(
+      (request) => routeOf(request) === "POST /v1/items/one/edit",
+    );
+    expect((await sent?.json()) as { source: string }).toMatchObject({
+      source: EDITS,
+    });
+  });
+
   it("rolls a refused edit back and says why", async () => {
-    const { client } = await overOne(() => refusal(409, "item-superseded"));
+    const { client } = await overOne(() =>
+      refusal(422, "payload-type-changed", { from: "text" }),
+    );
 
     await client.edit("one", payload("edited"));
     await client.drain();
@@ -220,7 +301,7 @@ describe("amend versus revise", () => {
     expect(says(read(client.queue))).toEqual(["one"]);
     expect(read(client.outbox)[0]?.state).toBe("refused");
     expect(read(client.outbox)[0]?.failure).toBe(
-      "a newer version of that item has replaced it",
+      "an edit cannot change what kind of thing this is",
     );
   });
 });

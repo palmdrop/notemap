@@ -131,6 +131,31 @@ test("reads the drained queue as the thing it was working toward", async () => {
   expect(screen.queryByText(/Empty —/)).toBeNull();
 });
 
+test("offers the edit on an unprocessed row and not on a processed one", async () => {
+  pool((request: Request) =>
+    routeOf(request) === "GET /v1/queue"
+      ? json(200, {
+          values: [
+            anItem("mine"),
+            // Held from an earlier read: the pool would not answer it as work.
+            anItem("gone", { revisedInto: ["later"] }),
+          ],
+        })
+      : json(200, { values: [] }),
+  );
+
+  render(Queue);
+  await screen.findByText("mine");
+
+  await open(1);
+  expect(screen.queryByRole("button", { name: "edit" })).toBeNull();
+  // And the row says what became of it instead.
+  expect(screen.getByText("revised")).toBeDefined();
+
+  await open(0);
+  expect(screen.getAllByRole("button", { name: "edit" })).toHaveLength(1);
+});
+
 test("says on the row it opens when an item was last touched", async () => {
   const touchedAt = "2026-08-19T22:14:00.000Z";
 

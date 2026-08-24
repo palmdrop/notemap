@@ -1,7 +1,7 @@
 import { answered } from "../../api/http";
 import { optimisticItem } from "../../capture/envelope";
 import type { Applied } from "../../state/applied";
-import { cached, forget, intoQueue, withIds } from "../../state/state";
+import { arrived, forget } from "../../state/state";
 import { replacing, type Handler } from "../handler";
 
 export const capture: Handler<"capture"> = {
@@ -9,15 +9,9 @@ export const capture: Handler<"capture"> = {
 
   apply(state, operation): Applied {
     const item = optimisticItem(operation.envelope);
-    const items = cached(state, [item]);
 
     return {
-      state: {
-        ...state,
-        items,
-        feed: withIds(state.feed, [item.id, ...state.feed.ids]),
-        queue: withIds(state.queue, intoQueue(state.queue, item.id, items)),
-      },
+      state: arrived(state, item),
       undo: (current) => forget(current, item.id),
     };
   },

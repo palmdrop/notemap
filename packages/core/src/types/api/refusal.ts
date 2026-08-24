@@ -52,8 +52,7 @@ export type EditRefusal =
   | { readonly kind: "source-item-changed"; readonly existing: ItemId };
 
 export type TagRefusal =
-  | SubjectRefusal
-  | { readonly kind: "tag-invalid"; readonly tag: string };
+  SubjectRefusal | { readonly kind: "tag-invalid"; readonly tag: string };
 
 export type ArchiveRefusal =
   | SubjectRefusal

@@ -7,14 +7,18 @@ import { replacing, type Handler, type Settlement } from "../handler";
 export const edit: Handler<"edit"> = {
   target: (operation) => operation.item,
 
-  /** Always an amendment: the client cannot know whether it still holds the head. */
+  /**
+   * Drawn as an amendment, which is what an item the client holds as
+   * unprocessed will get. Another client may have routed it since, and the
+   * settlement is what reconciles that.
+   */
   apply(state, operation, at): Applied {
     const previous = state.items.get(operation.item);
     if (previous === undefined) return unchanged(state);
 
     const amended: Item = {
       ...previous,
-      payload: operation.payload,
+      payload: operation.envelope.payload,
       contentUpdatedAt: at,
     };
 
@@ -44,13 +48,13 @@ export const edit: Handler<"edit"> = {
     const outcome = await answered(
       api.POST("/v1/items/{id}/edit", {
         params: { path: { id: operation.item } },
-        body: operation.payload,
+        body: operation.envelope,
       }),
     );
 
     if (outcome.kind === "amended") return replacing(outcome.item);
 
-    // The guess goes back first, or the original keeps content it never carried.
+    // The guess goes back first, or the item keeps content it never carried.
     const revision = outcome.revision;
     return (state: ClientState, revert) =>
       revised(revert(state), operation.item, revision);

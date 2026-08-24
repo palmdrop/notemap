@@ -1,5 +1,8 @@
 import type { Item } from "../api/types";
 
+/** The source a client under test stamps on the revisions its edits make. */
+export const EDITS = "web-edit";
+
 export function anItem(id: string, overrides: Partial<Item> = {}): Item {
   return {
     id,
@@ -9,6 +12,7 @@ export function anItem(id: string, overrides: Partial<Item> = {}): Item {
     tags: [],
     createdAt: "2026-08-17T10:00:00.000Z",
     modifiedAt: "2026-08-17T10:00:00.000Z",
+    revisedInto: [],
     ...overrides,
   };
 }

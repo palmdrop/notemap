@@ -1,5 +1,8 @@
 import type {
+  CapabilityName,
+  DestinationId,
   Duration,
+  EditEnvelope,
   EditOutcome,
   Item,
   ItemId,
@@ -9,12 +12,14 @@ import type {
   Pool,
   Position,
 } from "@notemap/core";
+import { fakeCapability, fakeDestinations } from "@notemap/core/testing";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
   envelope,
   harness,
   itemRecord,
+  SCRATCHPAD,
   tag,
   TEXT,
   upload,
@@ -24,6 +29,9 @@ import {
 const PERSON = { kind: "person" } as const;
 const ALL: Page = { limit: 50 };
 const OLDEST: PageRequest = { limit: 50, order: "oldest-first" };
+
+/** The source a person's edits arrive under, which is not the item's own. */
+const SHELL = "shell/web" as typeof SCRATCHPAD;
 
 const open: Harness[] = [];
 
@@ -60,6 +68,11 @@ function text(value: string): Payload {
   return { type: TEXT, content: { text: value }, metadata: {}, assets: [] };
 }
 
+/** An edit as a client makes one: its own source, and its own id for the edit. */
+function edit(value: string, sourceItemId = "edit-1"): EditEnvelope {
+  return { source: SHELL, sourceItemId, payload: text(value) };
+}
+
 function revision(outcome: EditOutcome): Item {
   if (outcome.kind !== "revised") {
     throw new Error(`expected a revision, got ${outcome.kind}`);
@@ -87,37 +100,62 @@ async function takeMirrorWork(p: Pool): Promise<readonly ItemId[]> {
 
 const ids = (values: readonly Item[]) => values.map((item) => item.id);
 
-/** An item a later capture has taken the head from, with the clock past both. */
-async function sealed(opened: Harness): Promise<Item> {
+/** An item routed and left in the queue's shadow, with the clock past the edit. */
+async function processed(opened: Harness): Promise<Item> {
   const item = await captured(opened.pool);
-  await captured(opened.pool, {
-    id: "item-1",
-    capturedAt: "2026-08-06T09:01:00.000Z",
-  });
-  opened.clock.set("2026-08-06T09:02:00.000Z");
+  await opened.pool.routing.markProcessed(item.id, "pasted into the vault");
+  opened.clock.set("2026-08-06T10:00:00.000Z");
   return item;
 }
 
-describe("amending the head", () => {
-  it("edits the unprocessed head in place", async () => {
+const VAULT = "vault" as DestinationId;
+
+const RESERVED = {
+  destination: VAULT,
+  capability: "create-note" as CapabilityName,
+  target: { path: "inbox/a-thought.md" },
+};
+
+/** An item whose delivery never landed: a reservation nothing has left through. */
+async function reserved() {
+  const opened = harness(
+    undefined,
+    "stub",
+    fakeDestinations({
+      answer: { kind: "unreachable", detail: "ECONNREFUSED" },
+      capabilities: [fakeCapability({ name: "create-note" })],
+    }),
+  );
+  open.push(opened);
+  await opened.putDestination({ id: VAULT });
+
+  const item = await captured(opened.pool);
+  const record = succeeded(await opened.pool.routing.route(item.id, RESERVED));
+  return { ...opened, item, record };
+}
+
+describe("amending an unprocessed item", () => {
+  it("edits it in place however old it is, and whatever arrived since", async () => {
     const opened = pool();
     const { pool: p } = opened;
     const item = await captured(p);
-    opened.clock.set("2026-08-06T10:00:00.000Z");
+    await captured(p, { id: "item-1", capturedAt: "2026-08-10T09:00:00.000Z" });
+    await captured(p, { id: "item-2", capturedAt: "2026-08-13T09:00:00.000Z" });
+    opened.clock.set("2026-08-13T10:00:00.000Z");
 
     const outcome = succeeded(
-      await p.items.edit(item.id, text("a second thought"), PERSON),
+      await p.items.edit(item.id, edit("a second thought"), PERSON),
     );
 
     expect(outcome).toMatchObject({ kind: "amended" });
     const amended = await p.items.get(item.id);
     expect(amended?.payload.content).toEqual({ text: "a second thought" });
     expect(amended?.createdAt).toBe(item.createdAt);
-    expect(amended?.contentUpdatedAt).toBe("2026-08-06T10:00:00.000Z");
-    expect(ids((await p.views.feed(ALL)).values)).toEqual([item.id]);
+    expect(amended?.contentUpdatedAt).toBe("2026-08-13T10:00:00.000Z");
+    expect(amended?.revisedInto).toEqual([]);
   });
 
-  it("moves the amended item in the queue, which orders on last touch", async () => {
+  it("leaves it where it sits in the queue, which orders on capture time", async () => {
     const opened = pool();
     const { pool: p } = opened;
     const first = await captured(p);
@@ -127,220 +165,232 @@ describe("amending the head", () => {
     });
     opened.clock.set("2026-08-06T10:00:00.000Z");
 
-    // The second is the head, so this amends rather than revising.
-    await p.items.edit(second.id, text("edited"), PERSON);
+    await p.items.edit(first.id, edit("edited"), PERSON);
 
-    expect(ids((await p.views.queue(ALL)).values)).toEqual([
+    expect(ids((await p.views.queue(OLDEST)).values)).toEqual([
       first.id,
       second.id,
     ]);
   });
 
-  it("seals the head only when a later capture takes it", async () => {
-    const { pool: p } = pool();
+  it("takes no source identity, so the edit's id is free for a later revision", async () => {
+    const opened = pool();
+    const { pool: p } = opened;
     const item = await captured(p);
-    // Earlier in the feed by its source time, the way a file import arrives.
-    await captured(p, {
-      id: "item-early",
-      capturedAt: "2026-08-05T09:00:00.000Z",
-    });
 
-    expect(
-      succeeded(await p.items.edit(item.id, text("still open"), PERSON)),
-    ).toMatchObject({ kind: "amended" });
+    await p.items.edit(item.id, edit("edited"), PERSON);
+
+    expect(await p.items.get(item.id)).toMatchObject({
+      source: SCRATCHPAD,
+      sourceItemId: "item-0",
+    });
+  });
+});
+
+describe("appending a revision", () => {
+  it("revises a routed item, leaving its records behind", async () => {
+    const opened = pool();
+    const { pool: p } = opened;
+    const item = await processed(opened);
+
+    const outcome = succeeded(
+      await p.items.edit(item.id, edit("again"), PERSON),
+    );
+
+    expect(outcome.kind).toBe("revised");
+    expect(await p.routing.recordsFor(revision(outcome).id)).toEqual([]);
+    expect(await p.routing.recordsFor(item.id)).toHaveLength(1);
   });
 
-  it("revises a processed head rather than amending it", async () => {
+  it("revises an archived item, leaving the archive state behind", async () => {
     const { pool: p } = pool();
     const archived = await captured(p);
     await p.items.archive(archived.id);
 
     const outcome = succeeded(
-      await p.items.edit(archived.id, text("alive"), PERSON),
+      await p.items.edit(archived.id, edit("alive"), PERSON),
     );
 
     expect(outcome.kind).toBe("revised");
-    // Editing says the item is alive again: the archive state stays behind.
     expect(revision(outcome).archived).toBeUndefined();
     expect(ids((await p.views.archived(ALL)).values)).toEqual([archived.id]);
   });
 
-  it("revises a routed head, since a routing record processes it", async () => {
-    const { pool: p } = pool();
-    const item = await captured(p);
-    await p.routing.markProcessed(item.id, "pasted into the vault");
-
-    const outcome = succeeded(
-      await p.items.edit(item.id, text("again"), PERSON),
-    );
-
-    expect(outcome.kind).toBe("revised");
-    // The records are the original's history and stay with it, so the revision
-    // starts unprocessed.
-    expect(await p.routing.recordsFor(revision(outcome).id)).toEqual([]);
-    expect(await p.routing.recordsFor(item.id)).toHaveLength(1);
-  });
-});
-
-describe("appending a revision", () => {
-  it("appends one once a later capture has taken the head", async () => {
+  it("is an ordinary capture: its own id, time and source identity", async () => {
     const opened = pool();
     const { pool: p } = opened;
-    const item = await sealed(opened);
-    opened.clock.set("2026-08-06T10:00:00.000Z");
+    const item = await processed(opened);
 
     const revised = revision(
-      succeeded(await p.items.edit(item.id, text("a second thought"), PERSON)),
+      succeeded(await p.items.edit(item.id, edit("a second thought"), PERSON)),
     );
 
     expect(revised.id).not.toBe(item.id);
     expect(revised.revisionOf).toBe(item.id);
     expect(revised.payload.content).toEqual({ text: "a second thought" });
-    // The original's capture time and source identity, plus the edit's time.
-    expect(revised.createdAt).toBe(item.createdAt);
-    expect(revised.contentUpdatedAt).toBe("2026-08-06T10:00:00.000Z");
-    expect(revised.source).toBe(item.source);
-    expect(revised.sourceItemId).toBe(item.sourceItemId);
+    expect(revised.createdAt).toBe("2026-08-06T10:00:00.000Z");
+    expect(revised.contentUpdatedAt).toBeUndefined();
+    expect(revised.source).toBe(SHELL);
+    expect(revised.sourceItemId).toBe("edit-1");
   });
 
   it("carries the tags over, keeping their attribution", async () => {
     const opened = pool();
     const { pool: p } = opened;
-    const item = await sealed(opened);
+    const item = await captured(p);
     await p.items.tag(item.id, tag("kind/quote"), {
       kind: "provider",
       provider: "tagger" as never,
     });
+    await p.items.archive(item.id);
 
     const revised = revision(
-      succeeded(await p.items.edit(item.id, text("x"), PERSON)),
+      succeeded(await p.items.edit(item.id, edit("x"), PERSON)),
     );
 
     expect(revised.tags).toEqual([
       {
         name: "kind/quote",
         by: { kind: "provider", provider: "tagger" },
-        addedAt: "2026-08-06T09:02:00.000Z",
+        addedAt: "2026-08-06T09:00:00.000Z",
       },
     ]);
   });
 
-  it("ties with its original in the feed and follows it by the link, not the id", async () => {
+  it("arrives at the newest end of the feed and the queue, by its own time", async () => {
     const opened = pool();
     const { pool: p } = opened;
-    const item = await sealed(opened);
+    const item = await processed(opened);
+    const later = await captured(p, {
+      id: "item-1",
+      capturedAt: "2026-08-06T09:30:00.000Z",
+    });
 
     const revised = revision(
-      succeeded(await p.items.edit(item.id, text("x"), PERSON)),
+      succeeded(await p.items.edit(item.id, edit("x"), PERSON)),
     );
 
-    // Minted ids sort ahead of the ids these captures were given, so an order
-    // that broke the tie on id would put the revision first.
-    expect(revised.id < item.id).toBe(true);
     expect(ids((await p.views.feed(OLDEST)).values)).toEqual([
       item.id,
+      later.id,
       revised.id,
-      "item-1",
     ]);
-    expect(ids((await p.views.feed(ALL)).values)).toEqual([
-      "item-1",
+    expect(ids((await p.views.queue(OLDEST)).values)).toEqual([
+      later.id,
       revised.id,
-      item.id,
     ]);
   });
 
-  it("pages the feed through a chain without repeating or skipping a row", async () => {
+  it("pages the feed across the boundary without repeating or skipping a row", async () => {
     const opened = pool();
     const { pool: p } = opened;
-    const item = await sealed(opened);
+    const item = await processed(opened);
     const revised = revision(
-      succeeded(await p.items.edit(item.id, text("x"), PERSON)),
+      succeeded(await p.items.edit(item.id, edit("x"), PERSON)),
     );
 
-    const seen: ItemId[] = [];
-    let after: Position | undefined;
-    for (;;) {
-      const page = await p.views.queue({
-        limit: 1,
-        ...(after === undefined ? {} : { after }),
-      });
-      seen.push(...ids(page.values));
-      if (page.next === undefined) break;
-      after = page.next;
-    }
-    expect(seen).toEqual(["item-1", revised.id]);
-
     const walked: ItemId[] = [];
-    let feedAfter: Position | undefined;
+    let after: Position | undefined;
     for (;;) {
       const page = await p.views.feed({
         limit: 1,
         order: "oldest-first",
-        ...(feedAfter === undefined ? {} : { after: feedAfter }),
+        ...(after === undefined ? {} : { after }),
       });
       walked.push(...ids(page.values));
       if (page.next === undefined) break;
-      feedAfter = page.next;
+      after = page.next;
     }
-    expect(walked).toEqual([item.id, revised.id, "item-1"]);
+
+    expect(walked).toEqual([item.id, revised.id]);
   });
 
-  it("takes the original out of the queue and puts the revision in it", async () => {
+  it("may be made twice from one item, into captures independent of each other", async () => {
     const opened = pool();
     const { pool: p } = opened;
-    const item = await sealed(opened);
+    const item = await processed(opened);
 
-    const revised = revision(
-      succeeded(await p.items.edit(item.id, text("x"), PERSON)),
+    const first = revision(
+      succeeded(await p.items.edit(item.id, edit("one", "edit-1"), PERSON)),
     );
-
-    expect((await p.items.get(item.id))?.supersededBy).toBe(revised.id);
-    expect(ids((await p.views.queue(ALL)).values)).toEqual([
-      "item-1",
-      revised.id,
-    ]);
-  });
-
-  it("stays behind a later capture, so a chain goes on growing", async () => {
-    const opened = pool();
-    const { pool: p } = opened;
-    const item = await sealed(opened);
-
-    // A revision carries the capture time it revises, so it never overtakes the
-    // capture that sealed it: the head is still `item-1`, and editing again
-    // extends the chain rather than amending its end.
+    opened.clock.set("2026-08-06T11:00:00.000Z");
     const second = revision(
-      succeeded(await p.items.edit(item.id, text("x"), PERSON)),
-    );
-    const third = revision(
-      succeeded(await p.items.edit(second.id, text("y"), PERSON)),
+      succeeded(await p.items.edit(item.id, edit("two", "edit-2"), PERSON)),
     );
 
-    expect(third.revisionOf).toBe(second.id);
-    expect(ids((await p.views.feed(OLDEST)).values)).toEqual([
-      item.id,
+    expect(await p.items.get(item.id)).toMatchObject({
+      revisedInto: [first.id, second.id],
+    });
+    // Neither is the current one: both are unprocessed work of their own.
+    expect(first.revisedInto).toEqual([]);
+    expect(second.revisedInto).toEqual([]);
+    expect(ids((await p.views.queue(OLDEST)).values)).toEqual([
+      first.id,
       second.id,
-      third.id,
-      "item-1",
-    ]);
-    expect(ids((await p.views.queue(ALL)).values)).toEqual([
-      "item-1",
-      third.id,
     ]);
   });
 
-  it("refuses to edit a superseded item, so the chain cannot fork", async () => {
+  it("answers the revision it already made when the edit is replayed", async () => {
     const opened = pool();
     const { pool: p } = opened;
-    const item = await sealed(opened);
-    const revised = revision(
-      succeeded(await p.items.edit(item.id, text("x"), PERSON)),
+    const item = await processed(opened);
+
+    const once = revision(
+      succeeded(await p.items.edit(item.id, edit("a second thought"), PERSON)),
+    );
+    opened.clock.set("2026-08-06T11:00:00.000Z");
+    const again = succeeded(
+      await p.items.edit(item.id, edit("a second thought"), PERSON),
     );
 
-    expect(await p.items.edit(item.id, text("y"), PERSON)).toMatchObject({
-      kind: "refused",
-      refusal: { kind: "item-superseded", by: revised.id },
+    expect(again).toMatchObject({ kind: "revised", revisionOf: item.id });
+    expect(revision(again).id).toBe(once.id);
+    expect(await p.items.get(item.id)).toMatchObject({
+      revisedInto: [once.id],
     });
+  });
+
+  it("refuses an identity that names something other than a revision of this item", async () => {
+    const opened = pool();
+    const { pool: p } = opened;
+    const item = await processed(opened);
+    const other = await captured(p, { id: "item-1", source: SHELL });
+
+    expect(
+      await p.items.edit(item.id, edit("x", other.sourceItemId), PERSON),
+    ).toMatchObject({
+      kind: "refused",
+      refusal: { kind: "source-item-changed", existing: other.id },
+    });
+  });
+});
+
+describe("a decision that was withdrawn", () => {
+  it("makes an unrevised item a person's to edit again", async () => {
+    const opened = await reserved();
+    const { pool: p, item } = opened;
+    opened.clock.set("2026-08-06T10:00:00.000Z");
+
+    expect(
+      succeeded(await p.items.edit(item.id, edit("while it waits"), PERSON)),
+    ).toMatchObject({ kind: "revised" });
+
+    await p.routing.cancelDelivery(opened.record.id);
+
+    expect(
+      succeeded(await p.items.edit(item.id, edit("thawed", "edit-2"), PERSON)),
+    ).toMatchObject({ kind: "revised" });
+  });
+
+  it("leaves an item something was revised from sealed", async () => {
+    const opened = await reserved();
+    const { pool: p, item } = opened;
+
+    await p.routing.cancelDelivery(opened.record.id);
+    // Nothing left, so the item is work again and a person's to rewrite.
+    expect(
+      succeeded(await p.items.edit(item.id, edit("thawed"), PERSON)),
+    ).toMatchObject({ kind: "amended" });
   });
 });
 
@@ -349,7 +399,7 @@ describe("what an edit refuses", () => {
     const { pool: p } = pool();
     const missing = "nobody" as ItemId;
 
-    expect(await p.items.edit(missing, text("x"), PERSON)).toMatchObject({
+    expect(await p.items.edit(missing, edit("x"), PERSON)).toMatchObject({
       kind: "refused",
       refusal: { kind: "no-such-item", item: missing },
     });
@@ -362,10 +412,9 @@ describe("what an edit refuses", () => {
     const refused = await p.items.edit(
       item.id,
       {
-        type: TEXT,
-        content: { text: 7 },
-        metadata: {},
-        assets: [],
+        source: SHELL,
+        sourceItemId: "edit-1",
+        payload: { type: TEXT, content: { text: 7 }, metadata: {}, assets: [] },
       },
       PERSON,
     );
@@ -387,10 +436,14 @@ describe("what an edit refuses", () => {
       await p.items.edit(
         item.id,
         {
-          type: "note" as typeof TEXT,
-          content: { body: "different" },
-          metadata: {},
-          assets: [],
+          source: SHELL,
+          sourceItemId: "edit-1",
+          payload: {
+            type: "note" as typeof TEXT,
+            content: { body: "different" },
+            metadata: {},
+            assets: [],
+          },
         },
         PERSON,
       ),
@@ -410,10 +463,16 @@ describe("what an edit refuses", () => {
     const refused = await p.items.edit(
       item.id,
       {
-        type: TEXT,
-        content: { text: "a thought" },
-        metadata: {},
-        assets: [{ slot: "image", asset: "no-such-asset" as typeof stored.id }],
+        source: SHELL,
+        sourceItemId: "edit-1",
+        payload: {
+          type: TEXT,
+          content: { text: "a thought" },
+          metadata: {},
+          assets: [
+            { slot: "image", asset: "no-such-asset" as typeof stored.id },
+          ],
+        },
       },
       PERSON,
     );
@@ -434,7 +493,7 @@ describe("what an edit refuses", () => {
       assets: [{ slot: "image", asset: stored.id }],
     });
 
-    await p.items.edit(item.id, text("no picture after all"), PERSON);
+    await p.items.edit(item.id, edit("no picture after all"), PERSON);
 
     expect((await p.items.get(item.id))?.payload.assets).toEqual([]);
   });
@@ -446,7 +505,7 @@ describe("what an edit leaves behind", () => {
     const item = await captured(p);
     await takeMirrorWork(p);
 
-    await p.items.edit(item.id, text("edited"), PERSON);
+    await p.items.edit(item.id, edit("edited"), PERSON);
 
     expect(await takeMirrorWork(p)).toEqual([item.id]);
     const logged = await p.actions.forItem(item.id, OLDEST);
@@ -460,23 +519,24 @@ describe("what an edit leaves behind", () => {
   it("logs a revision against the item that was edited, and owes both writes", async () => {
     const opened = pool();
     const { pool: p } = opened;
-    const item = await sealed(opened);
+    const item = await processed(opened);
     await takeMirrorWork(p);
 
     const revised = revision(
-      succeeded(await p.items.edit(item.id, text("x"), PERSON)),
+      succeeded(await p.items.edit(item.id, edit("x"), PERSON)),
     );
 
-    // The original as well: it is superseded now, which is a change a client
-    // reading deltas has to learn about.
+    // The item it came from as well: it is processed now, which is a change a
+    // client reading deltas has to learn about.
     expect(await takeMirrorWork(p)).toEqual([item.id, revised.id].sort());
 
     const logged = await p.actions.forItem(item.id, OLDEST);
     expect(logged.values.map((action) => action.kind)).toEqual([
       "captured",
+      "routed",
       "revised",
     ]);
-    expect(logged.values[1]).toMatchObject({
+    expect(logged.values[2]).toMatchObject({
       by: { kind: "person" },
       detail: { revision: revised.id },
     });
@@ -485,16 +545,16 @@ describe("what an edit leaves behind", () => {
   it("mirrors the revision as an item of its own, with the tags it carried over", async () => {
     const opened = pool();
     const { pool: p } = opened;
-    const item = await sealed(opened);
+    const item = await processed(opened);
     await p.items.tag(item.id, tag("kind/quote"), { kind: "person" });
 
     const revised = revision(
-      succeeded(await p.items.edit(item.id, text("x"), PERSON)),
+      succeeded(await p.items.edit(item.id, edit("x"), PERSON)),
     );
 
     const record = await itemRecord(p, revised.id);
     expect(record?.item.revisionOf).toBe(item.id);
     expect(record?.item.tags.map((held) => held.name)).toEqual(["kind/quote"]);
-    expect(record?.item.createdAt).toBe(item.createdAt);
+    expect(record?.item.createdAt).toBe("2026-08-06T10:00:00.000Z");
   });
 });

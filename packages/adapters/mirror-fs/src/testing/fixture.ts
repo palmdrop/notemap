@@ -68,6 +68,7 @@ export function item(overrides: ItemOverrides = {}): Item {
       ? {}
       : { revisionOf: overrides.revisionOf as ItemId }),
     modifiedAt: createdAt,
+    revisedInto: [],
   };
 }
 

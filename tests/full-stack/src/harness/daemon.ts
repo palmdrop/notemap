@@ -84,6 +84,8 @@ async function start(on: World): Promise<Running> {
     client: createClient({
       transport: createFetchTransport(url),
       store: createMemoryStore(),
+      // What a revision this client's edits produce is captured as.
+      source: "full-stack-edit",
     }),
     output: () => said,
     stop: () => stop(child),

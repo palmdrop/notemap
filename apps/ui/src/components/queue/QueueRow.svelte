@@ -14,7 +14,7 @@
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import { client } from "$lib/client";
-  import { became, finished } from "$lib/lineage";
+  import { became, editable, finished } from "$lib/lineage";
   import { briefly } from "$lib/stamp";
 
   let {
@@ -52,6 +52,7 @@
   });
 
   const word = $derived(became(item));
+  const mayEdit = $derived(editable(item));
 
   async function markDone() {
     said = "marking…";
@@ -96,7 +97,7 @@
     </div>
   {/if}
 
-  {#if editing}
+  {#if editing && mayEdit}
     <Edit {item} ondone={() => (editing = false)} />
   {:else}
     <Payload {item} muted={finished(item)} />
@@ -109,7 +110,11 @@
       <Action primary disabled={offline} onclick={onroute}>route</Action>
       <Action disabled={offline} onclick={markDone}>mark done</Action>
       <Action onclick={() => void client.archive(item.id)}>archive</Action>
-      <Action onclick={() => (editing = !editing)}>edit</Action>
+      <!-- A processed item is not this row's to rewrite: editing it would
+           append a revision, which the queue is not where to do. -->
+      {#if mayEdit}
+        <Action onclick={() => (editing = !editing)}>edit</Action>
+      {/if}
 
       {#if said !== ""}
         <span role="status" class="text-ink-muted">{said}</span>

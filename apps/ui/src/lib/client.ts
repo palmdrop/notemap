@@ -4,6 +4,8 @@ import {
   createMemoryStore,
 } from "@notemap/client";
 
+import { EDITS } from "./channels";
+
 /**
  * Empty means same origin: in production the daemon serves this app itself,
  * and in dev vite proxies `/v1` to it. An absolute URL is for a shell that
@@ -19,4 +21,5 @@ const baseUrl = import.meta.env.VITE_API_URL ?? "";
 export const client = createClient({
   transport: createFetchTransport(baseUrl),
   store: createMemoryStore(),
+  source: EDITS,
 });

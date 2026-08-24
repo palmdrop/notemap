@@ -389,7 +389,7 @@ function chainedAtPreviousVersion(
       ENQUEUED + depth,
       ENQUEUED + depth,
       revisionOf,
-      revisionOf === null ? id : rows[0]?.[0] ?? id,
+      revisionOf === null ? id : (rows[0]?.[0] ?? id),
       revisionOf === null ? 0 : depth,
     );
   });

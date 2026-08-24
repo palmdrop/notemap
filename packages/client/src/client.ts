@@ -171,7 +171,18 @@ export function createClient(config: ClientConfig): Client {
      * the outbox rewrites an un-sent capture in place and sends a domain edit
      * once it cannot, which is where the seal falls.
      */
-    edit: (item, payload) => mutate({ kind: "edit", item, payload }),
+    edit: (item, payload) =>
+      mutate({
+        kind: "edit",
+        item,
+        // Minted here and carried on the operation, so every retry of this edit
+        // claims the same identity and the pool answers one revision.
+        envelope: {
+          source: config.source,
+          sourceItemId: uuidv7(),
+          payload,
+        },
+      }),
 
     /** What an edit starts from: the payload as it stands, with new words in it. */
     saying: (item, said) => rewritten(item.payload, said),

@@ -31,7 +31,6 @@ import type {
 } from "../domain/ids";
 import type { EditOutcome, Item, TagUse } from "../domain/item";
 import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
-import type { Payload } from "../domain/payload";
 import type { AbandonedPosition } from "../domain/position";
 import type {
   AttemptableDelivery,

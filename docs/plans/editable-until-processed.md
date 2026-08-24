@@ -1,9 +1,9 @@
 # Editable until processed
 
 **Date**: 2026-08-24
-**Status**: Todo
+**Status**: Done
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/sync.md`, `docs/specs/mirror.md`, `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-08-24
 
 ---
 
@@ -117,55 +117,68 @@ Depends on phases 1 and 2.
 
 Depends on phase 3's document.
 
-- [ ] Regenerate `src/api/generated.d.ts` with `pnpm --filter @notemap/client codegen`
-- [ ] The `edit` outbox operation carries a `sourceItemId` minted once when the operation is
+- [x] Regenerate `src/api/generated.d.ts` with `pnpm --filter @notemap/client codegen`
+- [x] The `edit` outbox operation carries a `sourceItemId` minted once when the operation is
       created and reused on every retry, which is what makes the replay match work. **Minted in
       `client.edit()` and carried on the operation itself**: the pending entry's own id is minted
       inside `outbox.enqueue`, and a handler's `send` receives the `Operation` and never the
-      `PendingOperation`, so the entry's id is not reachable from where the request is built
-- [ ] Delete `revised()`'s placement logic in `state/state.ts`. A revision is an arrival like any
+      `PendingOperation`, so the entry's id is not reachable from where the request is built. It
+      carries the **whole envelope**, source included, which is what a `send` with no view of the
+      config can post — and is the shape a capture operation already has
+- [x] **`ClientConfig` gains `source`**, since a revision is a capture of whoever made the edit
+      rather than of the item's own source. The shell names it beside its capture channels
+      (`web-edit`), which is where that vocabulary already lives
+- [x] Delete `revised()`'s placement logic in `state/state.ts`. A revision is an arrival like any
       capture: it goes to the newest end, and the item it came from leaves the queue by being
-      processed rather than by being pointed at
-- [ ] `settle()` and any queue-membership test read `revisedInto.length` instead of `supersededBy`.
+      processed rather than by being pointed at. **Capture and revision share one `arrived()`**,
+      which is what makes that literally true rather than merely parallel
+- [x] `settle()` and any queue-membership test read `revisedInto.length` instead of `supersededBy`.
       **Put the rule in one named predicate** — unprocessed is holding no routing record, unarchived
       and `revisedInto` empty — rather than inline at each site:
       [durable-offline-client](durable-offline-client.md) derives the queue from the client's own
       cache by exactly this rule and will otherwise write a second copy of it
-- [ ] An amendment no longer re-ranks: drop the re-rank on the amended half of the edit settlement
-- [ ] Delete the `item-superseded` message from `errors.ts`
-- [ ] Tests: an optimistic amendment that settles as a revision; an amendment leaving queue
+- [x] **`queueRank` keys on capture time**, which phase 2 made the pool's key: the client compares
+      its rank against the position the pool issues, and a rank on last touch would have disagreed
+      with every `after` the queue answers with
+- [x] An amendment no longer re-ranks: drop the re-rank on the amended half of the edit settlement
+- [x] Delete the `item-superseded` message from `errors.ts`
+- [x] Tests: an optimistic amendment that settles as a revision; an amendment leaving queue
       position untouched; a retried edit leaving one revision
-- [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
+- [x] `git commit`
 
 ### Phase 5 — the shell
 
 Depends on phase 4.
 
-- [ ] `apps/ui/src/lib/lineage.ts`: `became()` and `finished()` read `revisedInto`. The word on the
+- [x] `apps/ui/src/lib/lineage.ts`: `became()` and `finished()` read `revisedInto`. The word on the
       older row is `revised`, not `superseded` — it says what happened, not that the row is stale
-- [ ] The edit action is offered on any unprocessed item and not on a processed one, which the row
-      can now answer from `archived`, `routing` and `revisedInto` without a second read
-- [ ] The last touch stops being described as what the queue is ordered by
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm lint` green
-- [ ] `git commit`
+- [x] The edit action is offered on any unprocessed item and not on a processed one, which the row
+      can now answer from `archived`, `routing` and `revisedInto` without a second read.
+      **`editable` is the client's `unprocessed`**, re-exported rather than restated
+- [x] The last touch stops being described as what the queue is ordered by
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm lint` green
+- [x] `git commit`
 
 ### Phase 6 — across the layers, and the specs
 
 Depends on every phase above.
 
-- [ ] `pnpm test:stack` green. Add a case that crosses the layers: capture, route, edit through the
+- [x] `pnpm test:stack` green. Add a case that crosses the layers: capture, route, edit through the
       client, and read the revision back from the feed at its own capture time
-- [ ] Remove the *Specified 2026-08-24, not built* note from core.md's Editing section
-- [ ] Drop the **Build ADR 21** item from `docs/todo.md`
-- [ ] Add the dated `Shipped:` entries (see Notes)
-- [ ] `git commit`
+- [x] Remove the *Specified 2026-08-24, not built* note from core.md's Editing section
+- [x] Drop the **Build ADR 21** item from `docs/todo.md`
+- [x] Add the dated `Shipped:` entries (see Notes)
+- [x] **client.md's retry criterion says it is session-scoped**, per the settled unknown below
+- [x] `git commit`
 
 ---
 
 ## Unknowns
 
-- **Dropping a column in SQLite.** Every migration so far is `ALTER TABLE ADD COLUMN`; nothing has
+- **~~Dropping a column in SQLite.~~** *Settled 2026-08-24*: node 24 bundles SQLite 3.53, so the
+  columns are dropped outright, after the indexes naming them. Every migration so far is
+  `ALTER TABLE ADD COLUMN`; nothing has
   removed one. `DROP COLUMN` needs SQLite 3.35+ and refuses a column an index names, so the two
   indexes come out first. *Fallback*: leave `root_id` and `revision_depth` in place, stop reading
   them, and drop them in a later migration. Ugly but harmless, and the pool is greenfield
@@ -179,7 +192,9 @@ Depends on every phase above.
   revision rather than two" a session-scoped claim until
   [durable-offline-client](durable-offline-client.md) lands. Say so where the criterion is written,
   rather than letting it read as absolute.
-- **Whether `revisedInto` belongs on the wire as ids or as a count.** The specs say ids, and a
+- **~~Whether `revisedInto` belongs on the wire as ids or as a count.~~** *Settled 2026-08-24*:
+  ids, and always spelled — a list's empty is a value, so every reader asks for its length rather
+  than for its presence. The specs say ids, and a
   shell wanting to open the revision needs one. *Fallback*: if the list turns out to cost a join
   per page that the store cannot index away, carry a count on the item and read the ids per item,
   which is the treatment routing records already get.

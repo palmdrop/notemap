@@ -2,8 +2,18 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations and routing to one are settled; the rest is stub
-**Last updated**: 2026-08-18
+**Last updated**: 2026-08-24
 **Shipped**:
+
+- 2026-08-24 — **The edit route carries an envelope, and an item names its revisions.**
+  `POST /v1/items/{id}/edit` takes the source making the edit and that source's own id for it
+  beside the payload, so an edit resent after a lost response answers with the revision it already
+  made; an envelope claiming an identity another item holds is `409 source-item-changed`. An item
+  spells `revisedInto` as a list of ids, the revised half of the outcome carries `revisionOf`, and
+  `409 item-superseded` left both the edit route and the two classification routes. The queue's
+  position is a capture time now, the same key the feed and the archive read.
+  ([plan](../plans/editable-until-processed.md),
+  [ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md))
 
 - 2026-08-18 — **Destinations are edited over `/v1`, and wiring one is no longer a restart.**
   `GET /v1/destinations` answers rows the pool holds — instantly, unpaginated, retired ones

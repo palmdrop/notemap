@@ -118,7 +118,10 @@ describe("classification over the wire", () => {
         .status,
     ).toBe(200);
     // The revision took the tags it was made with, and not the one added since.
-    expect((await send(app, `/v1/items/${revision.id}/tag`, { tag: "kind/n" })).status).toBe(200);
+    expect(
+      (await send(app, `/v1/items/${revision.id}/tag`, { tag: "kind/n" }))
+        .status,
+    ).toBe(200);
   });
 
   it("refuses a body with no tag in it, a key it does not know, and a blank tag", async () => {

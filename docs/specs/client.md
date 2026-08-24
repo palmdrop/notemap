@@ -1,8 +1,17 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is a designed seam, unbuilt
-**Last updated**: 2026-08-20
+**Last updated**: 2026-08-24
 **Shipped**:
+
+- 2026-08-24 — **An edit carries the client's own identity, and a revision is an arrival.** The
+  client is configured with the source its edits claim, mints a `sourceItemId` once per edit and
+  reuses it on every retry, so a lost response costs one revision rather than two — within a
+  session, until the outbox survives a reload. A revision settles at the newest end like any
+  capture rather than beside what it names, an amendment no longer re-ranks anything, and whether
+  an item is still work is one named predicate, `unprocessed`, read off the row.
+  ([plan](../plans/editable-until-processed.md),
+  [ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md))
 
 - 2026-08-20 — **Which end a reader starts from reaches the client.** `ListPage` carries an order,
   `loadFeed` and `loadQueue` take one, and a surface reports the order it is in so a control can
@@ -324,7 +333,12 @@ A capture is the client's own until it reaches the pool, and immutable once it d
 - **An edit carries the client's own source identity**, as a capture does, and the same one on
   every retry of that edit. This is what makes a retried edit idempotent: the pool matches a
   revision for replay exactly as it matches a capture, so a lost response costs a duplicate
-  revision only if the client mints a fresh id for the resend.
+  revision only if the client mints a fresh id for the resend. The source is the **client's**,
+  configured once for it, rather than the source of the item being edited: a revision is a capture
+  of whoever made the edit. Its own id for the edit is minted with the operation and carried on it.
+  *Session-scoped for now* (2026-08-24): the operation lives in a store nothing reads back, so a
+  retry after a reload mints a fresh id and the pool records a second revision. It becomes
+  unqualified when [durable-offline-client](../plans/durable-offline-client.md) lands.
 
 ### Source identity
 
@@ -483,7 +497,7 @@ that logic out of the one place it is meant to live.
 - An edit of an item that turns out to have been processed since is shown as a revision, matching
   what the pool recorded, not as the in-place amendment the client optimistically drew.
 - An amended item stays where it was drawn in the queue, and an edit retried after a lost response
-  leaves one revision rather than two.
+  leaves one revision rather than two — **within a session**, until the outbox survives a reload.
 - Archiving is available with the pool unreachable; routing and marking-processed-by-hand are not,
   and the interface says why rather than queuing them.
 - A tag added on one device and the same tag removed on another resolve to whichever the person did

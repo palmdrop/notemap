@@ -1,8 +1,13 @@
 # Spec: Sync and the client contract
 
 **Status**: Stub — to be written properly in a dedicated grilling session
-**Last updated**: 2026-08-11
+**Last updated**: 2026-08-24
 **Shipped**:
+
+- 2026-08-24 — **Being revised is a change a delta reports.** The item a revision was made from is
+  touched when the revision is written, so a client reading deltas learns that it left the queue
+  rather than going on showing it as work. ([plan](../plans/editable-until-processed.md),
+  [ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md))
 
 ---
 

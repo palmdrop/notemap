@@ -1,7 +1,7 @@
 # Rolling out offline capture, four plans and nine pull requests
 
 **Date**: 2026-08-24
-**Status**: Todo
+**Status**: In progress
 **Closed**:
 
 ---
@@ -24,22 +24,22 @@ is.
 
 ### PR 0 — the plans
 
-- [ ] `agent/editable-until-processed`, as it stands: ADR 21, the spec edits it carries, its plan,
+- [x] `agent/editable-until-processed`, as it stands: ADR 21, the spec edits it carries, its plan,
       the three plans that follow it and the notes tying them together
-- [ ] Merge before any code is written, so every implementation branch starts from plans that are on
+- [x] Merge before any code is written, so every implementation branch starts from plans that are on
       `main` and can be linked to
 
 ### PR 1 — editable until processed
 
 Depends on PR 0. Branch `agent/editable-until-processed-build`, since the docs branch keeps its name.
 
-- [ ] All six phases of [editable-until-processed](editable-until-processed.md), whole
-- [ ] **Not splittable.** Its phase 3 changes the item's shape on the wire — `revisedInto` for
+- [x] All six phases of [editable-until-processed](editable-until-processed.md), whole
+- [x] **Not splittable.** Its phase 3 changes the item's shape on the wire — `revisedInto` for
       `supersededBy` — and the edit route's body, so a merge between the daemon phase and the client
       phase leaves the client reading a field the daemon no longer answers
 - [ ] Large enough to deserve a real review rather than a skim; `core:co-review` or `core:review`
       before merging
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint` and `pnpm test:stack` green
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint` and `pnpm test:stack` green
 
 ### PR 2 — the pool says who it is
 

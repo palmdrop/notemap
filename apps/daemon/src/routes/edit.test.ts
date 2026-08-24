@@ -134,7 +134,12 @@ describe("editing over the wire", () => {
     const response = await send(app, `/v1/items/${first}/edit`, {
       source: "web",
       sourceItemId: "edit-1",
-      payload: { type: "voice", content: { text: "x" }, metadata: {}, assets: [] },
+      payload: {
+        type: "voice",
+        content: { text: "x" },
+        metadata: {},
+        assets: [],
+      },
     });
 
     expect(response.status).toBe(422);
@@ -147,11 +152,7 @@ describe("editing over the wire", () => {
     const app = serving();
     const [first] = await captureMany(app, 1);
 
-    const response = await send(
-      app,
-      `/v1/items/${first}/edit`,
-      envelope(""),
-    );
+    const response = await send(app, `/v1/items/${first}/edit`, envelope(""));
 
     expect(response.status).toBe(422);
     expect(await body(response)).toMatchObject({

@@ -7,6 +7,8 @@ import {
   type MockTransport,
 } from "@notemap/client/testing";
 
+import { EDITS } from "$lib/channels";
+
 function unanswered(): Response {
   return json(500, { error: { code: "nothing-stubbed" } });
 }
@@ -21,11 +23,16 @@ let transport = mockTransport(unanswered);
 export let client: Client = createClient({
   transport,
   store: createMemoryStore(),
+  source: EDITS,
 });
 
 export function pool(handler: Handler): MockTransport {
   transport = mockTransport(handler);
-  client = createClient({ transport, store: createMemoryStore() });
+  client = createClient({
+    transport,
+    store: createMemoryStore(),
+    source: EDITS,
+  });
   return transport;
 }
 

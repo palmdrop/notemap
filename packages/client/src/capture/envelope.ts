@@ -47,5 +47,6 @@ export function optimisticItem(envelope: CaptureEnvelope): Item {
     tags: [],
     createdAt: envelope.capturedAt,
     modifiedAt: envelope.capturedAt,
+    revisedInto: [],
   };
 }
