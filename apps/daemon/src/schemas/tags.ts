@@ -8,7 +8,7 @@ export const tagRequestSchema = z
 export const tagUseSchema = z
   .object({
     name: z.string(),
-    /** Items carrying it. A superseded one is not among them. */
+    /** Items carrying it, archived and revised alike. */
     items: z.number().int().positive(),
   })
   .openapi("TagUse");
