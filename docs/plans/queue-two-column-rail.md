@@ -14,6 +14,9 @@ furl away, and the capture itself — with routing lifted out of the register in
 that the register no longer reserves width for a composer, no row carries a label gutter, and every
 measure the new layout needs is a role in `styles/tokens.css`.
 
+Extended in review: **settings stops being a register** and becomes a page that is read — one
+column, one type size, hierarchy from capitals and rules.
+
 ---
 
 ## What changes, and why
@@ -89,6 +92,19 @@ reserve room for it.
 - [x] `docs/specs/shell.md`: the rail, the furl, the modal, the waiting mark, and the death of the
       spine. Close the pending-mark open question.
 - [x] Typecheck, tests, lint. `pnpm test:stack` is not needed — nothing crosses the layers.
+- [x] Commit.
+
+### 6 — Settings, which the same review asked for
+
+Not a separate branch: it arrived as review on this PR, and splitting it would have split one
+review conversation in two.
+
+- [x] `--color-good`, and `--spacing-read` / `--spacing-mark` for a page that is read.
+- [x] `components/settings/` — page, section, row, fact, destination, the daemon section with its
+      connectivity check, and the delete confirmation. `components/destinations/` goes.
+- [x] Settings stops being a register: one column, a narrower measure, no fold.
+- [x] `docs/specs/shell.md`: settings moves into scope and gets a Behavior section; green is a
+      result and never an intention.
 - [x] Commit.
 
 ---

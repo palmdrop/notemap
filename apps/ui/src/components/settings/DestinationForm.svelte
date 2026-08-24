@@ -60,46 +60,69 @@
   }
 </script>
 
-<form onsubmit={submit} class="grid gap-3 font-mono">
-  <input
-    bind:value={name}
-    placeholder="name"
-    aria-label="Name"
-    required
-    class="border-b border-ink bg-transparent font-mono placeholder:text-ink-muted"
-  />
+<form
+  onsubmit={submit}
+  class="mt-6 grid gap-3 border-l-2 border-l-ink bg-ink/[0.03] py-4 pr-5 pl-5 font-mono"
+>
+  <div class="tracking-[0.3em] text-ink-muted uppercase">
+    {editing === undefined ? "a new destination" : "editing"}
+  </div>
+
+  <label class="mt-2 block">
+    <span class="text-ink-muted">what to call it</span>
+    <input
+      bind:value={name}
+      aria-label="Name"
+      required
+      class="mt-0.5 block w-full border-b border-ink bg-transparent py-0.5 font-mono"
+    />
+  </label>
 
   {#if editing === undefined}
-    <select
-      bind:value={chosen}
-      onchange={() => (typed = {})}
-      aria-label="Kind"
-      class="cursor-pointer appearance-none border-b border-ink bg-transparent font-mono"
-    >
-      {#each kinds as one (one.name)}
-        <option value={one.name}>{one.name}</option>
-      {/each}
-    </select>
+    <label class="block">
+      <span class="text-ink-muted">what it is reached by</span>
+      <select
+        bind:value={chosen}
+        onchange={() => (typed = {})}
+        aria-label="Kind"
+        class="mt-0.5 block w-full cursor-pointer appearance-none border-b border-ink bg-transparent py-0.5 font-mono"
+      >
+        {#each kinds as one (one.name)}
+          <option value={one.name}>{one.name}</option>
+        {/each}
+      </select>
+    </label>
   {:else}
     <!-- Changing it would make one destination two, and a record cannot tell
          which it meant. -->
-    <span class="text-ink-muted">kind: {editing.kind}</span>
+    <div>
+      <span class="text-ink-muted">reached by</span>
+      {editing.kind}
+    </div>
   {/if}
 
+  <!-- Named by the kind's own schema, which is also what the pool refuses
+       against, so the label a person reads is the label the error will name. -->
   {#each fields as field (field.name)}
-    <input
-      bind:value={typed[field.name]}
-      placeholder={field.required ? `${field.name} (required)` : field.name}
-      aria-label={field.name}
-      class="border-b border-ink bg-transparent font-mono placeholder:text-ink-muted"
-    />
+    <label class="block">
+      <span class="text-ink-muted">
+        {field.name}{field.required ? "" : " (optional)"}
+      </span>
+      <input
+        bind:value={typed[field.name]}
+        aria-label={field.name}
+        class="mt-0.5 block w-full border-b border-ink bg-transparent py-0.5 font-mono"
+      />
+    </label>
   {/each}
 
-  <div class="flex gap-x-gap">
-    <Action primary submit disabled={busy || disabled}>
-      {editing === undefined ? "add" : "save"}
-    </Action>
-    <Action onclick={done}>cancel</Action>
+  <div class="mt-3 flex items-baseline gap-x-6">
+    <span class="inverted">
+      <Action submit disabled={busy || disabled}>
+        {editing === undefined ? "Create it" : "Save it"}
+      </Action>
+    </span>
+    <Action onclick={done}>Cancel</Action>
     {#if said !== ""}
       <span role="status" class="text-accent">{said}</span>
     {/if}

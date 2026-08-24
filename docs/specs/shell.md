@@ -4,6 +4,13 @@
 **Last updated**: 2026-08-24
 **Shipped**:
 
+- 2026-08-24 — **Settings is legible.** One column at a reading measure, no rail and nothing to
+  furl, with the hierarchy carried by capitals, tracking and rules rather than by a second type
+  size. Destinations open in place to what they can do and the four things that can be done to
+  them; the daemon section says where this shell is talking to and whether it answers, timed, on
+  request. Deleting asks first and offers retiring instead, and the pool's refusal lands inside the
+  asking. A **`--color-good`** role joins the four: green is a result and never an intention.
+  ([plan](../plans/queue-two-column-rail.md))
 - 2026-08-24 — **The register is two columns, and routing is a modal over them.** The left column
   became a **metadata rail** carrying the stamp, the state word, the tags and where the item went on
   every row, and the item's facts on the one that is open; the right column carries the capture and
@@ -53,7 +60,10 @@ fills in. It does not name a colour or a font; those come out of the design sess
 
 ### In scope
 
-- Two surfaces: **the queue**, which carries capture as its first row, and **the feed**.
+- Two surfaces: **the queue**, which carries capture as its first row, and **the feed**, plus
+  **settings**, which is chrome's own page rather than one of the two.
+- **Settings**: the destinations a pool can reach, what each can do, and whether the daemon
+  answers.
 - **The row**: one design serving both the list and an item being processed, in a collapsed and an
   opened state.
 - **The chrome**: navigation over three surfaces, the reachability indicator, and where a refused
@@ -64,8 +74,8 @@ fills in. It does not name a colour or a font; those come out of the design sess
 
 ### Out of scope
 
-- **Settings and destinations.** The surface exists and works; it inherits the tokens and nothing
-  else this iteration.
+- **An enrichment surface.** Suggestions and artifacts are not on the wire (below), so settings
+  holds destinations and the daemon's pages and nothing about enrichment.
 - **An archive surface.** `/v1/archived` exists and no shell surface reads it. Archived items are
   marked where they appear in the feed; nothing lists them.
 - **A standalone item route.** Processing happens in the row (below), so `/items/:id` is not a
@@ -236,6 +246,34 @@ for the queue as for the feed ([CONTEXT.md](../../CONTEXT.md)). Turning a surfac
 again from that end ([client.md](client.md#the-queue)) — a position belongs to the order that made
 it — so the control is a choice of order, not a re-sort of what is on screen.
 
+### Settings
+
+Settings is not a register and is not drawn as one. It is read rather than scanned, so it takes a
+**narrower measure** than the two surfaces — which is itself the signal that it is a different kind
+of page — in **one column**, with no rail and nothing to furl.
+
+**One type size, and the hierarchy comes from capitals and rules.** Three levels, meant to be
+countable: a **section** is muted ink at the widest tracking with a full-weight rule under it; a
+**destination** is full ink at tighter tracking with a mark in the margin; a **field** is lower
+case, muted, in a column of its own. Nothing is bigger and nothing is bold.
+
+Two sections. **Destinations** says how many are offered and how many retired, then one line per
+destination: a mark for offered or retired, its name, its kind, and whether anything has asked it
+lately. Opening one adds what it can do, the settings its kind asked for, its id, and the four
+things that can be done to it — check, edit, retire, delete — with the rule and the distance
+separating what can be undone from what cannot.
+
+**Daemon** says where this shell is talking to, and carries the exits to `/log` and `/docs`. Its
+first row is the one fact on the page that is about *now* rather than about configuration: whether
+the daemon answers, how long it took, and when it was asked. **The destination list is the probe** —
+knocking on the daemon and refreshing what the page shows are the same request, and there is no
+route here whose only job is to answer yes.
+
+**Deleting is the one thing on this page that cannot be undone, so it is the one thing that asks**,
+and the asking offers retiring instead. Only the pool knows whether a record has ever named a
+destination, so its refusal is the answer — and the refusal lands *in the asking*, where the
+alternative it leaves is already on screen.
+
 ### Content
 
 A **text** payload renders as CommonMark, collapsed and opened — that is what
@@ -311,6 +349,13 @@ are gone. Nothing needs a vertical rule now that the second column is real.
 **The frame has a measure.** The page is capped short of a desktop's width and nothing widens it,
 routing having left the register for a modal.
 
+**Green means a result, and only a result.** *Added 2026-08-24.* Something was asked and the answer
+was yes: a destination that answered, a daemon that is reachable. It is never spent on an intention
+— `add a destination` is ink, because nothing has happened yet and the reply to it is what earns a
+colour. Its opposite is the accent, which on settings reads as the thing that went wrong or the
+thing that cannot be undone. Each says so twice, in a mark and in a word, so the colour is never
+the only thing carrying it.
+
 **Lines are ink. Red means a warning or an action, and nothing else** — the route action, the
 arrow marking where an item went, the edge of the row being processed, a refused operation, a link
 under the cursor. Red is never structure and never body text, so it appears only where something is
@@ -357,6 +402,19 @@ the page a person actually reads. Three-character indents on successive paragrap
   freely, and an item route would cost them their place on every item. One design serves the list
   and the processing surface, and routing records and lineage get somewhere to live without the
   collapsed row accreting controls.
+- **Settings is not a register.** *2026-08-24.* It inherited the two-column layout because
+  everything did, and paid for it: a label gutter down a page whose content is already
+  label-and-value, and a fold control on a page with nothing worth reading without its left column.
+  One column at a narrower measure says "different kind of page" without a second type size.
+- **Green is a result, never an intention.** *2026-08-24.* The first draft put green on
+  `add a destination` and red on `delete`, which made red mean danger here and *the action* on the
+  queue, where `capture` and `route` wear it. Spending green on what came back instead leaves the
+  accent doing one job on every surface, and leaves the creating affordance in ink — which is
+  honest, since pressing it has produced nothing yet.
+- **The destination list is the connectivity probe.** *2026-08-24.* `/v1` has no route whose only
+  job is to answer yes, and adding one to learn what a read already proves is a route to keep
+  forever. Reading the destinations answers both questions at once and refreshes the page while it
+  is at it.
 - **The rail is one column, not two jobs.** *2026-08-24.* The left column used to be a stamp
   collapsed and a label gutter opened, which made it dead space on every row a reader was only
   scanning. Carrying the same metadata whether a row is open or shut costs nothing at a desk, gives
@@ -449,5 +507,11 @@ the page a person actually reads. Three-character indents on successive paragrap
   reload, and still accepts one that is on no list.
 - An unavailable destination reports its reason rather than failing silently or appearing routable.
 - The queue's empty state is a designed surface, not a sentence.
+- Settings is legible at one type size: a reader can tell a section from a destination from a field
+  without any of them being larger than the others.
+- Deleting a destination cannot happen in one press, and the reason the pool gives for refusing it
+  is readable without dismissing anything.
+- The daemon section reports reachable, unreachable and unasked as three distinguishable states,
+  and asking costs one request that the page needed anyway.
 - No component in `apps/ui` names a colour; every colour comes from a token role defined in
   `styles/tokens.css`, and switching the palette requires no change to a component.

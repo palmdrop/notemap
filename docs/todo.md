@@ -1,4 +1,5 @@
 # Developer TODOs
+- [ ] Consider full POC: inbox via Memos app, routing to complex obsidian project. Router should be able to advertise folders, and keep track of custom tags that exist for auto-routing. 
 - [ ] **Build ADR 21.** The specs describe an item that is editable until it is processed; the code
   still seals on the head rule. The gap, in one place: `sealed()` loses the head clause and gains a
   revisions one; `revisionOf` stays and `supersededBy` becomes `revisedInto`, a list; a revision
