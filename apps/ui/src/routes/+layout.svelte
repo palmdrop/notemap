@@ -7,13 +7,11 @@
   import ThemeToggle from "$components/theme/ThemeToggle.svelte";
   import Bar from "$components/primitives/frame/Bar.svelte";
   import Column from "$components/primitives/frame/Column.svelte";
-  import Furl from "$components/primitives/frame/Furl.svelte";
   import Nav from "$components/primitives/frame/Nav.svelte";
   import Reachability from "$components/primitives/frame/Reachability.svelte";
   import Sheet from "$components/primitives/frame/Sheet.svelte";
   import Waiting from "$components/primitives/frame/Waiting.svelte";
   import { client } from "$lib/client";
-  import { rail } from "$lib/rail.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { waiting } from "$lib/waiting.svelte";
 
@@ -45,7 +43,6 @@
         class="ml-auto flex flex-wrap items-baseline gap-4 max-narrow:gap-3"
       >
         <Order />
-        <Furl furled={rail.furled} ontoggle={() => rail.toggle()} />
         <Waiting count={held.count} />
         <Reachability yes={pool.yes} />
         <a href="/settings">settings</a>

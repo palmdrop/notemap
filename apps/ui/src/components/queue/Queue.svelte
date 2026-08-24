@@ -55,7 +55,7 @@
   }
 </script>
 
-<Register furled={rail.furled}>
+<Register furled={rail.furled} onfurl={() => rail.toggle()}>
   <CaptureRow />
 
   {#if $queue.failure !== undefined}

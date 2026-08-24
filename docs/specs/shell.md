@@ -95,9 +95,9 @@ the bar's right end**, after the reachability mark, with the other thing that is
 rather than of a surface — not beside the two surfaces as a third.
 
 The chrome carries what is true of the shell rather than of any item: whether the pool is
-reachable, how much the outbox is still holding, whether any operation has been refused, whether
-the metadata rail is furled, and which end the surface is read from. *Amended 2026-08-24*: the
-order control moved here from the surface, being a reading preference like the other four.
+reachable, how much the outbox is still holding, whether any operation has been refused, and which
+end the surface is read from. *Amended 2026-08-24*: the order control moved here from the surface,
+being a reading preference. The furl did not: it belongs on the edge it moves.
 
 ### Capture is the first row of the queue
 
@@ -283,10 +283,15 @@ item's facts under them — payload type, edited, source, id — rather than cha
 is for. The right column holds nothing but what was captured, and its actions once the row is open.
 One system, reused, and nothing is distinguished by being bigger.
 
-**The rail can be furled.** One control in the bar takes the left column to nothing, which gives
-the prose the whole measure without hiding a row or changing what a row can do. The rail holds the
-button that opens a row, so a furled rail hands the stamp to the body rather than taking it away.
-The reader's answer is remembered, like the palette.
+**The rail can be furled.** An arrow rides the seam the rail's edge makes, in its own strip above
+the register, and takes the left column to nothing — which gives the prose the whole measure
+without hiding a row or changing what a row can do. It sits on the edge it moves rather than in the
+bar, where a word for it was further from the thing it was about. The rail holds the button that
+opens a row, so a furled rail hands the stamp to the body rather than taking it away. The reader's
+answer is remembered, like the palette.
+
+**A surface that is a register without being a list of captures does not offer the fold.** Settings
+is the one, and there is nothing in it worth reading without its left column.
 
 **Both surfaces are one grid.** Each item drops two cells into it — a rail cell and a body cell —
 so the columns stay in register down the whole page without either one being told how tall the

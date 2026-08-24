@@ -20,7 +20,7 @@
   onMount(() => void client.loadFeed());
 </script>
 
-<Register furled={rail.furled}>
+<Register furled={rail.furled} onfurl={() => rail.toggle()}>
   {#if $feed.failure !== undefined}
     <Rail first>feed</Rail>
     <Body first>

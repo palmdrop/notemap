@@ -1,7 +1,6 @@
-import { fireEvent, render, screen } from "@testing-library/svelte";
-import { expect, test, vi } from "vitest";
+import { render, screen } from "@testing-library/svelte";
+import { expect, test } from "vitest";
 
-import Furl from "./Furl.svelte";
 import Nav from "./Nav.svelte";
 import Reachability from "./Reachability.svelte";
 import Waiting from "./Waiting.svelte";
@@ -27,17 +26,6 @@ test("says whether the pool is within reach", () => {
 
   void rerender({ yes: false });
   expect(screen.getByRole("status").textContent?.trim()).toBe("offline");
-});
-
-test("says which way furling the rail will go", async () => {
-  const furl = vi.fn();
-  const { rerender } = render(Furl, { furled: false, ontoggle: furl });
-
-  await fireEvent.click(screen.getByRole("button", { name: "hide metadata" }));
-  expect(furl).toHaveBeenCalledTimes(1);
-
-  void rerender({ furled: true, ontoggle: furl });
-  expect(screen.getByRole("button", { name: "show metadata" })).toBeDefined();
 });
 
 /** Pending is ordinary and heals itself, so an idle outbox says nothing at all. */

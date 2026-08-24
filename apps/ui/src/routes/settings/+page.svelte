@@ -4,10 +4,9 @@
   import Body from "$components/primitives/register/Body.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
-  import { rail } from "$lib/rail.svelte";
 </script>
 
-<Register furled={rail.furled}>
+<Register>
   <Rail first>daemon</Rail>
   <Body first>
     <ActionRow>

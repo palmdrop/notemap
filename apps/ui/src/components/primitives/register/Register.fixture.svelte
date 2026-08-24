@@ -3,11 +3,14 @@
   import Rail from "./Rail.svelte";
   import Register from "./Register.svelte";
 
-  let { furled = false, onpick }: { furled?: boolean; onpick?: () => void } =
-    $props();
+  let {
+    furled = false,
+    onfurl,
+    onpick,
+  }: { furled?: boolean; onfurl?: () => void; onpick?: () => void } = $props();
 </script>
 
-<Register {furled}>
+<Register {furled} {onfurl}>
   <Rail {onpick}>
     <span>the rail</span>
     <button type="button">a tag</button>
