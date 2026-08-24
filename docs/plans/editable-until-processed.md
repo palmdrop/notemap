@@ -97,12 +97,18 @@ Depends on phase 3's document.
 
 - [ ] Regenerate `src/api/generated.d.ts` with `pnpm --filter @notemap/client codegen`
 - [ ] The `edit` outbox operation carries a `sourceItemId` minted once when the operation is
-      created and reused on every retry, which is what makes the replay match work. See the unknown
-      about where that id comes from
+      created and reused on every retry, which is what makes the replay match work. **Minted in
+      `client.edit()` and carried on the operation itself**: the pending entry's own id is minted
+      inside `outbox.enqueue`, and a handler's `send` receives the `Operation` and never the
+      `PendingOperation`, so the entry's id is not reachable from where the request is built
 - [ ] Delete `revised()`'s placement logic in `state/state.ts`. A revision is an arrival like any
       capture: it goes to the newest end, and the item it came from leaves the queue by being
       processed rather than by being pointed at
-- [ ] `settle()` and any queue-membership test read `revisedInto.length` instead of `supersededBy`
+- [ ] `settle()` and any queue-membership test read `revisedInto.length` instead of `supersededBy`.
+      **Put the rule in one named predicate** — unprocessed is holding no routing record, unarchived
+      and `revisedInto` empty — rather than inline at each site:
+      [durable-offline-client](durable-offline-client.md) derives the queue from the client's own
+      cache by exactly this rule and will otherwise write a second copy of it
 - [ ] An amendment no longer re-ranks: drop the re-rank on the amended half of the edit settlement
 - [ ] Delete the `item-superseded` message from `errors.ts`
 - [ ] Tests: an optimistic amendment that settles as a revision; an amendment leaving queue
@@ -143,10 +149,14 @@ Depends on every phase above.
   them, and drop them in a later migration. Ugly but harmless, and the pool is greenfield
   ([ADR 9](../adr/0009-versioned-api-mutable-until-first-real-pool.md)) so neither route needs a
   data migration.
-- **Where the client's edit `sourceItemId` comes from.** It has to be stable across retries of one
-  edit and distinct between two edits of one item. The outbox operation already has an identity
-  that satisfies both. *Fallback*: mint a fresh uuid when the operation is created and store it on
-  the operation, which is the same thing said longhand.
+- **~~Where the client's edit `sourceItemId` comes from.~~** *Settled 2026-08-24*: minted in
+  `client.edit()` and carried on the operation, for the reason given in phase 4. What remains is a
+  limit rather than an unknown — the operation lives in a store nothing reads back, so the id is
+  stable only **within a session**. A retry after a reload mints a fresh one and the pool records a
+  second revision, which makes client.md's "an edit retried after a lost response leaves one
+  revision rather than two" a session-scoped claim until
+  [durable-offline-client](durable-offline-client.md) lands. Say so where the criterion is written,
+  rather than letting it read as absolute.
 - **Whether `revisedInto` belongs on the wire as ids or as a count.** The specs say ids, and a
   shell wanting to open the revision needs one. *Fallback*: if the list turns out to cost a join
   per page that the store cannot index away, carry a count on the item and read the ids per item,
@@ -164,6 +174,23 @@ slice that builds enrichment carries it.
 
 Purge. It is `notImplemented` and the specs describe what it should do; whoever builds it reads
 core.md's Archive and purge section rather than this plan.
+
+---
+
+## Related plans
+
+This one goes first. Three plans wait on it, in this order:
+
+1. [client-minted-assets-and-health](client-minted-assets-and-health.md) — the uploader mints the
+   asset id, `PUT /v1/assets/{id}` replaces `POST`, and `GET /v1/health` answers the pool identity.
+   Disjoint in design from this plan, but it edits the same refusal table and regenerates the same
+   `openapi.json`, which is the only reason it waits rather than running beside it.
+2. [durable-offline-client](durable-offline-client.md) — the client's store stops being write-only
+   and both surfaces are derived from the cache when the pool is out of reach. It reuses this plan's
+   unprocessed predicate and its capture-time ranking, which is why phase 4 asks for the predicate
+   to be named once.
+3. [shell-offline-marks](shell-offline-marks.md) — the pending mark, the incomplete-surface mark,
+   and a picture drawn before it is sent. Phase 5 of this plan touches the same rows.
 
 ---
 
