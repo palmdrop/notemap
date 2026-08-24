@@ -14,8 +14,8 @@ export type MirrorSubject =
  * One item's complete durable state: everything a rebuild needs to restore it,
  * and nothing else.
  *
- * An `ItemRecord` rather than an `Item`: a mirrored `supersededBy` could
- * disagree with the chain it was rebuilt from. The type does not enforce it —
+ * An `ItemRecord` rather than an `Item`: a mirrored `revisedInto` could
+ * disagree with the links it was rebuilt from. The type does not enforce it —
  * an `Item` satisfies this one — so the projection names the fields it copies.
  */
 export type ItemMirrorRecord = {

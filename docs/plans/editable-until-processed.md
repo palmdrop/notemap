@@ -25,55 +25,70 @@ and the revision chain are gone from the code as they are already gone from the 
 
 Depends on nothing. Everything else depends on this.
 
-- [ ] Branch `agent/editable-until-processed` (already carries the ADR and the spec edits)
-- [ ] `Item.supersededBy` becomes `revisedInto: readonly ItemId[]`, still derived and never stored.
+- [x] Branch `agent/editable-until-processed-build`, the docs branch keeping its name
+- [x] `Item.supersededBy` becomes `revisedInto: readonly ItemId[]`, still derived and never stored.
       Absent is the empty list rather than `undefined`, so every caller reads `length`
-- [ ] `sealed()` in `pool/edit.ts` loses the head clause and gains the revisions one: archived, or
+- [x] `sealed()` in `pool/edit.ts` loses the head clause and gains the revisions one: archived, or
       holding a routing record, or holding a revision. Delete `PoolTx.head()` and the port method
       with it
-- [ ] `edit` takes a capture envelope rather than a bare payload — source, that source's own id,
+- [x] `edit` takes a capture envelope rather than a bare payload — source, that source's own id,
       and the payload — and matches a revision for replay on `(source, sourceItemId)` exactly as
       `capture` does. An amendment needs no match. A replay answers the revision already made
-- [ ] `revise()` mints its own capture time of now and its own source identity from the envelope,
+- [x] **`EditEnvelope`, beside `CaptureEnvelope`**: a capture's envelope less what a revision mints
+      for itself — no id, no capture time, no tags
+- [x] **`EditRefusal` gains `source-item-changed`**, capture's, and for capture's reason: the
+      envelope's identity naming an item that is not a revision of this one is refused rather than
+      left to the store's uniqueness rule to raise as a lost write. Spec edit rides with phase 3
+- [x] `revise()` mints its own capture time of now and its own source identity from the envelope,
       and stops setting `contentUpdatedAt` on the new item. Tags still carry over with their
       attribution; archive state, routing records and enrichment still do not
-- [ ] `EditOutcome`'s revised half carries `revisionOf` rather than `supersedes`
-- [ ] Delete the `item-superseded` refusal: both `refusal.ts` entries, the guard in `edit.ts`, and
+- [x] `EditOutcome`'s revised half carries `revisionOf` rather than `supersedes`
+- [x] Delete the `item-superseded` refusal: both `refusal.ts` entries, the guard in `edit.ts`, and
       both guards in `tags.ts`. Any item that exists may be classified
-- [ ] `amend()` keeps writing `contentUpdatedAt` — it records when content last changed and no
+- [x] **Delete `PoolReads.revisionChain`** and the driver's stub for it: there is no chain to walk
+- [x] `amend()` keeps writing `contentUpdatedAt` — it records when content last changed and no
       longer orders anything
-- [ ] Tests: amending a week-old unprocessed item; the same item revised once routed and again
+- [x] Tests: amending a week-old unprocessed item; the same item revised once routed and again
       after that, giving two independent revisions that both name it; a retried edit answering one
       revision; tagging a routed-and-revised item; a cancelled reservation making an unrevised item
-      editable again and a revised one not
-- [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
-- [ ] `git commit`
+      editable again and a revised one not. **These drive core through the real driver, so they
+      land beside the existing ones in `tests/integration` and arrive with phase 2**
+- [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
+- [x] `git commit`
 
 ### Phase 2 — the feed key and the queue key (store-sqlite)
 
 Depends on phase 1's port shape.
 
-- [ ] Migration: drop `root_id`, `revision_depth` and the `items_feed` index over them. See the
-      unknown about SQLite column drops
-- [ ] `FEED_KEY` becomes `created_at, id`. Delete `chain()`, the `chainAt` query and the chain
+- [x] Migration: drop `root_id`, `revision_depth` and the `items_feed` index over them. **`DROP
+      COLUMN` outright** — node 24 carries SQLite 3.53, so the unknown's fallback is not needed
+- [x] `FEED_KEY` becomes `created_at, id`. Delete `chain()`, the `chainAt` query and the chain
       lookup inside `feedKeyset`, which becomes a plain two-column keyset
-- [ ] The queue and the archive order on `created_at, id` too. `CONTENT_TIME` stops being a sort
+- [x] The queue and the archive order on `created_at, id` too. `CONTENT_TIME` stops being a sort
       key; the column stays and is still read. Replace the two `COALESCE` indexes at
-      `migrations.ts:330` and `:334` with ones matching the new key
-- [ ] The `supersededBy` map built at `pool-store.ts:489` becomes a grouping into a list, so an
-      item revised twice answers both
-- [ ] Delete the `revision_of IS NULL` carve-out in `itemBySourceIdentity`: a revision now has an
+      `migrations.ts:330` and `:334` with ones matching the new key. **The three surfaces are then
+      one query through three filters**, the feed passing no filter at all
+- [x] The `supersededBy` map built at `pool-store.ts:489` becomes a grouping into a list, so an
+      item revised twice answers both, in the order the revisions were made
+- [x] Delete the `revision_of IS NULL` carve-out in `itemBySourceIdentity`: a revision now has an
       identity of its own, so the lookup matches at most one row without help
-- [ ] Delete the revision exclusion from tags-in-use. Every item that exists is counted
-- [ ] Delete `newestItem` and the `head` guard
-- [ ] `QUEUED` keeps all three anti-joins. The revision clause is now what keeps a thawed item out
+- [x] **The same carve-out comes off the `items_source_identity` unique index**, which is what
+      makes that true. A pool holding revisions written under the old rule — which copied the
+      identity they were revised from — fails the migration rather than keeping two rows claiming
+      one identity ([ADR 9](../adr/0009-versioned-api-mutable-until-first-real-pool.md): no pool is
+      real yet, and the fix is a fresh one)
+- [x] **Drop `items_one_revision_each`**, which held the chain to one revision per item
+- [x] Delete the revision exclusion from tags-in-use. Every item that exists is counted
+- [x] Delete `newestItem` and the `head` guard
+- [x] `QUEUED` keeps all three anti-joins. The revision clause is now what keeps a thawed item out
       of the queue after something was revised from it, so it carries weight rather than agreeing
       with the routing clause by coincidence
-- [ ] Tests beside the driver: a revision paginating at its own capture time; a feed page across
+- [x] Tests beside the driver: a revision paginating at its own capture time; a feed page across
       the boundary of an item and its revision; the queue not reordering under an amendment; two
-      revisions of one item read back as a list
-- [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
-- [ ] `git commit`
+      revisions of one item read back as a list. **And two over the migration itself**: a pool
+      carried across keeps its items, and one whose revisions share an identity refuses to migrate
+- [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
+- [x] `git commit`
 
 ### Phase 3 — the wire (daemon)
 

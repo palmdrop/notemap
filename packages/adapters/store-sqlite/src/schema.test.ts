@@ -51,7 +51,7 @@ describe("the row types and the migrations agree", () => {
     }
   });
 
-  it("refuses a second revision of one item, so the chain cannot fork", async () => {
+  it("takes any number of revisions of one item", async () => {
     const opened = store();
     try {
       opened.raw.exec("PRAGMA foreign_keys = ON");
@@ -63,8 +63,8 @@ describe("the row types and the migrations agree", () => {
       opened.raw.prepare(insert).run("revision", "b", 2, "original");
 
       expect(() =>
-        opened.raw.prepare(insert).run("fork", "c", 3, "original"),
-      ).toThrow(/UNIQUE|constraint/i);
+        opened.raw.prepare(insert).run("second-revision", "c", 3, "original"),
+      ).not.toThrow();
     } finally {
       await opened.cleanup();
     }
@@ -233,7 +233,7 @@ describe("the row types and the migrations agree", () => {
     }
   });
 
-  it("lets two revisions share the source identity they revise", async () => {
+  it("holds every item to one source identity, revisions included", async () => {
     const opened = store();
     try {
       const insert = `INSERT INTO items (id, source_id, source_item_id,
@@ -241,12 +241,10 @@ describe("the row types and the migrations agree", () => {
         VALUES (?, 'src', 'same', 'text', '{}', '{}', 1, ?, ?)`;
 
       opened.raw.prepare(insert).run("original", 1, null);
-      // A revision carries the identity of the capture it revises; the
-      // uniqueness rule is about re-reading a source, which this is not.
+      // A revision mints its own identity, so it claims one like anything else.
       expect(() =>
         opened.raw.prepare(insert).run("revision", 2, "original"),
-      ).not.toThrow();
-      // A second *capture* under that identity is still refused.
+      ).toThrow(/UNIQUE|constraint/i);
       expect(() =>
         opened.raw.prepare(insert).run("duplicate", 3, null),
       ).toThrow(/UNIQUE|constraint/i);

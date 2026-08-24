@@ -193,16 +193,15 @@ export function putAssets(
 }
 
 /** Carries the original's capture time and source identity; the edit is recorded separately. */
+/** An ordinary capture carrying a link: its own id, its own time, its own identity. */
 export function revisionOf(
   original: ItemRecord,
-  overrides: { id: string; text: string; editedAt: string },
+  overrides: { id: string; text: string; at: string },
 ): ItemRecord {
   return capture({
     id: overrides.id,
     text: overrides.text,
-    sourceItemId: original.sourceItemId,
-    createdAt: original.createdAt,
-    contentUpdatedAt: overrides.editedAt,
+    createdAt: overrides.at,
     revisionOf: original.id,
   });
 }

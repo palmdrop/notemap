@@ -3,7 +3,11 @@ import type { Page, PageRequest, Result, Slice } from "../result";
 import type { Action } from "../domain/action-log";
 import type { Agent } from "../domain/agent";
 import type { Asset, AssetMeta, BlobIntegrity } from "../domain/asset";
-import type { CaptureEnvelope, CaptureOutcome } from "../domain/capture";
+import type {
+  CaptureEnvelope,
+  CaptureOutcome,
+  EditEnvelope,
+} from "../domain/capture";
 import type {
   Destination,
   DestinationChanges,
@@ -66,9 +70,10 @@ import type {
 
 export interface ItemsApi {
   get(id: ItemId): Promise<Item | undefined>;
+  /** An envelope rather than a payload, because a revision is a capture. */
   edit(
     id: ItemId,
-    payload: Payload,
+    envelope: EditEnvelope,
     by: Agent,
   ): Promise<Result<EditOutcome, EditRefusal>>;
   tag(id: ItemId, tag: TagName, by: Agent): Promise<Result<Item, TagRefusal>>;

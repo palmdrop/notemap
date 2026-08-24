@@ -46,17 +46,13 @@ export type EditRefusal =
       readonly issues: readonly SchemaIssue[];
     }
   | { readonly kind: "payload-type-changed"; readonly from: PayloadTypeName }
-  | { readonly kind: "item-superseded"; readonly by: ItemId }
   | { readonly kind: "missing-asset-slot"; readonly slot: string }
-  | { readonly kind: "unknown-asset"; readonly asset: AssetId };
+  | { readonly kind: "unknown-asset"; readonly asset: AssetId }
+  /** The envelope's identity already names an item that is not a revision of this one. */
+  | { readonly kind: "source-item-changed"; readonly existing: ItemId };
 
-/**
- * A tag on a superseded item is attached where nobody reads it: the revision does
- * not inherit what arrives after it was made.
- */
 export type TagRefusal =
   | SubjectRefusal
-  | { readonly kind: "item-superseded"; readonly by: ItemId }
   | { readonly kind: "tag-invalid"; readonly tag: string };
 
 export type ArchiveRefusal =

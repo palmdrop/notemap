@@ -50,6 +50,7 @@ function item(assets: readonly { slot: string; asset: string }[] = []): Item {
     tags: [],
     createdAt: "2026-08-06T09:00:00.000Z" as Timestamp,
     modifiedAt: "2026-08-06T09:00:00.000Z" as Timestamp,
+    revisedInto: [],
   };
 }
 
