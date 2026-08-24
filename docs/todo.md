@@ -54,13 +54,14 @@
   at start, and a decision about whether boot drains. [client.md](specs/client.md) calls the
   offline protocol a designed seam, unbuilt; this is that seam, and it is the one place the code
   currently claims something it does not do.
-- [ ] Routing state has to reach a client, and that is a backend change. `Item` carries `archived`,
-  `revisionOf` and `supersededBy` and nothing about routing, so the queue excludes routed items
-  server-side and the feed receives them undifferentiated. The feed therefore cannot say `routed`,
-  or draw the `sent` line naming destination, capability and when, without a
-  `GET /v1/items/:id/routing` per row. A slice across [core.md](specs/core.md) and
-  [http-v1.md](specs/http-v1.md) first, then the client and the shell — the shell's half is drawn
-  and waiting. Decided 2026-08-20 that the answer is to carry it rather than work around it.
+- [x] Routing state reaches the client. Shipped in b42eeb9 as a **routing summary** on every item:
+  how many records, how many still pending, and the distinct places they name, derived rather than
+  stored and absent where an item has been nowhere. The feed says `routed` and names where from the
+  row it already has — `FeedRow.svelte` renders the summary, and both `Feed.test.ts` and
+  `Queue.test.ts` assert that no `GET /v1/items/:id/routing` is issued per row. A record's
+  capability, target and pointer stay per-item and are read when a row is opened
+  (`QueueRow.svelte`), which was the design rather than a gap: they are an item's detail, not a
+  row's. Decided 2026-08-20 to carry it rather than work around it, and that is what happened.
 - [x] `GET /v1/tags` — the tag chooser has nothing to choose from. No route reads the tags in use,
   so the shell offers free entry into a control already shaped to take suggestions. Wants a core
   read, the route, and a client cache. Open: whether it carries counts, which is the difference
