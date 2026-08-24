@@ -74,6 +74,7 @@
       {item}
       opened={opened === item.id}
       offline={!pool.yes}
+      furled={rail.furled}
       onopen={() => show(item.id)}
       onroute={() => (routing = item.id)}
     />

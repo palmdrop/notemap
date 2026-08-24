@@ -41,7 +41,9 @@
   <Column>
     <Bar>
       <Nav surfaces={SURFACES} current={page.url.pathname} />
-      <span class="ml-auto flex flex-wrap items-baseline gap-4 max-narrow:gap-3">
+      <span
+        class="ml-auto flex flex-wrap items-baseline gap-4 max-narrow:gap-3"
+      >
         <Order />
         <Furl furled={rail.furled} ontoggle={() => rail.toggle()} />
         <Waiting count={held.count} />

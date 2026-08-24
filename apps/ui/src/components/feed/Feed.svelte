@@ -36,7 +36,11 @@
   {/if}
 
   {#each $feed.items as item, at (item.id)}
-    <FeedRow {item} first={at === 0 && $feed.failure === undefined} />
+    <FeedRow
+      {item}
+      first={at === 0 && $feed.failure === undefined}
+      furled={rail.furled}
+    />
   {/each}
 
   {#if $feed.more}

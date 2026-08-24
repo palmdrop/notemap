@@ -158,3 +158,29 @@ test("a retired destination stays in the list and is not offered for new routing
       .disabled,
   ).toBe(false);
 });
+
+/** Over the register, so the ways out of it are the modal's own. */
+test("is dismissed by the veil, the cross, or Escape", async () => {
+  serving([aDestination()]);
+
+  const closed = draw();
+  const dialog = await screen.findByRole("dialog");
+
+  await fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  expect(closed).toHaveBeenCalledTimes(1);
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  expect(closed).toHaveBeenCalledTimes(2);
+
+  // The veil, which is what is under the dialog rather than in it.
+  await fireEvent.click(dialog.parentElement as HTMLElement);
+  expect(closed).toHaveBeenCalledTimes(3);
+});
+
+test("says which capture it is about, the row being behind it", async () => {
+  serving([aDestination()]);
+
+  draw();
+
+  expect(await screen.findByText("a note")).toBeDefined();
+});

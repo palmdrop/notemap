@@ -21,12 +21,15 @@
     item,
     opened,
     offline,
+    furled,
     onopen,
     onroute,
   }: {
     item: Item;
     opened: boolean;
     offline: boolean;
+    /** The rail is away, so the stamp comes with the reader rather than going with it. */
+    furled: boolean;
     onopen: () => void;
     onroute: () => void;
   } = $props();
@@ -62,7 +65,9 @@
 </script>
 
 <Rail lit={opened} onpick={onopen}>
-  <Stamp at={item.createdAt} {opened} onopen={() => onopen()} />
+  {#if !furled}
+    <Stamp at={item.createdAt} {opened} onopen={() => onopen()} />
+  {/if}
 
   {#if word !== undefined}
     <StateWord {word} />
@@ -86,6 +91,12 @@
 </Rail>
 
 <Body lit={opened} onpick={onopen}>
+  {#if furled}
+    <div class="mb-2 font-mono">
+      <Stamp at={item.createdAt} {opened} onopen={() => onopen()} />
+    </div>
+  {/if}
+
   {#if editing}
     <Edit {item} ondone={() => (editing = false)} />
   {:else}

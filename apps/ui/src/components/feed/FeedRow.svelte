@@ -13,14 +13,20 @@
   import { client } from "$lib/client";
   import { became, finished } from "$lib/lineage";
 
-  let { item, first = false }: { item: Item; first?: boolean } = $props();
+  let {
+    item,
+    first = false,
+    furled = false,
+  }: { item: Item; first?: boolean; furled?: boolean } = $props();
 
   const word = $derived(became(item));
   const archived = $derived(item.archived !== undefined);
 </script>
 
 <Rail {first}>
-  <Stamp at={item.createdAt} />
+  {#if !furled}
+    <Stamp at={item.createdAt} />
+  {/if}
 
   {#if word !== undefined}
     <StateWord {word} />
@@ -32,6 +38,12 @@
 </Rail>
 
 <Body {first}>
+  {#if furled}
+    <div class="mb-2 font-mono">
+      <Stamp at={item.createdAt} />
+    </div>
+  {/if}
+
   <Payload {item} muted={finished(item)} />
 
   {#if archived}

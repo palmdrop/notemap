@@ -25,7 +25,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   onclick={onpick === undefined ? undefined : pickable(onpick)}
-  class="col-start-1 min-w-0 border-t border-ink/20 font-mono group-data-furled:hidden
+  class="col-start-1 min-w-0 border-t border-t-ink/20 font-mono group-data-furled:hidden
     {first ? 'border-t-0 pt-3.5 pb-6' : 'py-6'}
     {onpick === undefined ? '' : 'cursor-pointer'}
     {lit ? 'bg-ink/5' : ''}"

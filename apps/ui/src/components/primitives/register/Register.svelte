@@ -12,9 +12,9 @@
 
 <div
   data-furled={furled ? "" : undefined}
-  class="group grid gap-x-gap {furled
+  class="group grid {furled
     ? 'grid-cols-[0_1fr] gap-x-0'
-    : 'grid-cols-[var(--spacing-rail)_1fr]'}"
+    : 'grid-cols-[var(--spacing-rail)_1fr] gap-x-gap'}"
 >
   {@render children()}
 </div>

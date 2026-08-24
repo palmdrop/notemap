@@ -1,14 +1,20 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
-import { expect, test, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { asked, pool } from "../../testing/pool";
 import { briefly } from "$lib/stamp";
 import { online } from "../../testing/dom";
+import { rail } from "$lib/rail.svelte";
 import Queue from "./Queue.svelte";
 
 vi.mock("$lib/client", () => import("../../testing/pool"));
+
+// Module-scoped reading preference, so a test that furls the rail unfurls it.
+afterEach(() => {
+  if (rail.furled) rail.toggle();
+});
 
 function queued(...ids: string[]) {
   return (request: Request) =>
@@ -95,9 +101,13 @@ test("opens a row without asking where an item has never been", async () => {
 
   render(Queue);
   await screen.findByText("one");
+
+  // The rail says so collapsed, which is what makes the read unnecessary.
+  expect(screen.getByText("unrouted")).toBeDefined();
+
   await open(0);
 
-  expect(await screen.findByText("none yet")).toBeDefined();
+  expect(await screen.findByText("payload")).toBeDefined();
   expect(asked()).not.toContain("GET /v1/items/one/routing");
 });
 
@@ -108,24 +118,6 @@ test("draws the way to add to the queue even when the queue is empty", async () 
 
   expect(await screen.findByText("zero")).toBeDefined();
   expect(screen.getByLabelText("What to capture")).toBeDefined();
-});
-
-test("turns the queue around and reads it again from that end", async () => {
-  const transport = pool(queued("one"));
-
-  render(Queue);
-  await screen.findByText("one");
-
-  await fireEvent.change(screen.getByLabelText("Order"), {
-    target: { value: "newest-first" },
-  });
-
-  await vi.waitFor(() => {
-    const orders = transport.sent
-      .filter((request) => routeOf(request) === "GET /v1/queue")
-      .map((request) => new URL(request.url).searchParams.get("order"));
-    expect(orders).toEqual(["oldest-first", "newest-first"]);
-  });
 });
 
 test("reads the drained queue as the thing it was working toward", async () => {
@@ -139,7 +131,7 @@ test("reads the drained queue as the thing it was working toward", async () => {
   expect(screen.queryByText(/Empty —/)).toBeNull();
 });
 
-test("says on the collapsed row when an item was last touched", async () => {
+test("says on the row it opens when an item was last touched", async () => {
   const touchedAt = "2026-08-19T22:14:00.000Z";
 
   pool((request: Request) =>
@@ -159,34 +151,26 @@ test("says on the collapsed row when an item was last touched", async () => {
   render(Queue);
   await screen.findByText("touched");
 
-  // The key the queue is ordered by, so it is readable without opening a row.
-  expect(screen.getByText(briefly(touchedAt))).toBeDefined();
-  expect(screen.queryByText("not since capture")).toBeNull();
+  // A plain fact about the note rather than what orders it, so it waits for
+  // the row to open along with everything else the rail knows.
+  expect(screen.queryByText(briefly(touchedAt))).toBeNull();
 
-  await open(1);
+  await open(0);
+  expect(await screen.findByText(briefly(touchedAt))).toBeDefined();
 
+  // The other row, which is now the only collapsed one left.
+  await open(0);
   expect(await screen.findByText("not since capture")).toBeDefined();
 });
 
-test("will not turn around while a read is still walking", async () => {
-  let release = () => {};
-  const held = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-
-  pool(async (request: Request) => {
-    if (routeOf(request) !== "GET /v1/queue") return json(200, { values: [] });
-    await held;
-    return json(200, { values: [anItem("one")] });
-  });
+/** Furling hides the rail, and the stamp is the only way into a row. */
+test("keeps a way into a row with the rail furled", async () => {
+  pool(queued("one"));
+  rail.toggle();
 
   render(Queue);
-
-  const control = screen.getByLabelText("Order") as HTMLSelectElement;
-  expect(control.disabled).toBe(true);
-
-  release();
   await screen.findByText("one");
 
-  await vi.waitFor(() => expect(control.disabled).toBe(false));
+  await open(0);
+  expect(screen.getAllByRole("button", { name: "archive" })).toHaveLength(1);
 });

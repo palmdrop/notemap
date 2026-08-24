@@ -151,7 +151,11 @@
 {#if adding}
   <Rail>new</Rail>
   <Body>
-    <DestinationForm {kinds} disabled={!pool.yes} done={() => (adding = false)} />
+    <DestinationForm
+      {kinds}
+      disabled={!pool.yes}
+      done={() => (adding = false)}
+    />
   </Body>
 {:else}
   <Foot>
