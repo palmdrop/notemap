@@ -9,12 +9,11 @@
   import DestinationForm from "$components/destinations/DestinationForm.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import ActionRow from "$components/primitives/controls/ActionRow.svelte";
-  import Content from "$components/primitives/register/Content.svelte";
+  import Body from "$components/primitives/register/Body.svelte";
+  import Fact from "$components/primitives/register/Fact.svelte";
+  import Facts from "$components/primitives/register/Facts.svelte";
   import Foot from "$components/primitives/register/Foot.svelte";
-  import Label from "$components/primitives/register/Label.svelte";
-  import Row from "$components/primitives/register/Row.svelte";
-  import Separator from "$components/primitives/register/Separator.svelte";
-  import Value from "$components/primitives/register/Value.svelte";
+  import Rail from "$components/primitives/register/Rail.svelte";
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
 
@@ -70,49 +69,43 @@
 </script>
 
 {#if !pool.yes}
-  <Row>
-    <Label name="daemon" />
-    <Value>
-      <!-- The chrome already says the pool is out of reach; this names the
-           exception, and an ordinary condition is not painted as an alarm. -->
-      <span role="status" class="text-ink-muted">
-        destinations can be read but not changed
-      </span>
-    </Value>
-  </Row>
+  <Rail>daemon</Rail>
+  <Body>
+    <!-- The chrome already says the pool is out of reach; this names the
+         exception, and an ordinary condition is not painted as an alarm. -->
+    <span role="status" class="font-mono text-ink-muted">
+      destinations can be read but not changed
+    </span>
+  </Body>
 {/if}
 
 {#if said !== ""}
-  <Row>
-    <Label name="failed" />
-    <Value>
-      <span role="status" class="text-accent">{said}</span>
-    </Value>
-  </Row>
+  <Rail>failed</Rail>
+  <Body>
+    <span role="status" class="font-mono text-accent">{said}</span>
+  </Body>
 {/if}
 
 {#if $destinations.length === 0}
-  <Row>
-    <Label name="destinations" />
-    <Value empty>none yet</Value>
-  </Row>
+  <Rail>destinations</Rail>
+  <Body>
+    <span class="font-mono text-ink-muted">none yet</span>
+  </Body>
 {/if}
 
 {#each $destinations as one (one.id)}
-  <Separator />
-  <Row>
-    <Label name="name" />
-    <Value>{one.name}</Value>
-
-    <Label name="kind" />
-    <Value>{one.kind}{one.retired ? " · retired" : ""}</Value>
-
-    <Label name="can" />
-    <Value empty={described[one.id] === undefined}>
-      {described[one.id] === undefined ? "unasked" : summary(described[one.id])}
-    </Value>
-
-    <Label />
+  <Rail>
+    <div class="break-words">{one.name}</div>
+    <Facts>
+      <Fact name="kind">{one.kind}{one.retired ? " · retired" : ""}</Fact>
+      <Fact name="can" empty={described[one.id] === undefined}>
+        {described[one.id] === undefined
+          ? "unasked"
+          : summary(described[one.id])}
+      </Fact>
+    </Facts>
+  </Rail>
+  <Body>
     <ActionRow>
       <Action onclick={() => void check(one)}>check</Action>
       <Action
@@ -143,32 +136,23 @@
     </ActionRow>
 
     {#if editing === one.id}
-      <Label />
-      <Content>
+      <div class="mt-5">
         <DestinationForm
           {kinds}
           editing={one}
           disabled={!pool.yes}
           done={() => (editing = undefined)}
         />
-      </Content>
+      </div>
     {/if}
-  </Row>
+  </Body>
 {/each}
 
-<Separator />
-
 {#if adding}
-  <Row>
-    <Label name="new" />
-    <Content>
-      <DestinationForm
-        {kinds}
-        disabled={!pool.yes}
-        done={() => (adding = false)}
-      />
-    </Content>
-  </Row>
+  <Rail>new</Rail>
+  <Body>
+    <DestinationForm {kinds} disabled={!pool.yes} done={() => (adding = false)} />
+  </Body>
 {:else}
   <Foot>
     <Action

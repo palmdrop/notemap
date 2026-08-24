@@ -63,7 +63,7 @@ function serving(
 function draw() {
   const closed = vi.fn();
   render(RoutingComposer, {
-    props: { item: "one", onclose: closed, onreserve: vi.fn() },
+    props: { item: "one", subject: "a note", onclose: closed },
   });
   return closed;
 }

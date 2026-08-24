@@ -24,19 +24,20 @@
   --text-mono: 1.0625rem;
   --text-prose: 1.25rem;
 
-  --spacing-gutter: 7.5rem;
-  --spacing-gap: 1.4rem;
-  --spacing-spine: 1.4rem;
-  --spacing-panel: 25rem;
-  --spacing-measure: 44rem;
+  --spacing-rail: 17rem;
+  --spacing-gap: 2.2rem;
+  --spacing-fact: 5.5rem;
+  --spacing-modal: 30rem;
+  --spacing-measure: 72rem;
 
-  --breakpoint-narrow: 34rem;
-  --breakpoint-aside: 56rem;
+  --breakpoint-narrow: 44rem;
 }
 
-/* One column: a gutter this wide would leave the prose too narrow to read. */
-@media (width < 34rem) {
+/* A phone keeps both columns — the rail is what says what a thing is — but a
+   rail this wide would leave nothing for the prose. */
+@media (width < 44rem) {
   :root {
-    --spacing-gap: 0.8rem;
+    --spacing-rail: 6.5rem;
+    --spacing-gap: 1rem;
   }
 }

@@ -7,22 +7,21 @@
 
   import Action from "$components/primitives/controls/Action.svelte";
   import Commit from "$components/primitives/composer/Commit.svelte";
-  import Composer from "$components/primitives/composer/Composer.svelte";
-  import Connector from "$components/primitives/composer/Connector.svelte";
   import Group from "$components/primitives/composer/Group.svelte";
+  import Modal from "$components/primitives/composer/Modal.svelte";
   import Option from "$components/primitives/composer/Option.svelte";
   import { client } from "$lib/client";
   import { fieldsOf, valuesFrom } from "$lib/schema-form";
 
   let {
     item,
+    subject,
     onclose,
-    onreserve,
   }: {
     item: string;
+    /** What the row said, since the row itself is now behind the veil. */
+    subject: string;
     onclose: () => void;
-    /** How much room the row must keep, since the panel is out of its flow. */
-    onreserve: (height: number) => void;
   } = $props();
 
   const destinations = client.destinations.all;
@@ -109,9 +108,7 @@
   }
 </script>
 
-<Connector />
-
-<Composer title="route" {onclose} {onreserve}>
+<Modal title="route" {subject} {onclose}>
   <!-- Above `where` is where a decision that arrived pre-filled with an
        attribution goes. Nothing produces that shape yet. -->
 
@@ -159,4 +156,4 @@
       <span role="status" class="text-ink-muted">{said}</span>
     {/if}
   </Commit>
-</Composer>
+</Modal>

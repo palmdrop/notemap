@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Content from "$components/primitives/register/Content.svelte";
+  import Body from "$components/primitives/register/Body.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
-  import Row from "$components/primitives/register/Row.svelte";
+  import Rail from "$components/primitives/register/Rail.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
 
   const SAID = `The queue is empty.
@@ -10,15 +10,13 @@ Everything captured has been routed, marked done, or archived. Anything new goes
 </script>
 
 <!--
-  The state word in the left column, where the feed puts what became of an item:
-  this is what became of the whole surface. No count is claimed, because the
-  pool gives none — reaching the end is the only number the queue ever has.
+  The state word in the rail, where the feed puts what became of an item: this
+  is what became of the whole surface. No count is claimed, because the pool
+  gives none — reaching the end is the only number the queue ever has.
 -->
-<div class="cleared">
-  <Row>
-    <StateWord word="zero" />
-    <Content>
-      <Prose text={SAID} />
-    </Content>
-  </Row>
-</div>
+<Rail>
+  <div class="cleared"><StateWord word="zero" /></div>
+</Rail>
+<Body>
+  <div class="cleared"><Prose text={SAID} /></div>
+</Body>

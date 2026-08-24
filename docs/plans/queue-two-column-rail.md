@@ -1,0 +1,116 @@
+# The queue is two columns, and routing is a modal over them
+
+**Date**: 2026-08-24
+**Status**: In progress
+**Spec**: `docs/specs/shell.md`
+**Closed**:
+
+---
+
+## Goal
+
+`apps/ui` draws both surfaces as one grid of two real columns — a **metadata rail** the reader can
+furl away, and the capture itself — with routing lifted out of the register into a **modal**, such
+that the register no longer reserves width for a composer, no row carries a label gutter, and every
+measure the new layout needs is a role in `styles/tokens.css`.
+
+---
+
+## What changes, and why
+
+The register used to be one column with a right-hand spine, where a row's left gutter held the
+stamp collapsed and became a label column opened. Two things were wrong with it: the gutter was
+dead space on a collapsed row, and the routing composer had to widen the whole page to have
+somewhere to live.
+
+v6 answers both. The left column becomes a **rail** that always carries metadata — stamp, tags,
+where it went, and the item's facts once it is open — and the right column carries nothing but what
+was captured. The rail can be furled from the bar, which gives the prose the whole width without
+hiding the register. Routing goes into a modal over the surface, so nothing in the register has to
+reserve room for it.
+
+**Settled with the developer, 2026-08-24:**
+
+- `N waiting` in the bar counts **outbox operations that have not drained** — which closes
+  shell.md's open question about a pending mark. It is not a count of the queue; the API has none.
+- **The feed gets the same rail.** One system, both surfaces.
+- The bar keeps the **reachability mark**, the **settings link** and the **order selector**,
+  alongside the furl toggle and the waiting count.
+- **The spine and the separators go.** Structure is the two columns plus a rule across the top of
+  every cell.
+
+**Not taken from the sketch**: `record` beside `capture` and `attach`. Nothing captures audio.
+
+---
+
+## Tasks
+
+### 1 — Tokens and the frame
+
+- [ ] Branch `agent/queue-two-column-rail`.
+- [ ] `styles/tokens.css`: `--spacing-rail`, `--spacing-fact`, `--spacing-modal`; `--spacing-measure`
+      becomes the frame's cap rather than the register's; `--spacing-spine` and `--spacing-panel`
+      go. One breakpoint, `--breakpoint-narrow: 44rem`, where the rail narrows; `--breakpoint-aside`
+      goes with the composer that needed it.
+- [ ] `Column` loses `wide`: nothing widens the page any more. `Sheet` matches the sketch's padding.
+- [ ] `Bar`: furl toggle, waiting count, reachability, settings, order.
+- [ ] `lib/rail.svelte.ts` — furled or not, remembered like the theme.
+- [ ] `lib/waiting.svelte.ts` — how many outbox operations have not drained.
+- [ ] Commit.
+
+### 2 — The register
+
+- [ ] `Register` becomes the grid itself, and furls its first column to nothing.
+- [ ] `Rail` and `Body` — the two cells one item drops into the grid, with the rule across the top,
+      the lit wash, and the accent edge on an open body.
+- [ ] `Facts`/`Fact` replace `Label`/`Value`. `Separator`, `Row`, `Content` go.
+- [ ] `Stamp` puts the time beside the date and stacks it on a phone.
+- [ ] `Foot` sits in the content column.
+- [ ] Commit.
+
+### 3 — The surfaces
+
+- [ ] `CaptureRow`, `QueueRow`, `Drained`, `FeedRow` emit a rail and a body.
+- [ ] The rail carries the stamp, the state word where there is one, tags, where it went, and — on
+      the open row — payload type, edited, source, id.
+- [ ] Clicking anywhere in either cell opens the row; the stamp stays the button that says so.
+- [ ] Commit.
+
+### 4 — Routing as a modal
+
+- [ ] `Modal` replaces `Composer` and `Connector`: veil, panel, title, the subject it is about,
+      dismissed by the veil, the ×, or Escape.
+- [ ] `RoutingComposer` renders into it; the surface owns which item is being routed, so
+      `lib/composing.svelte.ts` goes.
+- [ ] Commit.
+
+### 5 — Docs and gates
+
+- [ ] `docs/specs/shell.md`: the rail, the furl, the modal, the waiting mark, and the death of the
+      spine. Close the pending-mark open question.
+- [ ] Typecheck, tests, lint. `pnpm test:stack` is not needed — nothing crosses the layers.
+- [ ] Commit.
+
+---
+
+## Testing
+
+ALWAYS CREATE TESTS for the behavior implemented, unless appropriate tests already exist.
+
+The existing suite is the floor. What is new and worth a test: the rail furls and the register keeps
+working without it, the waiting count says what the outbox holds and never counts a refusal, an open
+row's facts, and routing being reachable and dismissable in the modal.
+
+---
+
+## Notes
+
+DO NOT IMPLEMENT until clearly stated by the developer.
+
+When told to implement, create a branch named after the plan and work there. Once a phase — or any
+sensible set of changes — is done, check off the relevant tasks, `git commit`, and describe what was
+added.
+
+When the plan is implemented, fully or partially, set **Status** to `Done` or `In progress`. **Then
+add a `Shipped:` entry to every spec listed above**, dated, describing at a high level what landed
+and linking back to this plan.

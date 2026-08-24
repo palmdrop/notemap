@@ -1,20 +1,17 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
-  import type { Order } from "@notemap/client";
 
   import CaptureRow from "$components/capture/CaptureRow.svelte";
   import Drained from "$components/queue/Drained.svelte";
   import QueueRow from "$components/queue/QueueRow.svelte";
+  import RoutingComposer from "$components/routing/RoutingComposer.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
-  import OrderSelector from "$components/primitives/controls/OrderSelector.svelte";
-  import Content from "$components/primitives/register/Content.svelte";
+  import Body from "$components/primitives/register/Body.svelte";
   import Foot from "$components/primitives/register/Foot.svelte";
-  import Label from "$components/primitives/register/Label.svelte";
+  import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
-  import Row from "$components/primitives/register/Row.svelte";
-  import Separator from "$components/primitives/register/Separator.svelte";
   import { client } from "$lib/client";
-  import { composing } from "$lib/composing.svelte";
+  import { rail } from "$lib/rail.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { readMark, writeMark } from "$lib/scroll-mark";
 
@@ -25,6 +22,13 @@
 
   /** Processing happens in the row, and one row is open at a time. */
   let opened = $state<string | undefined>(undefined);
+
+  /** Which item the routing modal is about, the row itself being behind it. */
+  let routing = $state<string | undefined>(undefined);
+
+  const subject = $derived(
+    $queue.items.find((item) => item.id === routing) ?? undefined,
+  );
 
   const drained = $derived(
     !$queue.loading &&
@@ -43,59 +47,35 @@
     // only where to put the view back on reload.
     const remember = () => writeMark(SURFACE, window.scrollY);
     window.addEventListener("scroll", remember, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", remember);
-      composing.end();
-    };
+    return () => window.removeEventListener("scroll", remember);
   });
 
-  /** Collapsing or leaving a row abandons whatever was being composed on it. */
   function show(id: string) {
-    composing.end();
     opened = opened === id ? undefined : id;
-  }
-
-  function turn(order: Order) {
-    composing.end();
-    opened = undefined;
-    void client.loadQueue(order);
   }
 </script>
 
-<Register aside={composing.open}>
+<Register furled={rail.furled}>
   <CaptureRow />
 
-  <Separator />
-
-  <OrderSelector
-    order={$queue.order}
-    reading={$queue.loading}
-    onchoose={turn}
-  />
-
   {#if $queue.failure !== undefined}
-    <Row>
-      <Label name="queue" />
-      <Content>
-        <span role="status" class="font-mono text-accent">{$queue.failure}</span
-        >
-      </Content>
-    </Row>
+    <Rail>queue</Rail>
+    <Body>
+      <span role="status" class="font-mono text-accent">{$queue.failure}</span>
+    </Body>
   {/if}
 
   {#if drained}
     <Drained />
   {/if}
 
-  {#each $queue.items as item, at (item.id)}
-    {#if at > 0}
-      <Separator />
-    {/if}
+  {#each $queue.items as item (item.id)}
     <QueueRow
       {item}
       opened={opened === item.id}
       offline={!pool.yes}
       onopen={() => show(item.id)}
+      onroute={() => (routing = item.id)}
     />
   {/each}
 
@@ -107,3 +87,11 @@
     </Foot>
   {/if}
 </Register>
+
+{#if subject !== undefined}
+  <RoutingComposer
+    item={subject.id}
+    subject={client.says(subject) || subject.payload.type}
+    onclose={() => (routing = undefined)}
+  />
+{/if}
