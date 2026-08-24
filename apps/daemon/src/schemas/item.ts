@@ -59,7 +59,8 @@ export const itemSchema = z
       .object({ archivedAt: z.string(), reason: z.string().optional() })
       .optional(),
     modifiedAt: z.string(),
-    supersededBy: z.string().optional(),
+    /** Empty rather than absent, so a reader asks for its length and nothing else. */
+    revisedInto: z.array(z.string()),
     routing: routingSummary.optional(),
   })
   .openapi("Item");
@@ -86,7 +87,17 @@ export const captureOutcomeSchema = z
   ])
   .openapi("CaptureOutcome");
 
-export const editRequestSchema = payloadSchema.openapi("EditRequest");
+/**
+ * Strict, as the capture envelope is, and for the same reason: a dropped
+ * `sourceItemId` costs a retried edit its match and appends a second revision.
+ */
+export const editEnvelopeSchema = z
+  .strictObject({
+    source: z.string().min(1),
+    sourceItemId: z.string().min(1),
+    payload: payloadSchema,
+  })
+  .openapi("EditEnvelope");
 
 /** Field by field because every one of them is branded or narrowed. */
 export function toPayload(parsed: z.infer<typeof payloadSchema>): Payload {
@@ -107,7 +118,7 @@ export const editOutcomeSchema = z
     z.object({
       kind: z.literal("revised"),
       revision: itemSchema,
-      supersedes: z.string(),
+      revisionOf: z.string(),
     }),
   ])
   .openapi("EditOutcome");

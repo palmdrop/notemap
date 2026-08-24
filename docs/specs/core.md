@@ -272,7 +272,9 @@ change.*
   source's own id, which is what makes a retried edit idempotent: a revision is matched for replay
   exactly as a capture is, so an edit resent after a lost response answers with the revision it
   already made instead of making a second one. An amendment needs no such match, writing the same
-  payload twice being the same as writing it once.
+  payload twice being the same as writing it once. **An identity that names an item core did not
+  revise from this one is refused** as `source-item-changed`, on capture's terms: every item claims
+  one identity, and a revision claims one like anything else.
 - A client may freely amend or discard a capture that core has not yet accepted. Immutability
   begins at the pool, and then only once the pool has been told the item is done with. Once a
   capture has been handed over for delivery it must be treated as accepted, even before a response

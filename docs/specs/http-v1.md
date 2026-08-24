@@ -269,8 +269,10 @@ archive, a capture outcome, an edit outcome:
                        { "kind": "user" } ] } }
 ```
 
-- **Absent where the item has been nowhere**, like `archived` and `revisedInto`, rather than
-  present and zeroed.
+- **Absent where the item has been nowhere**, like `archived`, rather than present and zeroed.
+  `revisedInto` is the exception and is **always spelled, empty where nothing was revised from the
+  item** (amended 2026-08-24): it is a list, whose empty is a value rather than a claim, and every
+  reader of it asks for its length.
 - `to` is **distinct and in the order the records were made**, and names a destination by id: a
   client resolves the name from `GET /v1/destinations`, which it already reads, and a record's
   capability, target and pointer are not here.
@@ -497,6 +499,11 @@ person to remember it.
   `(source, sourceItemId)` exactly as a capture is, so an edit resent after a lost response answers
   with the revision it already made instead of appending a second one. An amendment needs no match,
   writing the same payload twice being the same as writing it once.
+- **An identity another item already claims is `409 source-item-changed`** (added 2026-08-24),
+  carrying that item's id, exactly as a capture under a taken identity is refused. It is what the
+  replay match costs: every item claims one identity, a revision included, so an envelope naming
+  one that belongs to something other than a revision of this item is a caller's mistake rather
+  than a resend.
 - **An item may be revised more than once.** The revisions are independent captures sharing an
   ancestor; neither is the current one, and the item they came from names both.
 - `200` rather than `201`, although a revision creates an item. The outcome carries the whole item,

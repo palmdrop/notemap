@@ -94,17 +94,24 @@ Depends on phase 1's port shape.
 
 Depends on phases 1 and 2.
 
-- [ ] `editRequestSchema` becomes an envelope: `source`, `sourceItemId`, `payload`
-- [ ] `editOutcomeSchema`'s revised half carries `revisionOf`; the item schema carries
-      `revisedInto` as an array of ids in place of `supersededBy`
-- [ ] Delete `item-superseded` from the refusal table, from the status mapping in
+- [x] `editRequestSchema` becomes `editEnvelopeSchema`: `source`, `sourceItemId`, `payload`, and
+      **strict**, as the capture envelope is — a dropped `sourceItemId` costs a retry its match
+- [x] `editOutcomeSchema`'s revised half carries `revisionOf`; the item schema carries
+      `revisedInto` as an array of ids in place of `supersededBy`. **Required rather than optional,
+      and empty where nothing was revised from the item**, which http-v1.md's presence rule is
+      amended to say: the daemon answers core's item verbatim, and a list's empty is a value
+- [x] `EDIT_STATUS` gains `source-item-changed` at `409`, http-v1.md's edit section says when it is
+      raised, and core.md's Editing section says the rule underneath it
+- [x] Delete `item-superseded` from the refusal table, from the status mapping in
       `errors/refusals.ts`, and from the two route descriptions in `routes/definitions.ts` that
       still promise a 409
-- [ ] Regenerate `openapi.json` with `pnpm --filter @notemap/daemon openapi` and commit the result
-- [ ] Route tests: the edit route on an unprocessed item, on a routed one, and replayed; the tag
+- [x] **Three more descriptions were false rather than merely dated**: the feed's *superseded*, the
+      queue's *content-time position*, and `/v1/tags`' *a superseded item is not counted*
+- [x] Regenerate `openapi.json` with `pnpm --filter @notemap/daemon openapi` and commit the result
+- [x] Route tests: the edit route on an unprocessed item, on a routed one, and replayed; the tag
       route succeeding on a revised item where it used to be refused
-- [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
+- [x] `git commit`
 
 ### Phase 4 — the client
 
