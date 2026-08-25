@@ -250,7 +250,9 @@ export function createClient(config: ClientConfig): Client {
 
   // Work made in a previous session reaches the pool without anyone asking —
   // but not before the pool has said which pool it is.
-  void after(() => reach.ask()).then(() => drain());
+  void after(() => reach.ask())
+    .catch(() => undefined)
+    .then(() => drain());
 
   return {
     reachable: reach.changes,

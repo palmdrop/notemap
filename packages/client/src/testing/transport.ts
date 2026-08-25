@@ -33,7 +33,7 @@ export function mockTransport(handler: Handler): MockTransport {
   const sent: Request[] = [];
   let failing = false;
 
-  return {
+  const transport: MockTransport = {
     baseUrl: POOL,
     sent,
     pool: IDENTITY,
@@ -52,7 +52,11 @@ export function mockTransport(handler: Handler): MockTransport {
       // Answered here rather than by a test's handler: every client asks it on
       // start, and it is the mock pool's own answer rather than the test's.
       const asked = `${request.method} ${new URL(request.url).pathname}`;
-      return asked === HEALTH ? json(200, { pool: this.pool }) : handler(request);
+      return asked === HEALTH
+        ? json(200, { pool: transport.pool })
+        : handler(request);
     },
   };
+
+  return transport;
 }
