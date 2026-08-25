@@ -7,6 +7,7 @@ import {
   from,
   map,
   pairwise,
+  startWith,
 } from "rxjs";
 
 import type { Item, ItemId } from "../api/types";
@@ -25,7 +26,7 @@ export function persist(
   hydrated: ClientState,
   report: (error: unknown) => void,
 ): void {
-  persistItems(state, store, report);
+  persistItems(state, store, hydrated, report);
   whole(
     state,
     (current) => current.tags,
@@ -76,12 +77,16 @@ function whole<T>(
 function persistItems(
   state: Writable<ClientState>,
   store: ClientStore,
+  hydrated: ClientState,
   report: (error: unknown) => void,
 ): void {
   state.changes
     .pipe(
       map((current) => current.items),
       distinctUntilChanged(),
+      // What the store answered, so that anything retention dropped on the way
+      // in is dropped from the store too rather than accumulating per session.
+      startWith(hydrated.items),
       pairwise(),
       concatMap(([before, after]) =>
         mirrored(write(store, before, after), report),

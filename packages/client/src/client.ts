@@ -6,7 +6,7 @@ import type { Item, ItemId, PoolIdentity } from "./api/types";
 import { envelopeFor, optimisticItem } from "./capture/envelope";
 import { rewritten, saidIn } from "./capture/says";
 import { PoolChanged, Refused, Unreachable } from "./errors";
-import { derived, writable } from "./observable/observable";
+import { derived, writable, type Writable } from "./observable/observable";
 import { createDestinations } from "./destinations/destinations";
 import { createOutbox } from "./outbox/outbox";
 import { sendOperation } from "./outbox/registry";
@@ -15,6 +15,7 @@ import type { Transport } from "./ports/transport";
 import { createRouting } from "./routing/routing";
 import { hydrate } from "./state/hydrate";
 import { persist } from "./state/persist";
+import { retained } from "./state/retention";
 import {
   cached,
   drawnFrom,
@@ -96,7 +97,18 @@ export function createClient(config: ClientConfig): Client {
   const { transport, store } = config;
   const now = config.now ?? (() => new Date().toISOString());
   const report = config.onError ?? (() => undefined);
-  const state = writable<ClientState>(emptyState());
+  const held = writable<ClientState>(emptyState());
+  /**
+   * Retention is applied here rather than wherever an item enters, so there is
+   * one place a cached item can outlive its usefulness and no path that forgets
+   * to ask. The store mirrors the cache, so an eviction reaches it too.
+   */
+  const state: Writable<ClientState> = {
+    get: () => held.get(),
+    set: (value) => held.set(retained(value)),
+    update: (change) => held.update((current) => retained(change(current))),
+    changes: held.changes,
+  };
   const reach = reachability(() => askedHealth());
   const api = createApi(watching(transport, reach.answered));
 
