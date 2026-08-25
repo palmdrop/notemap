@@ -1,5 +1,6 @@
 import { createClient, createMemoryStore, type Client } from "@notemap/client";
 import {
+  asked as sentTo,
   json,
   mockTransport,
   routeOf,
@@ -29,7 +30,10 @@ export function pool(handler: Handler): MockTransport {
   return transport;
 }
 
-/** Every route the pool was asked for, oldest first. */
+/**
+ * Every route the shell caused, oldest first. The client's own start-up health
+ * probe is left out: it is housekeeping, and racing it would make these flaky.
+ */
 export function asked(): string[] {
-  return transport.sent.map(routeOf);
+  return sentTo(transport).map(routeOf);
 }

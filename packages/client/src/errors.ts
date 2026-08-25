@@ -40,6 +40,22 @@ export class Unreadable extends Error {
   }
 }
 
+/**
+ * The pool answering is not the pool the cache describes. A rebuild mints a new
+ * identity, so what the client holds describes somewhere that no longer exists.
+ */
+export class PoolChanged extends Error {
+  readonly held: string;
+  readonly answering: string;
+
+  constructor(held: string, answering: string) {
+    super("this is a different pool; what was cached for the last one is gone");
+    this.name = "PoolChanged";
+    this.held = held;
+    this.answering = answering;
+  }
+}
+
 /** An operation the vocabulary names but no `/v1` route accepts yet. */
 export class Unencodable extends Error {
   constructor(kind: string) {

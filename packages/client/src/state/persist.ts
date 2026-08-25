@@ -40,6 +40,15 @@ export function persist(
     hydrated,
     report,
   );
+  whole(
+    state,
+    (current) => current.pool,
+    async (pool) => {
+      if (pool !== undefined) await store.writePoolIdentity(pool);
+    },
+    hydrated,
+    report,
+  );
 }
 
 /** A read cache is replaced whole, so there is nothing to diff. */

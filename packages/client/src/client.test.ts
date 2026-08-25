@@ -6,7 +6,7 @@ import { createClient } from "./client";
 import { Refused, Unreachable } from "./errors";
 import type { PendingOperation } from "./outbox/operations";
 import { read } from "./testing/observing";
-import { anItem, routeOf, stoppedClock } from "./testing/pool";
+import { anItem, asked, routeOf, stoppedClock } from "./testing/pool";
 import {
   json,
   mockTransport,
@@ -79,7 +79,7 @@ describe("capturing", () => {
     await client.capture({ channel: "web-image", text: "", asset: "asset-1" });
     await client.drain();
 
-    const sent = (await transport.sent[0]!.json()) as {
+    const sent = (await asked(transport)[0]!.json()) as {
       source: string;
       sourceItemId: string;
       id: string;

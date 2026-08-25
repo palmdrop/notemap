@@ -5,7 +5,7 @@ import type { Destination } from "../api/types";
 import { createClient } from "../client";
 import { Refused, Unreachable } from "../errors";
 import { read } from "../testing/observing";
-import { routeOf } from "../testing/pool";
+import { asked as sentTo, routeOf } from "../testing/pool";
 import {
   json,
   mockTransport,
@@ -34,7 +34,7 @@ function aDestination(overrides: Partial<Destination> = {}): Destination {
 }
 
 const asked = (transport: { sent: readonly Request[] }) =>
-  transport.sent.map(routeOf);
+  sentTo(transport).map(routeOf);
 
 describe("reading destinations", () => {
   it("fills the cache a screen renders from", async () => {

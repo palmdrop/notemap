@@ -106,6 +106,14 @@ export interface RoutingApi {
 }
 
 export interface Client {
+  /**
+   * Whether the pool is answering, as the client's own requests report it and a
+   * probe of `GET /v1/health` keeps honest while it is not. Optimistic before
+   * anything has asked; the browser's `online` is a different question and a
+   * weaker one, since a network that exists says nothing about the daemon.
+   */
+  readonly reachable: Observable<boolean>;
+
   readonly feed: Observable<ListState>;
   readonly queue: Observable<ListState>;
   readonly outbox: Observable<readonly PendingOperation[]>;

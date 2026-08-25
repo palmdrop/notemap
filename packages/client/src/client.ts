@@ -1,14 +1,17 @@
+import { filter, skip } from "rxjs";
 import { v7 as uuidv7 } from "uuid";
 
 import { createApi, answered } from "./api/http";
-import type { Item, ItemId } from "./api/types";
+import type { Item, ItemId, PoolIdentity } from "./api/types";
 import { envelopeFor, optimisticItem } from "./capture/envelope";
 import { rewritten, saidIn } from "./capture/says";
-import { Refused } from "./errors";
+import { PoolChanged, Refused, Unreachable } from "./errors";
 import { derived, writable } from "./observable/observable";
 import { createDestinations } from "./destinations/destinations";
 import { createOutbox } from "./outbox/outbox";
 import { sendOperation } from "./outbox/registry";
+import { reachability } from "./pool/reachability";
+import type { Transport } from "./ports/transport";
 import { createRouting } from "./routing/routing";
 import { hydrate } from "./state/hydrate";
 import { persist } from "./state/persist";
@@ -19,6 +22,7 @@ import {
   forget,
   fromCache,
   processed,
+  rebuilt,
   settle,
   settledDestination,
   withdrawn,
@@ -44,6 +48,31 @@ function sameList(one: ListState, other: ListState): boolean {
   );
 }
 
+/**
+ * Every request is evidence of reach, and nothing else is. A 5xx is not: the
+ * client reads one as the pool failing to decide, exactly as it reads a socket
+ * that never opened, and a reachability that disagreed would leave an operation
+ * retrying against a daemon nothing was watching.
+ */
+function watching(
+  transport: Transport,
+  answered: (reached: boolean) => void,
+): Transport {
+  return {
+    ...transport,
+    async fetch(request) {
+      try {
+        const response = await transport.fetch(request);
+        answered(response.status < 500);
+        return response;
+      } catch (error) {
+        answered(false);
+        throw error;
+      }
+    },
+  };
+}
+
 function listOf(state: ClientState, surface: Surface): ListState {
   const page = state[surface];
   const drawn = fromCache(page);
@@ -67,8 +96,9 @@ export function createClient(config: ClientConfig): Client {
   const { transport, store } = config;
   const now = config.now ?? (() => new Date().toISOString());
   const report = config.onError ?? (() => undefined);
-  const api = createApi(transport);
   const state = writable<ClientState>(emptyState());
+  const reach = reachability(() => askedHealth());
+  const api = createApi(watching(transport, reach.answered));
 
   /**
    * Hydration is started here and waited on by everything that touches state,
@@ -88,6 +118,37 @@ export function createClient(config: ClientConfig): Client {
 
   function after<T>(work: () => T | Promise<T>): Promise<T> {
     return ready.then(work);
+  }
+
+  /**
+   * What the pool says it is, against what the cache was built from. A rebuilt
+   * pool restarts everything a cached copy is keyed on and has lost its
+   * tombstones, so what the client holds describes somewhere that no longer
+   * exists — and is dropped rather than reconciled.
+   */
+  function isThePoolWeCached(identity: PoolIdentity | undefined): void {
+    if (identity === undefined) return;
+
+    const held = state.get().pool;
+    if (held === identity) return;
+
+    state.update((current) =>
+      held === undefined
+        ? { ...current, pool: identity }
+        : rebuilt(current, identity),
+    );
+    if (held !== undefined) report(new PoolChanged(held, identity));
+  }
+
+  /** Which pool this is, and — by answering at all — that there is one to ask. */
+  async function askedHealth(): Promise<boolean> {
+    try {
+      isThePoolWeCached((await answered(api.GET("/v1/health"))).pool);
+      return true;
+    } catch (error) {
+      // A refusal is still the pool answering. Only silence is not.
+      return !(error instanceof Unreachable);
+    }
   }
 
   const tags = createTags({
@@ -170,10 +231,18 @@ export function createClient(config: ClientConfig): Client {
     void drain();
   }
 
-  // Work made in a previous session reaches the pool without anyone asking.
-  void drain();
+  // A pool that came back is what the outbox has been waiting for, and nothing
+  // else will ask. The first value is the optimism reachability starts from
+  // rather than a return, so it drains nothing.
+  reach.changes.pipe(skip(1), filter(Boolean)).subscribe(() => void drain());
+
+  // Work made in a previous session reaches the pool without anyone asking —
+  // but not before the pool has said which pool it is.
+  void after(() => reach.ask()).then(() => drain());
 
   return {
+    reachable: reach.changes,
+
     feed: derived(
       state.changes,
       (current) => listOf(current, "feed"),

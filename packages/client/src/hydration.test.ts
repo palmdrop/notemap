@@ -7,7 +7,7 @@ import { createClient } from "./client";
 import type { PendingOperation } from "./outbox/operations";
 import type { ClientStore } from "./ports/store";
 import { read, until } from "./testing/observing";
-import { anItem, routeOf, stoppedClock } from "./testing/pool";
+import { anItem, asked, routeOf, stoppedClock } from "./testing/pool";
 import {
   json,
   mockTransport,
@@ -75,7 +75,7 @@ describe("hydration", () => {
     await until(() => read(client.tags.inUse).length > 0);
 
     expect(read(client.tags.inUse).map((use) => use.name)).toEqual(["reading"]);
-    expect(transport.sent).toEqual([]);
+    expect(asked(transport)).toEqual([]);
   });
 
   it("drains a capture made in a previous session, exactly once, unprompted", async () => {
@@ -102,7 +102,7 @@ describe("hydration", () => {
 
     expect(captures).toEqual([optimistic.id]);
     expect(read(client.outbox)).toEqual([]);
-    expect(transport.sent.map(routeOf)).toEqual(["POST /v1/captures"]);
+    expect(asked(transport).map(routeOf)).toEqual(["POST /v1/captures"]);
   });
 
   it("settles a rehydrated operation the pool refuses from the pool itself", async () => {
@@ -199,7 +199,7 @@ describe("hydration", () => {
     const { client, transport } = clientOver(store, unreachable);
     await client.drain();
 
-    expect(transport.sent).toEqual([]);
+    expect(asked(transport)).toEqual([]);
     expect(read(client.outbox)[0]?.state).toBe("refused");
   });
 });

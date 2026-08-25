@@ -1,4 +1,10 @@
-import type { Destination, Item, ItemId, TagUse } from "../api/types";
+import type {
+  Destination,
+  Item,
+  ItemId,
+  PoolIdentity,
+  TagUse,
+} from "../api/types";
 import { Unreadable } from "../errors";
 import type { Writable } from "../observable/observable";
 import type { PendingOperation } from "../outbox/operations";
@@ -35,12 +41,15 @@ export async function hydrate(
     }
   }
 
-  const [outbox, items, tags, destinations] = await Promise.all([
+  const [outbox, items, tags, destinations, pool] = await Promise.all([
     read<readonly PendingOperation[]>("outbox", [], () => store.readOutbox()),
     read<readonly Item[]>("items", [], () => store.readItems()),
     read<readonly TagUse[]>("tags", [], () => store.readTags()),
     read<readonly Destination[]>("destinations", [], () =>
       store.readDestinations(),
+    ),
+    read<PoolIdentity | undefined>("pool identity", undefined, () =>
+      store.readPoolIdentity(),
     ),
   ]);
 
@@ -50,6 +59,7 @@ export async function hydrate(
     outbox: outbox.map(attemptable),
     tags,
     destinations,
+    ...(pool === undefined ? {} : { pool }),
   };
 
   state.set(hydrated);

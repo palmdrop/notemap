@@ -15,8 +15,10 @@ export function read<T>(source: Observable<T>): T {
  * Lets hydration, a boot drain and everything they start run to a stop. A
  * client begins work nobody holds a promise for, so a test waits on the effect.
  */
-export async function until(reached: () => boolean): Promise<void> {
-  for (let tries = 0; tries < 50 && !reached(); tries += 1) {
+export async function until(
+  reached: () => boolean | Promise<boolean>,
+): Promise<void> {
+  for (let tries = 0; tries < 50 && !(await reached()); tries += 1) {
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
 }

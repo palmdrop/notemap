@@ -3,6 +3,7 @@ import type {
   DestinationId,
   Item,
   ItemId,
+  PoolIdentity,
   RoutingRecord,
   RoutingSummary,
   TagUse,
@@ -34,6 +35,8 @@ export type ClientState = {
   readonly destinations: readonly Destination[];
   /** What completion offers, most used first, as the pool last counted it. */
   readonly tags: readonly TagUse[];
+  /** Which pool all of the above describes, absent until one has answered. */
+  readonly pool?: PoolIdentity;
 };
 
 export function emptyPage(order: Order): ListPage {
@@ -48,6 +51,24 @@ export function emptyState(): ClientState {
     outbox: [],
     destinations: [],
     tags: [],
+  };
+}
+
+/**
+ * The pool answering is not the one the cache describes. What it holds is
+ * dropped and the surfaces go back to being the client's own; the outbox stays,
+ * being the person's un-landed work rather than a copy of anything.
+ */
+export function rebuilt(
+  state: ClientState,
+  pool: PoolIdentity,
+): ClientState {
+  return {
+    ...state,
+    pool,
+    items: new Map(),
+    feed: emptyPage(state.feed.order),
+    queue: emptyPage(state.queue.order),
   };
 }
 
