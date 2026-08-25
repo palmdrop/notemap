@@ -1,3 +1,4 @@
+import type { ItemId } from "../api/types";
 import { saidBy, Unreachable } from "../errors";
 import type { Writable } from "../observable/observable";
 import type { ClientStore } from "../ports/store";
@@ -11,12 +12,19 @@ export type Outbox = {
   enqueue(operation: Operation): Promise<void>;
   drain(): Promise<void>;
   dismiss(id: OperationId): Promise<void>;
+  /** Which of these hydration read back, rather than this session enqueueing. */
+  restored(ids: readonly OperationId[]): void;
 };
 
 export type OutboxDeps = {
   readonly state: Writable<ClientState>;
   readonly store: ClientStore;
   readonly send: (operation: Operation) => Promise<Settlement>;
+  /**
+   * What a refusal is reported with where the operation came out of the store
+   * and has no reversal to run.
+   */
+  readonly reread: (item: ItemId) => Promise<void>;
   readonly now: () => string;
   readonly mint: () => OperationId;
 };
@@ -24,13 +32,14 @@ export type OutboxDeps = {
 export function createOutbox(deps: OutboxDeps): Outbox {
   /**
    * Reversals live here rather than in the store because a closure cannot be
-   * written to disk. An outbox reloaded from a durable store therefore has
-   * nothing to roll back to, which is the offline slice's to answer.
+   * written to disk. An operation read back from a durable store therefore has
+   * none, and a refusal of one is settled by re-reading the item instead.
    */
   const undos = new Map<OperationId, Undo>();
   const chains = new Map<string, Promise<void>>();
   /** Claimed the moment a drain schedules one, so a second drain cannot re-send it. */
   const inflight = new Set<OperationId>();
+  const restored = new Set<OperationId>();
 
   function record(entry: PendingOperation): Promise<void> {
     deps.state.update((state) => ({
@@ -45,6 +54,7 @@ export function createOutbox(deps: OutboxDeps): Outbox {
 
   function drop(id: OperationId): Promise<void> {
     undos.delete(id);
+    restored.delete(id);
     deps.state.update((state) => ({
       ...state,
       outbox: state.outbox.filter((held) => held.id !== id),
@@ -106,9 +116,16 @@ export function createOutbox(deps: OutboxDeps): Outbox {
         return;
       }
 
-      const undo = undos.get(entry.id);
-      if (undo !== undefined) deps.state.update(undo);
-      undos.delete(entry.id);
+      if (restored.has(entry.id)) {
+        // A failed re-read leaves the cache as it stands, which is what an
+        // unreachable pool leaves anyway; the refusal is still reported.
+        await deps.reread(targetOf(entry.operation)).catch(() => undefined);
+      } else {
+        const undo = undos.get(entry.id);
+        if (undo !== undefined) deps.state.update(undo);
+        undos.delete(entry.id);
+      }
+
       await record({ ...entry, state: "refused", failure: saidBy(error) });
     }
   }
@@ -154,5 +171,12 @@ export function createOutbox(deps: OutboxDeps): Outbox {
     }
   }
 
-  return { enqueue, drain, dismiss: drop };
+  return {
+    enqueue,
+    drain,
+    dismiss: drop,
+    restored: (ids) => {
+      for (const id of ids) restored.add(id);
+    },
+  };
 }

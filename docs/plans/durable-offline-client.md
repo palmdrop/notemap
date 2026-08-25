@@ -1,7 +1,7 @@
 # The durable offline client
 
 **Date**: 2026-08-24
-**Status**: Todo
+**Status**: In progress
 **Spec**: `docs/specs/client.md`, `docs/specs/sync.md`
 **Closed**:
 
@@ -29,48 +29,64 @@ capture with an attachment possible at all, and is what the reachability probe a
 
 Depends on nothing beyond the two plans above.
 
-- [ ] Branch `agent/durable-offline-client`
-- [ ] `ClientStore` grows a typed method per collection: items and the outbox as today, plus blobs
+- [x] Branch `agent/durable-client-store`, which is the pull request this phase lands in
+      ([rollout](offline-capture-rollout.md))
+- [x] `ClientStore` grows a typed method per collection: items and the outbox as today, plus blobs
       and the local URL for one, the tags in use, the destinations, and the pool identity. One port,
       one store for a shell to wire; the file groups the methods by concern
-- [ ] `createMemoryStore` implements all of it, blobs included, so every existing test keeps running
+- [x] `createMemoryStore` implements all of it, blobs included, so every existing test keeps running
       against a store that answers everything
-- [ ] An IndexedDB adapter over `idb`, exported from a subpath so `idb` reaches only a shell that
+- [x] An IndexedDB adapter over `idb`, exported from a subpath so `idb` reaches only a shell that
       asks for it. It opens the database lazily rather than at import
-- [ ] The adapter owns the local URL for a blob it holds, and its revocation. A shell that is not a
+- [x] The adapter owns the local URL for a blob it holds, and its revocation. A shell that is not a
       browser answers that question differently, which is why it sits on the port and not in the
       client
-- [ ] `fake-indexeddb` in the client package's test setup
-- [ ] Tests: every method round-trips; a database reopened answers what the last one wrote; a blob
-      survives the reopen; removing an item removes it
-- [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
-- [ ] `git commit`
+- [x] `fake-indexeddb` imported by the adapter's own test rather than a package-wide setup file:
+      it is the only test that wants a database, and a global nothing else asks for is a trap
+- [x] Tests: every method round-trips; a database reopened answers what the last one wrote; a blob
+      survives the reopen; removing an item removes it. The round-trips are one contract both
+      adapters are run against, so the pair cannot drift
+- [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
+- [x] `git commit`
 
 ### Phase 2 — hydration, the boot drain, and a refusal with nothing to reverse
 
 Depends on phase 1.
 
-- [ ] ADR 0024: a refusal after a restart is reported and settled by re-reading the item, not rolled
+- [x] ADR 0024: a refusal after a restart is reported and settled by re-reading the item, not rolled
       back. Reversals are closures (`outbox/outbox.ts:27`) and a rehydrated operation has none;
       record the rejected alternatives — a persisted before-snapshot per operation, and an inverse
       declared per kind, which collapses into snapshots for `edit` anyway — and the reason this is
       safe: a refusal means the pool answered, so it is reachable exactly when the re-read is needed
-- [ ] `createClient` starts hydration at once and returns; every path that touches state — a
+- [x] `createClient` starts hydration at once and returns; every path that touches state — a
       mutation, a surface read, a drain — waits on it first, the way `drain` already chains. The
       shell's wiring does not change and no caller can observe a half-hydrated cache
-- [ ] Hydration does not re-apply pending operations: the cache was persisted with their effects in
+- [x] Hydration reads back the tags in use and the destinations alongside the items and the outbox,
+      so a client opened cold against an unreachable pool completes tags from the last list it read
+      and can still name its destinations — the gap [client.md](../specs/client.md) says this work
+      closes
+- [x] Hydration does not re-apply pending operations: the cache was persisted with their effects in
       it. A crash between the two writes leaves one effect missing until that operation drains
-- [ ] A rehydrated `refused` operation stays refused, is not re-sent, and waits for a person, which
+- [x] A rehydrated `refused` operation stays refused, is not re-sent, and waits for a person, which
       is what `CONTEXT.md` says a refusal is
-- [ ] The drain runs as soon as hydration lands, so work made in a previous session reaches the pool
+- [x] A rehydrated `sending` operation is read back as pending and attempted again. A drain picks up
+      only what is pending or unreachable, so one the tab was closed on top of would otherwise never
+      be sent; client-minted ids are what make the second attempt safe
+- [x] A collection the store cannot read is reported through `onError` on `ClientConfig` and comes
+      up empty, on its own rather than costing the reads beside it — the outbox is the only one
+      whose loss costs work. The same seam carries a cache write that did not land
+- [x] The drain runs as soon as hydration lands, so work made in a previous session reaches the pool
       without the person doing anything
-- [ ] `apps/ui/src/lib/client.ts` wires the durable store
-- [ ] Tests: a client built over a store holding an outbox and items comes up with both; a capture
+- [x] `apps/ui/src/lib/client.ts` wires the durable store
+- [x] Tests: a client built over a store holding an outbox and items comes up with both; a capture
       made against a dead transport is there after a fresh client is built over the same store, and
       drains once when the transport answers; a rehydrated operation the pool refuses reports the
-      refusal and settles the item from the pool; a rehydrated refused operation drains nothing
-- [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
-- [ ] `git commit`
+      refusal and settles the item from the pool; a rehydrated refused operation drains nothing; a
+      rehydrated sending operation is sent exactly once; a store that cannot be read is reported and
+      the collections that could be read survive; a cold client with no transport completes a tag it
+      saw last session; an item whose rehydrated capture the pool refuses is forgotten
+- [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
+- [x] `git commit`
 
 ### Phase 3 — surfaces derived from the cache
 
@@ -136,18 +152,14 @@ Depends on phases 1 and 2, and on client-minted asset ids.
 - [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
 - [ ] `git commit`
 
-### Phase 6 — the read caches and retention
+### Phase 6 — retention
 
 Depends on phases 1 and 3.
 
-- [ ] The tags in use and the destinations persist and are read back on start, so a client opened
-      cold against an unreachable pool completes tags from the last list it read and can still name
-      its destinations — the gap [client.md](../specs/client.md) says this work closes
 - [ ] Retention: everything the client can see is unprocessed stays, being the working set; items
       that are only feed history are capped, oldest touched first. An item with a pending operation
       is never evicted
-- [ ] Tests: eviction spares unprocessed items and pending ones and takes the rest; a cold offline
-      client completes a tag it saw last session
+- [ ] Tests: eviction spares unprocessed items and pending ones and takes the rest
 - [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
 - [ ] `git commit`
 
@@ -159,8 +171,9 @@ Depends on every phase above.
       client over the same store, starts the daemon, and finds every operation landed exactly once —
       the attachment included
 - [ ] `CONTEXT.md`: add **Cache** and **Hydration**
-- [ ] `docs/specs/client.md`: the ports in detail, hydration and what it gates, derived surfaces,
-      retention, reachability, the offline attachment, and Prior decisions for each. Three of its
+- [ ] `docs/specs/client.md`: the ports in detail, hydration and what it gates, the read caches,
+      derived surfaces, retention, reachability, the offline attachment, and Prior decisions for
+      each. Three of its
       open questions close — reading the store back on start, the port shapes, and how an `edit`
       coalesces is answered by there being no coalescing
 - [ ] `docs/specs/sync.md`: half the rebuild question is answered; say which half and leave the rest

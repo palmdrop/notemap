@@ -1,4 +1,11 @@
-import type { Item, ItemId } from "../api/types";
+import type {
+  AssetId,
+  Destination,
+  Item,
+  ItemId,
+  PoolIdentity,
+  TagUse,
+} from "../api/types";
 import type { OperationId, PendingOperation } from "../outbox/operations";
 
 /**
@@ -14,4 +21,24 @@ export interface ClientStore {
   readItems(): Promise<readonly Item[]>;
   writeItems(items: readonly Item[]): Promise<void>;
   removeItems(ids: readonly ItemId[]): Promise<void>;
+
+  /** The read caches, each a whole list replaced as the pool answers it. */
+  readTags(): Promise<readonly TagUse[]>;
+  writeTags(tags: readonly TagUse[]): Promise<void>;
+  readDestinations(): Promise<readonly Destination[]>;
+  writeDestinations(destinations: readonly Destination[]): Promise<void>;
+
+  /** Which pool everything above describes, absent until one has answered. */
+  readPoolIdentity(): Promise<PoolIdentity | undefined>;
+  writePoolIdentity(identity: PoolIdentity): Promise<void>;
+
+  readBlob(asset: AssetId): Promise<Blob | undefined>;
+  writeBlob(asset: AssetId, blob: Blob): Promise<void>;
+  removeBlob(asset: AssetId): Promise<void>;
+  /**
+   * Where a shell's own renderer reaches bytes the store holds, for a capture
+   * that has not landed. The adapter owns the URL and its revocation: a browser
+   * answers with an object URL, and a shell that is not one answers differently.
+   */
+  blobUrl(asset: AssetId): Promise<string | undefined>;
 }

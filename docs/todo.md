@@ -44,14 +44,13 @@
   - same for pool/work, all the jobs management. Is there existing tools we could use for this instead?
 - [ ] Allow a user to have multiple pools? Use case: I route some captures to another pool, where I do more granular routing.
 - [ ] When purge lands: `GET /v1/items/:id/routing` reads the item and then its records, two reads on two connection states, so an item purged between them answers `200 {"values":[]}` — the claim about an item the existence check is there to avoid. Either one core method answering both, or the route accepting the window deliberately.
-- [ ] The client's store is write-only, so offline is a promise nothing keeps. `ClientStore`
-  declares `readOutbox()` and `readItems()` and nothing in `packages/client` calls either —
-  `persistItems` only writes — and `apps/ui/src/lib/client.ts` builds a `createMemoryStore()`. A
-  capture made with the pool unreachable is gone on reload, and the outbox never replays across a
-  session. Wants a durable `ClientStore` adapter (browser storage), `createClient` reading it back
-  at start, and a decision about whether boot drains. [client.md](specs/client.md) calls the
-  offline protocol a designed seam, unbuilt; this is that seam, and it is the one place the code
-  currently claims something it does not do.
+- [x] The client's store is write-only, so offline is a promise nothing keeps. Closed 2026-08-25:
+  `ClientStore` answers for every collection the client holds, an IndexedDB adapter backs it, the
+  web shell wires it, and `createClient` reads it back before anything may touch what it read. It
+  drains on boot, and a refusal of an operation with no reversal left to run is settled by
+  re-reading the item ([ADR 24](adr/0024-a-refusal-after-a-restart-is-settled-from-the-pool.md),
+  [plan](plans/durable-offline-client.md)). What the surfaces draw is still the pool's pages
+  rather than the cache's.
 - [x] Routing state reaches the client. Shipped in b42eeb9 as a **routing summary** on every item:
   how many records, how many still pending, and the distinct places they name, derived rather than
   stored and absent where an item has been nowhere. The feed says `routed` and names where from the

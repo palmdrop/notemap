@@ -26,6 +26,7 @@ const answering = (outcome: Outcome): Settlement =>
  */
 function engineOver(items: readonly Item[]) {
   const sent: Operation[] = [];
+  const reread: string[] = [];
   const waiting: ((outcome: Outcome) => void)[] = [];
 
   const empty = emptyState();
@@ -52,6 +53,10 @@ function engineOver(items: readonly Item[]) {
     store: createMemoryStore(),
     now: clock.now,
     mint: () => `op-${(minted += 1)}`,
+    reread: (item) => {
+      reread.push(item);
+      return Promise.resolve();
+    },
     send: (operation) => {
       sent.push(operation);
       return new Promise<Settlement>((resolve, reject) => {
@@ -68,7 +73,7 @@ function engineOver(items: readonly Item[]) {
     for (const settle of waiting.splice(0)) settle(outcome);
   }
 
-  return { outbox, state, sent, answer };
+  return { outbox, state, sent, reread, answer };
 }
 
 const ARCHIVE: Operation = { kind: "archive", item: "one" };

@@ -25,6 +25,21 @@ export class Unreachable extends Error {
   }
 }
 
+/**
+ * A collection of the client's own store could not be read. Nothing writes over
+ * a collection it failed to read, so what is in there is not lost — but this
+ * session came up without it.
+ */
+export class Unreadable extends Error {
+  readonly collection: string;
+
+  constructor(collection: string, cause: unknown) {
+    super(`the client's store could not be read: ${collection}`, { cause });
+    this.name = "Unreadable";
+    this.collection = collection;
+  }
+}
+
 /** An operation the vocabulary names but no `/v1` route accepts yet. */
 export class Unencodable extends Error {
   constructor(kind: string) {

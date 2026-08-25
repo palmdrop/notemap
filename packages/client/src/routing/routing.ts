@@ -5,9 +5,12 @@ import type { RoutingApi } from "../types";
 export type RoutingDeps = {
   readonly api: Api;
   /** A recorded decision takes the item out of the queue; the pool decided it. */
-  readonly processed: (item: ItemId, record: RoutingRecord) => void;
+  readonly processed: (item: ItemId, record: RoutingRecord) => Promise<void>;
   /** The records the item is left holding, which say whether it is work again. */
-  readonly withdrawn: (item: ItemId, records: readonly RoutingRecord[]) => void;
+  readonly withdrawn: (
+    item: ItemId,
+    records: readonly RoutingRecord[],
+  ) => Promise<void>;
 };
 
 /**
@@ -32,7 +35,7 @@ export function createRouting(deps: RoutingDeps): RoutingApi {
           body: request,
         }),
       );
-      deps.processed(item, record);
+      await deps.processed(item, record);
       return record;
     },
 
@@ -43,7 +46,7 @@ export function createRouting(deps: RoutingDeps): RoutingApi {
           body: note === undefined ? {} : { note },
         }),
       );
-      deps.processed(item, record);
+      await deps.processed(item, record);
       return record;
     },
 
@@ -58,7 +61,7 @@ export function createRouting(deps: RoutingDeps): RoutingApi {
 
       // The pool deletes the record rather than marking it, and processed is
       // derived from holding none — so an item routed twice is still not work.
-      deps.withdrawn(item, await recordsFor(item));
+      await deps.withdrawn(item, await recordsFor(item));
     },
   };
 }

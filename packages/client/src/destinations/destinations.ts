@@ -14,9 +14,9 @@ export type DestinationsDeps = {
   readonly api: Api;
   /** The cache a screen renders from, which every call here keeps current. */
   readonly all: Observable<readonly Destination[]>;
-  readonly cached: (destinations: readonly Destination[]) => void;
+  readonly cached: (destinations: readonly Destination[]) => Promise<void>;
   /** Replaces or drops one, so a mutation does not cost a second read. */
-  readonly settled: (id: DestinationId, held?: Destination) => void;
+  readonly settled: (id: DestinationId, held?: Destination) => Promise<void>;
 };
 
 /** None of this is an outbox operation: an offline edit would accept what the pool may refuse. */
@@ -28,7 +28,7 @@ export function createDestinations(deps: DestinationsDeps): DestinationsApi {
 
     async load(): Promise<readonly Destination[]> {
       const answer = await answered(api.GET("/v1/destinations"));
-      deps.cached(answer.values);
+      await deps.cached(answer.values);
       return answer.values;
     },
 
@@ -49,7 +49,7 @@ export function createDestinations(deps: DestinationsDeps): DestinationsApi {
       const created = await answered(
         api.POST("/v1/destinations", { body: request }),
       );
-      deps.settled(created.id, created);
+      await deps.settled(created.id, created);
       return created;
     },
 
@@ -63,7 +63,7 @@ export function createDestinations(deps: DestinationsDeps): DestinationsApi {
           body: changes,
         }),
       );
-      deps.settled(id, edited);
+      await deps.settled(id, edited);
       return edited;
     },
 
@@ -74,7 +74,7 @@ export function createDestinations(deps: DestinationsDeps): DestinationsApi {
       await acknowledged(
         api.DELETE("/v1/destinations/{id}", { params: { path: { id } } }),
       );
-      deps.settled(id);
+      await deps.settled(id);
     },
   };
 }
@@ -96,6 +96,6 @@ async function retirement(
         }),
       ));
 
-  deps.settled(id, answer);
+  await deps.settled(id, answer);
   return answer;
 }

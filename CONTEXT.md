@@ -315,6 +315,12 @@ with its own reading and its own position, not a screen: a shell may draw two su
 screen, or one surface across several.
 _Avoid_: screen, page, view, tab
 
+**Hydration**:
+Reading a client's own store back into memory when it starts, before anything is allowed to touch
+what was read. Pending operations are not re-applied: what they changed was written to the store
+along with them.
+_Avoid_: rehydration, restore, boot, warm-up, sync
+
 **Outbox**:
 A client's ordered set of pending mutations, held locally and drained to the pool — at once when
 it can reach it, on reconnect when it cannot. Carries captures and classification, never

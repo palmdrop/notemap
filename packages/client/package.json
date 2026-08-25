@@ -5,14 +5,25 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./testing": "./src/testing/index.ts"
+    "./testing": "./src/testing/index.ts",
+    "./indexeddb": "./src/adapters/indexeddb-store.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "codegen": "openapi-typescript ../../apps/daemon/openapi.json -o src/api/generated.d.ts"
   },
+  "peerDependencies": {
+    "idb": "^8.0.3"
+  },
+  "peerDependenciesMeta": {
+    "idb": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "fake-indexeddb": "^6.2.5",
+    "idb": "^8.0.3",
     "openapi-typescript": "^7.13.0",
     "vitest": "^4.1.10"
   },

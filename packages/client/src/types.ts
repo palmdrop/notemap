@@ -152,4 +152,10 @@ export type ClientConfig = {
   readonly store: ClientStore;
   /** The clock that stamps an operation-time. A port, so a test can hold it still. */
   readonly now?: () => string;
+  /**
+   * Where a failure with no caller waiting on it goes. A shell decides whether
+   * that is a console, a log or something a person sees; unwired, these are
+   * swallowed as they were before.
+   */
+  readonly onError?: (error: unknown) => void;
 };
