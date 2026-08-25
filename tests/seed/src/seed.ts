@@ -148,7 +148,7 @@ export async function seed(
     queued,
     processed: [processed],
     archived: [archived],
-    withImage: await captureAnImage(http, capture, options, 7 + offset),
+    withImage: await captureAnImage(http, capture, options, 7),
     routed: await routeEach(http, forDestinations, options),
   };
 }
@@ -160,7 +160,9 @@ async function captureAnImage(
   options: SeedOptions,
   index: number,
 ): Promise<{ item: string; asset: string }> {
-  const asset = assetIdFor(index);
+  // `capture` shifts an index by the offset itself; the asset id is minted
+  // here, so it is shifted here.
+  const asset = assetIdFor(index + (options.offset ?? 0));
   await http.upload(asset, "pixel.png", "image/png", PIXEL);
 
   const item = await capture(
