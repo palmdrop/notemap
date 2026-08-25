@@ -13,6 +13,12 @@ The complete set of items notemap holds. Owned outright by notemap and reachable
 its API.
 _Avoid_: store, inbox, database
 
+**Pool identity**:
+Which pool this is: minted when the pool is created, stable for as long as it exists, and opaque —
+it names a pool without describing one. A rebuild makes a new pool and so takes a new identity,
+which is how a client that cached one can tell that everything it holds describes somewhere else.
+_Avoid_: pool id, instance id, server id, fingerprint
+
 **Item**:
 One thing in the pool, with its own lifecycle, enrichment and routing decisions. Items never
 merge with each other.
