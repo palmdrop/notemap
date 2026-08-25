@@ -2,7 +2,12 @@ import type { JsonObject } from "../json";
 import type { Page, PageRequest, Result, Slice } from "../result";
 import type { Action } from "../domain/action-log";
 import type { Agent } from "../domain/agent";
-import type { Asset, AssetMeta, BlobIntegrity } from "../domain/asset";
+import type {
+  Asset,
+  AssetMeta,
+  AssetOutcome,
+  BlobIntegrity,
+} from "../domain/asset";
 import type {
   CaptureEnvelope,
   CaptureOutcome,
@@ -52,6 +57,7 @@ import type {
   ArchiveRefusal,
   ArtifactRefusal,
   AssetRefusal,
+  AssetStoreRefusal,
   CaptureRefusal,
   CancelRefusal,
   CompletionRefusal,
@@ -171,11 +177,16 @@ export interface RoutingApi {
 
 export interface AssetsApi {
   /**
-   * Answers the asset rather than a result: every way an upload can be declined
-   * — a size cap, a digest that disagrees — is interface policy, and belongs to
-   * the host that set it.
+   * The id is the uploader's, so a capture naming an asset can be written
+   * before its bytes are sent. Everything else an upload is declined for — a
+   * size cap, a digest that disagrees — is interface policy and stays the
+   * host's.
    */
-  store(bytes: AsyncIterable<Uint8Array>, meta: AssetMeta): Promise<Asset>;
+  store(
+    id: AssetId,
+    bytes: AsyncIterable<Uint8Array>,
+    meta: AssetMeta,
+  ): Promise<Result<AssetOutcome, AssetStoreRefusal>>;
   get(id: AssetId): Promise<Asset | undefined>;
   open(
     id: AssetId,

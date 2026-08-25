@@ -89,7 +89,7 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
     },
 
     assets: {
-      store: (bytes, meta) => assets.store(ports, bytes, meta),
+      store: (id, bytes, meta) => assets.store(ports, id, bytes, meta),
       get: (id) => assets.get(ports, id),
       open: (id, signal) => assets.open(ports, id, signal),
       verify: (id) => assets.verify(ports, id),

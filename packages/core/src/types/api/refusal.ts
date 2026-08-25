@@ -175,6 +175,16 @@ export type AssetRefusal =
   | { readonly kind: "no-such-asset"; readonly asset: AssetId }
   | { readonly kind: "blob-missing"; readonly blob: BlobHash };
 
+/**
+ * The id is the uploader's, so two uploads can claim one. Refused only where
+ * they disagree: identical bytes under the same name and media type are the
+ * same asset arriving twice.
+ */
+export type AssetStoreRefusal = {
+  readonly kind: "asset-id-conflict";
+  readonly asset: AssetId;
+};
+
 export type LeaseRefusal = {
   readonly kind: "lease-lost";
   readonly lease: LeaseId;

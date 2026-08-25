@@ -8,6 +8,10 @@ export type Asset = {
   readonly bytes: number;
 };
 
+export type AssetOutcome =
+  | { readonly kind: "stored"; readonly asset: Asset }
+  | { readonly kind: "already-stored"; readonly asset: Asset };
+
 export type AssetMeta = {
   readonly filename: string;
   readonly mime: string;
