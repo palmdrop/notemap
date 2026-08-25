@@ -1046,6 +1046,11 @@ database client, which is the difference between a trace that is kept and one th
 It is **host surface on the same terms as the playground**: absent from the document, referred to
 by nothing in `/v1`, and removable without changing a promise this spec makes.
 
+*Amended 2026-08-25*: it is drawn in the shell's visual language ([shell.md](shell.md#the-daemons-own-pages))
+rather than a second one of its own. It still loads nothing from anywhere but the daemon, so the
+roles are restated in the page rather than imported, and a test holds that copy to
+`apps/ui/src/styles/tokens.css`.
+
 ---
 
 ## Constraints

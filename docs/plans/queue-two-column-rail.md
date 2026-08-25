@@ -3,7 +3,7 @@
 **Date**: 2026-08-24
 **Status**: Done
 **Spec**: `docs/specs/shell.md`
-**Closed**: 2026-08-24
+**Closed**: 2026-08-25
 
 ---
 
@@ -105,6 +105,16 @@ review conversation in two.
 - [x] Settings stops being a register: one column, a narrower measure, no fold.
 - [x] `docs/specs/shell.md`: settings moves into scope and gets a Behavior section; green is a
       result and never an intention.
+- [x] Commit.
+
+### 7 — The log page, which the same review asked for
+
+- [x] `apps/daemon/public/log.html` is the same register, with the shell's bar: rail, body, one
+      rule per cell, one type size, mono throughout.
+- [x] The roles restated in the page, since it loads nothing but the daemon, with a test in
+      `src/log/log.test.ts` holding that copy to `apps/ui/src/styles/tokens.css`.
+- [x] `docs/specs/shell.md` and `http-v1.md`: `/log` leaves the out-of-scope list and the open
+      question closes for half of it. `/docs` is a vendored Swagger UI and stays.
 - [x] Commit.
 
 ---

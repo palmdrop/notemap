@@ -1,9 +1,14 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-08-24
+**Last updated**: 2026-08-25
 **Shipped**:
 
+- 2026-08-25 — **The action log is a register.** `/log` stopped being a second visual language —
+  rounded cards, a system sans, a weight nothing else uses — and became the same two columns as
+  the queue and the feed, with the shell's bar on top. It still loads nothing but the daemon, so
+  the roles are restated in the page and a test holds that copy to `styles/tokens.css`. `/docs`
+  stays as it is. ([plan](../plans/queue-two-column-rail.md))
 - 2026-08-24 — **Settings is legible.** One column at a reading measure, no rail and nothing to
   furl, with the hierarchy carried by capitals, tracking and rules rather than by a second type
   size. Destinations open in place to what they can do and the four things that can be done to
@@ -80,8 +85,9 @@ fills in. It does not name a colour or a font; those come out of the design sess
   marked where they appear in the feed; nothing lists them.
 - **A standalone item route.** Processing happens in the row (below), so `/items/:id` is not a
   surface this shell draws.
-- **The daemon's own pages.** `/log` and `/docs` are rendered by the daemon, in its own markup.
-  They will not match this design until someone restyles them there.
+- **`/docs`.** The playground is a vendored Swagger UI, and restyling somebody else's application
+  is not this design's job. `/log` is no longer in this list: it is the daemon's markup still, but
+  it is drawn in this language (below).
 - **Enrichment.** Suggestions and artifacts are not on the wire — `Item` carries no enrichment
   field and the two suggestion operations have no encoder — so there is nothing to draw and no
   slot is guessed at.
@@ -274,6 +280,21 @@ and the asking offers retiring instead. Only the pool knows whether a record has
 destination, so its refusal is the answer — and the refusal lands *in the asking*, where the
 alternative it leaves is already on screen.
 
+### The daemon's own pages
+
+`/log` is the daemon's markup, served by the daemon, and it is drawn in this language anyway. It is
+the same register: a rail carrying the stamp and who did it, a body carrying what happened, what it
+was about and the detail, one rule across the top of every cell. The bar is the shell's, so leaving
+the app and coming back does not change what the page looks like.
+
+It **loads nothing from anywhere but the daemon** — that is a rule of that page, not a preference —
+so it cannot reach the app's compiled stylesheet and restates the roles inline. Two copies of a
+palette drift the moment one moves, so a test holds the copy to `styles/tokens.css`, which stays
+the source of truth.
+
+`/docs` is a vendored Swagger UI and is left alone: restyling somebody else's application is not
+this design's job.
+
 ### Content
 
 A **text** payload renders as CommonMark, collapsed and opened — that is what
@@ -464,8 +485,10 @@ the page a person actually reads. Three-character indents on successive paragrap
 - [ ] 2026-08-19 — **Which markdown library, and whether captured markdown is sanitised before
       rendering.** A library choice is the developer's. `@tailwindcss/typography` is already a
       dependency and unused.
-- [ ] 2026-08-19 — **`/log` and `/docs` remain in the daemon's own visual language.** Restyling
-      them is the daemon's work and nobody has claimed it.
+- [x] 2026-08-19 — **`/log` and `/docs` remain in the daemon's own visual language.** Answered
+      2026-08-25 for half of it: `/log` is drawn in this language, restated in the page because it
+      loads nothing from anywhere but the daemon, with a test holding the copy to `tokens.css`.
+      `/docs` is a vendored Swagger UI and stays as it is.
 - [ ] 2026-08-19 — **Nothing can enumerate a destination's folders.** The composer draws a folder
       tree; `describe()` returns capabilities and a `targetSchema` and that is the whole vocabulary.
       Either the adapter publishes an enum it refreshes at describe time, or the destination port
@@ -513,5 +536,8 @@ the page a person actually reads. Three-character indents on successive paragrap
   is readable without dismissing anything.
 - The daemon section reports reachable, unreachable and unasked as three distinguishable states,
   and asking costs one request that the page needed anyway.
+- Leaving the app for `/log` and coming back does not change what the interface looks like, and the
+  log page still fetches nothing from outside the daemon.
+- The log page's palette cannot drift from the shell's without a test failing.
 - No component in `apps/ui` names a colour; every colour comes from a token role defined in
   `styles/tokens.css`, and switching the palette requires no change to a component.
