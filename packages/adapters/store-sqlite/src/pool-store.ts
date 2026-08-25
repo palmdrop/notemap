@@ -29,6 +29,7 @@ import type {
   OrderedPage,
   Page,
   Payload,
+  PoolIdentity,
   PoolStore,
   PoolTx,
   Position,
@@ -57,6 +58,7 @@ import {
   toRoutingSummary,
   toTimestamp,
 } from "./mapping";
+import { poolIdentity } from "./identity";
 import { abandonedWork, jobQueue } from "./jobs";
 import { LAST_MODIFIED_AT, migrate } from "./migrations";
 import type {
@@ -189,11 +191,13 @@ export function createSqlitePoolStore(
   const writer = new DatabaseSync(config.file);
   let reader = writer;
   let shut = false;
+  let identity: PoolIdentity;
   try {
     writer.exec("PRAGMA foreign_keys = ON");
     writer.exec(`PRAGMA busy_timeout = ${BUSY_TIMEOUT_MS}`);
     if (config.file !== ":memory:") writer.exec("PRAGMA journal_mode = WAL");
     migrate(writer);
+    identity = poolIdentity(writer);
 
     /**
      * Reads get their own connection, so one outside a transaction cannot see
@@ -859,6 +863,8 @@ export function createSqlitePoolStore(
   return {
     ...committed,
     ...notYetImplementedReads(),
+
+    identity: () => Promise.resolve(identity),
 
     transaction: <T>(work: (handle: PoolTx) => Promise<T>): Promise<T> =>
       writes.transact((fence) => work(poolTx(fence))),

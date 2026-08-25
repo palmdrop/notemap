@@ -591,6 +591,20 @@ export const MIGRATIONS: readonly string[] = [
   CREATE UNIQUE INDEX items_source_identity
     ON items (source_id, source_item_id);
   `,
+
+  `
+  -- Which pool this is, so a client can tell the one it cached from the one it
+  -- is now talking to. Minted rather than derived: nothing else about a pool is
+  -- stable across a rebuild, which restores every item under a new pool.
+  --
+  -- One row, pinned by a key that can only be 1. The value is not written here:
+  -- a migration cannot mint one, and an existing pool has to get its identity by
+  -- the same path a new one does.
+  CREATE TABLE pool_identity (
+    singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
+    identity  TEXT    NOT NULL
+  ) STRICT;
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";
