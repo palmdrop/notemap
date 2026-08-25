@@ -1,12 +1,17 @@
 <script lang="ts">
-  import type { RoutingSummary } from "@notemap/client";
+  import type { RoutingRecord, RoutingSummary } from "@notemap/client";
 
-  import Label from "$components/primitives/register/Label.svelte";
-  import Value from "$components/primitives/register/Value.svelte";
   import { client } from "$lib/client";
-  import { whereItWent } from "$lib/routing";
+  import { whereItWent, wentTo } from "$lib/routing";
 
-  let { summary }: { summary: RoutingSummary | undefined } = $props();
+  /** The records say more than the summary, and only an open row has them. */
+  let {
+    summary,
+    records = [],
+  }: {
+    summary: RoutingSummary | undefined;
+    records?: readonly RoutingRecord[];
+  } = $props();
 
   const destinations = client.destinations.all;
 
@@ -15,9 +20,25 @@
     (id: string) =>
       $destinations.find((one) => one.id === id)?.name ?? "a destination",
   );
+
+  const lines = $derived(
+    records.length > 0
+      ? records.map((record) => `${wentTo(record, nameOf)} · ${record.state}`)
+      : summary === undefined
+        ? []
+        : [whereItWent(summary, nameOf)],
+  );
 </script>
 
-<Label name="routing" />
-<Value empty={summary === undefined}>
-  {summary === undefined ? "none yet" : whereItWent(summary, nameOf)}
-</Value>
+<div class="mt-2">
+  {#if lines.length === 0}
+    <div class="text-ink-muted">unrouted</div>
+  {:else}
+    {#each lines as line (line)}
+      <div class="break-words">
+        <span aria-hidden="true" class="text-accent">→</span>
+        {line}
+      </div>
+    {/each}
+  {/if}
+</div>

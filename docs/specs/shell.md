@@ -1,9 +1,31 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-08-20
+**Last updated**: 2026-08-25
 **Shipped**:
 
+- 2026-08-25 — **The action log is a register.** `/log` stopped being a second visual language —
+  rounded cards, a system sans, a weight nothing else uses — and became the same two columns as
+  the queue and the feed, with the shell's bar on top. It still loads nothing but the daemon, so
+  the roles are restated in the page and a test holds that copy to `styles/tokens.css`. `/docs`
+  stays as it is. ([plan](../plans/queue-two-column-rail.md))
+- 2026-08-24 — **Settings is legible.** One column at a reading measure, no rail and nothing to
+  furl, with the hierarchy carried by capitals, tracking and rules rather than by a second type
+  size. Destinations open in place to what they can do and the four things that can be done to
+  them; the daemon section says where this shell is talking to and whether it answers, timed, on
+  request. Deleting asks first and offers retiring instead, and the pool's refusal lands inside the
+  asking. A **`--color-good`** role joins the four: green is a result and never an intention.
+  ([plan](../plans/queue-two-column-rail.md))
+- 2026-08-24 — **The register is two columns, and routing is a modal over them.** The left column
+  became a **metadata rail** carrying the stamp, the state word, the tags and where the item went on
+  every row, and the item's facts on the one that is open; the right column carries the capture and
+  nothing else. Both surfaces are one grid, so the columns stay in register down the page. The rail
+  **furls** from the bar and takes the stamp into the body with it, so a furled rail never costs a
+  row its way open. Routing left the register for a **modal**, which is what let the spine, the
+  separators, the connector and the panel the page had to widen for all go. The bar gained the furl
+  toggle, the order control, and `N waiting` — the outbox count that answers the pending mark this
+  spec had been carrying as an open question. **Not shipped**: `record` beside `capture`, nothing
+  capturing audio. ([plan](../plans/queue-two-column-rail.md))
 - 2026-08-20 — **The designed shell is built.** `apps/ui` draws the queue and the feed as one
   register: two columns, one line weight, ink structure, and the accent reserved for action and
   alarm. Every colour, face, size and measure is a role defined once in `styles/tokens.css`, and the
@@ -43,7 +65,10 @@ fills in. It does not name a colour or a font; those come out of the design sess
 
 ### In scope
 
-- Two surfaces: **the queue**, which carries capture as its first row, and **the feed**.
+- Two surfaces: **the queue**, which carries capture as its first row, and **the feed**, plus
+  **settings**, which is chrome's own page rather than one of the two.
+- **Settings**: the destinations a pool can reach, what each can do, and whether the daemon
+  answers.
 - **The row**: one design serving both the list and an item being processed, in a collapsed and an
   opened state.
 - **The chrome**: navigation over three surfaces, the reachability indicator, and where a refused
@@ -54,14 +79,15 @@ fills in. It does not name a colour or a font; those come out of the design sess
 
 ### Out of scope
 
-- **Settings and destinations.** The surface exists and works; it inherits the tokens and nothing
-  else this iteration.
+- **An enrichment surface.** Suggestions and artifacts are not on the wire (below), so settings
+  holds destinations and the daemon's pages and nothing about enrichment.
 - **An archive surface.** `/v1/archived` exists and no shell surface reads it. Archived items are
   marked where they appear in the feed; nothing lists them.
 - **A standalone item route.** Processing happens in the row (below), so `/items/:id` is not a
   surface this shell draws.
-- **The daemon's own pages.** `/log` and `/docs` are rendered by the daemon, in its own markup.
-  They will not match this design until someone restyles them there.
+- **`/docs`.** The playground is a vendored Swagger UI, and restyling somebody else's application
+  is not this design's job. `/log` is no longer in this list: it is the daemon's markup still, but
+  it is drawn in this language (below).
 - **Enrichment.** Suggestions and artifacts are not on the wire — `Item` carries no enrichment
   field and the two suggestion operations have no encoder — so there is nothing to draw and no
   slot is guessed at.
@@ -74,8 +100,9 @@ fills in. It does not name a colour or a font; those come out of the design sess
 
 ### The shape of the shell
 
-One column, designed at 375px and given air on a wider screen. There is no second layout: no
-two-pane desktop, no bottom bar, no sheet.
+Two columns, designed at 375px and given air on a wider screen. There is no second layout: no
+two-pane desktop, no bottom bar, no sheet. *Amended 2026-08-24*: the second column is the metadata
+rail, and it survives a phone rather than collapsing into the first.
 
 Navigation names **two** surfaces — the queue and the feed. Capture is not one of them: it is the
 first row of the queue. Settings holds the destination list and the exits to the daemon's `/log`
@@ -83,8 +110,10 @@ and `/docs`, which are not app surfaces and do not sit beside them as equals. **
 the bar's right end**, after the reachability mark, with the other thing that is true of the shell
 rather than of a surface — not beside the two surfaces as a third.
 
-The chrome also carries the two things that are true of the shell rather than of any item: whether
-the pool is reachable, and whether any operation has been refused.
+The chrome carries what is true of the shell rather than of any item: whether the pool is
+reachable, how much the outbox is still holding, whether any operation has been refused, and which
+end the surface is read from. *Amended 2026-08-24*: the order control moved here from the surface,
+being a reading preference. The furl did not: it belongs on the edge it moves.
 
 ### Capture is the first row of the queue
 
@@ -140,17 +169,24 @@ every row in the feed, including an archived one, which
 also offers `unarchive`. A finished row's prose is muted, so live captures stand out while
 scrolling.
 
-**Opened, a row is for triage.** It adds the item's **routing records** and the actions — route,
-mark done, archive, edit. Everything there is cheap and reversible. The **last touch** is not one of
-the additions: it is read collapsed, and only its *absence* — `not since capture` — waits for the
-row to open, having nothing to say.
+**Opened, a row is for triage.** It adds the item's **routing records**, the facts about it the
+rail holds back while scanning, and the actions — route, mark done, archive, edit. Everything there
+is cheap and reversible. *Amended 2026-08-24*: the **last touch** is one of the additions. It no
+longer orders the queue ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)), so it
+stopped being the thing that explains where a row sits and became a fact like any other.
+
+**A whole cell opens the row it belongs to**, both of them, which is the reach a rail carrying tags
+and a body carrying prose both want. A control inside one — a tag, an action, a field — is worth
+clicking for its own sake and is not that click. The stamp stays a button, and is what says a row
+opens at all.
 
 **Routing is not one of those, and it does not happen in the row.** It is the only act in the shell
 that composes an object rather than selecting a value: where, then what to do there, then exactly
 where and how, each step depending on the last. A row of controls asserts those are siblings when
-they are a chain. So `route` opens a **composer**, positioned beside the row it belongs to — its
-first line level with the note's, an arrow across the spine connecting them — and below 56rem it
-becomes a block inside the row instead, so the item stays readable above the decision.
+they are a chain. So `route` opens a **composer**. *Amended 2026-08-24*: it is a **modal over the
+surface** rather than a panel beside the row. It names the capture it is about, since the row is
+behind it, and the veil, the cross and Escape all put it away. Nothing in the register reserves
+width or height for it, which is what the panel cost everywhere it was not open.
 
 The composer is stepped, not flat: **where** (destinations, with an unavailable one saying so
 rather than disappearing), **do** (that destination's capabilities), then the target its schema
@@ -197,8 +233,8 @@ Three conditions, and the current shell paints two of them the same colour.
   on every row. Actions that need the daemon are visibly unavailable and read as unavailable, not
   as broken. Capture, tagging, editing and archiving stay live, because they replay from the
   outbox.
-- **Pending** is quiet: the chrome, plus a mark on the row it is about. It is the ordinary state of
-  a mutation and it heals itself.
+- **Pending** is quiet: one count in the chrome, and nothing at all while there is nothing waiting.
+  It is the ordinary state of a mutation and it heals itself.
 - **Refused** is loud. It gets a fixed place in the bottom-left corner carrying what was refused,
   why, and a way to dismiss it — the left corner because the right is where a composer lives, because it is the only one of the three that will not resolve without a person. It is not
   drawn in the same shape as pending work.
@@ -210,10 +246,54 @@ optional `next` link, nothing more. So the shell claims no number. `Load more` i
 statement that more exists, and **the empty state is designed as the thing you were working
 toward**, not as a grey apology.
 
-Both surfaces draw the reader's **order control**. Which end a reader starts from is the reader's,
+The reader's **order control** is in the bar and acts on whichever surface is being read; settings
+has no end to start from and it says nothing there. Which end a reader starts from is the reader's,
 for the queue as for the feed ([CONTEXT.md](../../CONTEXT.md)). Turning a surface around reads it
 again from that end ([client.md](client.md#the-queue)) — a position belongs to the order that made
 it — so the control is a choice of order, not a re-sort of what is on screen.
+
+### Settings
+
+Settings is not a register and is not drawn as one. It is read rather than scanned, so it takes a
+**narrower measure** than the two surfaces — which is itself the signal that it is a different kind
+of page — in **one column**, with no rail and nothing to furl.
+
+**One type size, and the hierarchy comes from capitals and rules.** Three levels, meant to be
+countable: a **section** is muted ink at the widest tracking with a full-weight rule under it; a
+**destination** is full ink at tighter tracking with a mark in the margin; a **field** is lower
+case, muted, in a column of its own. Nothing is bigger and nothing is bold.
+
+Two sections. **Destinations** says how many are offered and how many retired, then one line per
+destination: a mark for offered or retired, its name, its kind, and whether anything has asked it
+lately. Opening one adds what it can do, the settings its kind asked for, its id, and the four
+things that can be done to it — check, edit, retire, delete — with the rule and the distance
+separating what can be undone from what cannot.
+
+**Daemon** says where this shell is talking to, and carries the exits to `/log` and `/docs`. Its
+first row is the one fact on the page that is about *now* rather than about configuration: whether
+the daemon answers, how long it took, and when it was asked. **The destination list is the probe** —
+knocking on the daemon and refreshing what the page shows are the same request, and there is no
+route here whose only job is to answer yes.
+
+**Deleting is the one thing on this page that cannot be undone, so it is the one thing that asks**,
+and the asking offers retiring instead. Only the pool knows whether a record has ever named a
+destination, so its refusal is the answer — and the refusal lands *in the asking*, where the
+alternative it leaves is already on screen.
+
+### The daemon's own pages
+
+`/log` is the daemon's markup, served by the daemon, and it is drawn in this language anyway. It is
+the same register: a rail carrying the stamp and who did it, a body carrying what happened, what it
+was about and the detail, one rule across the top of every cell. The bar is the shell's, so leaving
+the app and coming back does not change what the page looks like.
+
+It **loads nothing from anywhere but the daemon** — that is a rule of that page, not a preference —
+so it cannot reach the app's compiled stylesheet and restates the roles inline. Two copies of a
+palette drift the moment one moves, so a test holds the copy to `styles/tokens.css`, which stays
+the source of truth.
+
+`/docs` is a vendored Swagger UI and is left alone: restyling somebody else's application is not
+this design's job.
 
 ### Content
 
@@ -255,33 +335,52 @@ alignment on a warm ground rather than a cold grey one.
 share: a fixed column of times, a wide column of content, and a margin carrying marks. The row
 reads as a dated entry in a ledger, which is why the capture time is its title.
 
-**Below 34rem the row is a single column.** A timestamp column costs a quarter of a phone screen
-and leaves the prose too narrow to read. So the stamp becomes a header line across the row — date,
-time, and the state word beside them — a field's label shrinks to its own width and sits inline
-before its value, and anything unlabelled takes the full measure. The columns still say what a
-thing is; they stop reserving space to do it.
+**Two columns do the work that type hierarchy usually does.** *Amended 2026-08-24.* The left
+column is a **metadata rail**, and it carries the same things whether a row is open or shut: the
+stamp, the state word where there is one, the tags, and where the item went. Opening a row adds the
+item's facts under them — payload type, edited, source, id — rather than changing what the column
+is for. The right column holds nothing but what was captured, and its actions once the row is open.
+One system, reused, and nothing is distinguished by being bigger.
 
-**Two columns do the work that type hierarchy usually does.** A fixed left column names what a
-thing is; a wide right column holds it. Collapsed, the left column carries the date over the time.
-Opened, that same column becomes the field-name column — `tags`, `edited`, `routing`. One system,
-reused, and nothing is distinguished by being bigger.
+**The rail can be furled.** An arrow rides the seam the rail's edge makes, in its own strip above
+the register, and takes the left column to nothing — which gives the prose the whole measure
+without hiding a row or changing what a row can do. It sits on the edge it moves rather than in the
+bar, where a word for it was further from the thing it was about. The rail holds the button that
+opens a row, so a furled rail hands the stamp to the body rather than taking it away. The reader's
+answer is remembered, like the palette.
+
+**A surface that is a register without being a list of captures does not offer the fold.** Settings
+is the one, and there is nothing in it worth reading without its left column.
+
+**Both surfaces are one grid.** Each item drops two cells into it — a rail cell and a body cell —
+so the columns stay in register down the whole page without either one being told how tall the
+other is.
+
+**A phone keeps both columns.** *Amended 2026-08-24.* An earlier version collapsed to one below
+34rem. It does not: below 44rem the rail narrows to the width of a stacked date and time, the facts
+put their values under their names, and the two columns survive, because the rail is what says what
+a thing is.
 
 **The grid is drawn, and it is rules rather than boxes.** Nothing is ever boxed or given a border
-on four sides. There is **one line weight**. A separator between captures begins where the content
-column begins — clear of the timestamps — and runs right until it meets the spine, so every capture
-makes one T-junction against it.
+on four sides. A rule runs across the top of every cell, lighter than the bar's own, and stops at
+the gap between the columns — so a row reads as two entries side by side rather than as a band
+across the page. *Amended 2026-08-24*: the separator that ran into the spine, and the spine itself,
+are gone. Nothing needs a vertical rule now that the second column is real.
 
-**The register has a measure.** The content column is capped at a comfortable reading width and
-the page does not sprawl to fill a desktop. The only thing that widens the shell is a composer
-opening beside the register, which needs the room.
+**The frame has a measure.** The page is capped short of a desktop's width and nothing widens it,
+routing having left the register for a modal.
 
-**The spine is on the right.** A vertical rule runs down the outer edge of the register. When a
-routing composer is open it is also the divider between the register and the composer, and a small
-arrow interrupts it at the row being routed.
+**Green means a result, and only a result.** *Added 2026-08-24.* Something was asked and the answer
+was yes: a destination that answered, a daemon that is reachable. It is never spent on an intention
+— `add a destination` is ink, because nothing has happened yet and the reply to it is what earns a
+colour. Its opposite is the accent, which on settings reads as the thing that went wrong or the
+thing that cannot be undone. Each says so twice, in a mark and in a word, so the colour is never
+the only thing carrying it.
 
 **Lines are ink. Red means a warning or an action, and nothing else** — the route action, the
-connector marking a routing in play, a refused operation, a link under the cursor. Red is never
-structure and never body text, so it appears only where something is being done or has gone wrong.
+arrow marking where an item went, the edge of the row being processed, a refused operation, a link
+under the cursor. Red is never structure and never body text, so it appears only where something is
+being done or has gone wrong.
 
 **Type: two faces, one size each.** A serif for what a person wrote, monospace for everything the
 interface says — the bar, timestamps, field names, values, tags, actions. The wordmark is the serif
@@ -324,6 +423,31 @@ the page a person actually reads. Three-character indents on successive paragrap
   freely, and an item route would cost them their place on every item. One design serves the list
   and the processing surface, and routing records and lineage get somewhere to live without the
   collapsed row accreting controls.
+- **Settings is not a register.** *2026-08-24.* It inherited the two-column layout because
+  everything did, and paid for it: a label gutter down a page whose content is already
+  label-and-value, and a fold control on a page with nothing worth reading without its left column.
+  One column at a narrower measure says "different kind of page" without a second type size.
+- **Green is a result, never an intention.** *2026-08-24.* The first draft put green on
+  `add a destination` and red on `delete`, which made red mean danger here and *the action* on the
+  queue, where `capture` and `route` wear it. Spending green on what came back instead leaves the
+  accent doing one job on every surface, and leaves the creating affordance in ink — which is
+  honest, since pressing it has produced nothing yet.
+- **The destination list is the connectivity probe.** *2026-08-24.* `/v1` has no route whose only
+  job is to answer yes, and adding one to learn what a read already proves is a route to keep
+  forever. Reading the destinations answers both questions at once and refreshes the page while it
+  is at it.
+- **The rail is one column, not two jobs.** *2026-08-24.* The left column used to be a stamp
+  collapsed and a label gutter opened, which made it dead space on every row a reader was only
+  scanning. Carrying the same metadata whether a row is open or shut costs nothing at a desk, gives
+  the reader something to scan by, and makes opening a row an addition rather than a change of
+  subject. Furling is the answer to the reader who wants the prose instead, and is cheaper than a
+  second layout.
+- **Routing is a modal, not a panel beside the row.** *2026-08-24.* The panel was answering "the
+  item must stay on screen", and it charged the whole shell for it: the register reserved a second
+  column, the row reserved a measured height, and the page widened whenever one opened. A modal
+  names the capture it is about instead, which is the part of the row the decision actually needs.
+  What is lost is the item being readable beside the choice; what is bought is that nothing in the
+  register has to know a composer exists.
 - **Routing escalates out of the row into a composer.** Routing is composition, not selection, and
   a flat control set hides the dependency between its parts. It is also the only irreversible act
   in the shell, so it is the one that earns a deliberate surface — which is what "fast capture,
@@ -361,23 +485,30 @@ the page a person actually reads. Three-character indents on successive paragrap
 - [ ] 2026-08-19 — **Which markdown library, and whether captured markdown is sanitised before
       rendering.** A library choice is the developer's. `@tailwindcss/typography` is already a
       dependency and unused.
-- [ ] 2026-08-19 — **`/log` and `/docs` remain in the daemon's own visual language.** Restyling
-      them is the daemon's work and nobody has claimed it.
+- [x] 2026-08-19 — **`/log` and `/docs` remain in the daemon's own visual language.** Answered
+      2026-08-25 for half of it: `/log` is drawn in this language, restated in the page because it
+      loads nothing from anywhere but the daemon, with a test holding the copy to `tokens.css`.
+      `/docs` is a vendored Swagger UI and stays as it is.
 - [ ] 2026-08-19 — **Nothing can enumerate a destination's folders.** The composer draws a folder
       tree; `describe()` returns capabilities and a `targetSchema` and that is the whole vocabulary.
       Either the adapter publishes an enum it refreshes at describe time, or the destination port
       gains a method for asking — which is the same seam [todo.md](../todo.md) predicts for preview,
       so it would have two callers.
-- [ ] 2026-08-19 — **A pending operation has no visible mark.** The spine's markers were removed as
-      clutter, and pending was the visible half of the offline story. Candidates: inverting the
-      row's timestamp, or a word in the row's left column.
+- [x] 2026-08-19 — **A pending operation has no visible mark.** Answered 2026-08-24: the bar says
+      `N waiting`, counting the outbox operations that have not drained and never a refusal, which
+      has the corner to itself. It says nothing while there is nothing, since pending is ordinary
+      and heals itself. Per-row was the rejected half: the fact is about the outbox, and forty rows
+      repeating it is the noise unreachability was already spared.
 
 ---
 
 ## Acceptance criteria
 
-- The whole design is legible and operable in a 375px-wide column, and no surface requires a
-  second layout to be usable at a desk.
+- The whole design is legible and operable at 375px wide, with the rail intact, and no surface
+  requires a second layout to be usable at a desk.
+- Furling the rail leaves every row still openable and every action still reachable.
+- Routing is dismissable without reaching for the mouse, and nothing in the register moves when it
+  opens or closes.
 - A queue row can be told at a glance to be a revision, to be archived, or to have work not yet
   drained, without opening it.
 - A row's capture time is the first thing read on it.
@@ -391,7 +522,7 @@ the page a person actually reads. Three-character indents on successive paragrap
 - A refused operation is distinguishable from a pending one without reading either, and only the
   refused one offers a dismissal.
 - Routing a queued item is reachable in two choices from the opened row when the capability needs
-  no target fields.
+  no target fields, and the modal says which capture it is about.
 - Choosing a destination describes that destination and no other.
 - A feed row that has been routed says so and names where it went, and drawing a page of them costs
   one read; opening a queue row that has been nowhere costs none.
@@ -399,5 +530,14 @@ the page a person actually reads. Three-character indents on successive paragrap
   reload, and still accepts one that is on no list.
 - An unavailable destination reports its reason rather than failing silently or appearing routable.
 - The queue's empty state is a designed surface, not a sentence.
+- Settings is legible at one type size: a reader can tell a section from a destination from a field
+  without any of them being larger than the others.
+- Deleting a destination cannot happen in one press, and the reason the pool gives for refusing it
+  is readable without dismissing anything.
+- The daemon section reports reachable, unreachable and unasked as three distinguishable states,
+  and asking costs one request that the page needed anyway.
+- Leaving the app for `/log` and coming back does not change what the interface looks like, and the
+  log page still fetches nothing from outside the daemon.
+- The log page's palette cannot drift from the shell's without a test failing.
 - No component in `apps/ui` names a colour; every colour comes from a token role defined in
   `styles/tokens.css`, and switching the palette requires no change to a component.

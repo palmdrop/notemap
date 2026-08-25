@@ -4,9 +4,8 @@
 
   import Action from "$components/primitives/controls/Action.svelte";
   import ActionRow from "$components/primitives/controls/ActionRow.svelte";
-  import Content from "$components/primitives/register/Content.svelte";
-  import Label from "$components/primitives/register/Label.svelte";
-  import Row from "$components/primitives/register/Row.svelte";
+  import Body from "$components/primitives/register/Body.svelte";
+  import Rail from "$components/primitives/register/Rail.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import { PICTURE, TYPED } from "$lib/channels";
   import { client } from "$lib/client";
@@ -78,19 +77,20 @@
   }
 </script>
 
-<form onsubmit={submit}>
-  <Row>
-    <Stamp {at} />
-    <Content>
-      <textarea
-        bind:value={text}
-        placeholder="Anything worth keeping…"
-        aria-label="What to capture"
-        class="min-h-18 w-full resize-y bg-transparent font-prose text-prose placeholder:text-ink-muted"
-      ></textarea>
-    </Content>
+<Rail first>
+  <Stamp {at} />
+  <div class="mt-2 text-ink-muted">not captured</div>
+</Rail>
 
-    <Label />
+<Body first>
+  <form onsubmit={submit}>
+    <textarea
+      bind:value={text}
+      placeholder="Anything worth keeping…"
+      aria-label="What to capture"
+      class="min-h-18 w-full resize-y bg-transparent font-prose text-prose placeholder:text-ink-muted"
+    ></textarea>
+
     <ActionRow>
       <Action primary submit disabled={busy}>capture</Action>
       <Action disabled={busy} onclick={() => picker.click()}>attach</Action>
@@ -113,5 +113,5 @@
         </span>
       {/if}
     </ActionRow>
-  </Row>
-</form>
+  </form>
+</Body>

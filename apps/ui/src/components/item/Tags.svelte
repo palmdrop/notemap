@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Item } from "@notemap/client";
 
-  import Label from "$components/primitives/register/Label.svelte";
   import TagSet from "$components/primitives/controls/TagSet.svelte";
   import { client } from "$lib/client";
 
@@ -13,7 +12,6 @@
   const offered = $derived($inUse.map((use) => use.name));
 </script>
 
-<Label name="tags" />
 <TagSet
   {names}
   {offered}

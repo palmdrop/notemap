@@ -3,6 +3,7 @@ import { expect, test } from "vitest";
 
 import Nav from "./Nav.svelte";
 import Reachability from "./Reachability.svelte";
+import Waiting from "./Waiting.svelte";
 
 const SURFACES = [
   { href: "/", label: "queue" },
@@ -25,4 +26,13 @@ test("says whether the pool is within reach", () => {
 
   void rerender({ yes: false });
   expect(screen.getByRole("status").textContent?.trim()).toBe("offline");
+});
+
+/** Pending is ordinary and heals itself, so an idle outbox says nothing at all. */
+test("says how much is waiting, and only while something is", () => {
+  const { rerender } = render(Waiting, { count: 0 });
+  expect(screen.queryByRole("status")).toBeNull();
+
+  void rerender({ count: 4 });
+  expect(screen.getByRole("status").textContent?.trim()).toBe("4 waiting");
 });

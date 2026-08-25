@@ -17,6 +17,10 @@
   --color-ink-muted: light-dark(oklch(0.58 0.011 55), oklch(0.63 0.01 60));
   --color-accent: light-dark(oklch(0.55 0.215 28), oklch(0.58 0.225 27));
 
+  /* Something was asked and the answer was yes. Never spent on an intention:
+     what a person is about to do has produced no result to report. */
+  --color-good: light-dark(oklch(0.5 0.11 148), oklch(0.68 0.13 150));
+
   --font-prose: serif;
   --font-mono: monospace;
   --default-font-family: var(--font-prose);
@@ -24,19 +28,25 @@
   --text-mono: 1.0625rem;
   --text-prose: 1.25rem;
 
-  --spacing-gutter: 7.5rem;
-  --spacing-gap: 1.4rem;
-  --spacing-spine: 1.4rem;
-  --spacing-panel: 25rem;
-  --spacing-measure: 44rem;
+  --spacing-rail: 17rem;
+  --spacing-gap: 2.2rem;
+  --spacing-fact: 5.5rem;
+  --spacing-modal: 30rem;
+  --spacing-measure: 72rem;
 
-  --breakpoint-narrow: 34rem;
-  --breakpoint-aside: 56rem;
+  /* Settings is read rather than scanned, so it takes a narrower measure than
+     the register — which is itself the signal that it is a different page. */
+  --spacing-read: 46rem;
+  --spacing-mark: 1.8rem;
+
+  --breakpoint-narrow: 44rem;
 }
 
-/* One column: a gutter this wide would leave the prose too narrow to read. */
-@media (width < 34rem) {
+/* A phone keeps both columns — the rail is what says what a thing is — but a
+   rail this wide would leave nothing for the prose. */
+@media (width < 44rem) {
   :root {
-    --spacing-gap: 0.8rem;
+    --spacing-rail: 6.5rem;
+    --spacing-gap: 1rem;
   }
 }

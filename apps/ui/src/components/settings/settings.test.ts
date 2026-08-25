@@ -5,6 +5,7 @@ import { json, routeOf } from "@notemap/client/testing";
 
 import { online } from "../../testing/dom";
 import { asked, pool } from "../../testing/pool";
+import Daemon from "./Daemon.svelte";
 import Destinations from "./Destinations.svelte";
 
 vi.mock("$lib/client", () => import("../../testing/pool"));
@@ -60,6 +61,14 @@ function serving(
   });
 }
 
+/** Processing a destination happens on the row, which opens on its own name. */
+async function open(name: string) {
+  return fireEvent.click(await screen.findByRole("button", { name }));
+}
+
+const press = async (name: string | RegExp) =>
+  fireEvent.click(await screen.findByRole("button", { name }));
+
 test("lists what the pool holds without asking any destination anything", async () => {
   serving([
     aDestination(),
@@ -67,16 +76,34 @@ test("lists what the pool holds without asking any destination anything", async 
   ]);
 
   render(Destinations);
-  await screen.findByText("Vault", { exact: false });
-  await screen.findByText("Board", { exact: false });
+  await screen.findByRole("button", { name: "Vault" });
+  await screen.findByRole("button", { name: "Board" });
 
-  // Retired ones are shown as not offered rather than hidden.
-  expect(screen.getByText(/retired/)).toBeDefined();
+  // Retired ones are shown as not offered rather than hidden, and the section
+  // says how the two split.
+  expect(screen.getByText("1 offered \u00b7 1 retired")).toBeDefined();
+  expect(screen.getByText(/offered to nothing new/)).toBeDefined();
+
   // The split is the point: listing must not probe an unmounted drive.
   expect(asked()).toEqual([
     "GET /v1/destination-kinds",
     "GET /v1/destinations",
   ]);
+});
+
+/** Everything that can be done to one is behind opening it, as on a queue row. */
+test("keeps a destination's doings behind opening it", async () => {
+  serving([aDestination()]);
+
+  render(Destinations);
+  await screen.findByRole("button", { name: "Vault" });
+  expect(screen.queryByRole("button", { name: "Retire" })).toBeNull();
+
+  await open("Vault");
+  expect(screen.getByRole("button", { name: "Retire" })).toBeDefined();
+
+  await open("Vault");
+  expect(screen.queryByRole("button", { name: "Retire" })).toBeNull();
 });
 
 test("asks one destination what it can do, on request", async () => {
@@ -89,8 +116,8 @@ test("asks one destination what it can do, on request", async () => {
   });
 
   render(Destinations);
-  await screen.findByRole("button", { name: "check" });
-  await fireEvent.click(screen.getByRole("button", { name: "check" }));
+  await open("Vault");
+  await press("Check");
 
   await screen.findByText("create-file");
   expect(asked()).toContain(`GET /v1/destinations/${VAULT}/description`);
@@ -106,19 +133,18 @@ test("shows one the daemon cannot make sense of as unusable, and keeps it listed
   });
 
   render(Destinations);
-  await fireEvent.click(await screen.findByRole("button", { name: "check" }));
+  await open("Vault");
+  await press("Check");
 
-  await screen.findByText(/unusable: nothing here speaks the kanban kind/);
-  expect(screen.getByText("Vault", { exact: false })).toBeDefined();
+  await screen.findByText(/nothing here speaks the kanban kind/);
+  expect(screen.getByRole("button", { name: "Vault" })).toBeDefined();
 });
 
 test("adds one from the kind's own schema", async () => {
   serving([]);
 
   render(Destinations);
-  await fireEvent.click(
-    await screen.findByRole("button", { name: "add a destination" }),
-  );
+  await press("Add a destination");
 
   // The fields are the kind's, not this component's.
   await fireEvent.input(screen.getByLabelText("Name"), {
@@ -127,9 +153,9 @@ test("adds one from the kind's own schema", async () => {
   await fireEvent.input(screen.getByLabelText("root"), {
     target: { value: "~/second-brain" },
   });
-  await fireEvent.click(screen.getByRole("button", { name: "add" }));
+  await press("Create it");
 
-  await screen.findByText("Second brain", { exact: false });
+  await screen.findByRole("button", { name: "Second brain" });
 
   const created = asked().filter((route) => route === "POST /v1/destinations");
   expect(created).toHaveLength(1);
@@ -139,14 +165,29 @@ test("retires one, and offers it again", async () => {
   serving([aDestination()]);
 
   render(Destinations);
-  await fireEvent.click(await screen.findByRole("button", { name: "retire" }));
+  await open("Vault");
+  await press("Retire");
 
-  const again = await screen.findByRole("button", { name: "offer again" });
-  await fireEvent.click(again);
+  await press("Offer again");
 
-  await screen.findByRole("button", { name: "retire" });
+  await screen.findByRole("button", { name: "Retire" });
   expect(asked()).toContain(`POST /v1/destinations/${VAULT}/retire`);
   expect(asked()).toContain(`POST /v1/destinations/${VAULT}/unretire`);
+});
+
+/** The one thing here that cannot be undone, so the one thing that asks first. */
+test("asks before deleting, and offers the reversible half instead", async () => {
+  serving([aDestination()]);
+
+  render(Destinations);
+  await open("Vault");
+  await press("Delete");
+
+  expect(await screen.findByRole("dialog")).toBeDefined();
+  expect(asked()).not.toContain(`DELETE /v1/destinations/${VAULT}`);
+
+  await press("Retire instead");
+  expect(asked()).toContain(`POST /v1/destinations/${VAULT}/retire`);
 });
 
 /** Only the pool knows whether a record has ever named it, so its refusal is the answer. */
@@ -157,10 +198,13 @@ test("shows the refusal where the pool will not delete one", async () => {
   });
 
   render(Destinations);
-  await fireEvent.click(await screen.findByRole("button", { name: "delete" }));
+  await open("Vault");
+  await press("Delete");
+  await press("Delete anyway");
 
+  // In the asking, where the alternative it leaves is already on screen.
   await screen.findByText(/retire it instead/);
-  expect(screen.getByText("Vault", { exact: false })).toBeDefined();
+  expect(screen.getByRole("button", { name: "Retire instead" })).toBeDefined();
 });
 
 test("deletes one nothing has ever named", async () => {
@@ -170,7 +214,9 @@ test("deletes one nothing has ever named", async () => {
   });
 
   render(Destinations);
-  await fireEvent.click(await screen.findByRole("button", { name: "delete" }));
+  await open("Vault");
+  await press("Delete");
+  await press("Delete anyway");
 
   await screen.findByText("none yet");
 });
@@ -179,7 +225,7 @@ test("deletes one nothing has ever named", async () => {
 test("reads while the pool is unreachable, and disables every change", async () => {
   serving([aDestination()]);
   render(Destinations);
-  await screen.findByText("Vault", { exact: false });
+  await open("Vault");
 
   online(false);
 
@@ -187,13 +233,16 @@ test("reads while the pool is unreachable, and disables every change", async () 
     (screen.getByRole("button", { name }) as HTMLButtonElement).disabled;
 
   await vi.waitFor(() => {
-    expect(disabled("edit")).toBe(true);
+    expect(disabled("Edit")).toBe(true);
   });
-  expect(disabled("retire")).toBe(true);
-  expect(disabled("delete")).toBe(true);
-  expect(disabled("add a destination")).toBe(true);
+  expect(disabled("Retire")).toBe(true);
+  expect(disabled("Delete")).toBe(true);
+  expect(disabled("Add a destination")).toBe(true);
+
+  // Checking is a read, so it survives what the changes do not.
+  expect(disabled("Check")).toBe(false);
   expect(
-    screen.getByText(/destinations can be read but not changed/),
+    screen.getByText(/Destinations can be read but not changed/),
   ).toBeDefined();
 });
 
@@ -205,26 +254,38 @@ test("asks again for the kinds once the daemon is reachable", async () => {
   });
   render(Destinations);
 
-  await vi.waitFor(() => {
-    expect(
-      (
-        screen.getByRole("button", {
-          name: "add a destination",
-        }) as HTMLButtonElement
-      ).disabled,
-    ).toBe(true);
-  });
+  const adding = () =>
+    screen.getByRole("button", {
+      name: "Add a destination",
+    }) as HTMLButtonElement;
+
+  await vi.waitFor(() => expect(adding().disabled).toBe(true));
 
   serving([]);
   online(true);
 
-  await vi.waitFor(() => {
-    expect(
-      (
-        screen.getByRole("button", {
-          name: "add a destination",
-        }) as HTMLButtonElement
-      ).disabled,
-    ).toBe(false);
-  });
+  await vi.waitFor(() => expect(adding().disabled).toBe(false));
+});
+
+/** Whether the daemon answers is the one fact here about now, so it is asked. */
+test("knocks on the daemon and says what came back", async () => {
+  serving([aDestination()]);
+
+  render(Daemon);
+  expect(screen.getByText("unasked")).toBeDefined();
+
+  await press("Check now");
+
+  await screen.findByText("reachable");
+  expect(asked()).toContain("GET /v1/destinations");
+});
+
+test("says the daemon is unreachable rather than saying nothing", async () => {
+  const transport = serving([aDestination()]);
+  transport.unreachable(true);
+
+  render(Daemon);
+  await press("Check now");
+
+  await screen.findByText("unreachable");
 });

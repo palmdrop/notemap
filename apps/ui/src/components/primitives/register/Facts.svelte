@@ -4,7 +4,6 @@
   let { children }: { children: Snippet } = $props();
 </script>
 
-<!-- Unlabelled, so on one column it takes the whole measure. -->
-<div class="col-start-2 min-w-0 max-narrow:col-span-full">
+<div class="mt-4 grid gap-1">
   {@render children()}
 </div>

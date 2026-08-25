@@ -1,47 +1,33 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
-
   import { dayOf, timeOf } from "$lib/stamp";
 
-  /**
-   * The row's title, so where a row opens in place it is also the way in.
-   * `children` is the state word, where the surface has one to say.
-   */
   let {
     at,
     opened,
     onopen,
-    children,
   }: {
     at: string;
     opened?: boolean;
     onopen?: () => void;
-    children?: Snippet;
   } = $props();
 </script>
 
 {#snippet written()}
-  <time datetime={at} class="block whitespace-nowrap max-narrow:inline">
-    {dayOf(at)}
-  </time>
-  <span class="block whitespace-nowrap max-narrow:ml-[1ch] max-narrow:inline">
-    {timeOf(at)}
+  <span class="flex gap-[1ch] max-narrow:flex-col max-narrow:gap-0">
+    <time datetime={at} class="whitespace-nowrap">{dayOf(at)}</time>
+    <span class="whitespace-nowrap text-ink-muted">{timeOf(at)}</span>
   </span>
 {/snippet}
 
-<!-- On one column the stamp is a header line across the whole row. -->
-<div class="col-start-1 font-mono max-narrow:col-span-full">
-  {#if onopen === undefined}
+{#if onopen === undefined}
+  {@render written()}
+{:else}
+  <button
+    type="button"
+    onclick={onopen}
+    aria-expanded={opened === true}
+    class="block text-left hover:text-accent"
+  >
     {@render written()}
-  {:else}
-    <button
-      type="button"
-      onclick={onopen}
-      aria-expanded={opened === true}
-      class="text-left hover:text-accent"
-    >
-      {@render written()}
-    </button>
-  {/if}
-  {@render children?.()}
-</div>
+  </button>
+{/if}

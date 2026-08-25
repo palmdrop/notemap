@@ -1,17 +1,29 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  /** Whether a composer is open beside a row, which is what reserves the panel. */
-  let { aside = false, children }: { aside?: boolean; children: Snippet } =
-    $props();
+  import Furl from "./Furl.svelte";
+
+  /** Without `onfurl` the rail cannot be folded away, which settings wants. */
+  let {
+    furled = false,
+    onfurl,
+    children,
+  }: {
+    furled?: boolean;
+    onfurl?: () => void;
+    children: Snippet;
+  } = $props();
 </script>
 
+{#if onfurl !== undefined}
+  <Furl {furled} ontoggle={onfurl} />
+{/if}
+
 <div
-  class="grid {aside
-    ? 'grid-cols-[1fr_var(--spacing-panel)] max-aside:grid-cols-[1fr]'
-    : 'grid-cols-[1fr]'}"
+  data-furled={furled && onfurl !== undefined ? "" : undefined}
+  class="group grid {furled && onfurl !== undefined
+    ? 'grid-cols-[0_1fr] gap-x-0'
+    : 'grid-cols-[var(--spacing-rail)_1fr] gap-x-gap'}"
 >
-  <div class="min-w-0 border-r border-ink pr-spine">
-    {@render children()}
-  </div>
+  {@render children()}
 </div>

@@ -1,18 +1,15 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { Order } from "@notemap/client";
 
   import FeedRow from "$components/feed/FeedRow.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
-  import OrderSelector from "$components/primitives/controls/OrderSelector.svelte";
-  import Content from "$components/primitives/register/Content.svelte";
+  import Body from "$components/primitives/register/Body.svelte";
   import Foot from "$components/primitives/register/Foot.svelte";
-  import Label from "$components/primitives/register/Label.svelte";
+  import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
-  import Row from "$components/primitives/register/Row.svelte";
-  import Separator from "$components/primitives/register/Separator.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
   import { client } from "$lib/client";
+  import { rail } from "$lib/rail.svelte";
 
   const feed = client.feed;
 
@@ -23,36 +20,27 @@
   onMount(() => void client.loadFeed());
 </script>
 
-<Register>
-  <OrderSelector
-    order={$feed.order}
-    reading={$feed.loading}
-    onchoose={(order: Order) => void client.loadFeed(order)}
-  />
-
+<Register furled={rail.furled} onfurl={() => rail.toggle()}>
   {#if $feed.failure !== undefined}
-    <Row>
-      <Label name="feed" />
-      <Content>
-        <span role="status" class="font-mono text-accent">{$feed.failure}</span>
-      </Content>
-    </Row>
+    <Rail first>feed</Rail>
+    <Body first>
+      <span role="status" class="font-mono text-accent">{$feed.failure}</span>
+    </Body>
   {/if}
 
   {#if bare}
-    <Row>
-      <Label name="feed" />
-      <Content>
-        <Prose text="Nothing captured yet." />
-      </Content>
-    </Row>
+    <Rail first>feed</Rail>
+    <Body first>
+      <Prose text="Nothing captured yet." />
+    </Body>
   {/if}
 
   {#each $feed.items as item, at (item.id)}
-    {#if at > 0}
-      <Separator />
-    {/if}
-    <FeedRow {item} />
+    <FeedRow
+      {item}
+      first={at === 0 && $feed.failure === undefined}
+      furled={rail.furled}
+    />
   {/each}
 
   {#if $feed.more}

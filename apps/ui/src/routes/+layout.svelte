@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { page } from "$app/state";
 
+  import Order from "$components/order/Order.svelte";
   import Refusals from "$components/outbox/Refusals.svelte";
   import ThemeToggle from "$components/theme/ThemeToggle.svelte";
   import Bar from "$components/primitives/frame/Bar.svelte";
@@ -9,15 +10,17 @@
   import Nav from "$components/primitives/frame/Nav.svelte";
   import Reachability from "$components/primitives/frame/Reachability.svelte";
   import Sheet from "$components/primitives/frame/Sheet.svelte";
+  import Waiting from "$components/primitives/frame/Waiting.svelte";
   import { client } from "$lib/client";
-  import { composing } from "$lib/composing.svelte";
   import { reachable } from "$lib/reachable.svelte";
+  import { waiting } from "$lib/waiting.svelte";
 
   import "./layout.css";
 
   let { children } = $props();
 
   const pool = reachable();
+  const held = waiting();
 
   const SURFACES = [
     { href: "/", label: "queue" },
@@ -33,10 +36,14 @@
 </script>
 
 <Sheet>
-  <Column wide={composing.open}>
+  <Column>
     <Bar>
       <Nav surfaces={SURFACES} current={page.url.pathname} />
-      <span class="ml-auto flex gap-4 max-narrow:gap-3">
+      <span
+        class="ml-auto flex flex-wrap items-baseline gap-4 max-narrow:gap-3"
+      >
+        <Order />
+        <Waiting count={held.count} />
         <Reachability yes={pool.yes} />
         <a href="/settings">settings</a>
       </span>
