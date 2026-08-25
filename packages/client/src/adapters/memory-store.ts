@@ -21,64 +21,56 @@ export function createMemoryStore(): ClientStore {
   let pool: PoolIdentity | undefined;
 
   return {
-    readOutbox: () => Promise.resolve([...operations.values()]),
+    readOutbox: async () => [...operations.values()],
 
-    writeOperation(operation) {
+    async writeOperation(operation) {
       operations.set(operation.id, operation);
-      return Promise.resolve();
     },
 
-    removeOperation(id) {
+    async removeOperation(id) {
       operations.delete(id);
-      return Promise.resolve();
     },
 
-    readItems: () => Promise.resolve([...items.values()]),
+    readItems: async () => [...items.values()],
 
-    writeItems(written) {
+    async writeItems(written) {
       for (const item of written) items.set(item.id, item);
-      return Promise.resolve();
     },
 
-    removeItems(ids) {
+    async removeItems(ids) {
       for (const id of ids) items.delete(id);
-      return Promise.resolve();
     },
 
-    readTags: () => Promise.resolve(tags),
+    readTags: async () => tags,
 
-    writeTags(written) {
+    async writeTags(written) {
       tags = written;
-      return Promise.resolve();
     },
 
-    readDestinations: () => Promise.resolve(destinations),
+    readDestinations: async () => destinations,
 
-    writeDestinations(written) {
+    async writeDestinations(written) {
       destinations = written;
-      return Promise.resolve();
     },
 
-    readPoolIdentity: () => Promise.resolve(pool),
+    readPoolIdentity: async () => pool,
 
-    writePoolIdentity(identity) {
+    async writePoolIdentity(identity) {
       pool = identity;
-      return Promise.resolve();
     },
 
-    readBlob: (asset) => Promise.resolve(blobs.get(asset)),
+    readBlob: async (asset) => blobs.get(asset),
 
-    writeBlob(asset, blob) {
+    async writeBlob(asset, blob) {
+      urls.release(asset);
       blobs.set(asset, blob);
-      return Promise.resolve();
     },
 
-    removeBlob(asset) {
+    async removeBlob(asset) {
       urls.release(asset);
       blobs.delete(asset);
-      return Promise.resolve();
     },
 
-    blobUrl: (asset) => Promise.resolve(urls.of(asset, blobs.get(asset))),
+    blobUrl: async (asset) => urls.of(asset, blobs.get(asset)),
   };
 }

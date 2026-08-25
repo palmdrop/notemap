@@ -69,6 +69,12 @@ Depends on phase 1.
       it. A crash between the two writes leaves one effect missing until that operation drains
 - [x] A rehydrated `refused` operation stays refused, is not re-sent, and waits for a person, which
       is what `CONTEXT.md` says a refusal is
+- [x] A rehydrated `sending` operation is read back as pending and attempted again. A drain picks up
+      only what is pending or unreachable, so one the tab was closed on top of would otherwise never
+      be sent; client-minted ids are what make the second attempt safe
+- [x] A collection the store cannot read is reported through `onError` on `ClientConfig` and comes
+      up empty, on its own rather than costing the reads beside it — the outbox is the only one
+      whose loss costs work. The same seam carries a cache write that did not land
 - [x] The drain runs as soon as hydration lands, so work made in a previous session reaches the pool
       without the person doing anything
 - [x] `apps/ui/src/lib/client.ts` wires the durable store
@@ -76,8 +82,9 @@ Depends on phase 1.
       made against a dead transport is there after a fresh client is built over the same store, and
       drains once when the transport answers; a rehydrated operation the pool refuses reports the
       refusal and settles the item from the pool; a rehydrated refused operation drains nothing; a
-      cold client with no transport completes a tag it saw last session; an item whose rehydrated
-      capture the pool refuses is forgotten
+      rehydrated sending operation is sent exactly once; a store that cannot be read is reported and
+      the collections that could be read survive; a cold client with no transport completes a tag it
+      saw last session; an item whose rehydrated capture the pool refuses is forgotten
 - [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
 - [x] `git commit`
 

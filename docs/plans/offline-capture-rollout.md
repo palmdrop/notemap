@@ -83,6 +83,10 @@ Depends on PR 3. Branch `agent/durable-client-store`.
       of it this pull request's
 - [x] client.md's ports and hydration paragraphs, and its `Shipped:` entry, describe **only** this —
       the derived surfaces are not here yet and the spec must not say they are
+- [x] The port grows its blob and pool-identity methods here, ahead of the callers PRs 5 and 6 bring.
+      That cuts against the line above about methods no caller reaches, and is deliberate: they are
+      the plan's phase 1, both adapters implement them, and the shared contract covers them, so
+      landing them now costs a review and landing them later costs a second pass over the port
 - [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm test:stack` green
 
 ### PR 5 — the cache is read, capped, and checked against the pool

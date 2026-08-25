@@ -298,6 +298,9 @@ importers:
       '@notemap/client':
         specifier: workspace:*
         version: link:../../packages/client
+      idb:
+        specifier: ^8.0.3
+        version: 8.0.3
     devDependencies:
       '@sveltejs/adapter-static':
         specifier: ^3.0.10
@@ -415,9 +418,6 @@ importers:
 
   packages/client:
     dependencies:
-      idb:
-        specifier: ^8.0.3
-        version: 8.0.3
       openapi-fetch:
         specifier: ^0.17.0
         version: 0.17.0
@@ -431,6 +431,9 @@ importers:
       fake-indexeddb:
         specifier: ^6.2.5
         version: 6.2.5
+      idb:
+        specifier: ^8.0.3
+        version: 8.0.3
       openapi-typescript:
         specifier: ^7.13.0
         version: 7.13.0(typescript@6.0.3)

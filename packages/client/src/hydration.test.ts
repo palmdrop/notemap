@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { Observable } from "rxjs";
 
 import { createMemoryStore } from "./adapters/memory-store";
+import { saidBy } from "./errors";
 import type { Item } from "./api/types";
 import { createClient } from "./client";
 import type { PendingOperation } from "./outbox/operations";
@@ -35,8 +36,14 @@ async function until(reached: () => boolean): Promise<void> {
 
 function clientOver(store: ClientStore, handler: Handler) {
   const transport = mockTransport(handler);
-  const client = createClient({ transport, store, now: clock.now });
-  return { client, transport };
+  const reported: unknown[] = [];
+  const client = createClient({
+    transport,
+    store,
+    now: clock.now,
+    onError: (error) => reported.push(error),
+  });
+  return { client, transport, reported };
 }
 
 const unreachable = () => json(200, {});
@@ -160,6 +167,43 @@ describe("hydration", () => {
     await until(() => read(client.outbox)[0]?.state === "refused");
 
     expect(await store.readItems()).toEqual([]);
+  });
+
+  it("sends an operation the last session was interrupted mid-send, exactly once", async () => {
+    const store = createMemoryStore();
+    await store.writeItems([anItem("one")]);
+    // What the store holds when the tab is closed while the request is away.
+    await store.writeOperation(
+      anOperation("op-1", { kind: "archive", item: "one" }, "sending"),
+    );
+
+    const sent: string[] = [];
+    const { client } = clientOver(store, (request) => {
+      sent.push(routeOf(request));
+      return json(200, anItem("one"));
+    });
+
+    await until(() => sent.length > 0);
+
+    expect(sent).toEqual(["POST /v1/items/one/archive"]);
+    expect(read(client.outbox)).toEqual([]);
+    expect(await store.readOutbox()).toEqual([]);
+  });
+
+  it("reports a store it cannot read, and keeps the collections it could", async () => {
+    const store = createMemoryStore();
+    await store.writeTags([{ name: "reading", items: 3 }]);
+    const broken: ClientStore = {
+      ...store,
+      readItems: () => Promise.reject(new Error("the database is gone")),
+    };
+
+    const { client, reported } = clientOver(broken, unreachable);
+    await until(() => reported.length > 0);
+
+    expect(saidBy(reported[0])).toContain("items");
+    // The read that failed is the only one lost.
+    expect(read(client.tags.inUse).map((use) => use.name)).toEqual(["reading"]);
   });
 
   it("leaves a rehydrated refusal alone: it is not re-sent and it waits for a person", async () => {

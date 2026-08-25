@@ -8,7 +8,6 @@ export function localUrls() {
   const held = new Map<AssetId, string>();
 
   return {
-    /** The URL for these bytes, minted once. Absent bytes have no URL. */
     of(asset: AssetId, blob: Blob | undefined): string | undefined {
       const already = held.get(asset);
       if (already !== undefined) return already;

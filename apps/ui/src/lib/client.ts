@@ -10,10 +10,12 @@ const baseUrl = import.meta.env.VITE_API_URL ?? "";
 
 /**
  * The web shell's ports. The store is the browser's own, and the client reads
- * it back on start, so an outbox filled with the pool down survives a reload
- * and drains without anyone asking.
+ * it back on start.
  */
 export const client = createClient({
   transport: createFetchTransport(baseUrl),
   store: createIndexedDbStore(),
+  onError: (error) => {
+    console.error(error);
+  },
 });

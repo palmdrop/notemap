@@ -3,7 +3,12 @@ import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { createIndexedDbStore } from "./indexeddb-store";
-import { anItem, anOperation, aTag, storeContract } from "./store-contract";
+import {
+  anItem,
+  anOperation,
+  aTag,
+  storeContract,
+} from "./store-contract.test";
 
 let database = "";
 let opened = 0;
@@ -13,7 +18,6 @@ beforeEach(() => {
   database = `notemap-test-${String(opened)}`;
 });
 
-/** Another store over the same database, as a reload gives the next session. */
 function reopen() {
   return createIndexedDbStore({ database });
 }

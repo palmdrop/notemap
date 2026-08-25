@@ -13,13 +13,21 @@
     "test": "vitest run --passWithNoTests",
     "codegen": "openapi-typescript ../../apps/daemon/openapi.json -o src/api/generated.d.ts"
   },
+  "peerDependencies": {
+    "idb": "^8.0.3"
+  },
+  "peerDependenciesMeta": {
+    "idb": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "fake-indexeddb": "^6.2.5",
+    "idb": "^8.0.3",
     "openapi-typescript": "^7.13.0",
     "vitest": "^4.1.10"
   },
   "dependencies": {
-    "idb": "^8.0.3",
     "openapi-fetch": "^0.17.0",
     "rxjs": "^7.8.2",
     "uuid": "^14.0.1"

@@ -58,18 +58,24 @@ function listOf(state: ClientState, surface: Surface): ListState {
 export function createClient(config: ClientConfig): Client {
   const { transport, store } = config;
   const now = config.now ?? (() => new Date().toISOString());
+  const report = config.onError ?? (() => undefined);
   const api = createApi(transport);
   const state = writable<ClientState>(emptyState());
 
   /**
    * Hydration is started here and waited on by everything that touches state,
    * so no caller can observe a half-read cache. A store that cannot be read
-   * leaves a cold client rather than a dead one.
+   * leaves a cold client rather than a dead one, which is why this cannot be
+   * allowed to reject: a rejected `ready` is a client where nothing works.
    */
-  const ready = hydrate(state, store)
-    .catch(() => undefined)
-    .then(() => {
-      persist(state, store);
+  const ready = hydrate(state, store, report)
+    .catch((error: unknown) => {
+      report(error);
+      return state.get();
+    })
+    .then((hydrated) => {
+      outbox.restored(hydrated.outbox.map((held) => held.id));
+      persist(state, store, hydrated, report);
     });
 
   function after<T>(work: () => T | Promise<T>): Promise<T> {

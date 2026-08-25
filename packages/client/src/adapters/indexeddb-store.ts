@@ -28,15 +28,10 @@ interface Notemap extends DBSchema {
 }
 
 export type IndexedDbStoreOptions = {
-  /** Named so that two pools open in one browser do not share a cache. */
   readonly database?: string;
 };
 
-/**
- * The browser's own storage behind `ClientStore`. Everything the client holds
- * is a cache except the outbox, which is the person's un-landed work, so an
- * eviction under storage pressure costs a re-read and nothing more.
- */
+/** The browser's own storage behind `ClientStore`. */
 export function createIndexedDbStore(
   options: IndexedDbStoreOptions = {},
 ): ClientStore {
@@ -56,6 +51,16 @@ export function createIndexedDbStore(
         database.createObjectStore("tags");
         database.createObjectStore("destinations");
         database.createObjectStore("pool");
+      },
+
+      // A tab left open on the old version blocks the next one's upgrade until
+      // it lets go, and nothing would say why. The next call opens again.
+      blocking() {
+        const held = opening;
+        opening = undefined;
+        void held?.then((database) => {
+          database.close();
+        });
       },
     });
 
@@ -129,6 +134,7 @@ export function createIndexedDbStore(
     },
 
     async writeBlob(asset, blob) {
+      urls.release(asset);
       await (await open()).put("blobs", blob, asset);
     },
 

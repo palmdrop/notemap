@@ -40,10 +40,7 @@ export function aTag(name: string, items = 1): TagUse {
   return { name, items };
 }
 
-/**
- * What every adapter answers the same, run against each. The durable one adds
- * the questions only it can be asked — whether any of it survives a reopen.
- */
+/** What every adapter answers the same, run against each. */
 export function storeContract(open: () => Promise<ClientStore>): void {
   it("reads back the operations it was given, and forgets removed ones", async () => {
     const store = await open();

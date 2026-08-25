@@ -1,10 +1,10 @@
+import type { ItemId } from "../api/types";
 import { saidBy, Unreachable } from "../errors";
 import type { Writable } from "../observable/observable";
 import type { ClientStore } from "../ports/store";
 import type { Undo } from "../state/applied";
 import type { ClientState } from "../state/state";
 import type { Settlement } from "./handler";
-import type { ItemId } from "../api/types";
 import type { Operation, OperationId, PendingOperation } from "./operations";
 import { applyOperation, opposes, targetOf } from "./registry";
 
@@ -12,6 +12,8 @@ export type Outbox = {
   enqueue(operation: Operation): Promise<void>;
   drain(): Promise<void>;
   dismiss(id: OperationId): Promise<void>;
+  /** Which of these hydration read back, rather than this session enqueueing. */
+  restored(ids: readonly OperationId[]): void;
 };
 
 export type OutboxDeps = {
@@ -19,8 +21,7 @@ export type OutboxDeps = {
   readonly store: ClientStore;
   readonly send: (operation: Operation) => Promise<Settlement>;
   /**
-   * Re-reads an item from the pool and settles the cache from the answer. What
-   * a refusal is reported with when the operation was read back from the store
+   * What a refusal is reported with where the operation came out of the store
    * and has no reversal to run.
    */
   readonly reread: (item: ItemId) => Promise<void>;
@@ -38,6 +39,7 @@ export function createOutbox(deps: OutboxDeps): Outbox {
   const chains = new Map<string, Promise<void>>();
   /** Claimed the moment a drain schedules one, so a second drain cannot re-send it. */
   const inflight = new Set<OperationId>();
+  const restored = new Set<OperationId>();
 
   function record(entry: PendingOperation): Promise<void> {
     deps.state.update((state) => ({
@@ -52,6 +54,7 @@ export function createOutbox(deps: OutboxDeps): Outbox {
 
   function drop(id: OperationId): Promise<void> {
     undos.delete(id);
+    restored.delete(id);
     deps.state.update((state) => ({
       ...state,
       outbox: state.outbox.filter((held) => held.id !== id),
@@ -113,13 +116,13 @@ export function createOutbox(deps: OutboxDeps): Outbox {
         return;
       }
 
-      const undo = undos.get(entry.id);
-      if (undo === undefined) {
+      if (restored.has(entry.id)) {
         // A failed re-read leaves the cache as it stands, which is what an
         // unreachable pool leaves anyway; the refusal is still reported.
         await deps.reread(targetOf(entry.operation)).catch(() => undefined);
       } else {
-        deps.state.update(undo);
+        const undo = undos.get(entry.id);
+        if (undo !== undefined) deps.state.update(undo);
         undos.delete(entry.id);
       }
 
@@ -168,5 +171,12 @@ export function createOutbox(deps: OutboxDeps): Outbox {
     }
   }
 
-  return { enqueue, drain, dismiss: drop };
+  return {
+    enqueue,
+    drain,
+    dismiss: drop,
+    restored: (ids) => {
+      for (const id of ids) restored.add(id);
+    },
+  };
 }

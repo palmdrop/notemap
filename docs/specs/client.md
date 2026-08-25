@@ -11,8 +11,9 @@
   hydration at once and every path that touches state waits on it, so an outbox filled with the pool
   down survives a reload and drains on boot without anyone asking, and a client opened cold
   completes tags and names destinations from the last lists it read. A refusal of an operation read
-  back from the store is settled by re-reading the item rather than rolled back. The surfaces are
-  not drawn from the cache yet. ([plan](../plans/durable-offline-client.md),
+  back from the store is settled by re-reading the item rather than rolled back, and one read back
+  mid-send is attempted again rather than stranded. What the store could not read is reported
+  through `onError` rather than swallowed. The surfaces are not drawn from the cache yet. ([plan](../plans/durable-offline-client.md),
   [ADR 24](../adr/0024-a-refusal-after-a-restart-is-settled-from-the-pool.md))
 
 - 2026-08-24 — **An edit names the channel its words came in through, and a revision is an
@@ -297,6 +298,21 @@ missing until the operation drains. The drain runs as soon as hydration lands, s
 previous session reaches the pool without the person doing anything, and a **refused** operation
 read back stays refused: it is not re-sent and it waits for a person, which is what a refusal is.
 
+**An operation read back as `sending` is attempted again.** `sending` is a claim about a process,
+and the process it was claimed in is gone; a drain picks up only what is pending or unreachable, so
+without this an operation the tab was closed on top of would sit in the outbox forever, never sent
+and never settled. Every operation is idempotent under an id minted before it was first sent, which
+is what makes the second attempt safe — the pool answers the first one's identity either way. The
+cost is that an operation whose request did land, and whose answer was lost with the process, is
+sent twice; the pool's answer to the second is the same as to the first.
+
+**A store that cannot be read leaves a cold client, not a dead one, and says so.** Each collection
+is read on its own, so a cache that fails does not also cost the outbox — the one thing whose loss
+costs a person work. What could not be read comes up empty and is **reported** rather than
+swallowed, through a seam the shell wires (`onError`); nothing is written over a collection that
+failed to read, so the next successful start finds it intact. The same seam carries a cache write
+that did not land, which is still dropped rather than allowed to stop the writes after it.
+
 **A refusal with nothing to reverse is settled from the pool** (2026-08-25,
 [ADR 24](../adr/0024-a-refusal-after-a-restart-is-settled-from-the-pool.md)). A reversal is a
 closure made when the operation was applied, and an operation read back from the store has none. So
@@ -400,6 +416,10 @@ discipline ([ADR 8](../adr/0008-adapters-are-in-process-and-wired-by-the-host.md
   own storage; a native shell with a file or a database. The client reads and writes through it and
   never names a storage engine.
 
+A third, optional, is not a port so much as a drain: **`onError`**, where a failure with no caller
+waiting on it goes — a collection that could not be read, a cache write that did not land. Unwired,
+these are swallowed as they always were; what a shell does with one is the shell's.
+
 **The store answers for every collection the client holds** (2026-08-25), one typed method per
 concern rather than one opaque blob: the outbox an operation at a time, the cached items in
 batches, the tags in use and the destinations each replaced whole as the pool answers them, the
@@ -411,9 +431,10 @@ durable one is a drop-in.
 
 **The store is a mirror of the cache, written as the cache changes**, rather than something each
 path that touches an item remembers to write. Those writes are ordered, and one that fails does not
-stop the ones after it — what it was mirroring is a cache, and losing it costs a re-read. **The
-outbox is not mirrored**: it is written by the operation that changes it and waited on, because it
-is the person's un-landed work rather than a copy of something the pool holds.
+stop the ones after it — what it was mirroring is a cache, and losing it costs a re-read, though it
+is reported rather than dropped in silence. **The outbox is not mirrored**: it is written by the
+operation that changes it and waited on, because it is the person's un-landed work rather than a
+copy of something the pool holds.
 
 **The web shell wires the browser's own storage** (2026-08-25) and the client reads it back on
 start. What the offline slice still owes is on the transport's side — reachability, so the outbox
@@ -495,6 +516,12 @@ that logic out of the one place it is meant to live.
   before any path may touch what was read, and the operations in it are not replayed against the
   cache, which was persisted holding their effects. Gating reads as well as mutations costs a tick
   on a cold start and removes the whole class of question about what a half-read cache answers.
+- **`sending` does not survive the process that claimed it** (2026-08-25): hydration reads such an
+  operation back as pending, because a drain skips anything else and it would otherwise never be
+  sent again. Idempotence under a client-minted id is what pays for the double send.
+- **A failed read is reported, not swallowed** (2026-08-25): per collection, so a cache that cannot
+  be read does not cost the outbox, and through a seam rather than a `console` the package chose on
+  a shell's behalf.
 - **A refusal with nothing to reverse is settled from the pool** (2026-08-25,
   [ADR 24](../adr/0024-a-refusal-after-a-restart-is-settled-from-the-pool.md)): re-read the item
   rather than persisting a before-snapshot per operation or declaring an inverse per kind. One rule
