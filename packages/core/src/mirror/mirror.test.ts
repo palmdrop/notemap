@@ -29,6 +29,7 @@ function anItem(overrides: Partial<Item> = {}): Item {
     tags: [],
     createdAt: at("2026-08-11T09:00:00.000Z"),
     modifiedAt: at("2026-08-11T09:00:00.000Z"),
+    revisedInto: [],
     ...overrides,
   };
 }
@@ -175,14 +176,14 @@ describe("what the record leaves out", () => {
   it("carries no derived state", () => {
     const record = bare(
       anItem({
-        supersededBy: "item-2" as ItemId,
+        revisedInto: ["item-2" as ItemId],
         revisionOf: "item-0" as ItemId,
         routing: { records: 1, pending: 0, to: [{ kind: "user" }] },
       }),
     );
 
     const written = serialiseMirrorRecord(record);
-    expect(written).not.toContain("supersededBy");
+    expect(written).not.toContain("revisedInto");
     // The item's own summary of its records, which the records themselves say.
     expect(record.item).not.toHaveProperty("routing");
     expect(written).not.toContain("pending");

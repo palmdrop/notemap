@@ -30,7 +30,11 @@ const clock = stoppedClock();
 function clientOver(handler: Handler) {
   const transport = mockTransport(handler);
   const store = createMemoryStore();
-  const client = createClient({ transport, store, now: clock.now });
+  const client = createClient({
+    transport,
+    store,
+    now: clock.now,
+  });
   return { client, transport, store };
 }
 
@@ -695,7 +699,10 @@ describe("an asset", () => {
 
   it("asks the transport where its bytes are, rather than building a URL", () => {
     const transport = mockTransport(() => json(200, {}));
-    const client = createClient({ transport, store: createMemoryStore() });
+    const client = createClient({
+      transport,
+      store: createMemoryStore(),
+    });
     const item = {
       ...anItem("one"),
       payload: {

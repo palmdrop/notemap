@@ -2,8 +2,18 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations and routing to one are settled; the rest is stub
-**Last updated**: 2026-08-18
+**Last updated**: 2026-08-24
 **Shipped**:
+
+- 2026-08-24 — **The edit route carries an envelope, and an item names its revisions.**
+  `POST /v1/items/{id}/edit` takes the source making the edit and that source's own id for it
+  beside the payload, so an edit resent after a lost response answers with the revision it already
+  made; an envelope claiming an identity another item holds is `409 source-item-changed`. An item
+  spells `revisedInto` as a list of ids, the revised half of the outcome carries `revisionOf`, and
+  `409 item-superseded` left both the edit route and the two classification routes. The queue's
+  position is a capture time now, the same key the feed and the archive read.
+  ([plan](../plans/editable-until-processed.md),
+  [ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md))
 
 - 2026-08-18 — **Destinations are edited over `/v1`, and wiring one is no longer a restart.**
   `GET /v1/destinations` answers rows the pool holds — instantly, unpaginated, retired ones
@@ -50,8 +60,9 @@ editing, destinations and routing to one are settled; the rest is stub
 - 2026-08-14 — **The queue and the archive are served, and so are the decisions that drain them.**
   `GET /v1/queue` and `GET /v1/archived` page oldest first from a **content-time** position, which
   is spelled exactly like the feed's and means something else — nothing in the wire form can tell
-  the two apart, so the consequence is written down rather than defended against. Neither takes an
-  `order` *(reversed 2026-08-17: both do, defaulting to oldest first)*.
+  the two apart, so the consequence is written down rather than defended against
+  *(reversed 2026-08-24: the key is capture time, the feed's own, and the three surfaces are one
+  ordering)*. Neither takes an `order` *(reversed 2026-08-17: both do, defaulting to oldest first)*.
   `POST /v1/items/:id/archive`, `/unarchive` and `/mark-processed` each take an optional
   strict JSON body, so a decision with nothing to add sends nothing, and
   `GET /v1/items/:id/routing` answers where an item has been — refusing an id the pool does not
@@ -133,9 +144,9 @@ are served inline.
 
 Settled (2026-08-11): `GET /v1/actions`, and the log page at `/log`.
 
-Settled (2026-08-14): `GET /v1/queue` and `GET /v1/archived`, both paginated by a content-time
-position; archiving and unarchiving an item; marking one processed by hand; and reading an item's
-routing records.
+Settled (2026-08-14): `GET /v1/queue` and `GET /v1/archived`, both paginated by a capture-time
+position *(the key was content time until 2026-08-24)*; archiving and unarchiving an item; marking
+one processed by hand; and reading an item's routing records.
 
 Settled (2026-08-14): `GET /v1/destinations`, `POST /v1/items/{id}/route` — whose response may name
 a delivery that has not happened yet — and `POST /v1/routing/{record}/cancel`
@@ -269,8 +280,10 @@ archive, a capture outcome, an edit outcome:
                        { "kind": "user" } ] } }
 ```
 
-- **Absent where the item has been nowhere**, like `archived` and `revisedInto`, rather than
-  present and zeroed.
+- **Absent where the item has been nowhere**, like `archived`, rather than present and zeroed.
+  `revisedInto` is the exception and is **always spelled, empty where nothing was revised from the
+  item** (amended 2026-08-24): it is a list, whose empty is a value rather than a claim, and every
+  reader of it asks for its length.
 - `to` is **distinct and in the order the records were made**, and names a destination by id: a
   client resolves the name from `GET /v1/destinations`, which it already reads, and a record's
   capability, target and pointer are not here.
@@ -497,6 +510,11 @@ person to remember it.
   `(source, sourceItemId)` exactly as a capture is, so an edit resent after a lost response answers
   with the revision it already made instead of appending a second one. An amendment needs no match,
   writing the same payload twice being the same as writing it once.
+- **An identity another item already claims is `409 source-item-changed`** (added 2026-08-24),
+  carrying that item's id, exactly as a capture under a taken identity is refused. The match is
+  capture's whole match, payload included, so an envelope naming an identity that belongs to
+  anything other than a revision of this item *saying these same words* is a caller's mistake
+  rather than a resend.
 - **An item may be revised more than once.** The revisions are independent captures sharing an
   ancestor; neither is the current one, and the item they came from names both.
 - `200` rather than `201`, although a revision creates an item. The outcome carries the whole item,

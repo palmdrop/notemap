@@ -124,7 +124,7 @@ export interface Client {
    * is the pool's call, and the client reconciles to whichever it recorded — so
    * this answers when the operation is applied, not when the shape is known.
    */
-  edit(item: ItemId, payload: Payload): Promise<void>;
+  edit(item: ItemId, payload: Payload, source: string): Promise<void>;
   /** The payload an edit would carry for new words, whichever slot holds them. */
   saying(item: Item, said: string): Payload;
 

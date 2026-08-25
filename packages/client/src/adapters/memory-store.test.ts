@@ -13,6 +13,7 @@ function anItem(id: string): Item {
     tags: [],
     createdAt: "2026-08-17T00:00:00.000Z",
     modifiedAt: "2026-08-17T00:00:00.000Z",
+    revisedInto: [],
   };
 }
 

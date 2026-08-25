@@ -31,7 +31,7 @@ export type RoutingSummary = {
   readonly to: readonly RoutedTo[];
 };
 
-/** One tag, and how much of the pool carries it. Superseded items are not counted. */
+/** One tag, and how much of the pool carries it. Every item carrying it is counted. */
 export type TagUse = {
   readonly name: TagName;
   readonly items: number;
@@ -50,10 +50,10 @@ export type ItemRecord = {
   readonly archived?: ArchiveState;
 };
 
+/** A record plus what the store derives from the rest of the pool around it. */
 export type Item = ItemRecord & {
   readonly modifiedAt: Timestamp;
-  readonly supersededBy?: ItemId;
-  /** Absent where the item has never been routed. Derived, like `supersededBy`. */
+  readonly revisedInto: readonly ItemId[];
   readonly routing?: RoutingSummary;
 };
 
@@ -62,5 +62,5 @@ export type EditOutcome =
   | {
       readonly kind: "revised";
       readonly revision: Item;
-      readonly supersedes: ItemId;
+      readonly revisionOf: ItemId;
     };

@@ -25,7 +25,10 @@ function read<T>(source: Observable<T>): T {
 
 function clientOver(handler: Handler) {
   const transport = mockTransport(handler);
-  const client = createClient({ transport, store: createMemoryStore() });
+  const client = createClient({
+    transport,
+    store: createMemoryStore(),
+  });
   return { client, transport };
 }
 

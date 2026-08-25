@@ -17,8 +17,12 @@ export function json(status: number, body: unknown): Response {
   });
 }
 
-export function refusal(status: number, code: string): Response {
-  return json(status, { error: { code } });
+export function refusal(
+  status: number,
+  code: string,
+  facts: Record<string, unknown> = {},
+): Response {
+  return json(status, { error: { code, ...facts } });
 }
 
 export function mockTransport(handler: Handler): MockTransport {

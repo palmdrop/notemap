@@ -37,7 +37,7 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
 
     items: {
       get: (id) => store.item(id),
-      edit: (id, payload, by) => edit(config, ports, id, payload, by),
+      edit: (id, envelope, by) => edit(config, ports, id, envelope, by),
       tag: (id, name, by) => tags.tag(ports, id, name, by),
       untag: (id, name, by) => tags.untag(ports, id, name, by),
       archive: (id, reason) => archive.archive(ports, id, reason),

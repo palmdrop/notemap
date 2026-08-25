@@ -550,6 +550,47 @@ export const MIGRATIONS: readonly string[] = [
     ON jobs (abandoned_at, subject_kind, subject_id, kind)
     WHERE abandoned_at IS NOT NULL;
   `,
+
+  `
+  -- One key for all three surfaces: a revision carries its own capture time now,
+  -- so nothing ties in the feed and nothing resurfaces in the queue. The feed,
+  -- the queue and the archive are one ordering read through three filters.
+  DROP INDEX items_feed;
+  DROP INDEX items_queue;
+  DROP INDEX items_archived;
+
+  ALTER TABLE items DROP COLUMN root_id;
+  ALTER TABLE items DROP COLUMN revision_depth;
+
+  CREATE INDEX items_feed ON items (created_at, id);
+
+  CREATE INDEX items_queue
+    ON items (created_at, id)
+    WHERE archived_at IS NULL;
+
+  CREATE INDEX items_archived
+    ON items (created_at, id)
+    WHERE archived_at IS NOT NULL;
+
+  -- An item may be revised any number of times, into captures independent of
+  -- each other. The uniqueness goes; the lookup does not, so a plain index
+  -- replaces it: the queue's revision anti-join and the read that answers
+  -- \`revisedInto\` both seek on this column and would otherwise scan the table.
+  DROP INDEX items_one_revision_each;
+
+  CREATE INDEX items_revision_of
+    ON items (revision_of)
+    WHERE revision_of IS NOT NULL;
+
+  -- A revision mints its own identity from whoever made the edit, so the rule
+  -- that a source cannot duplicate what it already captured now covers every
+  -- row. A pool holding revisions written under the old rule, which copied the
+  -- identity they were revised from, fails here rather than silently keeping
+  -- two rows claiming one identity.
+  DROP INDEX items_source_identity;
+  CREATE UNIQUE INDEX items_source_identity
+    ON items (source_id, source_item_id);
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

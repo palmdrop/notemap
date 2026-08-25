@@ -33,9 +33,6 @@ export async function tag(
   return ports.store.transaction(async (tx) => {
     const item = await tx.item(id);
     if (item === undefined) return refused({ kind: "no-such-item", item: id });
-    if (item.supersededBy !== undefined) {
-      return refused({ kind: "item-superseded", by: item.supersededBy });
-    }
 
     // The first attribution stands, and nothing changed to log or to mirror.
     if (item.tags.some((held) => held.name === tag)) return ok(item);
@@ -68,9 +65,6 @@ export async function untag(
   return ports.store.transaction(async (tx) => {
     const item = await tx.item(id);
     if (item === undefined) return refused({ kind: "no-such-item", item: id });
-    if (item.supersededBy !== undefined) {
-      return refused({ kind: "item-superseded", by: item.supersededBy });
-    }
 
     if (!item.tags.some((held) => held.name === tag)) return ok(item);
 

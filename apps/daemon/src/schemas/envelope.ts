@@ -1,9 +1,15 @@
 import "@hono/zod-openapi";
 import { z } from "zod";
 
-import type { CaptureEnvelope, ItemId, SourceId, TagName } from "@notemap/core";
+import type {
+  CaptureEnvelope,
+  EditEnvelope,
+  ItemId,
+  SourceId,
+  TagName,
+} from "@notemap/core";
 
-import { payloadSchema, toPayload } from "./item";
+import { editEnvelopeSchema, payloadSchema, toPayload } from "./item";
 import { instant, toTimestamp } from "./timestamp";
 
 /**
@@ -35,5 +41,15 @@ export function toEnvelope(
     capturedAt: toTimestamp(parsed.capturedAt),
     payload: toPayload(parsed.payload),
     ...(parsed.tags === undefined ? {} : { tags: parsed.tags as TagName[] }),
+  };
+}
+
+export function toEditEnvelope(
+  parsed: z.infer<typeof editEnvelopeSchema>,
+): EditEnvelope {
+  return {
+    source: parsed.source as SourceId,
+    sourceItemId: parsed.sourceItemId,
+    payload: toPayload(parsed.payload),
   };
 }

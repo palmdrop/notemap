@@ -9,6 +9,7 @@ export function anItem(id: string, overrides: Partial<Item> = {}): Item {
     tags: [],
     createdAt: "2026-08-17T10:00:00.000Z",
     modifiedAt: "2026-08-17T10:00:00.000Z",
+    revisedInto: [],
     ...overrides,
   };
 }

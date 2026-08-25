@@ -167,33 +167,34 @@ describe("tagging", () => {
     });
   });
 
-  it("refuses a superseded item, either way round", async () => {
+  it("classifies an item something was revised from, either way round", async () => {
     const { pool: p } = pool();
     const item = await captured(p);
     await p.items.tag(item.id, KIND_QUOTE, PERSON);
-    await captured(p, { id: "item-1", capturedAt: "2026-08-06T09:01:00.000Z" });
+    await p.routing.markProcessed(item.id, "pasted into the vault");
 
     const outcome = succeeded(
       await p.items.edit(
         item.id,
-        { ...item.payload, content: { text: "a second thought" } },
+        {
+          source: item.source,
+          sourceItemId: "edit-1",
+          payload: { ...item.payload, content: { text: "a second thought" } },
+        },
         PERSON,
       ),
     );
     if (outcome.kind !== "revised") throw new Error("expected a revision");
 
-    const refusal = {
-      kind: "refused",
-      refusal: { kind: "item-superseded", by: outcome.revision.id },
-    };
-    expect(await p.items.tag(item.id, tag("kind/note"), PERSON)).toMatchObject(
-      refusal,
-    );
-    expect(await p.items.untag(item.id, KIND_QUOTE, PERSON)).toMatchObject(
-      refusal,
-    );
+    // Classification is not content, so nothing that seals a capture reaches it.
+    expect(
+      names(succeeded(await p.items.tag(item.id, tag("kind/note"), PERSON))),
+    ).toEqual([tag("kind/note"), KIND_QUOTE]);
+    expect(
+      names(succeeded(await p.items.untag(item.id, KIND_QUOTE, PERSON))),
+    ).toEqual([tag("kind/note")]);
 
-    // The revision is where classification goes, and it still carries what it inherited.
+    // The revision took the tags it was made with, and not the one added since.
     expect(
       names(
         succeeded(await p.items.untag(outcome.revision.id, KIND_QUOTE, PERSON)),

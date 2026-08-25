@@ -8,6 +8,8 @@ export * from "./adapters/memory-store";
 
 export type { Writable } from "./observable/observable";
 
+export { unprocessed } from "./state/state";
+
 export type {
   Operation,
   OperationId,

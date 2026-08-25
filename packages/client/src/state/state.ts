@@ -71,17 +71,25 @@ export function settledDestination(
   };
 }
 
-/** Last touch: where the queue reads an item, and what a revision moves. */
-export function contentTime(item: Item): string {
-  return item.contentUpdatedAt ?? item.createdAt;
+/**
+ * Where every surface reads an item: its capture time, with the id only to
+ * break a tie, since mint order is not guaranteed to follow it.
+ */
+export function rank(item: Item): string {
+  return `${item.createdAt}|${item.id}`;
 }
 
 /**
- * Ids never order two items — a revision carries its original's capture time
- * and mint order is not guaranteed — so an id only breaks a tie.
+ * Whether an item is the queue's, which is the same question as whether it is
+ * a person's to edit. Named once because the shell, the settlement and the
+ * cache all ask it, and a second copy of it would drift.
  */
-export function queueRank(item: Item): string {
-  return `${contentTime(item)}|${item.id}`;
+export function unprocessed(item: Item): boolean {
+  return (
+    item.archived === undefined &&
+    item.routing === undefined &&
+    item.revisedInto.length === 0
+  );
 }
 
 /** Whether one rank sorts later than another in the order a page is being read. */
@@ -96,23 +104,27 @@ function behind(order: Order, one: string, other: string): boolean {
  */
 function loaded(page: ListPage, item: Item): boolean {
   if (page.exhausted) return true;
-  if (page.after === undefined) return false;
+
+  // Nothing read yet, so the window is the order's own start. An arrival is at
+  // that boundary reading newest-first and past the far end reading
+  // oldest-first, where the pool's first page is what carries it.
+  if (page.after === undefined) return page.order === "newest-first";
 
   const comma = page.after.indexOf(",");
   const at = comma === -1 ? page.after : page.after.slice(0, comma);
   const id = comma === -1 ? undefined : page.after.slice(comma + 1);
 
-  const time = contentTime(item);
+  const time = item.createdAt;
   if (time === at) return id === undefined || !behind(page.order, item.id, id);
   return behind(page.order, at, time);
 }
 
 /**
- * Places an item in the queue by its rank, and only where the list actually
+ * Places an item on a surface by its rank, and only where the page actually
  * reaches. Past that the pool's own next page carries it: appending to the end
- * of a window would sort it ahead of the older items still to be read.
+ * of a window would sort it ahead of the rows still to be read.
  */
-export function intoQueue(
+export function intoPage(
   page: ListPage,
   id: ItemId,
   items: ReadonlyMap<ItemId, Item>,
@@ -121,11 +133,11 @@ export function intoQueue(
   if (inserted === undefined || page.ids.includes(id)) return page.ids;
   if (!loaded(page, inserted)) return page.ids;
 
-  const rank = queueRank(inserted);
+  const arriving = rank(inserted);
 
   const at = page.ids.findIndex((held) => {
     const item = items.get(held);
-    return item !== undefined && behind(page.order, queueRank(item), rank);
+    return item !== undefined && behind(page.order, rank(item), arriving);
   });
 
   return at === -1
@@ -252,64 +264,62 @@ export function withdrawn(
 
   return {
     ...held,
-    queue: withIds(held.queue, intoQueue(held.queue, id, held.items)),
+    queue: withIds(held.queue, intoPage(held.queue, id, held.items)),
   };
 }
 
 /**
- * Places a revision beside the item it supersedes, rather than at either end.
- * The feed reads newest first and a revision carries its original's capture
- * time, so the two tie and the revision sits immediately ahead of it; the
- * original leaves the queue superseded and the revision takes its place there
- * by rank.
+ * An item that has just been captured, placed on both surfaces by its rank and
+ * only where the page reaches: they read the same key in either direction, so
+ * the newest arrival is at the head of one and past the end of the other.
  */
-export function revised(
-  state: ClientState,
-  supersedes: ItemId,
-  revision: Item,
-): ClientState {
-  const original = state.items.get(supersedes);
-  const items = cached(state, [
-    ...(original === undefined
-      ? []
-      : [{ ...original, supersededBy: revision.id }]),
-    revision,
-  ]);
-
-  const at = state.feed.ids.indexOf(supersedes);
-  const feed =
-    at === -1 || state.feed.ids.includes(revision.id)
-      ? state.feed.ids
-      : [
-          ...state.feed.ids.slice(0, at),
-          revision.id,
-          ...state.feed.ids.slice(at),
-        ];
-
-  const drained = withIds(state.queue, without(state.queue.ids, supersedes));
+export function arrived(state: ClientState, item: Item): ClientState {
+  const items = cached(state, [item]);
 
   return {
     ...state,
     items,
-    feed: withIds(state.feed, feed),
-    queue: withIds(drained, intoQueue(drained, revision.id, items)),
+    feed: withIds(state.feed, intoPage(state.feed, item.id, items)),
+    queue: withIds(state.queue, intoPage(state.queue, item.id, items)),
   };
+}
+
+/** The item it came from leaves the queue processed, not pointed at. */
+export function revised(
+  state: ClientState,
+  revisionOf: ItemId,
+  revision: Item,
+): ClientState {
+  const from = state.items.get(revisionOf);
+  const held =
+    from === undefined
+      ? state
+      : {
+          ...state,
+          items: cached(state, [
+            { ...from, revisedInto: [...from.revisedInto, revision.id] },
+          ]),
+          queue: withIds(state.queue, without(state.queue.ids, revisionOf)),
+        };
+
+  return arrived(held, revision);
 }
 
 /**
  * Replaces the optimistic copy with what the pool recorded, and puts the item
  * on the right side of the queue: the pool decides whether it is still work.
- * Re-ranked rather than left where it was, because an amendment moves an item
- * to the newest end — which may be past what this page has read, and the pool's
- * next page is then what carries it.
+ * Nothing re-ranks it — the key is capture time, which no mutation moves — so
+ * an item that is still the queue's keeps the place it was drawn in.
  */
 export function settle(state: ClientState, item: Item): ClientState {
   const items = cached(state, [item]);
+  const held = state.queue.ids.includes(item.id);
   const drained = withIds(state.queue, without(state.queue.ids, item.id));
-  const ids =
-    item.archived !== undefined || item.supersededBy !== undefined
-      ? drained.ids
-      : intoQueue(drained, item.id, items);
+  const ids = !unprocessed(item)
+    ? drained.ids
+    : held
+      ? state.queue.ids
+      : intoPage(drained, item.id, items);
 
   return { ...state, items, queue: withIds(state.queue, ids) };
 }

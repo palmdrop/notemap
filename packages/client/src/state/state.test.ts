@@ -3,10 +3,12 @@ import { describe, expect, it } from "vitest";
 import type { ItemId, RoutingRecord } from "../api/types";
 import { anItem } from "../testing/pool";
 import {
+  arrived,
   cached,
   emptyState,
   processed,
   summarise,
+  withIds,
   type ClientState,
 } from "./state";
 
@@ -78,4 +80,56 @@ describe("folding a routing decision matches summarising the records", () => {
       );
     });
   }
+});
+
+/**
+ * Both surfaces read one key, so where an arrival lands is the order's answer
+ * rather than the surface's. Reading oldest-first it is past the far end of
+ * every page but the last.
+ */
+describe("where an arrival lands", () => {
+  const OLD = "2026-08-17T09:00:00.000Z";
+  const NEW = "2026-08-17T18:00:00.000Z";
+
+  function feed(
+    order: "newest-first" | "oldest-first",
+    read: Partial<ClientState["feed"]>,
+  ): ClientState {
+    const empty = emptyState();
+    const held = anItem("held", { createdAt: OLD });
+    return {
+      ...empty,
+      items: cached(empty, [held]),
+      feed: {
+        ...withIds({ ...empty.feed, order }, ["held" as ItemId]),
+        ...read,
+      },
+    };
+  }
+
+  const arriving = () => anItem("new", { createdAt: NEW });
+
+  it("goes to the head reading newest-first", () => {
+    const state = arrived(
+      feed("newest-first", { after: `${OLD},held` }),
+      arriving(),
+    );
+    expect(state.feed.ids).toEqual(["new", "held"]);
+  });
+
+  it("waits for the pool reading oldest-first, being past what was read", () => {
+    const state = arrived(
+      feed("oldest-first", { after: `${OLD},held` }),
+      arriving(),
+    );
+    expect(state.feed.ids).toEqual(["held"]);
+  });
+
+  it("goes to the far end reading oldest-first once the page is exhausted", () => {
+    const state = arrived(
+      feed("oldest-first", { exhausted: true }),
+      arriving(),
+    );
+    expect(state.feed.ids).toEqual(["held", "new"]);
+  });
 });

@@ -1,8 +1,14 @@
 # Spec: The mirror on disk
 
 **Status**: Draft
-**Last updated**: 2026-08-18
+**Last updated**: 2026-08-24
 **Shipped**:
+
+- 2026-08-24 — **`revisedInto` is derived, so the mirror does not carry it.** A revision is
+  mirrored as the capture it is, holding its own capture time and the `revisionOf` link; the item it
+  was made from is written again because being revised moves its `modifiedAt`.
+  ([plan](../plans/editable-until-processed.md),
+  [ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md))
 
 - 2026-08-18 — **The mirror carries destinations, its first non-item unit.** A delivered routing
   record names a destination, so a mirror of items alone would rebuild a pool whose records refer to

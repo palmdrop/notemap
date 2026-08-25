@@ -33,6 +33,7 @@ import {
   revisionOf,
   SCRATCHPAD,
   store,
+  TEXT,
 } from "./testing/fixture";
 
 /** The store has no default order, so every read here names one. */
@@ -160,7 +161,7 @@ describe("writing a capture", () => {
 });
 
 describe("revisions", () => {
-  it("keeps the original's capture time and records the edit separately", async () => {
+  it("carries its own capture time and the link to what it came from", async () => {
     const { pool: p } = pool();
     const original = capture({ id: "item-1" });
     await appendCapture(p, original);
@@ -168,50 +169,52 @@ describe("revisions", () => {
     const revision = revisionOf(original, {
       id: "item-2",
       text: "reworded",
-      editedAt: "2026-08-04T11:00:00.000Z",
+      at: "2026-08-04T11:00:00.000Z",
     });
     const stored = await appendCapture(p, revision);
 
-    expect(stored.createdAt).toBe(original.createdAt);
-    expect(stored.contentUpdatedAt).toBe("2026-08-04T11:00:00.000Z");
+    expect(stored.createdAt).toBe("2026-08-04T11:00:00.000Z");
+    expect(stored.contentUpdatedAt).toBeUndefined();
     expect(stored.revisionOf).toBe("item-1");
   });
 
-  it("may carry the source identity of the capture it revises", async () => {
-    const { pool: p } = pool();
-    const original = capture({ id: "item-1", sourceItemId: "src-a" });
-    await appendCapture(p, original);
-
-    const revision = revisionOf(original, {
-      id: "item-2",
-      text: "reworded",
-      editedAt: "2026-08-04T11:00:00.000Z",
-    });
-
-    await expect(appendCapture(p, revision)).resolves.toMatchObject({
-      sourceItemId: "src-a",
-    });
-  });
-
-  it("marks the original superseded, and itself not", async () => {
+  it("names itself on the item it came from, and is named by nothing", async () => {
     const { pool: p } = pool();
     const original = capture({ id: "item-1" });
     await appendCapture(p, original);
 
-    expect((await p.item(original.id))?.supersededBy).toBeUndefined();
+    expect((await p.item(original.id))?.revisedInto).toEqual([]);
 
     const revision = revisionOf(original, {
       id: "item-2",
       text: "reworded",
-      editedAt: "2026-08-04T11:00:00.000Z",
+      at: "2026-08-04T11:00:00.000Z",
     });
     await appendCapture(p, revision);
 
-    expect((await p.item(original.id))?.supersededBy).toBe("item-2");
-    expect((await p.item(revision.id))?.supersededBy).toBeUndefined();
+    expect((await p.item(original.id))?.revisedInto).toEqual(["item-2"]);
+    expect((await p.item(revision.id))?.revisedInto).toEqual([]);
   });
 
-  it("is not what a lookup by source identity answers with", async () => {
+  it("is read back beside the other revisions of one item", async () => {
+    const { pool: p } = pool();
+    const original = capture({ id: "item-1" });
+    await appendCapture(p, original);
+
+    for (const [id, at] of [
+      ["item-2", "2026-08-04T11:00:00.000Z"],
+      ["item-3", "2026-08-05T11:00:00.000Z"],
+    ] as const) {
+      await appendCapture(p, revisionOf(original, { id, text: "again", at }));
+    }
+
+    expect((await p.item(original.id))?.revisedInto).toEqual([
+      "item-2",
+      "item-3",
+    ]);
+  });
+
+  it("is what a lookup by its own source identity answers with", async () => {
     const { pool: p } = pool();
     const original = capture({ id: "item-1", sourceItemId: "src-a" });
     await appendCapture(p, original);
@@ -220,13 +223,31 @@ describe("revisions", () => {
       revisionOf(original, {
         id: "item-2",
         text: "reworded",
-        editedAt: "2026-08-04T11:00:00.000Z",
+        at: "2026-08-04T11:00:00.000Z",
       }),
     );
 
-    const found = await p.itemBySourceIdentity(SCRATCHPAD, "src-a");
+    expect((await p.itemBySourceIdentity(SCRATCHPAD, "src-a"))?.id).toBe(
+      "item-1",
+    );
+    expect((await p.itemBySourceIdentity(SCRATCHPAD, "src-item-2"))?.id).toBe(
+      "item-2",
+    );
+  });
 
-    expect(found?.id).toBe("item-1");
+  it("refuses an identity another item already claims", async () => {
+    const { pool: p } = pool();
+    const original = capture({ id: "item-1", sourceItemId: "src-a" });
+    await appendCapture(p, original);
+
+    const revision = capture({
+      id: "item-2",
+      sourceItemId: "src-a",
+      revisionOf: "item-1",
+      createdAt: "2026-08-04T11:00:00.000Z",
+    });
+
+    await expect(appendCapture(p, revision)).rejects.toThrow(/UNIQUE/);
   });
 });
 
@@ -240,13 +261,13 @@ describe("a transaction", () => {
       return {
         byId: await tx.item(record.id),
         bySource: await tx.itemBySourceIdentity(record.source, "src-a"),
-        head: await tx.head(),
+        inFeed: await tx.feed(ALL),
       };
     });
 
     expect(seen.byId?.id).toBe("item-1");
     expect(seen.bySource?.id).toBe("item-1");
-    expect(seen.head?.id).toBe("item-1");
+    expect(ids(seen.inFeed.values)).toEqual(["item-1"]);
   });
 
   it("hides uncommitted writes from a read outside it", async () => {
@@ -538,6 +559,34 @@ describe("the feed", () => {
     expect(ids((await p.feed(page)).values)).toEqual(["older", "newer"]);
   });
 
+  it("pages across an item and its revision, each at its own time", async () => {
+    const { pool: p } = pool();
+    const original = capture({
+      id: "item-0",
+      createdAt: "2026-08-03T09:00:00.000Z",
+    });
+    await appendCapture(p, original);
+    await appendCapture(
+      p,
+      capture({ id: "item-1", createdAt: "2026-08-03T09:30:00.000Z" }),
+    );
+    await appendCapture(
+      p,
+      revisionOf(original, {
+        id: "revision",
+        text: "reworded",
+        at: "2026-08-03T10:00:00.000Z",
+      }),
+    );
+
+    const oldest: OrderedPage = { limit: 2, order: "oldest-first" };
+    const first = await p.feed(oldest);
+    const second = await p.feed(nextPage(first.next, oldest));
+
+    expect(ids(first.values)).toEqual(["item-0", "item-1"]);
+    expect(ids(second.values)).toEqual(["revision"]);
+  });
+
   it("orders timestamps of differing precision correctly", async () => {
     const { pool: p } = pool();
     // As text these sort "00.500Z" < "00Z" < "01Z", which is not their order.
@@ -699,27 +748,6 @@ describe("the feed", () => {
   it("hands back an empty slice for an empty pool", async () => {
     const { pool: p } = pool();
     expect(await p.feed(ALL)).toEqual({ values: [] });
-  });
-});
-
-describe("the head", () => {
-  it("is the newest by capture time, not the last written", async () => {
-    const { pool: p } = pool();
-    await appendCapture(
-      p,
-      capture({ id: "newest", createdAt: "2026-08-03T09:00:00.000Z" }),
-    );
-    await appendCapture(
-      p,
-      capture({ id: "backdated", createdAt: "2026-07-31T09:00:00.000Z" }),
-    );
-
-    expect((await p.head())?.id).toBe("newest");
-  });
-
-  it("is absent for an empty pool", async () => {
-    const { pool: p } = pool();
-    expect(await p.head()).toBeUndefined();
   });
 });
 
@@ -935,7 +963,7 @@ describe("the queue and the archive", () => {
     ).toEqual(["item-0"]);
   });
 
-  it("orders by content time, so a revision resurfaces at the newest end", async () => {
+  it("orders by capture time, so a revision arrives at the newest end", async () => {
     const { pool: p } = pool();
     await minutelyItems(p, 3);
     const original = capture({
@@ -947,7 +975,7 @@ describe("the queue and the archive", () => {
       revisionOf(original, {
         id: "revision",
         text: "reworded",
-        editedAt: "2026-08-03T11:00:00.000Z",
+        at: "2026-08-03T11:00:00.000Z",
       }),
     );
 
@@ -955,6 +983,30 @@ describe("the queue and the archive", () => {
       "item-1",
       "item-2",
       "revision",
+    ]);
+  });
+
+  it("does not reorder under an amendment", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 3);
+
+    await p.transaction((tx) =>
+      tx.amendItem(
+        "item-0" as ItemId,
+        {
+          type: TEXT,
+          content: { text: "reworded in place" },
+          metadata: {},
+          assets: [],
+        },
+        at("2026-08-03T11:00:00.000Z"),
+      ),
+    );
+
+    expect(ids((await p.queue(OLDEST_FIRST)).values)).toEqual([
+      "item-0",
+      "item-1",
+      "item-2",
     ]);
   });
 
@@ -1013,7 +1065,7 @@ describe("the queue and the archive", () => {
     expect(ids((await p.archived(OLDEST_FIRST)).values)).toEqual(["item-0"]);
   });
 
-  it("shows a superseded item on neither surface", async () => {
+  it("shows an item something was revised from on neither surface", async () => {
     const { pool: p } = pool();
     const original = capture({ id: "item-1" });
     await appendCapture(p, original);
@@ -1022,7 +1074,7 @@ describe("the queue and the archive", () => {
       revisionOf(original, {
         id: "revision",
         text: "reworded",
-        editedAt: "2026-08-04T11:00:00.000Z",
+        at: "2026-08-04T11:00:00.000Z",
       }),
     );
 
@@ -1359,8 +1411,7 @@ describe("the tags in use", () => {
     ]);
   });
 
-  /** Tags carry over to a revision, so counting the chain would count one tag twice. */
-  it("counts a revised item once, at its revision", async () => {
+  it("counts an item something was revised from, and the revision", async () => {
     const { pool: p } = pool();
     const original = tagged(
       "item-1",
@@ -1372,12 +1423,12 @@ describe("the tags in use", () => {
       ...revisionOf(original, {
         id: "item-2",
         text: "a second thought",
-        editedAt: "2026-08-03T10:00:00.000Z",
+        at: "2026-08-03T10:00:00.000Z",
       }),
       tags: original.tags,
     });
 
-    expect(await p.tagsInUse()).toEqual([{ name: "kind/quote", items: 1 }]);
+    expect(await p.tagsInUse()).toEqual([{ name: "kind/quote", items: 2 }]);
   });
 
   it("counts an archived item, which is still in the pool", async () => {
@@ -1510,8 +1561,8 @@ describe("reservations", () => {
 describe("the unbuilt half of the store", () => {
   it("names the method it has not got to yet", async () => {
     const { pool: p } = pool();
-    expect(() => p.revisionChain("item-1" as ItemId)).toThrow(
-      /revisionChain is not implemented/,
+    expect(() => p.tombstone("item-1" as ItemId)).toThrow(
+      /tombstone is not implemented/,
     );
   });
 });

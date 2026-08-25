@@ -64,19 +64,18 @@ export const ARCHIVE_STATUS = {
 export const TAG_STATUS = {
   "no-such-item": 404,
   "item-purged": 404,
-  "item-superseded": 409,
   "tag-invalid": 422,
 } as const satisfies Record<TagRefusal["kind"], number>;
 
 /**
- * `item-superseded` is `409`: the caller conflicts with a revision the pool
- * already holds and has to reconcile by editing that instead. The rest are
- * `422`, the request having been understood and declined.
+ * `source-item-changed` is `409` on capture's terms: the envelope's identity
+ * names an item the pool already holds and did not revise from this one. The
+ * rest are `422`, the request having been understood and declined.
  */
 export const EDIT_STATUS = {
   "no-such-item": 404,
   "item-purged": 404,
-  "item-superseded": 409,
+  "source-item-changed": 409,
   "payload-invalid": 422,
   "payload-type-changed": 422,
   "missing-asset-slot": 422,

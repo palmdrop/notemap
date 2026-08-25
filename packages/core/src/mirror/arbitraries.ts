@@ -138,7 +138,7 @@ export const item = (): fc.Arbitrary<Item> =>
         { requiredKeys: ["archivedAt"] },
       ),
       modifiedAt: stamp(),
-      supersededBy: branded(),
+      revisedInto: fc.array(branded<never>(), { maxLength: 2 }),
       routing: routingSummary(),
     },
     {
@@ -150,6 +150,7 @@ export const item = (): fc.Arbitrary<Item> =>
         "tags",
         "createdAt",
         "modifiedAt",
+        "revisedInto",
       ],
     },
   );

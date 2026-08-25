@@ -207,8 +207,11 @@
           "modifiedAt": {
             "type": "string"
           },
-          "supersededBy": {
-            "type": "string"
+          "revisedInto": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "routing": {
             "$ref": "#/components/schemas/RoutingSummary"
@@ -221,7 +224,8 @@
           "payload",
           "tags",
           "createdAt",
-          "modifiedAt"
+          "modifiedAt",
+          "revisedInto"
         ]
       },
       "RoutingSummary": {
@@ -475,58 +479,77 @@
               "revision": {
                 "$ref": "#/components/schemas/Item"
               },
-              "supersedes": {
+              "revisionOf": {
                 "type": "string"
               }
             },
             "required": [
               "kind",
               "revision",
-              "supersedes"
+              "revisionOf"
             ]
           }
         ]
       },
-      "EditRequest": {
+      "EditEnvelope": {
         "type": "object",
         "properties": {
-          "type": {
+          "source": {
             "type": "string",
             "minLength": 1
           },
-          "content": {
-            "type": "object",
-            "additionalProperties": {}
+          "sourceItemId": {
+            "type": "string",
+            "minLength": 1
           },
-          "metadata": {
+          "payload": {
             "type": "object",
-            "additionalProperties": {}
-          },
-          "assets": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "slot": {
-                  "type": "string"
-                },
-                "asset": {
-                  "type": "string"
-                }
+            "properties": {
+              "type": {
+                "type": "string",
+                "minLength": 1
               },
-              "required": [
-                "slot",
-                "asset"
-              ]
-            }
+              "content": {
+                "type": "object",
+                "additionalProperties": {}
+              },
+              "metadata": {
+                "type": "object",
+                "additionalProperties": {}
+              },
+              "assets": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "slot": {
+                      "type": "string"
+                    },
+                    "asset": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "slot",
+                    "asset"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "type",
+              "content",
+              "metadata",
+              "assets"
+            ]
           }
         },
         "required": [
-          "type",
-          "content",
-          "metadata",
-          "assets"
-        ]
+          "source",
+          "sourceItemId",
+          "payload"
+        ],
+        "additionalProperties": false
       },
       "RoutingRecord": {
         "type": "object",
@@ -1194,7 +1217,7 @@
     "/v1/feed": {
       "get": {
         "summary": "Read the feed",
-        "description": "Every item chronologically by capture time, including archived and superseded ones. Follow `next` until it is absent.",
+        "description": "Every item chronologically by capture time, including archived items and the items revisions were made from. Follow `next` until it is absent.",
         "parameters": [
           {
             "schema": {
@@ -1281,7 +1304,7 @@
     "/v1/queue": {
       "get": {
         "summary": "Read the queue",
-        "description": "Every item that is unprocessed, unarchived and not superseded, oldest first by default. Paginated by a **content-time** position, which is spelled like the feed's and means something else: the two are not interchangeable.",
+        "description": "Every item that is unprocessed — unarchived, unrouted, and nothing revised from it — oldest first by default. Paginated by a **capture-time** position, the feed's own: the queue, the feed and the archive are one ordering read through three filters.",
         "parameters": [
           {
             "schema": {
@@ -1939,37 +1962,6 @@
               }
             }
           },
-          "409": {
-            "description": "A revision already supersedes the item; classify that instead.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "enum": [
-                            "item-superseded"
-                          ]
-                        }
-                      },
-                      "required": [
-                        "code"
-                      ],
-                      "additionalProperties": {},
-                      "description": "The refusal's kind, with its facts beside it."
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
           "415": {
             "description": "The body was not JSON.",
             "content": {
@@ -2134,37 +2126,6 @@
               }
             }
           },
-          "409": {
-            "description": "A revision already supersedes the item; classify that instead.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "enum": [
-                            "item-superseded"
-                          ]
-                        }
-                      },
-                      "required": [
-                        "code"
-                      ],
-                      "additionalProperties": {},
-                      "description": "The refusal's kind, with its facts beside it."
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
           "415": {
             "description": "The body was not JSON.",
             "content": {
@@ -2233,7 +2194,7 @@
     "/v1/tags": {
       "get": {
         "summary": "Read the tags the pool carries",
-        "description": "Every tag in use, most used first, so a client completing one holds the whole set and filters it itself. Not paginated and not narrowed. A superseded item is not counted: its tags carried over to the revision that replaced it.",
+        "description": "Every tag in use, most used first, so a client completing one holds the whole set and filters it itself. Not paginated and not narrowed. Every item carrying a tag is counted, archived and revised alike.",
         "responses": {
           "200": {
             "description": "Every tag the pool carries.",
@@ -2251,7 +2212,7 @@
     "/v1/items/{id}/edit": {
       "post": {
         "summary": "Edit an item's content",
-        "description": "Changes what the capture says. The pool decides the shape: an in-place **amendment** while the item is the newest in the feed and unprocessed, an appended **revision** otherwise. The client does not say which it wants and cannot know, so the outcome is read off the answer.",
+        "description": "Changes what the capture says. The pool decides the shape: an in-place **amendment** while the item is unprocessed, an appended **revision** once it has been routed, archived or revised. The client does not say which it wants and may hold a stale view of the item, so the outcome is read off the answer. The body is an envelope, and a revision is matched for replay on its `(source, sourceItemId)` exactly as a capture is.",
         "parameters": [
           {
             "schema": {
@@ -2267,14 +2228,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EditRequest"
+                "$ref": "#/components/schemas/EditEnvelope"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "What the edit became: the amended item, or the revision and the item it supersedes.",
+            "description": "What the edit became: the amended item, or the revision and the item it was made from.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2348,7 +2309,7 @@
             }
           },
           "409": {
-            "description": "A revision already supersedes the item; edit that instead.",
+            "description": "Another item already claims the envelope's source identity.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2360,7 +2321,7 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "item-superseded"
+                            "source-item-changed"
                           ]
                         }
                       },

@@ -53,3 +53,13 @@ export async function checkAssets(
 
   return undefined;
 }
+
+/** Asset order carries no meaning, so neither side of a comparison differs by it. */
+export function canonicalPayload(payload: Payload): Payload {
+  return {
+    ...payload,
+    assets: [...payload.assets].sort((a, b) =>
+      a.slot < b.slot ? -1 : a.slot > b.slot ? 1 : 0,
+    ),
+  };
+}

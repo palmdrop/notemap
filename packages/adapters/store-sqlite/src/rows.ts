@@ -24,12 +24,6 @@ export type ItemRow = {
   readonly archive_reason: string | null;
 };
 
-/** The feed's sort key beside `created_at`: which chain a row is in, and where in it. */
-export type ChainColumns = {
-  readonly root_id: string;
-  readonly revision_depth: number;
-};
-
 export type ItemTagRow = AgentColumns & {
   readonly item_id: string;
   readonly name: string;
@@ -139,8 +133,6 @@ export const TABLE_COLUMNS = {
     "revision_of",
     "archived_at",
     "archive_reason",
-    "root_id",
-    "revision_depth",
   ],
   item_tags: ["item_id", "name", "by_kind", "by_ref", "added_at"],
   item_assets: ["item_id", "slot", "asset_id"],

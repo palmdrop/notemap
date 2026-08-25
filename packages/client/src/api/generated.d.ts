@@ -134,7 +134,7 @@ export interface paths {
         };
         /**
          * Read the feed
-         * @description Every item chronologically by capture time, including archived and superseded ones. Follow `next` until it is absent.
+         * @description Every item chronologically by capture time, including archived items and the items revisions were made from. Follow `next` until it is absent.
          */
         get: {
             parameters: {
@@ -197,7 +197,7 @@ export interface paths {
         };
         /**
          * Read the queue
-         * @description Every item that is unprocessed, unarchived and not superseded, oldest first by default. Paginated by a **content-time** position, which is spelled like the feed's and means something else: the two are not interchangeable.
+         * @description Every item that is unprocessed — unarchived, unrouted, and nothing revised from it — oldest first by default. Paginated by a **capture-time** position, the feed's own: the queue, the feed and the archive are one ordering read through three filters.
          */
         get: {
             parameters: {
@@ -666,23 +666,6 @@ export interface paths {
                         };
                     };
                 };
-                /** @description A revision already supersedes the item; classify that instead. */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description The refusal's kind, with its facts beside it. */
-                            error: {
-                                /** @enum {string} */
-                                code: "item-superseded";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        };
-                    };
-                };
                 /** @description The body was not JSON. */
                 415: {
                     headers: {
@@ -796,23 +779,6 @@ export interface paths {
                         };
                     };
                 };
-                /** @description A revision already supersedes the item; classify that instead. */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description The refusal's kind, with its facts beside it. */
-                            error: {
-                                /** @enum {string} */
-                                code: "item-superseded";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        };
-                    };
-                };
                 /** @description The body was not JSON. */
                 415: {
                     headers: {
@@ -864,7 +830,7 @@ export interface paths {
         };
         /**
          * Read the tags the pool carries
-         * @description Every tag in use, most used first, so a client completing one holds the whole set and filters it itself. Not paginated and not narrowed. A superseded item is not counted: its tags carried over to the revision that replaced it.
+         * @description Every tag in use, most used first, so a client completing one holds the whole set and filters it itself. Not paginated and not narrowed. Every item carrying a tag is counted, archived and revised alike.
          */
         get: {
             parameters: {
@@ -905,7 +871,7 @@ export interface paths {
         put?: never;
         /**
          * Edit an item's content
-         * @description Changes what the capture says. The pool decides the shape: an in-place **amendment** while the item is the newest in the feed and unprocessed, an appended **revision** otherwise. The client does not say which it wants and cannot know, so the outcome is read off the answer.
+         * @description Changes what the capture says. The pool decides the shape: an in-place **amendment** while the item is unprocessed, an appended **revision** once it has been routed, archived or revised. The client does not say which it wants and may hold a stale view of the item, so the outcome is read off the answer. The body is an envelope, and a revision is matched for replay on its `(source, sourceItemId)` exactly as a capture is.
          */
         post: {
             parameters: {
@@ -918,11 +884,11 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["EditRequest"];
+                    "application/json": components["schemas"]["EditEnvelope"];
                 };
             };
             responses: {
-                /** @description What the edit became: the amended item, or the revision and the item it supersedes. */
+                /** @description What the edit became: the amended item, or the revision and the item it was made from. */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -965,7 +931,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description A revision already supersedes the item; edit that instead. */
+                /** @description Another item already claims the envelope's source identity. */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -975,7 +941,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "item-superseded";
+                                code: "source-item-changed";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -2249,7 +2215,7 @@ export interface components {
                 reason?: string;
             };
             modifiedAt: string;
-            supersededBy?: string;
+            revisedInto: string[];
             routing?: components["schemas"]["RoutingSummary"];
         };
         RoutingSummary: {
@@ -2318,20 +2284,24 @@ export interface components {
             /** @enum {string} */
             kind: "revised";
             revision: components["schemas"]["Item"];
-            supersedes: string;
+            revisionOf: string;
         };
-        EditRequest: {
-            type: string;
-            content: {
-                [key: string]: unknown;
+        EditEnvelope: {
+            source: string;
+            sourceItemId: string;
+            payload: {
+                type: string;
+                content: {
+                    [key: string]: unknown;
+                };
+                metadata: {
+                    [key: string]: unknown;
+                };
+                assets: {
+                    slot: string;
+                    asset: string;
+                }[];
             };
-            metadata: {
-                [key: string]: unknown;
-            };
-            assets: {
-                slot: string;
-                asset: string;
-            }[];
         };
         RoutingRecord: {
             id: string;

@@ -3,7 +3,11 @@ import type { Page, PageRequest, Result, Slice } from "../result";
 import type { Action } from "../domain/action-log";
 import type { Agent } from "../domain/agent";
 import type { Asset, AssetMeta, BlobIntegrity } from "../domain/asset";
-import type { CaptureEnvelope, CaptureOutcome } from "../domain/capture";
+import type {
+  CaptureEnvelope,
+  CaptureOutcome,
+  EditEnvelope,
+} from "../domain/capture";
 import type {
   Destination,
   DestinationChanges,
@@ -27,7 +31,6 @@ import type {
 } from "../domain/ids";
 import type { EditOutcome, Item, TagUse } from "../domain/item";
 import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
-import type { Payload } from "../domain/payload";
 import type { AbandonedPosition } from "../domain/position";
 import type {
   AttemptableDelivery,
@@ -68,7 +71,7 @@ export interface ItemsApi {
   get(id: ItemId): Promise<Item | undefined>;
   edit(
     id: ItemId,
-    payload: Payload,
+    envelope: EditEnvelope,
     by: Agent,
   ): Promise<Result<EditOutcome, EditRefusal>>;
   tag(id: ItemId, tag: TagName, by: Agent): Promise<Result<Item, TagRefusal>>;

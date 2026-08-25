@@ -36,7 +36,6 @@ import type {
   ActionRow,
   AgentColumns,
   AssetRow,
-  ChainColumns,
   DestinationRow,
   ItemAssetRow,
   ItemRow,
@@ -117,7 +116,7 @@ export function toItem(
   row: ItemRow,
   tagRows: readonly ItemTagRow[],
   assetRows: readonly ItemAssetRow[],
-  supersededBy: string | undefined,
+  revisedInto: readonly string[],
   routing: RoutingSummary | undefined,
 ): Item {
   const assets: AssetRef[] = assetRows.map((asset) => ({
@@ -158,9 +157,7 @@ export function toItem(
           },
         }),
     modifiedAt: toTimestamp(row.modified_at),
-    ...(supersededBy === undefined
-      ? {}
-      : { supersededBy: supersededBy as ItemId }),
+    revisedInto: revisedInto as readonly ItemId[],
     ...(routing === undefined ? {} : { routing }),
   };
 }
@@ -169,7 +166,6 @@ export function toItem(
 export function itemParams(
   record: ItemRecord,
   modifiedAt: number,
-  chain: ChainColumns,
 ): [
   string,
   string,
@@ -183,8 +179,6 @@ export function itemParams(
   string | null,
   number | null,
   string | null,
-  string,
-  number,
 ] {
   return [
     record.id,
@@ -201,8 +195,6 @@ export function itemParams(
     record.revisionOf ?? null,
     record.archived === undefined ? null : toMillis(record.archived.archivedAt),
     record.archived?.reason ?? null,
-    chain.root_id,
-    chain.revision_depth,
   ];
 }
 

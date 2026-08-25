@@ -4,6 +4,16 @@
 **Last updated**: 2026-08-24
 **Shipped**:
 
+- 2026-08-24 — **An item is editable until it is processed.** The seal is now a decision about the
+  item — routed, archived or something revised from it — rather than a later capture taking the
+  head, so an unprocessed capture is a person's to rewrite however old it is, and an amendment
+  moves nothing. A revision became an ordinary capture carrying a trace: its own id, its own
+  capture time, its own source identity from the edit's envelope, which is what lets a retried edit
+  be matched for replay the way a capture is. `supersededBy` became `revisedInto`, a list, and one
+  item may be revised any number of times; the head rule, the revision chain and the
+  `item-superseded` refusal are gone. ([plan](../plans/editable-until-processed.md),
+  [ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md))
+
 - 2026-08-18 — **A destination is pool state, and the port is per kind.** One is a row a person
   creates, renames, retires and deletes through the pool's own API, each mutation appending to the
   action log; `PoolPorts.destinations` and the per-destination adapter are replaced by one
@@ -66,8 +76,8 @@
   none of the delivery machinery — its target is the user, nothing can be unreachable, and the
   record is born delivered — which is what lets both ways out of the queue exist before a line of
   retry logic does. `views.queue` and `views.archived` read oldest first from a content-time
-  position and take no order *(reversed 2026-08-17: which end a reader starts from is the
-  reader's)*, and **processed is derived** as promised: unarchived, unrevised
+  position *(reversed 2026-08-24: the key is capture time, which the feed already read)* and take
+  no order *(reversed 2026-08-17: which end a reader starts from is the reader's)*, and **processed is derived** as promised: unarchived, unrevised
   and holding no routing record, three anti-joins the store indexes for rather than denormalises
   around. Archiving something already archived is **refused** rather than absorbed, and so is
   unarchiving something that is not: both carry a reason and a time, and a second decision would
@@ -217,11 +227,6 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 
 ### Editing
 
-*Specified 2026-08-24, not built. The pool still seals on the head rule
-([ADR 11](../adr/0011-in-place-amendment-of-the-head.md)) and a revision still carries its
-original's capture time. This section describes what replaces both, and the code follows in its own
-change.*
-
 - **An item is editable in place while it is unprocessed, and revised once it is processed.**
   Processed means routed, archived or revised, so editability and queue membership are one
   predicate read two ways: everything in the queue is a person's to change, and nothing else is.
@@ -272,7 +277,12 @@ change.*
   source's own id, which is what makes a retried edit idempotent: a revision is matched for replay
   exactly as a capture is, so an edit resent after a lost response answers with the revision it
   already made instead of making a second one. An amendment needs no such match, writing the same
-  payload twice being the same as writing it once.
+  payload twice being the same as writing it once. Matching *exactly* as a capture does means the
+  payload is compared too: **an identity already claimed, by anything other than a revision of this
+  item saying these same words, is refused** as `source-item-changed`. Every item claims one
+  identity, a revision included, so a resend that changed its mind under an id it already spent is
+  a caller's mistake rather than a replay — answering it with the earlier revision would drop the
+  words it sent and call that success.
 - A client may freely amend or discard a capture that core has not yet accepted. Immutability
   begins at the pool, and then only once the pool has been told the item is done with. Once a
   capture has been handed over for delivery it must be treated as accepted, even before a response
@@ -438,8 +448,8 @@ change.*
   interface policy, and core imposes none. A person clearing a backlog may reasonably want the
   newest captures first, and refusing them buys the domain nothing. What makes it a queue is the
   **key**, and that the queue drains.
-- **The key is capture time** (decided 2026-08-24), the same one the feed uses, so the queue and
-  the feed are one ordering read through two filters. Nothing an item undergoes moves it: not
+- **The key is capture time** (decided 2026-08-24), the same one the feed uses, so the queue, the
+  feed and the archive are one ordering read through three filters. Nothing an item undergoes moves it: not
   classification, routing, archiving or enrichment, and not editing either. This replaces last
   touch, which existed so a revised item resurfaced where it would be met and is no longer needed
   for it, a revision now being a new capture that arrives at the newest end by its own time.

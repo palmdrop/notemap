@@ -92,28 +92,36 @@ describe("classification over the wire", () => {
     ).toBe(404);
   });
 
-  it("answers 409 for an item a revision supersedes, either way round", async () => {
+  it("classifies an item something was revised from, either way round", async () => {
     const app = serving();
-    const [first] = await captureMany(app, 2);
+    const [first] = await captureMany(app, 1);
     await send(app, `/v1/items/${first}/tag`, { tag: "kind/quote" });
+    await send(app, `/v1/items/${first}/mark-processed`);
 
     const edited = await send(app, `/v1/items/${first}/edit`, {
-      type: "text",
-      content: { text: "a second thought" },
-      metadata: {},
-      assets: [],
+      source: "web",
+      sourceItemId: "edit-1",
+      payload: {
+        type: "text",
+        content: { text: "a second thought" },
+        metadata: {},
+        assets: [],
+      },
     });
     const { revision } = (await body(edited)) as { revision: { id: string } };
 
+    // Classification is not content, so nothing that seals a capture reaches it.
     const tagged = await send(app, `/v1/items/${first}/tag`, { tag: "kind/n" });
-    expect(tagged.status).toBe(409);
-    expect(await body(tagged)).toEqual({
-      error: { code: "item-superseded", by: revision.id },
-    });
+    expect(tagged.status).toBe(200);
     expect(
       (await send(app, `/v1/items/${first}/untag`, { tag: "kind/quote" }))
         .status,
-    ).toBe(409);
+    ).toBe(200);
+    // The revision took the tags it was made with, and not the one added since.
+    expect(
+      (await send(app, `/v1/items/${revision.id}/tag`, { tag: "kind/n" }))
+        .status,
+    ).toBe(200);
   });
 
   it("refuses a body with no tag in it, a key it does not know, and a blank tag", async () => {

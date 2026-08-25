@@ -37,6 +37,8 @@ export type CaptureEnvelope = WireCaptureEnvelope & {
 };
 export type CaptureOutcome = components["schemas"]["CaptureOutcome"];
 
+export type EditEnvelope = components["schemas"]["EditEnvelope"];
+
 export type Destination = components["schemas"]["Destination"];
 export type DestinationKind = components["schemas"]["DestinationKind"];
 export type DestinationDescription =

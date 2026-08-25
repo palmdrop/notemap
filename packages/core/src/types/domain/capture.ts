@@ -12,6 +12,16 @@ export type CaptureEnvelope = {
   readonly tags?: readonly TagName[];
 };
 
+/**
+ * What an edit carries, which is a capture's envelope less everything a
+ * revision mints for itself: the id, the capture time and the tags it inherits.
+ */
+export type EditEnvelope = {
+  readonly source: SourceId;
+  readonly sourceItemId: string;
+  readonly payload: Payload;
+};
+
 export type CaptureOutcome =
   | { readonly kind: "captured"; readonly item: Item }
   | {

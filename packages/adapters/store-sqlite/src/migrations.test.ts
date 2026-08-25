@@ -30,6 +30,9 @@ const BEFORE_DESTINATIONS_MOVED = 10;
 /** Before that, the version at which a destination record remembered no target. */
 const BEFORE_TARGET_REMEMBERED = 9;
 
+/** The version at which the feed still sorted on a denormalised revision chain. */
+const BEFORE_ONE_KEY = 13;
+
 const directories: string[] = [];
 const opened: SqlitePoolStore[] = [];
 
@@ -355,5 +358,83 @@ describe("moving destinations into the pool", () => {
     } finally {
       raw.close();
     }
+  });
+});
+
+/** A pool as it stood while the feed sorted on `root_id` and `revision_depth`. */
+function chainedAtPreviousVersion(
+  rows: readonly (readonly [string, string, string | null])[],
+): string {
+  const directory = mkdtempSync(join(tmpdir(), "notemap-migration-"));
+  directories.push(directory);
+  const file = join(directory, "pool.db");
+
+  const raw = new DatabaseSync(file);
+  for (const migration of MIGRATIONS.slice(0, BEFORE_ONE_KEY)) {
+    raw.exec(migration);
+  }
+  raw.exec(`PRAGMA user_version = ${BEFORE_ONE_KEY}`);
+
+  const insert = raw.prepare(
+    `INSERT INTO items (id, source_id, source_item_id, payload_type,
+       payload_content, payload_metadata, created_at, modified_at, revision_of,
+       root_id, revision_depth)
+     VALUES (?, 'src', ?, 'text', '{}', '{}', ?, ?, ?, ?, ?)`,
+  );
+
+  rows.forEach(([id, sourceItemId, revisionOf], depth) => {
+    insert.run(
+      id,
+      sourceItemId,
+      ENQUEUED + depth,
+      ENQUEUED + depth,
+      revisionOf,
+      revisionOf === null ? id : (rows[0]?.[0] ?? id),
+      revisionOf === null ? 0 : depth,
+    );
+  });
+
+  raw.close();
+  return file;
+}
+
+describe("collapsing the surfaces onto one key", () => {
+  it("keeps the items it had, without the columns that ordered them", async () => {
+    const file = chainedAtPreviousVersion([
+      ["item-1", "a", null],
+      ["item-2", "b", "item-1"],
+    ]);
+
+    const pool = migrated(file);
+
+    expect(
+      (await pool.feed({ limit: 50, order: "oldest-first" })).values.map(
+        (item) => item.id,
+      ),
+    ).toEqual(["item-1", "item-2"]);
+    expect((await pool.item("item-1" as ItemId))?.revisedInto).toEqual([
+      "item-2",
+    ]);
+
+    const raw = new DatabaseSync(file, { readOnly: true });
+    try {
+      const columns = raw
+        .prepare("SELECT name FROM pragma_table_info('items')")
+        .all()
+        .map((row) => (row as { name: string }).name);
+      expect(columns).not.toContain("root_id");
+      expect(columns).not.toContain("revision_depth");
+    } finally {
+      raw.close();
+    }
+  });
+
+  it("refuses to migrate a pool whose revisions share an identity", () => {
+    const file = chainedAtPreviousVersion([
+      ["item-1", "same", null],
+      ["item-2", "same", "item-1"],
+    ]);
+
+    expect(() => migrated(file)).toThrow(/UNIQUE|constraint/i);
   });
 });

@@ -66,7 +66,6 @@ const SAID: {
   "invalid-destination-settings":
     "those settings are not ones this daemon can use",
   "item-purged": "that item was purged",
-  "item-superseded": "a newer version of that item has replaced it",
   "limit-too-large":
     "the app asked for more at once than this daemon will serve",
   "malformed-envelope": "the app sent a capture this daemon cannot read",
@@ -86,7 +85,8 @@ const SAID: {
     "that destination does not accept this kind of item",
   "rejected-by-destination": "the destination refused it",
   "tag-invalid": "a tag needs something in it",
-  "source-item-changed": "that capture already exists, with different content",
+  "source-item-changed":
+    "something else in the pool was captured under that id, saying something different",
   "target-invalid": "that destination needs a different target",
   "unknown-asset": "the upload is gone; pick the file again",
   "unknown-destination": "that destination is not here",

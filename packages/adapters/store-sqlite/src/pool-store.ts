@@ -62,7 +62,6 @@ import { LAST_MODIFIED_AT, migrate } from "./migrations";
 import type {
   ActionRow,
   AssetRow,
-  ChainColumns,
   DestinationRow,
   ItemAssetRow,
   ItemRoutingRow,
@@ -95,12 +94,6 @@ const ITEM_COLUMNS = `
   revision_of, archived_at, archive_reason
 `;
 
-/** What orders the feed beside `created_at`, which a revision shares with its original. */
-const CHAIN_COLUMNS = `root_id, revision_depth`;
-
-/** Total on its own: one row is one place in one chain. */
-const FEED_KEY = `created_at, root_id, revision_depth`;
-
 const ASSET_COLUMNS = `id, filename, mime, blob, bytes, stored_at`;
 
 const DESTINATION_COLUMNS = `
@@ -112,8 +105,8 @@ const ROUTING_COLUMNS = `
   pointer
 `;
 
-/** What the queue and the archive order on: last touch of content, never of state. */
-const CONTENT_TIME = `COALESCE(content_updated_at, created_at)`;
+/** What every surface orders on: capture time, and the id only to break a tie. */
+const CAPTURE_KEY = `created_at`;
 
 const QUEUED = `
   item.archived_at IS NULL
@@ -160,9 +153,8 @@ function bound(position: Position): Bound {
 /**
  * The comparison that continues a read past one position, in whichever
  * direction it runs. A row value rather than the `OR` form that spells out the
- * same thing: SQLite seeks straight to the position on plain columns, where the
- * `OR` form scans the index from the end and costs a page its offset in rows.
- * On an expression index — the queue's and the archive's — neither seeks.
+ * same thing: SQLite seeks straight to the position, where the `OR` form scans
+ * the index from the end and costs a page its offset in rows.
  */
 function keysetClause(
   column: string,
@@ -227,12 +219,9 @@ export function createSqlitePoolStore(
   const clock = config.clock ?? systemClock;
 
   const insertItem = write.query(`
-    INSERT INTO items (${ITEM_COLUMNS}, root_id, revision_depth)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO items (${ITEM_COLUMNS})
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  const chainOf = write.query<ChainColumns, [string]>(
-    `SELECT ${CHAIN_COLUMNS} FROM items WHERE id = ?`,
-  );
   const amend = write.query<
     never,
     [string, string, string, number, number, string]
@@ -327,23 +316,6 @@ export function createSqlitePoolStore(
     ON CONFLICT (key) DO UPDATE SET value = excluded.value
   `);
 
-  /** Where a row sits in its revision chain, taken from the one it revises. */
-  function chain(record: ItemRecord): ChainColumns {
-    if (record.revisionOf === undefined) {
-      return { root_id: record.id, revision_depth: 0 };
-    }
-
-    const original = chainOf.get(record.revisionOf);
-    if (original === undefined) {
-      throw new Error(`no item ${record.revisionOf} to revise`);
-    }
-
-    return {
-      root_id: original.root_id,
-      revision_depth: original.revision_depth + 1,
-    };
-  }
-
   function nextModifiedAt(): number {
     const previous = lastModifiedAt.get(LAST_MODIFIED_AT);
     const next = Math.max(toMillis(clock.now()), (previous?.value ?? 0) + 1);
@@ -358,44 +330,10 @@ export function createSqlitePoolStore(
     const itemById = source.query<ItemRow, [string]>(
       `SELECT ${ITEM_COLUMNS} FROM items WHERE id = ?`,
     );
-    /**
-     * `revision_of IS NULL` because a whole chain shares one source identity,
-     * and the capture at its root is the link that answers for it.
-     */
     const itemBySource = source.query<ItemRow, [string, string]>(
       `SELECT ${ITEM_COLUMNS} FROM items
-       WHERE source_id = ? AND source_item_id = ? AND revision_of IS NULL`,
+       WHERE source_id = ? AND source_item_id = ?`,
     );
-    const newestItem = source.query<ItemRow, []>(
-      `SELECT ${ITEM_COLUMNS} FROM items
-       ORDER BY created_at DESC, root_id DESC, revision_depth DESC LIMIT 1`,
-    );
-    const chainAt = source.query<ChainColumns, [string]>(
-      `SELECT ${CHAIN_COLUMNS} FROM items WHERE id = ?`,
-    );
-
-    /**
-     * A row that has since gone is read as the root of its own chain: a purge
-     * that took a revision took its chain with it, so nothing better is left.
-     */
-    function feedKeyset(
-      after: Bound,
-      comparison: "<" | ">",
-    ): { readonly sql: string; readonly params: Bindable[] } {
-      if (after.id === undefined) {
-        return { sql: `created_at ${comparison} ?`, params: [after.at] };
-      }
-
-      const chain = chainAt.get(after.id) ?? {
-        root_id: after.id,
-        revision_depth: 0,
-      };
-
-      return {
-        sql: `(${FEED_KEY}) ${comparison} (?, ?, ?)`,
-        params: [after.at, chain.root_id, chain.revision_depth],
-      };
-    }
     const assetById = source.query<AssetRow, [string]>(
       `SELECT ${ASSET_COLUMNS} FROM assets WHERE id = ?`,
     );
@@ -411,18 +349,10 @@ export function createSqlitePoolStore(
       ORDER BY stored_at, id
       LIMIT ?
     `);
-    /**
-     * A superseded item is not counted: tags carry over to a revision, so a
-     * chain would otherwise count its one tag once per link.
-     */
     const tagsInUse = source.query<TagUseRow, []>(`
-      SELECT tag.name AS name, COUNT(*) AS items
-      FROM item_tags AS tag
-      JOIN items AS item ON item.id = tag.item_id
-      WHERE NOT EXISTS (
-        SELECT 1 FROM items AS revision WHERE revision.revision_of = item.id
-      )
-      GROUP BY tag.name
+      SELECT name, COUNT(*) AS items
+      FROM item_tags
+      GROUP BY name
       ORDER BY items DESC, name ASC
     `);
     const routingFor = source.query<RoutingRecordRow, [string]>(
@@ -463,7 +393,8 @@ export function createSqlitePoolStore(
         .all(...ids);
       const revisionRows = source
         .query<{ id: string; revision_of: string }, Bindable[]>(
-          `SELECT id, revision_of FROM items WHERE revision_of IN (${slots})`,
+          `SELECT id, revision_of FROM items WHERE revision_of IN (${slots})
+           ORDER BY created_at, id`,
         )
         .all(...ids);
       const routingRows = source
@@ -486,16 +417,20 @@ export function createSqlitePoolStore(
       const tags = group(tagRows);
       const assets = group(assetRows);
       const routing = group(routingRows);
-      const supersededBy = new Map(
-        revisionRows.map((row) => [row.revision_of, row.id]),
-      );
+
+      const revisedInto = new Map<string, string[]>();
+      for (const row of revisionRows) {
+        const made = revisedInto.get(row.revision_of);
+        if (made) made.push(row.id);
+        else revisedInto.set(row.revision_of, [row.id]);
+      }
 
       return rows.map((row) =>
         toItem(
           row,
           tags.get(row.id) ?? [],
           assets.get(row.id) ?? [],
-          supersededBy.get(row.id),
+          revisedInto.get(row.id) ?? [],
           toRoutingSummary(routing.get(row.id) ?? []),
         ),
       );
@@ -505,22 +440,25 @@ export function createSqlitePoolStore(
       return row === undefined ? undefined : hydrate([row])[0];
     }
 
-    function byContentTime(page: OrderedPage, where: string): Slice<Item> {
+    function byCaptureTime(page: OrderedPage, where?: string): Slice<Item> {
       const way = direction(page.order);
 
       const { rows, next } = keysetPage(page, (after, limit) => {
         const keyset =
           after === undefined
             ? undefined
-            : keysetClause(CONTENT_TIME, after, way.comparison);
-        const clauses = [where, ...(keyset === undefined ? [] : [keyset.sql])];
+            : keysetClause(CAPTURE_KEY, after, way.comparison);
+        const clauses = [
+          ...(where === undefined ? [] : [where]),
+          ...(keyset === undefined ? [] : [keyset.sql]),
+        ];
         const params: Bindable[] = [...(keyset?.params ?? []), limit];
 
         return source
           .query<ItemRow & { at: number }, Bindable[]>(
-            `SELECT ${ITEM_COLUMNS}, ${CONTENT_TIME} AS at FROM items AS item
-             WHERE ${clauses.join(" AND ")}
-             ORDER BY ${CONTENT_TIME} ${way.sql}, id ${way.sql} LIMIT ?`,
+            `SELECT ${ITEM_COLUMNS}, ${CAPTURE_KEY} AS at FROM items AS item
+             ${clauses.length === 0 ? "" : `WHERE ${clauses.join(" AND ")}`}
+             ORDER BY ${CAPTURE_KEY} ${way.sql}, id ${way.sql} LIMIT ?`,
           )
           .all(...params);
       });
@@ -616,39 +554,14 @@ export function createSqlitePoolStore(
       ): Promise<Item | undefined> =>
         one(itemBySource.get(sourceId, sourceItemId)),
 
-      /** The newest by capture time, which is what a later capture must beat to seal it. */
-      head: async (): Promise<Item | undefined> => one(newestItem.get()),
-
-      feed: async (page: OrderedPage): Promise<Slice<Item>> => {
-        const way = direction(page.order);
-
-        const { rows, next } = keysetPage(page, (after, limit) => {
-          const keyset =
-            after === undefined ? undefined : feedKeyset(after, way.comparison);
-          const where = keyset === undefined ? "" : `WHERE ${keyset.sql}`;
-          const params: Bindable[] = [...(keyset?.params ?? []), limit];
-
-          return source
-            .query<ItemRow, Bindable[]>(
-              `SELECT ${ITEM_COLUMNS} FROM items ${where}
-               ORDER BY created_at ${way.sql}, root_id ${way.sql},
-                        revision_depth ${way.sql} LIMIT ?`,
-            )
-            .all(...params)
-            .map((row) => ({ ...row, at: row.created_at }));
-        });
-
-        return {
-          values: hydrate(rows),
-          ...(next === undefined ? {} : { next }),
-        };
-      },
+      feed: async (page: OrderedPage): Promise<Slice<Item>> =>
+        byCaptureTime(page),
 
       queue: async (page: OrderedPage): Promise<Slice<Item>> =>
-        byContentTime(page, QUEUED),
+        byCaptureTime(page, QUEUED),
 
       archived: async (page: OrderedPage): Promise<Slice<Item>> =>
-        byContentTime(page, ARCHIVED),
+        byCaptureTime(page, ARCHIVED),
 
       actions: async (
         query: ActionQuery,
@@ -732,7 +645,6 @@ export function createSqlitePoolStore(
       destination: guard(uncommitted.destination),
       destinationEverNamed: guard(uncommitted.destinationEverNamed),
       itemBySourceIdentity: guard(uncommitted.itemBySourceIdentity),
-      head: guard(uncommitted.head),
       feed: guard(uncommitted.feed),
       queue: guard(uncommitted.queue),
       archived: guard(uncommitted.archived),
@@ -741,11 +653,11 @@ export function createSqlitePoolStore(
       unreferencedAssets: guard(uncommitted.unreferencedAssets),
 
       insertItem: guard(async (record: ItemRecord): Promise<Item> => {
-        insertItem.run(...itemParams(record, nextModifiedAt(), chain(record)));
+        insertItem.run(...itemParams(record, nextModifiedAt()));
 
         if (record.revisionOf !== undefined) {
-          // Being superseded takes the original out of the queue, which a delta
-          // read that missed it would leave a client still showing.
+          // Being revised takes the item it came from out of the queue, which a
+          // delta read that missed it would leave a client still showing.
           touchItem.run(nextModifiedAt(), record.revisionOf);
         }
 
@@ -982,7 +894,6 @@ export function createSqlitePoolStore(
  */
 function notYetImplementedReads() {
   return {
-    revisionChain: unimplemented("revisionChain"),
     tombstone: unimplemented("tombstone"),
     suggestions: unimplemented("suggestions"),
     suggestion: unimplemented("suggestion"),

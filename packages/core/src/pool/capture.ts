@@ -2,7 +2,7 @@ import { dequal } from "dequal";
 
 import { recordAction } from "./actions";
 import { enqueueMirrorWrite } from "./mirror";
-import { checkAssets, checkPayload } from "./payload";
+import { canonicalPayload, checkAssets, checkPayload } from "./payload";
 import { normalised } from "./tags";
 import { ok, refused } from "../utils/result";
 import type { PoolConfig } from "../types/api/config";
@@ -12,7 +12,6 @@ import type { Agent } from "../types/domain/agent";
 import type { CaptureEnvelope, CaptureOutcome } from "../types/domain/capture";
 import type { ItemId } from "../types/domain/ids";
 import type { Item, ItemRecord } from "../types/domain/item";
-import type { Payload } from "../types/domain/payload";
 import type { Result } from "../types/result";
 
 type CaptureResult = Result<CaptureOutcome, CaptureRefusal>;
@@ -121,7 +120,7 @@ function fixedByEnvelope(envelope: CaptureEnvelope): FixedByCapture {
   return {
     ...fixed,
     capturedAtMs: Date.parse(capturedAt),
-    payload: canonical(envelope.payload),
+    payload: canonicalPayload(envelope.payload),
   };
 }
 
@@ -130,16 +129,6 @@ function fixedByItem(item: Item): FixedByCapture {
     source: item.source,
     sourceItemId: item.sourceItemId,
     capturedAtMs: Date.parse(item.createdAt),
-    payload: canonical(item.payload),
-  };
-}
-
-/** Asset order carries no meaning, so neither side gets to differ by it. */
-function canonical(payload: Payload): Payload {
-  return {
-    ...payload,
-    assets: [...payload.assets].sort((a, b) =>
-      a.slot < b.slot ? -1 : a.slot > b.slot ? 1 : 0,
-    ),
+    payload: canonicalPayload(item.payload),
   };
 }

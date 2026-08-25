@@ -190,12 +190,11 @@ export interface ProviderAdapter {
  */
 export interface PoolReads {
   item(id: ItemId): Promise<Item | undefined>;
-  head(): Promise<Item | undefined>;
+  /** At most one row: every item claims an identity, and no two claim the same one. */
   itemBySourceIdentity(
     source: SourceId,
     sourceItemId: string,
   ): Promise<Item | undefined>;
-  revisionChain(id: ItemId): Promise<readonly Item[]>;
   tombstone(id: ItemId): Promise<Tombstone | undefined>;
 
   feed(page: OrderedPage): Promise<Slice<Item>>;

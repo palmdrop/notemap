@@ -1,11 +1,14 @@
+import { dequal } from "dequal";
+
 import { recordAction } from "./actions";
 import { enqueueMirrorWrite } from "./mirror";
-import { checkAssets, checkPayload } from "./payload";
+import { canonicalPayload, checkAssets, checkPayload } from "./payload";
 import { ok, refused } from "../utils/result";
 import type { PoolConfig } from "../types/api/config";
 import type { Agent } from "../types/domain/agent";
 import type { PoolPorts, PoolTx } from "../types/api/ports";
 import type { EditRefusal } from "../types/api/refusal";
+import type { EditEnvelope } from "../types/domain/capture";
 import type { ItemId } from "../types/domain/ids";
 import type { EditOutcome, Item } from "../types/domain/item";
 import type { Payload } from "../types/domain/payload";
@@ -17,24 +20,19 @@ export function edit(
   config: PoolConfig,
   ports: PoolPorts,
   id: ItemId,
-  payload: Payload,
+  envelope: EditEnvelope,
   by: Agent,
 ): Promise<EditResult> {
   return ports.store.transaction(async (tx) => {
     const item = await tx.item(id);
     if (item === undefined) return refused({ kind: "no-such-item", item: id });
 
-    // Two live revisions of one original, with nothing saying which is current.
-    if (item.supersededBy !== undefined) {
-      return refused({ kind: "item-superseded", by: item.supersededBy });
-    }
-
-    const invalid = await validate(config, ports, tx, item, payload);
+    const invalid = await validate(config, ports, tx, item, envelope.payload);
     if (invalid !== undefined) return refused(invalid);
 
     return (await sealed(tx, item))
-      ? revise(ports, tx, item, payload, by)
-      : amend(ports, tx, item, payload, by);
+      ? revise(ports, tx, item, envelope, by)
+      : amend(ports, tx, item, envelope.payload, by);
   });
 }
 
@@ -59,13 +57,12 @@ async function validate(
   return checkAssets(tx, payload);
 }
 
-/** Only a capture that becomes the *new head* seals an item. There is no timeout. */
+/** Processed: something left, or the person declared themselves done with it. */
 async function sealed(tx: PoolTx, item: Item): Promise<boolean> {
   if (item.archived !== undefined) return true;
-  if ((await tx.routingRecords(item.id)).length > 0) return true;
+  if (item.revisedInto.length > 0) return true;
 
-  const head = await tx.head();
-  return head?.id !== item.id;
+  return (await tx.routingRecords(item.id)).length > 0;
 }
 
 async function amend(
@@ -94,25 +91,41 @@ async function revise(
   ports: PoolPorts,
   tx: PoolTx,
   item: Item,
-  payload: Payload,
+  envelope: EditEnvelope,
   by: Agent,
 ): Promise<EditResult> {
-  const at = ports.clock.now();
+  const replayed = await tx.itemBySourceIdentity(
+    envelope.source,
+    envelope.sourceItemId,
+  );
+  if (replayed !== undefined) {
+    // Same identity, same words: the resend of an edit already made. Different
+    // words under a taken identity is capture's refusal, not a second revision.
+    const replay =
+      replayed.revisionOf === item.id &&
+      dequal(
+        canonicalPayload(replayed.payload),
+        canonicalPayload(envelope.payload),
+      );
 
+    return replay
+      ? ok({ kind: "revised", revision: replayed, revisionOf: item.id })
+      : refused({ kind: "source-item-changed", existing: replayed.id });
+  }
+
+  const at = ports.clock.now();
   const revision = await tx.insertItem({
     id: ports.ids.next<ItemId>(),
-    // No source produced this, so it mints no identity and keeps the time it revises.
-    source: item.source,
-    sourceItemId: item.sourceItemId,
-    payload,
+    source: envelope.source,
+    sourceItemId: envelope.sourceItemId,
+    payload: envelope.payload,
     tags: item.tags,
-    createdAt: item.createdAt,
-    contentUpdatedAt: at,
+    createdAt: at,
     revisionOf: item.id,
     // Archive state and routing records stay behind: a revision starts unprocessed.
   });
 
-  // The original moved too: being superseded took it out of the queue.
+  // The item it came from moved too: being revised took it out of the queue.
   await enqueueMirrorWrite(ports, tx, { kind: "item", item: revision.id }, at);
   await enqueueMirrorWrite(ports, tx, { kind: "item", item: item.id }, at);
 
@@ -124,5 +137,5 @@ async function revise(
     detail: { revision: revision.id },
   });
 
-  return ok({ kind: "revised", revision, supersedes: item.id });
+  return ok({ kind: "revised", revision, revisionOf: item.id });
 }
