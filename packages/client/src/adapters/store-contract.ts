@@ -1,0 +1,137 @@
+import { expect, it } from "vitest";
+
+import type { Destination, Item, TagUse } from "../api/types";
+import type { PendingOperation } from "../outbox/operations";
+import type { ClientStore } from "../ports/store";
+
+export function anItem(id: string): Item {
+  return {
+    id,
+    source: "test",
+    sourceItemId: id,
+    payload: { type: "text", content: { text: id }, metadata: {}, assets: [] },
+    tags: [],
+    createdAt: "2026-08-17T00:00:00.000Z",
+    modifiedAt: "2026-08-17T00:00:00.000Z",
+    revisedInto: [],
+  };
+}
+
+export function anOperation(id: string): PendingOperation {
+  return {
+    id,
+    operation: { kind: "unarchive", item: "item-1" },
+    at: "2026-08-17T00:00:00.000Z",
+    state: "pending",
+  };
+}
+
+export function aDestination(id: string): Destination {
+  return {
+    id,
+    name: id,
+    kind: "fs",
+    settings: {},
+    retired: false,
+  };
+}
+
+export function aTag(name: string, items = 1): TagUse {
+  return { name, items };
+}
+
+/**
+ * What every adapter answers the same, run against each. The durable one adds
+ * the questions only it can be asked — whether any of it survives a reopen.
+ */
+export function storeContract(open: () => Promise<ClientStore>): void {
+  it("reads back the operations it was given, and forgets removed ones", async () => {
+    const store = await open();
+
+    await store.writeOperation(anOperation("a"));
+    await store.writeOperation(anOperation("b"));
+    await store.removeOperation("a");
+
+    expect((await store.readOutbox()).map((held) => held.id)).toEqual(["b"]);
+  });
+
+  it("replaces an operation written again under the same id", async () => {
+    const store = await open();
+
+    await store.writeOperation(anOperation("a"));
+    await store.writeOperation({ ...anOperation("a"), state: "sending" });
+
+    const outbox = await store.readOutbox();
+    expect(outbox).toHaveLength(1);
+    expect(outbox[0]?.state).toBe("sending");
+  });
+
+  it("reads back the items it was given, and forgets removed ones", async () => {
+    const store = await open();
+
+    await store.writeItems([anItem("one"), anItem("two")]);
+    await store.removeItems(["one"]);
+
+    expect((await store.readItems()).map((item) => item.id)).toEqual(["two"]);
+  });
+
+  it("replaces the whole tag list rather than merging it", async () => {
+    const store = await open();
+
+    await store.writeTags([aTag("one"), aTag("two")]);
+    await store.writeTags([aTag("three")]);
+
+    expect((await store.readTags()).map((use) => use.name)).toEqual(["three"]);
+  });
+
+  it("replaces the whole destination list rather than merging it", async () => {
+    const store = await open();
+
+    await store.writeDestinations([aDestination("one"), aDestination("two")]);
+    await store.writeDestinations([aDestination("three")]);
+
+    expect((await store.readDestinations()).map((held) => held.id)).toEqual([
+      "three",
+    ]);
+  });
+
+  it("reads back the pool identity it was given", async () => {
+    const store = await open();
+
+    await store.writePoolIdentity("pool-a");
+    await store.writePoolIdentity("pool-b");
+
+    expect(await store.readPoolIdentity()).toBe("pool-b");
+  });
+
+  it("answers empty for what it has never been given", async () => {
+    const store = await open();
+
+    expect(await store.readOutbox()).toEqual([]);
+    expect(await store.readItems()).toEqual([]);
+    expect(await store.readTags()).toEqual([]);
+    expect(await store.readDestinations()).toEqual([]);
+    expect(await store.readPoolIdentity()).toBeUndefined();
+    expect(await store.readBlob("asset-1")).toBeUndefined();
+  });
+
+  it("reads back a blob, and forgets a removed one", async () => {
+    const store = await open();
+
+    await store.writeBlob("asset-1", new Blob(["bytes"]));
+    expect(await (await store.readBlob("asset-1"))?.text()).toBe("bytes");
+
+    await store.removeBlob("asset-1");
+    expect(await store.readBlob("asset-1")).toBeUndefined();
+  });
+
+  it("answers one url per blob, and none for bytes it does not hold", async () => {
+    const store = await open();
+    await store.writeBlob("asset-1", new Blob(["bytes"]));
+
+    const url = await store.blobUrl("asset-1");
+    expect(url).toBeTypeOf("string");
+    expect(await store.blobUrl("asset-1")).toBe(url);
+    expect(await store.blobUrl("asset-2")).toBeUndefined();
+  });
+}

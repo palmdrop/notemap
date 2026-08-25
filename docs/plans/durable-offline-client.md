@@ -29,22 +29,25 @@ capture with an attachment possible at all, and is what the reachability probe a
 
 Depends on nothing beyond the two plans above.
 
-- [ ] Branch `agent/durable-offline-client`
-- [ ] `ClientStore` grows a typed method per collection: items and the outbox as today, plus blobs
+- [x] Branch `agent/durable-client-store`, which is the pull request this phase lands in
+      ([rollout](offline-capture-rollout.md))
+- [x] `ClientStore` grows a typed method per collection: items and the outbox as today, plus blobs
       and the local URL for one, the tags in use, the destinations, and the pool identity. One port,
       one store for a shell to wire; the file groups the methods by concern
-- [ ] `createMemoryStore` implements all of it, blobs included, so every existing test keeps running
+- [x] `createMemoryStore` implements all of it, blobs included, so every existing test keeps running
       against a store that answers everything
-- [ ] An IndexedDB adapter over `idb`, exported from a subpath so `idb` reaches only a shell that
+- [x] An IndexedDB adapter over `idb`, exported from a subpath so `idb` reaches only a shell that
       asks for it. It opens the database lazily rather than at import
-- [ ] The adapter owns the local URL for a blob it holds, and its revocation. A shell that is not a
+- [x] The adapter owns the local URL for a blob it holds, and its revocation. A shell that is not a
       browser answers that question differently, which is why it sits on the port and not in the
       client
-- [ ] `fake-indexeddb` in the client package's test setup
-- [ ] Tests: every method round-trips; a database reopened answers what the last one wrote; a blob
-      survives the reopen; removing an item removes it
-- [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
-- [ ] `git commit`
+- [x] `fake-indexeddb` imported by the adapter's own test rather than a package-wide setup file:
+      it is the only test that wants a database, and a global nothing else asks for is a trap
+- [x] Tests: every method round-trips; a database reopened answers what the last one wrote; a blob
+      survives the reopen; removing an item removes it. The round-trips are one contract both
+      adapters are run against, so the pair cannot drift
+- [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
+- [x] `git commit`
 
 ### Phase 2 — hydration, the boot drain, and a refusal with nothing to reverse
 

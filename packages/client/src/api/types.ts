@@ -53,6 +53,9 @@ export type RoutingRecord = components["schemas"]["RoutingRecord"];
 export type RoutingSummary = components["schemas"]["RoutingSummary"];
 export type TagUse = components["schemas"]["TagUse"];
 
+/** Which pool this is: opaque, and stable for as long as the pool exists. */
+export type PoolIdentity = components["schemas"]["Health"]["pool"];
+
 export type ItemId = Item["id"];
 export type AssetId = Asset["id"];
 export type DestinationId = Destination["id"];

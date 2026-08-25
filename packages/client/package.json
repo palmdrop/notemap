@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./testing": "./src/testing/index.ts"
+    "./testing": "./src/testing/index.ts",
+    "./indexeddb": "./src/adapters/indexeddb-store.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -13,10 +14,12 @@
     "codegen": "openapi-typescript ../../apps/daemon/openapi.json -o src/api/generated.d.ts"
   },
   "devDependencies": {
+    "fake-indexeddb": "^6.2.5",
     "openapi-typescript": "^7.13.0",
     "vitest": "^4.1.10"
   },
   "dependencies": {
+    "idb": "^8.0.3",
     "openapi-fetch": "^0.17.0",
     "rxjs": "^7.8.2",
     "uuid": "^14.0.1"
