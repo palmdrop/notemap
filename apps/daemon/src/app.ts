@@ -34,6 +34,7 @@ import {
   destinationsRoute,
   editRoute,
   feedRoute,
+  healthRoute,
   honoPath,
   itemRoute,
   markProcessedRoute,
@@ -58,6 +59,7 @@ import {
   updateDestinationHandler,
 } from "./routes/destinations";
 import { feedHandler } from "./routes/feed";
+import { healthHandler } from "./routes/health";
 import { itemHandler } from "./routes/items";
 import { itemViewHandler } from "./routes/queue";
 import { tagHandler, tagsInUseHandler } from "./routes/tags";
@@ -74,6 +76,8 @@ export function createApp(pool: Pool, limits: UploadLimits): Hono {
   const app = new Hono();
 
   app.use("/v1/*", requireJsonBody);
+
+  app.get(honoPath(healthRoute.path), healthHandler(pool));
 
   app.post(honoPath(captureRoute.path), captureHandler(pool));
   app.get(honoPath(feedRoute.path), feedHandler(pool));

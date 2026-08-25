@@ -35,6 +35,7 @@ import {
 } from "../schemas/destination";
 import { captureEnvelopeSchema } from "../schemas/envelope";
 import { errorSchema } from "../schemas/error";
+import { healthSchema } from "../schemas/health";
 import {
   assetSchema,
   captureOutcomeSchema,
@@ -114,6 +115,20 @@ const actionsQuery = pageQuery.extend({
         "Narrows the read to one subject. Never validated: an id no item has answers an empty page, since the log outlives what it describes.",
       example: "0198f0c2-0000-7000-8000-000000000000",
     }),
+});
+
+export const healthRoute = createRoute({
+  method: "get",
+  path: "/v1/health",
+  summary: "Read that the daemon is up, and which pool it is serving",
+  description:
+    "Liveness and the pool identity, which is opaque and stable for as long as that pool exists. A pool rebuilt from its mirror is a different pool and answers a different identity. This route has no refusals: a daemon that cannot answer is not answering.",
+  responses: {
+    200: {
+      description: "The daemon is up, and this is the pool it holds.",
+      content: { [JSON_MEDIA_TYPE]: { schema: healthSchema } },
+    },
+  },
 });
 
 export const captureRoute = createRoute({
@@ -801,6 +816,7 @@ export const assetContentRoute = createRoute({
 });
 
 export const ROUTES = [
+  healthRoute,
   captureRoute,
   feedRoute,
   queueRoute,
