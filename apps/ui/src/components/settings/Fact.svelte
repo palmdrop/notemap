@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  /** A field of an opened destination: name in its own column, lower case. */
   let {
     name,
     empty = false,

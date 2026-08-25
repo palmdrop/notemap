@@ -9,11 +9,7 @@
 Everything captured has been routed, marked done, or archived. Anything new goes in at the top.`;
 </script>
 
-<!--
-  The state word in the rail, where the feed puts what became of an item: this
-  is what became of the whole surface. No count is claimed, because the pool
-  gives none — reaching the end is the only number the queue ever has.
--->
+<!-- No count: the pool gives none, and reaching the end is the only one. -->
 <Rail>
   <div class="cleared"><StateWord word="zero" /></div>
 </Rail>

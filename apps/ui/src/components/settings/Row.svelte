@@ -1,11 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  /**
-   * One line of a section: a mark, what it is in capitals, and why at the far
-   * end. `tone` colours the mark and the word together, so the colour is never
-   * the only thing saying it.
-   */
+  /** `tone` colours the mark and the word together: never the word alone. */
   let {
     mark,
     what,

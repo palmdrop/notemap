@@ -3,7 +3,6 @@
 
   import { pickable } from "$lib/pick";
 
-  /** The right cell: what was captured, and — once it is open — what to do with it. */
   let {
     first = false,
     lit = false,

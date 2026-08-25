@@ -7,7 +7,6 @@
   import { client } from "$lib/client";
   import { timeOf } from "$lib/stamp";
 
-  /** Where this shell is talking to. Same origin unless a build said otherwise. */
   const address = $derived(
     import.meta.env.VITE_API_URL ??
       (typeof location === "undefined" ? "" : location.host),
@@ -44,12 +43,8 @@
     ],
   );
 
-  /**
-   * The destination list is the probe. Knocking on the daemon and refreshing
-   * what this page shows are the same request, so asking twice would be a
-   * question nobody asked, and there is no route here whose only job is to
-   * answer yes.
-   */
+  /** `/v1` has no route whose only job is to answer yes, and this read is one
+   *  the page wants anyway. */
   async function knock() {
     answer = { kind: "asking" };
     const from = performance.now();

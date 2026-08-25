@@ -3,10 +3,6 @@
 
   import { pickable } from "$lib/pick";
 
-  /**
-   * The left cell: everything about the capture that the capture does not say
-   * itself. `first` is the capture row, which has nothing above it to rule off.
-   */
   let {
     first = false,
     lit = false,
@@ -20,7 +16,7 @@
   } = $props();
 </script>
 
-<!-- The stamp inside is the button that says the row opens; this is reach. -->
+<!-- The stamp inside is the accessible way in; this is only reach. -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div

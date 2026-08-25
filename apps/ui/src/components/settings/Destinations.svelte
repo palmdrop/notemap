@@ -76,15 +76,14 @@
 
 <Section name="destinations" aside={tally}>
   {#if !pool.yes}
-    <!-- The chrome already says the pool is out of reach; this names the
-         exception, and an ordinary condition is not painted as an alarm. -->
+    <!-- The chrome already says the pool is out of reach; this names what that
+         costs here, and is not painted as an alarm. -->
     <p role="status" class="mt-4 text-ink-muted">
       Destinations can be read but not changed.
     </p>
   {/if}
 
-  <!-- A refusal about the one being deleted belongs in the asking, where the
-       alternative it leaves is already on screen. -->
+  <!-- A refusal about the one being deleted is shown in the asking instead. -->
   {#if said !== "" && doomed === undefined}
     <p role="status" class="mt-4 text-accent">{said}</p>
   {/if}
@@ -129,8 +128,6 @@
       done={() => (adding = false)}
     />
   {:else}
-    <!-- Nothing has happened yet, so nothing here is coloured: the reply to it
-         is what earns a colour. -->
     <div class="mt-6">
       <Action
         disabled={!pool.yes || kinds.length === 0}

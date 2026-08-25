@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  /** `aside` is the fact about the whole section, at the far end of its head. */
   let {
     name,
     aside,

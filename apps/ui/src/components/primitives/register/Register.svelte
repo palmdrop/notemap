@@ -3,15 +3,7 @@
 
   import Furl from "./Furl.svelte";
 
-  /**
-   * The surface itself, as one grid. Every item drops a rail cell and a body
-   * cell into it, so the two columns stay in register without either one
-   * knowing how tall the other is.
-   *
-   * `onfurl` is what makes the rail foldable. A surface that is a register
-   * without being a list of captures — settings — passes none and keeps both
-   * columns, there being nothing there worth reading without them.
-   */
+  /** Without `onfurl` the rail cannot be folded away, which settings wants. */
   let {
     furled = false,
     onfurl,

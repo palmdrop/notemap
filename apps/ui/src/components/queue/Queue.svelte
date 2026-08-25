@@ -23,7 +23,6 @@
   /** Processing happens in the row, and one row is open at a time. */
   let opened = $state<string | undefined>(undefined);
 
-  /** Which item the routing modal is about, the row itself being behind it. */
   let routing = $state<string | undefined>(undefined);
 
   const subject = $derived(

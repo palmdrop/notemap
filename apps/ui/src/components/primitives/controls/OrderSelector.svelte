@@ -21,7 +21,6 @@
   };
 </script>
 
-<!-- Which end a reader starts from is the reader's, on both surfaces. -->
 <label class="flex items-baseline gap-1">
   <select
     value={order}

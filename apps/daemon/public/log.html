@@ -6,10 +6,9 @@
     <title>notemap — the action log</title>
     <style>
       /*
-        The shell's visual system, restated. This page is the daemon's own and
-        cannot reach the app's compiled stylesheet, so the roles are copied from
-        `apps/ui/src/styles/tokens.css` — which is the source of truth, and which
-        a test in `src/log/log.test.ts` holds this file to.
+        Copied from `apps/ui/src/styles/tokens.css`, which stays the source of
+        truth: this page loads nothing but the daemon, so it cannot import them.
+        `src/log/log.test.ts` fails when the two disagree.
       */
       :root {
         color-scheme: light dark;
@@ -30,7 +29,6 @@
         --rule: color-mix(in oklab, var(--ink) 20%, transparent);
       }
 
-      /* A phone keeps both columns; the rail is what says what a thing is. */
       @media (width < 44rem) {
         :root {
           --rail: 6.5rem;
@@ -123,12 +121,6 @@
         color: var(--ink);
       }
 
-      /*
-        One grid for the whole page: every action drops a rail cell and a body
-        cell into it, so the two columns stay in register down the page without
-        either one knowing how tall the other is. A rule across the top of each
-        cell, stopping at the gap — no boxes, and nothing bordered on four sides.
-      */
       .register {
         margin-top: 1.5rem;
         display: grid;
@@ -177,7 +169,6 @@
         color: var(--ink-muted);
       }
 
-      /* The thing the whole surface was working toward, drawn as such. */
       .nothing {
         padding: 5rem 0;
       }
@@ -280,7 +271,7 @@
         }
       }
 
-      /** How the register writes a time: fixed width, so a column is countable. */
+      /** Fixed width, so a column of them is countable. */
       const pad = (value) => String(value).padStart(2, "0");
 
       function dayOf(at) {

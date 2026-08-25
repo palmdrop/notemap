@@ -26,7 +26,6 @@
     onedit: () => void;
     onretire: () => void;
     ondelete: () => void;
-    /** The edit form, where this is the destination being edited. */
     children?: import("svelte").Snippet;
   } = $props();
 
@@ -100,17 +99,14 @@
           unasked — describing one is a read that can hang
         {/if}
       </Fact>
-      <!-- Named by the kind's own schema, so a folder reads as `root` and this
-           holds whatever a later kind asks for. On the open row rather than the
-           collapsed one: a kind may yet want a token here. -->
+      <!-- On the open row rather than the collapsed one: a kind may want a
+           token here, and a scannable list is the wrong place for it. -->
       {#each Object.entries(one.settings ?? {}) as [key, value] (key)}
         <Fact name={key}>{String(value)}</Fact>
       {/each}
 
       <Fact name="id">{one.id}</Fact>
 
-      <!-- What can be undone, then what cannot, with the rule between them: the
-           colour is not left carrying the warning on its own. -->
       <div
         class="mt-4 flex flex-wrap items-baseline gap-x-6 border-t border-t-ink/20 pt-3"
       >

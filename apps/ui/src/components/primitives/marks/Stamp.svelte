@@ -1,10 +1,6 @@
 <script lang="ts">
   import { dayOf, timeOf } from "$lib/stamp";
 
-  /**
-   * The row's title, so where a row opens in place it is also the way in. On a
-   * phone the rail is too narrow for both on one line, so the time drops under.
-   */
   let {
     at,
     opened,

@@ -4,10 +4,7 @@
   import { client } from "$lib/client";
   import { whereItWent, wentTo } from "$lib/routing";
 
-  /**
-   * Where the item went, in the rail. The summary is what a page of items
-   * carries; the records are what the one open row read, and say more.
-   */
+  /** The records say more than the summary, and only an open row has them. */
   let {
     summary,
     records = [],

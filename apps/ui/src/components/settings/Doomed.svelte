@@ -5,10 +5,6 @@
   import Commit from "$components/primitives/composer/Commit.svelte";
   import Modal from "$components/primitives/composer/Modal.svelte";
 
-  /**
-   * Deleting is the one thing on this page that cannot be undone, so it is the
-   * one thing that asks — and the asking offers the reversible half instead.
-   */
   let {
     one,
     said,
@@ -17,7 +13,7 @@
     onretire,
   }: {
     one: Destination;
-    /** Why the pool said no, which is the only thing that knows. */
+    /** Only the pool knows whether a record names it, so its refusal is here. */
     said?: string;
     onclose: () => void;
     ondelete: () => void;

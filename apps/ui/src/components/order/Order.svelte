@@ -8,7 +8,7 @@
   const queue = client.queue;
   const feed = client.feed;
 
-  /** Chrome that acts on whichever surface is being read; settings has no end. */
+  /** Settings has no end to start from, so it is offered none. */
   const reading = $derived(page.url.pathname === "/feed" ? "feed" : "queue");
   const surface = $derived(reading === "feed" ? $feed : $queue);
   const drawn = $derived(["/", "/feed"].includes(page.url.pathname));

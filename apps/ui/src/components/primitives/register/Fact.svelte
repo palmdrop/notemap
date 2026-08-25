@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  /** Nothing there, which is muted rather than absent. */
   let {
     name,
     empty = false,

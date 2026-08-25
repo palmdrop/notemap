@@ -1,12 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  /**
-   * Routing is the one act in the shell that composes an object rather than
-   * selecting a value, and the only irreversible one, so it gets a surface of
-   * its own over the register rather than a place inside it. `subject` says
-   * which item that is, since the row it came from is now behind the veil.
-   */
+  /** `subject` names what this is about: its row is behind the veil. */
   let {
     title,
     subject,

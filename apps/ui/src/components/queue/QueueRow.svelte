@@ -28,7 +28,6 @@
     item: Item;
     opened: boolean;
     offline: boolean;
-    /** The rail is away, so the stamp comes with the reader rather than going with it. */
     furled: boolean;
     onopen: () => void;
     onroute: () => void;

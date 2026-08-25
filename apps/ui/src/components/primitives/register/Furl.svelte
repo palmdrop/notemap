@@ -1,8 +1,4 @@
 <script lang="ts">
-  /**
-   * Rides the seam between the rail and the body, which is the edge it moves.
-   * A word in the bar said the same thing further from the thing it was about.
-   */
   let { furled, ontoggle }: { furled: boolean; ontoggle: () => void } =
     $props();
 </script>

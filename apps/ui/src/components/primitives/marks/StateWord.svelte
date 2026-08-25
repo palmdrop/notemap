@@ -1,5 +1,4 @@
 <script lang="ts">
-  /** What became of an item: `routed`, `archived`. Never more than one. */
   let { word }: { word: string } = $props();
 </script>
 
