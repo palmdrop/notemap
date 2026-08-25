@@ -93,15 +93,15 @@ Depends on PR 3. Branch `agent/durable-client-store`.
 
 Depends on PR 4. Branch `agent/cache-with-readers`.
 
-- [ ] Phases 3, 4 and 6 of [durable-offline-client](durable-offline-client.md), and ADR 0023
-- [ ] Three phases, one review: the cache acquires readers, a lifetime, and a check that it still
+- [x] Phases 3, 4 and 6 of [durable-offline-client](durable-offline-client.md), and ADR 0023
+- [x] Three phases, one review: the cache acquires readers, a lifetime, and a check that it still
       describes the pool it thinks it does. They are separable on paper and were three pull requests
       here until 2026-08-25, but all three are `packages/client` alone — no wire, no daemon, one
       `apps/ui` file between them — and each is small enough that the review ceremony would cost
       more than the review
-- [ ] `CONTEXT.md`'s **Cache** lands here
-- [ ] sync.md's rebuild question is amended here to say which half is now answered
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm test:stack` green
+- [x] `CONTEXT.md`'s **Cache** lands here
+- [x] sync.md's rebuild question is amended here to say which half is now answered
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm test:stack` green
 
 ### PR 6 — a capture with an attachment, offline
 
