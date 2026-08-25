@@ -410,8 +410,10 @@ differently. Every method is asynchronous even where an in-memory adapter answer
 durable one is a drop-in.
 
 **The store is a mirror of the cache, written as the cache changes**, rather than something each
-mutation remembers to write. Writes are ordered, and one that fails does not stop the ones after
-it: everything in the store except the outbox is a cache, and losing it costs a re-read.
+path that touches an item remembers to write. Those writes are ordered, and one that fails does not
+stop the ones after it — what it was mirroring is a cache, and losing it costs a re-read. **The
+outbox is not mirrored**: it is written by the operation that changes it and waited on, because it
+is the person's un-landed work rather than a copy of something the pool holds.
 
 **The web shell wires the browser's own storage** (2026-08-25) and the client reads it back on
 start. What the offline slice still owes is on the transport's side — reachability, so the outbox

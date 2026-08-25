@@ -69,21 +69,21 @@ Depends on PR 2. Branch `agent/client-minted-assets`.
 
 Depends on PR 3. Branch `agent/durable-client-store`.
 
-- [ ] Phases 1 and 2 of [durable-offline-client](durable-offline-client.md), and ADR 0024
-- [ ] Useful alone and visibly so: the outbox survives a reload and drains on boot. Nothing later in
+- [x] Phases 1 and 2 of [durable-offline-client](durable-offline-client.md), and ADR 0024
+- [x] Useful alone and visibly so: the outbox survives a reload and drains on boot. Nothing later in
       that plan is needed for this to be worth having
-- [ ] The tags in use and the destinations are read back on start here rather than in that plan's
+- [x] The tags in use and the destinations are read back on start here rather than in that plan's
       phase 6, which had conflated them with retention. They depend on the port and on hydration and
       on nothing else, and folding them in is what keeps the port from shipping with methods no
       caller reaches
-- [ ] `CONTEXT.md`'s **Hydration** lands here, where hydration is first a thing that happens.
+- [x] `CONTEXT.md`'s **Hydration** lands here, where hydration is first a thing that happens.
       **Cache** waits for PR 5, where what it holds acquires readers and a lifetime
-- [ ] `docs/todo.md`'s write-only-store item is closed here rather than in PR 5: what it asks for —
+- [x] `docs/todo.md`'s write-only-store item is closed here rather than in PR 5: what it asks for —
       a durable adapter, the store read back at start, and a decision about boot draining — is all
       of it this pull request's
-- [ ] client.md's ports and hydration paragraphs, and its `Shipped:` entry, describe **only** this —
+- [x] client.md's ports and hydration paragraphs, and its `Shipped:` entry, describe **only** this —
       the derived surfaces are not here yet and the spec must not say they are
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm test:stack` green
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm test:stack` green
 
 ### PR 5 — the cache is read, capped, and checked against the pool
 
