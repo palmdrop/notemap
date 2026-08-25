@@ -7,12 +7,13 @@ export type TagsDeps = {
   readonly api: Api;
   /** The set completion offers, for a shell to filter rather than re-ask. */
   readonly inUse: Observable<readonly TagUse[]>;
-  readonly cached: (tags: readonly TagUse[]) => void;
+  /** Asynchronous because the client holds it until the store has been read back. */
+  readonly cached: (tags: readonly TagUse[]) => Promise<void>;
 };
 
 /**
  * Held whole rather than asked per keystroke: the set is small, and filtering
- * it is the shell's. Nothing reads it back on start, so it is a session's.
+ * it is the shell's.
  */
 export function createTags(deps: TagsDeps): TagsApi {
   return {
@@ -20,7 +21,7 @@ export function createTags(deps: TagsDeps): TagsApi {
 
     async load(): Promise<readonly TagUse[]> {
       const answer = await answered(deps.api.GET("/v1/tags"));
-      deps.cached(answer.values);
+      await deps.cached(answer.values);
       return answer.values;
     },
   };

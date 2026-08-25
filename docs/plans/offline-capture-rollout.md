@@ -78,6 +78,9 @@ Depends on PR 3. Branch `agent/durable-client-store`.
       caller reaches
 - [ ] `CONTEXT.md`'s **Hydration** lands here, where hydration is first a thing that happens.
       **Cache** waits for PR 5, where what it holds acquires readers and a lifetime
+- [ ] `docs/todo.md`'s write-only-store item is closed here rather than in PR 5: what it asks for —
+      a durable adapter, the store read back at start, and a decision about boot draining — is all
+      of it this pull request's
 - [ ] client.md's ports and hydration paragraphs, and its `Shipped:` entry, describe **only** this —
       the derived surfaces are not here yet and the spec must not say they are
 - [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm test:stack` green
@@ -94,7 +97,6 @@ Depends on PR 4. Branch `agent/cache-with-readers`.
       more than the review
 - [ ] `CONTEXT.md`'s **Cache** lands here
 - [ ] sync.md's rebuild question is amended here to say which half is now answered
-- [ ] `docs/todo.md`'s write-only-store item is dropped here
 - [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm test:stack` green
 
 ### PR 6 — a capture with an attachment, offline

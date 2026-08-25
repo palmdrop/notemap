@@ -4,6 +4,7 @@ import type { ClientStore } from "../ports/store";
 import type { Undo } from "../state/applied";
 import type { ClientState } from "../state/state";
 import type { Settlement } from "./handler";
+import type { ItemId } from "../api/types";
 import type { Operation, OperationId, PendingOperation } from "./operations";
 import { applyOperation, opposes, targetOf } from "./registry";
 
@@ -17,6 +18,12 @@ export type OutboxDeps = {
   readonly state: Writable<ClientState>;
   readonly store: ClientStore;
   readonly send: (operation: Operation) => Promise<Settlement>;
+  /**
+   * Re-reads an item from the pool and settles the cache from the answer. What
+   * a refusal is reported with when the operation was read back from the store
+   * and has no reversal to run.
+   */
+  readonly reread: (item: ItemId) => Promise<void>;
   readonly now: () => string;
   readonly mint: () => OperationId;
 };
@@ -24,8 +31,8 @@ export type OutboxDeps = {
 export function createOutbox(deps: OutboxDeps): Outbox {
   /**
    * Reversals live here rather than in the store because a closure cannot be
-   * written to disk. An outbox reloaded from a durable store therefore has
-   * nothing to roll back to, which is the offline slice's to answer.
+   * written to disk. An operation read back from a durable store therefore has
+   * none, and a refusal of one is settled by re-reading the item instead.
    */
   const undos = new Map<OperationId, Undo>();
   const chains = new Map<string, Promise<void>>();
@@ -107,8 +114,15 @@ export function createOutbox(deps: OutboxDeps): Outbox {
       }
 
       const undo = undos.get(entry.id);
-      if (undo !== undefined) deps.state.update(undo);
-      undos.delete(entry.id);
+      if (undo === undefined) {
+        // A failed re-read leaves the cache as it stands, which is what an
+        // unreachable pool leaves anyway; the refusal is still reported.
+        await deps.reread(targetOf(entry.operation)).catch(() => undefined);
+      } else {
+        deps.state.update(undo);
+        undos.delete(entry.id);
+      }
+
       await record({ ...entry, state: "refused", failure: saidBy(error) });
     }
   }

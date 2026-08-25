@@ -1,8 +1,5 @@
-import {
-  createClient,
-  createFetchTransport,
-  createMemoryStore,
-} from "@notemap/client";
+import { createClient, createFetchTransport } from "@notemap/client";
+import { createIndexedDbStore } from "@notemap/client/indexeddb";
 
 /**
  * Empty means same origin: in production the daemon serves this app itself,
@@ -12,11 +9,11 @@ import {
 const baseUrl = import.meta.env.VITE_API_URL ?? "";
 
 /**
- * The web shell's ports. The store is in-memory, so nothing survives a reload:
- * offline needs a durable one here *and* a client that reads it back on start,
- * which is not wired yet.
+ * The web shell's ports. The store is the browser's own, and the client reads
+ * it back on start, so an outbox filled with the pool down survives a reload
+ * and drains without anyone asking.
  */
 export const client = createClient({
   transport: createFetchTransport(baseUrl),
-  store: createMemoryStore(),
+  store: createIndexedDbStore(),
 });

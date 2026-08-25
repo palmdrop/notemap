@@ -1,8 +1,19 @@
 # Spec: The client
 
-**Status**: Draft — the online contract is settled; the offline protocol is a designed seam, unbuilt
-**Last updated**: 2026-08-24
+**Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
+**Last updated**: 2026-08-25
 **Shipped**:
+
+- 2026-08-25 — **The store stops being write-only, and the client reads it back on start.**
+  `ClientStore` answers for every collection the client holds — the outbox and the cached items as
+  before, plus the tags in use, the destinations, the pool identity, and an asset's blob with the
+  local URL for it — and an IndexedDB adapter backs it in the browser. `createClient` starts
+  hydration at once and every path that touches state waits on it, so an outbox filled with the pool
+  down survives a reload and drains on boot without anyone asking, and a client opened cold
+  completes tags and names destinations from the last lists it read. A refusal of an operation read
+  back from the store is settled by re-reading the item rather than rolled back. The surfaces are
+  not drawn from the cache yet. ([plan](../plans/durable-offline-client.md),
+  [ADR 24](../adr/0024-a-refusal-after-a-restart-is-settled-from-the-pool.md))
 
 - 2026-08-24 — **An edit names the channel its words came in through, and a revision is an
   arrival.** `edit` takes a source beside the payload and mints a `sourceItemId` once, reusing it
@@ -266,17 +277,33 @@ arrival that did not happen — which is the direction to be wrong in.
 
 **The tags in use are a read cache, on the destinations' terms.** A client holds what
 `GET /v1/tags` last answered and completes from it, so completion costs nothing per keystroke and
-survives the pool going out of reach **within a session**. It is not an outbox operation and it is
+survives the pool going out of reach **and the session ending**. It is not an outbox operation and it is
 not a vocabulary: classification drains offline as it always did, and a tag nobody has used yet is
 written by typing it. The list is read again once classification reaches the pool — a tag or an
 untag, since either changes what is in use — **once per drain rather than once per operation**, so a
 backlog of eight tags asks one question. The pool having just answered is what says it is reachable.
 
-**Neither cache outlives the session yet.** The `ClientStore` holds items and the outbox; the tags
-and the destinations live in memory, and nothing reads any of it back on start
-([the ports](#the-ports--the-seam-for-offline)). So a client opened cold against an unreachable pool
-completes from nothing and names no destination — the same gap as the unread outbox, and closed by
-the same work.
+**Both caches are read back on start** (2026-08-25). The store holds the tags and the destinations
+as it holds the items and the outbox, written whole as each list is answered, so a client opened
+cold against an unreachable pool completes from what it last read and can still name where things
+go ([the ports](#the-ports--the-seam-for-offline)).
+
+**The outbox is read back on start, and drains on its own.** A client reads its store into memory
+before anything is allowed to touch what was read — **hydration** — and everything that touches
+state, a mutation, a surface read or a drain, waits for it. Pending operations are **not
+re-applied**: the cache was persisted with their effects already in it, so replaying them would
+apply each one twice. A crash between the two writes is the cost of that, and it leaves one effect
+missing until the operation drains. The drain runs as soon as hydration lands, so work made in a
+previous session reaches the pool without the person doing anything, and a **refused** operation
+read back stays refused: it is not re-sent and it waits for a person, which is what a refusal is.
+
+**A refusal with nothing to reverse is settled from the pool** (2026-08-25,
+[ADR 24](../adr/0024-a-refusal-after-a-restart-is-settled-from-the-pool.md)). A reversal is a
+closure made when the operation was applied, and an operation read back from the store has none. So
+where a refusal cannot be rolled back the client re-reads the item and folds the pool's answer over
+whatever was drawn for it — an item the pool does not have is forgotten, which is what a refused
+capture needs. The re-read is safe because a refusal means the pool answered, so it is reachable
+exactly when it is needed.
 
 **Draining and reconciliation.** An operation is applied optimistically, then confirmed against the
 pool's answer:
@@ -339,10 +366,8 @@ A capture is the client's own until it reaches the pool, and immutable once it d
   own: what distinguishes one source from another is the policy attached to it, and a rewrite
   through a given channel wants the policy that channel already has. That it was an edit is
   `revisionOf`, which says so without spending an identity on it. Its own id for the edit is minted
-  with the operation and carried on it. *Session-scoped for now* (2026-08-24): the operation lives
-  in a store nothing reads back, so a retry after a reload mints a fresh id and the pool records a
-  second revision. It becomes unqualified when
-  [durable-offline-client](../plans/durable-offline-client.md) lands.
+  with the operation and carried on it, and survives a reload with the operation (2026-08-25), so a
+  retry after a restart claims the identity the first attempt did and the pool answers one revision.
 
 ### Source identity
 
@@ -372,15 +397,26 @@ discipline ([ADR 8](../adr/0008-adapters-are-in-process-and-wired-by-the-host.md
   pool's origin — a native build, or a browser pointed at an authenticated remote daemon — answers it
   differently, and that is the whole reason it sits here.
 - **`ClientStore`** — where the outbox and the cache live. A web shell backs it with the browser's
-  own storage; a native shell with a file or a database. The client reads and writes the outbox and
-  the cache through it and never names a storage engine.
+  own storage; a native shell with a file or a database. The client reads and writes through it and
+  never names a storage engine.
 
-**Today the online client wires a trivial pair** — a direct `fetch` transport and an in-memory
-store — and drains the outbox as fast as the network answers. **The offline slice supplies durable
-adapters**: a store that persists across a restart, and a transport that reports reachability so the
-outbox drains on more than the browser's own `online` event. The seam being here from the first line
-is what makes those adapters drop in rather than fork the client — but it is not the whole of
-offline, and the open questions below name what is still missing.
+**The store answers for every collection the client holds** (2026-08-25), one typed method per
+concern rather than one opaque blob: the outbox an operation at a time, the cached items in
+batches, the tags in use and the destinations each replaced whole as the pool answers them, the
+**pool identity** the cache describes, and an asset's blob. **The local URL for a blob is the
+store's answer, not the client's** — the same reason `assetUrl` sits on the transport. A browser
+adapter mints an object URL and owns revoking it; a shell that is not a browser answers
+differently. Every method is asynchronous even where an in-memory adapter answers instantly, so a
+durable one is a drop-in.
+
+**The store is a mirror of the cache, written as the cache changes**, rather than something each
+mutation remembers to write. Writes are ordered, and one that fails does not stop the ones after
+it: everything in the store except the outbox is a cache, and losing it costs a re-read.
+
+**The web shell wires the browser's own storage** (2026-08-25) and the client reads it back on
+start. What the offline slice still owes is on the transport's side — reachability, so the outbox
+drains on more than the browser's `online` event — and in the surfaces, which are still the pool's
+pages rather than the cache's.
 
 **The cache's shape**, so the port serves the working set rather than an arbitrary blob: the
 **queue is the offline working set**, cached as the local source of truth a person triages against;
@@ -453,6 +489,15 @@ that logic out of the one place it is meant to live.
   late. Pins [sync.md](sync.md)'s open question.
 - **Source is the capture channel** (2026-08-17, [core.md](core.md#enrichment)): finer than the
   shell, so per-source auto-request policy stays meaningful.
+- **Hydration gates everything, and re-applies nothing** (2026-08-25): the store is read back
+  before any path may touch what was read, and the operations in it are not replayed against the
+  cache, which was persisted holding their effects. Gating reads as well as mutations costs a tick
+  on a cold start and removes the whole class of question about what a half-read cache answers.
+- **A refusal with nothing to reverse is settled from the pool** (2026-08-25,
+  [ADR 24](../adr/0024-a-refusal-after-a-restart-is-settled-from-the-pool.md)): re-read the item
+  rather than persisting a before-snapshot per operation or declaring an inverse per kind. One rule
+  for every kind, nothing extra persisted, and the cache converges on the authority rather than on
+  a client's memory of it.
 - **The client owns state and exposes observables** (2026-08-17): the hard state logic lives in the
   shared package behind a `subscribe(fn)` seam, not in each shell.
 
@@ -463,20 +508,20 @@ that logic out of the one place it is meant to live.
 - [ ] 2026-08-17 — Whether the shared client is one package or splits — a headless core and a
       Svelte-binding layer — once a second shell (Tauri) actually exists. Not decided while there is
       one shell; the seam is designed so the split is cheap if wanted.
-- [ ] 2026-08-17 — The `ClientStore` and `Transport` port shapes in detail, settled with the code
-      that first implements the durable pair rather than guessed here.
+- [ ] 2026-08-17 — The `Transport` port's shape in detail, settled with the code that first
+      implements it. *Half answered 2026-08-25*: `ClientStore` is settled, above, by the durable
+      adapter that first implemented it. What is left is reachability, which the transport does not
+      report yet.
 - [ ] 2026-08-17 — Whether a shell should surface the outbox to the person — pending, draining,
       refused — as a visible list, or keep it invisible until something fails. The offline slice,
       where a drain can be long, is what forces the question.
 - [ ] 2026-08-17 — How an `edit` operation still in the outbox coalesces with a later `edit` of the
       same item, once edits can queue offline. Trivial while the drain is immediate; a real question
       once it is not.
-- [ ] 2026-08-17 — **How a client reads its store back on start.** The ports write the outbox and
-      the cache but nothing reads them, so a durable adapter would persist faithfully and restore
-      nothing. Rehydration is not only wiring: a reversal is a closure, so an outbox read back from
-      a store has nothing to roll back to, and replaying it safely means reconstructing reversals
-      from the cache — or deciding that a refusal after a restart is reported without a rollback.
-      Answered with the durable pair, not before it.
+- [x] 2026-08-17 — **How a client reads its store back on start.** *Answered 2026-08-25*: hydration
+      runs before anything may touch what it reads, re-applies nothing, and drains as soon as it
+      lands; a refusal with no reversal to run is settled by re-reading the item
+      ([ADR 24](../adr/0024-a-refusal-after-a-restart-is-settled-from-the-pool.md)).
 - [ ] 2026-08-17 — **What a non-browser shell puts behind `Transport.assetUrl`.** The port asks the
       shell where an asset's bytes are, which is the seam; what a native shell answers with — a custom
       protocol, an object URL and the lifetime that implies, a local cache path — is for the shell that

@@ -1,7 +1,7 @@
 # The durable offline client
 
 **Date**: 2026-08-24
-**Status**: Todo
+**Status**: In progress
 **Spec**: `docs/specs/client.md`, `docs/specs/sync.md`
 **Closed**:
 
@@ -53,32 +53,33 @@ Depends on nothing beyond the two plans above.
 
 Depends on phase 1.
 
-- [ ] ADR 0024: a refusal after a restart is reported and settled by re-reading the item, not rolled
+- [x] ADR 0024: a refusal after a restart is reported and settled by re-reading the item, not rolled
       back. Reversals are closures (`outbox/outbox.ts:27`) and a rehydrated operation has none;
       record the rejected alternatives — a persisted before-snapshot per operation, and an inverse
       declared per kind, which collapses into snapshots for `edit` anyway — and the reason this is
       safe: a refusal means the pool answered, so it is reachable exactly when the re-read is needed
-- [ ] `createClient` starts hydration at once and returns; every path that touches state — a
+- [x] `createClient` starts hydration at once and returns; every path that touches state — a
       mutation, a surface read, a drain — waits on it first, the way `drain` already chains. The
       shell's wiring does not change and no caller can observe a half-hydrated cache
-- [ ] Hydration reads back the tags in use and the destinations alongside the items and the outbox,
+- [x] Hydration reads back the tags in use and the destinations alongside the items and the outbox,
       so a client opened cold against an unreachable pool completes tags from the last list it read
       and can still name its destinations — the gap [client.md](../specs/client.md) says this work
       closes
-- [ ] Hydration does not re-apply pending operations: the cache was persisted with their effects in
+- [x] Hydration does not re-apply pending operations: the cache was persisted with their effects in
       it. A crash between the two writes leaves one effect missing until that operation drains
-- [ ] A rehydrated `refused` operation stays refused, is not re-sent, and waits for a person, which
+- [x] A rehydrated `refused` operation stays refused, is not re-sent, and waits for a person, which
       is what `CONTEXT.md` says a refusal is
-- [ ] The drain runs as soon as hydration lands, so work made in a previous session reaches the pool
+- [x] The drain runs as soon as hydration lands, so work made in a previous session reaches the pool
       without the person doing anything
-- [ ] `apps/ui/src/lib/client.ts` wires the durable store
-- [ ] Tests: a client built over a store holding an outbox and items comes up with both; a capture
+- [x] `apps/ui/src/lib/client.ts` wires the durable store
+- [x] Tests: a client built over a store holding an outbox and items comes up with both; a capture
       made against a dead transport is there after a fresh client is built over the same store, and
       drains once when the transport answers; a rehydrated operation the pool refuses reports the
       refusal and settles the item from the pool; a rehydrated refused operation drains nothing; a
-      cold client with no transport completes a tag it saw last session
-- [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
-- [ ] `git commit`
+      cold client with no transport completes a tag it saw last session; an item whose rehydrated
+      capture the pool refuses is forgotten
+- [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
+- [x] `git commit`
 
 ### Phase 3 — surfaces derived from the cache
 

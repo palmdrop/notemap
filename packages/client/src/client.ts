@@ -10,11 +10,14 @@ import { createDestinations } from "./destinations/destinations";
 import { createOutbox } from "./outbox/outbox";
 import { sendOperation } from "./outbox/registry";
 import { createRouting } from "./routing/routing";
-import { persistItems } from "./state/persist";
+import { hydrate } from "./state/hydrate";
+import { persist } from "./state/persist";
 import {
   cached,
   emptyState,
+  forget,
   processed,
+  settle,
   settledDestination,
   withdrawn,
   type ClientState,
@@ -58,19 +61,59 @@ export function createClient(config: ClientConfig): Client {
   const api = createApi(transport);
   const state = writable<ClientState>(emptyState());
 
-  persistItems(state, store);
+  /**
+   * Hydration is started here and waited on by everything that touches state,
+   * so no caller can observe a half-read cache. A store that cannot be read
+   * leaves a cold client rather than a dead one.
+   */
+  const ready = hydrate(state, store)
+    .catch(() => undefined)
+    .then(() => {
+      persist(state, store);
+    });
+
+  function after<T>(work: () => T | Promise<T>): Promise<T> {
+    return ready.then(work);
+  }
 
   const tags = createTags({
     api,
     inUse: derived(state.changes, (current) => current.tags),
-    cached: (held) => state.update((current) => ({ ...current, tags: held })),
+    cached: (held) =>
+      after(() => state.update((current) => ({ ...current, tags: held }))),
   });
 
   let classified = false;
 
+  async function fetched(id: ItemId): Promise<Item | undefined> {
+    try {
+      return await answered(
+        api.GET("/v1/items/{id}", { params: { path: { id } } }),
+      );
+    } catch (error) {
+      if (error instanceof Refused && error.code === "no-such-item") {
+        return undefined;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * What the pool holds for an item, over whatever was drawn for it. An item
+   * the pool does not have is forgotten: the operation that drew it was refused
+   * and nothing will ever claim it.
+   */
+  async function reread(id: ItemId): Promise<void> {
+    const item = await fetched(id);
+    state.update((current) =>
+      item === undefined ? forget(current, id) : settle(current, item),
+    );
+  }
+
   const outbox = createOutbox({
     state,
     store,
+    reread,
     send: async (operation) => {
       const settlement = await sendOperation(api, operation);
       classified ||= operation.kind === "tag" || operation.kind === "untag";
@@ -100,7 +143,7 @@ export function createClient(config: ClientConfig): Client {
    * made before it has been attempted — including the drain a mutation starts
    * on its own and nobody holds.
    */
-  let draining = Promise.resolve();
+  let draining: Promise<void> = ready;
 
   function drain(): Promise<void> {
     draining = draining.then(sweep, sweep);
@@ -108,9 +151,13 @@ export function createClient(config: ClientConfig): Client {
   }
 
   async function mutate(operation: Parameters<typeof outbox.enqueue>[0]) {
+    await ready;
     await outbox.enqueue(operation);
     void drain();
   }
+
+  // Work made in a previous session reaches the pool without anyone asking.
+  void drain();
 
   return {
     feed: derived(
@@ -125,26 +172,20 @@ export function createClient(config: ClientConfig): Client {
     ),
     outbox: derived(state.changes, (current) => current.outbox),
 
-    loadFeed: (order) => loadMore(state, api, "feed", order),
-    loadQueue: (order) => loadMore(state, api, "queue", order),
+    loadFeed: (order) => after(() => loadMore(state, api, "feed", order)),
+    loadQueue: (order) => after(() => loadMore(state, api, "queue", order)),
 
-    async item(id: ItemId) {
-      try {
-        const item = await answered(
-          api.GET("/v1/items/{id}", { params: { path: { id } } }),
-        );
-        state.update((current) => ({
-          ...current,
-          items: cached(current, [item]),
-        }));
-        return item;
-      } catch (error) {
-        if (error instanceof Refused && error.code === "no-such-item") {
-          return undefined;
+    item: (id) =>
+      after(async () => {
+        const item = await fetched(id);
+        if (item !== undefined) {
+          state.update((current) => ({
+            ...current,
+            items: cached(current, [item]),
+          }));
         }
-        throw error;
-      }
-    },
+        return item;
+      }),
 
     async capture(input) {
       const id = uuidv7();
@@ -212,23 +253,29 @@ export function createClient(config: ClientConfig): Client {
     routing: createRouting({
       api,
       processed: (item, record) =>
-        state.update((current) => processed(current, item, record)),
+        after(() =>
+          state.update((current) => processed(current, item, record)),
+        ),
       withdrawn: (item, records) =>
-        state.update((current) => withdrawn(current, item, records)),
+        after(() =>
+          state.update((current) => withdrawn(current, item, records)),
+        ),
     }),
 
     destinations: createDestinations({
       api,
       all: derived(state.changes, (current) => current.destinations),
       cached: (destinations) =>
-        state.update((current) => ({ ...current, destinations })),
+        after(() => state.update((current) => ({ ...current, destinations }))),
       settled: (id, held) =>
-        state.update((current) => settledDestination(current, id, held)),
+        after(() =>
+          state.update((current) => settledDestination(current, id, held)),
+        ),
     }),
 
     tags,
 
     drain,
-    dismiss: (operation) => outbox.dismiss(operation),
+    dismiss: (operation) => after(() => outbox.dismiss(operation)),
   };
 }

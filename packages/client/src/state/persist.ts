@@ -6,6 +6,7 @@ import {
   from,
   map,
   pairwise,
+  skip,
 } from "rxjs";
 
 import type { Item, ItemId } from "../api/types";
@@ -15,25 +16,61 @@ import type { ClientState } from "./state";
 
 /**
  * Mirrors the cache into the store as it changes, rather than making every path
- * that touches an item remember to write it. `concatMap` is what keeps a
- * durable adapter seeing the writes in the order they happened.
+ * that touches an item remember to write it. Subscribed after hydration, so the
+ * state read back out of the store is not written straight into it again.
  */
-export function persistItems(
+export function persist(
   state: Writable<ClientState>,
   store: ClientStore,
 ): void {
+  persistItems(state, store);
+  whole(
+    state,
+    (current) => current.tags,
+    (tags) => store.writeTags(tags),
+  );
+  whole(
+    state,
+    (current) => current.destinations,
+    (destinations) => store.writeDestinations(destinations),
+  );
+}
+
+/** A read cache is replaced whole, so there is nothing to diff. */
+function whole<T>(
+  state: Writable<ClientState>,
+  read: (current: ClientState) => T,
+  write: (value: T) => Promise<void>,
+): void {
+  state.changes
+    .pipe(
+      map(read),
+      distinctUntilChanged(),
+      // The first emission is what hydration left, which came from the store.
+      skip(1),
+      concatMap((value) => mirrored(write(value))),
+    )
+    .subscribe();
+}
+
+function persistItems(state: Writable<ClientState>, store: ClientStore): void {
   state.changes
     .pipe(
       map((current) => current.items),
       distinctUntilChanged(),
       pairwise(),
-      // The store is a mirror of the cache, so a write that fails must not stop
-      // the ones after it. Reporting one is the durable adapter's to answer.
-      concatMap(([before, after]) =>
-        from(write(store, before, after)).pipe(catchError(() => EMPTY)),
-      ),
+      concatMap(([before, after]) => mirrored(write(store, before, after))),
     )
     .subscribe();
+}
+
+/**
+ * `concatMap` is what keeps a durable adapter seeing the writes in the order
+ * they happened. The store is a mirror of the cache, so a write that fails must
+ * not stop the ones after it; reporting one is the durable adapter's to answer.
+ */
+function mirrored(written: Promise<void>) {
+  return from(written).pipe(catchError(() => EMPTY));
 }
 
 async function write(
