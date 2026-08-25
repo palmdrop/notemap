@@ -33,6 +33,8 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
   const { store } = ports;
 
   return {
+    identity: () => store.identity(),
+
     capture: (envelope) => capture(config, ports, envelope),
 
     items: {

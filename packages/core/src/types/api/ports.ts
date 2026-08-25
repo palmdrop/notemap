@@ -10,6 +10,7 @@ import type {
   ItemId,
   LeaseId,
   MintableId,
+  PoolIdentity,
   ProviderName,
   RoutingRecordId,
   SourceId,
@@ -289,6 +290,13 @@ export interface PoolTx extends PoolReads {
 }
 
 export interface PoolStore extends PoolReads {
+  /**
+   * Which pool this is. Minted by the driver with the pool itself and never
+   * reset: a store that answered a different one over the life of one pool
+   * would tell a client its whole cache belongs to somewhere else.
+   */
+  identity(): Promise<PoolIdentity>;
+
   /**
    * Applies `work` all-or-nothing: the store commits what it wrote when the
    * promise resolves and discards it when the promise rejects.

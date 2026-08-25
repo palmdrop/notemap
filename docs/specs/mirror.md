@@ -1,8 +1,14 @@
 # Spec: The mirror on disk
 
 **Status**: Draft
-**Last updated**: 2026-08-24
+**Last updated**: 2026-08-25
 **Shipped**:
+
+- 2026-08-25 — **The pool identity this spec has been asserting is readable now is.** A pool mints
+  one when it is created and answers the same one for as long as it exists; `GET /v1/health` serves
+  it ([http-v1.md](http-v1.md#health)). Rebuild is still unbuilt, so what a rebuilt pool answers is
+  a consequence of a rebuild making a new pool rather than something a test has watched happen.
+  ([plan](../plans/client-minted-assets-and-health.md))
 
 - 2026-08-24 — **`revisedInto` is derived, so the mirror does not carry it.** A revision is
   mirrored as the capture it is, holding its own capture time and the `revisionOf` link; the item it
@@ -379,7 +385,9 @@ items directly, enqueues nothing and logs nothing.
   ([ADR 14](../adr/0014-pagination-by-domain-position.md)), so every cached client cursor becomes
   not merely stale but plausibly wrong. A client comparing the pool identity it cached learns
   its cursor is void instead of receiving a confidently incorrect delta. What it then does is
-  [sync.md](sync.md)'s.
+  [sync.md](sync.md)'s. *(2026-08-25: the identity is real and readable — minted with the pool,
+  stable for its life, and served by `GET /v1/health`. It is a property of a pool rather than of a
+  rebuild, so a rebuild takes a new one by making a new pool.)*
 
 ### Verify and repair
 

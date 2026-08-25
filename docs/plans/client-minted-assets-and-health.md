@@ -1,7 +1,7 @@
 # Client-minted assets, and a pool that says who it is
 
 **Date**: 2026-08-24
-**Status**: Todo
+**Status**: In progress
 **Spec**: `docs/specs/http-v1.md`, `docs/specs/core.md`, `docs/specs/mirror.md`
 **Closed**:
 
@@ -49,17 +49,21 @@ Depends on nothing.
 
 Depends on nothing in phase 1; independently verifiable.
 
-- [ ] A pool identity, minted once and stable for the life of that pool. Nothing in
+- [x] A pool identity, minted once and stable for the life of that pool. Nothing in
       `packages/core` or `packages/adapters/store-sqlite` holds one today — this is new state, not
       a read of existing state
-- [ ] The store port answers it; the sqlite driver mints it when the schema is created and reads it
-      back thereafter. A rebuild makes a *new* pool, so it takes a new identity without anything
-      being told to reset one ([mirror.md](../specs/mirror.md))
-- [ ] A core read alongside the other pool reads, so a host never reaches into the store for it
-- [ ] Tests: two pools answer two identities; one pool answers the same identity across reopens; a
-      pool rebuilt from a mirror answers a different one from the pool it was built from
-- [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
-- [ ] `git commit`
+- [x] The store port answers it; the sqlite driver mints it when the schema is created and reads it
+      back thereafter — as a one-row table the migration creates empty and the first read fills, so
+      a pool that predates the table takes one without a data migration. A rebuild makes a *new*
+      pool, so it takes a new identity without anything being told to reset one
+      ([mirror.md](../specs/mirror.md))
+- [x] A core read alongside the other pool reads, so a host never reaches into the store for it
+- [x] Tests: two pools answer two identities; one pool answers the same identity across reopens; a
+      pool rebuilt from a mirror answers a different one from the pool it was built from — the
+      rebuild case is not written: rebuild has no entry point yet, and two pools differing is the
+      same assertion it would make
+- [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
+- [x] `git commit`
 
 ### Phase 3 — the wire (daemon)
 
@@ -72,7 +76,7 @@ Depends on phases 1 and 2.
       is matched "by exact path rather than by prefix" so no other route loses it; the path now
       carries an id, so the guard matches a method and a shape rather than a string. Whatever it
       becomes, a test asserts that no other `/v1` path is carved out with it
-- [ ] `GET /v1/health`: the daemon is up, and the pool identity it is serving. Liveness has no
+- [x] `GET /v1/health`: the daemon is up, and the pool identity it is serving. Liveness has no
       refusals — a daemon that cannot answer is not answering
 - [ ] `asset-id-conflict` joins the refusal table, the status mapping in `errors/refusals.ts`, and
       the route descriptions in `routes/definitions.ts`
@@ -94,13 +98,15 @@ Depends on phase 3's document.
       [durable-offline-client](durable-offline-client.md)'s
 - [ ] A reading for `asset-id-conflict` in `errors.ts`
 - [ ] `CONTEXT.md`: amend **Asset** — the id is minted by whoever uploads, so an asset has an
-      identity before the pool holds its bytes, as a capture does. Add **Pool identity**
-- [ ] `docs/specs/http-v1.md`: the upload section, the refusal table, and `/v1/health`.
-      `docs/specs/core.md`: the asset id is the caller's. `docs/specs/mirror.md`: the identity it
-      has been asserting is readable now is
-- [ ] `pnpm test:stack` green, with a case that uploads under a minted id, replays it, conflicts on
-      it, and reads `/v1/health`
-- [ ] Add the dated `Shipped:` entries (see Notes)
+      identity before the pool holds its bytes, as a capture does. (**Pool identity** landed with
+      the health route)
+- [ ] `docs/specs/http-v1.md`: the upload section and the refusal table. `docs/specs/core.md`: the
+      asset id is the caller's. (`/v1/health`, core.md's pool identity read and
+      `docs/specs/mirror.md` landed with the health route)
+- [ ] `pnpm test:stack` green, with a case that uploads under a minted id, replays it and conflicts
+      on it. (The `/v1/health` case landed with the health route)
+- [ ] Add the dated `Shipped:` entries for the asset half (see Notes). (http-v1.md, mirror.md and
+      core.md carry the health half's already)
 - [ ] `git commit`
 
 ---

@@ -37,21 +37,22 @@ Depends on PR 0. Branch `agent/editable-until-processed-build`, since the docs b
 - [x] **Not splittable.** Its phase 3 changes the item's shape on the wire — `revisedInto` for
       `supersededBy` — and the edit route's body, so a merge between the daemon phase and the client
       phase leaves the client reading a field the daemon no longer answers
-- [ ] Large enough to deserve a real review rather than a skim; `core:co-review` or `core:review`
-      before merging
+- [x] Large enough to deserve a real review rather than a skim; `core:co-review` or `core:review`
+      before merging — co-reviewed, written up in
+      [editable-until-processed-2026-08-24](../reviews/editable-until-processed-2026-08-24.md)
 - [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint` and `pnpm test:stack` green
 
 ### PR 2 — the pool says who it is
 
 Depends on PR 1. Branch `agent/pool-identity-and-health`.
 
-- [ ] Phase 2 of [client-minted-assets-and-health](client-minted-assets-and-health.md), and the
+- [x] Phase 2 of [client-minted-assets-and-health](client-minted-assets-and-health.md), and the
       `GET /v1/health` half of its phase 3
-- [ ] Purely additive: new state, one new route, no caller yet. Nothing it touches is load-bearing
+- [x] Purely additive: new state, one new route, no caller yet. Nothing it touches is load-bearing
       elsewhere, which is why it goes in on its own rather than riding with the asset change
-- [ ] Its spec edits — http-v1.md's new route, mirror.md's identity claim made true, `CONTEXT.md`'s
+- [x] Its spec edits — http-v1.md's new route, mirror.md's identity claim made true, `CONTEXT.md`'s
       **Pool identity** — land here, not with the asset work
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm test:stack` green
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm test:stack` green
 
 ### PR 3 — the uploader mints the asset id
 

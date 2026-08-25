@@ -1,8 +1,15 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-08-24
+**Last updated**: 2026-08-25
 **Shipped**:
+
+- 2026-08-25 — **A pool says which pool it is.** The store mints an identity with the pool and
+  answers the same one for as long as that pool exists; the pool reads it, so a host never reaches
+  past the pool for it. It is opaque and says nothing about the pool it names, which is why it is
+  not one of the ids a generator may mint. A rebuild makes a new pool and so a new identity — the
+  consequence this spec already carried, now with something behind it.
+  ([plan](../plans/client-minted-assets-and-health.md))
 
 - 2026-08-24 — **An item is editable until it is processed.** The seal is now a decision about the
   item — routed, archived or something revised from it — rather than a later capture taking the
@@ -224,6 +231,11 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   model.
 - Every item carries the identity of the source it came from and that source's own id for it,
   so re-reading a source cannot produce a duplicate.
+- **The pool answers which pool it is** (decided 2026-08-25). A **pool identity** is minted with
+  the pool, stable for as long as it exists, and opaque — it names a pool without describing one,
+  so nothing may be read out of it, its age included. It is a read on the pool rather than
+  something a host asks the store for, and it is not among the ids a generator mints, which are
+  free to be time-ordered. A rebuilt pool takes a new one by being a new pool.
 
 ### Editing
 

@@ -24,6 +24,7 @@ import type {
   EnrichmentName,
   ItemId,
   LeaseId,
+  PoolIdentity,
   RoutingRecordId,
   SuggestionId,
   SyncCursor,
@@ -237,6 +238,8 @@ export interface MaintenanceApi {
 }
 
 export interface Pool {
+  identity(): Promise<PoolIdentity>;
+
   capture(
     envelope: CaptureEnvelope,
   ): Promise<Result<CaptureOutcome, CaptureRefusal>>;

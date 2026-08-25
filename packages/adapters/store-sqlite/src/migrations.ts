@@ -591,6 +591,15 @@ export const MIGRATIONS: readonly string[] = [
   CREATE UNIQUE INDEX items_source_identity
     ON items (source_id, source_item_id);
   `,
+
+  `
+  -- Created empty: a migration cannot mint an identity, and a pool that
+  -- predates this table has to take one by the same path a new pool does.
+  CREATE TABLE pool_identity (
+    singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
+    identity  TEXT    NOT NULL
+  ) STRICT;
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

@@ -113,6 +113,11 @@ export type ActionRow = AgentColumns & {
   readonly detail: string;
 };
 
+export type PoolIdentityRow = {
+  readonly singleton: number;
+  readonly identity: string;
+};
+
 export type PoolMetaRow = {
   readonly key: string;
   readonly value: number;
@@ -176,4 +181,5 @@ export const TABLE_COLUMNS = {
   ],
   actions: ["id", "kind", "subject", "by_kind", "by_ref", "at", "detail"],
   pool_meta: ["key", "value"],
+  pool_identity: ["singleton", "identity"],
 } as const satisfies Record<string, readonly string[]>;

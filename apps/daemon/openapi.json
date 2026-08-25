@@ -7,6 +7,18 @@
   },
   "components": {
     "schemas": {
+      "Health": {
+        "type": "object",
+        "properties": {
+          "pool": {
+            "type": "string",
+            "example": "a1c9f2e4-6b30-4d51-9e7a-2f8b40c1d6e3"
+          }
+        },
+        "required": [
+          "pool"
+        ]
+      },
       "CaptureOutcome": {
         "anyOf": [
           {
@@ -1038,6 +1050,24 @@
     "parameters": {}
   },
   "paths": {
+    "/v1/health": {
+      "get": {
+        "summary": "Read that the daemon is up, and which pool it is serving",
+        "description": "Liveness and the pool identity, which is opaque and stable for as long as that pool exists. A pool rebuilt from its mirror is a different pool and answers a different identity. This route has no refusals: a daemon that cannot answer is not answering.",
+        "responses": {
+          "200": {
+            "description": "The daemon is up, and this is the pool it holds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/captures": {
       "post": {
         "summary": "Capture something into the pool",

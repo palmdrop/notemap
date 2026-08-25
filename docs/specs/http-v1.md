@@ -1,9 +1,16 @@
 # Spec: HTTP API (`/v1`)
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
-editing, destinations and routing to one are settled; the rest is stub
-**Last updated**: 2026-08-24
+editing, destinations, routing to one and health are settled; the rest is stub
+**Last updated**: 2026-08-25
 **Shipped**:
+
+- 2026-08-25 — **The daemon says which pool it is holding.** `GET /v1/health` answers that it is up
+  and the identity of the pool behind it — the identity [mirror.md](mirror.md) has claimed is
+  readable since 2026-08-11 and nothing served. It has no refusals and no parameters, and no client
+  reads it yet: what a client does with a pool identity is
+  [durable-offline-client](../plans/durable-offline-client.md)'s.
+  ([plan](../plans/client-minted-assets-and-health.md))
 
 - 2026-08-24 — **The edit route carries an envelope, and an item names its revisions.**
   `POST /v1/items/{id}/edit` takes the source making the edit and that source's own id for it
@@ -158,6 +165,8 @@ whose answer says whether the edit became an amendment or a revision.
 Settled (2026-08-20): `GET /v1/tags`, and `routing` on the `Item` — a summary of where an item has
 been, carried by every read that answers items.
 
+Settled (2026-08-25): `GET /v1/health` — that the daemon is up, and which pool it is serving.
+
 Still stub, and unwritten below: suggestions and their decisions, artifacts and corrections, purge
 and tombstones, range requests over asset content, the wire form of sync delta reads, and
 authentication. Nothing here forecloses them; they get the same treatment when their slice is
@@ -231,6 +240,27 @@ says so with an offset, which is exact. The refusal is `400 malformed-envelope` 
 What is accepted is wider than what is returned: the daemon normalises before core sees it, so a
 `Timestamp` in the pool is always RFC 3339 UTC and a round trip returns the canonical spelling
 rather than the one the client wrote.
+
+### Health
+
+`GET /v1/health` — that the daemon is up, and which pool it is holding.
+
+```json
+{ "pool": "a1c9f2e4-6b30-4d51-9e7a-2f8b40c1d6e3" }
+```
+
+- **Liveness is the `200` itself.** The route has no refusals: a daemon that cannot answer is not
+  answering, and a body reporting its own unhealthiness would be a fiction the connection already
+  disproved. Nothing else is in it — no version, no schema number, no uptime — because nothing asks
+  for those yet, and a field no client reads is one the next reader has to work out the meaning of.
+- **The pool identity is opaque**, minted with the pool and stable for as long as that pool exists.
+  It says *which* pool, never anything about it: not its age, not its size, and not the daemon
+  serving it. Two daemons over one pool answer one identity.
+- **A rebuilt pool answers a different identity**, because a rebuild makes a new pool
+  ([mirror.md](mirror.md)). That is the whole point of serving it: a client holding anything it read
+  from a pool — a cached window, a delta cursor — can tell that what it holds describes somewhere
+  else. What it should then do is [sync.md](sync.md)'s open question, and unanswered.
+- It takes no parameters and is not paginated.
 
 ### Captures
 
