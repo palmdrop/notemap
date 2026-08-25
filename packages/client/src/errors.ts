@@ -43,6 +43,8 @@ const SAID: {
 } = {
   "already-archived": "that item is already archived",
   "already-retired": "that destination is already retired",
+  "asset-id-conflict":
+    "that upload id already names a different file; pick the file again",
   "asset-too-large": (facts) =>
     `that file is larger than this daemon accepts (${String(facts["max"])} bytes)`,
   "bad-digest": "the upload's checksum is not readable",

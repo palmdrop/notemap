@@ -102,8 +102,9 @@ _Avoid_: sync, reconcile, fsck
 **Asset**:
 A named reference to media belonging to a capture — audio, image, page snapshot. Carries the
 filename exactly as it was uploaded and points at the blob holding the bytes. Uploading the same
-bytes twice under two names produces two assets. Pool state, held beside the item references that
-count it, so an asset an item still references cannot be released.
+bytes twice under two names produces two assets. Its id is minted by whoever uploads it, as a
+capture's is, so an asset has an identity before the pool holds its bytes. Pool state, held beside
+the item references that count it, so an asset an item still references cannot be released.
 _Avoid_: attachment, media file
 
 **Blob**:

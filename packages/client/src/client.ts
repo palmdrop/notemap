@@ -178,10 +178,13 @@ export function createClient(config: ClientConfig): Client {
     /** What an edit starts from: the payload as it stands, with new words in it. */
     saying: (item, said) => rewritten(item.payload, said),
 
+    // The id is minted here, so a capture can name the asset before the bytes
+    // are up and a retry of this upload claims the same asset rather than a second.
     uploadAsset: (file: File) =>
       answered(
-        api.POST("/v1/assets", {
+        api.PUT("/v1/assets/{id}", {
           params: {
+            path: { id: uuidv7() },
             header: {
               "content-disposition": `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`,
             },

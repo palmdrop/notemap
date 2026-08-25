@@ -823,7 +823,6 @@ export const assetContentRoute = createRoute({
       "No asset has that id, or its blob is gone from disk.",
       404,
       ASSET_STATUS,
-  ASSET_STORE_STATUS,
     ),
   },
 });
