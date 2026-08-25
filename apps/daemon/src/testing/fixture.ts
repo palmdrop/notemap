@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -49,13 +50,18 @@ export const CONFIG: PoolConfig = {
   sweep: { grace: 86_400_000 as Duration },
 };
 
-/** Uploads bytes the way a client does, and answers the response. */
+/** Uploads bytes the way a client does — under an id it minted — and answers the response. */
 export async function put(
   app: Hono,
   content: string | Uint8Array,
   headers: Record<string, string>,
+  id: string = randomUUID(),
 ): Promise<Response> {
-  return app.request("/v1/assets", { method: "POST", headers, body: content });
+  return app.request(`/v1/assets/${id}`, {
+    method: "PUT",
+    headers,
+    body: content,
+  });
 }
 
 export type Daemon = {

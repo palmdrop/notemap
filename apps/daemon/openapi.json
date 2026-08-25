@@ -3664,11 +3664,19 @@
         }
       }
     },
-    "/v1/assets": {
-      "post": {
-        "summary": "Upload bytes",
-        "description": "The body is the bytes, raw — not `multipart/form-data`. `Content-Type` is the asset's media type and is served back verbatim; `Content-Disposition` carries the filename, which is stored exactly as given. Anything may be uploaded; what may be rendered in place is decided on the way out.",
+    "/v1/assets/{id}": {
+      "put": {
+        "summary": "Upload bytes under an id the caller mints",
+        "description": "The body is the bytes, raw — not `multipart/form-data`. `Content-Type` is the asset's media type and is served back verbatim; `Content-Disposition` carries the filename, which is stored exactly as given. Anything may be uploaded; what may be rendered in place is decided on the way out. The id is the uploader's, so an upload may be repeated: the same bytes under the same name and media type answer the asset already stored.",
         "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
           {
             "schema": {
               "type": "string",
@@ -3704,6 +3712,16 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "That id already names this asset. Nothing was stored, and no `Location` is sent: the caller minted it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Asset"
+                }
+              }
+            }
+          },
           "201": {
             "description": "Stored. `Location` names the asset.",
             "headers": {
@@ -3719,6 +3737,37 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Asset"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "That id already names an asset with different bytes, a different filename or a different media type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "asset-id-conflict"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -3819,9 +3868,7 @@
             }
           }
         }
-      }
-    },
-    "/v1/assets/{id}": {
+      },
       "get": {
         "summary": "Read one asset",
         "parameters": [

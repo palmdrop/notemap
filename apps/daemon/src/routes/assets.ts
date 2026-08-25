@@ -1,6 +1,12 @@
 import type { Context } from "hono";
 
-import type { Asset, AssetId, Pool } from "@notemap/core";
+import type {
+  AssetId,
+  AssetOutcome,
+  AssetStoreRefusal,
+  Pool,
+  Result,
+} from "@notemap/core";
 
 import {
   contentDisposition,
@@ -9,7 +15,7 @@ import {
 import { dispositionFor } from "../assets/disposition";
 import { claimedDigest } from "../assets/repr-digest";
 import { guarded, type UploadLimits } from "../assets/upload";
-import { assetStatus, errorBody } from "../errors/refusals";
+import { assetStatus, assetStoreStatus, errorBody } from "../errors/refusals";
 import { RefusedUpload } from "../errors/refused-upload";
 import { json, refuse } from "../utils/responses";
 
@@ -31,9 +37,12 @@ export function assetUploadHandler(pool: Pool, limits: UploadLimits) {
       return refuse({ kind: "bad-digest", digest: header ?? "" });
     }
 
-    let asset: Asset;
+    const id = (context.req.param("id") ?? "") as AssetId;
+
+    let stored: Result<AssetOutcome, AssetStoreRefusal>;
     try {
-      asset = await pool.assets.store(
+      stored = await pool.assets.store(
+        id,
         guarded(
           context.req.raw.body,
           limits.maxUploadBytes,
@@ -46,9 +55,18 @@ export function assetUploadHandler(pool: Pool, limits: UploadLimits) {
       throw cause;
     }
 
-    return json(asset, 201, {
-      location: `/v1/assets/${encodeURIComponent(asset.id)}`,
-    });
+    if (stored.kind === "refused") {
+      return json(errorBody(stored.refusal), assetStoreStatus(stored.refusal));
+    }
+
+    const { asset } = stored.value;
+
+    // No `Location` on a replay: the caller minted the id and knows where it is.
+    return stored.value.kind === "stored"
+      ? json(asset, 201, {
+          location: `/v1/assets/${encodeURIComponent(asset.id)}`,
+        })
+      : json(asset, 200);
   };
 }
 

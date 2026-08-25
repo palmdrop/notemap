@@ -122,7 +122,7 @@ export function createApp(pool: Pool, limits: UploadLimits): Hono {
   app.post(honoPath(cancelDeliveryRoute.path), cancelDeliveryHandler(pool));
   app.get(honoPath(actionsRoute.path), actionsHandler(pool));
 
-  app.post(honoPath(assetUploadRoute.path), assetUploadHandler(pool, limits));
+  app.put(honoPath(assetUploadRoute.path), assetUploadHandler(pool, limits));
   app.get(honoPath(assetRoute.path), assetHandler(pool));
   app.get(honoPath(assetContentRoute.path), assetContentHandler(pool));
 
