@@ -17,8 +17,5 @@ export function finished(item: Item): boolean {
   return item.archived !== undefined || item.revisedInto.length > 0;
 }
 
-/**
- * Whether the content is still a person's to change, which is the queue's own
- * rule: the row answers it, and no second read is needed.
- */
+/** The queue's own rule, which the row answers without a second read. */
 export const editable = unprocessed;

@@ -48,7 +48,11 @@ describe("editing", () => {
     await client.drain();
     await client.loadQueue();
 
-    await client.edit(captured.id, client.saying(captured, "a better thought"));
+    await client.edit(
+      captured.id,
+      client.saying(captured, "a better thought"),
+      MANUAL,
+    );
     await client.drain();
 
     expect(read(client.queue).items.map((item) => item.id)).toEqual([
@@ -72,18 +76,20 @@ describe("editing", () => {
     await client.loadQueue();
     await client.routing.markProcessed(captured.id, "pasted it");
 
-    await client.edit(captured.id, client.saying(captured, "said again"));
+    await client.edit(
+      captured.id,
+      client.saying(captured, "said again"),
+      MANUAL,
+    );
     await client.drain();
 
     const from = await client.item(captured.id);
     const revision = from?.revisedInto[0];
     if (revision === undefined) throw new Error("expected a revision");
 
-    // The revision is work of its own; the item it came from is not.
     expect(await queueOf(running.url)).toEqual([revision]);
     expect(read(client.queue).items.map((item) => item.id)).toEqual([revision]);
 
-    // And it is a capture in the feed, after the one it was made from.
     const feed = (await (
       await fetch(`${running.url}/v1/feed?order=oldest-first`)
     ).json()) as { values: { id: string; createdAt: string }[] };

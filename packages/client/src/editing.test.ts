@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createMemoryStore } from "./adapters/memory-store";
 import type { Item } from "./api/types";
 import { createClient } from "./client";
-import { anItem, EDITS, routeOf, stoppedClock } from "./testing/pool";
+import { anItem, routeOf, stoppedClock } from "./testing/pool";
 import {
   json,
   mockTransport,
@@ -12,6 +12,9 @@ import {
   type Handler,
 } from "./testing/transport";
 import type { ListState } from "./types";
+
+/** The channel the shell's edits arrive through, as its captures do. */
+const TYPED = "web-manual";
 
 function read<T>(source: Observable<T>): T {
   let seen: T | undefined;
@@ -31,7 +34,6 @@ function clientOver(handler: Handler) {
     transport,
     store: createMemoryStore(),
     now: clock.now,
-    source: EDITS,
   });
   return { client, transport };
 }
@@ -41,10 +43,10 @@ const says = (list: ListState) =>
   list.items.map((item) => item.payload.content["text"]);
 
 /** A queue of one loaded item, and a handler for whatever the test then does. */
-async function overOne(handler: Handler) {
+async function overOne(handler: Handler, held: Item = anItem("one")) {
   const { client, transport } = clientOver((request) =>
     routeOf(request) === "GET /v1/queue"
-      ? json(200, { values: [anItem("one")] })
+      ? json(200, { values: [held] })
       : handler(request),
   );
 
@@ -79,7 +81,7 @@ describe("the hand-over seal", () => {
     const pending = await client.capture({ channel: "web", text: "a draft" });
     transport.unreachable(false);
 
-    await client.edit(pending.id, payload("a better draft"));
+    await client.edit(pending.id, payload("a better draft"), TYPED);
     await client.drain();
 
     const captures = transport.sent.filter(
@@ -110,7 +112,7 @@ describe("the hand-over seal", () => {
         : json(200, {}),
     );
 
-    await client.edit("one", payload("said again"));
+    await client.edit("one", payload("said again"), TYPED);
     await client.drain();
 
     expect(
@@ -136,7 +138,7 @@ describe("amend versus revise", () => {
       });
     });
 
-    await client.edit("one", payload("edited"));
+    await client.edit("one", payload("edited"), TYPED);
     expect(says(read(client.queue))).toEqual(["edited"]);
 
     release();
@@ -156,7 +158,7 @@ describe("amend versus revise", () => {
       json(200, { kind: "revised", revision, revisionOf: "one" }),
     );
 
-    await client.edit("one", payload("edited"));
+    await client.edit("one", payload("edited"), TYPED);
     // The guess: an amendment in place, under the original's id.
     expect(ids(read(client.queue))).toEqual(["one"]);
 
@@ -180,7 +182,7 @@ describe("amend versus revise", () => {
         : json(200, anItem("one")),
     );
 
-    await client.edit("one", payload("edited"));
+    await client.edit("one", payload("edited"), TYPED);
     await client.drain();
 
     const original = await client.item("one");
@@ -200,7 +202,7 @@ describe("amend versus revise", () => {
         : json(200, { ...anItem("one"), revisedInto: ["two"] }),
     );
 
-    await client.edit("one", payload("edited"));
+    await client.edit("one", payload("edited"), TYPED);
     await client.drain();
     expect(ids(read(client.queue))).toEqual(["two"]);
 
@@ -232,10 +234,9 @@ describe("amend versus revise", () => {
     );
     await client.loadQueue();
 
-    await client.edit("one", payload("edited"));
+    await client.edit("one", payload("edited"), TYPED);
     await client.drain();
 
-    // The last touch is later than either capture time and moves nothing.
     expect(ids(read(client.queue))).toEqual(["one", "two"]);
   });
 
@@ -251,7 +252,7 @@ describe("amend versus revise", () => {
     );
 
     transport.unreachable(true);
-    await client.edit("one", payload("edited"));
+    await client.edit("one", payload("edited"), TYPED);
     await client.drain();
     transport.unreachable(false);
     await client.drain();
@@ -271,22 +272,24 @@ describe("amend versus revise", () => {
     expect(new Set(identities).size).toBe(1);
   });
 
-  it("carries the client's own source, not the item's", async () => {
-    const { client, transport } = await overOne(() =>
-      json(200, {
-        kind: "amended",
-        item: { ...anItem("one"), payload: payload("edited") },
-      }),
+  it("carries the source it was given, not the item's", async () => {
+    const { client, transport } = await overOne(
+      () =>
+        json(200, {
+          kind: "amended",
+          item: { ...anItem("one"), payload: payload("edited") },
+        }),
+      anItem("one", { source: "a-watched-folder" }),
     );
 
-    await client.edit("one", payload("edited"));
+    await client.edit("one", payload("edited"), TYPED);
     await client.drain();
 
     const sent = transport.sent.find(
       (request) => routeOf(request) === "POST /v1/items/one/edit",
     );
     expect((await sent?.json()) as { source: string }).toMatchObject({
-      source: EDITS,
+      source: TYPED,
     });
   });
 
@@ -295,7 +298,7 @@ describe("amend versus revise", () => {
       refusal(422, "payload-type-changed", { from: "text" }),
     );
 
-    await client.edit("one", payload("edited"));
+    await client.edit("one", payload("edited"), TYPED);
     await client.drain();
 
     expect(says(read(client.queue))).toEqual(["one"]);

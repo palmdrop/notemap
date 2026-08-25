@@ -69,7 +69,6 @@ import type {
 
 export interface ItemsApi {
   get(id: ItemId): Promise<Item | undefined>;
-  /** An envelope rather than a payload, because a revision is a capture. */
   edit(
     id: ItemId,
     envelope: EditEnvelope,

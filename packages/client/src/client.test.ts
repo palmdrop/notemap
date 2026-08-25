@@ -6,7 +6,7 @@ import { createMemoryStore } from "./adapters/memory-store";
 import { createClient } from "./client";
 import { Refused, Unreachable } from "./errors";
 import type { PendingOperation } from "./outbox/operations";
-import { anItem, EDITS, routeOf, stoppedClock } from "./testing/pool";
+import { anItem, routeOf, stoppedClock } from "./testing/pool";
 import {
   json,
   mockTransport,
@@ -34,7 +34,6 @@ function clientOver(handler: Handler) {
     transport,
     store,
     now: clock.now,
-    source: EDITS,
   });
   return { client, transport, store };
 }
@@ -703,7 +702,6 @@ describe("an asset", () => {
     const client = createClient({
       transport,
       store: createMemoryStore(),
-      source: EDITS,
     });
     const item = {
       ...anItem("one"),

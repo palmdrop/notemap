@@ -1,6 +1,8 @@
+import { dequal } from "dequal";
+
 import { recordAction } from "./actions";
 import { enqueueMirrorWrite } from "./mirror";
-import { checkAssets, checkPayload } from "./payload";
+import { canonicalPayload, checkAssets, checkPayload } from "./payload";
 import { ok, refused } from "../utils/result";
 import type { PoolConfig } from "../types/api/config";
 import type { Agent } from "../types/domain/agent";
@@ -97,7 +99,16 @@ async function revise(
     envelope.sourceItemId,
   );
   if (replayed !== undefined) {
-    return replayed.revisionOf === item.id
+    // Same identity, same words: the resend of an edit already made. Different
+    // words under a taken identity is capture's refusal, not a second revision.
+    const replay =
+      replayed.revisionOf === item.id &&
+      dequal(
+        canonicalPayload(replayed.payload),
+        canonicalPayload(envelope.payload),
+      );
+
+    return replay
       ? ok({ kind: "revised", revision: replayed, revisionOf: item.id })
       : refused({ kind: "source-item-changed", existing: replayed.id });
   }

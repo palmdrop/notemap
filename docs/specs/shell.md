@@ -30,7 +30,9 @@
   The word on the older row is `revised` rather than `superseded`, since a revision does not replace
   what it names, and the edit action is drawn from `archived`, `routing` and `revisedInto` on the
   row itself. The last touch stopped being described as what the queue is ordered by and reads as
-  what it is: the only record that an unprocessed note was rewritten.
+  what it is: the only record that an unprocessed note was rewritten. **Not shipped**: any way to
+  ask for a revision — the queue offers the edit and holds unprocessed items only, and the feed
+  offers none, so a revision is something this shell can read and not something it can make.
   ([plan](../plans/editable-until-processed.md),
   [ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md))
 - 2026-08-20 — **The designed shell is built.** `apps/ui` draws the queue and the feed as one
@@ -160,11 +162,11 @@ time.**
   revised more than once. Where a revision **sorts** is settled: at its own capture time, like any
   capture. Drawing it beside what it came from is this shell's to choose, by grouping on the link.
 - A **pending** mark when an outbox operation about this item has not yet drained.
-- The **last touch** when it differs from the capture time, on any surface. *Amended 2026-08-24*:
-  it no longer orders the queue
-  ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)), so it stops explaining
-  where a row sits and becomes a plain fact about the note — worth more now that an unprocessed
-  item can be edited in place any number of times with nothing else recording that it changed.
+- The **last touch** when it differs from the capture time. *Amended 2026-08-24*: it no longer
+  orders the queue ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)), so it
+  stops explaining where a row sits and becomes a plain fact about the note — worth more now that
+  an unprocessed item can be edited in place any number of times with nothing else recording that
+  it changed, and read among the facts a row opens with rather than on every collapsed one.
 
 **In the feed, a row says what became of it.** The feed is the pool read completely, so routed and
 archived items are in it. The state is an inverted word in the left column, under the time —

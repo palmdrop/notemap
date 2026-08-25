@@ -440,7 +440,6 @@ export function createSqlitePoolStore(
       return row === undefined ? undefined : hydrate([row])[0];
     }
 
-    /** One ordering read through three filters: the feed takes none. */
     function byCaptureTime(page: OrderedPage, where?: string): Slice<Item> {
       const way = direction(page.order);
 

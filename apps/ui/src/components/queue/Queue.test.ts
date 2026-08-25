@@ -149,7 +149,6 @@ test("offers the edit on an unprocessed row and not on a processed one", async (
 
   await open(1);
   expect(screen.queryByRole("button", { name: "edit" })).toBeNull();
-  // And the row says what became of it instead.
   expect(screen.getByText("revised")).toBeDefined();
 
   await open(0);

@@ -3,6 +3,7 @@
   import type { Item } from "@notemap/client";
 
   import Action from "$components/primitives/controls/Action.svelte";
+  import { TYPED } from "$lib/channels";
   import { client } from "$lib/client";
 
   let { item, ondone }: { item: Item; ondone: () => void } = $props();
@@ -13,7 +14,7 @@
   function save(event: SubmitEvent) {
     event.preventDefault();
     ondone();
-    void client.edit(item.id, client.saying(item, draft));
+    void client.edit(item.id, client.saying(item, draft), TYPED);
   }
 </script>
 

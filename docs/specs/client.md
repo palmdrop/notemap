@@ -4,10 +4,10 @@
 **Last updated**: 2026-08-24
 **Shipped**:
 
-- 2026-08-24 — **An edit carries the client's own identity, and a revision is an arrival.** The
-  client is configured with the source its edits claim, mints a `sourceItemId` once per edit and
-  reuses it on every retry, so a lost response costs one revision rather than two — within a
-  session, until the outbox survives a reload. A revision settles at the newest end like any
+- 2026-08-24 — **An edit names the channel its words came in through, and a revision is an
+  arrival.** `edit` takes a source beside the payload and mints a `sourceItemId` once, reusing it
+  on every retry, so a lost response costs one revision rather than two — within a session, until
+  the outbox survives a reload. A revision settles at the newest end like any
   capture rather than beside what it names, an amendment no longer re-ranks anything, and whether
   an item is still work is one named predicate, `unprocessed`, read off the row.
   ([plan](../plans/editable-until-processed.md),
@@ -330,15 +330,19 @@ A capture is the client's own until it reaches the pool, and immutable once it d
   So it still treats amend-versus-revise as the pool's call and reconciles to whatever the ack
   recorded. The optimistic view may show an amendment and settle into a revision; the client shows
   the reconciled result, not its guess.
-- **An edit carries the client's own source identity**, as a capture does, and the same one on
-  every retry of that edit. This is what makes a retried edit idempotent: the pool matches a
-  revision for replay exactly as it matches a capture, so a lost response costs a duplicate
-  revision only if the client mints a fresh id for the resend. The source is the **client's**,
-  configured once for it, rather than the source of the item being edited: a revision is a capture
-  of whoever made the edit. Its own id for the edit is minted with the operation and carried on it.
-  *Session-scoped for now* (2026-08-24): the operation lives in a store nothing reads back, so a
-  retry after a reload mints a fresh id and the pool records a second revision. It becomes
-  unqualified when [durable-offline-client](../plans/durable-offline-client.md) lands.
+- **An edit carries a source identity**, as a capture does, and the same one on every retry of
+  that edit. This is what makes a retried edit idempotent: the pool matches a revision for replay
+  exactly as it matches a capture, so a lost response costs a duplicate revision only if the client
+  mints a fresh id for the resend. The **source is the channel the new words came in through** —
+  the caller's, named per edit, the same vocabulary its captures use — rather than the source of
+  the item being edited, which did not make this edit. Nothing about an edit needs a channel of its
+  own: what distinguishes one source from another is the policy attached to it, and a rewrite
+  through a given channel wants the policy that channel already has. That it was an edit is
+  `revisionOf`, which says so without spending an identity on it. Its own id for the edit is minted
+  with the operation and carried on it. *Session-scoped for now* (2026-08-24): the operation lives
+  in a store nothing reads back, so a retry after a reload mints a fresh id and the pool records a
+  second revision. It becomes unqualified when
+  [durable-offline-client](../plans/durable-offline-client.md) lands.
 
 ### Source identity
 

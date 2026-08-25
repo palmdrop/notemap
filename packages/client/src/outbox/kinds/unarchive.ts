@@ -1,6 +1,6 @@
 import { answered } from "../../api/http";
 import { unchanged, type Applied } from "../../state/applied";
-import { cached, intoQueue, withIds, without } from "../../state/state";
+import { cached, intoPage, withIds, without } from "../../state/state";
 import { replacing, type Handler } from "../handler";
 
 export const unarchive: Handler<"unarchive"> = {
@@ -20,7 +20,7 @@ export const unarchive: Handler<"unarchive"> = {
         items,
         queue: withIds(
           state.queue,
-          intoQueue(state.queue, operation.item, items),
+          intoPage(state.queue, operation.item, items),
         ),
       },
       undo: (current) => ({

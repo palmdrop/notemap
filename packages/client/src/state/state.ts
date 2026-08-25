@@ -75,7 +75,7 @@ export function settledDestination(
  * Where every surface reads an item: its capture time, with the id only to
  * break a tie, since mint order is not guaranteed to follow it.
  */
-export function queueRank(item: Item): string {
+export function rank(item: Item): string {
   return `${item.createdAt}|${item.id}`;
 }
 
@@ -104,7 +104,11 @@ function behind(order: Order, one: string, other: string): boolean {
  */
 function loaded(page: ListPage, item: Item): boolean {
   if (page.exhausted) return true;
-  if (page.after === undefined) return false;
+
+  // Nothing read yet, so the window is the order's own start. An arrival is at
+  // that boundary reading newest-first and past the far end reading
+  // oldest-first, where the pool's first page is what carries it.
+  if (page.after === undefined) return page.order === "newest-first";
 
   const comma = page.after.indexOf(",");
   const at = comma === -1 ? page.after : page.after.slice(0, comma);
@@ -116,11 +120,11 @@ function loaded(page: ListPage, item: Item): boolean {
 }
 
 /**
- * Places an item in the queue by its rank, and only where the list actually
+ * Places an item on a surface by its rank, and only where the page actually
  * reaches. Past that the pool's own next page carries it: appending to the end
- * of a window would sort it ahead of the older items still to be read.
+ * of a window would sort it ahead of the rows still to be read.
  */
-export function intoQueue(
+export function intoPage(
   page: ListPage,
   id: ItemId,
   items: ReadonlyMap<ItemId, Item>,
@@ -129,11 +133,11 @@ export function intoQueue(
   if (inserted === undefined || page.ids.includes(id)) return page.ids;
   if (!loaded(page, inserted)) return page.ids;
 
-  const rank = queueRank(inserted);
+  const arriving = rank(inserted);
 
   const at = page.ids.findIndex((held) => {
     const item = items.get(held);
-    return item !== undefined && behind(page.order, queueRank(item), rank);
+    return item !== undefined && behind(page.order, rank(item), arriving);
   });
 
   return at === -1
@@ -260,33 +264,27 @@ export function withdrawn(
 
   return {
     ...held,
-    queue: withIds(held.queue, intoQueue(held.queue, id, held.items)),
+    queue: withIds(held.queue, intoPage(held.queue, id, held.items)),
   };
 }
 
 /**
- * An item that has just been captured: newest in the feed, and placed in the
- * queue by its rank where the page reaches that far.
+ * An item that has just been captured, placed on both surfaces by its rank and
+ * only where the page reaches: they read the same key in either direction, so
+ * the newest arrival is at the head of one and past the end of the other.
  */
 export function arrived(state: ClientState, item: Item): ClientState {
   const items = cached(state, [item]);
-  const feed = state.feed.ids.includes(item.id)
-    ? state.feed.ids
-    : [item.id, ...state.feed.ids];
 
   return {
     ...state,
     items,
-    feed: withIds(state.feed, feed),
-    queue: withIds(state.queue, intoQueue(state.queue, item.id, items)),
+    feed: withIds(state.feed, intoPage(state.feed, item.id, items)),
+    queue: withIds(state.queue, intoPage(state.queue, item.id, items)),
   };
 }
 
-/**
- * A revision is an arrival like any capture. The item it came from leaves the
- * queue by being processed — one more revision made from it — rather than by
- * being pointed at.
- */
+/** The item it came from leaves the queue processed, not pointed at. */
 export function revised(
   state: ClientState,
   revisionOf: ItemId,
@@ -321,7 +319,7 @@ export function settle(state: ClientState, item: Item): ClientState {
     ? drained.ids
     : held
       ? state.queue.ids
-      : intoQueue(drained, item.id, items);
+      : intoPage(drained, item.id, items);
 
   return { ...state, items, queue: withIds(state.queue, ids) };
 }

@@ -124,7 +124,7 @@ export interface Client {
    * is the pool's call, and the client reconciles to whichever it recorded — so
    * this answers when the operation is applied, not when the shape is known.
    */
-  edit(item: ItemId, payload: Payload): Promise<void>;
+  edit(item: ItemId, payload: Payload, source: string): Promise<void>;
   /** The payload an edit would carry for new words, whichever slot holds them. */
   saying(item: Item, said: string): Payload;
 
@@ -150,12 +150,6 @@ export interface Client {
 export type ClientConfig = {
   readonly transport: Transport;
   readonly store: ClientStore;
-  /**
-   * The source identity this client's edits claim. A revision is a capture, so
-   * it is stamped with whoever made the edit rather than with the source of the
-   * item it was made from.
-   */
-  readonly source: string;
   /** The clock that stamps an operation-time. A port, so a test can hold it still. */
   readonly now?: () => string;
 };

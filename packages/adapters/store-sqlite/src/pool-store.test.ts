@@ -1411,7 +1411,6 @@ describe("the tags in use", () => {
     ]);
   });
 
-  /** Two items carry the tag: the revision copied it, and both are real. */
   it("counts an item something was revised from, and the revision", async () => {
     const { pool: p } = pool();
     const original = tagged(

@@ -33,7 +33,9 @@ Depends on nothing. Everything else depends on this.
       with it
 - [x] `edit` takes a capture envelope rather than a bare payload — source, that source's own id,
       and the payload — and matches a revision for replay on `(source, sourceItemId)` exactly as
-      `capture` does. An amendment needs no match. A replay answers the revision already made
+      `capture` does — *amended in review*: the payload too, so an identity resent with different
+      words is refused rather than answered with the earlier revision. An amendment needs no match.
+      A replay answers the revision already made
 - [x] **`EditEnvelope`, beside `CaptureEnvelope`**: a capture's envelope less what a revision mints
       for itself — no id, no capture time, no tags
 - [x] **`EditRefusal` gains `source-item-changed`**, capture's, and for capture's reason: the
@@ -77,7 +79,9 @@ Depends on phase 1's port shape.
       identity they were revised from — fails the migration rather than keeping two rows claiming
       one identity ([ADR 9](../adr/0009-versioned-api-mutable-until-first-real-pool.md): no pool is
       real yet, and the fix is a fresh one)
-- [x] **Drop `items_one_revision_each`**, which held the chain to one revision per item
+- [x] **Drop `items_one_revision_each`**, which held the chain to one revision per item.
+      *Amended in review*: replaced by a plain `items_revision_of`, since the unique index was also
+      carrying the queue's revision anti-join and the read that answers `revisedInto`
 - [x] Delete the revision exclusion from tags-in-use. Every item that exists is counted
 - [x] Delete `newestItem` and the `head` guard
 - [x] `QUEUED` keeps all three anti-joins. The revision clause is now what keeps a thawed item out
@@ -125,9 +129,11 @@ Depends on phase 3's document.
       `PendingOperation`, so the entry's id is not reachable from where the request is built. It
       carries the **whole envelope**, source included, which is what a `send` with no view of the
       config can post — and is the shape a capture operation already has
-- [x] **`ClientConfig` gains `source`**, since a revision is a capture of whoever made the edit
-      rather than of the item's own source. The shell names it beside its capture channels
-      (`web-edit`), which is where that vocabulary already lives
+- [x] **`client.edit` takes a source**, since a revision is a capture of whoever made the edit
+      rather than of the item's own source. *Amended in review*: it is a parameter rather than
+      client configuration, and it is the caller's ordinary capture channel — the shell passes
+      `TYPED`. A rewrite through a channel wants that channel's policy, which is the only thing a
+      separate source would buy, and `revisionOf` already says it was an edit
 - [x] Delete `revised()`'s placement logic in `state/state.ts`. A revision is an arrival like any
       capture: it goes to the newest end, and the item it came from leaves the queue by being
       processed rather than by being pointed at. **Capture and revision share one `arrived()`**,

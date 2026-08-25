@@ -7,11 +7,8 @@ import { replacing, type Handler, type Settlement } from "../handler";
 export const edit: Handler<"edit"> = {
   target: (operation) => operation.item,
 
-  /**
-   * Drawn as an amendment, which is what an item the client holds as
-   * unprocessed will get. Another client may have routed it since, and the
-   * settlement is what reconciles that.
-   */
+  /** Drawn as an amendment; another client may have routed it since, and the
+   * settlement is what reconciles that. */
   apply(state, operation, at): Applied {
     const previous = state.items.get(operation.item);
     if (previous === undefined) return unchanged(state);

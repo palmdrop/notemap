@@ -70,6 +70,27 @@ describe("the row types and the migrations agree", () => {
     }
   });
 
+  it("seeks rather than scans for the revisions made from an item", async () => {
+    const opened = store();
+    try {
+      const plan = opened.raw
+        .prepare(
+          `EXPLAIN QUERY PLAN
+           SELECT id FROM items AS item
+           WHERE NOT EXISTS (
+             SELECT 1 FROM items AS revision WHERE revision.revision_of = item.id
+           )`,
+        )
+        .all() as unknown as { detail: string }[];
+
+      expect(plan.map((step) => step.detail).join("\n")).toContain(
+        "SEARCH revision USING COVERING INDEX items_revision_of",
+      );
+    } finally {
+      await opened.cleanup();
+    }
+  });
+
   it("refuses an agent whose name disagrees with its kind", async () => {
     const opened = store();
     try {

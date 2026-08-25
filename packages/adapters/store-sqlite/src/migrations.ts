@@ -573,8 +573,14 @@ export const MIGRATIONS: readonly string[] = [
     WHERE archived_at IS NOT NULL;
 
   -- An item may be revised any number of times, into captures independent of
-  -- each other.
+  -- each other. The uniqueness goes; the lookup does not, so a plain index
+  -- replaces it: the queue's revision anti-join and the read that answers
+  -- \`revisedInto\` both seek on this column and would otherwise scan the table.
   DROP INDEX items_one_revision_each;
+
+  CREATE INDEX items_revision_of
+    ON items (revision_of)
+    WHERE revision_of IS NOT NULL;
 
   -- A revision mints its own identity from whoever made the edit, so the rule
   -- that a source cannot duplicate what it already captured now covers every

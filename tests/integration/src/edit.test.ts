@@ -30,7 +30,6 @@ const PERSON = { kind: "person" } as const;
 const ALL: Page = { limit: 50 };
 const OLDEST: PageRequest = { limit: 50, order: "oldest-first" };
 
-/** The source a person's edits arrive under, which is not the item's own. */
 const SHELL = "shell/web" as typeof SCRATCHPAD;
 
 const open: Harness[] = [];
@@ -68,7 +67,6 @@ function text(value: string): Payload {
   return { type: TEXT, content: { text: value }, metadata: {}, assets: [] };
 }
 
-/** An edit as a client makes one: its own source, and its own id for the edit. */
 function edit(value: string, sourceItemId = "edit-1"): EditEnvelope {
   return { source: SHELL, sourceItemId, payload: text(value) };
 }
@@ -321,7 +319,6 @@ describe("appending a revision", () => {
     expect(await p.items.get(item.id)).toMatchObject({
       revisedInto: [first.id, second.id],
     });
-    // Neither is the current one: both are unprocessed work of their own.
     expect(first.revisedInto).toEqual([]);
     expect(second.revisedInto).toEqual([]);
     expect(ids((await p.views.queue(OLDEST)).values)).toEqual([
@@ -350,6 +347,26 @@ describe("appending a revision", () => {
     });
   });
 
+  it("refuses the same identity carrying different words", async () => {
+    const opened = pool();
+    const { pool: p } = opened;
+    const item = await processed(opened);
+
+    const once = revision(
+      succeeded(await p.items.edit(item.id, edit("as it was sent"), PERSON)),
+    );
+
+    expect(
+      await p.items.edit(item.id, edit("second thoughts"), PERSON),
+    ).toMatchObject({
+      kind: "refused",
+      refusal: { kind: "source-item-changed", existing: once.id },
+    });
+    expect(await p.items.get(item.id)).toMatchObject({
+      revisedInto: [once.id],
+    });
+  });
+
   it("refuses an identity that names something other than a revision of this item", async () => {
     const opened = pool();
     const { pool: p } = opened;
@@ -366,7 +383,7 @@ describe("appending a revision", () => {
 });
 
 describe("a decision that was withdrawn", () => {
-  it("makes an unrevised item a person's to edit again", async () => {
+  it("leaves an item something was revised from sealed", async () => {
     const opened = await reserved();
     const { pool: p, item } = opened;
     opened.clock.set("2026-08-06T10:00:00.000Z");
@@ -382,7 +399,7 @@ describe("a decision that was withdrawn", () => {
     ).toMatchObject({ kind: "revised" });
   });
 
-  it("leaves an item something was revised from sealed", async () => {
+  it("makes an unrevised item a person's to edit again", async () => {
     const opened = await reserved();
     const { pool: p, item } = opened;
 

@@ -28,7 +28,6 @@ function payload(text: string): unknown {
   return { type: "text", content: { text }, metadata: {}, assets: [] };
 }
 
-/** What an edit carries: the source making it, its own id for it, and the words. */
 function envelope(text: string, sourceItemId = "edit-1"): unknown {
   return { source: "web", sourceItemId, payload: payload(text) };
 }
@@ -63,7 +62,6 @@ describe("editing over the wire", () => {
     expect(outcome.kind).toBe("revised");
     expect(outcome.revisionOf).toBe(first);
     expect(outcome.revision.id).not.toBe(first);
-    // The revision arrives at the newest end, by its own capture time.
     expect(ids(await slice(app, "/v1/queue"))).toEqual([
       second,
       outcome.revision.id,

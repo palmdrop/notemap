@@ -76,8 +76,8 @@
   none of the delivery machinery — its target is the user, nothing can be unreachable, and the
   record is born delivered — which is what lets both ways out of the queue exist before a line of
   retry logic does. `views.queue` and `views.archived` read oldest first from a content-time
-  position and take no order *(reversed 2026-08-17: which end a reader starts from is the
-  reader's)*, and **processed is derived** as promised: unarchived, unrevised
+  position *(reversed 2026-08-24: the key is capture time, which the feed already read)* and take
+  no order *(reversed 2026-08-17: which end a reader starts from is the reader's)*, and **processed is derived** as promised: unarchived, unrevised
   and holding no routing record, three anti-joins the store indexes for rather than denormalises
   around. Archiving something already archived is **refused** rather than absorbed, and so is
   unarchiving something that is not: both carry a reason and a time, and a second decision would
@@ -277,9 +277,12 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   source's own id, which is what makes a retried edit idempotent: a revision is matched for replay
   exactly as a capture is, so an edit resent after a lost response answers with the revision it
   already made instead of making a second one. An amendment needs no such match, writing the same
-  payload twice being the same as writing it once. **An identity that names an item core did not
-  revise from this one is refused** as `source-item-changed`, on capture's terms: every item claims
-  one identity, and a revision claims one like anything else.
+  payload twice being the same as writing it once. Matching *exactly* as a capture does means the
+  payload is compared too: **an identity already claimed, by anything other than a revision of this
+  item saying these same words, is refused** as `source-item-changed`. Every item claims one
+  identity, a revision included, so a resend that changed its mind under an id it already spent is
+  a caller's mistake rather than a replay — answering it with the earlier revision would drop the
+  words it sent and call that success.
 - A client may freely amend or discard a capture that core has not yet accepted. Immutability
   begins at the pool, and then only once the pool has been told the item is done with. Once a
   capture has been handed over for delivery it must be treated as accepted, even before a response
@@ -445,8 +448,8 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   interface policy, and core imposes none. A person clearing a backlog may reasonably want the
   newest captures first, and refusing them buys the domain nothing. What makes it a queue is the
   **key**, and that the queue drains.
-- **The key is capture time** (decided 2026-08-24), the same one the feed uses, so the queue and
-  the feed are one ordering read through two filters. Nothing an item undergoes moves it: not
+- **The key is capture time** (decided 2026-08-24), the same one the feed uses, so the queue, the
+  feed and the archive are one ordering read through three filters. Nothing an item undergoes moves it: not
   classification, routing, archiving or enrichment, and not editing either. This replaces last
   touch, which existed so a revised item resurfaced where it would be met and is no longer needed
   for it, a revision now being a new capture that arrives at the newest end by its own time.

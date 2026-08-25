@@ -8,7 +8,6 @@ export * from "./adapters/memory-store";
 
 export type { Writable } from "./observable/observable";
 
-/** The queue's rule, and editability's, which are one question. */
 export { unprocessed } from "./state/state";
 
 export type {

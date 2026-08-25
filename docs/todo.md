@@ -6,6 +6,12 @@
   A revision stopped being a version of an item and became an ordinary capture holding a trace.
   Specified across core.md, http-v1.md, client.md, sync.md, mirror.md and shell.md, and built on
   2026-08-24 ([plan](plans/editable-until-processed.md)).
+- [ ] **Nothing in the shell can ask for a revision.** Editing is offered on the queue, which holds
+  unprocessed items only, and the feed offers no edit at all — so the revision path is reachable
+  only when another device processes an item between the draw and the send. Either the feed row
+  grows an edit, or rewriting a processed note is deliberately not a thing this shell does and
+  shell.md should keep saying so. Raised reviewing
+  [editable-until-processed](plans/editable-until-processed.md).
 - [ ] Routing arguments - more detailed routing within a destination. The mechanism already exists: a capability's `targetSchema` is a JSON Schema the adapter publishes and core validates, so an adapter wanting a template name, a format, a column or a priority just declares one. What is left is making those schemas good enough to build a form from - titles, descriptions, defaults, enums - and saying so in the spec, so adapters bother.
   - This has a caller now. The routing composer builds the target step from `targetSchema`, so a
     schema with nothing in it renders as unlabelled text inputs; an enum would render as the same

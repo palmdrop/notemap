@@ -37,7 +37,6 @@ export type CaptureEnvelope = WireCaptureEnvelope & {
 };
 export type CaptureOutcome = components["schemas"]["CaptureOutcome"];
 
-/** What an edit carries: who is making it, their own id for it, and the words. */
 export type EditEnvelope = components["schemas"]["EditEnvelope"];
 
 export type Destination = components["schemas"]["Destination"];

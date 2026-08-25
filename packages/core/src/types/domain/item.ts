@@ -50,11 +50,10 @@ export type ItemRecord = {
   readonly archived?: ArchiveState;
 };
 
+/** A record plus what the store derives from the rest of the pool around it. */
 export type Item = ItemRecord & {
   readonly modifiedAt: Timestamp;
-  /** The revisions made from it, empty where there are none. Derived, never stored. */
   readonly revisedInto: readonly ItemId[];
-  /** Absent where the item has never been routed. Derived, like `revisedInto`. */
   readonly routing?: RoutingSummary;
 };
 
