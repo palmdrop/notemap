@@ -77,7 +77,12 @@ describe("the pool says which pool it is", () => {
       raw.exec(migration);
     }
     raw.exec(`PRAGMA user_version = ${BEFORE_POOL_IDENTITY}`);
+    const tables = raw
+      .prepare(`SELECT name FROM sqlite_master WHERE name = 'pool_identity'`)
+      .all();
     raw.close();
+
+    expect(tables).toEqual([]);
 
     const migrated = reopened(file);
     const minted = await migrated.identity();

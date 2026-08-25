@@ -12,6 +12,10 @@ const SINGLETON = 1;
  * so a pool that predates it takes one without a data migration. The insert
  * ignores a row already there, which is also what makes two hosts opening one
  * file at the same instant agree on which identity won.
+ *
+ * Not through the store's `IdGenerator`, which the daemon wires to mint v7:
+ * an identity that encoded its own minting time would say when the pool was
+ * made, and it may say only which pool it is.
  */
 export function poolIdentity(connection: DatabaseSync): PoolIdentity {
   connection

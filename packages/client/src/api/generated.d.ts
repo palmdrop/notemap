@@ -2203,7 +2203,7 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         Health: {
-            /** @example 0198f0c2-0000-7000-8000-000000000000 */
+            /** @example a1c9f2e4-6b30-4d51-9e7a-2f8b40c1d6e3 */
             pool: string;
         };
         CaptureOutcome: {

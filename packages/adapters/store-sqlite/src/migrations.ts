@@ -593,13 +593,8 @@ export const MIGRATIONS: readonly string[] = [
   `,
 
   `
-  -- Which pool this is, so a client can tell the one it cached from the one it
-  -- is now talking to. Minted rather than derived: nothing else about a pool is
-  -- stable across a rebuild, which restores every item under a new pool.
-  --
-  -- One row, pinned by a key that can only be 1. The value is not written here:
-  -- a migration cannot mint one, and an existing pool has to get its identity by
-  -- the same path a new one does.
+  -- Created empty: a migration cannot mint an identity, and a pool that
+  -- predates this table has to take one by the same path a new pool does.
   CREATE TABLE pool_identity (
     singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
     identity  TEXT    NOT NULL

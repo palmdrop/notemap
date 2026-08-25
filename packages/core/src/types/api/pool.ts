@@ -238,7 +238,6 @@ export interface MaintenanceApi {
 }
 
 export interface Pool {
-  /** Which pool this is, for a caller holding anything it read from one. */
   identity(): Promise<PoolIdentity>;
 
   capture(

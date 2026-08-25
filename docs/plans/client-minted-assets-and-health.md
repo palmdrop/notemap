@@ -98,15 +98,15 @@ Depends on phase 3's document.
       [durable-offline-client](durable-offline-client.md)'s
 - [ ] A reading for `asset-id-conflict` in `errors.ts`
 - [ ] `CONTEXT.md`: amend **Asset** — the id is minted by whoever uploads, so an asset has an
-      identity before the pool holds its bytes, as a capture does. **Pool identity** landed with the
-      health route
-- [ ] `docs/specs/http-v1.md`: the upload section and the refusal table — `/v1/health` is written
-      up already. `docs/specs/core.md`: the asset id is the caller's. `docs/specs/mirror.md`: the
-      identity it has been asserting is readable now is — done
+      identity before the pool holds its bytes, as a capture does. (**Pool identity** landed with
+      the health route)
+- [ ] `docs/specs/http-v1.md`: the upload section and the refusal table. `docs/specs/core.md`: the
+      asset id is the caller's. (`/v1/health`, core.md's pool identity read and
+      `docs/specs/mirror.md` landed with the health route)
 - [ ] `pnpm test:stack` green, with a case that uploads under a minted id, replays it and conflicts
-      on it. The `/v1/health` case is in
-- [ ] Add the dated `Shipped:` entries (see Notes) — http-v1.md and mirror.md carry the health
-      half's already; core.md's is owed here
+      on it. (The `/v1/health` case landed with the health route)
+- [ ] Add the dated `Shipped:` entries for the asset half (see Notes). (http-v1.md, mirror.md and
+      core.md carry the health half's already)
 - [ ] `git commit`
 
 ---

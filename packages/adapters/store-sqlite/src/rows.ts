@@ -113,7 +113,6 @@ export type ActionRow = AgentColumns & {
   readonly detail: string;
 };
 
-/** One row, pinned by its key: a pool has exactly one identity. */
 export type PoolIdentityRow = {
   readonly singleton: number;
   readonly identity: string;

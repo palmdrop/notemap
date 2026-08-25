@@ -246,7 +246,7 @@ rather than the one the client wrote.
 `GET /v1/health` — that the daemon is up, and which pool it is holding.
 
 ```json
-{ "pool": "0198f0c2-0000-7000-8000-000000000000" }
+{ "pool": "a1c9f2e4-6b30-4d51-9e7a-2f8b40c1d6e3" }
 ```
 
 - **Liveness is the `200` itself.** The route has no refusals: a daemon that cannot answer is not
