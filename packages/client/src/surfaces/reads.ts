@@ -7,12 +7,11 @@ import {
   emptyPage,
   type ClientState,
   type ListPage,
+  type Surface,
 } from "../state/state";
 import type { Order } from "../types";
 
 const PAGE = 25;
-
-export type Surface = "feed" | "queue";
 
 /** The slice hands back a ready-made URL; the typed client takes parameters. */
 function positionIn(next: string): string | undefined {

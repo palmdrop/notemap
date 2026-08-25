@@ -1,10 +1,10 @@
-import type { Observable } from "rxjs";
 import { describe, expect, it } from "vitest";
 
 import { createMemoryStore } from "../adapters/memory-store";
 import type { Destination } from "../api/types";
 import { createClient } from "../client";
 import { Refused, Unreachable } from "../errors";
+import { read } from "../testing/observing";
 import { routeOf } from "../testing/pool";
 import {
   json,
@@ -12,16 +12,6 @@ import {
   refusal,
   type Handler,
 } from "../testing/transport";
-
-function read<T>(source: Observable<T>): T {
-  let seen: T | undefined;
-  source
-    .subscribe((value) => {
-      seen = value;
-    })
-    .unsubscribe();
-  return seen as T;
-}
 
 function clientOver(handler: Handler) {
   const transport = mockTransport(handler);

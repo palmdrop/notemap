@@ -1,4 +1,3 @@
-import type { Observable } from "rxjs";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import type { Item } from "./api/types";
@@ -6,6 +5,7 @@ import { createMemoryStore } from "./adapters/memory-store";
 import { createClient } from "./client";
 import { Refused, Unreachable } from "./errors";
 import type { PendingOperation } from "./outbox/operations";
+import { read } from "./testing/observing";
 import { anItem, routeOf, stoppedClock } from "./testing/pool";
 import {
   json,
@@ -14,16 +14,6 @@ import {
   type Handler,
 } from "./testing/transport";
 import type { ListState } from "./types";
-
-function read<T>(source: Observable<T>): T {
-  let seen: T | undefined;
-  source
-    .subscribe((value) => {
-      seen = value;
-    })
-    .unsubscribe();
-  return seen as T;
-}
 
 const clock = stoppedClock();
 
@@ -301,7 +291,13 @@ describe("the queue", () => {
       "old",
       "less-old",
     ]);
-    expect(read(client.feed).items.map((item) => item.id)).toEqual([fresh.id]);
+    // The pool has not answered for the feed, so it is the cache newest-first —
+    // which is everything the queue's own reads put there.
+    expect(read(client.feed).items.map((item) => item.id)).toEqual([
+      fresh.id,
+      "less-old",
+      "old",
+    ]);
   });
 
   it("carries a new capture to the far end, where fresh work accumulates", async () => {

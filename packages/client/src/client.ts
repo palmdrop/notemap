@@ -14,16 +14,19 @@ import { hydrate } from "./state/hydrate";
 import { persist } from "./state/persist";
 import {
   cached,
+  drawnFrom,
   emptyState,
   forget,
+  fromCache,
   processed,
   settle,
   settledDestination,
   withdrawn,
   type ClientState,
+  type Surface,
 } from "./state/state";
 import { createTags } from "./tags/tags";
-import { loadMore, type Surface } from "./surfaces/reads";
+import { loadMore } from "./surfaces/reads";
 import type { Client, ClientConfig, ListState } from "./types";
 
 const IMAGE = "image";
@@ -34,6 +37,7 @@ function sameList(one: ListState, other: ListState): boolean {
     one.loading === other.loading &&
     one.order === other.order &&
     one.more === other.more &&
+    one.fromCache === other.fromCache &&
     one.failure === other.failure &&
     one.items.length === other.items.length &&
     one.items.every((item, at) => item === other.items[at])
@@ -42,15 +46,19 @@ function sameList(one: ListState, other: ListState): boolean {
 
 function listOf(state: ClientState, surface: Surface): ListState {
   const page = state[surface];
-  const items = page.ids
-    .map((id) => state.items.get(id))
-    .filter((item): item is Item => item !== undefined);
+  const drawn = fromCache(page);
+  const items = drawn
+    ? drawnFrom(state, surface)
+    : page.ids
+        .map((id) => state.items.get(id))
+        .filter((item): item is Item => item !== undefined);
 
   return {
     items,
     order: page.order,
     loading: page.loading,
     more: !page.exhausted,
+    fromCache: drawn,
     ...(page.failure === undefined ? {} : { failure: page.failure }),
   };
 }

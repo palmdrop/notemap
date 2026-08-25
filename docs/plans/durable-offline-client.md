@@ -92,22 +92,26 @@ Depends on phase 1.
 
 Depends on phase 2.
 
-- [ ] The queue is derived from the cache rather than restored as a page: the items the client can
+- [x] The queue is derived from the cache rather than restored as a page: the items the client can
       see are unprocessed, mirroring the store's own three anti-joins — no routing records, not
       archived, `revisedInto` empty — ranked by capture time. The feed is the same cache,
       newest first
-- [ ] A derived page reports that it holds what the client holds rather than what the pool holds,
-      and a surface says so. It is not exhausted and it is not loading: it is the client's own
-- [ ] The first successful pool read **replaces** a derived page rather than extending it. A derived
+- [x] A derived page reports that it holds what the client holds rather than what the pool holds,
+      and a surface says so. It is not exhausted and it is not loading: it is the client's own —
+      `ListState.fromCache`
+- [x] The first successful pool read **replaces** a derived page rather than extending it. A derived
       page has no position, and stitching one to a page the pool positioned is two orders in one list
-- [ ] `loaded()` answers for a derived page. As it stands it requires a position or exhaustion, so a
-      capture made offline would be refused placement into the very surface it was made on
-- [ ] Tests: a cold client over a store holding items draws both surfaces without a transport; a
+- [x] ~~`loaded()` answers for a derived page.~~ *Amended 2026-08-26*: it does not have to. A page
+      the pool has never answered for holds no ids, no position and no exhaustion, and the surface
+      reads the cache itself rather than a list of ids — so the replace above falls out of appending
+      to an empty page, and an arrival is placed by being in the cache. `intoPage` returns such a
+      page untouched instead
+- [x] Tests: a cold client over a store holding items draws both surfaces without a transport; a
       routed, an archived and a revised-from item are all absent from the derived queue; an offline
       capture appears in the derived queue at its own capture time; a pool read replaces the derived
       page rather than appending to it
-- [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
+- [x] `git commit`
 
 ### Phase 4 — reachability, and a pool that is not the one we cached
 

@@ -12,6 +12,9 @@ import type { Order } from "../types";
 
 type RoutedTo = RoutingSummary["to"][number];
 
+/** The two paginated surfaces, which are also the two `ClientState` holds a page for. */
+export type Surface = "feed" | "queue";
+
 export type ListPage = {
   readonly order: Order;
   readonly ids: readonly ItemId[];
@@ -98,6 +101,35 @@ function behind(order: Order, one: string, other: string): boolean {
 }
 
 /**
+ * Whether a surface is the client's own cache rather than a page the pool
+ * answered. A page holds a position or is exhausted the moment one has, so a
+ * page holding neither and no rows has never been answered for at all.
+ */
+export function fromCache(page: ListPage): boolean {
+  return page.ids.length === 0 && page.after === undefined && !page.exhausted;
+}
+
+/**
+ * A surface drawn from the cache. The queue is everything the client can see is
+ * unprocessed, which is the store's own three anti-joins read off the row; the
+ * feed is everything it holds. Both rank by capture time, in whichever order
+ * the surface is being read.
+ */
+export function drawnFrom(
+  state: ClientState,
+  surface: Surface,
+): readonly Item[] {
+  const { order } = state[surface];
+  const held = [...state.items.values()].filter(
+    (item) => surface === "feed" || unprocessed(item),
+  );
+
+  return held.sort((one, other) =>
+    behind(order, rank(one), rank(other)) ? 1 : -1,
+  );
+}
+
+/**
  * Whether an item falls inside what a page has actually read. The pool's
  * position is `<at>,<id>` — the last row it handed over — so it answers this
  * exactly, and goes on answering it once every row in the window has left.
@@ -129,6 +161,9 @@ export function intoPage(
   id: ItemId,
   items: ReadonlyMap<ItemId, Item>,
 ): readonly ItemId[] {
+  // A cache-drawn surface reads the cache itself, so an arrival is already in it.
+  if (fromCache(page)) return page.ids;
+
   const inserted = items.get(id);
   if (inserted === undefined || page.ids.includes(id)) return page.ids;
   if (!loaded(page, inserted)) return page.ids;

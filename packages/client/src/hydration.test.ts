@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Observable } from "rxjs";
 
 import { createMemoryStore } from "./adapters/memory-store";
 import { saidBy } from "./errors";
@@ -7,6 +6,7 @@ import type { Item } from "./api/types";
 import { createClient } from "./client";
 import type { PendingOperation } from "./outbox/operations";
 import type { ClientStore } from "./ports/store";
+import { read, until } from "./testing/observing";
 import { anItem, routeOf, stoppedClock } from "./testing/pool";
 import {
   json,
@@ -16,23 +16,6 @@ import {
 } from "./testing/transport";
 
 const clock = stoppedClock();
-
-function read<T>(source: Observable<T>): T {
-  let seen: T | undefined;
-  source
-    .subscribe((value) => {
-      seen = value;
-    })
-    .unsubscribe();
-  return seen as T;
-}
-
-/** Lets hydration, the boot drain and everything they start run to a stop. */
-async function until(reached: () => boolean): Promise<void> {
-  for (let tries = 0; tries < 50 && !reached(); tries += 1) {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  }
-}
 
 function clientOver(store: ClientStore, handler: Handler) {
   const transport = mockTransport(handler);

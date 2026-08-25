@@ -31,6 +31,12 @@ export type ListState = {
   readonly order: Order;
   readonly loading: boolean;
   readonly more: boolean;
+  /**
+   * What the client holds rather than what the pool holds: the cache, drawn
+   * because the pool has not answered for this surface. It is neither loading
+   * nor exhausted, and the first page the pool does answer replaces it.
+   */
+  readonly fromCache: boolean;
   readonly failure?: string;
 };
 
