@@ -58,6 +58,10 @@ Depends on phase 1.
 - [ ] `createClient` starts hydration at once and returns; every path that touches state — a
       mutation, a surface read, a drain — waits on it first, the way `drain` already chains. The
       shell's wiring does not change and no caller can observe a half-hydrated cache
+- [ ] Hydration reads back the tags in use and the destinations alongside the items and the outbox,
+      so a client opened cold against an unreachable pool completes tags from the last list it read
+      and can still name its destinations — the gap [client.md](../specs/client.md) says this work
+      closes
 - [ ] Hydration does not re-apply pending operations: the cache was persisted with their effects in
       it. A crash between the two writes leaves one effect missing until that operation drains
 - [ ] A rehydrated `refused` operation stays refused, is not re-sent, and waits for a person, which
@@ -68,7 +72,8 @@ Depends on phase 1.
 - [ ] Tests: a client built over a store holding an outbox and items comes up with both; a capture
       made against a dead transport is there after a fresh client is built over the same store, and
       drains once when the transport answers; a rehydrated operation the pool refuses reports the
-      refusal and settles the item from the pool; a rehydrated refused operation drains nothing
+      refusal and settles the item from the pool; a rehydrated refused operation drains nothing; a
+      cold client with no transport completes a tag it saw last session
 - [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
 - [ ] `git commit`
 
@@ -136,18 +141,14 @@ Depends on phases 1 and 2, and on client-minted asset ids.
 - [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
 - [ ] `git commit`
 
-### Phase 6 — the read caches and retention
+### Phase 6 — retention
 
 Depends on phases 1 and 3.
 
-- [ ] The tags in use and the destinations persist and are read back on start, so a client opened
-      cold against an unreachable pool completes tags from the last list it read and can still name
-      its destinations — the gap [client.md](../specs/client.md) says this work closes
 - [ ] Retention: everything the client can see is unprocessed stays, being the working set; items
       that are only feed history are capped, oldest touched first. An item with a pending operation
       is never evicted
-- [ ] Tests: eviction spares unprocessed items and pending ones and takes the rest; a cold offline
-      client completes a tag it saw last session
+- [ ] Tests: eviction spares unprocessed items and pending ones and takes the rest
 - [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
 - [ ] `git commit`
 
@@ -159,8 +160,9 @@ Depends on every phase above.
       client over the same store, starts the daemon, and finds every operation landed exactly once —
       the attachment included
 - [ ] `CONTEXT.md`: add **Cache** and **Hydration**
-- [ ] `docs/specs/client.md`: the ports in detail, hydration and what it gates, derived surfaces,
-      retention, reachability, the offline attachment, and Prior decisions for each. Three of its
+- [ ] `docs/specs/client.md`: the ports in detail, hydration and what it gates, the read caches,
+      derived surfaces, retention, reachability, the offline attachment, and Prior decisions for
+      each. Three of its
       open questions close — reading the store back on start, the port shapes, and how an `edit`
       coalesces is answered by there being no coalescing
 - [ ] `docs/specs/sync.md`: half the rebuild question is answered; say which half and leave the rest

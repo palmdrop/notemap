@@ -1,4 +1,4 @@
-# Rolling out offline capture, four plans and nine pull requests
+# Rolling out offline capture, four plans and seven pull requests
 
 **Date**: 2026-08-24
 **Status**: In progress
@@ -72,45 +72,44 @@ Depends on PR 3. Branch `agent/durable-client-store`.
 - [ ] Phases 1 and 2 of [durable-offline-client](durable-offline-client.md), and ADR 0024
 - [ ] Useful alone and visibly so: the outbox survives a reload and drains on boot. Nothing later in
       that plan is needed for this to be worth having
+- [ ] The tags in use and the destinations are read back on start here rather than in that plan's
+      phase 6, which had conflated them with retention. They depend on the port and on hydration and
+      on nothing else, and folding them in is what keeps the port from shipping with methods no
+      caller reaches
+- [ ] `CONTEXT.md`'s **Hydration** lands here, where hydration is first a thing that happens.
+      **Cache** waits for PR 5, where what it holds acquires readers and a lifetime
 - [ ] client.md's ports and hydration paragraphs, and its `Shipped:` entry, describe **only** this —
       the derived surfaces are not here yet and the spec must not say they are
 - [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm test:stack` green
 
-### PR 5 — surfaces derived from the cache
+### PR 5 — the cache is read, capped, and checked against the pool
 
-Depends on PR 4. Branch `agent/derived-surfaces`.
+Depends on PR 4. Branch `agent/cache-with-readers`.
 
-- [ ] Phase 3 of [durable-offline-client](durable-offline-client.md)
-- [ ] `CONTEXT.md`'s **Cache** and **Hydration** land here, where the cache first has a lifetime
-      worth defining
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm test:stack` green
-
-### PR 6 — reachability, and a pool that is not the one we cached
-
-Depends on PR 4; independent of PR 5, so it may swap places with it.
-
-- [ ] Phase 4 of [durable-offline-client](durable-offline-client.md), and ADR 0023
+- [ ] Phases 3, 4 and 6 of [durable-offline-client](durable-offline-client.md), and ADR 0023
+- [ ] Three phases, one review: the cache acquires readers, a lifetime, and a check that it still
+      describes the pool it thinks it does. They are separable on paper and were three pull requests
+      here until 2026-08-25, but all three are `packages/client` alone — no wire, no daemon, one
+      `apps/ui` file between them — and each is small enough that the review ceremony would cost
+      more than the review
+- [ ] `CONTEXT.md`'s **Cache** lands here
 - [ ] sync.md's rebuild question is amended here to say which half is now answered
+- [ ] `docs/todo.md`'s write-only-store item is dropped here
 - [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm test:stack` green
 
-### PR 7 — a capture with an attachment, offline
+### PR 6 — a capture with an attachment, offline
 
-Depends on PRs 3 and 4.
+Depends on PRs 3 and 4. Independent of PR 5, so it may swap places with it.
 
 - [ ] Phase 5 of [durable-offline-client](durable-offline-client.md)
+- [ ] Stays on its own: blobs in the store, a two-step `capture` and `edit`, local bytes resolved in
+      place of a URL, and the one real correctness question in the plan — a retry between the `PUT`
+      and the `POST` leaving one asset and one item
 - [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm test:stack` green
 
-### PR 8 — the read caches and retention
+### PR 7 — the shell's marks
 
-Depends on PRs 4 and 5.
-
-- [ ] Phase 6 of [durable-offline-client](durable-offline-client.md), and its remaining spec edits.
-      `docs/todo.md`'s write-only-store item is dropped here
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm test:stack` green
-
-### PR 9 — the shell's marks
-
-Depends on PRs 5 and 7.
+Depends on PRs 5 and 6.
 
 - [ ] All of [shell-offline-marks](shell-offline-marks.md). Three phases, one review: they are one
       idea drawn three times
@@ -121,7 +120,7 @@ Depends on PRs 5 and 7.
 ## How these are worked
 
 - **Spec edits ride with the pull request that earns them**, never as a sweep at the end. Where a
-  plan spans several — plan 1 across PRs 2 and 3, the offline plan across PRs 4 to 8 — each carries
+  plan spans several — plan 1 across PRs 2 and 3, the offline plan across PRs 4 to 6 — each carries
   its own `Shipped:` entry describing what actually landed, and the plan's Status becomes
   `In progress` rather than `Done` until the last one is in. A spec that describes the whole plan
   after the first of five merges is the exact failure this project keeps guarding against.
@@ -141,10 +140,11 @@ Depends on PRs 5 and 7.
 - **Whether PR 1 is too large to review honestly.** Six phases across core, the store driver, the
   daemon, the client and the shell. It cannot be split without breaking `main` in the middle.
   *Fallback*: land it whole and pay for it in review — a co-review pass rather than a single read.
-- **Whether PRs 5 to 8 hold as four.** They are separable on paper; reachability in particular may
-  turn out to be a hundred lines. *Fallback*: collapse 5 and 6, or 7 into 5, when the shape is
-  clearer. Splitting later is the cheap direction; merging a PR that should have been two is not.
-- **Whether `pnpm test:stack` in CI stays quick enough to gate nine pull requests.** It spawns a
+- **Whether PRs 5 to 8 hold as four.** Settled 2026-08-25: they do not. Reading the code for PR 4
+  made the shape clear enough — phases 3, 4 and 6 are one client-only idea drawn three times, and
+  they became one PR 5, wider than the fallback this line named. The attachment kept its own pull
+  request, being the one piece that crosses into the shell and carries a retry to get right.
+- **Whether `pnpm test:stack` in CI stays quick enough to gate seven pull requests.** It spawns a
   daemon per test. *Fallback*: it is CI's time, not a person's, and the alternative is not running it.
 
 ---
