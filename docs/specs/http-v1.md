@@ -5,6 +5,15 @@ editing, destinations, routing to one and health are settled; the rest is stub
 **Last updated**: 2026-08-25
 **Shipped**:
 
+- 2026-08-25 — **The uploader mints the asset id.** `PUT /v1/assets/{id}` replaces
+  `POST /v1/assets`: the bytes still go up raw under the same headers, but under an id the caller
+  chose, so a capture's envelope can name its assets before anything is sent. A first upload is
+  `201` with `Location`, an identical one replayed under that id is `200`, and an id already naming
+  something else is `409 asset-id-conflict`. The raw-body carve-out in the media-type guard matches
+  a method and a path pattern now that the path carries an id.
+  ([plan](../plans/client-minted-assets-and-health.md),
+  [ADR 22](../adr/0022-the-uploader-mints-the-asset-id.md))
+
 - 2026-08-25 — **The daemon says which pool it is holding.** `GET /v1/health` answers that it is up
   and the identity of the pool behind it — the identity [mirror.md](mirror.md) has claimed is
   readable since 2026-08-11 and nothing served. It has no refusals and no parameters, and no client
@@ -145,7 +154,8 @@ Settled (2026-08-08): `POST /v1/captures`, `GET /v1/feed`, `GET /v1/items/:id`, 
 envelope and the complete refusal-to-status table, pagination by position, content types, the
 bind address and port, and the OpenAPI document.
 
-Settled (2026-08-11): asset upload and download — `POST /v1/assets`, `GET /v1/assets/:id` and
+Settled (2026-08-11, amended 2026-08-25): asset upload and download — `PUT /v1/assets/{id}`,
+`GET /v1/assets/:id` and
 `GET /v1/assets/:id/content`, the upload's integrity check and size limit, and which media types
 are served inline.
 
@@ -791,13 +801,14 @@ up: the daemon publishes what a kind needs and holds no opinion about how it is 
 ### Assets
 
 Bytes go up in a request of their own and come back down under the filename they were uploaded
-with. An asset is minted by the upload and referenced by a later capture; the reference is taken
-when that capture commits, so an upload no capture ever claims is swept
+with. An asset is named by whoever uploads it and referenced by a later capture; the reference is
+taken when that capture commits, so an upload no capture ever claims is swept
 ([core.md](core.md#archive-and-purge)).
 
 #### Upload
 
-`POST /v1/assets` — **the body is the bytes, raw**. Not `multipart/form-data`.
+`PUT /v1/assets/{id}` — **the body is the bytes, raw**. Not `multipart/form-data`. The id is the
+caller's ([ADR 22](../adr/0022-the-uploader-mints-the-asset-id.md)).
 
 | Header | | |
 |---|---|---|
@@ -806,8 +817,19 @@ when that capture commits, so an upload no capture ever claims is swept
 | `Repr-Digest` | optional | RFC 9530, `sha-256=:…:`, checked against the bytes received |
 
 `201 Created` with the `Asset` — `{ "id", "filename", "mime", "blob", "bytes" }` — and
-`Location: /v1/assets/<id>`.
+`Location: /v1/assets/<id>`. An upload the pool already holds under that id is `200 OK` with that
+asset and no `Location`; an id naming something else is `409 asset-id-conflict`.
 
+- **The id is minted by the uploader**, as a capture's is, so a capture with an attachment can be
+  written whole before any bytes move. An upload is therefore idempotent: the same bytes, under the
+  same filename and media type, sent again under the same id, answer the asset already stored
+  rather than making a second one.
+- **All three are compared**, and any of them differing is the conflict. An asset is a *named*
+  reference, and both the name and the media type are served back to a browser, so a `PUT` that
+  changed either would rewrite what an existing capture points at. Two names over one content are
+  still two assets and one blob — that is two ids, and neither conflicts with the other.
+- A conflicting upload still writes its blob, since the bytes are hashed before the row is read.
+  Space rather than loss, and deep verify's to reclaim.
 - **A raw body rather than multipart**, because Hono buffers a multipart body in order to parse
   it, and filename encoding in multipart is a swamp — where `Content-Disposition` has `filename*`
   for anything outside ASCII and the body streams straight into the hash. The cost is that a
@@ -836,8 +858,9 @@ when that capture commits, so an upload no capture ever claims is swept
 - `413` is the one status outside the rule below, and deliberately: a size limit is a transport
   fact that clients and proxies already act on, and answering `422` would hide it from the layer
   that could have stopped the upload early.
-- **This is the one `/v1` path whose body is not JSON**, and the media-type guard carves it out
-  by exact path rather than by prefix, so no other route quietly loses it.
+- **This is the one `/v1` route whose body is not JSON**, and the media-type guard carves out that
+  method and that path pattern rather than a prefix, so a route added under `/v1/assets` — or
+  another bodied method on this same path — does not quietly inherit the exemption.
 
 #### Download
 
@@ -959,6 +982,7 @@ Every error, from core or from the daemon, is one shape:
 | `404` | `no-such-record` | `record` | core |
 | `404` | `unknown-destination` | `destination` | core (on `/v1/destinations/{id}`) |
 | `405` | `method-not-allowed` | `method`, `allow` | daemon (+ `Allow` header) |
+| `409` | `asset-id-conflict` | `asset` | core |
 | `409` | `capture-id-conflict` | `existing` | core |
 | `409` | `source-item-changed` | `existing` | core |
 | `409` | `already-archived` | `item`, `at` | core |
@@ -1244,11 +1268,14 @@ roles are restated in the page rather than imported, and a test holds that copy 
 - A `/docs` path naming anything but the vendored Swagger UI files returns `404 unknown-route`,
   and no `/docs` path reaches a file outside the vendored directory.
 - Neither the playground nor the log page appears anywhere in `GET /v1/openapi.json`.
-- Bytes uploaded to `POST /v1/assets` come back from `GET /v1/assets/:id/content` byte for byte,
+- Bytes uploaded to `PUT /v1/assets/{id}` come back from `GET /v1/assets/:id/content` byte for byte,
   under the filename they were uploaded with, for content that is not valid UTF-8 and for a
   filename that is not ASCII.
 - The same content uploaded twice under two filenames returns two asset ids sharing one blob
   hash, and each download returns its own name.
+- The same bytes, filename and media type sent again under the same id are `200` with the asset
+  already stored, and no `Location`; bytes, a filename or a media type differing under an id already
+  used is `409 asset-id-conflict` and leaves the stored asset as it was.
 - An upload with no `Content-Disposition` filename is `422 missing-filename`; one with no
   `Content-Type` is `415`; neither stores anything.
 - An upload whose `Repr-Digest` disagrees with the bytes received is `422 digest-mismatch` and
@@ -1258,8 +1285,8 @@ roles are restated in the page rather than imported, and a test holds that copy 
   algorithm notemap does not compute is ignored and the upload succeeds.
 - A body over the configured limit is `413 asset-too-large` and leaves no blob behind, whatever
   `Content-Length` claimed.
-- A JSON body posted to `/v1/captures` still requires `application/json`, unaffected by the
-  upload path's carve-out.
+- Every other bodied `/v1` route still requires `application/json`, unaffected by the upload
+  route's carve-out.
 - An uploaded `text/html` file is served `Content-Disposition: attachment`; an uploaded
   `image/png` is served `inline`. Both carry `nosniff` and the sandbox CSP.
 - Every registered spelling of a format on the allowlist is served `inline` — both ICO spellings

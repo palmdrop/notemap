@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { assetUploadRoute, ROUTES } from "./definitions";
 import { daemon, put, type Daemon } from "../testing/fixture";
 
 const open: Daemon[] = [];
@@ -38,8 +39,9 @@ async function upload(
   started: Daemon,
   content: string | Uint8Array,
   headers: Record<string, string>,
+  id?: string,
 ): Promise<StoredAsset> {
-  const response = await put(started.app, content, headers);
+  const response = await put(started.app, content, headers, id);
   if (response.status !== 201) {
     throw new Error(
       `upload failed: ${response.status} ${await response.text()}`,
@@ -48,23 +50,108 @@ async function upload(
   return (await response.json()) as StoredAsset;
 }
 
-describe("POST /v1/assets", () => {
-  it("stores the bytes and answers the asset", async () => {
+describe("PUT /v1/assets/{id}", () => {
+  it("stores the bytes under the id the caller minted", async () => {
     const started = host();
 
-    const response = await put(started.app, "a picture", {
-      "content-type": "image/png",
-      "content-disposition": attachment("photo.png"),
-    });
-    const asset = (await response.json()) as StoredAsset;
+    const response = await put(
+      started.app,
+      "a picture",
+      {
+        "content-type": "image/png",
+        "content-disposition": attachment("photo.png"),
+      },
+      "the-callers-id",
+    );
 
     expect(response.status).toBe(201);
-    expect(response.headers.get("location")).toBe(`/v1/assets/${asset.id}`);
-    expect(asset).toMatchObject({
+    expect(response.headers.get("location")).toBe("/v1/assets/the-callers-id");
+    expect(await response.json()).toMatchObject({
+      id: "the-callers-id",
       filename: "photo.png",
       mime: "image/png",
       bytes: 9,
     });
+  });
+
+  it("answers 200 and no Location when the same upload arrives twice", async () => {
+    const started = host();
+    const headers = {
+      "content-type": "image/png",
+      "content-disposition": attachment("photo.png"),
+    };
+    const asset = await upload(started, "a picture", headers, "the-callers-id");
+
+    const again = await put(
+      started.app,
+      "a picture",
+      headers,
+      "the-callers-id",
+    );
+
+    expect(again.status).toBe(200);
+    expect(again.headers.get("location")).toBeNull();
+    expect(await again.json()).toEqual(asset);
+  });
+
+  it.each([
+    ["bytes", "a different picture", "photo.png", "image/png"],
+    ["filename", "a picture", "other.png", "image/png"],
+    ["media type", "a picture", "photo.png", "image/jpeg"],
+  ])(
+    "is 409 for an id already naming an asset differing in its %s",
+    async (_difference, content, filename, mime) => {
+      const started = host();
+      await upload(
+        started,
+        "a picture",
+        {
+          "content-type": "image/png",
+          "content-disposition": attachment("photo.png"),
+        },
+        "the-callers-id",
+      );
+
+      const response = await put(
+        started.app,
+        content,
+        {
+          "content-type": mime,
+          "content-disposition": attachment(filename),
+        },
+        "the-callers-id",
+      );
+
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({
+        error: { code: "asset-id-conflict", asset: "the-callers-id" },
+      });
+      expect(
+        await (await started.app.request("/v1/assets/the-callers-id")).json(),
+      ).toMatchObject({ filename: "photo.png", mime: "image/png" });
+    },
+  );
+
+  /** The bytes are guarded as they stream, so the digest is answered before the id is read. */
+  it("refuses a replay whose digest disagrees, rather than answering the asset it holds", async () => {
+    const started = host();
+    const headers = {
+      "content-type": "image/png",
+      "content-disposition": attachment("photo.png"),
+    };
+    await upload(started, "a picture", headers, "the-callers-id");
+
+    const response = await put(
+      started.app,
+      "a picture",
+      { ...headers, "repr-digest": digestOf("a different picture") },
+      "the-callers-id",
+    );
+
+    expect(response.status).toBe(422);
+    expect(((await response.json()) as ErrorResponse).error.code).toBe(
+      "digest-mismatch",
+    );
   });
 
   it("round-trips content that is not valid UTF-8", async () => {
@@ -145,10 +232,8 @@ describe("POST /v1/assets", () => {
   it("refuses an upload with no media type", async () => {
     const started = host();
 
-    const response = await started.app.request("/v1/assets", {
-      method: "POST",
-      headers: { "content-disposition": attachment("photo.png") },
-      body: new Uint8Array([1, 2, 3]),
+    const response = await put(started.app, new Uint8Array([1, 2, 3]), {
+      "content-disposition": attachment("photo.png"),
     });
 
     expect(response.status).toBe(415);
@@ -258,16 +343,35 @@ describe("POST /v1/assets", () => {
     expect(response.status).toBe(201);
   });
 
-  it("does not lose the JSON guard on the capture route", async () => {
+  /** The carve-out is a pattern, so what it lets through is asserted over the whole table. */
+  it("is the only bodied route the JSON guard lets through", async () => {
     const started = host();
+    const bodied = (
+      ROUTES as readonly {
+        method: string;
+        path: string;
+        request?: { body?: unknown };
+      }[]
+    ).filter((route) => route.request?.body !== undefined);
 
-    const response = await started.app.request("/v1/captures", {
-      method: "POST",
-      headers: { "content-type": "text/plain" },
-      body: "{}",
+    const carved = await put(started.app, "not json", {
+      "content-type": "text/plain",
+      "content-disposition": attachment("notes.txt"),
     });
+    expect(carved.status).toBe(201);
 
-    expect(response.status).toBe(415);
+    for (const route of bodied) {
+      if (route === (assetUploadRoute as (typeof bodied)[number])) continue;
+
+      const path = route.path.replace(/\{[^}]+\}/g, "some-id");
+      const response = await started.app.request(path, {
+        method: route.method.toUpperCase(),
+        headers: { "content-type": "text/plain" },
+        body: "not json",
+      });
+
+      expect(response.status, `${route.method} ${path}`).toBe(415);
+    }
   });
 });
 

@@ -8,6 +8,7 @@ import {
   bytes,
   collect,
   envelope,
+  filesUnder,
   harness,
   itemRecord,
   streamOf,
@@ -52,6 +53,59 @@ describe("storing bytes", () => {
     expect((await p.assets.get(mine.id))?.filename).toBe("mum.png");
     expect((await p.assets.get(theirs.id))?.filename).toBe("dad.png");
   });
+
+  it("answers the asset it holds when the same upload arrives again", async () => {
+    const { pool: p } = pool();
+    const id = "minted-once" as AssetId;
+
+    const first = await p.assets.store(id, streamOf(bytes("a picture")), {
+      filename: "photo.png",
+      mime: "image/png",
+    });
+    const again = await p.assets.store(id, streamOf(bytes("a picture")), {
+      filename: "photo.png",
+      mime: "image/png",
+    });
+
+    expect(first).toMatchObject({ value: { kind: "stored" } });
+    expect(again).toEqual({
+      kind: "ok",
+      value: {
+        kind: "already-stored",
+        asset: await p.assets.get(id),
+      },
+    });
+  });
+
+  it.each([
+    ["its bytes", "a different picture", "photo.png", "image/png"],
+    ["its filename", "a picture", "other.png", "image/png"],
+    ["its media type", "a picture", "photo.png", "image/jpeg"],
+  ])(
+    "refuses an id already naming an asset differing in %s, and keeps the one it holds",
+    async (_difference, content, filename, mime) => {
+      const { pool: p } = pool();
+      const id = "minted-once" as AssetId;
+      await p.assets.store(id, streamOf(bytes("a picture")), {
+        filename: "photo.png",
+        mime: "image/png",
+      });
+
+      const conflicting = await p.assets.store(id, streamOf(bytes(content)), {
+        filename,
+        mime,
+      });
+
+      expect(conflicting).toEqual({
+        kind: "refused",
+        refusal: { kind: "asset-id-conflict", asset: id },
+      });
+      expect(await p.assets.get(id)).toMatchObject({
+        filename: "photo.png",
+        mime: "image/png",
+      });
+    },
+  );
 
   it("hands back exactly the bytes it was given, for content that is not text", async () => {
     const { pool: p } = pool();
@@ -284,16 +338,54 @@ describe("the blobs on disk", () => {
   it("accepts a stream that arrives in pieces", async () => {
     const { pool: p } = pool();
 
-    const asset = await p.assets.store(streamOf(bytes("one "), bytes("two ")), {
-      filename: "counted.txt",
-      mime: "text/plain",
-    });
+    const stored = await p.assets.store(
+      "counted-in-pieces" as AssetId,
+      streamOf(bytes("one "), bytes("two ")),
+      { filename: "counted.txt", mime: "text/plain" },
+    );
 
-    expect(asset.bytes).toBe(8);
+    expect(stored).toMatchObject({
+      kind: "ok",
+      value: { kind: "stored", asset: { bytes: 8 } },
+    });
   });
 });
 
 describe("where the bytes land", () => {
+  /**
+   * The bytes are hashed before the row is read, so a refused upload leaves a
+   * blob nothing names. Deleting it would be wrong — another asset may name the
+   * same content — so it is space, and asserted here rather than left to be
+   * discovered.
+   */
+  it("keeps the blob a refused upload wrote, and no sweep takes it", async () => {
+    const started = pool();
+    const id = "minted-once" as AssetId;
+    const meta = { filename: "photo.png", mime: "image/png" };
+    await started.pool.assets.store(id, streamOf(bytes("a picture")), meta);
+    const before = await filesUnder(started.assetRoot);
+
+    const refused = await started.pool.assets.store(
+      id,
+      streamOf(bytes("something else")),
+      meta,
+    );
+
+    expect(refused.kind).toBe("refused");
+    const orphaned = (await filesUnder(started.assetRoot)).filter(
+      (file) => !before.includes(file),
+    );
+    expect(orphaned).toHaveLength(1);
+
+    // The sweep reads the asset table, so it takes the asset and the blob that
+    // asset named, and walks past the one the refusal left.
+    pastTheGrace(started);
+    expect(await started.pool.maintenance.sweepUnreferencedAssets()).toEqual([
+      id,
+    ]);
+    expect(await filesUnder(started.assetRoot)).toEqual(orphaned);
+  });
+
   it("is findable from the record alone, without notemap", async () => {
     const { pool: p, assetRoot } = pool();
     const asset = await upload(p, "photo.png", bytes("a picture"));

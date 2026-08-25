@@ -1,34 +1,61 @@
 import { ok, refused } from "../utils/result";
-import type { PoolPorts } from "../types/api/ports";
-import type { AssetRefusal } from "../types/api/refusal";
-import type { Asset, AssetMeta, BlobIntegrity } from "../types/domain/asset";
+import type { PoolPorts, PoolTx } from "../types/api/ports";
+import type { AssetRefusal, AssetStoreRefusal } from "../types/api/refusal";
+import type {
+  Asset,
+  AssetMeta,
+  AssetOutcome,
+  BlobIntegrity,
+} from "../types/domain/asset";
 import type { AssetId } from "../types/domain/ids";
 import type { Result } from "../types/result";
 
+type StoreResult = Result<AssetOutcome, AssetStoreRefusal>;
+
 /**
  * The bytes are written before the transaction opens, so nothing awaits a disk
- * while the store holds its write lock. A crash between the two leaves a blob
- * no asset names — space, which no sweep reclaims and the next identical upload
- * reuses.
+ * while the store holds its write lock. A crash between the two — or a refused
+ * id — leaves a blob no asset names: space, which no sweep reclaims and the
+ * next identical upload reuses.
  */
 export async function store(
   ports: PoolPorts,
+  id: AssetId,
   bytes: AsyncIterable<Uint8Array>,
   meta: AssetMeta,
-): Promise<Asset> {
+): Promise<StoreResult> {
   const blob = await ports.blobs.put(bytes);
 
-  const asset: Asset = {
-    id: ports.ids.next<AssetId>(),
+  const arriving: Asset = {
+    id,
     filename: meta.filename,
     mime: meta.mime,
     blob: blob.hash,
     bytes: blob.bytes,
   };
 
-  await ports.store.transaction((tx) => tx.insertAsset(asset));
+  return ports.store.transaction((tx) => insert(tx, arriving));
+}
 
-  return asset;
+async function insert(tx: PoolTx, arriving: Asset): Promise<StoreResult> {
+  const held = await tx.asset(arriving.id);
+  if (held !== undefined) {
+    return isSame(held, arriving)
+      ? ok({ kind: "already-stored", asset: held })
+      : refused({ kind: "asset-id-conflict", asset: arriving.id });
+  }
+
+  await tx.insertAsset(arriving);
+  return ok({ kind: "stored", asset: arriving });
+}
+
+/** `bytes` is not compared: it comes from the blob, so equal hashes agree on it. */
+function isSame(held: Asset, arriving: Asset): boolean {
+  return (
+    held.blob === arriving.blob &&
+    held.filename === arriving.filename &&
+    held.mime === arriving.mime
+  );
 }
 
 export function get(ports: PoolPorts, id: AssetId): Promise<Asset | undefined> {

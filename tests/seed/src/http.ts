@@ -16,6 +16,7 @@ export type Http = {
   readonly find: <T>(path: string) => Promise<T | undefined>;
   readonly post: <T>(path: string, body?: unknown) => Promise<T>;
   readonly upload: (
+    id: string,
     filename: string,
     mime: string,
     bytes: Uint8Array<ArrayBuffer>,
@@ -68,12 +69,12 @@ export function httpAt(
         }),
       ),
 
-    upload: async (filename, mime, bytes): Promise<Asset> =>
+    upload: async (id, filename, mime, bytes): Promise<Asset> =>
       answered<Asset>(
-        "POST",
-        "/v1/assets",
-        await fetcher(at("/v1/assets"), {
-          method: "POST",
+        "PUT",
+        `/v1/assets/${id}`,
+        await fetcher(at(`/v1/assets/${id}`), {
+          method: "PUT",
           headers: {
             "content-type": mime,
             "content-disposition": `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,

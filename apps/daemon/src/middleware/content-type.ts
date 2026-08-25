@@ -6,17 +6,18 @@ import { refuse } from "../utils/responses";
 
 const CARRY_BODIES = new Set(["POST", "PUT", "PATCH"]);
 
-/**
- * The one path whose body is bytes rather than JSON. By exact path rather than
- * by prefix, so no route added under it quietly loses the guard.
- */
-const RAW_BODIES = new Set<string>([assetUploadRoute.path]);
-
 type Declared = {
   readonly method: string;
   readonly path: string;
   readonly request?: { readonly body?: { readonly required?: boolean } };
 };
+
+/**
+ * The one route whose body is bytes rather than JSON. Method and path pattern
+ * both, so a route added beside it — another method on the same path, or
+ * anything under it — does not quietly lose the guard.
+ */
+const RAW_BODIES: readonly Declared[] = [assetUploadRoute as Declared];
 
 /**
  * Read off the definitions rather than listed here, so the routes a client may
@@ -51,6 +52,10 @@ function matches(declared: Declared, method: string, path: string): boolean {
   );
 }
 
+function carriesRawBody(method: string, path: string): boolean {
+  return RAW_BODIES.some((declared) => matches(declared, method, path));
+}
+
 function bodyIsOptional(method: string, path: string): boolean {
   return OPTIONAL_BODIES.some((declared) => matches(declared, method, path));
 }
@@ -75,7 +80,7 @@ export const requireJsonBody: MiddlewareHandler = async (context, next) => {
 
   const method = context.req.method;
   const path = new URL(context.req.url).pathname;
-  if (RAW_BODIES.has(path)) return next();
+  if (carriesRawBody(method, path)) return next();
   if (takesNoBody(method, path)) return next();
   if (bodyIsOptional(method, path) && !carriesBody(context.req.raw)) {
     return next();

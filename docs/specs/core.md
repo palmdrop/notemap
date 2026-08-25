@@ -4,6 +4,14 @@
 **Last updated**: 2026-08-25
 **Shipped**:
 
+- 2026-08-25 — **An asset takes the id its uploader minted.** `assets.store` is given the id
+  instead of minting one, and answers whether it stored the asset or already held it, refusing
+  `asset-id-conflict` where that id names content, a filename or a media type it disagrees with. So
+  a capture's envelope can name its assets before the bytes are sent, and an upload repeated after
+  a lost answer costs the transfer again but not a second asset.
+  ([plan](../plans/client-minted-assets-and-health.md),
+  [ADR 22](../adr/0022-the-uploader-mints-the-asset-id.md))
+
 - 2026-08-25 — **A pool says which pool it is.** The store mints an identity with the pool and
   answers the same one for as long as that pool exists; the pool reads it, so a host never reaches
   past the pool for it. It is opaque and says nothing about the pool it names, which is why it is
@@ -404,6 +412,12 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   asset, which is wasted space, rather than a reference to a capture that never arrived, which
   would keep content alive forever. Unreferenced assets are swept after a grace window long
   enough that "just stored" is never mistaken for "abandoned".
+- **An asset's id is the uploader's** (decided 2026-08-25,
+  [ADR 22](../adr/0022-the-uploader-mints-the-asset-id.md)), as a capture's is. Storing under an id
+  the pool already holds answers that asset where the blob, the filename and the media type all
+  agree, and is refused otherwise: all three, because an asset is a named reference and the name
+  and media type are both served back. This is what lets a capture with an attachment be written
+  whole before its bytes move, and what makes an upload idempotent — the one mutation that was not.
 - **Which assets exist is pool state** (decided 2026-08-11,
   [ADR 16](../adr/0016-the-asset-registry-is-pool-state.md)). An asset — its id, filename, media
   type, blob hash and size — is held by the store beside the item references that count it, so
@@ -800,12 +814,14 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   it, since the blob itself is named for a machine.
 - **A payload's asset reference names a slot and an asset, and nothing else** (decided
   2026-08-11). It once carried the blob hash as well, so that a swapped asset would be caught at
-  capture. With server-minted asset ids that was the client copying back a number the server
-  handed it a moment earlier, and every failure it claimed to catch resolves elsewhere: a swept
+  capture. That was the client copying back a number the server handed it a moment earlier, and
+  every failure it claimed to catch resolves elsewhere: a swept
   asset is `unknown-asset`, a rebuilt pool restores asset identities so the id still resolves,
   and a corrupted blob is invisible to it, because the row and the reference agree — both name
   the same hash, and the disk is what is wrong. Integrity belongs where the two numbers have a
-  wire between them, which is the upload ([http-v1.md](http-v1.md)).
+  wire between them, which is the upload ([http-v1.md](http-v1.md)). *Unchanged by the id becoming
+  the uploader's* (2026-08-25): a client that mints the id does know the hash it would be copying
+  back, and the argument was never about who minted the id.
 - A blob's name is its expected content hash, so a change made outside notemap is detected and
   reported rather than silently absorbed.
 - Reading media is the single exception to never reading the mirror's storage area. Text and
@@ -1181,6 +1197,8 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   order, same classification, same artifacts and corrections, same routing records.
 - Deleting or editing a mirror text file leaves the pool unaffected.
 - Editing a blob outside notemap is reported as a change rather than passing unnoticed.
+- An upload under an id the pool already holds answers that asset where its content, filename and
+  media type agree, and is refused where any of them does not.
 - The same bytes uploaded under two filenames produce two assets and one blob, and downloading
   either returns the filename it was uploaded with.
 - An upload whose capture never arrives leaves an unreferenced asset that is eventually swept,

@@ -1983,20 +1983,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/assets": {
+    "/v1/assets/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put?: never;
+        /** Read one asset */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The asset. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Asset"];
+                    };
+                };
+                /** @description No asset has that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "no-such-asset" | "blob-missing";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
         /**
-         * Upload bytes
-         * @description The body is the bytes, raw — not `multipart/form-data`. `Content-Type` is the asset's media type and is served back verbatim; `Content-Disposition` carries the filename, which is stored exactly as given. Anything may be uploaded; what may be rendered in place is decided on the way out.
+         * Upload bytes under an id the caller mints
+         * @description The body is the bytes, raw — not `multipart/form-data`. `Content-Type` is the asset's media type and is served back verbatim; `Content-Disposition` carries the filename, which is stored exactly as given. Anything may be uploaded; what may be rendered in place is decided on the way out. The id is the uploader's, so an upload may be repeated: the same bytes under the same name and media type answer the asset already stored.
          */
-        post: {
+        put: {
             parameters: {
                 query?: never;
                 header: {
@@ -2005,7 +2043,9 @@ export interface paths {
                     /** @description RFC 9530. Recomputed over the bytes received and refused on mismatch. Only `sha-256` is understood; any other algorithm is ignored. */
                     "repr-digest"?: string;
                 };
-                path?: never;
+                path: {
+                    id: string;
+                };
                 cookie?: never;
             };
             requestBody: {
@@ -2014,6 +2054,15 @@ export interface paths {
                 };
             };
             responses: {
+                /** @description That id already names this asset. Nothing was stored, and no `Location` is sent: the caller minted it. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Asset"];
+                    };
+                };
                 /** @description Stored. `Location` names the asset. */
                 201: {
                     headers: {
@@ -2022,6 +2071,23 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["Asset"];
+                    };
+                };
+                /** @description That id already names an asset with different bytes, a different filename or a different media type. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "asset-id-conflict";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
                     };
                 };
                 /** @description The body was larger than the configured limit. Nothing was stored. */
@@ -2077,60 +2143,6 @@ export interface paths {
                 };
             };
         };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/assets/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Read one asset */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description The asset. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Asset"];
-                    };
-                };
-                /** @description No asset has that id. */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description The refusal's kind, with its facts beside it. */
-                            error: {
-                                /** @enum {string} */
-                                code: "no-such-asset" | "blob-missing";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
         post?: never;
         delete?: never;
         options?: never;

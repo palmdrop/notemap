@@ -58,12 +58,12 @@ Depends on PR 1. Branch `agent/pool-identity-and-health`.
 
 Depends on PR 2. Branch `agent/client-minted-assets`.
 
-- [ ] The rest of [client-minted-assets-and-health](client-minted-assets-and-health.md): phases 1,
+- [x] The rest of [client-minted-assets-and-health](client-minted-assets-and-health.md): phases 1,
       3 and 4, and ADR 0022
-- [ ] **Atomic for the same reason as PR 1**: `POST /v1/assets` is replaced rather than joined, so
+- [x] **Atomic for the same reason as PR 1**: `POST /v1/assets` is replaced rather than joined, so
       core, the daemon, the client and `tests/seed` move together
-- [ ] `CONTEXT.md`'s **Asset** amendment lands here
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm test:stack` green
+- [x] `CONTEXT.md`'s **Asset** amendment lands here
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm test:stack` green
 
 ### PR 4 — the store stops being write-only
 

@@ -5,6 +5,7 @@ import { JSON_MEDIA_TYPE, MAX_LIMIT } from "../constants";
 import {
   ARCHIVE_STATUS,
   ASSET_STATUS,
+  ASSET_STORE_STATUS,
   BODY_STATUS,
   CANCEL_STATUS,
   CAPTURE_STATUS,
@@ -730,12 +731,13 @@ const assetId = z.object({
 });
 
 export const assetUploadRoute = createRoute({
-  method: "post",
-  path: "/v1/assets",
-  summary: "Upload bytes",
+  method: "put",
+  path: "/v1/assets/{id}",
+  summary: "Upload bytes under an id the caller mints",
   description:
-    "The body is the bytes, raw — not `multipart/form-data`. `Content-Type` is the asset's media type and is served back verbatim; `Content-Disposition` carries the filename, which is stored exactly as given. Anything may be uploaded; what may be rendered in place is decided on the way out.",
+    "The body is the bytes, raw — not `multipart/form-data`. `Content-Type` is the asset's media type and is served back verbatim; `Content-Disposition` carries the filename, which is stored exactly as given. Anything may be uploaded; what may be rendered in place is decided on the way out. The id is the uploader's, so an upload may be repeated: the same bytes under the same name and media type answer the asset already stored.",
   request: {
+    params: assetId,
     headers: z.object({
       "content-disposition": z.string().openapi({
         description:
@@ -754,6 +756,11 @@ export const assetUploadRoute = createRoute({
     },
   },
   responses: {
+    200: {
+      description:
+        "That id already names this asset. Nothing was stored, and no `Location` is sent: the caller minted it.",
+      content: { [JSON_MEDIA_TYPE]: { schema: assetSchema } },
+    },
     201: {
       description: "Stored. `Location` names the asset.",
       headers: z.object({
@@ -761,6 +768,11 @@ export const assetUploadRoute = createRoute({
       }),
       content: { [JSON_MEDIA_TYPE]: { schema: assetSchema } },
     },
+    409: errorResponse(
+      "That id already names an asset with different bytes, a different filename or a different media type.",
+      409,
+      ASSET_STORE_STATUS,
+    ),
     413: errorResponse(
       "The body was larger than the configured limit. Nothing was stored.",
       413,

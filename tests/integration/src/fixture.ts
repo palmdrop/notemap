@@ -343,14 +343,24 @@ export async function collect(
   return joined;
 }
 
-/** Uploads content under a name, and answers the asset that names it. */
-export function upload(
+let uploaded = 0;
+
+/** Uploads content under a name and an id the caller mints, and answers the asset that names it. */
+export async function upload(
   pool: Pool,
   filename: string,
   content: Uint8Array,
   mime = "image/png",
+  id: AssetId = `asset-${++uploaded}` as AssetId,
 ): Promise<Asset> {
-  return pool.assets.store(streamOf(content), { filename, mime });
+  const stored = await pool.assets.store(id, streamOf(content), {
+    filename,
+    mime,
+  });
+  if (stored.kind === "refused") {
+    throw new Error(`upload refused: ${stored.refusal.kind}`);
+  }
+  return stored.value.asset;
 }
 
 export async function filesUnder(root: string): Promise<string[]> {

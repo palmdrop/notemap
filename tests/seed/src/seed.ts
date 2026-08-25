@@ -3,7 +3,6 @@ import type {
   CaptureOutcome,
   DestinationDescription,
   Destinations,
-  Item,
   RoutingRecords,
 } from "./types.ts";
 
@@ -60,6 +59,11 @@ const ALREADY_DONE = 409;
 
 function idFor(index: number): string {
   return `0198f0c2-0000-7000-8000-${String(index).padStart(12, "0")}`;
+}
+
+/** A UUID variant apart from `idFor`'s, so an item and an asset never share an id. */
+function assetIdFor(index: number): string {
+  return `0198f0c2-0001-7000-8000-${String(index).padStart(12, "0")}`;
 }
 
 function timeFor(index: number): string {
@@ -144,40 +148,34 @@ export async function seed(
     queued,
     processed: [processed],
     archived: [archived],
-    withImage: await captureAnImage(http, capture, options, 7 + offset),
+    withImage: await captureAnImage(http, capture, options, 7),
     routed: await routeEach(http, forDestinations, options),
   };
 }
 
-/**
- * An upload is not idempotent — the same bytes under a second name are a second
- * asset — so the item is asked about before any bytes are sent.
- */
+/** The id is the seeder's, so a second seeding replays the same upload rather than making a second asset. */
 async function captureAnImage(
   http: Http,
   capture: (index: number, payload: Payload, from?: string) => Promise<string>,
   options: SeedOptions,
   index: number,
 ): Promise<{ item: string; asset: string }> {
-  const id = idFor(index);
-  const existing = await http.find<
-    Item & { payload?: { assets?: readonly { asset: string }[] } }
-  >(`/v1/items/${id}`);
-  const already = existing?.payload?.assets?.[0]?.asset;
-  if (already !== undefined) return { item: id, asset: already };
+  // `capture` shifts an index by the offset itself; the asset id is minted
+  // here, so it is shifted here.
+  const asset = assetIdFor(index + (options.offset ?? 0));
+  await http.upload(asset, "pixel.png", "image/png", PIXEL);
 
-  const asset = await http.upload("pixel.png", "image/png", PIXEL);
   const item = await capture(
     index,
     {
       type: options.imageType ?? "image",
       content: { caption: "the whiteboard, before anyone rubbed it out" },
-      assets: [{ slot: options.imageSlot ?? "image", asset: asset.id }],
+      assets: [{ slot: options.imageSlot ?? "image", asset }],
     },
     options.imageSource ?? "web-image",
   );
 
-  return { item, asset: asset.id };
+  return { item, asset };
 }
 
 /**

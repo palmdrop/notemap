@@ -10,7 +10,13 @@ import CaptureRow from "./CaptureRow.svelte";
 
 vi.mock("$lib/client", () => import("../../testing/pool"));
 
-type Envelope = { id: string; source: string };
+type Envelope = {
+  id: string;
+  source: string;
+  payload: { assets: readonly { slot: string; asset: string }[] };
+};
+
+const UPLOAD = "PUT /v1/assets/";
 
 const empty = json(200, { values: [] });
 
@@ -52,14 +58,20 @@ test("draws a capture before the pool answers, and clears the form", async () =>
 
 test("stamps a typed note and a picture with different channels", async () => {
   const stamped: string[] = [];
+  const named: string[] = [];
+  let minted = "";
 
   pool(async (request) => {
     const route = routeOf(request);
-    if (route === "POST /v1/assets") return json(201, { id: "asset-one" });
+    if (route.startsWith(UPLOAD)) {
+      minted = route.slice(UPLOAD.length);
+      return json(201, { id: minted });
+    }
     if (route !== "POST /v1/captures") return empty.clone();
 
     const envelope = (await request.json()) as Envelope;
     stamped.push(envelope.source);
+    named.push(...envelope.payload.assets.map((each) => each.asset));
     return json(201, {
       kind: "captured",
       item: anItem(envelope.id, { source: envelope.source }),
@@ -80,4 +92,8 @@ test("stamps a typed note and a picture with different channels", async () => {
   await vi.waitFor(() => {
     expect(stamped).toEqual(["web-manual", "web-image"]);
   });
+
+  // The capture names the asset the upload actually went up under.
+  expect(named).toEqual([minted]);
+  expect(minted).not.toBe("");
 });

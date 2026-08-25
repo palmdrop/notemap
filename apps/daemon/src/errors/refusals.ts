@@ -1,6 +1,7 @@
 import type {
   ArchiveRefusal,
   AssetRefusal,
+  AssetStoreRefusal,
   CancelRefusal,
   CaptureRefusal,
   DeliveryRefusal,
@@ -51,6 +52,11 @@ export const ASSET_STATUS = {
   "no-such-asset": 404,
   "blob-missing": 404,
 } as const satisfies Record<AssetRefusal["kind"], number>;
+
+/** `409` by the rule: the id is a conflict with something the pool already holds. */
+export const ASSET_STORE_STATUS = {
+  "asset-id-conflict": 409,
+} as const satisfies Record<AssetStoreRefusal["kind"], number>;
 
 /** `item-purged` is part of the refusal a client parses; purge is not built. */
 export const ARCHIVE_STATUS = {
@@ -168,6 +174,10 @@ export function assetStatus(refusal: AssetRefusal): number {
   return ASSET_STATUS[refusal.kind];
 }
 
+export function assetStoreStatus(refusal: AssetStoreRefusal): number {
+  return ASSET_STORE_STATUS[refusal.kind];
+}
+
 export function archiveStatus(refusal: ArchiveRefusal): number {
   return ARCHIVE_STATUS[refusal.kind];
 }
@@ -214,6 +224,7 @@ export function errorBody(
   refusal:
     | ArchiveRefusal
     | AssetRefusal
+    | AssetStoreRefusal
     | CancelRefusal
     | CaptureRefusal
     | DaemonRefusal

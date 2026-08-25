@@ -178,10 +178,13 @@ export function createClient(config: ClientConfig): Client {
     /** What an edit starts from: the payload as it stands, with new words in it. */
     saying: (item, said) => rewritten(item.payload, said),
 
+    // A fresh id per call, not per file: nothing here replays an upload, so two
+    // calls over one file are two assets, as two uploads have always been.
     uploadAsset: (file: File) =>
       answered(
-        api.POST("/v1/assets", {
+        api.PUT("/v1/assets/{id}", {
           params: {
+            path: { id: uuidv7() },
             header: {
               "content-disposition": `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`,
             },
