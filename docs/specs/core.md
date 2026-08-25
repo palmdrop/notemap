@@ -8,7 +8,7 @@
   instead of minting one, and answers whether it stored the asset or already held it, refusing
   `asset-id-conflict` where that id names content, a filename or a media type it disagrees with. So
   a capture's envelope can name its assets before the bytes are sent, and an upload repeated after
-  a lost answer costs nothing.
+  a lost answer costs the transfer again but not a second asset.
   ([plan](../plans/client-minted-assets-and-health.md),
   [ADR 22](../adr/0022-the-uploader-mints-the-asset-id.md))
 

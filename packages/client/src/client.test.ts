@@ -693,6 +693,16 @@ describe("an asset", () => {
     );
   });
 
+  it("takes a 200 as the asset the pool already held, not as an empty answer", async () => {
+    const { client } = clientOver(() =>
+      json(200, { id: "asset-1", mediaType: "image/png", bytes: 3 }),
+    );
+
+    await expect(client.uploadAsset(file())).resolves.toMatchObject({
+      id: "asset-1",
+    });
+  });
+
   it("mints a fresh id per upload, so two files are two assets", async () => {
     const { client, transport } = clientOver(() =>
       json(201, { id: "asset-1", mediaType: "image/png", bytes: 3 }),

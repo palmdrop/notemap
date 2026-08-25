@@ -132,6 +132,28 @@ describe("PUT /v1/assets/{id}", () => {
     },
   );
 
+  /** The bytes are guarded as they stream, so the digest is answered before the id is read. */
+  it("refuses a replay whose digest disagrees, rather than answering the asset it holds", async () => {
+    const started = host();
+    const headers = {
+      "content-type": "image/png",
+      "content-disposition": attachment("photo.png"),
+    };
+    await upload(started, "a picture", headers, "the-callers-id");
+
+    const response = await put(
+      started.app,
+      "a picture",
+      { ...headers, "repr-digest": digestOf("a different picture") },
+      "the-callers-id",
+    );
+
+    expect(response.status).toBe(422);
+    expect(((await response.json()) as ErrorResponse).error.code).toBe(
+      "digest-mismatch",
+    );
+  });
+
   it("round-trips content that is not valid UTF-8", async () => {
     const started = host();
     const content = new Uint8Array([0, 0xff, 0xfe, 0x80, 0x00, 0xc0]);
@@ -321,11 +343,7 @@ describe("PUT /v1/assets/{id}", () => {
     expect(response.status).toBe(201);
   });
 
-  /**
-   * The guard carves out a method and a path pattern now that the path carries
-   * an id, so what it lets through is worth asserting whole rather than on the
-   * one route that noticed last time.
-   */
+  /** The carve-out is a pattern, so what it lets through is asserted over the whole table. */
   it("is the only bodied route the JSON guard lets through", async () => {
     const started = host();
     const bodied = (

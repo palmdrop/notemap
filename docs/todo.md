@@ -75,6 +75,20 @@
   capture-plus-unsent-tag look identical. The visible half of the offline story, and it pairs with
   the durable store above. [shell.md](specs/shell.md) has carried this since 2026-08-19 and names
   the candidates: inverting the row's timestamp, or a word in the row's left column.
+- [ ] Nothing reclaims a blob no asset ever named. The sweep enumerates the `assets` table, so a
+  blob written by an upload that never minted a row — a crash between the two, or a refused
+  `asset-id-conflict` — is permanent, where every other kind of debris is eventually taken. Both
+  [core.md](specs/core.md) and [ADR 22](adr/0022-the-uploader-mints-the-asset-id.md) park this on
+  deep verify, which does not exist. The narrow version is a sweep over the blob store dropping
+  hashes no asset names, behind the same grace window the asset sweep already uses for the same
+  reason. Raised reviewing [client-minted assets](plans/client-minted-assets-and-health.md), where
+  a refused upload made this reachable rather than only a crash window.
+- [ ] The sweep deletes a blob after its transaction commits, and the other order would be worse
+  — but an upload of that same content committing in the window between the two ends up naming a
+  file the sweep then deletes, so an asset that landed reads `blob-missing`. Pre-existing and
+  unrelated to who mints the id; found reviewing
+  [client-minted assets](plans/client-minted-assets-and-health.md). Wants either a delete that
+  re-checks the asset table under the write lock, or a grace on the blob as well as the asset.
 - [ ] The markdown renderer is unchosen, so a text capture shows its asterisks.
   [standards.md](standards.md) says a text payload is CommonMark; the shell's `Prose` primitive
   draws it verbatim behind the interface a renderer will sit in. A library choice, and the question

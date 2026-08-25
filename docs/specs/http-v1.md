@@ -859,8 +859,8 @@ asset and no `Location`; an id naming something else is `409 asset-id-conflict`.
   fact that clients and proxies already act on, and answering `422` would hide it from the layer
   that could have stopped the upload early.
 - **This is the one `/v1` route whose body is not JSON**, and the media-type guard carves out that
-  method and that path pattern rather than a prefix, so no other route — including the `GET` on the
-  same path — quietly loses it.
+  method and that path pattern rather than a prefix, so a route added under `/v1/assets` — or
+  another bodied method on this same path — does not quietly inherit the exemption.
 
 #### Download
 

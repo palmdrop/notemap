@@ -178,8 +178,8 @@ export function createClient(config: ClientConfig): Client {
     /** What an edit starts from: the payload as it stands, with new words in it. */
     saying: (item, said) => rewritten(item.payload, said),
 
-    // The id is minted here, so a capture can name the asset before the bytes
-    // are up and a retry of this upload claims the same asset rather than a second.
+    // A fresh id per call, not per file: nothing here replays an upload, so two
+    // calls over one file are two assets, as two uploads have always been.
     uploadAsset: (file: File) =>
       answered(
         api.PUT("/v1/assets/{id}", {

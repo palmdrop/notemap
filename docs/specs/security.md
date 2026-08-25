@@ -1,8 +1,16 @@
 # Spec: What is undefended
 
 **Status**: Draft
-**Last updated**: 2026-08-12
+**Last updated**: 2026-08-25
 **Shipped**:
+
+- 2026-08-25 — **The one unauthenticated cross-origin write closed itself.** The upload became
+  `PUT /v1/assets/{id}`, and `PUT` is never a simple method, so a cross-origin upload is
+  preflighted and fails against a daemon that sends no `Access-Control-Allow-*`. This was not the
+  reason for the change — the id moved to the uploader so an offline capture can name its assets —
+  but it is what the change is worth here.
+  ([plan](../plans/client-minted-assets-and-health.md),
+  [ADR 22](../adr/0022-the-uploader-mints-the-asset-id.md))
 
 - 2026-08-12 — This document, written alongside the slice that made it necessary: uploaded bytes
   now live on the daemon's own origin. The controls it describes ship with it — the inert
@@ -85,13 +93,13 @@ another origin from reading the pool of a user who happens to be running the dae
 - A page on `evil.example` can *issue* requests to `http://127.0.0.1:4747` — the browser sends
   them — but cannot read the responses, because the same-origin policy withholds them without an
   `Access-Control-Allow-Origin`.
-- **Writes are not equally protected.** A simple `POST` is not preflighted, so a cross-origin
-  page can cause a capture it cannot read the result of. `POST /v1/captures` requires
-  `application/json`, which *is* preflighted and therefore blocked — but that is a happy
-  consequence of the content-type rule, not a defence anything states. `POST /v1/assets` takes a
-  raw body under a media type a form could send, so an unauthenticated daemon can be made to
-  store bytes by a page the user merely visited. What that costs is disk, and a sweep takes it
-  back; it is written down because it is the sharpest edge on this list.
+- **Writes are not preflighted by design, only by accident** *(amended 2026-08-25)*. A simple
+  `POST` is not preflighted, so a cross-origin page could cause a write it cannot read the result
+  of. No `/v1` write is reachable that way today: `POST /v1/captures` and every other bodied
+  route require `application/json`, which *is* preflighted, and the upload is a `PUT`, which is
+  never simple. Both are happy consequences — of the content-type rule and of the id moving to the
+  uploader — rather than defences anything set out to build, and a route added under a media type
+  a form can send would reopen this without anything noticing.
 - **Adding a CORS header is the moment to reconsider authentication**, not a convenience to
   reach for. Any origin allowed to read is an origin allowed to read everything.
 - **The client stays same-origin so the header never has to exist.** In production the daemon
@@ -198,9 +206,12 @@ account for every line of this list:
       asset content. Today a stored SVG and the page share an origin, and only the sandbox CSP
       and `attachment` separate them; a second port or a `null`-origin sandbox would separate
       them structurally.
-- [ ] 2026-08-12 — Whether `POST /v1/assets` should require a header a cross-origin form cannot
-      send, closing the one unauthenticated write a visited page can currently cause. It costs a
-      line and one refusal, and it is not obviously worth doing before authentication exists.
+- [x] 2026-08-12 — Whether `POST /v1/assets` should require a header a cross-origin form cannot
+      send, closing the one unauthenticated write a visited page can currently cause. Answered
+      2026-08-25 by something else entirely: the upload is `PUT /v1/assets/{id}` now, and a `PUT`
+      is preflighted whatever it carries. The header is unnecessary; what remains is that no rule
+      says a `/v1` write must be unreachable by a simple request, so the next route added could
+      lose this again.
 - [ ] 2026-08-12 — Whether a pool should carry a total-size ceiling at all, or whether that
       belongs to the filesystem the way disk encryption does.
 

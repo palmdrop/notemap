@@ -7,7 +7,7 @@ and nothing reaches the pool except through `createPool`.
 
 The surface it answers is specified in [docs/specs/http-v1.md](../../docs/specs/http-v1.md).
 Today that is capture, feed, assets and the action log: `POST /v1/captures`, `GET /v1/feed`,
-`GET /v1/items/:id`, `POST /v1/assets`, `GET /v1/assets/:id`, `GET /v1/assets/:id/content`,
+`GET /v1/items/:id`, `PUT /v1/assets/:id`, `GET /v1/assets/:id`, `GET /v1/assets/:id/content`,
 `GET /v1/actions`, plus `GET /v1/openapi.json`. It also serves three pages of its own, outside
 the contract: the capture page at `/`, the action log at `/log`, and an OpenAPI playground at
 `/docs`.
@@ -43,11 +43,13 @@ else.
 
 ## Assets
 
-Bytes go up in a request of their own: `POST /v1/assets`, the body raw, `Content-Type` the media
+Bytes go up in a request of their own: `PUT /v1/assets/:id`, the body raw, `Content-Type` the media
 type and `Content-Disposition` the filename. Both are required and neither is guessed — a
 filename is user data and a media type is served back to a browser, so inventing either would be
 a lie the pool then stores. An optional `Repr-Digest` is recomputed over the bytes received and
-refused on mismatch.
+refused on mismatch. **The id is the uploader's**, so an upload can be repeated: the same bytes
+under the same name and media type answer the asset already stored, and an id naming anything else
+is refused.
 
 ```toml
 [assets]
@@ -229,9 +231,9 @@ sits at the depth the bundle does. The tests import sources and cannot see this 
   is a state core knows about — a pool wired without one enqueues no mirror jobs rather than
   accumulating work nothing will claim — where a pool that cannot store bytes simply cannot
   capture an image.
-- **The upload route is the one `/v1` path whose body is not JSON.** The media-type guard carves
-  it out by exact path rather than by prefix, so a route added under `/v1/assets` later does not
-  quietly inherit the exemption.
+- **The upload route is the one `/v1` route whose body is not JSON.** The media-type guard carves
+  out that method and that path pattern rather than a prefix, so a route added under `/v1/assets`
+  later — or another method on the same path — does not quietly inherit the exemption.
 - **A runner holds a timer and nothing else.** Which job is next, whether a failure retries and
   when, and when work is given up on are all core's
   ([ADR 2](../../docs/adr/0002-core-is-a-host-agnostic-library.md)): the host drives *when*, core

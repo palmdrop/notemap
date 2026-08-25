@@ -53,7 +53,7 @@ export const ASSET_STATUS = {
   "blob-missing": 404,
 } as const satisfies Record<AssetRefusal["kind"], number>;
 
-/** Storing one. An id the pool already holds, over content it disagrees with, is the only refusal core has. */
+/** `409` by the rule: the id is a conflict with something the pool already holds. */
 export const ASSET_STORE_STATUS = {
   "asset-id-conflict": 409,
 } as const satisfies Record<AssetStoreRefusal["kind"], number>;

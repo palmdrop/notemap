@@ -35,7 +35,11 @@ function ports(...held: readonly Asset[]): Wired {
   };
 
   const pool = {
-    asset: (id: AssetId) => Promise.resolve(assets.get(id)),
+    // Reading an id outside the transaction that inserts it is the race this
+    // whole shape exists to close, so the double refuses to answer one.
+    asset: () => {
+      throw new Error("read an asset outside the transaction");
+    },
     transaction: <T>(work: (transaction: typeof tx) => Promise<T>) => work(tx),
   } as unknown as PoolStore;
 
