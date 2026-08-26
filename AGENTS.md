@@ -25,7 +25,7 @@ Git
 - Branch per plan, `agent/<plan-file-stem>`. Never commit to `main` directly.
 - Keep `origin` on HTTPS — `https://github.com/palmdrop/notemap.git`. Never change it to `git@github.com:`.
 - Never force-push a branch that has an open PR.
-- Use conventional commits
+- Use conventional commits. Specify part of the app, i.e "feat(client): a clear statement indicating what has changed".
 
 Verification
 
