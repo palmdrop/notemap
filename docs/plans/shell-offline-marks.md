@@ -15,7 +15,9 @@ the pool holds; and a picture captured with the pool out of reach draws its own 
 broken image. After this, a capture made yesterday and one the pool already has no longer look
 identical.
 
-Depends on [durable-offline-client](durable-offline-client.md), which is what makes any of it true.
+Depends on [durable-offline-client](durable-offline-client.md), which is what makes any of it true,
+and on [reconnect-and-remembered-order](reconnect-and-remembered-order.md), which is where a page
+learns to say which kind of failure it holds — phase 2 needs that to draw one and not the other.
 
 ---
 
@@ -25,14 +27,25 @@ Depends on [durable-offline-client](durable-offline-client.md), which is what ma
 
 Depends on the client's outbox being observable per item, which it already is.
 
-- [ ] A row carries a **pending** mark when an outbox operation about that item has not drained.
-      shell.md has carried this since 2026-08-19 and names the candidates: inverting the row's
-      timestamp, or a word in the row's left column, where `routed` and `archived` already sit
+- [ ] A row carries a **pending** mark when an outbox operation about that item has not drained. The
+      word is `pending`; `unsynced` is on [CONTEXT.md](../../CONTEXT.md)'s Avoid list for this exact
+      thing. *Settled 2026-08-26*: it goes in the metadata rail rather than into the row's timestamp
+- [ ] It is **not** drawn in the idiom `routed`, `archived` and `revised` use. Those say what became
+      of the item in the pool; this says what this client's outbox is still holding, and they are
+      different claims about different subjects. So it is the quieter of the two, an archived row
+      that has not drained carries both without either shouting over the other, and `became`'s
+      one-word rule is left alone
 - [ ] Quiet, not loud. Pending is the ordinary state of a mutation and it heals itself
       ([CONTEXT.md](../../CONTEXT.md)); it is not drawn in the shape a refusal is drawn in
+- [ ] The bar's `N waiting` **stays**. It answers whether anything at all is outstanding, including
+      for rows nobody is looking at; the mark answers whether this row is. Two marks, two questions
+- [ ] The shell needs a way to ask which items have undrained work. `targetOf` is not exported from
+      `packages/client` today, so this is a client API addition — an exported helper, or a derived
+      observable of the ids with work outstanding — and it is designed before it is built
 - [ ] The compose row's own capture is the first thing that has it
 - [ ] Tests: a capture made against a dead transport draws the mark; the mark goes when the pool
-      answers; a refused operation is not drawn as pending
+      answers; a refused operation is not drawn as pending; an archived row that has not drained
+      says both things
 - [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm lint` green
 - [ ] `git commit`
 
@@ -45,8 +58,18 @@ Depends on the client's derived surfaces.
       is defined as the pool read *completely*
 - [ ] Stated once per surface, in the register rather than per row, and in the same voice as the
       chrome's unreachable mark — a condition, not a failure
+- [ ] The surface's **failure** is settled in the same pass, since it occupies the place this mark
+      wants. *Settled 2026-08-26*: an unreachable read says nothing here at all — shell.md states
+      unreachable **once**, in the chrome, and a row-shaped repeat of it is the thing this phase is
+      removing. A read the pool **refused** keeps the register, because it is the one read failure
+      that needs a person and the register is where the reader is looking. It does not go to the
+      corner: the corner belongs to the outbox — an operation, with an id, that a person dismisses —
+      and a failed read has neither
+- [ ] It reads the two apart from what the page carries, which
+      [reconnect-and-remembered-order](reconnect-and-remembered-order.md) puts there
 - [ ] Tests: a cold client with no transport draws the queue with the mark; the mark goes once the
-      pool has answered for that surface
+      pool has answered for that surface; an unreachable read draws no failure and a refused one
+      does
 - [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm lint` green
 - [ ] `git commit`
 
@@ -70,6 +93,9 @@ Depends on the phases above.
 
 - [ ] `docs/specs/shell.md`: the three conditions section stops describing pending as undrawn, and
       the row's mark, the surface's mark and the local-bytes rule are written as they landed
+- [ ] `docs/specs/shell.md`: "Pending is quiet: one count in the chrome" becomes a sentence about
+      two marks and what each one answers, and the unreachable clause says that a surface repeats
+      it nowhere
 - [ ] `docs/todo.md`: drop the pending-mark item
 - [ ] Add the dated `Shipped:` entry (see Notes)
 - [ ] `git commit`
@@ -78,10 +104,12 @@ Depends on the phases above.
 
 ## Unknowns
 
-- **Which of shell.md's two candidates the pending mark takes** — an inverted timestamp, or a word
-  in the left column beside `routed` and `archived`. The left column already carries state words,
-  which argues for consistency; the timestamp is quieter. *Fallback*: the word, since the column
-  exists for exactly this and a person reads it in one place.
+- [x] **Which of shell.md's two candidates the pending mark takes** — an inverted timestamp, or a
+  word in the left column beside `routed` and `archived`. *Settled 2026-08-26*: the word, in the
+  rail, but not in the state word's idiom — the two are claims about different subjects, and phase 1
+  says which is which. The reasoning is in
+  [reconnect-and-remembered-order](reconnect-and-remembered-order.md)'s out-of-scope section, where
+  it was argued.
 - **Whether a surface's incomplete mark and the chrome's unreachable mark say the same thing twice.**
   They are not the same fact — a cached surface stays cached for a moment after the pool comes back
   — but they will usually appear together. *Fallback*: draw both and see; the surface mark is cheap
