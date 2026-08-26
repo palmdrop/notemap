@@ -11,6 +11,7 @@ import { derived, writable, type Writable } from "./observable/observable";
 import { createDestinations } from "./destinations/destinations";
 import { createOutbox } from "./outbox/outbox";
 import { sendOperation } from "./outbox/registry";
+import { undrained } from "./outbox/undrained";
 import { reachability } from "./pool/reachability";
 import type { Transport } from "./ports/transport";
 import { createRouting } from "./routing/routing";
@@ -75,6 +76,13 @@ function watching(
       }
     },
   };
+}
+
+/** A set is rebuilt on every state change, so identity alone never matches. */
+function sameIds(one: ReadonlySet<ItemId>, other: ReadonlySet<ItemId>): boolean {
+  return (
+    one.size === other.size && [...one].every((id) => other.has(id))
+  );
 }
 
 function listOf(state: ClientState, surface: Surface): ListState {
@@ -301,6 +309,11 @@ export function createClient(config: ClientConfig): Client {
       sameList,
     ),
     outbox: derived(state.changes, (current) => current.outbox),
+    pending: derived(
+      state.changes,
+      (current) => undrained(current.outbox),
+      sameIds,
+    ),
 
     loadFeed: (order) => after(() => loadMore(state, api, "feed", order)),
     loadQueue: (order) => after(() => loadMore(state, api, "queue", order)),

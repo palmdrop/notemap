@@ -116,6 +116,11 @@ export interface Client {
   readonly feed: Observable<ListState>;
   readonly queue: Observable<ListState>;
   readonly outbox: Observable<readonly PendingOperation[]>;
+  /**
+   * The items an outbox operation about them has not drained. A refused one is
+   * not in it: waiting will not settle a refusal, so it is not pending.
+   */
+  readonly pending: Observable<ReadonlySet<ItemId>>;
 
   /**
    * Reads the next page. Naming an order the surface is not already in turns it
