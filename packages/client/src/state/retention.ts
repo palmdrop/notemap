@@ -2,24 +2,15 @@ import type { Item, ItemId } from "../api/types";
 import { targetOf } from "../outbox/registry";
 import { unprocessed, type ClientState } from "./state";
 
-/** How much feed history is kept beyond the working set. */
 export const HISTORY = 500;
 
-/** Touched, not captured: what a client last heard about is what it keeps. */
+/** Touched, not captured: eviction does not go by `rank`. */
 function oldestTouchedFirst(items: readonly Item[]): readonly Item[] {
   return [...items].sort((one, other) =>
     one.modifiedAt < other.modifiedAt ? -1 : 1,
   );
 }
 
-/**
- * Everything the client can see is unprocessed stays: it is the working set a
- * person triages against with the pool out of reach, and there is no useful
- * cap on it. So does anything an undrained operation is about, which is work
- * that has not landed, and anything a surface is currently drawing, which would
- * otherwise vanish under the reader. What is left is feed history, and it is
- * capped.
- */
 export function retained(state: ClientState): ClientState {
   if (state.items.size <= HISTORY) return state;
 

@@ -30,10 +30,7 @@ export function pool(handler: Handler): MockTransport {
   return transport;
 }
 
-/**
- * Every route the shell caused, oldest first. The client's own start-up health
- * probe is left out: it is housekeeping, and racing it would make these flaky.
- */
+/** Every route the shell caused, oldest first. */
 export function asked(): string[] {
   return sentTo(transport).map(routeOf);
 }

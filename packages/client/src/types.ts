@@ -31,11 +31,7 @@ export type ListState = {
   readonly order: Order;
   readonly loading: boolean;
   readonly more: boolean;
-  /**
-   * What the client holds rather than what the pool holds: the cache, drawn
-   * because the pool has not answered for this surface. It is neither loading
-   * nor exhausted, and the first page the pool does answer replaces it.
-   */
+  /** What the client holds rather than what the pool holds, the pool not having answered for this surface. */
   readonly fromCache: boolean;
   readonly failure?: string;
 };
@@ -106,12 +102,7 @@ export interface RoutingApi {
 }
 
 export interface Client {
-  /**
-   * Whether the pool is answering, as the client's own requests report it and a
-   * probe of `GET /v1/health` keeps honest while it is not. Optimistic before
-   * anything has asked; the browser's `online` is a different question and a
-   * weaker one, since a network that exists says nothing about the daemon.
-   */
+  /** Whether the pool is answering. Optimistic before anything has asked. */
   readonly reachable: Observable<boolean>;
 
   readonly feed: Observable<ListState>;

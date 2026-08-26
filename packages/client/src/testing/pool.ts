@@ -19,10 +19,7 @@ export function routeOf(request: Request): string {
   return `${request.method} ${new URL(request.url).pathname}`;
 }
 
-/**
- * What was asked of the pool, less the client's own start-up health probe: a
- * test about what a caller reached for is not about the client's housekeeping.
- */
+/** What was asked of the pool, less the client's own start-up health probe. */
 export function asked(transport: {
   readonly sent: readonly Request[];
 }): readonly Request[] {

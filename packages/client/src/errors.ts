@@ -40,10 +40,7 @@ export class Unreadable extends Error {
   }
 }
 
-/**
- * The pool answering is not the pool the cache describes. A rebuild mints a new
- * identity, so what the client holds describes somewhere that no longer exists.
- */
+/** The pool answering is not the pool the cache describes. */
 export class PoolChanged extends Error {
   readonly held: string;
   readonly answering: string;

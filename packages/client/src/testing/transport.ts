@@ -6,7 +6,7 @@ export type MockTransport = Transport & {
   /** Every request that reached it, oldest first, the health probe included. */
   readonly sent: readonly Request[];
   unreachable(failing: boolean): void;
-  /** Which pool it says it is. A test that rebuilds one answers a new identity. */
+  /** Which pool it says it is; set it to rebuild one. */
   pool: string;
 };
 
@@ -49,8 +49,7 @@ export function mockTransport(handler: Handler): MockTransport {
       sent.push(request.clone());
       if (failing) throw new TypeError("fetch failed");
 
-      // Answered here rather than by a test's handler: every client asks it on
-      // start, and it is the mock pool's own answer rather than the test's.
+      // Answered here rather than by a test's handler: every client asks it on start.
       const asked = `${request.method} ${new URL(request.url).pathname}`;
       return asked === HEALTH
         ? json(200, { pool: transport.pool })

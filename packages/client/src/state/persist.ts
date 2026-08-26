@@ -84,8 +84,8 @@ function persistItems(
     .pipe(
       map((current) => current.items),
       distinctUntilChanged(),
-      // What the store answered, so that anything retention dropped on the way
-      // in is dropped from the store too rather than accumulating per session.
+      // Seeded with what the store answered, so an eviction made during
+      // hydration reaches it.
       startWith(hydrated.items),
       pairwise(),
       concatMap(([before, after]) =>

@@ -1,7 +1,7 @@
 # Review: The cache is read, capped, and checked against the pool
 
 **Date**: 2026-08-26
-**Status**: Open
+**Status**: Open — the comment sweep is applied; findings 1-12 await the developer
 **Scope**: `packages/client/src/{client,types,errors}.ts`, `packages/client/src/{state,pool,surfaces,testing}/`, `apps/ui/src/lib/reachable.svelte.ts`, `docs/`
 **Plan**: `docs/plans/durable-offline-client.md` (phases 3, 4, 6), `docs/plans/offline-capture-rollout.md` (PR 5)
 **Spec**: `docs/specs/client.md`, `docs/specs/sync.md`
@@ -255,6 +255,95 @@ Checked because they were raised, and clear:
 
 ---
 
+## From the co-review
+
+palmdrop's review is one ask: **"comment sweep, remove unnecessary comments. Code should be the
+documentation."** The inline on `reachability.ts:15` — the `changes` member's docblock, "the type
+itself does not communicate this" — is the worked example rather than the whole of it.
+
+### 13. Comment sweep
+
+Agreed and applied. Every comment this PR added or touched, judged against AGENTS.md's own test:
+would a reader ask *why* here, and can the code itself answer it? Both-yes-and-no survives. Nothing
+outside this PR's diff was touched, so comments predating it stand.
+
+**Removed** — 18 comments, all of them restating code or narrating reasoning that already lives in
+`client.md` or ADR 23:
+
+- `pool/reachability.ts` — all four. The file is now comment-free: the `changes`/`answered`/`ask`
+  docblocks and the `SOONEST`/`SLOWEST` one restated their own names, and the `reachability()`
+  block was *Reachability, and a pool that is not the one we cached* transcribed. That "the probe
+  runs only while the pool is out of reach" is legible in `settle` — it clears the timer on an
+  answer and schedules on a failure — which is the developer's point exactly.
+- `client.ts` — `isThePoolWeCached`'s docblock (ADR 23, narrated) and `askedHealth`'s.
+- `state/state.ts` — `Surface`, `ClientState.pool`, `rebuilt` and `drawnFrom`. `drawnFrom`'s
+  "three anti-joins" claim is already on `unprocessed`, one screen up, where it belongs.
+- `state/retention.ts` — `HISTORY`'s and `retained`'s. The latter was *What the cache keeps*
+  restated in full.
+- `retention.test.ts` — three assertion comments that said what the assertion beside them said.
+
+**Kept, trimmed** — 16, each carrying a *why* the code cannot state:
+
+- `watching`'s `< 500` rule, cut to one line. Kept because a reader who does not know it would
+  "fix" `response.status < 500` to `response.ok` and silently invert reachability. The consequence
+  argument went; the rule and the pointer to `undecided` stayed.
+- `// A refusal is still the pool answering. Only silence is not.` — `!(error instanceof
+  Unreachable)` invites exactly that question.
+- `persist.ts`'s `startWith(hydrated.items)` seed. Removing the seed loses evictions made during
+  hydration and nothing fails, so the comment is what stops it being tidied away.
+- `fromCache`'s justification in `state.ts`, cut to one line. The three-term predicate does not say
+  why those three terms mean "never answered for", and finding 1 is a reader having to reason about
+  precisely that.
+- `intoPage`'s no-op line — `return page.ids` on an empty array reads as a bug without it.
+- `oldestTouchedFirst`, rewritten to say the thing a reader would reverse: eviction goes by
+  `modifiedAt` where every surface goes by `rank`.
+- `skip(1)`'s justification in `client.ts`, cut from three lines to one.
+- The mock transport's health interception, `until`'s why-not-await, `asked`'s filter, and the two
+  in `reachable.svelte.ts` — why `online &&` survives now that the client answers, and why the
+  `online` event still drains.
+- Three in the tests that justify a magic bound or a non-obvious fixture (`toBeLessThan(10)`
+  against 60s; an operation seeded `refused` so no drain touches it; the feed's contrasting
+  expectation).
+
+**One correction the sweep forced.** `types.ts`'s `fromCache` docblock claimed a cache-drawn surface
+"is neither loading nor exhausted". Finding 1 shows `loading` and `fromCache` are both true through
+an order turn, so that was a false guarantee on a public type — worse than none by AGENTS.md's own
+rule — and it is gone whatever is decided about the behaviour. **The behaviour is unchanged.**
+
+Incidentally, two of finding 10's three `mirror` uses went with the sweep. What remains is
+`client.md`'s "The store mirrors the cache" and `persist.ts`'s `mirrored`, which predates this PR.
+
+---
+
+## Reconciliation
+
+| # | Finding | Source | Verdict | Disposition |
+| --- | --- | --- | --- | --- |
+| 1 | Order turn puts a pool-answered surface back on the cache | mine | mine | **Open — needs a ruling.** No code change. |
+| 2 | History cap does not bind while `feed.ids` grows | mine | mine | **Open — needs a ruling.** No code change. |
+| 3 | Reachability backoff has no teardown | mine | mine | Open |
+| 4 | `rebuilt` drops items retention protects; ADR 23 silent on it | mine | mine | Open |
+| 5 | Reachability in the client, not on `Transport` | mine | mine | Agreed as built; one clause suggested for the revisit condition |
+| 6 | Identity check is effectively boot-only; not written down | mine | mine | Open |
+| 7 | `mockTransport` intercepts `/v1/health` ahead of the handler | mine | mine | Open |
+| 8 | Two assertions index raw `transport.sent` | mine | mine | Open |
+| 9 | `client.reachable` never read in a test | mine | mine | Open |
+| 10 | `mirror` used against its own new *Avoid* entry | mine | mine | Partly resolved by finding 13; two uses remain |
+| 11 | `held` shadowed in `isThePoolWeCached` | mine | mine | Open |
+| 12 | `listOf`/`retained` O(n) per emission | mine | mine | Open; falls out of 1 and 2 |
+| 13 | Comment sweep | theirs | theirs | **Fixed** |
+
+No row is *agreed* and none is *conflict*: the two reviews did not overlap. Findings 1-12 are
+untouched by the sweep and no code was changed for them.
+
+---
+
 ## Resolution
 
-To be filled in after the co-review.
+13. **Fixed.** The sweep above, on `agent/cache-with-readers`. 92 lines of comment removed net;
+    `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm -r --silent test` and
+    `pnpm test:stack` all green afterwards.
+
+1-12. **Awaiting palmdrop.** Findings 1 and 2 are the two I would stop for and both are reproduced,
+   so they want a decision before this merges rather than a follow-up plan. The rest are smaller and
+   several are one-liners. Nothing has been implemented for any of them.

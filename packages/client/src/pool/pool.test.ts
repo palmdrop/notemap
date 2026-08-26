@@ -15,7 +15,7 @@ function anOperation(
   return { id: "op-1", operation, at: "2026-08-17T11:00:00.000Z", state };
 }
 
-/** Lets everything a client starts on its own run to a stop, with time held still. */
+/** Lets everything a client starts on its own run to a stop. */
 async function quiet(): Promise<void> {
   for (let turns = 0; turns < 20; turns += 1) {
     await vi.advanceTimersByTimeAsync(0);

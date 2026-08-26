@@ -13,7 +13,6 @@ import type { Order } from "../types";
 
 type RoutedTo = RoutingSummary["to"][number];
 
-/** The two paginated surfaces, which are also the two `ClientState` holds a page for. */
 export type Surface = "feed" | "queue";
 
 export type ListPage = {
@@ -35,7 +34,6 @@ export type ClientState = {
   readonly destinations: readonly Destination[];
   /** What completion offers, most used first, as the pool last counted it. */
   readonly tags: readonly TagUse[];
-  /** Which pool all of the above describes, absent until one has answered. */
   readonly pool?: PoolIdentity;
 };
 
@@ -54,11 +52,6 @@ export function emptyState(): ClientState {
   };
 }
 
-/**
- * The pool answering is not the one the cache describes. What it holds is
- * dropped and the surfaces go back to being the client's own; the outbox stays,
- * being the person's un-landed work rather than a copy of anything.
- */
 export function rebuilt(state: ClientState, pool: PoolIdentity): ClientState {
   return {
     ...state,
@@ -118,21 +111,11 @@ function behind(order: Order, one: string, other: string): boolean {
   return order === "oldest-first" ? one > other : one < other;
 }
 
-/**
- * Whether a surface is the client's own cache rather than a page the pool
- * answered. A page holds a position or is exhausted the moment one has, so a
- * page holding neither and no rows has never been answered for at all.
- */
+/** A page holds a position or is exhausted the moment the pool answers, so one holding neither has not been. */
 export function fromCache(page: ListPage): boolean {
   return page.ids.length === 0 && page.after === undefined && !page.exhausted;
 }
 
-/**
- * A surface drawn from the cache. The queue is everything the client can see is
- * unprocessed, which is the store's own three anti-joins read off the row; the
- * feed is everything it holds. Both rank by capture time, in whichever order
- * the surface is being read.
- */
 export function drawnFrom(
   state: ClientState,
   surface: Surface,

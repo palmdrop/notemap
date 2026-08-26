@@ -2,12 +2,7 @@ import { onMount } from "svelte";
 
 import { client } from "./client";
 
-/**
- * Whether the pool is reachable, as the client reports it: a real request
- * having just answered, kept honest by its own probe. The browser's own opinion
- * is kept only as a second no — a network that exists says nothing about the
- * daemon, but one that does not is evidence enough.
- */
+/** The browser's own opinion is kept only as a second no; the client's is the first. */
 export function reachable() {
   let online = $state(true);
   let answering = $state(true);
@@ -15,8 +10,7 @@ export function reachable() {
   onMount(() => {
     online = navigator.onLine;
 
-    // The client notices on its own within a backoff; the platform knowing
-    // sooner is worth the drain being immediate rather than in a few seconds.
+    // The client would notice within a backoff; the platform knows sooner.
     const up = () => {
       online = true;
       void client.drain();

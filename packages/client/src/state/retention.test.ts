@@ -46,12 +46,9 @@ describe("retention", () => {
 
     const kept = read(client.feed).items.map((item) => item.id);
 
-    // Unprocessed, so it is the working set however much history there is.
     expect(kept).toContain("work");
-    // An operation that has not drained is about it.
     expect(kept).toContain("pending-on");
     expect(kept.filter((id) => id.startsWith("old-"))).toHaveLength(HISTORY);
-    // Evicted from the store as well: it mirrors the cache.
     expect(await store.readItems()).toHaveLength(HISTORY + 2);
   });
 

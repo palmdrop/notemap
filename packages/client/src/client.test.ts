@@ -291,8 +291,7 @@ describe("the queue", () => {
       "old",
       "less-old",
     ]);
-    // The pool has not answered for the feed, so it is the cache newest-first —
-    // which is everything the queue's own reads put there.
+    // The pool has not answered for the feed, so it is the cache newest-first.
     expect(read(client.feed).items.map((item) => item.id)).toEqual([
       fresh.id,
       "less-old",

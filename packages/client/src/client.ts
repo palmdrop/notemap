@@ -49,12 +49,7 @@ function sameList(one: ListState, other: ListState): boolean {
   );
 }
 
-/**
- * Every request is evidence of reach, and nothing else is. A 5xx is not: the
- * client reads one as the pool failing to decide, exactly as it reads a socket
- * that never opened, and a reachability that disagreed would leave an operation
- * retrying against a daemon nothing was watching.
- */
+/** A 5xx is not evidence of reach: `undecided` reads one as a socket that never opened. */
 function watching(
   transport: Transport,
   answered: (reached: boolean) => void,
@@ -98,11 +93,7 @@ export function createClient(config: ClientConfig): Client {
   const now = config.now ?? (() => new Date().toISOString());
   const report = config.onError ?? (() => undefined);
   const held = writable<ClientState>(emptyState());
-  /**
-   * Retention is applied here rather than wherever an item enters, so there is
-   * one place a cached item can outlive its usefulness and no path that forgets
-   * to ask. The store mirrors the cache, so an eviction reaches it too.
-   */
+  // Every state change passes through here, so no path can forget retention.
   const state: Writable<ClientState> = {
     get: () => held.get(),
     set: (value) => held.set(retained(value)),
@@ -132,12 +123,6 @@ export function createClient(config: ClientConfig): Client {
     return ready.then(work);
   }
 
-  /**
-   * What the pool says it is, against what the cache was built from. A rebuilt
-   * pool restarts everything a cached copy is keyed on and has lost its
-   * tombstones, so what the client holds describes somewhere that no longer
-   * exists — and is dropped rather than reconciled.
-   */
   function isThePoolWeCached(identity: PoolIdentity | undefined): void {
     if (identity === undefined) return;
 
@@ -152,7 +137,6 @@ export function createClient(config: ClientConfig): Client {
     if (held !== undefined) report(new PoolChanged(held, identity));
   }
 
-  /** Which pool this is, and — by answering at all — that there is one to ask. */
   async function askedHealth(): Promise<boolean> {
     try {
       isThePoolWeCached((await answered(api.GET("/v1/health"))).pool);
@@ -243,9 +227,7 @@ export function createClient(config: ClientConfig): Client {
     void drain();
   }
 
-  // A pool that came back is what the outbox has been waiting for, and nothing
-  // else will ask. The first value is the optimism reachability starts from
-  // rather than a return, so it drains nothing.
+  // skip(1): the first value is where reachability starts, not a return.
   reach.changes.pipe(skip(1), filter(Boolean)).subscribe(() => void drain());
 
   // Work made in a previous session reaches the pool without anyone asking —
