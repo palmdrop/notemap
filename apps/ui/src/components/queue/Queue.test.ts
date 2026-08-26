@@ -4,7 +4,6 @@ import { afterEach, expect, test, vi } from "vitest";
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool } from "../../testing/pool";
-import { CACHED } from "$lib/said";
 import { briefly } from "$lib/stamp";
 import { online } from "../../testing/dom";
 import { rail } from "$lib/rail.svelte";
@@ -279,55 +278,35 @@ test("does not draw a refused operation as pending", async () => {
   expect(screen.queryByText("pending")).toBeNull();
 });
 
-test("says a cold surface is what the client holds, and stops once the pool answers", async () => {
+test("says nothing in the register about a queue the pool has not answered for", async () => {
   const transport = pool(queued("one"));
   transport.unreachable(true);
 
   render(Queue);
-  expect(await screen.findByText(CACHED)).toBeDefined();
-
-  transport.unreachable(false);
-  await client.loadQueue();
-
-  expect(await screen.findByText("one")).toBeDefined();
   await vi.waitFor(() => {
-    expect(screen.queryByText(CACHED)).toBeNull();
+    expect(asked()).toContain("GET /v1/queue");
   });
+
+  // The chrome carries the offline mark; the register repeats neither it nor
+  // what the surface is drawn from.
+  expect(screen.queryByText("queue")).toBeNull();
+  expect(screen.queryByText("the daemon is not reachable")).toBeNull();
+  expect(screen.queryByText("zero")).toBeNull();
 });
 
-test("draws the read the pool refused and not the one it never answered", async () => {
-  const transport = pool(queued("one"));
-  transport.unreachable(true);
-
-  render(Queue);
-  await screen.findByText(CACHED);
-  expect(screen.queryByText("the daemon is not reachable")).toBeNull();
-
+test("draws the read the pool refused", async () => {
   pool((request) =>
     routeOf(request) === "GET /v1/queue"
       ? json(400, { error: { code: "bad-position" } })
       : json(200, { values: [] }),
   );
 
-  cleanup();
   render(Queue);
 
   expect(
     await screen.findByText("the app lost its place in the list; reload"),
   ).toBeDefined();
-  // One entry, not two: the accent sits beside the ink rather than under it.
-  expect(await screen.findByText(CACHED)).toBeDefined();
   expect(screen.getAllByText("queue")).toHaveLength(1);
-});
-
-test("says nothing about the cache on a queue the pool answers at once", async () => {
-  pool(queued("one"));
-
-  render(Queue);
-  expect(screen.queryByText(CACHED)).toBeNull();
-
-  await screen.findByText("one");
-  expect(screen.queryByText(CACHED)).toBeNull();
 });
 
 test("draws a picture before it is sent, and the pool's copy after", async () => {

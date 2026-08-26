@@ -17,15 +17,13 @@
   import { rail } from "$lib/rail.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { readMark, writeMark } from "$lib/scroll-mark";
-  import { CACHED } from "$lib/said";
-  import { surface } from "$lib/surface.svelte";
+  import { refusalIn } from "$lib/refusal";
 
   const SURFACE = "queue";
 
   const queue = client.queue;
   const pool = reachable();
   const undrained = pending();
-  const said = surface();
 
   /** Processing happens in the row, and one row is open at a time. */
   let opened = $state<string | undefined>(undefined);
@@ -36,8 +34,7 @@
     $queue.items.find((item) => item.id === routing) ?? undefined,
   );
 
-  const cached = $derived(said.cached($queue));
-  const refused = $derived(said.refused($queue));
+  const refused = $derived(refusalIn($queue));
 
   const drained = $derived(
     !$queue.loading &&
@@ -48,7 +45,7 @@
 
   onMount(() => {
     void (async () => {
-      await said.read(client.loadQueue(orderFor(SURFACE, page.url)));
+      await client.loadQueue(orderFor(SURFACE, page.url));
       await tick();
       window.scrollTo({ top: readMark(SURFACE) });
     })();
@@ -68,8 +65,8 @@
 <Register furled={rail.furled} onfurl={() => rail.toggle()}>
   <CaptureRow />
 
-  {#if cached || refused !== undefined}
-    <Notice surface="queue" said={cached ? CACHED : undefined} {refused} />
+  {#if refused !== undefined}
+    <Notice surface="queue" {refused} />
   {/if}
 
   {#if drained}

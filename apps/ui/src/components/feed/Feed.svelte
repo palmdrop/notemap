@@ -15,17 +15,15 @@
   import { orderFor } from "$lib/order";
   import { pending } from "$lib/pending.svelte";
   import { rail } from "$lib/rail.svelte";
-  import { CACHED, NOTHING_CAPTURED } from "$lib/said";
-  import { surface } from "$lib/surface.svelte";
+  import { refusalIn } from "$lib/refusal";
+  import { NOTHING_CAPTURED } from "$lib/said";
 
   const SURFACE = "feed";
 
   const feed = client.feed;
   const undrained = pending();
-  const said = surface();
 
-  const cached = $derived(said.cached($feed));
-  const refused = $derived(said.refused($feed));
+  const refused = $derived(refusalIn($feed));
 
   const bare = $derived(
     !$feed.loading &&
@@ -34,12 +32,12 @@
       $feed.items.length === 0,
   );
 
-  onMount(() => void said.read(client.loadFeed(orderFor(SURFACE, page.url))));
+  onMount(() => void client.loadFeed(orderFor(SURFACE, page.url)));
 </script>
 
 <Register furled={rail.furled} onfurl={() => rail.toggle()}>
-  {#if cached || refused !== undefined}
-    <Notice first surface="feed" said={cached ? CACHED : undefined} {refused} />
+  {#if refused !== undefined}
+    <Notice first surface="feed" {refused} />
   {/if}
 
   {#if bare}
@@ -52,7 +50,7 @@
   {#each $feed.items as item, at (item.id)}
     <FeedRow
       {item}
-      first={at === 0 && !cached && refused === undefined}
+      first={at === 0 && refused === undefined}
       furled={rail.furled}
       pending={undrained.has(item.id)}
     />

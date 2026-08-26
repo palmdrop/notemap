@@ -6,7 +6,7 @@ import { anItem, json, routeOf } from "@notemap/client/testing";
 import { asked, client, pool } from "../../testing/pool";
 import { remember } from "$lib/order";
 import { rail } from "$lib/rail.svelte";
-import { CACHED, NOTHING_CAPTURED } from "$lib/said";
+import { NOTHING_CAPTURED } from "$lib/said";
 import Feed from "./Feed.svelte";
 
 vi.mock("$lib/client", () => import("../../testing/pool"));
@@ -228,34 +228,23 @@ test("says an archived row is archived and still pending", async () => {
   expect(screen.getByText("archived")).toBeDefined();
 });
 
-test("says a cold feed is what the client holds, and stops once the pool answers", async () => {
+test("says nothing in the register about a feed the pool has not answered for", async () => {
   const transport = pool(held(anItem("one")));
   transport.unreachable(true);
 
   render(Feed);
-  expect(await screen.findByText(CACHED)).toBeDefined();
-  expect(screen.queryByText(NOTHING_CAPTURED)).toBeNull();
-
-  transport.unreachable(false);
-  await client.loadFeed();
-
-  expect(await screen.findByText("one")).toBeDefined();
   await vi.waitFor(() => {
-    expect(screen.queryByText(CACHED)).toBeNull();
+    expect(asked()).toContain("GET /v1/feed");
   });
+
+  // The chrome carries the offline mark; the register repeats neither it nor
+  // what the surface is drawn from.
+  expect(screen.queryByText("feed")).toBeNull();
+  expect(screen.queryByText("the daemon is not reachable")).toBeNull();
+  expect(screen.queryByText(NOTHING_CAPTURED)).toBeNull();
 });
 
-test("says nothing about the cache on a feed the pool answers at once", async () => {
-  pool(held(anItem("one")));
-
-  render(Feed);
-  expect(screen.queryByText(CACHED)).toBeNull();
-
-  await screen.findByText("one");
-  expect(screen.queryByText(CACHED)).toBeNull();
-});
-
-test("draws the read the pool refused and not the one it never answered", async () => {
+test("draws the read the pool refused", async () => {
   pool((request) =>
     routeOf(request) === "GET /v1/feed"
       ? json(400, { error: { code: "bad-position" } })
@@ -267,7 +256,7 @@ test("draws the read the pool refused and not the one it never answered", async 
   expect(
     await screen.findByText("the app lost its place in the list; reload"),
   ).toBeDefined();
-  expect(screen.queryByText("the daemon is not reachable")).toBeNull();
+  expect(screen.getAllByText("feed")).toHaveLength(1);
 });
 
 test("says nothing was captured only once the pool has answered for the feed", async () => {
@@ -275,7 +264,9 @@ test("says nothing was captured only once the pool has answered for the feed", a
   transport.unreachable(true);
 
   render(Feed);
-  await screen.findByText(CACHED);
+  await vi.waitFor(() => {
+    expect(asked()).toContain("GET /v1/feed");
+  });
   expect(screen.queryByText(NOTHING_CAPTURED)).toBeNull();
 
   transport.unreachable(false);
