@@ -46,7 +46,7 @@ export default defineConfig(({ mode }) => {
       // source in dev, so the dev server has to read outside `apps/ui`.
       fs: { allow: [envDir] },
 
-			allowedHosts: ["desk.ssh"],
+      allowedHosts: ["desk.ssh"],
 
       // In production the daemon serves this app from its own origin. Proxying
       // rather than calling it across origins keeps dev the same shape, which

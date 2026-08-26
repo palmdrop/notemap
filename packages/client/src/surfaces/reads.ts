@@ -154,8 +154,13 @@ export async function readAfterReturn(
       const page = state.get()[surface];
       if (unpositioned(page) && page.failure === undefined) return;
 
-      if (fromCache(page)) await walk(state, api, surface, emptyPage(page.order));
-      else state.update((current) => ({ ...current, [surface]: settled(current[surface]) }));
+      if (fromCache(page))
+        await walk(state, api, surface, emptyPage(page.order));
+      else
+        state.update((current) => ({
+          ...current,
+          [surface]: settled(current[surface]),
+        }));
     }),
   );
 }

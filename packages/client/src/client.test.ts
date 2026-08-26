@@ -503,7 +503,9 @@ describe("reading a surface", () => {
 
     await client.loadFeed();
 
-    expect(read(client.feed).failure?.said).toBe("refused: invented-by-a-proxy");
+    expect(read(client.feed).failure?.said).toBe(
+      "refused: invented-by-a-proxy",
+    );
   });
 
   it("starts each surface from the end its default names", async () => {
