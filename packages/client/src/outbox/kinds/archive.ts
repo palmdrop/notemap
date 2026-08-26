@@ -50,7 +50,7 @@ export const archive: Handler<"archive"> = {
     };
   },
 
-  async send(api, operation) {
+  async send({ api }, operation) {
     return replacing(
       await answered(
         api.POST("/v1/items/{id}/archive", {

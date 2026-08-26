@@ -28,6 +28,7 @@ function engineOver(items: readonly Item[]) {
   const sent: Operation[] = [];
   const reread: string[] = [];
   const waiting: ((outcome: Outcome) => void)[] = [];
+  const released: Operation[] = [];
 
   const empty = emptyState();
   const state: Writable<ClientState> = writable({
@@ -57,6 +58,10 @@ function engineOver(items: readonly Item[]) {
       reread.push(item);
       return Promise.resolve();
     },
+    released: (operation) => {
+      released.push(operation);
+      return Promise.resolve();
+    },
     send: (operation) => {
       sent.push(operation);
       return new Promise<Settlement>((resolve, reject) => {
@@ -73,7 +78,7 @@ function engineOver(items: readonly Item[]) {
     for (const settle of waiting.splice(0)) settle(outcome);
   }
 
-  return { outbox, state, sent, reread, answer };
+  return { outbox, state, sent, reread, released, answer };
 }
 
 const ARCHIVE: Operation = { kind: "archive", item: "one" };
@@ -244,5 +249,34 @@ describe("draining", () => {
 
     expect(sent).toEqual([ARCHIVE, ARCHIVE]);
     expect(state.get().outbox).toEqual([]);
+  });
+});
+
+describe("an operation leaving the outbox", () => {
+  it("is released once the pool has taken it", async () => {
+    const { outbox, released, answer } = engineOver([anItem("one")]);
+
+    await outbox.enqueue(ARCHIVE);
+    const draining = outbox.drain();
+    await flush();
+    answer({ item: ARCHIVED });
+    await draining;
+
+    expect(released).toEqual([ARCHIVE]);
+  });
+
+  it("is released when a refusal is dismissed, and not while it stands", async () => {
+    const { outbox, state, released, answer } = engineOver([anItem("one")]);
+
+    await outbox.enqueue(ARCHIVE);
+    const draining = outbox.drain();
+    await flush();
+    answer({ error: new Refused("no-such-item", "that item is not here") });
+    await draining;
+
+    expect(released).toEqual([]);
+
+    await outbox.dismiss(state.get().outbox[0]!.id);
+    expect(released).toEqual([ARCHIVE]);
   });
 });

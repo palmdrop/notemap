@@ -1,5 +1,5 @@
 import type {
-  Asset,
+  AssetId,
   CreateDestinationRequest,
   Destination,
   DestinationDescription,
@@ -52,8 +52,6 @@ export type CaptureInput = {
   readonly text: string;
   readonly asset?: AssetId;
 };
-
-type AssetId = Asset["id"];
 
 /**
  * The outbox's second exception, on routing's terms: whether a root exists, and
@@ -144,10 +142,13 @@ export interface Client {
   saying(item: Item, said: string): Payload;
 
   /**
-   * Bytes cannot be applied optimistically — the pool mints the id the capture
-   * then references — so an upload is a round trip and not an outbox operation.
+   * Mints an asset for a file and holds its bytes, so a capture can name them
+   * with nothing sent. The upload happens in the drain, under the id answered
+   * here, which is what makes a picture captured out of reach an ordinary
+   * mutation rather than a round trip a person waits on.
    */
-  uploadAsset(file: File): Promise<Asset>;
+  attach(file: File): Promise<AssetId>;
+  /** Where an asset's bytes are: the store's own, while it still holds them. */
   assetContent(asset: AssetId): string;
   images(item: Item): readonly string[];
   /** What an item reads as. Which slot holds that is the payload type's business. */

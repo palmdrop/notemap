@@ -1,10 +1,20 @@
 import type { Api } from "../api/http";
-import type { Item, ItemId } from "../api/types";
+import type { AssetId, Item, ItemId } from "../api/types";
 import type { Applied, Undo } from "../state/applied";
 import { settle, type ClientState } from "../state/state";
 import type { Operation, OperationKind } from "./operations";
 
 type Of<K extends OperationKind> = Extract<Operation, { kind: K }>;
+
+/**
+ * What a send reaches: the pool, and the bytes the store still holds for an
+ * asset an envelope names. An operation made offline carries both halves of a
+ * capture, and the bytes are the half no JSON body can hold.
+ */
+export type Sending = {
+  readonly api: Api;
+  readonly bytes: (asset: AssetId) => Promise<File | undefined>;
+};
 
 /** `revert` is for an outcome that took a different shape from the one drawn. */
 export type Settlement = (state: ClientState, revert: Undo) => ClientState;
@@ -33,5 +43,5 @@ export type Handler<K extends OperationKind> = {
     operation: Of<K>,
     at: string,
   ) => Applied;
-  readonly send?: (api: Api, operation: Of<K>) => Promise<Settlement>;
+  readonly send?: (sending: Sending, operation: Of<K>) => Promise<Settlement>;
 };

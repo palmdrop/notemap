@@ -32,8 +32,12 @@ export interface ClientStore {
   readPoolIdentity(): Promise<PoolIdentity | undefined>;
   writePoolIdentity(identity: PoolIdentity): Promise<void>;
 
-  readBlob(asset: AssetId): Promise<Blob | undefined>;
-  writeBlob(asset: AssetId, blob: Blob): Promise<void>;
+  /**
+   * A `File` rather than the bytes alone: the upload the drain makes carries the
+   * filename and the media type as headers, and neither is recoverable later.
+   */
+  readBlob(asset: AssetId): Promise<File | undefined>;
+  writeBlob(asset: AssetId, blob: File): Promise<void>;
   removeBlob(asset: AssetId): Promise<void>;
   /**
    * Where a shell's own renderer reaches bytes the store holds, for a capture

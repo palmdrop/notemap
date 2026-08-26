@@ -21,7 +21,7 @@ const HELD = "held";
 interface Notemap extends DBSchema {
   outbox: { key: OperationId; value: PendingOperation };
   items: { key: ItemId; value: Item };
-  blobs: { key: AssetId; value: Blob };
+  blobs: { key: AssetId; value: File };
   tags: { key: typeof HELD; value: readonly TagUse[] };
   destinations: { key: typeof HELD; value: readonly Destination[] };
   pool: { key: typeof HELD; value: PoolIdentity };

@@ -1,4 +1,5 @@
 import type {
+  AssetId,
   Destination,
   DestinationId,
   Item,
@@ -40,6 +41,12 @@ export type ClientState = {
   readonly destinations: readonly Destination[];
   /** What completion offers, most used first, as the pool last counted it. */
   readonly tags: readonly TagUse[];
+  /**
+   * Where the bytes the store still holds are, per asset. The store answers the
+   * URL and the client remembers it, so asking what an item's pictures are stays
+   * a question with an answer rather than a promise.
+   */
+  readonly blobUrls: ReadonlyMap<AssetId, string>;
   readonly pool?: PoolIdentity;
 };
 
@@ -55,7 +62,21 @@ export function emptyState(): ClientState {
     outbox: [],
     destinations: [],
     tags: [],
+    blobUrls: new Map(),
   };
+}
+
+/** The local URL for an asset's bytes, remembered while they are held and dropped when they go. */
+export function withBlobUrl(
+  state: ClientState,
+  asset: AssetId,
+  url: string | undefined,
+): ClientState {
+  const blobUrls = new Map(state.blobUrls);
+  if (url === undefined) blobUrls.delete(asset);
+  else blobUrls.set(asset, url);
+
+  return { ...state, blobUrls };
 }
 
 export function rebuilt(state: ClientState, pool: PoolIdentity): ClientState {

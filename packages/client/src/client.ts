@@ -2,7 +2,8 @@ import { filter, skip } from "rxjs";
 import { v7 as uuidv7 } from "uuid";
 
 import { createApi, answered } from "./api/http";
-import type { Item, ItemId, PoolIdentity } from "./api/types";
+import type { AssetId, Item, ItemId, PoolIdentity } from "./api/types";
+import { claimedBy } from "./assets/assets";
 import { envelopeFor, optimisticItem } from "./capture/envelope";
 import { rewritten, saidIn } from "./capture/says";
 import { PoolChanged, Refused, Unreachable } from "./errors";
@@ -26,6 +27,7 @@ import {
   rebuilt,
   settle,
   settledDestination,
+  withBlobUrl,
   withdrawn,
   type ClientState,
   type Surface,
@@ -147,6 +149,11 @@ export function createClient(config: ClientConfig): Client {
     }
   }
 
+  /** Bytes the client still holds are the answer; everything else is the pool's. */
+  function bytesOf(asset: AssetId): string {
+    return state.get().blobUrls.get(asset) ?? transport.assetUrl(asset);
+  }
+
   const tags = createTags({
     api,
     inUse: derived(state.changes, (current) => current.tags),
@@ -181,18 +188,39 @@ export function createClient(config: ClientConfig): Client {
     );
   }
 
+  /** Bytes nothing will claim now, and the URL a shell was drawing them at. */
+  async function release(operation: Parameters<typeof outbox.enqueue>[0]) {
+    for (const asset of claimedBy(operation)) {
+      state.update((current) => withBlobUrl(current, asset, undefined));
+      await store.removeBlob(asset);
+    }
+  }
+
   const outbox = createOutbox({
     state,
     store,
     reread,
+    released: release,
     send: async (operation) => {
-      const settlement = await sendOperation(api, operation);
+      const settlement = await sendOperation(
+        { api, bytes: (asset) => store.readBlob(asset) },
+        operation,
+      );
       classified ||= operation.kind === "tag" || operation.kind === "untag";
       return settlement;
     },
     now,
     mint: uuidv7,
   });
+
+  /**
+   * A drain's own requests are evidence of reach like any other, so an
+   * operation that sends two of them and fails on the second reports the pool
+   * as back and then gone again. Coming back inside a drain is that drain, not
+   * a return: draining for it would send the pair again at once, and go on
+   * doing so for as long as the pool half-answers.
+   */
+  let sweeping = 0;
 
   /**
    * Classification that reached the pool changes what is in use, and the pool
@@ -202,11 +230,16 @@ export function createClient(config: ClientConfig): Client {
    * unreachable pool leaves anyway.
    */
   async function sweep(): Promise<void> {
-    await outbox.drain();
-    if (!classified) return;
+    sweeping += 1;
+    try {
+      await outbox.drain();
+      if (!classified) return;
 
-    classified = false;
-    await tags.load().catch(() => undefined);
+      classified = false;
+      await tags.load().catch(() => undefined);
+    } finally {
+      sweeping -= 1;
+    }
   }
 
   /**
@@ -231,7 +264,11 @@ export function createClient(config: ClientConfig): Client {
   // The surfaces are read after the drain rather than beside it, so the page the
   // pool answers already holds what was waiting to be sent.
   const onReturn = reach.changes
-    .pipe(skip(1), filter(Boolean))
+    .pipe(
+      skip(1),
+      filter(Boolean),
+      filter(() => sweeping === 0),
+    )
     .subscribe(() => {
       void drain()
         .then(() => readAfterReturn(state, api))
@@ -306,35 +343,29 @@ export function createClient(config: ClientConfig): Client {
     /** What an edit starts from: the payload as it stands, with new words in it. */
     saying: (item, said) => rewritten(item.payload, said),
 
-    // A fresh id per call, not per file: nothing here replays an upload, so two
-    // calls over one file are two assets, as two uploads have always been.
-    uploadAsset: (file: File) =>
-      answered(
-        api.PUT("/v1/assets/{id}", {
-          params: {
-            path: { id: uuidv7() },
-            header: {
-              "content-disposition": `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`,
-            },
-          },
-          headers: { "content-type": file.type || "application/octet-stream" },
-          // The body is the bytes, raw. Serialising them would be the one thing
-          // this route does not want.
-          body: file as unknown as string,
-          bodySerializer: (body: unknown) => body as BodyInit,
-        }),
-      ),
+    // A fresh id per call, not per file: nothing here replays an attachment, so
+    // two calls over one file are two assets, as two uploads have always been.
+    attach: (file) =>
+      after(async () => {
+        const asset = uuidv7();
+        await store.writeBlob(asset, file);
 
-    assetContent: (asset) => transport.assetUrl(asset),
+        const url = await store.blobUrl(asset);
+        if (url !== undefined) {
+          state.update((current) => withBlobUrl(current, asset, url));
+        }
+
+        return asset;
+      }),
+
+    assetContent: (asset) => bytesOf(asset),
 
     says: (item) => saidIn(item.payload),
 
     /** Only `image` captures: another payload type's slot may hold anything at all. */
     images: (item) =>
       item.payload.type === IMAGE
-        ? item.payload.assets.map((reference) =>
-            transport.assetUrl(reference.asset),
-          )
+        ? item.payload.assets.map((reference) => bytesOf(reference.asset))
         : [],
 
     routing: createRouting({

@@ -36,6 +36,10 @@ export function aDestination(id: string): Destination {
   };
 }
 
+export function aFile(): File {
+  return new File(["bytes"], "a photo.png", { type: "image/png" });
+}
+
 export function aTag(name: string, items = 1): TagUse {
   return { name, items };
 }
@@ -112,11 +116,14 @@ export function storeContract(open: () => Promise<ClientStore>): void {
     expect(await store.readBlob("asset-1")).toBeUndefined();
   });
 
-  it("reads back a blob, and forgets a removed one", async () => {
+  it("reads back a blob under its own name, and forgets a removed one", async () => {
     const store = await open();
 
-    await store.writeBlob("asset-1", new Blob(["bytes"]));
-    expect(await (await store.readBlob("asset-1"))?.text()).toBe("bytes");
+    await store.writeBlob("asset-1", aFile());
+    const held = await store.readBlob("asset-1");
+    expect(await held?.text()).toBe("bytes");
+    expect(held?.name).toBe("a photo.png");
+    expect(held?.type).toBe("image/png");
 
     await store.removeBlob("asset-1");
     expect(await store.readBlob("asset-1")).toBeUndefined();
@@ -124,7 +131,7 @@ export function storeContract(open: () => Promise<ClientStore>): void {
 
   it("answers one url per blob, and none for bytes it does not hold", async () => {
     const store = await open();
-    await store.writeBlob("asset-1", new Blob(["bytes"]));
+    await store.writeBlob("asset-1", aFile());
 
     const url = await store.blobUrl("asset-1");
     expect(url).toBeTypeOf("string");

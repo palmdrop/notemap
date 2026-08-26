@@ -675,57 +675,6 @@ describe("a pool that did not decide", () => {
 });
 
 describe("an asset", () => {
-  const file = () =>
-    new File([new Uint8Array([1, 2, 3])], "a photo.png", { type: "image/png" });
-
-  it("goes up as raw bytes, under an id the client minted, naming its file", async () => {
-    const { client, transport } = clientOver(() =>
-      json(201, { id: "asset-1", mediaType: "image/png", bytes: 3 }),
-    );
-
-    await expect(client.uploadAsset(file())).resolves.toMatchObject({
-      id: "asset-1",
-    });
-
-    const sent = asked(transport)[0]!;
-    expect(routeOf(sent)).toMatch(
-      /^PUT \/v1\/assets\/[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/,
-    );
-    expect(sent.headers.get("content-type")).toBe("image/png");
-    expect(sent.headers.get("content-disposition")).toContain("a%20photo.png");
-    expect(new Uint8Array(await sent.arrayBuffer())).toEqual(
-      new Uint8Array([1, 2, 3]),
-    );
-  });
-
-  it("takes a 200 as the asset the pool already held, not as an empty answer", async () => {
-    const { client } = clientOver(() =>
-      json(200, { id: "asset-1", mediaType: "image/png", bytes: 3 }),
-    );
-
-    await expect(client.uploadAsset(file())).resolves.toMatchObject({
-      id: "asset-1",
-    });
-  });
-
-  it("mints a fresh id per upload, so two files are two assets", async () => {
-    const { client, transport } = clientOver(() =>
-      json(201, { id: "asset-1", mediaType: "image/png", bytes: 3 }),
-    );
-
-    await client.uploadAsset(file());
-    await client.uploadAsset(file());
-
-    const [first, second] = asked(transport).map(routeOf);
-    expect(first).not.toBe(second);
-  });
-
-  it("surfaces a refusal rather than handing back a body that is not an asset", async () => {
-    const { client } = clientOver(() => refusal(413, "asset-too-large"));
-
-    await expect(client.uploadAsset(file())).rejects.toBeInstanceOf(Refused);
-  });
-
   it("asks the transport where its bytes are, rather than building a URL", () => {
     const transport = mockTransport(() => json(200, {}));
     const client = createClient({
