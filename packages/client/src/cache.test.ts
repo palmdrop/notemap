@@ -22,7 +22,10 @@ function clientOver(store: ClientStore, handler: Handler) {
 const nothing = () => json(200, { values: [] });
 
 function at(id: string, year: number, overrides: Partial<Item> = {}): Item {
-  return anItem(id, { createdAt: `${String(year)}-01-01T00:00:00.000Z`, ...overrides });
+  return anItem(id, {
+    createdAt: `${String(year)}-01-01T00:00:00.000Z`,
+    ...overrides,
+  });
 }
 
 beforeEach(() => {
@@ -79,7 +82,10 @@ describe("a surface drawn from the cache", () => {
     transport.unreachable(true);
     await until(() => ids(read(client.queue)).length > 0);
 
-    const fresh = await client.capture({ channel: "web", text: "with the pool down" });
+    const fresh = await client.capture({
+      channel: "web",
+      text: "with the pool down",
+    });
 
     expect(ids(read(client.queue))).toEqual(["older", fresh.id]);
     expect(ids(read(client.feed))).toEqual([fresh.id, "older"]);

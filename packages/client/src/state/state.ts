@@ -59,10 +59,7 @@ export function emptyState(): ClientState {
  * dropped and the surfaces go back to being the client's own; the outbox stays,
  * being the person's un-landed work rather than a copy of anything.
  */
-export function rebuilt(
-  state: ClientState,
-  pool: PoolIdentity,
-): ClientState {
+export function rebuilt(state: ClientState, pool: PoolIdentity): ClientState {
   return {
     ...state,
     pool,

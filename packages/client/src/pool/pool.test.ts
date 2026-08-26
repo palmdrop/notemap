@@ -137,8 +137,9 @@ describe("a pool that is not the one we cached", () => {
     const client = createClient({ transport, store: createMemoryStore() });
     await client.drain();
 
-    expect(transport.sent.map(routeOf).filter((r) => r === "GET /v1/health"))
-      .toHaveLength(1);
+    expect(
+      transport.sent.map(routeOf).filter((r) => r === "GET /v1/health"),
+    ).toHaveLength(1);
     expect(asked(transport)).toEqual([]);
   });
 });
