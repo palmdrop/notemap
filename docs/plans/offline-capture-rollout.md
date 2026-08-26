@@ -122,13 +122,18 @@ a bug — a surface that went stale stayed stale until the page was reloaded.
 
 ### PR 6 — a capture with an attachment, offline
 
-Depends on PRs 3 and 4. Independent of PR 5, so it may swap places with it.
+Depends on PRs 3 and 4. Independent of PR 5, so it may swap places with it. Branch
+`agent/offline-attachment`.
 
-- [ ] Phase 5 of [durable-offline-client](durable-offline-client.md)
-- [ ] Stays on its own: blobs in the store, a two-step `capture` and `edit`, local bytes resolved in
+- [x] Phase 5 of [durable-offline-client](durable-offline-client.md)
+- [x] Stays on its own: blobs in the store, a two-step `capture` and `edit`, local bytes resolved in
       place of a URL, and the one real correctness question in the plan — a retry between the `PUT`
       and the `POST` leaving one asset and one item
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm test:stack` green
+- [x] It carries **phase 7** as well, that plan's last: the two-step is the last thing the
+      full-stack case was waiting for, and client.md's attachment section and its `Shipped:` entry
+      are this pull request's to earn. shell.md's "uploading is the one unavoidable wait" is amended
+      here rather than in PR 7, being a sentence this makes false
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint` and `pnpm test:stack` green
 
 ### PR 7 — the shell's marks
 

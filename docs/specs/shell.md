@@ -135,9 +135,11 @@ current date and time on the left, the field on the right, `capture` and `attach
 actions sit. **The compose field is the row it is about to become**, and the date it shows is the
 one the capture will keep.
 
-A capture asks nothing — text, an optional attachment, send. Uploading an attachment is the one
-unavoidable wait, because the pool mints the asset id the capture then references; the compose row
-says so while it happens rather than appearing stuck.
+A capture asks nothing — text, an optional attachment, send. *Amended 2026-08-26*: nothing waits on
+the pool any more. The client mints the asset id and holds the bytes, which go up with the capture
+when it drains ([client.md](client.md#an-attachment-made-offline)), so a picture is captured in the
+turn the button is pressed whether or not the daemon is there — and the row attaches and captures
+in one gesture, bytes with no capture behind them being bytes nothing will claim.
 
 The queue is therefore where notemap opens: the surface you are meant to empty, with the way to
 add to it at the top of it.

@@ -160,7 +160,8 @@ describe("a picture captured with the pool out of reach", () => {
     let lost = true;
 
     const { client, transport } = clientOver(createMemoryStore(), (request) => {
-      if (request.method === "POST" && lost) throw new TypeError("fetch failed");
+      if (request.method === "POST" && lost)
+        throw new TypeError("fetch failed");
       return pool.handler(request);
     });
 

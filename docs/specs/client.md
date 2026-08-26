@@ -4,6 +4,16 @@
 **Last updated**: 2026-08-26
 **Shipped**:
 
+- 2026-08-26 — **A capture carries its own bytes until the pool takes them.** Attaching a file mints
+  the asset and hands the bytes to the client's store, so the capture that names it is complete
+  before anything is sent and a picture taken with the pool out of reach is an ordinary mutation
+  rather than a round trip a person waits on. The drain sends the pair — the bytes under the id the
+  envelope already names, then the envelope — and an `edit` does the same, a revision being an
+  ordinary capture. Both requests carry ids minted before either was sent, so a failure between them
+  retries the pair and leaves one asset and one item. A picture is drawn from the bytes the store
+  holds until its capture lands, and from the pool's copy after; the bytes go when the capture lands
+  or when a refused one is dismissed. ([plan](../plans/durable-offline-client.md))
+
 - 2026-08-26 — **A surface comes back when the pool does.** Reachability already recovered on its
   own; what a surface was left holding did not, so a failure stood until the page was reloaded and
   rows the pool never answered for stayed drawn. A read failure now says whether the pool refused it
@@ -420,6 +430,33 @@ A client that mints its own capture id supplies that value as `sourceItemId` too
 ([http-v1.md](http-v1.md#captures)); the two identities have one answer for a client that mints at
 the moment of capture.
 
+### An attachment made offline
+
+**The client mints the asset id and holds the bytes**, so an envelope naming a picture is complete
+before anything is sent. Attaching is a store write, not a request: it costs no round trip and
+nothing about it needs the pool to be there ([ADR 22](../adr/0022-the-uploader-mints-the-asset-id.md)).
+
+**The drain sends the pair**: the bytes under the id the envelope already names, then the envelope.
+The `edit` handler does the same, a revision being an ordinary capture whose payload may name an
+asset the pool has never seen. Both requests are idempotent under ids minted before either was
+sent, so **a failure between them retries the pair** — the upload the pool already holds answers
+with the asset it holds rather than making a second one, and one capture lands.
+
+**An asset resolves to the store's own bytes while it holds them, and through the transport
+otherwise.** One rule, and the shell asks the question it always asked: what an item's pictures
+are. The URL is the store's answer rather than the client's, for the same reason `assetUrl` is the
+transport's — a browser adapter mints an object URL and owns revoking it.
+
+**The bytes are released when the capture that named them lands**, or when a refused one is
+dismissed: nothing will ever claim them after either. An `edit` naming the same asset releases
+nothing, the bytes being the capture's — releasing them would strand a capture that has not
+drained.
+
+**Attaching without capturing leaves bytes nothing will claim.** A shell that mints one and then
+loses interest is holding bytes with no operation behind them, and nothing sweeps them; the
+compose row therefore attaches and captures in the same gesture. A shell that wants a longer-lived
+draft needs an answer to this, and does not have one.
+
 ### The ports — the seam for offline
 
 The client is written against two ports the shell supplies, so that reaching the outside world is
@@ -458,16 +495,17 @@ operation that changes it and waited on, because it is the person's un-landed wo
 copy of something the pool holds.
 
 **The web shell wires the browser's own storage** (2026-08-25) and the client reads it back on
-start. *Amended 2026-08-26*: what the offline slice still owes is the attachment — bytes held in the
-store for a capture that has not drained, and resolved in place of a URL. The surfaces and
-reachability are described above.
+start. *Amended 2026-08-26*: the attachment landed with it — bytes held in the store for a capture
+that has not drained, and resolved in place of a URL ([below](#an-attachment-made-offline)). The
+surfaces and reachability are described above.
 
 **The cache's shape**, so the port serves the working set rather than an arbitrary blob: the
 **queue is the offline working set**, cached as the local source of truth a person triages against;
 a **window of the feed** accompanies it; and **asset blobs are cached lazily**, only for items in
 the queue window, because a voice memo cannot be processed offline without its audio
 ([sync.md](sync.md)). What is kept and what is dropped is
-[what the cache keeps](#what-the-cache-keeps); the blob half is still owed.
+[what the cache keeps](#what-the-cache-keeps). Bytes a capture of this client's own has not landed
+yet are not that: they are the person's un-landed work, like the outbox, and go when it lands.
 
 ### Surfaces drawn from the cache
 
@@ -541,6 +579,13 @@ pool failing to decide rather than as an answer ([http-v1.md](http-v1.md#errors)
 remember. Reachability is exposed for a shell to draw; the browser's `online` event is a weaker
 signal — a network exists says nothing about the daemon — and a shell may still use it as a second
 no, or as a hint to drain sooner than the backoff would.
+
+**Coming back inside a drain is that drain, not a return** *(added 2026-08-26)*. A drain's own
+requests are evidence like any other, so an operation that sends two of them and fails on the
+second reports the pool as back and then gone again — and draining for that would send the pair
+again at once, and go on doing so for as long as the pool half-answers. So a change of reach while
+a drain is running starts nothing: the work a return would have started is already happening, and
+what is left waits for the probe's backoff.
 
 **And then reads the surfaces again** *(added 2026-08-26)*, after the drain rather than beside it,
 so the page the pool answers already holds what was waiting to be sent. Which surfaces, and how far,
@@ -690,9 +735,12 @@ that logic out of the one place it is meant to live.
 - [ ] 2026-08-17 — Whether a shell should surface the outbox to the person — pending, draining,
       refused — as a visible list, or keep it invisible until something fails. The offline slice,
       where a drain can be long, is what forces the question.
-- [ ] 2026-08-17 — How an `edit` operation still in the outbox coalesces with a later `edit` of the
-      same item, once edits can queue offline. Trivial while the drain is immediate; a real question
-      once it is not.
+- [x] 2026-08-17 — How an `edit` operation still in the outbox coalesces with a later `edit` of the
+      same item, once edits can queue offline. *Answered 2026-08-26*: it does not. Two edits of one
+      item are two operations, drained in order, and the pool decides what each one is — the second
+      may amend what the first amended, or revise what it revised. Coalescing would mint one
+      identity for words written twice and lose whichever answer the pool gave the first, and
+      nothing about a queue that drains slowly makes that better.
 - [x] 2026-08-17 — **How a client reads its store back on start.** *Answered 2026-08-25*: hydration
       runs before anything may touch what it reads, re-applies nothing, and drains as soon as it
       lands; a refusal with no reversal to run is settled by re-reading the item
@@ -735,6 +783,9 @@ that logic out of the one place it is meant to live.
   read.
 - A typed note, a voice memo and a shared link captured from one shell carry three different
   sources.
+- A picture captured with the daemon down is drawn from the bytes the client holds, survives the
+  client being built again over the same store, and lands as one asset and one item — including
+  when the capture failed after the upload and went again.
 - A client opened with the daemon down draws the queue and the feed from what it holds, marked as
   what it holds, and the first page the pool answers replaces that rather than being appended to it.
 - A routed, an archived and a revised-from item are all absent from a cache-drawn queue and all
