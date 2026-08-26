@@ -12,7 +12,7 @@
   import Sheet from "$components/primitives/frame/Sheet.svelte";
   import Waiting from "$components/primitives/frame/Waiting.svelte";
   import { client } from "$lib/client";
-  import { reachable } from "$lib/reachable.svelte";
+  import { reachable, watched } from "$lib/reachable.svelte";
   import { waiting } from "$lib/waiting.svelte";
 
   import "./layout.css";
@@ -21,6 +21,8 @@
 
   const pool = reachable();
   const held = waiting();
+
+  watched();
 
   const SURFACES = [
     { href: "/", label: "queue" },

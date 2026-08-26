@@ -1,12 +1,13 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
+import { tick } from "svelte";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool } from "../../testing/pool";
 import { NO_MORE_OFFLINE } from "$lib/said";
 import { briefly } from "$lib/stamp";
-import { looking, online } from "../../testing/dom";
+import { online } from "../../testing/dom";
 import { rail } from "$lib/rail.svelte";
 import { remember } from "$lib/order";
 import Queue from "./Queue.svelte";
@@ -279,21 +280,6 @@ test("does not draw a refused operation as pending", async () => {
   expect(screen.queryByText("pending")).toBeNull();
 });
 
-test("stops the probe while nobody is looking at the page", async () => {
-  pool(queued("one"));
-  const watched = vi.spyOn(client, "watched");
-
-  render(Queue);
-  await screen.findByText("one");
-  expect(watched).toHaveBeenCalledWith(true);
-
-  looking(false);
-  expect(watched).toHaveBeenLastCalledWith(false);
-
-  looking(true);
-  expect(watched).toHaveBeenLastCalledWith(true);
-});
-
 test("says nothing in the register about a queue the pool has not answered for", async () => {
   const transport = pool(queued("one"));
   transport.unreachable(true);
@@ -321,6 +307,19 @@ test("offers no page it cannot fetch while the pool is out of reach", async () =
 
   expect(await screen.findByText(NO_MORE_OFFLINE)).toBeDefined();
   expect(screen.queryByRole("button", { name: "load more" })).toBeNull();
+});
+
+test("says nothing in the foot of a queue read to the end", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+  expect(screen.queryByRole("button", { name: "load more" })).toBeNull();
+
+  // There is no next page to be denied, so being out of reach costs nothing.
+  online(false);
+  await tick();
+  expect(screen.queryByText(NO_MORE_OFFLINE)).toBeNull();
 });
 
 test("draws the read the pool refused", async () => {
