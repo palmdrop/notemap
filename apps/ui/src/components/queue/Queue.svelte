@@ -60,7 +60,7 @@
   {#if $queue.failure !== undefined}
     <Rail>queue</Rail>
     <Body>
-      <span role="status" class="font-mono text-accent">{$queue.failure}</span>
+      <span role="status" class="font-mono text-accent">{$queue.failure.said}</span>
     </Body>
   {/if}
 

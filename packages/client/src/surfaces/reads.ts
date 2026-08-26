@@ -1,15 +1,19 @@
 import { answered, type Api } from "../api/http";
 import type { ItemSlice } from "../api/types";
-import { saidBy } from "../errors";
+import { saidBy, Unreachable } from "../errors";
 import type { Writable } from "../observable/observable";
 import {
   cached,
   emptyPage,
+  fromCache,
+  unpositioned,
   type ClientState,
   type ListPage,
   type Surface,
 } from "../state/state";
 import type { Order } from "../types";
+
+const SURFACES: readonly Surface[] = ["feed", "queue"];
 
 const PAGE = 25;
 
@@ -55,6 +59,41 @@ function extended(page: ListPage, slice: ItemSlice): ListPage {
   };
 }
 
+/** Reads one page into the surface, from whichever page it was told to start at. */
+async function walk(
+  state: Writable<ClientState>,
+  api: Api,
+  surface: Surface,
+  page: ListPage,
+): Promise<void> {
+  state.update((current) => ({ ...current, [surface]: loading(page) }));
+
+  try {
+    const slice = await read(api, surface, page);
+    state.update((current) => ({
+      ...current,
+      items: cached(current, slice.values),
+      [surface]: extended(current[surface], slice),
+    }));
+  } catch (error) {
+    state.update((current) => ({
+      ...current,
+      [surface]: {
+        ...current[surface],
+        loading: false,
+        // No rows came from the pool, so the surface is the client's own again.
+        answered: current[surface].ids.length > 0,
+        failure: {
+          said: saidBy(error),
+          // The same reading the probe makes: a refusal is still the pool
+          // answering, and only silence is not.
+          refused: !(error instanceof Unreachable),
+        },
+      },
+    }));
+  }
+}
+
 /**
  * Walks one surface forward by following the position the last page handed
  * back. Both surfaces arrive already ordered, so a page only ever extends the
@@ -85,25 +124,38 @@ export async function loadMore(
       : { ...emptyPage(order), answered: held.answered };
   if (page.exhausted) return;
 
-  state.update((current) => ({ ...current, [surface]: loading(page) }));
+  await walk(state, api, surface, page);
+}
 
-  try {
-    const slice = await read(api, surface, page);
-    state.update((current) => ({
-      ...current,
-      items: cached(current, slice.values),
-      [surface]: extended(current[surface], slice),
-    }));
-  } catch (error) {
-    state.update((current) => ({
-      ...current,
-      [surface]: {
-        ...current[surface],
-        loading: false,
-        // No rows came from the pool, so the surface is the client's own again.
-        answered: current[surface].ids.length > 0,
-        failure: saidBy(error),
-      },
-    }));
-  }
+/** A failure the pool never made is over the moment the pool answers again. */
+function settled(page: ListPage): ListPage {
+  if (page.failure === undefined || page.failure.refused) return page;
+
+  const { failure: _failure, ...rest } = page;
+  return rest;
+}
+
+/**
+ * Puts the surfaces back in touch with the pool after it has been out of reach.
+ *
+ * A surface holding nothing the pool gave it is read again from the start,
+ * since there is no position to continue from and the first page replaces what
+ * was drawn. One that walked real pages keeps them — throwing away a long scroll
+ * to answer a reconnect costs more than it is worth — and loses only the
+ * failure it was left with. A surface nobody has read stays cold: coming back
+ * into reach is not a reason to read something for the first time.
+ */
+export async function readAfterReturn(
+  state: Writable<ClientState>,
+  api: Api,
+): Promise<void> {
+  await Promise.all(
+    SURFACES.map(async (surface) => {
+      const page = state.get()[surface];
+      if (unpositioned(page) && page.failure === undefined) return;
+
+      if (fromCache(page)) await walk(state, api, surface, emptyPage(page.order));
+      else state.update((current) => ({ ...current, [surface]: settled(current[surface]) }));
+    }),
+  );
 }

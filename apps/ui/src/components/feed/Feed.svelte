@@ -24,7 +24,7 @@
   {#if $feed.failure !== undefined}
     <Rail first>feed</Rail>
     <Body first>
-      <span role="status" class="font-mono text-accent">{$feed.failure}</span>
+      <span role="status" class="font-mono text-accent">{$feed.failure.said}</span>
     </Body>
   {/if}
 

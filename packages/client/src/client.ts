@@ -31,7 +31,7 @@ import {
   type Surface,
 } from "./state/state";
 import { createTags } from "./tags/tags";
-import { loadMore } from "./surfaces/reads";
+import { loadMore, readAfterReturn } from "./surfaces/reads";
 import type { Client, ClientConfig, ListState } from "./types";
 
 const IMAGE = "image";
@@ -228,9 +228,15 @@ export function createClient(config: ClientConfig): Client {
   }
 
   // skip(1): the first value is where reachability starts, not a return.
+  // The surfaces are read after the drain rather than beside it, so the page the
+  // pool answers already holds what was waiting to be sent.
   const onReturn = reach.changes
     .pipe(skip(1), filter(Boolean))
-    .subscribe(() => void drain());
+    .subscribe(() => {
+      void drain()
+        .then(() => readAfterReturn(state, api))
+        .catch(report);
+    });
 
   // Work made in a previous session reaches the pool without anyone asking —
   // but not before the pool has said which pool it is.

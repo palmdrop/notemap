@@ -9,7 +9,7 @@ import type {
   TagUse,
 } from "../api/types";
 import type { PendingOperation } from "../outbox/operations";
-import type { Order } from "../types";
+import type { Order, ReadFailure } from "../types";
 
 type RoutedTo = RoutingSummary["to"][number];
 
@@ -28,7 +28,7 @@ export type ListPage = {
    * client's own again the moment it holds nothing the pool gave it.
    */
   readonly answered: boolean;
-  readonly failure?: string;
+  readonly failure?: ReadFailure;
 };
 
 export type ClientState = {

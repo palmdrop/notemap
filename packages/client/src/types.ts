@@ -25,6 +25,16 @@ import type { Transport } from "./ports/transport";
  */
 export type Order = "oldest-first" | "newest-first";
 
+/**
+ * Why a read of a surface failed. `refused` is the pool having answered and
+ * said no, which coming back into reach does not undo; the other kind is the
+ * pool not answering, and it is over the moment one does.
+ */
+export type ReadFailure = {
+  readonly said: string;
+  readonly refused: boolean;
+};
+
 /** A paginated read surface. Where a reader has scrolled is the shell's, never this. */
 export type ListState = {
   readonly items: readonly Item[];
@@ -33,7 +43,7 @@ export type ListState = {
   readonly more: boolean;
   /** What the client holds rather than what the pool holds, the pool not having answered for this surface. */
   readonly fromCache: boolean;
-  readonly failure?: string;
+  readonly failure?: ReadFailure;
 };
 
 export type CaptureInput = {

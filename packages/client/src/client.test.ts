@@ -491,9 +491,10 @@ describe("reading a surface", () => {
     await client.loadFeed();
 
     const state: ListState = read(client.feed);
-    expect(state.failure).toBe(
-      "the app asked for a page size this daemon will not serve",
-    );
+    expect(state.failure).toEqual({
+      said: "the app asked for a page size this daemon will not serve",
+      refused: true,
+    });
     expect(state.loading).toBe(false);
   });
 
@@ -502,7 +503,7 @@ describe("reading a surface", () => {
 
     await client.loadFeed();
 
-    expect(read(client.feed).failure).toBe("refused: invented-by-a-proxy");
+    expect(read(client.feed).failure?.said).toBe("refused: invented-by-a-proxy");
   });
 
   it("starts each surface from the end its default names", async () => {
