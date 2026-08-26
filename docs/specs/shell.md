@@ -275,12 +275,14 @@ of them the same colour.)*
 **A surface says what it is drawn from** *(2026-08-26)*. While the pool has not answered for the
 queue or the feed, the surface names itself in the register and says that this is what the client
 holds — once, above the rows, and never per row. It is drawn quietly, in ink: it is a condition and
-not a failure, and the accent beside it belongs to the read the pool refused. The
-queue is what it is for: three rows must not read as a queue nearly drained, and the feed is defined
-as the pool read completely. A read the pool **refused** keeps its place in the register too, in the
-accent, being the one read failure that will not resolve without a person; it does not go to the
-corner, which belongs to the outbox — an operation, with an id, that a person dismisses — and a
-failed read has neither.
+not a failure, and the accent beside it belongs to the read the pool refused. The queue is what it
+is for: three rows must not read as a queue nearly drained, and the feed is defined as the pool
+read completely. A read the pool **refused** shares that one entry, in the accent, being the one
+read failure that will not resolve without a person; it does not go to the corner, which belongs
+to the outbox — an operation, with an id, that a person dismisses — and a failed read has neither.
+The surface says it only once it has asked: a surface nobody has read yet is drawn
+from the cache in every respect but the one that matters, and marking it would put the mark on
+every load.
 
 ### Draining
 
@@ -398,8 +400,12 @@ One system, reused, and nothing is distinguished by being bigger.
 the register, and takes the left column to nothing — which gives the prose the whole measure
 without hiding a row or changing what a row can do. It sits on the edge it moves rather than in the
 bar, where a word for it was further from the thing it was about. The rail holds the button that
-opens a row, so a furled rail hands the stamp to the body rather than taking it away. The reader's
-answer is remembered, like the palette.
+opens a row, so a furled rail hands the stamp to the body rather than taking it away. *Amended
+2026-08-26*: the state word and the pending mark are handed over with it, since what a row became
+and what has not drained are what the acceptance criteria ask to be legible at a glance, and a
+reading preference is not a reason to lose either. Tags, routing and the opened row's facts stay
+behind, being what the reader asked for the measure back from. The reader's answer is remembered,
+like the palette.
 
 **A surface that is a register without being a list of captures does not offer the fold.** Settings
 is the one, and there is nothing in it worth reading without its left column.
@@ -513,9 +519,10 @@ the page a person actually reads. Three-character indents on successive paragrap
   red is reserved for what a person must do or attend to.
 - **Unreachability is stated once.** Forty rows repeating one global fact is noise; the fact is
   true of the shell, so it lives in the chrome.
-- **Pending and refused are drawn differently.** They currently share a red row and a shape.
-  Pending is self-healing and ordinary; refused is terminal until a person acts. Painting them
-  alike teaches the reader to ignore both.
+- **Pending and refused are drawn differently.** They shared a red row and a shape until
+  2026-08-26; pending is self-healing and ordinary, refused is terminal until a person acts, and
+  painting them alike teaches the reader to ignore both. Pending is now muted ink in the rail and a
+  refusal keeps the accent.
 - **No counts.** The API has no total to give, and a number meaning "how much I fetched" will be
   read as "how much is left".
 - **Semantic tokens, one theme mocked.** A second full palette is a second design pass; role names
@@ -565,7 +572,7 @@ the page a person actually reads. Three-character indents on successive paragrap
 - Routing is dismissable without reaching for the mouse, and nothing in the register moves when it
   opens or closes.
 - A queue row can be told at a glance to be a revision, to be archived, or to have work not yet
-  drained, without opening it.
+  drained, without opening it and with the rail furled or not.
 - A row's capture time is the first thing read on it.
 - A text capture containing a heading or a list renders as a heading or a list, not as its
   characters.

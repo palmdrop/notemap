@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-24
 **Status**: Done
-**Spec**: `docs/specs/shell.md`
+**Spec**: `docs/specs/shell.md`, `docs/specs/client.md`
 **Closed**: 2026-08-26
 
 ---
@@ -101,6 +101,25 @@ Depends on the phases above.
       it nowhere
 - [x] `docs/todo.md`: drop the pending-mark item
 - [x] Add the dated `Shipped:` entry (see Notes)
+- [x] `git commit`
+
+### Phase 5 — the co-review
+
+Written up in [shell-offline-marks-2026-08-26](../reviews/shell-offline-marks-2026-08-26.md).
+
+- [x] The cached mark was drawn on every load, hydration finishing before the first read sets
+      `loading`. A surface now says it only once it has asked
+- [x] The client answers the count as well as the set, so "a refusal is not waiting" is defined
+      once rather than in the client and the shell both. The set is exported as `undrained`, the
+      word `pending` being an operation's state and a wider thing than this
+- [x] The two surfaces read their marks from one helper rather than a copy each, and a cold surface
+      the pool refused draws one register entry rather than two
+- [x] The shell's own sentences are gathered where they can be read together
+- [x] A furled rail carries the state word and the pending mark into the body with the stamp,
+      rather than taking them away
+- [x] `CONTEXT.md` gains the item-level sense of **pending**; shell.md's prior-decision bullet
+      stops saying pending and refused share a shape; client.md says the outbox answers both ways
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint` and `pnpm test:stack` green
 - [x] `git commit`
 
 ---

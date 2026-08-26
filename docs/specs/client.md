@@ -4,6 +4,11 @@
 **Last updated**: 2026-08-26
 **Shipped**:
 
+- 2026-08-26 — **The outbox answers what is undrained, per item and as a count.** A shell asks it
+  two questions — whether anything at all is waiting, and whether *this* row is — so it answers
+  both rather than making each shell derive one from the raw list. A refusal is in neither.
+  ([plan](../plans/shell-offline-marks.md))
+
 - 2026-08-26 — **A capture carries its own bytes until the pool takes them.** Attaching a file mints
   the asset and hands the bytes to the client's store, so the capture that names it is complete
   before anything is sent and a picture taken with the pool out of reach is an ordinary mutation
@@ -273,6 +278,13 @@ than throwing when someone reaches it.
 - `tag` / `untag` — classification;
 - `archive` / `unarchive` — queue state;
 - `accept-suggestion` / `reject-suggestion` — a decision on a suggestion.
+
+**What is undrained is answered both ways** (2026-08-26). A shell draws two marks from the outbox
+and they answer different questions, so the client answers both: how many operations have not
+drained, for the one count in the chrome, and the set of items those operations are about, for the
+mark on a row. A refused operation is in neither — waiting will not settle it, and it is shown and
+dismissed rather than drained. Note that this is wider than the operation state also called
+`pending`: an operation being sent, or left unreachable, is undrained too.
 
 **Routing is not in it.** Marking an item processed by hand is routing to the user destination
 ([core.md](core.md#the-queue)), and routing is a decision that must reach the pool

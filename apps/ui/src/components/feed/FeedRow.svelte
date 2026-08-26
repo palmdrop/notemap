@@ -35,11 +35,11 @@
     <Stamp at={item.createdAt} />
   {/if}
 
-  {#if word !== undefined}
+  {#if !furled && word !== undefined}
     <StateWord {word} />
   {/if}
 
-  {#if pending}
+  {#if !furled && pending}
     <Pending />
   {/if}
 
@@ -50,8 +50,16 @@
 
 <Body {first}>
   {#if furled}
-    <div class="mb-2 font-mono">
+    <div class="mb-2 flex flex-wrap items-baseline gap-3 font-mono">
       <Stamp at={item.createdAt} />
+
+      {#if word !== undefined}
+        <StateWord {word} inline />
+      {/if}
+
+      {#if pending}
+        <Pending inline />
+      {/if}
     </div>
   {/if}
 

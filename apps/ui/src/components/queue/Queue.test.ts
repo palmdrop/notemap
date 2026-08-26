@@ -4,7 +4,7 @@ import { afterEach, expect, test, vi } from "vitest";
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool } from "../../testing/pool";
-import { CACHED } from "$lib/cached";
+import { CACHED } from "$lib/said";
 import { briefly } from "$lib/stamp";
 import { online } from "../../testing/dom";
 import { rail } from "$lib/rail.svelte";
@@ -214,7 +214,6 @@ test("reads from the end the reader last chose, not the one the queue defaults t
   expect(new URL(read!.url).searchParams.get("order")).toBe("newest-first");
 });
 
-/** What the compose row's own capture is stamped as before the pool takes it. */
 function taken(request: Request) {
   return request.json().then((body) => {
     const envelope = body as { id: string; source: string; payload: unknown };
@@ -259,7 +258,6 @@ test("says a capture is pending until the pool has taken it", async () => {
   expect(screen.getByText("made with the pool out of reach")).toBeDefined();
 });
 
-/** A refusal will not drain, so it is not what the quiet mark is about. */
 test("does not draw a refused operation as pending", async () => {
   pool((request) =>
     routeOf(request) === "POST /v1/items/one/archive"
@@ -297,7 +295,6 @@ test("says a cold surface is what the client holds, and stops once the pool answ
   });
 });
 
-/** Unreachable is the chrome's to say, once; a refusal needs a person here. */
 test("draws the read the pool refused and not the one it never answered", async () => {
   const transport = pool(queued("one"));
   transport.unreachable(true);
@@ -306,7 +303,6 @@ test("draws the read the pool refused and not the one it never answered", async 
   await screen.findByText(CACHED);
   expect(screen.queryByText("the daemon is not reachable")).toBeNull();
 
-  transport.unreachable(false);
   pool((request) =>
     routeOf(request) === "GET /v1/queue"
       ? json(400, { error: { code: "bad-position" } })
@@ -319,6 +315,19 @@ test("draws the read the pool refused and not the one it never answered", async 
   expect(
     await screen.findByText("the app lost its place in the list; reload"),
   ).toBeDefined();
+  // One entry, not two: the accent sits beside the ink rather than under it.
+  expect(await screen.findByText(CACHED)).toBeDefined();
+  expect(screen.getAllByText("queue")).toHaveLength(1);
+});
+
+test("says nothing about the cache on a queue the pool answers at once", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  expect(screen.queryByText(CACHED)).toBeNull();
+
+  await screen.findByText("one");
+  expect(screen.queryByText(CACHED)).toBeNull();
 });
 
 test("draws a picture before it is sent, and the pool's copy after", async () => {

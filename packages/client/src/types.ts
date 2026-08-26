@@ -117,10 +117,13 @@ export interface Client {
   readonly queue: Observable<ListState>;
   readonly outbox: Observable<readonly PendingOperation[]>;
   /**
-   * The items an outbox operation about them has not drained. A refused one is
-   * not in it: waiting will not settle a refusal, so it is not pending.
+   * The items an outbox operation about them has not drained, which is what a
+   * shell draws a row's `pending` mark from. Sending and unreachable ones are
+   * in it; a refused one never is, since waiting will not settle a refusal.
    */
-  readonly pending: Observable<ReadonlySet<ItemId>>;
+  readonly undrained: Observable<ReadonlySet<ItemId>>;
+  /** How many operations are undrained, for the one count in the chrome. */
+  readonly waiting: Observable<number>;
 
   /**
    * Reads the next page. Naming an order the surface is not already in turns it

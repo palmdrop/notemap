@@ -11,19 +11,21 @@
   import Foot from "$components/primitives/register/Foot.svelte";
   import Notice from "$components/primitives/register/Notice.svelte";
   import Register from "$components/primitives/register/Register.svelte";
-  import { CACHED } from "$lib/cached";
   import { client } from "$lib/client";
   import { orderFor } from "$lib/order";
   import { pending } from "$lib/pending.svelte";
   import { rail } from "$lib/rail.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { readMark, writeMark } from "$lib/scroll-mark";
+  import { CACHED } from "$lib/said";
+  import { surface } from "$lib/surface.svelte";
 
   const SURFACE = "queue";
 
   const queue = client.queue;
   const pool = reachable();
   const undrained = pending();
+  const said = surface();
 
   /** Processing happens in the row, and one row is open at a time. */
   let opened = $state<string | undefined>(undefined);
@@ -34,14 +36,8 @@
     $queue.items.find((item) => item.id === routing) ?? undefined,
   );
 
-  const cached = $derived($queue.fromCache && !$queue.loading);
-
-  // The pool refused this read and a person is needed; an unreachable one is
-  // the chrome's to say, and saying it again per surface is the repeat the
-  // shell does not make.
-  const refusal = $derived(
-    $queue.failure?.refused === true ? $queue.failure : undefined,
-  );
+  const cached = $derived(said.cached($queue));
+  const refused = $derived(said.refused($queue));
 
   const drained = $derived(
     !$queue.loading &&
@@ -52,7 +48,7 @@
 
   onMount(() => {
     void (async () => {
-      await client.loadQueue(orderFor(SURFACE, page.url));
+      await said.read(client.loadQueue(orderFor(SURFACE, page.url)));
       await tick();
       window.scrollTo({ top: readMark(SURFACE) });
     })();
@@ -72,12 +68,8 @@
 <Register furled={rail.furled} onfurl={() => rail.toggle()}>
   <CaptureRow />
 
-  {#if cached}
-    <Notice surface="queue" said={CACHED} />
-  {/if}
-
-  {#if refusal !== undefined}
-    <Notice surface="queue" said={refusal.said} alarm />
+  {#if cached || refused !== undefined}
+    <Notice surface="queue" said={cached ? CACHED : undefined} {refused} />
   {/if}
 
   {#if drained}

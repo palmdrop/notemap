@@ -1,3 +1,9 @@
-<!-- Quieter than the state word beside it: that says what became of the item in
-     the pool, this says what this client has not sent yet. -->
-<span class="mt-2 block w-max font-mono text-ink-muted">pending</span>
+<script lang="ts">
+  let { inline = false }: { inline?: boolean } = $props();
+</script>
+
+<span
+  class="w-max font-mono text-ink-muted {inline
+    ? 'inline-block'
+    : 'mt-2 block'}">pending</span
+>

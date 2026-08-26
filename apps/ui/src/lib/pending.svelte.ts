@@ -2,12 +2,11 @@ import { onMount } from "svelte";
 
 import { client } from "./client";
 
-/** Which rows the outbox is still holding work for. A refusal is not one. */
 export function pending() {
   let held = $state<ReadonlySet<string> | undefined>(undefined);
 
   onMount(() => {
-    const watching = client.pending.subscribe((ids) => {
+    const watching = client.undrained.subscribe((ids) => {
       held = ids;
     });
 

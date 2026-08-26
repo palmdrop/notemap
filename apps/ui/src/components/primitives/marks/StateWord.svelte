@@ -1,5 +1,7 @@
 <script lang="ts">
-  let { word }: { word: string } = $props();
+  let { word, inline = false }: { word: string; inline?: boolean } = $props();
 </script>
 
-<span class="inverted mt-2 block w-max font-mono">{word}</span>
+<span class="inverted w-max font-mono {inline ? 'inline-block' : 'mt-2 block'}"
+  >{word}</span
+>

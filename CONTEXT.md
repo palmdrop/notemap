@@ -340,7 +340,9 @@ _Avoid_: sync queue, pending queue, queue
 **Pending**:
 Said of an outbox operation applied to a client's cache and not yet drained to the pool. The
 ordinary state of every mutation and a self-healing one — it drains when the pool is next
-reachable — so it is never a failure and is never dressed as one.
+reachable — so it is never a failure and is never dressed as one. An **item** is drawn as pending
+when an operation about it is: the client answers those as the **undrained** set, which is every
+operation that is not refused and so is wider than the one operation state named `pending`.
 _Avoid_: unsynced, unsaved, queued, offline
 
 **Refused**:

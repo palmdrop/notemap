@@ -11,7 +11,7 @@ import { derived, writable, type Writable } from "./observable/observable";
 import { createDestinations } from "./destinations/destinations";
 import { createOutbox } from "./outbox/outbox";
 import { sendOperation } from "./outbox/registry";
-import { undrained } from "./outbox/undrained";
+import { undrained, waiting } from "./outbox/undrained";
 import { reachability } from "./pool/reachability";
 import type { Transport } from "./ports/transport";
 import { createRouting } from "./routing/routing";
@@ -310,10 +310,14 @@ export function createClient(config: ClientConfig): Client {
       sameList,
     ),
     outbox: derived(state.changes, (current) => current.outbox),
-    pending: derived(
+    undrained: derived(
       state.changes,
       (current) => undrained(current.outbox),
       sameIds,
+    ),
+    waiting: derived(
+      state.changes,
+      (current) => waiting(current.outbox).length,
     ),
 
     loadFeed: (order) => after(() => loadMore(state, api, "feed", order)),
