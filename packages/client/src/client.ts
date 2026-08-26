@@ -79,10 +79,11 @@ function watching(
 }
 
 /** A set is rebuilt on every state change, so identity alone never matches. */
-function sameIds(one: ReadonlySet<ItemId>, other: ReadonlySet<ItemId>): boolean {
-  return (
-    one.size === other.size && [...one].every((id) => other.has(id))
-  );
+function sameIds(
+  one: ReadonlySet<ItemId>,
+  other: ReadonlySet<ItemId>,
+): boolean {
+  return one.size === other.size && [...one].every((id) => other.has(id));
 }
 
 function listOf(state: ClientState, surface: Surface): ListState {
