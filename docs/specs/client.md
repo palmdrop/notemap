@@ -214,7 +214,7 @@ A client presents four surfaces, each a thin projection of core:
 - **The queue** — the pool read as unprocessed, unarchived items, oldest first by default.
   Presented as **one scrollable list** (see [the queue](#the-queue)).
 - Either may be **drawn from the cache** rather than from the pool (see
-  [surfaces drawn from the cache](#surfaces-drawn-from-the-cache)), and says which it is.
+  [surfaces drawn from the cache](#surfaces-drawn-from-the-cache)), and carries which it is.
 - **An order** — which end of a surface a reader starts from. A default per surface and a
   parameter of a read, never a stored preference.
 - **An item** — its payload, tags, enrichment state, suggestions and routing records, and the
@@ -552,8 +552,10 @@ a surface holding no rows the pool gave it is **drawn from the cache** instead o
   nothing revised from it — which is the same three anti-joins the pool's own queue read makes,
   asked of the rows the client holds. **The feed is everything it holds.** Both rank by capture
   time, in whichever order the surface is being read.
-- **A cache-drawn surface says so.** A shell that drew it as the pool's reading would tell a person
-  that three rows means they are nearly done. What a shell does with that is [shell.md](shell.md)'s.
+- **A cache-drawn surface is marked as one.** A shell that drew it as the pool's reading would tell
+  a person that three rows means they are nearly done, so the state carries the claim and what a
+  shell draws from it is [shell.md](shell.md)'s. *(Amended 2026-08-26: it draws nothing above the
+  rows, and reads the claim to keep an unanswered surface from being drawn as an empty pool.)*
 - **Turning a surface around does not make it the client's own.** A turn throws away the position
   and the rows, and reads the new order from the start — but the surface keeps its claim on the
   pool's answer while that read is in flight, so an ordinary reorder shows an empty loading list
