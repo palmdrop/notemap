@@ -421,6 +421,7 @@ export function createClient(config: ClientConfig): Client {
 
     drain,
     dismiss: (operation) => after(() => outbox.dismiss(operation)),
+    watched: (yes) => reach.watched(yes),
 
     close() {
       reach.stop();

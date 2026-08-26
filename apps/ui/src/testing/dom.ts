@@ -84,10 +84,20 @@ export function online(yes: boolean): void {
   window.dispatchEvent(new Event(yes ? "online" : "offline"));
 }
 
+/** Whether the page is being looked at, which jsdom fixes at visible. */
+export function looking(yes: boolean): void {
+  Object.defineProperty(document, "visibilityState", {
+    configurable: true,
+    value: yes ? "visible" : "hidden",
+  });
+  document.dispatchEvent(new Event("visibilitychange"));
+}
+
 beforeEach(() => {
   stubScrolling();
   stubResizing();
   online(true);
+  looking(true);
   sessionStorage.clear();
   localStorage.clear();
   delete document.documentElement.dataset["theme"];

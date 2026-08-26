@@ -6,7 +6,7 @@ import { PoolChanged } from "../errors";
 import type { PendingOperation } from "../outbox/operations";
 import { read, until } from "../testing/observing";
 import { anItem, asked, routeOf } from "../testing/pool";
-import { json, mockTransport, refusal } from "../testing/transport";
+import { HEALTH, json, mockTransport, refusal } from "../testing/transport";
 
 function anOperation(
   operation: PendingOperation["operation"],
@@ -52,21 +52,57 @@ describe("reachability", () => {
     expect(read(client.outbox)).toEqual([]);
   });
 
-  it("backs off rather than spinning while the pool stays away", async () => {
+  it("backs off rather than spinning while the pool stays away, and caps at ten seconds", async () => {
     vi.useFakeTimers();
     const transport = mockTransport(() => json(200, {}));
     transport.unreachable(true);
 
-    createClient({ transport, store: createMemoryStore() });
+    const client = createClient({ transport, store: createMemoryStore() });
     await quiet();
 
     const boot = transport.sent.length;
     await vi.advanceTimersByTimeAsync(60_000);
-    const probes = transport.sent.length - boot;
 
-    // A second apart throughout would be sixty of them.
-    expect(probes).toBeGreaterThan(2);
-    expect(probes).toBeLessThan(10);
+    // A second, two, four, eight, then the cap: eight in the first minute,
+    // where a second apart throughout would be sixty.
+    expect(transport.sent.length - boot).toBe(8);
+
+    // Onto the tick after the minute, and then the cap holds either side of it:
+    // ten seconds is one more probe and not two.
+    await vi.advanceTimersByTimeAsync(5_000);
+    const capped = transport.sent.length;
+
+    await vi.advanceTimersByTimeAsync(9_999);
+    expect(transport.sent.length).toBe(capped);
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(transport.sent.length).toBe(capped + 1);
+
+    client.close();
+  });
+
+  it("comes back from an unwatched stretch on the soonest backoff, not the longest", async () => {
+    vi.useFakeTimers();
+    const transport = mockTransport(() => json(200, {}));
+    transport.unreachable(true);
+
+    const client = createClient({ transport, store: createMemoryStore() });
+    await quiet();
+    await vi.advanceTimersByTimeAsync(60_000);
+
+    client.watched(false);
+    await quiet();
+    const idle = transport.sent.length;
+
+    client.watched(true);
+    await quiet();
+    expect(transport.sent.length).toBe(idle + 1);
+
+    // A second, not the ten the backoff had climbed to with nobody reading.
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(transport.sent.length).toBe(idle + 2);
+
+    client.close();
   });
 
   it("does not spin on a pool that answers one request of a pair, and not the other", async () => {
@@ -124,17 +160,64 @@ describe("reachability", () => {
     client.close();
   });
 
-  it("stops asking once the pool answers", async () => {
+  it("keeps asking a pool that answers, so a pool that stops is noticed", async () => {
     vi.useFakeTimers();
     const transport = mockTransport(() => json(200, {}));
 
-    createClient({ transport, store: createMemoryStore() });
+    const client = createClient({ transport, store: createMemoryStore() });
     await quiet();
 
     const boot = transport.sent.length;
-    await vi.advanceTimersByTimeAsync(120_000);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(transport.sent.length - boot).toBe(3);
 
-    expect(transport.sent.length).toBe(boot);
+    transport.unreachable(true);
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    expect(read(client.reachable)).toBe(false);
+    client.close();
+  });
+
+  it("asks nothing while nobody is watching, and asks at once when someone is", async () => {
+    vi.useFakeTimers();
+    const transport = mockTransport(() => json(200, {}));
+
+    const client = createClient({ transport, store: createMemoryStore() });
+    await quiet();
+
+    client.watched(false);
+    const idle = transport.sent.length;
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(transport.sent.length).toBe(idle);
+
+    client.watched(true);
+    await quiet();
+
+    expect(transport.sent.length).toBe(idle + 1);
+    client.close();
+  });
+
+  it("does not probe a pool that is answering everything else", async () => {
+    vi.useFakeTimers();
+    const transport = mockTransport(() => json(200, anItem("one")));
+
+    const client = createClient({ transport, store: createMemoryStore() });
+    await quiet();
+
+    const boot = transport.sent.length;
+    for (let reads = 0; reads < 3; reads += 1) {
+      await vi.advanceTimersByTimeAsync(9_000);
+      await client.item("one");
+    }
+
+    // Each answer pushes the probe out, so a client being used never sends one.
+    expect(
+      transport.sent
+        .slice(boot)
+        .map(routeOf)
+        .filter((route) => route === HEALTH),
+    ).toEqual([]);
+    client.close();
   });
 
   it("reads a daemon that cannot answer as out of reach, not as an answer", async () => {

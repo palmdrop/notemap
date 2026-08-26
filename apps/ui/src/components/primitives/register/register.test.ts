@@ -1,6 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { expect, test, vi } from "vitest";
 
+import { NO_MORE_OFFLINE } from "$lib/said";
+
+import More from "./More.svelte";
 import Fixture from "./Register.fixture.svelte";
 
 /** The grid does the hiding, so this is the one thing the markup has to say. */
@@ -55,4 +58,28 @@ test("a control inside a cell is not the cell's click", async () => {
   await fireEvent.click(screen.getByRole("button", { name: "a tag" }));
 
   expect(picked).not.toHaveBeenCalled();
+});
+
+test("the foot offers the next page, or says why it cannot", async () => {
+  const more = vi.fn();
+  const { rerender } = render(More, {
+    loading: false,
+    offline: false,
+    onmore: more,
+  });
+
+  await fireEvent.click(screen.getByRole("button", { name: "load more" }));
+  expect(more).toHaveBeenCalledTimes(1);
+  expect(screen.queryByText(NO_MORE_OFFLINE)).toBeNull();
+
+  void rerender({ loading: true, offline: false, onmore: more });
+  expect(screen.getByRole("button", { name: "loading…" })).toHaveProperty(
+    "disabled",
+    true,
+  );
+
+  // Not a disabled action: offline there is no page to promise, only a reason.
+  void rerender({ loading: false, offline: true, onmore: more });
+  expect(screen.getByText(NO_MORE_OFFLINE)).toBeDefined();
+  expect(screen.queryByRole("button")).toBeNull();
 });

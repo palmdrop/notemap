@@ -4,6 +4,11 @@
 **Last updated**: 2026-08-26
 **Shipped**:
 
+- 2026-08-26 — **Offline is said twice, not three times.** The register entry that named a surface
+  drawn from the cache is gone from the queue and the feed; the chrome's mark and a row's `pending`
+  already carried it. In its place the foot of a surface with more to read says the pool is out of
+  reach and offers no page it cannot fetch. A read the pool refused keeps its entry, in the accent.
+  ([plan](../plans/quieter-offline-marks.md))
 - 2026-08-26 — **A capture made yesterday no longer looks like one the pool has.** A row says
   `pending` in the rail while this client's outbox still holds work about it, muted rather than
   inverted: what became of an item in the pool and what has not been sent yet are different claims,
@@ -257,7 +262,8 @@ of them the same colour.)*
 
 - **Unreachable** is stated **once**, in the chrome, as a small persistent mark. It is not repeated
   on every row, and no surface repeats it either: a read that never reached the pool draws no
-  failure, the surface saying what it is drawn from instead (below). Actions that need the daemon
+  failure, and the only other place it is said at all is the foot of a surface with more to read,
+  which is where a page would have been offered (below). Actions that need the daemon
   are visibly unavailable and read as unavailable, not as broken. Capture, tagging, editing and
   archiving stay live, because they replay from the outbox.
 - **Pending** is quiet, and it is two marks answering two questions *(amended 2026-08-26)*. The
@@ -272,23 +278,28 @@ of them the same colour.)*
   why, and a way to dismiss it — the left corner because the right is where a composer lives, because it is the only one of the three that will not resolve without a person. It is not
   drawn in the same shape as pending work.
 
-**A surface says what it is drawn from** *(2026-08-26)*. While the pool has not answered for the
-queue or the feed, the surface names itself in the register and says that this is what the client
-holds — once, above the rows, and never per row. It is drawn quietly, in ink: it is a condition and
-not a failure, and the accent beside it belongs to the read the pool refused. The queue is what it
-is for: three rows must not read as a queue nearly drained, and the feed is defined as the pool
-read completely. A read the pool **refused** shares that one entry, in the accent, being the one
-read failure that will not resolve without a person; it does not go to the corner, which belongs
-to the outbox — an operation, with an id, that a person dismisses — and a failed read has neither.
-The surface says it only once it has asked: a surface nobody has read yet is drawn
-from the cache in every respect but the one that matters, and marking it would put the mark on
-every load.
+**A surface says nothing about what it is drawn from** *(amended 2026-08-26)*. It used to: while the
+pool had not answered for the queue or the feed, the surface named itself in the register and said
+that this was what the client holds. That entry is gone. Between the chrome's `offline` mark and a
+row's `pending` mark the condition is already stated twice, and a third sentence above the rows was
+the loudest of the three about the quietest thing. What replaces it is the **foot**: a surface with
+more to read says, where `Load more` would be, that the pool is out of reach and that nothing more
+can be fetched — muted, in the foot's own place, with no action offered. It is drawn from
+reachability rather than from what the surface holds, because a surface drawn from the cache while
+the pool answers is one whose read is about to land and it has nothing to say. A surface read to
+the end says nothing either: there is no next page to be denied.
+
+A read the pool **refused** keeps the register entry, in the accent, being the one read failure that
+will not resolve without a person; it does not go to the corner, which belongs to the outbox — an
+operation, with an id, that a person dismisses — and a failed read has neither. A read the pool
+never answered still draws no failure at all.
 
 ### Draining
 
 The queue's job is to reach zero and the API gives no count — `ItemSlice` carries values and an
 optional `next` link, nothing more. So the shell claims no number. `Load more` is the honest
-statement that more exists, and **the empty state is designed as the thing you were working
+statement that more exists — and while the pool is out of reach the foot says that instead of
+offering a page it cannot fetch. **The empty state is designed as the thing you were working
 toward**, not as a grey apology.
 
 The reader's **order control** is in the bar and acts on whichever surface is being read; settings
@@ -578,8 +589,10 @@ the page a person actually reads. Three-character indents on successive paragrap
   characters.
 - A capture whose payload type the shell does not know is visible, names its type, and can still be
   tagged, archived and routed.
-- A surface drawn from the client's cache says so once, above the rows, and stops saying it when the
-  pool has answered for that surface.
+- A surface drawn from the client's cache is drawn as itself, with nothing above the rows to say so;
+  a queue holding three cached rows does not read as a queue nearly drained.
+- With the pool out of reach, a surface with more to read offers no `load more` and says in its foot
+  why, and offers it again once the pool answers.
 - A picture captured with the pool out of reach draws the picture, and the same row after the drain
   draws the pool's copy.
 - With the daemon unreachable: the chrome says so once, no row and no surface repeats it, capture

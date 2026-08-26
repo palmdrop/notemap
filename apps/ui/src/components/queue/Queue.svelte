@@ -7,8 +7,7 @@
   import Drained from "$components/queue/Drained.svelte";
   import QueueRow from "$components/queue/QueueRow.svelte";
   import RoutingComposer from "$components/routing/RoutingComposer.svelte";
-  import Action from "$components/primitives/controls/Action.svelte";
-  import Foot from "$components/primitives/register/Foot.svelte";
+  import More from "$components/primitives/register/More.svelte";
   import Notice from "$components/primitives/register/Notice.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import { client } from "$lib/client";
@@ -17,15 +16,13 @@
   import { rail } from "$lib/rail.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { readMark, writeMark } from "$lib/scroll-mark";
-  import { CACHED } from "$lib/said";
-  import { surface } from "$lib/surface.svelte";
+  import { refusalIn } from "$lib/refusal";
 
   const SURFACE = "queue";
 
   const queue = client.queue;
   const pool = reachable();
   const undrained = pending();
-  const said = surface();
 
   /** Processing happens in the row, and one row is open at a time. */
   let opened = $state<string | undefined>(undefined);
@@ -36,8 +33,7 @@
     $queue.items.find((item) => item.id === routing) ?? undefined,
   );
 
-  const cached = $derived(said.cached($queue));
-  const refused = $derived(said.refused($queue));
+  const refused = $derived(refusalIn($queue));
 
   const drained = $derived(
     !$queue.loading &&
@@ -48,7 +44,7 @@
 
   onMount(() => {
     void (async () => {
-      await said.read(client.loadQueue(orderFor(SURFACE, page.url)));
+      await client.loadQueue(orderFor(SURFACE, page.url));
       await tick();
       window.scrollTo({ top: readMark(SURFACE) });
     })();
@@ -68,8 +64,8 @@
 <Register furled={rail.furled} onfurl={() => rail.toggle()}>
   <CaptureRow />
 
-  {#if cached || refused !== undefined}
-    <Notice surface="queue" said={cached ? CACHED : undefined} {refused} />
+  {#if refused !== undefined}
+    <Notice surface="queue" {refused} />
   {/if}
 
   {#if drained}
@@ -89,11 +85,11 @@
   {/each}
 
   {#if $queue.more}
-    <Foot>
-      <Action disabled={$queue.loading} onclick={() => void client.loadQueue()}>
-        {$queue.loading ? "loading…" : "load more"}
-      </Action>
-    </Foot>
+    <More
+      loading={$queue.loading}
+      offline={!pool.yes}
+      onmore={() => void client.loadQueue()}
+    />
   {/if}
 </Register>
 

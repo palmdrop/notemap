@@ -167,6 +167,13 @@ export interface Client {
 
   /** Called on every mutation, and again to retry what is still pending. */
   drain(): Promise<void>;
+
+  /**
+   * Whether anyone is looking at what this client draws. The probe runs while
+   * they are and pauses while they are not, so an unwatched shell costs the
+   * pool nothing and asks once when it is looked at again.
+   */
+  watched(yes: boolean): void;
   dismiss(operation: OperationId): Promise<void>;
 
   /**

@@ -36,3 +36,23 @@ export function reachable() {
     },
   };
 }
+
+/**
+ * Whether anyone is looking, told to the client. Mounted once by the chrome:
+ * a surface reading `reachable()` is not a second opinion about it, and the
+ * last one to go says so rather than leaving the client asking on its own.
+ */
+export function watched(): void {
+  onMount(() => {
+    const looking = () =>
+      client.watched(document.visibilityState === "visible");
+
+    document.addEventListener("visibilitychange", looking);
+    looking();
+
+    return () => {
+      document.removeEventListener("visibilitychange", looking);
+      client.watched(false);
+    };
+  });
+}
