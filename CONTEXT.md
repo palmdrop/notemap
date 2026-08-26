@@ -345,6 +345,13 @@ when an operation about it is: the client answers those as the **undrained** set
 operation that is not refused and so is wider than the one operation state named `pending`.
 _Avoid_: unsynced, unsaved, queued, offline
 
+**Watched**:
+Said of a client whose surfaces someone is looking at — a visible page, a foregrounded app. What a
+shell tells its client, and what decides whether the reachability probe runs: an unwatched client
+asks the pool nothing and asks once when it is watched again, so a mark that is right without being
+asked costs nothing while nobody is reading it.
+_Avoid_: visible, focused, active, foreground
+
 **Refused**:
 Said of an outbox operation the pool answered no to. Terminal without a person: waiting will not
 drain it, and the client's cache is left holding something the pool never accepted, so it is shown

@@ -312,7 +312,9 @@ test("offers no page it cannot fetch while the pool is out of reach", async () =
   const transport = pool(queued("one"));
 
   render(Queue);
-  expect(await screen.findByRole("button", { name: "load more" })).toBeDefined();
+  expect(
+    await screen.findByRole("button", { name: "load more" }),
+  ).toBeDefined();
 
   transport.unreachable(true);
   await client.loadQueue();

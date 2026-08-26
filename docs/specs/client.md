@@ -4,6 +4,12 @@
 **Last updated**: 2026-08-26
 **Shipped**:
 
+- 2026-08-26 — **The pool is asked whether it is there, whether or not anything else is asking.**
+  The health probe runs in both states at ten seconds, down from a backoff capped at thirty, so a
+  daemon that dies is marked offline without an action to discover it and one that comes back drains
+  within ten seconds. An answered request pushes the probe out, and a client nobody is watching asks
+  nothing at all. ([plan](../plans/quieter-offline-marks.md))
+
 - 2026-08-26 — **The outbox answers what is undrained, per item and as a count.** A shell asks it
   two questions — whether anything at all is waiting, and whether *this* row is — so it answers
   both rather than making each shell derive one from the raw list. A refusal is in neither.
@@ -600,10 +606,24 @@ large as the person's reading made it.
 
 **Reachability is the client's, not the transport's.** Every request the client makes is evidence —
 the pool answering is the only proof of reach there is — and a **probe of `GET /v1/health`** sits
-behind them, on a backoff, while the pool is out of reach. It runs only in that state: it is the
-only one whose ending nobody else would notice, and a client whose requests are being answered has
-better evidence than a poll. A 5xx is not evidence of reach, because the client reads one as the
-pool failing to decide rather than as an answer ([http-v1.md](http-v1.md#errors)).
+behind them. A 5xx is not evidence of reach, because the client reads one as the pool failing to
+decide rather than as an answer ([http-v1.md](http-v1.md#errors)).
+
+**The probe runs in both states, ten seconds apart** *(amended 2026-08-26; it used to run only while
+the pool was out of reach, on a backoff capped at thirty seconds)*. Out of reach it still doubles
+from a second, capped now at ten: a pool that comes back is drained by the probe that finds it, and
+half a minute of holding work that could have been sent is the cost the cap was quietly charging.
+In reach it ticks at ten seconds, because the argument that a client whose requests are answered
+has better evidence than a poll is an argument about a client being *used* — a shell left open and
+read is asking nothing, so nothing notices the daemon go away, and the mark stays wrong until
+someone acts on it. Every answered request pushes the probe out by its interval, so the used client
+still sends none: the probe fires only when nothing else has spoken for ten seconds.
+
+**The probe pauses while nobody is watching.** A client is told whether anyone is looking at what it
+draws ([CONTEXT.md](../../CONTEXT.md)); unwatched it asks nothing, and it asks once when it is
+watched again rather than waiting out the interval. So the cost is one request every ten seconds per
+shell being read, not per shell left open. The signal is the shell's to give — a web shell has the
+page's visibility, a native one has its own — and the cadence stays in the client.
 
 **A pool that comes back drains the outbox**, with no mutation to prod it and nothing for a shell to
 remember. Reachability is exposed for a shell to draw; the browser's `online` event is a weaker
@@ -615,8 +635,8 @@ evidence like any other, so an operation that sends two of them and fails on the
 pool as back and then gone again — and starting a drain for that would send the pair again at once,
 and go on doing so for as long as the pool half-answers. So a return found by a drain does not start
 another: it waits for the one already running and **reads the surfaces after it**, which is the half
-nothing else would do. A drain is often the only thing that notices the pool is back — reach is true
-again, so the probe stops, and no second return is coming.
+nothing else would do. A drain often notices the pool is back before the probe's next tick would, and
+nothing else is coming to read the surfaces on its behalf.
 
 **And then reads the surfaces again** *(added 2026-08-26)*, after the drain rather than beside it,
 so the page the pool answers already holds what was waiting to be sent. Which surfaces, and how far,
@@ -730,8 +750,9 @@ that logic out of the one place it is meant to live.
 - **A surface the pool has not answered for is the cache, not an empty list** (2026-08-26): the
   alternative was to keep the surfaces empty until a read lands, which is what made a durable store
   invisible to the person holding it. The cost is that a surface changes shape when the first page
-  arrives, and the surface says which it is holding so that change is legible rather than
-  mysterious.
+  arrives. *Amended 2026-08-26*: the shell used to name that in the register and no longer does —
+  the chrome's offline mark carries it, and what the surface holds is not by itself a thing worth
+  saying out loud ([shell.md](shell.md)).
 - **Reachability is the client's, not the transport's** (2026-08-26): the plan for this work put it
   on the `Transport` port, on the grounds that a native shell may know it from the platform. It sits
   in the client instead — every request already passes through the client's own api layer, which is
@@ -739,7 +760,10 @@ that logic out of the one place it is meant to live.
   a `/v1` route the client has typed. One implementation and one backoff, rather than one per
   adapter. The argument for the port was never that a shell *could* compute it too — it is that a
   native platform signal answers **without a round trip**, where the probe costs a request per
-  backoff tick. That is the condition to revisit under, and nothing else is.
+  backoff tick. That is the condition to revisit under, and nothing else is. *Amended 2026-08-26*:
+  that cost is now six requests a minute while a shell is being read, which makes the condition
+  worth watching rather than merely worth stating. It is paid to a daemon on the same machine or
+  the same network, and it buys a mark that is right without being asked.
 - **The cache is capped and the working set is not** (2026-08-26): a browser may evict the database
   under storage pressure anyway, so the cache is treated as a cache. What is capped is history,
   because it is the part a re-read replaces for free.
