@@ -1,13 +1,20 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
-import { expect, test, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool } from "../../testing/pool";
 import { remember } from "$lib/order";
+import { rail } from "$lib/rail.svelte";
+import { CACHED, NOTHING_CAPTURED } from "$lib/said";
 import Feed from "./Feed.svelte";
 
 vi.mock("$lib/client", () => import("../../testing/pool"));
+
+// Module-scoped reading preference, so a test that furls the rail unfurls it.
+afterEach(() => {
+  if (rail.furled) rail.toggle();
+});
 
 function held(...values: Record<string, unknown>[]) {
   return (request: Request) =>
@@ -199,4 +206,104 @@ test("reads from the end the reader last chose, not the one the feed defaults to
     (request) => routeOf(request) === "GET /v1/feed",
   );
   expect(new URL(read!.url).searchParams.get("order")).toBe("oldest-first");
+});
+
+test("says an archived row is archived and still pending", async () => {
+  const transport = pool(
+    held(
+      anItem("gone", { archived: { archivedAt: "2026-08-17T07:15:00.000Z" } }),
+    ),
+  );
+
+  render(Feed);
+  await screen.findByText("archived");
+  transport.unreachable(true);
+
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  const field = screen.getByLabelText("Add a tag");
+  await fireEvent.input(field, { target: { value: "reading" } });
+  await fireEvent.submit(field.closest("form") as HTMLFormElement);
+
+  expect(await screen.findByText("pending")).toBeDefined();
+  expect(screen.getByText("archived")).toBeDefined();
+});
+
+test("says a cold feed is what the client holds, and stops once the pool answers", async () => {
+  const transport = pool(held(anItem("one")));
+  transport.unreachable(true);
+
+  render(Feed);
+  expect(await screen.findByText(CACHED)).toBeDefined();
+  expect(screen.queryByText(NOTHING_CAPTURED)).toBeNull();
+
+  transport.unreachable(false);
+  await client.loadFeed();
+
+  expect(await screen.findByText("one")).toBeDefined();
+  await vi.waitFor(() => {
+    expect(screen.queryByText(CACHED)).toBeNull();
+  });
+});
+
+test("says nothing about the cache on a feed the pool answers at once", async () => {
+  pool(held(anItem("one")));
+
+  render(Feed);
+  expect(screen.queryByText(CACHED)).toBeNull();
+
+  await screen.findByText("one");
+  expect(screen.queryByText(CACHED)).toBeNull();
+});
+
+test("draws the read the pool refused and not the one it never answered", async () => {
+  pool((request) =>
+    routeOf(request) === "GET /v1/feed"
+      ? json(400, { error: { code: "bad-position" } })
+      : json(200, { values: [] }),
+  );
+
+  render(Feed);
+
+  expect(
+    await screen.findByText("the app lost its place in the list; reload"),
+  ).toBeDefined();
+  expect(screen.queryByText("the daemon is not reachable")).toBeNull();
+});
+
+test("says nothing was captured only once the pool has answered for the feed", async () => {
+  const transport = pool(held());
+  transport.unreachable(true);
+
+  render(Feed);
+  await screen.findByText(CACHED);
+  expect(screen.queryByText(NOTHING_CAPTURED)).toBeNull();
+
+  transport.unreachable(false);
+  await client.loadFeed();
+
+  expect(await screen.findByText(NOTHING_CAPTURED)).toBeDefined();
+});
+
+test("keeps the row's marks when the rail furls, and draws each of them once", async () => {
+  const transport = pool(
+    held(
+      anItem("gone", { archived: { archivedAt: "2026-08-17T07:15:00.000Z" } }),
+    ),
+  );
+
+  render(Feed);
+  await screen.findByText("archived");
+  transport.unreachable(true);
+
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  const field = screen.getByLabelText("Add a tag");
+  await fireEvent.input(field, { target: { value: "reading" } });
+  await fireEvent.submit(field.closest("form") as HTMLFormElement);
+  await screen.findByText("pending");
+
+  rail.toggle();
+  await vi.waitFor(() => {
+    expect(screen.getAllByText("archived")).toHaveLength(1);
+  });
+  expect(screen.getAllByText("pending")).toHaveLength(1);
 });

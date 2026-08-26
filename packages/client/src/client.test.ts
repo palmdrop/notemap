@@ -172,6 +172,82 @@ describe("capturing", () => {
   });
 });
 
+describe("what has not drained", () => {
+  it("names the item a waiting capture is about", async () => {
+    const { client, transport } = clientOver(() => json(201, {}));
+    transport.unreachable(true);
+
+    const optimistic = await client.capture({ channel: "web", text: "later" });
+    await client.drain();
+
+    expect([...read(client.undrained)]).toEqual([optimistic.id]);
+  });
+
+  it("lets go of it once the pool has taken it", async () => {
+    const { client, transport } = clientOver(async (request) => {
+      const body = (await request.json()) as { id: string };
+      return captured(anItem(body.id));
+    });
+
+    transport.unreachable(true);
+    await client.capture({ channel: "web", text: "later" });
+    await client.drain();
+
+    transport.unreachable(false);
+    await client.drain();
+
+    expect(read(client.undrained).size).toBe(0);
+  });
+
+  it("holds nothing for a refusal, which is not waiting for anything", async () => {
+    const { client } = clientOver(() => refusal(409, "capture-id-conflict"));
+
+    await client.capture({ channel: "web", text: "conflicting" });
+    await client.drain();
+
+    expect(read(client.outbox)[0]?.state).toBe("refused");
+    expect(read(client.undrained).size).toBe(0);
+  });
+
+  it("names an item whose archive is waiting, alongside the capture's", async () => {
+    const { client, transport } = clientOver(() => json(200, anItem("one")));
+
+    await client.item("one");
+    transport.unreachable(true);
+
+    await client.archive("one");
+    const optimistic = await client.capture({ channel: "web", text: "both" });
+    await client.drain();
+
+    expect([...read(client.undrained)].sort()).toEqual(
+      [optimistic.id, "one"].sort(),
+    );
+  });
+
+  it("counts operations where it names items, the two marks being two questions", async () => {
+    const { client, transport } = clientOver(() => json(200, anItem("one")));
+
+    await client.item("one");
+    transport.unreachable(true);
+
+    await client.tag("one", "reading");
+    await client.archive("one");
+    await client.drain();
+
+    expect([...read(client.undrained)]).toEqual(["one"]);
+    expect(read(client.waiting)).toBe(2);
+  });
+
+  it("counts nothing for a refusal either", async () => {
+    const { client } = clientOver(() => refusal(409, "capture-id-conflict"));
+
+    await client.capture({ channel: "web", text: "conflicting" });
+    await client.drain();
+
+    expect(read(client.waiting)).toBe(0);
+  });
+});
+
 describe("the queue", () => {
   const queued = (...items: Item[]) => json(200, { values: items });
 

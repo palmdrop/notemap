@@ -3,7 +3,8 @@ import { afterEach, expect, test, vi } from "vitest";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
-import { asked, pool } from "../../testing/pool";
+import { asked, client, pool } from "../../testing/pool";
+import { CACHED } from "$lib/said";
 import { briefly } from "$lib/stamp";
 import { online } from "../../testing/dom";
 import { rail } from "$lib/rail.svelte";
@@ -211,4 +212,160 @@ test("reads from the end the reader last chose, not the one the queue defaults t
     (request) => routeOf(request) === "GET /v1/queue",
   );
   expect(new URL(read!.url).searchParams.get("order")).toBe("newest-first");
+});
+
+function taken(request: Request) {
+  return request.json().then((body) => {
+    const envelope = body as { id: string; source: string; payload: unknown };
+    return json(201, {
+      kind: "captured",
+      item: anItem(envelope.id, {
+        source: envelope.source,
+        payload: envelope.payload as ReturnType<typeof anItem>["payload"],
+      }),
+      matchedOn: "id",
+    });
+  });
+}
+
+async function capture(said: string) {
+  const written = screen.getByLabelText("What to capture");
+  await fireEvent.input(written, { target: { value: said } });
+  return fireEvent.click(screen.getByRole("button", { name: "capture" }));
+}
+
+test("says a capture is pending until the pool has taken it", async () => {
+  const transport = pool((request) =>
+    routeOf(request) === "POST /v1/captures"
+      ? taken(request)
+      : json(200, { values: [] }),
+  );
+
+  render(Queue);
+  await screen.findByText("zero");
+  transport.unreachable(true);
+
+  await capture("made with the pool out of reach");
+  await screen.findByText("made with the pool out of reach");
+  expect(await screen.findByText("pending")).toBeDefined();
+
+  transport.unreachable(false);
+  await client.drain();
+
+  await vi.waitFor(() => {
+    expect(screen.queryByText("pending")).toBeNull();
+  });
+  expect(screen.getByText("made with the pool out of reach")).toBeDefined();
+});
+
+test("does not draw a refused operation as pending", async () => {
+  pool((request) =>
+    routeOf(request) === "POST /v1/items/one/archive"
+      ? json(409, { error: { code: "already-archived" } })
+      : queued("one")(request),
+  );
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.click(screen.getByRole("button", { expanded: false }));
+  await fireEvent.click(screen.getByRole("button", { name: "archive" }));
+
+  // The pool put the row back, and the operation it refused is still held.
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/archive");
+    expect(screen.queryByText("zero")).toBeNull();
+  });
+  expect(screen.queryByText("pending")).toBeNull();
+});
+
+test("says a cold surface is what the client holds, and stops once the pool answers", async () => {
+  const transport = pool(queued("one"));
+  transport.unreachable(true);
+
+  render(Queue);
+  expect(await screen.findByText(CACHED)).toBeDefined();
+
+  transport.unreachable(false);
+  await client.loadQueue();
+
+  expect(await screen.findByText("one")).toBeDefined();
+  await vi.waitFor(() => {
+    expect(screen.queryByText(CACHED)).toBeNull();
+  });
+});
+
+test("draws the read the pool refused and not the one it never answered", async () => {
+  const transport = pool(queued("one"));
+  transport.unreachable(true);
+
+  render(Queue);
+  await screen.findByText(CACHED);
+  expect(screen.queryByText("the daemon is not reachable")).toBeNull();
+
+  pool((request) =>
+    routeOf(request) === "GET /v1/queue"
+      ? json(400, { error: { code: "bad-position" } })
+      : json(200, { values: [] }),
+  );
+
+  cleanup();
+  render(Queue);
+
+  expect(
+    await screen.findByText("the app lost its place in the list; reload"),
+  ).toBeDefined();
+  // One entry, not two: the accent sits beside the ink rather than under it.
+  expect(await screen.findByText(CACHED)).toBeDefined();
+  expect(screen.getAllByText("queue")).toHaveLength(1);
+});
+
+test("says nothing about the cache on a queue the pool answers at once", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  expect(screen.queryByText(CACHED)).toBeNull();
+
+  await screen.findByText("one");
+  expect(screen.queryByText(CACHED)).toBeNull();
+});
+
+test("draws a picture before it is sent, and the pool's copy after", async () => {
+  const transport = pool((request) => {
+    const route = routeOf(request);
+    if (route.startsWith("PUT /v1/assets/")) {
+      return json(201, { id: route.slice("PUT /v1/assets/".length) });
+    }
+    return route === "POST /v1/captures"
+      ? taken(request)
+      : json(200, { values: [] });
+  });
+
+  render(Queue);
+  await screen.findByText("zero");
+  transport.unreachable(true);
+
+  await fireEvent.change(screen.getByLabelText("A picture to capture"), {
+    target: {
+      files: [new File(["bytes"], "shot.png", { type: "image/png" })],
+    },
+  });
+  await capture("a picture");
+
+  const drawn = await vi.waitFor(() => {
+    const image = document.querySelector("img");
+    expect(image).not.toBeNull();
+    return image as HTMLImageElement;
+  });
+  // Its own bytes: nothing has been uploaded, so the pool's URL would be broken.
+  expect(drawn.getAttribute("src")).not.toContain("/v1/assets/");
+
+  transport.unreachable(false);
+  await client.drain();
+
+  await vi.waitFor(() => {
+    expect(document.querySelector("img")?.getAttribute("src")).toContain(
+      "/v1/assets/",
+    );
+  });
 });

@@ -4,6 +4,14 @@
 **Last updated**: 2026-08-26
 **Shipped**:
 
+- 2026-08-26 — **A capture made yesterday no longer looks like one the pool has.** A row says
+  `pending` in the rail while this client's outbox still holds work about it, muted rather than
+  inverted: what became of an item in the pool and what has not been sent yet are different claims,
+  and an archived row that has not drained carries both. A surface drawn from the cache says so
+  once, in the register, so three rows do not read as a queue nearly done. The read failure beside
+  it is the refused one alone — unreachable was already stated in the chrome, and a surface repeats
+  it nowhere. A picture draws the bytes the client is holding until the pool has them.
+  ([plan](../plans/shell-offline-marks.md))
 - 2026-08-26 — **The end a reader starts from survives a reload.** The order control's choice is
   named on the URL and remembered per surface, so a read reloads as the one that was being read and
   a shared link opens at the end it was shared at. The queue and the feed keep their own, having
@@ -156,7 +164,8 @@ time.**
 - The **capture time**, prominently — the row reads as a dated entry, not as a card with a caption.
 - The payload, rendered (below). Text clamps only when it is genuinely long — on the order of ten
   lines — with a visible cue that there is more. An image is large enough to recognise and bounded
-  so it cannot swallow the list.
+  so it cannot swallow the list. A picture whose capture has not drained draws the bytes the client
+  is holding, so the row looks the same before the upload as after it.
 - **Tags**, always, and addable here. Tagging replays from the outbox, which makes it the one
   processing gesture that survives an unreachable pool, and it is cheap enough to do while
   scanning.
@@ -167,7 +176,8 @@ time.**
   ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)), and an item may have been
   revised more than once. Where a revision **sorts** is settled: at its own capture time, like any
   capture. Drawing it beside what it came from is this shell's to choose, by grouping on the link.
-- A **pending** mark when an outbox operation about this item has not yet drained.
+- A **pending** mark when an outbox operation about this item has not yet drained. *Amended
+  2026-08-26*: it is a word in the rail, muted, below the state word rather than in its idiom.
 - The **last touch** when it differs from the capture time. *Amended 2026-08-24*: it no longer
   orders the queue ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)), so it
   stops explaining where a row sits and becomes a plain fact about the note — worth more now that
@@ -242,17 +252,37 @@ destination×capability list.
 
 ### Reachable, pending, refused
 
-Three conditions, and the current shell paints two of them the same colour.
+Three conditions, and each of them is drawn as itself. *(Amended 2026-08-26: it used to paint two
+of them the same colour.)*
 
 - **Unreachable** is stated **once**, in the chrome, as a small persistent mark. It is not repeated
-  on every row. Actions that need the daemon are visibly unavailable and read as unavailable, not
-  as broken. Capture, tagging, editing and archiving stay live, because they replay from the
-  outbox.
-- **Pending** is quiet: one count in the chrome, and nothing at all while there is nothing waiting.
-  It is the ordinary state of a mutation and it heals itself.
+  on every row, and no surface repeats it either: a read that never reached the pool draws no
+  failure, the surface saying what it is drawn from instead (below). Actions that need the daemon
+  are visibly unavailable and read as unavailable, not as broken. Capture, tagging, editing and
+  archiving stay live, because they replay from the outbox.
+- **Pending** is quiet, and it is two marks answering two questions *(amended 2026-08-26)*. The
+  bar's `N waiting` answers whether anything at all is outstanding, including for rows nobody is
+  looking at, and says nothing while there is nothing. A row's own `pending` mark answers whether
+  *this* row is, and sits in the metadata rail — muted, and deliberately not in the inverted idiom
+  `routed`, `archived` and `revised` use: those say what became of the item in the pool, this says
+  what this client has not sent, and an archived row that has not drained carries both without
+  either shouting over the other. Pending is the ordinary state of a mutation and it heals itself,
+  so neither mark is drawn in the shape a refusal is.
 - **Refused** is loud. It gets a fixed place in the bottom-left corner carrying what was refused,
   why, and a way to dismiss it — the left corner because the right is where a composer lives, because it is the only one of the three that will not resolve without a person. It is not
   drawn in the same shape as pending work.
+
+**A surface says what it is drawn from** *(2026-08-26)*. While the pool has not answered for the
+queue or the feed, the surface names itself in the register and says that this is what the client
+holds — once, above the rows, and never per row. It is drawn quietly, in ink: it is a condition and
+not a failure, and the accent beside it belongs to the read the pool refused. The queue is what it
+is for: three rows must not read as a queue nearly drained, and the feed is defined as the pool
+read completely. A read the pool **refused** shares that one entry, in the accent, being the one
+read failure that will not resolve without a person; it does not go to the corner, which belongs
+to the outbox — an operation, with an id, that a person dismisses — and a failed read has neither.
+The surface says it only once it has asked: a surface nobody has read yet is drawn
+from the cache in every respect but the one that matters, and marking it would put the mark on
+every load.
 
 ### Draining
 
@@ -370,8 +400,12 @@ One system, reused, and nothing is distinguished by being bigger.
 the register, and takes the left column to nothing — which gives the prose the whole measure
 without hiding a row or changing what a row can do. It sits on the edge it moves rather than in the
 bar, where a word for it was further from the thing it was about. The rail holds the button that
-opens a row, so a furled rail hands the stamp to the body rather than taking it away. The reader's
-answer is remembered, like the palette.
+opens a row, so a furled rail hands the stamp to the body rather than taking it away. *Amended
+2026-08-26*: the state word and the pending mark are handed over with it, since what a row became
+and what has not drained are what the acceptance criteria ask to be legible at a glance, and a
+reading preference is not a reason to lose either. Tags, routing and the opened row's facts stay
+behind, being what the reader asked for the measure back from. The reader's answer is remembered,
+like the palette.
 
 **A surface that is a register without being a list of captures does not offer the fold.** Settings
 is the one, and there is nothing in it worth reading without its left column.
@@ -485,9 +519,10 @@ the page a person actually reads. Three-character indents on successive paragrap
   red is reserved for what a person must do or attend to.
 - **Unreachability is stated once.** Forty rows repeating one global fact is noise; the fact is
   true of the shell, so it lives in the chrome.
-- **Pending and refused are drawn differently.** They currently share a red row and a shape.
-  Pending is self-healing and ordinary; refused is terminal until a person acts. Painting them
-  alike teaches the reader to ignore both.
+- **Pending and refused are drawn differently.** They shared a red row and a shape until
+  2026-08-26; pending is self-healing and ordinary, refused is terminal until a person acts, and
+  painting them alike teaches the reader to ignore both. Pending is now muted ink in the rail and a
+  refusal keeps the accent.
 - **No counts.** The API has no total to give, and a number meaning "how much I fetched" will be
   read as "how much is left".
 - **Semantic tokens, one theme mocked.** A second full palette is a second design pass; role names
@@ -522,7 +557,10 @@ the page a person actually reads. Three-character indents on successive paragrap
       `N waiting`, counting the outbox operations that have not drained and never a refusal, which
       has the corner to itself. It says nothing while there is nothing, since pending is ordinary
       and heals itself. Per-row was the rejected half: the fact is about the outbox, and forty rows
-      repeating it is the noise unreachability was already spared.
+      repeating it is the noise unreachability was already spared. *Amended 2026-08-26*: the row
+      gets one after all, in the quieter idiom. The noise argument holds for a fact true of the whole
+      shell, which unreachability is and this is not: `N waiting` and the row's mark answer different
+      questions, and neither answers the other's.
 
 ---
 
@@ -534,15 +572,19 @@ the page a person actually reads. Three-character indents on successive paragrap
 - Routing is dismissable without reaching for the mouse, and nothing in the register moves when it
   opens or closes.
 - A queue row can be told at a glance to be a revision, to be archived, or to have work not yet
-  drained, without opening it.
+  drained, without opening it and with the rail furled or not.
 - A row's capture time is the first thing read on it.
 - A text capture containing a heading or a list renders as a heading or a list, not as its
   characters.
 - A capture whose payload type the shell does not know is visible, names its type, and can still be
   tagged, archived and routed.
-- With the daemon unreachable: the chrome says so once, no row repeats it, capture and tagging and
-  editing and archiving remain operable, and routing and mark-done read as unavailable rather than
-  as broken.
+- A surface drawn from the client's cache says so once, above the rows, and stops saying it when the
+  pool has answered for that surface.
+- A picture captured with the pool out of reach draws the picture, and the same row after the drain
+  draws the pool's copy.
+- With the daemon unreachable: the chrome says so once, no row and no surface repeats it, capture
+  and tagging and editing and archiving remain operable, and routing and mark-done read as
+  unavailable rather than as broken.
 - A refused operation is distinguishable from a pending one without reading either, and only the
   refused one offers a dismissal.
 - Routing a queued item is reachable in two choices from the opened row when the capability needs

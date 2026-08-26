@@ -8,20 +8,24 @@
   import QueueRow from "$components/queue/QueueRow.svelte";
   import RoutingComposer from "$components/routing/RoutingComposer.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
-  import Body from "$components/primitives/register/Body.svelte";
   import Foot from "$components/primitives/register/Foot.svelte";
-  import Rail from "$components/primitives/register/Rail.svelte";
+  import Notice from "$components/primitives/register/Notice.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import { client } from "$lib/client";
   import { orderFor } from "$lib/order";
+  import { pending } from "$lib/pending.svelte";
   import { rail } from "$lib/rail.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { readMark, writeMark } from "$lib/scroll-mark";
+  import { CACHED } from "$lib/said";
+  import { surface } from "$lib/surface.svelte";
 
   const SURFACE = "queue";
 
   const queue = client.queue;
   const pool = reachable();
+  const undrained = pending();
+  const said = surface();
 
   /** Processing happens in the row, and one row is open at a time. */
   let opened = $state<string | undefined>(undefined);
@@ -32,15 +36,19 @@
     $queue.items.find((item) => item.id === routing) ?? undefined,
   );
 
+  const cached = $derived(said.cached($queue));
+  const refused = $derived(said.refused($queue));
+
   const drained = $derived(
     !$queue.loading &&
+      !$queue.fromCache &&
       $queue.failure === undefined &&
       $queue.items.length === 0,
   );
 
   onMount(() => {
     void (async () => {
-      await client.loadQueue(orderFor(SURFACE, page.url));
+      await said.read(client.loadQueue(orderFor(SURFACE, page.url)));
       await tick();
       window.scrollTo({ top: readMark(SURFACE) });
     })();
@@ -60,13 +68,8 @@
 <Register furled={rail.furled} onfurl={() => rail.toggle()}>
   <CaptureRow />
 
-  {#if $queue.failure !== undefined}
-    <Rail>queue</Rail>
-    <Body>
-      <span role="status" class="font-mono text-accent"
-        >{$queue.failure.said}</span
-      >
-    </Body>
+  {#if cached || refused !== undefined}
+    <Notice surface="queue" said={cached ? CACHED : undefined} {refused} />
   {/if}
 
   {#if drained}
@@ -79,6 +82,7 @@
       opened={opened === item.id}
       offline={!pool.yes}
       furled={rail.furled}
+      pending={undrained.has(item.id)}
       onopen={() => show(item.id)}
       onroute={() => (routing = item.id)}
     />

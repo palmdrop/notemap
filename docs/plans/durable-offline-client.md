@@ -3,7 +3,7 @@
 **Date**: 2026-08-24
 **Status**: Done
 **Spec**: `docs/specs/client.md`, `docs/specs/sync.md`
-**Closed**:
+**Closed**: 2026-08-26
 
 ---
 

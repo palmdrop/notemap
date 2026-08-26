@@ -11,6 +11,7 @@
   import Fact from "$components/primitives/register/Fact.svelte";
   import Facts from "$components/primitives/register/Facts.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
+  import Pending from "$components/primitives/marks/Pending.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import { client } from "$lib/client";
@@ -22,6 +23,7 @@
     opened,
     offline,
     furled,
+    pending = false,
     onopen,
     onroute,
   }: {
@@ -29,6 +31,7 @@
     opened: boolean;
     offline: boolean;
     furled: boolean;
+    pending?: boolean;
     onopen: () => void;
     onroute: () => void;
   } = $props();
@@ -69,8 +72,12 @@
     <Stamp at={item.createdAt} {opened} onopen={() => onopen()} />
   {/if}
 
-  {#if word !== undefined}
+  {#if !furled && word !== undefined}
     <StateWord {word} />
+  {/if}
+
+  {#if !furled && pending}
+    <Pending />
   {/if}
 
   <Tags {item} />
@@ -92,8 +99,16 @@
 
 <Body lit={opened} onpick={onopen}>
   {#if furled}
-    <div class="mb-2 font-mono">
+    <div class="mb-2 flex flex-wrap items-baseline gap-3 font-mono">
       <Stamp at={item.createdAt} {opened} onopen={() => onopen()} />
+
+      {#if word !== undefined}
+        <StateWord {word} inline />
+      {/if}
+
+      {#if pending}
+        <Pending inline />
+      {/if}
     </div>
   {/if}
 
