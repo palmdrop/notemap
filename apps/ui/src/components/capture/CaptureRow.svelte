@@ -48,15 +48,13 @@
     if (chosen === undefined && text.trim() === "") return;
 
     busy = true;
+    said = "";
+    bad = false;
     try {
-      // The bytes are a round trip whatever happens: the pool mints the id the
-      // capture then references, so there is nothing to apply optimistically.
-      let asset: string | undefined;
-      if (chosen !== undefined) {
-        bad = false;
-        said = "uploading…";
-        asset = (await client.uploadAsset(chosen)).id;
-      }
+      // Held rather than uploaded: the bytes go up with the capture when it
+      // drains, so nothing here waits on the pool.
+      const asset =
+        chosen === undefined ? undefined : await client.attach(chosen);
 
       await client.capture({
         channel: chosen === undefined ? TYPED : PICTURE,
@@ -67,7 +65,6 @@
       text = "";
       chosen = undefined;
       picker.value = "";
-      said = "";
     } catch (error) {
       said = saidBy(error);
       bad = true;

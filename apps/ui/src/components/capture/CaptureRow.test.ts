@@ -27,6 +27,13 @@ async function capture(text: string) {
   return written as HTMLTextAreaElement;
 }
 
+/** The row clears when the capture is applied, which is before the pool answers. */
+async function cleared(written: HTMLTextAreaElement): Promise<void> {
+  await vi.waitFor(() => {
+    expect(written.value).toBe("");
+  });
+}
+
 test("draws a capture before the pool answers, and clears the form", async () => {
   let answer = () => {};
   const held = new Promise<void>((resolve) => {
@@ -51,7 +58,7 @@ test("draws a capture before the pool answers, and clears the form", async () =>
   const written = await capture("before any round trip");
 
   expect(await screen.findByText("before any round trip")).toBeDefined();
-  expect(written.value).toBe("");
+  await cleared(written);
 
   answer();
 });
@@ -81,7 +88,7 @@ test("stamps a typed note and a picture with different channels", async () => {
 
   render(CaptureRow);
 
-  await capture("a typed note");
+  await cleared(await capture("a typed note"));
 
   const picker = screen.getByLabelText("A picture to capture");
   await fireEvent.change(picker, {
