@@ -77,17 +77,18 @@ Depends on the client's derived surfaces.
 
 Depends on the client resolving locally-held bytes.
 
-- [ ] A picture row draws the local bytes while its capture has not drained, so the row looks the
+- [x] A picture row draws the local bytes while its capture has not drained, so the row looks the
       same before and after the drain
 - [x] The compose row stops saying `uploading…` before a capture can be made, the upload having
       moved into the drain. What it says while an upload is actually in flight is a matter for the
       pending mark, not a separate wait. *Done 2026-08-26* in
       [durable-offline-client](durable-offline-client.md)'s phase 5: the wait went with the upload
       it was about, and shell.md's sentence naming it was amended there
-- [ ] Tests: a picture captured against a dead transport draws an image; the same row after the
-      drain draws the pool's copy
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm lint` green
-- [ ] `git commit`
+- [x] Tests: a picture captured against a dead transport draws an image; the same row after the
+      drain draws the pool's copy. *Held rather than built*: the client resolves an asset it still
+      holds bytes for, so the row already drew them; what was missing was the test
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm lint` green
+- [x] `git commit`
 
 ### Phase 4 — the spec
 

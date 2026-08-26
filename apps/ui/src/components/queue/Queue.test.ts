@@ -321,3 +321,42 @@ test("draws the read the pool refused and not the one it never answered", async 
   ).toBeDefined();
 });
 
+test("draws a picture before it is sent, and the pool's copy after", async () => {
+  const transport = pool((request) => {
+    const route = routeOf(request);
+    if (route.startsWith("PUT /v1/assets/")) {
+      return json(201, { id: route.slice("PUT /v1/assets/".length) });
+    }
+    return route === "POST /v1/captures"
+      ? taken(request)
+      : json(200, { values: [] });
+  });
+
+  render(Queue);
+  await screen.findByText("zero");
+  transport.unreachable(true);
+
+  await fireEvent.change(screen.getByLabelText("A picture to capture"), {
+    target: {
+      files: [new File(["bytes"], "shot.png", { type: "image/png" })],
+    },
+  });
+  await capture("a picture");
+
+  const drawn = await vi.waitFor(() => {
+    const image = document.querySelector("img");
+    expect(image).not.toBeNull();
+    return image as HTMLImageElement;
+  });
+  // Its own bytes: nothing has been uploaded, so the pool's URL would be broken.
+  expect(drawn.getAttribute("src")).not.toContain("/v1/assets/");
+
+  transport.unreachable(false);
+  await client.drain();
+
+  await vi.waitFor(() => {
+    expect(document.querySelector("img")?.getAttribute("src")).toContain(
+      "/v1/assets/",
+    );
+  });
+});
