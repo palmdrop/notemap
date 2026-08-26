@@ -1,8 +1,8 @@
 # Rolling out offline capture, four plans and seven pull requests
 
 **Date**: 2026-08-24
-**Status**: In progress
-**Closed**:
+**Status**: Done
+**Closed**: 2026-08-26
 
 ---
 
@@ -139,9 +139,9 @@ Depends on PRs 3 and 4. Independent of PR 5, so it may swap places with it. Bran
 
 Depends on PRs 5 and 6.
 
-- [ ] All of [shell-offline-marks](shell-offline-marks.md). Three phases, one review: they are one
-      idea drawn three times
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint` and `pnpm test:stack` green
+- [x] All of [shell-offline-marks](shell-offline-marks.md). Three phases, one review: they are one
+      idea drawn three times. Branch `agent/shell-offline-marks`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint` and `pnpm test:stack` green
 
 ---
 

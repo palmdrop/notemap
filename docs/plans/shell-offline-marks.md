@@ -1,9 +1,9 @@
 # The shell's offline marks
 
 **Date**: 2026-08-24
-**Status**: Todo
+**Status**: Done
 **Spec**: `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-08-26
 
 ---
 
@@ -94,14 +94,14 @@ Depends on the client resolving locally-held bytes.
 
 Depends on the phases above.
 
-- [ ] `docs/specs/shell.md`: the three conditions section stops describing pending as undrawn, and
+- [x] `docs/specs/shell.md`: the three conditions section stops describing pending as undrawn, and
       the row's mark, the surface's mark and the local-bytes rule are written as they landed
-- [ ] `docs/specs/shell.md`: "Pending is quiet: one count in the chrome" becomes a sentence about
+- [x] `docs/specs/shell.md`: "Pending is quiet: one count in the chrome" becomes a sentence about
       two marks and what each one answers, and the unreachable clause says that a surface repeats
       it nowhere
-- [ ] `docs/todo.md`: drop the pending-mark item
-- [ ] Add the dated `Shipped:` entry (see Notes)
-- [ ] `git commit`
+- [x] `docs/todo.md`: drop the pending-mark item
+- [x] Add the dated `Shipped:` entry (see Notes)
+- [x] `git commit`
 
 ---
 
@@ -113,13 +113,14 @@ Depends on the phases above.
   says which is which. The reasoning is in
   [reconnect-and-remembered-order](reconnect-and-remembered-order.md)'s out-of-scope section, where
   it was argued.
-- **Whether a surface's incomplete mark and the chrome's unreachable mark say the same thing twice.**
-  They are not the same fact — a cached surface stays cached for a moment after the pool comes back
-  — but they will usually appear together. *Fallback*: draw both and see; the surface mark is cheap
-  to remove if it reads as noise.
-- **What the compose row says during a large upload** now that the upload is inside the drain and no
-  longer blocks the capture. *Fallback*: nothing beyond the pending mark, which is what every other
-  undrained mutation gets.
+- [x] **Whether a surface's incomplete mark and the chrome's unreachable mark say the same thing
+  twice.** They are not the same fact — a cached surface stays cached for a moment after the pool
+  comes back — but they will usually appear together. *Taken 2026-08-26*: both are drawn, and the
+  surface mark is cheap to remove if it reads as noise. What went instead is the third statement of
+  it, the unreachable read's failure in the register.
+- [x] **What the compose row says during a large upload** now that the upload is inside the drain
+  and no longer blocks the capture. *Settled 2026-08-26*: nothing beyond the pending mark on the row
+  the capture became, which is what every other undrained mutation gets.
 
 ---
 

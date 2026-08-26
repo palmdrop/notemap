@@ -69,11 +69,6 @@
   folder tree, a board column, or an existing note to append to. Either the adapter publishes an
   enum it refreshes at describe time, or the destination port gains a method for asking. **This is
   the same seam preview needs** (above), so design the two together or it gets built twice.
-- [ ] A pending outbox operation has no visible mark on the row it is about. The chrome says the
-  pool is out of reach; nothing says *this item* has work that has not drained, so a capture and a
-  capture-plus-unsent-tag look identical. The visible half of the offline story, and it pairs with
-  the durable store above. [shell.md](specs/shell.md) has carried this since 2026-08-19 and names
-  the candidates: inverting the row's timestamp, or a word in the row's left column.
 - [ ] Nothing reclaims a blob no asset ever named. The sweep enumerates the `assets` table, so a
   blob written by an upload that never minted a row — a crash between the two, or a refused
   `asset-id-conflict` — is permanent, where every other kind of debris is eventually taken. Both
