@@ -2,7 +2,8 @@ import { filter, skip } from "rxjs";
 import { v7 as uuidv7 } from "uuid";
 
 import { createApi, answered } from "./api/http";
-import type { Item, ItemId, PoolIdentity } from "./api/types";
+import type { AssetId, Item, ItemId, PoolIdentity } from "./api/types";
+import { releasedBy } from "./assets/assets";
 import { envelopeFor, optimisticItem } from "./capture/envelope";
 import { rewritten, saidIn } from "./capture/says";
 import { PoolChanged, Refused, Unreachable } from "./errors";
@@ -26,6 +27,7 @@ import {
   rebuilt,
   settle,
   settledDestination,
+  withBlobUrl,
   withdrawn,
   type ClientState,
   type Surface,
@@ -35,6 +37,12 @@ import { loadMore, readAfterReturn } from "./surfaces/reads";
 import type { Client, ClientConfig, ListState } from "./types";
 
 const IMAGE = "image";
+
+function copied(file: File): Promise<File> {
+  return file
+    .arrayBuffer()
+    .then((bytes) => new File([bytes], file.name, { type: file.type }));
+}
 
 /** A projection rebuilds its array every time, so identity alone never matches. */
 function sameList(one: ListState, other: ListState): boolean {
@@ -147,6 +155,10 @@ export function createClient(config: ClientConfig): Client {
     }
   }
 
+  function bytesOf(asset: AssetId): string {
+    return state.get().blobUrls.get(asset) ?? transport.assetUrl(asset);
+  }
+
   const tags = createTags({
     api,
     inUse: derived(state.changes, (current) => current.tags),
@@ -181,18 +193,42 @@ export function createClient(config: ClientConfig): Client {
     );
   }
 
+  /**
+   * A release that fails is reported rather than thrown: the operation has left
+   * the outbox whether or not the bytes went, and failing here would hand back
+   * a refusal for a capture the pool took.
+   */
+  async function release(operation: Parameters<typeof outbox.enqueue>[0]) {
+    for (const asset of releasedBy(operation, state.get().outbox)) {
+      state.update((current) => withBlobUrl(current, asset, undefined));
+      await store.removeBlob(asset).catch(report);
+    }
+  }
+
   const outbox = createOutbox({
     state,
     store,
     reread,
+    released: release,
     send: async (operation) => {
-      const settlement = await sendOperation(api, operation);
+      const settlement = await sendOperation(
+        { api, bytes: (asset) => store.readBlob(asset) },
+        operation,
+      );
       classified ||= operation.kind === "tag" || operation.kind === "untag";
       return settlement;
     },
     now,
     mint: uuidv7,
   });
+
+  /**
+   * A drain's own requests are evidence of reach, so an operation that sends
+   * two and fails on the second reports the pool as back and then gone again.
+   * A return inside a drain therefore rides it rather than starting another,
+   * which would send the pair again at once and go on doing so.
+   */
+  let sweeping = 0;
 
   /**
    * Classification that reached the pool changes what is in use, and the pool
@@ -202,11 +238,16 @@ export function createClient(config: ClientConfig): Client {
    * unreachable pool leaves anyway.
    */
   async function sweep(): Promise<void> {
-    await outbox.drain();
-    if (!classified) return;
+    sweeping += 1;
+    try {
+      await outbox.drain();
+      if (!classified) return;
 
-    classified = false;
-    await tags.load().catch(() => undefined);
+      classified = false;
+      await tags.load().catch(() => undefined);
+    } finally {
+      sweeping -= 1;
+    }
   }
 
   /**
@@ -233,7 +274,9 @@ export function createClient(config: ClientConfig): Client {
   const onReturn = reach.changes
     .pipe(skip(1), filter(Boolean))
     .subscribe(() => {
-      void drain()
+      // The surfaces are read whichever drain this is: a read cannot start a
+      // drain, so nothing here can loop.
+      void (sweeping === 0 ? drain() : draining)
         .then(() => readAfterReturn(state, api))
         .catch(report);
     });
@@ -306,35 +349,31 @@ export function createClient(config: ClientConfig): Client {
     /** What an edit starts from: the payload as it stands, with new words in it. */
     saying: (item, said) => rewritten(item.payload, said),
 
-    // A fresh id per call, not per file: nothing here replays an upload, so two
-    // calls over one file are two assets, as two uploads have always been.
-    uploadAsset: (file: File) =>
-      answered(
-        api.PUT("/v1/assets/{id}", {
-          params: {
-            path: { id: uuidv7() },
-            header: {
-              "content-disposition": `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`,
-            },
-          },
-          headers: { "content-type": file.type || "application/octet-stream" },
-          // The body is the bytes, raw. Serialising them would be the one thing
-          // this route does not want.
-          body: file as unknown as string,
-          bodySerializer: (body: unknown) => body as BodyInit,
-        }),
-      ),
+    // A fresh id per call, not per file: nothing here replays an attachment, so
+    // two calls over one file are two assets, as two uploads have always been.
+    attach: (file) =>
+      after(async () => {
+        const asset = uuidv7();
+        // Copied rather than referenced: a picker's `File` points at a file on
+        // disk, which a capture that has not drained may outlive by days.
+        await store.writeBlob(asset, await copied(file));
 
-    assetContent: (asset) => transport.assetUrl(asset),
+        const url = await store.blobUrl(asset);
+        if (url !== undefined) {
+          state.update((current) => withBlobUrl(current, asset, url));
+        }
+
+        return asset;
+      }),
+
+    assetContent: (asset) => bytesOf(asset),
 
     says: (item) => saidIn(item.payload),
 
     /** Only `image` captures: another payload type's slot may hold anything at all. */
     images: (item) =>
       item.payload.type === IMAGE
-        ? item.payload.assets.map((reference) =>
-            transport.assetUrl(reference.asset),
-          )
+        ? item.payload.assets.map((reference) => bytesOf(reference.asset))
         : [],
 
     routing: createRouting({

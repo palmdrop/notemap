@@ -1,4 +1,5 @@
 import type {
+  AssetId,
   Destination,
   Item,
   ItemId,
@@ -9,6 +10,7 @@ import { Unreadable } from "../errors";
 import type { Writable } from "../observable/observable";
 import type { PendingOperation } from "../outbox/operations";
 import type { ClientStore } from "../ports/store";
+import { namedBy } from "../assets/assets";
 import { emptyState, type ClientState } from "./state";
 
 /**
@@ -55,6 +57,9 @@ export async function hydrate(
 
   const hydrated: ClientState = {
     ...emptyState(),
+    blobUrls: await read("blobs", new Map<AssetId, string>(), () =>
+      urlsFor(store, outbox),
+    ),
     items: new Map<ItemId, Item>(items.map((item) => [item.id, item])),
     outbox: outbox.map(attemptable),
     tags,
@@ -64,6 +69,23 @@ export async function hydrate(
 
   state.set(hydrated);
   return hydrated;
+}
+
+/** The URL an adapter hands out belongs to the session that asked for it. */
+async function urlsFor(
+  store: ClientStore,
+  outbox: readonly PendingOperation[],
+): Promise<Map<AssetId, string>> {
+  const urls = new Map<AssetId, string>();
+
+  for (const held of outbox) {
+    for (const asset of namedBy(held.operation)) {
+      const url = await store.blobUrl(asset);
+      if (url !== undefined) urls.set(asset, url);
+    }
+  }
+
+  return urls;
 }
 
 /**

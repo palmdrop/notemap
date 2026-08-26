@@ -69,6 +69,61 @@ describe("reachability", () => {
     expect(probes).toBeLessThan(10);
   });
 
+  it("does not spin on a pool that answers one request of a pair, and not the other", async () => {
+    const store = createMemoryStore();
+    await store.writeBlob(
+      "asset-1",
+      new File(["bytes"], "a photo.png", { type: "image/png" }),
+    );
+    await store.writeOperation(
+      anOperation({
+        kind: "capture",
+        envelope: {
+          id: "one",
+          source: "web",
+          sourceItemId: "one",
+          capturedAt: "2026-08-17T11:00:00.000Z",
+          payload: {
+            type: "image",
+            content: {},
+            metadata: {},
+            assets: [{ slot: "image", asset: "asset-1" }],
+          },
+        },
+      }),
+    );
+
+    vi.useFakeTimers();
+    // The upload lands and the capture does not, so every attempt reports the
+    // pool as back and then gone again. It gives up answering anything after a
+    // while, so a client that did spin fails this rather than hanging it.
+    let answers = 0;
+    const transport = mockTransport((request) => {
+      answers += 1;
+      return request.method === "PUT" && answers < 30
+        ? json(201, { id: "asset-1", filename: "a photo.png", bytes: 5 })
+        : json(503, {});
+    });
+
+    const client = createClient({ transport, store });
+    await quiet();
+
+    // A second attempt, with the first having left the pool out of reach: the
+    // upload answering is a return arriving inside a drain, and a drain is what
+    // a return would start.
+    void client.drain();
+    await quiet();
+
+    expect(asked(transport).map(routeOf)).toEqual([
+      "PUT /v1/assets/asset-1",
+      "POST /v1/captures",
+      "PUT /v1/assets/asset-1",
+      "POST /v1/captures",
+    ]);
+    expect(read(client.outbox)[0]?.state).toBe("unreachable");
+    client.close();
+  });
+
   it("stops asking once the pool answers", async () => {
     vi.useFakeTimers();
     const transport = mockTransport(() => json(200, {}));

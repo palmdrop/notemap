@@ -13,7 +13,7 @@ import { localUrls } from "./local-urls";
 export function createMemoryStore(): ClientStore {
   const operations = new Map<OperationId, PendingOperation>();
   const items = new Map<ItemId, Item>();
-  const blobs = new Map<AssetId, Blob>();
+  const blobs = new Map<AssetId, File>();
   const urls = localUrls();
 
   let tags: readonly TagUse[] = [];

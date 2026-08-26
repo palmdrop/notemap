@@ -68,7 +68,7 @@ export const tag: Handler<"tag"> = {
           ],
     ),
 
-  send: (api, operation) => send(api, "tag", operation.item, operation.tag),
+  send: ({ api }, operation) => send(api, "tag", operation.item, operation.tag),
 };
 
 export const untag: Handler<"untag"> = {
@@ -81,5 +81,6 @@ export const untag: Handler<"untag"> = {
       held.filter((each) => each.name !== operation.tag),
     ),
 
-  send: (api, operation) => send(api, "untag", operation.item, operation.tag),
+  send: ({ api }, operation) =>
+    send(api, "untag", operation.item, operation.tag),
 };

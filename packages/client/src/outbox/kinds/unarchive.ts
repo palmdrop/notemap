@@ -34,7 +34,7 @@ export const unarchive: Handler<"unarchive"> = {
     };
   },
 
-  async send(api, operation) {
+  async send({ api }, operation) {
     return replacing(
       await answered(
         api.POST("/v1/items/{id}/unarchive", {

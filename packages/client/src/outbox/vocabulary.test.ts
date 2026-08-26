@@ -15,16 +15,17 @@ const WITHOUT_A_ROUTE: readonly Operation[] = [
 ];
 
 describe("the vocabulary beyond what /v1 answers", () => {
-  const api = createApi(
-    mockTransport(() => new Response(null, { status: 500 })),
-  );
+  const sending = {
+    api: createApi(mockTransport(() => new Response(null, { status: 500 }))),
+    bytes: () => Promise.resolve(undefined),
+  };
 
   it.each(
     WITHOUT_A_ROUTE.map((operation) => [operation.kind, operation] as const),
   )(
     "refuses to send %s rather than guessing a wire",
     async (_kind, operation) => {
-      await expect(sendOperation(api, operation)).rejects.toBeInstanceOf(
+      await expect(sendOperation(sending, operation)).rejects.toBeInstanceOf(
         Unencodable,
       );
     },

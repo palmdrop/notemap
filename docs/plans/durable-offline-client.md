@@ -1,7 +1,7 @@
 # The durable offline client
 
 **Date**: 2026-08-24
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/client.md`, `docs/specs/sync.md`
 **Closed**:
 
@@ -146,23 +146,36 @@ Depends on phase 2; independent of phase 3.
 
 Depends on phases 1 and 2, and on client-minted asset ids.
 
-- [ ] The client mints the asset id when the person attaches the file, and holds the bytes in the
-      store under it. The envelope is therefore complete when the capture is made
-- [ ] The `capture` handler `PUT`s the bytes then `POST`s the capture. Both are idempotent under
+- [x] The client mints the asset id when the person attaches the file, and holds the bytes in the
+      store under it. The envelope is therefore complete when the capture is made. `uploadAsset`
+      goes: nothing reaches the pool for bytes any more except the drain
+- [x] The `capture` handler `PUT`s the bytes then `POST`s the capture. Both are idempotent under
       ids minted before either was sent, so a failure between them retries the pair
-- [ ] The same two-step in the `edit` handler: ADR 21 makes a revision an ordinary capture, so its
+- [x] The same two-step in the `edit` handler: ADR 21 makes a revision an ordinary capture, so its
       payload can name an asset the store still holds
-- [ ] An asset whose capture has not drained resolves to the store's local URL; everything else
+- [x] An asset whose capture has not drained resolves to the store's local URL; everything else
       resolves through the transport. The rule is one line and the shell asks the same question it
       always did
-- [ ] Bytes are released when their capture lands, or when a refused capture is dismissed — nothing
-      will ever claim them
-- [ ] The compose surface no longer waits on an upload before capturing
-- [ ] Tests: a picture captured against a dead transport is drawn from local bytes, survives a
+- [x] Bytes are released when the operation that named them leaves the outbox and nothing still
+      queued names them too. *Amended 2026-08-26 in review*: keying that on the operation's **kind**
+      leaked the bytes an `edit` alone named, `edit` being an uploader now as well
+- [x] The compose surface no longer waits on an upload before capturing, and attaches in the same
+      gesture as the capture — bytes with no operation behind them are bytes nothing sweeps
+- [x] The store holds a `File` rather than a `Blob`. The upload carries the filename and the media
+      type as headers and neither is recoverable from the bytes, so the port keeps them
+- [x] **Not planned and found by the tests**: a drain's own requests are evidence of reach, so a
+      pair whose first half answers and second half does not reported the pool as back mid-drain
+      and started another drain for it, without end. A return inside a drain now rides that drain
+      rather than starting one — and still reads the surfaces after it, which
+      [the review](../reviews/offline-attachment-2026-08-26.md) caught the first fix dropping
+- [x] The bytes are copied when they are attached rather than referenced, so a file that moved
+      fails in front of the person who moved it; and bytes the store cannot produce refuse their
+      operation rather than being retried forever
+- [x] Tests: a picture captured against a dead transport is drawn from local bytes, survives a
       rebuild of the client over the same store, and lands as one asset and one item when the
       transport answers; a retry after a failure between the two requests leaves one of each
-- [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
+- [x] `git commit`
 
 ### Phase 6 — retention
 
@@ -183,19 +196,23 @@ Depends on phases 1 and 3.
 
 Depends on every phase above.
 
-- [ ] `pnpm test:stack` green, with a case that fills an outbox against a dead daemon, rebuilds the
+- [x] `pnpm test:stack` green, with a case that fills an outbox against a dead daemon, rebuilds the
       client over the same store, starts the daemon, and finds every operation landed exactly once —
       the attachment included
-- [ ] `CONTEXT.md`: add **Cache** and **Hydration**
-- [ ] `docs/specs/client.md`: the ports in detail, hydration and what it gates, the read caches,
+- [x] `CONTEXT.md`: add **Cache** and **Hydration** — landed with the phases that earned them,
+      **Hydration** with phase 2 and **Cache** with phases 3, 4 and 6
+- [x] `docs/specs/client.md`: the ports in detail, hydration and what it gates, the read caches,
       derived surfaces, retention, reachability, the offline attachment, and Prior decisions for
       each. Three of its
       open questions close — reading the store back on start, the port shapes, and how an `edit`
       coalesces is answered by there being no coalescing
-- [ ] `docs/specs/sync.md`: half the rebuild question is answered; say which half and leave the rest
-- [ ] `docs/todo.md`: drop the write-only-store item
-- [ ] Add the dated `Shipped:` entries (see Notes)
-- [ ] `git commit`
+- [x] `docs/specs/sync.md`: half the rebuild question is answered; say which half and leave the rest
+- [x] `docs/todo.md`: drop the write-only-store item
+- [x] `docs/specs/shell.md`: the compose row's unavoidable wait was this plan's to remove, so the
+      sentence that named it is amended here rather than left for
+      [shell-offline-marks](shell-offline-marks.md)
+- [x] Add the dated `Shipped:` entries (see Notes)
+- [x] `git commit`
 
 ---
 
@@ -206,11 +223,13 @@ Depends on every phase above.
 - **How a derived surface says it is derived.** *Settled 2026-08-26*: one flag on the list state,
   `fromCache`, as the fallback named.
 - **Whether `images()` can stay synchronous** once an asset may resolve to a local URL the store
-  creates. *Fallback*: the client holds resolved local URLs in its state, filled at hydration and on
-  enqueue and released on drain, so the call stays synchronous and the port stays asynchronous.
+  creates. *Settled 2026-08-26*: it does, as the fallback named — the client holds the resolved
+  URLs in its state, filled when a file is attached and at hydration for whatever a pending
+  operation names, and dropped when the bytes go.
 - **When the web adapter revokes an object URL.** Too early and a row blanks; never and the tab
-  leaks. *Fallback*: revoke when the bytes are released and on unload, and accept the leak inside a
-  session.
+  leaks. *Settled 2026-08-26*: when the bytes are released, which the adapter owns because it minted
+  the URL. Not on unload — the page going away takes them with it — so the leak inside a session is
+  bounded by what a person attaches and does not capture.
 - **Whether the browser evicts the database under storage pressure.** IndexedDB is best-effort
   unless storage is persisted, and asking for persistence prompts in some browsers. *Fallback*:
   treat the cache as a cache — the outbox is the only thing whose loss would cost work, and its

@@ -14,7 +14,6 @@
   let chosen = $state<File | undefined>(undefined);
   let busy = $state(false);
   let said = $state("");
-  let bad = $state(false);
   let picker: HTMLInputElement;
 
   /**
@@ -48,15 +47,11 @@
     if (chosen === undefined && text.trim() === "") return;
 
     busy = true;
+    said = "";
     try {
-      // The bytes are a round trip whatever happens: the pool mints the id the
-      // capture then references, so there is nothing to apply optimistically.
-      let asset: string | undefined;
-      if (chosen !== undefined) {
-        bad = false;
-        said = "uploading…";
-        asset = (await client.uploadAsset(chosen)).id;
-      }
+      // Held rather than uploaded: the bytes go up when the capture drains.
+      const asset =
+        chosen === undefined ? undefined : await client.attach(chosen);
 
       await client.capture({
         channel: chosen === undefined ? TYPED : PICTURE,
@@ -67,10 +62,8 @@
       text = "";
       chosen = undefined;
       picker.value = "";
-      said = "";
     } catch (error) {
       said = saidBy(error);
-      bad = true;
     } finally {
       busy = false;
     }
@@ -108,9 +101,8 @@
         <span class="break-words text-ink-muted">{chosen.name}</span>
       {/if}
       {#if said !== ""}
-        <span role="status" class={bad ? "text-accent" : "text-ink-muted"}>
-          {said}
-        </span>
+        <!-- Only a failure reaches this: the capture itself waits on nothing. -->
+        <span role="status" class="text-accent">{said}</span>
       {/if}
     </ActionRow>
   </form>

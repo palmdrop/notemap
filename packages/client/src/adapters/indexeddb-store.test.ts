@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { createIndexedDbStore } from "./indexeddb-store";
 import {
+  aFile,
   anItem,
   anOperation,
   aTag,
@@ -39,10 +40,12 @@ describe("the IndexedDB store", () => {
     expect(await second.readPoolIdentity()).toBe("pool-a");
   });
 
-  it("keeps a blob across the reopen", async () => {
-    await reopen().writeBlob("asset-1", new Blob(["bytes"]));
+  it("keeps a blob, and its name, across the reopen", async () => {
+    await reopen().writeBlob("asset-1", aFile());
 
-    expect(await (await reopen().readBlob("asset-1"))?.text()).toBe("bytes");
+    const held = await reopen().readBlob("asset-1");
+    expect(await held?.text()).toBe("bytes");
+    expect(held?.name).toBe("a photo.png");
   });
 
   it("forgets what was removed before the reopen", async () => {

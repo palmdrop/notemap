@@ -1,4 +1,5 @@
 import { answered } from "../../api/http";
+import { uploaded } from "../../assets/assets";
 import { optimisticItem } from "../../capture/envelope";
 import type { Applied } from "../../state/applied";
 import { arrived, forget } from "../../state/state";
@@ -16,9 +17,11 @@ export const capture: Handler<"capture"> = {
     };
   },
 
-  async send(api, operation) {
+  async send(sending, operation) {
+    await uploaded(sending, operation);
+
     const outcome = await answered(
-      api.POST("/v1/captures", { body: operation.envelope }),
+      sending.api.POST("/v1/captures", { body: operation.envelope }),
     );
     return replacing(outcome.item);
   },

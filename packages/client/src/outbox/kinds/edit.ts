@@ -1,5 +1,6 @@
 import { answered } from "../../api/http";
 import type { Item } from "../../api/types";
+import { uploaded } from "../../assets/assets";
 import { unchanged, type Applied } from "../../state/applied";
 import { cached, revised, type ClientState } from "../../state/state";
 import { replacing, type Handler, type Settlement } from "../handler";
@@ -41,9 +42,13 @@ export const edit: Handler<"edit"> = {
     };
   },
 
-  async send(api, operation): Promise<Settlement> {
+  async send(sending, operation): Promise<Settlement> {
+    // A revision is an ordinary capture, so its payload may name bytes the pool
+    // has never seen — an edit of a picture captured while it was out of reach.
+    await uploaded(sending, operation);
+
     const outcome = await answered(
-      api.POST("/v1/items/{id}/edit", {
+      sending.api.POST("/v1/items/{id}/edit", {
         params: { path: { id: operation.item } },
         body: operation.envelope,
       }),

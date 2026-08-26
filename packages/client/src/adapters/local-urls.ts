@@ -8,7 +8,7 @@ export function localUrls() {
   const held = new Map<AssetId, string>();
 
   return {
-    of(asset: AssetId, blob: Blob | undefined): string | undefined {
+    of(asset: AssetId, blob: File | undefined): string | undefined {
       const already = held.get(asset);
       if (already !== undefined) return already;
       if (blob === undefined) return undefined;

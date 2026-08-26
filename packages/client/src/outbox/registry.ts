@@ -1,9 +1,8 @@
-import type { Api } from "../api/http";
 import type { ItemId } from "../api/types";
 import { Unencodable } from "../errors";
 import type { Applied } from "../state/applied";
 import type { ClientState } from "../state/state";
-import type { Handler, Settlement } from "./handler";
+import type { Handler, Sending, Settlement } from "./handler";
 import { archive } from "./kinds/archive";
 import { capture } from "./kinds/capture";
 import { acceptSuggestion, rejectSuggestion } from "./kinds/deferred";
@@ -65,11 +64,11 @@ export function applyOperation(
  * client drew.
  */
 export async function sendOperation(
-  api: Api,
+  sending: Sending,
   operation: Operation,
 ): Promise<Settlement> {
   const send = handlerFor(operation).send;
   if (send === undefined) throw new Unencodable(operation.kind);
 
-  return send(api, operation);
+  return send(sending, operation);
 }
