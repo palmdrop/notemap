@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
+  import { page } from "$app/state";
+
   import FeedRow from "$components/feed/FeedRow.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import Body from "$components/primitives/register/Body.svelte";
@@ -9,7 +11,10 @@
   import Register from "$components/primitives/register/Register.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
   import { client } from "$lib/client";
+  import { orderFor } from "$lib/order";
   import { rail } from "$lib/rail.svelte";
+
+  const SURFACE = "feed";
 
   const feed = client.feed;
 
@@ -17,14 +22,16 @@
     !$feed.loading && $feed.failure === undefined && $feed.items.length === 0,
   );
 
-  onMount(() => void client.loadFeed());
+  onMount(() => void client.loadFeed(orderFor(SURFACE, page.url)));
 </script>
 
 <Register furled={rail.furled} onfurl={() => rail.toggle()}>
   {#if $feed.failure !== undefined}
     <Rail first>feed</Rail>
     <Body first>
-      <span role="status" class="font-mono text-accent">{$feed.failure.said}</span>
+      <span role="status" class="font-mono text-accent"
+        >{$feed.failure.said}</span
+      >
     </Body>
   {/if}
 

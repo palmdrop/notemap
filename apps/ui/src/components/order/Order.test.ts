@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
-import { expect, test, vi } from "vitest";
+import { beforeEach, expect, test, vi } from "vitest";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
@@ -15,6 +15,16 @@ vi.mock("$app/state", () => ({
     return { url: new URL(`http://localhost${at.path}`) };
   },
 }));
+
+/** Shallow routing needs a router, and there is none outside the app. */
+const replaced = vi.hoisted(() => ({ urls: [] as string[] }));
+vi.mock("$app/navigation", () => ({
+  replaceState: (url: string | URL) => replaced.urls.push(String(url)),
+}));
+
+beforeEach(() => {
+  replaced.urls = [];
+});
 
 function serving(surface: "queue" | "feed", handler?: () => Promise<void>) {
   return pool(async (request: Request) => {
@@ -92,4 +102,32 @@ test("says nothing on a surface with no end to start from", () => {
   render(Order);
 
   expect(screen.queryByLabelText("Order")).toBeNull();
+});
+
+test("names the order on the URL and remembers it, so a reload reads the same end", async () => {
+  at.path = "/";
+  serving("queue");
+
+  render(Order);
+
+  await fireEvent.change(screen.getByLabelText("Order"), {
+    target: { value: "newest-first" },
+  });
+
+  expect(replaced.urls).toEqual(["http://localhost/?order=newest-first"]);
+  expect(localStorage.getItem("notemap:order:queue")).toBe("newest-first");
+});
+
+test("remembers each surface on its own, the two starting from different ends", async () => {
+  at.path = "/feed";
+  serving("feed");
+
+  render(Order);
+
+  await fireEvent.change(screen.getByLabelText("Order"), {
+    target: { value: "oldest-first" },
+  });
+
+  expect(localStorage.getItem("notemap:order:feed")).toBe("oldest-first");
+  expect(localStorage.getItem("notemap:order:queue")).toBeNull();
 });

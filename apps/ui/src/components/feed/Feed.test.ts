@@ -4,6 +4,7 @@ import { expect, test, vi } from "vitest";
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool } from "../../testing/pool";
+import { remember } from "$lib/order";
 import Feed from "./Feed.svelte";
 
 vi.mock("$lib/client", () => import("../../testing/pool"));
@@ -185,4 +186,17 @@ test("marks a revision as one without opening it", async () => {
   render(Feed);
 
   expect(await screen.findByText("revision")).toBeDefined();
+});
+
+test("reads from the end the reader last chose, not the one the feed defaults to", async () => {
+  remember("feed", "oldest-first");
+  const transport = pool(held(anItem("one")));
+
+  render(Feed);
+  await screen.findByText("one");
+
+  const read = transport.sent.find(
+    (request) => routeOf(request) === "GET /v1/feed",
+  );
+  expect(new URL(read!.url).searchParams.get("order")).toBe("oldest-first");
 });

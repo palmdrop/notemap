@@ -7,6 +7,7 @@ import { asked, pool } from "../../testing/pool";
 import { briefly } from "$lib/stamp";
 import { online } from "../../testing/dom";
 import { rail } from "$lib/rail.svelte";
+import { remember } from "$lib/order";
 import Queue from "./Queue.svelte";
 
 vi.mock("$lib/client", () => import("../../testing/pool"));
@@ -197,4 +198,17 @@ test("keeps a way into a row with the rail furled", async () => {
 
   await open(0);
   expect(screen.getAllByRole("button", { name: "archive" })).toHaveLength(1);
+});
+
+test("reads from the end the reader last chose, not the one the queue defaults to", async () => {
+  remember("queue", "newest-first");
+  const transport = pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  const read = transport.sent.find(
+    (request) => routeOf(request) === "GET /v1/queue",
+  );
+  expect(new URL(read!.url).searchParams.get("order")).toBe("newest-first");
 });

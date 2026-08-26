@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
 
+  import { page } from "$app/state";
+
   import CaptureRow from "$components/capture/CaptureRow.svelte";
   import Drained from "$components/queue/Drained.svelte";
   import QueueRow from "$components/queue/QueueRow.svelte";
@@ -11,6 +13,7 @@
   import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import { client } from "$lib/client";
+  import { orderFor } from "$lib/order";
   import { rail } from "$lib/rail.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { readMark, writeMark } from "$lib/scroll-mark";
@@ -37,7 +40,7 @@
 
   onMount(() => {
     void (async () => {
-      await client.loadQueue();
+      await client.loadQueue(orderFor(SURFACE, page.url));
       await tick();
       window.scrollTo({ top: readMark(SURFACE) });
     })();
@@ -60,7 +63,9 @@
   {#if $queue.failure !== undefined}
     <Rail>queue</Rail>
     <Body>
-      <span role="status" class="font-mono text-accent">{$queue.failure.said}</span>
+      <span role="status" class="font-mono text-accent"
+        >{$queue.failure.said}</span
+      >
     </Body>
   {/if}
 
