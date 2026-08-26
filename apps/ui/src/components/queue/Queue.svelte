@@ -7,8 +7,7 @@
   import Drained from "$components/queue/Drained.svelte";
   import QueueRow from "$components/queue/QueueRow.svelte";
   import RoutingComposer from "$components/routing/RoutingComposer.svelte";
-  import Action from "$components/primitives/controls/Action.svelte";
-  import Foot from "$components/primitives/register/Foot.svelte";
+  import More from "$components/primitives/register/More.svelte";
   import Notice from "$components/primitives/register/Notice.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import { client } from "$lib/client";
@@ -86,11 +85,11 @@
   {/each}
 
   {#if $queue.more}
-    <Foot>
-      <Action disabled={$queue.loading} onclick={() => void client.loadQueue()}>
-        {$queue.loading ? "loading…" : "load more"}
-      </Action>
-    </Foot>
+    <More
+      loading={$queue.loading}
+      offline={!pool.yes}
+      onmore={() => void client.loadQueue()}
+    />
   {/if}
 </Register>
 

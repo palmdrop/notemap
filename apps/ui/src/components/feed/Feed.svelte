@@ -4,9 +4,8 @@
   import { page } from "$app/state";
 
   import FeedRow from "$components/feed/FeedRow.svelte";
-  import Action from "$components/primitives/controls/Action.svelte";
   import Body from "$components/primitives/register/Body.svelte";
-  import Foot from "$components/primitives/register/Foot.svelte";
+  import More from "$components/primitives/register/More.svelte";
   import Notice from "$components/primitives/register/Notice.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
@@ -15,12 +14,14 @@
   import { orderFor } from "$lib/order";
   import { pending } from "$lib/pending.svelte";
   import { rail } from "$lib/rail.svelte";
+  import { reachable } from "$lib/reachable.svelte";
   import { refusalIn } from "$lib/refusal";
   import { NOTHING_CAPTURED } from "$lib/said";
 
   const SURFACE = "feed";
 
   const feed = client.feed;
+  const pool = reachable();
   const undrained = pending();
 
   const refused = $derived(refusalIn($feed));
@@ -57,10 +58,10 @@
   {/each}
 
   {#if $feed.more}
-    <Foot>
-      <Action disabled={$feed.loading} onclick={() => void client.loadFeed()}>
-        {$feed.loading ? "loading…" : "load more"}
-      </Action>
-    </Foot>
+    <More
+      loading={$feed.loading}
+      offline={!pool.yes}
+      onmore={() => void client.loadFeed()}
+    />
   {/if}
 </Register>

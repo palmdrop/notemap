@@ -4,6 +4,7 @@ import { afterEach, expect, test, vi } from "vitest";
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool } from "../../testing/pool";
+import { NO_MORE_OFFLINE } from "$lib/said";
 import { briefly } from "$lib/stamp";
 import { online } from "../../testing/dom";
 import { rail } from "$lib/rail.svelte";
@@ -283,15 +284,26 @@ test("says nothing in the register about a queue the pool has not answered for",
   transport.unreachable(true);
 
   render(Queue);
-  await vi.waitFor(() => {
-    expect(asked()).toContain("GET /v1/queue");
-  });
+  await screen.findByText(NO_MORE_OFFLINE);
 
-  // The chrome carries the offline mark; the register repeats neither it nor
-  // what the surface is drawn from.
+  // The chrome carries the offline mark, the foot says what it costs; the
+  // register repeats neither that nor what the surface is drawn from.
   expect(screen.queryByText("queue")).toBeNull();
   expect(screen.queryByText("the daemon is not reachable")).toBeNull();
   expect(screen.queryByText("zero")).toBeNull();
+});
+
+test("offers no page it cannot fetch while the pool is out of reach", async () => {
+  const transport = pool(queued("one"));
+
+  render(Queue);
+  expect(await screen.findByRole("button", { name: "load more" })).toBeDefined();
+
+  transport.unreachable(true);
+  await client.loadQueue();
+
+  expect(await screen.findByText(NO_MORE_OFFLINE)).toBeDefined();
+  expect(screen.queryByRole("button", { name: "load more" })).toBeNull();
 });
 
 test("draws the read the pool refused", async () => {

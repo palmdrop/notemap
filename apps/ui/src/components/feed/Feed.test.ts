@@ -6,7 +6,7 @@ import { anItem, json, routeOf } from "@notemap/client/testing";
 import { asked, client, pool } from "../../testing/pool";
 import { remember } from "$lib/order";
 import { rail } from "$lib/rail.svelte";
-import { NOTHING_CAPTURED } from "$lib/said";
+import { NO_MORE_OFFLINE, NOTHING_CAPTURED } from "$lib/said";
 import Feed from "./Feed.svelte";
 
 vi.mock("$lib/client", () => import("../../testing/pool"));
@@ -233,15 +233,26 @@ test("says nothing in the register about a feed the pool has not answered for", 
   transport.unreachable(true);
 
   render(Feed);
-  await vi.waitFor(() => {
-    expect(asked()).toContain("GET /v1/feed");
-  });
+  await screen.findByText(NO_MORE_OFFLINE);
 
-  // The chrome carries the offline mark; the register repeats neither it nor
-  // what the surface is drawn from.
+  // The chrome carries the offline mark, the foot says what it costs; the
+  // register repeats neither that nor what the surface is drawn from.
   expect(screen.queryByText("feed")).toBeNull();
   expect(screen.queryByText("the daemon is not reachable")).toBeNull();
   expect(screen.queryByText(NOTHING_CAPTURED)).toBeNull();
+});
+
+test("offers no page it cannot fetch while the pool is out of reach", async () => {
+  const transport = pool(held(anItem("one")));
+
+  render(Feed);
+  expect(await screen.findByRole("button", { name: "load more" })).toBeDefined();
+
+  transport.unreachable(true);
+  await client.loadFeed();
+
+  expect(await screen.findByText(NO_MORE_OFFLINE)).toBeDefined();
+  expect(screen.queryByRole("button", { name: "load more" })).toBeNull();
 });
 
 test("draws the read the pool refused", async () => {
