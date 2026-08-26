@@ -66,6 +66,9 @@ export function reachability(probe: () => Promise<boolean>): Reachability {
       watching = yes;
 
       if (yes) {
+        // Failed requests went on doubling it while nothing was scheduled, and
+        // that stretch is one nobody was reading.
+        backoff = SOONEST;
         void ask();
       } else {
         clearTimeout(waiting);
