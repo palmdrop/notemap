@@ -1,9 +1,9 @@
 # A surface that comes back, and an order that is remembered
 
 **Date**: 2026-08-26
-**Status**: Todo
+**Status**: Done
 **Spec**: `docs/specs/client.md`, `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-08-26
 
 ---
 
@@ -41,13 +41,13 @@ nowhere, so every reload drops back to the client's default.
 
 Depends on nothing. `packages/client` only.
 
-- [ ] Create the branch `agent/reconnect-and-remembered-order`
-- [ ] A surface can be started again from its order's first page, rather than only walked forward
+- [x] Create the branch `agent/reconnect-and-remembered-order`
+- [x] A surface can be started again from its order's first page, rather than only walked forward
       from the position it holds. `loadMore` is the walk and stays the walk
-- [ ] The client does this itself, where it already drains the outbox on the pool coming back, so
+- [x] The client does this itself, where it already drains the outbox on the pool coming back, so
       every shell gets it rather than each shell remembering to. It runs **after** the drain lands,
       so the page the pool answers already holds what was just sent
-- [ ] Three rules, and the third is what keeps it honest:
+- [x] Three rules, and the third is what keeps it honest:
       - a surface **drawn from the cache** — holding nothing the pool gave it — starts again from
         the first page
       - a surface holding a **failure** but real pages the pool answered has the failure cleared and
@@ -55,53 +55,53 @@ Depends on nothing. `packages/client` only.
         to press
       - a surface **nobody has asked for** stays cold, and is not read on the strength of a
         reconnect alone
-- [ ] The third rule is inferred from what a page already carries — no position, no rows, no end and
+- [x] The third rule is inferred from what a page already carries — no position, no rows, no end and
       no failure — rather than by adding a field to `ListPage`
-- [ ] A page says **which kind** of failure it holds. Only an unreachability is cleared by the pool
+- [x] A page says **which kind** of failure it holds. Only an unreachability is cleared by the pool
       coming back; a refusal is the pool having answered, and it stands until the reader asks again.
       Without the distinction the second rule clears both and loses a refusal that was made before
       the outage
-- [ ] Tests: one per rule, that a refusal survives a reconnect where an unreachability does not, that
+- [x] Tests: one per rule, that a refusal survives a reconnect where an unreachability does not, that
       a cache-drawn surface's first page replaces rather than extends what was drawn, and that the
       read happens after the drain
-- [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
+- [x] `git commit`
 
 ### Phase 2 — the order a reader chose, remembered
 
 Depends on nothing in phase 1; may be built in either order. `apps/ui` only.
 
-- [ ] The URL carries the order of the surface being read — the domain's own words, `oldest-first`
+- [x] The URL carries the order of the surface being read — the domain's own words, `oldest-first`
       and `newest-first`, not the control's `oldest` and `newest`. It is what makes a read
       shareable and what survives a reload
-- [ ] `localStorage` holds one per surface, because the queue starts oldest-first and the feed
+- [x] `localStorage` holds one per surface, because the queue starts oldest-first and the feed
       newest-first and a single key would have to pick a loser
-- [ ] Resolution on entering a surface: the URL parameter, then what was stored, then the client's
+- [x] Resolution on entering a surface: the URL parameter, then what was stored, then the client's
       own default. A parameter naming an order that does not exist falls through to the same chain
       rather than failing
-- [ ] Choosing an order stores it, replaces the URL rather than pushing it — turning a surface
+- [x] Choosing an order stores it, replaces the URL rather than pushing it — turning a surface
       around is not a place in history — and turns the surface
-- [ ] It lives beside the shell's other remembered things (`scroll-mark.ts`, `theme.svelte.ts`)
+- [x] It lives beside the shell's other remembered things (`scroll-mark.ts`, `theme.svelte.ts`)
       rather than inside a component: two surfaces read it and the bar writes it
-- [ ] Tests: the parameter beats what was stored, what was stored beats the default, an unreadable
+- [x] Tests: the parameter beats what was stored, what was stored beats the default, an unreadable
       parameter falls back, and choosing an order writes both
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm lint` green
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm lint` green
+- [x] `git commit`
 
 ### Phase 3 — the specs
 
 Depends on phases 1 and 2.
 
-- [ ] `docs/specs/client.md`: the reconnect read joins **Reachability, and a pool that is not the
+- [x] `docs/specs/client.md`: the reconnect read joins **Reachability, and a pool that is not the
       one we cached**, where "a pool that comes back drains the outbox" already stands, and the
       three rules are written where **Surfaces drawn from the cache** describes what a failed read
       leaves behind — which is also where the two kinds of failed read part company
-- [ ] `docs/specs/shell.md`: **Draining**, which describes the order control, gains that the choice
+- [x] `docs/specs/shell.md`: **Draining**, which describes the order control, gains that the choice
       is the reader's to keep — carried in the URL, remembered per surface
-- [ ] `docs/plans/offline-capture-rollout.md`: this pull request named in the sequence, between
+- [x] `docs/plans/offline-capture-rollout.md`: this pull request named in the sequence, between
       PR 5 and PR 6
-- [ ] Add the dated `Shipped:` entry to both specs (see Notes)
-- [ ] `git commit`
+- [x] Add the dated `Shipped:` entry to both specs (see Notes)
+- [x] `git commit`
 
 ---
 
@@ -117,11 +117,10 @@ Depends on phases 1 and 2.
   is left holding pages that may have moved on, with no mark saying so beyond the surface's own
   cache mark. *Fallback*: it is what pressing `load more` already resolves, and PR 7's cache mark is
   where that condition gets drawn.
-- **What shape the failure kind takes on `ListPage`.** A second field beside the sentence, or the
-  sentence replaced by something carrying both. The client's errors already draw this line as
-  `Unreachable` against `Refused` ([client.md](../specs/client.md#the-outbox)), so the fact exists
-  and only its wire into `ListState` is open. *Fallback*: a boolean beside `failure`, since a shell
-  needs the sentence rendered and the kind decided, and nothing else.
+- ~~**What shape the failure kind takes on `ListPage`.**~~ *Settled in build*: `failure` stopped
+  being a bare sentence and became the sentence with the kind beside it, rather than a second field
+  that could contradict it. A page either failed or it did not, and where it did there is always
+  both a thing to say and an answer to whether the pool said it.
 
 ---
 

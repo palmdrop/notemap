@@ -1,9 +1,13 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-08-25
+**Last updated**: 2026-08-26
 **Shipped**:
 
+- 2026-08-26 — **The end a reader starts from survives a reload.** The order control's choice is
+  named on the URL and remembered per surface, so a read reloads as the one that was being read and
+  a shared link opens at the end it was shared at. The queue and the feed keep their own, having
+  different ends to start from. ([plan](../plans/reconnect-and-remembered-order.md))
 - 2026-08-25 — **The action log is a register.** `/log` stopped being a second visual language —
   rounded cards, a system sans, a weight nothing else uses — and became the same two columns as
   the queue and the feed, with the shell's bar on top. It still loads nothing but the daemon, so
@@ -260,6 +264,15 @@ has no end to start from and it says nothing there. Which end a reader starts fr
 for the queue as for the feed ([CONTEXT.md](../../CONTEXT.md)). Turning a surface around reads it
 again from that end ([client.md](client.md#the-queue)) — a position belongs to the order that made
 it — so the control is a choice of order, not a re-sort of what is on screen.
+
+**The choice is the reader's to keep** *(amended 2026-08-26)*. The order is named on the URL, so a
+read reloads as the one that was being read and travels as the one that was shared; and it is
+remembered, so a fresh visit opens where the last one left off. **Per surface**: the queue starts at
+the oldest, which is why it is a queue, and the feed at the newest, so one preference over both
+would have to overrule one of them. The URL wins over what was remembered — being the more specific
+statement about the read in front of you — and an order named there that is not one falls through to
+what was remembered rather than failing. Turning a surface **replaces** the URL rather than pushing
+it: which end you read from is not a place to go back to.
 
 ### Settings
 

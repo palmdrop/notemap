@@ -4,6 +4,13 @@
 **Last updated**: 2026-08-26
 **Shipped**:
 
+- 2026-08-26 — **A surface comes back when the pool does.** Reachability already recovered on its
+  own; what a surface was left holding did not, so a failure stood until the page was reloaded and
+  rows the pool never answered for stayed drawn. A read failure now says whether the pool refused it
+  or never answered it, and coming back into reach reads the surfaces again after the drain: one
+  drawn from the cache from the start, one that walked real pages left holding them and rid of a
+  failure the pool never made, and one nobody asked for left alone.
+  ([plan](../plans/reconnect-and-remembered-order.md))
 - 2026-08-26 — **The cache acquires readers, a lifetime, and a check that it still describes the
   pool it thinks it does.** The queue and the feed are drawn from the cache until the pool answers
   for them, so a client opened with the daemon down finds its pool rather than an empty list, and a
@@ -485,6 +492,12 @@ a surface holding no rows the pool gave it is **drawn from the cache** instead o
   was.
 - **A read that fails leaves the surface on the cache** and reports the failure beside it. The
   surface is still the client's own, because nothing replaced it.
+- **A failure says which kind it is** *(added 2026-08-26)*: the pool refused the read, or the pool
+  did not answer it — the same line `Unreachable` and `Refused` already draw for a mutation
+  ([the outbox](#the-outbox)). They have different lifetimes. A refusal is the pool having decided,
+  and it stands until something asks again; not being answered is over the moment the pool answers,
+  which is why the surface stops reporting it on its own (below). A shell that drew them the same
+  would leave one of them on screen after it stopped being true.
 - Nothing places an item into a cache-drawn surface. Placement by rank is for a page with a window
   ([the queue](#the-queue)); a cache-drawn surface reads the cache itself, so an arrival is in it
   by being cached at all.
@@ -528,6 +541,24 @@ pool failing to decide rather than as an answer ([http-v1.md](http-v1.md#errors)
 remember. Reachability is exposed for a shell to draw; the browser's `online` event is a weaker
 signal — a network exists says nothing about the daemon — and a shell may still use it as a second
 no, or as a hint to drain sooner than the backoff would.
+
+**And then reads the surfaces again** *(added 2026-08-26)*, after the drain rather than beside it,
+so the page the pool answers already holds what was waiting to be sent. Which surfaces, and how far,
+is not the same question for all of them:
+
+- One **drawn from the cache** is read again from the start. It holds no position to continue from,
+  and the pool's first page replaces what was drawn
+  ([surfaces drawn from the cache](#surfaces-drawn-from-the-cache)).
+- One that **walked real pages** keeps them, and loses only a failure the pool never made. Throwing
+  away a long scroll to answer a reconnect costs the reader more than it is worth, and the next page
+  is theirs to ask for.
+- One **nobody has read** stays cold. Coming back into reach is not a reason to read something for
+  the first time; the client warms nothing ([what the cache keeps](#what-the-cache-keeps)).
+
+Without this a shell has no reconnect path of its own: a page walks forward from the position it
+holds, so nothing it can call would clear a failure or replace rows it never got. Which surface is
+in front of a person is the shell's business and the client cannot see it, so "was it ever asked
+for" stands in for it.
 
 **The client caches the pool identity and checks it.** The same probe answers which pool this is
 ([mirror.md](mirror.md)). An identity that does not match what the store holds means the pool was

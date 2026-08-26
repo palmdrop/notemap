@@ -103,6 +103,23 @@ Depends on PR 4. Branch `agent/cache-with-readers`.
 - [x] sync.md's rebuild question is amended here to say which half is now answered
 - [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm test:stack` green
 
+### PR 5a — a surface that comes back, and an order that is remembered
+
+Depends on PR 5. Branch `agent/reconnect-and-remembered-order`. Not in the original sequence: it
+came out of reading PR 5 on screen, and it is here rather than after PR 7 because the first half is
+a bug — a surface that went stale stayed stale until the page was reloaded.
+
+- [x] All of [reconnect-and-remembered-order](reconnect-and-remembered-order.md)
+- [x] Small enough to have gone unplanned and it did not, because its first half changes a shape
+      PR 7 then reads: a read failure now says whether the pool refused it or never answered it,
+      which is what lets the shell draw one and drop the other
+- [x] It also settles four things PR 7 was carrying open — where the pending mark goes and in what
+      idiom, whether the bar's count survives it, and where a failed read is drawn. Those are
+      recorded in this plan's out-of-scope section and folded into shell-offline-marks, so PR 7
+      starts from them
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm lint` green. `pnpm test:stack`
+      is not run: `packages/client` and `apps/ui`, no wire and no daemon
+
 ### PR 6 — a capture with an attachment, offline
 
 Depends on PRs 3 and 4. Independent of PR 5, so it may swap places with it.
