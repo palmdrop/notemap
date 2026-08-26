@@ -8,6 +8,11 @@ export type MockTransport = Transport & {
   unreachable(failing: boolean): void;
   /** Which pool it says it is; set it to rebuild one. */
   pool: string;
+  /**
+   * What `/v1/health` answers. Null hands the route to the test's own handler,
+   * which is the only way to exercise a probe that is refused or does not decide.
+   */
+  health: (() => Response) | null;
 };
 
 export const POOL = "http://pool.test";
@@ -37,6 +42,7 @@ export function mockTransport(handler: Handler): MockTransport {
     baseUrl: POOL,
     sent,
     pool: IDENTITY,
+    health: () => json(200, { pool: transport.pool }),
 
     assetUrl: (asset) =>
       `${POOL}/v1/assets/${encodeURIComponent(asset)}/content`,
@@ -49,11 +55,11 @@ export function mockTransport(handler: Handler): MockTransport {
       sent.push(request.clone());
       if (failing) throw new TypeError("fetch failed");
 
-      // Answered here rather than by a test's handler: every client asks it on start.
+      // Answered here rather than by a test's handler: every client asks it on
+      // start. `health` is how a test takes the route back.
       const asked = `${request.method} ${new URL(request.url).pathname}`;
-      return asked === HEALTH
-        ? json(200, { pool: transport.pool })
-        : handler(request);
+      const health = transport.health;
+      return asked === HEALTH && health !== null ? health() : handler(request);
     },
   };
 

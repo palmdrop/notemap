@@ -1,7 +1,7 @@
 # Review: The cache is read, capped, and checked against the pool
 
 **Date**: 2026-08-26
-**Status**: Open — the comment sweep is applied; findings 1-12 await the developer
+**Status**: Closed — every finding resolved on 2026-08-26
 **Scope**: `packages/client/src/{client,types,errors}.ts`, `packages/client/src/{state,pool,surfaces,testing}/`, `apps/ui/src/lib/reachable.svelte.ts`, `docs/`
 **Plan**: `docs/plans/durable-offline-client.md` (phases 3, 4, 6), `docs/plans/offline-capture-rollout.md` (PR 5)
 **Spec**: `docs/specs/client.md`, `docs/specs/sync.md`
@@ -319,31 +319,68 @@ Incidentally, two of finding 10's three `mirror` uses went with the sweep. What 
 
 | # | Finding | Source | Verdict | Disposition |
 | --- | --- | --- | --- | --- |
-| 1 | Order turn puts a pool-answered surface back on the cache | mine | mine | **Open — needs a ruling.** No code change. |
-| 2 | History cap does not bind while `feed.ids` grows | mine | mine | **Open — needs a ruling.** No code change. |
-| 3 | Reachability backoff has no teardown | mine | mine | Open |
-| 4 | `rebuilt` drops items retention protects; ADR 23 silent on it | mine | mine | Open |
-| 5 | Reachability in the client, not on `Transport` | mine | mine | Agreed as built; one clause suggested for the revisit condition |
-| 6 | Identity check is effectively boot-only; not written down | mine | mine | Open |
-| 7 | `mockTransport` intercepts `/v1/health` ahead of the handler | mine | mine | Open |
-| 8 | Two assertions index raw `transport.sent` | mine | mine | Open |
-| 9 | `client.reachable` never read in a test | mine | mine | Open |
-| 10 | `mirror` used against its own new *Avoid* entry | mine | mine | Partly resolved by finding 13; two uses remain |
-| 11 | `held` shadowed in `isThePoolWeCached` | mine | mine | Open |
-| 12 | `listOf`/`retained` O(n) per emission | mine | mine | Open; falls out of 1 and 2 |
+| 1 | Order turn puts a pool-answered surface back on the cache | mine | mine | **Fixed** — `ListPage.answered` splits the two questions |
+| 2 | History cap does not bind while `feed.ids` grows | mine | mine | **Fixed as a doc correction** — the exemption stands, the claim of an unconditional cap does not; open half in `docs/todo.md` |
+| 3 | Reachability backoff has no teardown | mine | mine | **Fixed** — `Client.close()`, and the tests use it |
+| 4 | `rebuilt` drops items retention protects; ADR 23 silent on it | mine | mine | **Fixed** — ADR 23 consequences |
+| 5 | Reachability in the client, not on `Transport` | mine | mine | **Fixed** — revisit condition named as "without a round trip" |
+| 6 | Identity check is effectively boot-only; not written down | mine | mine | **Fixed** — ADR 23 and client.md say when detection happens |
+| 7 | `mockTransport` intercepts `/v1/health` ahead of the handler | mine | mine | **Fixed** — `health` takes the route back; the 5xx and no-identity paths are now tested |
+| 8 | Two assertions index raw `transport.sent` | mine | mine | **Fixed** — both use `asked(transport)` |
+| 9 | `client.reachable` never read in a test | mine | mine | **Fixed** — one test across all three moments |
+| 10 | `mirror` used against its own new *Avoid* entry | mine | mine | **Fixed** — the store *follows* the cache, in prose and in `persist.ts` |
+| 11 | `held` shadowed in `isThePoolWeCached` | mine | mine | **Fixed** — renamed `ours` |
+| 12 | `listOf`/`retained` O(n) per emission | mine | mine | **Fixed by 1**; unbounded half tracked with 2 |
 | 13 | Comment sweep | theirs | theirs | **Fixed** |
 
-No row is *agreed* and none is *conflict*: the two reviews did not overlap. Findings 1-12 are
-untouched by the sweep and no code was changed for them.
+No row was *agreed* or *conflict*: the two reviews did not overlap. Finding 13 was applied first,
+on its own; 1-12 followed once palmdrop asked for all of them.
 
 ---
 
 ## Resolution
 
-13. **Fixed.** The sweep above, on `agent/cache-with-readers`. 92 lines of comment removed net;
-    `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm -r --silent test` and
-    `pnpm test:stack` all green afterwards.
+All thirteen, on `agent/cache-with-readers`.
 
-1-12. **Awaiting palmdrop.** Findings 1 and 2 are the two I would stop for and both are reproduced,
-   so they want a decision before this merges rather than a follow-up plan. The rest are smaller and
-   several are one-liners. Nothing has been implemented for any of them.
+**13** was applied on its own, before the rest: the comment sweep described above.
+
+**1.** `ListPage` grows `answered`, which says whether the rows a page holds came from the pool.
+`fromCache` had been carrying two questions — *this page holds no window*, which is what `intoPage`
+wants, and *this surface is the client's own*, which is what a shell wants — and they diverge on a
+turn. The first keeps the derived predicate, renamed `unpositioned`; the second reads `answered`. A
+turn carries the claim across while it reads and gives it up only if the read fails, so an ordinary
+online reorder shows an empty loading list rather than the whole cache, and a reorder that cannot be
+read falls back to the cache in the new order. Two tests.
+
+**2.** Resolved as a documentation correction rather than a behaviour change, because the exemption
+is right and the claim was wrong. Eviction goes oldest-touched-first and the feed is read
+newest-first, so the rows a deep scroll is looking at are exactly the eviction candidates — evicting
+them is the thing the exemption exists to prevent. What was wrong is `client.md` describing an
+unconditional cap. It now says the cap bounds history the client is **not drawing**, and the real
+question — how to bound a surface that outgrows the cache — is in `docs/todo.md` where it can be
+designed rather than assumed away.
+
+**3.** `reachability` returns `stop()`, and `Client` grows `close()`. It is the narrow fix the
+finding asked for plus the one public method that makes it reachable, because the probe is the first
+thing the client owns that keeps running rather than waiting to be called. The test harnesses in
+`client.test.ts`, `cache.test.ts` and `hydration.test.ts` close every client they build.
+
+**4, 6.** ADR 23's consequences gain the working set blinking, and the detection window — the probe
+is the only reader of `/v1/health`, so a rebuild is seen on start and on returning from
+unreachability, and not otherwise. `client.md` says the same.
+
+**5.** The revisit condition in `client.md` now names the actual argument for the port: a native
+signal answers without a round trip.
+
+**7.** `MockTransport.health` hands the route back to a test's own handler. The two paths this was
+hiding are now tested: a probe answered 503 reads as out of reach, and a probe *refused* reads as
+reachable, because the pool answered in order to refuse. Both pass, which is what the finding
+predicted and could not demonstrate.
+
+**8, 9, 10, 11.** As tabled.
+
+**12.** Finding 1's fix removes the repeated entry into the cache-drawn state. The remaining half is
+finding 2's and is tracked with it.
+
+`pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm -r --silent test` and `pnpm test:stack`
+green afterwards.

@@ -79,6 +79,16 @@ that a client detects the change and stops asserting what it can no longer verif
 - **Bad** — the outbox may carry an operation about an item the rebuilt pool does not have, which
   is refused and shown as a refusal. Correct, and better than silence: the person is the only one
   who can decide what to do about it.
+- **Bad** — the working set blinks. The cache is dropped whole, including the items an undrained
+  operation is about, which retention otherwise protects by name; the drain that follows replays
+  them and the pool answers them back. So a person watching sees their un-landed captures leave and
+  return a moment later. "Nothing the person did is lost" is about the operations, not about what
+  is on screen while they replay.
+- **Neutral** — detection happens when the probe reads `/v1/health`, which is on start and on
+  coming back from being out of reach. A rebuild takes the daemon away, so in practice it is seen;
+  a daemon replaced fast enough to answer every request the client made would not be, and the
+  client would draw the old pool's cache for the rest of the session. Cheaper triggers exist — the
+  identity could ride an ordinary read — and are not worth their wire until one is needed.
 - **Neutral** — the tags in use and the destinations are kept. They are re-read whole the next time
   anything asks, and neither can assert the existence of something that was purged.
 

@@ -150,6 +150,14 @@ export interface Client {
   /** Called on every mutation, and again to retry what is still pending. */
   drain(): Promise<void>;
   dismiss(operation: OperationId): Promise<void>;
+
+  /**
+   * Stops the reachability probe, which is the one thing here that keeps
+   * running rather than waiting to be called. A web shell holds one client for
+   * the life of the page and never needs this; a shell that builds a second
+   * client, and a test, do.
+   */
+  close(): void;
 }
 
 export type ClientConfig = {

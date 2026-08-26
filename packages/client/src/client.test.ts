@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import type { Item } from "./api/types";
 import { createMemoryStore } from "./adapters/memory-store";
@@ -13,9 +13,15 @@ import {
   refusal,
   type Handler,
 } from "./testing/transport";
-import type { ListState } from "./types";
+import type { Client, ListState } from "./types";
 
 const clock = stoppedClock();
+
+const built: Client[] = [];
+
+afterEach(() => {
+  for (const client of built.splice(0)) client.close();
+});
 
 function clientOver(handler: Handler) {
   const transport = mockTransport(handler);
@@ -25,6 +31,7 @@ function clientOver(handler: Handler) {
     store,
     now: clock.now,
   });
+  built.push(client);
   return { client, transport, store };
 }
 
@@ -677,7 +684,7 @@ describe("an asset", () => {
       id: "asset-1",
     });
 
-    const sent = transport.sent[0]!;
+    const sent = asked(transport)[0]!;
     expect(routeOf(sent)).toMatch(
       /^PUT \/v1\/assets\/[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/,
     );
@@ -706,7 +713,7 @@ describe("an asset", () => {
     await client.uploadAsset(file());
     await client.uploadAsset(file());
 
-    const [first, second] = transport.sent.map(routeOf);
+    const [first, second] = asked(transport).map(routeOf);
     expect(first).not.toBe(second);
   });
 
@@ -761,7 +768,7 @@ describe("an asset", () => {
 });
 
 describe("the store", () => {
-  it("mirrors the cache and the outbox into it as they change", async () => {
+  it("follows the cache and the outbox into it as they change", async () => {
     const { client, store, transport } = clientOver(() => json(201, {}));
     transport.unreachable(true);
 

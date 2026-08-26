@@ -9,14 +9,18 @@ export type Reachability = {
   readonly changes: Observable<boolean>;
   answered(reached: boolean): void;
   ask(): Promise<void>;
+  stop(): void;
 };
 
 export function reachability(probe: () => Promise<boolean>): Reachability {
   const reached = writable(true);
   let waiting: ReturnType<typeof setTimeout> | undefined;
   let backoff = SOONEST;
+  let stopped = false;
 
   function settle(answered: boolean): void {
+    if (stopped) return;
+
     if (answered) {
       backoff = SOONEST;
       clearTimeout(waiting);
@@ -39,8 +43,18 @@ export function reachability(probe: () => Promise<boolean>): Reachability {
   }
 
   async function ask(): Promise<void> {
+    if (stopped) return;
     settle(await probe().catch(() => false));
   }
 
-  return { changes: reached.changes, answered: settle, ask };
+  return {
+    changes: reached.changes,
+    answered: settle,
+    ask,
+    stop() {
+      stopped = true;
+      clearTimeout(waiting);
+      waiting = undefined;
+    },
+  };
 }

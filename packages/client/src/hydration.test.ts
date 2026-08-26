@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { createMemoryStore } from "./adapters/memory-store";
 import { saidBy } from "./errors";
@@ -6,6 +6,7 @@ import type { Item } from "./api/types";
 import { createClient } from "./client";
 import type { PendingOperation } from "./outbox/operations";
 import type { ClientStore } from "./ports/store";
+import type { Client } from "./types";
 import { read, until } from "./testing/observing";
 import { anItem, asked, routeOf, stoppedClock } from "./testing/pool";
 import {
@@ -17,6 +18,12 @@ import {
 
 const clock = stoppedClock();
 
+const built: Client[] = [];
+
+afterEach(() => {
+  for (const client of built.splice(0)) client.close();
+});
+
 function clientOver(store: ClientStore, handler: Handler) {
   const transport = mockTransport(handler);
   const reported: unknown[] = [];
@@ -26,6 +33,7 @@ function clientOver(store: ClientStore, handler: Handler) {
     now: clock.now,
     onError: (error) => reported.push(error),
   });
+  built.push(client);
   return { client, transport, reported };
 }
 

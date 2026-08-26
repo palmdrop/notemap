@@ -12,7 +12,7 @@ import type { ClientStore } from "../ports/store";
 import { emptyState, type ClientState } from "./state";
 
 /**
- * The store read back into the cache it was mirrored from, and what it read.
+ * The store read back into the cache it follows, and what it read.
  *
  * Pending operations are not re-applied: the cache was persisted with their
  * effects already in it. A crash between the two writes therefore leaves one

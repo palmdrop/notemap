@@ -6,7 +6,7 @@ import { PoolChanged } from "../errors";
 import type { PendingOperation } from "../outbox/operations";
 import { read, until } from "../testing/observing";
 import { anItem, asked, routeOf } from "../testing/pool";
-import { json, mockTransport } from "../testing/transport";
+import { json, mockTransport, refusal } from "../testing/transport";
 
 function anOperation(
   operation: PendingOperation["operation"],
@@ -81,6 +81,47 @@ describe("reachability", () => {
 
     expect(transport.sent.length).toBe(boot);
   });
+
+  it("reads a daemon that cannot answer as out of reach, not as an answer", async () => {
+    vi.useFakeTimers();
+    const transport = mockTransport(() => json(200, {}));
+    // A 5xx is the pool failing to decide, which is not evidence of reach.
+    transport.health = () => json(503, {});
+
+    const client = createClient({ transport, store: createMemoryStore() });
+    await quiet();
+
+    expect(read(client.reachable)).toBe(false);
+    client.close();
+  });
+
+  it("counts a refusal as reach, because the pool answered to make it", async () => {
+    vi.useFakeTimers();
+    const transport = mockTransport(() => json(200, {}));
+    transport.health = () => refusal(404, "no-such-item");
+
+    const client = createClient({ transport, store: createMemoryStore() });
+    await quiet();
+
+    expect(read(client.reachable)).toBe(true);
+    client.close();
+  });
+
+  it("says whether the pool is answering, and changes its mind on evidence", async () => {
+    const transport = mockTransport(() => json(200, { values: [] }));
+    const client = createClient({ transport, store: createMemoryStore() });
+
+    expect(read(client.reachable)).toBe(true);
+
+    transport.unreachable(true);
+    await client.loadFeed();
+    expect(read(client.reachable)).toBe(false);
+
+    transport.unreachable(false);
+    await client.loadFeed();
+    expect(read(client.reachable)).toBe(true);
+    client.close();
+  });
 });
 
 describe("a pool that is not the one we cached", () => {
@@ -130,6 +171,28 @@ describe("a pool that is not the one we cached", () => {
     expect(read(client.queue).items.map((item) => item.id)).toEqual(["one"]);
     expect(reported).toEqual([]);
     expect(await store.readPoolIdentity()).toBe(transport.pool);
+  });
+
+  it("keeps what it holds when the daemon answers no identity at all", async () => {
+    const store = createMemoryStore();
+    await store.writeItems([anItem("one")]);
+    await store.writePoolIdentity("the-pool-that-was");
+
+    const transport = mockTransport(() => json(200, { values: [] }));
+    transport.health = () => json(200, {});
+
+    const reported: unknown[] = [];
+    const client = createClient({
+      transport,
+      store,
+      onError: (error) => reported.push(error),
+    });
+    await until(() => read(client.queue).items.length > 0);
+
+    expect(read(client.queue).items.map((item) => item.id)).toEqual(["one"]);
+    expect(reported).toEqual([]);
+    expect(await store.readPoolIdentity()).toBe("the-pool-that-was");
+    client.close();
   });
 
   it("asks who the pool is once, on start", async () => {

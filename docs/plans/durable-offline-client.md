@@ -171,7 +171,10 @@ Depends on phases 1 and 3.
 - [x] Retention: everything the client can see is unprocessed stays, being the working set; items
       that are only feed history are capped, oldest touched first. An item with a pending operation
       is never evicted — and neither is one a surface is currently drawing, which the plan did not
-      name and which would otherwise vanish under the reader
+      name and which would otherwise vanish under the reader. *Amended 2026-08-26*: that exemption
+      means the cap bounds history the client is **not drawing** rather than the cache as a whole,
+      since a page accumulates ids and nothing trims it. Bounding a drawn surface is its own
+      question and is in `docs/todo.md`
 - [x] Tests: eviction spares unprocessed items and pending ones and takes the rest
 - [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
 - [x] `git commit`

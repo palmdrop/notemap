@@ -16,7 +16,7 @@ import type { ClientStore } from "../ports/store";
 import type { ClientState } from "./state";
 
 /**
- * Mirrors the cache into the store as it changes, rather than making every path
+ * Follows the cache into the store as it changes, rather than making every path
  * that touches an item remember to write it. `hydrated` is what came out of the
  * store, which is the one thing that must not be written back into it.
  */
@@ -69,7 +69,7 @@ function whole<T>(
       // Held by value rather than by counting emissions: a subscription that
       // arrived a tick late would otherwise drop the first real write instead.
       filter((value) => value !== held),
-      concatMap((value) => mirrored(write(value), report)),
+      concatMap((value) => followed(write(value), report)),
     )
     .subscribe();
 }
@@ -89,7 +89,7 @@ function persistItems(
       startWith(hydrated.items),
       pairwise(),
       concatMap(([before, after]) =>
-        mirrored(write(store, before, after), report),
+        followed(write(store, before, after), report),
       ),
     )
     .subscribe();
@@ -97,10 +97,10 @@ function persistItems(
 
 /**
  * `concatMap` is what keeps a durable adapter seeing the writes in the order
- * they happened. The store is a mirror of the cache, so a write that fails is
+ * they happened. The store follows the cache, so a write that fails is
  * reported and dropped rather than stopping the ones after it.
  */
-function mirrored(written: Promise<void>, report: (error: unknown) => void) {
+function followed(written: Promise<void>, report: (error: unknown) => void) {
   return from(written).pipe(
     catchError((error: unknown) => {
       report(error);

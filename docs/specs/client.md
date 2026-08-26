@@ -443,10 +443,10 @@ adapter mints an object URL and owns revoking it; a shell that is not a browser 
 differently. Every method is asynchronous even where an in-memory adapter answers instantly, so a
 durable one is a drop-in.
 
-**The store is a mirror of the cache, written as the cache changes**, rather than something each
+**The store follows the cache, written as the cache changes**, rather than something each
 path that touches an item remembers to write. Those writes are ordered, and one that fails does not
-stop the ones after it — what it was mirroring is a cache, and losing it costs a re-read, though it
-is reported rather than dropped in silence. **The outbox is not mirrored**: it is written by the
+stop the ones after it — what it was following is a cache, and losing it costs a re-read, though it
+is reported rather than dropped in silence. **The outbox is not followed**: it is written by the
 operation that changes it and waited on, because it is the person's un-landed work rather than a
 copy of something the pool holds.
 
@@ -465,15 +465,20 @@ the queue window, because a voice memo cannot be processed offline without its a
 ### Surfaces drawn from the cache
 
 A page is a **position** the pool handed back, and a client that has not read the pool has none. So
-a surface the pool has never answered for is **drawn from the cache** instead of being empty:
+a surface holding no rows the pool gave it is **drawn from the cache** instead of being empty:
 
 - **The queue is what the client can see is unprocessed** — no routing records, not archived,
   nothing revised from it — which is the same three anti-joins the pool's own queue read makes,
   asked of the rows the client holds. **The feed is everything it holds.** Both rank by capture
   time, in whichever order the surface is being read.
-- **A cache-drawn surface says so.** It is not loading and it is not exhausted; it is the client's
-  own, and a shell that drew it as the pool's reading would tell a person three rows means they are
-  nearly done. What a shell does with that is [shell.md](shell.md)'s.
+- **A cache-drawn surface says so.** A shell that drew it as the pool's reading would tell a person
+  that three rows means they are nearly done. What a shell does with that is [shell.md](shell.md)'s.
+- **Turning a surface around does not make it the client's own.** A turn throws away the position
+  and the rows, and reads the new order from the start — but the surface keeps its claim on the
+  pool's answer while that read is in flight, so an ordinary reorder shows an empty loading list
+  rather than flashing the whole cache and snapping back. It gives the claim up only if the read
+  **fails**, which is the honest reading of a surface that now holds nothing the pool gave it: it
+  falls back to the cache, in the order it was turned to, and reports the failure beside it.
 - **The first page the pool answers replaces it.** A cache-drawn surface holds no position, and
   stitching one onto a page the pool positioned would be two orders in one list. It is a
   replacement rather than an extension, and thereafter the surface is the pool's page as it always
@@ -497,7 +502,14 @@ by anything owed to a person:
 - **An item an undrained operation is about is never evicted**, and neither is one a surface is
   currently drawing. The first is work that has not landed; the second would vanish under the
   reader.
-- The store mirrors the cache, so an eviction reaches it. Including one made while reading the
+- **So the cap bounds history the client is not drawing, and not the cache as a whole.** A page
+  accumulates ids as it is walked and nothing trims it, so a person who pages a long way holds
+  every row they paged — which is what the exemption above says, stated as the bound it actually
+  is. The two ends coincide: the feed is read newest-first, and the rows deepest in a long scroll
+  are the least recently touched, which is exactly what eviction would take. Bounding a surface
+  that is being drawn is a real question and an unanswered one ([todo](../todo.md)); what is
+  settled here is that the answer is not "evict it under the reader".
+- The store follows the cache, so an eviction reaches it. Including one made while reading the
   store back, which is what stops it growing a session at a time.
 
 Nothing warms the cache. It fills from what surfaces actually read, so an offline working set is as
@@ -520,8 +532,11 @@ no, or as a hint to drain sooner than the backoff would.
 **The client caches the pool identity and checks it.** The same probe answers which pool this is
 ([mirror.md](mirror.md)). An identity that does not match what the store holds means the pool was
 rebuilt, or the shell is pointed somewhere else; either way what the cache holds describes somewhere
-that no longer exists. The cached items and the surfaces drawn from them are dropped, the **outbox
-is kept** — it is the person's un-landed work and replays idempotently into whichever pool receives
+that no longer exists. **Detection happens when the probe runs** — on start, and on coming back
+from being out of reach — because the probe is the only thing that reads `/v1/health`. In practice
+that covers it, a rebuild being something that takes the daemon away; a daemon replaced fast enough
+to answer every request the client made would go unnoticed for the session. The cached items and the
+surfaces drawn from them are dropped, the **outbox is kept** — it is the person's un-landed work and replays idempotently into whichever pool receives
 it — and the change is reported through `onError`
 ([ADR 23](../adr/0023-a-changed-pool-identity-drops-the-cache-and-keeps-the-outbox.md)). What a
 client should *resync* after that is [sync.md](sync.md)'s and needs a wire that does not exist.
@@ -615,7 +630,9 @@ that logic out of the one place it is meant to live.
   in the client instead — every request already passes through the client's own api layer, which is
   the only place that distinguishes a pool that said no from one that said nothing, and the probe is
   a `/v1` route the client has typed. One implementation and one backoff, rather than one per
-  adapter. Revisit when a shell can genuinely answer it better than a probe can.
+  adapter. The argument for the port was never that a shell *could* compute it too — it is that a
+  native platform signal answers **without a round trip**, where the probe costs a request per
+  backoff tick. That is the condition to revisit under, and nothing else is.
 - **The cache is capped and the working set is not** (2026-08-26): a browser may evict the database
   under storage pressure anyway, so the cache is treated as a cache. What is capped is history,
   because it is the part a re-read replaces for free.

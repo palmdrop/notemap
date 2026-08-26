@@ -126,15 +126,15 @@ export function createClient(config: ClientConfig): Client {
   function isThePoolWeCached(identity: PoolIdentity | undefined): void {
     if (identity === undefined) return;
 
-    const held = state.get().pool;
-    if (held === identity) return;
+    const ours = state.get().pool;
+    if (ours === identity) return;
 
     state.update((current) =>
-      held === undefined
+      ours === undefined
         ? { ...current, pool: identity }
         : rebuilt(current, identity),
     );
-    if (held !== undefined) report(new PoolChanged(held, identity));
+    if (ours !== undefined) report(new PoolChanged(ours, identity));
   }
 
   async function askedHealth(): Promise<boolean> {
@@ -228,7 +228,9 @@ export function createClient(config: ClientConfig): Client {
   }
 
   // skip(1): the first value is where reachability starts, not a return.
-  reach.changes.pipe(skip(1), filter(Boolean)).subscribe(() => void drain());
+  const onReturn = reach.changes
+    .pipe(skip(1), filter(Boolean))
+    .subscribe(() => void drain());
 
   // Work made in a previous session reaches the pool without anyone asking —
   // but not before the pool has said which pool it is.
@@ -356,5 +358,10 @@ export function createClient(config: ClientConfig): Client {
 
     drain,
     dismiss: (operation) => after(() => outbox.dismiss(operation)),
+
+    close() {
+      reach.stop();
+      onReturn.unsubscribe();
+    },
   };
 }

@@ -22,6 +22,12 @@ export type ListPage = {
   readonly after?: string;
   readonly exhausted: boolean;
   readonly loading: boolean;
+  /**
+   * Whether the rows this page holds came from the pool. A turn keeps the claim
+   * while it reads, and gives it up if that read fails: the surface is the
+   * client's own again the moment it holds nothing the pool gave it.
+   */
+  readonly answered: boolean;
   readonly failure?: string;
 };
 
@@ -38,7 +44,7 @@ export type ClientState = {
 };
 
 export function emptyPage(order: Order): ListPage {
-  return { order, ids: [], exhausted: false, loading: false };
+  return { order, ids: [], exhausted: false, loading: false, answered: false };
 }
 
 export function emptyState(): ClientState {
@@ -111,9 +117,14 @@ function behind(order: Order, one: string, other: string): boolean {
   return order === "oldest-first" ? one > other : one < other;
 }
 
-/** A page holds a position or is exhausted the moment the pool answers, so one holding neither has not been. */
-export function fromCache(page: ListPage): boolean {
+/** No rows, no position, no end: nothing an arrival could be placed into. */
+export function unpositioned(page: ListPage): boolean {
   return page.ids.length === 0 && page.after === undefined && !page.exhausted;
+}
+
+/** Whether a surface draws itself rather than the page the pool answered for it. */
+export function fromCache(page: ListPage): boolean {
+  return !page.answered;
 }
 
 export function drawnFrom(
@@ -162,8 +173,9 @@ export function intoPage(
   id: ItemId,
   items: ReadonlyMap<ItemId, Item>,
 ): readonly ItemId[] {
-  // A cache-drawn surface reads the cache itself, so an arrival is already in it.
-  if (fromCache(page)) return page.ids;
+  // Nothing to place into a page with no window: either the cache draws the
+  // surface and already holds this, or a read is about to replace it wholesale.
+  if (unpositioned(page)) return page.ids;
 
   const inserted = items.get(id);
   if (inserted === undefined || page.ids.includes(id)) return page.ids;
