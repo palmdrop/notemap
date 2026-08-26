@@ -11,8 +11,9 @@
   envelope already names, then the envelope — and an `edit` does the same, a revision being an
   ordinary capture. Both requests carry ids minted before either was sent, so a failure between them
   retries the pair and leaves one asset and one item. A picture is drawn from the bytes the store
-  holds until its capture lands, and from the pool's copy after; the bytes go when the capture lands
-  or when a refused one is dismissed. ([plan](../plans/durable-offline-client.md))
+  holds until its capture lands, and from the pool's copy after; the bytes are copied when they are
+  attached, so nothing depends on the file staying where it was, and go when the operation that
+  named them leaves the outbox. ([plan](../plans/durable-offline-client.md))
 
 - 2026-08-26 — **A surface comes back when the pool does.** Reachability already recovered on its
   own; what a surface was left holding did not, so a failure stood until the page was reloaded and
@@ -447,15 +448,32 @@ otherwise.** One rule, and the shell asks the question it always asked: what an 
 are. The URL is the store's answer rather than the client's, for the same reason `assetUrl` is the
 transport's — a browser adapter mints an object URL and owns revoking it.
 
-**The bytes are released when the capture that named them lands**, or when a refused one is
-dismissed: nothing will ever claim them after either. An `edit` naming the same asset releases
-nothing, the bytes being the capture's — releasing them would strand a capture that has not
-drained.
+**The bytes are released when the operation that named them leaves the outbox** — landing, or being
+dismissed after a refusal — **and nothing still queued names them too**. A capture and an edit of it
+hold the same asset, and whichever lands first would otherwise strand the other; an `edit` that
+names bytes no capture ever did releases them itself, since nothing else will.
+
+**A local failure is not a refusal, and an unreadable one is not a retry.** A store that could not
+answer for an asset is a hiccup the next drain may not have, so the operation stays where it is; but
+bytes the store hands over and cannot produce will not read on the tenth attempt either, and that
+refuses the operation and waits for a person. The bytes are therefore **read rather than streamed**
+into the upload, which is what tells the two apart at all — a body that fails mid-stream is
+indistinguishable from a socket that closed.
+
+**The bytes are copied when they are attached** rather than referenced. A file a picker hands over
+is a pointer at something on disk, and a capture that has not drained may outlive it by days; a file
+that has moved fails at the moment it is attached, in front of the person who knows what happened,
+rather than at a drain that is nobody's business to watch.
 
 **Attaching without capturing leaves bytes nothing will claim.** A shell that mints one and then
 loses interest is holding bytes with no operation behind them, and nothing sweeps them; the
 compose row therefore attaches and captures in the same gesture. A shell that wants a longer-lived
 draft needs an answer to this, and does not have one.
+
+**Closing a client does not revoke the URLs it minted.** They go when the bytes do, and a page that
+goes away takes its own with it — so the leak is bounded by one session. A shell that builds a
+second client over one store, which is what a reload is outside a browser, leaks the first one's
+set; that is worth knowing before a shell starts doing it often.
 
 ### The ports — the seam for offline
 
@@ -580,12 +598,13 @@ remember. Reachability is exposed for a shell to draw; the browser's `online` ev
 signal — a network exists says nothing about the daemon — and a shell may still use it as a second
 no, or as a hint to drain sooner than the backoff would.
 
-**Coming back inside a drain is that drain, not a return** *(added 2026-08-26)*. A drain's own
-requests are evidence like any other, so an operation that sends two of them and fails on the
-second reports the pool as back and then gone again — and draining for that would send the pair
-again at once, and go on doing so for as long as the pool half-answers. So a change of reach while
-a drain is running starts nothing: the work a return would have started is already happening, and
-what is left waits for the probe's backoff.
+**A return that arrives inside a drain rides it** *(added 2026-08-26)*. A drain's own requests are
+evidence like any other, so an operation that sends two of them and fails on the second reports the
+pool as back and then gone again — and starting a drain for that would send the pair again at once,
+and go on doing so for as long as the pool half-answers. So a return found by a drain does not start
+another: it waits for the one already running and **reads the surfaces after it**, which is the half
+nothing else would do. A drain is often the only thing that notices the pool is back — reach is true
+again, so the probe stops, and no second return is coming.
 
 **And then reads the surfaces again** *(added 2026-08-26)*, after the drain rather than beside it,
 so the page the pool answers already holds what was waiting to be sent. Which surfaces, and how far,

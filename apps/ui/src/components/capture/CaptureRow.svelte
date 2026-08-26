@@ -14,7 +14,6 @@
   let chosen = $state<File | undefined>(undefined);
   let busy = $state(false);
   let said = $state("");
-  let bad = $state(false);
   let picker: HTMLInputElement;
 
   /**
@@ -49,10 +48,8 @@
 
     busy = true;
     said = "";
-    bad = false;
     try {
-      // Held rather than uploaded: the bytes go up with the capture when it
-      // drains, so nothing here waits on the pool.
+      // Held rather than uploaded: the bytes go up when the capture drains.
       const asset =
         chosen === undefined ? undefined : await client.attach(chosen);
 
@@ -67,7 +64,6 @@
       picker.value = "";
     } catch (error) {
       said = saidBy(error);
-      bad = true;
     } finally {
       busy = false;
     }
@@ -105,9 +101,8 @@
         <span class="break-words text-ink-muted">{chosen.name}</span>
       {/if}
       {#if said !== ""}
-        <span role="status" class={bad ? "text-accent" : "text-ink-muted"}>
-          {said}
-        </span>
+        <!-- Only a failure reaches this: the capture itself waits on nothing. -->
+        <span role="status" class="text-accent">{said}</span>
       {/if}
     </ActionRow>
   </form>

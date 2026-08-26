@@ -6,11 +6,7 @@ import type { Operation, OperationKind } from "./operations";
 
 type Of<K extends OperationKind> = Extract<Operation, { kind: K }>;
 
-/**
- * What a send reaches: the pool, and the bytes the store still holds for an
- * asset an envelope names. An operation made offline carries both halves of a
- * capture, and the bytes are the half no JSON body can hold.
- */
+/** What a send reaches: the pool, and the bytes no JSON body can carry. */
 export type Sending = {
   readonly api: Api;
   readonly bytes: (asset: AssetId) => Promise<File | undefined>;

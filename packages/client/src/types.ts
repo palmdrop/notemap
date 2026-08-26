@@ -143,9 +143,8 @@ export interface Client {
 
   /**
    * Mints an asset for a file and holds its bytes, so a capture can name them
-   * with nothing sent. The upload happens in the drain, under the id answered
-   * here, which is what makes a picture captured out of reach an ordinary
-   * mutation rather than a round trip a person waits on.
+   * with nothing sent; the upload happens in the drain, under the id answered
+   * here.
    */
   attach(file: File): Promise<AssetId>;
   /** Where an asset's bytes are: the store's own, while it still holds them. */

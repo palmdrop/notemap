@@ -156,17 +156,21 @@ Depends on phases 1 and 2, and on client-minted asset ids.
 - [x] An asset whose capture has not drained resolves to the store's local URL; everything else
       resolves through the transport. The rule is one line and the shell asks the same question it
       always did
-- [x] Bytes are released when their capture lands, or when a refused capture is dismissed — nothing
-      will ever claim them. An `edit` naming the same asset releases nothing: the bytes are the
-      capture's, and releasing them would strand a capture that has not drained
+- [x] Bytes are released when the operation that named them leaves the outbox and nothing still
+      queued names them too. *Amended 2026-08-26 in review*: keying that on the operation's **kind**
+      leaked the bytes an `edit` alone named, `edit` being an uploader now as well
 - [x] The compose surface no longer waits on an upload before capturing, and attaches in the same
       gesture as the capture — bytes with no operation behind them are bytes nothing sweeps
 - [x] The store holds a `File` rather than a `Blob`. The upload carries the filename and the media
       type as headers and neither is recoverable from the bytes, so the port keeps them
 - [x] **Not planned and found by the tests**: a drain's own requests are evidence of reach, so a
       pair whose first half answers and second half does not reported the pool as back mid-drain
-      and started another drain for it, without end. A return that arrives inside a drain is now
-      that drain
+      and started another drain for it, without end. A return inside a drain now rides that drain
+      rather than starting one — and still reads the surfaces after it, which
+      [the review](../reviews/offline-attachment-2026-08-26.md) caught the first fix dropping
+- [x] The bytes are copied when they are attached rather than referenced, so a file that moved
+      fails in front of the person who moved it; and bytes the store cannot produce refuse their
+      operation rather than being retried forever
 - [x] Tests: a picture captured against a dead transport is drawn from local bytes, survives a
       rebuild of the client over the same store, and lands as one asset and one item when the
       transport answers; a retry after a failure between the two requests leaves one of each

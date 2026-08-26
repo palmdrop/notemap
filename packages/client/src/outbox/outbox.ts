@@ -25,10 +25,7 @@ export type OutboxDeps = {
    * and has no reversal to run.
    */
   readonly reread: (item: ItemId) => Promise<void>;
-  /**
-   * An operation that has left the outbox for good — landed, or dismissed after
-   * a refusal — so nothing will ever claim what it was holding on to.
-   */
+  /** An operation that has left the outbox for good: landed, or dismissed. */
   readonly released: (operation: Operation) => Promise<void>;
   readonly now: () => string;
   readonly mint: () => OperationId;
@@ -111,8 +108,11 @@ export function createOutbox(deps: OutboxDeps): Outbox {
     try {
       const settlement = await deps.send(entry.operation);
       const revert = undos.get(entry.id) ?? ((state: ClientState) => state);
-      deps.state.update((state) => settlement(state, revert));
+
+      // Dropped before the settlement, so the emission that draws the pool's
+      // answer is the one that stops drawing bytes released with it.
       await drop(entry.id);
+      deps.state.update((state) => settlement(state, revert));
     } catch (error) {
       if (error instanceof Unreachable) {
         await record({

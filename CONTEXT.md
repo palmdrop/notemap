@@ -105,7 +105,10 @@ filename exactly as it was uploaded and points at the blob holding the bytes. Up
 bytes twice under two names produces two assets. Its id is minted by whoever uploads it, as a
 capture's is, so an asset has an identity before the pool holds its bytes. Pool state, held beside
 the item references that count it, so an asset an item still references cannot be released.
-_Avoid_: attachment, media file
+**To attach** is the act of naming one on a capture, and a capture that carries one has an
+attachment — the word is the gesture and what came of it, never the asset itself, which is what the
+Avoid list is about.
+_Avoid_: attachment *for the asset*, media file
 
 **Blob**:
 The bytes an asset points at, stored once and addressed by their SHA-256. Named for a machine,

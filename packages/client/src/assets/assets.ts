@@ -1,9 +1,9 @@
 import { answered } from "../api/http";
 import type { AssetId } from "../api/types";
+import { Unreachable, Unreadable } from "../errors";
 import type { Sending } from "../outbox/handler";
-import type { Operation } from "../outbox/operations";
+import type { Operation, PendingOperation } from "../outbox/operations";
 
-/** The assets an operation's envelope names, which is none for a kind with no envelope. */
 export function namedBy(operation: Operation): readonly AssetId[] {
   return "envelope" in operation
     ? operation.envelope.payload.assets.map((reference) => reference.asset)
@@ -11,26 +11,29 @@ export function namedBy(operation: Operation): readonly AssetId[] {
 }
 
 /**
- * The assets an operation is the last claim on. A capture's bytes are its own,
- * and an `edit` names the ones the capture it revises brought — releasing those
- * would strand a capture that has not drained yet.
+ * What leaves with an operation: the assets it names that nothing still queued
+ * names too. A capture and the edit of it hold the same bytes, and whichever
+ * lands first would otherwise strand the other.
  */
-export function claimedBy(operation: Operation): readonly AssetId[] {
-  return operation.kind === "capture" ? namedBy(operation) : [];
+export function releasedBy(
+  operation: Operation,
+  queued: readonly PendingOperation[],
+): readonly AssetId[] {
+  const claimed = new Set(queued.flatMap((held) => namedBy(held.operation)));
+  return namedBy(operation).filter((asset) => !claimed.has(asset));
 }
 
 /**
- * The bytes go up before the envelope that names them, for every asset the
- * store still holds. Both carry ids minted before either was sent, so an upload
- * the pool already has answers with the asset it holds rather than making a
- * second one — which is what lets a failure between the two retry the pair.
+ * The bytes go up before the envelope that names them. Both carry ids minted
+ * before either was sent, so an upload the pool already holds answers with the
+ * asset rather than a second one, and a failure between them retries the pair.
  */
 export async function uploaded(
   sending: Sending,
   operation: Operation,
 ): Promise<void> {
   for (const asset of namedBy(operation)) {
-    const file = await sending.bytes(asset);
+    const file = await held(sending, asset);
     if (file === undefined) continue;
 
     await answered(
@@ -44,9 +47,39 @@ export async function uploaded(
         headers: { "content-type": file.type || "application/octet-stream" },
         // The body is the bytes, raw. Serialising them would be the one thing
         // this route does not want.
-        body: file as unknown as string,
+        body: await bytes(asset, file),
         bodySerializer: (body: unknown) => body as BodyInit,
       }),
     );
+  }
+}
+
+/**
+ * A store that could not answer is a local hiccup, and the operation waits for
+ * the next drain rather than being refused for something no pool ever said.
+ */
+async function held(
+  sending: Sending,
+  asset: AssetId,
+): Promise<File | undefined> {
+  try {
+    return await sending.bytes(asset);
+  } catch (cause) {
+    throw new Unreachable(
+      cause,
+      "the bytes could not be read from this device; this will be tried again",
+    );
+  }
+}
+
+/**
+ * Read here rather than streamed, so bytes the store cannot produce are told
+ * from a pool that did not answer and are refused rather than retried forever.
+ */
+async function bytes(asset: AssetId, file: File): Promise<string> {
+  try {
+    return (await file.arrayBuffer()) as unknown as string;
+  } catch (cause) {
+    throw new Unreadable(`the bytes for ${asset}`, cause);
   }
 }

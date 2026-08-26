@@ -33,8 +33,8 @@ export interface ClientStore {
   writePoolIdentity(identity: PoolIdentity): Promise<void>;
 
   /**
-   * A `File` rather than the bytes alone: the upload the drain makes carries the
-   * filename and the media type as headers, and neither is recoverable later.
+   * A `File` rather than the bytes alone: the upload carries the filename and
+   * the media type as headers, and neither is recoverable from bytes.
    */
   readBlob(asset: AssetId): Promise<File | undefined>;
   writeBlob(asset: AssetId, blob: File): Promise<void>;

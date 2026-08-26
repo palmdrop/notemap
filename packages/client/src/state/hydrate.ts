@@ -71,11 +71,7 @@ export async function hydrate(
   return hydrated;
 }
 
-/**
- * A picture captured in a previous session draws its own bytes again: the URL
- * an adapter hands out belongs to the session that asked for it, and the bytes
- * are the store's until the capture naming them lands.
- */
+/** The URL an adapter hands out belongs to the session that asked for it. */
 async function urlsFor(
   store: ClientStore,
   outbox: readonly PendingOperation[],

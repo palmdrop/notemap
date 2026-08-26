@@ -3,7 +3,7 @@ import { v7 as uuidv7 } from "uuid";
 
 import { createApi, answered } from "./api/http";
 import type { AssetId, Item, ItemId, PoolIdentity } from "./api/types";
-import { claimedBy } from "./assets/assets";
+import { releasedBy } from "./assets/assets";
 import { envelopeFor, optimisticItem } from "./capture/envelope";
 import { rewritten, saidIn } from "./capture/says";
 import { PoolChanged, Refused, Unreachable } from "./errors";
@@ -37,6 +37,12 @@ import { loadMore, readAfterReturn } from "./surfaces/reads";
 import type { Client, ClientConfig, ListState } from "./types";
 
 const IMAGE = "image";
+
+function copied(file: File): Promise<File> {
+  return file
+    .arrayBuffer()
+    .then((bytes) => new File([bytes], file.name, { type: file.type }));
+}
 
 /** A projection rebuilds its array every time, so identity alone never matches. */
 function sameList(one: ListState, other: ListState): boolean {
@@ -149,7 +155,6 @@ export function createClient(config: ClientConfig): Client {
     }
   }
 
-  /** Bytes the client still holds are the answer; everything else is the pool's. */
   function bytesOf(asset: AssetId): string {
     return state.get().blobUrls.get(asset) ?? transport.assetUrl(asset);
   }
@@ -188,11 +193,15 @@ export function createClient(config: ClientConfig): Client {
     );
   }
 
-  /** Bytes nothing will claim now, and the URL a shell was drawing them at. */
+  /**
+   * A release that fails is reported rather than thrown: the operation has left
+   * the outbox whether or not the bytes went, and failing here would hand back
+   * a refusal for a capture the pool took.
+   */
   async function release(operation: Parameters<typeof outbox.enqueue>[0]) {
-    for (const asset of claimedBy(operation)) {
+    for (const asset of releasedBy(operation, state.get().outbox)) {
       state.update((current) => withBlobUrl(current, asset, undefined));
-      await store.removeBlob(asset);
+      await store.removeBlob(asset).catch(report);
     }
   }
 
@@ -214,11 +223,10 @@ export function createClient(config: ClientConfig): Client {
   });
 
   /**
-   * A drain's own requests are evidence of reach like any other, so an
-   * operation that sends two of them and fails on the second reports the pool
-   * as back and then gone again. Coming back inside a drain is that drain, not
-   * a return: draining for it would send the pair again at once, and go on
-   * doing so for as long as the pool half-answers.
+   * A drain's own requests are evidence of reach, so an operation that sends
+   * two and fails on the second reports the pool as back and then gone again.
+   * A return inside a drain therefore rides it rather than starting another,
+   * which would send the pair again at once and go on doing so.
    */
   let sweeping = 0;
 
@@ -264,13 +272,11 @@ export function createClient(config: ClientConfig): Client {
   // The surfaces are read after the drain rather than beside it, so the page the
   // pool answers already holds what was waiting to be sent.
   const onReturn = reach.changes
-    .pipe(
-      skip(1),
-      filter(Boolean),
-      filter(() => sweeping === 0),
-    )
+    .pipe(skip(1), filter(Boolean))
     .subscribe(() => {
-      void drain()
+      // The surfaces are read whichever drain this is: a read cannot start a
+      // drain, so nothing here can loop.
+      void (sweeping === 0 ? drain() : draining)
         .then(() => readAfterReturn(state, api))
         .catch(report);
     });
@@ -348,7 +354,9 @@ export function createClient(config: ClientConfig): Client {
     attach: (file) =>
       after(async () => {
         const asset = uuidv7();
-        await store.writeBlob(asset, file);
+        // Copied rather than referenced: a picker's `File` points at a file on
+        // disk, which a capture that has not drained may outlive by days.
+        await store.writeBlob(asset, await copied(file));
 
         const url = await store.blobUrl(asset);
         if (url !== undefined) {

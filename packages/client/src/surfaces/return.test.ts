@@ -144,6 +144,38 @@ describe("a pool that comes back", () => {
     expect(read(client.queue).failure?.refused).toBe(true);
   });
 
+  it("reads them when the drain's own request is what noticed the pool", async () => {
+    vi.useFakeTimers();
+    const store = createMemoryStore();
+    await store.writeItems([anItem("one")]);
+    await store.writeOperation({
+      id: "op-1",
+      operation: { kind: "archive", item: "one" },
+      at: "2026-08-26T11:00:00.000Z",
+      state: "pending",
+    });
+
+    const { client, transport } = clientOver(
+      () => json(200, { values: [] }),
+      store,
+    );
+    transport.unreachable(true);
+    await quiet();
+
+    await client.loadQueue();
+    expect(read(client.queue).failure).toBeDefined();
+
+    // No probe: the pool is back and the drain is what finds out, which is the
+    // one return nothing else would report.
+    transport.unreachable(false);
+    await client.drain();
+    await quiet();
+
+    expect(asked(transport)).toContain("POST /v1/items/one/archive");
+    expect(asked(transport)).toContain("GET /v1/queue");
+    expect(read(client.queue).failure).toBeUndefined();
+  });
+
   it("reads the surfaces after the drain, so the page holds what was waiting", async () => {
     vi.useFakeTimers();
     const store = createMemoryStore();
