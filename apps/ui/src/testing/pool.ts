@@ -25,6 +25,8 @@ export let client: Client = createClient({
 });
 
 export function pool(handler: Handler): MockTransport {
+  // The one it replaces holds a running probe, and nothing else will stop it.
+  client.close();
   transport = mockTransport(handler);
   client = createClient({ transport, store: createMemoryStore() });
   return transport;

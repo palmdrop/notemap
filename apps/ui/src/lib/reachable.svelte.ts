@@ -19,6 +19,11 @@ export function reachable() {
     window.addEventListener("online", up);
     window.addEventListener("offline", down);
 
+    const looking = () =>
+      client.watched(document.visibilityState === "visible");
+    document.addEventListener("visibilitychange", looking);
+    looking();
+
     const held = client.reachable.subscribe((yes) => {
       answering = yes;
     });
@@ -26,6 +31,7 @@ export function reachable() {
     return () => {
       window.removeEventListener("online", up);
       window.removeEventListener("offline", down);
+      document.removeEventListener("visibilitychange", looking);
       held.unsubscribe();
     };
   });

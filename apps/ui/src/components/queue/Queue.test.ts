@@ -6,7 +6,7 @@ import { anItem, json, routeOf } from "@notemap/client/testing";
 import { asked, client, pool } from "../../testing/pool";
 import { NO_MORE_OFFLINE } from "$lib/said";
 import { briefly } from "$lib/stamp";
-import { online } from "../../testing/dom";
+import { looking, online } from "../../testing/dom";
 import { rail } from "$lib/rail.svelte";
 import { remember } from "$lib/order";
 import Queue from "./Queue.svelte";
@@ -277,6 +277,21 @@ test("does not draw a refused operation as pending", async () => {
     expect(screen.queryByText("zero")).toBeNull();
   });
   expect(screen.queryByText("pending")).toBeNull();
+});
+
+test("stops the probe while nobody is looking at the page", async () => {
+  pool(queued("one"));
+  const watched = vi.spyOn(client, "watched");
+
+  render(Queue);
+  await screen.findByText("one");
+  expect(watched).toHaveBeenCalledWith(true);
+
+  looking(false);
+  expect(watched).toHaveBeenLastCalledWith(false);
+
+  looking(true);
+  expect(watched).toHaveBeenLastCalledWith(true);
 });
 
 test("says nothing in the register about a queue the pool has not answered for", async () => {
