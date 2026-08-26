@@ -3,11 +3,19 @@ import { onMount } from "svelte";
 import { client } from "./client";
 
 /** The browser's own opinion is kept only as a second no; the client's is the first. */
-export function reachable() {
-  let online = $state(true);
-  let answering = $state(true);
+let online = $state(true);
+let answering = $state(true);
 
-  onMount(() => {
+let readers = 0;
+let drop: (() => void) | undefined;
+
+/**
+ * One set of listeners however many surfaces are reading them: an `online`
+ * event used to start a drain per mounted reader, and the client kept a
+ * subscription per one.
+ */
+function hold(): () => void {
+  if (readers === 0) {
     online = navigator.onLine;
 
     // The client would notice within a backoff; the platform knows sooner.
@@ -23,12 +31,26 @@ export function reachable() {
       answering = yes;
     });
 
-    return () => {
+    drop = () => {
       window.removeEventListener("online", up);
       window.removeEventListener("offline", down);
       held.unsubscribe();
     };
-  });
+  }
+
+  readers += 1;
+
+  return () => {
+    readers -= 1;
+    if (readers > 0) return;
+
+    drop?.();
+    drop = undefined;
+  };
+}
+
+export function reachable() {
+  onMount(hold);
 
   return {
     get yes() {
