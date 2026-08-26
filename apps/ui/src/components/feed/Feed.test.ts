@@ -1,9 +1,11 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
+import { tick } from "svelte";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool } from "../../testing/pool";
+import { online } from "../../testing/dom";
 import { remember } from "$lib/order";
 import { rail } from "$lib/rail.svelte";
 import { NO_MORE_OFFLINE, NOTHING_CAPTURED } from "$lib/said";
@@ -255,6 +257,19 @@ test("offers no page it cannot fetch while the pool is out of reach", async () =
 
   expect(await screen.findByText(NO_MORE_OFFLINE)).toBeDefined();
   expect(screen.queryByRole("button", { name: "load more" })).toBeNull();
+});
+
+test("says nothing in the foot of a feed read to the end", async () => {
+  pool(held(anItem("one")));
+
+  render(Feed);
+  await screen.findByText("one");
+  expect(screen.queryByRole("button", { name: "load more" })).toBeNull();
+
+  // There is no next page to be denied, so being out of reach costs nothing.
+  online(false);
+  await tick();
+  expect(screen.queryByText(NO_MORE_OFFLINE)).toBeNull();
 });
 
 test("draws the read the pool refused", async () => {

@@ -1,3 +1,5 @@
+import { afterEach } from "vitest";
+
 import { createClient, createMemoryStore, type Client } from "@notemap/client";
 import {
   asked as sentTo,
@@ -31,6 +33,10 @@ export function pool(handler: Handler): MockTransport {
   client = createClient({ transport, store: createMemoryStore() });
   return transport;
 }
+
+// The last client of a file has no successor to close it, and its probe would
+// go on ticking for as long as the worker lives. Every test builds its own.
+afterEach(() => client.close());
 
 /** Every route the shell caused, oldest first. */
 export function asked(): string[] {
