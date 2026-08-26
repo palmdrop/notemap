@@ -2,20 +2,15 @@ import { onMount } from "svelte";
 
 import { client } from "./client";
 
-/**
- * Whether the pool looks reachable, which is all a shell can honestly say: the
- * transport reports no reachability yet, so this is the browser's own opinion
- * plus whatever the outbox has already failed to send.
- */
+/** The browser's own opinion is kept only as a second no; the client's is the first. */
 export function reachable() {
   let online = $state(true);
-  let failing = $state(false);
+  let answering = $state(true);
 
   onMount(() => {
     online = navigator.onLine;
 
-    // Coming back is the moment the outbox has been waiting for; nothing else
-    // will ask, so a capture made offline would sit until the next mutation.
+    // The client would notice within a backoff; the platform knows sooner.
     const up = () => {
       online = true;
       void client.drain();
@@ -24,8 +19,8 @@ export function reachable() {
     window.addEventListener("online", up);
     window.addEventListener("offline", down);
 
-    const held = client.outbox.subscribe((outbox) => {
-      failing = outbox.some((held) => held.state === "unreachable");
+    const held = client.reachable.subscribe((yes) => {
+      answering = yes;
     });
 
     return () => {
@@ -37,7 +32,7 @@ export function reachable() {
 
   return {
     get yes() {
-      return online && !failing;
+      return online && answering;
     },
   };
 }

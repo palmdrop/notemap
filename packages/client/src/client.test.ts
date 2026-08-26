@@ -1,31 +1,27 @@
-import type { Observable } from "rxjs";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import type { Item } from "./api/types";
 import { createMemoryStore } from "./adapters/memory-store";
 import { createClient } from "./client";
 import { Refused, Unreachable } from "./errors";
 import type { PendingOperation } from "./outbox/operations";
-import { anItem, routeOf, stoppedClock } from "./testing/pool";
+import { read } from "./testing/observing";
+import { anItem, asked, routeOf, stoppedClock } from "./testing/pool";
 import {
   json,
   mockTransport,
   refusal,
   type Handler,
 } from "./testing/transport";
-import type { ListState } from "./types";
-
-function read<T>(source: Observable<T>): T {
-  let seen: T | undefined;
-  source
-    .subscribe((value) => {
-      seen = value;
-    })
-    .unsubscribe();
-  return seen as T;
-}
+import type { Client, ListState } from "./types";
 
 const clock = stoppedClock();
+
+const built: Client[] = [];
+
+afterEach(() => {
+  for (const client of built.splice(0)) client.close();
+});
 
 function clientOver(handler: Handler) {
   const transport = mockTransport(handler);
@@ -35,6 +31,7 @@ function clientOver(handler: Handler) {
     store,
     now: clock.now,
   });
+  built.push(client);
   return { client, transport, store };
 }
 
@@ -89,7 +86,7 @@ describe("capturing", () => {
     await client.capture({ channel: "web-image", text: "", asset: "asset-1" });
     await client.drain();
 
-    const sent = (await transport.sent[0]!.json()) as {
+    const sent = (await asked(transport)[0]!.json()) as {
       source: string;
       sourceItemId: string;
       id: string;
@@ -301,7 +298,12 @@ describe("the queue", () => {
       "old",
       "less-old",
     ]);
-    expect(read(client.feed).items.map((item) => item.id)).toEqual([fresh.id]);
+    // The pool has not answered for the feed, so it is the cache newest-first.
+    expect(read(client.feed).items.map((item) => item.id)).toEqual([
+      fresh.id,
+      "less-old",
+      "old",
+    ]);
   });
 
   it("carries a new capture to the far end, where fresh work accumulates", async () => {
@@ -682,7 +684,7 @@ describe("an asset", () => {
       id: "asset-1",
     });
 
-    const sent = transport.sent[0]!;
+    const sent = asked(transport)[0]!;
     expect(routeOf(sent)).toMatch(
       /^PUT \/v1\/assets\/[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/,
     );
@@ -711,7 +713,7 @@ describe("an asset", () => {
     await client.uploadAsset(file());
     await client.uploadAsset(file());
 
-    const [first, second] = transport.sent.map(routeOf);
+    const [first, second] = asked(transport).map(routeOf);
     expect(first).not.toBe(second);
   });
 
@@ -766,7 +768,7 @@ describe("an asset", () => {
 });
 
 describe("the store", () => {
-  it("mirrors the cache and the outbox into it as they change", async () => {
+  it("follows the cache and the outbox into it as they change", async () => {
     const { client, store, transport } = clientOver(() => json(201, {}));
     transport.unreachable(true);
 

@@ -1,29 +1,37 @@
+import { filter, skip } from "rxjs";
 import { v7 as uuidv7 } from "uuid";
 
 import { createApi, answered } from "./api/http";
-import type { Item, ItemId } from "./api/types";
+import type { Item, ItemId, PoolIdentity } from "./api/types";
 import { envelopeFor, optimisticItem } from "./capture/envelope";
 import { rewritten, saidIn } from "./capture/says";
-import { Refused } from "./errors";
-import { derived, writable } from "./observable/observable";
+import { PoolChanged, Refused, Unreachable } from "./errors";
+import { derived, writable, type Writable } from "./observable/observable";
 import { createDestinations } from "./destinations/destinations";
 import { createOutbox } from "./outbox/outbox";
 import { sendOperation } from "./outbox/registry";
+import { reachability } from "./pool/reachability";
+import type { Transport } from "./ports/transport";
 import { createRouting } from "./routing/routing";
 import { hydrate } from "./state/hydrate";
 import { persist } from "./state/persist";
+import { retained } from "./state/retention";
 import {
   cached,
+  drawnFrom,
   emptyState,
   forget,
+  fromCache,
   processed,
+  rebuilt,
   settle,
   settledDestination,
   withdrawn,
   type ClientState,
+  type Surface,
 } from "./state/state";
 import { createTags } from "./tags/tags";
-import { loadMore, type Surface } from "./surfaces/reads";
+import { loadMore } from "./surfaces/reads";
 import type { Client, ClientConfig, ListState } from "./types";
 
 const IMAGE = "image";
@@ -34,23 +42,48 @@ function sameList(one: ListState, other: ListState): boolean {
     one.loading === other.loading &&
     one.order === other.order &&
     one.more === other.more &&
+    one.fromCache === other.fromCache &&
     one.failure === other.failure &&
     one.items.length === other.items.length &&
     one.items.every((item, at) => item === other.items[at])
   );
 }
 
+/** A 5xx is not evidence of reach: `undecided` reads one as a socket that never opened. */
+function watching(
+  transport: Transport,
+  answered: (reached: boolean) => void,
+): Transport {
+  return {
+    ...transport,
+    async fetch(request) {
+      try {
+        const response = await transport.fetch(request);
+        answered(response.status < 500);
+        return response;
+      } catch (error) {
+        answered(false);
+        throw error;
+      }
+    },
+  };
+}
+
 function listOf(state: ClientState, surface: Surface): ListState {
   const page = state[surface];
-  const items = page.ids
-    .map((id) => state.items.get(id))
-    .filter((item): item is Item => item !== undefined);
+  const drawn = fromCache(page);
+  const items = drawn
+    ? drawnFrom(state, surface)
+    : page.ids
+        .map((id) => state.items.get(id))
+        .filter((item): item is Item => item !== undefined);
 
   return {
     items,
     order: page.order,
     loading: page.loading,
     more: !page.exhausted,
+    fromCache: drawn,
     ...(page.failure === undefined ? {} : { failure: page.failure }),
   };
 }
@@ -59,8 +92,16 @@ export function createClient(config: ClientConfig): Client {
   const { transport, store } = config;
   const now = config.now ?? (() => new Date().toISOString());
   const report = config.onError ?? (() => undefined);
-  const api = createApi(transport);
-  const state = writable<ClientState>(emptyState());
+  const held = writable<ClientState>(emptyState());
+  // Every state change passes through here, so no path can forget retention.
+  const state: Writable<ClientState> = {
+    get: () => held.get(),
+    set: (value) => held.set(retained(value)),
+    update: (change) => held.update((current) => retained(change(current))),
+    changes: held.changes,
+  };
+  const reach = reachability(() => askedHealth());
+  const api = createApi(watching(transport, reach.answered));
 
   /**
    * Hydration is started here and waited on by everything that touches state,
@@ -80,6 +121,30 @@ export function createClient(config: ClientConfig): Client {
 
   function after<T>(work: () => T | Promise<T>): Promise<T> {
     return ready.then(work);
+  }
+
+  function isThePoolWeCached(identity: PoolIdentity | undefined): void {
+    if (identity === undefined) return;
+
+    const ours = state.get().pool;
+    if (ours === identity) return;
+
+    state.update((current) =>
+      ours === undefined
+        ? { ...current, pool: identity }
+        : rebuilt(current, identity),
+    );
+    if (ours !== undefined) report(new PoolChanged(ours, identity));
+  }
+
+  async function askedHealth(): Promise<boolean> {
+    try {
+      isThePoolWeCached((await answered(api.GET("/v1/health"))).pool);
+      return true;
+    } catch (error) {
+      // A refusal is still the pool answering. Only silence is not.
+      return !(error instanceof Unreachable);
+    }
   }
 
   const tags = createTags({
@@ -162,10 +227,20 @@ export function createClient(config: ClientConfig): Client {
     void drain();
   }
 
-  // Work made in a previous session reaches the pool without anyone asking.
-  void drain();
+  // skip(1): the first value is where reachability starts, not a return.
+  const onReturn = reach.changes
+    .pipe(skip(1), filter(Boolean))
+    .subscribe(() => void drain());
+
+  // Work made in a previous session reaches the pool without anyone asking —
+  // but not before the pool has said which pool it is.
+  void after(() => reach.ask())
+    .catch(() => undefined)
+    .then(() => drain());
 
   return {
+    reachable: reach.changes,
+
     feed: derived(
       state.changes,
       (current) => listOf(current, "feed"),
@@ -283,5 +358,10 @@ export function createClient(config: ClientConfig): Client {
 
     drain,
     dismiss: (operation) => after(() => outbox.dismiss(operation)),
+
+    close() {
+      reach.stop();
+      onReturn.unsubscribe();
+    },
   };
 }

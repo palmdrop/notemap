@@ -1,8 +1,15 @@
 # Spec: Sync and the client contract
 
 **Status**: Stub — to be written properly in a dedicated grilling session
-**Last updated**: 2026-08-24
+**Last updated**: 2026-08-26
 **Shipped**:
+
+- 2026-08-26 — **Half the rebuild question is answered: what a client drops.** A client caches the
+  pool identity `/v1/health` reports, compares it on start, and on finding another pool drops the
+  items it cached and the surfaces drawn from them while keeping the outbox, which replays
+  idempotently into whichever pool receives it. What it should *resync* is untouched and still needs
+  a delta wire. ([plan](../plans/durable-offline-client.md),
+  [ADR 23](../adr/0023-a-changed-pool-identity-drops-the-cache-and-keeps-the-outbox.md))
 
 - 2026-08-24 — **Being revised is a change a delta reports.** The item a revision was made from is
   touched when the revision is written, so a client reading deltas learns that it left the queue
@@ -95,11 +102,14 @@ this spec is unwritten.
       own earlier stamp, but the delta/replay surface that expresses this is unbuilt.
 - [ ] 2026-08-02 — "Idempotent and order-independent" versus last-write-wins: LWW requires an
       order, so the precise claim needs pinning down.
-- [ ] 2026-08-11 — Rebuild interaction: what a client *does* once it detects a rebuild. Detection
-      is settled — the pool identity changes and is readable — but not the response: a full
-      resync of the cached window, a resync from scratch, or a prompt. A rebuilt pool has also
-      lost its tombstones, so a client holding a copy of something purged before the rebuild will
-      never be told it is gone, which is the case that needs an answer rather than a default.
+- [ ] 2026-08-11 — Rebuild interaction: what a client *does* once it detects a rebuild. **Half
+      answered 2026-08-26** ([ADR 23](../adr/0023-a-changed-pool-identity-drops-the-cache-and-keeps-the-outbox.md)):
+      what it **drops** is settled — the cached items and the surfaces drawn from them go, the
+      outbox stays, and the change is reported. That is the half that answers the tombstone case,
+      since an item purged before the rebuild can no longer be shown by a client that is no longer
+      holding it. What it **resyncs** is still open — a resync of the cached window, a resync from
+      scratch, or nothing until a surface reads — and stays open, because there is no delta wire to
+      ask and no cursor that would survive the rebuild anyway.
 - [ ] 2026-08-02 — Tombstone retention window, and what a client does when it has been offline
       longer than one. (Moved from core.md.)
 - [ ] 2026-08-02 — The exact outbox operation vocabulary: which operations exist and replay.

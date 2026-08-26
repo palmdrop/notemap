@@ -31,6 +31,8 @@ export type ListState = {
   readonly order: Order;
   readonly loading: boolean;
   readonly more: boolean;
+  /** What the client holds rather than what the pool holds, the pool not having answered for this surface. */
+  readonly fromCache: boolean;
   readonly failure?: string;
 };
 
@@ -100,6 +102,9 @@ export interface RoutingApi {
 }
 
 export interface Client {
+  /** Whether the pool is answering. Optimistic before anything has asked. */
+  readonly reachable: Observable<boolean>;
+
   readonly feed: Observable<ListState>;
   readonly queue: Observable<ListState>;
   readonly outbox: Observable<readonly PendingOperation[]>;
@@ -145,6 +150,14 @@ export interface Client {
   /** Called on every mutation, and again to retry what is still pending. */
   drain(): Promise<void>;
   dismiss(operation: OperationId): Promise<void>;
+
+  /**
+   * Stops the reachability probe, which is the one thing here that keeps
+   * running rather than waiting to be called. A web shell holds one client for
+   * the life of the page and never needs this; a shell that builds a second
+   * client, and a test, do.
+   */
+  close(): void;
 }
 
 export type ClientConfig = {

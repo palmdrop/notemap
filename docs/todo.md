@@ -88,6 +88,15 @@
   unrelated to who mints the id; found reviewing
   [client-minted assets](plans/client-minted-assets-and-health.md). Wants either a delete that
   re-checks the asset table under the write lock, or a grace on the blob as well as the asset.
+- [ ] **Nothing bounds a surface that is being drawn.** The client's cache caps feed history at 500
+  items, but exempts everything a page currently holds — and a page accumulates ids as it is walked
+  and nothing trims it, so a long feed session holds every row it paged and the cap does not reach
+  it ([client.md](specs/client.md#what-the-cache-keeps)). The exemption itself is right: eviction
+  goes oldest-touched-first, the feed is read newest-first, so the rows at risk are exactly the ones
+  a deep scroll is looking at. What is missing is an answer for a surface that outgrows the cache —
+  a windowed page that drops what is far from the reader and re-reads it, or a cap on the page that
+  the shell knows how to draw. Raised reviewing
+  [the cache's readers](reviews/cache-with-readers-2026-08-26.md).
 - [ ] The markdown renderer is unchosen, so a text capture shows its asterisks.
   [standards.md](standards.md) says a text payload is CommonMark; the shell's `Prose` primitive
   draws it verbatim behind the interface a renderer will sit in. A library choice, and the question

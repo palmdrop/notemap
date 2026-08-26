@@ -7,12 +7,11 @@ import {
   emptyPage,
   type ClientState,
   type ListPage,
+  type Surface,
 } from "../state/state";
 import type { Order } from "../types";
 
 const PAGE = 25;
-
-export type Surface = "feed" | "queue";
 
 /** The slice hands back a ready-made URL; the typed client takes parameters. */
 function positionIn(next: string): string | undefined {
@@ -51,6 +50,7 @@ function extended(page: ListPage, slice: ItemSlice): ListPage {
     ids: [...page.ids, ...arriving],
     exhausted: slice.next === undefined,
     loading: false,
+    answered: true,
     ...(next === undefined ? {} : { after: next }),
   };
 }
@@ -76,8 +76,13 @@ export async function loadMore(
 
   // Turning the surface around invalidates the position it was walking, so the
   // page starts again rather than stitching two orders together.
+  // The claim that these rows are the pool's is carried across a turn rather
+  // than dropped: giving it up here is what made an ordinary reorder flash the
+  // whole cache in between.
   const page =
-    order === undefined || order === held.order ? held : emptyPage(order);
+    order === undefined || order === held.order
+      ? held
+      : { ...emptyPage(order), answered: held.answered };
   if (page.exhausted) return;
 
   state.update((current) => ({ ...current, [surface]: loading(page) }));
@@ -95,6 +100,8 @@ export async function loadMore(
       [surface]: {
         ...current[surface],
         loading: false,
+        // No rows came from the pool, so the surface is the client's own again.
+        answered: current[surface].ids.length > 0,
         failure: saidBy(error),
       },
     }));

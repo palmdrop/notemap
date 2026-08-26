@@ -1,9 +1,9 @@
-import type { Observable } from "rxjs";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { createMemoryStore } from "./adapters/memory-store";
 import type { Item } from "./api/types";
 import { createClient } from "./client";
+import { read } from "./testing/observing";
 import { anItem, routeOf, stoppedClock } from "./testing/pool";
 import {
   json,
@@ -15,16 +15,6 @@ import type { ListState } from "./types";
 
 /** The channel the shell's edits arrive through, as its captures do. */
 const TYPED = "web-manual";
-
-function read<T>(source: Observable<T>): T {
-  let seen: T | undefined;
-  source
-    .subscribe((value) => {
-      seen = value;
-    })
-    .unsubscribe();
-  return seen as T;
-}
 
 const clock = stoppedClock();
 

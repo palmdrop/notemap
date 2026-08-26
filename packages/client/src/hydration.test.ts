@@ -1,5 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import type { Observable } from "rxjs";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { createMemoryStore } from "./adapters/memory-store";
 import { saidBy } from "./errors";
@@ -7,7 +6,9 @@ import type { Item } from "./api/types";
 import { createClient } from "./client";
 import type { PendingOperation } from "./outbox/operations";
 import type { ClientStore } from "./ports/store";
-import { anItem, routeOf, stoppedClock } from "./testing/pool";
+import type { Client } from "./types";
+import { read, until } from "./testing/observing";
+import { anItem, asked, routeOf, stoppedClock } from "./testing/pool";
 import {
   json,
   mockTransport,
@@ -17,22 +18,11 @@ import {
 
 const clock = stoppedClock();
 
-function read<T>(source: Observable<T>): T {
-  let seen: T | undefined;
-  source
-    .subscribe((value) => {
-      seen = value;
-    })
-    .unsubscribe();
-  return seen as T;
-}
+const built: Client[] = [];
 
-/** Lets hydration, the boot drain and everything they start run to a stop. */
-async function until(reached: () => boolean): Promise<void> {
-  for (let tries = 0; tries < 50 && !reached(); tries += 1) {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  }
-}
+afterEach(() => {
+  for (const client of built.splice(0)) client.close();
+});
 
 function clientOver(store: ClientStore, handler: Handler) {
   const transport = mockTransport(handler);
@@ -43,6 +33,7 @@ function clientOver(store: ClientStore, handler: Handler) {
     now: clock.now,
     onError: (error) => reported.push(error),
   });
+  built.push(client);
   return { client, transport, reported };
 }
 
@@ -92,7 +83,7 @@ describe("hydration", () => {
     await until(() => read(client.tags.inUse).length > 0);
 
     expect(read(client.tags.inUse).map((use) => use.name)).toEqual(["reading"]);
-    expect(transport.sent).toEqual([]);
+    expect(asked(transport)).toEqual([]);
   });
 
   it("drains a capture made in a previous session, exactly once, unprompted", async () => {
@@ -119,7 +110,7 @@ describe("hydration", () => {
 
     expect(captures).toEqual([optimistic.id]);
     expect(read(client.outbox)).toEqual([]);
-    expect(transport.sent.map(routeOf)).toEqual(["POST /v1/captures"]);
+    expect(asked(transport).map(routeOf)).toEqual(["POST /v1/captures"]);
   });
 
   it("settles a rehydrated operation the pool refuses from the pool itself", async () => {
@@ -216,7 +207,7 @@ describe("hydration", () => {
     const { client, transport } = clientOver(store, unreachable);
     await client.drain();
 
-    expect(transport.sent).toEqual([]);
+    expect(asked(transport)).toEqual([]);
     expect(read(client.outbox)[0]?.state).toBe("refused");
   });
 });

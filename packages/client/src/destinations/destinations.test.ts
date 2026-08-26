@@ -1,27 +1,17 @@
-import type { Observable } from "rxjs";
 import { describe, expect, it } from "vitest";
 
 import { createMemoryStore } from "../adapters/memory-store";
 import type { Destination } from "../api/types";
 import { createClient } from "../client";
 import { Refused, Unreachable } from "../errors";
-import { routeOf } from "../testing/pool";
+import { read } from "../testing/observing";
+import { asked as sentTo, routeOf } from "../testing/pool";
 import {
   json,
   mockTransport,
   refusal,
   type Handler,
 } from "../testing/transport";
-
-function read<T>(source: Observable<T>): T {
-  let seen: T | undefined;
-  source
-    .subscribe((value) => {
-      seen = value;
-    })
-    .unsubscribe();
-  return seen as T;
-}
 
 function clientOver(handler: Handler) {
   const transport = mockTransport(handler);
@@ -44,7 +34,7 @@ function aDestination(overrides: Partial<Destination> = {}): Destination {
 }
 
 const asked = (transport: { sent: readonly Request[] }) =>
-  transport.sent.map(routeOf);
+  sentTo(transport).map(routeOf);
 
 describe("reading destinations", () => {
   it("fills the cache a screen renders from", async () => {

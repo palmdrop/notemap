@@ -92,43 +92,55 @@ Depends on phase 1.
 
 Depends on phase 2.
 
-- [ ] The queue is derived from the cache rather than restored as a page: the items the client can
+- [x] The queue is derived from the cache rather than restored as a page: the items the client can
       see are unprocessed, mirroring the store's own three anti-joins — no routing records, not
       archived, `revisedInto` empty — ranked by capture time. The feed is the same cache,
       newest first
-- [ ] A derived page reports that it holds what the client holds rather than what the pool holds,
-      and a surface says so. It is not exhausted and it is not loading: it is the client's own
-- [ ] The first successful pool read **replaces** a derived page rather than extending it. A derived
+- [x] A derived page reports that it holds what the client holds rather than what the pool holds,
+      and a surface says so. It is not exhausted and it is not loading: it is the client's own —
+      `ListState.fromCache`
+- [x] The first successful pool read **replaces** a derived page rather than extending it. A derived
       page has no position, and stitching one to a page the pool positioned is two orders in one list
-- [ ] `loaded()` answers for a derived page. As it stands it requires a position or exhaustion, so a
-      capture made offline would be refused placement into the very surface it was made on
-- [ ] Tests: a cold client over a store holding items draws both surfaces without a transport; a
+- [x] ~~`loaded()` answers for a derived page.~~ *Amended 2026-08-26*: it does not have to. A page
+      the pool has never answered for holds no ids, no position and no exhaustion, and the surface
+      reads the cache itself rather than a list of ids — so the replace above falls out of appending
+      to an empty page, and an arrival is placed by being in the cache. `intoPage` returns such a
+      page untouched instead
+- [x] Tests: a cold client over a store holding items draws both surfaces without a transport; a
       routed, an archived and a revised-from item are all absent from the derived queue; an offline
       capture appears in the derived queue at its own capture time; a pool read replaces the derived
       page rather than appending to it
-- [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
+- [x] `git commit`
 
 ### Phase 4 — reachability, and a pool that is not the one we cached
 
 Depends on phase 2; independent of phase 3.
 
-- [ ] ADR 0023: on a changed pool identity the client drops the cached items and the derived
+- [x] ADR 0023: on a changed pool identity the client drops the cached items and the derived
       surfaces, keeps the outbox, and says so. The cache may describe a pool that no longer exists —
       a rebuild loses its tombstones, so anything purged before it would never be reported gone —
       while the outbox is the person's own un-landed work and replays idempotently. Record that this
       settles half of [sync.md](../specs/sync.md)'s rebuild question and leaves the resync half open
-- [ ] `Transport` reports reachability as an observable: true when a real request has just answered,
-      and kept honest by a probe of `GET /v1/health` on a backoff — quick after a failure, slow when
-      quiet. The client drains when it turns true
-- [ ] The client caches the pool identity `/v1/health` reports and compares it with what the store
-      holds
-- [ ] `apps/ui/src/lib/reachable.svelte.ts` reads the transport's signal instead of
-      `navigator.onLine`, which says yes whenever a network exists and the daemon is dead
-- [ ] Tests: an unreachable transport that starts answering drives a drain with no mutation to prod
+- [x] ~~`Transport` reports reachability as an observable~~ — the **client** does. *Amended
+      2026-08-26*: every request already passes through the client's api layer, which is the only
+      place that tells a pool saying no from a pool saying nothing, and the probe is a `/v1` route
+      the client has typed; on the port it would have been reimplemented per adapter. True when a
+      real request has just answered, kept honest by a probe of `GET /v1/health` on a backoff. It
+      probes **only while the pool is out of reach** rather than slowly when quiet: that is the one
+      state whose ending nobody else would notice, and a permanent poll is a cost a local-first
+      client should not pay to keep a mark fresh while nothing is happening. The client drains when
+      it turns true
+- [x] The client caches the pool identity `/v1/health` reports and compares it with what the store
+      holds — asked once on start, which is also what gives a client with an empty outbox an honest
+      first answer about reach
+- [x] `apps/ui/src/lib/reachable.svelte.ts` reads the client's signal instead of `navigator.onLine`,
+      which says yes whenever a network exists and the daemon is dead. `onLine` is kept only as a
+      second **no**, and as the hint that drains sooner than the backoff would
+- [x] Tests: an unreachable transport that starts answering drives a drain with no mutation to prod
       it; the backoff does not spin; a changed identity clears the items and keeps the outbox
-- [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
+- [x] `git commit`
 
 ### Phase 5 — a capture with an attachment, offline
 
@@ -156,12 +168,16 @@ Depends on phases 1 and 2, and on client-minted asset ids.
 
 Depends on phases 1 and 3.
 
-- [ ] Retention: everything the client can see is unprocessed stays, being the working set; items
+- [x] Retention: everything the client can see is unprocessed stays, being the working set; items
       that are only feed history are capped, oldest touched first. An item with a pending operation
-      is never evicted
-- [ ] Tests: eviction spares unprocessed items and pending ones and takes the rest
-- [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
-- [ ] `git commit`
+      is never evicted — and neither is one a surface is currently drawing, which the plan did not
+      name and which would otherwise vanish under the reader. *Amended 2026-08-26*: that exemption
+      means the cap bounds history the client is **not drawing** rather than the cache as a whole,
+      since a page accumulates ids and nothing trims it. Bounding a drawn surface is its own
+      question and is in `docs/todo.md`
+- [x] Tests: eviction spares unprocessed items and pending ones and takes the rest
+- [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
+- [x] `git commit`
 
 ### Phase 7 — across the layers, and the specs
 
@@ -185,6 +201,10 @@ Depends on every phase above.
 
 ## Unknowns
 
+- **Whether hydration should gate reads as well as mutations.** *Settled 2026-08-25*: it gates
+  everything, and a cold start costs a tick.
+- **How a derived surface says it is derived.** *Settled 2026-08-26*: one flag on the list state,
+  `fromCache`, as the fallback named.
 - **Whether `images()` can stay synchronous** once an asset may resolve to a local URL the store
   creates. *Fallback*: the client holds resolved local URLs in its state, filled at hydration and on
   enqueue and released on drain, so the call stays synchronous and the port stays asynchronous.

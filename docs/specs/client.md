@@ -1,8 +1,20 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-08-25
+**Last updated**: 2026-08-26
 **Shipped**:
+
+- 2026-08-26 — **The cache acquires readers, a lifetime, and a check that it still describes the
+  pool it thinks it does.** The queue and the feed are drawn from the cache until the pool answers
+  for them, so a client opened with the daemon down finds its pool rather than an empty list, and a
+  surface says which of the two it is holding. Reachability is the client's own — every request is
+  evidence and a probe of `GET /v1/health` backs off behind it while the pool is out of reach — so
+  the outbox drains the moment the pool returns, with nothing to prod it. That probe also asks which
+  pool this is: an identity that does not match what the store holds means a rebuild or a different
+  daemon, and the cache is dropped while the outbox is kept. What the cache keeps is bounded: the
+  working set stays whatever its size and feed history is capped.
+  ([plan](../plans/durable-offline-client.md),
+  [ADR 23](../adr/0023-a-changed-pool-identity-drops-the-cache-and-keeps-the-outbox.md))
 
 - 2026-08-25 — **The store stops being write-only, and the client reads it back on start.**
   `ClientStore` answers for every collection the client holds — the outbox and the cached items as
@@ -172,6 +184,8 @@ A client presents four surfaces, each a thin projection of core:
   [http-v1.md](http-v1.md) hands back. A read surface: it never drains.
 - **The queue** — the pool read as unprocessed, unarchived items, oldest first by default.
   Presented as **one scrollable list** (see [the queue](#the-queue)).
+- Either may be **drawn from the cache** rather than from the pool (see
+  [surfaces drawn from the cache](#surfaces-drawn-from-the-cache)), and says which it is.
 - **An order** — which end of a surface a reader starts from. A default per surface and a
   parameter of a read, never a stored preference.
 - **An item** — its payload, tags, enrichment state, suggestions and routing records, and the
@@ -429,24 +443,103 @@ adapter mints an object URL and owns revoking it; a shell that is not a browser 
 differently. Every method is asynchronous even where an in-memory adapter answers instantly, so a
 durable one is a drop-in.
 
-**The store is a mirror of the cache, written as the cache changes**, rather than something each
+**The store follows the cache, written as the cache changes**, rather than something each
 path that touches an item remembers to write. Those writes are ordered, and one that fails does not
-stop the ones after it — what it was mirroring is a cache, and losing it costs a re-read, though it
-is reported rather than dropped in silence. **The outbox is not mirrored**: it is written by the
+stop the ones after it — what it was following is a cache, and losing it costs a re-read, though it
+is reported rather than dropped in silence. **The outbox is not followed**: it is written by the
 operation that changes it and waited on, because it is the person's un-landed work rather than a
 copy of something the pool holds.
 
 **The web shell wires the browser's own storage** (2026-08-25) and the client reads it back on
-start. What the offline slice still owes is on the transport's side — reachability, so the outbox
-drains on more than the browser's `online` event — and in the surfaces, which are still the pool's
-pages rather than the cache's.
+start. *Amended 2026-08-26*: what the offline slice still owes is the attachment — bytes held in the
+store for a capture that has not drained, and resolved in place of a URL. The surfaces and
+reachability are described above.
 
 **The cache's shape**, so the port serves the working set rather than an arbitrary blob: the
 **queue is the offline working set**, cached as the local source of truth a person triages against;
 a **window of the feed** accompanies it; and **asset blobs are cached lazily**, only for items in
 the queue window, because a voice memo cannot be processed offline without its audio
-([sync.md](sync.md)). Retention and eviction are the offline slice's to fix; the direction is
-fixed here so the port is designed for it.
+([sync.md](sync.md)). What is kept and what is dropped is
+[what the cache keeps](#what-the-cache-keeps); the blob half is still owed.
+
+### Surfaces drawn from the cache
+
+A page is a **position** the pool handed back, and a client that has not read the pool has none. So
+a surface holding no rows the pool gave it is **drawn from the cache** instead of being empty:
+
+- **The queue is what the client can see is unprocessed** — no routing records, not archived,
+  nothing revised from it — which is the same three anti-joins the pool's own queue read makes,
+  asked of the rows the client holds. **The feed is everything it holds.** Both rank by capture
+  time, in whichever order the surface is being read.
+- **A cache-drawn surface says so.** A shell that drew it as the pool's reading would tell a person
+  that three rows means they are nearly done. What a shell does with that is [shell.md](shell.md)'s.
+- **Turning a surface around does not make it the client's own.** A turn throws away the position
+  and the rows, and reads the new order from the start — but the surface keeps its claim on the
+  pool's answer while that read is in flight, so an ordinary reorder shows an empty loading list
+  rather than flashing the whole cache and snapping back. It gives the claim up only if the read
+  **fails**, which is the honest reading of a surface that now holds nothing the pool gave it: it
+  falls back to the cache, in the order it was turned to, and reports the failure beside it.
+- **The first page the pool answers replaces it.** A cache-drawn surface holds no position, and
+  stitching one onto a page the pool positioned would be two orders in one list. It is a
+  replacement rather than an extension, and thereafter the surface is the pool's page as it always
+  was.
+- **A read that fails leaves the surface on the cache** and reports the failure beside it. The
+  surface is still the client's own, because nothing replaced it.
+- Nothing places an item into a cache-drawn surface. Placement by rank is for a page with a window
+  ([the queue](#the-queue)); a cache-drawn surface reads the cache itself, so an arrival is in it
+  by being cached at all.
+
+### What the cache keeps
+
+The cache is a copy and never an authority, so what it holds is bounded by usefulness rather than
+by anything owed to a person:
+
+- **The working set stays, whatever its size.** Everything the client can see is unprocessed is
+  what a person triages against with the pool out of reach, and capping it would cap the offline
+  queue.
+- **Feed history is capped**, oldest touched first out. It is the part that only ever answers a
+  scroll backwards, and re-reading it costs one request.
+- **An item an undrained operation is about is never evicted**, and neither is one a surface is
+  currently drawing. The first is work that has not landed; the second would vanish under the
+  reader.
+- **So the cap bounds history the client is not drawing, and not the cache as a whole.** A page
+  accumulates ids as it is walked and nothing trims it, so a person who pages a long way holds
+  every row they paged — which is what the exemption above says, stated as the bound it actually
+  is. The two ends coincide: the feed is read newest-first, and the rows deepest in a long scroll
+  are the least recently touched, which is exactly what eviction would take. Bounding a surface
+  that is being drawn is a real question and an unanswered one ([todo](../todo.md)); what is
+  settled here is that the answer is not "evict it under the reader".
+- The store follows the cache, so an eviction reaches it. Including one made while reading the
+  store back, which is what stops it growing a session at a time.
+
+Nothing warms the cache. It fills from what surfaces actually read, so an offline working set is as
+large as the person's reading made it.
+
+### Reachability, and a pool that is not the one we cached
+
+**Reachability is the client's, not the transport's.** Every request the client makes is evidence —
+the pool answering is the only proof of reach there is — and a **probe of `GET /v1/health`** sits
+behind them, on a backoff, while the pool is out of reach. It runs only in that state: it is the
+only one whose ending nobody else would notice, and a client whose requests are being answered has
+better evidence than a poll. A 5xx is not evidence of reach, because the client reads one as the
+pool failing to decide rather than as an answer ([http-v1.md](http-v1.md#errors)).
+
+**A pool that comes back drains the outbox**, with no mutation to prod it and nothing for a shell to
+remember. Reachability is exposed for a shell to draw; the browser's `online` event is a weaker
+signal — a network exists says nothing about the daemon — and a shell may still use it as a second
+no, or as a hint to drain sooner than the backoff would.
+
+**The client caches the pool identity and checks it.** The same probe answers which pool this is
+([mirror.md](mirror.md)). An identity that does not match what the store holds means the pool was
+rebuilt, or the shell is pointed somewhere else; either way what the cache holds describes somewhere
+that no longer exists. **Detection happens when the probe runs** — on start, and on coming back
+from being out of reach — because the probe is the only thing that reads `/v1/health`. In practice
+that covers it, a rebuild being something that takes the daemon away; a daemon replaced fast enough
+to answer every request the client made would go unnoticed for the session. The cached items and the
+surfaces drawn from them are dropped, the **outbox is kept** — it is the person's un-landed work and replays idempotently into whichever pool receives
+it — and the change is reported through `onError`
+([ADR 23](../adr/0023-a-changed-pool-identity-drops-the-cache-and-keeps-the-outbox.md)). What a
+client should *resync* after that is [sync.md](sync.md)'s and needs a wire that does not exist.
 
 ### Reactivity
 
@@ -527,6 +620,27 @@ that logic out of the one place it is meant to live.
   rather than persisting a before-snapshot per operation or declaring an inverse per kind. One rule
   for every kind, nothing extra persisted, and the cache converges on the authority rather than on
   a client's memory of it.
+- **A surface the pool has not answered for is the cache, not an empty list** (2026-08-26): the
+  alternative was to keep the surfaces empty until a read lands, which is what made a durable store
+  invisible to the person holding it. The cost is that a surface changes shape when the first page
+  arrives, and the surface says which it is holding so that change is legible rather than
+  mysterious.
+- **Reachability is the client's, not the transport's** (2026-08-26): the plan for this work put it
+  on the `Transport` port, on the grounds that a native shell may know it from the platform. It sits
+  in the client instead — every request already passes through the client's own api layer, which is
+  the only place that distinguishes a pool that said no from one that said nothing, and the probe is
+  a `/v1` route the client has typed. One implementation and one backoff, rather than one per
+  adapter. The argument for the port was never that a shell *could* compute it too — it is that a
+  native platform signal answers **without a round trip**, where the probe costs a request per
+  backoff tick. That is the condition to revisit under, and nothing else is.
+- **The cache is capped and the working set is not** (2026-08-26): a browser may evict the database
+  under storage pressure anyway, so the cache is treated as a cache. What is capped is history,
+  because it is the part a re-read replaces for free.
+- **A changed pool identity drops the cache and keeps the outbox** (2026-08-26,
+  [ADR 23](../adr/0023-a-changed-pool-identity-drops-the-cache-and-keeps-the-outbox.md)): a rebuilt
+  pool has lost its tombstones, so a cached copy of something purged before it could never be
+  contradicted. The outbox is the one thing whose loss would cost work and the one thing that
+  replays safely regardless.
 - **The client owns state and exposes observables** (2026-08-17): the hard state logic lives in the
   shared package behind a `subscribe(fn)` seam, not in each shell.
 
@@ -537,10 +651,11 @@ that logic out of the one place it is meant to live.
 - [ ] 2026-08-17 — Whether the shared client is one package or splits — a headless core and a
       Svelte-binding layer — once a second shell (Tauri) actually exists. Not decided while there is
       one shell; the seam is designed so the split is cheap if wanted.
-- [ ] 2026-08-17 — The `Transport` port's shape in detail, settled with the code that first
-      implements it. *Half answered 2026-08-25*: `ClientStore` is settled, above, by the durable
-      adapter that first implemented it. What is left is reachability, which the transport does not
-      report yet.
+- [x] 2026-08-17 — The `Transport` port's shape in detail, settled with the code that first
+      implements it. *Answered 2026-08-26*: it is what it was. `ClientStore` was settled on
+      2026-08-25 by the durable adapter that first implemented it, and reachability — the one thing
+      still thought to be owed here — turned out to belong to the client rather than to the port
+      (above). The transport stays a way to reach `/v1` and to say where an asset's bytes are.
 - [ ] 2026-08-17 — Whether a shell should surface the outbox to the person — pending, draining,
       refused — as a visible list, or keep it invisible until something fails. The offline slice,
       where a drain can be long, is what forces the question.
@@ -589,5 +704,15 @@ that logic out of the one place it is meant to live.
   read.
 - A typed note, a voice memo and a shared link captured from one shell carry three different
   sources.
+- A client opened with the daemon down draws the queue and the feed from what it holds, marked as
+  what it holds, and the first page the pool answers replaces that rather than being appended to it.
+- A routed, an archived and a revised-from item are all absent from a cache-drawn queue and all
+  present in a cache-drawn feed.
+- An outbox filled with the daemon down drains when the daemon comes back, with nothing done to
+  prod it, and the client does not poll while the daemon is answering.
+- A daemon answering a different pool identity from the one the store holds leaves the client with
+  no cached items, the outbox intact, and something reported.
+- Cached history past the cap is evicted oldest-touched-first, and an item that is unprocessed or
+  has an undrained operation is not evicted whatever the cap says.
 - The shared client builds and runs with no UI framework imported, and a shell observes its state
   through the subscribe contract alone.

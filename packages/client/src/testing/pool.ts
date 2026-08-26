@@ -1,4 +1,5 @@
 import type { Item } from "../api/types";
+import { HEALTH } from "./transport";
 
 export function anItem(id: string, overrides: Partial<Item> = {}): Item {
   return {
@@ -16,6 +17,13 @@ export function anItem(id: string, overrides: Partial<Item> = {}): Item {
 
 export function routeOf(request: Request): string {
   return `${request.method} ${new URL(request.url).pathname}`;
+}
+
+/** What was asked of the pool, less the client's own start-up health probe. */
+export function asked(transport: {
+  readonly sent: readonly Request[];
+}): readonly Request[] {
+  return transport.sent.filter((request) => routeOf(request) !== HEALTH);
 }
 
 export function stoppedClock(start = "2026-08-17T12:00:00.000Z") {

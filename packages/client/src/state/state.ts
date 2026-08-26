@@ -3,6 +3,7 @@ import type {
   DestinationId,
   Item,
   ItemId,
+  PoolIdentity,
   RoutingRecord,
   RoutingSummary,
   TagUse,
@@ -12,6 +13,8 @@ import type { Order } from "../types";
 
 type RoutedTo = RoutingSummary["to"][number];
 
+export type Surface = "feed" | "queue";
+
 export type ListPage = {
   readonly order: Order;
   readonly ids: readonly ItemId[];
@@ -19,6 +22,12 @@ export type ListPage = {
   readonly after?: string;
   readonly exhausted: boolean;
   readonly loading: boolean;
+  /**
+   * Whether the rows this page holds came from the pool. A turn keeps the claim
+   * while it reads, and gives it up if that read fails: the surface is the
+   * client's own again the moment it holds nothing the pool gave it.
+   */
+  readonly answered: boolean;
   readonly failure?: string;
 };
 
@@ -31,10 +40,11 @@ export type ClientState = {
   readonly destinations: readonly Destination[];
   /** What completion offers, most used first, as the pool last counted it. */
   readonly tags: readonly TagUse[];
+  readonly pool?: PoolIdentity;
 };
 
 export function emptyPage(order: Order): ListPage {
-  return { order, ids: [], exhausted: false, loading: false };
+  return { order, ids: [], exhausted: false, loading: false, answered: false };
 }
 
 export function emptyState(): ClientState {
@@ -45,6 +55,16 @@ export function emptyState(): ClientState {
     outbox: [],
     destinations: [],
     tags: [],
+  };
+}
+
+export function rebuilt(state: ClientState, pool: PoolIdentity): ClientState {
+  return {
+    ...state,
+    pool,
+    items: new Map(),
+    feed: emptyPage(state.feed.order),
+    queue: emptyPage(state.queue.order),
   };
 }
 
@@ -97,6 +117,30 @@ function behind(order: Order, one: string, other: string): boolean {
   return order === "oldest-first" ? one > other : one < other;
 }
 
+/** No rows, no position, no end: nothing an arrival could be placed into. */
+export function unpositioned(page: ListPage): boolean {
+  return page.ids.length === 0 && page.after === undefined && !page.exhausted;
+}
+
+/** Whether a surface draws itself rather than the page the pool answered for it. */
+export function fromCache(page: ListPage): boolean {
+  return !page.answered;
+}
+
+export function drawnFrom(
+  state: ClientState,
+  surface: Surface,
+): readonly Item[] {
+  const { order } = state[surface];
+  const held = [...state.items.values()].filter(
+    (item) => surface === "feed" || unprocessed(item),
+  );
+
+  return held.sort((one, other) =>
+    behind(order, rank(one), rank(other)) ? 1 : -1,
+  );
+}
+
 /**
  * Whether an item falls inside what a page has actually read. The pool's
  * position is `<at>,<id>` — the last row it handed over — so it answers this
@@ -129,6 +173,10 @@ export function intoPage(
   id: ItemId,
   items: ReadonlyMap<ItemId, Item>,
 ): readonly ItemId[] {
+  // Nothing to place into a page with no window: either the cache draws the
+  // surface and already holds this, or a read is about to replace it wholesale.
+  if (unpositioned(page)) return page.ids;
+
   const inserted = items.get(id);
   if (inserted === undefined || page.ids.includes(id)) return page.ids;
   if (!loaded(page, inserted)) return page.ids;

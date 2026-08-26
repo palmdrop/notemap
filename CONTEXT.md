@@ -321,6 +321,13 @@ what was read. Pending operations are not re-applied: what they changed was writ
 along with them.
 _Avoid_: rehydration, restore, boot, warm-up, sync
 
+**Cache**:
+The items a client holds, and what its surfaces are drawn from until the pool answers for one. A
+copy, never an authority: everything in it can be re-read, so it is dropped without ceremony when
+it describes a pool that is no longer there. What the client can see is unprocessed is its working
+set and is kept whatever its size; the rest is history and is capped.
+_Avoid_: local store, offline copy, snapshot, mirror
+
 **Outbox**:
 A client's ordered set of pending mutations, held locally and drained to the pool — at once when
 it can reach it, on reconnect when it cannot. Carries captures and classification, never
