@@ -200,3 +200,27 @@ test("reads from the end the reader last chose, not the one the feed defaults to
   );
   expect(new URL(read!.url).searchParams.get("order")).toBe("oldest-first");
 });
+
+/**
+ * Two claims about two subjects: what became of the item in the pool, and what
+ * this client has not sent yet. A row can carry both at once.
+ */
+test("says an archived row is archived and still pending", async () => {
+  const transport = pool(
+    held(
+      anItem("gone", { archived: { archivedAt: "2026-08-17T07:15:00.000Z" } }),
+    ),
+  );
+
+  render(Feed);
+  await screen.findByText("archived");
+  transport.unreachable(true);
+
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  const field = screen.getByLabelText("Add a tag");
+  await fireEvent.input(field, { target: { value: "reading" } });
+  await fireEvent.submit(field.closest("form") as HTMLFormElement);
+
+  expect(await screen.findByText("pending")).toBeDefined();
+  expect(screen.getByText("archived")).toBeDefined();
+});

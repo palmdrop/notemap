@@ -7,32 +7,46 @@
   import Action from "$components/primitives/controls/Action.svelte";
   import Body from "$components/primitives/register/Body.svelte";
   import Foot from "$components/primitives/register/Foot.svelte";
+  import Notice from "$components/primitives/register/Notice.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
+  import { CACHED } from "$lib/cached";
   import { client } from "$lib/client";
   import { orderFor } from "$lib/order";
+  import { pending } from "$lib/pending.svelte";
   import { rail } from "$lib/rail.svelte";
 
   const SURFACE = "feed";
 
   const feed = client.feed;
+  const undrained = pending();
+
+  const cached = $derived($feed.fromCache && !$feed.loading);
+
+  // Only the read the pool refused: an unreachable one is stated in the chrome
+  // and nowhere else.
+  const refusal = $derived(
+    $feed.failure?.refused === true ? $feed.failure : undefined,
+  );
 
   const bare = $derived(
-    !$feed.loading && $feed.failure === undefined && $feed.items.length === 0,
+    !$feed.loading &&
+      !$feed.fromCache &&
+      $feed.failure === undefined &&
+      $feed.items.length === 0,
   );
 
   onMount(() => void client.loadFeed(orderFor(SURFACE, page.url)));
 </script>
 
 <Register furled={rail.furled} onfurl={() => rail.toggle()}>
-  {#if $feed.failure !== undefined}
-    <Rail first>feed</Rail>
-    <Body first>
-      <span role="status" class="font-mono text-accent"
-        >{$feed.failure.said}</span
-      >
-    </Body>
+  {#if cached}
+    <Notice first surface="feed" said={CACHED} />
+  {/if}
+
+  {#if refusal !== undefined}
+    <Notice first={!cached} surface="feed" said={refusal.said} alarm />
   {/if}
 
   {#if bare}
@@ -45,8 +59,9 @@
   {#each $feed.items as item, at (item.id)}
     <FeedRow
       {item}
-      first={at === 0 && $feed.failure === undefined}
+      first={at === 0 && !cached && refusal === undefined}
       furled={rail.furled}
+      pending={undrained.has(item.id)}
     />
   {/each}
 

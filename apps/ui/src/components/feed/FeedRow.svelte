@@ -8,6 +8,7 @@
   import ActionRow from "$components/primitives/controls/ActionRow.svelte";
   import Body from "$components/primitives/register/Body.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
+  import Pending from "$components/primitives/marks/Pending.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import { client } from "$lib/client";
@@ -17,7 +18,13 @@
     item,
     first = false,
     furled = false,
-  }: { item: Item; first?: boolean; furled?: boolean } = $props();
+    pending = false,
+  }: {
+    item: Item;
+    first?: boolean;
+    furled?: boolean;
+    pending?: boolean;
+  } = $props();
 
   const word = $derived(became(item));
   const archived = $derived(item.archived !== undefined);
@@ -30,6 +37,10 @@
 
   {#if word !== undefined}
     <StateWord {word} />
+  {/if}
+
+  {#if pending}
+    <Pending />
   {/if}
 
   <!-- Tagging replays from the outbox, so it survives on every row, finished or not. -->

@@ -3,7 +3,8 @@ import { afterEach, expect, test, vi } from "vitest";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
-import { asked, pool } from "../../testing/pool";
+import { asked, client, pool } from "../../testing/pool";
+import { CACHED } from "$lib/cached";
 import { briefly } from "$lib/stamp";
 import { online } from "../../testing/dom";
 import { rail } from "$lib/rail.svelte";
@@ -212,3 +213,111 @@ test("reads from the end the reader last chose, not the one the queue defaults t
   );
   expect(new URL(read!.url).searchParams.get("order")).toBe("newest-first");
 });
+
+/** What the compose row's own capture is stamped as before the pool takes it. */
+function taken(request: Request) {
+  return request.json().then((body) => {
+    const envelope = body as { id: string; source: string; payload: unknown };
+    return json(201, {
+      kind: "captured",
+      item: anItem(envelope.id, {
+        source: envelope.source,
+        payload: envelope.payload as ReturnType<typeof anItem>["payload"],
+      }),
+      matchedOn: "id",
+    });
+  });
+}
+
+async function capture(said: string) {
+  const written = screen.getByLabelText("What to capture");
+  await fireEvent.input(written, { target: { value: said } });
+  return fireEvent.click(screen.getByRole("button", { name: "capture" }));
+}
+
+test("says a capture is pending until the pool has taken it", async () => {
+  const transport = pool((request) =>
+    routeOf(request) === "POST /v1/captures"
+      ? taken(request)
+      : json(200, { values: [] }),
+  );
+
+  render(Queue);
+  await screen.findByText("zero");
+  transport.unreachable(true);
+
+  await capture("made with the pool out of reach");
+  await screen.findByText("made with the pool out of reach");
+  expect(await screen.findByText("pending")).toBeDefined();
+
+  transport.unreachable(false);
+  await client.drain();
+
+  await vi.waitFor(() => {
+    expect(screen.queryByText("pending")).toBeNull();
+  });
+  expect(screen.getByText("made with the pool out of reach")).toBeDefined();
+});
+
+/** A refusal will not drain, so it is not what the quiet mark is about. */
+test("does not draw a refused operation as pending", async () => {
+  pool((request) =>
+    routeOf(request) === "POST /v1/items/one/archive"
+      ? json(409, { error: { code: "already-archived" } })
+      : queued("one")(request),
+  );
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.click(screen.getByRole("button", { expanded: false }));
+  await fireEvent.click(screen.getByRole("button", { name: "archive" }));
+
+  // The pool put the row back, and the operation it refused is still held.
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/archive");
+    expect(screen.queryByText("zero")).toBeNull();
+  });
+  expect(screen.queryByText("pending")).toBeNull();
+});
+
+test("says a cold surface is what the client holds, and stops once the pool answers", async () => {
+  const transport = pool(queued("one"));
+  transport.unreachable(true);
+
+  render(Queue);
+  expect(await screen.findByText(CACHED)).toBeDefined();
+
+  transport.unreachable(false);
+  await client.loadQueue();
+
+  expect(await screen.findByText("one")).toBeDefined();
+  await vi.waitFor(() => {
+    expect(screen.queryByText(CACHED)).toBeNull();
+  });
+});
+
+/** Unreachable is the chrome's to say, once; a refusal needs a person here. */
+test("draws the read the pool refused and not the one it never answered", async () => {
+  const transport = pool(queued("one"));
+  transport.unreachable(true);
+
+  render(Queue);
+  await screen.findByText(CACHED);
+  expect(screen.queryByText("the daemon is not reachable")).toBeNull();
+
+  transport.unreachable(false);
+  pool((request) =>
+    routeOf(request) === "GET /v1/queue"
+      ? json(400, { error: { code: "bad-position" } })
+      : json(200, { values: [] }),
+  );
+
+  cleanup();
+  render(Queue);
+
+  expect(
+    await screen.findByText("the app lost its place in the list; reload"),
+  ).toBeDefined();
+});
+
