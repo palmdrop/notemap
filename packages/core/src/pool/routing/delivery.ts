@@ -1,8 +1,8 @@
 import { usability } from "../destinations/usability";
-import type { PoolPorts } from "../../types/api/ports";
-import type { Asset } from "../../types/domain/asset";
-import type { RoutingRecordId } from "../../types/domain/ids";
-import type { Item } from "../../types/domain/item";
+import type { PoolPorts } from "#types/api/ports";
+import type { Asset } from "#types/domain/asset";
+import type { RoutingRecordId } from "#types/domain/ids";
+import type { Item } from "#types/domain/item";
 import type {
   AttemptableDelivery,
   DeliveredAsset,
@@ -10,9 +10,9 @@ import type {
   DeliveryOutcome,
   DeliveryRequest,
   RoutingRecord,
-} from "../../types/domain/routing";
-import type { WorkOutcome } from "../../types/domain/work";
-import type { JsonObject } from "../../types/json";
+} from "#types/domain/routing";
+import type { WorkOutcome } from "#types/domain/work";
+import type { JsonObject } from "#types/json";
 
 /** The abandoned surface has to keep these apart: only the last warrants checking the destination. */
 export const DELIVERY_FAILURE = {

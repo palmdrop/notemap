@@ -1,23 +1,23 @@
 import { recordAction } from "../actions";
 import { enqueueMirrorRemove, enqueueMirrorWrite } from "../mirror";
-import { sameJson } from "../../utils/json";
-import { ok, refused } from "../../utils/result";
-import type { PoolPorts, PoolTx } from "../../types/api/ports";
+import { sameJson } from "#utils/json";
+import { ok, refused } from "#utils/result";
+import type { PoolPorts, PoolTx } from "#types/api/ports";
 import type {
   DestinationDeletionRefusal,
   DestinationRefusal,
   RetireRefusal,
-} from "../../types/api/refusal";
+} from "#types/api/refusal";
 import type {
   Destination,
   DestinationChanges,
   DestinationDraft,
   DestinationRecord,
-} from "../../types/domain/destination";
-import type { DestinationId, Timestamp } from "../../types/domain/ids";
-import type { JsonObject } from "../../types/json";
-import type { ActionKind } from "../../types/domain/action-log";
-import type { Result } from "../../types/result";
+} from "#types/domain/destination";
+import type { DestinationId, Timestamp } from "#types/domain/ids";
+import type { JsonObject } from "#types/json";
+import type { ActionKind } from "#types/domain/action-log";
+import type { Result } from "#types/result";
 import { declaredKind } from "./usability";
 
 type Created = Result<Destination, DestinationRefusal>;
