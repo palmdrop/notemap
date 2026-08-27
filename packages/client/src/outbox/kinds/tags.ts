@@ -1,7 +1,7 @@
-import { answered, type Api } from "../../api/http";
-import type { Item, Tag } from "../../api/types";
-import { unchanged, type Applied } from "../../state/applied";
-import { cached, type ClientState } from "../../state/state";
+import { answered, type Api } from "#api/http";
+import type { Item, Tag } from "#api/types";
+import { unchanged, type Applied } from "#state/applied";
+import { cached, type ClientState } from "#state/state";
 import { replacing, type Handler, type Settlement } from "../handler";
 import type { Operation } from "../operations";
 

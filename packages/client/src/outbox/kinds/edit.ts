@@ -1,8 +1,8 @@
-import { answered } from "../../api/http";
-import type { Item } from "../../api/types";
-import { uploaded } from "../../assets/assets";
-import { unchanged, type Applied } from "../../state/applied";
-import { cached, revised, type ClientState } from "../../state/state";
+import { answered } from "#api/http";
+import type { Item } from "#api/types";
+import { uploaded } from "#assets/assets";
+import { unchanged, type Applied } from "#state/applied";
+import { cached, revised, type ClientState } from "#state/state";
 import { replacing, type Handler, type Settlement } from "../handler";
 
 export const edit: Handler<"edit"> = {

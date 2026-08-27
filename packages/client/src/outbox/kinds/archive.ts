@@ -1,7 +1,7 @@
-import { answered } from "../../api/http";
-import type { Item, ItemId } from "../../api/types";
-import { unchanged, type Applied } from "../../state/applied";
-import { cached, withIds, without } from "../../state/state";
+import { answered } from "#api/http";
+import type { Item, ItemId } from "#api/types";
+import { unchanged, type Applied } from "#state/applied";
+import { cached, withIds, without } from "#state/state";
 import { replacing, type Handler } from "../handler";
 
 function replaced(

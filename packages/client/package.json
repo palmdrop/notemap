@@ -8,6 +8,13 @@
     "./testing": "./src/testing/index.ts",
     "./indexeddb": "./src/adapters/indexeddb-store.ts"
   },
+  "imports": {
+    "#api/*": "./src/api/*.ts",
+    "#state/*": "./src/state/*.ts",
+    "#assets/*": "./src/assets/*.ts",
+    "#capture/*": "./src/capture/*.ts",
+    "#testing/*": "./src/testing/*.ts"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
