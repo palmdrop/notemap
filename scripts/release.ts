@@ -121,8 +121,20 @@ run("git", ["tag", tag]);
 
 console.log(`release: notemap ${before} -> ${after}`);
 
-run("git", ["push", "origin", BRANCH]);
-run("git", ["push", "origin", tag]);
+/**
+ * Both refs or neither. Two pushes can leave the release commit on the remote
+ * with no tag naming it, which builds nothing and reads like a release that
+ * happened.
+ */
+const push = ["push", "--atomic", "origin", BRANCH, tag];
+const pushed = spawnSync("git", push, { encoding: "utf8" });
+if (pushed.status !== 0) {
+  fail(
+    `${tag} is committed and tagged here, and nothing reached origin:\n` +
+      `${pushed.stderr || pushed.stdout}\n` +
+      `retry with: git ${push.join(" ")}`,
+  );
+}
 
 console.log(`release: pushed ${tag}`);
 console.log(`release: CI is building ghcr.io/palmdrop/notemap:${tag}`);
