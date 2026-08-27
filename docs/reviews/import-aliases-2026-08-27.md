@@ -1,7 +1,7 @@
 # Review: Import aliases (`imports` field / `$testing`)
 
 **Date**: 2026-08-27
-**Status**: Partially addressed
+**Status**: Resolved
 **Scope**: `5810803..e598a50` — `packages/core`, `packages/client`, `apps/ui`, `AGENTS.md`
 **Plan**: none — these changes were made without one
 
@@ -163,4 +163,5 @@ checks it.
    imported; nothing imports it.
 7. **Won't fix.** `#api/*` still misses `src/api/generated.d.ts`. Nothing reaches it across a
    folder, and adding a map entry for a file with one sibling consumer buys nothing.
-8. **Open.** No ADR written. The reasoning lives in `AGENTS.md:110-114`.
+8. **Fixed.** `docs/adr/0025-cross-folder-aliases-live-in-the-imports-field.md`. AGENTS.md
+   keeps the rule and points at it.

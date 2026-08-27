@@ -1,7 +1,7 @@
 # Review: Import aliases, PR #33 as a whole
 
 **Date**: 2026-08-27
-**Status**: Partially addressed
+**Status**: Resolved
 **Scope**: `main...agent/import-aliases` — `packages/core`, `packages/client`, `apps/ui`,
 `AGENTS.md`, `docs/reviews/import-aliases-2026-08-27.md`
 **Plan**: none — stated in the PR body
@@ -136,7 +136,7 @@ opposite and its resolutions 1 and 3 stand as what was known then; this supersed
 1. **Fixed.** 195 imports rewritten — every crossing into a folder its package aliases now goes
    through the alias, in both `packages/core` and `packages/client`. Purely mechanical
    (`../types/` → `#types/` and so on), and nothing was converted that stays inside a folder:
-   `../handler`, `../actions` and `../destinations/usability` are untouched. `AGENTS.md:104-115`
+   `../handler`, `../actions` and `../destinations/usability` are untouched. `AGENTS.md:104-113`
    now says that the sweep is what holds the preference up, in place of the earlier claim that
    the tree still reaches across relatively.
 2. **Fixed.** `#outbox/*` and `#ports/*` added to `packages/client/package.json`, the two
@@ -147,10 +147,12 @@ opposite and its resolutions 1 and 3 stand as what was known then; this supersed
 3. **Fixed** by the sweep. `#testing/*` has 18 importers now that the crossings into
    `src/testing/` were converted; it was dead only because those imports were the ones left
    spelled `../`.
-4. **Fixed.** `docs/reviews/import-aliases-2026-08-27.md` flipped to `Partially addressed`, its
-   finding 8 being open.
-5. **Open.** No ADR. `AGENTS.md:117-124` still carries the `imports`-vs-`paths` reasoning, now
-   with the sigil question beside it.
+4. **Fixed.** `docs/reviews/import-aliases-2026-08-27.md` was flipped to `Partially addressed`
+   while its finding 8 stood, and back to `Resolved` once 5 below closed it.
+5. **Fixed.** `docs/adr/0025-cross-folder-aliases-live-in-the-imports-field.md` records why
+   `imports` beats tsconfig `paths` here, why the app is the exception, and why the two sigils
+   are not a choice. `AGENTS.md:104-113` keeps the rule and points at it, down from twenty-one
+   lines to nine.
 
 Verified after the sweep: `pnpm -r typecheck`, `pnpm -r --silent test`, `pnpm lint`,
 `pnpm format:check`, `pnpm build` and `pnpm test:stack` (8 files, 15 tests) all pass.

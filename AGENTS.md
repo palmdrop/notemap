@@ -101,27 +101,15 @@ Keep files small and grouped by concern, in folders — routes, middleware, sche
 types, utils, constants. A flat directory of everything is not a structure. Tests live beside
 what they test.
 
-Within a folder, import relatively. Reaching across a top-level folder under `src/` prefers an
-alias: `#types/domain/ids` rather than `../../types/domain/ids`. Moving an aliased folder then
-stops rewriting its callers, and the `..` that remains is left saying something — `../handler`
-reaches the root of the folder the file belongs to, which is a real relation, not a count of
-directories.
+Within a folder, import relatively. Reaching across a top-level folder under `src/` goes through
+an alias where one exists — `#types/domain/ids`, not `../../types/domain/ids` — which leaves `..`
+saying one thing: the folder the file belongs to.
 
-A preference, not a rule, and nothing checks it. What holds it up is that the sweep was done:
-in `packages/core` and `packages/client`, every crossing into a folder they alias goes through
-the alias, so there is no second spelling to copy. The alias still has to exist to be used —
-`apps/daemon` declares none, and a package names the folders it aliases and stops there. Write
-the alias where one is declared, add one where a folder is reached across often enough to earn
-it, and reach relatively where neither applies.
-
-Aliases live in the `imports` field of the package's own `package.json`. Not tsconfig `paths`:
-these packages export TypeScript source, so the daemon's esbuild and the app's Vite build compile
-each other's `src/` directly, and neither reads a dependency's tsconfig. `imports` travels in the
-manifest every resolver already opens. The app is the exception — SvelteKit owns resolution
-there, so its aliases stay in `vite.config.ts` beside `$components`.
-
-Hence the two sigils, which are not a choice: an `imports` key must begin with `#`, and
-SvelteKit's own are `$lib` and `$app`. Whoever owns resolution names the alias.
+Aliases live in the `imports` field of the package's own `package.json`, and in
+`apps/ui/vite.config.ts` for the app ([ADR 0025](docs/adr/0025-cross-folder-aliases-live-in-the-imports-field.md)).
+A package names the folders it aliases and stops there; `apps/daemon` names none, and a crossing
+no alias covers stays relative. Add an entry where a folder is reached across often enough to
+earn one and convert its callers in the same change. Nothing checks any of this.
 
 ## Git
 
