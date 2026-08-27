@@ -3,6 +3,9 @@
 *.env
 !*.env.example
 !.env.example
+# The deploy folder is copied to a host whole, so its .env ships with it. It
+# holds an image tag and a network name; a secret must never go in this one.
+!docker/compose/.env
 *.pem
 *.key
 

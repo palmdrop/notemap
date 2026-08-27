@@ -16,6 +16,11 @@ const EXAMPLE = fileURLToPath(
   new URL("../../config.example.toml", import.meta.url),
 );
 
+/** The file the compose files mount, which is a deployment rather than an example. */
+const CONTAINER = fileURLToPath(
+  new URL("../../../../docker/compose/config.toml", import.meta.url),
+);
+
 const parse = (source: string) => parseConfig(source, "test.toml").config;
 
 /** What the daemon ignored, which is a warning rather than a refusal. */
@@ -71,6 +76,54 @@ describe("the example config", () => {
         },
       },
     ]);
+  });
+});
+
+describe("the container config", () => {
+  it("is a config this daemon can load", () => {
+    const { config, warnings } = parseConfig(
+      readFileSync(CONTAINER, "utf8"),
+      "container.toml",
+    );
+
+    expect(warnings).toEqual([]);
+    expect(config.port).toBe(4747);
+    // Every interface: a container that binds loopback is reachable from nothing.
+    expect(config.host).toBe("0.0.0.0");
+    expect(config.pool).toBe("/var/lib/notemap/state/notemap.db");
+    expect(config.mirror?.root).toBe("/var/lib/notemap/pool-mirror");
+    expect(config.assets.root).toBe("/var/lib/notemap/assets");
+    expect(config.delivery).toEqual({
+      pollIntervalMs: 5_000,
+      leaseForMs: 300_000,
+      batch: 4,
+    });
+    expect(config.poolConfig.sources.map((source) => source.id)).toEqual([
+      "web-manual",
+      "web-image",
+    ]);
+    expect(config.poolConfig.payloadTypes.map((type) => type.name)).toEqual([
+      "text",
+      "image",
+    ]);
+  });
+
+  /** The pool, the mirror and the assets are one backup unit, so one volume holds all three. */
+  it("keeps every path it writes under the volume", () => {
+    const { config } = parseConfig(
+      readFileSync(CONTAINER, "utf8"),
+      "container.toml",
+    );
+
+    for (const path of [config.pool, config.mirror?.root, config.assets.root]) {
+      expect(path).toMatch(/^\/var\/lib\/notemap\//);
+    }
+  });
+
+  it("declares no destinations, which are pool state rather than config", () => {
+    expect(readFileSync(CONTAINER, "utf8")).not.toMatch(
+      /^\[\[destinations\]\]/m,
+    );
   });
 });
 

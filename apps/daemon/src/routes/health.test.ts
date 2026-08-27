@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import { daemon, type Daemon } from "../testing/fixture";
+import { VERSION } from "../version";
 
 const open: Daemon[] = [];
 
@@ -15,7 +16,7 @@ afterEach(async () => {
 });
 
 const body = (response: Response) =>
-  response.json() as Promise<{ pool: string }>;
+  response.json() as Promise<{ pool: string; version: string }>;
 
 describe("GET /v1/health", () => {
   it("answers 200 with the identity of the pool it is serving", async () => {
@@ -37,6 +38,23 @@ describe("GET /v1/health", () => {
     const again = await body(await host.app.request("/v1/health"));
 
     expect(again.pool).toBe(first.pool);
+  });
+
+  it("answers the version the daemon was built from", async () => {
+    const host = started();
+
+    const response = await host.app.request("/v1/health");
+
+    expect((await body(response)).version).toBe(VERSION);
+  });
+
+  /** Two daemons over two pools are one build, so the version cannot be the pool's. */
+  it("answers one version whatever pool it is holding", async () => {
+    const one = await body(await started().app.request("/v1/health"));
+    const other = await body(await started().app.request("/v1/health"));
+
+    expect(other.version).toBe(one.version);
+    expect(other.pool).not.toBe(one.pool);
   });
 
   it("says a different pool is a different pool", async () => {

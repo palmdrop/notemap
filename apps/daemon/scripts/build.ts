@@ -1,11 +1,20 @@
-import { build } from "esbuild";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+
+import { build } from "esbuild";
 
 import { bundleUi } from "./bundle-ui.ts";
 import { vendorSwaggerUi } from "./vendor-swagger.ts";
 
 const entry = (name: string) =>
   fileURLToPath(new URL(`../src/${name}.ts`, import.meta.url));
+
+/** The workspace version. One number for the daemon, the app and the image. */
+const version = (
+  JSON.parse(
+    readFileSync(new URL("../../../package.json", import.meta.url), "utf8"),
+  ) as { version: string }
+).version;
 
 vendorSwaggerUi();
 bundleUi();
@@ -24,5 +33,6 @@ await build({
   target: "node24",
   packages: "bundle",
   external: ["node:*"],
+  define: { __NOTEMAP_VERSION__: JSON.stringify(version) },
   logLevel: "info",
 });

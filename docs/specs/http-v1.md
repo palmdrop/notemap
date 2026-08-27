@@ -5,6 +5,11 @@ editing, destinations, routing to one and health are settled; the rest is stub
 **Last updated**: 2026-08-25
 **Shipped**:
 
+- 2026-08-27 — **`GET /v1/health` answers the daemon's version**, baked in at bundle time from the
+  workspace version and matching the image tag. Amends this document's own line that nothing but
+  the pool identity belonged there: a container behind a proxy has an operator, and they have to be
+  able to ask what is running. ([plan](../plans/run-story.md))
+
 - 2026-08-25 — **The uploader mints the asset id.** `PUT /v1/assets/{id}` replaces
   `POST /v1/assets`: the bytes still go up raw under the same headers, but under an id the caller
   chose, so a capture's envelope can name its assets before anything is sent. A first upload is
@@ -175,7 +180,8 @@ whose answer says whether the edit became an amendment or a revision.
 Settled (2026-08-20): `GET /v1/tags`, and `routing` on the `Item` — a summary of where an item has
 been, carried by every read that answers items.
 
-Settled (2026-08-25): `GET /v1/health` — that the daemon is up, and which pool it is serving.
+Settled (2026-08-25, amended 2026-08-27): `GET /v1/health` — that the daemon is up, which pool it
+is serving, and its own version.
 
 Still stub, and unwritten below: suggestions and their decisions, artifacts and corrections, purge
 and tombstones, range requests over asset content, the wire form of sync delta reads, and
@@ -253,16 +259,25 @@ rather than the one the client wrote.
 
 ### Health
 
-`GET /v1/health` — that the daemon is up, and which pool it is holding.
+`GET /v1/health` — that the daemon is up, which pool it is holding, and what it is.
 
 ```json
-{ "pool": "a1c9f2e4-6b30-4d51-9e7a-2f8b40c1d6e3" }
+{ "pool": "a1c9f2e4-6b30-4d51-9e7a-2f8b40c1d6e3", "version": "0.2.0" }
 ```
 
 - **Liveness is the `200` itself.** The route has no refusals: a daemon that cannot answer is not
   answering, and a body reporting its own unhealthiness would be a fiction the connection already
-  disproved. Nothing else is in it — no version, no schema number, no uptime — because nothing asks
-  for those yet, and a field no client reads is one the next reader has to work out the meaning of.
+  disproved.
+- **The version is the release the daemon was built from** — the workspace version, baked in at
+  bundle time, and the same number the image is tagged with. It says what this daemon *is*, never
+  anything about the pool: an upgrade changes it and nothing in the pool moves. A daemon that was
+  not built — a test run, or the source run directly — answers `0.0.0-dev`, because a number there
+  would be a claim about a release nobody cut.
+- *Amended 2026-08-27.* This section previously said nothing else belonged in the response, "no
+  version, no schema number, no uptime — because nothing asks for those yet". Something does now:
+  the daemon is deployed as a container behind a proxy ([security.md](security.md)), and the person
+  running it has to be able to ask what is running rather than infer it from an image tag that
+  `latest` makes a lie. The reasoning stands for schema number and uptime, which stay out.
 - **The pool identity is opaque**, minted with the pool and stable for as long as that pool exists.
   It says *which* pool, never anything about it: not its age, not its size, and not the daemon
   serving it. Two daemons over one pool answer one identity.

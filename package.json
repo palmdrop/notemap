@@ -1,15 +1,18 @@
 {
   "name": "notemap",
+  "version": "0.0.0",
   "private": true,
+  "packageManager": "pnpm@11.20.0",
   "type": "module",
   "engines": {
     "node": ">=24"
   },
   "scripts": {
     "dev": "node scripts/dev.ts",
+    "release": "node scripts/release.ts",
     "seed": "node scripts/seed.ts",
     "build": "pnpm --filter @notemap/ui build && pnpm --filter @notemap/daemon build",
-    "typecheck": "pnpm -r typecheck",
+    "typecheck": "tsc -p tsconfig.json && pnpm -r typecheck",
     "test": "pnpm -r test",
     "test:stack": "pnpm --filter @notemap/full-stack-tests test:stack",
     "lint": "eslint .",
@@ -22,13 +25,14 @@
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "11.20.0",
+      "version": "11.x",
       "onFail": "download"
     }
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@notemap/seed": "workspace:*",
+    "@types/node": "^24.10.1",
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-svelte": "^3.23.0",
