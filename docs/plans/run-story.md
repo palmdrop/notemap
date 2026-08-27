@@ -70,20 +70,20 @@ Depends on phase 1.
 
 Depends on nothing; lands after phase 2 to keep the commits legible.
 
-- [ ] `packaging/docker/config.toml`, the file the compose service mounts: the state paths under the
+- [x] `packaging/docker/config.toml`, the file the compose service mounts: the state paths under the
       volume, `host = "0.0.0.0"`, the `text` and `image` payload types, the two web sources, the
       delivery cadence. `apps/daemon/config.example.toml` stays as the local-run example and gains a
       pointer to this one rather than being rewritten around a container
-- [ ] The container config binds every interface, and that is not the daemon relaxing: a container
+- [x] The container config binds every interface, and that is not the daemon relaxing: a container
       that binds loopback is reachable from nothing at all. The boundary moved to the network and
       the proxy, which is phase 4's business, and the file says so in one line
-- [ ] Both files say that **destinations are not config**: a vault is created in settings and lives
+- [x] Both files say that **destinations are not config**: a vault is created in settings and lives
       in the pool ([ADR 20](../adr/0020-destinations-are-pool-state.md)). A stale `[[destinations]]`
       is already ignored with a warning; where they went belongs in the file
-- [ ] `config/load.test.ts` reads the container config too, and holds it to what it claims. A
+- [x] `config/load.test.ts` reads the container config too, and holds it to what it claims. A
       config the daemon cannot load should fail in CI rather than on the box
-- [ ] Verify: `pnpm --filter @notemap/daemon test`
-- [ ] `git commit`
+- [x] Verify: `pnpm --filter @notemap/daemon test`
+- [x] `git commit`
 
 ### Phase 4 — what the boundary actually is now
 

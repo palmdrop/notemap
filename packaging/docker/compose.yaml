@@ -21,7 +21,14 @@ services:
 
     healthcheck:
       test:
-        ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:4747/v1/health"]
+        [
+          "CMD",
+          "wget",
+          "-q",
+          "-O",
+          "/dev/null",
+          "http://127.0.0.1:4747/v1/health",
+        ]
       interval: 30s
       timeout: 5s
       start_period: 10s

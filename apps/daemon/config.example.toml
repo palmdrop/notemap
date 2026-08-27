@@ -1,10 +1,17 @@
-# notemap daemon configuration.
+# notemap daemon configuration, for running the daemon on this machine.
 #
 # Copy to $XDG_CONFIG_HOME/notemap/config.toml (usually ~/.config/notemap/config.toml),
-# or pass --config <path>.
+# or pass --config <path>. Running it as a container instead? That deployment
+# has its own file, `packaging/docker/config.toml`, with the paths under the
+# volume and a bind address to match; this one stays the annotated reference.
 #
 # Keys are core's own names, so `docs/specs/core.md` reads as documentation for
 # this file. Absent lists mean empty.
+#
+# **Destinations are not in here.** A vault is created in settings and lives in
+# the pool, so it survives a reinstall and is edited without a restart. A
+# leftover `[[destinations]]` block is ignored with a warning on startup rather
+# than refused.
 
 [daemon]
 pool = "~/.local/share/notemap/state/notemap.db"
