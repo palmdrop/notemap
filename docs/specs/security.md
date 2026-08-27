@@ -4,6 +4,13 @@
 **Last updated**: 2026-08-27
 **Shipped**:
 
+- 2026-08-27 — **The containerised case, written down.** Notemap now runs as a container behind a
+  reverse proxy, where the daemon binds every interface by necessity and the bind-address section
+  no longer describes it. What limits reach is the absence of a published port, the one compose
+  network the service names, and the proxy in front — which carries TLS and authentication until
+  the daemon has a door of its own.
+  ([plan](../plans/run-story.md))
+
 - 2026-08-25 — **The one unauthenticated cross-origin write closed itself.** The upload became
   `PUT /v1/assets/{id}`, and `PUT` is never a simple method, so a cross-origin upload is
   preflighted and fails against a daemon that sends no `Access-Control-Allow-*`. This was not the

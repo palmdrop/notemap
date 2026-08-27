@@ -18,6 +18,11 @@ services:
     volumes:
       - state:/var/lib/notemap
       - ./config.toml:/etc/notemap/config.toml:ro
+      # A filesystem destination writes inside the container, so the vault it
+      # names has to be visible there. The path a destination is created with in
+      # settings is this one, not the host's. Writable by uid 1000, which is who
+      # the daemon runs as.
+      # - /srv/vault:/vault
 
     healthcheck:
       test:

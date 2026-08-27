@@ -1,7 +1,7 @@
 # The run story
 
 **Date**: 2026-08-26
-**Status**: Todo
+**Status**: In progress
 **Spec**: `docs/specs/security.md`
 **Closed**:
 
@@ -109,35 +109,36 @@ Depends on phase 2, which is the arrangement being described.
 
 Depends on phases 1–4: it describes them.
 
-- [ ] Root `README.md`: what notemap is, in the glossary's words, and the shortest path from a clone
+- [x] Root `README.md`: what notemap is, in the glossary's words, and the shortest path from a clone
       to a running container. Short, pointing at the rest rather than restating it
-- [ ] `docs/running.md`: build and deploy, the config, the proxy and what it must carry, what is in
+- [x] `docs/running.md`: build and deploy, the config, the proxy and what it must carry, what is in
       the volume and what to back up — the pool, the mirror and the assets are one unit, because
       rebuilding needs the mirror and the assets together — and how to upgrade: rebuild, `up -d`
-- [ ] The destinations section: create a `filesystem` destination in settings, route with
+- [x] The destinations section: create a `filesystem` destination in settings, route with
       `create-file` into a folder or `append-to-file` onto a note, and what a delivery writes —
       frontmatter carrying the item id, the source, the capture time and the tags, then the
       capture's own markdown. It says plainly that Nextcloud is not reachable yet and names the
       webdav plan
-- [ ] `docs/README.md`'s table gains the running doc
+- [x] `docs/README.md`'s table gains the running doc
 - [ ] Verify: follow it from a clone on the host, capture from a phone over the proxy, route into a
-      directory in a volume, and read the file back
-- [ ] `git commit`
+      directory in a volume, and read the file back — *done except the phone and the proxy, which
+      this machine has neither of. Capture, route and read-back were driven against the compose
+      service over its network on 2026-08-27.*
+- [x] `git commit`
 
 ---
 
 ## Unknowns
 
-- **`node:sqlite` on musl.** The store is Node's built-in SQLite, so an Alpine base should carry it
-  with no native build — but the pool is the one thing that must not be discovered wrong later.
-  Verify it in phase 1 by opening a pool in the image; fallback is a `-slim` Debian base, which
-  costs image size and nothing else.
-- **The uid that owns the volume.** A non-root container and a named volume disagree about ownership
-  until somebody chowns it. Fallback: the compose file declares the uid and the running doc says to
-  chown the volume once, rather than the image running as root.
-- **Whether the proxy terminates at a host root.** The shell is built for its own origin and the
-  daemon serves it at `/ui`; a proxy mounting it under a subpath is untested and may need a build
-  flag. Fallback: give it a hostname of its own, which is what the running doc will say.
+- ~~**`node:sqlite` on musl.**~~ Answered 2026-08-27: `node:24-alpine` carries it, and a pool opens
+  and is written to in the image. No Debian fallback needed.
+- ~~**The uid that owns the volume.**~~ Answered 2026-08-27: Docker initialises an empty *named*
+  volume from the ownership of the image path it covers, and the image chowns `/var/lib/notemap` to
+  uid 1000, so nothing has to be chowned. A **bind mount** does not work that way, which is why the
+  running doc says a mounted vault must be writable by uid 1000.
+- **Whether the proxy terminates at a host root.** Still open, and the running doc takes the
+  fallback: give it a hostname of its own. Note that the app is served from `/`, not `/ui` —
+  `/ui` answers only because every extensionless path falls through to the shell.
 - **Capture from a phone over the proxy.** The client is offline-capable and the shell is same-origin,
   so nothing here should be new — but it has never been used across a real network, and phase 5's
   verify is the first time. Anything that fails there is a finding, not a task in this plan.
