@@ -1,33 +1,52 @@
-# notemap
+# Notemap
 
-Notemap captures anything worth keeping into one **pool**, enriches it without altering it, and
-routes it out to wherever it actually lives. It is a conveyor belt, not an archive: items are
-supposed to leave.
+> NOTE: This is an experimental personal notetaking app. Development uses agentic development heavily. This README is an exception, and is NOT AI generated. 
+> NOTE: This repo comes with no guarantee. Notemap is in alpha, v1.0.0 is likely months away.
 
-A capture goes in from a phone or a browser. Classification is a person's, and cheap. A **routing**
-decision sends the item to a **destination** — a vault, a folder, another app — and what leaves is
-a file that keeps working with notemap gone. Everything is yours, on a machine you own: local-first,
-offline-friendly, self-hosted.
+`Notemap` is a working memory queue. 
 
-## Running it
+The problem: quick note taking often results in a big "working memory file" where links, thoughts, notes, quotes, movies to watch, 
+projects to start, end up. I've used this technique extensively for a long time. The problem: the file grows without bound. It is 
+disorganized and unstructured. Cleaning it up means copy pasting fragments to appropriate places, visiting links, and mostly just
+deleting things.
 
-One container, from a published image. Nothing is built on the machine that runs it — copy
-[`docker/compose/`](docker/compose) to it and:
+`Notemap` is a replacement for this. A queue of unprocessed notes, intended to be transferred to a more persistent location. 
+
+Captures can be tagged, edited, "enriched", and most importantly, *routed* to other locations. `Notemap` works with various 
+*routing adapters* that take the capture and transfers it to the appropriate place. A calendar entry, a todo item, a note 
+in an Obsidian vault, an Are.na channel, whatever. 
+
+`Notemap` keeps track of all the unprocessed and processed notes, and the full history can always be viewed in a feed. 
+Each capture tracks the routing history, which can be surveyed at any time.
+
+## Roadmap
+
+A rough roadmap.
+
+- Android/IOS App 
+- External Inboxes
+- Complex routing
+- More adapters
+
+## Core philosophy
+
+Full data ownership. Fully self-hostable. Works offline through a durable client using Indexeddb. 
+
+## Install
+
+Copy `docker/compose/` and run
 
 ```sh
-docker compose up -d                            # on this machine's loopback
-docker compose -f compose.proxy.yaml up -d      # behind your reverse proxy
+docker compose up -d                            
+docker compose -f compose.yaml up -d      
 ```
 
-Upgrading is a version in `.env` and `docker compose pull && up -d`.
+Upgrade by bumping the version in `.env` and run `docker compose pull && up -d`.
 
-There is **no authentication in notemap itself**: everything that reaches `/v1` can read and write
-the whole pool. The standalone file publishes on `127.0.0.1` only for that reason; the proxy file
-publishes nothing and expects the proxy to carry TLS and authentication.
-[docs/running.md](docs/running.md) is the whole story: the config, the proxy, the volume and what to
-back up, destinations, upgrades, releases.
+NOTE: No authentication yet. Recommend using a reverse proxy with auth for now. 
+Do not expose `Notemap` to the public internet.
 
-## Working on it
+## Development
 
 ```sh
 pnpm install
@@ -35,13 +54,6 @@ mkdir -p ~/.config/notemap && cp apps/daemon/config.example.toml ~/.config/notem
 pnpm dev
 ```
 
-`pnpm -r --silent test` prints nothing and says what happened through its exit code.
-[AGENTS.md](AGENTS.md) is the conventions and the reasoning behind them.
+---
 
-## The rest
-
-| | |
-|---|---|
-| [CONTEXT.md](CONTEXT.md) | The glossary. Every word above is defined there. |
-| [docs/](docs/README.md) | Specs, decisions, plans and reviews. |
-| [docs/running.md](docs/running.md) | Deploying and operating it. |
+Very WIP, more to come, etc.

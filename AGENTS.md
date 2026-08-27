@@ -80,6 +80,8 @@ That cuts both ways:
 - `docs/standards.md` — principles, formats, interop contract.
 - `docs/exploration/` — frozen. The design phase these were derived from, kept as rationale.
   Where it disagrees with an ADR, the ADR wins.
+- `README.md`- general information about Notemap, user- or developer-facing. THIS FILE IS WRITTEN
+  by hand, by the developer. Do not edit. You may, however, suggest edits and additions.
 
 ## Coding guidelines
 
