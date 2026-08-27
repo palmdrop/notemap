@@ -1,18 +1,18 @@
-# The compose project, so the container, the volume and the network are named
-# for what they are rather than for the directory this file sits in.
+# notemap behind a reverse proxy that already fronts your other apps.
+#
+# Copy this directory to the host, set `PROXY_NETWORK` in `.env` to the network
+# your proxy is already on, then `docker compose -f compose.proxy.yaml up -d`.
+# The proxy carries TLS and authentication; notemap has neither.
+
 name: notemap
 
 services:
   notemap:
-    build:
-      context: ../..
-      dockerfile: packaging/docker/Dockerfile
-    image: notemap
+    image: ghcr.io/palmdrop/notemap:${NOTEMAP_VERSION:-latest}
     restart: unless-stopped
 
-    # No `ports:`. The daemon has no authentication, so nothing reaches `/v1`
-    # except by way of the proxy, which reaches it by service name on the shared
-    # network. Publishing a port here would put the pool on the host's address.
+    # No `ports:`. The daemon is on no address the host publishes; the proxy
+    # reaches it as `http://notemap:4747` on the network below.
     networks: [proxy]
 
     volumes:
@@ -39,16 +39,15 @@ services:
       start_period: 10s
       retries: 3
 
-    # Room for the shutdown grace plus a delivery still in flight. A lease that
-    # expires with nothing reported is abandoned rather than retried, so killing
-    # the daemon mid-delivery costs a routing decision.
     stop_grace_period: 30s
 
 volumes:
-  # The pool, the mirror and the assets, which are one backup unit.
   state:
 
 networks:
+  # Yours, and already there — compose will not create it. Everything else on
+  # it reaches an unauthenticated `/v1`, so it should be the network the proxy
+  # is on and not a network everything on the host shares.
   proxy:
     external: true
-    name: ${NOTEMAP_PROXY_NETWORK:-proxy}
+    name: ${PROXY_NETWORK:?set PROXY_NETWORK in .env to your proxy's network}

@@ -7,6 +7,36 @@
 
 ---
 
+## Amended 2026-08-27 — the image is published, not built on the box
+
+Phases 1 and 2 assumed the machine that runs notemap also builds it: clone the repo, `docker compose
+up -d --build`. That is the wrong shape for the deployment this plan exists for. A homelab box should
+not need pnpm, a toolchain and a clone to run one daemon, and "update when I feel ready" should be a
+version number rather than a `git pull` and a rebuild.
+
+What changed, and why:
+
+- **The image is published to GHCR** by CI, on a tag and on every push to `main`. Deploying is
+  `docker compose pull && up -d`; the version is a line in `.env`; a rollback is that line changed
+  back. Nothing is built on the target.
+- **`packaging/docker/` became `Dockerfile` at the root and `docker/compose/`**, which is the layout
+  paperless-ngx uses. `packaging/` is the convention for a project shipping deb, rpm and brew
+  alongside an image, and notemap ships one image. What lands on the host is a deployment rather
+  than packaging.
+- **Two whole compose files, not one file plus an override.** `compose.yaml` publishes
+  `127.0.0.1:4747` and runs anywhere; `compose.proxy.yaml` publishes nothing and joins a named
+  external network. The original single file *required* an external network to exist, so
+  `docker compose up` failed on any machine that did not already have one — a shipped file that
+  cannot run is worse than two that can.
+- **The standalone file publishes a port**, which contradicts the "no `ports:`" line the first pass
+  wrote into `security.md`. Loopback-only is the same bargain the direct-run default makes, and it
+  is what makes the thing testable at all. The spec says so, and says why `4747:4747` is the edit
+  not to make.
+
+Phases 3, 4 and 5 stand; their files moved and their words changed to match.
+
+---
+
 ## Goal
 
 Notemap runs as a container on the machine that hosts the other self-hosted apps: an image built

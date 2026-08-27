@@ -1,0 +1,50 @@
+# notemap on its own: reachable from this machine and nothing else.
+#
+# Copy this directory to the host, edit `.env` and `config.toml`, then
+# `docker compose up -d`. Behind a reverse proxy? Use `compose.proxy.yaml`
+# instead — it is a whole file, not an overlay on this one.
+
+name: notemap
+
+services:
+  notemap:
+    image: ghcr.io/palmdrop/notemap:${NOTEMAP_VERSION:-latest}
+    restart: unless-stopped
+
+    # The host's loopback, not the host's addresses. `/v1` has no
+    # authentication, so `4747:4747` here would be the whole pool on the LAN.
+    ports:
+      - "127.0.0.1:4747:4747"
+
+    volumes:
+      - state:/var/lib/notemap
+      - ./config.toml:/etc/notemap/config.toml:ro
+      # A filesystem destination writes inside the container, so the vault it
+      # names has to be visible there. The path a destination is created with in
+      # settings is this one, not the host's. Writable by uid 1000, which is who
+      # the daemon runs as.
+      # - /srv/vault:/vault
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "-q",
+          "-O",
+          "/dev/null",
+          "http://127.0.0.1:4747/v1/health",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+    # Room for the shutdown grace plus a delivery still in flight. A lease that
+    # expires with nothing reported is abandoned rather than retried, so killing
+    # the daemon mid-delivery costs a routing decision.
+    stop_grace_period: 30s
+
+volumes:
+  # The pool, the mirror and the assets, which are one backup unit.
+  state:

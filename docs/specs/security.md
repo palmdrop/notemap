@@ -4,11 +4,11 @@
 **Last updated**: 2026-08-27
 **Shipped**:
 
-- 2026-08-27 — **The containerised case, written down.** Notemap now runs as a container behind a
-  reverse proxy, where the daemon binds every interface by necessity and the bind-address section
-  no longer describes it. What limits reach is the absence of a published port, the one compose
-  network the service names, and the proxy in front — which carries TLS and authentication until
-  the daemon has a door of its own.
+- 2026-08-27 — **The containerised case, written down.** Notemap now runs as a container from a
+  published image, where the daemon binds every interface by necessity and the bind-address section
+  no longer describes it. What limits reach is which of the two shipped compose files is used: a
+  port on the host's loopback, or no port and one named network with a proxy on it — which carries
+  TLS and authentication until the daemon has a door of its own.
   ([plan](../plans/run-story.md))
 
 - 2026-08-25 — **The one unauthenticated cross-origin write closed itself.** The upload became
@@ -97,24 +97,32 @@ or a WireGuard interface to bind to instead.
 
 ### In a container, the proxy is the boundary
 
-The deployment notemap is actually run in is a container: an image built from this repo, one compose
-service holding the pool, the mirror and the assets in one volume, no published port, and the
-reverse proxy that already fronts the other self-hosted apps on that machine
-(`packaging/docker/`, [the run story](../plans/run-story.md)).
+The deployment notemap is actually run in is a container: a published image, one compose service
+holding the pool, the mirror and the assets in one volume, and the reverse proxy that already fronts
+the other self-hosted apps on that machine (`docker/compose/`,
+[the run story](../plans/run-story.md)).
 
 **There the daemon binds every interface, and the section above does not describe it.** A container
 that binds `127.0.0.1` is reachable from nothing at all — not from the proxy, not from the host.
 `host = "0.0.0.0"` in the container's config is not the daemon relaxing; it is the loopback having
-moved. What limits reach is one level out, and all of it is outside notemap:
+moved. What limits reach is one level out, and all of it is outside notemap.
 
-- **No `ports:`.** The daemon is on no address the host publishes, so nothing on the LAN can find it
-  and neither can anything on the machine that is not on its network.
-- **One compose network, named.** The service declares the proxy's network, which is also what keeps
-  it off compose's default one. Anything on a shared Docker network reaches an unauthenticated `/v1`
-  in full — the pool is readable and writable by any container that can resolve the service name — so
-  putting notemap on the proxy's network is a decision to trust every other container that proxy
-  fronts. It is the smallest network that still has the proxy on it, not a safe one.
-- **The proxy in front**, which is the whole of what stands between `/v1` and whoever can reach it.
+Two compose files ship, and the difference between them is exactly this boundary:
+
+- **`compose.yaml` publishes `127.0.0.1:4747`.** The loopback moved into the container, so it is
+  published back out to the host's loopback and no further. Reaching it means already having code
+  execution on the machine, which is the same bargain the direct-run default makes. **`4747:4747`
+  is the mistake this is shaped to prevent**: it would put an unauthenticated pool on the LAN.
+- **`compose.proxy.yaml` publishes nothing** and joins one named external network instead. The
+  daemon is then on no address the host publishes, and the proxy reaches it by service name.
+  Anything else on that network reaches an unauthenticated `/v1` in full — the pool is readable and
+  writable by any container that can resolve the name — so putting notemap on the proxy's network is
+  a decision to trust every other container that proxy fronts. It is the smallest network that still
+  has the proxy on it, not a safe one, and it is named rather than defaulted so that it is never
+  quietly the network every container on the host shares.
+
+Running both at once is publishing the port *and* joining the network, which is the union of what
+each exposes rather than the intersection.
 
 ### What the proxy carries until the daemon has a door
 
@@ -273,6 +281,6 @@ account for every line of this list:
 - A body larger than the configured upload limit is refused, and the refusal names the limit.
 - The daemon's default bind address is `127.0.0.1`, and starting it on a wider one is possible
   only by writing that address into the configuration file.
-- The compose service publishes no port and names the network it joins, so it is never on compose's
-  default network.
+- The standalone compose file publishes on `127.0.0.1` only, and the proxy compose file publishes
+  no port at all and names the network it joins rather than defaulting to one.
 - The container's config binds `0.0.0.0`, and that address is in the file rather than in the image.

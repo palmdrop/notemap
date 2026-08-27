@@ -11,17 +11,21 @@ offline-friendly, self-hosted.
 
 ## Running it
 
-One container behind the reverse proxy you already run:
+One container, from a published image. Nothing is built on the machine that runs it — copy
+[`docker/compose/`](docker/compose) to it and:
 
 ```sh
-git clone https://github.com/palmdrop/notemap.git
-cd notemap/packaging/docker
-NOTEMAP_PROXY_NETWORK=proxy docker compose up -d --build
+docker compose up -d                            # on this machine's loopback
+docker compose -f compose.proxy.yaml up -d      # behind your reverse proxy
 ```
 
-There is no published port and no authentication in notemap itself — **the proxy carries TLS and
-authentication**. [docs/running.md](docs/running.md) is the whole story: the config, the proxy, the
-volume and what to back up, destinations, upgrades.
+Upgrading is a version in `.env` and `docker compose pull && up -d`.
+
+There is **no authentication in notemap itself**: everything that reaches `/v1` can read and write
+the whole pool. The standalone file publishes on `127.0.0.1` only for that reason; the proxy file
+publishes nothing and expects the proxy to carry TLS and authentication.
+[docs/running.md](docs/running.md) is the whole story: the config, the proxy, the volume and what to
+back up, destinations, upgrades, releases.
 
 ## Working on it
 

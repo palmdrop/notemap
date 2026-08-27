@@ -16,9 +16,9 @@ const EXAMPLE = fileURLToPath(
   new URL("../../config.example.toml", import.meta.url),
 );
 
-/** The file the compose service mounts, which is a deployment rather than an example. */
+/** The file the compose files mount, which is a deployment rather than an example. */
 const CONTAINER = fileURLToPath(
-  new URL("../../../../packaging/docker/config.toml", import.meta.url),
+  new URL("../../../../docker/compose/config.toml", import.meta.url),
 );
 
 const parse = (source: string) => parseConfig(source, "test.toml").config;

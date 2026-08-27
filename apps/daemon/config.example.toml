@@ -2,7 +2,7 @@
 #
 # Copy to $XDG_CONFIG_HOME/notemap/config.toml (usually ~/.config/notemap/config.toml),
 # or pass --config <path>. Running it as a container instead? That deployment
-# has its own file, `packaging/docker/config.toml`, with the paths under the
+# has its own file, `docker/compose/config.toml`, with the paths under the
 # volume and a bind address to match; this one stays the annotated reference.
 #
 # Keys are core's own names, so `docs/specs/core.md` reads as documentation for

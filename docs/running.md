@@ -1,41 +1,61 @@
 # Running notemap
 
-One container, one volume, no published port, behind the reverse proxy that already fronts your
-other self-hosted apps. Everything here lives in `packaging/docker/`.
+One container, one volume, from a published image. Nothing is built on the machine that runs it.
+
+Everything you copy to that machine is in [`docker/compose/`](../docker/compose): two compose files,
+the daemon's config, and an `.env` naming the version.
 
 ## What you need
 
-- Docker with the compose plugin.
-- A reverse proxy already on a Docker network, terminating TLS. **It has to carry authentication
-  too** — see [the proxy](#the-proxy).
+- Docker with the compose plugin. That is all — no clone, no pnpm, no toolchain.
+- If you are putting it behind a reverse proxy: one already running on a Docker network,
+  terminating TLS. **It has to carry authentication too** — see [the proxy](#behind-a-proxy).
 
-## From a clone to a running daemon
+## Get the files
 
 ```sh
-git clone https://github.com/palmdrop/notemap.git
-cd notemap/packaging/docker
+mkdir -p /srv/notemap && cd /srv/notemap
+curl -L https://github.com/palmdrop/notemap/archive/refs/heads/main.tar.gz \
+  | tar xz --strip-components=3 '*/docker/compose'
+```
+
+Or copy `docker/compose/` out of a clone you already have. The four files are yours from then on;
+upgrading does not replace them.
+
+The image lives at `ghcr.io/palmdrop/notemap`. While the package is private, log in once:
+
+```sh
+echo $GITHUB_TOKEN | docker login ghcr.io -u <your-username> --password-stdin
+```
+
+## Standalone
+
+Reachable from that machine and nothing else.
+
+```sh
+$EDITOR .env          # NOTEMAP_VERSION
 $EDITOR config.toml   # only if the defaults are wrong for you
-NOTEMAP_PROXY_NETWORK=proxy docker compose up -d --build
+docker compose up -d
 ```
 
-`NOTEMAP_PROXY_NETWORK` names the existing Docker network your proxy is on; it defaults to `proxy`.
-The network is not created here — compose expects to find it.
+`compose.yaml` publishes `127.0.0.1:4747`, so `curl http://127.0.0.1:4747/v1/health` answers on the
+host and nothing on the LAN can reach it. **Do not change that to `4747:4747`** — `/v1` has no
+authentication, and that one edit puts the whole pool on your network.
 
-Then:
+## Behind a proxy
 
 ```sh
-docker compose ps      # healthy, once the healthcheck has asked /v1/health
-docker compose logs    # the pool, the mirror, the assets and the destinations it found
+$EDITOR .env          # NOTEMAP_VERSION, and PROXY_NETWORK
+docker compose -f compose.proxy.yaml up -d
 ```
 
-The daemon is on no address the host publishes. On the proxy's network it answers at
-`http://notemap:4747`.
+`compose.proxy.yaml` is a whole file rather than an overlay on `compose.yaml`: pick one, use it, and
+what you are running is the file you can read. It publishes no port and joins the network named by
+`PROXY_NETWORK`, which must already exist — compose will not create it.
 
-## The proxy
-
-Point it at `notemap:4747` and give notemap **a hostname of its own** rather than a subpath. The app
-is a static build made for its own origin and the daemon serves it from `/`; mounting it under
-`/notemap/` on a shared host is untested and would need a build flag.
+Point the proxy at `notemap:4747` and give notemap **a hostname of its own** rather than a subpath.
+The app is a static build made for its own origin and the daemon serves it from `/`; mounting it
+under `/notemap/` on a shared host is untested and would need a build flag.
 
 What the proxy must supply, because the daemon does not:
 
@@ -52,21 +72,41 @@ Two things to check in the proxy's own configuration:
   (nginx's `client_max_body_size`).
 - **The read timeout**, for the same reason.
 
-[What is undefended](specs/security.md) is the full account of what this arrangement is open to,
-including the fact that anything else on the proxy's network reaches an unauthenticated `/v1`.
+[What is undefended](specs/security.md) is the full account of what each of these two arrangements
+is open to, including the fact that anything else on the proxy's network reaches an unauthenticated
+`/v1`.
 
-## The config
+## Checking on it
 
-`packaging/docker/config.toml` is mounted read-only at `/etc/notemap/config.toml`. Editing it takes
-a `docker compose restart`.
+```sh
+docker compose ps      # healthy, once the healthcheck has asked /v1/health
+docker compose logs    # the pool, the mirror, the assets and the destinations it found
+```
 
-It binds `host = "0.0.0.0"`, which is not the daemon relaxing: a container that binds loopback is
-reachable from nothing at all, not even the proxy. `apps/daemon/config.example.toml` is the
-annotated reference for every key.
+## Upgrading
 
-**Destinations are not in this file.** A vault is created in settings and lives in the pool
-([ADR 20](adr/0020-destinations-are-pool-state.md)), so it survives a rebuild and is edited without
-a restart. A leftover `[[destinations]]` block is ignored with a warning on startup.
+The version you run is one line in `.env`:
+
+```sh
+$EDITOR .env                        # NOTEMAP_VERSION=v0.2.0
+docker compose pull && docker compose up -d
+```
+
+Rolling back is the same edit with the old value. Pin a release rather than leaving
+`NOTEMAP_VERSION=latest`: `latest` moves under you the next time one is cut, which is the wrong
+moment to discover what changed.
+
+Which tags exist:
+
+| | |
+|---|---|
+| `v0.2.0`, `0.2` | A release. What you should be running. |
+| `sha-a1b2c3d` | Any commit on `main`, for trying something that has no release yet. |
+| `latest` | The most recent release. Moves on its own. |
+
+The volume is never touched by an upgrade. Notemap is greenfield and has no migrations: features and
+APIs may change without one ([AGENTS.md](../AGENTS.md#what-this-project-is)), so read what changed
+first, and take the backup below.
 
 ## The volume, and what to back up
 
@@ -90,6 +130,19 @@ docker run --rm -v notemap_state:/state -v "$PWD:/out" alpine \
 docker compose start
 ```
 
+## The config
+
+`config.toml` is mounted read-only at `/etc/notemap/config.toml`. Editing it takes a
+`docker compose restart`.
+
+It binds `host = "0.0.0.0"`, which is not the daemon relaxing: a container that binds loopback is
+reachable from nothing at all, not even the proxy. What limits reach is the compose file you chose.
+`apps/daemon/config.example.toml` in the repo is the annotated reference for every key.
+
+**Destinations are not in this file.** A vault is created in settings and lives in the pool
+([ADR 20](adr/0020-destinations-are-pool-state.md)), so it survives an upgrade and is edited without
+a restart. A leftover `[[destinations]]` block is ignored with a warning on startup.
+
 ## Destinations
 
 A destination is created in the app's settings, not in a file: a name, a kind, and that kind's
@@ -98,16 +151,16 @@ settings. Today there is one kind.
 ### filesystem
 
 Its one setting is `root`, **a path inside the container**. Mount the directory you mean and name
-the container's side of the mount — there is a commented-out example in `compose.yaml`:
+the container's side of the mount — there is a commented-out example in both compose files:
 
 ```yaml
 volumes:
   - /srv/vault:/vault
 ```
 
-Then create a destination with `root = "/vault"`. The daemon runs as uid 1000, so that directory
-has to be writable by uid 1000 on the host. The root is never created for you: one that is not
-there is an unmounted drive far more often than it is a typo.
+Then create a destination with `root = "/vault"`. The daemon runs as uid 1000, so that directory has
+to be writable by uid 1000 on the host. The root is never created for you: one that is not there is
+an unmounted drive far more often than it is a typo.
 
 Routing an item at it uses one of two capabilities:
 
@@ -148,13 +201,20 @@ into Nextcloud's own data directory is not that — it is unsupported by Nextclo
 `occ files:scan` the daemon has no business being able to run, and leaves files owned by the wrong
 uid. [A webdav destination kind](plans/destination-webdav.md) is what makes it work properly.
 
-## Upgrading
+## Cutting a release
+
+From a clone, on the machine you develop on:
 
 ```sh
-git pull
-NOTEMAP_PROXY_NETWORK=proxy docker compose up -d --build
+git tag v0.2.0 && git push --tags
 ```
 
-The volume is not touched. Notemap is greenfield and has no migrations: features and APIs may
-change without one ([AGENTS.md](../AGENTS.md#what-this-project-is)), so read what changed before
-upgrading a pool you care about, and take the backup above first.
+CI builds the image and pushes `v0.2.0`, `0.2` and `latest` to GHCR. Every push to `main` also gets
+a `sha-<short>` tag, so a build with no release yet is still something the homelab can pin.
+
+To try the image locally without a release, build it under a name the compose files will use:
+
+```sh
+docker build -t ghcr.io/palmdrop/notemap:dev .
+cd docker/compose && NOTEMAP_VERSION=dev docker compose up -d
+```
