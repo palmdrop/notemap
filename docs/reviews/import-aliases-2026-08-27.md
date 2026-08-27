@@ -1,7 +1,7 @@
 # Review: Import aliases (`imports` field / `$testing`)
 
 **Date**: 2026-08-27
-**Status**: Resolved
+**Status**: Partially addressed
 **Scope**: `5810803..e598a50` — `packages/core`, `packages/client`, `apps/ui`, `AGENTS.md`
 **Plan**: none — these changes were made without one
 
@@ -131,6 +131,9 @@ own rules the reasoning belongs in `docs/adr/`, with AGENTS.md keeping only the 
 ---
 
 ## Resolution
+
+<!-- Superseded on findings 1 and 3 by docs/reviews/import-aliases-pr-2026-08-27.md,
+     which swept the code instead. Left as it stood. -->
 
 Settled by narrowing the doc rather than sweeping the code: the alias is a preference applied
 where one is declared, and the 339 relative crossings stand as correct until a folder earns an
