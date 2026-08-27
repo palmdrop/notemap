@@ -19,6 +19,8 @@ Code
 - Comments are the exception. Do not restate the code, do not explain rejected alternatives, do not point at discussions, ADRs or other docs.
 - Before writing one, two questions: would a reader ask _why_ here, and can the code itself answer it? Write the comment only if the answers are yes and no.
 - Keep files small and grouped by concern, in folders. Tests live beside what they test.
+- Import a sibling relatively; reach across a top-level `src/` folder through the alias.
+  `#folder/*` from the package's own `imports` field, `$folder` in the UI. Never `../../`.
 
 Git
 
@@ -97,6 +99,17 @@ guarantee must be one the code actually enforces; a stale or false comment is wo
 Keep files small and grouped by concern, in folders — routes, middleware, schemas, errors,
 types, utils, constants. A flat directory of everything is not a structure. Tests live beside
 what they test.
+
+Within a folder, import relatively. Crossing a top-level folder under `src/` goes through an
+alias instead: `#types/domain/ids` rather than `../../types/domain/ids`. The relative form then
+means one thing only — "this lives next to me" — and moving a folder stops rewriting its callers.
+
+Each package declares its own aliases in the `imports` field of its `package.json`, which names
+the reachable folders and stops there. Not tsconfig `paths`: these packages export TypeScript
+source, so the daemon's esbuild and the app's Vite build compile each other's `src/` directly,
+and neither reads a dependency's tsconfig. `imports` travels in the manifest every resolver
+already opens. The app is the exception — SvelteKit owns resolution there, so its aliases stay
+in `vite.config.ts` beside `$components`.
 
 ## Git
 
