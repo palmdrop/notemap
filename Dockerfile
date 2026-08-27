@@ -6,24 +6,15 @@ WORKDIR /src
 
 RUN corepack enable && corepack prepare pnpm@11.20.0 --activate
 
-# Manifests first, so a source change does not reinstall the workspace.
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
-COPY apps/daemon/package.json apps/daemon/
-COPY apps/ui/package.json apps/ui/
-COPY packages/client/package.json packages/client/
-COPY packages/core/package.json packages/core/
-COPY packages/adapters/blob-fs/package.json packages/adapters/blob-fs/
-COPY packages/adapters/destination-fs/package.json packages/adapters/destination-fs/
-COPY packages/adapters/mirror-fs/package.json packages/adapters/mirror-fs/
-COPY packages/adapters/schema-ajv/package.json packages/adapters/schema-ajv/
-COPY packages/adapters/store-sqlite/package.json packages/adapters/store-sqlite/
-COPY tests/full-stack/package.json tests/full-stack/
-COPY tests/integration/package.json tests/integration/
-COPY tests/seed/package.json tests/seed/
-
-RUN pnpm install --frozen-lockfile
+# The lockfile alone is enough to populate the store, so a workspace package
+# added later needs nothing remembered here, and a version bump in a manifest
+# does not refetch what it did not change.
+COPY pnpm-lock.yaml ./
+RUN pnpm fetch
 
 COPY . .
+
+RUN pnpm install --offline --frozen-lockfile
 
 RUN pnpm build
 

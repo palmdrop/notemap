@@ -22,11 +22,14 @@ curl -L https://github.com/palmdrop/notemap/archive/refs/heads/main.tar.gz \
 Or copy `docker/compose/` out of a clone you already have. The four files are yours from then on;
 upgrading does not replace them.
 
-The image lives at `ghcr.io/palmdrop/notemap`. While the package is private, log in once:
+The image lives at `ghcr.io/palmdrop/notemap`, and the package is private. Log in once per host:
 
 ```sh
-echo $GITHUB_TOKEN | docker login ghcr.io -u <your-username> --password-stdin
+echo $PAT | docker login ghcr.io -u palmdrop --password-stdin
 ```
+
+**It has to be a classic personal access token** with the `read:packages` scope — GHCR does not
+accept fine-grained tokens. The login is stored, so this is a one-time step per machine.
 
 ## Standalone
 
@@ -75,6 +78,14 @@ Two things to check in the proxy's own configuration:
 [What is undefended](specs/security.md) is the full account of what each of these two arrangements
 is open to, including the fact that anything else on the proxy's network reaches an unauthenticated
 `/v1`.
+
+## One container, not two
+
+The app is not a service of its own. It is a static build the daemon serves from its own origin,
+which is what lets the daemon send no CORS headers at all — the only thing stopping another origin
+from reading the pool of whoever is running it ([security.md](specs/security.md)). Two containers
+would be two origins, and closing that again would mean either a CORS header on an API with no
+authentication, or a proxy merging them back into one origin.
 
 ## Checking on it
 

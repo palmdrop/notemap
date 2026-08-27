@@ -33,7 +33,18 @@ What changed, and why:
   is what makes the thing testable at all. The spec says so, and says why `4747:4747` is the edit
   not to make.
 
+- **The builder fetches from the lockfile alone.** It copied thirteen `package.json` files by name,
+  so adding a workspace package broke the build until someone remembered the fourteenth line.
+  `pnpm fetch` needs only `pnpm-lock.yaml`, which is [what pnpm recommends](https://pnpm.io/docker)
+  for exactly this, and caches on dependencies rather than on any manifest edit. `--prod` is not
+  used: the build needs esbuild, vite, svelte and typescript.
+
 Phases 3, 4 and 5 stand; their files moved and their words changed to match.
+
+**Not changed, and asked about**: the app stays inside the daemon's container rather than becoming a
+service of its own. The no-CORS property in [security.md](../specs/security.md) depends on the app
+being same-origin with `/v1`, and splitting them would mean either a CORS header on an
+unauthenticated API or a proxy merging the two origins back into one.
 
 ---
 
