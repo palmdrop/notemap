@@ -134,7 +134,9 @@ export function oneSegment(name: string, fallback: string): string {
     .replace(UNSAFE, "-")
     .slice(0, MAX_SEGMENT);
 
-  const trimmed = flattened.replace(/^[.\s]+/, "").replace(/[.\s]+$/, "");
+  // A dash goes with them: every leading character this replaced is one, so a
+  // note starting `# heading` would otherwise be filed under `- heading`.
+  const trimmed = flattened.replace(/^[-.\s]+/, "").replace(/[-.\s]+$/, "");
   return trimmed === "" ? fallback : trimmed;
 }
 

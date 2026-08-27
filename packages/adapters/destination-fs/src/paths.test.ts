@@ -121,6 +121,20 @@ describe("one segment", () => {
     expect(oneSegment("..", "fallback")).toBe("fallback");
     expect(oneSegment("   ", "fallback")).toBe("fallback");
     expect(oneSegment("", "fallback")).toBe("fallback");
+    expect(oneSegment("###", "fallback")).toBe("fallback");
+  });
+
+  it("drops the markers a heading or a bullet begins with", () => {
+    expect(oneSegment("# A thought", "fallback")).toBe("A thought");
+    expect(oneSegment("## A thought", "fallback")).toBe("A thought");
+    expect(oneSegment("- a bullet", "fallback")).toBe("a bullet");
+    expect(oneSegment("> a quote", "fallback")).toBe("a quote");
+  });
+
+  /** Only the ends: a dash between words is somebody's name for the thing. */
+  it("leaves a dash alone in the middle of a name", () => {
+    expect(oneSegment("a-thought.md", "fallback")).toBe("a-thought.md");
+    expect(oneSegment("Read: Borges", "fallback")).toBe("Read- Borges");
   });
 
   it("keeps letters of any script, because a filename is the user's", () => {
