@@ -4,12 +4,13 @@ FROM node:24-alpine AS build
 
 WORKDIR /src
 
-RUN corepack enable && corepack prepare pnpm@11.20.0 --activate
+RUN corepack enable
 
-# The lockfile alone is enough to populate the store, so a workspace package
-# added later needs nothing remembered here, and a version bump in a manifest
-# does not refetch what it did not change.
-COPY pnpm-lock.yaml ./
+# The lockfile is what populates the store, so a workspace package added later
+# needs nothing remembered here. The root manifest comes with it only so that
+# corepack reads the pnpm version from `packageManager` rather than from a
+# number written here as well.
+COPY pnpm-lock.yaml package.json ./
 RUN pnpm fetch
 
 COPY . .

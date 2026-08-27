@@ -2,6 +2,7 @@
   "name": "notemap",
   "version": "0.0.0",
   "private": true,
+  "packageManager": "pnpm@11.20.0",
   "type": "module",
   "engines": {
     "node": ">=24"
@@ -24,7 +25,7 @@
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "11.20.0",
+      "version": "11.x",
       "onFail": "download"
     }
   },
