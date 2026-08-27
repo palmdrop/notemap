@@ -89,21 +89,21 @@ Depends on nothing; lands after phase 2 to keep the commits legible.
 
 Depends on phase 2, which is the arrangement being described.
 
-- [ ] [security.md](../specs/security.md) gains the containerised case, and only that. It was
+- [x] [security.md](../specs/security.md) gains the containerised case, and only that. It was
       written imagining a loopback bind, and that sentence is misleading in the deployment this plan
       builds: the daemon binds every interface by necessity, so what limits reach is the compose
       network and the proxy in front of it. Anything else on a shared Docker network reaches an
       unauthenticated `/v1` — which is why the service joins the proxy's network and its own, and
       not the default one
-- [ ] The **general** rewrite of that section — the several shapes a deployment takes, of which a
+- [x] The **general** rewrite of that section — the several shapes a deployment takes, of which a
       container is one — belongs to [login-and-access-tokens](login-and-access-tokens.md), which
       lands next and changes what the section is about. Two plans editing one section in sequence is
       fine; two plans editing it at once is not
-- [ ] What the proxy is expected to carry **until the daemon has a door**: TLS, and authentication,
+- [x] What the proxy is expected to carry **until the daemon has a door**: TLS, and authentication,
       because the daemon has none today and `/v1` permits everything to whoever reaches it. Written
       as the interim it is, naming the plan that ends it, rather than as a permanent requirement
-- [ ] Verify: `pnpm lint`, and the spec reads true against the compose file
-- [ ] `git commit`
+- [x] Verify: `pnpm lint`, and the spec reads true against the compose file
+- [x] `git commit`
 
 ### Phase 5 — the README
 
