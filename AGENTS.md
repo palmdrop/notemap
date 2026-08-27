@@ -19,8 +19,8 @@ Code
 - Comments are the exception. Do not restate the code, do not explain rejected alternatives, do not point at discussions, ADRs or other docs.
 - Before writing one, two questions: would a reader ask _why_ here, and can the code itself answer it? Write the comment only if the answers are yes and no.
 - Keep files small and grouped by concern, in folders. Tests live beside what they test.
-- Import a sibling relatively; reach across a top-level `src/` folder through the alias.
-  `#folder/*` from the package's own `imports` field, `$folder` in the UI. Never `../../`.
+- Prefer an alias to reach across a top-level `src/` folder, where one exists: `#folder/*` from
+  the package's own `imports` field, `$folder` in the UI. Relative is fine where none does.
 
 Git
 
@@ -100,16 +100,22 @@ Keep files small and grouped by concern, in folders — routes, middleware, sche
 types, utils, constants. A flat directory of everything is not a structure. Tests live beside
 what they test.
 
-Within a folder, import relatively. Crossing a top-level folder under `src/` goes through an
-alias instead: `#types/domain/ids` rather than `../../types/domain/ids`. The relative form then
-means one thing only — "this lives next to me" — and moving a folder stops rewriting its callers.
+Within a folder, import relatively. Reaching across a top-level folder under `src/` prefers an
+alias: `#types/domain/ids` rather than `../../types/domain/ids`. The relative form then leans
+towards one meaning — "this lives next to me" — and moving an aliased folder stops rewriting its
+callers.
 
-Each package declares its own aliases in the `imports` field of its `package.json`, which names
-the reachable folders and stops there. Not tsconfig `paths`: these packages export TypeScript
-source, so the daemon's esbuild and the app's Vite build compile each other's `src/` directly,
-and neither reads a dependency's tsconfig. `imports` travels in the manifest every resolver
-already opens. The app is the exception — SvelteKit owns resolution there, so its aliases stay
-in `vite.config.ts` beside `$components`.
+A preference, not a rule, and nothing checks it. The alias has to exist to be used: a package
+names the folders it aliases and stops there, and most of the tree still reaches across
+relatively. Write the alias where one is declared, add one where a folder is reached across
+often enough to earn it, and use the relative path otherwise — a sweep converting the rest is
+its own change, not something to do in passing.
+
+Aliases live in the `imports` field of the package's own `package.json`. Not tsconfig `paths`:
+these packages export TypeScript source, so the daemon's esbuild and the app's Vite build compile
+each other's `src/` directly, and neither reads a dependency's tsconfig. `imports` travels in the
+manifest every resolver already opens. The app is the exception — SvelteKit owns resolution
+there, so its aliases stay in `vite.config.ts` beside `$components`.
 
 ## Git
 
