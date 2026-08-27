@@ -12,7 +12,7 @@ import { rail } from "$lib/rail.svelte";
 import { remember } from "$lib/order";
 import Queue from "./Queue.svelte";
 
-vi.mock("$lib/client", () => import("../../testing/pool"));
+vi.mock("$lib/client", () => import("$testing/pool"));
 
 // Module-scoped reading preference, so a test that furls the rail unfurls it.
 afterEach(() => {

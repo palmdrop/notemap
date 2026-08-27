@@ -6,7 +6,7 @@ import { json, refusal, routeOf } from "@notemap/client/testing";
 import { client, pool } from "$testing/pool";
 import Refusals from "./Refusals.svelte";
 
-vi.mock("$lib/client", () => import("../../testing/pool"));
+vi.mock("$lib/client", () => import("$testing/pool"));
 
 test("shows what the pool refused, and lets it be dismissed", async () => {
   pool((request) =>

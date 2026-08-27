@@ -8,7 +8,7 @@ import Feed from "$components/feed/Feed.svelte";
 import { pool } from "$testing/pool";
 import CaptureRow from "./CaptureRow.svelte";
 
-vi.mock("$lib/client", () => import("../../testing/pool"));
+vi.mock("$lib/client", () => import("$testing/pool"));
 
 type Envelope = {
   id: string;

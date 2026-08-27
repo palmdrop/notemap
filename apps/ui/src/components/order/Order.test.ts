@@ -6,7 +6,7 @@ import { anItem, json, routeOf } from "@notemap/client/testing";
 import { pool } from "$testing/pool";
 import Order from "./Order.svelte";
 
-vi.mock("$lib/client", () => import("../../testing/pool"));
+vi.mock("$lib/client", () => import("$testing/pool"));
 
 /** Chrome, so it is drawn a level above whichever surface it acts on. */
 const at = vi.hoisted(() => ({ path: "/" }));

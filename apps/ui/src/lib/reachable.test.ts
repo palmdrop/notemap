@@ -3,11 +3,11 @@ import { expect, test, vi } from "vitest";
 
 import { json } from "@notemap/client/testing";
 
-import { client, pool } from "../testing/pool";
-import { looking, online } from "../testing/dom";
+import { client, pool } from "$testing/pool";
+import { looking, online } from "$testing/dom";
 import Fixture from "./reachable.fixture.svelte";
 
-vi.mock("$lib/client", () => import("../testing/pool"));
+vi.mock("$lib/client", () => import("$testing/pool"));
 
 test("tells the client when nobody is looking, and when someone is again", async () => {
   pool(() => json(200, { values: [] }));
