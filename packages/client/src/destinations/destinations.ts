@@ -1,4 +1,4 @@
-import { acknowledged, answered, type Api } from "../api/http";
+import { acknowledged, answered, type Api } from "#api/http";
 import type {
   CreateDestinationRequest,
   Destination,
@@ -6,7 +6,7 @@ import type {
   DestinationId,
   DestinationKind,
   UpdateDestinationRequest,
-} from "../api/types";
+} from "#api/types";
 import type { DestinationsApi } from "../types";
 import type { Observable } from "rxjs";
 

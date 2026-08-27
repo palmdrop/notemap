@@ -1,26 +1,26 @@
 import { recordAction } from "../actions";
 import { usability } from "../destinations/usability";
 import { enqueueMirrorWrite } from "../mirror";
-import { ok, refused } from "../../utils/result";
-import type { PoolPorts, PoolTx } from "../../types/api/ports";
-import type { CancelRefusal, DeliveryRefusal } from "../../types/api/refusal";
+import { ok, refused } from "#utils/result";
+import type { PoolPorts, PoolTx } from "#types/api/ports";
+import type { CancelRefusal, DeliveryRefusal } from "#types/api/refusal";
 import type {
   Destination,
   DestinationDescriptor,
-} from "../../types/domain/destination";
-import type { FailureDetail } from "../../types/domain/enrichment";
+} from "#types/domain/destination";
+import type { FailureDetail } from "#types/domain/enrichment";
 import type {
   ItemId,
   JobId,
   RoutingRecordId,
   Timestamp,
-} from "../../types/domain/ids";
+} from "#types/domain/ids";
 import type {
   DeliveryOutcome,
   DeliveryRequest,
   RoutingRecord,
-} from "../../types/domain/routing";
-import type { Result } from "../../types/result";
+} from "#types/domain/routing";
+import type { Result } from "#types/result";
 import {
   DELIVERY_FAILURE,
   destinationDetail,

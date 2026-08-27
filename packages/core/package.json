@@ -7,6 +7,11 @@
     ".": "./src/index.ts",
     "./testing": "./src/testing/index.ts"
   },
+  "imports": {
+    "#types/*": "./src/types/*.ts",
+    "#utils/*": "./src/utils/*.ts",
+    "#testing/*": "./src/testing/*.ts"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests"

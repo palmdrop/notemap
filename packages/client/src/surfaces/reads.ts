@@ -1,5 +1,5 @@
-import { answered, type Api } from "../api/http";
-import type { ItemSlice } from "../api/types";
+import { answered, type Api } from "#api/http";
+import type { ItemSlice } from "#api/types";
 import { saidBy, Unreachable } from "../errors";
 import type { Writable } from "../observable/observable";
 import {
@@ -10,7 +10,7 @@ import {
   type ClientState,
   type ListPage,
   type Surface,
-} from "../state/state";
+} from "#state/state";
 import type { Order } from "../types";
 
 const SURFACES: readonly Surface[] = ["feed", "queue"];

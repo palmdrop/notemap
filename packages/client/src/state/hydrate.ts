@@ -5,12 +5,12 @@ import type {
   ItemId,
   PoolIdentity,
   TagUse,
-} from "../api/types";
+} from "#api/types";
 import { Unreadable } from "../errors";
 import type { Writable } from "../observable/observable";
-import type { PendingOperation } from "../outbox/operations";
-import type { ClientStore } from "../ports/store";
-import { namedBy } from "../assets/assets";
+import type { PendingOperation } from "#outbox/operations";
+import type { ClientStore } from "#ports/store";
+import { namedBy } from "#assets/assets";
 import { emptyState, type ClientState } from "./state";
 
 /**

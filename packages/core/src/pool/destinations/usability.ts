@@ -1,10 +1,7 @@
-import type { PoolPorts } from "../../types/api/ports";
-import type {
-  Destination,
-  DestinationKind,
-} from "../../types/domain/destination";
-import type { DestinationKindName } from "../../types/domain/ids";
-import type { SchemaIssue } from "../../types/json";
+import type { PoolPorts } from "#types/api/ports";
+import type { Destination, DestinationKind } from "#types/domain/destination";
+import type { DestinationKindName } from "#types/domain/ids";
+import type { SchemaIssue } from "#types/json";
 
 /** Whether the running code can make sense of a destination at all. */
 export type Usability =

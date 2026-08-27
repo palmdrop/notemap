@@ -1,18 +1,18 @@
-import type { Destinations } from "../types/api/ports";
-import type { JsonObject, JsonSchema } from "../types/json";
+import type { Destinations } from "#types/api/ports";
+import type { JsonObject, JsonSchema } from "#types/json";
 import type {
   Capability,
   Destination,
   DestinationKind,
-} from "../types/domain/destination";
+} from "#types/domain/destination";
 import type {
   CapabilityName,
   DestinationId,
   DestinationKindName,
   PayloadTypeName,
   Timestamp,
-} from "../types/domain/ids";
-import type { Delivery, DeliveryOutcome } from "../types/domain/routing";
+} from "#types/domain/ids";
+import type { Delivery, DeliveryOutcome } from "#types/domain/routing";
 
 /**
  * A kind registry that fails on command. A real filesystem is never unreachable

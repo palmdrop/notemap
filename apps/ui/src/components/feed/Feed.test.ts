@@ -4,14 +4,14 @@ import { tick } from "svelte";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
-import { asked, client, pool } from "../../testing/pool";
-import { online } from "../../testing/dom";
+import { asked, client, pool } from "$testing/pool";
+import { online } from "$testing/dom";
 import { remember } from "$lib/order";
 import { rail } from "$lib/rail.svelte";
 import { NO_MORE_OFFLINE, NOTHING_CAPTURED } from "$lib/said";
 import Feed from "./Feed.svelte";
 
-vi.mock("$lib/client", () => import("../../testing/pool"));
+vi.mock("$lib/client", () => import("$testing/pool"));
 
 // Module-scoped reading preference, so a test that furls the rail unfurls it.
 afterEach(() => {

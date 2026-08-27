@@ -8,8 +8,8 @@ import type {
   RoutingRecord,
   RoutingSummary,
   TagUse,
-} from "../api/types";
-import type { PendingOperation } from "../outbox/operations";
+} from "#api/types";
+import type { PendingOperation } from "#outbox/operations";
 import type { Order, ReadFailure } from "../types";
 
 type RoutedTo = RoutingSummary["to"][number];

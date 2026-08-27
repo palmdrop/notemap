@@ -1,8 +1,8 @@
-import { answered } from "../../api/http";
-import { uploaded } from "../../assets/assets";
-import { optimisticItem } from "../../capture/envelope";
-import type { Applied } from "../../state/applied";
-import { arrived, forget } from "../../state/state";
+import { answered } from "#api/http";
+import { uploaded } from "#assets/assets";
+import { optimisticItem } from "#capture/envelope";
+import type { Applied } from "#state/applied";
+import { arrived, forget } from "#state/state";
 import { replacing, type Handler } from "../handler";
 
 export const capture: Handler<"capture"> = {

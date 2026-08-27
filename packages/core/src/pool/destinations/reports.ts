@@ -1,9 +1,6 @@
-import type { PoolPorts } from "../../types/api/ports";
-import type {
-  Destination,
-  DestinationReport,
-} from "../../types/domain/destination";
-import type { DestinationId } from "../../types/domain/ids";
+import type { PoolPorts } from "#types/api/ports";
+import type { Destination, DestinationReport } from "#types/domain/destination";
+import type { DestinationId } from "#types/domain/ids";
 import { usability } from "./usability";
 
 /** A read of the pool: instant, unpaginated, and it probes nothing. */

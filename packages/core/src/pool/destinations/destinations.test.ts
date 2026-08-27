@@ -4,18 +4,15 @@ import {
   fakeDestinationRow,
   fakeDestinations,
   fakeKind,
-} from "../../testing/destination";
+} from "#testing/destination";
 import type {
   PoolPorts,
   PoolStore,
   PoolTx,
   SchemaValidator,
-} from "../../types/api/ports";
-import type { Action } from "../../types/domain/action-log";
-import type {
-  Destination,
-  DestinationRecord,
-} from "../../types/domain/destination";
+} from "#types/api/ports";
+import type { Action } from "#types/domain/action-log";
+import type { Destination, DestinationRecord } from "#types/domain/destination";
 import type {
   CapabilityName,
   DestinationId,
@@ -26,11 +23,11 @@ import type {
   RoutingRecordId,
   SourceId,
   Timestamp,
-} from "../../types/domain/ids";
-import type { Item } from "../../types/domain/item";
-import type { Job } from "../../types/domain/work";
-import type { RoutingRecord } from "../../types/domain/routing";
-import type { JsonObject, JsonSchema } from "../../types/json";
+} from "#types/domain/ids";
+import type { Item } from "#types/domain/item";
+import type { Job } from "#types/domain/work";
+import type { RoutingRecord } from "#types/domain/routing";
+import type { JsonObject, JsonSchema } from "#types/json";
 import { deliveryFor } from "../routing/delivery";
 
 import { create, edit, remove, retire, unretire } from "./lifecycle";

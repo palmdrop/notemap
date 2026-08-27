@@ -1,4 +1,4 @@
-import type { AssetId } from "../api/types";
+import type { AssetId } from "#api/types";
 
 /**
  * The object URLs an adapter has handed out for blobs it holds. One per asset,

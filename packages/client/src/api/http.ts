@@ -1,7 +1,7 @@
 import createOpenapiClient from "openapi-fetch";
 
 import { readRefusal, Refused, Unreachable } from "../errors";
-import type { Transport } from "../ports/transport";
+import type { Transport } from "#ports/transport";
 import type { paths } from "./generated";
 
 export type Api = ReturnType<typeof createOpenapiClient<paths>>;

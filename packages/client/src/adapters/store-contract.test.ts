@@ -1,8 +1,8 @@
 import { expect, it } from "vitest";
 
-import type { Destination, Item, TagUse } from "../api/types";
-import type { PendingOperation } from "../outbox/operations";
-import type { ClientStore } from "../ports/store";
+import type { Destination, Item, TagUse } from "#api/types";
+import type { PendingOperation } from "#outbox/operations";
+import type { ClientStore } from "#ports/store";
 
 export function anItem(id: string): Item {
   return {

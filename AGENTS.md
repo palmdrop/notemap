@@ -19,6 +19,9 @@ Code
 - Comments are the exception. Do not restate the code, do not explain rejected alternatives, do not point at discussions, ADRs or other docs.
 - Before writing one, two questions: would a reader ask _why_ here, and can the code itself answer it? Write the comment only if the answers are yes and no.
 - Keep files small and grouped by concern, in folders. Tests live beside what they test.
+- Reach across a top-level `src/` folder through an alias, where one exists: `#folder/*` from
+  the package's own `imports` field, `$folder` in the UI. Relative is for reaching within your
+  own folder, and for crossings no alias covers.
 
 Git
 
@@ -97,6 +100,16 @@ guarantee must be one the code actually enforces; a stale or false comment is wo
 Keep files small and grouped by concern, in folders — routes, middleware, schemas, errors,
 types, utils, constants. A flat directory of everything is not a structure. Tests live beside
 what they test.
+
+Within a folder, import relatively. Reaching across a top-level folder under `src/` goes through
+an alias where one exists — `#types/domain/ids`, not `../../types/domain/ids` — which leaves `..`
+saying one thing: the folder the file belongs to.
+
+Aliases live in the `imports` field of the package's own `package.json`, and in
+`apps/ui/vite.config.ts` for the app ([ADR 0025](docs/adr/0025-cross-folder-aliases-live-in-the-imports-field.md)).
+A package names the folders it aliases and stops there; `apps/daemon` names none, and a crossing
+no alias covers stays relative. Add an entry where a folder is reached across often enough to
+earn one and convert its callers in the same change. Nothing checks any of this.
 
 ## Git
 

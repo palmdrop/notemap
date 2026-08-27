@@ -5,8 +5,8 @@ import type {
   ItemId,
   PoolIdentity,
   TagUse,
-} from "../api/types";
-import type { OperationId, PendingOperation } from "../outbox/operations";
+} from "#api/types";
+import type { OperationId, PendingOperation } from "#outbox/operations";
 
 /**
  * Where the outbox and the cache live. Every method is asynchronous even though

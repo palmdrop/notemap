@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import type { ItemId, RoutingRecord } from "../api/types";
-import { anItem } from "../testing/pool";
+import type { ItemId, RoutingRecord } from "#api/types";
+import { anItem } from "#testing/pool";
 import {
   arrived,
   cached,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Operation, PendingOperation } from "../outbox/operations";
+import type { Operation, PendingOperation } from "#outbox/operations";
 import { releasedBy } from "./assets";
 
 const AT = "2026-08-26T12:00:00.000Z";

@@ -1,18 +1,18 @@
 import { recordAction } from "./actions";
 import { enqueueMirrorWrite } from "./mirror";
 import { DELIVERY_FAILURE, destinationDetail } from "./routing/delivery";
-import { ok, refused } from "../utils/result";
-import type { PoolConfig } from "../types/api/config";
-import type { PoolPorts, PoolTx } from "../types/api/ports";
-import type { CompletionRefusal, LeaseRefusal } from "../types/api/refusal";
-import type { FailureDetail } from "../types/domain/enrichment";
+import { ok, refused } from "#utils/result";
+import type { PoolConfig } from "#types/api/config";
+import type { PoolPorts, PoolTx } from "#types/api/ports";
+import type { CompletionRefusal, LeaseRefusal } from "#types/api/refusal";
+import type { FailureDetail } from "#types/domain/enrichment";
 import type {
   Duration,
   LeaseId,
   RoutingRecordId,
   Timestamp,
-} from "../types/domain/ids";
-import type { AbandonedPosition } from "../types/domain/position";
+} from "#types/domain/ids";
+import type { AbandonedPosition } from "#types/domain/position";
 import type {
   AbandonedWork,
   ClaimRequest,
@@ -21,9 +21,9 @@ import type {
   Lease,
   RetryPolicy,
   WorkOutcome,
-} from "../types/domain/work";
-import type { Page, Result, Slice } from "../types/result";
-import type { JsonObject } from "../types/json";
+} from "#types/domain/work";
+import type { Page, Result, Slice } from "#types/result";
+import type { JsonObject } from "#types/json";
 
 /** Mirror attempts have no ceiling, so the doubling needs one before it reaches Infinity. */
 const MAX_DOUBLINGS = 32;

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import type { PoolPorts } from "../../types/api/ports";
-import type { Asset } from "../../types/domain/asset";
-import type { Artifact } from "../../types/domain/enrichment";
+import type { PoolPorts } from "#types/api/ports";
+import type { Asset } from "#types/domain/asset";
+import type { Artifact } from "#types/domain/enrichment";
 import type {
   AssetId,
   BlobHash,
@@ -11,9 +11,9 @@ import type {
   ItemId,
   SourceId,
   Timestamp,
-} from "../../types/domain/ids";
-import type { Item } from "../../types/domain/item";
-import type { DeliveryRequest } from "../../types/domain/routing";
+} from "#types/domain/ids";
+import type { Item } from "#types/domain/item";
+import type { DeliveryRequest } from "#types/domain/routing";
 
 import { asDeliveryWorkOutcome, projectDelivery } from "./delivery";
 

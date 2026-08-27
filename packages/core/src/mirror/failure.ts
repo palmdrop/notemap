@@ -1,4 +1,4 @@
-import type { WorkOutcome } from "../types/domain/work";
+import type { WorkOutcome } from "#types/domain/work";
 
 /** What a mirror driver throws when it knows what went wrong. */
 export class MirrorWriteFailure extends Error {

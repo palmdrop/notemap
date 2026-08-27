@@ -1,4 +1,4 @@
-import type { ItemId } from "../api/types";
+import type { ItemId } from "#api/types";
 import type { PendingOperation } from "./operations";
 import { targetOf } from "./registry";
 

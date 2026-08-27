@@ -1,9 +1,9 @@
-import type { ItemId } from "../api/types";
+import type { ItemId } from "#api/types";
 import { saidBy, Unreachable } from "../errors";
 import type { Writable } from "../observable/observable";
-import type { ClientStore } from "../ports/store";
-import type { Undo } from "../state/applied";
-import type { ClientState } from "../state/state";
+import type { ClientStore } from "#ports/store";
+import type { Undo } from "#state/applied";
+import type { ClientState } from "#state/state";
 import type { Settlement } from "./handler";
 import type { Operation, OperationId, PendingOperation } from "./operations";
 import { applyOperation, opposes, targetOf } from "./registry";

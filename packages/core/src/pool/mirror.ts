@@ -2,10 +2,10 @@ import {
   projectDestinationRecord,
   projectMirrorRecord,
 } from "../mirror/record";
-import type { PoolPorts, PoolTx } from "../types/api/ports";
-import type { Asset } from "../types/domain/asset";
-import type { AssetId, JobId, Timestamp } from "../types/domain/ids";
-import type { MirrorRecord, MirrorSubject } from "../types/domain/mirror";
+import type { PoolPorts, PoolTx } from "#types/api/ports";
+import type { Asset } from "#types/domain/asset";
+import type { AssetId, JobId, Timestamp } from "#types/domain/ids";
+import type { MirrorRecord, MirrorSubject } from "#types/domain/mirror";
 
 export async function enqueueMirrorWrite(
   ports: PoolPorts,

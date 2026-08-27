@@ -1,4 +1,4 @@
-import type { Item } from "../api/types";
+import type { Item } from "#api/types";
 import { HEALTH } from "./transport";
 
 export function anItem(id: string, overrides: Partial<Item> = {}): Item {

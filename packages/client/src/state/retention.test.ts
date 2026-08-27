@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { createMemoryStore } from "../adapters/memory-store";
-import type { Item } from "../api/types";
+import type { Item } from "#api/types";
 import { createClient } from "../client";
-import type { PendingOperation } from "../outbox/operations";
-import { read, until } from "../testing/observing";
-import { anItem } from "../testing/pool";
-import { json, mockTransport } from "../testing/transport";
+import type { PendingOperation } from "#outbox/operations";
+import { read, until } from "#testing/observing";
+import { anItem } from "#testing/pool";
+import { json, mockTransport } from "#testing/transport";
 import { HISTORY } from "./retention";
 
 /** Feed history: processed, so it is nobody's working set. */

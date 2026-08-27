@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import type { BlobStore, PoolPorts, PoolStore } from "../types/api/ports";
-import type { Asset, StoredBlob } from "../types/domain/asset";
-import type { AssetId, BlobHash } from "../types/domain/ids";
+import type { BlobStore, PoolPorts, PoolStore } from "#types/api/ports";
+import type { Asset, StoredBlob } from "#types/domain/asset";
+import type { AssetId, BlobHash } from "#types/domain/ids";
 
 import { store } from "./assets";
 

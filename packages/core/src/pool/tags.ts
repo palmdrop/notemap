@@ -1,12 +1,12 @@
 import { recordAction } from "./actions";
 import { enqueueMirrorWrite } from "./mirror";
-import { ok, refused } from "../utils/result";
-import type { PoolPorts } from "../types/api/ports";
-import type { TagRefusal } from "../types/api/refusal";
-import type { Agent } from "../types/domain/agent";
-import type { ItemId, TagName } from "../types/domain/ids";
-import type { Item } from "../types/domain/item";
-import type { Result } from "../types/result";
+import { ok, refused } from "#utils/result";
+import type { PoolPorts } from "#types/api/ports";
+import type { TagRefusal } from "#types/api/refusal";
+import type { Agent } from "#types/domain/agent";
+import type { ItemId, TagName } from "#types/domain/ids";
+import type { Item } from "#types/domain/item";
+import type { Result } from "#types/result";
 
 type TagResult = Result<Item, TagRefusal>;
 

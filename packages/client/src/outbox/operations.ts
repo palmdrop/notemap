@@ -1,4 +1,4 @@
-import type { CaptureEnvelope, EditEnvelope, ItemId } from "../api/types";
+import type { CaptureEnvelope, EditEnvelope, ItemId } from "#api/types";
 
 export type OperationId = string;
 

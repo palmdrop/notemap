@@ -1,8 +1,5 @@
-import type {
-  DestinationKindAdapter,
-  Destinations,
-} from "../../types/api/ports";
-import type { Destination } from "../../types/domain/destination";
+import type { DestinationKindAdapter, Destinations } from "#types/api/ports";
+import type { Destination } from "#types/domain/destination";
 
 /** The port, over one adapter per kind. */
 export function destinationRegistry(

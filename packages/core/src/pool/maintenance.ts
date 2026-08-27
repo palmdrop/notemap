@@ -1,11 +1,6 @@
-import type { PoolConfig } from "../types/api/config";
-import type { PoolPorts } from "../types/api/ports";
-import type {
-  ActionId,
-  AssetId,
-  BlobHash,
-  Timestamp,
-} from "../types/domain/ids";
+import type { PoolConfig } from "#types/api/config";
+import type { PoolPorts } from "#types/api/ports";
+import type { ActionId, AssetId, BlobHash, Timestamp } from "#types/domain/ids";
 
 /**
  * How many assets one run takes. The store holds a write lock for the length of

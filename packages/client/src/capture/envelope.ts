@@ -1,4 +1,4 @@
-import type { CaptureEnvelope, Item } from "../api/types";
+import type { CaptureEnvelope, Item } from "#api/types";
 import type { CaptureInput } from "../types";
 
 const TEXT = "text";
