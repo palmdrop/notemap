@@ -53,18 +53,18 @@ Depends on nothing.
 
 Depends on phase 1.
 
-- [ ] `packaging/docker/compose.yaml`: one service, one named volume for the state directory, the
+- [x] `packaging/docker/compose.yaml`: one service, one named volume for the state directory, the
       config file mounted read-only, `restart: unless-stopped`, and **no `ports:`** — it joins the
       proxy's network and is reached by name
-- [ ] A healthcheck on `GET /v1/health`, which has no refusals and no parameters and is exactly this
+- [x] A healthcheck on `GET /v1/health`, which has no refusals and no parameters and is exactly this
       question. The image carries no curl; busybox `wget` or `node -e` does it
-- [ ] `stop_grace_period` leaves room for `SHUTDOWN_GRACE_MS` plus a delivery in flight — a lease
+- [x] `stop_grace_period` leaves room for `SHUTDOWN_GRACE_MS` plus a delivery in flight — a lease
       that expires with nothing reported is abandoned rather than retried, so a killed daemon costs
       a routing decision
-- [ ] Verify by hand: `docker compose up -d`, the health check goes healthy, the startup lines are
+- [x] Verify by hand: `docker compose up -d`, the health check goes healthy, the startup lines are
       in `docker compose logs`, `docker compose restart` and the pool is still there, reboot and it
       comes back
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 3 — one config that is the real one
 

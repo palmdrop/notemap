@@ -1,0 +1,42 @@
+# The compose project, so the container, the volume and the network are named
+# for what they are rather than for the directory this file sits in.
+name: notemap
+
+services:
+  notemap:
+    build:
+      context: ../..
+      dockerfile: packaging/docker/Dockerfile
+    image: notemap
+    restart: unless-stopped
+
+    # No `ports:`. The daemon has no authentication, so nothing reaches `/v1`
+    # except by way of the proxy, which reaches it by service name on the shared
+    # network. Publishing a port here would put the pool on the host's address.
+    networks: [proxy]
+
+    volumes:
+      - state:/var/lib/notemap
+      - ./config.toml:/etc/notemap/config.toml:ro
+
+    healthcheck:
+      test:
+        ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:4747/v1/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+    # Room for the shutdown grace plus a delivery still in flight. A lease that
+    # expires with nothing reported is abandoned rather than retried, so killing
+    # the daemon mid-delivery costs a routing decision.
+    stop_grace_period: 30s
+
+volumes:
+  # The pool, the mirror and the assets, which are one backup unit.
+  state:
+
+networks:
+  proxy:
+    external: true
+    name: ${NOTEMAP_PROXY_NETWORK:-proxy}
