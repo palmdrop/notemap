@@ -76,13 +76,24 @@ function guard(): void {
   }
 }
 
-function tagIsFree(tag: string): void {
+/** Why `tag` cannot be cut, or nothing. Answered rather than refused: by the time
+ * anyone can ask, the bump is already written and has to be put back first. */
+function tagConflict(tag: string): string | undefined {
   const local = spawnSync("git", ["rev-parse", "--verify", `refs/tags/${tag}`]);
-  if (local.status === 0) fail(`${tag} already exists`);
+  if (local.status === 0) return `${tag} already exists`;
 
-  if (run("git", ["ls-remote", "--tags", "origin", tag]) !== "") {
-    fail(`${tag} already exists on origin`);
-  }
+  return run("git", ["ls-remote", "--tags", "origin", tag]) === ""
+    ? undefined
+    : `${tag} already exists on origin`;
+}
+
+/**
+ * Undo the bump, then report. The clean-tree guard ran before anything was
+ * written, so discarding the manifest can only discard what this script did.
+ */
+function abandon(message: string): never {
+  run("git", ["checkout", "--", MANIFEST]);
+  fail(message);
 }
 
 const bump = bumpFrom(process.argv.slice(2));
@@ -101,7 +112,8 @@ loud("pnpm", ["version", bump, "--no-git-tag-version"]);
 const after = version();
 const tag = `v${after}`;
 
-tagIsFree(tag);
+const conflict = tagConflict(tag);
+if (conflict !== undefined) abandon(conflict);
 
 run("git", ["add", MANIFEST]);
 run("git", ["commit", "-m", `chore(release): ${tag}`]);
