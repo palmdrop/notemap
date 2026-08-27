@@ -24,7 +24,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description The daemon is up, and this is the pool it holds. */
+                /** @description The daemon is up, this is the pool it holds, and this is what it is. */
                 200: {
                     headers: {
                         [name: string]: unknown;

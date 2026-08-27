@@ -1,8 +1,8 @@
-# notemap on its own: reachable from this machine and nothing else.
+# notemap on one machine: reachable from that machine and nothing else.
 #
 # Copy this directory to the host, edit `.env` and `config.toml`, then
-# `docker compose up -d`. Behind a reverse proxy? Use `compose.proxy.yaml`
-# instead — it is a whole file, not an overlay on this one.
+# `docker compose up -d`. For a deployment behind a reverse proxy, use
+# `compose.proxy.yaml` — a whole file, not an overlay on this one.
 
 name: notemap
 
@@ -18,6 +18,8 @@ services:
 
     volumes:
       - state:/var/lib/notemap
+      # `/etc/notemap/config.toml` is where the image's own command looks. A
+      # daemon run directly reads `~/.config/notemap/config.toml` instead.
       - ./config.toml:/etc/notemap/config.toml:ro
       # A filesystem destination writes inside the container, so the vault it
       # names has to be visible there. The path a destination is created with in

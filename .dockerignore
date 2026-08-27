@@ -6,6 +6,8 @@ dist
 **/dist
 build
 **/build
+apps/daemon/public/ui
+apps/daemon/public/vendor
 .pnpm-store
 
 .git

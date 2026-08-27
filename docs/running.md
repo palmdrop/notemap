@@ -13,23 +13,27 @@ the daemon's config, and an `.env` naming the version.
 
 ## Get the files
 
+The repository is private, so the four files come out of a clone rather than a public tarball:
+
 ```sh
-mkdir -p /srv/notemap && cd /srv/notemap
-curl -L https://github.com/palmdrop/notemap/archive/refs/heads/main.tar.gz \
-  | tar xz --strip-components=3 '*/docker/compose'
+mkdir -p /srv/notemap
+gh repo clone palmdrop/notemap /tmp/notemap -- --depth 1
+cp -r /tmp/notemap/docker/compose/. /srv/notemap/
+cd /srv/notemap
 ```
 
-Or copy `docker/compose/` out of a clone you already have. The four files are yours from then on;
-upgrading does not replace them.
+They are yours from then on; upgrading does not replace them, and nothing else from that clone is
+needed on the host.
 
-The image lives at `ghcr.io/palmdrop/notemap`, and the package is private. Log in once per host:
+The image lives at `ghcr.io/palmdrop/notemap`, and the package is private too. Log in once per host:
 
 ```sh
 echo $PAT | docker login ghcr.io -u palmdrop --password-stdin
 ```
 
-**It has to be a classic personal access token** with the `read:packages` scope — GHCR does not
-accept fine-grained tokens. The login is stored, so this is a one-time step per machine.
+A classic personal access token with the `read:packages` scope is the form that has always worked;
+fine-grained tokens have been gaining Packages support, so check the current state before assuming
+one will not do. The login is stored, so this is a one-time step per machine.
 
 ## Standalone
 
@@ -101,6 +105,10 @@ curl -s http://127.0.0.1:4747/v1/health
 {"pool":"12add8f7-f445-4b8e-b526-317cd85c46a1","version":"0.2.0"}
 ```
 
+That address is the one `compose.yaml` publishes. Under `compose.proxy.yaml` nothing is on the host
+at all, so ask from inside instead — `docker compose -f compose.proxy.yaml exec notemap wget -qO-
+http://127.0.0.1:4747/v1/health` — or over the proxy's hostname.
+
 ## Upgrading
 
 The version you run is one line in `.env`:
@@ -118,9 +126,12 @@ Which tags exist:
 
 | | |
 |---|---|
-| `v0.2.0`, `0.2` | A release. What you should be running. |
+| `v0.2.0`, `v0.2` | A release. What you should be running. |
 | `sha-a1b2c3d` | Any commit on `main`, for trying something that has no release yet. |
 | `latest` | The most recent release. Moves on its own. |
+
+The image tags carry the `v` the git tag does, so the version in `.env` is the release as it is
+written everywhere else.
 
 The volume is never touched by an upgrade. Notemap is greenfield and has no migrations: features and
 APIs may change without one ([AGENTS.md](../AGENTS.md#what-this-project-is)), so read what changed
@@ -150,7 +161,10 @@ docker compose start
 
 ## The config
 
-`config.toml` is mounted read-only at `/etc/notemap/config.toml`. Editing it takes a
+`config.toml` is mounted read-only at `/etc/notemap/config.toml`, which is where the image's own
+command looks — not a notemap default. Run directly, the daemon reads
+`~/.config/notemap/config.toml`; the container names its path explicitly instead, because `/etc` is
+where an operator's file belongs and the daemon's own user's home is not. Editing it takes a
 `docker compose restart`.
 
 It binds `host = "0.0.0.0"`, which is not the daemon relaxing: a container that binds loopback is
@@ -229,7 +243,7 @@ pnpm release patch   # or minor, or major
 
 It refuses unless you are on `main` with a clean tree and nothing unpulled, runs typecheck, lint,
 format, the tests and the full-stack suite, then bumps the version in `package.json`, commits it as
-`chore(release): v0.2.0`, tags, and pushes both. CI builds from the tag and pushes `v0.2.0`, `0.2`
+`chore(release): v0.2.0`, tags, and pushes both. CI builds from the tag and pushes `v0.2.0`, `v0.2`
 and `latest` to GHCR — and refuses if the tag and `package.json` disagree.
 
 Every push to `main` also gets a `sha-<short>` tag, so a build with no release yet is still

@@ -121,8 +121,11 @@ Two compose files ship, and the difference between them is exactly this boundary
   has the proxy on it, not a safe one, and it is named rather than defaulted so that it is never
   quietly the network every container on the host shares.
 
-Running both at once is publishing the port *and* joining the network, which is the union of what
-each exposes rather than the intersection.
+Merging the two — `docker compose -f compose.yaml -f compose.proxy.yaml up` — publishes the port
+*and* joins the network, which is the union of what each exposes rather than the intersection.
+Running one after the other does something else: both files name the same project and the same
+service, so the second `up` replaces the container the first made, and what is exposed is whichever
+file was named last.
 
 ### What the proxy carries until the daemon has a door
 

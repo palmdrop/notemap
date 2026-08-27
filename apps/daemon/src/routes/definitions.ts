@@ -127,7 +127,8 @@ export const healthRoute = createRoute({
     "Liveness, the pool identity, and the daemon's own version. The identity is opaque and stable for as long as that pool exists; a pool rebuilt from its mirror is a different pool and answers a different identity. The version is the release this daemon was built from, so whoever runs it can ask it rather than infer it from an image tag. This route has no refusals: a daemon that cannot answer is not answering.",
   responses: {
     200: {
-      description: "The daemon is up, and this is the pool it holds.",
+      description:
+        "The daemon is up, this is the pool it holds, and this is what it is.",
       content: { [JSON_MEDIA_TYPE]: { schema: healthSchema } },
     },
   },

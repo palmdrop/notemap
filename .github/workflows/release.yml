@@ -43,6 +43,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # The `v` is written into the patterns because `{{version}}` alone strips
+      # it, and an image tag that is not the git tag is a translation everyone
+      # reading a release has to do in their head.
+      #
       # `latest` only ever moves on a tag, so a compose file that has not been
       # pinned still follows releases rather than whatever main last was. Every
       # push to main is reachable as `sha-<short>`, which is what pins a build
@@ -53,8 +57,8 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern=v{{version}}
+            type=semver,pattern=v{{major}}.{{minor}}
             type=sha,prefix=sha-
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
 

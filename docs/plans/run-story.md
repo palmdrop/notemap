@@ -140,8 +140,8 @@ Depends on phase 2, which is the arrangement being described.
       written imagining a loopback bind, and that sentence is misleading in the deployment this plan
       builds: the daemon binds every interface by necessity, so what limits reach is the compose
       network and the proxy in front of it. Anything else on a shared Docker network reaches an
-      unauthenticated `/v1` — which is why the service joins the proxy's network and its own, and
-      not the default one
+      unauthenticated `/v1` — which is why the service joins one named network, the proxy's, and
+      never the default one
 - [x] The **general** rewrite of that section — the several shapes a deployment takes, of which a
       container is one — belongs to [login-and-access-tokens](login-and-access-tokens.md), which
       lands next and changes what the section is about. Two plans editing one section in sequence is

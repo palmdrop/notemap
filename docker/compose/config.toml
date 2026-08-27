@@ -1,8 +1,10 @@
 # notemap daemon configuration, as the container runs it.
 #
-# Mounted read-only at /etc/notemap/config.toml by `compose.yaml`. The
-# annotated version of every key is `apps/daemon/config.example.toml`; this
-# file is the deployed one and says only what the container changes.
+# Both compose files mount it read-only at /etc/notemap/config.toml, which is
+# where the image's own command looks; a daemon run directly reads
+# `~/.config/notemap/config.toml` instead. The annotated version of every key is
+# `apps/daemon/config.example.toml`; this file is the deployed one and says only
+# what the container changes.
 #
 # **Destinations are not in here.** A vault is created in settings and lives in
 # the pool, so it survives a rebuild of the image and is edited without a

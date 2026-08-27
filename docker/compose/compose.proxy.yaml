@@ -1,8 +1,12 @@
-# notemap behind a reverse proxy that already fronts your other apps.
+# notemap behind a reverse proxy.
 #
-# Copy this directory to the host, set `PROXY_NETWORK` in `.env` to the network
-# your proxy is already on, then `docker compose -f compose.proxy.yaml up -d`.
-# The proxy carries TLS and authentication; notemap has neither.
+# For a deployment that already has a proxy on a Docker network. Copy this
+# directory to the host, set `PROXY_NETWORK` in `.env` to that network, then
+# `docker compose -f compose.proxy.yaml up -d`. The proxy carries TLS and
+# authentication; notemap has neither.
+#
+# Running on one machine with no proxy? `compose.yaml` is that case, and is a
+# whole file rather than an overlay on this one.
 
 name: notemap
 
@@ -17,6 +21,8 @@ services:
 
     volumes:
       - state:/var/lib/notemap
+      # `/etc/notemap/config.toml` is where the image's own command looks. A
+      # daemon run directly reads `~/.config/notemap/config.toml` instead.
       - ./config.toml:/etc/notemap/config.toml:ro
       # A filesystem destination writes inside the container, so the vault it
       # names has to be visible there. The path a destination is created with in
@@ -45,9 +51,9 @@ volumes:
   state:
 
 networks:
-  # Yours, and already there — compose will not create it. Everything else on
-  # it reaches an unauthenticated `/v1`, so it should be the network the proxy
-  # is on and not a network everything on the host shares.
+  # Already there, and not created by compose. Everything else on it reaches an
+  # unauthenticated `/v1`, so it should be the smallest network that still has
+  # the proxy on it rather than one every container on the host shares.
   proxy:
     external: true
-    name: ${PROXY_NETWORK:?set PROXY_NETWORK in .env to your proxy's network}
+    name: ${PROXY_NETWORK:?set PROXY_NETWORK in .env to the proxy's network}

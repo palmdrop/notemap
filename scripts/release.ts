@@ -18,7 +18,18 @@ const CHECKS: readonly (readonly string[])[] = [
   ["test:stack"],
 ];
 
+/**
+ * What has to be put back if the release stops where it is now. Every git call
+ * after the version is written can fail, and none of them should leave a bump
+ * or a commit behind for the next run's clean-tree guard to trip over.
+ */
+let unwind: (() => void) | undefined;
+
 function fail(message: string): never {
+  const undo = unwind;
+  unwind = undefined;
+  undo?.();
+
   console.error(`release: ${message}`);
   process.exit(1);
 }
@@ -87,15 +98,6 @@ function tagConflict(tag: string): string | undefined {
     : `${tag} already exists on origin`;
 }
 
-/**
- * Undo the bump, then report. The clean-tree guard ran before anything was
- * written, so discarding the manifest can only discard what this script did.
- */
-function abandon(message: string): never {
-  run("git", ["checkout", "--", MANIFEST]);
-  fail(message);
-}
-
 const bump = bumpFrom(process.argv.slice(2));
 const before = version();
 
@@ -109,15 +111,26 @@ for (const check of CHECKS) {
 // After the checks, so a failing one costs nothing that has to be undone.
 loud("pnpm", ["version", bump, "--no-git-tag-version"]);
 
+// Raw `spawnSync` rather than `run`, so unwinding cannot itself call `fail`.
+// The clean-tree guard ran before any of this, so both can only undo this run.
+unwind = () => void spawnSync("git", ["checkout", "--", MANIFEST]);
+
 const after = version();
 const tag = `v${after}`;
 
 const conflict = tagConflict(tag);
-if (conflict !== undefined) abandon(conflict);
+if (conflict !== undefined) fail(conflict);
 
 run("git", ["add", MANIFEST]);
 run("git", ["commit", "-m", `chore(release): ${tag}`]);
+
+unwind = () => void spawnSync("git", ["reset", "--hard", "HEAD~1"]);
+
 run("git", ["tag", tag]);
+
+// From here the tag exists and a failure is worth keeping: the push below says
+// how to retry it rather than making the release start over.
+unwind = undefined;
 
 console.log(`release: notemap ${before} -> ${after}`);
 
