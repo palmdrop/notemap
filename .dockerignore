@@ -1,0 +1,26 @@
+# The build stage installs from the lockfile and builds from source; anything
+# already built on the host is a different machine's answer to the same question.
+node_modules
+**/node_modules
+dist
+**/dist
+build
+**/build
+.pnpm-store
+
+.git
+.github
+.claude
+
+docs
+
+data
+state
+pool-mirror
+assets
+*.db
+*.db-wal
+*.db-shm
+
+.env
+*.env

@@ -35,19 +35,19 @@ as a plain directory.
 
 Depends on nothing.
 
-- [ ] Create branch `agent/run-story`
-- [ ] `packaging/docker/Dockerfile`, two stages. The builder takes the workspace, installs frozen,
+- [x] Create branch `agent/run-story`
+- [x] `packaging/docker/Dockerfile`, two stages. The builder takes the workspace, installs frozen,
       and runs `pnpm build`. The runtime carries `apps/daemon/dist` and `apps/daemon/public` and
       nothing else: the bundle holds every workspace package, the store is `node:sqlite`, and there
       is no `node_modules` at runtime
-- [ ] `dist/` and `public/` keep their relative positions in the image — `paths.ts` resolves
+- [x] `dist/` and `public/` keep their relative positions in the image — `paths.ts` resolves
       `public/` as a sibling of the directory the bundle sits in. Say so where the copy happens
-- [ ] It runs as a non-root uid that owns the state directory, and the entrypoint is the bundle with
+- [x] It runs as a non-root uid that owns the state directory, and the entrypoint is the bundle with
       `--config` naming the mounted file. `SIGTERM` reaches PID 1 as itself, since the daemon's own
       handler is what gives the runners' leases back
-- [ ] Verify: `docker build`, then run the image against a scratch config and a scratch volume;
+- [x] Verify: `docker build`, then run the image against a scratch config and a scratch volume;
       `GET /v1/health` answers and `/ui` serves. `docker stop` exits without the ten-second kill
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 2 — a service that comes back
 
