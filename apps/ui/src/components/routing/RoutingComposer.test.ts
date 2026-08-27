@@ -3,7 +3,7 @@ import { expect, test, vi } from "vitest";
 
 import { json, routeOf } from "@notemap/client/testing";
 
-import { asked, pool } from "../../testing/pool";
+import { asked, pool } from "$testing/pool";
 import RoutingComposer from "./RoutingComposer.svelte";
 
 vi.mock("$lib/client", () => import("../../testing/pool"));

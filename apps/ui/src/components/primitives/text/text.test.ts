@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { expect, test } from "vitest";
 
-import { overflowing } from "../../../testing/dom";
+import { overflowing } from "$testing/dom";
 import Figure from "./Figure.svelte";
 import Prose from "./Prose.svelte";
 import ClampFixture from "./Clamp.fixture.svelte";

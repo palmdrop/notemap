@@ -5,7 +5,7 @@ import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import Feed from "$components/feed/Feed.svelte";
 
-import { pool } from "../../testing/pool";
+import { pool } from "$testing/pool";
 import CaptureRow from "./CaptureRow.svelte";
 
 vi.mock("$lib/client", () => import("../../testing/pool"));

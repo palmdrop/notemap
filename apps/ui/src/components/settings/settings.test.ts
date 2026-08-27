@@ -3,8 +3,8 @@ import { expect, test, vi } from "vitest";
 
 import { json, routeOf } from "@notemap/client/testing";
 
-import { online } from "../../testing/dom";
-import { asked, pool } from "../../testing/pool";
+import { online } from "$testing/dom";
+import { asked, pool } from "$testing/pool";
 import Daemon from "./Daemon.svelte";
 import Destinations from "./Destinations.svelte";
 

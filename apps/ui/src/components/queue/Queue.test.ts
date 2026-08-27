@@ -4,10 +4,10 @@ import { tick } from "svelte";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
-import { asked, client, pool } from "../../testing/pool";
+import { asked, client, pool } from "$testing/pool";
 import { NO_MORE_OFFLINE } from "$lib/said";
 import { briefly } from "$lib/stamp";
-import { online } from "../../testing/dom";
+import { online } from "$testing/dom";
 import { rail } from "$lib/rail.svelte";
 import { remember } from "$lib/order";
 import Queue from "./Queue.svelte";

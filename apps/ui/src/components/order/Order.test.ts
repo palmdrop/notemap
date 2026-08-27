@@ -3,7 +3,7 @@ import { beforeEach, expect, test, vi } from "vitest";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
-import { pool } from "../../testing/pool";
+import { pool } from "$testing/pool";
 import Order from "./Order.svelte";
 
 vi.mock("$lib/client", () => import("../../testing/pool"));
