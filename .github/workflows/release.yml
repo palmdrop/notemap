@@ -21,6 +21,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # A tag made by hand can name a version the repo does not hold, and the
+      # image would then be labelled something no commit says it is.
+      - name: The tag matches package.json
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          held=$(node -p "require('./package.json').version")
+          tagged="${GITHUB_REF_NAME#v}"
+          if [ "$held" != "$tagged" ]; then
+            echo "tag $GITHUB_REF_NAME does not match package.json version $held" >&2
+            exit 1
+          fi
+
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 

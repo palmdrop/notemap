@@ -121,9 +121,10 @@ const actionsQuery = pageQuery.extend({
 export const healthRoute = createRoute({
   method: "get",
   path: "/v1/health",
-  summary: "Read that the daemon is up, and which pool it is serving",
+  summary:
+    "Read that the daemon is up, which pool it is serving, and its version",
   description:
-    "Liveness and the pool identity, which is opaque and stable for as long as that pool exists. A pool rebuilt from its mirror is a different pool and answers a different identity. This route has no refusals: a daemon that cannot answer is not answering.",
+    "Liveness, the pool identity, and the daemon's own version. The identity is opaque and stable for as long as that pool exists; a pool rebuilt from its mirror is a different pool and answers a different identity. The version is the release this daemon was built from, so whoever runs it can ask it rather than infer it from an image tag. This route has no refusals: a daemon that cannot answer is not answering.",
   responses: {
     200: {
       description: "The daemon is up, and this is the pool it holds.",

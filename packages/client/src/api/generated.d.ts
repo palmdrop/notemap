@@ -12,8 +12,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Read that the daemon is up, and which pool it is serving
-         * @description Liveness and the pool identity, which is opaque and stable for as long as that pool exists. A pool rebuilt from its mirror is a different pool and answers a different identity. This route has no refusals: a daemon that cannot answer is not answering.
+         * Read that the daemon is up, which pool it is serving, and its version
+         * @description Liveness, the pool identity, and the daemon's own version. The identity is opaque and stable for as long as that pool exists; a pool rebuilt from its mirror is a different pool and answers a different identity. The version is the release this daemon was built from, so whoever runs it can ask it rather than infer it from an image tag. This route has no refusals: a daemon that cannot answer is not answering.
          */
         get: {
             parameters: {
@@ -2217,6 +2217,8 @@ export interface components {
         Health: {
             /** @example a1c9f2e4-6b30-4d51-9e7a-2f8b40c1d6e3 */
             pool: string;
+            /** @example 0.2.0 */
+            version: string;
         };
         CaptureOutcome: {
             /** @enum {string} */

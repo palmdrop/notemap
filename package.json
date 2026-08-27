@@ -1,5 +1,6 @@
 {
   "name": "notemap",
+  "version": "0.0.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -7,6 +8,7 @@
   },
   "scripts": {
     "dev": "node scripts/dev.ts",
+    "release": "node scripts/release.ts",
     "seed": "node scripts/seed.ts",
     "build": "pnpm --filter @notemap/ui build && pnpm --filter @notemap/daemon build",
     "typecheck": "pnpm -r typecheck",

@@ -94,6 +94,13 @@ docker compose ps      # healthy, once the healthcheck has asked /v1/health
 docker compose logs    # the pool, the mirror, the assets and the destinations it found
 ```
 
+To ask what is actually running rather than infer it from an image tag:
+
+```sh
+curl -s http://127.0.0.1:4747/v1/health
+{"pool":"12add8f7-f445-4b8e-b526-317cd85c46a1","version":"0.2.0"}
+```
+
 ## Upgrading
 
 The version you run is one line in `.env`:
@@ -217,11 +224,16 @@ uid. [A webdav destination kind](plans/destination-webdav.md) is what makes it w
 From a clone, on the machine you develop on:
 
 ```sh
-git tag v0.2.0 && git push --tags
+pnpm release patch   # or minor, or major
 ```
 
-CI builds the image and pushes `v0.2.0`, `0.2` and `latest` to GHCR. Every push to `main` also gets
-a `sha-<short>` tag, so a build with no release yet is still something the homelab can pin.
+It refuses unless you are on `main` with a clean tree and nothing unpulled, runs typecheck, lint,
+format, the tests and the full-stack suite, then bumps the version in `package.json`, commits it as
+`chore(release): v0.2.0`, tags, and pushes both. CI builds from the tag and pushes `v0.2.0`, `0.2`
+and `latest` to GHCR — and refuses if the tag and `package.json` disagree.
+
+Every push to `main` also gets a `sha-<short>` tag, so a build with no release yet is still
+something the homelab can pin.
 
 To try the image locally without a release, build it under a name the compose files will use:
 

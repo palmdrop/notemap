@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-26
 **Status**: In progress
-**Spec**: `docs/specs/security.md`
+**Spec**: `docs/specs/security.md`, `docs/specs/http-v1.md`
 **Closed**:
 
 ---
@@ -40,6 +40,12 @@ What changed, and why:
   used: the build needs esbuild, vite, svelte and typescript.
 
 Phases 3, 4 and 5 stand; their files moved and their words changed to match.
+
+- **A release is `pnpm release patch|minor|major`.** The version lives in the root `package.json`,
+  the daemon reports it on `GET /v1/health`, and the script bumps, verifies, commits, tags and
+  pushes — which is the flow linkding and paperless-ngx both use. Reporting it amends
+  [http-v1.md](../specs/http-v1.md), which had said no version belonged in that response because
+  nothing asked for one; a deployed container has an operator, and they do.
 
 **Not changed, and asked about**: the app stays inside the daemon's container rather than becoming a
 service of its own. The no-CORS property in [security.md](../specs/security.md) depends on the app
