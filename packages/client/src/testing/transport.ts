@@ -1,4 +1,4 @@
-import type { Transport } from "../ports/transport";
+import type { Transport } from "#ports/transport";
 
 export type Handler = (request: Request) => Promise<Response> | Response;
 

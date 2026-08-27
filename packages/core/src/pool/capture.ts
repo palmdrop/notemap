@@ -4,15 +4,15 @@ import { recordAction } from "./actions";
 import { enqueueMirrorWrite } from "./mirror";
 import { canonicalPayload, checkAssets, checkPayload } from "./payload";
 import { normalised } from "./tags";
-import { ok, refused } from "../utils/result";
-import type { PoolConfig } from "../types/api/config";
-import type { PoolPorts, PoolTx } from "../types/api/ports";
-import type { CaptureRefusal } from "../types/api/refusal";
-import type { Agent } from "../types/domain/agent";
-import type { CaptureEnvelope, CaptureOutcome } from "../types/domain/capture";
-import type { ItemId } from "../types/domain/ids";
-import type { Item, ItemRecord } from "../types/domain/item";
-import type { Result } from "../types/result";
+import { ok, refused } from "#utils/result";
+import type { PoolConfig } from "#types/api/config";
+import type { PoolPorts, PoolTx } from "#types/api/ports";
+import type { CaptureRefusal } from "#types/api/refusal";
+import type { Agent } from "#types/domain/agent";
+import type { CaptureEnvelope, CaptureOutcome } from "#types/domain/capture";
+import type { ItemId } from "#types/domain/ids";
+import type { Item, ItemRecord } from "#types/domain/item";
+import type { Result } from "#types/result";
 
 type CaptureResult = Result<CaptureOutcome, CaptureRefusal>;
 

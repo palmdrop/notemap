@@ -1,5 +1,5 @@
-import { answered, type Api } from "../api/http";
-import type { TagUse } from "../api/types";
+import { answered, type Api } from "#api/http";
+import type { TagUse } from "#api/types";
 import type { TagsApi } from "../types";
 import type { Observable } from "rxjs";
 

@@ -1,17 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { createMemoryStore } from "../adapters/memory-store";
-import type { Destination } from "../api/types";
+import type { Destination } from "#api/types";
 import { createClient } from "../client";
 import { Refused, Unreachable } from "../errors";
-import { read } from "../testing/observing";
-import { asked as sentTo, routeOf } from "../testing/pool";
-import {
-  json,
-  mockTransport,
-  refusal,
-  type Handler,
-} from "../testing/transport";
+import { read } from "#testing/observing";
+import { asked as sentTo, routeOf } from "#testing/pool";
+import { json, mockTransport, refusal, type Handler } from "#testing/transport";
 
 function clientOver(handler: Handler) {
   const transport = mockTransport(handler);

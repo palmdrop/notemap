@@ -19,8 +19,9 @@ Code
 - Comments are the exception. Do not restate the code, do not explain rejected alternatives, do not point at discussions, ADRs or other docs.
 - Before writing one, two questions: would a reader ask _why_ here, and can the code itself answer it? Write the comment only if the answers are yes and no.
 - Keep files small and grouped by concern, in folders. Tests live beside what they test.
-- Prefer an alias to reach across a top-level `src/` folder, where one exists: `#folder/*` from
-  the package's own `imports` field, `$folder` in the UI. Relative is fine where none does.
+- Reach across a top-level `src/` folder through an alias, where one exists: `#folder/*` from
+  the package's own `imports` field, `$folder` in the UI. Relative is for reaching within your
+  own folder, and for crossings no alias covers.
 
 Git
 
@@ -101,21 +102,26 @@ types, utils, constants. A flat directory of everything is not a structure. Test
 what they test.
 
 Within a folder, import relatively. Reaching across a top-level folder under `src/` prefers an
-alias: `#types/domain/ids` rather than `../../types/domain/ids`. The relative form then leans
-towards one meaning — "this lives next to me" — and moving an aliased folder stops rewriting its
-callers.
+alias: `#types/domain/ids` rather than `../../types/domain/ids`. Moving an aliased folder then
+stops rewriting its callers, and the `..` that remains is left saying something — `../handler`
+reaches the root of the folder the file belongs to, which is a real relation, not a count of
+directories.
 
-A preference, not a rule, and nothing checks it. The alias has to exist to be used: a package
-names the folders it aliases and stops there, and most of the tree still reaches across
-relatively. Write the alias where one is declared, add one where a folder is reached across
-often enough to earn it, and use the relative path otherwise — a sweep converting the rest is
-its own change, not something to do in passing.
+A preference, not a rule, and nothing checks it. What holds it up is that the sweep was done:
+in `packages/core` and `packages/client`, every crossing into a folder they alias goes through
+the alias, so there is no second spelling to copy. The alias still has to exist to be used —
+`apps/daemon` declares none, and a package names the folders it aliases and stops there. Write
+the alias where one is declared, add one where a folder is reached across often enough to earn
+it, and reach relatively where neither applies.
 
 Aliases live in the `imports` field of the package's own `package.json`. Not tsconfig `paths`:
 these packages export TypeScript source, so the daemon's esbuild and the app's Vite build compile
 each other's `src/` directly, and neither reads a dependency's tsconfig. `imports` travels in the
 manifest every resolver already opens. The app is the exception — SvelteKit owns resolution
 there, so its aliases stay in `vite.config.ts` beside `$components`.
+
+Hence the two sigils, which are not a choice: an `imports` key must begin with `#`, and
+SvelteKit's own are `$lib` and `$app`. Whoever owns resolution names the alias.
 
 ## Git
 

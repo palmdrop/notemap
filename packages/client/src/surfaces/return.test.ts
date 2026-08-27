@@ -2,15 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createMemoryStore } from "../adapters/memory-store";
 import { createClient } from "../client";
-import type { PendingOperation } from "../outbox/operations";
-import { read } from "../testing/observing";
-import { anItem, routeOf } from "../testing/pool";
-import {
-  json,
-  mockTransport,
-  refusal,
-  type Handler,
-} from "../testing/transport";
+import type { PendingOperation } from "#outbox/operations";
+import { read } from "#testing/observing";
+import { anItem, routeOf } from "#testing/pool";
+import { json, mockTransport, refusal, type Handler } from "#testing/transport";
 import type { Client, ListState } from "../types";
 
 const ids = (list: ListState) => list.items.map((item) => item.id);

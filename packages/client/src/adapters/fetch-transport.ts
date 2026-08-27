@@ -1,4 +1,4 @@
-import type { Transport } from "../ports/transport";
+import type { Transport } from "#ports/transport";
 
 export function createFetchTransport(baseUrl = ""): Transport {
   return {

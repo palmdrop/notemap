@@ -1,13 +1,13 @@
 import fc from "fast-check";
 
-import type { JsonObject } from "../types/json";
-import type { Agent } from "../types/domain/agent";
-import type { Asset, AssetRef } from "../types/domain/asset";
-import type { Destination } from "../types/domain/destination";
-import type { Artifact } from "../types/domain/enrichment";
-import type { DestinationId, Timestamp } from "../types/domain/ids";
-import type { Item, RoutingSummary } from "../types/domain/item";
-import type { RoutingRecord } from "../types/domain/routing";
+import type { JsonObject } from "#types/json";
+import type { Agent } from "#types/domain/agent";
+import type { Asset, AssetRef } from "#types/domain/asset";
+import type { Destination } from "#types/domain/destination";
+import type { Artifact } from "#types/domain/enrichment";
+import type { DestinationId, Timestamp } from "#types/domain/ids";
+import type { Item, RoutingSummary } from "#types/domain/item";
+import type { RoutingRecord } from "#types/domain/routing";
 
 /**
  * Generated pool state, for the property that keeps the mirror honest. Every

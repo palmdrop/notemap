@@ -1,7 +1,7 @@
-import type { PoolConfig } from "../types/api/config";
-import type { Pool } from "../types/api/pool";
-import type { PoolPorts } from "../types/api/ports";
-import type { OrderedPage, PageRequest, ReadOrder } from "../types/result";
+import type { PoolConfig } from "#types/api/config";
+import type { Pool } from "#types/api/pool";
+import type { PoolPorts } from "#types/api/ports";
+import type { OrderedPage, PageRequest, ReadOrder } from "#types/result";
 
 import * as archive from "./archive";
 import * as assets from "./assets";

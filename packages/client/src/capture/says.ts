@@ -1,4 +1,4 @@
-import type { Payload } from "../api/types";
+import type { Payload } from "#api/types";
 
 const IMAGE = "image";
 

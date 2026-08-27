@@ -10,9 +10,9 @@ import {
   startWith,
 } from "rxjs";
 
-import type { Item, ItemId } from "../api/types";
+import type { Item, ItemId } from "#api/types";
 import type { Writable } from "../observable/observable";
-import type { ClientStore } from "../ports/store";
+import type { ClientStore } from "#ports/store";
 import type { ClientState } from "./state";
 
 /**

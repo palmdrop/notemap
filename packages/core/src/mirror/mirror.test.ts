@@ -1,10 +1,10 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
-import type { Asset } from "../types/domain/asset";
-import type { ItemId, Timestamp } from "../types/domain/ids";
-import type { Item } from "../types/domain/item";
-import type { RoutingRecord } from "../types/domain/routing";
+import type { Asset } from "#types/domain/asset";
+import type { ItemId, Timestamp } from "#types/domain/ids";
+import type { Item } from "#types/domain/item";
+import type { RoutingRecord } from "#types/domain/routing";
 
 import { destination, poolState, type PoolState } from "./arbitraries";
 import { parseMirrorRecord, serialiseMirrorRecord } from "./codec";

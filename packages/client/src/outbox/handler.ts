@@ -1,7 +1,7 @@
-import type { Api } from "../api/http";
-import type { AssetId, Item, ItemId } from "../api/types";
-import type { Applied, Undo } from "../state/applied";
-import { settle, type ClientState } from "../state/state";
+import type { Api } from "#api/http";
+import type { AssetId, Item, ItemId } from "#api/types";
+import type { Applied, Undo } from "#state/applied";
+import { settle, type ClientState } from "#state/state";
 import type { Operation, OperationKind } from "./operations";
 
 type Of<K extends OperationKind> = Extract<Operation, { kind: K }>;

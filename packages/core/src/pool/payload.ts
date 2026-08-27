@@ -1,8 +1,8 @@
-import type { SchemaIssue } from "../types/json";
-import type { PoolConfig } from "../types/api/config";
-import type { PoolPorts, PoolTx } from "../types/api/ports";
-import type { AssetId, PayloadTypeName } from "../types/domain/ids";
-import type { Payload } from "../types/domain/payload";
+import type { SchemaIssue } from "#types/json";
+import type { PoolConfig } from "#types/api/config";
+import type { PoolPorts, PoolTx } from "#types/api/ports";
+import type { AssetId, PayloadTypeName } from "#types/domain/ids";
+import type { Payload } from "#types/domain/payload";
 
 export type PayloadRefusal =
   | { readonly kind: "unknown-payload-type"; readonly type: PayloadTypeName }

@@ -1,8 +1,8 @@
-import { answered } from "../api/http";
-import type { AssetId } from "../api/types";
+import { answered } from "#api/http";
+import type { AssetId } from "#api/types";
 import { Unreachable, Unreadable } from "../errors";
-import type { Sending } from "../outbox/handler";
-import type { Operation, PendingOperation } from "../outbox/operations";
+import type { Sending } from "#outbox/handler";
+import type { Operation, PendingOperation } from "#outbox/operations";
 
 export function namedBy(operation: Operation): readonly AssetId[] {
   return "envelope" in operation

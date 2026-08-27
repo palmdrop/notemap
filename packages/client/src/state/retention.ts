@@ -1,5 +1,5 @@
-import type { Item, ItemId } from "../api/types";
-import { targetOf } from "../outbox/registry";
+import type { Item, ItemId } from "#api/types";
+import { targetOf } from "#outbox/registry";
 import { unprocessed, type ClientState } from "./state";
 
 export const HISTORY = 500;

@@ -13,6 +13,8 @@
     "#state/*": "./src/state/*.ts",
     "#assets/*": "./src/assets/*.ts",
     "#capture/*": "./src/capture/*.ts",
+    "#outbox/*": "./src/outbox/*.ts",
+    "#ports/*": "./src/ports/*.ts",
     "#testing/*": "./src/testing/*.ts"
   },
   "scripts": {

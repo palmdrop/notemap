@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import type { PoolConfig } from "../types/api/config";
-import type { PoolPorts, PoolStore } from "../types/api/ports";
-import type { PoolIdentity } from "../types/domain/ids";
+import type { PoolConfig } from "#types/api/config";
+import type { PoolPorts, PoolStore } from "#types/api/ports";
+import type { PoolIdentity } from "#types/domain/ids";
 
 import { createPool } from "./pool";
 

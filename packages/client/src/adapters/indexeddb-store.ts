@@ -7,9 +7,9 @@ import type {
   ItemId,
   PoolIdentity,
   TagUse,
-} from "../api/types";
-import type { OperationId, PendingOperation } from "../outbox/operations";
-import type { ClientStore } from "../ports/store";
+} from "#api/types";
+import type { OperationId, PendingOperation } from "#outbox/operations";
+import type { ClientStore } from "#ports/store";
 import { localUrls } from "./local-urls";
 
 const DATABASE = "notemap";

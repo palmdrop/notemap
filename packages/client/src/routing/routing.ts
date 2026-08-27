@@ -1,5 +1,5 @@
-import { acknowledged, answered, type Api } from "../api/http";
-import type { ItemId, RoutingRecord } from "../api/types";
+import { acknowledged, answered, type Api } from "#api/http";
+import type { ItemId, RoutingRecord } from "#api/types";
 import type { RoutingApi } from "../types";
 
 export type RoutingDeps = {

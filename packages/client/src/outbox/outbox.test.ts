@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { createMemoryStore } from "../adapters/memory-store";
-import type { Item } from "../api/types";
+import type { Item } from "#api/types";
 import { Refused, Unreachable } from "../errors";
 import { writable, type Writable } from "../observable/observable";
-import { cached, emptyState, withIds, type ClientState } from "../state/state";
-import { anItem, stoppedClock } from "../testing/pool";
+import { cached, emptyState, withIds, type ClientState } from "#state/state";
+import { anItem, stoppedClock } from "#testing/pool";
 import { replacing, type Settlement } from "./handler";
 import type { Operation } from "./operations";
 import { createOutbox } from "./outbox";

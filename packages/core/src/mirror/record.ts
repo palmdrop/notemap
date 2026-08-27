@@ -1,14 +1,14 @@
-import type { Asset } from "../types/domain/asset";
-import type { Destination } from "../types/domain/destination";
-import type { Artifact } from "../types/domain/enrichment";
-import type { Timestamp } from "../types/domain/ids";
-import type { Item, ItemRecord, Tag } from "../types/domain/item";
+import type { Asset } from "#types/domain/asset";
+import type { Destination } from "#types/domain/destination";
+import type { Artifact } from "#types/domain/enrichment";
+import type { Timestamp } from "#types/domain/ids";
+import type { Item, ItemRecord, Tag } from "#types/domain/item";
 import type {
   DestinationMirrorRecord,
   ItemMirrorRecord,
-} from "../types/domain/mirror";
-import type { Payload } from "../types/domain/payload";
-import type { RoutingRecord } from "../types/domain/routing";
+} from "#types/domain/mirror";
+import type { Payload } from "#types/domain/payload";
+import type { RoutingRecord } from "#types/domain/routing";
 
 /**
  * One item's durable state, in the one form the mirror stores it in.

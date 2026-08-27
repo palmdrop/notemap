@@ -1,6 +1,6 @@
-import type { PoolPorts, PoolTx } from "../types/api/ports";
-import type { Action } from "../types/domain/action-log";
-import type { ActionId } from "../types/domain/ids";
+import type { PoolPorts, PoolTx } from "#types/api/ports";
+import type { Action } from "#types/domain/action-log";
+import type { ActionId } from "#types/domain/ids";
 
 export type ActionDraft = Omit<Action, "id">;
 

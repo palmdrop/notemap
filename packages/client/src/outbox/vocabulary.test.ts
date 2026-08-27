@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { createApi } from "../api/http";
+import { createApi } from "#api/http";
 import { Unencodable } from "../errors";
-import { emptyState } from "../state/state";
-import { mockTransport } from "../testing/transport";
+import { emptyState } from "#state/state";
+import { mockTransport } from "#testing/transport";
 import type { Operation } from "./operations";
 import { applyOperation, opposes, sendOperation, targetOf } from "./registry";
 

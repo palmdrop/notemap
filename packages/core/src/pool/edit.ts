@@ -3,16 +3,16 @@ import { dequal } from "dequal";
 import { recordAction } from "./actions";
 import { enqueueMirrorWrite } from "./mirror";
 import { canonicalPayload, checkAssets, checkPayload } from "./payload";
-import { ok, refused } from "../utils/result";
-import type { PoolConfig } from "../types/api/config";
-import type { Agent } from "../types/domain/agent";
-import type { PoolPorts, PoolTx } from "../types/api/ports";
-import type { EditRefusal } from "../types/api/refusal";
-import type { EditEnvelope } from "../types/domain/capture";
-import type { ItemId } from "../types/domain/ids";
-import type { EditOutcome, Item } from "../types/domain/item";
-import type { Payload } from "../types/domain/payload";
-import type { Result } from "../types/result";
+import { ok, refused } from "#utils/result";
+import type { PoolConfig } from "#types/api/config";
+import type { Agent } from "#types/domain/agent";
+import type { PoolPorts, PoolTx } from "#types/api/ports";
+import type { EditRefusal } from "#types/api/refusal";
+import type { EditEnvelope } from "#types/domain/capture";
+import type { ItemId } from "#types/domain/ids";
+import type { EditOutcome, Item } from "#types/domain/item";
+import type { Payload } from "#types/domain/payload";
+import type { Result } from "#types/result";
 
 type EditResult = Result<EditOutcome, EditRefusal>;
 

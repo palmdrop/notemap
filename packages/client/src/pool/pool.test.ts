@@ -3,10 +3,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createMemoryStore } from "../adapters/memory-store";
 import { createClient } from "../client";
 import { PoolChanged } from "../errors";
-import type { PendingOperation } from "../outbox/operations";
-import { read, until } from "../testing/observing";
-import { anItem, asked, routeOf } from "../testing/pool";
-import { HEALTH, json, mockTransport, refusal } from "../testing/transport";
+import type { PendingOperation } from "#outbox/operations";
+import { read, until } from "#testing/observing";
+import { anItem, asked, routeOf } from "#testing/pool";
+import { HEALTH, json, mockTransport, refusal } from "#testing/transport";
 
 function anOperation(
   operation: PendingOperation["operation"],

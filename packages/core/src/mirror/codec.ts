@@ -1,8 +1,8 @@
-import { canonicalJson } from "../utils/json";
-import type { JsonObject } from "../types/json";
-import type { Agent } from "../types/domain/agent";
-import type { Asset, AssetRef } from "../types/domain/asset";
-import type { Artifact } from "../types/domain/enrichment";
+import { canonicalJson } from "#utils/json";
+import type { JsonObject } from "#types/json";
+import type { Agent } from "#types/domain/agent";
+import type { Asset, AssetRef } from "#types/domain/asset";
+import type { Artifact } from "#types/domain/enrichment";
 import type {
   ArtifactId,
   AssetId,
@@ -18,16 +18,16 @@ import type {
   SourceId,
   TagName,
   Timestamp,
-} from "../types/domain/ids";
-import type { DestinationRecord } from "../types/domain/destination";
-import type { ArchiveState, ItemRecord, Tag } from "../types/domain/item";
-import type { MirrorRecord } from "../types/domain/mirror";
-import type { Payload } from "../types/domain/payload";
+} from "#types/domain/ids";
+import type { DestinationRecord } from "#types/domain/destination";
+import type { ArchiveState, ItemRecord, Tag } from "#types/domain/item";
+import type { MirrorRecord } from "#types/domain/mirror";
+import type { Payload } from "#types/domain/payload";
 import type {
   RoutingRecord,
   RoutingRecordState,
   RoutingTarget,
-} from "../types/domain/routing";
+} from "#types/domain/routing";
 
 /** Sorted at every depth, including inside a payload's open JSON, so one state has one serialisation. */
 export function serialiseMirrorRecord(record: MirrorRecord): string {
