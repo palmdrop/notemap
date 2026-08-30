@@ -1,9 +1,9 @@
 # The run story
 
 **Date**: 2026-08-26
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/security.md`, `docs/specs/http-v1.md`
-**Closed**:
+**Closed**: 2026-08-27
 
 ---
 
@@ -83,7 +83,7 @@ as a plain directory.
 Depends on nothing.
 
 - [x] Create branch `agent/run-story`
-- [x] `packaging/docker/Dockerfile`, two stages. The builder takes the workspace, installs frozen,
+- [x] `Dockerfile` at the repository root, two stages. The builder takes the workspace, installs frozen,
       and runs `pnpm build`. The runtime carries `apps/daemon/dist` and `apps/daemon/public` and
       nothing else: the bundle holds every workspace package, the store is `node:sqlite`, and there
       is no `node_modules` at runtime
@@ -100,9 +100,11 @@ Depends on nothing.
 
 Depends on phase 1.
 
-- [x] `packaging/docker/compose.yaml`: one service, one named volume for the state directory, the
-      config file mounted read-only, `restart: unless-stopped`, and **no `ports:`** — it joins the
-      proxy's network and is reached by name
+- [x] `docker/compose/`, two whole files rather than one and an override. Each holds one service,
+      one named volume for the state directory, the config file mounted read-only and
+      `restart: unless-stopped`; `compose.yaml` publishes `127.0.0.1:4747` and runs on a machine
+      that has nothing else, `compose.proxy.yaml` publishes **no `ports:`** and joins one named
+      external network, where it is reached by name
 - [x] A healthcheck on `GET /v1/health`, which has no refusals and no parameters and is exactly this
       question. The image carries no curl; busybox `wget` or `node -e` does it
 - [x] `stop_grace_period` leaves room for `SHUTDOWN_GRACE_MS` plus a delivery in flight — a lease
@@ -117,7 +119,7 @@ Depends on phase 1.
 
 Depends on nothing; lands after phase 2 to keep the commits legible.
 
-- [x] `packaging/docker/config.toml`, the file the compose service mounts: the state paths under the
+- [x] `docker/compose/config.toml`, the file the compose service mounts: the state paths under the
       volume, `host = "0.0.0.0"`, the `text` and `image` payload types, the two web sources, the
       delivery cadence. `apps/daemon/config.example.toml` stays as the local-run example and gains a
       pointer to this one rather than being rewritten around a container
@@ -160,7 +162,8 @@ Depends on phases 1–4: it describes them.
       to a running container. Short, pointing at the rest rather than restating it
 - [x] `docs/running.md`: build and deploy, the config, the proxy and what it must carry, what is in
       the volume and what to back up — the pool, the mirror and the assets are one unit, because
-      rebuilding needs the mirror and the assets together — and how to upgrade: rebuild, `up -d`
+      rebuilding needs the mirror and the assets together — and how to upgrade: the version in
+      `.env`, then `docker compose pull && up -d`
 - [x] The destinations section: create a `filesystem` destination in settings, route with
       `create-file` into a folder or `append-to-file` onto a note, and what a delivery writes —
       frontmatter carrying the item id, the source, the capture time and the tags, then the
@@ -170,7 +173,22 @@ Depends on phases 1–4: it describes them.
 - [ ] Verify: follow it from a clone on the host, capture from a phone over the proxy, route into a
       directory in a volume, and read the file back — *done except the phone and the proxy, which
       this machine has neither of. Capture, route and read-back were driven against the compose
-      service over its network on 2026-08-27.*
+      service over its network on 2026-08-27.* This is the plan's stated acceptance and it stays
+      unticked; it is carried below as the one thing the plan shipped without
+- [x] `git commit`
+
+### Phase 6 — published, and versioned
+
+Depends on phases 1 and 2, and amends them: the box that runs notemap does not build it.
+
+- [x] `.github/workflows/release.yml` builds the image and pushes it to GHCR on every push to
+      `main` and on a `v*` tag, so deploying is `docker compose pull` and a version in `.env`
+      rather than a clone and a toolchain
+- [x] `pnpm release patch|minor|major` — `scripts/release.ts` bumps the root `package.json`,
+      verifies, commits, tags and pushes; the daemon bakes that version in and answers it on
+      `GET /v1/health`. `v0.1.0` was cut this way on 2026-08-27
+- [x] The builder fetches from `pnpm-lock.yaml` alone, so adding a workspace package cannot break
+      the image by leaving a manifest uncopied
 - [x] `git commit`
 
 ---
@@ -186,9 +204,12 @@ Depends on phases 1–4: it describes them.
 - **Whether the proxy terminates at a host root.** Still open, and the running doc takes the
   fallback: give it a hostname of its own. Note that the app is served from `/`, not `/ui` —
   `/ui` answers only because every extensionless path falls through to the shell.
-- **Capture from a phone over the proxy.** The client is offline-capable and the shell is same-origin,
-  so nothing here should be new — but it has never been used across a real network, and phase 5's
-  verify is the first time. Anything that fails there is a finding, not a task in this plan.
+- **Capture from a phone over the proxy.** Still unperformed, and it is the acceptance the Goal
+  names. The client is offline-capable and the shell is same-origin, so nothing here should be new —
+  but it has never been used across a real network, and this machine has neither a phone nor a proxy
+  to try it with. The plan is Done on everything a machine here can reach: the image, the two
+  compose files, the config, the specs, the docs and a published `v0.1.0`. Whatever the first real
+  crossing turns up is a finding against the shell or the client, not a task left open here.
 
 ---
 
