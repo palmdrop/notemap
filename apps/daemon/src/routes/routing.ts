@@ -67,7 +67,7 @@ export function routeHandler(pool: Pool) {
     const result = await pool.routing.route(id as ItemId, {
       destination: body.value.destination as DestinationId,
       capability: body.value.capability as CapabilityName,
-      target: body.value.target as JsonObject,
+      arguments: body.value.arguments as JsonObject,
     });
 
     return result.kind === "refused"

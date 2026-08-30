@@ -191,7 +191,7 @@ describe("PATCH /v1/destinations/{id}", () => {
     const first = await send(host.app, `/v1/items/${item}/route`, {
       destination: vault.id,
       capability: "create-file",
-      target: { directory: "inbox", filename: "a.md" },
+      arguments: { directory: "inbox", filename: "a.md" },
     });
     expect(((await body(first)) as { state: string }).state).toBe("pending");
 
@@ -250,14 +250,14 @@ describe("GET /v1/destinations/{id}/description", () => {
 
     const described = (await body(response)) as {
       kind: string;
-      capabilities: { name: string; targetSchema: object }[];
+      capabilities: { name: string; argumentsSchema: object }[];
     };
     expect(described.kind).toBe("described");
     expect(described.capabilities.map((each) => each.name)).toEqual([
       "create-file",
       "append-to-file",
     ]);
-    expect(described.capabilities[0]?.targetSchema).toMatchObject({
+    expect(described.capabilities[0]?.argumentsSchema).toMatchObject({
       required: ["directory"],
     });
   });
@@ -288,7 +288,7 @@ describe("retiring and offering again", () => {
     const refused = await send(host.app, `/v1/items/${item}/route`, {
       destination: vault.id,
       capability: "create-file",
-      target: { directory: "inbox" },
+      arguments: { directory: "inbox" },
     });
     expect(refused.status).toBe(409);
     expect(await body(refused)).toMatchObject({
@@ -312,7 +312,7 @@ describe("retiring and offering again", () => {
     const routed = await send(host.app, `/v1/items/${item}/route`, {
       destination: vault.id,
       capability: "create-file",
-      target: { directory: "inbox" },
+      arguments: { directory: "inbox" },
     });
     expect(routed.status).toBe(200);
   });
@@ -374,7 +374,7 @@ describe("DELETE /v1/destinations/{id}", () => {
     await send(host.app, `/v1/items/${item}/route`, {
       destination: vault.id,
       capability: "create-file",
-      target: { directory: "inbox" },
+      arguments: { directory: "inbox" },
     });
 
     const response = await host.app.request(`/v1/destinations/${vault.id}`, {

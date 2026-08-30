@@ -20,7 +20,7 @@ import { asDeliveryWorkOutcome, projectDelivery } from "./delivery";
 const REQUEST: DeliveryRequest = {
   destination: "vault" as DestinationId,
   capability: "create-note" as CapabilityName,
-  target: { path: "inbox/a.md" },
+  arguments: { path: "inbox/a.md" },
 };
 
 function asset(id: string, filename = `${id}.png`): Asset {

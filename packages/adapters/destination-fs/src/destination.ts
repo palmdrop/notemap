@@ -14,8 +14,8 @@ import { createFile, replaceFile } from "./atomic";
 import { Refused } from "./errors";
 import {
   APPEND_TO_FILE,
-  asAppendToFileTarget,
-  asCreateFileTarget,
+  asAppendToFileArguments,
+  asCreateFileArguments,
   CREATE_FILE,
   capabilitiesFor,
 } from "./capabilities";
@@ -145,13 +145,13 @@ async function createNote(
   delivery: Delivery,
   signal?: AbortSignal,
 ): Promise<string> {
-  const target = asCreateFileTarget(delivery.target);
-  if (target === undefined) {
-    throw new Refused("that is not a create-file target");
+  const args = asCreateFileArguments(delivery.arguments);
+  if (args === undefined) {
+    throw new Refused("that is not a create-file argument set");
   }
 
-  const filename = target.filename ?? deriveFilename(delivery);
-  const note = await locate(wiring.realRoot, join(target.directory, filename));
+  const filename = args.filename ?? deriveFilename(delivery);
+  const note = await locate(wiring.realRoot, join(args.directory, filename));
 
   if (await exists(note.absolute)) {
     throw new Refused(`${note.relative} is already there`);
@@ -171,12 +171,12 @@ async function appendToNote(
   delivery: Delivery,
   signal?: AbortSignal,
 ): Promise<string> {
-  const target = asAppendToFileTarget(delivery.target);
-  if (target === undefined) {
-    throw new Refused("that is not an append-to-file target");
+  const args = asAppendToFileArguments(delivery.arguments);
+  if (args === undefined) {
+    throw new Refused("that is not an append-to-file argument set");
   }
 
-  const note = await locate(wiring.realRoot, target.path);
+  const note = await locate(wiring.realRoot, args.path);
   const directory = dirname(note.absolute);
 
   const assets = await placeAssets(directory, delivery.assets, signal);
@@ -186,12 +186,12 @@ async function appendToNote(
   if (existing === undefined) {
     await createFile(
       note.absolute,
-      `${rendered.frontmatter}\n${insertUnder("", rendered.body, target.heading)}`,
+      `${rendered.frontmatter}\n${insertUnder("", rendered.body, args.heading)}`,
     );
   } else {
     await replaceFile(
       note.absolute,
-      insertUnder(existing, rendered.body, target.heading),
+      insertUnder(existing, rendered.body, args.heading),
     );
   }
 

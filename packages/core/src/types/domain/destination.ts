@@ -33,7 +33,7 @@ export type DestinationKind = {
 export type Capability = {
   readonly name: CapabilityName;
   readonly accepts: readonly PayloadTypeName[];
-  readonly targetSchema: JsonSchema;
+  readonly argumentsSchema: JsonSchema;
 };
 
 export type DestinationDescriptor = {

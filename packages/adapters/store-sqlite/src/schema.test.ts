@@ -139,13 +139,13 @@ describe("the row types and the migrations agree", () => {
 
       const record = opened.raw.prepare(
         `INSERT INTO routing_records
-           (id, item_id, target_kind, destination, capability, note, target,
+           (id, item_id, target_kind, destination, capability, note, arguments,
             state, at)
          VALUES (?, 'item', ?, ?, ?, ?, ?, 'delivered', 1)`,
       );
       const targeted = JSON.stringify({ path: "inbox/a.md" });
 
-      // Args are (id, target_kind, destination, capability, note, target).
+      // Args are (id, target_kind, destination, capability, note, arguments).
       expect(() =>
         record.run("a", "destination", "vault", null, null, targeted),
       ).toThrow(/constraint/i);
@@ -217,7 +217,7 @@ describe("the row types and the migrations agree", () => {
       opened.raw
         .prepare(
           `INSERT INTO routing_records
-             (id, item_id, target_kind, destination, capability, target, state, at)
+             (id, item_id, target_kind, destination, capability, arguments, state, at)
            VALUES ('r', 'item', 'destination', 'vault', 'create', '{}', 'pending', 1)`,
         )
         .run();
@@ -244,7 +244,7 @@ describe("the row types and the migrations agree", () => {
         opened.raw
           .prepare(
             `INSERT INTO routing_records
-               (id, item_id, target_kind, destination, capability, target, state, at)
+               (id, item_id, target_kind, destination, capability, arguments, state, at)
              VALUES ('r', 'item', 'destination', 'ghost', 'create', '{}', 'pending', 1)`,
           )
           .run(),

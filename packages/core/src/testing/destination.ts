@@ -53,7 +53,7 @@ export type FakeDestinationsOptions = {
   readonly answer?: ScriptedAnswer;
 };
 
-const ANY_TARGET: JsonSchema = { type: "object" };
+const ANY_ARGUMENTS: JsonSchema = { type: "object" };
 
 export const FAKE_KIND = "fake" as DestinationKindName;
 
@@ -73,7 +73,7 @@ export function fakeCapability(
   overrides: {
     name?: string;
     accepts?: readonly string[];
-    targetSchema?: JsonSchema;
+    argumentsSchema?: JsonSchema;
   } = {},
 ): Capability {
   return {
@@ -81,7 +81,7 @@ export function fakeCapability(
     accepts: (overrides.accepts ?? ["text"]).map(
       (type) => type as PayloadTypeName,
     ),
-    targetSchema: overrides.targetSchema ?? ANY_TARGET,
+    argumentsSchema: overrides.argumentsSchema ?? ANY_ARGUMENTS,
   };
 }
 

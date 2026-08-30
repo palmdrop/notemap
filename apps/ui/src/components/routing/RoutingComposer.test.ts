@@ -14,7 +14,7 @@ const BOARD = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a78";
 const CREATE_FILE = {
   name: "create-file",
   accepts: ["text"],
-  targetSchema: {
+  argumentsSchema: {
     type: "object",
     required: ["directory"],
     properties: {

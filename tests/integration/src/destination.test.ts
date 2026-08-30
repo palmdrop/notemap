@@ -94,12 +94,12 @@ async function captured(
 async function route(
   opened: Harness,
   item: ItemId,
-  target: Record<string, string>,
+  args: Record<string, string>,
 ): Promise<RoutingRecord> {
   const result = await opened.pool.routing.route(item, {
     destination: VAULT,
     capability: CREATE,
-    target,
+    arguments: args,
   });
   if (result.kind === "refused") {
     throw new Error(`refused: ${JSON.stringify(result.refusal)}`);

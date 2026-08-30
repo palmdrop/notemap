@@ -95,7 +95,7 @@ export async function deliveryFor(
   const delivery = await projectDelivery(ports, item, {
     destination: record.target.destination,
     capability: record.target.capability,
-    target: record.target.target,
+    arguments: record.target.arguments,
   });
 
   return { kind: "ready", destination, delivery };
@@ -138,7 +138,7 @@ export async function projectDelivery(
     item: item.id,
     destination: request.destination,
     capability: request.capability,
-    target: request.target,
+    arguments: request.arguments,
     source: item.source,
     payload: item.payload,
     tags: item.tags,

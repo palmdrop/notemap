@@ -10,7 +10,7 @@ export const CREATE_FILE = "create-file" as CapabilityName;
 export const APPEND_TO_FILE = "append-to-file" as CapabilityName;
 
 /** An empty `directory` names the root itself; an absent `filename` is derived. */
-const CREATE_FILE_TARGET: JsonSchema = {
+const CREATE_FILE_ARGUMENTS: JsonSchema = {
   type: "object",
   required: ["directory"],
   additionalProperties: false,
@@ -21,7 +21,7 @@ const CREATE_FILE_TARGET: JsonSchema = {
 };
 
 /** `heading` absent appends at the end of the file. */
-const APPEND_TO_FILE_TARGET: JsonSchema = {
+const APPEND_TO_FILE_ARGUMENTS: JsonSchema = {
   type: "object",
   required: ["path"],
   additionalProperties: false,
@@ -35,27 +35,31 @@ export function capabilitiesFor(
   accepts: readonly PayloadTypeName[],
 ): readonly Capability[] {
   return [
-    { name: CREATE_FILE, accepts, targetSchema: CREATE_FILE_TARGET },
-    { name: APPEND_TO_FILE, accepts, targetSchema: APPEND_TO_FILE_TARGET },
+    { name: CREATE_FILE, accepts, argumentsSchema: CREATE_FILE_ARGUMENTS },
+    {
+      name: APPEND_TO_FILE,
+      accepts,
+      argumentsSchema: APPEND_TO_FILE_ARGUMENTS,
+    },
   ];
 }
 
-export type CreateFileTarget = {
+export type CreateFileArguments = {
   readonly directory: string;
   readonly filename?: string;
 };
 
-export type AppendToFileTarget = {
+export type AppendToFileArguments = {
   readonly path: string;
   readonly heading?: string;
 };
 
 /** Read rather than cast: a schema that passed once is not a type, and a record holds JSON. */
-export function asCreateFileTarget(
-  target: JsonObject,
-): CreateFileTarget | undefined {
-  const directory = target["directory"];
-  const filename = target["filename"];
+export function asCreateFileArguments(
+  args: JsonObject,
+): CreateFileArguments | undefined {
+  const directory = args["directory"];
+  const filename = args["filename"];
 
   if (typeof directory !== "string") return undefined;
   if (filename !== undefined && typeof filename !== "string") return undefined;
@@ -63,11 +67,11 @@ export function asCreateFileTarget(
   return { directory, ...(filename === undefined ? {} : { filename }) };
 }
 
-export function asAppendToFileTarget(
-  target: JsonObject,
-): AppendToFileTarget | undefined {
-  const path = target["path"];
-  const heading = target["heading"];
+export function asAppendToFileArguments(
+  args: JsonObject,
+): AppendToFileArguments | undefined {
+  const path = args["path"];
+  const heading = args["heading"];
 
   if (typeof path !== "string" || path === "") return undefined;
   if (heading !== undefined && typeof heading !== "string") return undefined;

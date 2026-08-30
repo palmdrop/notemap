@@ -181,7 +181,7 @@ async function captureAnImage(
 /**
  * One item per destination, in the order the pool holds them. What a
  * destination can do is a second read, and one that cannot say is skipped:
- * routing to it is refused, because no target can be checked against nothing.
+ * routing to it is refused, because no arguments can be checked against nothing.
  */
 async function routeEach(
   http: Http,
@@ -217,7 +217,7 @@ async function routeEach(
       await http.post(`/v1/items/${item}/route`, {
         destination: destination.id,
         capability,
-        target: {
+        arguments: {
           directory: options.directory ?? "seeded",
           filename: `${item}.md`,
         },

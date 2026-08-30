@@ -27,16 +27,16 @@ describe("a delivery, on the daemon's own timer", () => {
     });
     await client.drain();
 
-    const target = { directory: "inbox", filename: "a-thought.md" };
+    const args = { directory: "inbox", filename: "a-thought.md" };
     await client.routing.route(carried.id, {
       destination: vault.up,
       capability: "create-file",
-      target,
+      arguments: args,
     });
     const owed = await client.routing.route(stranded.id, {
       destination: vault.down,
       capability: "create-file",
-      target,
+      arguments: args,
     });
 
     await until("the vault to hold the delivery", () =>

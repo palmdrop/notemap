@@ -12,7 +12,7 @@ const KEYS = {
   item: "id",
   destination: null,
   capability: null,
-  target: null,
+  arguments: null,
   source: "capture_source",
   payload: "payload_type",
   createdAt: "captured_at",

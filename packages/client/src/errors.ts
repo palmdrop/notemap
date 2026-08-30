@@ -117,7 +117,7 @@ const SAID: {
   "tag-invalid": "a tag needs something in it",
   "source-item-changed":
     "something else in the pool was captured under that id, saying something different",
-  "target-invalid": "that destination needs a different target",
+  "arguments-invalid": "that destination needs different arguments",
   "unknown-asset": "the upload is gone; pick the file again",
   "unknown-destination": "that destination is not here",
   "unknown-destination-kind": (facts) =>

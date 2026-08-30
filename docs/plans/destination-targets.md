@@ -49,33 +49,33 @@ kinds diverge.
 
 Depends on nothing. Nothing behaves differently when this phase lands.
 
-- [ ] Create branch `agent/destination-targets`
-- [ ] The glossary is already right and the code is not. `CONTEXT.md`'s **Capability** entry says a
+- [x] Create branch `agent/destination-targets`
+- [x] The glossary is already right and the code is not. `CONTEXT.md`'s **Capability** entry says a
       capability "carries a schema for the **arguments** a delivery must supply: where it goes, and
       anything else that shapes it, such as a template or a format", and **Destination** lists
       `target` among the words to avoid. Rename to match: `Capability.targetSchema` →
       `argumentsSchema`, `DeliveryRequest.target` → `arguments`, `Delivery.target` → `arguments`,
       and the `target` inside `RoutingTarget` → `arguments`
-- [ ] `RoutingTarget` itself keeps the word, and so does the `target_kind` column: destination-or-user
+- [x] `RoutingTarget` itself keeps the word, and so does the `target_kind` column: destination-or-user
       is the sense the glossary permits. Only the object the capability was pointed at is renamed
-- [ ] A new migration renames the column and recreates the two triggers that guard it. Migrations
+- [x] A new migration renames the column and recreates the two triggers that guard it. Migrations
       are append-only and tracked by `PRAGMA user_version` — the file says so at the top — so an
       existing pool is carried across rather than broken
-- [ ] The mirror codec reads and writes `arguments`; the round-trip property test and the
+- [x] The mirror codec reads and writes `arguments`; the round-trip property test and the
       arbitraries follow it. A mirror written before this phase no longer parses, which costs
       nothing today because rebuild is unbuilt, and is worth saying out loud rather than discovering
-- [ ] The filesystem adapter's `CreateFileTarget`, `asCreateFileTarget` and their `append-to-file`
+- [x] The filesystem adapter's `CreateFileTarget`, `asCreateFileTarget` and their `append-to-file`
       counterparts; the `/v1` route bodies and the regenerated OpenAPI document; the client's types;
       the shell's `schema-form.ts` callers
-- [ ] `CONTEXT.md`: **Capability** and **Routing record** stop saying target where they mean
+- [x] `CONTEXT.md`: **Capability** and **Routing record** stop saying target where they mean
       arguments. **Destination**'s Avoid line keeps `target` and `sink`, and loses `output` —
       [delivery-output-and-preview](delivery-output-and-preview.md) gives that word a meaning of its
       own, and a glossary cannot both define a word and ban it
-- [ ] The evidence this phase offers is a green suite after a pure rename: no test rewritten except
+- [x] The evidence this phase offers is a green suite after a pure rename: no test rewritten except
       where one names the field
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, and `pnpm test:stack` —
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, and `pnpm test:stack` —
       the wire shape changes, which is exactly what that suite is for
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 2 — A root you did not mean
 

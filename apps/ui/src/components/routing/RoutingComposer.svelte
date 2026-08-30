@@ -29,7 +29,7 @@
   let chosen = $state<string | undefined>(undefined);
   let described = $state<DestinationDescription | undefined>(undefined);
   let capability = $state<string | undefined>(undefined);
-  let target = $state<Record<string, string>>({});
+  let args = $state<Record<string, string>>({});
   let said = $state("");
   let busy = $state(false);
 
@@ -41,7 +41,9 @@
   );
 
   const fields = $derived(
-    fieldsOf(capabilities.find((one) => one.name === capability)?.targetSchema),
+    fieldsOf(
+      capabilities.find((one) => one.name === capability)?.argumentsSchema,
+    ),
   );
 
   const ready = $derived(chosen !== undefined && capability !== undefined);
@@ -68,7 +70,7 @@
     chosen = id;
     described = undefined;
     capability = undefined;
-    target = {};
+    args = {};
     said = "";
 
     try {
@@ -97,7 +99,7 @@
       await client.routing.route(item, {
         destination: chosen,
         capability,
-        target: valuesFrom(fields, target),
+        arguments: valuesFrom(fields, args),
       });
       onclose();
     } catch (error) {
@@ -131,7 +133,7 @@
           chosen={capability === one.name}
           onchoose={() => {
             capability = one.name;
-            target = {};
+            args = {};
           }}
         />
       {/each}
@@ -141,7 +143,7 @@
   {#each fields as field (field.name)}
     <Group name={field.name}>
       <input
-        bind:value={target[field.name]}
+        bind:value={args[field.name]}
         placeholder={field.required ? "required" : "optional"}
         aria-label={field.name}
         class="w-full border-b border-ink bg-transparent font-mono placeholder:text-ink-muted"

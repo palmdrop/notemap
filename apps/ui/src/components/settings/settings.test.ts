@@ -111,7 +111,9 @@ test("asks one destination what it can do, on request", async () => {
     [`GET /v1/destinations/${VAULT}/description`]: () =>
       json(200, {
         kind: "described",
-        capabilities: [{ name: "create-file", accepts: [], targetSchema: {} }],
+        capabilities: [
+          { name: "create-file", accepts: [], argumentsSchema: {} },
+        ],
       }),
   });
 

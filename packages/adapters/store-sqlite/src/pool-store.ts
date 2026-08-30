@@ -103,8 +103,8 @@ const DESTINATION_COLUMNS = `
 `;
 
 const ROUTING_COLUMNS = `
-  id, item_id, target_kind, destination, capability, note, target, state, at,
-  pointer
+  id, item_id, target_kind, destination, capability, note, arguments, state,
+  at, pointer
 `;
 
 /** What every surface orders on: capture time, and the id only to break a tie. */

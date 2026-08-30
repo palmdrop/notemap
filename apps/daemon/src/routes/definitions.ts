@@ -513,7 +513,7 @@ export const destinationDescriptionRoute = createRoute({
   path: "/v1/destinations/{id}/description",
   summary: "Ask one destination what it can do",
   description:
-    "Split from the list because they are different animals: what a destination *is* comes from the pool, and what it can *do* is I/O that may hang or fail. `described` carries the capabilities the adapter declared; `undescribable` went and looked and could not say; `unusable` could not be asked at all — no adapter speaks its kind, or its settings no longer satisfy that kind. `targetSchema` is JSON Schema and is the whole of what a client needs to build a `target`.",
+    "Split from the list because they are different animals: what a destination *is* comes from the pool, and what it can *do* is I/O that may hang or fail. `described` carries the capabilities the adapter declared; `undescribable` went and looked and could not say; `unusable` could not be asked at all — no adapter speaks its kind, or its settings no longer satisfy that kind. `argumentsSchema` is JSON Schema and is the whole of what a client needs to build `arguments`.",
   request: { params: destinationId },
   responses: {
     200: {
@@ -531,7 +531,7 @@ export const destinationKindsRoute = createRoute({
   path: "/v1/destination-kinds",
   summary: "Read the destination kinds this daemon has an adapter for",
   description:
-    "Each with the `settingsSchema` a destination of that kind must satisfy, which is what a client builds its form from. The same arrangement as a capability's `targetSchema`, one level up: the daemon publishes what a kind needs and holds no opinion about how it is asked for.",
+    "Each with the `settingsSchema` a destination of that kind must satisfy, which is what a client builds its form from. The same arrangement as a capability's `argumentsSchema`, one level up: the daemon publishes what a kind needs and holds no opinion about how it is asked for.",
   responses: {
     200: {
       description: "Every kind, with the schema its settings must satisfy.",
@@ -699,7 +699,7 @@ export const routeItemRoute = createRoute({
     ),
     415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
     422: errorResponse(
-      "The destination, the capability, the payload type or the target was declined. Nothing was written.",
+      "The destination, the capability, the payload type or the arguments were declined. Nothing was written.",
       422,
       DELIVERY_STATUS,
     ),

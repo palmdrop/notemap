@@ -600,6 +600,16 @@ export const MIGRATIONS: readonly string[] = [
     identity  TEXT    NOT NULL
   ) STRICT;
   `,
+
+  `
+  -- What the capability was pointed at is the delivery's arguments, not a
+  -- target — \`target\` collided with \`RoutingTarget\`, the destination-or-user
+  -- object naming it. The pair of triggers this column was once guarded by
+  -- went in the rebuild that added the foreign key to \`destinations\`, folded
+  -- into a CHECK on the column itself; \`RENAME COLUMN\` carries that CHECK
+  -- across without a rebuild of its own.
+  ALTER TABLE routing_records RENAME COLUMN target TO arguments;
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

@@ -16,7 +16,7 @@ import type { Payload } from "./payload";
 export type DeliveryRequest = {
   readonly destination: DestinationId;
   readonly capability: CapabilityName;
-  readonly target: JsonObject;
+  readonly arguments: JsonObject;
 };
 
 /** Opening is lazy, so a capability that wants no bytes reads none and a long recording is never buffered. */
@@ -31,7 +31,7 @@ export type Delivery = {
   readonly item: ItemId;
   readonly destination: DestinationId;
   readonly capability: CapabilityName;
-  readonly target: JsonObject;
+  readonly arguments: JsonObject;
   readonly source: SourceId;
   readonly payload: Payload;
   readonly tags: readonly Tag[];
@@ -69,7 +69,7 @@ export type RoutingTarget =
        * A path, a file, a board column. Remembered rather than consumed,
        * because a pending delivery is attempted again from the record alone.
        */
-      readonly target: JsonObject;
+      readonly arguments: JsonObject;
     }
   | { readonly kind: "user"; readonly note?: string };
 

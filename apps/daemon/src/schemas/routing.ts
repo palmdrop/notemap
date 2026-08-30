@@ -22,7 +22,7 @@ export const routingRecordSchema = z
         destination: z.string(),
         capability: z.string(),
         /** What the capability was pointed at, in its own terms. */
-        target: jsonObject,
+        arguments: jsonObject,
       }),
       z.object({ kind: z.literal("user"), note: z.string().optional() }),
     ]),
@@ -48,9 +48,9 @@ export const routeRequestSchema = z
       description: "One the destination declared. Anything else is refused.",
       example: "create-file",
     }),
-    target: jsonObject.openapi({
+    arguments: jsonObject.openapi({
       description:
-        "What the capability is pointed at, in its own terms. Must satisfy the capability's `targetSchema`.",
+        "What the capability is pointed at, in its own terms. Must satisfy the capability's `argumentsSchema`.",
       example: { directory: "inbox", filename: "a-thought.md" },
     }),
   })
@@ -60,7 +60,7 @@ export const capabilitySchema = z
   .object({
     name: z.string(),
     accepts: z.array(z.string()),
-    /** JSON Schema: the whole of what a client needs to build a target. */
-    targetSchema: jsonObject,
+    /** JSON Schema: the whole of what a client needs to build the arguments. */
+    argumentsSchema: jsonObject,
   })
   .openapi("Capability");

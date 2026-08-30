@@ -36,7 +36,7 @@ function toVault(
       kind: "destination",
       destination,
       capability: "create",
-      target: {},
+      arguments: {},
     },
     state,
     at: "now",
