@@ -1,3 +1,5 @@
+import { dirname } from "node:path";
+
 import { v7 as uuidv7 } from "uuid";
 
 import { createFilesystemBlobStore } from "@notemap/blob-fs";
@@ -63,10 +65,21 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     (type) => type.name as PayloadTypeName,
   );
 
+  // Which paths are the daemon's own is the host's knowledge, not core's and
+  // not the adapter's: the pool's directory (its WAL and SHM files live
+  // beside it), the mirror and the assets. A vault over any of them is
+  // destructive and nobody ever means it.
+  const reserved = [
+    dirname(options.file),
+    options.assetRoot,
+    ...(options.mirrorRoot === undefined ? [] : [options.mirrorRoot]),
+  ];
+
   const destinations = destinationRegistry([
     createFilesystemDestination({
       renderers: destinationRenderers(),
       accepts: everyPayloadType,
+      reserved,
     }),
   ]);
 

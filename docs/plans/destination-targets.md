@@ -1,7 +1,7 @@
 # A destination can be asked what it holds
 
 **Date**: 2026-08-30
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: In progress <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`, `docs/specs/security.md`
 **Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
 
@@ -81,35 +81,41 @@ Depends on nothing. Nothing behaves differently when this phase lands.
 
 Depends on nothing; lands after phase 1 to keep the diffs legible.
 
-- [ ] **The boundary is the deployment, and that is a decision rather than an omission.** The
+- [x] **The boundary is the deployment, and that is a decision rather than an omission.** The
       compose files and the `Dockerfile` gain one directory under which vaults are mounted, and the
       container reaches nothing else because nothing else is mounted. A daemon run directly has the
       reach of the person running it, which is the reach they already had — confining it there would
       buy nothing and would make the first vault cost a config edit and a restart, which is what
       [ADR 20](../adr/0020-destinations-are-pool-state.md) removed
-- [ ] `docs/running.md` says to mount vaults under that directory, and why there is nothing else to
+- [x] `docs/running.md` says to mount vaults under that directory, and why there is nothing else to
       configure
-- [ ] **A root overlapping the daemon's own state is refused**, whether it contains them or sits
+- [x] **A root overlapping the daemon's own state is refused**, whether it contains them or sits
       inside them: the pool, the mirror and the assets. Routing a note into the mirror is
       destructive and nobody ever means it. The host hands the adapter the paths it must refuse —
       which paths are the daemon's own is the host's knowledge, not core's and not the adapter's
-- [ ] The refusal surfaces as `unusable` from `describe()` with the reason, which is the treatment
+- [x] The refusal surfaces as `unusable` from `describe()` with the reason, which is the treatment
       core.md:637 already gives a destination the running code cannot make sense of, and needs no
       new port method. It bites where it matters: such a destination is not routable and delivers
       nothing
-- [ ] **The settings form confirms a root the pool has not been pointed at before**, showing the
+- [x] **The settings form confirms a root the pool has not been pointed at before**, showing the
       resolved real path — the adapter already resolves symlinks to contain a delivery. Familiar
       means equal to, or under, the root of a destination that already exists; nothing new is
-      remembered
-- [ ] The confirmation says what it is: a check against a mistake. It authenticates nobody, because
+      remembered. **Deviation**: no route exposes the resolved real path (`describe()` stays
+      filesystem-free and `deliver()`'s resolution is never returned), so the shell shows the typed
+      path rather than the real one. Flagged rather than solved by inventing a route, per this
+      task's own fallback
+- [x] The confirmation says what it is: a check against a mistake. It authenticates nobody, because
       whoever can create a destination over `/v1` can also confirm one. Do not word it as a
       permission
-- [ ] `security.md` gains the posture, in its own words — this is the spec of what is undefended and
+- [x] `security.md` gains the posture, in its own words — this is the spec of what is undefended and
       this is a statement of exactly that kind. The bind-address section already had to be rewritten
       for the container; this sits beside it
-- [ ] Tests: the state-path refusal beside the adapter, the confirmation in the settings suite
-- [ ] Verify: `pnpm -r --silent test`, and by hand against a container
-- [ ] `git commit`
+- [x] Tests: the state-path refusal beside the adapter, the confirmation in the settings suite
+- [x] Verify: `pnpm -r --silent test` — passes, along with `pnpm -r typecheck`, `pnpm lint` and
+      `pnpm format:check`. **Not done**: by hand against a container — no Docker in this
+      environment. The compose files and `Dockerfile` want a manual `docker compose up` check
+      before release
+- [x] `git commit`
 
 ### Phase 3 — The decision, and the port
 

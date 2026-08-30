@@ -1,12 +1,13 @@
 import { readFile, stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-import type {
-  Delivery,
-  DeliveryOutcome,
-  Destination,
-  DestinationKindAdapter,
-  PayloadTypeName,
+import {
+  Unusable,
+  type Delivery,
+  type DeliveryOutcome,
+  type Destination,
+  type DestinationKindAdapter,
+  type PayloadTypeName,
 } from "@notemap/core";
 
 import { placeAssets } from "./assets";
@@ -22,7 +23,7 @@ import {
 import { deriveFilename } from "./filename";
 import { FIXED_KEYS, fixedFrontmatter, toYaml } from "./frontmatter";
 import type { FrontmatterValue } from "./frontmatter";
-import { contain, realRootOf, type Contained } from "./paths";
+import { contain, overlapsAny, realRootOf, type Contained } from "./paths";
 import {
   renderAsJson,
   type Renderers,
@@ -42,6 +43,12 @@ export type FilesystemDestinationConfig = {
   readonly renderers?: Renderers;
   /** What every destination of this kind takes. */
   readonly accepts: readonly PayloadTypeName[];
+  /**
+   * The pool, the mirror and the assets — paths only the host knows are its
+   * own. A root that contains one, or sits inside one, is refused: routing a
+   * note into the mirror is destructive and nobody ever means it.
+   */
+  readonly reserved?: readonly string[];
 };
 
 const UNREACHABLE: readonly string[] = [
@@ -56,6 +63,7 @@ export function createFilesystemDestination(
   config: FilesystemDestinationConfig,
 ): DestinationKindAdapter {
   const renderers = config.renderers ?? {};
+  const reserved = config.reserved ?? [];
 
   return {
     name: FILESYSTEM,
@@ -64,15 +72,22 @@ export function createFilesystemDestination(
     /**
      * Never looks at the filesystem: an unmounted root is something a delivery
      * discovers and retries past, and refusing to describe it would turn a
-     * decision worth reserving into one that cannot be made at all.
+     * decision worth reserving into one that cannot be made at all. The
+     * overlap check is pure path arithmetic and costs nothing to run here too.
      */
     describe: (destination) => {
       const settings = asFilesystemSettings(destination.settings);
-      return settings === undefined
-        ? Promise.reject(unreadable(destination))
-        : Promise.resolve({
-            capabilities: capabilitiesFor(config.accepts),
-          });
+      if (settings === undefined)
+        return Promise.reject(unreadable(destination));
+
+      const overlap = overlapsAny(settings.root, reserved);
+      if (overlap !== undefined) {
+        return Promise.reject(
+          new Unusable(overlapDetail(settings.root, overlap)),
+        );
+      }
+
+      return Promise.resolve({ capabilities: capabilitiesFor(config.accepts) });
     },
 
     deliver: async (
@@ -87,6 +102,11 @@ export function createFilesystemDestination(
 
       const reached = await reachRoot(settings.root);
       if (typeof reached !== "string") return reached;
+
+      const overlap = overlapsAny(reached, reserved);
+      if (overlap !== undefined) {
+        return { kind: "rejected", detail: overlapDetail(reached, overlap) };
+      }
 
       try {
         const landed = await carryOut(
@@ -105,6 +125,10 @@ export function createFilesystemDestination(
 /** Core checks settings against the schema first, so this is the two disagreeing. */
 function unreadable(destination: Destination): Error {
   return new Error(`${destination.name} has no readable filesystem settings`);
+}
+
+function overlapDetail(root: string, reserved: string): string {
+  return `${root} overlaps notemap's own ${reserved}`;
 }
 
 /** The root as the filesystem holds it, or why it could not be reached. */

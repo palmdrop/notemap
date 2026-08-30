@@ -28,6 +28,7 @@ import type { Item } from "#types/domain/item";
 import type { Job } from "#types/domain/work";
 import type { RoutingRecord } from "#types/domain/routing";
 import type { JsonObject, JsonSchema } from "#types/json";
+import { Unusable } from "./usability";
 import { deliveryFor } from "../routing/delivery";
 
 import { create, edit, remove, retire, unretire } from "./lifecycle";
@@ -272,6 +273,19 @@ describe("what a destination reports about itself", () => {
     expect(await describeOne(wired, vault.id)).toEqual({
       kind: "undescribable",
       detail: "ENOENT: ~/notes",
+    });
+  });
+
+  it("is unusable where the adapter itself says so, distinct from undescribable", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
+    const wired = ports({ destinations: [vault] });
+    wired.adapters.cannotDescribe(
+      new Unusable("/vault overlaps notemap's own state"),
+    );
+
+    expect(await describeOne(wired, vault.id)).toEqual({
+      kind: "unusable",
+      detail: "/vault overlaps notemap's own state",
     });
   });
 

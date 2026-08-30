@@ -41,8 +41,13 @@ export type FakeDestinations = Destinations & {
   answers(next: ScriptedAnswer): void;
   /** Takes precedence over the standing answer, for one delivery. */
   answersOnce(next: ScriptedAnswer): void;
-  /** What `describe` throws with, which is what an undescribable destination is. */
-  cannotDescribe(detail: string | undefined): void;
+  /**
+   * What `describe` throws with. A bare string is an undescribable
+   * destination; an `Error` instance — `Unusable`, say — is thrown as itself,
+   * for a test that needs `describe` to reject with a particular kind of
+   * failure.
+   */
+  cannotDescribe(detail: string | Error | undefined): void;
 };
 
 export type FakeDestinationsOptions = {
@@ -122,7 +127,7 @@ export function fakeDestinations(
     kind: "delivered",
     pointer: "somewhere",
   };
-  let undescribable: string | undefined;
+  let undescribable: string | Error | undefined;
 
   async function read(
     delivery: Delivery,
@@ -147,7 +152,11 @@ export function fakeDestinations(
     describe: () =>
       undescribable === undefined
         ? Promise.resolve({ capabilities })
-        : Promise.reject(new Error(undescribable)),
+        : Promise.reject(
+            undescribable instanceof Error
+              ? undescribable
+              : new Error(undescribable),
+          ),
 
     deliver: async (destination, delivery, signal) => {
       const answer = once.shift() ?? standing;

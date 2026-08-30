@@ -31,7 +31,11 @@ ENV NODE_ENV=production
 COPY --from=build /src/apps/daemon/dist /app/dist
 COPY --from=build /src/apps/daemon/public /app/public
 
-RUN mkdir -p /var/lib/notemap && chown node:node /var/lib/notemap
+# `vaults/` is where the compose files mount a filesystem destination's
+# `root`. The container reaches nothing else, because nothing else is
+# mounted — and a root pointed at `state/`, `pool-mirror/` or `assets/`
+# instead is refused regardless of where it is mounted.
+RUN mkdir -p /var/lib/notemap/vaults && chown -R node:node /var/lib/notemap
 
 USER node
 

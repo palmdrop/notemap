@@ -1,5 +1,5 @@
 import { recordAction } from "../actions";
-import { usability } from "../destinations/usability";
+import { Unusable, usability } from "../destinations/usability";
 import { enqueueMirrorWrite } from "../mirror";
 import { ok, refused } from "#utils/result";
 import type { PoolPorts, PoolTx } from "#types/api/ports";
@@ -165,6 +165,13 @@ async function describeOrRefuse(
   try {
     return ok(await ports.destinations.describe(destination, signal));
   } catch (cause) {
+    if (cause instanceof Unusable) {
+      return refused({
+        kind: "destination-unusable",
+        destination: destination.id,
+        detail: cause.message,
+      });
+    }
     return refused({
       kind: "unreachable",
       detail: cause instanceof Error ? cause.message : String(cause),

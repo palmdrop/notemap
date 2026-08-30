@@ -8,6 +8,7 @@ import {
 } from "node:fs/promises";
 import { join } from "node:path";
 
+import { Unusable } from "@notemap/core";
 import type {
   Delivery,
   DeliveryOutcome,
@@ -63,8 +64,9 @@ function bind(
   path: string,
   accepts: readonly PayloadTypeName[],
   renderers: Record<string, Renderer>,
+  reserved: readonly string[] = [],
 ): Bound {
-  const kind = createFilesystemDestination({ renderers, accepts });
+  const kind = createFilesystemDestination({ renderers, accepts, reserved });
   const row = destinationRow({ root: path });
 
   return {
@@ -566,5 +568,75 @@ describe("a capability it never declared", () => {
     expect(
       await destination.deliver(delivery({ capability: "post-to-board" })),
     ).toMatchObject({ kind: "rejected" });
+  });
+});
+
+describe("a root that overlaps notemap's own state", () => {
+  it("reports unusable where the root names reserved state exactly", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    await mkdir(made.path, { recursive: true });
+    const destination = bind(made.path, [TEXT], {}, [made.path]);
+
+    await expect(destination.describe()).rejects.toThrow(Unusable);
+  });
+
+  it("reports unusable where the root sits inside reserved state", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    const nested = join(made.path, "vault");
+    await mkdir(nested, { recursive: true });
+    const destination = bind(nested, [TEXT], {}, [made.path]);
+
+    await expect(destination.describe()).rejects.toThrow(Unusable);
+  });
+
+  it("reports unusable where the root contains reserved state", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    const reserved = join(made.path, "state");
+    await mkdir(reserved, { recursive: true });
+    const destination = bind(made.path, [TEXT], {}, [reserved]);
+
+    await expect(destination.describe()).rejects.toThrow(Unusable);
+  });
+
+  it("delivers nothing, refusing rather than writing into it", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    await mkdir(made.path, { recursive: true });
+    const destination = bind(made.path, [TEXT], {}, [made.path]);
+
+    const outcome = await destination.deliver(delivery());
+
+    expect(outcome).toMatchObject({ kind: "rejected" });
+    expect(await filesUnder(made.path)).toEqual([]);
+  });
+
+  it("catches a root reached through a symlink into reserved state", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    const reserved = join(made.path, "state");
+    await mkdir(reserved, { recursive: true });
+    const link = join(made.path, "vault");
+    await symlink(reserved, link);
+    const destination = bind(link, [TEXT], {}, [reserved]);
+
+    const outcome = await destination.deliver(delivery());
+
+    expect(outcome).toMatchObject({ kind: "rejected" });
+    expect(await filesUnder(reserved)).toEqual([]);
+  });
+
+  it("leaves an unrelated root alone", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    await mkdir(made.path, { recursive: true });
+    const elsewhere = join(made.path, "..", "reserved-elsewhere");
+    const destination = bind(made.path, [TEXT], {}, [elsewhere]);
+
+    await expect(destination.describe()).resolves.toMatchObject({
+      capabilities: expect.any(Array),
+    });
   });
 });

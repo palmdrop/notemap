@@ -35,6 +35,24 @@ export function realRootOf(root: string): Promise<string> {
 }
 
 /**
+ * The first of `reserved` that `root` contains or sits inside of, resolved the
+ * same way a person's setting is — `~` and `..` — but never through a symlink:
+ * this runs from `describe()`, which touches no filesystem, so a root that is
+ * a link to reserved state is caught only once a delivery is attempted.
+ */
+export function overlapsAny(
+  root: string,
+  reserved: readonly string[],
+): string | undefined {
+  const candidate = rootPath(root);
+  return reserved.find((each) => overlaps(candidate, rootPath(each)));
+}
+
+function overlaps(a: string, b: string): boolean {
+  return within(a, b) || within(b, a);
+}
+
+/**
  * Where `target` lands under `realRoot`, or a refusal. Two checks, because
  * either alone is a hole: resolving catches an absolute target and any `..`,
  * and reading the path back through the filesystem catches a symlink, which is

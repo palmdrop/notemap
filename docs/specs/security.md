@@ -1,8 +1,16 @@
 # Spec: What is undefended
 
 **Status**: Draft
-**Last updated**: 2026-08-27
+**Last updated**: 2026-08-31
 **Shipped**:
+
+- 2026-08-31 — **A filesystem destination is confined to what the container is given.** The
+  compose files and the `Dockerfile` gain `/var/lib/notemap/vaults`, the one directory a root may
+  be mounted under, and a root pointed at the pool, the mirror or the assets instead — whether it
+  names one exactly or sits inside or around one — is refused rather than delivered into. The
+  settings form asks a person to confirm a root it has not seen before, which is a check against a
+  mistake and not a permission.
+  ([plan](../plans/destination-targets.md))
 
 - 2026-08-27 — **The containerised case, written down.** Notemap now runs as a container from a
   published image, where the daemon binds every interface by necessity and the bind-address section
@@ -141,6 +149,28 @@ supply both or the arrangement above is a pool on the internet:
 what makes the proxy's authentication a choice rather than a requirement. It also owns the **general**
 account of the boundary — the several shapes a deployment takes, of which a container is one. What is
 written above is the container case and nothing else.
+
+### A filesystem destination reaches only what is mounted
+
+The container's filesystem is the boundary here, not `/v1`. A filesystem destination's `root` is a
+path *inside the container*, and the only thing that container can ever write to is whatever was
+mounted into it — the compose files mount one state volume and, optionally, one or more vaults
+under `/var/lib/notemap/vaults`. Nothing else on the host is reachable no matter what root a
+destination names, because nothing else is there to reach.
+
+**The pool, the mirror and the assets are refused as a root**, whether a destination names one of
+them exactly or sits inside or around one: `describe()` reports it `unusable` and `deliver()`
+writes nothing. This is a check against a mistake, not a permission — whoever can create a
+destination over `/v1` already has read and write of the whole pool through the lack of
+authentication above, so a person who meant harm loses nothing this refusal takes away. It exists
+because routing a note into the mirror is destructive and nobody who honestly reaches `/v1` ever
+means it; a fat-fingered path is the only thing it defends against.
+
+**The settings form asks a person to confirm a root it has not seen before, the same way.** It
+authenticates nobody, and clicking past the confirmation is not a boundary crossed, because there
+was never one there to cross — a person who wanted to route somewhere unfamiliar was always free
+to. What it catches is a root nobody meant to type, which costs enough — see the paragraph above —
+to be worth catching before it is saved rather than after.
 
 ### No CORS headers, which is load-bearing
 

@@ -5,3 +5,8 @@ export * from "./pool";
 export { asDeliveryWorkOutcome, DELIVERY_FAILURE } from "./routing/delivery";
 
 export { destinationRegistry } from "./destinations/registry";
+
+// A kind adapter throws this from `describe()` to say a destination cannot
+// be made sense of for a reason only it knows, rather than one merely
+// unreachable — see `destinations/usability.ts`.
+export { Unusable } from "./destinations/usability";

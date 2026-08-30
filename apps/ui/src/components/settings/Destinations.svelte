@@ -112,6 +112,7 @@
         <div class="mt-5">
           <DestinationForm
             {kinds}
+            existing={$destinations}
             editing={one}
             disabled={!pool.yes}
             done={() => (editing = undefined)}
@@ -124,6 +125,7 @@
   {#if adding}
     <DestinationForm
       {kinds}
+      existing={$destinations}
       disabled={!pool.yes}
       done={() => (adding = false)}
     />

@@ -254,3 +254,42 @@ describe("a vault that cannot be written, and then can", () => {
     );
   });
 });
+
+describe("a root that overlaps notemap's own state", () => {
+  it("is unusable, and routing to it is refused rather than attempted", async () => {
+    const { root } = vault();
+    await mkdir(root, { recursive: true });
+
+    const guarded = destinationRegistry([
+      createFilesystemDestination({
+        renderers,
+        accepts: [TEXT, NOTE],
+        reserved: [root],
+      }),
+    ]);
+    const opened = harness(undefined, "filesystem", guarded);
+    open.push(opened.cleanup);
+    await opened.putDestination({
+      id: VAULT,
+      kind: "filesystem",
+      settings: { root },
+    });
+
+    expect(await opened.pool.destinations.describe(VAULT)).toMatchObject({
+      kind: "unusable",
+    });
+
+    const item = await captured(opened, envelope({ id: "item-1" }));
+    const refusal = await opened.pool.routing.route(item, {
+      destination: VAULT,
+      capability: CREATE,
+      arguments: { directory: "inbox", filename: "a.md" },
+    });
+
+    expect(refusal).toMatchObject({
+      kind: "refused",
+      refusal: { kind: "destination-unusable" },
+    });
+    expect(await filesUnder(root)).toEqual([]);
+  });
+});
