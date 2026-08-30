@@ -1,4 +1,5 @@
 import type { Hono } from "hono";
+import type { AppEnv } from "../types";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
@@ -10,7 +11,7 @@ import {
 
 const open: Daemon[] = [];
 
-function serving(): Hono {
+function serving(): Hono<AppEnv> {
   const host = daemon();
   open.push(host);
   return host.app;

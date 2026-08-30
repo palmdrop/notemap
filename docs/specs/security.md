@@ -259,6 +259,33 @@ account for every line of this list:
 5. Whether a wider bind is then supported or merely permitted, which decides whether transport
    security (TLS) becomes notemap's problem or stays the reverse proxy's.
 
+### Authentication answers who, and nothing answers what
+
+A credential that authenticates carries no scope. Once a request is authenticated it may do
+anything any other authenticated request may do: read the feed, capture, edit, route, delete a
+destination. There is one exception, and it is a containment measure rather than an authorization
+model — **an access token may not manage access tokens**. `GET`, `POST` on `/v1/tokens` and
+`DELETE /v1/tokens/{id}` require a session, and a bearer token is refused with `session-required`.
+The reason is narrow: without it a leaked token mints a replacement, and revoking the token you
+know about leaves the one you do not.
+
+What that does not give:
+
+1. **A read-only credential.** A token handed to a script that only captures can also archive
+   everything and retire every destination.
+2. **A per-destination or per-source credential.** Nothing narrows a token to the vault it was
+   made for.
+3. **Any distinction between the browser and a headless client**, beyond the token rule above.
+   A session and a token reach the same routes.
+
+This is deliberate for a single-user daemon where every credential belongs to the same person, and
+it is the reason `lastUsedAt` and revocation matter more here than they would in a system with
+scopes: containing a leak means noticing it and revoking, because nothing limits the blast radius
+in advance. **Authorization is deferred, not decided.** The day two credentials should be able to
+do different things, this section is the list of what has to be answered, and `Agent` growing a
+name (see [the login plan](../plans/login-and-access-tokens.md)) is the same trigger from the
+other direction.
+
 ---
 
 ## Constraints
@@ -301,6 +328,10 @@ account for every line of this list:
       lose this again.
 - [ ] 2026-08-12 — Whether a pool should carry a total-size ceiling at all, or whether that
       belongs to the filesystem the way disk encryption does.
+- [ ] 2026-08-30 — Whether an access token should carry a scope. Deferred deliberately: every
+      credential belongs to one person, so a scope would be a fence around one's own garden. The
+      question becomes real the first time a token is handed to something not fully trusted — a
+      shared script, a hosted integration, a device someone else holds.
 
 ---
 
@@ -317,3 +348,5 @@ account for every line of this list:
 - The standalone compose file publishes on `127.0.0.1` only, and the proxy compose file publishes
   no port at all and names the network it joins rather than defaulting to one.
 - The container's config binds `0.0.0.0`, and that address is in the file rather than in the image.
+- An access token is refused with `session-required` on every `/v1/tokens` route, and reaches every
+  other `/v1` route exactly as a session does.

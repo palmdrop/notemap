@@ -24,6 +24,157 @@
           "version"
         ]
       },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "authenticated": {
+            "type": "boolean",
+            "example": true
+          },
+          "requiresCredentials": {
+            "type": "boolean",
+            "example": true
+          },
+          "identity": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "session",
+                  "token"
+                ],
+                "example": "session"
+              },
+              "id": {
+                "type": "string",
+                "example": "gpeukvybsmmgwnec"
+              },
+              "name": {
+                "type": "string",
+                "example": "laptop"
+              }
+            },
+            "required": [
+              "kind",
+              "id"
+            ]
+          }
+        },
+        "required": [
+          "authenticated",
+          "requiresCredentials"
+        ]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "anton"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "example": "correct horse battery staple"
+          }
+        },
+        "required": [
+          "name",
+          "password"
+        ]
+      },
+      "Tokens": {
+        "type": "object",
+        "properties": {
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Token"
+            }
+          }
+        },
+        "required": [
+          "values"
+        ]
+      },
+      "Token": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "gpeukvybsmmgwnec"
+          },
+          "name": {
+            "type": "string",
+            "example": "laptop"
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-08-30T09:00:00.000Z"
+          },
+          "expiresAt": {
+            "type": "string",
+            "example": "2026-11-30T09:00:00.000Z"
+          },
+          "lastUsedAt": {
+            "type": "string",
+            "example": "2026-08-31T14:12:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "createdAt"
+        ]
+      },
+      "MintedToken": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Token"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "token": {
+                "type": "string",
+                "example": "nmp.gpeukvybsmmgwnec.qK9v..."
+              }
+            },
+            "required": [
+              "token"
+            ]
+          }
+        ]
+      },
+      "MintTokenRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "laptop"
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "string",
+                "format": "date"
+              }
+            ],
+            "description": "An ISO 8601 instant: a date-time carrying an offset (`2026-08-08T09:00:00Z`, `2026-08-08T09:00:00+02:00`), or a date alone, which means midnight UTC. A date-time without an offset is refused — there is no way to tell which zone it was written in.",
+            "example": "2026-11-30T09:00:00.000Z"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
       "CaptureOutcome": {
         "anyOf": [
           {
@@ -1160,6 +1311,447 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/session": {
+      "post": {
+        "summary": "Sign in and take a session",
+        "description": "Exchanges the credential for a session cookie. The cookie is `HttpOnly` and carries the only copy of the session's secret; the daemon stores a hash of it and can never reproduce it. Answered the same way whether the name or the password was wrong, so neither can be probed for.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signed in. The session cookie is set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body could not be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "malformed-json",
+                            "malformed-envelope"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The credential was not accepted. Which half was wrong is not said.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unauthenticated"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The body was not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unsupported-media-type"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Read who this request is, if anyone",
+        "description": "Open, and answers 200 whether or not anyone is signed in — being signed out is an answer rather than a refusal, and a client needs to tell it apart from a daemon that is unreachable. `requiresCredentials` is false on a daemon nobody has set a password on, where every request is let through.",
+        "responses": {
+          "200": {
+            "description": "What this request is, and whether this daemon asks at all.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Sign out",
+        "description": "Ends the session the cookie names and clears the cookie. Idempotent, and open: signing out with a session that already lapsed is not an error, it is the same outcome arrived at early.",
+        "responses": {
+          "204": {
+            "description": "Signed out, whether or not there was a session."
+          },
+          "422": {
+            "description": "Authenticated by an access token, which is not a session to end.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "not-a-session"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sessions": {
+      "delete": {
+        "summary": "End every session, everywhere",
+        "description": "What a person reaches for after losing a device: every session is ended at once, including this one. Access tokens are untouched — a headless client is not a device someone left on a train, and revoking one is its own deliberate act. Behind the door, unlike signing out of this session alone.",
+        "responses": {
+          "204": {
+            "description": "Every session is over."
+          },
+          "401": {
+            "description": "Nothing valid was presented.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unauthenticated"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tokens": {
+      "get": {
+        "summary": "Read the access tokens that exist",
+        "description": "Names, times and last use. **No secret is ever listed**: the token string is shown once when it is minted and is not stored. `lastUsedAt` is what says whether a token is still in use and safe to revoke.",
+        "responses": {
+          "200": {
+            "description": "Every token this daemon holds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tokens"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated by an access token, which may not manage tokens.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "session-required"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Mint an access token",
+        "description": "**The only answer that carries the token string.** It is not stored and cannot be read back, so a token that was not written down is replaced rather than recovered. Leaving `expiresAt` out mints one that never expires.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MintTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Minted. `token` is shown here and nowhere else.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MintedToken"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body could not be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "malformed-json",
+                            "malformed-envelope"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated by an access token, which may not manage tokens.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "session-required"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The body was not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unsupported-media-type"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tokens/{id}": {
+      "delete": {
+        "summary": "Revoke an access token",
+        "description": "Takes effect on the next request: nothing caches an authentication, so there is no window to outrun. Revoking a token that is already gone is not an error.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked, or was never there."
+          },
+          "403": {
+            "description": "Authenticated by an access token, which may not manage tokens.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "session-required"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }

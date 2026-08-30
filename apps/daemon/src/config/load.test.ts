@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  cookiesAreSecure,
   defaultAssetRoot,
   defaultConfigPath,
   defaultPoolPath,
@@ -289,5 +290,50 @@ describe("where the daemon looks", () => {
     expect(defaultConfigPath()).toBe(
       join(homedir(), ".config/notemap/config.toml"),
     );
+  });
+});
+
+describe("where the daemon says it is reachable", () => {
+  it("takes a loopback daemon without an origin, as it always has", () => {
+    expect(parse(`[daemon]\nhost = "127.0.0.1"`).origin).toBeUndefined();
+    expect(parse("").origin).toBeUndefined();
+  });
+
+  it("refuses to bind beyond loopback without one", () => {
+    // Every interface is the accidental exposure: nothing else in the file says
+    // whether a session cookie may cross the network in the clear.
+    for (const host of ["0.0.0.0", "::", "192.168.1.10"]) {
+      expect(() => parse(`[daemon]\nhost = "${host}"`), host).toThrow(
+        "daemon.origin",
+      );
+    }
+  });
+
+  it("takes the same daemon once it says where it is", () => {
+    expect(
+      parse(`[daemon]\nhost = "0.0.0.0"\norigin = "https://notes.example.com"`)
+        .origin,
+    ).toBe("https://notes.example.com");
+  });
+
+  it("refuses an origin that is not a URL", () => {
+    expect(() => parse(`[daemon]\norigin = "notes.example.com"`)).toThrow();
+  });
+});
+
+describe("whether a session cookie may require HTTPS", () => {
+  it("requires it of an origin reached over TLS", () => {
+    expect(cookiesAreSecure("https://notes.example.com")).toBe(true);
+  });
+
+  it("requires it on loopback too, which a browser trusts whatever the scheme", () => {
+    expect(cookiesAreSecure("http://localhost:4747")).toBe(true);
+    expect(cookiesAreSecure("http://127.0.0.1:4747")).toBe(true);
+    expect(cookiesAreSecure(undefined)).toBe(true);
+  });
+
+  it("gives it up only where plain HTTP crosses a network", () => {
+    expect(cookiesAreSecure("http://notes.example.com")).toBe(false);
+    expect(cookiesAreSecure("http://192.168.1.10:4747")).toBe(false);
   });
 });

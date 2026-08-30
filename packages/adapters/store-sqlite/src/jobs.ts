@@ -28,7 +28,7 @@ import {
   toTimestamp,
 } from "./mapping";
 import type { JobRow } from "./rows";
-import type { Bindable, statements } from "./statements";
+import type { Bindable, statements } from "@notemap/sqlite";
 
 type Statements = ReturnType<typeof statements>;
 

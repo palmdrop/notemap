@@ -48,6 +48,12 @@ export type DaemonConfig = {
   readonly pool: string;
   readonly host: string;
   readonly port: number;
+  /**
+   * Where a browser reaches this daemon. Required once it binds beyond
+   * loopback, because nothing else says whether a session cookie may travel
+   * over plain HTTP.
+   */
+  readonly origin?: string;
   /** Absent turns the mirror off: nothing is written and no job is enqueued. */
   readonly mirror?: MirrorConfig;
   readonly assets: AssetsConfig;
@@ -72,6 +78,7 @@ const fileSchema = z.object({
       pool: z.string().optional(),
       host: z.string().min(1).optional(),
       port: z.number().int().min(1).max(65535).optional(),
+      origin: z.string().url().optional(),
     })
     .optional(),
   mirror: z
@@ -134,6 +141,26 @@ const fileSchema = z.object({
     )
     .default([]),
 });
+
+/**
+ * `0.0.0.0` and `::` are not loopback: they are every interface, which is the
+ * accidental exposure this tells apart from a daemon on someone's laptop.
+ */
+export function isLoopback(host: string): boolean {
+  return host === "127.0.0.1" || host === "::1" || host === "localhost";
+}
+
+/**
+ * A browser counts loopback as trustworthy whatever the scheme, so a secure
+ * cookie survives plain HTTP there. Only a plain-HTTP origin someone else can
+ * reach turns it off.
+ */
+export function cookiesAreSecure(origin: string | undefined): boolean {
+  if (origin === undefined) return true;
+
+  const url = new URL(origin);
+  return url.protocol === "https:" || isLoopback(url.hostname);
+}
 
 /** `~` is the shell's, not the filesystem's. */
 function expandHome(path: string): string {
@@ -235,10 +262,20 @@ export function parseConfig(source: string, from: string): LoadedConfig {
   const { file, stripped } = tolerate(raw, from);
   const retry = file.retry ?? DEFAULT_RETRY;
 
+  const host = file.daemon?.host ?? DEFAULT_HOST;
+  const origin = file.daemon?.origin;
+
+  if (!isLoopback(host) && origin === undefined) {
+    throw new Error(
+      `${from} binds ${host}, which is reachable from beyond this machine, so daemon.origin must say where — a session cookie has no other way to know whether it may travel over plain HTTP`,
+    );
+  }
+
   const config: DaemonConfig = {
     pool: resolve(expandHome(file.daemon?.pool ?? defaultPoolPath())),
-    host: file.daemon?.host ?? DEFAULT_HOST,
+    host,
     port: file.daemon?.port ?? DEFAULT_PORT,
+    ...(origin === undefined ? {} : { origin }),
     ...(file.mirror === undefined
       ? {}
       : {

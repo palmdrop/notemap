@@ -20,6 +20,11 @@ pool = "/var/lib/notemap/state/notemap.db"
 host = "0.0.0.0"
 port = 4747
 
+# Where a browser reaches the daemon, which binding every interface makes
+# required: nothing else says whether a session cookie may cross the network in
+# the clear. An `https://` origin, or a loopback one, gets `Secure` cookies.
+origin = "http://localhost:4747"
+
 # The pool, the mirror and the assets are siblings under the one volume,
 # because rebuilding needs the mirror and the assets together.
 [mirror]

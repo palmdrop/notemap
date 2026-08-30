@@ -48,7 +48,7 @@ exists so that decision stays reversible.
 
 Depends on nothing.
 
-- [ ] Create branch `agent/login-and-access-tokens`
+- [ ] Create branch `feature/login-and-access-tokens`
 - [ ] An ADR: **the daemon authenticates; core does not, and the implementation is ours.** What it
       has to record, because none of it is recoverable from the code:
   - Core stays host-agnostic and gains no user, so a different host picks its own scheme, and
@@ -141,8 +141,12 @@ Depends on phase 2.
 
 - [ ] One middleware over `/v1` accepting either a session cookie or `Authorization: Bearer`. A
       request with neither is `401` with `unauthenticated` in the existing refusal envelope, which
-      joins the status table [http-v1.md](../specs/http-v1.md) keeps. There is no `403`: with one
-      user there is nothing that is authenticated but not permitted
+      joins the status table [http-v1.md](../specs/http-v1.md) keeps.
+      *Amended 2026-08-30*: this said there would be no `403`, on the reasoning that with one user
+      nothing is authenticated but not permitted. There is exactly one — an access token may not
+      manage access tokens, `session-required`, `403` — and it is containment rather than
+      permission: without it a leaked token mints a replacement that survives revoking the original.
+      The original reasoning still holds everywhere else
 - [ ] Open without a credential, and only these: `POST /v1/auth/login`, and `GET /v1/health` — the
       shell probes it every ten seconds to decide whether it is offline, and a probe that answers
       `401` would make a closed door look like a dead daemon, which is the worse lie. But it answers
@@ -153,8 +157,18 @@ Depends on phase 2.
       the daemon cannot see TLS and has to be told rather than guess
 - [ ] **A new session id is minted on every login**, and the old one invalidated. Session fixation is
       the thing this prevents and it is one line to omit
-- [ ] `GET`, `POST` and `DELETE` on `/v1/auth/tokens`. The secret appears in the creation response
-      and never again; the list carries the name, the times and the id
+- [ ] `GET`, `POST` and `DELETE` on the tokens routes. The secret appears in the creation response
+      and never again; the list carries the name, the times and the id. **A session is required**:
+      these are the only routes an access token cannot reach
+- [ ] **Authorization is deferred, and said so out loud** rather than left to be inferred from the
+      absence of it. A credential answers *who*, and nothing answers *what*: any authenticated
+      request may do anything, the tokens routes aside. There is no read-only token, no
+      per-destination token, and no difference in reach between a session and a token. That is
+      right for one person holding every credential, and it is why revocation and `lastUsedAt`
+      carry the weight a scope would otherwise carry — a leak is contained by noticing it, not by
+      what the credential was allowed to do. Recorded in
+      [security.md](../specs/security.md#authentication-answers-who-and-nothing-answers-what) with
+      the list of what a scoped model would have to answer
 - [ ] **Failed logins are throttled**, and this is required rather than a refinement: one password is
       now the whole attack surface, and without a delay a wordlist gets unlimited attempts. A
       per-caller backoff and a global ceiling. Single-user means an in-memory counter is enough
@@ -303,6 +317,11 @@ Human-written, and checked on 2026-08-27. The first two are the ones to read bef
 - **Whether setting the password should end open sessions.** It should — a reset is usually a
   response to suspecting something — but it means the person running the command signs themselves
   out of the browser they were holding, which will surprise someone at least once.
+- **When authorization stops being deferrable.** The trigger is a credential handed to something not
+  fully trusted — a shared script, a hosted integration, a device someone else holds — which is the
+  same trigger as `Agent` growing a name, arriving from the other direction. Until then a scope
+  would be a fence around one's own garden. Fallback if it arrives sooner than expected: a single
+  read-only flag on a token, which covers the common case without a permission model.
 - **Bearer tokens and `<img src>`.** A future native client cannot set a header on an image, which is
   item 2 of the spec's own list. Out of scope here — the cookie covers the browser — but the answer
   will be short-lived signed URLs rather than a token in a query string, and phase 7 should say so

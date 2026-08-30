@@ -18,6 +18,13 @@ pool = "~/.local/share/notemap/state/notemap.db"
 host = "127.0.0.1"
 port = 4747
 
+# Where a browser reaches the daemon. Optional on loopback, and required the
+# moment `host` is anything else — a session cookie has no other way to know
+# whether it may travel over plain HTTP. `https://` or a loopback origin gets
+# `Secure` cookies; a plain-HTTP origin on a real address gives them up, and the
+# daemon says so on startup.
+# origin = "https://notes.example.com"
+
 # The plain-file copy of everything, written and never read back. Delete this
 # whole table and the mirror is off: nothing is written, and no work is even
 # recorded as owed — which makes the SQLite file the only copy of everything.

@@ -2,6 +2,7 @@ packages:
   - "apps/*"
   - "packages/*"
   - "packages/adapters/*"
+  - "packages/plumbing/*"
   - "tests/*"
 # esbuild ships prebuilt binaries and needs its install script to place them.
 # It arrives via vitest, as a devDependency only.

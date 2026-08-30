@@ -6,11 +6,11 @@ import { serve } from "@hono/node-server";
 
 import { createApp } from "./app";
 import { startSweeper } from "./assets/sweeper";
-import { loadConfig } from "./config/load";
+import { cookiesAreSecure, loadConfig } from "./config/load";
 import { SHUTDOWN_GRACE_MS } from "./constants";
 import { startDeliveryRunner } from "./destinations/runner";
 import { startMirrorRunner } from "./mirror/runner";
-import { openPool } from "./ports";
+import { openPool, openAuth } from "./ports";
 
 function start(): void {
   const { values } = parseArgs({
@@ -23,13 +23,25 @@ function start(): void {
     console.warn(`notemap: ignoring ${key}, which this daemon does not know`);
   }
 
+  if (!cookiesAreSecure(config.origin)) {
+    console.warn(
+      `notemap: ${config.origin} is plain HTTP, so a session cookie crosses the network in the clear — put TLS in front of the daemon`,
+    );
+  }
+
   mkdirSync(dirname(config.pool), { recursive: true });
 
-  const { pool, mirrorWriter, destinations } = openPool({
+  const { pool, ports, mirrorWriter, destinations } = openPool({
     file: config.pool,
     config: config.poolConfig,
     assetRoot: config.assets.root,
     ...(config.mirror === undefined ? {} : { mirrorRoot: config.mirror.root }),
+  });
+
+  const auth = openAuth({
+    file: "./auth.db", // TODO: comes from where?
+  }, {
+    clock: ports.clock
   });
 
   const mirror =
@@ -53,7 +65,11 @@ function start(): void {
 
   const server = serve(
     {
-      fetch: createApp(pool, config.assets).fetch,
+      fetch: createApp(pool, {
+        limits: config.assets,
+        auth,
+        cookies: { secure: cookiesAreSecure(config.origin) },
+      }).fetch,
       hostname: config.host,
       port: config.port,
     },

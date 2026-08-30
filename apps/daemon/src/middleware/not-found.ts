@@ -1,5 +1,4 @@
-import type { Hono } from "hono";
-import type { NotFoundHandler } from "hono";
+import type { Env, Hono, NotFoundHandler } from "hono";
 
 import { refuse } from "../utils/responses";
 
@@ -8,7 +7,7 @@ function escapeRegExp(value: string): string {
 }
 
 /** Read off what is registered, so it cannot drift from the routes themselves. */
-export function methodsFor(app: Hono, path: string): string[] {
+export function methodsFor<E extends Env>(app: Hono<E>, path: string): string[] {
   const allowed = new Set<string>();
 
   for (const route of app.routes) {
@@ -23,7 +22,7 @@ export function methodsFor(app: Hono, path: string): string[] {
   return [...allowed].sort();
 }
 
-export function notFound(app: Hono): NotFoundHandler {
+export function notFound<E extends Env>(app: Hono<E>): NotFoundHandler<E> {
   return (context) => {
     const path = new URL(context.req.url).pathname;
     const allow = methodsFor(app, path);

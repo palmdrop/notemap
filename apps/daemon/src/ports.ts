@@ -25,6 +25,8 @@ import {
 
 import { destinationRenderers } from "./destinations/renderers";
 import { renderersFor } from "./mirror/renderers";
+import { createAuth, } from "./auth";
+import { createSqliteAuthStore } from "./auth/store";
 
 export const systemClock: Clock = {
   now: () => new Date().toISOString() as Timestamp,
@@ -51,6 +53,7 @@ export type OpenPoolConfig = {
  */
 export type OpenPool = {
   readonly pool: Pool;
+  readonly ports: PoolPorts;
   readonly blobs: BlobStore;
   readonly mirrorWriter?: MirrorWriter;
   readonly destinations: Destinations;
@@ -111,8 +114,29 @@ export function openPool(options: OpenPoolConfig): OpenPool {
 
   return {
     pool: createPool(options.config, ports),
+    ports,
     blobs,
     ...(mirrorWriter === undefined ? {} : { mirrorWriter }),
     destinations,
   };
 }
+
+type OpenAuthConfig = {
+  file: string;
+}
+
+type OpenAuthPorts = {
+  clock: Clock;
+}
+
+export const openAuth = (config: OpenAuthConfig, { clock }: OpenAuthPorts) => {
+  const store = createSqliteAuthStore({
+    file: config.file,
+  });
+
+  const auth = createAuth(store, {
+    clock
+  });
+
+  return auth;
+};
