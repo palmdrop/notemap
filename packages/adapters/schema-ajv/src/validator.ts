@@ -37,7 +37,11 @@ export function createAjvSchemaValidator(
    * reads. Overridable, since a host that wants ajv's other strict checks may
    * still want them.
    */
-  const ajv = new Ajv2020({ strict: false, ...config.options, allErrors: true });
+  const ajv = new Ajv2020({
+    strict: false,
+    ...config.options,
+    allErrors: true,
+  });
 
   return {
     validate(schema: JsonSchema, value: JsonValue): readonly SchemaIssue[] {

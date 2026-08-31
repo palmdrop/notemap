@@ -12,6 +12,7 @@ import {
 
 import { placeAssets } from "./assets";
 import { createFile, replaceFile } from "./atomic";
+import { filesystemCandidates } from "./candidates";
 import { Refused } from "./errors";
 import {
   APPEND_TO_FILE,
@@ -119,6 +120,9 @@ export function createFilesystemDestination(
         return failure(cause);
       }
     },
+
+    candidates: (destination, request) =>
+      filesystemCandidates({ reserved }, destination, request),
   };
 }
 

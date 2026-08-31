@@ -192,32 +192,34 @@ Depends on phase 3.
 
 Depends on phases 3 and 4.
 
-- [ ] One level, through the existing containment: a scope that leaves the root is refused by the
+- [x] One level, through the existing containment: a scope that leaves the root is refused by the
       same rule a delivery is refused by, symlinks included. Sorted by name
-- [ ] The scope is the path relative to the root, because that is what the field takes — the value
+- [x] The scope is the path relative to the root, because that is what the field takes — the value
       and the way to descend are the same string here, and will not be for every kind
-- [ ] What is offered follows the field, not the kind: `create-file`'s `directory` offers folders,
+- [x] What is offered follows the field, not the kind: `create-file`'s `directory` offers folders,
       `append-to-file`'s `path` offers notes
-- [ ] Hidden files and the `.notemap-*` temporaries a crashed delivery leaves are not offered
-- [ ] Unreadable or absent is `unreachable` with the reason, never an empty listing: a vault that is
+- [x] Hidden files and the `.notemap-*` temporaries a crashed delivery leaves are not offered
+- [x] Unreadable or absent is `unreachable` with the reason, never an empty listing: a vault that is
       not mounted and a vault that is empty are different answers to a person looking for a folder
-- [ ] Tests beside the adapter, over a temporary tree
-- [ ] Verify: `pnpm -r --silent test`
-- [ ] `git commit`
+- [x] Tests beside the adapter, over a temporary tree
+- [x] Verify: `pnpm -r --silent test`
+- [x] `git commit`
 
 ### Phase 6 — The webdav kind answers
 
 Depends on [destination-webdav](destination-webdav.md). Drops out of this plan if that has not
 landed, and the plan still ships.
 
-- [ ] `PROPFIND` with `Depth: 1`, which is one request for one level and is what the method was
+- [-] `PROPFIND` with `Depth: 1`, which is one request for one level and is what the method was
       designed for. Resource type says whether it can be descended into; the display name and the
-      href give the label and the value
-- [ ] The same exclusions and the same failure vocabulary as phase 5, so a composer cannot tell the
-      two kinds apart except by what is in them
-- [ ] Tests against the same in-process DAV server the webdav kind is tested against
-- [ ] Verify: `pnpm -r --silent test`
-- [ ] `git commit`
+      href give the label and the value _(dropped — `destination-webdav` has not landed; this
+      phase has nothing to be built against)_
+- [-] The same exclusions and the same failure vocabulary as phase 5, so a composer cannot tell the
+      two kinds apart except by what is in them _(dropped — same reason)_
+- [-] Tests against the same in-process DAV server the webdav kind is tested against _(dropped —
+      same reason)_
+- [-] Verify: `pnpm -r --silent test` _(dropped — same reason)_
+- [-] `git commit` _(dropped — same reason)_
 
 ### Phase 7 — On the wire
 

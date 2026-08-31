@@ -195,7 +195,9 @@ export function fakeDestinations(
       cannotAnswer === undefined
         ? Promise.resolve(candidatesAnswer)
         : Promise.reject(
-            cannotAnswer instanceof Error ? cannotAnswer : new Error(cannotAnswer),
+            cannotAnswer instanceof Error
+              ? cannotAnswer
+              : new Error(cannotAnswer),
           ),
 
     received,
