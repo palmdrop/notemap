@@ -6,7 +6,12 @@ const SCHEMA = {
   type: "object",
   required: ["path"],
   properties: {
-    path: { type: "string" },
+    path: {
+      type: "string",
+      title: "Path",
+      description: "Where it goes.",
+      "x-notemap-candidates": true,
+    },
     tags: { type: "array", items: { type: "string" } },
   },
 };
@@ -14,8 +19,15 @@ const SCHEMA = {
 describe("the fields a schema asks for", () => {
   test("names each property, which of them are required, and its shape", () => {
     expect(fieldsOf(SCHEMA)).toEqual([
-      { name: "path", required: true, kind: "text" },
-      { name: "tags", required: false, kind: "list" },
+      {
+        name: "path",
+        required: true,
+        kind: "text",
+        title: "Path",
+        description: "Where it goes.",
+        askable: true,
+      },
+      { name: "tags", required: false, kind: "list", askable: false },
     ]);
   });
 

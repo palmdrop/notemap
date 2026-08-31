@@ -594,7 +594,7 @@
                   "capability": {
                     "type": "string"
                   },
-                  "target": {
+                  "arguments": {
                     "type": "object",
                     "additionalProperties": {}
                   }
@@ -603,7 +603,7 @@
                   "kind",
                   "destination",
                   "capability",
-                  "target"
+                  "arguments"
                 ]
               },
               {
@@ -849,7 +849,7 @@
               "type": "string"
             }
           },
-          "targetSchema": {
+          "argumentsSchema": {
             "type": "object",
             "additionalProperties": {}
           }
@@ -857,7 +857,101 @@
         "required": [
           "name",
           "accepts",
-          "targetSchema"
+          "argumentsSchema"
+        ]
+      },
+      "DestinationCandidates": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "answered"
+                ]
+              },
+              "entries": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CandidateEntry"
+                }
+              },
+              "truncated": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "entries",
+              "truncated"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "unreachable"
+                ]
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "detail"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "unusable"
+                ]
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "detail"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "not-offered"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        ]
+      },
+      "CandidateEntry": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "value": {},
+          "scope": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label"
         ]
       },
       "UpdateDestinationRequest": {
@@ -889,10 +983,10 @@
             "description": "One the destination declared. Anything else is refused.",
             "example": "create-file"
           },
-          "target": {
+          "arguments": {
             "type": "object",
             "additionalProperties": {},
-            "description": "What the capability is pointed at, in its own terms. Must satisfy the capability's `targetSchema`.",
+            "description": "What the capability is pointed at, in its own terms. Must satisfy the capability's `argumentsSchema`.",
             "example": {
               "directory": "inbox",
               "filename": "a-thought.md"
@@ -902,7 +996,7 @@
         "required": [
           "destination",
           "capability",
-          "target"
+          "arguments"
         ],
         "additionalProperties": false
       },
@@ -2785,7 +2879,7 @@
     "/v1/destination-kinds": {
       "get": {
         "summary": "Read the destination kinds this daemon has an adapter for",
-        "description": "Each with the `settingsSchema` a destination of that kind must satisfy, which is what a client builds its form from. The same arrangement as a capability's `targetSchema`, one level up: the daemon publishes what a kind needs and holds no opinion about how it is asked for.",
+        "description": "Each with the `settingsSchema` a destination of that kind must satisfy, which is what a client builds its form from. The same arrangement as a capability's `argumentsSchema`, one level up: the daemon publishes what a kind needs and holds no opinion about how it is asked for.",
         "responses": {
           "200": {
             "description": "Every kind, with the schema its settings must satisfy.",
@@ -2803,7 +2897,7 @@
     "/v1/destinations/{id}/description": {
       "get": {
         "summary": "Ask one destination what it can do",
-        "description": "Split from the list because they are different animals: what a destination *is* comes from the pool, and what it can *do* is I/O that may hang or fail. `described` carries the capabilities the adapter declared; `undescribable` went and looked and could not say; `unusable` could not be asked at all — no adapter speaks its kind, or its settings no longer satisfy that kind. `targetSchema` is JSON Schema and is the whole of what a client needs to build a `target`.",
+        "description": "Split from the list because they are different animals: what a destination *is* comes from the pool, and what it can *do* is I/O that may hang or fail. `described` carries the capabilities the adapter declared; `undescribable` went and looked and could not say; `unusable` could not be asked at all — no adapter speaks its kind, or its settings no longer satisfy that kind. `argumentsSchema` is JSON Schema and is the whole of what a client needs to build `arguments`.",
         "parameters": [
           {
             "schema": {
@@ -2839,6 +2933,132 @@
                           "type": "string",
                           "enum": [
                             "unknown-destination"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/destinations/{id}/candidates": {
+      "get": {
+        "summary": "Ask one destination what a field of one capability's arguments could hold",
+        "description": "The same animal as `/description`: a question the destination answers, slowly, and may refuse. Capped rather than paginated — `truncated` says when it cut the answer short, because a folder holding thousands of notes is a search problem rather than a paging one, and a cursor would put a position on an ordering notemap does not own. The capability and the field are checked against what `/description` already declares before the destination is asked anything: an undeclared capability or a field not carrying `x-notemap-candidates` is refused on the route's own terms.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "One the destination declared. Anything else is refused.",
+              "example": "create-file"
+            },
+            "required": true,
+            "description": "One the destination declared. Anything else is refused.",
+            "name": "capability",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "A property of that capability's `argumentsSchema` carrying `x-notemap-candidates`. Anything else is refused.",
+              "example": "directory"
+            },
+            "required": true,
+            "description": "A property of that capability's `argumentsSchema` carrying `x-notemap-candidates`. Anything else is refused.",
+            "name": "field",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Opaque. Absent asks at the top; present is a scope an earlier answer minted, to descend without being told it is descending anything.",
+              "example": "inbox"
+            },
+            "required": false,
+            "description": "Opaque. Absent asks at the top; present is a scope an earlier answer minted, to descend without being told it is descending anything.",
+            "name": "scope",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What it answered: entries, a refusal the destination itself gave, or a kind that does not offer this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DestinationCandidates"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No destination has that id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unknown-destination"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The capability was not declared, or the field is not one that can be asked about.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "capability-undeclared",
+                            "field-not-askable"
                           ]
                         }
                       },
@@ -3448,7 +3668,7 @@
             }
           },
           "422": {
-            "description": "The destination, the capability, the payload type or the target was declined. Nothing was written.",
+            "description": "The destination, the capability, the payload type or the arguments were declined. Nothing was written.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3463,7 +3683,7 @@
                             "unknown-destination",
                             "capability-undeclared",
                             "payload-type-unsupported",
-                            "target-invalid",
+                            "arguments-invalid",
                             "rejected-by-destination",
                             "delivery-outcome-unknown",
                             "unreachable"

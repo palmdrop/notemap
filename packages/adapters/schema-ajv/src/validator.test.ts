@@ -110,3 +110,47 @@ describe("two validators in one process", () => {
     ]);
   });
 });
+
+describe("a vendor keyword this validator does not interpret", () => {
+  it("is declared, so a keyword nobody told ajv about still throws", () => {
+    const typo: JsonSchema = {
+      type: "object",
+      properties: {
+        directory: { type: "string", "x-notemap-candidate": true },
+      },
+    };
+
+    expect(() => issues(typo, { directory: "inbox" })).toThrow(
+      /unknown keyword/,
+    );
+  });
+
+  it("is tolerated rather than thrown on", () => {
+    const withCandidates: JsonSchema = {
+      type: "object",
+      properties: {
+        directory: { type: "string", "x-notemap-candidates": true },
+      },
+    };
+
+    expect(issues(withCandidates, { directory: "inbox" })).toEqual([]);
+  });
+
+  it("is not stripped from the schema object handed in", () => {
+    const withCandidates: JsonSchema = {
+      type: "object",
+      properties: {
+        directory: { type: "string", "x-notemap-candidates": true },
+      },
+    };
+
+    issues(withCandidates, { directory: "inbox" });
+
+    const properties = withCandidates["properties"] as Record<
+      string,
+      JsonValue
+    >;
+    const directory = properties["directory"] as Record<string, JsonValue>;
+    expect(directory["x-notemap-candidates"]).toBe(true);
+  });
+});

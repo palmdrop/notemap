@@ -48,6 +48,11 @@ export type CreateDestinationRequest =
 export type UpdateDestinationRequest =
   components["schemas"]["UpdateDestinationRequest"];
 export type Capability = components["schemas"]["Capability"];
+export type DestinationCandidates =
+  components["schemas"]["DestinationCandidates"];
+export type CandidateEntry = components["schemas"]["CandidateEntry"];
+export type CandidatesRequest =
+  paths["/v1/destinations/{id}/candidates"]["get"]["parameters"]["query"];
 export type RouteRequest = components["schemas"]["RouteRequest"];
 export type RoutingRecord = components["schemas"]["RoutingRecord"];
 export type RoutingSummary = components["schemas"]["RoutingSummary"];

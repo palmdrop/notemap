@@ -22,10 +22,12 @@ services:
       # daemon run directly reads `~/.config/notemap/config.toml` instead.
       - ./config.toml:/etc/notemap/config.toml:ro
       # A filesystem destination writes inside the container, so the vault it
-      # names has to be visible there. The path a destination is created with in
-      # settings is this one, not the host's. Writable by uid 1000, which is who
-      # the daemon runs as.
-      # - /srv/vault:/vault
+      # names has to be visible there — under /var/lib/notemap/vaults, the one
+      # directory a root may be mounted at. The container reaches nothing
+      # else, because nothing else is mounted. The path a destination is
+      # created with in settings is the container's side, not the host's.
+      # Writable by uid 1000, which is who the daemon runs as.
+      # - /srv/vault:/var/lib/notemap/vaults/second-brain
 
     healthcheck:
       test:

@@ -1,6 +1,7 @@
 import type { Destinations } from "#types/api/ports";
 import type { JsonObject, JsonSchema } from "#types/json";
 import type {
+  CandidatesAnswer,
   Capability,
   Destination,
   DestinationKind,
@@ -41,8 +42,17 @@ export type FakeDestinations = Destinations & {
   answers(next: ScriptedAnswer): void;
   /** Takes precedence over the standing answer, for one delivery. */
   answersOnce(next: ScriptedAnswer): void;
-  /** What `describe` throws with, which is what an undescribable destination is. */
-  cannotDescribe(detail: string | undefined): void;
+  /**
+   * What `describe` throws with. A bare string is an undescribable
+   * destination; an `Error` instance — `Unusable`, say — is thrown as itself,
+   * for a test that needs `describe` to reject with a particular kind of
+   * failure.
+   */
+  cannotDescribe(detail: string | Error | undefined): void;
+  /** What `candidates` answers when nothing says it should fail. */
+  answersCandidates(next: CandidatesAnswer): void;
+  /** What `candidates` throws with, on the same terms as `cannotDescribe`. */
+  cannotAnswerCandidates(detail: string | Error | undefined): void;
 };
 
 export type FakeDestinationsOptions = {
@@ -51,9 +61,10 @@ export type FakeDestinationsOptions = {
   /** Whether it reads the assets it is handed, which is what proves the opener lazy. */
   readonly reads?: boolean;
   readonly answer?: ScriptedAnswer;
+  readonly candidatesAnswer?: CandidatesAnswer;
 };
 
-const ANY_TARGET: JsonSchema = { type: "object" };
+const ANY_ARGUMENTS: JsonSchema = { type: "object" };
 
 export const FAKE_KIND = "fake" as DestinationKindName;
 
@@ -73,7 +84,7 @@ export function fakeCapability(
   overrides: {
     name?: string;
     accepts?: readonly string[];
-    targetSchema?: JsonSchema;
+    argumentsSchema?: JsonSchema;
   } = {},
 ): Capability {
   return {
@@ -81,7 +92,7 @@ export function fakeCapability(
     accepts: (overrides.accepts ?? ["text"]).map(
       (type) => type as PayloadTypeName,
     ),
-    targetSchema: overrides.targetSchema ?? ANY_TARGET,
+    argumentsSchema: overrides.argumentsSchema ?? ANY_ARGUMENTS,
   };
 }
 
@@ -122,7 +133,12 @@ export function fakeDestinations(
     kind: "delivered",
     pointer: "somewhere",
   };
-  let undescribable: string | undefined;
+  let undescribable: string | Error | undefined;
+  let candidatesAnswer: CandidatesAnswer = options.candidatesAnswer ?? {
+    entries: [],
+    truncated: false,
+  };
+  let cannotAnswer: string | Error | undefined;
 
   async function read(
     delivery: Delivery,
@@ -147,7 +163,11 @@ export function fakeDestinations(
     describe: () =>
       undescribable === undefined
         ? Promise.resolve({ capabilities })
-        : Promise.reject(new Error(undescribable)),
+        : Promise.reject(
+            undescribable instanceof Error
+              ? undescribable
+              : new Error(undescribable),
+          ),
 
     deliver: async (destination, delivery, signal) => {
       const answer = once.shift() ?? standing;
@@ -171,6 +191,15 @@ export function fakeDestinations(
       });
     },
 
+    candidates: () =>
+      cannotAnswer === undefined
+        ? Promise.resolve(candidatesAnswer)
+        : Promise.reject(
+            cannotAnswer instanceof Error
+              ? cannotAnswer
+              : new Error(cannotAnswer),
+          ),
+
     received,
     answers: (next) => {
       standing = next;
@@ -180,6 +209,12 @@ export function fakeDestinations(
     },
     cannotDescribe: (detail) => {
       undescribable = detail;
+    },
+    answersCandidates: (next) => {
+      candidatesAnswer = next;
+    },
+    cannotAnswerCandidates: (detail) => {
+      cannotAnswer = detail;
     },
   };
 }

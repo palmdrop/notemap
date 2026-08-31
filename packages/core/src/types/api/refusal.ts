@@ -139,7 +139,7 @@ export type PreparationRefusal =
       readonly accepts: readonly PayloadTypeName[];
     }
   | {
-      readonly kind: "target-invalid";
+      readonly kind: "arguments-invalid";
       readonly issues: readonly SchemaIssue[];
     }
   | {

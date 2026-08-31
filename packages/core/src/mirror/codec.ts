@@ -225,7 +225,7 @@ function readTarget(value: unknown, at: string): RoutingTarget {
           row["capability"],
           `${at}.capability`,
         ) as CapabilityName,
-        target: object(row["target"], `${at}.target`) as JsonObject,
+        arguments: object(row["arguments"], `${at}.arguments`) as JsonObject,
       };
     case "user":
       return { kind: "user", ...present("note", row, at, text) };

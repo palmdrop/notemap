@@ -1,5 +1,5 @@
 import { recordAction } from "../actions";
-import { usability } from "../destinations/usability";
+import { Unusable, usability } from "../destinations/usability";
 import { enqueueMirrorWrite } from "../mirror";
 import { ok, refused } from "#utils/result";
 import type { PoolPorts, PoolTx } from "#types/api/ports";
@@ -31,7 +31,7 @@ type Routed = Result<RoutingRecord, DeliveryRefusal>;
 
 /**
  * Everything checkable is checked before anything is written or attempted,
- * because this is interactive: a typo'd target is worth refusing while the
+ * because this is interactive: a typo'd argument is worth refusing while the
  * person is still looking at the item. The adapter is then called outside any
  * transaction.
  */
@@ -89,10 +89,10 @@ export async function route(
   }
 
   const issues = ports.schemas.validate(
-    capability.targetSchema,
-    request.target,
+    capability.argumentsSchema,
+    request.arguments,
   );
-  if (issues.length > 0) return refused({ kind: "target-invalid", issues });
+  if (issues.length > 0) return refused({ kind: "arguments-invalid", issues });
 
   const delivery = await projectDelivery(ports, stored, request);
   const record: RoutingRecord = {
@@ -102,7 +102,7 @@ export async function route(
       kind: "destination",
       destination: request.destination,
       capability: request.capability,
-      target: request.target,
+      arguments: request.arguments,
     },
     state: "pending",
     at: ports.clock.now(),
@@ -152,9 +152,9 @@ export async function route(
 }
 
 /**
- * A destination that cannot say what it accepts cannot have a target checked
+ * A destination that cannot say what it accepts cannot have arguments checked
  * against it. Nothing has been attempted and nothing written, so this refuses
- * rather than reserving: a record minted here would carry a target nobody
+ * rather than reserving: a record minted here would carry arguments nobody
  * validated, and every retry would refuse it again.
  */
 async function describeOrRefuse(
@@ -165,6 +165,13 @@ async function describeOrRefuse(
   try {
     return ok(await ports.destinations.describe(destination, signal));
   } catch (cause) {
+    if (cause instanceof Unusable) {
+      return refused({
+        kind: "destination-unusable",
+        destination: destination.id,
+        detail: cause.message,
+      });
+    }
     return refused({
       kind: "unreachable",
       detail: cause instanceof Error ? cause.message : String(cause),

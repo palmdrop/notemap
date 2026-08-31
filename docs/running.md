@@ -182,17 +182,31 @@ settings. Today there is one kind.
 
 ### filesystem
 
-Its one setting is `root`, **a path inside the container**. Mount the directory you mean and name
-the container's side of the mount — there is a commented-out example in both compose files:
+Its one setting is `root`, **a path inside the container**, and the only directory it may be
+mounted under is `/var/lib/notemap/vaults` — there is nothing else to configure, because the
+container reaches nothing else: nothing else is mounted. Mount the directory you mean somewhere
+under it and name the container's side of the mount — there is a commented-out example in both
+compose files:
 
 ```yaml
 volumes:
-  - /srv/vault:/vault
+  - /srv/vault:/var/lib/notemap/vaults/second-brain
 ```
 
-Then create a destination with `root = "/vault"`. The daemon runs as uid 1000, so that directory has
-to be writable by uid 1000 on the host. The root is never created for you: one that is not there is
-an unmounted drive far more often than it is a typo.
+Then create a destination with `root = "/var/lib/notemap/vaults/second-brain"`. The daemon runs as
+uid 1000, so that directory has to be writable by uid 1000 on the host. The root is never created
+for you: one that is not there is an unmounted drive far more often than it is a typo.
+
+A root pointed at the pool, the mirror or the assets instead — `/var/lib/notemap/state`,
+`/var/lib/notemap/pool-mirror`, `/var/lib/notemap/assets` — is refused, whether it names one of
+them exactly or sits inside or around one: routing a note into the mirror is destructive and
+nobody ever means it. Mounting under `vaults/` keeps the two apart without having to think about
+it, but the refusal holds regardless of what is mounted where.
+
+What is reserved is the pool's whole **directory**, not the database file — its `-wal` and `-shm`
+siblings are part of the pool and are not named in any config. So a `pool` moved up a level, to
+`/var/lib/notemap/notemap.db`, would reserve `/var/lib/notemap` and make every vault mounted under
+it unusable. Leave the database in `state/`.
 
 Routing an item at it uses one of two capabilities:
 

@@ -1,5 +1,11 @@
 # Developer TODOs
-- [ ] Consider full POC: inbox via Memos app, routing to complex obsidian project. Router should be able to advertise folders, and keep track of custom tags that exist for auto-routing. 
+- [ ] Consider full POC: inbox via Memos app, routing to complex obsidian project. The "advertise
+  folders" half closed 2026-08-31: the destination port can be asked what an argument could hold
+  ([ADR 26](adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md)), and the
+  filesystem kind answers it for `create-file` and `append-to-file`. Still open: **custom tags that
+  exist for auto-routing** — the port can now answer this too, since a vault's tags are just another
+  field's candidates, but no kind implements it, obsidian tags being read from the notes themselves
+  rather than declared anywhere a filesystem adapter can see.
 - [x] Consider allowing in-place edits to notes IF they have not been routed. Settled 2026-08-24 in
   [ADR 21](adr/0021-an-item-is-editable-until-it-is-processed.md), one clause wider than this line
   asked for: an item is editable while it is **unprocessed**, which is routed, archived or revised.
@@ -12,10 +18,19 @@
   grows an edit, or rewriting a processed note is deliberately not a thing this shell does and
   shell.md should keep saying so. Raised reviewing
   [editable-until-processed](plans/editable-until-processed.md).
-- [ ] Routing arguments - more detailed routing within a destination. The mechanism already exists: a capability's `targetSchema` is a JSON Schema the adapter publishes and core validates, so an adapter wanting a template name, a format, a column or a priority just declares one. What is left is making those schemas good enough to build a form from - titles, descriptions, defaults, enums - and saying so in the spec, so adapters bother.
-  - This has a caller now. The routing composer builds the target step from `targetSchema`, so a
-    schema with nothing in it renders as unlabelled text inputs; an enum would render as the same
-    marked-option idiom the `where` and `do` steps already use.
+- [x] Routing arguments - more detailed routing within a destination. The mechanism already exists: a capability's `argumentsSchema` is a JSON Schema the adapter publishes and core validates, so an adapter wanting a template name, a format, a column or a priority just declares one. What is left is making those schemas good enough to build a form from - titles, descriptions, defaults, enums - and saying so in the spec, so adapters bother.
+  - This has a caller now. The routing composer builds the arguments step from `argumentsSchema`,
+    so a schema with nothing in it renders as unlabelled text inputs; an enum would render as the
+    same marked-option idiom the `where` and `do` steps already use.
+  - Closed 2026-08-31: titles and descriptions landed on every argument field of both kinds (phase 4
+    of [destination-targets](plans/destination-targets.md), which also renamed `targetSchema` to
+    `argumentsSchema`). What would have been a static `enum` is answered dynamically instead — a
+    destination is asked what a field could hold
+    ([ADR 26](adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md)) — and the
+    composer draws it through exactly the marked-option idiom this line predicted.
+- [ ] A schema field's **default** is not drawn. Titles, descriptions and dynamic candidates landed
+  2026-08-31; a `default` an adapter declares is still ignored by the composer, which starts every
+  field empty. Split off the routing-arguments line above rather than left ticked inside it.
 - [ ] Routing templates - changing or formatting an item on routing, for example, making an item a piece of a TODO list
   - AI templates, where a local model formats an entry that may or may not be properly formatted
   - Shape settled in [ADR 19](adr/0019-a-destination-converts-and-the-delivery-records-what-went.md): the destination converts a copy, the work happens inside the delivery, and the bytes that landed come back to be stored on the routing record. Open: whether a template is configured in the delivery's arguments or in destination config, and whether a template is itself a thing a person edits.
@@ -25,7 +40,7 @@
   from it meanwhile, which seals it for good, since rewriting it would leave that revision's trace
   naming content which never produced it
   ([ADR 21](adr/0021-an-item-is-editable-until-it-is-processed.md)).
-- [ ] Routing auto-processing - routing a note to a specific destination converts it to a specified format. A todo list, a prose paragraph, a markdown image link, whatever. The format could be a templating language, or natural language, with an LLM in the loop, or a mix. ADR 19 answers _where the work happens_; the interesting half is still open - **preview**. Composing a routing decision with a template means wanting to see the result before committing, which is a third method on the destination port and needs the conversion to be repeatable enough that a preview means something.
+- [ ] Routing auto-processing - routing a note to a specific destination converts it to a specified format. A todo list, a prose paragraph, a markdown image link, whatever. The format could be a templating language, or natural language, with an LLM in the loop, or a mix. ADR 19 answers _where the work happens_; the interesting half is still open - **preview**. Composing a routing decision with a template means wanting to see the result before committing, which is a third method on the destination port and needs the conversion to be repeatable enough that a preview means something. Carried by [delivery-output-and-preview](plans/delivery-output-and-preview.md) — deliberately not built alongside `candidates` (2026-08-31): the two turned out not to share a seam after all, `candidates` answering "what could this hold" and preview answering "what would this produce", which is a question about the payload rather than about the destination.
 - [ ] Routing rules - core.md has carried "how rules are expressed, how fan-out to several destinations is presented, and whether a rule may ever be trusted to fire unattended" since 2026-08-02. Capture templates that auto-route are the first thing to touch it: choosing a template _is_ a person's decision to route, made early, which is how it survives "a rule never delivers on its own" - but that sentence wants writing deliberately rather than discovering later.
 - [ ] Reconsider where revisions *appear*. Half-answered on 2026-08-24: a revision now carries its
   own capture time, so it sorts at the moment it was written and no longer ties with what it came
@@ -63,12 +78,17 @@
   so the shell offers free entry into a control already shaped to take suggestions. Wants a core
   read, the route, and a client cache. Open: whether it carries counts, which is the difference
   between a chooser and a tag manager; and whether it answers for the whole pool or for a surface.
-- [ ] Nothing can enumerate a destination's targets. Capabilities are already dynamic — `describe()`
+- [x] Nothing can enumerate a destination's targets. Capabilities are already dynamic — `describe()`
   answers them live and the composer draws whatever comes back — but the target half is not:
   `describe()` returns a `targetSchema` and that is the whole vocabulary, so nothing can offer a
   folder tree, a board column, or an existing note to append to. Either the adapter publishes an
   enum it refreshes at describe time, or the destination port gains a method for asking. **This is
   the same seam preview needs** (above), so design the two together or it gets built twice.
+  - Closed 2026-08-31: the destination port gained `candidates`, asked about a field rather than a
+    path so a board's columns and a vault's tags answer the same question a filesystem's folders do
+    ([ADR 26](adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md),
+    [destination-targets](plans/destination-targets.md)). Preview did not, in the end, share the
+    seam this line predicted — see above.
 - [ ] Nothing reclaims a blob no asset ever named. The sweep enumerates the `assets` table, so a
   blob written by an upload that never minted a row — a crash between the two, or a refused
   `asset-id-conflict` — is permanent, where every other kind of debris is eventually taken. Both

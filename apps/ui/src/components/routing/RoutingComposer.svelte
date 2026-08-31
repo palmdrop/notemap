@@ -10,6 +10,7 @@
   import Group from "$components/primitives/composer/Group.svelte";
   import Modal from "$components/primitives/composer/Modal.svelte";
   import Option from "$components/primitives/composer/Option.svelte";
+  import { browserFor } from "$lib/candidate-browsers";
   import { client } from "$lib/client";
   import { fieldsOf, valuesFrom } from "$lib/schema-form";
 
@@ -29,7 +30,7 @@
   let chosen = $state<string | undefined>(undefined);
   let described = $state<DestinationDescription | undefined>(undefined);
   let capability = $state<string | undefined>(undefined);
-  let target = $state<Record<string, string>>({});
+  let args = $state<Record<string, string>>({});
   let said = $state("");
   let busy = $state(false);
 
@@ -41,7 +42,13 @@
   );
 
   const fields = $derived(
-    fieldsOf(capabilities.find((one) => one.name === capability)?.targetSchema),
+    fieldsOf(
+      capabilities.find((one) => one.name === capability)?.argumentsSchema,
+    ),
+  );
+
+  const destinationKind = $derived(
+    $destinations.find((one) => one.id === chosen)?.kind,
   );
 
   const ready = $derived(chosen !== undefined && capability !== undefined);
@@ -68,7 +75,7 @@
     chosen = id;
     described = undefined;
     capability = undefined;
-    target = {};
+    args = {};
     said = "";
 
     try {
@@ -97,7 +104,7 @@
       await client.routing.route(item, {
         destination: chosen,
         capability,
-        target: valuesFrom(fields, target),
+        arguments: valuesFrom(fields, args),
       });
       onclose();
     } catch (error) {
@@ -131,7 +138,7 @@
           chosen={capability === one.name}
           onchoose={() => {
             capability = one.name;
-            target = {};
+            args = {};
           }}
         />
       {/each}
@@ -139,12 +146,25 @@
   {/if}
 
   {#each fields as field (field.name)}
-    <Group name={field.name}>
+    <Group name={field.title ?? field.name}>
+      {#if field.description !== undefined}
+        <p class="mb-1 text-ink-muted">{field.description}</p>
+      {/if}
+      {#if field.askable && chosen !== undefined && capability !== undefined && destinationKind !== undefined}
+        {@const Browser = browserFor(destinationKind)}
+        <Browser
+          destination={chosen}
+          {capability}
+          field={field.name}
+          value={args[field.name] ?? ""}
+          onchoose={(value) => (args = { ...args, [field.name]: value })}
+        />
+      {/if}
       <input
-        bind:value={target[field.name]}
+        bind:value={args[field.name]}
         placeholder={field.required ? "required" : "optional"}
-        aria-label={field.name}
-        class="w-full border-b border-ink bg-transparent font-mono placeholder:text-ink-muted"
+        aria-label={field.title ?? field.name}
+        class="mt-1.5 w-full border-b border-ink bg-transparent font-mono placeholder:text-ink-muted"
       />
     </Group>
   {/each}

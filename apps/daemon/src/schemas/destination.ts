@@ -40,6 +40,39 @@ export const destinationDescriptionSchema = z
   ])
   .openapi("DestinationDescription");
 
+export const candidateEntrySchema = z
+  .object({
+    label: z.string(),
+    /** Absent where this is only somewhere to look further. */
+    value: z.unknown().optional(),
+    /** Absent where the destination has nothing further to offer past this entry. */
+    scope: z.string().optional(),
+  })
+  .openapi("CandidateEntry");
+
+export const destinationCandidatesSchema = z
+  .union([
+    z.object({
+      kind: z.literal("answered"),
+      entries: z.array(candidateEntrySchema),
+      /** True where the destination held more than it answered. */
+      truncated: z.boolean(),
+    }),
+    z.object({
+      kind: z.literal("unreachable"),
+      /** It went and asked and could not say. */
+      detail: z.string(),
+    }),
+    z.object({
+      kind: z.literal("unusable"),
+      /** No adapter speaks its kind, or its settings no longer satisfy that kind. */
+      detail: z.string(),
+    }),
+    /** The kind does not do this at all. Same fact to a caller whether the adapter said so or never implemented it. */
+    z.object({ kind: z.literal("not-offered") }),
+  ])
+  .openapi("DestinationCandidates");
+
 export const destinationKindSchema = z
   .object({
     name: z.string(),

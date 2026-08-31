@@ -82,7 +82,7 @@ export function deliveredAsset(
 
 type DeliveryOverrides = {
   readonly capability?: string;
-  readonly target?: JsonObject;
+  readonly arguments?: JsonObject;
   readonly type?: PayloadTypeName;
   readonly content?: JsonObject;
   readonly tags?: readonly string[];
@@ -97,7 +97,7 @@ export function delivery(overrides: DeliveryOverrides = {}): Delivery {
     item: "item-1" as ItemId,
     destination: VAULT,
     capability: (overrides.capability ?? "create-file") as CapabilityName,
-    target: overrides.target ?? { directory: "inbox" },
+    arguments: overrides.arguments ?? { directory: "inbox" },
     source: SCRATCHPAD,
     payload: {
       type: overrides.type ?? TEXT,

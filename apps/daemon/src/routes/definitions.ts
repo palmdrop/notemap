@@ -8,6 +8,7 @@ import {
   ASSET_STORE_STATUS,
   BODY_STATUS,
   CANCEL_STATUS,
+  CANDIDATES_REQUEST_STATUS,
   CAPTURE_STATUS,
   codesFor,
   DELIVERY_STATUS,
@@ -28,6 +29,7 @@ import {
 } from "../schemas/archive";
 import {
   createDestinationRequestSchema,
+  destinationCandidatesSchema,
   destinationDescriptionSchema,
   destinationKindsSchema,
   destinationSchema,
@@ -513,7 +515,7 @@ export const destinationDescriptionRoute = createRoute({
   path: "/v1/destinations/{id}/description",
   summary: "Ask one destination what it can do",
   description:
-    "Split from the list because they are different animals: what a destination *is* comes from the pool, and what it can *do* is I/O that may hang or fail. `described` carries the capabilities the adapter declared; `undescribable` went and looked and could not say; `unusable` could not be asked at all — no adapter speaks its kind, or its settings no longer satisfy that kind. `targetSchema` is JSON Schema and is the whole of what a client needs to build a `target`.",
+    "Split from the list because they are different animals: what a destination *is* comes from the pool, and what it can *do* is I/O that may hang or fail. `described` carries the capabilities the adapter declared; `undescribable` went and looked and could not say; `unusable` could not be asked at all — no adapter speaks its kind, or its settings no longer satisfy that kind. `argumentsSchema` is JSON Schema and is the whole of what a client needs to build `arguments`.",
   request: { params: destinationId },
   responses: {
     200: {
@@ -526,12 +528,64 @@ export const destinationDescriptionRoute = createRoute({
   },
 });
 
+const candidatesQuery = z.object({
+  capability: z
+    .string()
+    .min(1)
+    .openapi({
+      param: { name: "capability", in: "query" },
+      description: "One the destination declared. Anything else is refused.",
+      example: "create-file",
+    }),
+  field: z
+    .string()
+    .min(1)
+    .openapi({
+      param: { name: "field", in: "query" },
+      description:
+        "A property of that capability's `argumentsSchema` carrying `x-notemap-candidates`. Anything else is refused.",
+      example: "directory",
+    }),
+  scope: z
+    .string()
+    .optional()
+    .openapi({
+      param: { name: "scope", in: "query" },
+      description:
+        "Opaque. Absent asks at the top; present is a scope an earlier answer minted, to descend without being told it is descending anything.",
+      example: "inbox",
+    }),
+});
+
+export const destinationCandidatesRoute = createRoute({
+  method: "get",
+  path: "/v1/destinations/{id}/candidates",
+  summary:
+    "Ask one destination what a field of one capability's arguments could hold",
+  description:
+    "The same animal as `/description`: a question the destination answers, slowly, and may refuse. Capped rather than paginated — `truncated` says when it cut the answer short, because a folder holding thousands of notes is a search problem rather than a paging one, and a cursor would put a position on an ordering notemap does not own. The capability and the field are checked against what `/description` already declares before the destination is asked anything: an undeclared capability or a field not carrying `x-notemap-candidates` is refused on the route's own terms.",
+  request: { params: destinationId, query: candidatesQuery },
+  responses: {
+    200: {
+      description:
+        "What it answered: entries, a refusal the destination itself gave, or a kind that does not offer this.",
+      content: { [JSON_MEDIA_TYPE]: { schema: destinationCandidatesSchema } },
+    },
+    404: errorResponse("No destination has that id.", 404, DESTINATION_STATUS),
+    422: errorResponse(
+      "The capability was not declared, or the field is not one that can be asked about.",
+      422,
+      CANDIDATES_REQUEST_STATUS,
+    ),
+  },
+});
+
 export const destinationKindsRoute = createRoute({
   method: "get",
   path: "/v1/destination-kinds",
   summary: "Read the destination kinds this daemon has an adapter for",
   description:
-    "Each with the `settingsSchema` a destination of that kind must satisfy, which is what a client builds its form from. The same arrangement as a capability's `targetSchema`, one level up: the daemon publishes what a kind needs and holds no opinion about how it is asked for.",
+    "Each with the `settingsSchema` a destination of that kind must satisfy, which is what a client builds its form from. The same arrangement as a capability's `argumentsSchema`, one level up: the daemon publishes what a kind needs and holds no opinion about how it is asked for.",
   responses: {
     200: {
       description: "Every kind, with the schema its settings must satisfy.",
@@ -699,7 +753,7 @@ export const routeItemRoute = createRoute({
     ),
     415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
     422: errorResponse(
-      "The destination, the capability, the payload type or the target was declined. Nothing was written.",
+      "The destination, the capability, the payload type or the arguments were declined. Nothing was written.",
       422,
       DELIVERY_STATUS,
     ),
@@ -848,6 +902,7 @@ export const ROUTES = [
   createDestinationRoute,
   destinationKindsRoute,
   destinationDescriptionRoute,
+  destinationCandidatesRoute,
   updateDestinationRoute,
   retireDestinationRoute,
   unretireDestinationRoute,

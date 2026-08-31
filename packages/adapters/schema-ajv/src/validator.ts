@@ -33,6 +33,16 @@ export function createAjvSchemaValidator(
    */
   const ajv = new Ajv2020({ ...config.options, allErrors: true });
 
+  /**
+   * `x-notemap-candidates` is a vendor annotation core validates schemas
+   * against but never interprets — declaring it here is what lets it survive
+   * strict mode, which otherwise throws on any keyword it was not told about.
+   * Left declared rather than turning strict off: a `config.toml` payload
+   * type is hand-written, and a typo'd keyword in it should still fail loudly
+   * at startup rather than silently validating less than its author meant.
+   */
+  ajv.addKeyword({ keyword: "x-notemap-candidates", schemaType: "boolean" });
+
   return {
     validate(schema: JsonSchema, value: JsonValue): readonly SchemaIssue[] {
       // A schema ajv cannot compile is a configuration mistake, not a payload

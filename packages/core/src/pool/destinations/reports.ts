@@ -1,7 +1,7 @@
 import type { PoolPorts } from "#types/api/ports";
 import type { Destination, DestinationReport } from "#types/domain/destination";
 import type { DestinationId } from "#types/domain/ids";
-import { usability } from "./usability";
+import { Unusable, usability } from "./usability";
 
 /** A read of the pool: instant, unpaginated, and it probes nothing. */
 export function list(ports: PoolPorts): Promise<readonly Destination[]> {
@@ -36,6 +36,9 @@ export async function report(
       ...(await ports.destinations.describe(destination, signal)),
     };
   } catch (cause) {
+    if (cause instanceof Unusable) {
+      return { kind: "unusable", detail: cause.message };
+    }
     return {
       kind: "undescribable",
       detail: cause instanceof Error ? cause.message : String(cause),

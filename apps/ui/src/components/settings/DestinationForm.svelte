@@ -9,15 +9,19 @@
 
   import Action from "$components/primitives/controls/Action.svelte";
   import { client } from "$lib/client";
+  import { isFamiliarRoot } from "$lib/roots";
   import { fieldsOf, typedFrom, valuesFrom } from "$lib/schema-form";
 
   let {
     kinds,
+    existing,
     editing,
     disabled,
     done,
   }: {
     kinds: readonly DestinationKind[];
+    /** What a root is checked against — every destination the pool already holds. */
+    existing: readonly Destination[];
     editing?: Destination;
     disabled: boolean;
     done: () => void;
@@ -33,6 +37,32 @@
 
   const fields = $derived(
     fieldsOf(kinds.find((one) => one.name === chosen)?.settingsSchema),
+  );
+
+  // "root" rather than every field a kind might offer: it is the one shape a
+  // typo turns into somewhere else entirely, which nothing else here is.
+  const typedRoot = $derived(
+    fields.some((field) => field.name === "root")
+      ? (typed["root"] ?? "")
+      : undefined,
+  );
+
+  const knownRoots = $derived(
+    existing
+      .filter((one) => one.kind === chosen)
+      .map((one) => one.settings["root"])
+      .filter((root): root is string => typeof root === "string"),
+  );
+
+  // A check against a mistake, not a permission: it authenticates nobody,
+  // since whoever can create a destination over `/v1` can already write the
+  // same root there directly. Submitting is what confirms it — the warning
+  // and the button's own wording are what make that a choice rather than an
+  // accident.
+  const unfamiliarRoot = $derived(
+    typedRoot !== undefined &&
+      typedRoot.trim() !== "" &&
+      !isFamiliarRoot(typedRoot, knownRoots),
   );
 
   async function submit(event: SubmitEvent) {
@@ -112,10 +142,21 @@
     </label>
   {/each}
 
+  {#if unfamiliarRoot}
+    <p role="status" class="text-ink-muted">
+      notemap has not used <span class="text-ink">{typedRoot}</span> before — check
+      it names the right place.
+    </p>
+  {/if}
+
   <div class="mt-3 flex items-baseline gap-x-6">
     <span class="inverted">
       <Action submit disabled={busy || disabled}>
-        {editing === undefined ? "Create it" : "Save it"}
+        {unfamiliarRoot
+          ? "Use it anyway"
+          : editing === undefined
+            ? "Create it"
+            : "Save it"}
       </Action>
     </span>
     <Action onclick={done}>Cancel</Action>

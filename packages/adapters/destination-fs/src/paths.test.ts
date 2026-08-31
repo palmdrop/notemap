@@ -1,9 +1,16 @@
 import { mkdir, symlink, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { alternatives, contain, oneSegment, realRootOf } from "./paths";
+import {
+  alternatives,
+  contain,
+  oneSegment,
+  overlapsAny,
+  realRootOf,
+} from "./paths";
 import { root } from "./testing/fixture";
 
 const roots: Array<() => void> = [];
@@ -106,6 +113,42 @@ describe("containment", () => {
     expect(await contain(path, "a\u0000b.md")).toMatchObject({
       kind: "refused",
     });
+  });
+});
+
+describe("overlapping reserved state", () => {
+  it("is undefined where nothing reserved is anywhere near the root", () => {
+    expect(overlapsAny("/vault", ["/var/lib/notemap/state"])).toBeUndefined();
+  });
+
+  it("names the reserved path a root sits inside of", () => {
+    expect(
+      overlapsAny("/var/lib/notemap/state/deeper", [
+        "/var/lib/notemap/state",
+        "/var/lib/notemap/assets",
+      ]),
+    ).toBe("/var/lib/notemap/state");
+  });
+
+  it("names the reserved path a root contains", () => {
+    expect(overlapsAny("/var/lib/notemap", ["/var/lib/notemap/assets"])).toBe(
+      "/var/lib/notemap/assets",
+    );
+  });
+
+  it("catches the root naming reserved state exactly", () => {
+    expect(
+      overlapsAny("/var/lib/notemap/assets", ["/var/lib/notemap/assets"]),
+    ).toBe("/var/lib/notemap/assets");
+  });
+
+  it("resolves `~` and relative segments before comparing", () => {
+    const home = homedir();
+    expect(
+      overlapsAny("~/vaults/../../lib/notemap/assets", [
+        join(home, "..", "lib", "notemap", "assets"),
+      ]),
+    ).toBe(join(home, "..", "lib", "notemap", "assets"));
   });
 });
 

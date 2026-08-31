@@ -337,7 +337,7 @@ describe("the queue", () => {
     await client.routing.route("one", {
       destination: "vault",
       capability: "create-file",
-      target: {},
+      arguments: {},
     });
 
     expect(read(client.queue).items).toEqual([]);
@@ -526,7 +526,7 @@ describe("routing", () => {
       client.routing.route("one", {
         destination: "nowhere",
         capability: "create-file",
-        target: {},
+        arguments: {},
       }),
     ).rejects.toBeInstanceOf(Refused);
   });

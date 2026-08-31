@@ -1310,7 +1310,7 @@ export interface paths {
         };
         /**
          * Read the destination kinds this daemon has an adapter for
-         * @description Each with the `settingsSchema` a destination of that kind must satisfy, which is what a client builds its form from. The same arrangement as a capability's `targetSchema`, one level up: the daemon publishes what a kind needs and holds no opinion about how it is asked for.
+         * @description Each with the `settingsSchema` a destination of that kind must satisfy, which is what a client builds its form from. The same arrangement as a capability's `argumentsSchema`, one level up: the daemon publishes what a kind needs and holds no opinion about how it is asked for.
          */
         get: {
             parameters: {
@@ -1349,7 +1349,7 @@ export interface paths {
         };
         /**
          * Ask one destination what it can do
-         * @description Split from the list because they are different animals: what a destination *is* comes from the pool, and what it can *do* is I/O that may hang or fail. `described` carries the capabilities the adapter declared; `undescribable` went and looked and could not say; `unusable` could not be asked at all — no adapter speaks its kind, or its settings no longer satisfy that kind. `targetSchema` is JSON Schema and is the whole of what a client needs to build a `target`.
+         * @description Split from the list because they are different animals: what a destination *is* comes from the pool, and what it can *do* is I/O that may hang or fail. `described` carries the capabilities the adapter declared; `undescribable` went and looked and could not say; `unusable` could not be asked at all — no adapter speaks its kind, or its settings no longer satisfy that kind. `argumentsSchema` is JSON Schema and is the whole of what a client needs to build `arguments`.
          */
         get: {
             parameters: {
@@ -1382,6 +1382,88 @@ export interface paths {
                             error: {
                                 /** @enum {string} */
                                 code: "unknown-destination";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/destinations/{id}/candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ask one destination what a field of one capability's arguments could hold
+         * @description The same animal as `/description`: a question the destination answers, slowly, and may refuse. Capped rather than paginated — `truncated` says when it cut the answer short, because a folder holding thousands of notes is a search problem rather than a paging one, and a cursor would put a position on an ordering notemap does not own. The capability and the field are checked against what `/description` already declares before the destination is asked anything: an undeclared capability or a field not carrying `x-notemap-candidates` is refused on the route's own terms.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description One the destination declared. Anything else is refused. */
+                    capability: string;
+                    /** @description A property of that capability's `argumentsSchema` carrying `x-notemap-candidates`. Anything else is refused. */
+                    field: string;
+                    /** @description Opaque. Absent asks at the top; present is a scope an earlier answer minted, to descend without being told it is descending anything. */
+                    scope?: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What it answered: entries, a refusal the destination itself gave, or a kind that does not offer this. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DestinationCandidates"];
+                    };
+                };
+                /** @description No destination has that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unknown-destination";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The capability was not declared, or the field is not one that can be asked about. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "capability-undeclared" | "field-not-askable";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -1820,7 +1902,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description The destination, the capability, the payload type or the target was declined. Nothing was written. */
+                /** @description The destination, the capability, the payload type or the arguments were declined. Nothing was written. */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -1830,7 +1912,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "target-invalid" | "rejected-by-destination" | "delivery-outcome-unknown" | "unreachable";
+                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "arguments-invalid" | "rejected-by-destination" | "delivery-outcome-unknown" | "unreachable";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -2368,7 +2450,7 @@ export interface components {
                 kind: "destination";
                 destination: string;
                 capability: string;
-                target: {
+                arguments: {
                     [key: string]: unknown;
                 };
             } | {
@@ -2449,9 +2531,31 @@ export interface components {
         Capability: {
             name: string;
             accepts: string[];
-            targetSchema: {
+            argumentsSchema: {
                 [key: string]: unknown;
             };
+        };
+        DestinationCandidates: {
+            /** @enum {string} */
+            kind: "answered";
+            entries: components["schemas"]["CandidateEntry"][];
+            truncated: boolean;
+        } | {
+            /** @enum {string} */
+            kind: "unreachable";
+            detail: string;
+        } | {
+            /** @enum {string} */
+            kind: "unusable";
+            detail: string;
+        } | {
+            /** @enum {string} */
+            kind: "not-offered";
+        };
+        CandidateEntry: {
+            label: string;
+            value?: unknown;
+            scope?: string;
         };
         UpdateDestinationRequest: {
             name?: string;
@@ -2471,13 +2575,13 @@ export interface components {
              */
             capability: string;
             /**
-             * @description What the capability is pointed at, in its own terms. Must satisfy the capability's `targetSchema`.
+             * @description What the capability is pointed at, in its own terms. Must satisfy the capability's `argumentsSchema`.
              * @example {
              *       "directory": "inbox",
              *       "filename": "a-thought.md"
              *     }
              */
-            target: {
+            arguments: {
                 [key: string]: unknown;
             };
         };

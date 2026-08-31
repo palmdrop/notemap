@@ -86,7 +86,7 @@ export type RoutingRecordRow = {
   readonly capability: string | null;
   readonly note: string | null;
   /** JSON, and only for a destination: what the capability was pointed at. */
-  readonly target: string | null;
+  readonly arguments: string | null;
   readonly state: "pending" | "delivered";
   readonly at: number;
   readonly pointer: string | null;
@@ -174,7 +174,7 @@ export const TABLE_COLUMNS = {
     "destination",
     "capability",
     "note",
-    "target",
+    "arguments",
     "state",
     "at",
     "pointer",

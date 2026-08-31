@@ -93,6 +93,7 @@ const SAID: {
   "destination-unusable":
     "this daemon cannot make sense of that destination's settings",
   "digest-mismatch": "the upload arrived corrupted; pick the file again",
+  "field-not-askable": "that field cannot be browsed; type it instead",
   "invalid-destination-settings":
     "those settings are not ones this daemon can use",
   "item-purged": "that item was purged",
@@ -117,7 +118,7 @@ const SAID: {
   "tag-invalid": "a tag needs something in it",
   "source-item-changed":
     "something else in the pool was captured under that id, saying something different",
-  "target-invalid": "that destination needs a different target",
+  "arguments-invalid": "that destination needs different arguments",
   "unknown-asset": "the upload is gone; pick the file again",
   "unknown-destination": "that destination is not here",
   "unknown-destination-kind": (facts) =>

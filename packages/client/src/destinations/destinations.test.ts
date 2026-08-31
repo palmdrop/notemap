@@ -4,6 +4,7 @@ import { createMemoryStore } from "../adapters/memory-store";
 import type { Destination } from "#api/types";
 import { createClient } from "../client";
 import { Refused, Unreachable } from "../errors";
+import type { ClientStore } from "#ports/store";
 import { read } from "#testing/observing";
 import { asked as sentTo, routeOf } from "#testing/pool";
 import { json, mockTransport, refusal, type Handler } from "#testing/transport";
@@ -15,6 +16,25 @@ function clientOver(handler: Handler) {
     store: createMemoryStore(),
   });
   return { client, transport };
+}
+
+/** Wraps a store to record every write it was asked to make, none of them undone. */
+function spyingOn(store: ClientStore): {
+  store: ClientStore;
+  writes: string[];
+} {
+  const writes: string[] = [];
+  return {
+    writes,
+    store: new Proxy(store, {
+      get(target, property, receiver) {
+        if (typeof property === "string" && property.startsWith("write")) {
+          writes.push(property);
+        }
+        return Reflect.get(target, property, receiver);
+      },
+    }),
+  };
 }
 
 function aDestination(overrides: Partial<Destination> = {}): Destination {
@@ -192,5 +212,86 @@ describe("editing a destination", () => {
       .catch((error: unknown) => error);
 
     expect((refused as Refused).message).toMatch(/"kanban"/);
+  });
+});
+
+describe("asking what a field could hold", () => {
+  it("carries the capability, field and scope as query parameters", async () => {
+    const { client, transport } = clientOver(() =>
+      json(200, {
+        kind: "answered",
+        entries: [{ label: "inbox", value: "inbox", scope: "inbox" }],
+        truncated: false,
+      }),
+    );
+
+    const answer = await client.destinations.candidates(aDestination().id, {
+      capability: "create-file",
+      field: "directory",
+      scope: "notes",
+    });
+
+    expect(answer).toEqual({
+      kind: "answered",
+      entries: [{ label: "inbox", value: "inbox", scope: "inbox" }],
+      truncated: false,
+    });
+
+    const request = sentTo(transport).at(-1);
+    expect(request === undefined ? undefined : routeOf(request)).toBe(
+      `GET /v1/destinations/${aDestination().id}/candidates`,
+    );
+    const query = new URL(request?.url ?? "").searchParams;
+    expect(query.get("capability")).toBe("create-file");
+    expect(query.get("field")).toBe("directory");
+    expect(query.get("scope")).toBe("notes");
+  });
+
+  it("reads a refusal the destination itself gave as an answer, not a failure", async () => {
+    const { client } = clientOver(() => json(200, { kind: "not-offered" }));
+
+    expect(
+      await client.destinations.candidates(aDestination().id, {
+        capability: "create-file",
+        field: "directory",
+      }),
+    ).toEqual({ kind: "not-offered" });
+  });
+
+  it("says in a sentence why the route refused the field itself", async () => {
+    const { client } = clientOver(() =>
+      refusal(422, "field-not-askable", {
+        capability: "create-file",
+        field: "filename",
+      }),
+    );
+
+    const refused = await client.destinations
+      .candidates(aDestination().id, {
+        capability: "create-file",
+        field: "filename",
+      })
+      .catch((error: unknown) => error);
+
+    expect(refused).toBeInstanceOf(Refused);
+    expect((refused as Refused).message).toMatch(/type it instead/);
+  });
+
+  /**
+   * Never durable: a vault's contents are somebody else's state, stale the
+   * moment somebody else writes a file. The durable cache is for the pool's
+   * own collections, and this answer is not one of them.
+   */
+  it("writes nothing to the store", async () => {
+    const transport = mockTransport(() => json(200, { kind: "not-offered" }));
+    const { store, writes } = spyingOn(createMemoryStore());
+    const client = createClient({ transport, store });
+
+    await client.destinations.candidates(aDestination().id, {
+      capability: "create-file",
+      field: "directory",
+    });
+
+    expect(writes).not.toContain("writeDestinations");
   });
 });

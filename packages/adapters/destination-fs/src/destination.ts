@@ -1,28 +1,30 @@
 import { readFile, stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-import type {
-  Delivery,
-  DeliveryOutcome,
-  Destination,
-  DestinationKindAdapter,
-  PayloadTypeName,
+import {
+  Unusable,
+  type Delivery,
+  type DeliveryOutcome,
+  type Destination,
+  type DestinationKindAdapter,
+  type PayloadTypeName,
 } from "@notemap/core";
 
 import { placeAssets } from "./assets";
 import { createFile, replaceFile } from "./atomic";
+import { filesystemCandidates } from "./candidates";
 import { Refused } from "./errors";
 import {
   APPEND_TO_FILE,
-  asAppendToFileTarget,
-  asCreateFileTarget,
+  asAppendToFileArguments,
+  asCreateFileArguments,
   CREATE_FILE,
   capabilitiesFor,
 } from "./capabilities";
 import { deriveFilename } from "./filename";
 import { FIXED_KEYS, fixedFrontmatter, toYaml } from "./frontmatter";
 import type { FrontmatterValue } from "./frontmatter";
-import { contain, realRootOf, type Contained } from "./paths";
+import { contain, overlapsAny, realRootOf, type Contained } from "./paths";
 import {
   renderAsJson,
   type Renderers,
@@ -42,6 +44,12 @@ export type FilesystemDestinationConfig = {
   readonly renderers?: Renderers;
   /** What every destination of this kind takes. */
   readonly accepts: readonly PayloadTypeName[];
+  /**
+   * The pool, the mirror and the assets — paths only the host knows are its
+   * own. A root that contains one, or sits inside one, is refused: routing a
+   * note into the mirror is destructive and nobody ever means it.
+   */
+  readonly reserved?: readonly string[];
 };
 
 const UNREACHABLE: readonly string[] = [
@@ -56,6 +64,7 @@ export function createFilesystemDestination(
   config: FilesystemDestinationConfig,
 ): DestinationKindAdapter {
   const renderers = config.renderers ?? {};
+  const reserved = config.reserved ?? [];
 
   return {
     name: FILESYSTEM,
@@ -64,15 +73,22 @@ export function createFilesystemDestination(
     /**
      * Never looks at the filesystem: an unmounted root is something a delivery
      * discovers and retries past, and refusing to describe it would turn a
-     * decision worth reserving into one that cannot be made at all.
+     * decision worth reserving into one that cannot be made at all. The
+     * overlap check is pure path arithmetic and costs nothing to run here too.
      */
     describe: (destination) => {
       const settings = asFilesystemSettings(destination.settings);
-      return settings === undefined
-        ? Promise.reject(unreadable(destination))
-        : Promise.resolve({
-            capabilities: capabilitiesFor(config.accepts),
-          });
+      if (settings === undefined)
+        return Promise.reject(unreadable(destination));
+
+      const overlap = overlapsAny(settings.root, reserved);
+      if (overlap !== undefined) {
+        return Promise.reject(
+          new Unusable(overlapDetail(settings.root, overlap)),
+        );
+      }
+
+      return Promise.resolve({ capabilities: capabilitiesFor(config.accepts) });
     },
 
     deliver: async (
@@ -88,6 +104,11 @@ export function createFilesystemDestination(
       const reached = await reachRoot(settings.root);
       if (typeof reached !== "string") return reached;
 
+      const overlap = overlapsAny(reached, reserved);
+      if (overlap !== undefined) {
+        return { kind: "rejected", detail: overlapDetail(reached, overlap) };
+      }
+
       try {
         const landed = await carryOut(
           { realRoot: reached, renderers },
@@ -99,12 +120,19 @@ export function createFilesystemDestination(
         return failure(cause);
       }
     },
+
+    candidates: (destination, request) =>
+      filesystemCandidates({ reserved }, destination, request),
   };
 }
 
 /** Core checks settings against the schema first, so this is the two disagreeing. */
 function unreadable(destination: Destination): Error {
   return new Error(`${destination.name} has no readable filesystem settings`);
+}
+
+function overlapDetail(root: string, reserved: string): string {
+  return `${root} overlaps notemap's own ${reserved}`;
 }
 
 /** The root as the filesystem holds it, or why it could not be reached. */
@@ -145,13 +173,13 @@ async function createNote(
   delivery: Delivery,
   signal?: AbortSignal,
 ): Promise<string> {
-  const target = asCreateFileTarget(delivery.target);
-  if (target === undefined) {
-    throw new Refused("that is not a create-file target");
+  const args = asCreateFileArguments(delivery.arguments);
+  if (args === undefined) {
+    throw new Refused("that is not a create-file argument set");
   }
 
-  const filename = target.filename ?? deriveFilename(delivery);
-  const note = await locate(wiring.realRoot, join(target.directory, filename));
+  const filename = args.filename ?? deriveFilename(delivery);
+  const note = await locate(wiring.realRoot, join(args.directory, filename));
 
   if (await exists(note.absolute)) {
     throw new Refused(`${note.relative} is already there`);
@@ -171,12 +199,12 @@ async function appendToNote(
   delivery: Delivery,
   signal?: AbortSignal,
 ): Promise<string> {
-  const target = asAppendToFileTarget(delivery.target);
-  if (target === undefined) {
-    throw new Refused("that is not an append-to-file target");
+  const args = asAppendToFileArguments(delivery.arguments);
+  if (args === undefined) {
+    throw new Refused("that is not an append-to-file argument set");
   }
 
-  const note = await locate(wiring.realRoot, target.path);
+  const note = await locate(wiring.realRoot, args.path);
   const directory = dirname(note.absolute);
 
   const assets = await placeAssets(directory, delivery.assets, signal);
@@ -186,12 +214,12 @@ async function appendToNote(
   if (existing === undefined) {
     await createFile(
       note.absolute,
-      `${rendered.frontmatter}\n${insertUnder("", rendered.body, target.heading)}`,
+      `${rendered.frontmatter}\n${insertUnder("", rendered.body, args.heading)}`,
     );
   } else {
     await replaceFile(
       note.absolute,
-      insertUnder(existing, rendered.body, target.heading),
+      insertUnder(existing, rendered.body, args.heading),
     );
   }
 

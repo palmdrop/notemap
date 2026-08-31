@@ -31,7 +31,7 @@ const VAULT = "vault" as DestinationId;
 const REQUEST = {
   destination: VAULT,
   capability: "create-note" as CapabilityName,
-  target: { path: "inbox/a-thought.md" },
+  arguments: { path: "inbox/a-thought.md" },
 };
 
 const UNREACHABLE = { kind: "unreachable", detail: "ECONNREFUSED" } as const;
@@ -314,7 +314,7 @@ describe("claiming past a delivery that has to be ended", () => {
     const opened = await pending();
     const second = await opened.pool.routing.route(opened.item, {
       ...REQUEST,
-      target: { path: "inbox/again.md" },
+      arguments: { path: "inbox/again.md" },
     });
     if (second.kind === "refused") throw new Error("expected a reservation");
 
@@ -360,7 +360,7 @@ describe("two deliveries of one item", () => {
     const opened = await pending();
     const second = await opened.pool.routing.route(opened.item, {
       ...REQUEST,
-      target: { path: "inbox/again.md" },
+      arguments: { path: "inbox/again.md" },
     });
     if (second.kind === "refused") throw new Error("expected a reservation");
 

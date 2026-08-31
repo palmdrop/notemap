@@ -2,8 +2,25 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one and health are settled; the rest is stub
-**Last updated**: 2026-08-25
+**Last updated**: 2026-08-31
 **Shipped**:
+
+- 2026-08-31 — **A destination can be asked what a field could hold.**
+  `GET /v1/destinations/{id}/candidates` sits beside `/description`: the capability, the field and
+  an opaque scope as query parameters, capped rather than paginated. The route checks the
+  capability and the field itself before the destination is asked anything — `422
+  capability-undeclared` and the new `422 field-not-askable` — and otherwise answers `200` with
+  entries, or `unreachable`, `unusable` or `not-offered`, on `/description`'s own terms.
+  ([plan](../plans/destination-targets.md),
+  [ADR 26](../adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md))
+
+- 2026-08-31 — **`arguments` replaces `target` on the wire.** `POST /v1/items/{id}/route`'s body
+  and what a `destination` routing record carries under its own `target` field now name it
+  `arguments`, and `targetSchema` in a `Capability` is `argumentsSchema`. The refusal joins it:
+  `target-invalid` is `arguments-invalid`. A routing record's `target` field itself is unchanged —
+  that names the destination-or-user a record resolves to, which is the sense CONTEXT.md's
+  glossary keeps the word for. No behaviour changed.
+  ([plan](../plans/destination-targets.md))
 
 - 2026-08-27 — **`GET /v1/health` answers the daemon's version**, baked in at bundle time from the
   workspace version and matching the image tag. Amends this document's own line that nothing but
@@ -65,8 +82,8 @@ editing, destinations, routing to one and health are settled; the rest is stub
   [client-review-fixes.md](../plans/client-review-fixes.md).
 
 - 2026-08-14 — **Items can be routed out over the wire.** `GET /v1/destinations` reports what each
-  wired adapter declares, capabilities and target schemas and all, so a client builds a target from
-  the destination's own terms rather than from anything `/v1` holds.
+  wired adapter declares, capabilities and argument schemas and all, so a client builds arguments
+  from the destination's own terms rather than from anything `/v1` holds.
   `POST /v1/items/{id}/route` records the decision and attempts the delivery inline — and **may
   answer a record that has not landed**, which is written down rather than left to be discovered:
   `state` is `pending` when the destination could not be reached, and a client reading a record as
@@ -341,7 +358,7 @@ archive, a capture outcome, an edit outcome:
   reader of it asks for its length.
 - `to` is **distinct and in the order the records were made**, and names a destination by id: a
   client resolves the name from `GET /v1/destinations`, which it already reads, and a record's
-  capability, target and pointer are not here.
+  capability, arguments and pointer are not here.
 - **`pending` is what has not landed**, on the same terms as a record's `state`. It is the whole of
   what a row can say about arrival; `GET /v1/items/{id}/routing` is what says which record.
 - A summary saying nothing and one saying `records: 0` are the same claim, so only the first is
@@ -646,7 +663,7 @@ probes nothing.
     {
       "name": "create-file",
       "accepts": ["text", "image"],
-      "targetSchema": {
+      "argumentsSchema": {
         "type": "object",
         "required": ["directory"],
         "properties": {
@@ -667,14 +684,15 @@ probes nothing.
 - **The capabilities are the destination's, not core's** ([core.md](core.md#routing)). This route
   reports what the adapter for that kind declared and holds no list of its own, so a new kind of
   destination adds a capability here without changing `/v1`.
-- `targetSchema` is JSON Schema, and is the whole of what a client needs to build the `target` a
-  delivery must supply. A target that does not satisfy it is refused before anything is attempted.
+- `argumentsSchema` is JSON Schema, and is the whole of what a client needs to build the
+  `arguments` a delivery must supply. Arguments that do not satisfy it are refused before
+  anything is attempted.
 - **A destination is asked what it can do, and may have to go and look**
   ([core.md](core.md#routing)). One that could not answer is `undescribable` with the reason; one
   whose kind no adapter is registered for, or whose settings no longer satisfy that kind's schema,
   is `unusable` with the reason. Neither is dropped: missing, unreachable and unusable are three
   different answers to a person looking for a destination. A client renders the last two as present
-  and unavailable, and cannot build a target until the destination describes itself again.
+  and unavailable, and cannot build arguments until the destination describes itself again.
 - Retired destinations are listed. A client shows them as not offered for routing rather than
   hiding them, because a record may still name one.
 - Not paginated and never refused: there are as many destinations as a person made. An empty
@@ -682,6 +700,50 @@ probes nothing.
 - **Which destinations exist is no longer stable for the life of a connection** (revised
   2026-08-17). It was, when wiring one meant a restart. A client re-reads rather than caching for
   the session, and what each can do is re-read per request as it always was.
+
+`GET /v1/destinations/{id}/candidates` — what one field of one capability's arguments could hold,
+asked now. `capability`, `field` and an opaque `scope` are query parameters, `scope` absent asking
+at the top:
+
+```
+GET /v1/destinations/019a3f2c-.../candidates?capability=create-file&field=directory&scope=inbox
+```
+
+```json
+{
+  "kind": "answered",
+  "entries": [
+    { "label": "drafts", "value": "inbox/drafts", "scope": "inbox/drafts" }
+  ],
+  "truncated": false
+}
+```
+
+- **An entry carries a `value`, a `scope`, or both.** `value` is what the field would take and is
+  absent where this entry is only somewhere to look further; `scope` is what to ask again with and
+  is absent where there is nothing past it. Browsing `append-to-file`'s `path` for a note lists a
+  folder with a scope and no value — somewhere to descend, never something to append to — and a
+  note with a value and no scope. A client draws all three the same way: opening an entry descends
+  where it can and takes the value otherwise.
+
+- **The same animal as `/description`**: a question the destination answers, slowly, and may
+  refuse. It sits beside it rather than folded into it, on `describe()`'s own terms
+  ([core.md](core.md#routing)).
+- **The route checks the capability and the field itself, before the destination is asked
+  anything** — the capability must be one `/description` already declared, and the field must be a
+  property of that capability's `argumentsSchema` carrying `x-notemap-candidates`. An undeclared
+  capability is `422 capability-undeclared`, the same code and shape routing an item refuses one
+  with; a field that is not askable is `422 field-not-askable`. Neither reaches the destination.
+- **It is capped, not paginated.** `truncated` says the destination held more than it answered. A
+  folder holding thousands of notes is a search problem rather than a paging one, and a cursor
+  would put a position on an ordering notemap does not own and cannot promise is stable between two
+  reads.
+- **`200` carries everything else this can answer**, on `/description`'s own terms: `answered` with
+  the entries; `unreachable` where the destination was asked and could not say; `unusable` where
+  nothing speaks its kind or its settings no longer satisfy it; `not-offered` where the kind does
+  not do this at all, whether the adapter said so or was never asked to implement it. None of the
+  three is an error status — a destination that is merely asleep is not a broken request.
+- An id no destination has is `404 unknown-destination`.
 
 `POST /v1/destinations` — create one, from a name, a kind and that kind's settings. The id is
 minted and answered; a name is a label and need not be unique.
@@ -698,11 +760,11 @@ again. Neither touches a delivery already decided.
 `409 destination-in-use` where one has, which names retirement as what to do instead.
 
 `GET /v1/destination-kinds` — every kind the daemon has an adapter for, each with a
-`settingsSchema` a client builds its form from. The same arrangement as `targetSchema`, one level
-up: the daemon publishes what a kind needs and holds no opinion about how it is asked for.
+`settingsSchema` a client builds its form from. The same arrangement as `argumentsSchema`, one
+level up: the daemon publishes what a kind needs and holds no opinion about how it is asked for.
 
 - Settings are validated against the kind's schema on create and on edit, and a failure is
-  `422` carrying the schema issues — the same shape a bad target gets.
+  `422` carrying the schema issues — the same shape bad arguments get.
 - **Writes are online-only, and the client makes that visible** ([client.md](client.md)). They are
   not in the outbox: whether a root exists, and whether settings satisfy the kind registry the
   daemon is actually running, are questions only the daemon can answer.
@@ -716,7 +778,7 @@ up: the daemon publishes what a kind needs and holds no opinion about how it is 
 {
   "destination": "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
   "capability": "create-file",
-  "target": { "directory": "inbox", "filename": "a-thought.md" }
+  "arguments": { "directory": "inbox", "filename": "a-thought.md" }
 }
 ```
 
@@ -730,7 +792,7 @@ up: the daemon publishes what a kind needs and holds no opinion about how it is 
     "kind": "destination",
     "destination": "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
     "capability": "create-file",
-    "target": { "directory": "inbox", "filename": "a-thought.md" }
+    "arguments": { "directory": "inbox", "filename": "a-thought.md" }
   },
   "state": "delivered",
   "at": "2026-08-08T09:00:00.123Z",
@@ -749,10 +811,10 @@ up: the daemon publishes what a kind needs and holds no opinion about how it is 
   carrying the destination's own `detail` verbatim. No record is minted and the item stays in the
   queue, because a refusal is proof that nothing arrived and will be refused identically next time.
 - **A destination that could not say what it accepts is `422 unreachable`**, carrying the reason.
-  No target can be checked against capabilities nobody could read, and nothing is attempted or
-  written, so this refuses rather than reserving — a record minted here would carry a target nobody
-  validated. This is the one way `unreachable` is raised on this route; a destination that fails
-  during the *attempt* still answers `200` with a pending record.
+  No arguments can be checked against capabilities nobody could read, and nothing is attempted or
+  written, so this refuses rather than reserving — a record minted here would carry arguments
+  nobody validated. This is the one way `unreachable` is raised on this route; a destination that
+  fails during the *attempt* still answers `200` with a pending record.
 - **An attempt that neither answered nor refused is `422 delivery-outcome-unknown`**, carrying the
   `detail` core has. No record is minted and the item stays in the queue, but unlike a refusal this
   is not proof that nothing arrived: the material may be at the destination already, and a client
@@ -766,8 +828,8 @@ up: the daemon publishes what a kind needs and holds no opinion about how it is 
   and it refuses before anything is attempted.
 - A destination the daemon has not wired is `422 unknown-destination`; a capability that
   destination never declared is `422 capability-undeclared`; a payload type it does not accept is
-  `422 payload-type-unsupported`, carrying the types it does; a `target` that does not satisfy the
-  capability's schema is `422 target-invalid`, carrying `issues` in the same shape
+  `422 payload-type-unsupported`, carrying the types it does; arguments that do not satisfy the
+  capability's schema are `422 arguments-invalid`, carrying `issues` in the same shape
   `payload-invalid` uses. None of them touches the destination.
 - An id no item has is `404 no-such-item`.
 
@@ -807,7 +869,7 @@ up: the daemon publishes what a kind needs and holds no opinion about how it is 
 - **`state` is `pending` or `delivered`**, and a client may not read a record as arrival without it
   ([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)). Marking an item
   processed is delivered by construction; a record routed to a destination may be either, and the
-  field is the same field. A `destination` target additionally carries the `target` the delivery
+  field is the same field. A `destination` target additionally carries the `arguments` the delivery
   named there, because a delivery that has not landed is attempted again from the record alone.
 - A record that is pending disappears rather than changing state if its delivery is abandoned or
   cancelled, and the item returns to the queue. So a record this route answers at all either has
@@ -1027,9 +1089,11 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `unknown-destination` | `destination` | core (routing an item) |
 | `422` | `unknown-destination-kind` | `destinationKind` | core |
 | `422` | `invalid-destination-settings` | `issues` | core |
-| `422` | `capability-undeclared` | `capability` | core |
+| `422` | `capability-undeclared` | `capability` | core (routing an item) |
+| `422` | `capability-undeclared` | `capability` | daemon (asking what a field could hold) |
+| `422` | `field-not-askable` | `capability`, `field` | daemon |
 | `422` | `payload-type-unsupported` | `type`, `accepts` | core |
-| `422` | `target-invalid` | `issues` | core |
+| `422` | `arguments-invalid` | `issues` | core |
 | `422` | `rejected-by-destination` | `detail` | core |
 | `422` | `delivery-outcome-unknown` | `detail` | core |
 | `422` | `unreachable` | `detail` | core |
@@ -1254,13 +1318,13 @@ roles are restated in the page rather than imported, and a test holds that copy 
 - A payload naming a different type is `422 payload-type-changed` and changes nothing, on either
   outcome.
 - `GET /v1/destinations` answers every wired destination with its capabilities, each carrying the
-  payload types it accepts and the JSON Schema of the target it needs.
+  payload types it accepts and the JSON Schema of the arguments it needs.
 - `POST /v1/items/{id}/route` to a reachable destination answers `200` with a `delivered` record
   and a pointer, and removes the item from `GET /v1/queue`.
 - The same call to a destination that cannot be reached answers `200` with a `pending` record and
   no pointer, and the item is out of the queue although nothing has arrived.
 - A capability the destination never declared is `422 capability-undeclared` and the destination is
-  never called; a `target` that does not satisfy its schema is `422 target-invalid` with `issues`.
+  never called; arguments that do not satisfy its schema are `422 arguments-invalid` with `issues`.
 - A destination that refuses the delivery is `422 rejected-by-destination` carrying its own detail,
   leaves no routing record, and leaves the item in the queue.
 - An attempt whose outcome nobody can state is `422 delivery-outcome-unknown`, on the same terms

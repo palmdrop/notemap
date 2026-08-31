@@ -111,7 +111,7 @@ const VAULT = "vault" as DestinationId;
 const RESERVED = {
   destination: VAULT,
   capability: "create-note" as CapabilityName,
-  target: { path: "inbox/a-thought.md" },
+  arguments: { path: "inbox/a-thought.md" },
 };
 
 /** An item whose delivery never landed: a reservation nothing has left through. */

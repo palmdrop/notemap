@@ -47,7 +47,7 @@ afterEach(async () => {
 });
 
 const CAPABILITIES = [
-  fakeCapability({ name: "create-note", targetSchema: PATH_SCHEMA }),
+  fakeCapability({ name: "create-note", argumentsSchema: PATH_SCHEMA }),
 ];
 
 /**
@@ -74,6 +74,7 @@ async function pooledWith(kind: Partial<Destinations>) {
     kinds: () => [fakeKind()],
     describe: () => Promise.resolve({ capabilities: CAPABILITIES }),
     deliver: () => Promise.resolve(DELIVERED),
+    candidates: () => Promise.reject(new Error("no candidates in this test")),
     ...kind,
   });
   open.push(opened);
@@ -105,7 +106,7 @@ function request(path = "inbox/a-thought.md") {
   return {
     destination: VAULT,
     capability: "create-note" as CapabilityName,
-    target: { path },
+    arguments: { path },
   };
 }
 
@@ -137,7 +138,7 @@ describe("routing to a destination that is up", () => {
         kind: "destination",
         destination: VAULT,
         capability: "create-note",
-        target: { path: "inbox/a-thought.md" },
+        arguments: { path: "inbox/a-thought.md" },
       },
     });
     expect(ids((await pool.views.queue(ALL)).values)).toEqual([]);
@@ -156,7 +157,7 @@ describe("routing to a destination that is up", () => {
       item,
       destination: VAULT,
       capability: "create-note",
-      target: { path: "inbox/a-thought.md" },
+      arguments: { path: "inbox/a-thought.md" },
       source: "scratchpad",
       payload: { type: "text", content: { text: "a thought" } },
       tags: [],
@@ -298,7 +299,7 @@ describe("what routing refuses before it attempts anything", () => {
         fakeCapability({
           name: "create-note",
           accepts: ["note"],
-          targetSchema: PATH_SCHEMA,
+          argumentsSchema: PATH_SCHEMA,
         }),
       ],
     });
@@ -313,16 +314,16 @@ describe("what routing refuses before it attempts anything", () => {
     });
   });
 
-  it("a target its capability's schema rejects", async () => {
+  it("arguments its capability's schema rejects", async () => {
     const { pool, destination } = await pooled();
     const item = await capture(pool);
 
     const refusal = await pool.routing.route(item, {
       ...request(),
-      target: { pth: "typo" },
+      arguments: { pth: "typo" },
     });
 
-    expect(refusal).toMatchObject({ refusal: { kind: "target-invalid" } });
+    expect(refusal).toMatchObject({ refusal: { kind: "arguments-invalid" } });
     expect(destination.received).toEqual([]);
   });
 
@@ -359,7 +360,7 @@ describe("a destination that cannot say what it can do", () => {
     });
   });
 
-  it("refuses a route to it, since no target can be checked against nothing", async () => {
+  it("refuses a route to it, since no arguments can be checked against nothing", async () => {
     const opened = await pooledWith(undescribable);
     const item = await capture(opened.pool);
 
@@ -560,7 +561,7 @@ describe("the assets a delivery carries", () => {
         fakeCapability({
           name: "create-note",
           accepts: ["note"],
-          targetSchema: PATH_SCHEMA,
+          argumentsSchema: PATH_SCHEMA,
         }),
       ],
     });

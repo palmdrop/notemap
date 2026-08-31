@@ -111,7 +111,9 @@ test("asks one destination what it can do, on request", async () => {
     [`GET /v1/destinations/${VAULT}/description`]: () =>
       json(200, {
         kind: "described",
-        capabilities: [{ name: "create-file", accepts: [], targetSchema: {} }],
+        capabilities: [
+          { name: "create-file", accepts: [], argumentsSchema: {} },
+        ],
       }),
   });
 
@@ -153,12 +155,55 @@ test("adds one from the kind's own schema", async () => {
   await fireEvent.input(screen.getByLabelText("root"), {
     target: { value: "~/second-brain" },
   });
-  await press("Create it");
+  // Nothing is known yet, so the button already says what it is about to do.
+  await press("Use it anyway");
 
   await screen.findByRole("button", { name: "Second brain" });
 
   const created = asked().filter((route) => route === "POST /v1/destinations");
   expect(created).toHaveLength(1);
+});
+
+test("checks a root nothing has used before, and writes nothing until confirmed", async () => {
+  serving([]);
+
+  render(Destinations);
+  await press("Add a destination");
+
+  await fireEvent.input(screen.getByLabelText("Name"), {
+    target: { value: "Second brain" },
+  });
+  await fireEvent.input(screen.getByLabelText("root"), {
+    target: { value: "~/second-brain" },
+  });
+
+  await screen.findByText(/notemap has not used/);
+  expect(screen.queryByRole("button", { name: "Create it" })).toBeNull();
+  expect(asked()).not.toContain("POST /v1/destinations");
+
+  await press("Use it anyway");
+  await screen.findByRole("button", { name: "Second brain" });
+  expect(asked()).toContain("POST /v1/destinations");
+});
+
+test("asks nothing for a root already under one notemap holds", async () => {
+  serving([aDestination({ settings: { root: "~/notes" } })]);
+
+  render(Destinations);
+  await screen.findByRole("button", { name: "Vault" });
+  await press("Add a destination");
+
+  await fireEvent.input(screen.getByLabelText("Name"), {
+    target: { value: "Second brain" },
+  });
+  await fireEvent.input(screen.getByLabelText("root"), {
+    target: { value: "~/notes/second-brain" },
+  });
+
+  expect(screen.queryByText(/notemap has not used/)).toBeNull();
+  await press("Create it");
+
+  await screen.findByRole("button", { name: "Second brain" });
 });
 
 test("retires one, and offers it again", async () => {

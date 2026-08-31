@@ -20,6 +20,8 @@ import type {
   Timestamp,
 } from "../domain/ids";
 import type {
+  CandidatesAnswer,
+  CandidatesRequest,
   Destination,
   DestinationDescriptor,
   DestinationKind,
@@ -166,6 +168,12 @@ export interface Destinations {
     delivery: Delivery,
     signal?: AbortSignal,
   ): Promise<DeliveryOutcome>;
+  /** Rejects with `NotOffered` where the adapter registered for the kind has none. */
+  candidates(
+    destination: Destination,
+    request: CandidatesRequest,
+    signal?: AbortSignal,
+  ): Promise<CandidatesAnswer>;
 }
 
 export interface DestinationKindAdapter extends DestinationKind {
@@ -178,6 +186,12 @@ export interface DestinationKindAdapter extends DestinationKind {
     delivery: Delivery,
     signal?: AbortSignal,
   ): Promise<DeliveryOutcome>;
+  /** Absent is the same answer to a caller as a kind that tried and could not say: not-offered. */
+  candidates?(
+    destination: Destination,
+    request: CandidatesRequest,
+    signal?: AbortSignal,
+  ): Promise<CandidatesAnswer>;
 }
 
 export interface ProviderAdapter {

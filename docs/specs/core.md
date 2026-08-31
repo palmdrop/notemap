@@ -1,8 +1,26 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-08-25
+**Last updated**: 2026-08-31
 **Shipped**:
+
+- 2026-08-31 — **A destination can be asked what one field of one capability's arguments could
+  hold.** `destinations.candidates` joins `describe` on the pool API and on the `Destinations`
+  port, optional on a kind adapter: it names a capability, a field, and an opaque scope an earlier
+  answer minted, and answers entries — a label, the value the field would take where the field may
+  hold it, and a scope to ask again with where there is more past it — plus whether the answer was
+  cut short. `describe()` is untouched and stays offline-safe. Failures are `unreachable`,
+  `unusable` and `not-offered`. An adapter can now declare the last two itself, by throwing
+  `Unusable` or `NotOffered`, for what only it knows.
+  ([plan](../plans/destination-targets.md),
+  [ADR 26](../adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md))
+
+- 2026-08-31 — **A delivery supplies arguments, not a target.** `Capability.targetSchema`,
+  `DeliveryRequest.target`, `Delivery.target`, and the arguments a `destination` `RoutingTarget`
+  carried under its own `target` field, are all `arguments` now — matching CONTEXT.md.
+  `RoutingTarget` itself keeps the word, for the one sense it still names: the destination-or-user
+  a record resolves to. No behaviour changed.
+  ([plan](../plans/destination-targets.md))
 
 - 2026-08-25 — **An asset takes the id its uploader minted.** `assets.store` is given the id
   instead of minting one, and answers whether it stored the asset or already held it, refusing
@@ -108,8 +126,8 @@
   abandoned rather than retried, so every automatic retry is backed by proof that nothing was
   delivered. Abandoning or cancelling a delivery removes the reservation, which returns the item to
   the queue, and puts a row naming that item on the abandoned-work surface. A record now carries
-  its **state** and what the delivery **targeted**, because a delivery carried out later is
-  assembled from the record alone; `routing.cancelDelivery` and `routing.deliveryFor` are new, and
+  its **state** and the **arguments** the delivery supplied, because a delivery carried out later
+  is assembled from the record alone; `routing.cancelDelivery` and `routing.deliveryFor` are new, and
   `routing.destinations` answers what each wired adapter declares. No adapter ships: this is proved
   against a destination that fails on command.
   ([plan](../plans/delivery-machinery.md),
@@ -122,7 +140,7 @@
   runner beside the mirror runner drives what could not be carried out inline; the two share one
   loop, differing only in what a job is. A missing or unwritable root reports **unreachable**, so a
   decision made against an unmounted drive is kept and retried; a traversal, a file already there
-  and a target of the wrong shape report **rejected**, which is abandoned at once. Nothing a
+  and arguments of the wrong shape report **rejected**, which is abandoned at once. Nothing a
   delivery names can escape the root: the target is resolved against the root's real path and
   compared, and the deepest existing part of it read back through the filesystem, so a symlink out
   is caught as well as an absolute path or a `..`. Nothing is overwritten either — a file is created
@@ -131,7 +149,7 @@
   Identity moved onto the adapter as `id`, so a duplicate is still caught at wiring time while
   capabilities are re-read per call; `routing.destinations` answers a report per destination, and
   one that could not describe itself is reported rather than dropped; and `routing.route` refuses
-  `unreachable` when it cannot read capabilities to check a target against.)*
+  `unreachable` when it cannot read capabilities to check arguments against.)*
   ([plan](../plans/destination-fs.md))
 - 2026-08-17 — **An inline attempt that throws is unknown, not failed.** `routing.route` was letting
   an adapter's exception — including the caller's own `AbortSignal` firing — unwind the call with
@@ -602,15 +620,15 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   authoritative and a second copy is one that can one day disagree. It is on the item because a
   surface reads a page of them and cannot ask per row — without it a feed can say an item was
   archived and cannot say it was routed. The records themselves are still read one item at a
-  time: a capability, a target and a pointer are an item's detail, not a row's.
+  time: a capability, arguments and a pointer are an item's detail, not a row's.
 - **A destination declares its capabilities** (decided 2026-08-04). Each capability names one
-  thing that destination can do, the payload types it accepts for it, and a schema for what a
-  delivery must target. A delivery names a capability and supplies a target; core refuses one
-  the destination has not declared, or a payload type it does not accept, rather than
-  approximating.
+  thing that destination can do, the payload types it accepts for it, and a schema for the
+  arguments a delivery must supply. A delivery names a capability and supplies arguments; core
+  refuses one the destination has not declared, or a payload type it does not accept, rather
+  than approximating.
 - **Core holds no list of capabilities.** A fixed set — create, append, place — was tried and
   rejected: it is filesystem-shaped, and a board, a webhook or a Micropub endpoint does not
-  decompose into it. Capability names and target shapes belong to the adapter, the way payload
+  decompose into it. Capability names and argument shapes belong to the adapter, the way payload
   types already do, so a new kind of destination needs no change in core.
 - **A destination is pool state** (decided 2026-08-17,
   [ADR 20](../adr/0020-destinations-are-pool-state.md)). One is a row: a minted id, a name a person
@@ -619,7 +637,7 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   a person could delete a paragraph from. Creating, editing, retiring and deleting one are
   operations like any other, and each appends to the action log.
 - **A kind publishes the schema for its settings**, and core validates against it and refuses with
-  facts — the same arrangement as a capability's target schema, one level up. Core holds no list of
+  facts — the same arrangement as a capability's arguments schema, one level up. Core holds no list of
   kinds, so a new kind of destination still needs no change in core. The host registers **one
   adapter per kind**, not one per destination
   ([ADR 8](../adr/0008-adapters-are-in-process-and-wired-by-the-host.md)): the destination is
@@ -638,6 +656,14 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   with a reason, beside described and undescribable. Routing to it is refused. The row is left
   exactly as it is, because the code that understood it may come back and the person who wrote it
   cannot reach the row to fix it otherwise.
+- **An adapter may declare a destination unusable itself** (added 2026-08-31), by throwing
+  `Unusable` from `describe()` or from `candidates()`, and core reports it on exactly the terms
+  above. The two checks core makes — a kind nothing speaks, settings that fail the kind's schema —
+  are the ones core can make from the outside, and they are not all of them: a filesystem root
+  pointed at the daemon's own state satisfies every schema there is and is still a destination
+  nothing should be delivered to. Without this an adapter's only way to say so is a throw, which
+  core has to read as merely unreachable — a destination that will come back — and retry forever.
+  A kind that throws anything else is unreachable, as it always was.
 - **A deferred delivery resolves its destination when it runs**, not when the decision was made: a
   root corrected after a failure is why the retry succeeds. A destination that has become unusable
   is proof that nothing was delivered, so the job retries on the same terms as `unreachable` and is
@@ -660,10 +686,10 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   extreme. The decision is what the record exists to remember, and it is what orders an item's
   records; where a delivery landed is what the pointer is for. A destination's own idea of when it
   received something is not kept, since no reader was found for it that the pointer does not serve.
-- **A record remembers what the delivery targeted** (added 2026-08-14), beside the destination and
-  the capability. Under the synchronous model the target was consumed by the one attempt; a delivery
-  that is carried out later has to be assembled from the record alone, and a reservation that could
-  not say what it was pointed at would be a decision nothing could act on.
+- **A record remembers the arguments the delivery supplied** (added 2026-08-14), beside the
+  destination and the capability. Under the synchronous model the arguments were consumed by the
+  one attempt; a delivery that is carried out later has to be assembled from the record alone, and
+  a reservation that could not say what it was pointed at would be a decision nothing could act on.
 - **Core imposes no timeout on the inline attempt.** A default is interface policy, and core is a
   primitive API; the caller bounds it with the `AbortSignal` that reaches the adapter. A host that
   passes none waits as long as its destination takes.
@@ -755,6 +781,25 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   columns come from an API, or another pool cannot answer from a constant fixed at wiring time. A
   destination that cannot describe itself is reported as such rather than omitted silently, since a
   missing destination and an unreachable one are different answers to a person looking for one.
+- **A destination can also be asked what one field of one capability's arguments could hold**
+  (added 2026-08-31, [ADR 26](../adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md)),
+  through its own method, **`candidates`**, rather than `describe()` grown a mode. `describe()`
+  answers from a destination's declared shape and stays constant-time and offline-safe; a folder's
+  contents, which notes exist, or the tags a vault already uses are current state, and folding them
+  in would make every settings screen stall on a destination that is merely asleep. It is optional
+  on the adapter, and asked about **a field** rather than a path: a fixed vocabulary of place-kinds
+  was tried once for capabilities themselves and rejected, and encoding "collection" and "item" for
+  what a field can hold would repeat it the day a board's columns or a vault's tags showed up
+  neither. An answer is entries — a label, and then a value, a scope, or both: what the field may
+  hold, somewhere to look for more, and no assumption that they are the same thing. Browsing for a
+  note descends through folders and is never offered one as a note, which is what an entry with a
+  scope and no value says. So a tree is walked by a caller that was never told it is a tree, and
+  `truncated` says where the destination held more than it answered. A
+  request carries none of the arguments filled in so far, because no field either kind declares
+  today depends on another. Failures are `unreachable`, `unusable` and `not-offered`, on the same
+  terms `describe()`'s own report already uses. `not-offered` is one answer however it was reached
+  — a kind whose adapter implements none of this, and a field an adapter does not answer for, are
+  the same fact to a caller: nothing here can be browsed.
 - **A capability's accepted payload types may be a wildcard**, for a destination whose fallback
   genuinely handles anything. It is a promise rather than a shrug: claiming it trades away the
   refusal core would otherwise make up front, so what would have been an immediate

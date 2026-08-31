@@ -333,13 +333,13 @@ describe("moving destinations into the pool", () => {
         destination: "vault",
         capability: "create-file",
         // Written before the column existed, and read as `{}` ever since.
-        target: {},
+        arguments: {},
       },
       {
         kind: "destination",
         destination: "vault",
         capability: "create-file",
-        target: {},
+        arguments: {},
       },
       { kind: "user", note: "pasted it" },
     ]);

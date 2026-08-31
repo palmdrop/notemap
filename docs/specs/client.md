@@ -1,8 +1,14 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-08-26
+**Last updated**: 2026-08-31
 **Shipped**:
+
+- 2026-08-31 — **A destination can be asked what a field could hold, and the answer is never
+  cached.** `DestinationsApi.candidates()` is a passthrough over
+  `GET /v1/destinations/{id}/candidates`, on `describe()`'s own terms: asked now, kept by nothing
+  in the store. A vault's contents are somebody else's state, and the durable cache is for the
+  pool's own collections alone. ([plan](../plans/destination-targets.md))
 
 - 2026-08-26 — **The pool is asked whether it is there, whether or not anything else is asking.**
   The health probe runs in both states at ten seconds, down from a backoff capped at thirty, so a
@@ -308,6 +314,15 @@ not in the outbox: whether a root exists, and whether settings satisfy the kind 
 is actually running, are questions only the daemon can answer, so an offline edit would validate
 against a cached schema and hand back an acceptance the pool may then refuse. The settings screen is
 readable offline and its controls are disabled, like a route.
+
+**What a field could hold is asked, never cached** (added 2026-08-31). `describe()`'s capabilities
+are read like any destination's, but a folder's contents, a note's existence, or the tags a vault
+already uses are somebody else's state, stale the moment somebody else writes a file — answering a
+folder listing from disk while offline would be the client claiming something it cannot know. So
+`DestinationsApi.candidates()` is a bare passthrough that goes nowhere near the store, and whoever
+asked holds the answer for exactly as long as they keep it, which in the shell is the life of an
+open composer and no longer. Out of reach is out of reach: a refusal reads as unavailable rather
+than broken, typing still works, and the decision stays a person's to make.
 
 A recorded decision takes the item out of the queue, and **withdrawing one puts it back only if the
 item holds no other**: processed is derived from holding no routing record ([core.md](core.md#the-queue)),

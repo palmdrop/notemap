@@ -1,8 +1,18 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-08-26
+**Last updated**: 2026-08-31
 **Shipped**:
+
+- 2026-08-31 — **The composer walks what a field could hold.** A field carrying
+  `x-notemap-candidates` draws a browser in the `Group`/`Option` idiom `where` and `do` already
+  use — entries at the current scope, `back`, `use <label>` where the scope stood in is something
+  the field may hold, and `clear` at the top — beside its free-text input rather than instead of
+  it. An entry may be somewhere to look without being something to take, which is how browsing for
+  a note descends through folders. A refusal to browse reads as the ordinary
+  condition, never an alarm. The control is chosen through a lookup keyed by destination kind,
+  falling back to the schema-driven browser for every kind that registers nothing; none does yet.
+  ([plan](../plans/destination-targets.md))
 
 - 2026-08-26 — **Offline is said twice, not three times.** The register entry that named a surface
   drawn from the cache is gone from the queue and the feed; the chrome's mark and a row's `pending`
@@ -58,12 +68,12 @@
   three Tailwind namespaces are cleared so a component naming its own colour does not compile — a
   test over `src/components`, `src/routes` and `src/styles` is the second gate. The queue is the root route and
   carries capture as its first row; a row opens in place on its own stamp, one at a time, and
-  routing escalates into a composer beside it that steps through where, what to do, and the target
-  the schema asks for. The feed says what became of a row and keeps tags editable on every one of
+  routing escalates into a composer beside it that steps through where, what to do, and the
+  arguments the schema asks for. The feed says what became of a row and keeps tags editable on every one of
   them. A refusal has the bottom-left corner to itself; work merely waiting for the daemon is left
   to the one mark in the bar. Settings enters at the bar's right end and holds the exits to the
-  daemon's own pages. **Not shipped**: the folder tree, which nothing can enumerate; CommonMark,
-  the renderer being unchosen; and a visible mark for pending work.
+  daemon's own pages. **Not shipped**: CommonMark, the renderer being unchosen; and a visible mark
+  for pending work.
   ([plan](../plans/shell-design-port.md))
 - 2026-08-20 — **A row says where it went, and a tag field completes.** `Item` carries a routing
   summary ([core.md](core.md#routing)), so the feed draws `routed` and a `routing` line naming the
@@ -219,14 +229,26 @@ behind it, and the veil, the cross and Escape all put it away. Nothing in the re
 width or height for it, which is what the panel cost everywhere it was not open.
 
 The composer is stepped, not flat: **where** (destinations, with an unavailable one saying so
-rather than disappearing), **do** (that destination's capabilities), then the target its schema
+rather than disappearing), **do** (that destination's capabilities), then the arguments its schema
 asks for. A settled step stays visible with its choice marked, so the decision reads back as it is
 built.
 
-It is shaped for what routing is about to become. A folder tree, a preview of the converted bytes,
-and a slot above `where` for a decision that arrived **pre-filled with an attribution** — which is
-the one shape a routing rule, a capture template and an enrichment suggestion all produce. None of
-those exist yet and none is drawn except the tree; the composer leaves them somewhere to land.
+**A field that can be asked about draws a browser beside its input, in the register's own
+language** (added 2026-08-31): the entries at the current scope as marked options, `back` to the
+scope before it, `use <label>` to take the scope stood in where it is something the field may hold,
+and `clear` at the top for a field that already holds something — the same `Group`/`Option` idiom
+`where` and `do` already use, not a second visual vocabulary. Free entry stays beside it regardless,
+since a folder that does not exist yet cannot be browsed to. A destination that cannot be asked, or
+a kind that does not offer this, draws the field exactly as it is otherwise, with a muted line
+saying why — the ordinary condition, not one of the [three alarms](#reachable-pending-refused). The
+control a field gets is chosen through a lookup keyed by destination kind, falling back to this
+schema-driven browser for every kind that registers nothing; no kind registers one, so every field
+draws through it today.
+
+It is shaped for what routing is about to become. A preview of the converted bytes, and a slot
+above `where` for a decision that arrived **pre-filled with an attribution** — which is the one
+shape a routing rule, a capture template and an enrichment suggestion all produce. Neither exists
+yet; the composer leaves them somewhere to land.
 
 ### Actions
 
@@ -559,11 +581,11 @@ the page a person actually reads. Three-character indents on successive paragrap
       2026-08-25 for half of it: `/log` is drawn in this language, restated in the page because it
       loads nothing from anywhere but the daemon, with a test holding the copy to `tokens.css`.
       `/docs` is a vendored Swagger UI and stays as it is.
-- [ ] 2026-08-19 — **Nothing can enumerate a destination's folders.** The composer draws a folder
-      tree; `describe()` returns capabilities and a `targetSchema` and that is the whole vocabulary.
-      Either the adapter publishes an enum it refreshes at describe time, or the destination port
-      gains a method for asking — which is the same seam [todo.md](../todo.md) predicts for preview,
-      so it would have two callers.
+- [x] 2026-08-19 — **Nothing can enumerate a destination's folders.** Answered 2026-08-31: the
+      destination port gained `candidates`, asked about a field rather than a path
+      ([ADR 26](../adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md)), and the
+      composer draws a browser for any field whose schema carries `x-notemap-candidates`, one scope
+      at a time rather than as a refreshed enum.
 - [x] 2026-08-19 — **A pending operation has no visible mark.** Answered 2026-08-24: the bar says
       `N waiting`, counting the outbox operations that have not drained and never a refusal, which
       has the corner to itself. It says nothing while there is nothing, since pending is ordinary
@@ -601,7 +623,7 @@ the page a person actually reads. Three-character indents on successive paragrap
 - A refused operation is distinguishable from a pending one without reading either, and only the
   refused one offers a dismissal.
 - Routing a queued item is reachable in two choices from the opened row when the capability needs
-  no target fields, and the modal says which capture it is about.
+  no argument fields, and the modal says which capture it is about.
 - Choosing a destination describes that destination and no other.
 - A feed row that has been routed says so and names where it went, and drawing a page of them costs
   one read; opening a queue row that has been nowhere costs none.

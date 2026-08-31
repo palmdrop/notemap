@@ -8,6 +8,7 @@ import {
 } from "node:fs/promises";
 import { join } from "node:path";
 
+import { Unusable } from "@notemap/core";
 import type {
   Delivery,
   DeliveryOutcome,
@@ -63,8 +64,9 @@ function bind(
   path: string,
   accepts: readonly PayloadTypeName[],
   renderers: Record<string, Renderer>,
+  reserved: readonly string[] = [],
 ): Bound {
-  const kind = createFilesystemDestination({ renderers, accepts });
+  const kind = createFilesystemDestination({ renderers, accepts, reserved });
   const row = destinationRow({ root: path });
 
   return {
@@ -101,7 +103,7 @@ describe("what it says it can do", () => {
       "append-to-file",
     ]);
     expect(described.capabilities[0]?.accepts).toEqual([TEXT, "image"]);
-    expect(described.capabilities[1]?.targetSchema).toMatchObject({
+    expect(described.capabilities[1]?.argumentsSchema).toMatchObject({
       required: ["path"],
     });
   });
@@ -113,7 +115,7 @@ describe("creating a file", () => {
 
     const outcome = await destination.deliver(
       delivery({
-        target: { directory: "inbox", filename: "a-thought.md" },
+        arguments: { directory: "inbox", filename: "a-thought.md" },
         tags: ["kind/quote"],
       }),
     );
@@ -131,12 +133,12 @@ describe("creating a file", () => {
     expect(written.endsWith("a thought\n")).toBe(true);
   });
 
-  it("derives a filename from the first line when the target names none", async () => {
+  it("derives a filename from the first line when the arguments name none", async () => {
     const { destination } = await vault({ text: renderText });
 
     const outcome = await destination.deliver(
       delivery({
-        target: { directory: "inbox" },
+        arguments: { directory: "inbox" },
         content: { text: "Read: Borges — Ficciones\nand then the rest" },
       }),
     );
@@ -151,7 +153,7 @@ describe("creating a file", () => {
 
     expect(
       await destination.deliver(
-        delivery({ target: { directory: "" }, content: { count: 4 } }),
+        delivery({ arguments: { directory: "" }, content: { count: 4 } }),
       ),
     ).toMatchObject({ pointer: "item-1.md" });
   });
@@ -160,7 +162,7 @@ describe("creating a file", () => {
     const { path, destination } = await vault({ text: renderText });
 
     await destination.deliver(
-      delivery({ target: { directory: "", filename: "a.md" } }),
+      delivery({ arguments: { directory: "", filename: "a.md" } }),
     );
 
     expect(await filesUnder(path)).toEqual(["a.md"]);
@@ -172,7 +174,7 @@ describe("creating a file", () => {
     await writeFile(join(path, "inbox", "a.md"), "theirs\n");
 
     const outcome = await destination.deliver(
-      delivery({ target: { directory: "inbox", filename: "a.md" } }),
+      delivery({ arguments: { directory: "inbox", filename: "a.md" } }),
     );
 
     expect(outcome.kind).toBe("rejected");
@@ -187,7 +189,7 @@ describe("creating a file", () => {
     await destination.deliver(
       delivery({
         type: "walk" as PayloadTypeName,
-        target: { directory: "", filename: "a.md" },
+        arguments: { directory: "", filename: "a.md" },
         content: { nodes: ["one"] },
       }),
     );
@@ -204,36 +206,36 @@ describe("nothing escapes the root", () => {
     { directory: "", filename: "../escaped.md" },
   ];
 
-  it.each(outside)("refuses %o and writes nothing", async (target) => {
+  it.each(outside)("refuses %o and writes nothing", async (args) => {
     const { path, destination } = await vault({ text: renderText });
 
-    const outcome = await destination.deliver(delivery({ target }));
+    const outcome = await destination.deliver(delivery({ arguments: args }));
 
     expect(outcome.kind).toBe("rejected");
     expect(await filesUnder(path)).toEqual([]);
     expect(await filesUnder(join(path, ".."))).toEqual([]);
   });
 
-  it("refuses a target that leaves through a symlink", async () => {
+  it("refuses arguments that leave through a symlink", async () => {
     const { path, destination } = await vault({ text: renderText });
     const elsewhere = join(path, "..", "elsewhere");
     await mkdir(elsewhere, { recursive: true });
     await symlink(elsewhere, join(path, "escape"));
 
     const outcome = await destination.deliver(
-      delivery({ target: { directory: "escape", filename: "a.md" } }),
+      delivery({ arguments: { directory: "escape", filename: "a.md" } }),
     );
 
     expect(outcome.kind).toBe("rejected");
     expect(await filesUnder(elsewhere)).toEqual([]);
   });
 
-  it("refuses a target that is the root itself", async () => {
+  it("refuses arguments naming the root itself", async () => {
     const { destination } = await vault({ text: renderText });
 
     expect(
       await destination.deliver(
-        delivery({ capability: "append-to-file", target: { path: "." } }),
+        delivery({ capability: "append-to-file", arguments: { path: "." } }),
       ),
     ).toMatchObject({ kind: "rejected" });
   });
@@ -246,7 +248,7 @@ describe("appending to a file", () => {
     const outcome = await destination.deliver(
       delivery({
         capability: "append-to-file",
-        target: { path: "daily/2026-08-11.md", heading: "Notes" },
+        arguments: { path: "daily/2026-08-11.md", heading: "Notes" },
       }),
     );
 
@@ -280,7 +282,7 @@ describe("appending to a file", () => {
     await destination.deliver(
       delivery({
         capability: "append-to-file",
-        target: { path: "daily.md", heading: "Notes" },
+        arguments: { path: "daily.md", heading: "Notes" },
       }),
     );
 
@@ -309,7 +311,10 @@ describe("appending to a file", () => {
     await symlink(join(path, "days", "monday.md"), join(path, "daily.md"));
 
     await destination.deliver(
-      delivery({ capability: "append-to-file", target: { path: "daily.md" } }),
+      delivery({
+        capability: "append-to-file",
+        arguments: { path: "daily.md" },
+      }),
     );
 
     // The real file got it, and the link is still a link.
@@ -319,12 +324,15 @@ describe("appending to a file", () => {
     expect((await lstat(join(path, "daily.md"))).isSymbolicLink()).toBe(true);
   });
 
-  it("appends at the end when the target names no heading", async () => {
+  it("appends at the end when the arguments name no heading", async () => {
     const { path, destination } = await vault({ text: renderText });
     await writeFile(join(path, "daily.md"), "# Monday\n");
 
     await destination.deliver(
-      delivery({ capability: "append-to-file", target: { path: "daily.md" } }),
+      delivery({
+        capability: "append-to-file",
+        arguments: { path: "daily.md" },
+      }),
     );
 
     expect(await readFile(join(path, "daily.md"), "utf8")).toBe(
@@ -339,7 +347,7 @@ describe("appending to a file", () => {
     await destination.deliver(
       delivery({
         capability: "append-to-file",
-        target: { path: "daily.md", heading: "Captured" },
+        arguments: { path: "daily.md", heading: "Captured" },
       }),
     );
 
@@ -357,7 +365,7 @@ describe("assets", () => {
     await destination.deliver(
       delivery({
         type: "image" as PayloadTypeName,
-        target: { directory: "inbox", filename: "a.md" },
+        arguments: { directory: "inbox", filename: "a.md" },
         assets: [photo],
       }),
     );
@@ -377,7 +385,7 @@ describe("assets", () => {
     await destination.deliver(
       delivery({
         type: "image" as PayloadTypeName,
-        target: { directory: "", filename: "a.md" },
+        arguments: { directory: "", filename: "a.md" },
         assets: [
           deliveredAsset("one", "photo.png", bytes("first")),
           deliveredAsset("two", "photo.png", bytes("second")),
@@ -401,7 +409,7 @@ describe("assets", () => {
     await destination.deliver(
       delivery({
         type: "image" as PayloadTypeName,
-        target: { directory: "", filename: "a.md" },
+        arguments: { directory: "", filename: "a.md" },
         assets: [deliveredAsset("one", "photo.png", bytes("ours"))],
       }),
     );
@@ -416,7 +424,7 @@ describe("assets", () => {
     await destination.deliver(
       delivery({
         type: "image" as PayloadTypeName,
-        target: { directory: "", filename: "a.md" },
+        arguments: { directory: "", filename: "a.md" },
         assets: [
           deliveredAsset("one", "Screenshot 2026-08-14.png", bytes("ours")),
         ],
@@ -435,7 +443,7 @@ describe("assets", () => {
     await destination.deliver(
       delivery({
         type: "image" as PayloadTypeName,
-        target: { directory: "", filename: "a.md" },
+        arguments: { directory: "", filename: "a.md" },
         assets: [deliveredAsset("one", "../../authorized_keys", bytes("ours"))],
       }),
     );
@@ -452,7 +460,7 @@ describe("assets", () => {
     const unread = deliveredAsset("image", "photo.png", bytes("PNG"));
 
     await destination.deliver(
-      delivery({ target: { directory: "", filename: "a.md" } }),
+      delivery({ arguments: { directory: "", filename: "a.md" } }),
     );
 
     expect(unread.opens()).toBe(0);
@@ -465,7 +473,7 @@ describe("assets", () => {
     await destination.deliver(
       delivery({
         type: "image" as PayloadTypeName,
-        target: { directory: "", filename: "a.md" },
+        arguments: { directory: "", filename: "a.md" },
         assets: [deliveredAsset("one", "raw.bin", raw)],
       }),
     );
@@ -503,7 +511,7 @@ describe("the root a person wrote", () => {
       const destination = bind("~/notes", [TEXT], { text: renderText });
       expect(
         await destination.deliver(
-          delivery({ target: { directory: "", filename: "a.md" } }),
+          delivery({ arguments: { directory: "", filename: "a.md" } }),
         ),
       ).toMatchObject({ kind: "delivered" });
       expect(await filesUnder(join(made.path, "notes"))).toEqual(["a.md"]);
@@ -524,7 +532,7 @@ describe("the root a person wrote", () => {
       const destination = bind(".", [TEXT], { text: renderText });
       expect(
         await destination.deliver(
-          delivery({ target: { directory: "", filename: "a.md" } }),
+          delivery({ arguments: { directory: "", filename: "a.md" } }),
         ),
       ).toMatchObject({ kind: "delivered" });
     } finally {
@@ -540,14 +548,14 @@ describe("a root that cannot be written", () => {
     await chmod(path, 0o500);
 
     const refused = await destination.deliver(
-      delivery({ target: { directory: "inbox", filename: "a.md" } }),
+      delivery({ arguments: { directory: "inbox", filename: "a.md" } }),
     );
     expect(refused).toMatchObject({ kind: "unreachable" });
 
     await chmod(path, 0o700);
     expect(
       await destination.deliver(
-        delivery({ target: { directory: "inbox", filename: "a.md" } }),
+        delivery({ arguments: { directory: "inbox", filename: "a.md" } }),
       ),
     ).toMatchObject({ kind: "delivered" });
   });
@@ -560,5 +568,75 @@ describe("a capability it never declared", () => {
     expect(
       await destination.deliver(delivery({ capability: "post-to-board" })),
     ).toMatchObject({ kind: "rejected" });
+  });
+});
+
+describe("a root that overlaps notemap's own state", () => {
+  it("reports unusable where the root names reserved state exactly", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    await mkdir(made.path, { recursive: true });
+    const destination = bind(made.path, [TEXT], {}, [made.path]);
+
+    await expect(destination.describe()).rejects.toThrow(Unusable);
+  });
+
+  it("reports unusable where the root sits inside reserved state", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    const nested = join(made.path, "vault");
+    await mkdir(nested, { recursive: true });
+    const destination = bind(nested, [TEXT], {}, [made.path]);
+
+    await expect(destination.describe()).rejects.toThrow(Unusable);
+  });
+
+  it("reports unusable where the root contains reserved state", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    const reserved = join(made.path, "state");
+    await mkdir(reserved, { recursive: true });
+    const destination = bind(made.path, [TEXT], {}, [reserved]);
+
+    await expect(destination.describe()).rejects.toThrow(Unusable);
+  });
+
+  it("delivers nothing, refusing rather than writing into it", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    await mkdir(made.path, { recursive: true });
+    const destination = bind(made.path, [TEXT], {}, [made.path]);
+
+    const outcome = await destination.deliver(delivery());
+
+    expect(outcome).toMatchObject({ kind: "rejected" });
+    expect(await filesUnder(made.path)).toEqual([]);
+  });
+
+  it("catches a root reached through a symlink into reserved state", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    const reserved = join(made.path, "state");
+    await mkdir(reserved, { recursive: true });
+    const link = join(made.path, "vault");
+    await symlink(reserved, link);
+    const destination = bind(link, [TEXT], {}, [reserved]);
+
+    const outcome = await destination.deliver(delivery());
+
+    expect(outcome).toMatchObject({ kind: "rejected" });
+    expect(await filesUnder(reserved)).toEqual([]);
+  });
+
+  it("leaves an unrelated root alone", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    await mkdir(made.path, { recursive: true });
+    const elsewhere = join(made.path, "..", "reserved-elsewhere");
+    const destination = bind(made.path, [TEXT], {}, [elsewhere]);
+
+    await expect(destination.describe()).resolves.toMatchObject({
+      capabilities: expect.any(Array),
+    });
   });
 });

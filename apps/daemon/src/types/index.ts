@@ -32,6 +32,13 @@ export type DaemonRefusal =
     }
   | { readonly kind: "asset-too-large"; readonly max: number }
   | { readonly kind: "no-such-item"; readonly item: string }
+  /** The route's own check, before the destination is asked anything: same fact core raises when routing an item. */
+  | { readonly kind: "capability-undeclared"; readonly capability: string }
+  | {
+      readonly kind: "field-not-askable";
+      readonly capability: string;
+      readonly field: string;
+    }
   | { readonly kind: "unknown-route"; readonly path: string }
   | {
       readonly kind: "method-not-allowed";

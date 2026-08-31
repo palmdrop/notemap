@@ -45,18 +45,18 @@ type Record_ = {
   item: string;
   state: string;
   pointer?: string;
-  target: { kind: string; destination?: string; target?: unknown };
+  target: { kind: string; destination?: string; arguments?: unknown };
 };
 
 async function route(
   host: Vaulted,
   item: string,
-  target: unknown = { directory: "inbox", filename: "a-thought.md" },
+  args: unknown = { directory: "inbox", filename: "a-thought.md" },
 ): Promise<Response> {
   return send(host.app, `/v1/items/${item}/route`, {
     destination: host.vault.id,
     capability: "create-file",
-    target,
+    arguments: args,
   });
 }
 
@@ -275,7 +275,7 @@ describe("POST /v1/items/{id}/route", () => {
     const response = await send(host.app, `/v1/items/${item}/route`, {
       destination: host.vault.id,
       capability: "post-to-board",
-      target: {},
+      arguments: {},
     });
 
     expect(response.status).toBe(422);
@@ -292,7 +292,7 @@ describe("POST /v1/items/{id}/route", () => {
     const response = await send(host.app, `/v1/items/${item}/route`, {
       destination: "elsewhere",
       capability: "create-file",
-      target: { directory: "" },
+      arguments: { directory: "" },
     });
 
     expect(response.status).toBe(422);
@@ -301,7 +301,7 @@ describe("POST /v1/items/{id}/route", () => {
     });
   });
 
-  it("refuses a target the capability's schema does not accept", async () => {
+  it("refuses arguments the capability's schema does not accept", async () => {
     const host = await vaulted("ready");
     const item = await only(host);
 
@@ -309,7 +309,7 @@ describe("POST /v1/items/{id}/route", () => {
 
     expect(response.status).toBe(422);
     expect(await body(response)).toMatchObject({
-      error: { code: "target-invalid" },
+      error: { code: "arguments-invalid" },
     });
   });
 
@@ -330,7 +330,7 @@ describe("POST /v1/items/{id}/route", () => {
     const response = await send(host.app, `/v1/items/${item}/route`, {
       destination: host.vault.id,
       capability: "create-file",
-      target: {},
+      arguments: {},
       when: "now",
     });
 

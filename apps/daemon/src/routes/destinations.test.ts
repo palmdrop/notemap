@@ -1,3 +1,6 @@
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { afterEach, describe, expect, it } from "vitest";
 
 import { captureMany, daemon, send, type Daemon } from "../testing/fixture";
@@ -191,7 +194,7 @@ describe("PATCH /v1/destinations/{id}", () => {
     const first = await send(host.app, `/v1/items/${item}/route`, {
       destination: vault.id,
       capability: "create-file",
-      target: { directory: "inbox", filename: "a.md" },
+      arguments: { directory: "inbox", filename: "a.md" },
     });
     expect(((await body(first)) as { state: string }).state).toBe("pending");
 
@@ -250,14 +253,14 @@ describe("GET /v1/destinations/{id}/description", () => {
 
     const described = (await body(response)) as {
       kind: string;
-      capabilities: { name: string; targetSchema: object }[];
+      capabilities: { name: string; argumentsSchema: object }[];
     };
     expect(described.kind).toBe("described");
     expect(described.capabilities.map((each) => each.name)).toEqual([
       "create-file",
       "append-to-file",
     ]);
-    expect(described.capabilities[0]?.targetSchema).toMatchObject({
+    expect(described.capabilities[0]?.argumentsSchema).toMatchObject({
       required: ["directory"],
     });
   });
@@ -268,6 +271,137 @@ describe("GET /v1/destinations/{id}/description", () => {
     const response = await host.app.request(
       "/v1/destinations/nobody/description",
     );
+    expect(response.status).toBe(404);
+    expect(await body(response)).toMatchObject({
+      error: { code: "unknown-destination" },
+    });
+  });
+});
+
+describe("GET /v1/destinations/{id}/candidates", () => {
+  async function ask(
+    host: Daemon,
+    destination: string,
+    query: Record<string, string>,
+  ): Promise<Response> {
+    const search = new URLSearchParams(query).toString();
+    return host.app.request(
+      `/v1/destinations/${destination}/candidates?${search}`,
+    );
+  }
+
+  it("answers what an askable field could hold", async () => {
+    const host = serving("ready");
+    mkdirSync(join(host.vaultRoot, "inbox"));
+    const vault = await created(host);
+
+    const response = await ask(host, vault.id, {
+      capability: "create-file",
+      field: "directory",
+    });
+
+    expect(response.status).toBe(200);
+    expect(await body(response)).toEqual({
+      kind: "answered",
+      truncated: false,
+      entries: [{ label: "inbox", value: "inbox", scope: "inbox" }],
+    });
+  });
+
+  it("refuses a capability the destination never declared, before asking it anything", async () => {
+    const host = serving("ready");
+    const vault = await created(host);
+
+    const response = await ask(host, vault.id, {
+      capability: "delete-file",
+      field: "directory",
+    });
+
+    expect(response.status).toBe(422);
+    expect(await body(response)).toMatchObject({
+      error: { code: "capability-undeclared", capability: "delete-file" },
+    });
+  });
+
+  it("refuses a field that does not carry x-notemap-candidates", async () => {
+    const host = serving("ready");
+    const vault = await created(host);
+
+    const response = await ask(host, vault.id, {
+      capability: "create-file",
+      field: "filename",
+    });
+
+    expect(response.status).toBe(422);
+    expect(await body(response)).toMatchObject({
+      error: {
+        code: "field-not-askable",
+        capability: "create-file",
+        field: "filename",
+      },
+    });
+  });
+
+  it("is unreachable rather than an error where the destination could not be asked", async () => {
+    const host = serving();
+    const vault = await created(host);
+
+    const response = await ask(host, vault.id, {
+      capability: "create-file",
+      field: "directory",
+    });
+
+    expect(response.status).toBe(200);
+    const answered = (await body(response)) as { kind: string; detail: string };
+    expect(answered.kind).toBe("unreachable");
+    expect(answered.detail).toContain(host.vaultRoot);
+  });
+
+  it("offers a folder to walk through, and a note to take, for append-to-file", async () => {
+    const host = serving("ready");
+    mkdirSync(join(host.vaultRoot, "projects"));
+    writeFileSync(join(host.vaultRoot, "daily.md"), "");
+    const vault = await created(host);
+
+    const response = await ask(host, vault.id, {
+      capability: "append-to-file",
+      field: "path",
+    });
+
+    expect(response.status).toBe(200);
+    expect(await body(response)).toEqual({
+      kind: "answered",
+      truncated: false,
+      entries: [
+        { label: "projects", scope: "projects" },
+        { label: "daily.md", value: "daily.md" },
+      ],
+    });
+  });
+
+  it("is unusable where the root overlaps notemap's own state", async () => {
+    const host = serving();
+    const vault = await created(host, { settings: { root: host.assetRoot } });
+
+    const response = await ask(host, vault.id, {
+      capability: "create-file",
+      field: "directory",
+    });
+
+    expect(response.status).toBe(200);
+    const answered = (await body(response)) as { kind: string; detail: string };
+    expect(answered.kind).toBe("unusable");
+    expect(answered.detail).toContain("overlaps");
+  });
+
+  it("is 404 for an id no destination has", async () => {
+    const host = serving();
+
+    const response = await ask(host, "nobody", {
+      capability: "create-file",
+      field: "directory",
+    });
+
     expect(response.status).toBe(404);
     expect(await body(response)).toMatchObject({
       error: { code: "unknown-destination" },
@@ -288,7 +422,7 @@ describe("retiring and offering again", () => {
     const refused = await send(host.app, `/v1/items/${item}/route`, {
       destination: vault.id,
       capability: "create-file",
-      target: { directory: "inbox" },
+      arguments: { directory: "inbox" },
     });
     expect(refused.status).toBe(409);
     expect(await body(refused)).toMatchObject({
@@ -312,7 +446,7 @@ describe("retiring and offering again", () => {
     const routed = await send(host.app, `/v1/items/${item}/route`, {
       destination: vault.id,
       capability: "create-file",
-      target: { directory: "inbox" },
+      arguments: { directory: "inbox" },
     });
     expect(routed.status).toBe(200);
   });
@@ -374,7 +508,7 @@ describe("DELETE /v1/destinations/{id}", () => {
     await send(host.app, `/v1/items/${item}/route`, {
       destination: vault.id,
       capability: "create-file",
-      target: { directory: "inbox" },
+      arguments: { directory: "inbox" },
     });
 
     const response = await host.app.request(`/v1/destinations/${vault.id}`, {

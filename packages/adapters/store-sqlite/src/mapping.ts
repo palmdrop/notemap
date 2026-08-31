@@ -274,7 +274,7 @@ function toRoutingTarget(row: RoutingRecordRow): RoutingTarget {
     kind: "destination",
     destination: row.destination as DestinationId,
     capability: row.capability as CapabilityName,
-    target: parseJson(row.target ?? "{}"),
+    arguments: parseJson(row.arguments ?? "{}"),
   };
 }
 
@@ -302,7 +302,7 @@ export function routingRecordParams(
     target.kind === "destination" ? target.destination : null,
     target.kind === "destination" ? target.capability : null,
     target.kind === "user" ? (target.note ?? null) : null,
-    target.kind === "destination" ? JSON.stringify(target.target) : null,
+    target.kind === "destination" ? JSON.stringify(target.arguments) : null,
     record.state,
     toMillis(record.at),
     record.pointer ?? null,
