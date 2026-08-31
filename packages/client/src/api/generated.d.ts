@@ -43,6 +43,405 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read who this request is, if anyone
+         * @description Open, and answers 200 whether or not anyone is signed in — being signed out is an answer rather than a refusal, and a client needs to tell it apart from a daemon that is unreachable. `requiresCredentials` is false on a daemon nobody has set a password on, where every request is let through.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What this request is, and whether this daemon asks at all. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Session"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Sign in and take a session
+         * @description Exchanges the credential for a session cookie. The cookie is `HttpOnly` and carries the only copy of the session's secret; the daemon stores a hash of it and can never reproduce it. Answered the same way whether the name or the password was wrong, so neither can be probed for.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["LoginRequest"];
+                };
+            };
+            responses: {
+                /** @description Signed in. The session cookie is set. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Session"];
+                    };
+                };
+                /** @description The body could not be read. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "malformed-json" | "malformed-envelope";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The credential was not accepted. Which half was wrong is not said. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unauthenticated";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The body was not JSON. */
+                415: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unsupported-media-type";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        /**
+         * Sign out
+         * @description Ends the session the cookie names and clears the cookie. Idempotent, and open: signing out with a session that already lapsed is not an error, it is the same outcome arrived at early.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Signed out, whether or not there was a session. */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Authenticated by an access token, which is not a session to end. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "not-a-session";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * End every session, everywhere
+         * @description What a person reaches for after losing a device: every session is ended at once, including this one. Access tokens are untouched — a headless client is not a device someone left on a train, and revoking one is its own deliberate act. Behind the door, unlike signing out of this session alone.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Every session is over. */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Nothing valid was presented. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unauthenticated";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the access tokens that exist
+         * @description Names, times and last use. **No secret is ever listed**: the token string is shown once when it is minted and is not stored. `lastUsedAt` is what says whether a token is still in use and safe to revoke.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Every token this daemon holds. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Tokens"];
+                    };
+                };
+                /** @description Authenticated by an access token, which may not manage tokens. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "session-required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Mint an access token
+         * @description **The only answer that carries the token string.** It is not stored and cannot be read back, so a token that was not written down is replaced rather than recovered. Leaving `expiresAt` out mints one that never expires.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["MintTokenRequest"];
+                };
+            };
+            responses: {
+                /** @description Minted. `token` is shown here and nowhere else. */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MintedToken"];
+                    };
+                };
+                /** @description The body could not be read. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "malformed-json" | "malformed-envelope";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description Authenticated by an access token, which may not manage tokens. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "session-required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The body was not JSON. */
+                415: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unsupported-media-type";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tokens/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke an access token
+         * @description Takes effect on the next request: nothing caches an authentication, so there is no window to outrun. Revoking a token that is already gone is not an error.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Revoked, or was never there. */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Authenticated by an access token, which may not manage tokens. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "session-required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/captures": {
         parameters: {
             query?: never;
@@ -2301,6 +2700,57 @@ export interface components {
             pool: string;
             /** @example 0.2.0 */
             version: string;
+        };
+        Session: {
+            /** @example true */
+            authenticated: boolean;
+            /** @example true */
+            requiresCredentials: boolean;
+            identity?: {
+                /**
+                 * @example session
+                 * @enum {string}
+                 */
+                kind: "session" | "token";
+                /** @example gpeukvybsmmgwnec */
+                id: string;
+                /** @example laptop */
+                name?: string;
+            };
+        };
+        LoginRequest: {
+            /** @example anton */
+            name: string;
+            /** @example correct horse battery staple */
+            password: string;
+        };
+        Tokens: {
+            values: components["schemas"]["Token"][];
+        };
+        Token: {
+            /** @example gpeukvybsmmgwnec */
+            id: string;
+            /** @example laptop */
+            name: string;
+            /** @example 2026-08-30T09:00:00.000Z */
+            createdAt: string;
+            /** @example 2026-11-30T09:00:00.000Z */
+            expiresAt?: string;
+            /** @example 2026-08-31T14:12:00.000Z */
+            lastUsedAt?: string;
+        };
+        MintedToken: components["schemas"]["Token"] & {
+            /** @example nmp.gpeukvybsmmgwnec.qK9v... */
+            token: string;
+        };
+        MintTokenRequest: {
+            /** @example laptop */
+            name: string;
+            /**
+             * @description An ISO 8601 instant: a date-time carrying an offset (`2026-08-08T09:00:00Z`, `2026-08-08T09:00:00+02:00`), or a date alone, which means midnight UTC. A date-time without an offset is refused — there is no way to tell which zone it was written in.
+             * @example 2026-11-30T09:00:00.000Z
+             */
+            expiresAt?: string;
         };
         CaptureOutcome: {
             /** @enum {string} */

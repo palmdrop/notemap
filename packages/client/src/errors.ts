@@ -107,6 +107,7 @@ const SAID: {
   "no-such-asset": "the upload is gone; pick the file again",
   "no-such-item": "that item is not here",
   "no-such-record": "that routing record is not here",
+  "not-a-session": "an access token is not a session to sign out of; revoke it instead",
   "not-archived": "that item is not archived",
   "not-retired": "that destination is not retired",
   "not-pending": "that delivery has already been decided",
@@ -115,10 +116,12 @@ const SAID: {
   "payload-type-unsupported":
     "that destination does not accept this kind of item",
   "rejected-by-destination": "the destination refused it",
+  "session-required": "only someone signed in may manage access tokens",
   "tag-invalid": "a tag needs something in it",
   "source-item-changed":
     "something else in the pool was captured under that id, saying something different",
   "arguments-invalid": "that destination needs different arguments",
+  unauthenticated: "you are signed out; sign in to reach this pool",
   "unknown-asset": "the upload is gone; pick the file again",
   "unknown-destination": "that destination is not here",
   "unknown-destination-kind": (facts) =>
