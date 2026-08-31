@@ -21,7 +21,7 @@ export const createSqliteAuthStore = (config: Config): AuthStore => {
   });
 
   try {
-    if (config.file === ":memory:") {
+    if (config.file !== ":memory:") {
       chmodSync(config.file, 0o600);
     }
 

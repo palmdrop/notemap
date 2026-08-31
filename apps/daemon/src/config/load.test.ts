@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   cookiesAreSecure,
   defaultAssetRoot,
+  defaultAuthPath,
   defaultConfigPath,
   defaultPoolPath,
   parseConfig,
@@ -34,6 +35,9 @@ describe("the example config", () => {
     expect(config.port).toBe(4747);
     expect(config.pool).toBe(
       join(homedir(), ".local/share/notemap/state/notemap.db"),
+    );
+    expect(config.auth).toBe(
+      join(homedir(), ".local/share/notemap/state/auth.db"),
     );
     expect(config.mirror).toEqual({
       root: join(homedir(), ".local/share/notemap/pool-mirror"),
@@ -92,6 +96,7 @@ describe("the container config", () => {
     // Every interface: a container that binds loopback is reachable from nothing.
     expect(config.host).toBe("0.0.0.0");
     expect(config.pool).toBe("/var/lib/notemap/state/notemap.db");
+    expect(config.auth).toBe("/var/lib/notemap/state/auth.db");
     expect(config.mirror?.root).toBe("/var/lib/notemap/pool-mirror");
     expect(config.assets.root).toBe("/var/lib/notemap/assets");
     expect(config.delivery).toEqual({
@@ -109,14 +114,24 @@ describe("the container config", () => {
     ]);
   });
 
-  /** The pool, the mirror and the assets are one backup unit, so one volume holds all three. */
+  /**
+   * The pool, the mirror and the assets are one backup unit, so one volume holds
+   * all three. The auth database is not part of that unit and is here for a
+   * different reason: off the volume, every restart is a daemon nobody has a
+   * password for.
+   */
   it("keeps every path it writes under the volume", () => {
     const { config } = parseConfig(
       readFileSync(CONTAINER, "utf8"),
       "container.toml",
     );
 
-    for (const path of [config.pool, config.mirror?.root, config.assets.root]) {
+    for (const path of [
+      config.pool,
+      config.auth,
+      config.mirror?.root,
+      config.assets.root,
+    ]) {
       expect(path).toMatch(/^\/var\/lib\/notemap\//);
     }
   });
@@ -134,6 +149,7 @@ describe("what a config may leave out", () => {
 
     expect(config.port).toBe(4747);
     expect(config.pool).toBe(defaultPoolPath());
+    expect(config.auth).toBe(defaultAuthPath());
     // No mirror table is the mirror off, rather than one at a guessed path.
     expect(config.mirror).toBeUndefined();
     // Assets are not optional, so their absence is a default rather than an off switch.
@@ -270,6 +286,7 @@ describe("where the daemon looks", () => {
 
     expect(defaultConfigPath()).toBe("/xdg/config/notemap/config.toml");
     expect(defaultPoolPath()).toBe("/xdg/data/notemap/state/notemap.db");
+    expect(defaultAuthPath()).toBe("/xdg/data/notemap/state/auth.db");
   });
 
   it("falls back to the standard directories when they are not", () => {
@@ -281,6 +298,9 @@ describe("where the daemon looks", () => {
     );
     expect(defaultPoolPath()).toBe(
       join(homedir(), ".local/share/notemap/state/notemap.db"),
+    );
+    expect(defaultAuthPath()).toBe(
+      join(homedir(), ".local/share/notemap/state/auth.db"),
     );
   });
 

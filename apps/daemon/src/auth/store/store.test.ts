@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -48,6 +48,28 @@ const token = {
   secretHash: "hash-2",
   createdAt: at("2026-08-29T09:00:00.000Z"),
 };
+
+describe("the database file", () => {
+  /**
+   * It holds the password hash, so it is the owner's alone. SQLite gives the
+   * `-wal` and `-shm` siblings whatever mode the database file has, which is
+   * why restricting it has to happen before the first write rather than after.
+   */
+  it("is left readable only by the user that owns it", () => {
+    const directory = mkdtempSync(join(tmpdir(), "notemap-auth-"));
+    const file = join(directory, "auth.db");
+
+    opened.push({ store: createSqliteAuthStore({ file }), directory });
+
+    const written = readdirSync(directory);
+    expect(written).toContain("auth.db");
+
+    for (const name of written) {
+      const mode = statSync(join(directory, name)).mode & 0o777;
+      expect(mode.toString(8), name).toBe("600");
+    }
+  });
+});
 
 describe("the credential", () => {
   it("is absent until one is set", async () => {

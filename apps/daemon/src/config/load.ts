@@ -203,7 +203,7 @@ export function defaultAssetRoot(): string {
 }
 
 export function defaultAuthPath(): string {
-  return join(defaultDataRoot(), "auth.db");
+  return join(defaultDataRoot(), "state", "auth.db");
 }
 
 /** The config, and every key the daemon did not know and ignored. */

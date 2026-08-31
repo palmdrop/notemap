@@ -14,6 +14,11 @@
 [daemon]
 pool = "/var/lib/notemap/state/notemap.db"
 
+# The credential and the access tokens. On the volume, or every restart is a
+# daemon nobody has a password for; outside the mirror, so rebuilding the pool
+# restores no credential and the new deployment issues its own tokens.
+auth = "/var/lib/notemap/state/auth.db"
+
 # Every interface, which is not the daemon relaxing: a container that binds
 # loopback is reachable from nothing at all, not even the proxy. The boundary
 # moved to the compose network and the proxy in front of it.

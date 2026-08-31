@@ -15,6 +15,13 @@
 
 [daemon]
 pool = "~/.local/share/notemap/state/notemap.db"
+
+# The credential and the access tokens, in a database the daemon owns. Beside
+# the pool and never inside it: it is not the pool's material, the mirror never
+# writes it, and rebuilding a pool from the mirror is a new deployment that
+# should issue its own tokens.
+auth = "~/.local/share/notemap/state/auth.db"
+
 host = "127.0.0.1"
 port = 4747
 
