@@ -7,9 +7,19 @@ export type Field = {
   readonly name: string;
   readonly required: boolean;
   readonly kind: "text" | "list";
+  readonly title?: string;
+  readonly description?: string;
+  /** Carries `x-notemap-candidates`: a destination can be asked what it could hold. */
+  readonly askable: boolean;
 };
 
 type Schema = Record<string, unknown> | undefined;
+
+function propertyOf(property: unknown): Record<string, unknown> {
+  return property !== null && typeof property === "object"
+    ? (property as Record<string, unknown>)
+    : {};
+}
 
 export function fieldsOf(schema: Schema): readonly Field[] {
   const properties = schema?.["properties"];
@@ -20,11 +30,19 @@ export function fieldsOf(schema: Schema): readonly Field[] {
     : [];
 
   return Object.entries(properties as Record<string, unknown>).map(
-    ([name, property]) => ({
-      name,
-      required: required.includes(name),
-      kind: kindOf(property),
-    }),
+    ([name, property]) => {
+      const meta = propertyOf(property);
+      return {
+        name,
+        required: required.includes(name),
+        kind: kindOf(property),
+        ...(typeof meta["title"] === "string" ? { title: meta["title"] } : {}),
+        ...(typeof meta["description"] === "string"
+          ? { description: meta["description"] }
+          : {}),
+        askable: meta["x-notemap-candidates"] === true,
+      };
+    },
   );
 }
 

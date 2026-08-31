@@ -260,25 +260,27 @@ Depends on phase 7.
 
 Depends on phases 4 and 8.
 
-- [ ] A field that can be asked about draws a browser instead of a bare input: the entries at the
+- [x] A field that can be asked about draws a browser instead of a bare input: the entries at the
       current scope, a way back to the one before it, and a way to take the scope you are standing
       in. In the register's own language — this is the marked-option idiom the `where` and `do`
       steps already use, not a second visual vocabulary
-- [ ] Free entry stays, beside it. A folder that does not exist yet cannot be browsed to, and
+- [x] Free entry stays, beside it. A folder that does not exist yet cannot be browsed to, and
       `create-file` into a new folder is a thing people do
-- [ ] A destination that cannot be asked, or a kind that does not offer this, is the field as it is
+- [x] A destination that cannot be asked, or a kind that does not offer this, is the field as it is
       today with a line saying why. Nothing about it is an alarm: it is the ordinary condition
-- [ ] The other argument fields draw the titles and descriptions phase 4 gave them
-- [ ] **The control a field gets is chosen through a lookup that can be keyed by destination kind**,
+- [x] The other argument fields draw the titles and descriptions phase 4 gave them
+- [x] **The control a field gets is chosen through a lookup that can be keyed by destination kind**,
       with the schema-driven control as the fallback for every kind that registers nothing. No
       per-kind control is registered in this plan and none is designed; what is being built is the
       seam, so that the day a vault picker wants search-as-you-type and a breadcrumb it is a
       component registered for two kinds and nothing else moves
-- [ ] Tests in `RoutingComposer.test.ts`: a field that can be asked about is browsed, a refusal
+- [x] Tests in `RoutingComposer.test.ts`: a field that can be asked about is browsed, a refusal
       falls back to typing, a typed value that was never listed still routes, and an unregistered
       kind gets the schema-driven control
-- [ ] Verify: `pnpm --filter @notemap/ui test`, and by hand against the real vault
-- [ ] `git commit`
+- [ ] Verify: `pnpm --filter @notemap/ui test`, and by hand against the real vault — *the suite is
+      green; the hand check against a real vault was not run, this environment having no vault to
+      point a browser at.* This is the plan's stated acceptance and it stays unticked
+- [x] `git commit`
 
 ### Phase 10 — The specs say so
 

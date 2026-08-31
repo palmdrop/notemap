@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { expect, test, vi } from "vitest";
 
-import { json, routeOf } from "@notemap/client/testing";
+import { asked as sentTo, json, routeOf } from "@notemap/client/testing";
 
 import { asked, pool } from "$testing/pool";
 import RoutingComposer from "./RoutingComposer.svelte";
@@ -19,6 +19,19 @@ const CREATE_FILE = {
     required: ["directory"],
     properties: {
       directory: { type: "string" },
+      filename: { type: "string" },
+    },
+  },
+};
+
+const CREATE_FILE_ASKABLE = {
+  name: "create-file",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    required: ["directory"],
+    properties: {
+      directory: { type: "string", "x-notemap-candidates": true },
       filename: { type: "string" },
     },
   },
@@ -48,6 +61,38 @@ function serving(
     const route = routeOf(request);
     if (route === "GET /v1/destinations") return json(200, { values: held });
     if (route.endsWith("/description")) return json(200, description);
+    if (route === "POST /v1/items/one/route") {
+      return json(200, {
+        id: "r",
+        item: "one",
+        state: "delivered",
+        target: {},
+      });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+}
+
+/** A destination whose `create-file` capability's `directory` can be browsed. */
+function servingBrowsable(
+  answerAt: (scope: string | undefined) => Record<string, unknown>,
+  kind = "filesystem",
+) {
+  return pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind })] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, {
+        kind: "described",
+        capabilities: [CREATE_FILE_ASKABLE],
+      });
+    }
+    if (route.endsWith("/candidates")) {
+      const scope = new URL(request.url).searchParams.get("scope") ?? undefined;
+      return json(200, answerAt(scope));
+    }
     if (route === "POST /v1/items/one/route") {
       return json(200, {
         id: "r",
@@ -183,4 +228,98 @@ test("says which capture it is about, the row being behind it", async () => {
   draw();
 
   expect(await screen.findByText("a note")).toBeDefined();
+});
+
+test("browses a field that can be asked about, and takes the scope stood in", async () => {
+  servingBrowsable((scope) =>
+    scope === undefined
+      ? {
+          kind: "answered",
+          entries: [{ label: "inbox", value: "inbox", scope: "inbox" }],
+          truncated: false,
+        }
+      : {
+          kind: "answered",
+          entries: [{ label: "drafts", value: `${scope}/drafts` }],
+          truncated: false,
+        },
+  );
+
+  draw();
+  await choose(/Vault/);
+  await choose(/create-file/);
+
+  await choose("inbox");
+  await choose(/use inbox/);
+
+  expect((screen.getByLabelText("directory") as HTMLInputElement).value).toBe(
+    "inbox",
+  );
+});
+
+test("a refusal to browse is not an alarm, and typing still works beside it", async () => {
+  servingBrowsable(() => ({
+    kind: "unreachable",
+    detail: "the vault is not mounted",
+  }));
+
+  draw();
+  await choose(/Vault/);
+  await choose(/create-file/);
+
+  await screen.findByText(/the vault is not mounted/);
+  expect(screen.queryByRole("alert")).toBeNull();
+
+  await fireEvent.input(screen.getByLabelText("directory"), {
+    target: { value: "inbox" },
+  });
+  expect((screen.getByLabelText("directory") as HTMLInputElement).value).toBe(
+    "inbox",
+  );
+});
+
+test("a typed value that was never listed still routes", async () => {
+  const transport = servingBrowsable(() => ({
+    kind: "answered",
+    entries: [],
+    truncated: false,
+  }));
+
+  const closed = draw();
+  await choose(/Vault/);
+  await choose(/create-file/);
+
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "brand-new-folder" },
+  });
+  await choose("route");
+
+  await vi.waitFor(() => {
+    expect(closed).toHaveBeenCalled();
+  });
+
+  const routed = sentTo(transport).find(
+    (request) => routeOf(request) === "POST /v1/items/one/route",
+  );
+  const body = (await routed?.clone().json()) as {
+    arguments: Record<string, unknown>;
+  };
+  expect(body.arguments).toEqual({ directory: "brand-new-folder" });
+});
+
+test("an unregistered kind gets the schema-driven control", async () => {
+  servingBrowsable(
+    () => ({
+      kind: "answered",
+      entries: [{ label: "inbox", value: "inbox" }],
+      truncated: false,
+    }),
+    "kanban",
+  );
+
+  draw();
+  await choose(/Vault/);
+  await choose(/create-file/);
+
+  expect(await screen.findByRole("button", { name: "inbox" })).toBeDefined();
 });
