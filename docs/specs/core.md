@@ -762,6 +762,21 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   columns come from an API, or another pool cannot answer from a constant fixed at wiring time. A
   destination that cannot describe itself is reported as such rather than omitted silently, since a
   missing destination and an unreachable one are different answers to a person looking for one.
+- **A destination can also be asked what one field of one capability's arguments could hold**
+  (added 2026-08-31, [ADR 26](../adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md)),
+  through its own method, **`candidates`**, rather than `describe()` grown a mode. `describe()`
+  answers from a destination's declared shape and stays constant-time and offline-safe; a folder's
+  contents, which notes exist, or the tags a vault already uses are current state, and folding them
+  in would make every settings screen stall on a destination that is merely asleep. It is optional
+  on the adapter, and asked about **a field** rather than a path: a fixed vocabulary of place-kinds
+  was tried once for capabilities themselves and rejected, and encoding "collection" and "item" for
+  what a field can hold would repeat it the day a board's columns or a vault's tags showed up
+  neither. An answer is entries — a label, the value the field would take, and, where the
+  destination offers it, a scope to ask again with — so a tree is walked by a caller that was never
+  told it is a tree, and `truncated` says where the destination held more than it answered. A
+  request carries none of the arguments filled in so far, because no field either kind declares
+  today depends on another. Failures are `unreachable`, `unusable` and `not-offered`, on the same
+  terms `describe()`'s own report already uses.
 - **A capability's accepted payload types may be a wildcard**, for a destination whose fallback
   genuinely handles anything. It is a promise rather than a shrug: claiming it trades away the
   refusal core would otherwise make up front, so what would have been an immediate

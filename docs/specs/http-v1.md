@@ -5,6 +5,15 @@ editing, destinations, routing to one and health are settled; the rest is stub
 **Last updated**: 2026-08-31
 **Shipped**:
 
+- 2026-08-31 — **A destination can be asked what a field could hold.**
+  `GET /v1/destinations/{id}/candidates` sits beside `/description`: the capability, the field and
+  an opaque scope as query parameters, capped rather than paginated. The route checks the
+  capability and the field itself before the destination is asked anything — `422
+  capability-undeclared` and the new `422 field-not-askable` — and otherwise answers `200` with
+  entries, or `unreachable`, `unusable` or `not-offered`, on `/description`'s own terms.
+  ([plan](../plans/destination-targets.md),
+  [ADR 26](../adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md))
+
 - 2026-08-31 — **`arguments` replaces `target` on the wire.** `POST /v1/items/{id}/route`'s body
   and what a `destination` routing record carries under its own `target` field now name it
   `arguments`, and `targetSchema` in a `Capability` is `argumentsSchema`. The refusal joins it:
@@ -692,6 +701,43 @@ probes nothing.
   2026-08-17). It was, when wiring one meant a restart. A client re-reads rather than caching for
   the session, and what each can do is re-read per request as it always was.
 
+`GET /v1/destinations/{id}/candidates` — what one field of one capability's arguments could hold,
+asked now. `capability`, `field` and an opaque `scope` are query parameters, `scope` absent asking
+at the top:
+
+```
+GET /v1/destinations/019a3f2c-.../candidates?capability=create-file&field=directory&scope=inbox
+```
+
+```json
+{
+  "kind": "answered",
+  "entries": [
+    { "label": "drafts", "value": "inbox/drafts", "scope": "inbox/drafts" }
+  ],
+  "truncated": false
+}
+```
+
+- **The same animal as `/description`**: a question the destination answers, slowly, and may
+  refuse. It sits beside it rather than folded into it, on `describe()`'s own terms
+  ([core.md](core.md#routing)).
+- **The route checks the capability and the field itself, before the destination is asked
+  anything** — the capability must be one `/description` already declared, and the field must be a
+  property of that capability's `argumentsSchema` carrying `x-notemap-candidates`. An undeclared
+  capability is `422 capability-undeclared`, the same code and shape routing an item refuses one
+  with; a field that is not askable is `422 field-not-askable`. Neither reaches the destination.
+- **It is capped, not paginated.** `truncated` says the destination held more than it answered. A
+  folder holding thousands of notes is a search problem rather than a paging one, and a cursor
+  would put a position on an ordering notemap does not own and cannot promise is stable between two
+  reads.
+- **`200` carries everything else this can answer**, on `/description`'s own terms: `answered` with
+  the entries; `unreachable` where the destination was asked and could not say; `unusable` where
+  nothing speaks its kind or its settings no longer satisfy it; `not-offered` where the kind does
+  not do this at all, whether the adapter said so or was never asked to implement it. None of the
+  three is an error status — a destination that is merely asleep is not a broken request.
+- An id no destination has is `404 unknown-destination`.
+
 `POST /v1/destinations` — create one, from a name, a kind and that kind's settings. The id is
 minted and answered; a name is a label and need not be unique.
 
@@ -1036,7 +1082,9 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `unknown-destination` | `destination` | core (routing an item) |
 | `422` | `unknown-destination-kind` | `destinationKind` | core |
 | `422` | `invalid-destination-settings` | `issues` | core |
-| `422` | `capability-undeclared` | `capability` | core |
+| `422` | `capability-undeclared` | `capability` | core (routing an item) |
+| `422` | `capability-undeclared` | `capability` | daemon (asking what a field could hold) |
+| `422` | `field-not-askable` | `capability`, `field` | daemon |
 | `422` | `payload-type-unsupported` | `type`, `accepts` | core |
 | `422` | `arguments-invalid` | `issues` | core |
 | `422` | `rejected-by-destination` | `detail` | core |

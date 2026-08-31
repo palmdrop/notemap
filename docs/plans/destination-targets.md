@@ -1,9 +1,9 @@
 # A destination can be asked what it holds
 
 **Date**: 2026-08-30
-**Status**: In progress <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`, `docs/specs/security.md`
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-08-31 <!-- YYYY-MM-DD, set when Status becomes Done -->
 
 ---
 
@@ -287,17 +287,17 @@ Depends on phases 4 and 8.
 Depends on everything above. `security.md` is not here: phase 2 writes it, beside the code it
 describes.
 
-- [ ] `core.md` gains the method, the word `arguments`, and why this is not `describe()`;
+- [x] `core.md` gains the method, the word `arguments`, and why this is not `describe()`;
       `http-v1.md` the route and the cap; `client.md` that this answer is never cached durably and
       why; `shell.md` the browser and the per-kind seam, which also settles that spec's
       "**Not shipped**: the folder tree, which nothing can enumerate"
-- [ ] `docs/todo.md`: line 66 closes, line 15's schema half closes with it, and line 2's "advertise
+- [x] `docs/todo.md`: line 66 closes, line 15's schema half closes with it, and line 2's "advertise
       folders" half closes — its tags half is now something the port can answer and no kind does.
       Preview stays open and names the plan that carries it
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack` — this
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack` — this
       crosses core, the HTTP surface, the client and the shell, which is exactly what that suite is
       for
-- [ ] `git commit`
+- [x] `git commit`
 
 ---
 
