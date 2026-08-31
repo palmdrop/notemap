@@ -15,8 +15,19 @@ const CREATE_FILE_ARGUMENTS: JsonSchema = {
   required: ["directory"],
   additionalProperties: false,
   properties: {
-    directory: { type: "string" },
-    filename: { type: "string", minLength: 1 },
+    directory: {
+      type: "string",
+      title: "Folder",
+      description: "Where the note is created, relative to the vault's root.",
+      "x-notemap-candidates": true,
+    },
+    filename: {
+      type: "string",
+      minLength: 1,
+      title: "Filename",
+      description:
+        "The note's filename. Left blank, one is derived from the item.",
+    },
   },
 };
 
@@ -26,8 +37,21 @@ const APPEND_TO_FILE_ARGUMENTS: JsonSchema = {
   required: ["path"],
   additionalProperties: false,
   properties: {
-    path: { type: "string", minLength: 1 },
-    heading: { type: "string", minLength: 1 },
+    path: {
+      type: "string",
+      minLength: 1,
+      title: "Note",
+      description:
+        "The note to append to, relative to the vault's root. Created if it does not exist.",
+      "x-notemap-candidates": true,
+    },
+    heading: {
+      type: "string",
+      minLength: 1,
+      title: "Heading",
+      description:
+        "The heading to append under. Left blank, the item is appended at the end of the note.",
+    },
   },
 };
 

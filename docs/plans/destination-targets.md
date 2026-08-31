@@ -173,19 +173,19 @@ Depends on phase 1, for the word.
 
 Depends on phase 3.
 
-- [ ] A field of an `argumentsSchema` can say that it **can be asked about**. One bit, not a
+- [x] A field of an `argumentsSchema` can say that it **can be asked about**. One bit, not a
       taxonomy: the first draft of this plan proposed two values, one for a collection and one for
       an item, and every new sort of place would have cost a third that both core and the shell had
       to learn — which is core.md:611's rejected fixed set, one level down
-- [ ] **The channel is a vendor-prefixed keyword**, `x-notemap-candidates`, carrying a boolean.
+- [x] **The channel is a vendor-prefixed keyword**, `x-notemap-candidates`, carrying a boolean.
       JSON Schema permits unknown keywords, core validates the schema and does not interpret
       annotations, and with one bit to carry there is nothing to gain from overloading `format` and
       a strict validator to lose
-- [ ] Both kinds annotate, and the rest of what [todo.md](../todo.md) line 15 asks for lands with
+- [x] Both kinds annotate, and the rest of what [todo.md](../todo.md) line 15 asks for lands with
       it: titles and descriptions on every argument field of both kinds. The composer draws
       unlabelled inputs today because there is nothing to label them with, and that is the schema's
       fault rather than the shell's
-- [ ] Verify: `pnpm -r --silent test`
+- [x] Verify: `pnpm -r --silent test`
 - [ ] `git commit`
 
 ### Phase 5 — The filesystem kind answers
