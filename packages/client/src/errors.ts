@@ -93,6 +93,7 @@ const SAID: {
   "destination-unusable":
     "this daemon cannot make sense of that destination's settings",
   "digest-mismatch": "the upload arrived corrupted; pick the file again",
+  "field-not-askable": "that field cannot be browsed; type it instead",
   "invalid-destination-settings":
     "those settings are not ones this daemon can use",
   "item-purged": "that item was purged",

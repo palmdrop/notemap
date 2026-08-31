@@ -1,7 +1,9 @@
 import { acknowledged, answered, type Api } from "#api/http";
 import type {
+  CandidatesRequest,
   CreateDestinationRequest,
   Destination,
+  DestinationCandidates,
   DestinationDescription,
   DestinationId,
   DestinationKind,
@@ -41,6 +43,18 @@ export function createDestinations(deps: DestinationsDeps): DestinationsApi {
       return answered(
         api.GET("/v1/destinations/{id}/description", {
           params: { path: { id } },
+        }),
+      );
+    },
+
+    /** A passthrough on `describe()`'s own terms: asked now, kept by nothing here. */
+    candidates(
+      id: DestinationId,
+      request: CandidatesRequest,
+    ): Promise<DestinationCandidates> {
+      return answered(
+        api.GET("/v1/destinations/{id}/candidates", {
+          params: { path: { id }, query: request },
         }),
       );
     },

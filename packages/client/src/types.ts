@@ -1,7 +1,9 @@
 import type {
   AssetId,
+  CandidatesRequest,
   CreateDestinationRequest,
   Destination,
+  DestinationCandidates,
   DestinationDescription,
   DestinationId,
   DestinationKind,
@@ -69,6 +71,16 @@ export interface DestinationsApi {
   kinds(): Promise<readonly DestinationKind[]>;
   /** What one can do, asked now. The only call here that reaches past the pool. */
   describe(id: DestinationId): Promise<DestinationDescription>;
+  /**
+   * What one field of one capability's arguments could hold, asked now and
+   * never cached: a vault's contents are somebody else's state, stale the
+   * moment somebody else writes a file. Held only for as long as whoever
+   * asked keeps the answer.
+   */
+  candidates(
+    id: DestinationId,
+    request: CandidatesRequest,
+  ): Promise<DestinationCandidates>;
 
   create(request: CreateDestinationRequest): Promise<Destination>;
   update(

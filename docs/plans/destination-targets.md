@@ -244,17 +244,17 @@ Depends on phase 3, and on at least one of phases 5 and 6.
 
 Depends on phase 7.
 
-- [ ] The client can ask, and holds the answer in memory for as long as a composer is open —
+- [x] The client can ask, and holds the answer in memory for as long as a composer is open —
       **and no longer**. It does not go in the durable store: that cache answers for the pool's own
       collections, and a vault's contents are somebody else's state, stale the moment somebody else
       writes a file. Answering a folder listing from disk while offline would be the client claiming
       something it cannot know
-- [ ] Out of reach is out of reach: the composer says so and offers typing, which is what it does
+- [x] Out of reach is out of reach: the composer says so and offers typing, which is what it does
       today. Nothing here is allowed to make routing impossible when the vault is asleep — the
       decision is still a person's to make and the delivery is still deferrable
-- [ ] Tests in the client package, including that nothing was written to the store
-- [ ] Verify: `pnpm --filter @notemap/client test`
-- [ ] `git commit`
+- [x] Tests in the client package, including that nothing was written to the store
+- [x] Verify: `pnpm --filter @notemap/client test`
+- [x] `git commit`
 
 ### Phase 9 — The composer walks it
 

@@ -1398,6 +1398,88 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/destinations/{id}/candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ask one destination what a field of one capability's arguments could hold
+         * @description The same animal as `/description`: a question the destination answers, slowly, and may refuse. Capped rather than paginated — `truncated` says when it cut the answer short, because a folder holding thousands of notes is a search problem rather than a paging one, and a cursor would put a position on an ordering notemap does not own. The capability and the field are checked against what `/description` already declares before the destination is asked anything: an undeclared capability or a field not carrying `x-notemap-candidates` is refused on the route's own terms.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description One the destination declared. Anything else is refused. */
+                    capability: string;
+                    /** @description A property of that capability's `argumentsSchema` carrying `x-notemap-candidates`. Anything else is refused. */
+                    field: string;
+                    /** @description Opaque. Absent asks at the top; present is a scope an earlier answer minted, to descend without being told it is descending anything. */
+                    scope?: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What it answered: entries, a refusal the destination itself gave, or a kind that does not offer this. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DestinationCandidates"];
+                    };
+                };
+                /** @description No destination has that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unknown-destination";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The capability was not declared, or the field is not one that can be asked about. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "capability-undeclared" | "field-not-askable";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/destinations/{id}": {
         parameters: {
             query?: never;
@@ -2452,6 +2534,28 @@ export interface components {
             argumentsSchema: {
                 [key: string]: unknown;
             };
+        };
+        DestinationCandidates: {
+            /** @enum {string} */
+            kind: "answered";
+            entries: components["schemas"]["CandidateEntry"][];
+            truncated: boolean;
+        } | {
+            /** @enum {string} */
+            kind: "unreachable";
+            detail: string;
+        } | {
+            /** @enum {string} */
+            kind: "unusable";
+            detail: string;
+        } | {
+            /** @enum {string} */
+            kind: "not-offered";
+        };
+        CandidateEntry: {
+            label: string;
+            value?: unknown;
+            scope?: string;
         };
         UpdateDestinationRequest: {
             name?: string;
