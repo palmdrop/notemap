@@ -14,6 +14,12 @@
   falling back to the schema-driven browser for every kind that registers nothing; none does yet.
   ([plan](../plans/destination-targets.md))
 
+- 2026-08-31 — **The shell draws a login, and nothing behind it.** Where a password is set and
+  nobody is signed in, the chrome draws one surface and no pool material — cached or not — because
+  drawing it because it happens to be local would make signing out mean nothing. It goes on saying
+  how much unsent work it holds, which is the person's. Settings gains the way back out.
+  ([plan](../plans/login-and-access-tokens.md))
+
 - 2026-08-26 — **Offline is said twice, not three times.** The register entry that named a surface
   drawn from the cache is gone from the queue and the feed; the chrome's mark and a row's `pending`
   already carried it. In its place the foot of a surface with more to read says the pool is out of

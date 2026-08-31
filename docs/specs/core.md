@@ -226,7 +226,10 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 ### Out of scope
 
 - Any user interface: the web queue UI, a mobile app, an Obsidian plugin.
-- **Authentication and authorization.** Deferred entirely; the pool is the boundary.
+- **Authentication and authorization.** Not core's, and still not — a host authenticates or does
+  not, and core gains no user either way. *Clarified 2026-08-31*: the daemon now has a door
+  ([ADR 27](../adr/0027-the-daemon-authenticates-and-core-does-not.md)); this line was and remains
+  true **of core**.
 - Multi-user and multi-pool operation.
 - Transcription, formatting, tagging and embedding **providers** — the port exists, no
   implementation ships.
@@ -1041,8 +1044,10 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - The HTTP surface is versioned from the first commit. `/v1` may take breaking changes until the
   first pool exists that would be upsetting to lose; from then on breaking changes mean a new
   version and a changelog. The surface itself is specified in [http-v1.md](http-v1.md).
-- **No authentication for now** (decided 2026-08-02). The daemon binds to localhost or a
-  trusted network; the pool is the boundary.
+- **No authentication in core**, which was written as "no authentication for now" on 2026-08-02
+  and meant both things while they were the same thing. They are not since 2026-08-31: the daemon
+  authenticates and core does not, gaining no user, no credential and no notion that a request has
+  an author ([ADR 27](../adr/0027-the-daemon-authenticates-and-core-does-not.md)).
 - Everything that leaves the pool carries identity and provenance, per
   [standards.md](../standards.md). Local-only is the default for every provider; anything that
   sends content off-box is opt-in and named on the item.

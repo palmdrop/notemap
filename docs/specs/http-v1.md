@@ -22,6 +22,13 @@ editing, destinations, routing to one and health are settled; the rest is stub
   glossary keeps the word for. No behaviour changed.
   ([plan](../plans/destination-targets.md))
 
+- 2026-08-31 — **`/v1` is behind a credential.** The 2026-08-02 decision that there is no
+  authentication is revised: `401 unauthenticated`, `403 session-required`, `422 not-a-session` and
+  `429 too-many-attempts` join the status table, `/v1/session`, `/v1/sessions` and `/v1/tokens`
+  join the routes, and health answers liveness without the pool identity to a caller outside the
+  door. The pages the daemon serves stay open; everything they ask for does not.
+  ([plan](../plans/login-and-access-tokens.md), [ADR 27](../adr/0027-the-daemon-authenticates-and-core-does-not.md))
+
 - 2026-08-27 — **`GET /v1/health` answers the daemon's version**, baked in at bundle time from the
   workspace version and matching the image tag. Amends this document's own line that nothing but
   the pool identity belonged there: a container behind a proxy has an operator, and they have to be

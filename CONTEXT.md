@@ -56,7 +56,8 @@ surface names its own: the feed and the queue both continue from a capture time 
 abandoned surface from the time it was given up on. A parameter of a read, never stored, and never
 the frontend's idea of how far processing has got, which notemap's core does not hold. A position
 belongs to the ordering it names rather than to the surface that issued it.
-_Avoid_: cursor, token, offset, page number
+_Avoid_: cursor, offset, page number. Not "token" either, though the word is taken: an
+**access token** is a credential and nothing to do with a place in a list.
 
 **Revision**:
 An ordinary capture, made by editing a processed item, carrying its own capture time, source and
@@ -357,3 +358,40 @@ Said of an outbox operation the pool answered no to. Terminal without a person: 
 drain it, and the client's cache is left holding something the pool never accepted, so it is shown
 and dismissed rather than retried.
 _Avoid_: failed, error, rejected (reserved for suggestions)
+
+### The door
+
+**Credential**:
+The one username and password a daemon holds, or nothing. Stored beside the pool and never in it,
+so a rebuild from the mirror restores no way in. Setting one closes the door on the next request;
+a daemon with none asks for nothing and lets every request through. There is exactly one, and it
+belongs to the person running the daemon — it is not an account and there is nothing to register.
+_Avoid_: account, user, login (as a noun), identity
+
+**Session**:
+What a person holds after signing in: a secret in an `HttpOnly` cookie, and a row the daemon keeps
+the digest of. Expires on its own and ends when someone signs out, when the password is set, or
+when every session is ended at once. Belongs to a browser; anything else carries an access token
+instead.
+_Avoid_: login, cookie, ticket, JWT
+
+**Access token**:
+A credential issued to something that is not a browser — a script, a headless client, a machine
+with nobody at it. Named when it is minted so it can be told apart later, shown exactly once, kept
+only as a digest, and revoked one at a time. Reaches everything a session does except the routes
+that manage access tokens and end sessions, so a leaked one cannot mint its replacement or hide
+itself.
+_Avoid_: API key, PAT, bearer, secret
+
+**Signed in**:
+Said of a request the daemon knows — by session or by access token. Not the same as *permitted*:
+nothing in notemap answers what a signed-in request may do, because there is one person holding
+every credential. A request that is not signed in is **unauthenticated**, and is refused rather
+than redirected.
+_Avoid_: authenticated (in prose about people), logged in, authorized
+
+**Open**:
+Said of a daemon nobody has set a credential on, where every request is let through, and of the few
+routes that answer without one on a daemon that has: signing in, asking who you are, liveness, and
+the pages the daemon serves. Open is a state to be told about, not a mode to be relied on.
+_Avoid_: public, anonymous, unprotected

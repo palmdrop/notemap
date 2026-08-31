@@ -12,6 +12,13 @@
   mistake and not a permission.
   ([plan](../plans/destination-targets.md))
 
+- 2026-08-31 — **The daemon has a door.** One middleware over `/v1` takes a session cookie or a
+  bearer token, and a request carrying neither is refused in the daemon's own envelope. A password
+  is set from the command line and takes effect on the next request; access tokens are minted,
+  listed and revoked one at a time. Failed sign-ins are throttled on one counter for the daemon.
+  Authorization is deferred and said so out loud, with two containment rules standing in for it.
+  ([plan](../plans/login-and-access-tokens.md), [ADR 27](../adr/0027-the-daemon-authenticates-and-core-does-not.md))
+
 - 2026-08-27 — **The containerised case, written down.** Notemap now runs as a container from a
   published image, where the daemon binds every interface by necessity and the bind-address section
   no longer describes it. What limits reach is which of the two shipped compose files is used: a
@@ -331,6 +338,21 @@ Two risks are accepted rather than mitigated:
 The trigger to revisit is **a second guessable credential** — a pairing code, a recovery code,
 anything short enough for a person to type. That joins this counter the day it exists. A new
 32-byte secret does not.
+
+### What the door does not close
+
+Said plainly, because an absence reads as an oversight otherwise:
+
+- **No rate limiting beyond the login.** Every other route takes as many requests as a caller cares
+  to make, authenticated or not.
+- **No quotas.** The upload size cap is still the only limit; a signed-in caller can fill the disk.
+- **TLS is the proxy's.** The daemon cannot see it, is told rather than left to guess whether a
+  session cookie may travel, and serves plain HTTP itself.
+- **Nothing here is multi-user.** One credential, and tokens carrying exactly what it carries.
+- **No `Origin` check beside `SameSite`.** The cookie is `SameSite=Lax`, which blocks the
+  cross-site `POST`, and no `/v1` response carries `Access-Control-Allow-Origin` — so what Strict
+  would additionally close is a top-level `GET` whose answer the other origin still cannot read.
+  Open rather than decided.
 
 ---
 

@@ -10,6 +10,13 @@
   in the store. A vault's contents are somebody else's state, and the durable cache is for the
   pool's own collections alone. ([plan](../plans/destination-targets.md))
 
+- 2026-08-31 — **The client learns there is a door.** A `401` reads as `Unauthenticated` rather
+  than as a refusal, so what is queued parks and drains instead of being burned terminally. The
+  client carries session state a surface can read, asked on start and revised whenever a `401`
+  arrives from any route; `login` and `logout` are on it, and signing out drops what was drawn
+  from the pool and keeps the outbox.
+  ([plan](../plans/login-and-access-tokens.md), [ADR 27](../adr/0027-the-daemon-authenticates-and-core-does-not.md))
+
 - 2026-08-26 — **The pool is asked whether it is there, whether or not anything else is asking.**
   The health probe runs in both states at ten seconds, down from a backoff capped at thirty, so a
   daemon that dies is marked offline without an action to discover it and one that comes back drains
@@ -114,10 +121,6 @@
   `Transport.assetUrl` makes where an asset's bytes live the shell's answer rather than a URL the
   client builds. See [client-review-fixes.md](../plans/client-review-fixes.md).
 
-- 2026-08-31 — **The client learns there is a door.** `401` reads as `Unauthenticated` rather than
-  as a refusal, so what is queued parks and drains instead of being burned, and the three refusals
-  the door added have readings. See
-  [login-and-access-tokens.md](../plans/login-and-access-tokens.md).
 - 2026-08-17 — **Review fixes.** The queue now empties when the pool records a routing decision and
   places an optimistic item only inside the window a page has read; the observable seam is RxJS,
   handed out as observables a shell cannot end; every refusal `/v1` declares has a reading, checked

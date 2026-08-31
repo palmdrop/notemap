@@ -1,9 +1,9 @@
 # A login, and tokens for everything else
 
 **Date**: 2026-08-27
-**Status**: Todo
+**Status**: In progress
 **Spec**: `docs/specs/security.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`
-**Closed**:
+**Closed**: phases 1 to 5, and most of 6
 
 ---
 
@@ -48,8 +48,8 @@ exists so that decision stays reversible.
 
 Depends on nothing.
 
-- [ ] Create branch `feature/login-and-access-tokens`
-- [ ] An ADR: **the daemon authenticates; core does not, and the implementation is ours.** What it
+- [x] Create branch — `feature/auth` rather than the name below
+- [x] An ADR: **the daemon authenticates; core does not, and the implementation is ours.** What it
       has to record, because none of it is recoverable from the code:
   - Core stays host-agnostic and gains no user, so a different host picks its own scheme, and
     credentials never enter the pool — which matters because the mirror writes pool state to disk in
@@ -74,72 +74,72 @@ Depends on nothing.
     revisiting: `Agent` already carries a `{ kind: "person" }` variant with no identity on it
     (`agent.ts:6`), recorded on every tag, artifact and suggestion. The day two people's tags must be
     told apart, that variant grows a name and a user has earned its place.
-- [ ] Verify: the ADR is written and confirmed
-- [ ] `git commit`
+- [x] Verify: the ADR is written and confirmed
+- [x] `git commit`
 
 ### Phase 2 — the primitives, behind a seam — *developer*
 
 Depends on phase 1.
 
-- [ ] **The seam first.** A small port inside the daemon answering two questions — *who is this
+- [x] **The seam first.** A small port inside the daemon answering two questions — *who is this
       request*, and *mint, list, revoke* — with the implementation behind it. The rest of the daemon
       talks to the port. Adopting a library later is then wiring rather than a rewrite, which is the
       whole reason phase 1's decision is allowed to be provisional
-- [ ] **The credential lives in the auth database, not in the config.** One row: a username, a hash,
+- [x] **The credential lives in the auth database, not in the config.** One row: a username, a hash,
       and when it was last changed. The config file is mounted read-only in a container, so a hash
       there would make changing a password mean editing a file on the host and restarting the
       daemon; in the database it takes effect on the next request. An environment variable may still
       set the credential on first start, for a deployment that wants to arrive with one
-- [ ] **No credential set means no authentication**, exactly as today, and the daemon says so on
+- [x] **No credential set means no authentication**, exactly as today, and the daemon says so on
       startup in the same voice as its other lines — naming the command that fixes it. That keeps a
       loopback daemon on a laptop as easy as it is now, and keeps the existing suites running while
       phases 3 to 6 land
-- [ ] Password hashing: **`node:crypto` scrypt**. OWASP's first choice is Argon2id and scrypt is its
+- [x] Password hashing: **`node:crypto` scrypt**. OWASP's first choice is Argon2id and scrypt is its
       named fallback where Argon2id is unavailable — which, without a native module, is exactly the
       situation in Node. Keeping `dist/main.js` a single self-contained bundle is worth more here
       than the margin between two memory-hard KDFs guarding one password behind a throttle. If that
       trade ever stops being worth it, `@noble/hashes` is audited and pure JavaScript; `argon2` and
       `@node-rs/argon2` are native and would cost the bundle
-- [ ] Tokens live in a small SQLite file the daemon owns, a sibling of the pool. **Not in the pool**:
+- [x] Tokens live in a small SQLite file the daemon owns, a sibling of the pool. **Not in the pool**:
       it is not the pool's material, it is not mirrored, and a rebuild is a new deployment that
       should issue new tokens
-- [ ] A session id and a token are both 32 random bytes from `randomBytes`, and **both are stored
+- [x] A session id and a token are both 32 random bytes from `randomBytes`, and **both are stored
       hashed** — SHA-256 through `crypto.hash` is right for a high-entropy secret, where the
       password wants a slow KDF for the opposite reason. A leaked auth database is then not a set of
       live sessions. Comparison is `timingSafeEqual`, both kinds
-- [ ] A token carries a short identifying **prefix** so it is recognisable in a log or a config file
+- [x] A token carries a short identifying **prefix** so it is recognisable in a log or a config file
       and so secret scanning has something to match, the way `ghp_` does. GitHub's checksum digits
       are a nice idea and overkill for one person's daemon; the prefix is not
-- [ ] A token has a name, a creation time, an optional expiry and a last-used time. Expiry is checked
+- [x] A token has a name, a creation time, an optional expiry and a last-used time. Expiry is checked
       on every use, and revocation takes effect on the next request — there is no cache to outrun
-- [ ] **A command line for the credential and the tokens**, as a subcommand on the existing bundle
+- [x] **A command line for the credential and the tokens**, as a subcommand on the existing bundle
       rather than a second binary, so the image stays two directories. It sets the password, mints a
       token with a name and an optional expiry printed once, lists what exists, and revokes one. The
       token commands are not only for recovery: they are how a headless client is given a credential
       without a browser in the loop
-- [ ] It is **not user management**, and is not named as though it were: there is no user to manage,
+- [x] It is **not user management**, and is not named as though it were: there is no user to manage,
       only a credential and some tokens. A command called `user` would smuggle back the concept this
       plan declined
-- [ ] There is no email in this, now or later: no verification, no magic link, no reset by mail. An
+- [x] There is no email in this, now or later: no verification, no magic link, no reset by mail. An
       emailed reset is more security-sensitive code than the login it protects — single-use tokens,
       expiry, timing — plus SMTP configuration, for one person who has a shell on the machine. And it
       grants nothing: whoever can run this command can already read the pool's database directly,
       which is why it is a recovery path rather than a way in. `occ user:resetpassword`,
       `changepassword` and `gitea admin user change-password` are the same reasoning
-- [ ] The running doc says how to reset a forgotten password, and that a daemon which will not start
+- [x] The running doc says how to reset a forgotten password, and that a daemon which will not start
       is recovered by running the image with the command overridden rather than by reaching into a
       container that is not up
-- [ ] Tests: a hash round-trips and a wrong password does not; an expired token does not
+- [x] Tests: a hash round-trips and a wrong password does not; an expired token does not
       authenticate; a revoked one stops working immediately; a stored session is not usable as
       presented; setting the password ends every session that was open
-- [ ] Verify: `pnpm --filter @notemap/daemon test`
-- [ ] `git commit`
+- [x] Verify: `pnpm --filter @notemap/daemon test`
+- [x] `git commit`
 
 ### Phase 3 — the middleware, and the routes that open it — *developer*
 
 Depends on phase 2.
 
-- [ ] One middleware over `/v1` accepting either a session cookie or `Authorization: Bearer`. A
+- [x] One middleware over `/v1` accepting either a session cookie or `Authorization: Bearer`. A
       request with neither is `401` with `unauthenticated` in the existing refusal envelope, which
       joins the status table [http-v1.md](../specs/http-v1.md) keeps.
       *Amended 2026-08-30*: this said there would be no `403`, on the reasoning that with one user
@@ -147,20 +147,20 @@ Depends on phase 2.
       manage access tokens, `session-required`, `403` — and it is containment rather than
       permission: without it a leaked token mints a replacement that survives revoking the original.
       The original reasoning still holds everywhere else
-- [ ] Open without a credential, and only these: `POST /v1/auth/login`, and `GET /v1/health` — the
+- [x] Open without a credential, and only these: `POST /v1/auth/login`, and `GET /v1/health` — the
       shell probes it every ten seconds to decide whether it is offline, and a probe that answers
       `401` would make a closed door look like a dead daemon, which is the worse lie. But it answers
       **liveness only** when unauthenticated: which pool this is, is a fact about the pool and goes
       behind the door
-- [ ] `POST /v1/auth/login`, `POST /v1/auth/logout`, `GET /v1/auth/session`. The cookie is
+- [x] `POST /v1/auth/login`, `POST /v1/auth/logout`, `GET /v1/auth/session`. The cookie is
       `HttpOnly`, `SameSite=Strict`, `Path=/`, and `Secure` when configured to be — behind a proxy
       the daemon cannot see TLS and has to be told rather than guess
-- [ ] **A new session id is minted on every login**, and the old one invalidated. Session fixation is
+- [x] **A new session id is minted on every login**, and the old one invalidated. Session fixation is
       the thing this prevents and it is one line to omit
-- [ ] `GET`, `POST` and `DELETE` on the tokens routes. The secret appears in the creation response
+- [x] `GET`, `POST` and `DELETE` on the tokens routes. The secret appears in the creation response
       and never again; the list carries the name, the times and the id. **A session is required**:
       these are the only routes an access token cannot reach
-- [ ] **Authorization is deferred, and said so out loud** rather than left to be inferred from the
+- [x] **Authorization is deferred, and said so out loud** rather than left to be inferred from the
       absence of it. A credential answers *who*, and nothing answers *what*: any authenticated
       request may do anything, the tokens routes aside. There is no read-only token, no
       per-destination token, and no difference in reach between a session and a token. That is
@@ -169,58 +169,58 @@ Depends on phase 2.
       what the credential was allowed to do. Recorded in
       [security.md](../specs/security.md#authentication-answers-who-and-nothing-answers-what) with
       the list of what a scoped model would have to answer
-- [ ] **Failed logins are throttled**, and this is required rather than a refinement: one password is
+- [x] **Failed logins are throttled**, and this is required rather than a refinement: one password is
       now the whole attack surface, and without a delay a wordlist gets unlimited attempts. A
       per-caller backoff and a global ceiling. Single-user means an in-memory counter is enough
 - [ ] `hono/csrf` alongside `SameSite`, since the two fail differently — but read the caveat in
       **Unknowns** first: it leans on `Origin`, and a reverse proxy is exactly the thing that
       sometimes strips it
-- [ ] Route tests beside the routes, and the OpenAPI document regenerated. The playground is
+- [x] Route tests beside the routes, and the OpenAPI document regenerated. The playground is
       same-origin and carries the cookie, so it keeps working
-- [ ] Verify: `pnpm --filter @notemap/daemon test`
-- [ ] `git commit`
+- [x] Verify: `pnpm --filter @notemap/daemon test`
+- [x] `git commit`
 
 ### Phase 4 — the pages the daemon serves — *developer*
 
 Depends on phase 3.
 
-- [ ] The shell's own files stay reachable without a credential: they are the application, not the
+- [x] The shell's own files stay reachable without a credential: they are the application, not the
       pool, and something has to be able to draw the login. Everything they then *ask for* is behind
       the door
-- [ ] `/log` reads the action log, so the page goes behind it. `/docs` renders a document and calls
+- [x] `/log` reads the action log, so the page goes behind it. `/docs` renders a document and calls
       nothing until a person presses a button, so it may stay — decide it deliberately and write the
       reason in `http-v1.md` rather than leaving it to whichever is easier
-- [ ] Tests: an unauthenticated `/log` does not answer pool material
-- [ ] Verify: `pnpm --filter @notemap/daemon test`
-- [ ] `git commit`
+- [x] Tests: an unauthenticated `/log` does not answer pool material
+- [x] Verify: `pnpm --filter @notemap/daemon test`
+- [x] `git commit`
 
 ### Phase 5 — the client learns there is a door
 
 Depends on phase 3. This is where an auth slice usually does its damage.
 
-- [ ] **A `401` is not a refusal.** Today a refusal is terminal: the entry becomes `refused`, is kept
+- [x] **A `401` is not a refusal.** Today a refusal is terminal: the entry becomes `refused`, is kept
       to be read and is never retried (`outbox.ts:136`). A session that expired while the shell was
       offline would burn every queued capture that way, which is data loss wearing a refusal's
       clothes. An expired credential is `unreachable`-shaped — the entry parks, keeps its optimistic
       state, and drains when someone signs in again
-- [ ] The client carries a session state a surface can read, `login` and `logout`, and a transport
+- [x] The client carries a session state a surface can read, `login` and `logout`, and a transport
       that can carry a bearer token for a caller that is not a browser
-- [ ] **Signing out drops the cache and keeps the outbox** — the rule
+- [x] **Signing out drops the cache and keeps the outbox** — the rule
       [ADR 23](../adr/0023-a-changed-pool-identity-drops-the-cache-and-keeps-the-outbox.md) already
       sets for a changed pool identity, for the same reason: what is held describes somewhere the
       holder can no longer speak for, and unsent work is still the person's
-- [ ] Tests: a `401` mid-drain parks the outbox rather than refusing it; signing out clears the
+- [x] Tests: a `401` mid-drain parks the outbox rather than refusing it; signing out clears the
       cached collections and leaves the outbox; a token-carrying transport authenticates
-- [ ] Verify: `pnpm --filter @notemap/client test`
-- [ ] `git commit`
+- [x] Verify: `pnpm --filter @notemap/client test`
+- [x] `git commit`
 
 ### Phase 6 — the shell
 
 Depends on phase 5.
 
-- [ ] A login surface in the register's own language — one field, the shell's bar above it, a
+- [x] A login surface in the register's own language — one field, the shell's bar above it, a
       refusal in the place refusals go. Not a modal: there is nothing behind it to return to
-- [ ] **An unauthenticated shell draws no pool material, cached or not.** The cache holds the pool's
+- [x] **An unauthenticated shell draws no pool material, cached or not.** The cache holds the pool's
       items and the door is shut; drawing them because they happen to be local would make signing
       out mean nothing. What it does say is how much unsent work it is holding, because that is the
       person's and its loss would be silent
@@ -228,8 +228,8 @@ Depends on phase 5.
       revoke any of them. Beside the destinations, in the same one-column measure
 - [ ] Tests: unauthenticated draws the login and no rows; a token is shown once and not again;
       revoking removes it
-- [ ] Verify: `pnpm --filter @notemap/ui test`
-- [ ] `git commit`
+- [x] Verify: `pnpm --filter @notemap/ui test`
+- [x] `git commit`
 
 ### Phase 7 — the security spec says what is true now
 
@@ -252,12 +252,12 @@ Depends on phases 3 to 6.
       `GET /v1/destinations` answers settings verbatim and the mirror writes them plaintext to
       `pool-mirror/destinations/<id>.json`, verified 2026-08-26. This is what
       [destination-webdav](destination-webdav.md) phase 2 must satisfy
-- [ ] What is still open, said plainly: no rate limiting beyond the login, no quotas, TLS is the
+- [x] What is still open, said plainly: no rate limiting beyond the login, no quotas, TLS is the
       proxy's, and nothing here is multi-user
-- [ ] `core.md`'s constraint gets a dated clarification rather than a rewrite — no authentication
+- [x] `core.md`'s constraint gets a dated clarification rather than a rewrite — no authentication
       **in core** was and remains true; the daemon has one now
 - [ ] Verify: the acceptance criteria at the foot of `security.md` are each true, and each has a test
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 8 — end to end, with the door shut
 
@@ -269,7 +269,7 @@ Depends on everything above.
 - [ ] A token-carrying client does the same without a browser, which is the thing the tokens exist
       for and the first proof they work
 - [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack`
-- [ ] `git commit`
+- [x] `git commit`
 
 ---
 
@@ -340,6 +340,42 @@ host's wiring, the client's transport and the config file at once — which is p
 suite is for.
 
 ---
+
+## Where this diverged
+
+Recorded because the plan reads as though it did not.
+
+- **The routes are `/v1/session`, `/v1/sessions` and `/v1/tokens`**, not `/v1/auth/*`. Signing in,
+  reading who you are and signing out are `POST`, `GET` and `DELETE` on one resource.
+- **The session cookie is `SameSite=Lax`, and there is no `hono/csrf`.** Lax already blocks the
+  cross-site `POST`, and the daemon sends no CORS headers, so the gap Strict would close is a
+  top-level `GET` whose answer an attacker still cannot read. **Still open**, and the one item of
+  phase 3 that did not land as written.
+- **`/log` stayed open.** The plan's premise — that it reads the action log — does not hold: the
+  page is a static file whose only call is `/v1/actions`, which is behind the door. Gating it would
+  answer a person a JSON refusal where their browser asked for a page. The reasoning is in
+  `http-v1.md`, which is what this phase asked for either way.
+- **Login throttling is one counter for the daemon, not per caller.** Behind a proxy the socket
+  address is the proxy's and `X-Forwarded-For` is a claim; per-caller keying is also what lets an
+  attacker evade a throttle by rotating it. Recorded with its two accepted risks in `security.md`.
+- **scrypt is `N=2^16, r=8, p=2`**, the set OWASP lists beside its `N=2^17, r=8, p=1` floor as the
+  same work for half the memory. 128 MiB a call is 512 MiB across libuv's threadpool, which is a
+  lot to ask of the machines this runs on.
+- **An access token may not end every session either.** The plan named one `403`; there are two,
+  for the same containment reason.
+- **Setting the password does not require the old one**, and neither does anything else the command
+  line does. Whoever can run it can already read the database off the volume.
+
+## What is still open
+
+- **Phase 6's third bullet**: settings shows the session and the way out, but not the access
+  tokens. Minting one, seeing it once, listing and revoking are the command line's only.
+- **Phase 7**: `security.md` and `http-v1.md` say what is true now, but the bind and CORS sections
+  still narrate the undefended daemon, and the five-item list of what authentication has to close
+  is not answered item by item.
+- **Phase 8**: the full-stack harness runs one daemon, with no password. Nothing there drives the
+  whole path with the door shut.
+- `hono/csrf`, above.
 
 ## Notes
 
