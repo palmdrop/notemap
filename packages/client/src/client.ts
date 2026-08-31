@@ -23,6 +23,7 @@ import {
   drawnFrom,
   emptyState,
   forget,
+  forgotten,
   fromCache,
   processed,
   rebuilt,
@@ -33,6 +34,7 @@ import {
   type ClientState,
   type Surface,
 } from "./state/state";
+import { createSessions } from "./session/session";
 import { createTags } from "./tags/tags";
 import { loadMore, readAfterReturn } from "./surfaces/reads";
 import type { Client, ClientConfig, ListState } from "./types";
@@ -58,10 +60,16 @@ function sameList(one: ListState, other: ListState): boolean {
   );
 }
 
-/** A 5xx is not evidence of reach: `undecided` reads one as a socket that never opened. */
+/**
+ * A 5xx is not evidence of reach: `undecided` reads one as a socket that never
+ * opened. A 401 is the opposite — the daemon is plainly there — and it is the
+ * only notice a client gets that a credential lapsed, since nothing announces
+ * an expiry.
+ */
 function watching(
   transport: Transport,
   answered: (reached: boolean) => void,
+  lapsed: () => void,
 ): Transport {
   return {
     ...transport,
@@ -69,6 +77,7 @@ function watching(
       try {
         const response = await transport.fetch(request);
         answered(response.status < 500);
+        if (response.status === 401) lapsed();
         return response;
       } catch (error) {
         answered(false);
@@ -118,7 +127,25 @@ export function createClient(config: ClientConfig): Client {
     changes: held.changes,
   };
   const reach = reachability(() => askedHealth());
-  const api = createApi(watching(transport, reach.answered));
+
+  // The sessions object needs the api, and the api needs to tell it about a
+  // 401, so the notice goes through a binding rather than through either.
+  let noticeLapsed = (): void => undefined;
+  const api = createApi(
+    watching(transport, reach.answered, () => {
+      noticeLapsed();
+    }),
+  );
+
+  const sessions = createSessions({
+    api,
+    forget: () =>
+      after(() => {
+        state.update(forgotten);
+      }),
+  });
+
+  noticeLapsed = sessions.lapsed;
 
   /**
    * Hydration is started here and waited on by everything that touches state,
@@ -298,6 +325,11 @@ export function createClient(config: ClientConfig): Client {
 
   return {
     reachable: reach.changes,
+
+    session: sessions.changes,
+    askSession: () => sessions.ask(),
+    login: (name, password) => sessions.login(name, password),
+    logout: () => sessions.logout(),
 
     feed: derived(
       state.changes,

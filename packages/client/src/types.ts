@@ -17,6 +17,8 @@ import type {
 } from "./api/types";
 import type { Observable } from "rxjs";
 
+import type { SessionState } from "./session/session";
+
 import type { OperationId, PendingOperation } from "./outbox/operations";
 import type { ClientStore } from "./ports/store";
 import type { Transport } from "./ports/transport";
@@ -124,6 +126,18 @@ export interface RoutingApi {
 export interface Client {
   /** Whether the pool is answering. Optimistic before anything has asked. */
   readonly reachable: Observable<boolean>;
+
+  /**
+   * Who this client is to the daemon, and whether the daemon asks at all. A
+   * surface draws the login from this rather than inferring it from a refusal.
+   */
+  readonly session: Observable<SessionState>;
+
+  /** Asks the daemon who this is. Open, so it answers whether or not anyone is. */
+  askSession(): Promise<SessionState>;
+  login(name: string, password: string): Promise<void>;
+  /** Drops what was drawn from the pool and keeps the outbox, which is not the pool's. */
+  logout(): Promise<void>;
 
   readonly feed: Observable<ListState>;
   readonly queue: Observable<ListState>;
