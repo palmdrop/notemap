@@ -32,6 +32,28 @@ CONTEXT.md:227 tells us to avoid and the word `RoutingTarget` uses for something
 that a delivery's arguments are reached today as `record.target.target`. And a filesystem
 destination's `root` is free text with nothing between a typo and the daemon's own state.
 
+## Amended 2026-08-31 — three names settled
+
+Phases 1 and 2 are merged. Three things the plan left to confirm were confirmed, and one of them
+changes what phase 7 builds.
+
+- **The method is `candidates`.** `enumerate` was the tree walk this rewrite stopped being, and
+  `suggestion` is a word CONTEXT.md already spends on an enrichment's proposal.
+- **The annotation is a vendor-prefixed keyword**, `x-notemap-candidates`, rather than a borrowed
+  JSON Schema `format`. One bit has nothing to gain from overloading a standard keyword and a
+  strict validator to lose.
+- **The route is a `GET` with query parameters**, not the `POST` phase 7 proposed. `http-v1.md` has
+  no stance on a read that posts, and nothing needed one: no enumerable field of either kind
+  depends on another — `create-file` takes `directory` and `filename`, `append-to-file` takes
+  `path` and `heading`. A read is a `GET`, with no exception to explain.
+
+That last one reaches back into phase 3. A request carried the arguments filled in so far, so that
+a later field could depend on an earlier one; a `GET` cannot carry them and nothing can supply
+them, so the port stops taking them too. A port parameter no caller can fill is worse than one
+added when a kind finally needs it.
+
+---
+
 **Out of this slice, deliberately**: preview, the output a delivery records, and the record view
 that reads them — [delivery-output-and-preview](delivery-output-and-preview.md) and
 [item-route-and-record-view](item-route-and-record-view.md). Templates and rules stay open.
@@ -131,12 +153,12 @@ Depends on phase 1, for the word.
       "everything" is one nobody can use twice
 - [ ] The method joins `DestinationKindAdapter` and the `Destinations` port, **optionally**: a kind
       that cannot answer says so, and a kind that has not implemented it is the same answer.
-      **Proposed name: `candidates`** — `enumerate` is the tree walk this plan stopped being.
-      Confirm the name before it exists in three packages
-- [ ] A request names the capability, the field, the arguments filled in so far, and an opaque
-      **scope** the destination minted in an earlier answer. The arguments so far are what lets a
-      later field depend on an earlier one — listing the notes in the folder just chosen — and the
-      scope is what makes descending possible without the port knowing what a path is
+      The method is **`candidates`** — `enumerate` is the tree walk this plan stopped being
+- [ ] A request names the capability, the field, and an opaque **scope** the destination minted in
+      an earlier answer. The scope is what makes descending possible without the port knowing what
+      a path is. It does **not** carry the arguments filled in so far: the route is a `GET` and
+      cannot supply them, no field of either kind depends on another today, and a parameter no
+      caller can fill is worse than one added when a kind needs it
 - [ ] An answer is entries, each with a label to read, the value the field would take, and — where
       the destination offers it — the scope to ask again with, which is how a tree is walked by a
       caller that was never told it is a tree. Plus whether the answer was cut short, which phase 7
@@ -155,10 +177,10 @@ Depends on phase 3.
       taxonomy: the first draft of this plan proposed two values, one for a collection and one for
       an item, and every new sort of place would have cost a third that both core and the shell had
       to learn — which is core.md:611's rejected fixed set, one level down
-- [ ] **Proposed channel: a vendor-prefixed keyword.** JSON Schema permits unknown keywords, core
-      validates the schema and does not interpret annotations, and with one bit to carry there is
-      nothing to gain from overloading `format` and a strict validator to lose. Confirm before both
-      kinds annotate
+- [ ] **The channel is a vendor-prefixed keyword**, `x-notemap-candidates`, carrying a boolean.
+      JSON Schema permits unknown keywords, core validates the schema and does not interpret
+      annotations, and with one bit to carry there is nothing to gain from overloading `format` and
+      a strict validator to lose
 - [ ] Both kinds annotate, and the rest of what [todo.md](../todo.md) line 15 asks for lands with
       it: titles and descriptions on every argument field of both kinds. The composer draws
       unlabelled inputs today because there is nothing to label them with, and that is the schema's
@@ -201,13 +223,10 @@ landed, and the plan still ships.
 
 Depends on phase 3, and on at least one of phases 5 and 6.
 
-- [ ] The route sits beside `/description` and is the same animal: a question the destination
-      answers, slowly, and may refuse. **Proposed: `POST /v1/destinations/{id}/candidates`** — a
-      read that takes a structured body, because the arguments filled in so far do not encode into
-      a query string without something everyone will regret. Confirm this against
-      [http-v1.md](../specs/http-v1.md)'s existing stance before building it; the fallback is a
-      `GET` that carries only the capability, the field and the scope, which defers dependent
-      fields until a kind needs one
+- [ ] `GET /v1/destinations/{id}/candidates`, taking the capability, the field and the scope as
+      query parameters. It sits beside `/description` and is the same animal: a question the
+      destination answers, slowly, and may refuse. A read is a `GET` — `http-v1.md` has no stance
+      on a read that posts and this route is not the place to open one
 - [ ] **It is capped, not paginated**, and says when it cut the answer short. A folder holding five
       thousand notes is a search problem rather than a paging problem, and paginating it would put a
       position on somebody else's directory listing — an ordering notemap does not own and cannot
@@ -280,17 +299,12 @@ describes.
 
 ## Unknowns
 
-- **The method's name.** `candidates` is proposed; `enumerate` is the tree walk this stopped being,
-  and `options` collides with what a form control is made of. Settle it in phase 3, before it exists
-  in three packages.
-- **The annotation's channel.** A vendor-prefixed keyword is proposed over `format` now that there
-  is one bit rather than a taxonomy. Fallback: `format` with a single agreed value, which is free
-  vocabulary in JSON Schema and would be objected to only by a validator configured to be strict
-  about formats.
-- **Whether the request needs the arguments filled in so far, in this slice.** Nothing today has a
-  field that depends on another — the filesystem kind's `directory` and `filename` are independent.
-  Carrying it costs a `POST` where a `GET` would otherwise do. Fallback is to leave it out and let
-  the first kind that needs one pay for it.
+- ~~**The method's name.**~~ Settled 2026-08-31: `candidates`.
+- ~~**The annotation's channel.**~~ Settled 2026-08-31: `x-notemap-candidates`, a vendor-prefixed
+  keyword carrying a boolean.
+- ~~**Whether the request needs the arguments filled in so far.**~~ Settled 2026-08-31: not in this
+  slice, and not in the port either. No enumerable field of either kind depends on another, so the
+  first kind that needs one pays for it — and pays for the route shape it forces at the same time.
 - **Whether the cap is felt.** An Obsidian vault with a flat folder of a few thousand notes is not
   unusual, and `append-to-file` lists notes rather than folders. Fallback is a filter parameter — a
   name fragment the adapter applies — before anything resembling a cursor.
