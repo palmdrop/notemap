@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { createMemoryStore } from "../adapters/memory-store";
 import type { Item } from "#api/types";
-import { Refused, Unreachable } from "../errors";
+import { Refused, Unauthenticated, Unreachable } from "../errors";
 import { writable, type Writable } from "../observable/observable";
 import { cached, emptyState, withIds, type ClientState } from "#state/state";
 import { anItem, stoppedClock } from "#testing/pool";
@@ -228,6 +228,52 @@ describe("draining", () => {
 
     await outbox.drain();
     expect(sent).toEqual([ARCHIVE]);
+  });
+
+  /**
+   * The correctness requirement behind all of this: a session that lapsed while
+   * the shell was away must not burn what is queued. A refusal is terminal, and
+   * a shut door is not a refusal — the pool never weighed the work at all.
+   */
+  it("parks on a shut door rather than refusing, and drains once it opens", async () => {
+    const { outbox, state, sent, answer } = engineOver([anItem("one")]);
+
+    await outbox.enqueue(ARCHIVE);
+    const first = outbox.drain();
+    await flush();
+    answer({ error: new Unauthenticated() });
+    await first;
+
+    expect(state.get().outbox[0]?.state).toBe("unreachable");
+    // The optimistic state stands: the item is still out of the queue.
+    expect(state.get().queue.ids).toEqual([]);
+
+    const second = outbox.drain();
+    await flush();
+    answer({ item: ARCHIVED });
+    await second;
+
+    expect(sent).toEqual([ARCHIVE, ARCHIVE]);
+    expect(state.get().outbox).toEqual([]);
+  });
+
+  it("parks every entry behind it, not only the one that met the door", async () => {
+    const { outbox, state, answer } = engineOver([anItem("one"), anItem("two")]);
+
+    await outbox.enqueue(ARCHIVE);
+    await outbox.enqueue({ kind: "archive", item: "two" });
+
+    const draining = outbox.drain();
+    await flush();
+    answer({ error: new Unauthenticated() });
+    await flush();
+    answer({ error: new Unauthenticated() });
+    await draining;
+
+    expect(state.get().outbox.map((entry) => entry.state)).toEqual([
+      "unreachable",
+      "unreachable",
+    ]);
   });
 
   it("keeps an unreachable operation applied, and sends it again next time", async () => {

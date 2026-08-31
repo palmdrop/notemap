@@ -6,6 +6,7 @@ import type { Clock, Timestamp } from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createAuth } from ".";
+import { hashPassword } from "./passwords";
 import { createSqliteAuthStore } from "./store";
 import type { AuthStore } from "./store/types";
 import type { Auth } from "./types";
@@ -105,6 +106,88 @@ describe("signing in", () => {
     const second = await opened.auth.login(NAME, PASSWORD);
 
     expect(second).toBeDefined();
+    expect(
+      await opened.auth.authenticate("session", opened.session.token),
+    ).toBeDefined();
+  });
+});
+
+describe("what a wrong sign-in gives away", () => {
+  /**
+   * The route promises the two are answered alike. Timing is the channel that
+   * would break that promise, so the work is done whichever half was wrong.
+   */
+  it("costs about the same for a wrong name as for a wrong password", async () => {
+    const opened = auth();
+    await opened.auth.setPassword(NAME, PASSWORD);
+
+    const took = async (name: string, password: string) => {
+      const started = process.hrtime.bigint();
+      expect(await opened.auth.login(name, password)).toBeUndefined();
+      return Number(process.hrtime.bigint() - started) / 1e6;
+    };
+
+    const wrongName = await took("nobody", PASSWORD);
+    const wrongPassword = await took(NAME, "not the password");
+
+    // Generous, because this is a clock on a shared machine. What it rules out
+    // is the shape the old code had: returning before hashing at all.
+    expect(wrongName).toBeGreaterThan(wrongPassword / 4);
+  });
+
+  it("answers nothing either way", async () => {
+    const opened = auth();
+    await opened.auth.setPassword(NAME, PASSWORD);
+
+    expect(await opened.auth.login("nobody", PASSWORD)).toBeUndefined();
+    expect(await opened.auth.login(NAME, "not the password")).toBeUndefined();
+  });
+});
+
+describe("a stored credential nobody can read", () => {
+  /** A corrupt row is not a password to get wrong, and 500 is not the answer. */
+  it("is a failed sign-in rather than a thrown error", async () => {
+    const opened = auth();
+    await opened.auth.setPassword(NAME, PASSWORD);
+    await opened.store.rehashCredential("not a hash at all");
+
+    await expect(opened.auth.login(NAME, PASSWORD)).resolves.toBeUndefined();
+  });
+});
+
+describe("a password stored under weaker parameters", () => {
+  /** What an older build wrote, and what this one should stop leaving in place. */
+  const asAnOlderBuild = () =>
+    hashPassword(PASSWORD, "scrypt", { N: 16384, r: 8, p: 1, keylen: 64 });
+
+  it("is rewritten when the password next proves itself", async () => {
+    const opened = auth();
+    await opened.auth.setPassword(NAME, PASSWORD);
+    await opened.store.rehashCredential(await asAnOlderBuild());
+
+    expect(await opened.auth.login(NAME, PASSWORD)).toBeDefined();
+
+    const now = (await opened.store.getCredential())?.passwordHash ?? "";
+    expect(now.split("$")[2]).toBe("65536");
+  });
+
+  it("keeps working while it is rewritten, and afterwards", async () => {
+    const opened = auth();
+    await opened.auth.setPassword(NAME, PASSWORD);
+    await opened.store.rehashCredential(await asAnOlderBuild());
+
+    expect(await opened.auth.login(NAME, PASSWORD)).toBeDefined();
+    expect(await opened.auth.login(NAME, PASSWORD)).toBeDefined();
+    expect(await opened.auth.login(NAME, "not the password")).toBeUndefined();
+  });
+
+  /** The password did not change, so nobody should be signed out by this. */
+  it("leaves the sessions that were open alone", async () => {
+    const opened = await signedIn();
+    await opened.store.rehashCredential(await asAnOlderBuild());
+
+    expect(await opened.auth.login(NAME, PASSWORD)).toBeDefined();
+
     expect(
       await opened.auth.authenticate("session", opened.session.token),
     ).toBeDefined();

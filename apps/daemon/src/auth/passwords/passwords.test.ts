@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { hashPassword, joinHash, splitHash, verifyPassword } from ".";
+import {
+  hashPassword,
+  joinHash,
+  needsRehash,
+  splitHash,
+  verifyPassword,
+} from ".";
 import { UnreadableHash, UnusablePassword } from "./errors";
 
 const PASSWORD = "correct horse battery staple";
@@ -36,12 +42,26 @@ describe("what a hashed password looks like", () => {
     expect(algorithm).toBe("scrypt");
     expect({ keylen, N, r, p }).toEqual({
       keylen: "64",
-      N: "16384",
+      N: "65536",
       r: "8",
-      p: "1",
+      p: "2",
     });
     expect(salt).toBeTruthy();
     expect(key).toBeTruthy();
+  });
+
+  /**
+   * OWASP's floor for scrypt is `N=2^17, r=8, p=1`, and it lists sets of equal
+   * work beside it — `N * r * p` is what they hold constant. This says the
+   * numbers above are one of those rather than a guess, which the numbers
+   * themselves cannot.
+   */
+  it("costs at least what OWASP asks of scrypt", async () => {
+    const [, , N, r, p] = splitHash(await hashPassword(PASSWORD));
+
+    expect(Number(N) * Number(r) * Number(p)).toBeGreaterThanOrEqual(
+      2 ** 17 * 8 * 1,
+    );
   });
 
   it("never contains the password", async () => {
@@ -226,5 +246,33 @@ describe("a stored hash that has been tampered with", () => {
 
       expect(await verifyPassword(PASSWORD, stored), field).toBe(false);
     }
+  });
+});
+
+describe("whether a stored hash is behind this build", () => {
+  const weakened = (hash: string, params: string) => {
+    const [algorithm, keylen, , , , salt, key] = splitHash(hash);
+    return [algorithm, keylen, params, salt, key].join("$");
+  };
+
+  it("says no to one this build just wrote", async () => {
+    expect(await needsRehash(await hashPassword(PASSWORD))).toBe(false);
+  });
+
+  it("says yes to one turned down below what is written now", async () => {
+    const stored = await hashPassword(PASSWORD);
+
+    expect(await needsRehash(weakened(stored, "16384$8$1"))).toBe(true);
+  });
+
+  /** Rehashing to match would weaken it, so a stronger hash is left alone. */
+  it("says no to one written stronger than this build writes", async () => {
+    const stored = await hashPassword(PASSWORD);
+
+    expect(await needsRehash(weakened(stored, "131072$8$4"))).toBe(false);
+  });
+
+  it("says yes to an algorithm this build no longer writes", async () => {
+    expect(await needsRehash("pbkdf2$64$1000$c2FsdA$a2V5")).toBe(true);
   });
 });

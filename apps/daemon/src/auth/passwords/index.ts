@@ -19,7 +19,9 @@ export type HashResult<P extends Record<string, unknown> = Record<string, unknow
 
 export type Algorithm = {
   hash: (password: string, salt: Buffer<ArrayBuffer>, params?: Record<string, unknown>) => Promise<string>,
-  decode: (hash: string) => Promise<HashResult>
+  decode: (hash: string) => Promise<HashResult>,
+  /** Whether a hash written under these parameters is behind the current ones. */
+  needsRehash: (params: Record<string, unknown>) => boolean
 }
 
 export type AlgorithmName = 
@@ -84,3 +86,17 @@ export const verifyPassword = async (password: string, stored: string) => {
     timingSafeEqual(expected.key, actual.key)
   );
 }
+/**
+ * Whether a stored hash was written under something weaker than this build
+ * would write now — a different algorithm, or the same one turned down. The
+ * answer is only useful where the password is at hand to rewrite it with.
+ */
+export const needsRehash = async (stored: string): Promise<boolean> => {
+  const parts = splitHash(stored);
+  if (parts[0] !== DEFAULT_ALGORITHM) return true;
+
+  const algorithm = resolveAlgorithm(parts[0]);
+  const { params } = await algorithm.decode(stored);
+
+  return algorithm.needsRehash(params);
+};

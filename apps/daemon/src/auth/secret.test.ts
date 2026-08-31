@@ -3,7 +3,14 @@ import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
 import { TOKEN_PART_SEPARATOR, TOKEN_PREFIX } from "./config";
-import { getRandomId, hashSecret, mintSecret, parseSecret } from "./secret";
+import {
+  getRandomId,
+  hasPassed,
+  hashSecret,
+  mintSecret,
+  parseSecret,
+  sameSecretly,
+} from "./secret";
 
 describe("the id a secret is filed under", () => {
   it("avoids the characters a person would misread", () => {
@@ -139,5 +146,42 @@ describe("reading a presented secret back", () => {
 
     expect(parseSecret(prefixed.token)).toBeUndefined();
     expect(parseSecret(bare.token, TOKEN_PREFIX)).toBeUndefined();
+  });
+});
+
+describe("whether an instant has passed", () => {
+  const AT = "2026-08-31T09:00:00.000Z";
+
+  it("is true once it is reached, and at the moment it is", () => {
+    expect(hasPassed("2026-08-31T09:00:00.001Z", AT)).toBe(true);
+    expect(hasPassed(AT, AT)).toBe(true);
+  });
+
+  it("is false a moment before", () => {
+    expect(hasPassed("2026-08-31T08:59:59.999Z", AT)).toBe(false);
+  });
+
+  /**
+   * Fails closed. A row whose expiry nothing can read is not a row anything
+   * should keep honouring, and reading it as "not yet" is a token that never
+   * expires.
+   */
+  it("is true when either side cannot be read at all", () => {
+    expect(hasPassed(AT, "whenever")).toBe(true);
+    expect(hasPassed("whenever", AT)).toBe(true);
+    expect(hasPassed("", "")).toBe(true);
+  });
+});
+
+describe("comparing two strings without saying where they differ", () => {
+  it("is true for the same string", () => {
+    expect(sameSecretly("anton", "anton")).toBe(true);
+    expect(sameSecretly("", "")).toBe(true);
+  });
+
+  it("is false for anything else, whatever the lengths", () => {
+    expect(sameSecretly("anton", "antoN")).toBe(false);
+    expect(sameSecretly("anton", "")).toBe(false);
+    expect(sameSecretly("anton", "anton with more after it")).toBe(false);
   });
 });

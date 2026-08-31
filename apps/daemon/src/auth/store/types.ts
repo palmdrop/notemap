@@ -26,7 +26,14 @@ export type TokenRecord = {
 
 export type AuthStore = {
   getCredential(): Promise<CredentialRecord | undefined>;
+  /** Sets the credential, and ends every session: a reset answers a suspicion. */
   setCredential(credential: CredentialRecord): Promise<void>;
+  /**
+   * Rewrites the hash of the password already set, leaving sessions alone. The
+   * password did not change — only what this build stores it under — so nobody
+   * should be signed out by it.
+   */
+  rehashCredential(passwordHash: string): Promise<void>;
 
   addSession(session: SessionRecord): Promise<void>;
   getSession(id: SessionId): Promise<SessionRecord | undefined>;

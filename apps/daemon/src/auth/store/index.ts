@@ -62,6 +62,10 @@ export const createSqliteAuthStore = (config: Config): AuthStore => {
       changed_at = excluded.changed_at 
   `);
 
+  const rehashCredential = query<never, [string]>(`
+    UPDATE credential SET password_hash = ? WHERE id = 1
+  `);
+
   const addSession = query<never, [string, string, number, number]>(`
     INSERT INTO sessions (id, secret_hash, created_at, expires_at)
     VALUES (?, ?, ?, ?)
@@ -136,6 +140,9 @@ export const createSqliteAuthStore = (config: Config): AuthStore => {
           toMillis(credential.changedAt)
         );
       })
+    },
+    rehashCredential: async (passwordHash) => {
+      rehashCredential.run(passwordHash);
     },
     addSession: async (session) => {
       addSession.run(

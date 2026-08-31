@@ -1,6 +1,6 @@
 import createOpenapiClient from "openapi-fetch";
 
-import { readRefusal, Refused, Unreachable } from "../errors";
+import { readRefusal, Refused, Unauthenticated, Unreachable } from "../errors";
 import type { Transport } from "#ports/transport";
 import type { paths } from "./generated";
 
@@ -16,13 +16,21 @@ export function createApi(transport: Transport): Api {
 type Answer<T> = { data?: T; error?: unknown; response?: Response };
 
 /**
- * A 5xx is not a refusal. The pool did not weigh the request and say no, it
- * failed to answer it, so the operation keeps its optimistic state and goes
- * again — the same reading as a socket that never opened.
+ * Neither a 5xx nor a 401 is a refusal. In both the pool did not weigh the
+ * request and say no — one failed to answer it, the other would not look at it
+ * — so the operation keeps its optimistic state and goes again, the same
+ * reading as a socket that never opened.
+ *
+ * They are told apart because a surface must: a daemon having trouble is
+ * waited out, and a session that lapsed is waited on by a person signing in.
  */
 function undecided(answer: Answer<unknown>): void {
   const status = answer.response?.status;
-  if (status !== undefined && status >= 500) {
+  if (status === undefined) return;
+
+  if (status === 401) throw new Unauthenticated();
+
+  if (status >= 500) {
     throw new Unreachable(
       new Error(`the daemon answered ${String(status)}`),
       "the daemon is having trouble; this will be tried again",

@@ -114,6 +114,10 @@
   `Transport.assetUrl` makes where an asset's bytes live the shell's answer rather than a URL the
   client builds. See [client-review-fixes.md](../plans/client-review-fixes.md).
 
+- 2026-08-31 — **The client learns there is a door.** `401` reads as `Unauthenticated` rather than
+  as a refusal, so what is queued parks and drains instead of being burned, and the three refusals
+  the door added have readings. See
+  [login-and-access-tokens.md](../plans/login-and-access-tokens.md).
 - 2026-08-17 — **Review fixes.** The queue now empties when the pool records a routing decision and
   places an optimistic item only inside the window a page has read; the observable seam is RxJS,
   handed out as observables a shell cannot end; every refusal `/v1` declares has a reading, checked
@@ -297,6 +301,15 @@ drained, for the one count in the chrome, and the set of items those operations 
 mark on a row. A refused operation is in neither — waiting will not settle it, and it is shown and
 dismissed rather than drained. Note that this is wider than the operation state also called
 `pending`: an operation being sent, or left unreachable, is undrained too.
+
+**A shut door is not a refusal** (2026-08-31). The daemon answers `401` where nobody is signed in
+or a credential lapsed, and that is not the pool having weighed the work and said no — it never
+looked at it. A `401` reads as `Unauthenticated` and parks the entry `unreachable`-shaped: the
+optimistic state stands and it drains when someone signs in. Reading it as a refusal would be
+terminal, so a session that expired while the shell was away would burn every capture queued behind
+it, which is data loss wearing a refusal's clothes. It is kept apart from `Unreachable` because a
+surface has to tell them apart: a daemon having trouble is waited out, a door is waited on by a
+person. A `403` stays a refusal — an access token on a token route will not start working.
 
 **Routing is not in it.** Marking an item processed by hand is routing to the user destination
 ([core.md](core.md#the-queue)), and routing is a decision that must reach the pool

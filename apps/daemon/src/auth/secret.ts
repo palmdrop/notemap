@@ -112,6 +112,28 @@ export const verifySecret = async <R extends Verifiable>(
     : undefined;
 };
 
-/** Both sides are UTC to the millisecond, but the intent is an instant rather than a string. */
-export const hasPassed = (now: string, at: string): boolean =>
-  Date.parse(now) >= Date.parse(at);
+/**
+ * Both sides are UTC to the millisecond, but the intent is an instant rather
+ * than a string. A timestamp neither side can read counts as passed: it is not
+ * a guarantee that something is still good, and the alternative is a row that
+ * never expires because its expiry is unreadable.
+ */
+export const hasPassed = (now: string, at: string): boolean => {
+  const reached = Date.parse(at);
+  const current = Date.parse(now);
+
+  if (Number.isNaN(reached) || Number.isNaN(current)) return true;
+
+  return current >= reached;
+};
+
+/**
+ * Equality that takes the same time whatever differs, over strings of any
+ * length — `timingSafeEqual` needs two buffers the same size, and hashing first
+ * is what gives it them.
+ */
+export const sameSecretly = (a: string, b: string): boolean =>
+  timingSafeEqual(
+    hashSecret(Buffer.from(a, "utf8")),
+    hashSecret(Buffer.from(b, "utf8")),
+  );

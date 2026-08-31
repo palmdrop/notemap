@@ -11,14 +11,21 @@ type Params = {
 
 type Result = HashResult<Params>;
 
+/**
+ * OWASP's floor for scrypt is `N=2^17, r=8, p=1`, and it lists `N=2^16, r=8,
+ * p=2` beside it as the same work for half the memory. That is the one worth
+ * having here: 128 MiB per call is 512 MiB in flight across libuv's threadpool,
+ * which is a lot to ask of the small machines this is meant to run on.
+ */
 const defaultParams: Params = {
-  N: 16384,
+  N: 65536,
   r: 8,
-  p: 1,
+  p: 2,
   keylen: 64
 };
 
-const MAXMEM = 64 * 1024 * 1024;
+/** `128 * N * r` is what scrypt needs; the rest is room for the parameters to move. */
+const MAXMEM = 96 * 1024 * 1024;
 
 const decodeHash = (encodedHash: string) => {
   const [algorithm, keylen, N, r, p, salt, key] = splitHash(encodedHash);
@@ -93,7 +100,13 @@ const handlers = {
     const result = await hash(password, salt, params as Params); 
     return encodeHash(result);
   },
-  decode: async (hash: string) => decodeHash(hash)
+  decode: async (hash: string) => decodeHash(hash),
+  // Only ever upwards: a hash written under stronger parameters than the
+  // current ones is left alone rather than weakened to match them.
+  needsRehash: (params: Record<string, unknown>) => {
+    const { N, r, p } = params as Params;
+    return N < defaultParams.N || r < defaultParams.r || p < defaultParams.p;
+  }
 } as Algorithm;
 
 export default handlers;

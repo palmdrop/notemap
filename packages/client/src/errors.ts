@@ -17,6 +17,18 @@ export class Refused extends Error {
   }
 }
 
+/**
+ * The daemon is there and would not consider the request: nobody is signed in,
+ * or the credential lapsed. Not a refusal — the pool never weighed the work —
+ * so what is queued keeps its place and goes again once someone signs in.
+ */
+export class Unauthenticated extends Error {
+  constructor(said = "you are signed out; sign in to reach this pool") {
+    super(said);
+    this.name = "Unauthenticated";
+  }
+}
+
 /** The pool could not be reached, or did not decide. Nothing is known either way. */
 export class Unreachable extends Error {
   constructor(cause: unknown, said = "the daemon is not reachable") {

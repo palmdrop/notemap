@@ -1,6 +1,8 @@
 import type { Clock } from "@notemap/core";
 
-import { hashPassword, verifyPassword } from "./passwords"
+import { UnreadableHash } from "./passwords/errors";
+import { hashPassword, needsRehash, verifyPassword } from "./passwords"
+import { sameSecretly } from "./secret";
 import { createSessions } from "./sessions";
 import type { AuthStore } from "./store/types"
 import { createTokens } from "./tokens";
@@ -57,11 +59,34 @@ export const createAuth = (store: AuthStore, { clock }: AuthParams): Auth => {
         return undefined;
       }
 
-      if(
-        credential.name !== name || // NOTE: is this necessary?
-        !await verifyPassword(password, credential.passwordHash)
-      ) {
+      // Both halves are weighed whatever the first one said, and the name is
+      // compared without leaking where it stopped matching, so a wrong name and
+      // a wrong password cost the same — which is what the route promises.
+      let proved: boolean;
+      try {
+        proved = await verifyPassword(password, credential.passwordHash);
+      } catch (cause) {
+        if (!(cause instanceof UnreadableHash)) throw cause;
+
+        // A row nobody can read is not a password anybody can get wrong, and
+        // answering 500 would tell a person to try again at something broken.
+        console.error(
+          "notemap: the stored credential cannot be read — run `notemap password set`",
+          cause,
+        );
         return undefined;
+      }
+
+      const named = sameSecretly(credential.name, name);
+
+      if (!named || !proved) {
+        return undefined;
+      }
+
+      // The password is in hand exactly here, which is the only moment a hash
+      // written under weaker parameters can be brought up to the current ones.
+      if (await needsRehash(credential.passwordHash)) {
+        await store.rehashCredential(await hashPassword(password));
       }
 
       return await sessions.mint();
