@@ -29,6 +29,7 @@ import {
   captureRoute,
   createDestinationRoute,
   deleteDestinationRoute,
+  destinationCandidatesRoute,
   destinationDescriptionRoute,
   destinationKindsRoute,
   destinationsRoute,
@@ -52,6 +53,7 @@ import {
 import {
   createDestinationHandler,
   deleteDestinationHandler,
+  destinationCandidatesHandler,
   destinationDescriptionHandler,
   destinationKindsHandler,
   destinationsHandler,
@@ -101,6 +103,10 @@ export function createApp(pool: Pool, limits: UploadLimits): Hono {
   app.get(
     honoPath(destinationDescriptionRoute.path),
     destinationDescriptionHandler(pool),
+  );
+  app.get(
+    honoPath(destinationCandidatesRoute.path),
+    destinationCandidatesHandler(pool),
   );
   app.patch(
     honoPath(updateDestinationRoute.path),

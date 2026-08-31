@@ -105,13 +105,18 @@ export function daemon(
   options: DaemonOptions = {},
 ): Daemon {
   const directory = mkdtempSync(join(tmpdir(), "notemap-daemon-"));
-  const mirrorRoot = join(directory, "pool-mirror");
-  const assetRoot = join(directory, "assets");
+  // The pool's own state is confined to its own subtree, sibling to the vault
+  // rather than its parent — otherwise every vault a test points at is nested
+  // under `dirname(pool.db)` and refused as overlapping notemap's own state.
+  const stateRoot = join(directory, "state");
+  const mirrorRoot = join(stateRoot, "pool-mirror");
+  const assetRoot = join(stateRoot, "assets");
   const vaultRoot = join(directory, "vault");
+  mkdirSync(stateRoot, { recursive: true });
   if (options.vault === "ready") mkdirSync(vaultRoot, { recursive: true });
 
   const { pool, blobs, mirrorWriter, destinations } = openPool({
-    file: join(directory, "pool.db"),
+    file: join(stateRoot, "pool.db"),
     config,
     assetRoot,
     ...(options.mirroring === true ? { mirrorRoot } : {}),

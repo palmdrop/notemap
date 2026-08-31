@@ -152,6 +152,16 @@ export const PARAMETER_STATUS = {
 
 export const SUBJECT_STATUS = { "no-such-item": 404 } as const;
 
+/**
+ * The route's own check on `GET /v1/destinations/{id}/candidates`, on the same
+ * terms `capability-undeclared` is refused when routing an item: the request
+ * was understood and declined before the destination was asked anything.
+ */
+export const CANDIDATES_REQUEST_STATUS = {
+  "capability-undeclared": 422,
+  "field-not-askable": 422,
+} as const;
+
 export const ADDRESS_STATUS = {
   "unknown-route": 404,
   "method-not-allowed": 405,
@@ -163,6 +173,7 @@ const DAEMON_STATUS = {
   ...PARAMETER_STATUS,
   ...UPLOAD_STATUS,
   ...SUBJECT_STATUS,
+  ...CANDIDATES_REQUEST_STATUS,
   ...ADDRESS_STATUS,
 } as const satisfies Record<DaemonRefusal["kind"], number>;
 

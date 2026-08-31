@@ -1,10 +1,13 @@
 import type { Context } from "hono";
 
 import type {
+  CandidatesRequest,
+  CapabilityName,
   Destination,
   DestinationId,
   DestinationKindName,
   JsonObject,
+  JsonSchema,
   Pool,
 } from "@notemap/core";
 
@@ -47,6 +50,78 @@ export function destinationDescriptionHandler(pool: Pool) {
   return async (context: Context): Promise<Response> => {
     const id = (context.req.param("id") ?? "") as DestinationId;
     const report = await pool.destinations.describe(id);
+
+    return report === undefined
+      ? json(errorBody({ kind: "unknown-destination", destination: id }), 404)
+      : json(report, 200);
+  };
+}
+
+/** What a field's own schema carries when a person may browse it rather than type it. */
+const CANDIDATES_KEYWORD = "x-notemap-candidates";
+
+function askable(schema: JsonSchema, field: string): boolean {
+  const properties = schema["properties"];
+  if (
+    properties === null ||
+    typeof properties !== "object" ||
+    Array.isArray(properties)
+  ) {
+    return false;
+  }
+
+  const property = (properties as Record<string, unknown>)[field];
+  if (property === null || typeof property !== "object") return false;
+
+  return (property as Record<string, unknown>)[CANDIDATES_KEYWORD] === true;
+}
+
+/**
+ * The same animal as `/description`: a question the destination answers,
+ * slowly, and may refuse. The capability and the field are checked here,
+ * before the destination is asked anything — the same shape `POST
+ * /v1/items/{id}/route` refuses an undeclared capability with, on this
+ * route's own terms rather than core's, since the port takes neither request
+ * on faith.
+ */
+export function destinationCandidatesHandler(pool: Pool) {
+  return async (context: Context): Promise<Response> => {
+    const id = (context.req.param("id") ?? "") as DestinationId;
+    const capability = (context.req.query("capability") ??
+      "") as CapabilityName;
+    const field = context.req.query("field") ?? "";
+    const scope = context.req.query("scope");
+
+    const description = await pool.destinations.describe(id);
+    if (description === undefined) {
+      return json(
+        errorBody({ kind: "unknown-destination", destination: id }),
+        404,
+      );
+    }
+    if (description.kind === "undescribable") {
+      return json({ kind: "unreachable", detail: description.detail }, 200);
+    }
+    if (description.kind === "unusable") {
+      return json(description, 200);
+    }
+
+    const declared = description.capabilities.find(
+      (each) => each.name === capability,
+    );
+    if (declared === undefined) {
+      return refuse({ kind: "capability-undeclared", capability });
+    }
+    if (!askable(declared.argumentsSchema, field)) {
+      return refuse({ kind: "field-not-askable", capability, field });
+    }
+
+    const request: CandidatesRequest = {
+      capability,
+      field,
+      ...(scope === undefined ? {} : { scope }),
+    };
+    const report = await pool.destinations.candidates(id, request);
 
     return report === undefined
       ? json(errorBody({ kind: "unknown-destination", destination: id }), 404)

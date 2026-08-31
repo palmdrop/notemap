@@ -1,3 +1,6 @@
+import { mkdirSync } from "node:fs";
+import { join } from "node:path";
+
 import { afterEach, describe, expect, it } from "vitest";
 
 import { captureMany, daemon, send, type Daemon } from "../testing/fixture";
@@ -268,6 +271,115 @@ describe("GET /v1/destinations/{id}/description", () => {
     const response = await host.app.request(
       "/v1/destinations/nobody/description",
     );
+    expect(response.status).toBe(404);
+    expect(await body(response)).toMatchObject({
+      error: { code: "unknown-destination" },
+    });
+  });
+});
+
+describe("GET /v1/destinations/{id}/candidates", () => {
+  async function ask(
+    host: Daemon,
+    destination: string,
+    query: Record<string, string>,
+  ): Promise<Response> {
+    const search = new URLSearchParams(query).toString();
+    return host.app.request(
+      `/v1/destinations/${destination}/candidates?${search}`,
+    );
+  }
+
+  it("answers what an askable field could hold", async () => {
+    const host = serving("ready");
+    mkdirSync(join(host.vaultRoot, "inbox"));
+    const vault = await created(host);
+
+    const response = await ask(host, vault.id, {
+      capability: "create-file",
+      field: "directory",
+    });
+
+    expect(response.status).toBe(200);
+    expect(await body(response)).toEqual({
+      kind: "answered",
+      truncated: false,
+      entries: [{ label: "inbox", value: "inbox", scope: "inbox" }],
+    });
+  });
+
+  it("refuses a capability the destination never declared, before asking it anything", async () => {
+    const host = serving("ready");
+    const vault = await created(host);
+
+    const response = await ask(host, vault.id, {
+      capability: "delete-file",
+      field: "directory",
+    });
+
+    expect(response.status).toBe(422);
+    expect(await body(response)).toMatchObject({
+      error: { code: "capability-undeclared", capability: "delete-file" },
+    });
+  });
+
+  it("refuses a field that does not carry x-notemap-candidates", async () => {
+    const host = serving("ready");
+    const vault = await created(host);
+
+    const response = await ask(host, vault.id, {
+      capability: "create-file",
+      field: "filename",
+    });
+
+    expect(response.status).toBe(422);
+    expect(await body(response)).toMatchObject({
+      error: {
+        code: "field-not-askable",
+        capability: "create-file",
+        field: "filename",
+      },
+    });
+  });
+
+  it("is unreachable rather than an error where the destination could not be asked", async () => {
+    const host = serving();
+    const vault = await created(host);
+
+    const response = await ask(host, vault.id, {
+      capability: "create-file",
+      field: "directory",
+    });
+
+    expect(response.status).toBe(200);
+    const answered = (await body(response)) as { kind: string; detail: string };
+    expect(answered.kind).toBe("unreachable");
+    expect(answered.detail).toContain(host.vaultRoot);
+  });
+
+  it("is unusable where the root overlaps notemap's own state", async () => {
+    const host = serving();
+    const vault = await created(host, { settings: { root: host.assetRoot } });
+
+    const response = await ask(host, vault.id, {
+      capability: "create-file",
+      field: "directory",
+    });
+
+    expect(response.status).toBe(200);
+    const answered = (await body(response)) as { kind: string; detail: string };
+    expect(answered.kind).toBe("unusable");
+    expect(answered.detail).toContain("overlaps");
+  });
+
+  it("is 404 for an id no destination has", async () => {
+    const host = serving();
+
+    const response = await ask(host, "nobody", {
+      capability: "create-file",
+      field: "directory",
+    });
+
     expect(response.status).toBe(404);
     expect(await body(response)).toMatchObject({
       error: { code: "unknown-destination" },
