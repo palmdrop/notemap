@@ -133,7 +133,7 @@ export const healthRoute = createRoute({
   summary:
     "Read that the daemon is up, which pool it is serving, and its version",
   description:
-    "Liveness, the pool identity, and the daemon's own version. The identity is opaque and stable for as long as that pool exists; a pool rebuilt from its mirror is a different pool and answers a different identity. The version is the release this daemon was built from, so whoever runs it can ask it rather than infer it from an image tag. This route has no refusals: a daemon that cannot answer is not answering.",
+    "Liveness, the daemon's own version, and — to a caller the daemon knows — the pool identity. Open on purpose: the shell probes it to tell a closed door from a daemon that is down, and a `401` here would make the two look alike. `pool` is omitted where a password is set and nothing was presented, because which pool this is, is a fact about the pool; a daemon nobody has set a password on answers it to everyone, as it always did. The identity is opaque and stable for as long as that pool exists; a pool rebuilt from its mirror is a different pool and answers a different identity. This route has no refusals: a daemon that cannot answer is not answering.",
   responses: {
     200: {
       description:
@@ -210,10 +210,15 @@ export const endAllSessionsRoute = createRoute({
   path: "/v1/sessions",
   summary: "End every session, everywhere",
   description:
-    "What a person reaches for after losing a device: every session is ended at once, including this one. Access tokens are untouched — a headless client is not a device someone left on a train, and revoking one is its own deliberate act. Behind the door, unlike signing out of this session alone.",
+    "What a person reaches for after losing a device: every session is ended at once, including this one. Access tokens are untouched — a headless client is not a device someone left on a train, and revoking one is its own deliberate act. Behind the door, unlike signing out of this session alone, and **a session is required**: signing every browser out is what someone does so that a leak is noticed, so a leaked token may not be the thing that does it.",
   responses: {
     204: { description: "Every session is over." },
     401: errorResponse("Nothing valid was presented.", 401, AUTH_STATUS),
+    403: errorResponse(
+      "Authenticated by an access token, which may not end sessions.",
+      403,
+      AUTH_STATUS,
+    ),
   },
 });
 

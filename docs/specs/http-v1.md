@@ -244,6 +244,19 @@ discovered: [security.md](security.md).
   configuration allows it, and nothing in `/v1` defends it.
 - The app is served at `/`, the action log page at `/log`, and the playground at `/docs`.
   Everything the API itself answers is under `/v1`.
+- **The pages the daemon serves stay reachable without a credential, and what they ask for does
+  not.** `/`, `/log` and `/docs` are files: they are the application, not the pool, and something
+  has to be able to draw a login. Each draws nothing until it calls `/v1`, and every one of those
+  calls is behind the door — an unauthenticated `/log` is a page that reports a refusal rather
+  than a page full of somebody's actions. Shutting them would also answer a person a JSON refusal
+  where they asked a browser for a page. `/v1/openapi.json` is open for the same reason and one
+  more: it describes the routes and never the pool, so closing it would break a signed-out
+  operator's only way to read the API without withholding anything the source does not say.
+- **`GET /v1/health` is open, and answers less from outside.** The shell probes it to tell a
+  closed door from a daemon that is down, so a `401` here would make the two look alike. It
+  answers liveness and the version to anyone; `pool` is omitted where a password is set and
+  nothing was presented, because which pool this is, is a fact about the pool. Where no password
+  is set there is no door to be outside of, and it answers everything as it always did.
 - An unknown path **under `/v1`** is `404 unknown-route`. A known path with the wrong method is
   `405`, carrying an `Allow` header listing the methods that path does answer. `OPTIONS` is one
   of them, and is answered `204` with the same `Allow`.

@@ -282,7 +282,11 @@ What that does not give:
 This is deliberate for a single-user daemon where every credential belongs to the same person, and
 it is the reason `lastUsedAt` and revocation matter more here than they would in a system with
 scopes: containing a leak means noticing it and revoking, because nothing limits the blast radius
-in advance. **Authorization is deferred, not decided.** The day two credentials should be able to
+in advance. There is one more refusal of the same shape, added for the same reason: **an access token may not
+end every session** (`DELETE /v1/sessions`). Signing every browser out is what a person does so
+that a leak is noticed, so it is not a thing a leaked token may do to them first.
+
+**Authorization is deferred, not decided.** The day two credentials should be able to
 do different things, this section is the list of what has to be answered, and `Agent` growing a
 name (see [the login plan](../plans/login-and-access-tokens.md)) is the same trigger from the
 other direction.
@@ -390,8 +394,12 @@ anything short enough for a person to type. That joins this counter the day it e
 - The standalone compose file publishes on `127.0.0.1` only, and the proxy compose file publishes
   no port at all and names the network it joins rather than defaulting to one.
 - The container's config binds `0.0.0.0`, and that address is in the file rather than in the image.
-- An access token is refused with `session-required` on every `/v1/tokens` route, and reaches every
-  other `/v1` route exactly as a session does.
+- An access token is refused with `session-required` on every `/v1/tokens` route and on
+  `DELETE /v1/sessions`, and reaches every other `/v1` route exactly as a session does.
+- `GET /v1/health` omits the pool identity where a password is set and nothing was presented, and
+  carries it where one was or where no password is set at all.
+- An unauthenticated `/log` answers the page and no pool material, and the calls it would make
+  are refused.
 - Repeated failed sign-ins are answered `429 too-many-attempts` carrying `Retry-After`, and one
   successful sign-in clears the count.
 - An unauthenticated request to any route other than the login never contributes to that count.

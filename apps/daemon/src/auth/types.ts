@@ -30,6 +30,9 @@ export type Auth = {
   endSession(id: SessionId): Promise<void>
   endAllSessions(): Promise<void>
 
+  /** Takes away what has expired. Refusing it does not depend on this having run. */
+  forgetExpired(): Promise<void>
+
   mintToken(name: string, expiresAt?: Timestamp): Promise<MintedToken>
   listTokens(): Promise<readonly Token[]>
   revokeToken(id: TokenId): Promise<void>

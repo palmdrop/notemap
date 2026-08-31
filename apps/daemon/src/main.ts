@@ -12,6 +12,7 @@ import { startDeliveryRunner } from "./destinations/runner";
 import { startMirrorRunner } from "./mirror/runner";
 import { openPool, openAuth } from "./ports";
 import { runCliCommand } from "./cli";
+import { FORGET_EXPIRED_EVERY_MS } from "./auth/config";
 import { createLoginThrottle } from "./auth/throttle";
 
 function start(): void {
@@ -48,6 +49,20 @@ function start(): void {
     clock: ports.clock
   });
 
+  // Nothing waits on this: an expired session or token is refused whether or
+  // not it has been swept, so a failed sweep costs a row rather than a refusal.
+  const forgetExpired = () => {
+    void auth
+      .forgetExpired()
+      .catch((cause: unknown) =>
+        console.error("notemap: could not sweep expired sessions", cause),
+      );
+  };
+
+  forgetExpired();
+  const forgetting = setInterval(forgetExpired, FORGET_EXPIRED_EVERY_MS);
+  forgetting.unref();
+
   const mirror =
     config.mirror === undefined || mirrorWriter === undefined
       ? undefined
@@ -61,6 +76,7 @@ function start(): void {
 
   /** A runner holds a lease while it works; stopping it first gives it back. */
   const close = async () => {
+    clearInterval(forgetting);
     await mirror?.stop();
     await delivery.stop();
     await sweeper.stop();

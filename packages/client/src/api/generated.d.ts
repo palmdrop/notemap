@@ -13,7 +13,7 @@ export interface paths {
         };
         /**
          * Read that the daemon is up, which pool it is serving, and its version
-         * @description Liveness, the pool identity, and the daemon's own version. The identity is opaque and stable for as long as that pool exists; a pool rebuilt from its mirror is a different pool and answers a different identity. The version is the release this daemon was built from, so whoever runs it can ask it rather than infer it from an image tag. This route has no refusals: a daemon that cannot answer is not answering.
+         * @description Liveness, the daemon's own version, and — to a caller the daemon knows — the pool identity. Open on purpose: the shell probes it to tell a closed door from a daemon that is down, and a `401` here would make the two look alike. `pool` is omitted where a password is set and nothing was presented, because which pool this is, is a fact about the pool; a daemon nobody has set a password on answers it to everyone, as it always did. The identity is opaque and stable for as long as that pool exists; a pool rebuilt from its mirror is a different pool and answers a different identity. This route has no refusals: a daemon that cannot answer is not answering.
          */
         get: {
             parameters: {
@@ -227,7 +227,7 @@ export interface paths {
         post?: never;
         /**
          * End every session, everywhere
-         * @description What a person reaches for after losing a device: every session is ended at once, including this one. Access tokens are untouched — a headless client is not a device someone left on a train, and revoking one is its own deliberate act. Behind the door, unlike signing out of this session alone.
+         * @description What a person reaches for after losing a device: every session is ended at once, including this one. Access tokens are untouched — a headless client is not a device someone left on a train, and revoking one is its own deliberate act. Behind the door, unlike signing out of this session alone, and **a session is required**: signing every browser out is what someone does so that a leak is noticed, so a leaked token may not be the thing that does it.
          */
         delete: {
             parameters: {
@@ -256,6 +256,23 @@ export interface paths {
                             error: {
                                 /** @enum {string} */
                                 code: "unauthenticated";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description Authenticated by an access token, which may not end sessions. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "session-required";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -2714,7 +2731,7 @@ export interface components {
     schemas: {
         Health: {
             /** @example a1c9f2e4-6b30-4d51-9e7a-2f8b40c1d6e3 */
-            pool: string;
+            pool?: string;
             /** @example 0.2.0 */
             version: string;
         };

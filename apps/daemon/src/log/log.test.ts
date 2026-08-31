@@ -1,11 +1,22 @@
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import type { Clock, Timestamp } from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { createAuth } from "../auth";
+import { createSqliteAuthStore } from "../auth/store";
+import type { AuthStore } from "../auth/store/types";
 import { daemon, type Daemon } from "../testing/fixture";
 
 const open: Daemon[] = [];
+const stores: { store: AuthStore; directory: string }[] = [];
+
+const systemClock: Clock = {
+  now: () => new Date().toISOString() as Timestamp,
+};
 
 function started(): Daemon {
   const it = daemon();
@@ -13,8 +24,54 @@ function started(): Daemon {
   return it;
 }
 
+/** A daemon with a password set, which is the only state where the door is shut. */
+async function guarded(): Promise<Daemon> {
+  const directory = mkdtempSync(join(tmpdir(), "notemap-log-auth-"));
+  const store = createSqliteAuthStore({ file: join(directory, "auth.db") });
+  stores.push({ store, directory });
+
+  const auth = createAuth(store, { clock: systemClock });
+  await auth.setPassword("anton", "correct horse battery staple");
+
+  const it = daemon(undefined, { auth });
+  open.push(it);
+  return it;
+}
+
 afterEach(async () => {
   await Promise.all(open.splice(0).map((it) => it.cleanup()));
+  for (const each of stores.splice(0)) {
+    await each.store.close();
+    rmSync(each.directory, { recursive: true, force: true });
+  }
+});
+
+/**
+ * The page is a file, not a rendering: everything it draws it asks `/v1` for,
+ * and that is behind the door. So it stays reachable for the same reason the
+ * shell's own files do — it is the application, not the pool — and shutting it
+ * would answer a person a refusal envelope where they asked for a page.
+ */
+describe("the log page with the door shut", () => {
+  it("is still served, because it is the application rather than the pool", async () => {
+    const { app } = await guarded();
+
+    const response = await app.request("/log");
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/html");
+  });
+
+  it("answers no pool material, having none to answer", async () => {
+    const { app, pool } = await guarded();
+    const identity = await pool.identity();
+
+    const page = await (await app.request("/log")).text();
+
+    expect(page).not.toContain(identity);
+    // What it would draw is refused to the caller that asked for the page.
+    expect((await app.request("/v1/actions")).status).toBe(401);
+  });
 });
 
 describe("the log page", () => {

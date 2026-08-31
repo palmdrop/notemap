@@ -72,6 +72,9 @@ export const createAuth = (store: AuthStore, { clock }: AuthParams): Auth => {
     endAllSessions: async () => {
       await store.deleteAllSessions();
     },
+    forgetExpired: async () => {
+      await store.cleanExpired(clock.now());
+    },
     mintToken: (name, expiresAt) => tokens.mint(name, expiresAt),
     listTokens: () => tokens.list(),
     revokeToken: (id) => tokens.revoke(id),

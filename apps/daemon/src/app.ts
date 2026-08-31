@@ -113,24 +113,27 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
   const { auth, limits } = options;
   const app = new Hono<AppEnv>();
 
-  const OPEN_PATHS = [
-    "/v1/health",
-    "/v1/session",
-    "/v1/openapi.json",
-    "/v1/docs",
-    "/v1/docs/*",
-  ];
+  /**
+   * `/v1/openapi.json` describes the routes and never the pool, and it is what
+   * the playground reads; closing it would break a signed-out operator's only
+   * way to look at the API without protecting anything the source does not
+   * already say.
+   */
+  const OPEN_PATHS = ["/v1/health", "/v1/session", "/v1/openapi.json"];
 
   app.use("/v1/*", requireJsonBody);
   app.use("/v1/*", except([...OPEN_PATHS], authenticate(auth, options.cookies)));
 
-  // Open, but they answer about the caller, so they need to know who it is.
+  // Open, but they answer differently depending on who is asking, so they need
+  // to know — and being signed out is an answer here rather than a refusal.
   app.use(honoPath(sessionRoute.path), identify(auth, options.cookies));
+  app.use(honoPath(healthRoute.path), identify(auth, options.cookies));
 
   app.use(honoPath(tokensRoute.path), requireSession);
   app.use(`${honoPath(tokensRoute.path)}/*`, requireSession);
+  app.use(honoPath(endAllSessionsRoute.path), requireSession);
 
-  app.get(honoPath(healthRoute.path), healthHandler(pool));
+  app.get(honoPath(healthRoute.path), healthHandler(pool, auth));
 
   app.post(honoPath(loginRoute.path), loginHandler(auth, options.cookies, options.throttle));
   app.get(honoPath(sessionRoute.path), sessionHandler(auth));

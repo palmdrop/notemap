@@ -260,3 +260,51 @@ describe("access tokens through the service", () => {
     expect(await opened.auth.authenticate("token", minted.token)).toBeUndefined();
   });
 });
+
+/**
+ * An expired session or token is refused whether or not this has run, so what
+ * it takes away is the row rather than the reach. Nothing depends on the timing.
+ */
+describe("forgetting what has expired", () => {
+  it("takes away a session whose time has passed", async () => {
+    const clock = frozenClock();
+    const opened = await signedIn(clock);
+
+    clock.set("2026-10-30T09:00:00.000Z");
+    await opened.auth.forgetExpired();
+
+    expect(await opened.store.getSession(opened.session.id)).toBeUndefined();
+  });
+
+  it("leaves one that is still good", async () => {
+    const clock = frozenClock();
+    const opened = await signedIn(clock);
+
+    await opened.auth.forgetExpired();
+
+    expect(await opened.store.getSession(opened.session.id)).toBeDefined();
+  });
+
+  it("takes away a token whose expiry has passed", async () => {
+    const clock = frozenClock();
+    const opened = await signedIn(clock);
+    await opened.auth.mintToken("ci", "2026-09-30T09:00:00.000Z" as Timestamp);
+
+    clock.set("2026-10-30T09:00:00.000Z");
+    await opened.auth.forgetExpired();
+
+    expect(await opened.auth.listTokens()).toEqual([]);
+  });
+
+  /** A token without an expiry never reaches one, so a sweep never reaches it. */
+  it("leaves a token that carries no expiry, however long it runs", async () => {
+    const clock = frozenClock();
+    const opened = await signedIn(clock);
+    await opened.auth.mintToken("laptop");
+
+    clock.set("2099-01-01T09:00:00.000Z");
+    await opened.auth.forgetExpired();
+
+    expect(await opened.auth.listTokens()).toHaveLength(1);
+  });
+});

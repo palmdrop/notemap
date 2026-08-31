@@ -94,6 +94,32 @@ describe("the door", () => {
     expect((await app.request("/v1/health")).status).toBe(200);
   });
 
+  /** Which pool this is, is a fact about the pool, and goes behind the door. */
+  it("answers health with liveness alone to a caller it does not know", async () => {
+    const { app } = await guarded();
+
+    const said = await body(await app.request("/v1/health"));
+
+    expect(said).toHaveProperty("version");
+    expect(said).not.toHaveProperty("pool");
+  });
+
+  it("names the pool once someone has signed in", async () => {
+    const { app } = await guarded();
+    const cookie = cookieFrom(await login(app));
+
+    const said = await body(await app.request("/v1/health", { headers: { cookie } }));
+
+    expect(said).toHaveProperty("pool");
+  });
+
+  /** A daemon nobody has set a password on has no door to be outside of. */
+  it("names the pool to everyone where no password is set", async () => {
+    const said = await body(await unguarded().request("/v1/health"));
+
+    expect(said).toHaveProperty("pool");
+  });
+
   it("turns away a cookie nobody minted", async () => {
     const { app } = await guarded();
 
@@ -249,6 +275,39 @@ describe("signing out everywhere", () => {
         cookie,
       ).toBe(401);
     }
+  });
+
+  /**
+   * Signing every browser out is what someone does so a leak is noticed, so it
+   * is not a thing a leaked token may do — the same containment as the token
+   * routes, arriving from the other direction.
+   */
+  it("is refused to an access token, which may not end sessions", async () => {
+    const { app, auth } = await guarded();
+    const minted = await auth.mintToken("laptop");
+
+    const response = await app.request("/v1/sessions", {
+      method: "DELETE",
+      headers: { authorization: `Bearer ${minted.token}` },
+    });
+
+    expect(response.status).toBe(403);
+    expect(await body(response)).toMatchObject({
+      error: { code: "session-required" },
+    });
+  });
+
+  it("is allowed to a session, which is the point of it", async () => {
+    const { app } = await guarded();
+    const cookie = cookieFrom(await login(app));
+
+    const response = await app.request("/v1/sessions", {
+      method: "DELETE",
+      headers: { cookie },
+    });
+
+    expect(response.status).toBe(204);
+    expect((await app.request("/v1/feed", { headers: { cookie } })).status).toBe(401);
   });
 
   it("is behind the door, unlike signing out of this session alone", async () => {
