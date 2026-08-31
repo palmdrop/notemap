@@ -46,6 +46,7 @@ export type SweepConfig = {
 export type DaemonConfig = {
   /** The SQLite file the pool lives in. */
   readonly pool: string;
+  readonly auth: string;
   readonly host: string;
   readonly port: number;
   /**
@@ -76,6 +77,7 @@ const fileSchema = z.object({
   daemon: z
     .object({
       pool: z.string().optional(),
+      auth: z.string().optional(),
       host: z.string().min(1).optional(),
       port: z.number().int().min(1).max(65535).optional(),
       origin: z.string().url().optional(),
@@ -200,6 +202,10 @@ export function defaultAssetRoot(): string {
   return join(defaultDataRoot(), "assets");
 }
 
+export function defaultAuthPath(): string {
+  return join(defaultDataRoot(), "auth.db");
+}
+
 /** The config, and every key the daemon did not know and ignored. */
 export type LoadedConfig = {
   readonly config: DaemonConfig;
@@ -273,6 +279,7 @@ export function parseConfig(source: string, from: string): LoadedConfig {
 
   const config: DaemonConfig = {
     pool: resolve(expandHome(file.daemon?.pool ?? defaultPoolPath())),
+    auth: resolve(expandHome(file.daemon?.auth ?? defaultAuthPath())),
     host,
     port: file.daemon?.port ?? DEFAULT_PORT,
     ...(origin === undefined ? {} : { origin }),

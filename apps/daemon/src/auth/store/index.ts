@@ -9,6 +9,7 @@ import {
   type TokenRow,
 } from "./rows";
 import type { AuthStore } from "./types";
+import { chmodSync } from "node:fs";
 
 type Config = {
   readonly file: string;
@@ -20,6 +21,10 @@ export const createSqliteAuthStore = (config: Config): AuthStore => {
   });
 
   try {
+    if (config.file === ":memory:") {
+      chmodSync(config.file, 0o600);
+    }
+
     migrate(database.writer, MIGRATIONS, "auth");
   } catch (cause) {
     database.close();

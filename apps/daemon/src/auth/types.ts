@@ -33,4 +33,6 @@ export type Auth = {
   mintToken(name: string, expiresAt?: Timestamp): Promise<MintedToken>
   listTokens(): Promise<readonly Token[]>
   revokeToken(id: TokenId): Promise<void>
+
+  close(): Promise<void>
 }

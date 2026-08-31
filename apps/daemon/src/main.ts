@@ -38,8 +38,10 @@ function start(): void {
     ...(config.mirror === undefined ? {} : { mirrorRoot: config.mirror.root }),
   });
 
+  mkdirSync(dirname(config.auth), { recursive: true });
+
   const auth = openAuth({
-    file: "./auth.db", // TODO: comes from where?
+    file: config.auth
   }, {
     clock: ports.clock
   });
@@ -61,6 +63,7 @@ function start(): void {
     await delivery.stop();
     await sweeper.stop();
     await pool.close();
+    await auth.close();
   };
 
   const server = serve(
@@ -91,6 +94,14 @@ function start(): void {
             : `notemap: destinations ${held.map((each) => each.name).join(", ")}`,
         );
       });
+
+      void auth.requiresCredentials().then((requires) => {
+        console.log(
+          requires
+            ? "notemap: credentials are required to log in" 
+            : "notemap: credentials are not required to log in", // TODO: show CLI command for setting password?
+        );
+      })
     },
   );
 

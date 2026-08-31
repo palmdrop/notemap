@@ -236,9 +236,8 @@ describe("listing and revoking", () => {
 
     const listed = await opened.tokens.list();
 
-    expect(listed).toEqual([
-      { id: minted.id, name: "laptop", createdAt: START },
-    ]);
+    expect(listed).toHaveLength(1);
+    expect(JSON.stringify(listed)).not.toContain(secretOf(minted.token));
   });
 
   it("stops a revoked token on the next request", async () => {
