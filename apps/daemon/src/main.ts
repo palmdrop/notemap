@@ -12,6 +12,7 @@ import { startDeliveryRunner } from "./destinations/runner";
 import { startMirrorRunner } from "./mirror/runner";
 import { openPool, openAuth } from "./ports";
 import { runCliCommand } from "./cli";
+import { createLoginThrottle } from "./auth/throttle";
 
 function start(): void {
   const { values } = parseArgs({
@@ -73,6 +74,7 @@ function start(): void {
         limits: config.assets,
         auth,
         cookies: { secure: cookiesAreSecure(config.origin) },
+        throttle: createLoginThrottle({ clock: ports.clock }),
       }).fetch,
       hostname: config.host,
       port: config.port,

@@ -10,15 +10,30 @@ import type { AppEnv } from "../types";
 import { loginRequestSchema } from "../schemas/session";
 import { readBody } from "../utils/body";
 import { json, refuse } from "../utils/responses";
+import type { Throttle } from "../auth/throttle";
 
-export function loginHandler(auth: Auth, cookies: CookieOptions) {
+export function loginHandler(auth: Auth, cookies: CookieOptions, throttle: Throttle) {
   return async (context: Context<AppEnv>): Promise<Response> => {
+    const wait = throttle.waitFor();
+    if(wait > 0) {
+      const seconds = Math.ceil(wait / 1000);
+      return refuse(
+        { kind: "too-many-attempts", retryAfter: seconds },
+        { "retry-after": String(seconds) }
+      );
+    }
+
     const body = await readBody(context, loginRequestSchema);
     if (!body.ok) return refuse(body.refusal);
 
     const minted = await auth.login(body.value.name, body.value.password);
 
-    if (minted === undefined) return refuse({ kind: "unauthenticated" });
+    if (minted === undefined) {
+      throttle.failed();
+      return refuse({ kind: "unauthenticated" });
+    }
+
+    throttle.passed();
 
     setSessionCookie(context, minted, cookies);
 

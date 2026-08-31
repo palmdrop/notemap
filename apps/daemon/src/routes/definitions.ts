@@ -170,6 +170,7 @@ export const loginRoute = createRoute({
       401,
       AUTH_STATUS,
     ),
+    429: errorResponse("Too many attempts.", 429, AUTH_STATUS),
     415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
   },
 });

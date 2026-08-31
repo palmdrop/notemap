@@ -173,7 +173,8 @@ export const AUTH_STATUS = {
   "not-a-session": 422,
   /** Authenticated, and by something not trusted to do this. */
   "session-required": 403,
-}
+  "too-many-attempts": 429,
+} as const;
 
 /** Split by concern so a route can document only the codes it can answer with. */
 const DAEMON_STATUS = {

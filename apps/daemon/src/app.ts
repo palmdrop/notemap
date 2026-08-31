@@ -100,11 +100,13 @@ import {
   requireSession,
 } from "./middleware/authenticate";
 import { except } from "hono/combine";
+import type { Throttle } from "./auth/throttle";
 
 export type AppOptions = {
   readonly limits: UploadLimits;
   readonly auth: Auth;
   readonly cookies: CookieOptions;
+  readonly throttle: Throttle;
 };
 
 export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
@@ -130,7 +132,7 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
 
   app.get(honoPath(healthRoute.path), healthHandler(pool));
 
-  app.post(honoPath(loginRoute.path), loginHandler(auth, options.cookies));
+  app.post(honoPath(loginRoute.path), loginHandler(auth, options.cookies, options.throttle));
   app.get(honoPath(sessionRoute.path), sessionHandler(auth));
   app.delete(honoPath(logoutRoute.path), logoutHandler(auth, options.cookies));
   app.delete(
