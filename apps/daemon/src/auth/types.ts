@@ -4,7 +4,10 @@ import type { TokenRecord } from "./store/types"
 
 export type SessionId = Branded<string, "SessionId">;
 export type TokenId = Branded<string, "TokenId">;
-export type MintedToken = TokenRecord & {
+
+export type Token = Pick<TokenRecord, "id" | "name" | "expiresAt" | "createdAt" | "lastUsedAt">
+
+export type MintedToken = Token & {
   readonly token: string;
 }
 
@@ -28,6 +31,6 @@ export type Auth = {
   endAllSessions(): Promise<void>
 
   mintToken(name: string, expiresAt?: Timestamp): Promise<MintedToken>
-  listTokens(): Promise<readonly TokenRecord[]>
+  listTokens(): Promise<readonly Token[]>
   revokeToken(id: TokenId): Promise<void>
 }

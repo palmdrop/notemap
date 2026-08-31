@@ -227,8 +227,13 @@ describe("access tokens through the service", () => {
 
     const listed = await opened.auth.listTokens();
 
-    expect(listed).toHaveLength(1);
-    expect(JSON.stringify(listed)).not.toContain(minted.token);
+    expect(listed).toEqual([
+      {
+        id: minted.id,
+        name: "laptop",
+        createdAt: START
+      }
+    ])
   });
 
   it("stops a revoked token on the next request", async () => {

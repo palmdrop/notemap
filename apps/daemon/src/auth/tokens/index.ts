@@ -3,7 +3,7 @@ import type { Clock, Timestamp } from "@notemap/core";
 import { TOKEN_PREFIX } from "../config";
 import { hasPassed, mintSecret, verifySecret } from "../secret";
 import type { AuthStore, TokenRecord } from "../store/types";
-import type { MintedToken, TokenId } from "../types";
+import type { MintedToken, TokenId, Token } from "../types";
 import { TOUCH_AFTER_MS } from "./config";
 
 type TokensOptions = {
@@ -12,8 +12,8 @@ type TokensOptions = {
 
 export type Tokens = {
   mint(name: string, expiresAt?: Timestamp): Promise<MintedToken>;
-  verify(token: string): Promise<TokenRecord | undefined>;
-  list(): Promise<readonly TokenRecord[]>;
+  verify(token: string): Promise<Token | undefined>;
+  list(): Promise<readonly Token[]>;
   revoke(id: TokenId): Promise<void>;
 };
 
@@ -21,11 +21,19 @@ const needsTouch = (now: Timestamp, lastUsedAt?: Timestamp) =>
   lastUsedAt === undefined ||
   Date.parse(now) - Date.parse(lastUsedAt) >= TOUCH_AFTER_MS;
 
+const recordToToken = (record: TokenRecord): Token => ({
+  id: record.id,
+  name: record.name,
+  createdAt: record.createdAt,
+  ...(record.expiresAt === undefined ? {} : { expiresAt: record.expiresAt }),
+  ...(record.lastUsedAt === undefined ? {} : { lastUsedAt: record.lastUsedAt }),
+});
+
 export const createTokens = (store: AuthStore, { clock }: TokensOptions): Tokens => ({
   mint: async (name, expiresAt) => {
     const minted = await mintSecret(TOKEN_PREFIX);
 
-    const token: TokenRecord = {
+    const tokenRecord: TokenRecord = {
       name,
       id: minted.id as TokenId,
       secretHash: minted.secretHash,
@@ -33,7 +41,9 @@ export const createTokens = (store: AuthStore, { clock }: TokensOptions): Tokens
       ...(expiresAt === undefined ? {} : { expiresAt }),
     }
 
-    await store.addToken(token);
+    await store.addToken(tokenRecord);
+
+    const token = recordToToken(tokenRecord);
 
     return {
       ...token,
@@ -70,10 +80,10 @@ export const createTokens = (store: AuthStore, { clock }: TokensOptions): Tokens
       }
     }
 
-    return record;
+    return recordToToken(record);
   },
 
-  list: async () => store.listTokens(),
+  list: async () => (await store.listTokens()).map(record => recordToToken(record)),
   revoke: async (id) => {
     await store.deleteToken(id);
   },
