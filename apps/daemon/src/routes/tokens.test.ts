@@ -91,6 +91,20 @@ describe("minting a token over the wire", () => {
     expect(JSON.stringify(await body(listed))).not.toContain(minted.token);
   });
 
+  // Read as text rather than by field, so a stored secret is caught whatever
+  // name it arrives under.
+  it("puts no stored secret in either answer", async () => {
+    const { app, cookie } = await guarded();
+
+    const minted = await (await mint(app, cookie, { name: "laptop" })).text();
+    const listed = await (
+      await app.request("/v1/tokens", { headers: { cookie } })
+    ).text();
+
+    expect(minted).not.toContain("secretHash");
+    expect(listed).not.toContain("secretHash");
+  });
+
   it("takes an expiry, and does without one", async () => {
     const { app, cookie } = await guarded();
 
