@@ -1,8 +1,15 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-08-25
+**Last updated**: 2026-08-31
 **Shipped**:
+
+- 2026-08-31 — **A delivery supplies arguments, not a target.** `Capability.targetSchema`,
+  `DeliveryRequest.target`, `Delivery.target`, and the arguments a `destination` `RoutingTarget`
+  carried under its own `target` field, are all `arguments` now — matching CONTEXT.md.
+  `RoutingTarget` itself keeps the word, for the one sense it still names: the destination-or-user
+  a record resolves to. No behaviour changed.
+  ([plan](../plans/destination-targets.md))
 
 - 2026-08-25 — **An asset takes the id its uploader minted.** `assets.store` is given the id
   instead of minting one, and answers whether it stored the asset or already held it, refusing
@@ -108,8 +115,8 @@
   abandoned rather than retried, so every automatic retry is backed by proof that nothing was
   delivered. Abandoning or cancelling a delivery removes the reservation, which returns the item to
   the queue, and puts a row naming that item on the abandoned-work surface. A record now carries
-  its **state** and what the delivery **targeted**, because a delivery carried out later is
-  assembled from the record alone; `routing.cancelDelivery` and `routing.deliveryFor` are new, and
+  its **state** and the **arguments** the delivery supplied, because a delivery carried out later
+  is assembled from the record alone; `routing.cancelDelivery` and `routing.deliveryFor` are new, and
   `routing.destinations` answers what each wired adapter declares. No adapter ships: this is proved
   against a destination that fails on command.
   ([plan](../plans/delivery-machinery.md),
@@ -122,7 +129,7 @@
   runner beside the mirror runner drives what could not be carried out inline; the two share one
   loop, differing only in what a job is. A missing or unwritable root reports **unreachable**, so a
   decision made against an unmounted drive is kept and retried; a traversal, a file already there
-  and a target of the wrong shape report **rejected**, which is abandoned at once. Nothing a
+  and arguments of the wrong shape report **rejected**, which is abandoned at once. Nothing a
   delivery names can escape the root: the target is resolved against the root's real path and
   compared, and the deepest existing part of it read back through the filesystem, so a symlink out
   is caught as well as an absolute path or a `..`. Nothing is overwritten either — a file is created
@@ -131,7 +138,7 @@
   Identity moved onto the adapter as `id`, so a duplicate is still caught at wiring time while
   capabilities are re-read per call; `routing.destinations` answers a report per destination, and
   one that could not describe itself is reported rather than dropped; and `routing.route` refuses
-  `unreachable` when it cannot read capabilities to check a target against.)*
+  `unreachable` when it cannot read capabilities to check arguments against.)*
   ([plan](../plans/destination-fs.md))
 - 2026-08-17 — **An inline attempt that throws is unknown, not failed.** `routing.route` was letting
   an adapter's exception — including the caller's own `AbortSignal` firing — unwind the call with
@@ -602,15 +609,15 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   authoritative and a second copy is one that can one day disagree. It is on the item because a
   surface reads a page of them and cannot ask per row — without it a feed can say an item was
   archived and cannot say it was routed. The records themselves are still read one item at a
-  time: a capability, a target and a pointer are an item's detail, not a row's.
+  time: a capability, arguments and a pointer are an item's detail, not a row's.
 - **A destination declares its capabilities** (decided 2026-08-04). Each capability names one
-  thing that destination can do, the payload types it accepts for it, and a schema for what a
-  delivery must target. A delivery names a capability and supplies a target; core refuses one
-  the destination has not declared, or a payload type it does not accept, rather than
-  approximating.
+  thing that destination can do, the payload types it accepts for it, and a schema for the
+  arguments a delivery must supply. A delivery names a capability and supplies arguments; core
+  refuses one the destination has not declared, or a payload type it does not accept, rather
+  than approximating.
 - **Core holds no list of capabilities.** A fixed set — create, append, place — was tried and
   rejected: it is filesystem-shaped, and a board, a webhook or a Micropub endpoint does not
-  decompose into it. Capability names and target shapes belong to the adapter, the way payload
+  decompose into it. Capability names and argument shapes belong to the adapter, the way payload
   types already do, so a new kind of destination needs no change in core.
 - **A destination is pool state** (decided 2026-08-17,
   [ADR 20](../adr/0020-destinations-are-pool-state.md)). One is a row: a minted id, a name a person
@@ -619,7 +626,7 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   a person could delete a paragraph from. Creating, editing, retiring and deleting one are
   operations like any other, and each appends to the action log.
 - **A kind publishes the schema for its settings**, and core validates against it and refuses with
-  facts — the same arrangement as a capability's target schema, one level up. Core holds no list of
+  facts — the same arrangement as a capability's arguments schema, one level up. Core holds no list of
   kinds, so a new kind of destination still needs no change in core. The host registers **one
   adapter per kind**, not one per destination
   ([ADR 8](../adr/0008-adapters-are-in-process-and-wired-by-the-host.md)): the destination is
@@ -660,10 +667,10 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   extreme. The decision is what the record exists to remember, and it is what orders an item's
   records; where a delivery landed is what the pointer is for. A destination's own idea of when it
   received something is not kept, since no reader was found for it that the pointer does not serve.
-- **A record remembers what the delivery targeted** (added 2026-08-14), beside the destination and
-  the capability. Under the synchronous model the target was consumed by the one attempt; a delivery
-  that is carried out later has to be assembled from the record alone, and a reservation that could
-  not say what it was pointed at would be a decision nothing could act on.
+- **A record remembers the arguments the delivery supplied** (added 2026-08-14), beside the
+  destination and the capability. Under the synchronous model the arguments were consumed by the
+  one attempt; a delivery that is carried out later has to be assembled from the record alone, and
+  a reservation that could not say what it was pointed at would be a decision nothing could act on.
 - **Core imposes no timeout on the inline attempt.** A default is interface policy, and core is a
   primitive API; the caller bounds it with the `AbortSignal` that reaches the adapter. A host that
   passes none waits as long as its destination takes.

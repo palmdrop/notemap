@@ -58,8 +58,8 @@
   three Tailwind namespaces are cleared so a component naming its own colour does not compile — a
   test over `src/components`, `src/routes` and `src/styles` is the second gate. The queue is the root route and
   carries capture as its first row; a row opens in place on its own stamp, one at a time, and
-  routing escalates into a composer beside it that steps through where, what to do, and the target
-  the schema asks for. The feed says what became of a row and keeps tags editable on every one of
+  routing escalates into a composer beside it that steps through where, what to do, and the
+  arguments the schema asks for. The feed says what became of a row and keeps tags editable on every one of
   them. A refusal has the bottom-left corner to itself; work merely waiting for the daemon is left
   to the one mark in the bar. Settings enters at the bar's right end and holds the exits to the
   daemon's own pages. **Not shipped**: the folder tree, which nothing can enumerate; CommonMark,
@@ -219,7 +219,7 @@ behind it, and the veil, the cross and Escape all put it away. Nothing in the re
 width or height for it, which is what the panel cost everywhere it was not open.
 
 The composer is stepped, not flat: **where** (destinations, with an unavailable one saying so
-rather than disappearing), **do** (that destination's capabilities), then the target its schema
+rather than disappearing), **do** (that destination's capabilities), then the arguments its schema
 asks for. A settled step stays visible with its choice marked, so the decision reads back as it is
 built.
 
@@ -560,7 +560,7 @@ the page a person actually reads. Three-character indents on successive paragrap
       loads nothing from anywhere but the daemon, with a test holding the copy to `tokens.css`.
       `/docs` is a vendored Swagger UI and stays as it is.
 - [ ] 2026-08-19 — **Nothing can enumerate a destination's folders.** The composer draws a folder
-      tree; `describe()` returns capabilities and a `targetSchema` and that is the whole vocabulary.
+      tree; `describe()` returns capabilities and an `argumentsSchema` and that is the whole vocabulary.
       Either the adapter publishes an enum it refreshes at describe time, or the destination port
       gains a method for asking — which is the same seam [todo.md](../todo.md) predicts for preview,
       so it would have two callers.
@@ -601,7 +601,7 @@ the page a person actually reads. Three-character indents on successive paragrap
 - A refused operation is distinguishable from a pending one without reading either, and only the
   refused one offers a dismissal.
 - Routing a queued item is reachable in two choices from the opened row when the capability needs
-  no target fields, and the modal says which capture it is about.
+  no argument fields, and the modal says which capture it is about.
 - Choosing a destination describes that destination and no other.
 - A feed row that has been routed says so and names where it went, and drawing a page of them costs
   one read; opening a queue row that has been nowhere costs none.
