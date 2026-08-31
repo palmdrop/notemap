@@ -30,18 +30,18 @@ export function createAjvSchemaValidator(
    * name with different schemas, and ajv caches compiled schemas by `$id` — a
    * shared instance would hand one pool's rules to the other, or throw on the
    * second registration of an id.
-   *
-   * `strict` defaults to off: ajv's strict mode throws at compile time on a
-   * keyword it does not recognise, and `x-notemap-candidates` is exactly
-   * that — an annotation JSON Schema permits and core is not the one that
-   * reads. Overridable, since a host that wants ajv's other strict checks may
-   * still want them.
    */
-  const ajv = new Ajv2020({
-    strict: false,
-    ...config.options,
-    allErrors: true,
-  });
+  const ajv = new Ajv2020({ ...config.options, allErrors: true });
+
+  /**
+   * `x-notemap-candidates` is a vendor annotation core validates schemas
+   * against but never interprets — declaring it here is what lets it survive
+   * strict mode, which otherwise throws on any keyword it was not told about.
+   * Left declared rather than turning strict off: a `config.toml` payload
+   * type is hand-written, and a typo'd keyword in it should still fail loudly
+   * at startup rather than silently validating less than its author meant.
+   */
+  ajv.addKeyword({ keyword: "x-notemap-candidates", schemaType: "boolean" });
 
   return {
     validate(schema: JsonSchema, value: JsonValue): readonly SchemaIssue[] {
