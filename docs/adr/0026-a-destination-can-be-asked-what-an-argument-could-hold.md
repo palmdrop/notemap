@@ -147,6 +147,38 @@ check `describe()` already runs; `unreachable` where the destination was asked a
 
 ---
 
+## Amended 2026-08-31, reviewing the implementation
+
+Two refinements to the answer shape, neither reversing the decision above.
+
+**An entry's `value` is optional.** The first shape required one, so every entry a destination
+offered was something the field could hold. That made a whole capability unbrowsable: browsing for
+a note to append to has to descend through folders, and a folder is not a note. The adapter's only
+alternatives were to hide the folders — which is what shipped, and left `append-to-file` able to
+see root-level notes and nothing else — or to offer them as values, which lets a person pick
+`projects/` as the note to append to and mints a routing record whose delivery cannot land.
+
+So `value` and `scope` are independent, and both optional. An entry is something to take, somewhere
+to look, or both:
+
+| | `value` | `scope` |
+| --- | --- | --- |
+| a folder, browsing for a folder | the folder | descend |
+| a folder, browsing for a note | — | descend |
+| a note, browsing for a note | the note | — |
+
+This is the shape a board wants too, where a swimlane is worth opening and is not somewhere a card
+goes. An entry with neither is nothing, and no caller is obliged to draw one.
+
+**`NotOffered` is part of the adapter contract, not the registry's alone.** It was thrown only by
+the registry, for a kind whose adapter has no `candidates` at all; an adapter asked about a field
+it does not answer for had no way to say so and fell through to `unreachable`, which claims the
+destination could not be reached when it was never asked. An adapter may now throw it per field.
+The report is unchanged — `not-offered` is still one answer, because "nothing here can be browsed"
+is one fact to a caller however it was arrived at.
+
+---
+
 ## More information
 
 Plan: [destination-targets.md](../plans/destination-targets.md), phase 3. The route

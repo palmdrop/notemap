@@ -7,9 +7,11 @@ import type { DestinationId } from "#types/domain/ids";
 import { Unusable, usability } from "./usability";
 
 /**
- * Thrown by the registry itself, never by an adapter: the kind is usable and
- * the adapter registered for it simply has no `candidates`. Distinct from
- * every other throw, which `candidates()` below sorts into `unreachable`.
+ * Nothing here can be browsed, and that is a fact about the kind rather than
+ * a failure: the registry throws it for an adapter with no `candidates` at
+ * all, and an adapter throws it for a field it does not answer for. Distinct
+ * from every other throw, which `candidates()` below sorts into
+ * `unreachable`.
  */
 export class NotOffered extends Error {
   constructor(detail: string) {

@@ -64,10 +64,17 @@ export type CandidatesRequest = {
   readonly scope?: string;
 };
 
-/** One thing the field could hold: what to show, what to send back, and where to look further. */
+/**
+ * One thing the field could hold, or one place to look for more, or both.
+ * Both are optional because they are independent: a vault's folder is
+ * somewhere an `append-to-file` browser descends and never something that
+ * field may hold, and a note is the reverse. An entry with neither is
+ * nothing, and no caller is obliged to draw one.
+ */
 export type CandidateEntry = {
   readonly label: string;
-  readonly value: JsonValue;
+  /** Absent where this is only somewhere to look further. */
+  readonly value?: JsonValue;
   /** Absent where the destination has nothing further to offer past this entry. */
   readonly scope?: string;
 };

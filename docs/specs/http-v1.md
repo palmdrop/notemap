@@ -719,6 +719,13 @@ GET /v1/destinations/019a3f2c-.../candidates?capability=create-file&field=direct
 }
 ```
 
+- **An entry carries a `value`, a `scope`, or both.** `value` is what the field would take and is
+  absent where this entry is only somewhere to look further; `scope` is what to ask again with and
+  is absent where there is nothing past it. Browsing `append-to-file`'s `path` for a note lists a
+  folder with a scope and no value — somewhere to descend, never something to append to — and a
+  note with a value and no scope. A client draws all three the same way: opening an entry descends
+  where it can and takes the value otherwise.
+
 - **The same animal as `/description`**: a question the destination answers, slowly, and may
   refuse. It sits beside it rather than folded into it, on `describe()`'s own terms
   ([core.md](core.md#routing)).

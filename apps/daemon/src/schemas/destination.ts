@@ -43,7 +43,8 @@ export const destinationDescriptionSchema = z
 export const candidateEntrySchema = z
   .object({
     label: z.string(),
-    value: z.unknown(),
+    /** Absent where this is only somewhere to look further. */
+    value: z.unknown().optional(),
     /** Absent where the destination has nothing further to offer past this entry. */
     scope: z.string().optional(),
   })

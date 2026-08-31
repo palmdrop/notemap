@@ -1,4 +1,4 @@
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
@@ -355,6 +355,28 @@ describe("GET /v1/destinations/{id}/candidates", () => {
     const answered = (await body(response)) as { kind: string; detail: string };
     expect(answered.kind).toBe("unreachable");
     expect(answered.detail).toContain(host.vaultRoot);
+  });
+
+  it("offers a folder to walk through, and a note to take, for append-to-file", async () => {
+    const host = serving("ready");
+    mkdirSync(join(host.vaultRoot, "projects"));
+    writeFileSync(join(host.vaultRoot, "daily.md"), "");
+    const vault = await created(host);
+
+    const response = await ask(host, vault.id, {
+      capability: "append-to-file",
+      field: "path",
+    });
+
+    expect(response.status).toBe(200);
+    expect(await body(response)).toEqual({
+      kind: "answered",
+      truncated: false,
+      entries: [
+        { label: "projects", scope: "projects" },
+        { label: "daily.md", value: "daily.md" },
+      ],
+    });
   });
 
   it("is unusable where the root overlaps notemap's own state", async () => {

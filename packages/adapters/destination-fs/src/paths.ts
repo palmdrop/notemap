@@ -36,9 +36,12 @@ export function realRootOf(root: string): Promise<string> {
 
 /**
  * The first of `reserved` that `root` contains or sits inside of, resolved the
- * same way a person's setting is — `~` and `..` — but never through a symlink:
- * this runs from `describe()`, which touches no filesystem, so a root that is
- * a link to reserved state is caught only once a delivery is attempted.
+ * same way a person's setting is — `~` and `..` — but never through a symlink
+ * of its own: this is string arithmetic, and how much it catches depends on
+ * what its caller hands it. `deliver()` and `candidates()` pass a root already
+ * read back through the filesystem; `describe()` touches no filesystem at all,
+ * so a root that is a *link* to reserved state passes it and is caught only
+ * once something goes and looks.
  */
 export function overlapsAny(
   root: string,

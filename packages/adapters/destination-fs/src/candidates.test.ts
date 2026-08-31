@@ -1,7 +1,12 @@
 import { mkdir, symlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import type { CandidatesRequest, CapabilityName } from "@notemap/core";
+import {
+  NotOffered,
+  Unusable,
+  type CandidatesRequest,
+  type CapabilityName,
+} from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createFilesystemDestination } from "./destination";
@@ -121,7 +126,7 @@ describe("what create-file's directory offers", () => {
 });
 
 describe("what append-to-file's path offers", () => {
-  it("lists notes, and not folders", async () => {
+  it("offers notes to take and folders only to walk through", async () => {
     const { path, candidates } = await vault();
     await writeFile(join(path, "daily.md"), "");
     await mkdir(join(path, "inbox"));
@@ -130,8 +135,36 @@ describe("what append-to-file's path offers", () => {
 
     expect(answer).toEqual({
       truncated: false,
-      entries: [{ label: "daily.md", value: "daily.md" }],
+      entries: [
+        { label: "inbox", scope: "inbox" },
+        { label: "daily.md", value: "daily.md" },
+      ],
     });
+  });
+
+  it("descends into a folder to reach a note that is not at the root", async () => {
+    const { path, candidates } = await vault();
+    await mkdir(join(path, "projects"));
+    await writeFile(join(path, "projects", "fiction.md"), "");
+
+    const answer = await candidates({ ...PATH, scope: "projects" });
+
+    expect(answer.entries).toEqual([
+      { label: "fiction.md", value: "projects/fiction.md" },
+    ]);
+  });
+
+  it("puts the ways down before the notes, so a flat vault does not bury them", async () => {
+    const { path, candidates } = await vault();
+    await writeFile(join(path, "a-note.md"), "");
+    await mkdir(join(path, "z-folder"));
+
+    const answer = await candidates(PATH);
+
+    expect(answer.entries.map((each) => each.label)).toEqual([
+      "z-folder",
+      "a-note.md",
+    ]);
   });
 
   it("offers no further scope: a note is a leaf", async () => {
@@ -143,10 +176,11 @@ describe("what append-to-file's path offers", () => {
     expect(answer.entries[0]?.scope).toBeUndefined();
   });
 
-  it("excludes hidden files", async () => {
+  it("excludes hidden folders as well as hidden files", async () => {
     const { path, candidates } = await vault();
     await writeFile(join(path, "daily.md"), "");
     await writeFile(join(path, ".DS_Store"), "");
+    await mkdir(join(path, ".obsidian"));
 
     const answer = await candidates(PATH);
 
@@ -216,18 +250,18 @@ describe("a root that is not there", () => {
 });
 
 describe("a root that overlaps notemap's own state", () => {
-  it("rejects rather than listing it", async () => {
+  it("is unusable, the same word describing it gives", async () => {
     const made = root();
     cleanups.push(made.cleanup);
     await mkdir(made.path, { recursive: true });
     const candidates = bind(made.path, [made.path]);
 
-    await expect(candidates(DIRECTORY)).rejects.toThrow();
+    await expect(candidates(DIRECTORY)).rejects.toThrow(Unusable);
   });
 });
 
 describe("a field this kind does not offer candidates for", () => {
-  it("rejects rather than answering nothing", async () => {
+  it("is not-offered rather than a failure to reach anything", async () => {
     const { candidates } = await vault();
 
     await expect(
@@ -235,6 +269,6 @@ describe("a field this kind does not offer candidates for", () => {
         capability: "create-file" as CapabilityName,
         field: "filename",
       }),
-    ).rejects.toThrow();
+    ).rejects.toThrow(NotOffered);
   });
 });

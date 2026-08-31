@@ -4,6 +4,17 @@
 **Last updated**: 2026-08-31
 **Shipped**:
 
+- 2026-08-31 — **A destination can be asked what one field of one capability's arguments could
+  hold.** `destinations.candidates` joins `describe` on the pool API and on the `Destinations`
+  port, optional on a kind adapter: it names a capability, a field, and an opaque scope an earlier
+  answer minted, and answers entries — a label, the value the field would take where the field may
+  hold it, and a scope to ask again with where there is more past it — plus whether the answer was
+  cut short. `describe()` is untouched and stays offline-safe. Failures are `unreachable`,
+  `unusable` and `not-offered`. An adapter can now declare the last two itself, by throwing
+  `Unusable` or `NotOffered`, for what only it knows.
+  ([plan](../plans/destination-targets.md),
+  [ADR 26](../adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md))
+
 - 2026-08-31 — **A delivery supplies arguments, not a target.** `Capability.targetSchema`,
   `DeliveryRequest.target`, `Delivery.target`, and the arguments a `destination` `RoutingTarget`
   carried under its own `target` field, are all `arguments` now — matching CONTEXT.md.
@@ -645,6 +656,14 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   with a reason, beside described and undescribable. Routing to it is refused. The row is left
   exactly as it is, because the code that understood it may come back and the person who wrote it
   cannot reach the row to fix it otherwise.
+- **An adapter may declare a destination unusable itself** (added 2026-08-31), by throwing
+  `Unusable` from `describe()` or from `candidates()`, and core reports it on exactly the terms
+  above. The two checks core makes — a kind nothing speaks, settings that fail the kind's schema —
+  are the ones core can make from the outside, and they are not all of them: a filesystem root
+  pointed at the daemon's own state satisfies every schema there is and is still a destination
+  nothing should be delivered to. Without this an adapter's only way to say so is a throw, which
+  core has to read as merely unreachable — a destination that will come back — and retry forever.
+  A kind that throws anything else is unreachable, as it always was.
 - **A deferred delivery resolves its destination when it runs**, not when the decision was made: a
   root corrected after a failure is why the retry succeeds. A destination that has become unusable
   is proof that nothing was delivered, so the job retries on the same terms as `unreachable` and is
@@ -771,12 +790,16 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   on the adapter, and asked about **a field** rather than a path: a fixed vocabulary of place-kinds
   was tried once for capabilities themselves and rejected, and encoding "collection" and "item" for
   what a field can hold would repeat it the day a board's columns or a vault's tags showed up
-  neither. An answer is entries — a label, the value the field would take, and, where the
-  destination offers it, a scope to ask again with — so a tree is walked by a caller that was never
-  told it is a tree, and `truncated` says where the destination held more than it answered. A
+  neither. An answer is entries — a label, and then a value, a scope, or both: what the field may
+  hold, somewhere to look for more, and no assumption that they are the same thing. Browsing for a
+  note descends through folders and is never offered one as a note, which is what an entry with a
+  scope and no value says. So a tree is walked by a caller that was never told it is a tree, and
+  `truncated` says where the destination held more than it answered. A
   request carries none of the arguments filled in so far, because no field either kind declares
   today depends on another. Failures are `unreachable`, `unusable` and `not-offered`, on the same
-  terms `describe()`'s own report already uses.
+  terms `describe()`'s own report already uses. `not-offered` is one answer however it was reached
+  — a kind whose adapter implements none of this, and a field an adapter does not answer for, are
+  the same fact to a caller: nothing here can be browsed.
 - **A capability's accepted payload types may be a wildcard**, for a destination whose fallback
   genuinely handles anything. It is a promise rather than a shrug: claiming it trades away the
   refusal core would otherwise make up front, so what would have been an immediate

@@ -18,17 +18,19 @@
   grows an edit, or rewriting a processed note is deliberately not a thing this shell does and
   shell.md should keep saying so. Raised reviewing
   [editable-until-processed](plans/editable-until-processed.md).
-- [x] Routing arguments - more detailed routing within a destination. The mechanism already exists: a capability's `targetSchema` is a JSON Schema the adapter publishes and core validates, so an adapter wanting a template name, a format, a column or a priority just declares one. What is left is making those schemas good enough to build a form from - titles, descriptions, defaults, enums - and saying so in the spec, so adapters bother.
-  - This has a caller now. The routing composer builds the target step from `targetSchema`, so a
-    schema with nothing in it renders as unlabelled text inputs; an enum would render as the same
-    marked-option idiom the `where` and `do` steps already use.
+- [x] Routing arguments - more detailed routing within a destination. The mechanism already exists: a capability's `argumentsSchema` is a JSON Schema the adapter publishes and core validates, so an adapter wanting a template name, a format, a column or a priority just declares one. What is left is making those schemas good enough to build a form from - titles, descriptions, defaults, enums - and saying so in the spec, so adapters bother.
+  - This has a caller now. The routing composer builds the arguments step from `argumentsSchema`,
+    so a schema with nothing in it renders as unlabelled text inputs; an enum would render as the
+    same marked-option idiom the `where` and `do` steps already use.
   - Closed 2026-08-31: titles and descriptions landed on every argument field of both kinds (phase 4
     of [destination-targets](plans/destination-targets.md), which also renamed `targetSchema` to
     `argumentsSchema`). What would have been a static `enum` is answered dynamically instead — a
     destination is asked what a field could hold
     ([ADR 26](adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md)) — and the
-    composer draws it through exactly the marked-option idiom this line predicted. Defaults were
-    not built; open a fresh line if they are still wanted.
+    composer draws it through exactly the marked-option idiom this line predicted.
+- [ ] A schema field's **default** is not drawn. Titles, descriptions and dynamic candidates landed
+  2026-08-31; a `default` an adapter declares is still ignored by the composer, which starts every
+  field empty. Split off the routing-arguments line above rather than left ticked inside it.
 - [ ] Routing templates - changing or formatting an item on routing, for example, making an item a piece of a TODO list
   - AI templates, where a local model formats an entry that may or may not be properly formatted
   - Shape settled in [ADR 19](adr/0019-a-destination-converts-and-the-delivery-records-what-went.md): the destination converts a copy, the work happens inside the delivery, and the bytes that landed come back to be stored on the routing record. Open: whether a template is configured in the delivery's arguments or in destination config, and whether a template is itself a thing a person edits.

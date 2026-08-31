@@ -203,6 +203,11 @@ them exactly or sits inside or around one: routing a note into the mirror is des
 nobody ever means it. Mounting under `vaults/` keeps the two apart without having to think about
 it, but the refusal holds regardless of what is mounted where.
 
+What is reserved is the pool's whole **directory**, not the database file — its `-wal` and `-shm`
+siblings are part of the pool and are not named in any config. So a `pool` moved up a level, to
+`/var/lib/notemap/notemap.db`, would reserve `/var/lib/notemap` and make every vault mounted under
+it unusable. Leave the database in `state/`.
+
 Routing an item at it uses one of two capabilities:
 
 - **`create-file`** — writes a new file under `directory` (empty names the root itself). Give it a

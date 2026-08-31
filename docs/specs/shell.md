@@ -6,8 +6,10 @@
 
 - 2026-08-31 — **The composer walks what a field could hold.** A field carrying
   `x-notemap-candidates` draws a browser in the `Group`/`Option` idiom `where` and `do` already
-  use — entries at the current scope, `back`, and `use <label>` to take the scope stood in — beside
-  its free-text input rather than instead of it. A refusal to browse reads as the ordinary
+  use — entries at the current scope, `back`, `use <label>` where the scope stood in is something
+  the field may hold, and `clear` at the top — beside its free-text input rather than instead of
+  it. An entry may be somewhere to look without being something to take, which is how browsing for
+  a note descends through folders. A refusal to browse reads as the ordinary
   condition, never an alarm. The control is chosen through a lookup keyed by destination kind,
   falling back to the schema-driven browser for every kind that registers nothing; none does yet.
   ([plan](../plans/destination-targets.md))
@@ -233,7 +235,8 @@ built.
 
 **A field that can be asked about draws a browser beside its input, in the register's own
 language** (added 2026-08-31): the entries at the current scope as marked options, `back` to the
-scope before it, and `use <label>` to take the scope stood in — the same `Group`/`Option` idiom
+scope before it, `use <label>` to take the scope stood in where it is something the field may hold,
+and `clear` at the top for a field that already holds something — the same `Group`/`Option` idiom
 `where` and `do` already use, not a second visual vocabulary. Free entry stays beside it regardless,
 since a folder that does not exist yet cannot be browsed to. A destination that cannot be asked, or
 a kind that does not offer this, draws the field exactly as it is otherwise, with a muted line

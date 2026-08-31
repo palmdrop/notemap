@@ -33,7 +33,8 @@
   type Crumb = {
     readonly label: string;
     readonly scope: string;
-    readonly value: string;
+    /** Absent where the scope stood in is not itself something the field may hold. */
+    readonly value?: string;
   };
 
   let history = $state<Crumb[]>([]);
@@ -43,9 +44,16 @@
   let refusal = $state<string | undefined>(undefined);
 
   const scope = $derived(history.at(-1)?.scope);
+  const here = $derived(history.at(-1));
+
+  // Every answer but the newest is dropped: descending and coming straight
+  // back leaves two asks in flight, and without this the slower one paints
+  // its entries under the crumb trail of the scope already left.
+  let asking = 0;
 
   $effect(() => {
     const at = scope;
+    const mine = (asking += 1);
     loading = true;
     refusal = undefined;
 
@@ -56,13 +64,14 @@
           field,
           ...(at === undefined ? {} : { scope: at }),
         });
-        applied(answer);
+        if (mine === asking) applied(answer);
       } catch (error) {
+        if (mine !== asking) return;
         entries = [];
         truncated = false;
         refusal = saidBy(error);
       } finally {
-        loading = false;
+        if (mine === asking) loading = false;
       }
     })();
   });
@@ -81,15 +90,23 @@
       answer.kind === "not-offered" ? "cannot be browsed here" : answer.detail;
   }
 
-  /** A walkable entry descends; one with nothing past it is taken directly. */
+  /**
+   * An entry may be somewhere to look, something to take, or both, and the
+   * three are drawn the same way: opening descends where there is anywhere to
+   * descend to, and takes the value otherwise.
+   */
   function open(entry: CandidateEntry): void {
     if (entry.scope === undefined) {
-      onchoose(String(entry.value));
+      if (entry.value !== undefined) onchoose(String(entry.value));
       return;
     }
     history = [
       ...history,
-      { label: entry.label, scope: entry.scope, value: String(entry.value) },
+      {
+        label: entry.label,
+        scope: entry.scope,
+        ...(entry.value === undefined ? {} : { value: String(entry.value) }),
+      },
     ];
   }
 
@@ -98,15 +115,29 @@
   }
 
   function take(): void {
-    const here = history.at(-1);
-    if (here !== undefined) onchoose(here.value);
+    if (here?.value !== undefined) onchoose(here.value);
+  }
+
+  /**
+   * Emptying the field, not choosing the top: what an empty value means is
+   * the schema's business — for `create-file` it is the vault's own root.
+   * Offered only at the top, since `back` is what leaves a scope.
+   */
+  function clear(): void {
+    onchoose("");
   }
 </script>
 
-{#if history.length > 0}
+{#if here !== undefined}
   <div class="mb-1.5 flex items-baseline gap-3">
     <Action onclick={back}>back</Action>
-    <Action onclick={take}>use {history.at(-1)?.label}</Action>
+    {#if here.value !== undefined}
+      <Action onclick={take}>use {here.label}</Action>
+    {/if}
+  </div>
+{:else if value !== ""}
+  <div class="mb-1.5 flex items-baseline gap-3">
+    <Action onclick={clear}>clear</Action>
   </div>
 {/if}
 
@@ -115,10 +146,10 @@
 {:else if refusal !== undefined}
   <p class="text-ink-muted">{refusal}</p>
 {:else}
-  {#each entries as entry (entry.label)}
+  {#each entries as entry (entry.scope ?? String(entry.value))}
     <Option
       label={entry.label}
-      chosen={String(entry.value) === value}
+      chosen={entry.value !== undefined && String(entry.value) === value}
       onchoose={() => open(entry)}
     />
   {/each}

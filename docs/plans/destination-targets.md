@@ -80,9 +80,12 @@ Depends on nothing. Nothing behaves differently when this phase lands.
       and the `target` inside `RoutingTarget` → `arguments`
 - [x] `RoutingTarget` itself keeps the word, and so does the `target_kind` column: destination-or-user
       is the sense the glossary permits. Only the object the capability was pointed at is renamed
-- [x] A new migration renames the column and recreates the two triggers that guard it. Migrations
-      are append-only and tracked by `PRAGMA user_version` — the file says so at the top — so an
-      existing pool is carried across rather than broken
+- [x] A new migration renames the column. Migrations are append-only and tracked by
+      `PRAGMA user_version` — the file says so at the top — so an existing pool is carried across
+      rather than broken. **Deviation**: this task expected to recreate the two triggers that once
+      guarded the column, and there were none left to recreate — the rebuild that added the foreign
+      key to `destinations` had already folded them into a `CHECK` on the column itself, which
+      `RENAME COLUMN` carries across without a rebuild of its own
 - [x] The mirror codec reads and writes `arguments`; the round-trip property test and the
       arbitraries follow it. A mirror written before this phase no longer parses, which costs
       nothing today because rebuild is unbuilt, and is worth saying out loud rather than discovering
@@ -186,7 +189,7 @@ Depends on phase 3.
       unlabelled inputs today because there is nothing to label them with, and that is the schema's
       fault rather than the shell's
 - [x] Verify: `pnpm -r --silent test`
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 5 — The filesystem kind answers
 
@@ -197,7 +200,10 @@ Depends on phases 3 and 4.
 - [x] The scope is the path relative to the root, because that is what the field takes — the value
       and the way to descend are the same string here, and will not be for every kind
 - [x] What is offered follows the field, not the kind: `create-file`'s `directory` offers folders,
-      `append-to-file`'s `path` offers notes
+      `append-to-file`'s `path` offers notes. **Revised after co-review**: `path` also lists folders,
+      with a scope and no value — somewhere to descend, never something to append to — because a
+      note that is not at the vault's root was otherwise unreachable by browsing at all. Folders
+      first, then notes
 - [x] Hidden files and the `.notemap-*` temporaries a crashed delivery leaves are not offered
 - [x] Unreadable or absent is `unreachable` with the reason, never an empty listing: a vault that is
       not mounted and a vault that is empty are different answers to a person looking for a folder
@@ -262,7 +268,7 @@ Depends on phases 4 and 8.
 
 - [x] A field that can be asked about draws a browser instead of a bare input: the entries at the
       current scope, a way back to the one before it, and a way to take the scope you are standing
-      in. In the register's own language — this is the marked-option idiom the `where` and `do`
+      in where it is something the field may hold, plus a way to empty the field at the top. In the register's own language — this is the marked-option idiom the `where` and `do`
       steps already use, not a second visual vocabulary
 - [x] Free entry stays, beside it. A folder that does not exist yet cannot be browsed to, and
       `create-file` into a new folder is a thing people do

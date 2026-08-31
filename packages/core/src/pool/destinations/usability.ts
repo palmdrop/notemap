@@ -9,11 +9,12 @@ export type Usability =
   | { readonly kind: "unusable"; readonly detail: string };
 
 /**
- * What an adapter throws from `describe()` where it, rather than core, is the
- * one that knows the destination cannot be made sense of — a filesystem root
- * configured over the daemon's own state, say. Core cannot tell this apart
- * from a destination that merely could not be reached except by the adapter
- * saying so, which is what distinguishes it from an ordinary throw.
+ * What an adapter throws, from `describe()` or from `candidates()`, where it
+ * rather than core is the one that knows the destination cannot be made sense
+ * of — a filesystem root configured over the daemon's own state, say. Core
+ * cannot tell this apart from a destination that merely could not be reached
+ * except by the adapter saying so, which is what distinguishes it from an
+ * ordinary throw.
  */
 export class Unusable extends Error {
   constructor(detail: string, options?: { cause?: unknown }) {
