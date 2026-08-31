@@ -217,8 +217,12 @@ discovered: [security.md](security.md).
 - **Versioned from the first commit.** `/v1` may take breaking changes until the first pool
   exists that would be upsetting to lose; from then on breaking changes mean a new version and
   a changelog ([ADR 9](../adr/0009-versioned-api-mutable-until-first-real-pool.md)).
-- **No authentication for now** (decided 2026-08-02). The daemon binds to localhost or a
-  trusted network; the pool is the boundary.
+- **The daemon authenticates** (decided 2026-08-27, revising 2026-08-02's "no authentication for
+  now"). One middleware over `/v1` takes either a session cookie or `Authorization: Bearer`, and a
+  request carrying neither is `401 unauthenticated` in this document's own refusal envelope. A
+  daemon nobody has set a password on asks for nothing and behaves exactly as it did before. The
+  rest of this document still describes the undefended daemon in places; see
+  [the login plan](../plans/login-and-access-tokens.md).
 - Every intake path produces the same capture envelope: a typed payload, the source, the
   source's own identifier, and the capture time ([standards.md](../standards.md)).
 - A capture is identified by a client-generated id; submitting it twice has no additional
@@ -1051,6 +1055,8 @@ Every error, from core or from the daemon, is one shape:
 |---|---|---|---|
 | `400` | `malformed-json` | — | daemon |
 | `400` | `malformed-envelope` | `issues` (`SchemaIssue[]`) | daemon |
+| `401` | `unauthenticated` | — | daemon |
+| `403` | `session-required` | — | daemon |
 | `404` | `unknown-route` | `path` | daemon |
 | `404` | `no-such-item` | `item` | daemon, core |
 | `404` | `item-purged` | `item`, `at` | core |
@@ -1096,7 +1102,9 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `arguments-invalid` | `issues` | core |
 | `422` | `rejected-by-destination` | `detail` | core |
 | `422` | `delivery-outcome-unknown` | `detail` | core |
+| `422` | `not-a-session` | `presented` | daemon |
 | `422` | `unreachable` | `detail` | core |
+| `429` | `too-many-attempts` | `retryAfter` | daemon (+ `Retry-After` header) |
 
 The rule behind the table, so a refusal added later has a status without a decision being
 needed: **`409` is for a conflict with something the pool already holds** — the request is

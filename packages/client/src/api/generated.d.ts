@@ -152,6 +152,23 @@ export interface paths {
                         };
                     };
                 };
+                /** @description Too many attempts. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "too-many-attempts";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
             };
         };
         /**

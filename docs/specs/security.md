@@ -239,8 +239,9 @@ What that leaves:
 - The sweep reclaims assets no capture ever referenced, after a grace window
   ([core.md](core.md#archive-and-purge)), so unclaimed uploads are self-limiting over time — but
   not within the window, and not at all for uploads a capture *does* claim.
-- There is no rate limiting anywhere, and the pool holds a write lock for the duration of a
-  transaction, so a caller issuing writes in a loop degrades every other caller.
+- There is no rate limiting anywhere **except failed sign-ins** (below), and the pool holds a
+  write lock for the duration of a transaction, so a caller issuing writes in a loop degrades
+  every other caller.
 - None of this matters at the intended deployment — one person, one machine, one daemon — and
   all of it matters the moment the bind widens.
 
@@ -285,6 +286,47 @@ in advance. **Authorization is deferred, not decided.** The day two credentials 
 do different things, this section is the list of what has to be answered, and `Agent` growing a
 name (see [the login plan](../plans/login-and-access-tokens.md)) is the same trigger from the
 other direction.
+
+### The login is throttled, and nothing else is
+
+One password is the whole of the attack surface, and without a delay a wordlist gets unlimited
+attempts. `POST /v1/session` counts failed sign-ins and, past a threshold, answers `429
+too-many-attempts` with `Retry-After`. A successful sign-in clears the count.
+
+**One counter for the daemon, not one per caller.** Behind a proxy the socket address is the
+proxy's, so keying on it throttles everyone as one by accident; `X-Forwarded-For` fixes that and
+is a header anyone can write, so trusting it needs a configuration flag saying a proxy is in
+front. Neither is worth it here. Per-caller keying is also what *lets* an attacker evade a
+throttle — by rotating the value — and it grows a map that then has to be bounded against that
+same rotation. Notemap is one person with one credential, so the per-caller key buys little and
+costs the hole.
+
+**It answers rather than waits.** Sleeping inside the handler holds a socket per attempt, which
+turns a wordlist into a slow-loris by accident. A `429` costs nothing to hold and tells an honest
+client when to come back; the attacker's rate is capped either way.
+
+**It escalates to a cap and never becomes a lock.** A permanent lockout hands anyone who can
+reach the login the power to deny it.
+
+**Every other `401` is deliberately not counted**, which is an absence worth stating so it does
+not read as an oversight. A session id and an access token are 32 random bytes: throttling them
+defends nothing, because guessing one is not an attack that finishes. It would, however, create
+one — an outbox draining twenty queued captures with a session that expired overnight produces
+twenty `401`s in a burst, and under a single counter that would throttle the owner out of the one
+route that fixes it. The client's own recovery would be the thing locking it out.
+
+Two risks are accepted rather than mitigated:
+
+- **Anyone who can reach the login can slow yours.** That is inherent to one counter, and is why
+  the escalation is bounded and never a lock. The intended deployments — a proxy, a tailnet, a
+  LAN — mean the population who can do this is people already let in. On the open internet it
+  would not be an acceptable trade.
+- **The count is in memory, so a restart clears it.** A crash-looping daemon has no throttle at
+  all, and `restart: unless-stopped` is in the compose file.
+
+The trigger to revisit is **a second guessable credential** — a pairing code, a recovery code,
+anything short enough for a person to type. That joins this counter the day it exists. A new
+32-byte secret does not.
 
 ---
 
@@ -350,3 +392,7 @@ other direction.
 - The container's config binds `0.0.0.0`, and that address is in the file rather than in the image.
 - An access token is refused with `session-required` on every `/v1/tokens` route, and reaches every
   other `/v1` route exactly as a session does.
+- Repeated failed sign-ins are answered `429 too-many-attempts` carrying `Retry-After`, and one
+  successful sign-in clears the count.
+- An unauthenticated request to any route other than the login never contributes to that count.
+- No number of failures makes signing in permanently unavailable.

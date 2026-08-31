@@ -17,13 +17,14 @@ import type {
 } from "@notemap/core";
 
 import { createApp } from "../app";
+import { createLoginThrottle, type Throttle } from "../auth/throttle";
 import type { Auth } from "../auth/types";
 import type { AppEnv } from "../types";
 import { startSweeper } from "../assets/sweeper";
 import { DEFAULT_MAX_UPLOAD_BYTES } from "../constants";
 import { startDeliveryRunner } from "../destinations/runner";
 import { startMirrorRunner } from "../mirror/runner";
-import { openPool } from "../ports";
+import { openPool, systemClock } from "../ports";
 
 export const WEB = "web" as SourceId;
 export const TEXT = "text" as PayloadTypeName;
@@ -101,6 +102,11 @@ export type DaemonOptions = {
   readonly mirroring?: boolean;
   /** Absent leaves the door open, which is what a daemon with no credential set does. */
   readonly auth?: Auth;
+  /**
+   * Absent counts against the wall clock, which no test reaches the threshold
+   * of. A test about the throttle itself brings one it can move.
+   */
+  readonly throttle?: Throttle;
   readonly maxUploadBytes?: number;
   /**
    * Makes the folder `vaultRoot` names before the pool opens. Leaving it out is
@@ -154,6 +160,7 @@ export function daemon(
     },
     auth: options.auth ?? noAuth,
     cookies: { secure: false },
+    throttle: options.throttle ?? createLoginThrottle({ clock: systemClock }),
   });
   const answered = trackResponses(app);
 

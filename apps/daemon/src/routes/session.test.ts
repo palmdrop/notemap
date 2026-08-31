@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { createAuth } from "../auth";
 import { createSqliteAuthStore } from "../auth/store";
+import { createLoginThrottle, type Throttle } from "../auth/throttle";
 import type { AuthStore } from "../auth/store/types";
 import type { Auth } from "../auth/types";
 import { daemon, type Daemon } from "../testing/fixture";
@@ -32,11 +33,17 @@ function authOver(): Auth {
 }
 
 /** A daemon with a password set, which is the only state where the door is shut. */
-async function guarded(): Promise<{ app: Hono<AppEnv>; auth: Auth }> {
+async function guarded(throttle?: Throttle): Promise<{
+  app: Hono<AppEnv>;
+  auth: Auth;
+}> {
   const auth = authOver();
   await auth.setPassword(NAME, PASSWORD);
 
-  const host = daemon(undefined, { auth });
+  const host = daemon(undefined, {
+    auth,
+    ...(throttle === undefined ? {} : { throttle }),
+  });
   open.push(host);
 
   return { app: host.app, auth };
@@ -250,5 +257,126 @@ describe("signing out everywhere", () => {
     expect((await app.request("/v1/sessions", { method: "DELETE" })).status).toBe(
       401,
     );
+  });
+});
+
+describe("guessing at the password", () => {
+  /** Enough to pass the free attempts and open a wait, whatever they are set to. */
+  const WRONG_ENOUGH = 12;
+
+  const movable = () => {
+    let current = Date.parse("2026-08-31T09:00:00.000Z");
+    return {
+      throttle: createLoginThrottle({
+        clock: { now: () => new Date(current).toISOString() as Timestamp },
+      }),
+      pass: (ms: number) => {
+        current += ms;
+      },
+    };
+  };
+
+  it("is turned away once too much of it has been done", async () => {
+    const clock = movable();
+    const { app } = await guarded(clock.throttle);
+
+    for (let attempt = 0; attempt < WRONG_ENOUGH; attempt += 1) {
+      await login(app, "not the password");
+    }
+
+    const response = await login(app, "not the password");
+
+    expect(response.status).toBe(429);
+    expect(await body(response)).toMatchObject({
+      error: { code: "too-many-attempts" },
+    });
+  });
+
+  it("says when to come back, in the header and in the envelope", async () => {
+    const clock = movable();
+    const { app } = await guarded(clock.throttle);
+
+    for (let attempt = 0; attempt < WRONG_ENOUGH; attempt += 1) {
+      await login(app, "not the password");
+    }
+
+    const response = await login(app, "not the password");
+    const said = (await body(response)) as {
+      error: { retryAfter: number };
+    };
+
+    expect(Number(response.headers.get("retry-after"))).toBeGreaterThan(0);
+    expect(said.error.retryAfter).toBe(
+      Number(response.headers.get("retry-after")),
+    );
+  });
+
+  /** The right password is refused while the door is shut, which is the point. */
+  it("turns away the right password too, until the wait has passed", async () => {
+    const clock = movable();
+    const { app } = await guarded(clock.throttle);
+
+    for (let attempt = 0; attempt < WRONG_ENOUGH; attempt += 1) {
+      await login(app, "not the password");
+    }
+
+    expect((await login(app)).status).toBe(429);
+
+    clock.pass(60_000);
+
+    expect((await login(app)).status).toBe(200);
+  });
+
+  it("forgets the count once someone signs in", async () => {
+    const clock = movable();
+    const { app } = await guarded(clock.throttle);
+
+    for (let attempt = 0; attempt < WRONG_ENOUGH; attempt += 1) {
+      await login(app, "not the password");
+    }
+
+    clock.pass(60_000);
+    expect((await login(app)).status).toBe(200);
+
+    // Back to the free attempts, rather than to where the count had climbed.
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      expect((await login(app, "not the password")).status).toBe(401);
+    }
+  });
+
+  /**
+   * The decision this stands behind: a session id and an access token are 32
+   * random bytes, so guessing one is not an attack, and counting the refusals
+   * would let an outbox draining with an expired session throttle its owner out
+   * of the one route that fixes it.
+   */
+  it("does not count a refusal from any other route", async () => {
+    const clock = movable();
+    const { app } = await guarded(clock.throttle);
+
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      const refused = await app.request("/v1/feed", {
+        headers: { authorization: "Bearer nmp.nosuchtoken1111.aGVsbG8" },
+      });
+      expect(refused.status).toBe(401);
+    }
+
+    expect((await login(app)).status).toBe(200);
+  });
+
+  it("does not count a body it could not read as a guess", async () => {
+    const clock = movable();
+    const { app } = await guarded(clock.throttle);
+
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      const refused = await app.request("/v1/session", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: NAME }),
+      });
+      expect(refused.status).toBe(400);
+    }
+
+    expect((await login(app)).status).toBe(200);
   });
 });

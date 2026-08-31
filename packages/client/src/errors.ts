@@ -121,6 +121,8 @@ const SAID: {
   "source-item-changed":
     "something else in the pool was captured under that id, saying something different",
   "arguments-invalid": "that destination needs different arguments",
+  "too-many-attempts": (facts) =>
+    `too many sign-ins have been tried; wait ${String(facts["retryAfter"])} seconds and try again`,
   unauthenticated: "you are signed out; sign in to reach this pool",
   "unknown-asset": "the upload is gone; pick the file again",
   "unknown-destination": "that destination is not here",
