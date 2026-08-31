@@ -31,6 +31,7 @@ import type { JsonObject, JsonSchema } from "#types/json";
 import { Unusable } from "./usability";
 import { deliveryFor } from "../routing/delivery";
 
+import { candidates as candidatesFor, NotOffered } from "./candidates";
 import { create, edit, remove, retire, unretire } from "./lifecycle";
 import { describe as describeOne, list } from "./reports";
 
@@ -292,6 +293,80 @@ describe("what a destination reports about itself", () => {
   it("answers nothing at all for an id no destination has", async () => {
     expect(
       await describeOne(ports(), "ghost" as DestinationId),
+    ).toBeUndefined();
+  });
+});
+
+describe("what a destination answers about its candidates", () => {
+  const request = {
+    capability: "create-note" as CapabilityName,
+    field: "directory",
+  };
+
+  it("is unusable before it is ever asked, on the same terms as describing it", async () => {
+    const stale = fakeDestinationRow({ id: "old", kind: "kanban" });
+    const wired = ports({ destinations: [stale] });
+
+    expect(await candidatesFor(wired, stale.id, request)).toEqual({
+      kind: "unusable",
+      detail: "nothing here speaks the kanban kind",
+    });
+  });
+
+  it("is answered where the adapter has entries to offer", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
+    const wired = ports({ destinations: [vault] });
+    wired.adapters.answersCandidates({
+      entries: [{ label: "Inbox", value: "inbox", scope: "inbox" }],
+      truncated: false,
+    });
+
+    expect(await candidatesFor(wired, vault.id, request)).toEqual({
+      kind: "answered",
+      entries: [{ label: "Inbox", value: "inbox", scope: "inbox" }],
+      truncated: false,
+    });
+  });
+
+  it("is unreachable where the adapter went and asked and could not say", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
+    const wired = ports({ destinations: [vault] });
+    wired.adapters.cannotAnswerCandidates("ENOENT: ~/notes");
+
+    expect(await candidatesFor(wired, vault.id, request)).toEqual({
+      kind: "unreachable",
+      detail: "ENOENT: ~/notes",
+    });
+  });
+
+  it("is unusable where the adapter itself says so, distinct from unreachable", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
+    const wired = ports({ destinations: [vault] });
+    wired.adapters.cannotAnswerCandidates(
+      new Unusable("/vault overlaps notemap's own state"),
+    );
+
+    expect(await candidatesFor(wired, vault.id, request)).toEqual({
+      kind: "unusable",
+      detail: "/vault overlaps notemap's own state",
+    });
+  });
+
+  it("is not-offered where the kind does not do this at all", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
+    const wired = ports({ destinations: [vault] });
+    wired.adapters.cannotAnswerCandidates(
+      new NotOffered("the filesystem kind does not offer candidates"),
+    );
+
+    expect(await candidatesFor(wired, vault.id, request)).toEqual({
+      kind: "not-offered",
+    });
+  });
+
+  it("answers nothing at all for an id no destination has", async () => {
+    expect(
+      await candidatesFor(ports(), "ghost" as DestinationId, request),
     ).toBeUndefined();
   });
 });

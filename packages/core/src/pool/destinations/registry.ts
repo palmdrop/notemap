@@ -1,6 +1,8 @@
 import type { DestinationKindAdapter, Destinations } from "#types/api/ports";
 import type { Destination } from "#types/domain/destination";
 
+import { NotOffered } from "./candidates";
+
 /** The port, over one adapter per kind. */
 export function destinationRegistry(
   adapters: readonly DestinationKindAdapter[],
@@ -27,5 +29,14 @@ export function destinationRegistry(
       reach(destination).describe(destination, signal),
     deliver: (destination, delivery, signal) =>
       reach(destination).deliver(destination, delivery, signal),
+    candidates: (destination, request, signal) => {
+      const adapter = reach(destination);
+      if (adapter.candidates === undefined) {
+        return Promise.reject(
+          new NotOffered(`the ${adapter.name} kind does not offer candidates`),
+        );
+      }
+      return adapter.candidates(destination, request, signal);
+    },
   };
 }

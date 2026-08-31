@@ -71,6 +71,8 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
     destinations: {
       list: () => destinations.list(ports),
       describe: (id, signal) => destinations.describe(ports, id, signal),
+      candidates: (id, request, signal) =>
+        destinations.candidates(ports, id, request, signal),
       kinds: () => ports.destinations.kinds(),
       create: (draft) => destinations.create(ports, draft),
       edit: (id, changes) => destinations.edit(ports, id, changes),

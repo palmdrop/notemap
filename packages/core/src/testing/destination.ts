@@ -1,6 +1,7 @@
 import type { Destinations } from "#types/api/ports";
 import type { JsonObject, JsonSchema } from "#types/json";
 import type {
+  CandidatesAnswer,
   Capability,
   Destination,
   DestinationKind,
@@ -48,6 +49,10 @@ export type FakeDestinations = Destinations & {
    * failure.
    */
   cannotDescribe(detail: string | Error | undefined): void;
+  /** What `candidates` answers when nothing says it should fail. */
+  answersCandidates(next: CandidatesAnswer): void;
+  /** What `candidates` throws with, on the same terms as `cannotDescribe`. */
+  cannotAnswerCandidates(detail: string | Error | undefined): void;
 };
 
 export type FakeDestinationsOptions = {
@@ -56,6 +61,7 @@ export type FakeDestinationsOptions = {
   /** Whether it reads the assets it is handed, which is what proves the opener lazy. */
   readonly reads?: boolean;
   readonly answer?: ScriptedAnswer;
+  readonly candidatesAnswer?: CandidatesAnswer;
 };
 
 const ANY_ARGUMENTS: JsonSchema = { type: "object" };
@@ -128,6 +134,11 @@ export function fakeDestinations(
     pointer: "somewhere",
   };
   let undescribable: string | Error | undefined;
+  let candidatesAnswer: CandidatesAnswer = options.candidatesAnswer ?? {
+    entries: [],
+    truncated: false,
+  };
+  let cannotAnswer: string | Error | undefined;
 
   async function read(
     delivery: Delivery,
@@ -180,6 +191,13 @@ export function fakeDestinations(
       });
     },
 
+    candidates: () =>
+      cannotAnswer === undefined
+        ? Promise.resolve(candidatesAnswer)
+        : Promise.reject(
+            cannotAnswer instanceof Error ? cannotAnswer : new Error(cannotAnswer),
+          ),
+
     received,
     answers: (next) => {
       standing = next;
@@ -189,6 +207,12 @@ export function fakeDestinations(
     },
     cannotDescribe: (detail) => {
       undescribable = detail;
+    },
+    answersCandidates: (next) => {
+      candidatesAnswer = next;
+    },
+    cannotAnswerCandidates: (detail) => {
+      cannotAnswer = detail;
     },
   };
 }

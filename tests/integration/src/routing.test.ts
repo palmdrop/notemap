@@ -74,6 +74,7 @@ async function pooledWith(kind: Partial<Destinations>) {
     kinds: () => [fakeKind()],
     describe: () => Promise.resolve({ capabilities: CAPABILITIES }),
     deliver: () => Promise.resolve(DELIVERED),
+    candidates: () => Promise.reject(new Error("no candidates in this test")),
     ...kind,
   });
   open.push(opened);

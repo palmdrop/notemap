@@ -143,7 +143,7 @@ Depends on nothing; lands after phase 1 to keep the diffs legible.
 
 Depends on phase 1, for the word.
 
-- [ ] An ADR: **a destination can be asked what an argument could hold.** The reasoning worth
+- [x] An ADR: **a destination can be asked what an argument could hold.** The reasoning worth
       keeping: `describe()` deliberately touches neither disk nor network, because an unmounted
       drive and an unreachable Nextcloud must still be *routable* with the delivery deferred, and
       folding this into it would make every settings screen stall on a destination that is merely
@@ -151,23 +151,23 @@ Depends on phase 1, for the word.
       columns and a vault's tags are all answers and only two of them are hierarchical. It is asked
       one scope at a time, because a vault holds thousands of notes and an adapter that answers
       "everything" is one nobody can use twice
-- [ ] The method joins `DestinationKindAdapter` and the `Destinations` port, **optionally**: a kind
+- [x] The method joins `DestinationKindAdapter` and the `Destinations` port, **optionally**: a kind
       that cannot answer says so, and a kind that has not implemented it is the same answer.
       The method is **`candidates`** — `enumerate` is the tree walk this plan stopped being
-- [ ] A request names the capability, the field, and an opaque **scope** the destination minted in
+- [x] A request names the capability, the field, and an opaque **scope** the destination minted in
       an earlier answer. The scope is what makes descending possible without the port knowing what
       a path is. It does **not** carry the arguments filled in so far: the route is a `GET` and
       cannot supply them, no field of either kind depends on another today, and a parameter no
       caller can fill is worse than one added when a kind needs it
-- [ ] An answer is entries, each with a label to read, the value the field would take, and — where
+- [x] An answer is entries, each with a label to read, the value the field would take, and — where
       the destination offers it — the scope to ask again with, which is how a tree is walked by a
       caller that was never told it is a tree. Plus whether the answer was cut short, which phase 7
       explains
-- [ ] Failures are the ones this domain already has: **unreachable** when the destination could not
+- [x] Failures are the ones this domain already has: **unreachable** when the destination could not
       be asked, **unusable** when nothing speaks its kind, and **not-offered** when the kind does not
       do this
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
+- [x] `git commit`
 
 ### Phase 4 — An argument schema good enough to build a form from
 

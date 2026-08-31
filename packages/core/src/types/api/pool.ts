@@ -14,6 +14,8 @@ import type {
   EditEnvelope,
 } from "../domain/capture";
 import type {
+  CandidatesReport,
+  CandidatesRequest,
   Destination,
   DestinationChanges,
   DestinationDraft,
@@ -127,6 +129,16 @@ export interface DestinationsApi {
     id: DestinationId,
     signal?: AbortSignal,
   ): Promise<DestinationReport | undefined>;
+  /**
+   * What one field of one capability's arguments could hold. Also reaches the
+   * outside world, and may be asked one scope at a time. Absent means no
+   * destination has that id.
+   */
+  candidates(
+    id: DestinationId,
+    request: CandidatesRequest,
+    signal?: AbortSignal,
+  ): Promise<CandidatesReport | undefined>;
   /** Every kind the host wired an adapter for, with the schema its settings must satisfy. */
   kinds(): readonly DestinationKind[];
 
