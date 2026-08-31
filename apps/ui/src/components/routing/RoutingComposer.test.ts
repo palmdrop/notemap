@@ -323,3 +323,123 @@ test("an unregistered kind gets the schema-driven control", async () => {
 
   expect(await screen.findByRole("button", { name: "inbox" })).toBeDefined();
 });
+
+const answered = (entries: readonly Record<string, unknown>[]) => ({
+  kind: "answered",
+  entries,
+  truncated: false,
+});
+
+test("walks through an entry that is only somewhere to look, and takes the one past it", async () => {
+  servingBrowsable((scope) =>
+    scope === undefined
+      ? answered([{ label: "projects", scope: "projects" }])
+      : answered([{ label: "fiction.md", value: "projects/fiction.md" }]),
+  );
+
+  draw();
+  await choose(/Vault/);
+  await choose(/create-file/);
+
+  await choose("projects");
+  await screen.findByRole("button", { name: "fiction.md" });
+
+  // A scope the field may not hold is not offered as something to take.
+  expect(screen.queryByRole("button", { name: /^use / })).toBeNull();
+  expect((screen.getByLabelText("directory") as HTMLInputElement).value).toBe(
+    "",
+  );
+
+  await choose("fiction.md");
+  expect((screen.getByLabelText("directory") as HTMLInputElement).value).toBe(
+    "projects/fiction.md",
+  );
+});
+
+test("empties a field browsed to and then left, from the top and only there", async () => {
+  servingBrowsable((scope) =>
+    scope === undefined
+      ? answered([{ label: "inbox", value: "inbox", scope: "inbox" }])
+      : answered([]),
+  );
+
+  draw();
+  await choose(/Vault/);
+  await choose(/create-file/);
+  await screen.findByRole("button", { name: "inbox" });
+
+  expect(screen.queryByRole("button", { name: "clear" })).toBeNull();
+
+  await choose("inbox");
+  await choose(/use inbox/);
+  await choose("back");
+  await choose("clear");
+
+  expect((screen.getByLabelText("directory") as HTMLInputElement).value).toBe(
+    "",
+  );
+});
+
+test("draws two entries that share a label", async () => {
+  servingBrowsable(() =>
+    answered([
+      { label: "notes", value: "a/notes", scope: "a/notes" },
+      { label: "notes", value: "b/notes", scope: "b/notes" },
+    ]),
+  );
+
+  draw();
+  await choose(/Vault/);
+  await choose(/create-file/);
+
+  expect(await screen.findAllByRole("button", { name: "notes" })).toHaveLength(
+    2,
+  );
+});
+
+test("drops an answer for a scope it has already left", async () => {
+  let release = (): void => {};
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+
+  pool(async (request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, {
+        kind: "described",
+        capabilities: [CREATE_FILE_ASKABLE],
+      });
+    }
+    if (route.endsWith("/candidates")) {
+      if (new URL(request.url).searchParams.get("scope") === null) {
+        return json(
+          200,
+          answered([{ label: "inbox", value: "inbox", scope: "inbox" }]),
+        );
+      }
+      await held;
+      return json(200, answered([{ label: "buried", value: "inbox/buried" }]));
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  draw();
+  await choose(/Vault/);
+  await choose(/create-file/);
+
+  // Descend into an answer that hangs, then leave before it lands.
+  await choose("inbox");
+  await choose("back");
+  await screen.findByRole("button", { name: "inbox" });
+
+  release();
+  await held;
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  expect(screen.queryByRole("button", { name: "buried" })).toBeNull();
+  expect(screen.getByRole("button", { name: "inbox" })).toBeDefined();
+});
