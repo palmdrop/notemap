@@ -1,47 +1,60 @@
+import { setPassword } from "./password";
+import { listTokens, mintToken, revokeToken } from "./tokens";
+import { USAGE } from "./usage";
+
 type Command = (argv: string[]) => Promise<void>;
 
 type Commands = {
   [group: string]: {
     [action: string]: Command;
-  }
-}
+  };
+};
 
 const COMMANDS: Commands = {
   password: {
-    set: () => Promise.resolve(),
+    set: setPassword,
   },
   token: {
-    mint: () => Promise.resolve(),
-    list: () => Promise.resolve(),
-    revoke: () => Promise.resolve(),
-  }
+    mint: mintToken,
+    list: listTokens,
+    revoke: revokeToken,
+  },
+};
+
+/** Says what was not understood, then what would have been. */
+const refuse = (said: string): void => {
+  console.error(`notemap: ${said}`);
+  console.error("");
+  console.error(USAGE);
+
+  process.exitCode = 2;
 };
 
 export const runCliCommand = async (args: string[]): Promise<void> => {
   const [groupName, actionName, ...options] = args;
 
-  if(!groupName || !actionName) {
-    console.error("You must specify a command group and an action");
-    // TODO: usage reporting
-    process.exit(1);
+  if (groupName === "help") {
+    console.log(USAGE);
+    return;
   }
 
-  const group = COMMANDS[groupName];
+  const group = groupName === undefined ? undefined : COMMANDS[groupName];
 
-  if(!group) {
-    console.error(`Unknown command group: ${groupName}`);
-    // TODO: usage reporting
-    process.exit(1);
+  if (group === undefined) {
+    refuse(`there is no "${groupName ?? ""}" to run`);
+    return;
   }
 
-  const action = group[actionName];
+  const action = actionName === undefined ? undefined : group[actionName];
 
-  if(!action) {
-    console.error(`Unknown command: ${actionName}`);
-    // TODO: usage reporting
-    process.exit(1);
+  if (action === undefined) {
+    refuse(
+      actionName === undefined
+        ? `${groupName} needs one of: ${Object.keys(group).join(", ")}`
+        : `${groupName} has no "${actionName}" — try one of: ${Object.keys(group).join(", ")}`,
+    );
+    return;
   }
 
   await action(options);
-}
-
+};

@@ -15,11 +15,8 @@ import { runCliCommand } from "./cli";
 
 function start(): void {
   const { values } = parseArgs({
-    options: { 
-      config: { type: "string" },
-    },
+    options: { config: { type: "string" } },
     strict: true,
-    allowPositionals: true
   });
 
   const { config, warnings } = loadConfig(values.config);
@@ -99,13 +96,13 @@ function start(): void {
         );
       });
 
-      void auth.requiresCredentials().then((requires) => {
+      void auth.requiresCredentials().then((asks) => {
         console.log(
-          requires
-            ? "notemap: credentials are required to log in" 
-            : "notemap: credentials are not required to log in", // TODO: show CLI command for setting password?
+          asks
+            ? "notemap: signing in is required to reach /v1"
+            : "notemap: no password set — every request is let through; `notemap password set` closes the door",
         );
-      })
+      });
     },
   );
 
@@ -152,7 +149,7 @@ const entry = async (): Promise<void> => {
   }
 
   start();
-}
+};
 
 entry().catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : String(error));

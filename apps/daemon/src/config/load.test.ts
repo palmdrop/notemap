@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -11,6 +11,7 @@ import {
   defaultAuthPath,
   defaultConfigPath,
   defaultPoolPath,
+  loadConfig,
   parseConfig,
 } from "./load";
 
@@ -278,6 +279,34 @@ describe("where the daemon looks", () => {
 
   it("refuses a mirror table with no root, rather than guessing one", () => {
     expect(() => parse("[mirror]\npollInterval = 500\n")).toThrow(/root/);
+  });
+
+  /**
+   * `docker compose exec` inherits the image's environment but not its `CMD`,
+   * so the variable is what lets a command find the config the daemon is on.
+   */
+  it("takes the config path from NOTEMAP_CONFIG", () => {
+    const directory = mkdtempSync(join(tmpdir(), "notemap-env-"));
+    const path = join(directory, "config.toml");
+    writeFileSync(path, '[daemon]\nport = 4848\n', "utf8");
+
+    try {
+      vi.stubEnv("NOTEMAP_CONFIG", path);
+
+      expect(loadConfig().config.port).toBe(4848);
+      // An explicit path outranks it, so a command may name another daemon's.
+      expect(() => loadConfig("/nowhere/config.toml")).toThrow(/no config at/);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("ignores an empty NOTEMAP_CONFIG, which names nothing", () => {
+    vi.stubEnv("XDG_CONFIG_HOME", "/xdg/config");
+    vi.stubEnv("NOTEMAP_CONFIG", "");
+
+    // The default, rather than an attempt to read a file called "".
+    expect(() => loadConfig()).toThrow(/\/xdg\/config\/notemap\/config.toml/);
   });
 
   it("follows the XDG variables when they are set", () => {

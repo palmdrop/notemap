@@ -334,7 +334,7 @@ export function parseConfig(source: string, from: string): LoadedConfig {
 }
 
 export function loadConfig(
-  path = process.env["NOTEMAP_CONFIG"] ?? defaultConfigPath()
+  path = process.env["NOTEMAP_CONFIG"] || defaultConfigPath()
 ): LoadedConfig {
   let source: string;
   try {

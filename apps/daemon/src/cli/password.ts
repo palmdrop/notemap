@@ -1,62 +1,32 @@
-import { Writable } from "node:stream";
-import { parseArgs } from "node:util"
-import { withAuth } from "./open";
+import { parseArgs } from "node:util";
+
 import { DEFAULT_CREDENTIALS_NAME } from "../auth/config";
-import { createInterface } from "node:readline/promises";
+import { withAuth } from "./open";
+import { readPassword, type Streams } from "./prompt";
 
-const askSecretly = async (prompt: string): Promise<string> => {
-  let muted = false;
-  const output = new Writable({
-    write: (chunk, encoding, callback) => {
-      if (!muted) process.stdout.write(chunk, encoding);
-      callback();
-    }
-  });
-
-  const rl = createInterface({
-    input: process.stdin,
-    output,
-    terminal: true,
-  });
-
-  const answer = rl.question(prompt);
-  muted = true;
-
-  try {
-    return await answer;
-  } finally {
-    rl.close();
-    process.stdout.write("\n");
-  }
-}
-
-const readPassword = async (): Promise<string> => {
-  let attempts = 10;
-  while (attempts > 0) {
-    const password = await askSecretly("Input password: ");
-    const confirmation = await askSecretly("Confirm password: ");
-    if (password === confirmation) return password;
-
-    attempts--;
-  }
-
-  throw new Error("Failed to input password!");
-}
-
-
-export async function setPassword(argv: string[]): Promise<void> {
+export async function setPassword(
+  argv: string[],
+  streams?: Streams,
+): Promise<void> {
   const { values } = parseArgs({
-    args: argv,  
+    args: argv,
     options: {
       config: { type: "string" },
       name: { type: "string" },
     },
-    strict: true
-  })
+    strict: true,
+  });
 
-  const password = await readPassword();
+  const password = await readPassword(streams);
+
+  if (password === "") throw new Error("a password of nothing is not one");
+
+  const name = values.name ?? DEFAULT_CREDENTIALS_NAME;
 
   await withAuth(async (auth) => {
-    await auth.setPassword(values.name ?? DEFAULT_CREDENTIALS_NAME, password);
+    await auth.setPassword(name, password);
+
+    console.log(`notemap: the password for ${name} is set`);
+    console.log("notemap: every session that was open has ended");
   }, values.config);
 }
