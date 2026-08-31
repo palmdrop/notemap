@@ -225,20 +225,20 @@ landed, and the plan still ships.
 
 Depends on phase 3, and on at least one of phases 5 and 6.
 
-- [ ] `GET /v1/destinations/{id}/candidates`, taking the capability, the field and the scope as
+- [x] `GET /v1/destinations/{id}/candidates`, taking the capability, the field and the scope as
       query parameters. It sits beside `/description` and is the same animal: a question the
       destination answers, slowly, and may refuse. A read is a `GET` — `http-v1.md` has no stance
       on a read that posts and this route is not the place to open one
-- [ ] **It is capped, not paginated**, and says when it cut the answer short. A folder holding five
+- [x] **It is capped, not paginated**, and says when it cut the answer short. A folder holding five
       thousand notes is a search problem rather than a paging problem, and paginating it would put a
       position on somebody else's directory listing — an ordering notemap does not own and cannot
       promise is stable between two reads. If browsing something that large turns out to matter, the
       honest fix is a filter parameter, not a cursor
-- [ ] Refusals map onto the table `http-v1.md` already keeps: unreachable, unusable, and the kind
+- [x] Refusals map onto the table `http-v1.md` already keeps: unreachable, unusable, and the kind
       not offering this at all
-- [ ] Route tests beside the route, and the OpenAPI document regenerated
-- [ ] Verify: `pnpm --filter @notemap/daemon test`
-- [ ] `git commit`
+- [x] Route tests beside the route, and the OpenAPI document regenerated
+- [x] Verify: `pnpm --filter @notemap/daemon test`
+- [x] `git commit`
 
 ### Phase 8 — The client asks, and does not remember
 
