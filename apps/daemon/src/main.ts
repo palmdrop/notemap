@@ -11,11 +11,15 @@ import { SHUTDOWN_GRACE_MS } from "./constants";
 import { startDeliveryRunner } from "./destinations/runner";
 import { startMirrorRunner } from "./mirror/runner";
 import { openPool, openAuth } from "./ports";
+import { runCliCommand } from "./cli";
 
 function start(): void {
   const { values } = parseArgs({
-    options: { config: { type: "string" } },
+    options: { 
+      config: { type: "string" },
+    },
     strict: true,
+    allowPositionals: true
   });
 
   const { config, warnings } = loadConfig(values.config);
@@ -139,9 +143,18 @@ function start(): void {
   process.on("SIGTERM", shutdown);
 }
 
-try {
+const entry = async (): Promise<void> => {
+  const args = process.argv.slice(2);
+  const first = args[0];
+
+  if (first !== undefined && !first.startsWith("-")) {
+    return runCliCommand(args);
+  }
+
   start();
-} catch (error) {
+}
+
+entry().catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);
-}
+});

@@ -333,7 +333,9 @@ export function parseConfig(source: string, from: string): LoadedConfig {
   return { config, warnings: stripped };
 }
 
-export function loadConfig(path = defaultConfigPath()): LoadedConfig {
+export function loadConfig(
+  path = process.env["NOTEMAP_CONFIG"] ?? defaultConfigPath()
+): LoadedConfig {
   let source: string;
   try {
     source = readFileSync(path, "utf8");
