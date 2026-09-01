@@ -17,15 +17,10 @@ import {
   capabilitiesFor,
   CREATE_FILE,
   deriveFilename,
-  FIXED_KEYS,
-  fixedFrontmatter,
   insertUnder,
-  renderAsJson,
-  toYaml,
-  type FrontmatterValue,
+  renderNote,
+  RenderingFailed,
   type Renderers,
-  type Rendering,
-  type RenderingContext,
 } from "@notemap/output-markdown";
 
 import { placeAssets } from "./assets";
@@ -193,7 +188,10 @@ async function createNote(
 
   const directory = dirname(note.absolute);
   const assets = await placeAssets(directory, delivery.assets, signal);
-  const rendered = render(wiring.renderers, delivery, { directory, assets });
+  const rendered = renderNote(wiring.renderers, delivery, {
+    directory,
+    assets,
+  });
 
   await createFile(note.absolute, `${rendered.frontmatter}\n${rendered.body}`);
   return note.relative;
@@ -214,7 +212,10 @@ async function appendToNote(
   const directory = dirname(note.absolute);
 
   const assets = await placeAssets(directory, delivery.assets, signal);
-  const rendered = render(wiring.renderers, delivery, { directory, assets });
+  const rendered = renderNote(wiring.renderers, delivery, {
+    directory,
+    assets,
+  });
 
   const existing = await readIfPresent(note.absolute);
   if (existing === undefined) {
@@ -240,37 +241,6 @@ async function locate(realRoot: string, target: string): Promise<Contained> {
     throw new Refused(`${target} names the destination itself`);
   }
   return contained.path;
-}
-
-function render(
-  renderers: Renderers,
-  delivery: Delivery,
-  at: RenderingContext,
-): { frontmatter: string; body: string } {
-  const rendered = renderOrRefuse(renderers, delivery, at);
-
-  const entries = new Map<string, FrontmatterValue>(fixedFrontmatter(delivery));
-  for (const [key, value] of rendered.frontmatter ?? []) {
-    if (!FIXED_KEYS.includes(key)) entries.set(key, value);
-  }
-
-  return { frontmatter: toYaml(entries), body: rendered.body };
-}
-
-function renderOrRefuse(
-  renderers: Renderers,
-  delivery: Delivery,
-  at: RenderingContext,
-): Rendering {
-  const renderer = renderers[delivery.payload.type] ?? renderAsJson;
-  try {
-    return renderer(delivery, at);
-  } catch (cause) {
-    // It will throw identically on every attempt, so retrying is pointless.
-    throw new Refused(
-      `the renderer for ${delivery.payload.type} threw: ${why(cause)}`,
-    );
-  }
 }
 
 async function exists(path: string): Promise<boolean> {
@@ -302,7 +272,9 @@ function unreachable(detail: string): DeliveryOutcome {
  * abandoned on the first attempt, because retrying cannot change it.
  */
 function failure(cause: unknown): DeliveryOutcome {
-  if (cause instanceof Refused) return { kind: "rejected", detail: why(cause) };
+  if (cause instanceof Refused || cause instanceof RenderingFailed) {
+    return { kind: "rejected", detail: why(cause) };
+  }
 
   const code = (cause as NodeJS.ErrnoException).code;
   return code !== undefined && UNREACHABLE.includes(code)
