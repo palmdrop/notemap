@@ -14,6 +14,13 @@
   falling back to the schema-driven browser for every kind that registers nothing; none does yet.
   ([plan](../plans/destination-targets.md))
 
+- 2026-09-01 — **Settings holds the access tokens.** What exists, when each was last used, a name
+  to mint one under, and the string shown once with a way to copy it — because the daemon kept a
+  hash and has nothing to answer with afterwards. Beside the destinations, in the same one-column
+  measure, and drawn only for a session: the routes are a session's alone, so a token-carrying
+  shell is not offered a section it would only be refused.
+  ([plan](../plans/login-and-access-tokens.md))
+
 - 2026-08-31 — **The shell draws a login, and nothing behind it.** Where a password is set and
   nobody is signed in, the chrome draws one surface and no pool material — cached or not — because
   drawing it because it happens to be local would make signing out mean nothing. It goes on saying
@@ -356,8 +363,8 @@ countable: a **section** is muted ink at the widest tracking with a full-weight 
 **destination** is full ink at tighter tracking with a mark in the margin; a **field** is lower
 case, muted, in a column of its own. Nothing is bigger and nothing is bold.
 
-Two sections. **Destinations** says how many are offered and how many retired, then one line per
-destination: a mark for offered or retired, its name, its kind, and whether anything has asked it
+Four sections *(two when this was written, and the door brought the others)*. **Destinations** says
+how many are offered and how many retired, then one line per destination: a mark for offered or retired, its name, its kind, and whether anything has asked it
 lately. Opening one adds what it can do, the settings its kind asked for, its id, and the four
 things that can be done to it — check, edit, retire, delete — with the rule and the distance
 separating what can be undone from what cannot.
@@ -367,6 +374,17 @@ first row is the one fact on the page that is about *now* rather than about conf
 the daemon answers, how long it took, and when it was asked. **The destination list is the probe** —
 knocking on the daemon and refreshing what the page shows are the same request, and there is no
 route here whose only job is to answer yes.
+
+**Session** says whether this browser holds one and offers the way out, or — on a daemon nobody has
+set a password on — says the door is open and names the command that shuts it.
+
+**Access tokens** is what something that is not a browser carries, and is drawn **only for a
+session**: the routes behind it are a session's alone, so a token-carrying shell is not offered a
+section it would only be refused. One line per token, with when it was made and when it was last
+used, which is what says whether one is safe to revoke. Minting takes a name and answers with the
+string **once** — the daemon kept a hash and has nothing to answer with a second time — so it is
+shown in the accent, selectable, with a way to copy it, and dismissing it is a deliberate act rather
+than a navigation.
 
 **Deleting is the one thing on this page that cannot be undone, so it is the one thing that asks**,
 and the asking offers retiring instead. Only the pool knows whether a record has ever named a

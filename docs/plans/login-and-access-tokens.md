@@ -1,9 +1,9 @@
 # A login, and tokens for everything else
 
 **Date**: 2026-08-27
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/security.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`
-**Closed**: phases 1 to 5, and most of 6
+**Closed**: every phase
 
 ---
 
@@ -239,20 +239,20 @@ Depends on phase 5.
 
 Depends on phases 3 to 6.
 
-- [ ] `security.md`'s bind section stops being one deployment's story. It describes the shapes —
+- [x] `security.md`'s bind section stops being one deployment's story. It describes the shapes —
       loopback on a person's own machine, a LAN, a container network, a tunnel or tailnet, a proxy
       in front — and what each one covers, because **the container is one way to deploy notemap and
       not the only one**
-- [ ] "The bind address is the whole of the defence" becomes two layers, and the doc says what each
+- [x] "The bind address is the whole of the defence" becomes two layers, and the doc says what each
       one still does not cover. A wider bind is no longer a decision to trust a whole network segment
       with everything
-- [ ] The CORS section is revised where the cookie touches it: cross-origin writes were blocked by a
+- [x] The CORS section is revised where the cookie touches it: cross-origin writes were blocked by a
       content-type rule the doc is honest about calling an accident, and `SameSite` — with `Origin`
       checking beside it — is now a control standing behind an acceptance criterion and a test
-- [ ] The five-item list of what authentication has to close is answered item by item — including
+- [x] The five-item list of what authentication has to close is answered item by item — including
       the asset-content one, which the cookie closes for the browser and which a bearer-only client
       will reopen when one exists
-- [ ] **A new rule, ahead of the kind that needs it**: no destination setting may hold a secret.
+- [x] **A new rule, ahead of the kind that needs it**: no destination setting may hold a secret.
       `GET /v1/destinations` answers settings verbatim and the mirror writes them plaintext to
       `pool-mirror/destinations/<id>.json`, verified 2026-08-26. This is what
       [destination-webdav](destination-webdav.md) phase 2 must satisfy
@@ -260,7 +260,7 @@ Depends on phases 3 to 6.
       proxy's, and nothing here is multi-user
 - [x] `core.md`'s constraint gets a dated clarification rather than a rewrite — no authentication
       **in core** was and remains true; the daemon has one now
-- [ ] Verify: the acceptance criteria at the foot of `security.md` are each true, and each has a test
+- [x] Verify: the acceptance criteria at the foot of `security.md` are each true, and each has a test
 - [x] `git commit`
 
 ### Phase 8 — end to end, with the door shut
@@ -395,9 +395,6 @@ Recorded because the plan reads as though it did not.
 
 ## What is still open
 
-- **Phase 7**: `security.md` and `http-v1.md` say what is true now, but the bind and CORS sections
-  still narrate the undefended daemon, and the five-item list of what authentication has to close
-  is not answered item by item.
 - Most of the full-stack suite still runs against an open daemon, which is deliberate — what those
   tests are about is not the door — but it means the shut path is proven by the handful of tests
   written for it rather than by everything.

@@ -4,6 +4,15 @@
 **Last updated**: 2026-09-01
 **Shipped**:
 
+- 2026-09-01 — **The spec says what is true now that there is a door.** The boundary is two layers
+  rather than one; the bind section describes the shapes a deployment takes — loopback, a LAN, a
+  routable address, a tunnel, a container network — instead of one deployment's story; the proxy
+  carries TLS and no longer carries authentication; and the five-item list of what authentication
+  had to close is answered item by item, including the asset-content one, which the cookie closes
+  for a browser and which a token-carrying client reopens. A new rule arrives ahead of what needs
+  it: **no destination setting may hold a secret**.
+  ([plan](../plans/login-and-access-tokens.md))
+
 - 2026-09-01 — **A deployment may arrive with a password, and a password has a floor.**
   `NOTEMAP_PASSWORD` and `NOTEMAP_PASSWORD_FILE` set the credential on a daemon holding none,
   before anything listens, and leave one that is already set alone. A password is now at least 12
@@ -88,7 +97,7 @@ authentication, is made against facts rather than against a feeling.
 
 ### In scope
 
-- What an unauthenticated `/v1` currently permits, and to whom.
+- What `/v1` permits, to whom, and what it still permits to a caller carrying nothing.
 - The exposure a wider bind address adds, and the exposure a browser adds.
 - What uploaded bytes can and cannot do once they are served from the daemon's origin.
 - The list authentication has to close when it is built.
@@ -109,39 +118,67 @@ authentication, is made against facts rather than against a feeling.
 
 ## Behavior
 
-### The pool is the boundary
+### The door is the boundary, and the network is the layer under it
 
-**There is no authentication and no authorization** (decided 2026-08-02,
-[core.md](core.md#constraints)). Anything that can reach the daemon's address and port can do
-everything `/v1` can do: read every item in the pool, capture new ones, upload bytes, and
-download any asset by id. There is no notion of a user, so there is nothing to be permitted or
-denied.
+*Revised 2026-09-01. Until then there was no authentication at all, and everything below said so;
+what that sentence used to mean is kept in [Prior decisions](#prior-decisions).*
 
-This is deliberate and it is affordable **only because of where the daemon binds**. The defence
-is the network, entirely.
+**The daemon authenticates.** A password mints a session for a browser, an access token is carried
+by everything else, and every `/v1` route takes one or the other ([ADR
+27](../adr/0027-the-daemon-authenticates-and-core-does-not.md)). Reaching the address and port is no
+longer the whole of it.
 
-### The bind address is the whole of the defence
+Two things that has not changed:
 
-*When the daemon runs on a host directly. In a container it does not, and the next section is the
-one that describes that.*
+- **A daemon nobody has set a credential on is open**, exactly as before, and says so on startup.
+  That is not a default nobody chose — it is what keeps a loopback daemon on one person's laptop as
+  easy as it was — but a deployment that reaches further and never runs `notemap password set` or
+  sets `NOTEMAP_PASSWORD` is the old story unchanged.
+- **Authentication answers *who*, and nothing answers *what*.** One credential, and tokens carrying
+  what it carries, with two containment rules standing in for authorization
+  ([below](#authentication-answers-who-and-nothing-answers-what)).
 
-The daemon binds `127.0.0.1:4747` by default ([http-v1.md](http-v1.md#transport)). On that
-address, reaching it means already having code execution on the machine, at which point the
-SQLite file is readable anyway and the daemon adds nothing.
+So the network is no longer the whole of the defence, and it is still a layer worth having: it
+decides who may *ask*, and the door decides who is *answered*. The sections that follow are what
+each one covers, and what neither does.
 
-**Binding wider moves the pool onto the network unauthenticated.** Configuration allows it, and
-nothing in `/v1` defends it:
+### Where the daemon binds, and what that still decides
 
-- On a LAN, every device on that LAN can read and write the pool. That includes devices the
-  user does not administer — a guest phone, a television, anything on the same subnet.
-- On a routable address, so can anyone who finds the port.
-- There is no rate limit, so nothing slows an enumeration of item ids or asset ids.
-- Ids are unguessable in practice — UUIDv4 for the ones notemap mints — but that is obscurity,
-  not a control. `GET /v1/feed` lists every item without needing to guess anything.
+The daemon binds `127.0.0.1:4747` by default ([http-v1.md](http-v1.md#transport)). **A container is
+one way to run notemap and not the only one**, so this is the several shapes a deployment takes and
+what each covers. In every one of them the door is the same door; what changes is who gets as far as
+knocking.
 
-A wider bind is therefore a decision to trust the whole network segment, and should be paired
-with something that is not part of notemap: a reverse proxy that authenticates, an SSH tunnel,
-or a WireGuard interface to bind to instead.
+- **Loopback, on the machine the person uses.** Reaching it means already having code execution
+  there, at which point the SQLite file is readable anyway. The credential is worth setting even
+  here — it is what stops another *user account* on the same machine, and another program running
+  as that account, from reading the pool over HTTP — but this is the shape where the door adds
+  least.
+- **A LAN address.** Every device on the subnet can reach the port, including ones nobody
+  administers: a guest phone, a television. They now meet a `401` rather than the feed. What the
+  bind still decides is that they can *knock*, which is worth something: an unauthenticated caller
+  can still fill logs, and the login is the one route that does real work
+  ([throttled](#the-login-is-throttled-and-nothing-else-is)).
+- **A routable address.** Anyone who finds the port meets the door. This is where **TLS stops being
+  optional**: the daemon speaks plain HTTP, so a session cookie or a bearer token on a bare
+  routable address crosses the network readable. The daemon warns when the origin it was told is
+  plain HTTP on an address that is not loopback, and drops `Secure` from the cookie rather than
+  minting one a browser will not send back.
+- **A tunnel or a tailnet.** The daemon binds loopback or the tailnet interface, and the network
+  layer is doing the same job a proxy would. The one thing to know is that the bind address is not
+  where a browser arrives — `daemon.origin` is what settles the cookie, and the daemon
+  [says so](#the-session-cookie-is-as-narrow-as-the-origin-allows) the first time a `Host` disagrees
+  with it.
+- **A container network, with a proxy on it.** The section below.
+
+**A wider bind is no longer a decision to trust a whole network segment with everything.** It is a
+decision about who may reach the door, on a daemon whose credential had better be set — which is
+worth stating plainly because the old version of this document said the opposite, and a reader who
+remembers it would take the wrong lesson.
+
+What the door does not do, on any of these: it does not stop enumeration by a *signed-in* caller,
+because there is nothing to enumerate past — one credential reaches everything. Ids are unguessable
+in practice (UUIDv4 for the ones notemap mints), and that remains obscurity rather than a control.
 
 ### In a container, the proxy is the boundary
 
@@ -160,12 +197,14 @@ Two compose files ship, and the difference between them is exactly this boundary
 - **`compose.yaml` publishes `127.0.0.1:4747`.** The loopback moved into the container, so it is
   published back out to the host's loopback and no further. Reaching it means already having code
   execution on the machine, which is the same bargain the direct-run default makes. **`4747:4747`
-  is the mistake this is shaped to prevent**: it would put an unauthenticated pool on the LAN.
+  is the mistake this is shaped to prevent**: it would put the pool on the LAN behind one password,
+  which is a decision worth taking on purpose rather than by editing a port.
 - **`compose.proxy.yaml` publishes nothing** and joins one named external network instead. The
   daemon is then on no address the host publishes, and the proxy reaches it by service name.
-  Anything else on that network reaches an unauthenticated `/v1` in full — the pool is readable and
-  writable by any container that can resolve the name — so putting notemap on the proxy's network is
-  a decision to trust every other container that proxy fronts. It is the smallest network that still
+  Anything else on that network reaches `/v1` and meets the same door a browser does — so what
+  putting notemap on the proxy's network now costs is that every other container the proxy fronts
+  may knock, and may spend the login's one attempt at a time. Before the door it was the whole
+  pool; it is not that any more, and it is still not a network to join carelessly. It is the smallest network that still
   has the proxy on it, not a safe one, and it is named rather than defaulted so that it is never
   quietly the network every container on the host shares.
 
@@ -175,20 +214,21 @@ Running one after the other does something else: both files name the same projec
 service, so the second `up` replaces the container the first made, and what is exposed is whichever
 file was named last.
 
-### What the proxy carries until the daemon has a door
+### What the proxy still carries
 
-An interim, written down as one. The daemon has no authentication and no TLS, so the proxy has to
-supply both or the arrangement above is a pool on the internet:
+One thing, and it is not negotiable:
 
-- **TLS.** The daemon speaks plain HTTP and will not speak anything else while a proxy is in front.
-  A capture from a phone crosses a real network.
-- **Authentication.** Whatever that proxy already carries for the apps behind it. Without it, the
-  pool is readable and writable by anyone who finds the hostname.
+- **TLS.** The daemon speaks plain HTTP and will not speak anything else. A capture from a phone
+  crosses a real network, and so does the credential that made it. The daemon cannot see whether
+  TLS is in front of it, which is why it is told through `daemon.origin` rather than left to guess
+  — and why an origin that says `http:` on a reachable address costs the cookie its `Secure` and
+  earns a warning on startup.
 
-[A login, and tokens for everything else](../plans/login-and-access-tokens.md) is what ends this, and
-what makes the proxy's authentication a choice rather than a requirement. It also owns the **general**
-account of the boundary — the several shapes a deployment takes, of which a container is one. What is
-written above is the container case and nothing else.
+**Authentication is no longer the proxy's**, as of 2026-08-31. Whatever the proxy carries for the
+apps behind it is now a second lock rather than the only one, and is worth keeping for exactly that
+reason: it stops an unauthenticated caller before the daemon spends a scrypt hash on them. What it
+cannot do is tell one client from another — that is what an access token is for, and why revoking
+one client does not mean changing every client.
 
 ### A filesystem destination reaches only what is mounted
 
@@ -201,8 +241,8 @@ destination names, because nothing else is there to reach.
 **The pool, the mirror and the assets are refused as a root**, whether a destination names one of
 them exactly or sits inside or around one: `describe()` reports it `unusable` and `deliver()`
 writes nothing. This is a check against a mistake, not a permission — whoever can create a
-destination over `/v1` already has read and write of the whole pool through the lack of
-authentication above, so a person who meant harm loses nothing this refusal takes away. It exists
+destination over `/v1` is signed in, and a signed-in caller already has read and write of the whole
+pool, so a person who meant harm loses nothing this refusal takes away. It exists
 because routing a note into the mirror is destructive and nobody who honestly reaches `/v1` ever
 means it; a fat-fingered path is the only thing it defends against.
 
@@ -211,6 +251,29 @@ authenticates nobody, and clicking past the confirmation is not a boundary cross
 was never one there to cross — a person who wanted to route somewhere unfamiliar was always free
 to. What it catches is a root nobody meant to type, which costs enough — see the paragraph above —
 to be worth catching before it is saved rather than after.
+
+### No destination setting may hold a secret
+
+A rule written ahead of the kind of destination that will want to break it. A filesystem
+destination's settings are a path, and nothing about that is sensitive; the next kinds — WebDAV, an
+API somewhere — arrive wanting a password or a token in the same field, and this says they may not
+have one there.
+
+Two things make it a rule rather than a preference, both verified 2026-08-26:
+
+- **`GET /v1/destinations` answers `settings` verbatim**, to any authenticated caller. That
+  includes an access token handed to a script, which authorization does not narrow
+  ([above](#authentication-answers-who-and-nothing-answers-what)) — so a credential in a setting is
+  a credential every other credential can read.
+- **The mirror writes them to disk in the clear**, at `pool-mirror/destinations/<id>.json`. The
+  mirror is a plain-text copy of pool state by design, and a rebuild restores whatever is in it.
+  This is the same reasoning that keeps the *auth* database out of the pool: a secret that reaches
+  the mirror survives being deleted from anywhere else.
+
+So a destination that needs a credential holds a **reference** to one — a name the daemon resolves
+out of its own configuration or its auth database — and never the credential itself.
+[destination-webdav](../plans/destination-webdav.md)'s phase 2 is the first thing that has to
+satisfy this.
 
 ### No CORS headers, which is load-bearing
 
@@ -235,8 +298,14 @@ another origin from reading the pool of a user who happens to be running the dae
   a simple cross-site `POST`, with `SameSite=Lax` and an unguessable id the only things in the way.
   It is now stated as the rule it had been standing in for, and a route added under a media type a
   form can send is what would reopen it.
+- **The cookie is the other half, and it is a control now rather than a happy accident.** The
+  session cookie is `SameSite=Lax`, so a cross-*site* `POST` does not carry it whatever the media
+  type — and the media-type rule above holds for the cross-origin case Lax does not, a page on a
+  sibling of the same registrable domain. Neither alone covers both, which is why both are here and
+  why each stands behind an acceptance criterion and a test.
 - **Adding a CORS header is the moment to reconsider authentication**, not a convenience to
-  reach for. Any origin allowed to read is an origin allowed to read everything.
+  reach for. Any origin allowed to read is an origin allowed to read everything — and now that
+  there is a credential, an allowed origin is one allowed to spend somebody's cookie.
 - **The client stays same-origin so the header never has to exist.** In production the daemon
   serves the app from its own origin ([http-v1.md](http-v1.md#transport)); in development the app's
   dev server proxies `/v1` to the daemon rather than calling it across origins, so both are
@@ -293,20 +362,49 @@ What that leaves:
 - None of this matters at the intended deployment — one person, one machine, one daemon — and
   all of it matters the moment the bind widens.
 
-### What authentication has to close
+### What authentication had to close, answered
 
-When the open question in [http-v1.md](http-v1.md#open-questions) is answered, the answer has to
-account for every line of this list:
+This was a list of five things the answer would have to account for. It has one now, so each is
+answered here rather than left to be inferred — including the two that are answered only partly.
 
-1. Every `/v1` route, including `GET`s. Read access to the feed is read access to everything.
-2. Asset content, which is the one route a browser will fetch as a subresource — so whatever
-   carries the credential has to survive an `<img src>`, or asset URLs need a capability of
-   their own.
-3. Cross-origin writes, which today are blocked by a content-type rule rather than by intent.
-4. A story for the capture page and the playground, both of which are unauthenticated pages the
-   daemon serves itself.
-5. Whether a wider bind is then supported or merely permitted, which decides whether transport
-   security (TLS) becomes notemap's problem or stays the reverse proxy's.
+1. **Every `/v1` route, including `GET`s. Closed.** One middleware over `/v1` takes a session cookie
+   or a bearer token and refuses anything else in the daemon's own envelope. Three routes are open
+   on purpose — `/v1/health`, `/v1/session` and `/v1/openapi.json` — and none of them answers pool
+   material: health withholds even the pool's identity until something is presented.
+
+2. **Asset content, the one route a browser fetches as a subresource. Closed for a browser, open
+   for a client that is not one.** An `<img src>` carries no header, but it does carry a cookie:
+   the daemon serves the shell from its own origin, the cookie is `SameSite=Lax` with `Path=/`, and
+   a subresource `GET` from that page is same-site, so the bytes are fetched signed in with nothing
+   special done. A client holding an **access token** instead has no such luck — its transport can
+   set a header on `fetch` and cannot set one on an `<img>` — so `assetUrl` is the one part of the
+   port a token does not reach. Two things soften it and neither answers it: bytes the client
+   captured itself render from an object URL and never touch `/v1`, and any client can read the
+   bytes through `fetch` and make its own URL. **The real answer is a short-lived signed URL**, not
+   a token in a query string, and it is owed the day a native or mobile shell exists. Recorded in
+   [Open questions](#open-questions).
+
+3. **Cross-origin writes. Closed, and on purpose rather than by accident.** Every `POST`, `PUT` and
+   `PATCH` under `/v1` must declare `application/json` — carrying a body or not — which no HTML
+   form can send, so a cross-origin write is preflighted and dies on the CORS headers the daemon
+   does not send. `SameSite=Lax` stands behind that, and the two are separate controls:
+   [the CORS section](#no-cors-headers-which-is-load-bearing) says which covers what, and why
+   `hono/csrf` was declined rather than added.
+
+4. **The pages the daemon serves itself. Answered, and they stayed open.** The shell's own files
+   are the application and not the pool, and something has to be able to draw the login; everything
+   they then *ask for* is behind the door, and an unauthenticated shell draws no pool material even
+   from its own cache. `/docs` renders a document and calls nothing until a person presses a button,
+   so it stays too — the button meets the same `401` everything else does. `/log` is a static page
+   whose only call is `/v1/actions`, which is closed; gating the page would answer a browser a JSON
+   refusal where it asked for HTML.
+
+5. **Whether a wider bind is supported or merely permitted. Supported, with TLS still the proxy's.**
+   A daemon with a credential set may be bound wider deliberately — that is what the door was for —
+   and [the shapes](#where-the-daemon-binds-and-what-that-still-decides) say what each one covers.
+   What notemap does **not** take on is transport security: the daemon speaks plain HTTP, is told
+   rather than left to guess whether a cookie may travel, and a reachable address without TLS in
+   front of it puts the credential on the wire in the clear.
 
 ### Authentication answers who, and nothing answers what
 
@@ -525,7 +623,12 @@ that is empty, at the price of a dependency on a header the deployment is allowe
 
 - **[No authentication for now](core.md#constraints)** (2026-08-02) — the daemon binds to
   localhost and the pool is the boundary. This document is the cost of that decision, written
-  down rather than implied.
+  down rather than implied. **Revised 2026-08-31** by
+  [ADR 27](../adr/0027-the-daemon-authenticates-and-core-does-not.md): the daemon authenticates,
+  and core still does not. The decision was affordable while the daemon bound loopback on one
+  person's machine and stopped being affordable once it was deployed anywhere else. It is not
+  erased here, because a reader of the old sections should be able to see what they were the cost
+  of.
 - **[Assets name, blobs store](../adr/0013-assets-are-named-references-to-content-addressed-blobs.md)**
   — asset ids are minted by the daemon and unguessable in practice, which is not a control but
   does mean an asset URL is not enumerable from a filename.
@@ -549,6 +652,11 @@ that is empty, at the price of a dependency on a header the deployment is allowe
       lose this again.
 - [ ] 2026-08-12 — Whether a pool should carry a total-size ceiling at all, or whether that
       belongs to the filesystem the way disk encryption does.
+- [ ] 2026-09-01 — **How a client that is not a browser renders an asset.** An `<img src>` carries
+      a cookie and cannot carry a header, so a token-carrying shell cannot render one from
+      `/v1/assets/{id}/content` at all. The answer will be a short-lived signed URL rather than a
+      token in a query string, which a log or a `Referer` would leak. It is not owed until a native
+      or mobile shell exists; today every shell is a browser on the daemon's own origin.
 - [ ] 2026-08-30 — Whether an access token should carry a scope. Deferred deliberately: every
       credential belongs to one person, so a scope would be a fence around one's own garden. The
       question becomes real the first time a token is handed to something not fully trusted — a
@@ -588,5 +696,12 @@ that is empty, at the price of a dependency on a header the deployment is allowe
   daemon says so.
 - Both variables set at once, a file that cannot be read, or a password the rules refuse, each stop
   the daemon from starting rather than leaving it open.
+- A client carrying only an access token reaches the pool, captures and routes without ever signing
+  in, and is answered `403 session-required` on every `/v1/tokens` route and on `DELETE /v1/sessions`.
+- A revoked token is refused on the next request, with nothing to wait for.
+- An outbox filled while the door was shut lands everything once when it opens, in order, with its
+  uploaded bytes.
+- Settings shows the access tokens to a session and to nothing else, and a minted token's string is
+  shown once and never read back.
 - A `POST`, `PUT` or `PATCH` under `/v1` that declares no media type, or one an HTML form can send,
   is refused `415` — the routes reading no body included. The asset upload is the one exception.
