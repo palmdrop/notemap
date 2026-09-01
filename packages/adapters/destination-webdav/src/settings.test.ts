@@ -21,8 +21,17 @@ describe("the settings a person fills in", () => {
     expect(check({ profile: "nextcloud", root: "Notes/Vault" })).toEqual([]);
   });
 
-  it("takes an empty folder, which is the account's own", () => {
+  /**
+   * A settings form sends nothing for a field somebody left blank, so a folder
+   * that is required could never be the account's own however it is described.
+   */
+  it("takes the account's own folder, blank or absent", () => {
     expect(check({ profile: "nextcloud", root: "" })).toEqual([]);
+    expect(check({ profile: "nextcloud" })).toEqual([]);
+    expect(asWebdavSettings({ profile: "nextcloud" })).toEqual({
+      profile: "nextcloud",
+      root: "",
+    });
   });
 
   /** The whole of ADR 28 as a schema: there is nowhere to put either. */
@@ -50,8 +59,9 @@ describe("the settings a person fills in", () => {
       profile: "nextcloud",
       root: "",
     });
-    expect(asWebdavSettings({ profile: "nextcloud" })).toBeUndefined();
     expect(asWebdavSettings({ profile: 4, root: "" })).toBeUndefined();
+    expect(asWebdavSettings({ profile: "nextcloud", root: 4 })).toBeUndefined();
+    expect(asWebdavSettings({ root: "Notes" })).toBeUndefined();
   });
 });
 
