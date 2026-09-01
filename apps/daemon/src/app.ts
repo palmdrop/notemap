@@ -100,12 +100,15 @@ import {
   requireSession,
 } from "./middleware/authenticate";
 import { except } from "hono/combine";
+import { noticeOrigin } from "./middleware/origin";
 import type { Throttle } from "./auth/throttle";
 
 export type AppOptions = {
   readonly limits: UploadLimits;
   readonly auth: Auth;
   readonly cookies: CookieOptions;
+  /** What `daemon.origin` said, for the notice when a request disagrees with it. */
+  readonly origin?: string;
   readonly throttle: Throttle;
 };
 
@@ -122,7 +125,10 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
   const OPEN_PATHS = ["/v1/health", "/v1/session", "/v1/openapi.json"];
 
   app.use("/v1/*", requireJsonBody);
-  app.use("/v1/*", except([...OPEN_PATHS], authenticate(auth, options.cookies)));
+  app.use(
+    "/v1/*",
+    except([...OPEN_PATHS], authenticate(auth, options.cookies)),
+  );
 
   // Open, but they answer differently depending on who is asking, so they need
   // to know — and being signed out is an answer here rather than a refusal.
@@ -135,7 +141,12 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
 
   app.get(honoPath(healthRoute.path), healthHandler(pool, auth));
 
-  app.post(honoPath(loginRoute.path), loginHandler(auth, options.cookies, options.throttle));
+  app.use(honoPath(loginRoute.path), noticeOrigin(options.origin));
+
+  app.post(
+    honoPath(loginRoute.path),
+    loginHandler(auth, options.cookies, options.throttle),
+  );
   app.get(honoPath(sessionRoute.path), sessionHandler(auth));
   app.delete(honoPath(logoutRoute.path), logoutHandler(auth, options.cookies));
   app.delete(

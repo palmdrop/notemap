@@ -1,7 +1,7 @@
 # Spec: What is undefended
 
 **Status**: Draft
-**Last updated**: 2026-08-31
+**Last updated**: 2026-09-01
 **Shipped**:
 
 - 2026-08-31 — **A filesystem destination is confined to what the container is given.** The
@@ -11,6 +11,12 @@
   settings form asks a person to confirm a root it has not seen before, which is a check against a
   mistake and not a permission.
   ([plan](../plans/destination-targets.md))
+
+- 2026-09-01 — **The daemon says when it is reached somewhere it was not told about.** The check
+  that `daemon.origin` is set reads the bind address, which a tunnel or a proxy in front of a
+  loopback daemon walks straight past. The first sign-in whose `Host` disagrees with the origin the
+  cookie was decided from is logged once, naming the host and the key.
+  ([plan](../plans/login-and-access-tokens.md))
 
 - 2026-08-31 — **The session cookie asks for the scheme the `__Host-` prefix needs, not the trust
   it sits next to.** `Secure` still follows what a browser counts as trustworthy, loopback
@@ -325,6 +331,15 @@ on the floor, and refuse every request after it as `unauthenticated`, saying not
 Firefox accepts the same cookie, so this is a browser a person happens to be using rather than a
 thing the daemon can observe. The two attributes are therefore kept apart, and the prefix asks for
 the scheme it needs rather than for the trust it is adjacent to.
+
+**The daemon says when it is reached somewhere it was not told about.** `origin` is refused as
+absent once `host` binds beyond loopback, but that check reads the bind address, and the bind
+address is not where a browser arrives: a tunnel or a reverse proxy puts a name in front of a
+daemon still bound to `127.0.0.1`, which passes the check and then mints a loopback cookie for a
+browser that is not on loopback. The first sign-in whose `Host` disagrees with the origin the
+cookie was decided from is logged once — naming the host that arrived, and `daemon.origin` as the
+key that settles it. A warning rather than a refusal: it is a guess about somebody else's network,
+and a wrong guess must not be the thing that shuts the door.
 
 ### The login is throttled, and nothing else is
 

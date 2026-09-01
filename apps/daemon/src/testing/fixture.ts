@@ -111,6 +111,8 @@ export type DaemonOptions = {
   readonly maxUploadBytes?: number;
   /** Absent is the loopback daemon: `Secure` off over the fixture's plain HTTP, and no prefix. */
   readonly cookies?: CookieOptions;
+  /** What `daemon.origin` said. Absent is the daemon nobody configured one on. */
+  readonly origin?: string;
   /**
    * Makes the folder `vaultRoot` names before the pool opens. Leaving it out is
    * a case rather than an omission: it is what an unmounted drive looks like.
@@ -163,6 +165,7 @@ export function daemon(
     },
     auth: options.auth ?? noAuth,
     cookies: options.cookies ?? { secure: false, prefixed: false },
+    ...(options.origin === undefined ? {} : { origin: options.origin }),
     throttle: options.throttle ?? createLoginThrottle({ clock: systemClock }),
   });
   const answered = trackResponses(app);

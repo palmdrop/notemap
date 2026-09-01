@@ -1,3 +1,5 @@
+import { request as httpRequest } from "node:http";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -8,6 +10,7 @@ import {
   PASSWORD,
   read,
   setPassword,
+  until,
   world,
   type Running,
   type Told,
@@ -22,12 +25,46 @@ async function shut(told: Told = {}): Promise<Running> {
   return daemon(on);
 }
 
+const CREDENTIAL = JSON.stringify({ name: NAME, password: PASSWORD });
+
 const signIn = (url: string) =>
   fetch(`${url}/v1/session`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ name: NAME, password: PASSWORD }),
+    body: CREDENTIAL,
   });
+
+/**
+ * `fetch` writes the `Host` header itself and will not be talked out of it, and
+ * a host the daemon was not bound to is the whole of what these ask about — so
+ * this one goes over `node:http`, where the header is the caller's to set.
+ */
+function signInAs(url: string, host: string): Promise<number> {
+  const target = new URL(`${url}/v1/session`);
+
+  return new Promise((resolve, reject) => {
+    const call = httpRequest(
+      {
+        hostname: target.hostname,
+        port: target.port,
+        path: target.pathname,
+        method: "POST",
+        headers: {
+          host,
+          "content-type": "application/json",
+          "content-length": Buffer.byteLength(CREDENTIAL),
+        },
+      },
+      (response) => {
+        response.resume();
+        response.on("end", () => resolve(response.statusCode ?? 0));
+      },
+    );
+
+    call.on("error", reject);
+    call.end(CREDENTIAL);
+  });
+}
 
 async function setCookieFrom(running: Running): Promise<string> {
   const response = await signIn(running.url);
@@ -160,5 +197,56 @@ describe("a client against a daemon nobody has set a password on", () => {
 
     expect(held).toMatchObject({ required: false, signedIn: false });
     expect(read(client.feed).failure).toBeUndefined();
+  });
+});
+
+/**
+ * The daemon's own wiring, which is the half a unit test cannot reach: `main.ts`
+ * decides the cookie from the config file and hands the same origin to the
+ * notice, and a tunnel is exactly the case where the bind address is no answer.
+ */
+describe("a daemon reached somewhere it was not told about", () => {
+  const noticed = (running: Running) =>
+    until(
+      "the daemon to notice where it was reached",
+      async () => running.output().includes("daemon.origin") || undefined,
+    );
+
+  const notices = (running: Running) =>
+    running.output().match(/a sign-in arrived/g)?.length ?? 0;
+
+  it("says which key would fix it, on a daemon that configured none", async () => {
+    const running = await shut();
+
+    expect(await signInAs(running.url, "notemap.internal")).toBe(200);
+
+    await noticed(running);
+    expect(running.output()).toContain("notemap.internal");
+  });
+
+  /**
+   * Behind a positive fence, because the notice is said once: a loopback
+   * sign-in that said nothing is what leaves the one below free to be the first.
+   */
+  it("says nothing where a browser reached it on loopback", async () => {
+    const running = await shut();
+
+    await signIn(running.url);
+    await signInAs(running.url, "notemap.internal");
+
+    await noticed(running);
+    expect(notices(running)).toBe(1);
+    expect(running.output()).toContain("notemap.internal");
+  });
+
+  it("says nothing where the origin it was told matches", async () => {
+    const running = await shut({ origin: "http://notemap.internal:4747" });
+
+    await signInAs(running.url, "notemap.internal");
+    await signInAs(running.url, "elsewhere.internal");
+
+    await noticed(running);
+    expect(notices(running)).toBe(1);
+    expect(running.output()).toContain("elsewhere.internal");
   });
 });

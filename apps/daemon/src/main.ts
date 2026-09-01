@@ -95,6 +95,7 @@ function start(): void {
         limits: config.assets,
         auth,
         cookies,
+        ...(config.origin === undefined ? {} : { origin: config.origin }),
         throttle: createLoginThrottle({ clock: ports.clock }),
       }).fetch,
       hostname: config.host,

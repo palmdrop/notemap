@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   cookieOptionsFor,
+  reachedElsewhere,
   defaultAssetRoot,
   defaultAuthPath,
   defaultConfigPath,
@@ -367,6 +368,35 @@ describe("where the daemon says it is reachable", () => {
 
   it("refuses an origin that is not a URL", () => {
     expect(() => parse(`[daemon]\norigin = "notes.example.com"`)).toThrow();
+  });
+});
+
+describe("whether a request arrived where the cookie rules were decided", () => {
+  it("says nothing of loopback where no origin was configured", () => {
+    expect(reachedElsewhere("127.0.0.1:4747", undefined)).toBe(false);
+    expect(reachedElsewhere("localhost:4747", undefined)).toBe(false);
+    expect(reachedElsewhere("[::1]:4747", undefined)).toBe(false);
+  });
+
+  /**
+   * The bind address cannot answer this: a tunnel puts a name in front of a
+   * daemon on `127.0.0.1`, and nothing else notices the browser is elsewhere.
+   */
+  it("notices a name in front of a daemon that configured no origin", () => {
+    expect(reachedElsewhere("notemap.internal:4747", undefined)).toBe(true);
+    expect(reachedElsewhere("192.168.1.10:4747", undefined)).toBe(true);
+  });
+
+  it("holds a configured origin against what arrived, port and scheme aside", () => {
+    const origin = "http://notemap.internal:4747";
+
+    expect(reachedElsewhere("notemap.internal:4747", origin)).toBe(false);
+    expect(reachedElsewhere("notemap.internal:9999", origin)).toBe(false);
+    expect(reachedElsewhere("localhost:4747", origin)).toBe(true);
+  });
+
+  it("says nothing about a request that carried no host at all", () => {
+    expect(reachedElsewhere(undefined, undefined)).toBe(false);
   });
 });
 

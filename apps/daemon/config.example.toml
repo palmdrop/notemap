@@ -27,9 +27,15 @@ port = 4747
 
 # Where a browser reaches the daemon. Optional on loopback, and required the
 # moment `host` is anything else — a session cookie has no other way to know
-# whether it may travel over plain HTTP. `https://` or a loopback origin gets
-# `Secure` cookies; a plain-HTTP origin on a real address gives them up, and the
-# daemon says so on startup.
+# whether it may travel over plain HTTP. `https://` gets `__Host-` cookies; a
+# loopback origin keeps `Secure` without the prefix, which Chromium rejects over
+# plain HTTP; a plain-HTTP origin on a real address gives up both, and the daemon
+# says so on startup.
+#
+# Set it here too where a tunnel or a proxy puts a name in front of a daemon
+# still bound to loopback. Nothing about the bind address gives that away, and a
+# browser reaching `http://notemap.internal:4747` drops a cookie minted for
+# loopback — so the daemon logs the first sign-in whose host disagrees.
 # origin = "https://notes.example.com"
 
 # The plain-file copy of everything, written and never read back. Delete this
