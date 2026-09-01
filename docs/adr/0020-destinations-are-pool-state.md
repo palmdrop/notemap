@@ -2,7 +2,8 @@
 
 **Date**: 2026-08-17
 **Status**: Accepted — replaces `PoolPorts.destinations` and the `[[destinations]]` block in
-[core.md](../specs/core.md#routing) and [http-v1.md](../specs/http-v1.md)
+[core.md](../specs/core.md#routing) and [http-v1.md](../specs/http-v1.md); narrowed for
+credential-holding kinds by [ADR 28](0028-a-remote-destination-names-a-credential-profile-not-a-url.md)
 **Deciders**: palmdrop, with Claude
 
 ---
@@ -153,5 +154,9 @@ Spec: [core.md](../specs/core.md#routing); the wire: [http-v1.md](../specs/http-
 on-disk consequences: [mirror.md](../specs/mirror.md); the client's asymmetry:
 [client.md](../specs/client.md).
 
-Revisit if destinations ever need to be shared between pools, or if a kind arrives whose settings
-are large or secret enough that a row in a mirrored table is the wrong place for them.
+Revisit if destinations ever need to be shared between pools. The other trigger named here — a
+kind whose settings are secret enough that a row in a mirrored table is the wrong place for them —
+arrived on 2026-09-01 with WebDAV, and is answered by
+[ADR 28](0028-a-remote-destination-names-a-credential-profile-not-a-url.md): a kind holding a
+credential names a profile the host resolves, and its endpoint stops being a person's free-text
+field. Destinations stay pool state.

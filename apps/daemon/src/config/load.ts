@@ -44,6 +44,23 @@ export type SweepConfig = {
   readonly intervalMs: number;
 };
 
+/**
+ * One account a credential-holding destination kind may be pointed at: the
+ * collection it is rooted in, who is reaching it, and where the secret is read
+ * from. The base URL travels with the secret rather than being a destination's
+ * field, so nothing created over `/v1` can aim the daemon somewhere else with
+ * the credential attached.
+ */
+export type WebdavProfile = {
+  readonly name: string;
+  /** The collection the profile is rooted at, without a trailing slash. */
+  readonly baseUrl: string;
+  readonly username: string;
+  /** Exactly one of these two. The secret is read when a delivery needs it. */
+  readonly passwordFile?: string;
+  readonly passwordEnv?: string;
+};
+
 export type DaemonConfig = {
   /** The SQLite file the pool lives in. */
   readonly pool: string;
@@ -62,6 +79,8 @@ export type DaemonConfig = {
   readonly sweep: SweepConfig;
   /** The cadence the delivery runner claims at. Destinations are pool state, not this file's. */
   readonly delivery: DeliveryConfig;
+  /** The accounts a webdav destination may name. Empty is a daemon with no vault to reach. */
+  readonly webdav: readonly WebdavProfile[];
   readonly poolConfig: PoolConfig;
 };
 
@@ -118,6 +137,21 @@ const fileSchema = z.object({
       batch: z.number().int().positive().optional(),
     })
     .optional(),
+  webdav: z
+    .array(
+      z.object({
+        name: z.string().min(1),
+        baseUrl: z.string().url(),
+        username: z.string().min(1),
+        passwordFile: z.string().min(1).optional(),
+        passwordEnv: z.string().min(1).optional(),
+        // Known so it can be refused by name rather than dropped as an
+        // unrecognised key, which would start a daemon with no credential and
+        // a warning nobody reads.
+        password: z.string().optional(),
+      }),
+    )
+    .default([]),
   sources: z
     .array(
       z.object({
@@ -292,6 +326,62 @@ function isTable(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/**
+ * A profile carries a secret, so the two things that would send it somewhere it
+ * should not go are refused at load rather than at the first delivery: a
+ * password written into a file people keep in dotfiles, and an address that
+ * would carry it across a network in the clear.
+ */
+function readProfiles(
+  profiles: NonNullable<ConfigFile["webdav"]>,
+  from: string,
+): readonly WebdavProfile[] {
+  const seen = new Set<string>();
+
+  return profiles.map((profile) => {
+    const at = `${from}: the webdav profile ${profile.name}`;
+
+    if (profile.password !== undefined) {
+      throw new Error(
+        `${at} sets password inline, which puts a secret in a file that is backed up and pasted into issues. Use passwordFile or passwordEnv.`,
+      );
+    }
+    if (
+      (profile.passwordFile === undefined) ===
+      (profile.passwordEnv === undefined)
+    ) {
+      throw new Error(
+        `${at} must set exactly one of passwordFile and passwordEnv`,
+      );
+    }
+    if (seen.has(profile.name)) {
+      throw new Error(
+        `${at} is declared twice, and a destination names one by name`,
+      );
+    }
+    seen.add(profile.name);
+
+    const url = new URL(profile.baseUrl);
+    if (url.protocol !== "https:" && !isLoopback(url.hostname)) {
+      throw new Error(
+        `${at} reaches ${url.hostname} over ${url.protocol}, which would carry its password across the network in the clear`,
+      );
+    }
+
+    return {
+      name: profile.name,
+      baseUrl: profile.baseUrl.replace(/\/+$/, ""),
+      username: profile.username,
+      ...(profile.passwordFile === undefined
+        ? {}
+        : { passwordFile: profile.passwordFile }),
+      ...(profile.passwordEnv === undefined
+        ? {}
+        : { passwordEnv: profile.passwordEnv }),
+    };
+  });
+}
+
 export function parseConfig(source: string, from: string): LoadedConfig {
   let raw: unknown;
   try {
@@ -340,6 +430,7 @@ export function parseConfig(source: string, from: string): LoadedConfig {
         DEFAULT_DELIVERY.leaseMs) as Duration,
       batch: file.delivery?.batch ?? DEFAULT_DELIVERY.batch,
     },
+    webdav: readProfiles(file.webdav, from),
     poolConfig: {
       sources: file.sources.map((source) => ({
         id: source.id as SourceId,

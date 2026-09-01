@@ -82,6 +82,39 @@ pollInterval = 5000 # milliseconds between claims
 leaseFor = 300000   # how long a claimed delivery is held before anyone may retake it
 batch = 4           # deliveries claimed per pass
 
+# The accounts a webdav destination may be pointed at. This is the one part of a
+# destination that is not created in settings, and the reason is that it carries
+# a password: a destination's settings are pool state, answered verbatim by
+# `GET /v1/destinations` and written to the mirror in the clear, so a credential
+# in one is a credential every access token can read and every backup keeps.
+#
+# The base URL travels with the secret rather than being a field on the
+# destination. Otherwise whoever can create a destination over `/v1` could aim
+# the daemon at any address it can reach and have it deliver there with this
+# password attached, over and over, on the delivery runner's own timer.
+#
+# A destination then names a profile and a folder under it — never a URL, never
+# a secret. Several vaults on one account are several destinations naming one
+# profile.
+#
+# `baseUrl` is the DAV collection the profile is rooted at. For Nextcloud that
+# is `https://<host>/remote.php/dav/files/<user>`, which is the whole of that
+# user's files; a vault below it is the destination's own folder. Plain HTTP is
+# refused unless it is loopback, since the password would otherwise cross a
+# network in the clear.
+#
+# The secret is `passwordFile` or `passwordEnv` — exactly one, and never an
+# inline `password`, which would put it in this file. It is read when a delivery
+# needs it rather than at startup, so rotating one is writing the file. Use an
+# app password rather than the account's own where the server offers them.
+#
+# [[webdav]]
+# name = "nextcloud"
+# baseUrl = "https://cloud.example.com/remote.php/dav/files/alice"
+# username = "alice"
+# passwordFile = "~/.config/notemap/nextcloud-app-password"
+# passwordEnv = "NOTEMAP_WEBDAV_NEXTCLOUD"
+
 # A source needs no declaration to capture; declaring one attaches policy.
 #
 # A source is the capture *channel*, not the shell: the web app stamps a typed

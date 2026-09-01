@@ -56,6 +56,19 @@ pollInterval = 5000 # milliseconds between claims
 leaseFor = 300000   # how long a claimed delivery is held before anyone may retake it
 batch = 4           # deliveries claimed per pass
 
+# The accounts a webdav destination may be pointed at. Not a destination: this
+# carries a password, and a destination's settings are pool state the mirror
+# writes in the clear. A destination names a profile and a folder under it.
+#
+# Mount the secret and name the file, or pass the variable through in the
+# compose file. `apps/daemon/config.example.toml` annotates the whole of it.
+#
+# [[webdav]]
+# name = "nextcloud"
+# baseUrl = "https://cloud.example.com/remote.php/dav/files/alice"
+# username = "alice"
+# passwordFile = "/run/secrets/notemap-webdav-nextcloud"
+
 # The web app stamps a typed note and a picture differently, so that policy can
 # differ between them even though one page sent both.
 [[sources]]

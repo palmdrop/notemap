@@ -261,6 +261,9 @@ importers:
       '@notemap/destination-fs':
         specifier: workspace:*
         version: link:../../packages/adapters/destination-fs
+      '@notemap/destination-webdav':
+        specifier: workspace:*
+        version: link:../../packages/adapters/destination-webdav
       '@notemap/mirror-fs':
         specifier: workspace:*
         version: link:../../packages/adapters/mirror-fs
@@ -362,6 +365,25 @@ importers:
         version: 4.1.10(@types/node@24.13.3)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.5)(yaml@2.9.0))
 
   packages/adapters/destination-fs:
+    dependencies:
+      '@notemap/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@notemap/output-markdown':
+        specifier: workspace:*
+        version: link:../../output-markdown
+    devDependencies:
+      '@notemap/schema-ajv':
+        specifier: workspace:*
+        version: link:../schema-ajv
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.13.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@24.13.3)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.5)(yaml@2.9.0))
+
+  packages/adapters/destination-webdav:
     dependencies:
       '@notemap/core':
         specifier: workspace:*
