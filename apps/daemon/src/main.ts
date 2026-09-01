@@ -42,6 +42,7 @@ async function start(): Promise<void> {
     config: config.poolConfig,
     assetRoot: config.assets.root,
     ...(config.mirror === undefined ? {} : { mirrorRoot: config.mirror.root }),
+    webdav: config.webdav,
   });
 
   mkdirSync(dirname(config.auth), { recursive: true });
@@ -116,6 +117,12 @@ async function start(): Promise<void> {
           : `notemap: mirroring to ${config.mirror.root}`,
       );
       console.log(`notemap: assets in ${config.assets.root}`);
+
+      if (config.webdav.length > 0) {
+        console.log(
+          `notemap: webdav accounts ${config.webdav.map((each) => each.name).join(", ")}`,
+        );
+      }
 
       void pool.destinations.list().then((held) => {
         console.log(

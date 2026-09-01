@@ -1,7 +1,7 @@
 # A webdav destination kind
 
 **Date**: 2026-08-26
-**Status**: Todo
+**Status**: In progress — phases 1–6 and the wiring are done; the hand verification against a real Nextcloud is not
 **Spec**: `docs/specs/core.md`, `docs/specs/security.md`
 **Closed**:
 
@@ -174,16 +174,39 @@ Depends on phase 4.
 
 Depends on every phase above.
 
-- [ ] `apps/daemon/src/ports.ts` registers the kind beside the filesystem one, with the credential
+- [x] `apps/daemon/src/ports.ts` registers the kind beside the filesystem one, with the credential
       resolver from phase 2. `GET /v1/destination-kinds` then publishes it and the composer builds
       the form with no shell change
-- [ ] `packaging/docker` gains whatever the credential reference needs — an environment variable
-      passed through, or a secret file mounted
-- [ ] Verify by hand against the real Nextcloud: create the destination in settings, route a capture
-      with `create-file`, and see the note in Nextcloud's web UI **without running a scan**. Then
-      `append-to-file` onto it. Then open the vault in Obsidian and confirm the tags read as tags
+- [x] `docker/compose` gains a commented-out secret file for the account's app password, beside the
+      one the daemon's own password already uses, and `running.md` gains the whole of what a person
+      does. *(The plan said `packaging/docker`; the directory is `docker/`.)*
+- [ ] **Outstanding, and the only thing left.** Verify by hand against the real Nextcloud: create
+      the destination in settings, route a capture with `create-file`, and see the note in
+      Nextcloud's web UI **without running a scan**. Then `append-to-file` onto it. Then open the
+      vault in Obsidian and confirm the tags read as tags
 - [ ] Anything the fake DAV server got wrong is a finding recorded here before this plan closes
-- [ ] `git commit`
+- [x] `git commit`
+
+#### What the hand verification has to answer
+
+The three unknowns below are the whole of it, and none of them can be answered by the fake:
+
+1. **`If-None-Match: *` on `PUT`.** Create a note, then route a second capture at the same
+   `filename`. The second must be **refused** — the first note's content untouched. If Nextcloud
+   ignores the header, the second overwrites the first, and that is data loss rather than a failing
+   test: the fallback is `PROPFIND` then `PUT`, which is racy and would have to be documented.
+2. **`ETag` stability for `If-Match`.** Append twice to one note, a moment apart, and check both
+   fragments are there. Then edit the note in Nextcloud's web UI between an append's read and its
+   write if you can provoke it: the append should retry rather than lose the edit. An `ETag` that
+   changes for reasons other than a write turns every append into four retries and an
+   `unreachable`; one that does not change on a write loses the edit silently, which is worse.
+3. **How large an asset survives.** Route an image, then something big. Nextcloud has its own
+   chunked-upload protocol this kind does not speak, and a proxy in front will have a body limit
+   long before 256 MiB. Find where it stops and record the number; the answer is to document the
+   ceiling and refuse above it rather than discover it as a failed delivery.
+
+Also worth a look while there: that a folder with a space and a non-ASCII name in it is created and
+named correctly, since per-segment percent-encoding is where that would show.
 
 ---
 

@@ -4,6 +4,7 @@ import { v7 as uuidv7 } from "uuid";
 
 import { createFilesystemBlobStore } from "@notemap/blob-fs";
 import { createFilesystemDestination } from "@notemap/destination-fs";
+import { createWebdavDestination } from "@notemap/destination-webdav";
 import { createFilesystemMirrorWriter } from "@notemap/mirror-fs";
 import { createAjvSchemaValidator } from "@notemap/schema-ajv";
 import { createSqlitePoolStore } from "@notemap/store-sqlite";
@@ -23,10 +24,12 @@ import {
   type Timestamp,
 } from "@notemap/core";
 
+import { webdavCredentials } from "./destinations/credentials";
 import { destinationRenderers } from "./destinations/renderers";
 import { renderersFor } from "./mirror/renderers";
 import { createAuth } from "./auth";
 import { createSqliteAuthStore } from "./auth/store";
+import type { WebdavProfile } from "./config/load";
 
 export const systemClock: Clock = {
   now: () => new Date().toISOString() as Timestamp,
@@ -44,6 +47,12 @@ export type OpenPoolConfig = {
   readonly assetRoot: string;
   /** Absent disables the mirror, and then capture enqueues nothing. */
   readonly mirrorRoot?: string;
+  /**
+   * The accounts a webdav destination may name. The adapter closes over the
+   * resolver these make, so a secret reaches neither core nor the pool — and a
+   * destination cannot name an address, only one of these.
+   */
+  readonly webdav?: readonly WebdavProfile[];
 };
 
 /**
@@ -78,11 +87,18 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     ...(options.mirrorRoot === undefined ? [] : [options.mirrorRoot]),
   ];
 
+  const renderers = destinationRenderers();
+
   const destinations = destinationRegistry([
     createFilesystemDestination({
-      renderers: destinationRenderers(),
+      renderers,
       accepts: everyPayloadType,
       reserved,
+    }),
+    createWebdavDestination({
+      renderers,
+      accepts: everyPayloadType,
+      credentials: webdavCredentials(options.webdav ?? []),
     }),
   ]);
 

@@ -70,9 +70,29 @@ describe("GET /v1/destination-kinds", () => {
     const answered = (await body(response)) as {
       values: { name: string; settingsSchema: Record<string, unknown> }[];
     };
-    expect(answered.values.map((each) => each.name)).toEqual(["filesystem"]);
+    expect(answered.values.map((each) => each.name)).toEqual([
+      "filesystem",
+      "webdav",
+    ]);
     expect(answered.values[0]?.settingsSchema).toMatchObject({
       required: ["root"],
+    });
+  });
+
+  /** A kind reaches the composer by being registered; no route knows either name. */
+  it("publishes a webdav kind whose settings can hold neither a URL nor a secret", async () => {
+    const host = serving();
+
+    const answered = (await body(
+      await host.app.request("/v1/destination-kinds"),
+    )) as {
+      values: { name: string; settingsSchema: Record<string, unknown> }[];
+    };
+    const webdav = answered.values.find((each) => each.name === "webdav");
+
+    expect(webdav?.settingsSchema).toMatchObject({
+      required: ["profile", "root"],
+      additionalProperties: false,
     });
   });
 });

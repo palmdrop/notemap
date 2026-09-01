@@ -246,7 +246,8 @@ a restart. A leftover `[[destinations]]` block is ignored with a warning on star
 ## Destinations
 
 A destination is created in the app's settings, not in a file: a name, a kind, and that kind's
-settings. Today there is one kind.
+settings. Today there are two kinds — a folder this container can see, and a folder on a WebDAV
+server it can reach.
 
 ### filesystem
 
@@ -279,8 +280,9 @@ it unusable. Leave the database in `state/`.
 Routing an item at it uses one of two capabilities:
 
 - **`create-file`** — writes a new file under `directory` (empty names the root itself). Give it a
-  `filename` or let one be derived from the capture. It never overwrites: a name already taken
-  becomes `name-1.md`.
+  `filename` or let one be derived from the capture. It never overwrites: a name already taken is
+  refused, and the decision comes back to you. An *asset* whose name is taken becomes `name-1.png`
+  rather than being refused, since nobody chose that name.
 - **`append-to-file`** — appends onto an existing note at `path`, under `heading` if you name one,
   at the end of the file if you do not.
 
@@ -308,12 +310,53 @@ Routed into a folder on the host.
 An `image` capture gets its assets copied in beside the note and embedded by relative link, so the
 vault keeps working with notemap gone.
 
-### Nextcloud
+### webdav
 
-**Not reachable yet.** A Nextcloud vault is reachable here only as a plain directory, and writing
-into Nextcloud's own data directory is not that — it is unsupported by Nextcloud, needs an
-`occ files:scan` the daemon has no business being able to run, and leaves files owned by the wrong
-uid. [A webdav destination kind](plans/destination-webdav.md) is what makes it work properly.
+A folder on a WebDAV server — a Nextcloud vault, most immediately. The note arrives as something
+the server already knows about: no `occ files:scan`, no shared volume, no uid to align. It writes
+the same markdown the `filesystem` kind writes, and its two capabilities are the same two, with the
+same fields.
+
+**The account is not a setting.** A destination's settings are two things — the *name* of an
+account and a *folder* under it — and there is nowhere in them to put an address or a password.
+Settings live in the pool: `GET /v1/destinations` answers them to anything signed in, and the
+mirror writes them to disk in the clear. And an address in one would be somewhere the daemon sends
+that password, chosen by whoever can create a destination
+([ADR 28](adr/0028-a-remote-destination-names-a-credential-profile-not-a-url.md)).
+
+So the account goes in `config.toml`, once:
+
+```toml
+[[webdav]]
+name = "nextcloud"
+baseUrl = "https://cloud.example.com/remote.php/dav/files/alice"
+username = "alice"
+passwordFile = "/run/secrets/notemap_webdav_nextcloud"
+```
+
+`baseUrl` is the DAV collection the account is rooted at. For Nextcloud that is
+`https://<host>/remote.php/dav/files/<user>` — the whole of that user's files, with the vault a
+folder below it. Plain HTTP is refused for anything but loopback, since the password would
+otherwise cross the network in the clear.
+
+Use an **app password** rather than the account's own: Nextcloud issues them under Settings →
+Security, and one can be revoked without changing the password everywhere else. It comes from
+`passwordFile` or `passwordEnv` and never from an inline `password`, which is refused on startup —
+`config.toml` is a file that gets backed up and pasted into issues. There is a commented-out secret
+in both compose files. The file is read when a delivery needs it, so rotating the password is
+writing the file; the daemon prints the account names it holds on startup, and never a password.
+
+Then create a destination in settings with `profile = "nextcloud"` and `root = "Notes/Vault"` —
+where the folder is the vault inside that account, or blank for the account's own folder. Several
+vaults on one account are several destinations naming one profile.
+
+The root is never created for you, for the same reason the `filesystem` kind's is not: one that is
+not there is a vault somebody has not made yet. Folders *below* it are created as notes are filed
+into them. A create never overwrites — a name already taken is refused — and an append never loses
+a write that landed between the read and the write, which is a thing that can happen here and
+cannot on a local disk. An account that is unreachable, a password that will not read, or a
+profile that is not declared all leave the delivery pending and retried, on the same terms as an
+unmounted drive.
 
 ## Cutting a release
 

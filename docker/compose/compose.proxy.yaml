@@ -41,6 +41,15 @@ services:
       # Writable by uid 1000, which is who the daemon runs as.
       # - /srv/vault:/var/lib/notemap/vaults/second-brain
 
+    # A webdav destination reaches a Nextcloud instead, and needs the account's
+    # app password. Declare the account in `config.toml` under `[[webdav]]` and
+    # point `passwordFile` at the secret below; a destination then names the
+    # account and a folder, and never a URL or a password. The _FILE form is the
+    # one to prefer here too — an environment variable shows up in
+    # `docker inspect` and in every child process.
+    # secrets:
+    #   - notemap_webdav_nextcloud
+
     healthcheck:
       test:
         [
@@ -72,3 +81,9 @@ networks:
   proxy:
     external: true
     name: ${PROXY_NETWORK:?set PROXY_NETWORK in .env to the proxy's network}
+
+# secrets:
+#   notemap_password:
+#     file: ./notemap_password
+#   notemap_webdav_nextcloud:
+#     file: ./notemap_webdav_nextcloud
