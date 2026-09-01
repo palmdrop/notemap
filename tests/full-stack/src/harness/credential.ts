@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 
 import { MAIN } from "./daemon.ts";
-import type { World } from "./world.ts";
+import { world, type Told, type World } from "./world.ts";
 
 export const NAME = "admin";
 export const PASSWORD = "correct horse battery staple";
@@ -38,5 +38,41 @@ export function setPassword(
     });
 
     child.stdin.end(password);
+  });
+}
+
+/** A world whose credential is set, so the daemon started over it opens shut. */
+export async function shutWorld(told: Told = {}): Promise<World> {
+  const on = world(told);
+  await setPassword(on);
+  return on;
+}
+
+/**
+ * Mints an access token the way a person does, and reads it off stdout — which
+ * is where the command puts it alone, so that a script can take it.
+ */
+export function mintToken(on: World, name = "a script"): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      "node",
+      [MAIN, "token", "mint", "--config", on.config, "--name", name],
+      { stdio: ["ignore", "pipe", "pipe"] },
+    );
+
+    let out = "";
+    let said = "";
+    child.stdout.on("data", (chunk: Buffer) => {
+      out += chunk.toString();
+    });
+    child.stderr.on("data", (chunk: Buffer) => {
+      said += chunk.toString();
+    });
+
+    child.on("error", reject);
+    child.on("exit", (code) => {
+      if (code === 0) return resolve(out.trim());
+      reject(new Error(`minting a token exited with ${code}:\n${said}`));
+    });
   });
 }

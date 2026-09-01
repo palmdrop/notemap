@@ -36,6 +36,7 @@ import {
 } from "./state/state";
 import { createSessions } from "./session/session";
 import { createTags } from "./tags/tags";
+import { createTokens } from "./tokens/tokens";
 import { loadMore, readAfterReturn } from "./surfaces/reads";
 import type { Client, ClientConfig, ListState } from "./types";
 
@@ -330,6 +331,8 @@ export function createClient(config: ClientConfig): Client {
     askSession: () => sessions.ask(),
     login: (name, password) => sessions.login(name, password),
     logout: () => sessions.logout(),
+
+    tokens: createTokens({ api }),
 
     feed: derived(
       state.changes,

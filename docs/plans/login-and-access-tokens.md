@@ -228,9 +228,9 @@ Depends on phase 5.
       items and the door is shut; drawing them because they happen to be local would make signing
       out mean nothing. What it does say is how much unsent work it is holding, because that is the
       person's and its loss would be silent
-- [ ] Settings gains tokens: create one with a name, see it once, copy it, list what exists and
+- [x] Settings gains tokens: create one with a name, see it once, copy it, list what exists and
       revoke any of them. Beside the destinations, in the same one-column measure
-- [ ] Tests: unauthenticated draws the login and no rows; a token is shown once and not again;
+- [x] Tests: unauthenticated draws the login and no rows; a token is shown once and not again;
       revoking removes it
 - [x] Verify: `pnpm --filter @notemap/ui test`
 - [x] `git commit`
@@ -267,12 +267,12 @@ Depends on phases 3 to 6.
 
 Depends on everything above.
 
-- [ ] The full-stack harness can run a daemon with a password and one without. Most tests keep the
+- [x] The full-stack harness can run a daemon with a password and one without. Most tests keep the
       open daemon, since what they are about is not this; at least one drives the whole path with a
       password — sign in, capture, route — and one proves an unauthenticated request is refused
-- [ ] A token-carrying client does the same without a browser, which is the thing the tokens exist
+- [x] A token-carrying client does the same without a browser, which is the thing the tokens exist
       for and the first proof they work
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack`
 - [x] `git commit`
 
 ---
@@ -374,6 +374,10 @@ Recorded because the plan reads as though it did not.
 - **The environment variable is two**: `NOTEMAP_PASSWORD` and `NOTEMAP_PASSWORD_FILE`, the second
   because a path is what a secret is mounted as and what the first one is not. Both are read before
   the daemon listens, neither replaces a credential already set, and setting both is refused.
+- **An access token is carried by the transport, not by the client.** `createFetchTransport` takes
+  one, which is what makes a headless client possible at all — the client itself still knows
+  nothing of credentials, and `assetUrl` is the one thing a token cannot reach, because a renderer
+  fetches it and sets no header.
 - **The throttle counts an attempt before the hash rather than after it**, and weighs one at a
   time. Counting afterwards let a batch arriving together spend the free attempts at once and run
   that many memory-hard hashes beside each other, which made the one open route that does real work
@@ -391,14 +395,12 @@ Recorded because the plan reads as though it did not.
 
 ## What is still open
 
-- **Phase 6's third bullet**: settings shows the session and the way out, but not the access
-  tokens. Minting one, seeing it once, listing and revoking are the command line's only.
 - **Phase 7**: `security.md` and `http-v1.md` say what is true now, but the bind and CORS sections
   still narrate the undefended daemon, and the five-item list of what authentication has to close
   is not answered item by item.
-- **Phase 8**: the harness can now start a daemon with the door shut, and one test drives an
-  outbox through it — queued while signed out, replayed once after signing in, bytes and order
-  intact. What is still missing is the rest of the suite running that way rather than one test.
+- Most of the full-stack suite still runs against an open daemon, which is deliberate — what those
+  tests are about is not the door — but it means the shut path is proven by the handful of tests
+  written for it rather than by everything.
 
 ## Notes
 

@@ -1,5 +1,11 @@
 export { browser, keepingCookies } from "./browser.ts";
-export { NAME, PASSWORD, setPassword } from "./credential.ts";
+export {
+  NAME,
+  PASSWORD,
+  mintToken,
+  setPassword,
+  shutWorld,
+} from "./credential.ts";
 export { daemons, MAIN, type Running } from "./daemon.ts";
 export { read } from "./read.ts";
 export { until } from "./until.ts";

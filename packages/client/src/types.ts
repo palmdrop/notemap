@@ -9,10 +9,13 @@ import type {
   DestinationKind,
   Item,
   ItemId,
+  MintTokenRequest,
+  MintedToken,
   Payload,
   RouteRequest,
   RoutingRecord,
   TagUse,
+  Token,
   UpdateDestinationRequest,
 } from "./api/types";
 import type { Observable } from "rxjs";
@@ -123,6 +126,21 @@ export interface RoutingApi {
   cancel(record: RoutingRecord["id"], item: ItemId): Promise<void>;
 }
 
+/**
+ * The credentials handed to things that are not browsers. A session is required
+ * to reach any of this: without that rule a leaked token would mint its own
+ * replacement, and revoking the one you know about would leave the one you do
+ * not.
+ */
+export interface TokensApi {
+  /** Names, times and last use. No secret is ever listed. */
+  list(): Promise<readonly Token[]>;
+  /** The one answer carrying the token string, which is not stored anywhere. */
+  mint(request: MintTokenRequest): Promise<MintedToken>;
+  /** Takes effect on the next request. Revoking one already gone is not a failure. */
+  revoke(id: string): Promise<void>;
+}
+
 export interface Client {
   /** Whether the pool is answering. Optimistic before anything has asked. */
   readonly reachable: Observable<boolean>;
@@ -132,6 +150,8 @@ export interface Client {
    * surface draws the login from this rather than inferring it from a refusal.
    */
   readonly session: Observable<SessionState>;
+
+  readonly tokens: TokensApi;
 
   /** Asks the daemon who this is. Open, so it answers whether or not anyone is. */
   askSession(): Promise<SessionState>;

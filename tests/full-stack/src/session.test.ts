@@ -11,6 +11,7 @@ import {
   PASSWORD,
   read,
   setPassword,
+  shutWorld,
   until,
   world,
   type Running,
@@ -21,9 +22,7 @@ const daemon = daemons();
 
 /** A daemon whose credential was set before it started, which shuts the door. */
 async function shut(told: Told = {}): Promise<Running> {
-  const on = world(told);
-  await setPassword(on);
-  return daemon(on);
+  return daemon(await shutWorld(told));
 }
 
 const CREDENTIAL = JSON.stringify({ name: NAME, password: PASSWORD });

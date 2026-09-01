@@ -1,3 +1,5 @@
+import type { Client } from "@notemap/client";
+
 import type { Running } from "./daemon.ts";
 import { DOWN, UP } from "./world.ts";
 
@@ -11,15 +13,19 @@ export type Vaults = {
 /**
  * The two destinations, made the way a person makes one. They are pool state
  * rather than configuration, so a world that already holds them — a restart —
- * is answered with what it has instead of a second pair.
+ * is answered with what it has instead of a second pair. Over the daemon's own
+ * client, or over one a test signed in for itself.
  */
-export async function vaults(running: Running): Promise<Vaults> {
-  const held = await running.client.destinations.load();
+export async function vaults(
+  running: Running,
+  over: Client = running.client,
+): Promise<Vaults> {
+  const held = await over.destinations.load();
   const idFor = async (name: string, root: string): Promise<string> => {
     const already = held.find((each) => each.name === name);
     if (already !== undefined) return already.id;
 
-    const made = await running.client.destinations.create({
+    const made = await over.destinations.create({
       name,
       kind: "filesystem",
       settings: { root },
