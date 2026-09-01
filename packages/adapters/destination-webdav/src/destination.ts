@@ -1,4 +1,5 @@
 import {
+  APPEND_TO_FILE,
   capabilitiesFor,
   CREATE_FILE,
   type Renderers,
@@ -14,7 +15,7 @@ import type {
 import type { CredentialResolver } from "./credentials";
 import { createDav, type Dav } from "./dav";
 import { Refused, Unreachable } from "./errors";
-import { createNote, type Wiring } from "./notes";
+import { appendToNote, createNote, type Wiring } from "./notes";
 import { asWebdavSettings, WEBDAV, WEBDAV_SETTINGS } from "./settings";
 
 /** What the host wires: neither a renderer nor a credential is a person's setting. */
@@ -96,6 +97,8 @@ function carryOut(
   switch (delivery.capability) {
     case CREATE_FILE:
       return createNote(wiring, delivery, signal);
+    case APPEND_TO_FILE:
+      return appendToNote(wiring, delivery, signal);
     default:
       return Promise.reject(
         new Refused(`no capability named ${delivery.capability}`),

@@ -114,7 +114,7 @@ describe("creating a note", () => {
     expect(outcome).toMatchObject({ pointer: "A thought.md" });
   });
 
-  it("lands beside a name that is taken rather than over it", async () => {
+  it("refuses a name that is taken rather than writing over it", async () => {
     const server = await vault();
     server.put("V/note.md", "somebody else's note");
 
@@ -123,7 +123,10 @@ describe("creating a note", () => {
       delivery({ arguments: { directory: "", filename: "note.md" } }),
     );
 
-    expect(outcome).toMatchObject({ pointer: "note-1.md" });
+    expect(outcome).toMatchObject({
+      kind: "rejected",
+      detail: "note.md is already there",
+    });
     expect(server.files()["V/note.md"]).toBe("somebody else's note");
   });
 
@@ -158,28 +161,28 @@ describe("creating a note", () => {
     expect(server.files()).toEqual({});
   });
 
-  it("produces two notes where two creates race, and never one", async () => {
+  /** The condition is the whole of it: asking first and then writing would lose one silently. */
+  it("leaves one note and one refusal where two creates race for a name", async () => {
     const server = await vault();
     server.makeCollection("V");
 
-    const create = () =>
+    const create = (item: string) =>
       adapter(server).deliver(
         destinationRow({ root: "V" }),
-        delivery({ arguments: { directory: "", filename: "note.md" } }),
+        delivery({
+          item,
+          arguments: { directory: "", filename: "note.md" },
+          content: { text: item },
+        }),
       );
 
-    const outcomes = await Promise.all([create(), create(), create()]);
+    const outcomes = await Promise.all([create("first"), create("second")]);
 
-    expect(outcomes.map((each) => each.kind)).toEqual([
+    expect(outcomes.map((each) => each.kind).sort()).toEqual([
       "delivered",
-      "delivered",
-      "delivered",
+      "rejected",
     ]);
-    expect(Object.keys(server.files()).sort()).toEqual([
-      "V/note-1.md",
-      "V/note-2.md",
-      "V/note.md",
-    ]);
+    expect(Object.keys(server.files())).toEqual(["V/note.md"]);
   });
 
   it("refuses a target that leaves the vault, whatever a later attempt would find", async () => {
@@ -204,5 +207,113 @@ describe("creating a note", () => {
         delivery({ arguments: { folder: "inbox" } }),
       ),
     ).toMatchObject({ kind: "rejected" });
+  });
+});
+
+describe("appending to a note", () => {
+  const append = (server: DavServer, args: Record<string, string>) =>
+    adapter(server).deliver(
+      destinationRow({ root: "V" }),
+      delivery({ capability: "append-to-file", arguments: args }),
+    );
+
+  it("inserts under the heading and keeps what was already there", async () => {
+    const server = await vault();
+    server.put("V/daily.md", "# Monday\n\n## Notes\n\nthe first one\n");
+
+    const outcome = await append(server, {
+      path: "daily.md",
+      heading: "Notes",
+    });
+
+    expect(outcome).toMatchObject({ kind: "delivered", pointer: "daily.md" });
+    expect(server.files()["V/daily.md"]).toBe(
+      '# Monday\n\n## Notes\n\nthe first one\n\n```json\n{\n  "text": "a thought"\n}\n```\n',
+    );
+  });
+
+  /** It is going into somebody else's file, which has its own. */
+  it("carries no frontmatter into a note that was already there", async () => {
+    const server = await vault();
+    server.put("V/daily.md", "already here\n");
+
+    await append(server, { path: "daily.md" });
+
+    expect(server.files()["V/daily.md"]).not.toContain("derived_from");
+  });
+
+  it("writes a note that is not there, frontmatter and all", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+
+    const outcome = await append(server, {
+      path: "a/b/daily.md",
+      heading: "Notes",
+    });
+
+    expect(outcome).toMatchObject({ pointer: "a/b/daily.md" });
+    const note = server.files()["V/a/b/daily.md"] ?? "";
+    expect(note).toContain("derived_from: 'urn:commons:item:item-1'");
+    expect(note).toContain("## Notes");
+  });
+
+  /**
+   * The lost update this kind is exposed to and the filesystem kind is not.
+   * Somebody writes between the read and the write; the condition catches it,
+   * and the re-read carries their line into the result.
+   */
+  it("does not lose a write that landed between the read and the write", async () => {
+    const server = await vault();
+    server.put("V/daily.md", "the first line\n");
+    server.interceptOnce("PUT", () => {
+      server.put("V/daily.md", "the first line\nsomebody else's line\n");
+    });
+
+    const outcome = await append(server, { path: "daily.md" });
+
+    expect(outcome).toMatchObject({ kind: "delivered" });
+    const note = server.files()["V/daily.md"] ?? "";
+    expect(note).toContain("somebody else's line");
+    expect(note).toContain('"text": "a thought"');
+  });
+
+  /**
+   * Contention is retryable and the delivery runner's business. Rejecting would
+   * abandon a routing decision at once over somebody else typing.
+   */
+  it("gives up as unreachable where every attempt loses the race", async () => {
+    const server = await vault();
+    server.put("V/daily.md", "the first line\n");
+
+    let writes = 0;
+    for (let each = 0; each < 8; each += 1) {
+      server.interceptOnce("PUT", () => {
+        writes += 1;
+        server.put("V/daily.md", `written over ${writes}\n`);
+      });
+    }
+
+    expect(await append(server, { path: "daily.md" })).toMatchObject({
+      kind: "unreachable",
+      detail: /4 attempts/,
+    });
+    expect(writes).toBe(4);
+  });
+
+  it("refuses a path that leaves the vault", async () => {
+    const server = await vault();
+
+    expect(await append(server, { path: "../elsewhere.md" })).toMatchObject({
+      kind: "rejected",
+      detail: /outside/,
+    });
+  });
+
+  it("refuses arguments that are not an append-to-file argument set", async () => {
+    const server = await vault();
+
+    expect(await append(server, { note: "daily.md" })).toMatchObject({
+      kind: "rejected",
+    });
   });
 });
