@@ -12,6 +12,12 @@
   mistake and not a permission.
   ([plan](../plans/destination-targets.md))
 
+- 2026-08-31 — **The session cookie asks for the scheme the `__Host-` prefix needs, not the trust
+  it sits next to.** `Secure` still follows what a browser counts as trustworthy, loopback
+  included; the prefix now follows `https:` alone, because Chromium rejects a prefixed cookie set
+  over `http:` outright and a loopback daemon issuing one answered the sign-in `200` and every
+  request after it `401`. ([plan](../plans/login-and-access-tokens.md))
+
 - 2026-08-31 — **The daemon has a door.** One middleware over `/v1` takes a session cookie or a
   bearer token, and a request carrying neither is refused in the daemon's own envelope. A password
   is set from the command line and takes effect on the next request; access tokens are minted,
@@ -297,6 +303,28 @@ that a leak is noticed, so it is not a thing a leaked token may do to them first
 do different things, this section is the list of what has to be answered, and `Agent` growing a
 name (see [the login plan](../plans/login-and-access-tokens.md)) is the same trigger from the
 other direction.
+
+### The session cookie is as narrow as the origin allows
+
+A sign-in mints a cookie carrying `HttpOnly`, `Path=/`, `SameSite=Lax` and no `Domain`. Two things
+about it are the origin's to decide, and they are decided separately:
+
+- **`Secure`** follows what a browser will treat as trustworthy. That includes loopback whatever
+  the scheme, so the ordinary `http://localhost:4747` daemon still gets it. It comes off only where
+  a configured origin is plain HTTP on an address someone else can reach — which the daemon warns
+  about on startup, because at that point the cookie crosses a network in the clear.
+- **The `__Host-` prefix** follows the scheme alone. `https://` gets `__Host-session`; everything
+  else, loopback included, gets `session`.
+
+The prefix is worth having where it applies: it is the browser's own guarantee that the cookie was
+set with `Secure` and `Path=/` by this exact host and not by a subdomain or a sibling that talked
+its way into a `Domain`. It is not worth having everywhere, because Chromium **rejects a prefixed
+cookie set over `http:`** — loopback included, even though it accepts `Secure` there. A daemon that
+took the prefix on loopback would answer a sign-in `200` with an identity, have the cookie dropped
+on the floor, and refuse every request after it as `unauthenticated`, saying nothing about why.
+Firefox accepts the same cookie, so this is a browser a person happens to be using rather than a
+thing the daemon can observe. The two attributes are therefore kept apart, and the prefix asks for
+the scheme it needs rather than for the trust it is adjacent to.
 
 ### The login is throttled, and nothing else is
 

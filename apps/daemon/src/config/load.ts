@@ -23,6 +23,7 @@ import {
   DEFAULT_RETRY,
   DEFAULT_SWEEP,
 } from "../constants";
+import type { CookieOptions } from "../auth/sessions/config";
 
 export type MirrorConfig = {
   /** The `pool-mirror` directory. */
@@ -153,15 +154,20 @@ export function isLoopback(host: string): boolean {
 }
 
 /**
- * A browser counts loopback as trustworthy whatever the scheme, so a secure
- * cookie survives plain HTTP there. Only a plain-HTTP origin someone else can
- * reach turns it off.
+ * The two the origin decides, which are not the same question. A browser counts
+ * loopback as trustworthy whatever the scheme, so `Secure` survives plain HTTP
+ * there and only a plain-HTTP origin someone else can reach gives it up. The
+ * `__Host-` prefix is stricter than that in Chromium, which rejects a prefixed
+ * cookie outright over `http:` — loopback included — so the prefix follows the
+ * scheme alone. An absent origin is the loopback daemon nobody configured.
  */
-export function cookiesAreSecure(origin: string | undefined): boolean {
-  if (origin === undefined) return true;
+export function cookieOptionsFor(origin: string | undefined): CookieOptions {
+  if (origin === undefined) return { secure: true, prefixed: false };
 
   const url = new URL(origin);
-  return url.protocol === "https:" || isLoopback(url.hostname);
+  const https = url.protocol === "https:";
+
+  return { secure: https || isLoopback(url.hostname), prefixed: https };
 }
 
 /** `~` is the shell's, not the filesystem's. */
@@ -334,7 +340,7 @@ export function parseConfig(source: string, from: string): LoadedConfig {
 }
 
 export function loadConfig(
-  path = process.env["NOTEMAP_CONFIG"] || defaultConfigPath()
+  path = process.env["NOTEMAP_CONFIG"] || defaultConfigPath(),
 ): LoadedConfig {
   let source: string;
   try {

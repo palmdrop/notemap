@@ -40,3 +40,8 @@ a positive fence the daemon has demonstrably passed.
 
 `@notemap/seed` fills a pool where a journey wants a populated one; it speaks `/v1` too, so nothing
 here reaches behind the daemon to arrange state.
+
+A session needs one thing a browser would otherwise provide: `fetch` in Node keeps no cookies, so
+`browser(url)` wraps the transport in a jar and the client carries what a sign-in gave it. The jar is
+credulous on purpose — it keeps whatever it is sent, and what a browser would *refuse* is asserted
+on the `Set-Cookie` header instead, because nothing here can be Chromium.

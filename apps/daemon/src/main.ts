@@ -6,7 +6,7 @@ import { serve } from "@hono/node-server";
 
 import { createApp } from "./app";
 import { startSweeper } from "./assets/sweeper";
-import { cookiesAreSecure, loadConfig } from "./config/load";
+import { cookieOptionsFor, loadConfig } from "./config/load";
 import { SHUTDOWN_GRACE_MS } from "./constants";
 import { startDeliveryRunner } from "./destinations/runner";
 import { startMirrorRunner } from "./mirror/runner";
@@ -26,7 +26,9 @@ function start(): void {
     console.warn(`notemap: ignoring ${key}, which this daemon does not know`);
   }
 
-  if (!cookiesAreSecure(config.origin)) {
+  const cookies = cookieOptionsFor(config.origin);
+
+  if (!cookies.secure) {
     console.warn(
       `notemap: ${config.origin} is plain HTTP, so a session cookie crosses the network in the clear — put TLS in front of the daemon`,
     );
@@ -43,11 +45,14 @@ function start(): void {
 
   mkdirSync(dirname(config.auth), { recursive: true });
 
-  const auth = openAuth({
-    file: config.auth
-  }, {
-    clock: ports.clock
-  });
+  const auth = openAuth(
+    {
+      file: config.auth,
+    },
+    {
+      clock: ports.clock,
+    },
+  );
 
   // Nothing waits on this: an expired session or token is refused whether or
   // not it has been swept, so a failed sweep costs a row rather than a refusal.
@@ -89,7 +94,7 @@ function start(): void {
       fetch: createApp(pool, {
         limits: config.assets,
         auth,
-        cookies: { secure: cookiesAreSecure(config.origin) },
+        cookies,
         throttle: createLoginThrottle({ clock: ports.clock }),
       }).fetch,
       hostname: config.host,

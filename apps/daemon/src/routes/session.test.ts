@@ -10,6 +10,7 @@ import { createAuth } from "../auth";
 import { createSqliteAuthStore } from "../auth/store";
 import { createLoginThrottle, type Throttle } from "../auth/throttle";
 import type { AuthStore } from "../auth/store/types";
+import type { CookieOptions } from "../auth/sessions/config";
 import type { Auth } from "../auth/types";
 import { daemon, type Daemon } from "../testing/fixture";
 import type { AppEnv } from "../types";
@@ -33,7 +34,10 @@ function authOver(): Auth {
 }
 
 /** A daemon with a password set, which is the only state where the door is shut. */
-async function guarded(throttle?: Throttle): Promise<{
+async function guarded(
+  throttle?: Throttle,
+  cookies?: CookieOptions,
+): Promise<{
   app: Hono<AppEnv>;
   auth: Auth;
 }> {
@@ -43,6 +47,7 @@ async function guarded(throttle?: Throttle): Promise<{
   const host = daemon(undefined, {
     auth,
     ...(throttle === undefined ? {} : { throttle }),
+    ...(cookies === undefined ? {} : { cookies }),
   });
   open.push(host);
 
@@ -108,7 +113,9 @@ describe("the door", () => {
     const { app } = await guarded();
     const cookie = cookieFrom(await login(app));
 
-    const said = await body(await app.request("/v1/health", { headers: { cookie } }));
+    const said = await body(
+      await app.request("/v1/health", { headers: { cookie } }),
+    );
 
     expect(said).toHaveProperty("pool");
   });
@@ -140,6 +147,60 @@ describe("the door", () => {
     });
 
     expect(response.headers.get("set-cookie")).toContain("session=");
+  });
+});
+
+describe("the cookie a sign-in mints", () => {
+  const setBy = async (cookies: CookieOptions) => {
+    const { app } = await guarded(undefined, cookies);
+    return (await login(app)).headers.get("set-cookie") ?? "";
+  };
+
+  it("is named plainly where the origin is not TLS", async () => {
+    const said = await setBy({ secure: true, prefixed: false });
+
+    expect(said).toMatch(/^session=/);
+    expect(said).not.toContain("__Host-");
+  });
+
+  /**
+   * The prefix and the attributes are one decision to a browser: Chromium
+   * rejects a prefixed cookie over `http:` outright, loopback included, so a
+   * loopback daemon issuing one signs nobody in and says nothing about why.
+   */
+  it("takes the __Host- prefix only where the origin is", async () => {
+    expect(await setBy({ secure: true, prefixed: true })).toMatch(
+      /^__Host-session=/,
+    );
+  });
+
+  it("carries what the prefix promises either way", async () => {
+    for (const prefixed of [false, true]) {
+      const said = await setBy({ secure: true, prefixed });
+
+      expect(said).toContain("Path=/");
+      expect(said).toContain("HttpOnly");
+      expect(said).toContain("Secure");
+      expect(said).toContain("SameSite=Lax");
+      expect(said).not.toContain("Domain=");
+    }
+  });
+
+  it("gives up Secure where plain HTTP crosses a network", async () => {
+    const said = await setBy({ secure: false, prefixed: false });
+
+    expect(said).not.toContain("Secure");
+  });
+
+  it("is read back under the name it was set under", async () => {
+    const cookies = { secure: true, prefixed: true } as const;
+    const { app } = await guarded(undefined, cookies);
+    const cookie = cookieFrom(await login(app));
+
+    expect(cookie).toMatch(/^__Host-session=/);
+    expect(
+      (await app.request("/v1/feed", { headers: { cookie } })).status,
+    ).toBe(200);
   });
 });
 
@@ -227,17 +288,17 @@ describe("signing out", () => {
     expect(response.status).toBe(204);
     expect(response.headers.get("set-cookie")).toContain("session=");
 
-    expect((await app.request("/v1/feed", { headers: { cookie } })).status).toBe(
-      401,
-    );
+    expect(
+      (await app.request("/v1/feed", { headers: { cookie } })).status,
+    ).toBe(401);
   });
 
   it("takes signing out when nothing was presented", async () => {
     const { app } = await guarded();
 
-    expect((await app.request("/v1/session", { method: "DELETE" })).status).toBe(
-      204,
-    );
+    expect(
+      (await app.request("/v1/session", { method: "DELETE" })).status,
+    ).toBe(204);
   });
 
   it("refuses to sign out an access token, which is not a session", async () => {
@@ -307,15 +368,17 @@ describe("signing out everywhere", () => {
     });
 
     expect(response.status).toBe(204);
-    expect((await app.request("/v1/feed", { headers: { cookie } })).status).toBe(401);
+    expect(
+      (await app.request("/v1/feed", { headers: { cookie } })).status,
+    ).toBe(401);
   });
 
   it("is behind the door, unlike signing out of this session alone", async () => {
     const { app } = await guarded();
 
-    expect((await app.request("/v1/sessions", { method: "DELETE" })).status).toBe(
-      401,
-    );
+    expect(
+      (await app.request("/v1/sessions", { method: "DELETE" })).status,
+    ).toBe(401);
   });
 });
 

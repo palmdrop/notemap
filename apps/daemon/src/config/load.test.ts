@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
-  cookiesAreSecure,
+  cookieOptionsFor,
   defaultAssetRoot,
   defaultAuthPath,
   defaultConfigPath,
@@ -288,7 +288,7 @@ describe("where the daemon looks", () => {
   it("takes the config path from NOTEMAP_CONFIG", () => {
     const directory = mkdtempSync(join(tmpdir(), "notemap-env-"));
     const path = join(directory, "config.toml");
-    writeFileSync(path, '[daemon]\nport = 4848\n', "utf8");
+    writeFileSync(path, "[daemon]\nport = 4848\n", "utf8");
 
     try {
       vi.stubEnv("NOTEMAP_CONFIG", path);
@@ -370,19 +370,32 @@ describe("where the daemon says it is reachable", () => {
   });
 });
 
-describe("whether a session cookie may require HTTPS", () => {
-  it("requires it of an origin reached over TLS", () => {
-    expect(cookiesAreSecure("https://notes.example.com")).toBe(true);
+describe("what an origin decides about the session cookie", () => {
+  it("asks for both of an origin reached over TLS", () => {
+    expect(cookieOptionsFor("https://notes.example.com")).toEqual({
+      secure: true,
+      prefixed: true,
+    });
   });
 
-  it("requires it on loopback too, which a browser trusts whatever the scheme", () => {
-    expect(cookiesAreSecure("http://localhost:4747")).toBe(true);
-    expect(cookiesAreSecure("http://127.0.0.1:4747")).toBe(true);
-    expect(cookiesAreSecure(undefined)).toBe(true);
+  it("keeps Secure on loopback, which a browser trusts whatever the scheme", () => {
+    expect(cookieOptionsFor("http://localhost:4747").secure).toBe(true);
+    expect(cookieOptionsFor("http://127.0.0.1:4747").secure).toBe(true);
+    expect(cookieOptionsFor(undefined).secure).toBe(true);
   });
 
-  it("gives it up only where plain HTTP crosses a network", () => {
-    expect(cookiesAreSecure("http://notes.example.com")).toBe(false);
-    expect(cookiesAreSecure("http://192.168.1.10:4747")).toBe(false);
+  /**
+   * The prefix is Chromium's to reject, and it rejects it over `http:` whatever
+   * the host — so a loopback daemon that took it would sign nobody in at all.
+   */
+  it("drops the prefix everywhere but TLS, loopback included", () => {
+    expect(cookieOptionsFor("http://localhost:4747").prefixed).toBe(false);
+    expect(cookieOptionsFor("http://127.0.0.1:4747").prefixed).toBe(false);
+    expect(cookieOptionsFor(undefined).prefixed).toBe(false);
+  });
+
+  it("gives Secure up only where plain HTTP crosses a network", () => {
+    expect(cookieOptionsFor("http://notes.example.com").secure).toBe(false);
+    expect(cookieOptionsFor("http://192.168.1.10:4747").secure).toBe(false);
   });
 });

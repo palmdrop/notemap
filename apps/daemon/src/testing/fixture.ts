@@ -18,6 +18,7 @@ import type {
 
 import { createApp } from "../app";
 import { createLoginThrottle, type Throttle } from "../auth/throttle";
+import type { CookieOptions } from "../auth/sessions/config";
 import type { Auth } from "../auth/types";
 import type { AppEnv } from "../types";
 import { startSweeper } from "../assets/sweeper";
@@ -108,6 +109,8 @@ export type DaemonOptions = {
    */
   readonly throttle?: Throttle;
   readonly maxUploadBytes?: number;
+  /** Absent is the loopback daemon: `Secure` off over the fixture's plain HTTP, and no prefix. */
+  readonly cookies?: CookieOptions;
   /**
    * Makes the folder `vaultRoot` names before the pool opens. Leaving it out is
    * a case rather than an omission: it is what an unmounted drive looks like.
@@ -159,7 +162,7 @@ export function daemon(
       maxUploadBytes: options.maxUploadBytes ?? DEFAULT_MAX_UPLOAD_BYTES,
     },
     auth: options.auth ?? noAuth,
-    cookies: { secure: false },
+    cookies: options.cookies ?? { secure: false, prefixed: false },
     throttle: options.throttle ?? createLoginThrottle({ clock: systemClock }),
   });
   const answered = trackResponses(app);
@@ -255,7 +258,10 @@ export function envelope(overrides: EnvelopeOverrides = {}) {
   };
 }
 
-export async function post(app: Hono<AppEnv>, body: unknown): Promise<Response> {
+export async function post(
+  app: Hono<AppEnv>,
+  body: unknown,
+): Promise<Response> {
   return app.request("/v1/captures", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -290,7 +296,10 @@ export async function slice(app: Hono<AppEnv>, url: string): Promise<Slice> {
 export const ids = (page: Slice) => page.values.map((item) => item.id);
 
 /** Captures `count` items one minute apart, oldest first, and returns their ids. */
-export async function captureMany(app: Hono<AppEnv>, count: number): Promise<string[]> {
+export async function captureMany(
+  app: Hono<AppEnv>,
+  count: number,
+): Promise<string[]> {
   const ids: string[] = [];
   for (let index = 0; index < count; index += 1) {
     const id = `0198f0c2-0000-7000-8000-00000000000${index}`;
