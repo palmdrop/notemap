@@ -24,6 +24,12 @@ export type DavServer = {
   /** What arrived, in order, as `METHOD /path`. */
   requests(): readonly string[];
   /**
+   * Whether the body at that path arrived chunked rather than under a
+   * `Content-Length`, which is what says it was streamed and not buffered up to
+   * be measured first.
+   */
+  arrivedChunked(path: string): boolean;
+  /**
    * Run before the named method is handled, once per matching request. This is
    * how a test writes into the vault between somebody's read and their write.
    */
@@ -44,6 +50,7 @@ export async function startDavServer(): Promise<DavServer> {
 
   const tree = new Map<string, Entry>([["", { kind: "collection" }]]);
   const seen: string[] = [];
+  const chunked = new Set<string>();
   const intercepts = new Map<string, Array<() => void>>();
 
   let versions = 0;
@@ -60,6 +67,7 @@ export async function startDavServer(): Promise<DavServer> {
     }
 
     seen.push(`${method} /${path}`);
+    if (request.headers["transfer-encoding"] === "chunked") chunked.add(path);
 
     if (request.headers.authorization !== expected) {
       response.writeHead(401, { "www-authenticate": "Basic" }).end();
@@ -176,6 +184,8 @@ export async function startDavServer(): Promise<DavServer> {
     },
 
     requests: () => [...seen],
+
+    arrivedChunked: (path) => chunked.has(trim(path)),
 
     interceptOnce: (method, run) => {
       const waiting = intercepts.get(method) ?? [];

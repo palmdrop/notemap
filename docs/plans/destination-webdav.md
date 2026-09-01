@@ -159,15 +159,16 @@ Depends on phase 4.
 
 Depends on phase 4.
 
-- [ ] Each asset is `PUT` into the note's own collection under the name it was uploaded with, using
+- [x] Each asset is `PUT` into the note's own collection under the name it was uploaded with, using
       the shared naming so a webdav vault and a filesystem vault name the same picture the same
       way, and the rendering links to it relatively. A reference back into notemap's blob layout
       breaks the moment notemap moves, which is why the filesystem kind copies too
-- [ ] Streamed, not buffered: `DeliveredAsset.open` is lazy for the reason that a delivery may be
+- [x] Streamed, not buffered: `DeliveredAsset.open` is lazy for the reason that a delivery may be
       carrying an hour of audio
-- [ ] Tests: an image capture lands as a note and a file beside it, and the link resolves
-- [ ] Verify: `pnpm -r --silent test`
-- [ ] `git commit`
+- [x] Tests: an image capture lands as a note and a file beside it, the link resolves, and
+      the bytes arrive chunked rather than under a `Content-Length` taken by buffering them first
+- [x] Verify: `pnpm -r --silent test`
+- [x] `git commit`
 
 ### Phase 7 — wired, and tried against the real thing
 

@@ -8,6 +8,7 @@ import {
   type Renderers,
 } from "@notemap/output-markdown";
 
+import { placeAssets } from "./assets";
 import type { Dav } from "./dav";
 import { Refused, Unreachable } from "./errors";
 import { collectionsUnder, contain, type Contained } from "./paths";
@@ -43,9 +44,10 @@ export async function createNote(
 
   await makeCollections(wiring.dav, wanted, signal);
 
+  const assets = await placeAssets(wiring.dav, wanted, delivery.assets, signal);
   const rendered = renderNote(wiring.renderers, delivery, {
     directory: collectionOfPointer(wanted),
-    assets: new Map(),
+    assets,
   });
   const written = await wiring.dav.create(
     wanted.encoded,
@@ -83,16 +85,27 @@ export async function appendToNote(
   }
 
   const note = locate(wiring.root, args.path);
-  const rendered = renderNote(wiring.renderers, delivery, {
-    directory: collectionOfPointer(note),
-    assets: new Map(),
-  });
+
+  // Placed once, whatever happens to the note after: the collection they go in
+  // is the note's, and an attempt that loses a race re-reads rather than
+  // re-uploading an hour of audio.
+  let assets: ReadonlyMap<string, string> | undefined;
 
   for (let attempt = 0; attempt < ATTEMPTS; attempt += 1) {
     const existing = await wiring.dav.get(note.encoded, signal);
 
+    if (assets === undefined) {
+      if (existing === undefined)
+        await makeCollections(wiring.dav, note, signal);
+      assets = await placeAssets(wiring.dav, note, delivery.assets, signal);
+    }
+
+    const rendered = renderNote(wiring.renderers, delivery, {
+      directory: collectionOfPointer(note),
+      assets,
+    });
+
     if (existing === undefined) {
-      await makeCollections(wiring.dav, note, signal);
       const created = await wiring.dav.create(
         note.encoded,
         `${rendered.frontmatter}\n${insertUnder("", rendered.body, args.heading)}`,

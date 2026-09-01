@@ -1,8 +1,16 @@
-import type { DeliveryOutcome } from "@notemap/core";
+import type { DeliveryOutcome, PayloadTypeName } from "@notemap/core";
+import { linkTo, type Renderer } from "@notemap/output-markdown";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createWebdavDestination } from "./destination";
-import { delivery, destinationRow, resolverFor, TEXT } from "./testing/fixture";
+import {
+  bytes,
+  deliveredAsset,
+  delivery,
+  destinationRow,
+  resolverFor,
+  TEXT,
+} from "./testing/fixture";
 import { startDavServer, type DavServer } from "./testing/dav-server";
 
 const servers: DavServer[] = [];
@@ -17,10 +25,20 @@ async function vault(): Promise<DavServer> {
   return server;
 }
 
-function adapter(server: DavServer) {
+const IMAGE = "image" as PayloadTypeName;
+
+/** Links every asset it was handed, so the names they landed under are visible. */
+const renderWithAssets: Renderer = (_delivery, where) => ({
+  body: [...where.assets.values()]
+    .map((name) => `![](${linkTo(name)})`)
+    .join("\n"),
+});
+
+function adapter(server: DavServer, renderers = {}) {
   return createWebdavDestination({
-    accepts: [TEXT],
+    accepts: [TEXT, IMAGE],
     credentials: resolverFor(server),
+    renderers,
   });
 }
 
@@ -315,5 +333,192 @@ describe("appending to a note", () => {
     expect(await append(server, { note: "daily.md" })).toMatchObject({
       kind: "rejected",
     });
+  });
+});
+
+describe("assets", () => {
+  const withImages = (server: DavServer) =>
+    adapter(server, { [IMAGE]: renderWithAssets });
+
+  it("land beside the note under the names they were uploaded with", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+    const photo = deliveredAsset("image", "photo.png", bytes("PNG"));
+
+    await withImages(server).deliver(
+      destinationRow({ root: "V" }),
+      delivery({
+        type: IMAGE,
+        arguments: { directory: "inbox", filename: "a.md" },
+        assets: [photo],
+      }),
+    );
+
+    expect(Object.keys(server.files())).toEqual([
+      "V/inbox/a.md",
+      "V/inbox/photo.png",
+    ]);
+    expect(server.files()["V/inbox/photo.png"]).toBe("PNG");
+    expect(server.files()["V/inbox/a.md"]).toContain("![](photo.png)");
+  });
+
+  it("suffixes the second of two sharing one name, rather than losing it", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+
+    await withImages(server).deliver(
+      destinationRow({ root: "V" }),
+      delivery({
+        type: IMAGE,
+        arguments: { directory: "", filename: "a.md" },
+        assets: [
+          deliveredAsset("one", "photo.png", bytes("first")),
+          deliveredAsset("two", "photo.png", bytes("second")),
+        ],
+      }),
+    );
+
+    expect(Object.keys(server.files())).toEqual([
+      "V/a.md",
+      "V/photo-1.png",
+      "V/photo.png",
+    ]);
+    expect(server.files()["V/photo-1.png"]).toBe("second");
+  });
+
+  it("writes beside a name the vault already had rather than over it", async () => {
+    const server = await vault();
+    server.put("V/photo.png", "theirs");
+
+    await withImages(server).deliver(
+      destinationRow({ root: "V" }),
+      delivery({
+        type: IMAGE,
+        arguments: { directory: "", filename: "a.md" },
+        assets: [deliveredAsset("one", "photo.png", bytes("ours"))],
+      }),
+    );
+
+    expect(server.files()["V/photo.png"]).toBe("theirs");
+    expect(server.files()["V/photo-1.png"]).toBe("ours");
+  });
+
+  /** An uploaded filename was never promised to be one path segment. */
+  it("flattens a name that would have left the vault", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+
+    await withImages(server).deliver(
+      destinationRow({ root: "V" }),
+      delivery({
+        type: IMAGE,
+        arguments: { directory: "", filename: "a.md" },
+        assets: [deliveredAsset("one", "../../authorized_keys", bytes("ours"))],
+      }),
+    );
+
+    expect(Object.keys(server.files())).toEqual([
+      "V/a.md",
+      "V/authorized_keys",
+    ]);
+  });
+
+  it("links to the copy beside the note, never back into notemap", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+
+    await withImages(server).deliver(
+      destinationRow({ root: "V" }),
+      delivery({
+        type: IMAGE,
+        arguments: { directory: "", filename: "a.md" },
+        assets: [deliveredAsset("one", "a photo.png", bytes("PNG"))],
+      }),
+    );
+
+    // Angle brackets, because a bare CommonMark destination ends at the space.
+    expect(server.files()["V/a.md"]).toContain("![](<a photo.png>)");
+    expect(server.files()["V/a photo.png"]).toBe("PNG");
+  });
+
+  it("opens no stream for a delivery carrying none", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+    const photo = deliveredAsset("image", "photo.png", bytes("PNG"));
+
+    await adapter(server).deliver(
+      destinationRow({ root: "V" }),
+      delivery({ arguments: { directory: "", filename: "a.md" } }),
+    );
+
+    expect(photo.opens()).toBe(0);
+  });
+
+  it("puts an asset beside a note being appended to as well", async () => {
+    const server = await vault();
+    server.put("V/daily.md", "the first line\n");
+
+    await withImages(server).deliver(
+      destinationRow({ root: "V" }),
+      delivery({
+        type: IMAGE,
+        capability: "append-to-file",
+        arguments: { path: "daily.md" },
+        assets: [deliveredAsset("one", "photo.png", bytes("PNG"))],
+      }),
+    );
+
+    expect(server.files()["V/photo.png"]).toBe("PNG");
+    expect(server.files()["V/daily.md"]).toContain("![](photo.png)");
+  });
+
+  /** Uploaded once even where the note has to be re-read and written again. */
+  it("does not upload an asset a second time when an append loses a race", async () => {
+    const server = await vault();
+    server.put("V/daily.md", "the first line\n");
+    const photo = deliveredAsset("one", "photo.png", bytes("PNG"));
+
+    server.interceptOnce("PUT", () => undefined); // the asset's own PUT
+    server.interceptOnce("PUT", () => {
+      server.put("V/daily.md", "somebody else got there\n");
+    });
+
+    const outcome = await withImages(server).deliver(
+      destinationRow({ root: "V" }),
+      delivery({
+        type: IMAGE,
+        capability: "append-to-file",
+        arguments: { path: "daily.md" },
+        assets: [photo],
+      }),
+    );
+
+    expect(outcome).toMatchObject({ kind: "delivered" });
+    expect(photo.opens()).toBe(1);
+  });
+});
+
+/**
+ * `DeliveredAsset.open` is lazy because a delivery may be carrying an hour of
+ * audio, and the whole of that is given up if the bytes are gathered into one
+ * buffer to be measured before the request goes.
+ */
+describe("an asset is streamed, not buffered", () => {
+  it("sends the bytes chunked, with no length taken first", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+
+    await adapter(server, { [IMAGE]: renderWithAssets }).deliver(
+      destinationRow({ root: "V" }),
+      delivery({
+        type: IMAGE,
+        arguments: { directory: "", filename: "a.md" },
+        assets: [deliveredAsset("one", "long.wav", bytes("many bytes"))],
+      }),
+    );
+
+    expect(server.arrivedChunked("V/long.wav")).toBe(true);
+    // The note is a string the adapter already holds, so it is measured.
+    expect(server.arrivedChunked("V/a.md")).toBe(false);
   });
 });
