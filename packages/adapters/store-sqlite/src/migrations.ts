@@ -1,5 +1,3 @@
-import type { DatabaseSync } from "node:sqlite";
-
 /**
  * Applied in order, tracked by `PRAGMA user_version`. Never edited once it has
  * run anywhere real — a new statement goes in a new migration.
@@ -613,33 +611,3 @@ export const MIGRATIONS: readonly string[] = [
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";
-
-export function migrate(connection: DatabaseSync): void {
-  const applied = (
-    connection.prepare("PRAGMA user_version").get() as { user_version: number }
-  ).user_version;
-
-  if (applied > MIGRATIONS.length) {
-    throw new Error(
-      `pool was written by a newer notemap: schema version ${applied}, this build knows ${MIGRATIONS.length}`,
-    );
-  }
-
-  for (let version = applied; version < MIGRATIONS.length; version += 1) {
-    try {
-      // `user_version` takes no parameter binding, and the value is a loop
-      // counter rather than anything a caller supplies.
-      connection.exec(
-        `BEGIN IMMEDIATE; ${MIGRATIONS[version]} PRAGMA user_version = ${version + 1}; COMMIT;`,
-      );
-    } catch (cause) {
-      try {
-        // A failure mid-script leaves its transaction open on the connection.
-        connection.exec("ROLLBACK");
-      } catch {
-        // It failed before BEGIN, or SQLite already rolled back on its own.
-      }
-      throw cause;
-    }
-  }
-}

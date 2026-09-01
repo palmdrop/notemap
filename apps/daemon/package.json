@@ -21,6 +21,7 @@
     "@notemap/destination-fs": "workspace:*",
     "@notemap/mirror-fs": "workspace:*",
     "@notemap/schema-ajv": "workspace:*",
+    "@notemap/sqlite": "workspace:*",
     "@notemap/store-sqlite": "workspace:*",
     "hono": "^4.13.1",
     "smol-toml": "^1.7.1",

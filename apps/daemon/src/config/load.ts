@@ -23,6 +23,7 @@ import {
   DEFAULT_RETRY,
   DEFAULT_SWEEP,
 } from "../constants";
+import type { CookieOptions } from "../auth/sessions/config";
 
 export type MirrorConfig = {
   /** The `pool-mirror` directory. */
@@ -46,8 +47,15 @@ export type SweepConfig = {
 export type DaemonConfig = {
   /** The SQLite file the pool lives in. */
   readonly pool: string;
+  readonly auth: string;
   readonly host: string;
   readonly port: number;
+  /**
+   * Where a browser reaches this daemon. Required once it binds beyond
+   * loopback, because nothing else says whether a session cookie may travel
+   * over plain HTTP.
+   */
+  readonly origin?: string;
   /** Absent turns the mirror off: nothing is written and no job is enqueued. */
   readonly mirror?: MirrorConfig;
   readonly assets: AssetsConfig;
@@ -70,8 +78,10 @@ const fileSchema = z.object({
   daemon: z
     .object({
       pool: z.string().optional(),
+      auth: z.string().optional(),
       host: z.string().min(1).optional(),
       port: z.number().int().min(1).max(65535).optional(),
+      origin: z.string().url().optional(),
     })
     .optional(),
   mirror: z
@@ -135,6 +145,60 @@ const fileSchema = z.object({
     .default([]),
 });
 
+/**
+ * `0.0.0.0` and `::` are not loopback: they are every interface, which is the
+ * accidental exposure this tells apart from a daemon on someone's laptop.
+ */
+export function isLoopback(host: string): boolean {
+  return host === "127.0.0.1" || host === "::1" || host === "localhost";
+}
+
+/**
+ * The two the origin decides, which are not the same question. A browser counts
+ * loopback as trustworthy whatever the scheme, so `Secure` survives plain HTTP
+ * there and only a plain-HTTP origin someone else can reach gives it up. The
+ * `__Host-` prefix is stricter than that in Chromium, which rejects a prefixed
+ * cookie outright over `http:` — loopback included — so the prefix follows the
+ * scheme alone. An absent origin is the loopback daemon nobody configured.
+ */
+export function cookieOptionsFor(origin: string | undefined): CookieOptions {
+  if (origin === undefined) return { secure: true, prefixed: false };
+
+  const url = new URL(origin);
+  const https = url.protocol === "https:";
+
+  return { secure: https || isLoopback(url.hostname), prefixed: https };
+}
+
+/** The name in a `Host` header, which carries a port and may be bracketed. */
+function hostnameIn(header: string): string | undefined {
+  try {
+    return new URL(`http://${header}`).hostname.replace(/^\[|]$/g, "");
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Whether a request arrived somewhere the cookie rules were not decided from.
+ * The bind address cannot answer this — a tunnel or a proxy carries a daemon
+ * bound to loopback to a name a browser sees instead, and the cookie the
+ * browser then drops is the whole of the symptom.
+ */
+export function reachedElsewhere(
+  arrivedFor: string | undefined,
+  origin: string | undefined,
+): boolean {
+  if (arrivedFor === undefined) return false;
+
+  const host = hostnameIn(arrivedFor);
+  if (host === undefined) return false;
+
+  return origin === undefined
+    ? !isLoopback(host)
+    : host !== new URL(origin).hostname;
+}
+
 /** `~` is the shell's, not the filesystem's. */
 function expandHome(path: string): string {
   return path === "~" || path.startsWith("~/")
@@ -171,6 +235,10 @@ export function defaultMirrorRoot(): string {
 
 export function defaultAssetRoot(): string {
   return join(defaultDataRoot(), "assets");
+}
+
+export function defaultAuthPath(): string {
+  return join(defaultDataRoot(), "state", "auth.db");
 }
 
 /** The config, and every key the daemon did not know and ignored. */
@@ -235,10 +303,21 @@ export function parseConfig(source: string, from: string): LoadedConfig {
   const { file, stripped } = tolerate(raw, from);
   const retry = file.retry ?? DEFAULT_RETRY;
 
+  const host = file.daemon?.host ?? DEFAULT_HOST;
+  const origin = file.daemon?.origin;
+
+  if (!isLoopback(host) && origin === undefined) {
+    throw new Error(
+      `${from} binds ${host}, which is reachable from beyond this machine, so daemon.origin must say where — a session cookie has no other way to know whether it may travel over plain HTTP`,
+    );
+  }
+
   const config: DaemonConfig = {
     pool: resolve(expandHome(file.daemon?.pool ?? defaultPoolPath())),
-    host: file.daemon?.host ?? DEFAULT_HOST,
+    auth: resolve(expandHome(file.daemon?.auth ?? defaultAuthPath())),
+    host,
     port: file.daemon?.port ?? DEFAULT_PORT,
+    ...(origin === undefined ? {} : { origin }),
     ...(file.mirror === undefined
       ? {}
       : {
@@ -289,7 +368,9 @@ export function parseConfig(source: string, from: string): LoadedConfig {
   return { config, warnings: stripped };
 }
 
-export function loadConfig(path = defaultConfigPath()): LoadedConfig {
+export function loadConfig(
+  path = process.env["NOTEMAP_CONFIG"] || defaultConfigPath(),
+): LoadedConfig {
   let source: string;
   try {
     source = readFileSync(path, "utf8");

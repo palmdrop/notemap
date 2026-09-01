@@ -1,6 +1,7 @@
 export * from "./api/types";
 export * from "./client";
 export * from "./errors";
+export type { SessionState, Signed } from "./session/session";
 export * from "./types";
 
 export * from "./adapters/fetch-transport";

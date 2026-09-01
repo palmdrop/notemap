@@ -35,8 +35,15 @@ import {
   destinationsRoute,
   editRoute,
   feedRoute,
+  endAllSessionsRoute,
   healthRoute,
   honoPath,
+  loginRoute,
+  logoutRoute,
+  mintTokenRoute,
+  revokeTokenRoute,
+  sessionRoute,
+  tokensRoute,
   itemRoute,
   markProcessedRoute,
   queueRoute,
@@ -71,15 +78,85 @@ import {
   routeHandler,
   routingRecordsHandler,
 } from "./routes/routing";
+import {
+  endAllSessionsHandler,
+  loginHandler,
+  logoutHandler,
+  sessionHandler,
+} from "./routes/session";
+import {
+  mintTokenHandler,
+  revokeTokenHandler,
+  tokensHandler,
+} from "./routes/tokens";
 import { serveUi } from "./ui/serve";
 import { json, refuse } from "./utils/responses";
+import type { CookieOptions } from "./auth/sessions/config";
+import type { Auth } from "./auth/types";
+import type { AppEnv } from "./types";
+import {
+  authenticate,
+  identify,
+  requireSession,
+} from "./middleware/authenticate";
+import { except } from "hono/combine";
+import { noticeOrigin } from "./middleware/origin";
+import type { Throttle } from "./auth/throttle";
 
-export function createApp(pool: Pool, limits: UploadLimits): Hono {
-  const app = new Hono();
+export type AppOptions = {
+  readonly limits: UploadLimits;
+  readonly auth: Auth;
+  readonly cookies: CookieOptions;
+  /** What `daemon.origin` said, for the notice when a request disagrees with it. */
+  readonly origin?: string;
+  readonly throttle: Throttle;
+};
+
+export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
+  const { auth, limits } = options;
+  const app = new Hono<AppEnv>();
+
+  /**
+   * `/v1/openapi.json` describes the routes and never the pool, and it is what
+   * the playground reads; closing it would break a signed-out operator's only
+   * way to look at the API without protecting anything the source does not
+   * already say.
+   */
+  const OPEN_PATHS = ["/v1/health", "/v1/session", "/v1/openapi.json"];
 
   app.use("/v1/*", requireJsonBody);
+  app.use(
+    "/v1/*",
+    except([...OPEN_PATHS], authenticate(auth, options.cookies)),
+  );
 
-  app.get(honoPath(healthRoute.path), healthHandler(pool));
+  // Open, but they answer differently depending on who is asking, so they need
+  // to know — and being signed out is an answer here rather than a refusal.
+  app.use(honoPath(sessionRoute.path), identify(auth, options.cookies));
+  app.use(honoPath(healthRoute.path), identify(auth, options.cookies));
+
+  app.use(honoPath(tokensRoute.path), requireSession);
+  app.use(`${honoPath(tokensRoute.path)}/*`, requireSession);
+  app.use(honoPath(endAllSessionsRoute.path), requireSession);
+
+  app.get(honoPath(healthRoute.path), healthHandler(pool, auth));
+
+  app.use(honoPath(loginRoute.path), noticeOrigin(options.origin));
+
+  app.post(
+    honoPath(loginRoute.path),
+    loginHandler(auth, options.cookies, options.throttle),
+  );
+  app.get(honoPath(sessionRoute.path), sessionHandler(auth));
+  app.delete(honoPath(logoutRoute.path), logoutHandler(auth, options.cookies));
+  app.delete(
+    honoPath(endAllSessionsRoute.path),
+    endAllSessionsHandler(auth, options.cookies),
+  );
+
+  app.get(honoPath(tokensRoute.path), tokensHandler(auth));
+  app.post(honoPath(mintTokenRoute.path), mintTokenHandler(auth));
+  app.delete(honoPath(revokeTokenRoute.path), revokeTokenHandler(auth));
 
   app.post(honoPath(captureRoute.path), captureHandler(pool));
   app.get(honoPath(feedRoute.path), feedHandler(pool));

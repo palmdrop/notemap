@@ -9,9 +9,10 @@ import {
 } from "@notemap/client";
 import { afterEach } from "vitest";
 
-import { world, type World } from "./world.ts";
+import { world, type Told, type World } from "./world.ts";
 
-const MAIN = fileURLToPath(
+/** The bundle every start and every CLI call in this suite runs. */
+export const MAIN = fileURLToPath(
   new URL("../../../../apps/daemon/dist/main.js", import.meta.url),
 );
 
@@ -37,28 +38,35 @@ export type Running = {
  * Call at the top of a test file: it registers the teardown that stops whatever
  * a test started, whether or not the test got as far as stopping it.
  */
-export function daemons(): (over?: World) => Promise<Running> {
+export function daemons(): (
+  over?: World | Told,
+  env?: NodeJS.ProcessEnv,
+) => Promise<Running> {
   const started: Running[] = [];
-  const worlds: World[] = [];
+  // A set, because a restart hands back a world this already holds — and a
+  // world laid out by a test before its daemon started is cleaned up too.
+  const worlds = new Set<World>();
 
   afterEach(async () => {
     for (const running of started.splice(0)) await running.stop();
-    for (const each of worlds.splice(0)) each.remove();
+    for (const each of worlds) each.remove();
+    worlds.clear();
   });
 
-  return async (over?: World) => {
-    const on = over ?? world();
-    if (over === undefined) worlds.push(on);
+  return async (over?: World | Told, env?: NodeJS.ProcessEnv) => {
+    const on = over !== undefined && "config" in over ? over : world(over);
+    worlds.add(on);
 
-    const running = await start(on);
+    const running = await start(on, env);
     started.push(running);
     return running;
   };
 }
 
-async function start(on: World): Promise<Running> {
+async function start(on: World, env?: NodeJS.ProcessEnv): Promise<Running> {
   const child = spawn("node", [MAIN, "--config", on.config], {
     stdio: ["ignore", "pipe", "pipe"],
+    ...(env === undefined ? {} : { env: { ...process.env, ...env } }),
   });
 
   let said = "";

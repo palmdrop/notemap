@@ -167,6 +167,15 @@ export const ADDRESS_STATUS = {
   "method-not-allowed": 405,
 } as const;
 
+export const AUTH_STATUS = {
+  unauthenticated: 401,
+  /** Authenticated, and by something that is not a session to end. */
+  "not-a-session": 422,
+  /** Authenticated, and by something not trusted to do this. */
+  "session-required": 403,
+  "too-many-attempts": 429,
+} as const;
+
 /** Split by concern so a route can document only the codes it can answer with. */
 const DAEMON_STATUS = {
   ...BODY_STATUS,
@@ -175,6 +184,7 @@ const DAEMON_STATUS = {
   ...SUBJECT_STATUS,
   ...CANDIDATES_REQUEST_STATUS,
   ...ADDRESS_STATUS,
+  ...AUTH_STATUS,
 } as const satisfies Record<DaemonRefusal["kind"], number>;
 
 export function captureStatus(refusal: CaptureRefusal): number {

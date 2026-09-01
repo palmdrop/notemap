@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { DatabaseSync } from "node:sqlite";
 
 import type {
   AbandonedPosition,
@@ -60,7 +59,7 @@ import {
 } from "./mapping";
 import { poolIdentity } from "./identity";
 import { abandonedWork, jobQueue } from "./jobs";
-import { LAST_MODIFIED_AT, migrate } from "./migrations";
+import { LAST_MODIFIED_AT, MIGRATIONS } from "./migrations";
 import type {
   ActionRow,
   AssetRow,
@@ -73,7 +72,13 @@ import type {
   RoutingRecordRow,
   TagUseRow,
 } from "./rows";
-import { placeholders, statements, type Bindable } from "./statements";
+import {
+  migrate,
+  openDatabase,
+  placeholders,
+  statements,
+  type Bindable,
+} from "@notemap/sqlite";
 import { writeLock, type Fence } from "./write-lock";
 
 export type SqlitePoolStoreConfig = {
@@ -188,32 +193,21 @@ export type SqlitePoolStore = PoolStore & WorkQueue;
 export function createSqlitePoolStore(
   config: SqlitePoolStoreConfig,
 ): SqlitePoolStore {
-  const writer = new DatabaseSync(config.file);
-  let reader = writer;
+  const database = openDatabase({
+    file: config.file,
+    busyTimeoutMs: BUSY_TIMEOUT_MS,
+    foreignKeys: true,
+    reader: true,
+  });
+  const { writer, reader } = database;
   let shut = false;
   let identity: PoolIdentity;
   try {
-    writer.exec("PRAGMA foreign_keys = ON");
-    writer.exec(`PRAGMA busy_timeout = ${BUSY_TIMEOUT_MS}`);
-    if (config.file !== ":memory:") writer.exec("PRAGMA journal_mode = WAL");
-    migrate(writer);
+    migrate(writer, MIGRATIONS, "pool");
     identity = poolIdentity(writer);
-
-    /**
-     * Reads get their own connection, so one outside a transaction cannot see
-     * what that transaction may still roll back. A `:memory:` database has no
-     * second connection to give — each would be a separate database — so it
-     * shares the writer and forfeits that isolation.
-     */
-    if (config.file !== ":memory:") {
-      reader = new DatabaseSync(config.file);
-      reader.exec("PRAGMA query_only = ON");
-      reader.exec(`PRAGMA busy_timeout = ${BUSY_TIMEOUT_MS}`);
-    }
   } catch (cause) {
     // A store that failed to open leaves the caller no connection to close.
-    if (reader !== writer) reader.close();
-    writer.close();
+    database.close();
     throw cause;
   }
 
@@ -887,8 +881,7 @@ export function createSqlitePoolStore(
       if (shut) return;
       shut = true;
 
-      if (reader !== writer) reader.close();
-      writer.close();
+      database.close();
     },
   };
 }

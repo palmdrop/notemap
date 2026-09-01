@@ -41,6 +41,9 @@ function configured(port: number): string {
     [
       "[daemon]",
       `pool = "${join(directory, "pool.db")}"`,
+      // Named, or the default reaches the developer's own — and a password set
+      // on that machine turns every route here into a 401.
+      `auth = "${join(directory, "auth.db")}"`,
       `port = ${port}`,
       "",
       "[mirror]",

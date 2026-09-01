@@ -17,11 +17,15 @@ import type {
 } from "@notemap/core";
 
 import { createApp } from "../app";
+import { createLoginThrottle, type Throttle } from "../auth/throttle";
+import type { CookieOptions } from "../auth/sessions/config";
+import type { Auth } from "../auth/types";
+import type { AppEnv } from "../types";
 import { startSweeper } from "../assets/sweeper";
 import { DEFAULT_MAX_UPLOAD_BYTES } from "../constants";
 import { startDeliveryRunner } from "../destinations/runner";
 import { startMirrorRunner } from "../mirror/runner";
-import { openPool } from "../ports";
+import { openPool, systemClock } from "../ports";
 
 export const WEB = "web" as SourceId;
 export const TEXT = "text" as PayloadTypeName;
@@ -52,7 +56,7 @@ export const CONFIG: PoolConfig = {
 
 /** Uploads bytes the way a client does — under an id it minted — and answers the response. */
 export async function put(
-  app: Hono,
+  app: Hono<AppEnv>,
   content: string | Uint8Array,
   headers: Record<string, string>,
   id: string = randomUUID(),
@@ -65,7 +69,7 @@ export async function put(
 }
 
 export type Daemon = {
-  readonly app: Hono;
+  readonly app: Hono<AppEnv>;
   /** Reachable so a test can set up pool state `/v1` has no route for yet. */
   readonly pool: Pool;
   /** Where the mirror would write, whether or not one is wired. */
@@ -90,9 +94,25 @@ export type Daemon = {
  */
 const NEVER_POLLS = 60 * 60 * 1000;
 
+/** What the daemon is before anyone sets a password: every request passes. */
+const noAuth = {
+  requiresCredentials: async () => false,
+} as Auth;
+
 export type DaemonOptions = {
   readonly mirroring?: boolean;
+  /** Absent leaves the door open, which is what a daemon with no credential set does. */
+  readonly auth?: Auth;
+  /**
+   * Absent counts against the wall clock, which no test reaches the threshold
+   * of. A test about the throttle itself brings one it can move.
+   */
+  readonly throttle?: Throttle;
   readonly maxUploadBytes?: number;
+  /** Absent is the loopback daemon: `Secure` off over the fixture's plain HTTP, and no prefix. */
+  readonly cookies?: CookieOptions;
+  /** What `daemon.origin` said. Absent is the daemon nobody configured one on. */
+  readonly origin?: string;
   /**
    * Makes the folder `vaultRoot` names before the pool opens. Leaving it out is
    * a case rather than an omission: it is what an unmounted drive looks like.
@@ -140,7 +160,13 @@ export function daemon(
   const sweeper = startSweeper(pool, { intervalMs: NEVER_POLLS });
 
   const app = createApp(pool, {
-    maxUploadBytes: options.maxUploadBytes ?? DEFAULT_MAX_UPLOAD_BYTES,
+    limits: {
+      maxUploadBytes: options.maxUploadBytes ?? DEFAULT_MAX_UPLOAD_BYTES,
+    },
+    auth: options.auth ?? noAuth,
+    cookies: options.cookies ?? { secure: false, prefixed: false },
+    ...(options.origin === undefined ? {} : { origin: options.origin }),
+    throttle: options.throttle ?? createLoginThrottle({ clock: systemClock }),
   });
   const answered = trackResponses(app);
 
@@ -188,7 +214,7 @@ export async function createVault(
  * error, in whichever test happened to be running. A test asserting on headers
  * has no reason to read the body, so the fixture cancels what it left.
  */
-function trackResponses(app: Hono): { close: () => Promise<void> } {
+function trackResponses(app: Hono<AppEnv>): { close: () => Promise<void> } {
   const answered = new Set<Response>();
   const request = app.request.bind(app);
 
@@ -235,7 +261,10 @@ export function envelope(overrides: EnvelopeOverrides = {}) {
   };
 }
 
-export async function post(app: Hono, body: unknown): Promise<Response> {
+export async function post(
+  app: Hono<AppEnv>,
+  body: unknown,
+): Promise<Response> {
   return app.request("/v1/captures", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -245,7 +274,7 @@ export async function post(app: Hono, body: unknown): Promise<Response> {
 
 /** A decision a client posts: the body is optional, as those routes declare it. */
 export async function send(
-  app: Hono,
+  app: Hono<AppEnv>,
   path: string,
   content?: unknown,
 ): Promise<Response> {
@@ -259,7 +288,7 @@ export async function send(
 export type Slice = { values: { id: string }[]; next?: string };
 
 /** A paginated read that must have succeeded, since no test asserts about a page it failed to get. */
-export async function slice(app: Hono, url: string): Promise<Slice> {
+export async function slice(app: Hono<AppEnv>, url: string): Promise<Slice> {
   const response = await app.request(url);
   if (response.status !== 200) {
     throw new Error(`${url}: ${response.status} ${await response.text()}`);
@@ -270,7 +299,10 @@ export async function slice(app: Hono, url: string): Promise<Slice> {
 export const ids = (page: Slice) => page.values.map((item) => item.id);
 
 /** Captures `count` items one minute apart, oldest first, and returns their ids. */
-export async function captureMany(app: Hono, count: number): Promise<string[]> {
+export async function captureMany(
+  app: Hono<AppEnv>,
+  count: number,
+): Promise<string[]> {
   const ids: string[] = [];
   for (let index = 0; index < count; index += 1) {
     const id = `0198f0c2-0000-7000-8000-00000000000${index}`;

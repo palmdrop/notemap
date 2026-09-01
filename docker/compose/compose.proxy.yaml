@@ -19,6 +19,15 @@ services:
     # reaches it as `http://notemap:4747` on the network below.
     networks: [proxy]
 
+    # A daemon holding no credential takes its first password from here, and
+    # then the auth database owns it — `notemap password set` in the container
+    # is what changes it afterwards. The _FILE form is the one to prefer: the
+    # variable itself shows up in `docker inspect` and in every child process.
+    # environment:
+    #   NOTEMAP_PASSWORD_FILE: /run/secrets/notemap_password
+    # secrets:
+    #   - notemap_password
+
     volumes:
       - state:/var/lib/notemap
       # `/etc/notemap/config.toml` is where the image's own command looks. A
@@ -52,10 +61,14 @@ services:
 volumes:
   state:
 
+# secrets:
+#   notemap_password:
+#     file: ./notemap_password
+
 networks:
-  # Already there, and not created by compose. Everything else on it reaches an
-  # unauthenticated `/v1`, so it should be the smallest network that still has
-  # the proxy on it rather than one every container on the host shares.
+  # Already there, and not created by compose. Everything else on it reaches
+  # `/v1` behind whatever password is set, so it should be the smallest network
+  # that still has the proxy on it rather than one every container shares.
   proxy:
     external: true
     name: ${PROXY_NETWORK:?set PROXY_NETWORK in .env to the proxy's network}

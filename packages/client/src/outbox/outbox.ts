@@ -1,5 +1,5 @@
 import type { ItemId } from "#api/types";
-import { saidBy, Unreachable } from "../errors";
+import { saidBy, Unauthenticated, Unreachable } from "../errors";
 import type { Writable } from "../observable/observable";
 import type { ClientStore } from "#ports/store";
 import type { Undo } from "#state/applied";
@@ -114,7 +114,10 @@ export function createOutbox(deps: OutboxDeps): Outbox {
       await drop(entry.id);
       deps.state.update((state) => settlement(state, revert));
     } catch (error) {
-      if (error instanceof Unreachable) {
+      // A door that is shut parks the entry exactly as silence does. Marking it
+      // refused would be terminal, and a session that lapsed while the shell was
+      // away would burn every capture waiting behind it.
+      if (error instanceof Unreachable || error instanceof Unauthenticated) {
         await record({
           ...entry,
           state: "unreachable",

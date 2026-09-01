@@ -11,10 +11,19 @@ services:
     image: ghcr.io/palmdrop/notemap:${NOTEMAP_VERSION:-latest}
     restart: unless-stopped
 
-    # The host's loopback, not the host's addresses. `/v1` has no
-    # authentication, so `4747:4747` here would be the whole pool on the LAN.
+    # The host's loopback, not the host's addresses. `4747:4747` here would put
+    # the pool on the LAN behind one password, which is not what this file is.
     ports:
       - "127.0.0.1:4747:4747"
+
+    # A daemon holding no credential takes its first password from here, and
+    # then the auth database owns it — `notemap password set` in the container
+    # is what changes it afterwards. The _FILE form is the one to prefer: the
+    # variable itself shows up in `docker inspect` and in every child process.
+    # environment:
+    #   NOTEMAP_PASSWORD_FILE: /run/secrets/notemap_password
+    # secrets:
+    #   - notemap_password
 
     volumes:
       - state:/var/lib/notemap
@@ -52,3 +61,6 @@ services:
 volumes:
   # The pool, the mirror and the assets, which are one backup unit.
   state:
+# secrets:
+#   notemap_password:
+#     file: ./notemap_password

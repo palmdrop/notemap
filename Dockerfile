@@ -23,6 +23,7 @@ RUN pnpm build
 FROM node:24-alpine
 
 ENV NODE_ENV=production
+ENV NOTEMAP_CONFIG=/etc/notemap/config.toml
 
 # `paths.ts` resolves `public/` as a sibling of the directory the bundle sits
 # in, so these two must land beside each other exactly as they do in the
@@ -36,6 +37,8 @@ COPY --from=build /src/apps/daemon/public /app/public
 # mounted — and a root pointed at `state/`, `pool-mirror/` or `assets/`
 # instead is refused regardless of where it is mounted.
 RUN mkdir -p /var/lib/notemap/vaults && chown -R node:node /var/lib/notemap
+RUN printf '#!/bin/sh\nexec node /app/dist/main.js "$@"\n' > /usr/local/bin/notemap \
+  && chmod +x /usr/local/bin/notemap
 
 USER node
 

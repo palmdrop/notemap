@@ -109,6 +109,73 @@ That address is the one `compose.yaml` publishes. Under `compose.proxy.yaml` not
 at all, so ask from inside instead — `docker compose -f compose.proxy.yaml exec notemap wget -qO-
 http://127.0.0.1:4747/v1/health` — or over the proxy's hostname.
 
+## Signing in
+
+A fresh daemon has no password and lets every request through, and says so on startup:
+
+```
+notemap: no password set — every request is let through; `notemap password set` closes the door
+```
+
+Close it from inside the running container. It takes effect on the next request — no restart, no
+signal:
+
+```sh
+docker compose exec notemap notemap password set
+```
+
+It asks twice, echoes nothing, and ends every session that was open. `--name` sets who the login
+asks for; leaving it out uses `admin`. Piping works too, for a script:
+`printf '%s\n' "$PASSWORD" | docker compose exec -T notemap notemap password set`.
+
+Run `exec` as it comes, without `-u root`. The daemon runs as `node` and its database is that
+user's alone; a root process would leave SQLite's `-wal` and `-shm` files owned by root, and the
+daemon could no longer write them.
+
+There is no email in any of this — no verification, no reset link. **A forgotten password is reset
+by the same command**, which asks for no old one. That grants nothing: whoever can run it can
+already read the pool's database off the volume, which is why it is a recovery path rather than a
+way in.
+
+If the daemon will not start at all, do not try to `exec` into a container that is not up. Start one
+just for the command, which overrides the image's own:
+
+```sh
+docker compose run --rm notemap password set
+```
+
+Running the daemon directly rather than in a container, it is the same command against the binary:
+`notemap-daemon password set`.
+
+## Access tokens
+
+A browser signs in and holds a session. Anything else — a script, a headless client, a machine with
+no browser in the loop — carries an access token instead:
+
+```sh
+docker compose exec notemap notemap token mint --name laptop
+nmp.ei9pmmbzgs6hqpe2.461s0-TQjtup6tOreeRwQAZXQEY6R0lr67QaIZkEGFM
+```
+
+**That is the only time it is readable.** The daemon stores a hash and cannot reproduce it, so a
+token nobody wrote down is replaced rather than recovered. It goes in an `Authorization: Bearer`
+header, and reaches everything a session does except the token routes themselves — a leaked token
+cannot mint its own replacement.
+
+`--expires` takes a date or an instant and mints one that stops working then. Without it, it works
+until revoked.
+
+```sh
+docker compose exec notemap notemap token list      # names, times, and when each was last used
+docker compose exec notemap notemap token revoke <id>
+```
+
+Revoking takes effect on the next request; nothing caches an authentication. `last used` is what
+says whether a token is still in use, and is the thing to read before revoking one you have
+forgotten the purpose of.
+
+There is no command for users, because there are none: one credential, and the tokens it issues.
+
 ## Upgrading
 
 The version you run is one line in `.env`:
@@ -144,6 +211,7 @@ The named volume `notemap_state` holds all three of these under `/var/lib/notema
 | | |
 |---|---|
 | `state/notemap.db` | The pool. The authority for everything. |
+| `state/auth.db` | The password and the access tokens. Not in the pool, and never mirrored. |
 | `pool-mirror/` | The plain-file copy of every item, written and never read back. |
 | `assets/` | The blobs — every uploaded image, recording and snapshot. |
 

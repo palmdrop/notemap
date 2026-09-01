@@ -5,6 +5,13 @@ editing, destinations, routing to one and health are settled; the rest is stub
 **Last updated**: 2026-08-31
 **Shipped**:
 
+- 2026-09-01 — **Every `/v1` write declares its media type, carrying a body or not.** The rule
+  used to skip the routes that read no body and the ones whose optional body was absent, which
+  left `.../archive`, `.../unarchive`, `.../mark-processed`, `.../retire`, `.../unretire` and
+  `.../cancel` reachable as a simple cross-site `POST`. They are now asked for `application/json`
+  like everything else, so a cross-origin write is preflighted and dies on the CORS headers the
+  daemon does not send. ([plan](../plans/login-and-access-tokens.md))
+
 - 2026-08-31 — **A destination can be asked what a field could hold.**
   `GET /v1/destinations/{id}/candidates` sits beside `/description`: the capability, the field and
   an opaque scope as query parameters, capped rather than paginated. The route checks the
@@ -21,6 +28,13 @@ editing, destinations, routing to one and health are settled; the rest is stub
   that names the destination-or-user a record resolves to, which is the sense CONTEXT.md's
   glossary keeps the word for. No behaviour changed.
   ([plan](../plans/destination-targets.md))
+
+- 2026-08-31 — **`/v1` is behind a credential.** The 2026-08-02 decision that there is no
+  authentication is revised: `401 unauthenticated`, `403 session-required`, `422 not-a-session` and
+  `429 too-many-attempts` join the status table, `/v1/session`, `/v1/sessions` and `/v1/tokens`
+  join the routes, and health answers liveness without the pool identity to a caller outside the
+  door. The pages the daemon serves stay open; everything they ask for does not.
+  ([plan](../plans/login-and-access-tokens.md), [ADR 27](../adr/0027-the-daemon-authenticates-and-core-does-not.md))
 
 - 2026-08-27 — **`GET /v1/health` answers the daemon's version**, baked in at bundle time from the
   workspace version and matching the image tag. Amends this document's own line that nothing but
@@ -217,8 +231,12 @@ discovered: [security.md](security.md).
 - **Versioned from the first commit.** `/v1` may take breaking changes until the first pool
   exists that would be upsetting to lose; from then on breaking changes mean a new version and
   a changelog ([ADR 9](../adr/0009-versioned-api-mutable-until-first-real-pool.md)).
-- **No authentication for now** (decided 2026-08-02). The daemon binds to localhost or a
-  trusted network; the pool is the boundary.
+- **The daemon authenticates** (decided 2026-08-27, revising 2026-08-02's "no authentication for
+  now"). One middleware over `/v1` takes either a session cookie or `Authorization: Bearer`, and a
+  request carrying neither is `401 unauthenticated` in this document's own refusal envelope. A
+  daemon nobody has set a password on asks for nothing and behaves exactly as it did before. The
+  rest of this document still describes the undefended daemon in places; see
+  [the login plan](../plans/login-and-access-tokens.md).
 - Every intake path produces the same capture envelope: a typed payload, the source, the
   source's own identifier, and the capture time ([standards.md](../standards.md)).
 - A capture is identified by a client-generated id; submitting it twice has no additional
@@ -229,10 +247,16 @@ discovered: [security.md](security.md).
 
 ### Transport
 
-- **`application/json; charset=utf-8` in both directions.** A request with a body whose media
-  type is anything but `application/json` is refused `415 unsupported-media-type`; a missing
-  `Content-Type` on a request with a body is treated the same way. Parameters on the type are
-  ignored, and so is the charset — the body is parsed as UTF-8 regardless.
+- **`application/json; charset=utf-8` in both directions, declared whether or not anything is
+  carried.** Every `POST`, `PUT` and `PATCH` under `/v1` states its media type, and one that is
+  anything but `application/json` — or absent — is refused `415 unsupported-media-type`. That
+  holds for the routes reading no body at all, which have nothing to be wrong about and are asked
+  anyway: a media type no HTML form can send is what makes a browser preflight a cross-origin
+  write, and a preflight is what the daemon refuses by sending no CORS headers
+  ([security.md](security.md#no-cors-headers-which-is-load-bearing)). The upload is the one
+  exception, and it is a `PUT` carrying bytes under their own type, which no form can send either.
+  Parameters on the type are ignored, and so is the charset — the body is parsed as UTF-8
+  regardless.
 - **The daemon binds `127.0.0.1` by default**, on port `4747`; both are configurable. It sends
   no CORS headers: nothing but a page it serves itself is meant to reach it, and adding the
   header is the moment to reconsider authentication rather than a convenience. Binding wider
@@ -240,6 +264,19 @@ discovered: [security.md](security.md).
   configuration allows it, and nothing in `/v1` defends it.
 - The app is served at `/`, the action log page at `/log`, and the playground at `/docs`.
   Everything the API itself answers is under `/v1`.
+- **The pages the daemon serves stay reachable without a credential, and what they ask for does
+  not.** `/`, `/log` and `/docs` are files: they are the application, not the pool, and something
+  has to be able to draw a login. Each draws nothing until it calls `/v1`, and every one of those
+  calls is behind the door — an unauthenticated `/log` is a page that reports a refusal rather
+  than a page full of somebody's actions. Shutting them would also answer a person a JSON refusal
+  where they asked a browser for a page. `/v1/openapi.json` is open for the same reason and one
+  more: it describes the routes and never the pool, so closing it would break a signed-out
+  operator's only way to read the API without withholding anything the source does not say.
+- **`GET /v1/health` is open, and answers less from outside.** The shell probes it to tell a
+  closed door from a daemon that is down, so a `401` here would make the two look alike. It
+  answers liveness and the version to anyone; `pool` is omitted where a password is set and
+  nothing was presented, because which pool this is, is a fact about the pool. Where no password
+  is set there is no door to be outside of, and it answers everything as it always did.
 - An unknown path **under `/v1`** is `404 unknown-route`. A known path with the wrong method is
   `405`, carrying an `Allow` header listing the methods that path does answer. `OPTIONS` is one
   of them, and is answered `204` with the same `Allow`.
@@ -475,11 +512,11 @@ Both answer `200 OK` with the `Item` as it now stands.
   something it may not know arrived; an archive is a fresh decision about a state the caller can
   already read.
 - An id no item has is `404 no-such-item`.
-- **A body is still JSON, and no body is a body of `{}`.** A client with nothing to say sends
-  nothing — no body and no `content-type`, which is what a bare `POST` is — and the route reads
-  `{}`. Sending a body means sending `application/json` like every other bodied request; anything
-  else is `415 unsupported-media-type`. A key neither route knows is `400 malformed-envelope`, on
-  the same strictness the capture envelope has.
+- **A body is still JSON, and no body is a body of `{}`.** A client with nothing to say sends no
+  body and the route reads `{}` — but it still declares `application/json`, like every other write
+  ([Transport](#transport)). Anything else, absence included, is `415 unsupported-media-type`. A
+  key neither route knows is `400 malformed-envelope`, on the same strictness the capture envelope
+  has.
 
 ### Classifying an item
 
@@ -1051,6 +1088,8 @@ Every error, from core or from the daemon, is one shape:
 |---|---|---|---|
 | `400` | `malformed-json` | — | daemon |
 | `400` | `malformed-envelope` | `issues` (`SchemaIssue[]`) | daemon |
+| `401` | `unauthenticated` | — | daemon |
+| `403` | `session-required` | — | daemon |
 | `404` | `unknown-route` | `path` | daemon |
 | `404` | `no-such-item` | `item` | daemon, core |
 | `404` | `item-purged` | `item`, `at` | core |
@@ -1096,7 +1135,9 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `arguments-invalid` | `issues` | core |
 | `422` | `rejected-by-destination` | `detail` | core |
 | `422` | `delivery-outcome-unknown` | `detail` | core |
+| `422` | `not-a-session` | `presented` | daemon |
 | `422` | `unreachable` | `detail` | core |
+| `429` | `too-many-attempts` | `retryAfter` | daemon (+ `Retry-After` header) |
 
 The rule behind the table, so a refusal added later has a status without a decision being
 needed: **`409` is for a conflict with something the pool already holds** — the request is
@@ -1262,6 +1303,8 @@ roles are restated in the page rather than imported, and a test holds that copy 
   returns `400 malformed-envelope` with `issues`.
 - A request with a body and no `application/json` content type returns `415`; `text/json` is
   one of the types refused.
+- A `POST` to a route that reads no body, or one whose body is optional and absent, returns `415`
+  where it declares no content type or a type an HTML form can send.
 - `capturedAt` accepts an offset and stores the instant it names in UTC; a date alone is
   midnight UTC; `2026-08-08T09:00:00` with no offset, `Aug 8 2026` and `2026-02-31` are all
   `400 malformed-envelope` with keyword `format`.

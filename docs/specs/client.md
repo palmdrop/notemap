@@ -10,6 +10,22 @@
   in the store. A vault's contents are somebody else's state, and the durable cache is for the
   pool's own collections alone. ([plan](../plans/destination-targets.md))
 
+- 2026-09-01 — **The client holds the access tokens, and a transport may carry one.** `tokens`
+  lists what exists, mints one under a name — the only answer carrying the string, which is not
+  stored anywhere — and revokes one at a time. None of it is cached and none of it is an outbox
+  operation: an offline mint would hand somebody a credential the daemon has never heard of.
+  `createFetchTransport` takes a token, which is what a client that is not a browser carries
+  instead of a cookie; the client itself still knows nothing of credentials, and `assetUrl` is the
+  one thing a token cannot reach.
+  ([plan](../plans/login-and-access-tokens.md))
+
+- 2026-08-31 — **The client learns there is a door.** A `401` reads as `Unauthenticated` rather
+  than as a refusal, so what is queued parks and drains instead of being burned terminally. The
+  client carries session state a surface can read, asked on start and revised whenever a `401`
+  arrives from any route; `login` and `logout` are on it, and signing out drops what was drawn
+  from the pool and keeps the outbox.
+  ([plan](../plans/login-and-access-tokens.md), [ADR 27](../adr/0027-the-daemon-authenticates-and-core-does-not.md))
+
 - 2026-08-26 — **The pool is asked whether it is there, whether or not anything else is asking.**
   The health probe runs in both states at ten seconds, down from a backoff capped at thirty, so a
   daemon that dies is marked offline without an action to discover it and one that comes back drains
@@ -297,6 +313,15 @@ drained, for the one count in the chrome, and the set of items those operations 
 mark on a row. A refused operation is in neither — waiting will not settle it, and it is shown and
 dismissed rather than drained. Note that this is wider than the operation state also called
 `pending`: an operation being sent, or left unreachable, is undrained too.
+
+**A shut door is not a refusal** (2026-08-31). The daemon answers `401` where nobody is signed in
+or a credential lapsed, and that is not the pool having weighed the work and said no — it never
+looked at it. A `401` reads as `Unauthenticated` and parks the entry `unreachable`-shaped: the
+optimistic state stands and it drains when someone signs in. Reading it as a refusal would be
+terminal, so a session that expired while the shell was away would burn every capture queued behind
+it, which is data loss wearing a refusal's clothes. It is kept apart from `Unreachable` because a
+surface has to tell them apart: a daemon having trouble is waited out, a door is waited on by a
+person. A `403` stays a refusal — an access token on a token route will not start working.
 
 **Routing is not in it.** Marking an item processed by hand is routing to the user destination
 ([core.md](core.md#the-queue)), and routing is a decision that must reach the pool

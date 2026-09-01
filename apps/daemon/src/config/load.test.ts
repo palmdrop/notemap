@@ -1,14 +1,18 @@
-import { readFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  cookieOptionsFor,
+  reachedElsewhere,
   defaultAssetRoot,
+  defaultAuthPath,
   defaultConfigPath,
   defaultPoolPath,
+  loadConfig,
   parseConfig,
 } from "./load";
 
@@ -33,6 +37,9 @@ describe("the example config", () => {
     expect(config.port).toBe(4747);
     expect(config.pool).toBe(
       join(homedir(), ".local/share/notemap/state/notemap.db"),
+    );
+    expect(config.auth).toBe(
+      join(homedir(), ".local/share/notemap/state/auth.db"),
     );
     expect(config.mirror).toEqual({
       root: join(homedir(), ".local/share/notemap/pool-mirror"),
@@ -91,6 +98,7 @@ describe("the container config", () => {
     // Every interface: a container that binds loopback is reachable from nothing.
     expect(config.host).toBe("0.0.0.0");
     expect(config.pool).toBe("/var/lib/notemap/state/notemap.db");
+    expect(config.auth).toBe("/var/lib/notemap/state/auth.db");
     expect(config.mirror?.root).toBe("/var/lib/notemap/pool-mirror");
     expect(config.assets.root).toBe("/var/lib/notemap/assets");
     expect(config.delivery).toEqual({
@@ -108,14 +116,24 @@ describe("the container config", () => {
     ]);
   });
 
-  /** The pool, the mirror and the assets are one backup unit, so one volume holds all three. */
+  /**
+   * The pool, the mirror and the assets are one backup unit, so one volume holds
+   * all three. The auth database is not part of that unit and is here for a
+   * different reason: off the volume, every restart is a daemon nobody has a
+   * password for.
+   */
   it("keeps every path it writes under the volume", () => {
     const { config } = parseConfig(
       readFileSync(CONTAINER, "utf8"),
       "container.toml",
     );
 
-    for (const path of [config.pool, config.mirror?.root, config.assets.root]) {
+    for (const path of [
+      config.pool,
+      config.auth,
+      config.mirror?.root,
+      config.assets.root,
+    ]) {
       expect(path).toMatch(/^\/var\/lib\/notemap\//);
     }
   });
@@ -133,6 +151,7 @@ describe("what a config may leave out", () => {
 
     expect(config.port).toBe(4747);
     expect(config.pool).toBe(defaultPoolPath());
+    expect(config.auth).toBe(defaultAuthPath());
     // No mirror table is the mirror off, rather than one at a guessed path.
     expect(config.mirror).toBeUndefined();
     // Assets are not optional, so their absence is a default rather than an off switch.
@@ -263,12 +282,41 @@ describe("where the daemon looks", () => {
     expect(() => parse("[mirror]\npollInterval = 500\n")).toThrow(/root/);
   });
 
+  /**
+   * `docker compose exec` inherits the image's environment but not its `CMD`,
+   * so the variable is what lets a command find the config the daemon is on.
+   */
+  it("takes the config path from NOTEMAP_CONFIG", () => {
+    const directory = mkdtempSync(join(tmpdir(), "notemap-env-"));
+    const path = join(directory, "config.toml");
+    writeFileSync(path, "[daemon]\nport = 4848\n", "utf8");
+
+    try {
+      vi.stubEnv("NOTEMAP_CONFIG", path);
+
+      expect(loadConfig().config.port).toBe(4848);
+      // An explicit path outranks it, so a command may name another daemon's.
+      expect(() => loadConfig("/nowhere/config.toml")).toThrow(/no config at/);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("ignores an empty NOTEMAP_CONFIG, which names nothing", () => {
+    vi.stubEnv("XDG_CONFIG_HOME", "/xdg/config");
+    vi.stubEnv("NOTEMAP_CONFIG", "");
+
+    // The default, rather than an attempt to read a file called "".
+    expect(() => loadConfig()).toThrow(/\/xdg\/config\/notemap\/config.toml/);
+  });
+
   it("follows the XDG variables when they are set", () => {
     vi.stubEnv("XDG_CONFIG_HOME", "/xdg/config");
     vi.stubEnv("XDG_DATA_HOME", "/xdg/data");
 
     expect(defaultConfigPath()).toBe("/xdg/config/notemap/config.toml");
     expect(defaultPoolPath()).toBe("/xdg/data/notemap/state/notemap.db");
+    expect(defaultAuthPath()).toBe("/xdg/data/notemap/state/auth.db");
   });
 
   it("falls back to the standard directories when they are not", () => {
@@ -281,6 +329,9 @@ describe("where the daemon looks", () => {
     expect(defaultPoolPath()).toBe(
       join(homedir(), ".local/share/notemap/state/notemap.db"),
     );
+    expect(defaultAuthPath()).toBe(
+      join(homedir(), ".local/share/notemap/state/auth.db"),
+    );
   });
 
   it("ignores an XDG variable that is not an absolute path, as the spec says to", () => {
@@ -289,5 +340,92 @@ describe("where the daemon looks", () => {
     expect(defaultConfigPath()).toBe(
       join(homedir(), ".config/notemap/config.toml"),
     );
+  });
+});
+
+describe("where the daemon says it is reachable", () => {
+  it("takes a loopback daemon without an origin, as it always has", () => {
+    expect(parse(`[daemon]\nhost = "127.0.0.1"`).origin).toBeUndefined();
+    expect(parse("").origin).toBeUndefined();
+  });
+
+  it("refuses to bind beyond loopback without one", () => {
+    // Every interface is the accidental exposure: nothing else in the file says
+    // whether a session cookie may cross the network in the clear.
+    for (const host of ["0.0.0.0", "::", "192.168.1.10"]) {
+      expect(() => parse(`[daemon]\nhost = "${host}"`), host).toThrow(
+        "daemon.origin",
+      );
+    }
+  });
+
+  it("takes the same daemon once it says where it is", () => {
+    expect(
+      parse(`[daemon]\nhost = "0.0.0.0"\norigin = "https://notes.example.com"`)
+        .origin,
+    ).toBe("https://notes.example.com");
+  });
+
+  it("refuses an origin that is not a URL", () => {
+    expect(() => parse(`[daemon]\norigin = "notes.example.com"`)).toThrow();
+  });
+});
+
+describe("whether a request arrived where the cookie rules were decided", () => {
+  it("says nothing of loopback where no origin was configured", () => {
+    expect(reachedElsewhere("127.0.0.1:4747", undefined)).toBe(false);
+    expect(reachedElsewhere("localhost:4747", undefined)).toBe(false);
+    expect(reachedElsewhere("[::1]:4747", undefined)).toBe(false);
+  });
+
+  /**
+   * The bind address cannot answer this: a tunnel puts a name in front of a
+   * daemon on `127.0.0.1`, and nothing else notices the browser is elsewhere.
+   */
+  it("notices a name in front of a daemon that configured no origin", () => {
+    expect(reachedElsewhere("notemap.internal:4747", undefined)).toBe(true);
+    expect(reachedElsewhere("192.168.1.10:4747", undefined)).toBe(true);
+  });
+
+  it("holds a configured origin against what arrived, port and scheme aside", () => {
+    const origin = "http://notemap.internal:4747";
+
+    expect(reachedElsewhere("notemap.internal:4747", origin)).toBe(false);
+    expect(reachedElsewhere("notemap.internal:9999", origin)).toBe(false);
+    expect(reachedElsewhere("localhost:4747", origin)).toBe(true);
+  });
+
+  it("says nothing about a request that carried no host at all", () => {
+    expect(reachedElsewhere(undefined, undefined)).toBe(false);
+  });
+});
+
+describe("what an origin decides about the session cookie", () => {
+  it("asks for both of an origin reached over TLS", () => {
+    expect(cookieOptionsFor("https://notes.example.com")).toEqual({
+      secure: true,
+      prefixed: true,
+    });
+  });
+
+  it("keeps Secure on loopback, which a browser trusts whatever the scheme", () => {
+    expect(cookieOptionsFor("http://localhost:4747").secure).toBe(true);
+    expect(cookieOptionsFor("http://127.0.0.1:4747").secure).toBe(true);
+    expect(cookieOptionsFor(undefined).secure).toBe(true);
+  });
+
+  /**
+   * The prefix is Chromium's to reject, and it rejects it over `http:` whatever
+   * the host — so a loopback daemon that took it would sign nobody in at all.
+   */
+  it("drops the prefix everywhere but TLS, loopback included", () => {
+    expect(cookieOptionsFor("http://localhost:4747").prefixed).toBe(false);
+    expect(cookieOptionsFor("http://127.0.0.1:4747").prefixed).toBe(false);
+    expect(cookieOptionsFor(undefined).prefixed).toBe(false);
+  });
+
+  it("gives Secure up only where plain HTTP crosses a network", () => {
+    expect(cookieOptionsFor("http://notes.example.com").secure).toBe(false);
+    expect(cookieOptionsFor("http://192.168.1.10:4747").secure).toBe(false);
   });
 });

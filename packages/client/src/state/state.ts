@@ -88,6 +88,25 @@ export function rebuilt(state: ClientState, pool: PoolIdentity): ClientState {
   };
 }
 
+/**
+ * Everything drawn from the pool, dropped — for signing out, which is the same
+ * rule a changed pool identity follows and for the same reason: what is held
+ * describes somewhere the holder can no longer speak for.
+ *
+ * The outbox is not in it. Unsent work is the person's own, not the pool's, and
+ * it drains when someone signs in again.
+ */
+export function forgotten(state: ClientState): ClientState {
+  return {
+    ...state,
+    items: new Map(),
+    feed: emptyPage(state.feed.order),
+    queue: emptyPage(state.queue.order),
+    destinations: [],
+    tags: [],
+  };
+}
+
 /** One destination replaced where it stood, appended where it is new, or dropped. */
 export function settledDestination(
   state: ClientState,

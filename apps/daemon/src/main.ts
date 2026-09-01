@@ -6,13 +6,17 @@ import { serve } from "@hono/node-server";
 
 import { createApp } from "./app";
 import { startSweeper } from "./assets/sweeper";
-import { loadConfig } from "./config/load";
+import { cookieOptionsFor, loadConfig } from "./config/load";
 import { SHUTDOWN_GRACE_MS } from "./constants";
 import { startDeliveryRunner } from "./destinations/runner";
 import { startMirrorRunner } from "./mirror/runner";
-import { openPool } from "./ports";
+import { openPool, openAuth } from "./ports";
+import { runCliCommand } from "./cli";
+import { FORGET_EXPIRED_EVERY_MS } from "./auth/config";
+import { provisionCredential } from "./auth/provision";
+import { createLoginThrottle } from "./auth/throttle";
 
-function start(): void {
+async function start(): Promise<void> {
   const { values } = parseArgs({
     options: { config: { type: "string" } },
     strict: true,
@@ -23,14 +27,51 @@ function start(): void {
     console.warn(`notemap: ignoring ${key}, which this daemon does not know`);
   }
 
+  const cookies = cookieOptionsFor(config.origin);
+
+  if (!cookies.secure) {
+    console.warn(
+      `notemap: ${config.origin} is plain HTTP, so a session cookie crosses the network in the clear — put TLS in front of the daemon`,
+    );
+  }
+
   mkdirSync(dirname(config.pool), { recursive: true });
 
-  const { pool, mirrorWriter, destinations } = openPool({
+  const { pool, ports, mirrorWriter, destinations } = openPool({
     file: config.pool,
     config: config.poolConfig,
     assetRoot: config.assets.root,
     ...(config.mirror === undefined ? {} : { mirrorRoot: config.mirror.root }),
   });
+
+  mkdirSync(dirname(config.auth), { recursive: true });
+
+  const auth = openAuth(
+    {
+      file: config.auth,
+    },
+    {
+      clock: ports.clock,
+    },
+  );
+
+  // Before anything listens: a daemon told to arrive with a door must not
+  // answer a request through the moment before it has one.
+  await provisionCredential(auth, process.env);
+
+  // Nothing waits on this: an expired session or token is refused whether or
+  // not it has been swept, so a failed sweep costs a row rather than a refusal.
+  const forgetExpired = () => {
+    void auth
+      .forgetExpired()
+      .catch((cause: unknown) =>
+        console.error("notemap: could not sweep expired sessions", cause),
+      );
+  };
+
+  forgetExpired();
+  const forgetting = setInterval(forgetExpired, FORGET_EXPIRED_EVERY_MS);
+  forgetting.unref();
 
   const mirror =
     config.mirror === undefined || mirrorWriter === undefined
@@ -45,15 +86,23 @@ function start(): void {
 
   /** A runner holds a lease while it works; stopping it first gives it back. */
   const close = async () => {
+    clearInterval(forgetting);
     await mirror?.stop();
     await delivery.stop();
     await sweeper.stop();
     await pool.close();
+    await auth.close();
   };
 
   const server = serve(
     {
-      fetch: createApp(pool, config.assets).fetch,
+      fetch: createApp(pool, {
+        limits: config.assets,
+        auth,
+        cookies,
+        ...(config.origin === undefined ? {} : { origin: config.origin }),
+        throttle: createLoginThrottle({ clock: ports.clock }),
+      }).fetch,
       hostname: config.host,
       port: config.port,
     },
@@ -73,6 +122,14 @@ function start(): void {
           held.length === 0
             ? "notemap: no destinations yet — add one to route anything out"
             : `notemap: destinations ${held.map((each) => each.name).join(", ")}`,
+        );
+      });
+
+      void auth.requiresCredentials().then((asks) => {
+        console.log(
+          asks
+            ? "notemap: signing in is required to reach /v1"
+            : "notemap: no password set — every request is let through; `notemap password set` closes the door",
         );
       });
     },
@@ -112,9 +169,18 @@ function start(): void {
   process.on("SIGTERM", shutdown);
 }
 
-try {
-  start();
-} catch (error) {
+const entry = async (): Promise<void> => {
+  const args = process.argv.slice(2);
+  const first = args[0];
+
+  if (first !== undefined && !first.startsWith("-")) {
+    return runCliCommand(args);
+  }
+
+  return start();
+};
+
+entry().catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);
-}
+});

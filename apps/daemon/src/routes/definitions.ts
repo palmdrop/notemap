@@ -4,6 +4,7 @@ import { z } from "zod";
 import { JSON_MEDIA_TYPE, MAX_LIMIT } from "../constants";
 import {
   ARCHIVE_STATUS,
+  AUTH_STATUS,
   ASSET_STATUS,
   ASSET_STORE_STATUS,
   BODY_STATUS,
@@ -38,6 +39,12 @@ import {
 } from "../schemas/destination";
 import { captureEnvelopeSchema } from "../schemas/envelope";
 import { errorSchema } from "../schemas/error";
+import { loginRequestSchema, sessionSchema } from "../schemas/session";
+import {
+  mintTokenRequestSchema,
+  mintedTokenSchema,
+  tokensSchema,
+} from "../schemas/token";
 import { healthSchema } from "../schemas/health";
 import {
   assetSchema,
@@ -126,13 +133,155 @@ export const healthRoute = createRoute({
   summary:
     "Read that the daemon is up, which pool it is serving, and its version",
   description:
-    "Liveness, the pool identity, and the daemon's own version. The identity is opaque and stable for as long as that pool exists; a pool rebuilt from its mirror is a different pool and answers a different identity. The version is the release this daemon was built from, so whoever runs it can ask it rather than infer it from an image tag. This route has no refusals: a daemon that cannot answer is not answering.",
+    "Liveness, the daemon's own version, and — to a caller the daemon knows — the pool identity. Open on purpose: the shell probes it to tell a closed door from a daemon that is down, and a `401` here would make the two look alike. `pool` is omitted where a password is set and nothing was presented, because which pool this is, is a fact about the pool; a daemon nobody has set a password on answers it to everyone, as it always did. The identity is opaque and stable for as long as that pool exists; a pool rebuilt from its mirror is a different pool and answers a different identity. This route has no refusals: a daemon that cannot answer is not answering.",
   responses: {
     200: {
       description:
         "The daemon is up, this is the pool it holds, and this is what it is.",
       content: { [JSON_MEDIA_TYPE]: { schema: healthSchema } },
     },
+  },
+});
+
+const tokenId = z.object({
+  id: z.string().openapi({ param: { name: "id", in: "path" } }),
+});
+
+export const loginRoute = createRoute({
+  method: "post",
+  path: "/v1/session",
+  summary: "Sign in and take a session",
+  description:
+    "Exchanges the credential for a session cookie. The cookie is `HttpOnly` and carries the only copy of the session's secret; the daemon stores a hash of it and can never reproduce it. Answered the same way whether the name or the password was wrong, so neither can be probed for.",
+  request: {
+    body: {
+      required: true,
+      content: { [JSON_MEDIA_TYPE]: { schema: loginRequestSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Signed in. The session cookie is set.",
+      content: { [JSON_MEDIA_TYPE]: { schema: sessionSchema } },
+    },
+    400: errorResponse("The body could not be read.", 400, BODY_STATUS),
+    401: errorResponse(
+      "The credential was not accepted. Which half was wrong is not said.",
+      401,
+      AUTH_STATUS,
+    ),
+    429: errorResponse("Too many attempts.", 429, AUTH_STATUS),
+    415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
+  },
+});
+
+export const sessionRoute = createRoute({
+  method: "get",
+  path: "/v1/session",
+  summary: "Read who this request is, if anyone",
+  description:
+    "Open, and answers 200 whether or not anyone is signed in — being signed out is an answer rather than a refusal, and a client needs to tell it apart from a daemon that is unreachable. `requiresCredentials` is false on a daemon nobody has set a password on, where every request is let through.",
+  responses: {
+    200: {
+      description: "What this request is, and whether this daemon asks at all.",
+      content: { [JSON_MEDIA_TYPE]: { schema: sessionSchema } },
+    },
+  },
+});
+
+export const logoutRoute = createRoute({
+  method: "delete",
+  path: "/v1/session",
+  summary: "Sign out",
+  description:
+    "Ends the session the cookie names and clears the cookie. Idempotent, and open: signing out with a session that already lapsed is not an error, it is the same outcome arrived at early.",
+  responses: {
+    204: { description: "Signed out, whether or not there was a session." },
+    422: errorResponse(
+      "Authenticated by an access token, which is not a session to end.",
+      422,
+      AUTH_STATUS,
+    ),
+  },
+});
+
+export const endAllSessionsRoute = createRoute({
+  method: "delete",
+  path: "/v1/sessions",
+  summary: "End every session, everywhere",
+  description:
+    "What a person reaches for after losing a device: every session is ended at once, including this one. Access tokens are untouched — a headless client is not a device someone left on a train, and revoking one is its own deliberate act. Behind the door, unlike signing out of this session alone, and **a session is required**: signing every browser out is what someone does so that a leak is noticed, so a leaked token may not be the thing that does it.",
+  responses: {
+    204: { description: "Every session is over." },
+    401: errorResponse("Nothing valid was presented.", 401, AUTH_STATUS),
+    403: errorResponse(
+      "Authenticated by an access token, which may not end sessions.",
+      403,
+      AUTH_STATUS,
+    ),
+  },
+});
+
+export const tokensRoute = createRoute({
+  method: "get",
+  path: "/v1/tokens",
+  summary: "Read the access tokens that exist",
+  description:
+    "Names, times and last use. **No secret is ever listed**: the token string is shown once when it is minted and is not stored. `lastUsedAt` is what says whether a token is still in use and safe to revoke.",
+  responses: {
+    200: {
+      description: "Every token this daemon holds.",
+      content: { [JSON_MEDIA_TYPE]: { schema: tokensSchema } },
+    },
+    403: errorResponse(
+      "Authenticated by an access token, which may not manage tokens.",
+      403,
+      AUTH_STATUS,
+    ),
+  },
+});
+
+export const mintTokenRoute = createRoute({
+  method: "post",
+  path: "/v1/tokens",
+  summary: "Mint an access token",
+  description:
+    "**The only answer that carries the token string.** It is not stored and cannot be read back, so a token that was not written down is replaced rather than recovered. Leaving `expiresAt` out mints one that never expires.",
+  request: {
+    body: {
+      required: true,
+      content: { [JSON_MEDIA_TYPE]: { schema: mintTokenRequestSchema } },
+    },
+  },
+  responses: {
+    201: {
+      description: "Minted. `token` is shown here and nowhere else.",
+      content: { [JSON_MEDIA_TYPE]: { schema: mintedTokenSchema } },
+    },
+    400: errorResponse("The body could not be read.", 400, BODY_STATUS),
+    415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
+    403: errorResponse(
+      "Authenticated by an access token, which may not manage tokens.",
+      403,
+      AUTH_STATUS,
+    ),
+  },
+});
+
+export const revokeTokenRoute = createRoute({
+  method: "delete",
+  path: "/v1/tokens/{id}",
+  summary: "Revoke an access token",
+  description:
+    "Takes effect on the next request: nothing caches an authentication, so there is no window to outrun. Revoking a token that is already gone is not an error.",
+  request: { params: tokenId },
+  responses: {
+    204: { description: "Revoked, or was never there." },
+    403: errorResponse(
+      "Authenticated by an access token, which may not manage tokens.",
+      403,
+      AUTH_STATUS,
+    ),
   },
 });
 
@@ -885,6 +1034,13 @@ export const assetContentRoute = createRoute({
 
 export const ROUTES = [
   healthRoute,
+  loginRoute,
+  sessionRoute,
+  logoutRoute,
+  endAllSessionsRoute,
+  tokensRoute,
+  mintTokenRoute,
+  revokeTokenRoute,
   captureRoute,
   feedRoute,
   queueRoute,

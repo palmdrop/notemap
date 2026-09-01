@@ -14,11 +14,21 @@
 [daemon]
 pool = "/var/lib/notemap/state/notemap.db"
 
+# The credential and the access tokens. On the volume, or every restart is a
+# daemon nobody has a password for; outside the mirror, so rebuilding the pool
+# restores no credential and the new deployment issues its own tokens.
+auth = "/var/lib/notemap/state/auth.db"
+
 # Every interface, which is not the daemon relaxing: a container that binds
 # loopback is reachable from nothing at all, not even the proxy. The boundary
 # moved to the compose network and the proxy in front of it.
 host = "0.0.0.0"
 port = 4747
+
+# Where a browser reaches the daemon, which binding every interface makes
+# required: nothing else says whether a session cookie may cross the network in
+# the clear. An `https://` origin, or a loopback one, gets `Secure` cookies.
+origin = "http://localhost:4747"
 
 # The pool, the mirror and the assets are siblings under the one volume,
 # because rebuilding needs the mirror and the assets together.

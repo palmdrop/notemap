@@ -50,4 +50,20 @@ describe("a delivery, on the daemon's own timer", () => {
     expect(records[0]?.state).toBe("pending");
     expect(await delivered(running.world.down)).toBeUndefined();
   });
+
+  /**
+   * Retiring carries no body, which is the one shape `openapi-fetch` sends
+   * without a media type and the daemon now refuses. Only the real transport
+   * against the real surface can say whether the header made the trip.
+   */
+  it("retires a destination over a request that carries nothing", async () => {
+    const running = await daemon();
+    const client = running.client;
+    const vault = await vaults(running);
+
+    expect((await client.destinations.retire(vault.down)).retired).toBe(true);
+    expect((await client.destinations.unretire(vault.down)).retired).toBe(
+      false,
+    );
+  });
 });

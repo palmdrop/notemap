@@ -17,6 +17,18 @@ export class Refused extends Error {
   }
 }
 
+/**
+ * The daemon is there and would not consider the request: nobody is signed in,
+ * or the credential lapsed. Not a refusal — the pool never weighed the work —
+ * so what is queued keeps its place and goes again once someone signs in.
+ */
+export class Unauthenticated extends Error {
+  constructor(said = "you are signed out; sign in to reach this pool") {
+    super(said);
+    this.name = "Unauthenticated";
+  }
+}
+
 /** The pool could not be reached, or did not decide. Nothing is known either way. */
 export class Unreachable extends Error {
   constructor(cause: unknown, said = "the daemon is not reachable") {
@@ -107,6 +119,8 @@ const SAID: {
   "no-such-asset": "the upload is gone; pick the file again",
   "no-such-item": "that item is not here",
   "no-such-record": "that routing record is not here",
+  "not-a-session":
+    "an access token is not a session to sign out of; revoke it instead",
   "not-archived": "that item is not archived",
   "not-retired": "that destination is not retired",
   "not-pending": "that delivery has already been decided",
@@ -115,10 +129,14 @@ const SAID: {
   "payload-type-unsupported":
     "that destination does not accept this kind of item",
   "rejected-by-destination": "the destination refused it",
+  "session-required": "only someone signed in may manage access tokens",
   "tag-invalid": "a tag needs something in it",
   "source-item-changed":
     "something else in the pool was captured under that id, saying something different",
   "arguments-invalid": "that destination needs different arguments",
+  "too-many-attempts": (facts) =>
+    `too many sign-ins have been tried; wait ${String(facts["retryAfter"])} seconds and try again`,
+  unauthenticated: "you are signed out; sign in to reach this pool",
   "unknown-asset": "the upload is gone; pick the file again",
   "unknown-destination": "that destination is not here",
   "unknown-destination-kind": (facts) =>

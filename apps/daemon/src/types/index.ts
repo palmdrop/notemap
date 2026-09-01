@@ -1,5 +1,14 @@
 import type { Position, ReadOrder, SchemaIssue } from "@notemap/core";
 
+import type { Identity } from "../auth/types";
+
+/** Set by the authenticating middleware, and absent where nothing was presented. */
+export type AppEnv = {
+  Variables: {
+    identity?: Identity;
+  };
+};
+
 export type ErrorBody = {
   readonly error: { readonly code: string } & Record<string, unknown>;
 };
@@ -44,7 +53,11 @@ export type DaemonRefusal =
       readonly kind: "method-not-allowed";
       readonly method: string;
       readonly allow: readonly string[];
-    };
+    }
+  | { readonly kind: "unauthenticated" }
+  | { readonly kind: "not-a-session"; readonly presented: "token" }
+  | { readonly kind: "session-required" }
+  | { readonly kind: "too-many-attempts"; readonly retryAfter: number };
 
 export type PageQuery =
   | {
