@@ -5,6 +5,13 @@ editing, destinations, routing to one and health are settled; the rest is stub
 **Last updated**: 2026-08-31
 **Shipped**:
 
+- 2026-09-01 — **Every `/v1` write declares its media type, carrying a body or not.** The rule
+  used to skip the routes that read no body and the ones whose optional body was absent, which
+  left `.../archive`, `.../unarchive`, `.../mark-processed`, `.../retire`, `.../unretire` and
+  `.../cancel` reachable as a simple cross-site `POST`. They are now asked for `application/json`
+  like everything else, so a cross-origin write is preflighted and dies on the CORS headers the
+  daemon does not send. ([plan](../plans/login-and-access-tokens.md))
+
 - 2026-08-31 — **A destination can be asked what a field could hold.**
   `GET /v1/destinations/{id}/candidates` sits beside `/description`: the capability, the field and
   an opaque scope as query parameters, capped rather than paginated. The route checks the
@@ -240,10 +247,16 @@ discovered: [security.md](security.md).
 
 ### Transport
 
-- **`application/json; charset=utf-8` in both directions.** A request with a body whose media
-  type is anything but `application/json` is refused `415 unsupported-media-type`; a missing
-  `Content-Type` on a request with a body is treated the same way. Parameters on the type are
-  ignored, and so is the charset — the body is parsed as UTF-8 regardless.
+- **`application/json; charset=utf-8` in both directions, declared whether or not anything is
+  carried.** Every `POST`, `PUT` and `PATCH` under `/v1` states its media type, and one that is
+  anything but `application/json` — or absent — is refused `415 unsupported-media-type`. That
+  holds for the routes reading no body at all, which have nothing to be wrong about and are asked
+  anyway: a media type no HTML form can send is what makes a browser preflight a cross-origin
+  write, and a preflight is what the daemon refuses by sending no CORS headers
+  ([security.md](security.md#no-cors-headers-which-is-load-bearing)). The upload is the one
+  exception, and it is a `PUT` carrying bytes under their own type, which no form can send either.
+  Parameters on the type are ignored, and so is the charset — the body is parsed as UTF-8
+  regardless.
 - **The daemon binds `127.0.0.1` by default**, on port `4747`; both are configurable. It sends
   no CORS headers: nothing but a page it serves itself is meant to reach it, and adding the
   header is the moment to reconsider authentication rather than a convenience. Binding wider
@@ -499,11 +512,11 @@ Both answer `200 OK` with the `Item` as it now stands.
   something it may not know arrived; an archive is a fresh decision about a state the caller can
   already read.
 - An id no item has is `404 no-such-item`.
-- **A body is still JSON, and no body is a body of `{}`.** A client with nothing to say sends
-  nothing — no body and no `content-type`, which is what a bare `POST` is — and the route reads
-  `{}`. Sending a body means sending `application/json` like every other bodied request; anything
-  else is `415 unsupported-media-type`. A key neither route knows is `400 malformed-envelope`, on
-  the same strictness the capture envelope has.
+- **A body is still JSON, and no body is a body of `{}`.** A client with nothing to say sends no
+  body and the route reads `{}` — but it still declares `application/json`, like every other write
+  ([Transport](#transport)). Anything else, absence included, is `415 unsupported-media-type`. A
+  key neither route knows is `400 malformed-envelope`, on the same strictness the capture envelope
+  has.
 
 ### Classifying an item
 
@@ -1290,6 +1303,8 @@ roles are restated in the page rather than imported, and a test holds that copy 
   returns `400 malformed-envelope` with `issues`.
 - A request with a body and no `application/json` content type returns `415`; `text/json` is
   one of the types refused.
+- A `POST` to a route that reads no body, or one whose body is optional and absent, returns `415`
+  where it declares no content type or a type an HTML form can send.
 - `capturedAt` accepts an offset and stores the instant it names in UTC; a date alone is
   midnight UTC; `2026-08-08T09:00:00` with no offset, `Aug 8 2026` and `2026-02-31` are all
   `400 malformed-envelope` with keyword `format`.

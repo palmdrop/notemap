@@ -414,6 +414,24 @@ describe("guessing at the password", () => {
     });
   });
 
+  /**
+   * The counter used to move after the hash, so a batch that arrived together
+   * read an open door apiece and every one of them reached the hash — the free
+   * attempts spent at once, and that much scrypt held at once with them.
+   */
+  it("does not let a batch arriving together past one attempt", async () => {
+    const clock = movable();
+    const { app } = await guarded(clock.throttle);
+
+    const answers = await Promise.all(
+      Array.from({ length: 20 }, () => login(app, "not the password")),
+    );
+    const statuses = answers.map((answer) => answer.status);
+
+    expect(statuses.filter((status) => status === 401)).toHaveLength(1);
+    expect(statuses.filter((status) => status === 429)).toHaveLength(19);
+  });
+
   it("says when to come back, in the header and in the envelope", async () => {
     const clock = movable();
     const { app } = await guarded(clock.throttle);

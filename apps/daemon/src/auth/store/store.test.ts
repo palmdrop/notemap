@@ -62,7 +62,8 @@ describe("the database file", () => {
     opened.push({ store: createSqliteAuthStore({ file }), directory });
 
     const written = readdirSync(directory);
-    expect(written).toContain("auth.db");
+    // Named, so the loop below cannot pass by finding nothing to look at.
+    expect(written.sort()).toEqual(["auth.db", "auth.db-shm", "auth.db-wal"]);
 
     for (const name of written) {
       const mode = statSync(join(directory, name)).mode & 0o777;

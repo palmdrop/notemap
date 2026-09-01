@@ -27,6 +27,19 @@
         tryItOutEnabled: true,
         displayRequestDuration: true,
         defaultModelsExpandDepth: 2,
+        // Every /v1 write declares its media type, carrying a body or not, and
+        // Swagger sends none where the operation takes none.
+        requestInterceptor: (request) => {
+          const writes = ["POST", "PUT", "PATCH"];
+          const declared =
+            request.headers["Content-Type"] ?? request.headers["content-type"];
+
+          if (writes.includes(request.method) && !declared) {
+            request.headers["Content-Type"] = "application/json";
+          }
+
+          return request;
+        },
       });
     </script>
   </body>

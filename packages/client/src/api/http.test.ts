@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { Refused, Unauthenticated, Unreachable } from "../errors";
-import { acknowledged, answered } from "./http";
+import { mockTransport, json } from "../testing/transport";
+import { acknowledged, answered, createApi } from "./http";
 
 const answering = (status: number, body?: unknown) =>
   Promise.resolve({
@@ -67,5 +68,49 @@ describe("an answer with nothing to read back", () => {
 
   it("takes a 204 as done", async () => {
     await expect(acknowledged(answering(204))).resolves.toBeUndefined();
+  });
+});
+
+/**
+ * The daemon refuses a write that declares no media type, bodyless or not, and
+ * `openapi-fetch` declares one only where there is a body to serialise.
+ */
+describe("the media type a write declares", () => {
+  const asked = (transport: ReturnType<typeof mockTransport>) =>
+    transport.sent[transport.sent.length - 1] as Request;
+
+  it("is set on a write that carries no body", async () => {
+    const transport = mockTransport(() => json(200, {}));
+    const api = createApi(transport);
+
+    await api.POST("/v1/destinations/{id}/retire", {
+      params: { path: { id: "a-destination" } },
+    });
+
+    expect(asked(transport).headers.get("content-type")).toBe(
+      "application/json",
+    );
+  });
+
+  it("is left alone where the caller set one", async () => {
+    const transport = mockTransport(() => json(200, {}));
+    const api = createApi(transport);
+
+    await api.PUT("/v1/assets/{id}", {
+      params: { path: { id: "an-asset" } },
+      headers: { "content-type": "image/png" },
+      body: null as never,
+    });
+
+    expect(asked(transport).headers.get("content-type")).toBe("image/png");
+  });
+
+  it("is not added to a read", async () => {
+    const transport = mockTransport(() => json(200, { items: [] }));
+    const api = createApi(transport);
+
+    await api.GET("/v1/feed", {});
+
+    expect(asked(transport).headers.get("content-type")).toBeNull();
   });
 });

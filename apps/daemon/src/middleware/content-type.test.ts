@@ -23,8 +23,10 @@ afterEach(async () => {
 
 const body = (response: Response) => response.json() as Promise<never>;
 
+const JSON_TYPE = { "content-type": "application/json" };
+
 describe("the media type a body arrives under", () => {
-  it("lets a bare POST through on every route whose body is optional", async () => {
+  it("lets an empty body through on every route whose body is optional", async () => {
     const app = serving();
     const [first] = await captureMany(app, 1);
 
@@ -33,31 +35,60 @@ describe("the media type a body arrives under", () => {
       `/v1/items/${first}/unarchive`,
       `/v1/items/${first}/mark-processed`,
     ]) {
-      const response = await app.request(path, { method: "POST" });
+      const response = await app.request(path, {
+        method: "POST",
+        headers: JSON_TYPE,
+      });
       expect(response.status, path).toBe(200);
     }
   });
 
-  /**
-   * A route that declares no body reads none, so there is no media type to be
-   * wrong about. `curl -X POST` with nothing to send declares no length either,
-   * and under the node server that is indistinguishable from a body arriving.
-   */
-  it("lets a POST through on a route that takes no body, however it was framed", async () => {
+  it("lets a declared POST through on a route that takes no body", async () => {
     const host = daemon();
     open.push(host);
     const vault = await createVault(host);
 
     const bare = await host.app.request(`/v1/destinations/${vault.id}/retire`, {
       method: "POST",
+      headers: JSON_TYPE,
     });
     expect(bare.status).toBe(200);
 
     const framed = await host.app.request(
       `/v1/destinations/${vault.id}/unretire`,
-      { method: "POST", body: "" },
+      { method: "POST", headers: JSON_TYPE, body: "" },
     );
     expect(framed.status).toBe(200);
+  });
+
+  /**
+   * The whole of what stops a cross-site page writing to the pool. A form
+   * declares one of three media types and a bodyless `fetch` declares none,
+   * none of which is this one — so every shape a browser sends without asking
+   * the daemon first is refused before it reaches a route.
+   */
+  it("refuses a write that declares nothing, body or no body", async () => {
+    const host = daemon();
+    open.push(host);
+    const vault = await createVault(host);
+    const [first] = await captureMany(host.app, 1);
+
+    for (const path of [
+      `/v1/items/${first}/archive`,
+      `/v1/items/${first}/unarchive`,
+      `/v1/items/${first}/mark-processed`,
+      `/v1/destinations/${vault.id}/retire`,
+      `/v1/destinations/${vault.id}/unretire`,
+    ]) {
+      const bare = await host.app.request(path, { method: "POST" });
+      expect(bare.status, path).toBe(415);
+
+      const asAForm = await host.app.request(path, {
+        method: "POST",
+        headers: { "content-type": "text/plain;charset=UTF-8" },
+      });
+      expect(asAForm.status, path).toBe(415);
+    }
   });
 
   it("still holds a bodied route sharing its path with a bodyless one", async () => {

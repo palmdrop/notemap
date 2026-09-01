@@ -5,7 +5,7 @@ import {
   clearSessionCookie,
   setSessionCookie,
 } from "../auth/sessions/cookie";
-import type { Auth } from "../auth/types";
+import type { Auth, MintedSession } from "../auth/types";
 import type { AppEnv } from "../types";
 import { loginRequestSchema } from "../schemas/session";
 import { readBody } from "../utils/body";
@@ -14,26 +14,27 @@ import type { Throttle } from "../auth/throttle";
 
 export function loginHandler(auth: Auth, cookies: CookieOptions, throttle: Throttle) {
   return async (context: Context<AppEnv>): Promise<Response> => {
-    const wait = throttle.waitFor();
-    if(wait > 0) {
-      const seconds = Math.ceil(wait / 1000);
+    // Before the throttle, so that a body nobody could read is not a guess.
+    const body = await readBody(context, loginRequestSchema);
+    if (!body.ok) return refuse(body.refusal);
+
+    const attempt = throttle.begin();
+    if (!attempt.allowed) {
+      const seconds = Math.ceil(attempt.wait / 1000);
       return refuse(
         { kind: "too-many-attempts", retryAfter: seconds },
         { "retry-after": String(seconds) }
       );
     }
 
-    const body = await readBody(context, loginRequestSchema);
-    if (!body.ok) return refuse(body.refusal);
-
-    const minted = await auth.login(body.value.name, body.value.password);
-
-    if (minted === undefined) {
-      throttle.failed();
-      return refuse({ kind: "unauthenticated" });
+    let minted: MintedSession | undefined;
+    try {
+      minted = await auth.login(body.value.name, body.value.password);
+    } finally {
+      attempt.settle(minted !== undefined);
     }
 
-    throttle.passed();
+    if (minted === undefined) return refuse({ kind: "unauthenticated" });
 
     setSessionCookie(context, minted, cookies);
 

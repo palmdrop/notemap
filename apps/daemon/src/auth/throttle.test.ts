@@ -1,7 +1,7 @@
 import type { Clock, Timestamp } from "@notemap/core";
 import { describe, expect, it } from "vitest";
 
-import { createLoginThrottle } from "./throttle";
+import { createLoginThrottle, type Throttle } from "./throttle";
 
 const START = "2026-08-31T09:00:00.000Z";
 
@@ -17,45 +17,53 @@ function frozenClock(start = START): Clock & { pass: (ms: number) => void } {
 
 const throttle = (clock: Clock) => createLoginThrottle({ clock });
 
-/** Fails `count` times in a row, without any time passing between them. */
-const failing = (
-  it: ReturnType<typeof createLoginThrottle>,
-  count: number,
-): void => {
-  for (let attempt = 0; attempt < count; attempt += 1) it.failed();
+/** One wrong guess, and what the door said. `0` is the door letting it in. */
+const guess = (it: Throttle): number => {
+  const attempt = it.begin();
+  if (!attempt.allowed) return attempt.wait;
+
+  attempt.settle(false);
+  return 0;
 };
+
+const guessing = (it: Throttle, count: number): number[] =>
+  Array.from({ length: count }, () => guess(it));
+
+const letIn = (count: number) => Array.from({ length: count }, () => 0);
 
 describe("what the login throttle allows", () => {
   it("lets a person mistype a few times without punishing them", () => {
     const clock = frozenClock();
     const it = throttle(clock);
 
-    failing(it, 5);
-
-    expect(it.waitFor()).toBe(0);
+    expect(guessing(it, 6)).toEqual(letIn(6));
   });
 
   it("closes the door on the attempt after that", () => {
     const clock = frozenClock();
     const it = throttle(clock);
 
-    failing(it, 6);
+    guessing(it, 6);
 
-    expect(it.waitFor()).toBe(1_000);
+    expect(guess(it)).toBe(1_000);
   });
 
   it("doubles the wait with every further attempt", () => {
     const clock = frozenClock();
     const it = throttle(clock);
 
-    failing(it, 6);
-    const waits = [it.waitFor()];
+    guessing(it, 6);
+
+    let wait = 1_000;
+    expect(guess(it)).toBe(wait);
 
     for (const doubled of [2_000, 4_000, 8_000, 16_000]) {
-      clock.pass(waits[waits.length - 1] ?? 0);
-      it.failed();
-      expect(it.waitFor()).toBe(doubled);
-      waits.push(doubled);
+      clock.pass(wait);
+
+      expect(guess(it)).toBe(0);
+      expect(guess(it)).toBe(doubled);
+
+      wait = doubled;
     }
   });
 
@@ -66,22 +74,22 @@ describe("what the login throttle allows", () => {
 
     for (let attempt = 0; attempt < 40; attempt += 1) {
       clock.pass(60_000);
-      it.failed();
+      guess(it);
     }
 
-    expect(it.waitFor()).toBe(30_000);
+    expect(guess(it)).toBe(30_000);
   });
 
   it("opens again as the wait passes", () => {
     const clock = frozenClock();
     const it = throttle(clock);
 
-    failing(it, 6);
+    guessing(it, 6);
     clock.pass(999);
-    expect(it.waitFor()).toBe(1);
+    expect(guess(it)).toBe(1);
 
     clock.pass(1);
-    expect(it.waitFor()).toBe(0);
+    expect(guess(it)).toBe(0);
   });
 });
 
@@ -90,15 +98,17 @@ describe("what clears the count", () => {
     const clock = frozenClock();
     const it = throttle(clock);
 
-    failing(it, 10);
-    expect(it.waitFor()).toBeGreaterThan(0);
+    guessing(it, 10);
+    expect(guess(it)).toBeGreaterThan(0);
 
-    it.passed();
+    clock.pass(60_000);
+    const worked = it.begin();
+    if (!worked.allowed) throw new Error("the door should have opened by now");
+    worked.settle(true);
 
-    expect(it.waitFor()).toBe(0);
-    // And the count went with it, so the next mistype starts from nothing.
-    failing(it, 5);
-    expect(it.waitFor()).toBe(0);
+    // Back to the free attempts, rather than to where the count had climbed.
+    expect(guessing(it, 6)).toEqual(letIn(6));
+    expect(guess(it)).toBe(1_000);
   });
 
   /**
@@ -109,24 +119,22 @@ describe("what clears the count", () => {
     const clock = frozenClock();
     const it = throttle(clock);
 
-    failing(it, 10);
+    guessing(it, 10);
 
     clock.pass(15 * 60 * 1_000 + 1);
-    it.failed();
 
-    expect(it.waitFor()).toBe(0);
+    expect(guessing(it, 6)).toEqual(letIn(6));
   });
 
   it("but not a gap shorter than that", () => {
     const clock = frozenClock();
     const it = throttle(clock);
 
-    failing(it, 6);
+    guessing(it, 6);
 
     clock.pass(60_000);
-    it.failed();
-
-    expect(it.waitFor()).toBe(2_000);
+    expect(guess(it)).toBe(0);
+    expect(guess(it)).toBe(2_000);
   });
 });
 
@@ -140,11 +148,67 @@ describe("being turned away", () => {
     const clock = frozenClock();
     const it = throttle(clock);
 
-    failing(it, 6);
-    const wait = it.waitFor();
+    guessing(it, 6);
+    const wait = guess(it);
 
-    for (let asked = 0; asked < 50; asked += 1) it.waitFor();
+    for (let asked = 0; asked < 50; asked += 1) it.begin();
 
-    expect(it.waitFor()).toBe(wait);
+    expect(guess(it)).toBe(wait);
+  });
+});
+
+/**
+ * Weighing a password is a memory-hard hash. A gate that closes once the
+ * answer is known is a gate everything already in flight walked through, which
+ * is both the free attempts spent on one batch and that many hashes at once.
+ */
+describe("attempts that overlap", () => {
+  it("counts an attempt from the moment it begins", () => {
+    const clock = frozenClock();
+    const it = throttle(clock);
+
+    const held = Array.from({ length: 6 }, () => it.begin());
+    for (const attempt of held) if (attempt.allowed) attempt.settle(false);
+
+    // Six were begun, but only one of them was ever let in to be weighed.
+    expect(guessing(it, 5)).toEqual(letIn(5));
+    expect(guess(it)).toBe(1_000);
+  });
+
+  it("weighs one attempt at a time, whatever arrives beside it", () => {
+    const clock = frozenClock();
+    const it = throttle(clock);
+
+    const held = Array.from({ length: 30 }, () => it.begin());
+
+    expect(held.filter((attempt) => attempt.allowed)).toHaveLength(1);
+    expect(held[1]).toEqual({ allowed: false, wait: 1_000 });
+  });
+
+  it("lets the next one in once the first has settled", () => {
+    const clock = frozenClock();
+    const it = throttle(clock);
+
+    const first = it.begin();
+    expect(it.begin().allowed).toBe(false);
+
+    if (first.allowed) first.settle(false);
+
+    expect(guess(it)).toBe(0);
+  });
+
+  it("settles once, so a stale settle cannot release the attempt after it", () => {
+    const clock = frozenClock();
+    const it = throttle(clock);
+
+    const first = it.begin();
+    if (!first.allowed) throw new Error("the door should have been open");
+
+    first.settle(false);
+    const second = it.begin();
+    first.settle(false);
+
+    expect(second.allowed).toBe(true);
+    expect(it.begin().allowed).toBe(false);
   });
 });

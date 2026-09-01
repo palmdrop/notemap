@@ -172,9 +172,13 @@ Depends on phase 2.
 - [x] **Failed logins are throttled**, and this is required rather than a refinement: one password is
       now the whole attack surface, and without a delay a wordlist gets unlimited attempts. A
       per-caller backoff and a global ceiling. Single-user means an in-memory counter is enough
-- [ ] `hono/csrf` alongside `SameSite`, since the two fail differently — but read the caveat in
-      **Unknowns** first: it leans on `Origin`, and a reverse proxy is exactly the thing that
-      sometimes strips it
+- [x] ~~`hono/csrf` alongside `SameSite`~~ — **declined, and what it would have guarded closed in
+      the content-type rule instead.** The middleware only looks at an unsafe method carrying a
+      media type a form can send, and every *bodied* `/v1` route already required
+      `application/json`. What was left uncovered was the writes reading no body, which that rule
+      waved through — so the rule now asks every write for a media type, body or not, which forces
+      the preflight the daemon refuses and depends on no header surviving a proxy. In
+      [security.md](../specs/security.md#why-there-is-no-origin-check-and-why-honocsrf-was-not-the-answer)
 - [x] Route tests beside the routes, and the OpenAPI document regenerated. The playground is
       same-origin and carries the cookie, so it keeps working
 - [x] Verify: `pnpm --filter @notemap/daemon test`
@@ -347,14 +351,28 @@ Recorded because the plan reads as though it did not.
 
 - **The routes are `/v1/session`, `/v1/sessions` and `/v1/tokens`**, not `/v1/auth/*`. Signing in,
   reading who you are and signing out are `POST`, `GET` and `DELETE` on one resource.
-- **The session cookie is `SameSite=Lax`, and there is no `hono/csrf`.** Lax already blocks the
-  cross-site `POST`, and the daemon sends no CORS headers, so the gap Strict would close is a
-  top-level `GET` whose answer an attacker still cannot read. **Still open**, and the one item of
-  phase 3 that did not land as written.
+- **The session cookie is `SameSite=Lax`, and there is no `hono/csrf`.** Declined rather than
+  deferred, and for a different reason than the one written here first. The middleware only looks
+  at requests carrying a media type a form can send, which every *bodied* `/v1` route already
+  refuses; what it would have covered is the **bodyless** writes, which the content-type rule let
+  past. That rule was tightened instead — every write declares `application/json`, body or not —
+  because it closes the same set without leaning on `Origin`, which a proxy may strip. The argument
+  is in
+  [security.md](../specs/security.md#why-there-is-no-origin-check-and-why-honocsrf-was-not-the-answer).
 - **`/log` stayed open.** The plan's premise — that it reads the action log — does not hold: the
   page is a static file whose only call is `/v1/actions`, which is behind the door. Gating it would
   answer a person a JSON refusal where their browser asked for a page. The reasoning is in
   `http-v1.md`, which is what this phase asked for either way.
+- **The bodyless writes were not covered by the content-type rule**, which is what answering the
+  `hono/csrf` question turned up. `requireJsonBody` returned early for a route reading no body, or
+  one whose body was optional and absent, so `.../archive`, `.../unarchive`, `.../mark-processed`,
+  `.../retire`, `.../unretire` and `.../cancel` accepted a simple cross-site `POST`. Closed by
+  asking every write for its media type, which cost the client a header on the calls carrying no
+  body, and the playground a `requestInterceptor` for the same reason.
+- **The throttle counts an attempt before the hash rather than after it**, and weighs one at a
+  time. Counting afterwards let a batch arriving together spend the free attempts at once and run
+  that many memory-hard hashes beside each other, which made the one open route that does real work
+  into the cheapest way to ask the daemon for memory.
 - **Login throttling is one counter for the daemon, not per caller.** Behind a proxy the socket
   address is the proxy's and `X-Forwarded-For` is a claim; per-caller keying is also what lets an
   attacker evade a throttle by rotating it. Recorded with its two accepted risks in `security.md`.
@@ -375,7 +393,6 @@ Recorded because the plan reads as though it did not.
   is not answered item by item.
 - **Phase 8**: the full-stack harness runs one daemon, with no password. Nothing there drives the
   whole path with the door shut.
-- `hono/csrf`, above.
 
 ## Notes
 

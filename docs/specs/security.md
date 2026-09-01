@@ -4,6 +4,21 @@
 **Last updated**: 2026-09-01
 **Shipped**:
 
+- 2026-09-01 — **Every `/v1` write declares its media type, carrying a body or not.** The
+  content-type rule skipped the routes reading no body, so `.../archive`, `.../unarchive`,
+  `.../mark-processed`, `.../retire`, `.../unretire` and `.../cancel` accepted a simple cross-site
+  `POST` — held only by `SameSite=Lax`, which is same-site rather than same-origin, and an
+  unguessable id. They are asked for `application/json` like every other write now, which forces
+  the preflight the daemon refuses. `hono/csrf` is declined in the same breath, with the reasoning
+  written down. ([plan](../plans/login-and-access-tokens.md))
+
+- 2026-09-01 — **The login throttle counts an attempt before it weighs the password, and weighs one
+  at a time.** The counter moved only once the hash had answered, so sign-ins arriving together
+  each read an open door: the free attempts were spent on a single burst and that many memory-hard
+  hashes ran beside each other. It now moves as the attempt begins and settles on what the hash
+  said, and a second attempt arriving while one is still being weighed is answered `429`.
+  ([plan](../plans/login-and-access-tokens.md))
+
 - 2026-08-31 — **A filesystem destination is confined to what the container is given.** The
   compose files and the `Dockerfile` gain `/var/lib/notemap/vaults`, the one directory a root may
   be mounted under, and a root pointed at the pool, the mirror or the assets instead — whether it
@@ -115,7 +130,7 @@ nothing in `/v1` defends it:
   user does not administer — a guest phone, a television, anything on the same subnet.
 - On a routable address, so can anyone who finds the port.
 - There is no rate limit, so nothing slows an enumeration of item ids or asset ids.
-- Ids are unguessable in practice — UUIDv7 for the ones notemap mints — but that is obscurity,
+- Ids are unguessable in practice — UUIDv4 for the ones notemap mints — but that is obscurity,
   not a control. `GET /v1/feed` lists every item without needing to guess anything.
 
 A wider bind is therefore a decision to trust the whole network segment, and should be paired
@@ -199,13 +214,21 @@ another origin from reading the pool of a user who happens to be running the dae
 - A page on `evil.example` can *issue* requests to `http://127.0.0.1:4747` — the browser sends
   them — but cannot read the responses, because the same-origin policy withholds them without an
   `Access-Control-Allow-Origin`.
-- **Writes are not preflighted by design, only by accident** *(amended 2026-08-25)*. A simple
-  `POST` is not preflighted, so a cross-origin page could cause a write it cannot read the result
-  of. No `/v1` write is reachable that way today: `POST /v1/captures` and every other bodied
-  route require `application/json`, which *is* preflighted, and the upload is a `PUT`, which is
-  never simple. Both are happy consequences — of the content-type rule and of the id moving to the
-  uploader — rather than defences anything set out to build, and a route added under a media type
-  a form can send would reopen this without anything noticing.
+- **Every write is preflighted, and since 2026-09-01 on purpose** *(amended 2026-08-25 and again
+  2026-09-01)*. A simple `POST` is not preflighted, so a cross-origin page could otherwise cause a
+  write it cannot read the answer to. Every `POST`, `PUT` and `PATCH` under `/v1` has to declare
+  `application/json` — carrying a body or not — which is not a media type an HTML form can send and
+  which a `fetch` can only send after a preflight the daemon answers no `Access-Control-Allow-*` to.
+  The upload is the exception and needs none: it is a `PUT` under the asset's own type, and `PUT` is
+  never simple.
+
+  This started as two happy consequences — of the content-type rule and of the id moving to the
+  uploader — rather than a defence anything set out to build, and it was a handful of routes short
+  of holding. The rule used to skip whatever declared no body, which left `.../archive`,
+  `.../unarchive`, `.../mark-processed`, `.../retire`, `.../unretire` and `.../cancel` reachable as
+  a simple cross-site `POST`, with `SameSite=Lax` and an unguessable id the only things in the way.
+  It is now stated as the rule it had been standing in for, and a route added under a media type a
+  form can send is what would reopen it.
 - **Adding a CORS header is the moment to reconsider authentication**, not a convenience to
   reach for. Any origin allowed to read is an origin allowed to read everything.
 - **The client stays same-origin so the header never has to exist.** In production the daemon
@@ -359,6 +382,19 @@ costs the hole.
 turns a wordlist into a slow-loris by accident. A `429` costs nothing to hold and tells an honest
 client when to come back; the attacker's rate is capped either way.
 
+**The attempt is counted as it begins, not as it is answered.** Weighing a password is a
+memory-hard hash, and a counter that moves once the answer is known is a counter every request
+that arrived during the hash walked past — the free attempts spent on one batch rather than on one
+guess, and that many hashes held at once on a machine chosen for being small. The count moves
+before the hash starts and is settled by what the hash said, so a caller turned away still costs
+nothing and a caller let in has already paid for its attempt.
+
+**One attempt is weighed at a time.** A second arriving while the first is still hashing is
+answered `429` rather than admitted: one password and one person means two at once is never
+somebody mistyping, and the one open route that does real work needs a ceiling on how much of that
+work is in flight as well as a limit on how often it may be asked for. A rate limit is not a
+concurrency limit, and the login is given both.
+
 **It escalates to a cap and never becomes a lock.** A permanent lockout hands anyone who can
 reach the login the power to deny it.
 
@@ -392,10 +428,41 @@ Said plainly, because an absence reads as an oversight otherwise:
 - **TLS is the proxy's.** The daemon cannot see it, is told rather than left to guess whether a
   session cookie may travel, and serves plain HTTP itself.
 - **Nothing here is multi-user.** One credential, and tokens carrying exactly what it carries.
-- **No `Origin` check beside `SameSite`.** The cookie is `SameSite=Lax`, which blocks the
-  cross-site `POST`, and no `/v1` response carries `Access-Control-Allow-Origin` — so what Strict
-  would additionally close is a top-level `GET` whose answer the other origin still cannot read.
-  Open rather than decided.
+- **No `Origin` check beside `SameSite`, and `hono/csrf` declined.** What the middleware would
+  have guarded is closed in the content-type rule instead, which depends on no header surviving a
+  proxy — see the section below.
+
+### Why there is no `Origin` check, and why `hono/csrf` was not the answer
+
+`hono/csrf` is already a dependency, so declining it costs an argument rather than a package. It
+guards an unsafe method whose `Content-Type` is one an HTML form can send —
+`application/x-www-form-urlencoded`, `multipart/form-data`, `text/plain`, or none at all, which it
+reads as `text/plain` — and lets the request through if `Sec-Fetch-Site` says `same-origin` or
+`Origin` matches the daemon's own. Everything else it does not look at.
+
+That window used to be a real gap, and it was not where the plan expected. Every route declaring a
+body already required `application/json`; what was uncovered was the writes declaring **no** body,
+or one that was optional and absent — `POST` on `.../archive`, `.../unarchive`,
+`.../mark-processed`, `.../retire`, `.../unretire` and `.../cancel`. The content-type rule had
+nothing to check on those and waved them through, so they were the one shape a cross-site page could
+put on the wire as a simple `POST`.
+
+**What stood in the way was `SameSite=Lax`, and Lax is same-*site*, not same-*origin*.** A page on a
+sibling of the deployment's registrable domain — `anything.example.com` beside a notemap at
+`notes.example.com` — is same-site, so the cookie rides along on its cross-origin `POST`. Past that
+it was an id the page has no way to learn, which is obscurity, which this document does not count.
+
+**The rule was tightened rather than a check on `Origin` added**, and that is the decision worth
+recording. Requiring a media type no form can send on *every* `/v1` write, the bodyless ones
+included, closes the same set as `hono/csrf` would — by forcing the preflight the daemon already
+refuses — and it does so in the layer the mistake was made in. It also depends on nothing a
+deployment can remove: `hono/csrf` reads `Origin` and `Sec-Fetch-Site`, and a reverse proxy is both
+the intended deployment and the thing its own documentation warns about. A defence a proxy
+configuration can switch off is one nothing observes the loss of.
+
+`hono/csrf` becomes worth having the day a `/v1` route legitimately accepts a form's media type,
+which is the day the content-type rule stops being able to speak. Until then it would guard a set
+that is empty, at the price of a dependency on a header the deployment is allowed to strip.
 
 ---
 
@@ -469,3 +536,7 @@ Said plainly, because an absence reads as an oversight otherwise:
   successful sign-in clears the count.
 - An unauthenticated request to any route other than the login never contributes to that count.
 - No number of failures makes signing in permanently unavailable.
+- Sign-ins arriving together are answered `429` bar one, so a batch reaches the password hash once
+  rather than once apiece.
+- A `POST`, `PUT` or `PATCH` under `/v1` that declares no media type, or one an HTML form can send,
+  is refused `415` — the routes reading no body included. The asset upload is the one exception.

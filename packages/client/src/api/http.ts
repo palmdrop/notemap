@@ -6,10 +6,30 @@ import type { paths } from "./generated";
 
 export type Api = ReturnType<typeof createOpenapiClient<paths>>;
 
+const WRITES = new Set(["POST", "PUT", "PATCH"]);
+const JSON_MEDIA_TYPE = "application/json";
+
+/**
+ * Every `/v1` write declares its media type, carrying a body or not — which is
+ * what keeps a cross-site page from making one without the browser asking the
+ * daemon first. `openapi-fetch` sets the header only where there is a body to
+ * serialise, so the routes taking none would otherwise arrive without it.
+ */
+function declaring(request: Request): Request {
+  if (!WRITES.has(request.method) || request.headers.has("content-type")) {
+    return request;
+  }
+
+  const headers = new Headers(request.headers);
+  headers.set("content-type", JSON_MEDIA_TYPE);
+
+  return new Request(request, { headers });
+}
+
 export function createApi(transport: Transport): Api {
   return createOpenapiClient<paths>({
     baseUrl: transport.baseUrl,
-    fetch: (request) => transport.fetch(request),
+    fetch: (request) => transport.fetch(declaring(request)),
   });
 }
 
