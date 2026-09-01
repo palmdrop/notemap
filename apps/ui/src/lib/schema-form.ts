@@ -51,7 +51,13 @@ function kindOf(property: unknown): Field["kind"] {
   return type === "array" ? "list" : "text";
 }
 
-/** What a person typed, as the value the schema asks for. Empty fields are absent. */
+/**
+ * What a person typed, as the value the schema asks for. A field nobody filled
+ * in is absent — except a **required** one, which is sent empty: blank is a
+ * value there rather than an omission, and it is the one a folder field means
+ * by it. A filesystem destination's `directory` says so in as many words, and
+ * dropping it made "empty names the root itself" a thing the form could not do.
+ */
 export function valuesFrom(
   fields: readonly Field[],
   typed: Record<string, string>,
@@ -60,7 +66,7 @@ export function valuesFrom(
 
   for (const field of fields) {
     const value = (typed[field.name] ?? "").trim();
-    if (value === "") continue;
+    if (value === "" && !field.required) continue;
 
     filled[field.name] =
       field.kind === "list"

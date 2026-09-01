@@ -21,14 +21,10 @@ describe("the settings a person fills in", () => {
     expect(check({ profile: "nextcloud", root: "Notes/Vault" })).toEqual([]);
   });
 
-  /**
-   * A settings form sends nothing for a field somebody left blank, so a folder
-   * that is required could never be the account's own however it is described.
-   */
-  it("takes the account's own folder, blank or absent", () => {
+  /** Blank is a value here, and the shape `create-file`'s own folder field has. */
+  it("takes a blank folder, which is the account's own", () => {
     expect(check({ profile: "nextcloud", root: "" })).toEqual([]);
-    expect(check({ profile: "nextcloud" })).toEqual([]);
-    expect(asWebdavSettings({ profile: "nextcloud" })).toEqual({
+    expect(asWebdavSettings({ profile: "nextcloud", root: "" })).toEqual({
       profile: "nextcloud",
       root: "",
     });
@@ -61,6 +57,7 @@ describe("the settings a person fills in", () => {
     });
     expect(asWebdavSettings({ profile: 4, root: "" })).toBeUndefined();
     expect(asWebdavSettings({ profile: "nextcloud", root: 4 })).toBeUndefined();
+    expect(asWebdavSettings({ profile: "nextcloud" })).toBeUndefined();
     expect(asWebdavSettings({ root: "Notes" })).toBeUndefined();
   });
 });
