@@ -19,4 +19,8 @@ export const USAGE = `notemap — capture notes, and route them somewhere else.
 
 Every command reads --config <path>, then NOTEMAP_CONFIG, then the default
 config location. There is no command for users, because there are none: one
-credential, and the tokens it issues.`;
+credential, and the tokens it issues.
+
+A daemon holding no credential takes one from NOTEMAP_PASSWORD, or from the
+file NOTEMAP_PASSWORD_FILE names — for a container, which has nowhere to type
+one. Neither replaces a password that is already set; this command does.`;

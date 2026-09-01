@@ -13,9 +13,10 @@ import { startMirrorRunner } from "./mirror/runner";
 import { openPool, openAuth } from "./ports";
 import { runCliCommand } from "./cli";
 import { FORGET_EXPIRED_EVERY_MS } from "./auth/config";
+import { provisionCredential } from "./auth/provision";
 import { createLoginThrottle } from "./auth/throttle";
 
-function start(): void {
+async function start(): Promise<void> {
   const { values } = parseArgs({
     options: { config: { type: "string" } },
     strict: true,
@@ -53,6 +54,10 @@ function start(): void {
       clock: ports.clock,
     },
   );
+
+  // Before anything listens: a daemon told to arrive with a door must not
+  // answer a request through the moment before it has one.
+  await provisionCredential(auth, process.env);
 
   // Nothing waits on this: an expired session or token is refused whether or
   // not it has been swept, so a failed sweep costs a row rather than a refusal.
@@ -172,7 +177,7 @@ const entry = async (): Promise<void> => {
     return runCliCommand(args);
   }
 
-  start();
+  return start();
 };
 
 entry().catch((error: unknown) => {

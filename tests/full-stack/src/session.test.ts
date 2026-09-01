@@ -128,6 +128,48 @@ describe("the cookie a daemon hands a browser", () => {
   });
 });
 
+describe("a daemon told its password by the environment", () => {
+  /**
+   * The variable is read before anything listens, so there is no moment where
+   * a daemon meant to have a door answers a request without one.
+   */
+  it("arrives with the door already shut", async () => {
+    const running = await daemon(undefined, { NOTEMAP_PASSWORD: PASSWORD });
+
+    expect((await fetch(`${running.url}/v1/feed`)).status).toBe(401);
+    expect((await signIn(running.url)).status).toBe(200);
+    expect(running.output()).toContain("NOTEMAP_PASSWORD");
+  });
+
+  /** A restart must not undo a password somebody changed. */
+  it("leaves the one already set alone", async () => {
+    const on = world({});
+    await setPassword(on, "a password of their own choosing");
+
+    const running = await daemon(on, { NOTEMAP_PASSWORD: PASSWORD });
+
+    expect((await signIn(running.url)).status).toBe(401);
+    expect(
+      (
+        await fetch(`${running.url}/v1/session`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            name: NAME,
+            password: "a password of their own choosing",
+          }),
+        })
+      ).status,
+    ).toBe(200);
+  });
+
+  it("does not start at all where the password is one nobody may have", async () => {
+    await expect(
+      daemon(undefined, { NOTEMAP_PASSWORD: "too short" }),
+    ).rejects.toThrow(/shorter than 12 characters/);
+  });
+});
+
 describe("a client against a daemon with a password set", () => {
   it("is turned away from the pool until it signs in", async () => {
     const running = await shut();

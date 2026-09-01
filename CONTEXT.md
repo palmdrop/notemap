@@ -366,6 +366,8 @@ The one username and password a daemon holds, or nothing. Stored beside the pool
 so a rebuild from the mirror restores no way in. Setting one closes the door on the next request;
 a daemon with none asks for nothing and lets every request through. There is exactly one, and it
 belongs to the person running the daemon — it is not an account and there is nothing to register.
+It is set from the command line, or from the environment on a daemon that holds none, which never
+replaces one that is already there.
 _Avoid_: account, user, login (as a noun), identity
 
 **Session**:

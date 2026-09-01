@@ -1,5 +1,6 @@
 export type PasswordRefusal =
   | "password-empty"
+  | "password-too-short"
   | "password-too-long"
   | "password-forbidden-characters";
 

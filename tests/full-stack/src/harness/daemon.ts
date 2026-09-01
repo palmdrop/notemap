@@ -38,7 +38,10 @@ export type Running = {
  * Call at the top of a test file: it registers the teardown that stops whatever
  * a test started, whether or not the test got as far as stopping it.
  */
-export function daemons(): (over?: World | Told) => Promise<Running> {
+export function daemons(): (
+  over?: World | Told,
+  env?: NodeJS.ProcessEnv,
+) => Promise<Running> {
   const started: Running[] = [];
   // A set, because a restart hands back a world this already holds — and a
   // world laid out by a test before its daemon started is cleaned up too.
@@ -50,19 +53,20 @@ export function daemons(): (over?: World | Told) => Promise<Running> {
     worlds.clear();
   });
 
-  return async (over?: World | Told) => {
+  return async (over?: World | Told, env?: NodeJS.ProcessEnv) => {
     const on = over !== undefined && "config" in over ? over : world(over);
     worlds.add(on);
 
-    const running = await start(on);
+    const running = await start(on, env);
     started.push(running);
     return running;
   };
 }
 
-async function start(on: World): Promise<Running> {
+async function start(on: World, env?: NodeJS.ProcessEnv): Promise<Running> {
   const child = spawn("node", [MAIN, "--config", on.config], {
     stdio: ["ignore", "pipe", "pipe"],
+    ...(env === undefined ? {} : { env: { ...process.env, ...env } }),
   });
 
   let said = "";

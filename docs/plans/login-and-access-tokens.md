@@ -369,6 +369,11 @@ Recorded because the plan reads as though it did not.
   `.../retire`, `.../unretire` and `.../cancel` accepted a simple cross-site `POST`. Closed by
   asking every write for its media type, which cost the client a header on the calls carrying no
   body, and the playground a `requestInterceptor` for the same reason.
+- **A password is at least 12 characters**, which the plan never named. The rule holds when one is
+  chosen and not when one is presented, so a password stored before it was raised still signs in.
+- **The environment variable is two**: `NOTEMAP_PASSWORD` and `NOTEMAP_PASSWORD_FILE`, the second
+  because a path is what a secret is mounted as and what the first one is not. Both are read before
+  the daemon listens, neither replaces a credential already set, and setting both is refused.
 - **The throttle counts an attempt before the hash rather than after it**, and weighs one at a
   time. Counting afterwards let a batch arriving together spend the free attempts at once and run
   that many memory-hard hashes beside each other, which made the one open route that does real work

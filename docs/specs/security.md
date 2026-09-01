@@ -4,6 +4,12 @@
 **Last updated**: 2026-09-01
 **Shipped**:
 
+- 2026-09-01 — **A deployment may arrive with a password, and a password has a floor.**
+  `NOTEMAP_PASSWORD` and `NOTEMAP_PASSWORD_FILE` set the credential on a daemon holding none,
+  before anything listens, and leave one that is already set alone. A password is now at least 12
+  characters, held against what may be chosen rather than against what is already stored.
+  ([plan](../plans/login-and-access-tokens.md))
+
 - 2026-09-01 — **Every `/v1` write declares its media type, carrying a body or not.** The
   content-type rule skipped the routes reading no body, so `.../archive`, `.../unarchive`,
   `.../mark-processed`, `.../retire`, `.../unretire` and `.../cancel` accepted a simple cross-site
@@ -364,6 +370,43 @@ cookie was decided from is logged once — naming the host that arrived, and `da
 key that settles it. A warning rather than a refusal: it is a guess about somebody else's network,
 and a wrong guess must not be the thing that shuts the door.
 
+### What a password may be
+
+At least 12 characters, at most 4096 bytes, no control characters and no unpaired surrogates.
+Twelve is the floor OWASP's ASVS puts under a password standing on its own, which this one does:
+there is no second factor, and one credential is the whole of the door. The maximum is counted in
+bytes rather than characters because it guards the hash against a body worth nothing, where the
+minimum guards a person against a password worth guessing. Spellings are folded to NFC and no
+further, so a password chosen as a compatibility variant stays its own.
+
+**The minimum holds when a password is chosen, not when one is presented.** A password stored
+before the rule was raised still opens the door — refusing to weigh it would lock its owner out
+with nothing said, and a rule about what may be picked has no business deciding what already was.
+
+### A deployment may arrive with a password
+
+A container has nowhere to type one. `NOTEMAP_PASSWORD` sets the credential on a daemon that holds
+none, and `NOTEMAP_PASSWORD_FILE` names a file holding it instead. Both are read before anything
+listens, so a daemon told to have a door never answers a request through the moment before it has
+one, and a password the rules refuse stops the daemon rather than leaving it quietly open. Setting
+both is refused too: two sources for one secret is a misconfiguration, not a precedence to work out.
+
+**Only where there is no credential yet.** The auth database owns the password once one is set. A
+variable that reasserted itself every start would end every open session each time the container
+restarted, and would make `notemap password set` a change that does not survive a restart — so where
+both exist the database wins, and the daemon says on startup that it did.
+
+**The environment is not a secret store, and that is what the variable costs.**
+`NOTEMAP_PASSWORD` is readable in `docker inspect`, in `/proc/<pid>/environ` by anything running as
+the same user, and in whatever compose file was committed to a repository; it is also inherited by
+every child process. `NOTEMAP_PASSWORD_FILE` is the one to prefer, because a path is what Docker and
+Podman secrets, Kubernetes and systemd credentials all hand over. The file is still readable by
+whoever can read it — this moves the secret somewhere with an owner and a mode, rather than making
+it safe.
+
+**The username is `admin`**, and the environment does not set it. A deployment that wants another
+runs `notemap password set --name`, which is also how the password is changed afterwards.
+
 ### The login is throttled, and nothing else is
 
 One password is the whole of the attack surface, and without a delay a wordlist gets unlimited
@@ -538,5 +581,12 @@ that is empty, at the price of a dependency on a header the deployment is allowe
 - No number of failures makes signing in permanently unavailable.
 - Sign-ins arriving together are answered `429` bar one, so a batch reaches the password hash once
   rather than once apiece.
+- A password shorter than 12 characters is refused when it is set, and one already stored under
+  that length still signs in.
+- `NOTEMAP_PASSWORD` or `NOTEMAP_PASSWORD_FILE` closes the door on a daemon holding no credential,
+  before the first request is answered; on one that holds a credential it changes nothing and the
+  daemon says so.
+- Both variables set at once, a file that cannot be read, or a password the rules refuse, each stop
+  the daemon from starting rather than leaving it open.
 - A `POST`, `PUT` or `PATCH` under `/v1` that declares no media type, or one an HTML form can send,
   is refused `415` — the routes reading no body included. The asset upload is the one exception.

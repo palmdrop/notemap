@@ -1,3 +1,5 @@
+import { randomBytes } from "node:crypto";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -8,6 +10,7 @@ import {
   verifyPassword,
 } from ".";
 import { UnreadableHash, UnusablePassword } from "./errors";
+import scrypt from "./scrypt";
 
 const PASSWORD = "correct horse battery staple";
 
@@ -162,12 +165,18 @@ describe("how a password is spelled before it is hashed", () => {
   it("keeps compatibility variants apart", async () => {
     // NFC rather than NFKC. Folding these would merge passwords their owner
     // chose as different, and quietly narrow the space they were chosen from.
+    // Padded, because the pairs themselves are under the minimum length.
+    const enough = (password: string) => `${password} au lait please`;
+
     for (const [a, b] of [
       ["abc", "\uff41bc"],
       ["fi", "\ufb01"],
       ["2", "\u00b2"],
     ]) {
-      expect(await verifyPassword(b!, await hashPassword(a!)), b).toBe(false);
+      expect(
+        await verifyPassword(enough(b!), await hashPassword(enough(a!))),
+        b,
+      ).toBe(false);
     }
   });
 
@@ -207,6 +216,34 @@ describe("a password that cannot be stored", () => {
     for (const [password, refusal] of unstorable) {
       expect(await verifyPassword(password, stored), refusal).toBe(false);
     }
+  });
+});
+
+describe("a password shorter than the minimum", () => {
+  it("cannot be chosen", async () => {
+    const error = await hashPassword("elevenchars").catch((thrown) => thrown);
+
+    expect(error).toBeInstanceOf(UnusablePassword);
+    expect(error.refusal).toBe("password-too-short");
+  });
+
+  it("counts characters rather than the bytes they take", async () => {
+    await expect(hashPassword("\u00e9".repeat(11))).rejects.toThrow(
+      "password-too-short",
+    );
+    await expect(hashPassword("\u00e9".repeat(12))).resolves.toBeDefined();
+  });
+
+  /**
+   * The rule is on what may be chosen. One stored before it was raised is
+   * still the password that daemon holds, and refusing to weigh it would lock
+   * its owner out with nothing said.
+   */
+  it("still opens the door where one is already stored", async () => {
+    const stored = await scrypt.hash("elevenchars", randomBytes(16), CHEAP);
+
+    expect(await verifyPassword("elevenchars", stored)).toBe(true);
+    expect(await verifyPassword("elevenchar", stored)).toBe(false);
   });
 });
 
