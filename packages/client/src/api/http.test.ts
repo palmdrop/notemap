@@ -97,7 +97,10 @@ describe("the media type a write declares", () => {
     const api = createApi(transport);
 
     await api.PUT("/v1/assets/{id}", {
-      params: { path: { id: "an-asset" } },
+      params: {
+        path: { id: "an-asset" },
+        header: { "content-disposition": 'attachment; filename="a.png"' },
+      },
       headers: { "content-type": "image/png" },
       body: null as never,
     });
