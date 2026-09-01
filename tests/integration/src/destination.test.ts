@@ -13,10 +13,8 @@ import type {
   RoutingRecord,
 } from "@notemap/core";
 import { destinationRegistry } from "@notemap/core";
-import {
-  createFilesystemDestination,
-  type Renderers,
-} from "@notemap/destination-fs";
+import { createFilesystemDestination } from "@notemap/destination-fs";
+import type { Renderers } from "@notemap/output-markdown";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {

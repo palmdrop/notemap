@@ -10,7 +10,8 @@ import {
   type Destination,
 } from "@notemap/core";
 
-import { APPEND_TO_FILE, CREATE_FILE } from "./capabilities";
+import { APPEND_TO_FILE, CREATE_FILE } from "@notemap/output-markdown";
+
 import { contain, overlapsAny, realRootOf } from "./paths";
 import { asFilesystemSettings } from "./settings";
 

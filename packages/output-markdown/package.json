@@ -1,5 +1,5 @@
 {
-  "name": "@notemap/destination-fs",
+  "name": "@notemap/output-markdown",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -12,10 +12,9 @@
   },
   "dependencies": {
     "@notemap/core": "workspace:*",
-    "@notemap/output-markdown": "workspace:*"
+    "js-yaml": "^5.2.3"
   },
   "devDependencies": {
-    "@notemap/schema-ajv": "workspace:*",
     "@types/node": "^24.10.1",
     "vitest": "^4.1.10"
   }

@@ -4,9 +4,6 @@ A **destination** that is a folder on disk — a vault, a notes directory, a syn
 declares two capabilities, renders a delivery as CommonMark with YAML frontmatter, and writes the
 assets beside the note under the names they were uploaded with.
 
-This is not the Obsidian dialect. It emits plain CommonMark: no `[[wikilinks]]`, no `![[embeds]]`,
-no `.canvas`. Those want a real vault to test against and are a later slice.
-
 ## The two capabilities
 
 `create-file` targets `{ directory, filename? }`.
@@ -85,15 +82,10 @@ touched.
 
 ## Rendering
 
-Renderers are wired by the host, by payload type, exactly as the mirror's are. A payload type with
-no renderer still gets a readable file: the provenance frontmatter, its content as a fenced JSON
-block, and a link to each asset that landed beside it.
+The note itself — the renderers, the frontmatter, the derived filename, section insertion and the
+naming — is [`@notemap/output-markdown`](../../output-markdown/README.md), so that a vault reached
+over WebDAV gets the same note as one on disk. What is left here is what is genuinely about a
+filesystem: containment against a real root through symlinks, and the temporary-then-`link`
+placement.
 
-The renderer is handed the directory the note is going into and the name each asset ended up under,
-because a name may have been suffixed to avoid taking a file that was already there. Link to one
-with `linkTo`: an uploaded filename may carry spaces, and a bare CommonMark destination ends at the
-first one.
-
-Frontmatter carries the item id, the capture source, the payload type, the capture and content
-times, the tags, and `derived_from` as a `urn:commons:item:` URI — which is what lets a note that
-has left notemap still be traced back to the capture it came from.
+Renderers are wired by the host, by payload type, and reach this adapter through its config.

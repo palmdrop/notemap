@@ -18,7 +18,7 @@ import type {
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createFilesystemDestination } from "./destination";
-import { linkTo, type Renderer } from "./renderers";
+import { linkTo, type Renderer } from "@notemap/output-markdown";
 import {
   bytes,
   delivery,

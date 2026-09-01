@@ -2,9 +2,10 @@ import { join } from "node:path";
 
 import type { DeliveredAsset } from "@notemap/core";
 
+import { alternatives, oneSegment } from "@notemap/output-markdown";
+
 import { createFile } from "./atomic";
 import { Refused } from "./errors";
-import { alternatives, oneSegment } from "./paths";
 
 /**
  * Every asset written into `directory` under the name it was uploaded with, and

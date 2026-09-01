@@ -10,33 +10,34 @@ import {
   type PayloadTypeName,
 } from "@notemap/core";
 
-import { placeAssets } from "./assets";
-import { createFile, replaceFile } from "./atomic";
-import { filesystemCandidates } from "./candidates";
-import { Refused } from "./errors";
 import {
   APPEND_TO_FILE,
   asAppendToFileArguments,
   asCreateFileArguments,
-  CREATE_FILE,
   capabilitiesFor,
-} from "./capabilities";
-import { deriveFilename } from "./filename";
-import { FIXED_KEYS, fixedFrontmatter, toYaml } from "./frontmatter";
-import type { FrontmatterValue } from "./frontmatter";
-import { contain, overlapsAny, realRootOf, type Contained } from "./paths";
-import {
+  CREATE_FILE,
+  deriveFilename,
+  FIXED_KEYS,
+  fixedFrontmatter,
+  insertUnder,
   renderAsJson,
+  toYaml,
+  type FrontmatterValue,
   type Renderers,
   type Rendering,
   type RenderingContext,
-} from "./renderers";
+} from "@notemap/output-markdown";
+
+import { placeAssets } from "./assets";
+import { createFile, replaceFile } from "./atomic";
+import { filesystemCandidates } from "./candidates";
+import { Refused } from "./errors";
+import { contain, overlapsAny, realRootOf, type Contained } from "./paths";
 import {
   asFilesystemSettings,
   FILESYSTEM,
   FILESYSTEM_SETTINGS,
 } from "./settings";
-import { insertUnder } from "./sections";
 
 /** What the host wires: neither a renderer nor the payload types that exist is a person's setting. */
 export type FilesystemDestinationConfig = {
@@ -88,7 +89,12 @@ export function createFilesystemDestination(
         );
       }
 
-      return Promise.resolve({ capabilities: capabilitiesFor(config.accepts) });
+      return Promise.resolve({
+        capabilities: capabilitiesFor({
+          accepts: config.accepts,
+          browsable: true,
+        }),
+      });
     },
 
     deliver: async (
