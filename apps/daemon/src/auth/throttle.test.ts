@@ -197,6 +197,49 @@ describe("attempts that overlap", () => {
     expect(guess(it)).toBe(0);
   });
 
+  /**
+   * The slot is held by a caller, and a caller that never settles would
+   * otherwise shut the login for good — which is the one route that reopens a
+   * daemon nobody can get into.
+   */
+  it("takes the door back from an attempt that never settled", () => {
+    const clock = frozenClock();
+    const it = throttle(clock);
+
+    it.begin();
+    expect(it.begin().allowed).toBe(false);
+
+    clock.pass(30_000);
+
+    expect(it.begin().allowed).toBe(true);
+  });
+
+  it("does not take it back from one that is merely slow", () => {
+    const clock = frozenClock();
+    const it = throttle(clock);
+
+    it.begin();
+    clock.pass(29_999);
+
+    expect(it.begin().allowed).toBe(false);
+  });
+
+  it("ignores an abandoned attempt settling after the door was handed on", () => {
+    const clock = frozenClock();
+    const it = throttle(clock);
+
+    const abandoned = it.begin();
+    clock.pass(30_000);
+    const holder = it.begin();
+
+    if (abandoned.allowed) abandoned.settle(false);
+
+    // The late settle released nothing, so the attempt now weighing still has it.
+    expect(it.begin().allowed).toBe(false);
+    if (holder.allowed) holder.settle(false);
+    expect(it.begin().allowed).toBe(true);
+  });
+
   it("settles once, so a stale settle cannot release the attempt after it", () => {
     const clock = frozenClock();
     const it = throttle(clock);

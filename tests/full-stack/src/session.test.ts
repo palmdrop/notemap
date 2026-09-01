@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   browser,
   daemons,
+  IMAGE_SOURCE,
   MANUAL,
   NAME,
   PASSWORD,
@@ -26,6 +27,16 @@ async function shut(told: Told = {}): Promise<Running> {
 }
 
 const CREDENTIAL = JSON.stringify({ name: NAME, password: PASSWORD });
+
+const BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+type Slice = { values: { id: string; tags: { name: string }[] }[] };
+
+/** A signed-in cookie, for reading the pool over `fetch` rather than the client. */
+async function cookieFor(url: string): Promise<string> {
+  const said = (await signIn(url)).headers.get("set-cookie") ?? "";
+  return said.split(";")[0] ?? "";
+}
 
 const signIn = (url: string) =>
   fetch(`${url}/v1/session`, {
@@ -247,6 +258,60 @@ describe("a client against a daemon nobody has set a password on", () => {
  * decides the cookie from the config file and hands the same origin to the
  * notice, and a tunnel is exactly the case where the bind address is no answer.
  */
+/**
+ * The outbox parks on a shut door rather than refusing, which is tested over a
+ * mock transport — and every full-stack proof of it replaying runs against a
+ * daemon with no password. This is the two together: a real door, a real
+ * transport, and everything queued behind it.
+ */
+describe("an outbox that filled up against a shut door", () => {
+  it("lands everything once when the door opens, bytes and order included", async () => {
+    const running = await shut();
+    const client = browser(running.url);
+
+    const asset = await client.attach(
+      new File([BYTES], "whiteboard.png", { type: "image/png" }),
+    );
+    const first = await client.capture({
+      channel: IMAGE_SOURCE,
+      text: "written while nobody was signed in",
+      asset,
+    });
+    const second = await client.capture({
+      channel: MANUAL,
+      text: "and one after it",
+    });
+    await client.tag(first.id, "meeting");
+
+    // A shut door is not a refusal: nothing is dropped, and nothing is applied
+    // twice by the drain that met it.
+    await client.drain();
+    expect(read(client.outbox)).toHaveLength(3);
+
+    await client.login(NAME, PASSWORD);
+    await until("the outbox to empty", async () => {
+      await client.drain();
+      return read(client.outbox).length === 0 ? true : undefined;
+    });
+
+    // Read outside the client, so what the pool holds is what is asserted on
+    // rather than what the client believes it sent.
+    const cookie = await cookieFor(running.url);
+    const feed = (await (
+      await fetch(`${running.url}/v1/feed`, { headers: { cookie } })
+    ).json()) as Slice;
+
+    expect(feed.values.map((item) => item.id)).toEqual([second.id, first.id]);
+    expect(feed.values[1]?.tags.map((tag) => tag.name)).toEqual(["meeting"]);
+
+    const served = await fetch(client.assetContent(asset), {
+      headers: { cookie },
+    });
+    expect(served.status).toBe(200);
+    expect(new Uint8Array(await served.arrayBuffer())).toEqual(BYTES);
+  });
+});
+
 describe("a daemon reached somewhere it was not told about", () => {
   const noticed = (running: Running) =>
     until(

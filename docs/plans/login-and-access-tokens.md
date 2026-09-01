@@ -396,8 +396,9 @@ Recorded because the plan reads as though it did not.
 - **Phase 7**: `security.md` and `http-v1.md` say what is true now, but the bind and CORS sections
   still narrate the undefended daemon, and the five-item list of what authentication has to close
   is not answered item by item.
-- **Phase 8**: the full-stack harness runs one daemon, with no password. Nothing there drives the
-  whole path with the door shut.
+- **Phase 8**: the harness can now start a daemon with the door shut, and one test drives an
+  outbox through it — queued while signed out, replayed once after signing in, bytes and order
+  intact. What is still missing is the rest of the suite running that way rather than one test.
 
 ## Notes
 
