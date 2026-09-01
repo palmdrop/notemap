@@ -1,10 +1,7 @@
 import type { Context } from "hono";
 
 import type { CookieOptions } from "../auth/sessions/config";
-import {
-  clearSessionCookie,
-  setSessionCookie,
-} from "../auth/sessions/cookie";
+import { clearSessionCookie, setSessionCookie } from "../auth/sessions/cookie";
 import type { Auth, MintedSession } from "../auth/types";
 import type { AppEnv } from "../types";
 import { loginRequestSchema } from "../schemas/session";
@@ -12,7 +9,11 @@ import { readBody } from "../utils/body";
 import { json, refuse } from "../utils/responses";
 import type { Throttle } from "../auth/throttle";
 
-export function loginHandler(auth: Auth, cookies: CookieOptions, throttle: Throttle) {
+export function loginHandler(
+  auth: Auth,
+  cookies: CookieOptions,
+  throttle: Throttle,
+) {
   return async (context: Context<AppEnv>): Promise<Response> => {
     // Before the throttle, so that a body nobody could read is not a guess.
     const body = await readBody(context, loginRequestSchema);
@@ -23,7 +24,7 @@ export function loginHandler(auth: Auth, cookies: CookieOptions, throttle: Throt
       const seconds = Math.ceil(attempt.wait / 1000);
       return refuse(
         { kind: "too-many-attempts", retryAfter: seconds },
-        { "retry-after": String(seconds) }
+        { "retry-after": String(seconds) },
       );
     }
 

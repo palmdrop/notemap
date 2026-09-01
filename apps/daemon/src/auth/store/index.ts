@@ -13,7 +13,7 @@ import { chmodSync } from "node:fs";
 
 type Config = {
   readonly file: string;
-}
+};
 
 export const createSqliteAuthStore = (config: Config): AuthStore => {
   const database = openDatabase({
@@ -30,7 +30,7 @@ export const createSqliteAuthStore = (config: Config): AuthStore => {
     database.close();
     throw cause;
   }
-  
+
   const { query } = statements(database.writer);
 
   const transact = (work: () => void) => {
@@ -47,7 +47,7 @@ export const createSqliteAuthStore = (config: Config): AuthStore => {
 
       throw cause;
     }
-  }
+  };
 
   const getCredential = query<CredentialRow, []>(
     `SELECT ${CREDENTIAL_COLUMNS} FROM credential WHERE id = 1`,
@@ -135,11 +135,11 @@ export const createSqliteAuthStore = (config: Config): AuthStore => {
       transact(() => {
         deleteAllSessions.run();
         setCredential.run(
-          credential.name, 
-          credential.passwordHash, 
-          toMillis(credential.changedAt)
+          credential.name,
+          credential.passwordHash,
+          toMillis(credential.changedAt),
         );
-      })
+      });
     },
     rehashCredential: async (passwordHash) => {
       rehashCredential.run(passwordHash);
@@ -149,7 +149,7 @@ export const createSqliteAuthStore = (config: Config): AuthStore => {
         session.id,
         session.secretHash,
         toMillis(session.createdAt),
-        toMillis(session.expiresAt)
+        toMillis(session.expiresAt),
       );
     },
     getSession: async (id) => {
@@ -169,7 +169,7 @@ export const createSqliteAuthStore = (config: Config): AuthStore => {
         token.secretHash,
         toMillis(token.createdAt),
         token.expiresAt === undefined ? null : toMillis(token.expiresAt),
-        token.lastUsedAt === undefined ? null : toMillis(token.lastUsedAt)
+        token.lastUsedAt === undefined ? null : toMillis(token.lastUsedAt),
       );
     },
     getToken: async (id) => {
@@ -186,6 +186,6 @@ export const createSqliteAuthStore = (config: Config): AuthStore => {
     deleteAllTokens: async () => {
       deleteAllTokens.run();
     },
-    close: async () => database.close()
-  }
+    close: async () => database.close(),
+  };
 };

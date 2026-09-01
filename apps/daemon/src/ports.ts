@@ -25,7 +25,7 @@ import {
 
 import { destinationRenderers } from "./destinations/renderers";
 import { renderersFor } from "./mirror/renderers";
-import { createAuth, } from "./auth";
+import { createAuth } from "./auth";
 import { createSqliteAuthStore } from "./auth/store";
 
 export const systemClock: Clock = {
@@ -123,11 +123,11 @@ export function openPool(options: OpenPoolConfig): OpenPool {
 
 type OpenAuthConfig = {
   file: string;
-}
+};
 
 type OpenAuthPorts = {
   clock: Clock;
-}
+};
 
 export const openAuth = (config: OpenAuthConfig, { clock }: OpenAuthPorts) => {
   const store = createSqliteAuthStore({
@@ -135,7 +135,7 @@ export const openAuth = (config: OpenAuthConfig, { clock }: OpenAuthPorts) => {
   });
 
   const auth = createAuth(store, {
-    clock
+    clock,
   });
 
   return auth;

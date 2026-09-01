@@ -20,7 +20,9 @@ export function healthHandler(pool: Pool, auth: Auth) {
       !(await auth.requiresCredentials());
 
     return json(
-      known ? { pool: await pool.identity(), version: VERSION } : { version: VERSION },
+      known
+        ? { pool: await pool.identity(), version: VERSION }
+        : { version: VERSION },
       200,
     );
   };

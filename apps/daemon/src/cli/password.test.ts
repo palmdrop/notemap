@@ -65,8 +65,14 @@ describe("setting the password", () => {
     const { argv, auth: file } = configured();
 
     const before = await opened(file);
-    await before.auth.setPassword(DEFAULT_CREDENTIALS_NAME, "the password before this");
-    const session = await before.auth.login(DEFAULT_CREDENTIALS_NAME, "the password before this");
+    await before.auth.setPassword(
+      DEFAULT_CREDENTIALS_NAME,
+      "the password before this",
+    );
+    const session = await before.auth.login(
+      DEFAULT_CREDENTIALS_NAME,
+      "the password before this",
+    );
     await before.store.close();
 
     expect(session).toBeDefined();
@@ -80,8 +86,12 @@ describe("setting the password", () => {
 
     const { auth, store } = await opened(file);
     try {
-      expect(await auth.login(DEFAULT_CREDENTIALS_NAME, "the password before this")).toBeUndefined();
-      expect(await auth.login(DEFAULT_CREDENTIALS_NAME, PASSWORD)).toBeDefined();
+      expect(
+        await auth.login(DEFAULT_CREDENTIALS_NAME, "the password before this"),
+      ).toBeUndefined();
+      expect(
+        await auth.login(DEFAULT_CREDENTIALS_NAME, PASSWORD),
+      ).toBeDefined();
       expect(
         await auth.authenticate("session", session?.token ?? ""),
       ).toBeUndefined();

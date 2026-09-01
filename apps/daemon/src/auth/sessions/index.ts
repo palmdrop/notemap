@@ -22,9 +22,9 @@ export const createSessions = (
       secretHash: minted.secretHash,
       createdAt: clock.now(),
       expiresAt: new Date(
-        Date.parse(clock.now()) + AUTH_SESSION_EXPIRES_IN_SECONDS * 1000
-      ).toISOString() as Timestamp
-    }
+        Date.parse(clock.now()) + AUTH_SESSION_EXPIRES_IN_SECONDS * 1000,
+      ).toISOString() as Timestamp,
+    };
 
     await store.addSession(session);
 
@@ -40,10 +40,10 @@ export const createSessions = (
       store.getSession(id as SessionId),
     );
 
-    if(!session) return undefined;
+    if (!session) return undefined;
 
     // Nobody lists sessions, so an expired one is taken away rather than shown.
-    if(hasPassed(clock.now(), session.expiresAt)) {
+    if (hasPassed(clock.now(), session.expiresAt)) {
       await store.deleteSession(session.id);
       return undefined;
     }

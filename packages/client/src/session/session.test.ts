@@ -4,7 +4,12 @@ import { createMemoryStore } from "../adapters/memory-store";
 import { createClient } from "../client";
 import { read } from "../testing/observing";
 import { anItem, stoppedClock } from "../testing/pool";
-import { json, mockTransport, refusal, type Handler } from "../testing/transport";
+import {
+  json,
+  mockTransport,
+  refusal,
+  type Handler,
+} from "../testing/transport";
 import type { Client } from "../types";
 
 const clock = stoppedClock();
@@ -51,9 +56,7 @@ describe("asking who this client is", () => {
 
   it("reads a daemon that asks for nothing as open rather than as signed out", async () => {
     const { client } = clientOver((request) =>
-      route(request) === "GET /v1/session"
-        ? said(false, false)
-        : json(200, {}),
+      route(request) === "GET /v1/session" ? said(false, false) : json(200, {}),
     );
 
     expect(await client.askSession()).toMatchObject({
@@ -129,7 +132,8 @@ describe("signing out", () => {
       if (asked === "GET /v1/queue") {
         return json(200, { values: [anItem("one")] });
       }
-      if (asked === "DELETE /v1/session") return new Response(null, { status: 204 });
+      if (asked === "DELETE /v1/session")
+        return new Response(null, { status: 204 });
       return json(200, {});
     });
 
@@ -146,7 +150,8 @@ describe("signing out", () => {
   it("keeps the outbox", async () => {
     const { client } = clientOver((request) => {
       const asked = route(request);
-      if (asked === "DELETE /v1/session") return new Response(null, { status: 204 });
+      if (asked === "DELETE /v1/session")
+        return new Response(null, { status: 204 });
       if (asked === "POST /v1/items/one/archive") return refusal(503, "down");
       return json(200, {});
     });
@@ -185,7 +190,8 @@ describe("a credential that lapsed while nobody was looking", () => {
   it("is noticed from a 401 on any route, without being asked for", async () => {
     const { client } = clientOver((request) => {
       const asked = route(request);
-      if (asked === "GET /v1/session") return said(true, true, { kind: "session", id: "abc" });
+      if (asked === "GET /v1/session")
+        return said(true, true, { kind: "session", id: "abc" });
       if (asked === "GET /v1/queue") return refusal(401, "unauthenticated");
       return json(200, {});
     });

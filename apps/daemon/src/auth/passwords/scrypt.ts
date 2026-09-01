@@ -7,7 +7,7 @@ type Params = {
   r: number;
   p: number;
   keylen: number;
-}
+};
 
 type Result = HashResult<Params>;
 
@@ -21,7 +21,7 @@ const defaultParams: Params = {
   N: 65536,
   r: 8,
   p: 2,
-  keylen: 64
+  keylen: 64,
 };
 
 /** `128 * N * r` is what scrypt needs; the rest is room for the parameters to move. */
@@ -30,7 +30,7 @@ const MAXMEM = 96 * 1024 * 1024;
 const decodeHash = (encodedHash: string) => {
   const [algorithm, keylen, N, r, p, salt, key] = splitHash(encodedHash);
 
-  if(!algorithm || !keylen || !N || !r || !p || !salt || !key) {
+  if (!algorithm || !keylen || !N || !r || !p || !salt || !key) {
     throw new UnreadableHash("invalid hash");
   }
 
@@ -43,44 +43,48 @@ const decodeHash = (encodedHash: string) => {
       N: parseInt(N),
       r: parseInt(r),
       p: parseInt(p),
-    }
-  }
+    },
+  };
 
   Object.values(decodedHash.params).forEach((value) => {
-    if(isNaN(value)) {
+    if (isNaN(value)) {
       throw new UnreadableHash("invalid hash");
     }
   });
 
   return decodedHash;
-}
+};
 
 const encodeHash = ({ algorithm, salt, key, params }: Result) => {
   return joinHash([
-    algorithm, 
-    params.keylen, 
-    params.N, 
-    params.r, 
-    params.p, 
-    salt.toString("base64"), 
-    key.toString("base64")
+    algorithm,
+    params.keylen,
+    params.N,
+    params.r,
+    params.p,
+    salt.toString("base64"),
+    key.toString("base64"),
   ]);
-}
+};
 
-const hash = (password: string, salt: Buffer<ArrayBuffer>, params = defaultParams) => 
+const hash = (
+  password: string,
+  salt: Buffer<ArrayBuffer>,
+  params = defaultParams,
+) =>
   new Promise<Result>((resolve, reject) => {
     scrypt(
-      password, 
-      salt, 
+      password,
+      salt,
       params.keylen as number,
       {
         N: params.N as number,
         r: params.r as number,
         p: params.p as number,
-        maxmem: MAXMEM
+        maxmem: MAXMEM,
       },
       (err, key) => {
-        if(err) {
+        if (err) {
           reject("error hashing password");
           return;
         }
@@ -89,15 +93,19 @@ const hash = (password: string, salt: Buffer<ArrayBuffer>, params = defaultParam
           algorithm: "scrypt",
           salt,
           key,
-          params
+          params,
         });
-      }
+      },
     );
   });
 
 const handlers = {
-  hash: async (password: string, salt: Buffer<ArrayBuffer>, params?: Params) => {
-    const result = await hash(password, salt, params as Params); 
+  hash: async (
+    password: string,
+    salt: Buffer<ArrayBuffer>,
+    params?: Params,
+  ) => {
+    const result = await hash(password, salt, params as Params);
     return encodeHash(result);
   },
   decode: async (hash: string) => decodeHash(hash),
@@ -106,7 +114,7 @@ const handlers = {
   needsRehash: (params: Record<string, unknown>) => {
     const { N, r, p } = params as Params;
     return N < defaultParams.N || r < defaultParams.r || p < defaultParams.p;
-  }
+  },
 } as Algorithm;
 
 export default handlers;

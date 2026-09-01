@@ -35,7 +35,10 @@ export function cleanup(): void {
 
 /** Stdin as a pipe, which is the path a script and a container script take. */
 export function piped(text: string): Streams {
-  return { input: Readable.from([text]), output: new Writable({ write: (_c, _e, done) => done() }) };
+  return {
+    input: Readable.from([text]),
+    output: new Writable({ write: (_c, _e, done) => done() }),
+  };
 }
 
 /** What a command wrote, in the order it wrote it. */

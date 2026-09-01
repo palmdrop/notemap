@@ -38,7 +38,9 @@ describe("minting a secret", () => {
   it("carries the prefix when it is given one", async () => {
     const minted = await mintSecret(TOKEN_PREFIX);
 
-    expect(minted.token.startsWith(`${TOKEN_PREFIX}${TOKEN_PART_SEPARATOR}`)).toBe(true);
+    expect(
+      minted.token.startsWith(`${TOKEN_PREFIX}${TOKEN_PART_SEPARATOR}`),
+    ).toBe(true);
     expect(minted.token.split(TOKEN_PART_SEPARATOR)).toHaveLength(3);
   });
 
@@ -46,7 +48,9 @@ describe("minting a secret", () => {
     // The separator may appear in neither the id alphabet nor base64url. A
     // change to either that broke this would break every parse, so it is
     // pinned here rather than assumed.
-    expect((await mintSecret()).token.split(TOKEN_PART_SEPARATOR)).toHaveLength(2);
+    expect((await mintSecret()).token.split(TOKEN_PART_SEPARATOR)).toHaveLength(
+      2,
+    );
     expect(
       (await mintSecret(TOKEN_PREFIX)).token.split(TOKEN_PART_SEPARATOR),
     ).toHaveLength(3);
@@ -54,7 +58,9 @@ describe("minting a secret", () => {
 
   it("encodes the secret in an alphabet the separator is not in", async () => {
     for (const prefix of [undefined, TOKEN_PREFIX]) {
-      const parts = (await mintSecret(prefix)).token.split(TOKEN_PART_SEPARATOR);
+      const parts = (await mintSecret(prefix)).token.split(
+        TOKEN_PART_SEPARATOR,
+      );
 
       expect(parts.at(-1), String(prefix)).toMatch(/^[A-Za-z0-9_-]+$/);
     }

@@ -144,7 +144,10 @@ describe("verifying a password against a stored hash", () => {
 
   it("refuses a hash naming an algorithm it does not have", async () => {
     await expect(
-      verifyPassword(PASSWORD, rewrite(FROZEN, "algorithm", () => "argon2id")),
+      verifyPassword(
+        PASSWORD,
+        rewrite(FROZEN, "algorithm", () => "argon2id"),
+      ),
     ).rejects.toThrow(new UnreadableHash("unknown algorithm"));
   });
 });
@@ -249,8 +252,10 @@ describe("a password shorter than the minimum", () => {
 
 describe("a stored hash that has been tampered with", () => {
   it("refuses a key with a character changed", async () => {
-    const stored = rewrite(FROZEN, "key", (key) =>
-      (key[0] === "A" ? "B" : "A") + key.slice(1),
+    const stored = rewrite(
+      FROZEN,
+      "key",
+      (key) => (key[0] === "A" ? "B" : "A") + key.slice(1),
     );
 
     expect(await verifyPassword(PASSWORD, stored)).toBe(false);

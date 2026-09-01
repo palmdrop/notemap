@@ -1,41 +1,47 @@
 import type { Branded, Timestamp } from "@notemap/core";
 
-import type { TokenRecord } from "./store/types"
+import type { TokenRecord } from "./store/types";
 
 export type SessionId = Branded<string, "SessionId">;
 export type TokenId = Branded<string, "TokenId">;
 
-export type Token = Pick<TokenRecord, "id" | "name" | "expiresAt" | "createdAt" | "lastUsedAt">
+export type Token = Pick<
+  TokenRecord,
+  "id" | "name" | "expiresAt" | "createdAt" | "lastUsedAt"
+>;
 
 export type MintedToken = Token & {
   readonly token: string;
-}
+};
 
 export type MintedSession = {
   readonly id: SessionId;
   readonly token: string;
   readonly expiresAt: Timestamp;
-}
+};
 
 export type Identity =
   | { readonly kind: "session"; readonly id: SessionId }
-  | { readonly kind: "token"; readonly id: TokenId, readonly name: string }
+  | { readonly kind: "token"; readonly id: TokenId; readonly name: string };
 
 export type Auth = {
-  requiresCredentials(): Promise<boolean>
-  authenticate(kind: "session" | "token", token: string): Promise<Identity | undefined>
+  requiresCredentials(): Promise<boolean>;
+  authenticate(
+    kind: "session" | "token",
+    token: string,
+  ): Promise<Identity | undefined>;
 
-  setPassword(name: string, password: string): Promise<void>
-  login(name: string, password: string): Promise<MintedSession | undefined>
-  endSession(id: SessionId): Promise<void>
-  endAllSessions(): Promise<void>
+  setPassword(name: string, password: string): Promise<void>;
+  login(name: string, password: string): Promise<MintedSession | undefined>;
+  endSession(id: SessionId): Promise<void>;
+  endAllSessions(): Promise<void>;
 
   /** Takes away what has expired. Refusing it does not depend on this having run. */
-  forgetExpired(): Promise<void>
+  forgetExpired(): Promise<void>;
 
-  mintToken(name: string, expiresAt?: Timestamp): Promise<MintedToken>
-  listTokens(): Promise<readonly Token[]>
-  revokeToken(id: TokenId): Promise<void>
+  mintToken(name: string, expiresAt?: Timestamp): Promise<MintedToken>;
+  listTokens(): Promise<readonly Token[]>;
+  revokeToken(id: TokenId): Promise<void>;
 
-  close(): Promise<void>
-}
+  close(): Promise<void>;
+};

@@ -25,7 +25,11 @@ const carryingCookies = (context: Context<AppEnv>, response: Response) => {
  * rather than a rejection.
  */
 const resolveIdentity =
-  (auth: Auth, cookieOptions: CookieOptions, required: boolean): MiddlewareHandler<AppEnv> =>
+  (
+    auth: Auth,
+    cookieOptions: CookieOptions,
+    required: boolean,
+  ): MiddlewareHandler<AppEnv> =>
   async (context, next) => {
     if (!(await auth.requiresCredentials())) return next();
 

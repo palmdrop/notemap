@@ -71,14 +71,7 @@ describe("asking for a password at a terminal", () => {
   });
 
   it("gives up rather than asking forever", async () => {
-    const { streams } = terminal([
-      "a\n",
-      "b\n",
-      "a\n",
-      "b\n",
-      "a\n",
-      "b\n",
-    ]);
+    const { streams } = terminal(["a\n", "b\n", "a\n", "b\n", "a\n", "b\n"]);
 
     await expect(readPassword(streams)).rejects.toThrow(/not confirmed/);
   });

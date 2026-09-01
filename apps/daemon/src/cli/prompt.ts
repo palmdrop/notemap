@@ -54,7 +54,9 @@ const readPiped = async (input: NodeJS.ReadableStream): Promise<string> => {
   const chunks: Buffer[] = [];
   for await (const chunk of input) chunks.push(Buffer.from(chunk));
 
-  return Buffer.concat(chunks).toString("utf8").replace(/\r?\n$/, "");
+  return Buffer.concat(chunks)
+    .toString("utf8")
+    .replace(/\r?\n$/, "");
 };
 
 const askTwice = async (streams: Streams): Promise<string> => {

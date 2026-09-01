@@ -19,31 +19,31 @@ export type ParsedToken = {
 // From https://raw.githubusercontent.com/lucia-auth/lucia/refs/heads/main/code/auth_session.ts
 export const getRandomId = () => {
   // Human readable alphabet (a-z, 0-9 without l, o, 0, 1 to avoid confusion).
-	const alphabet = "abcdefghijkmnpqrstuvwxyz23456789";
+  const alphabet = "abcdefghijkmnpqrstuvwxyz23456789";
 
-	// Generate 16 random bytes.
-	// We're only going to use 5 bits per byte so the total entropy will be 128 * 5 / 8 = 80 bits.
-	const bytes = new Uint8Array(16);
+  // Generate 16 random bytes.
+  // We're only going to use 5 bits per byte so the total entropy will be 128 * 5 / 8 = 80 bits.
+  const bytes = new Uint8Array(16);
 
-	// It's important to use a cryptographically-secure random source.
-	crypto.getRandomValues(bytes);
+  // It's important to use a cryptographically-secure random source.
+  crypto.getRandomValues(bytes);
 
-	let id = "";
-	for (let i = 0; i < bytes.length; i++) {
-		// >> 3 "removes" the right-most 3 bits of the byte, leaving us with 5 bits (0-31).
-		id += alphabet[bytes[i]! >> 3];
-	}
-	return id;
-}
+  let id = "";
+  for (let i = 0; i < bytes.length; i++) {
+    // >> 3 "removes" the right-most 3 bits of the byte, leaving us with 5 bits (0-31).
+    id += alphabet[bytes[i]! >> 3];
+  }
+  return id;
+};
 
 export const hashSecret = (secret: Uint8Array<ArrayBuffer>) => {
   const secretHashBuffer = createHash("sha256").update(secret).digest();
   const secretHash = new Uint8Array(secretHashBuffer);
   return secretHash;
-}
+};
 
 export const mintSecret = async (prefix?: string): Promise<MintedSecret> => {
-  const secret = new Uint8Array(32)
+  const secret = new Uint8Array(32);
   crypto.getRandomValues(secret);
 
   const secretHash = hashSecret(secret);
@@ -52,7 +52,7 @@ export const mintSecret = async (prefix?: string): Promise<MintedSecret> => {
   const token = [
     prefix?.length ? prefix : undefined,
     id,
-    Buffer.from(secret).toString("base64url")
+    Buffer.from(secret).toString("base64url"),
   ]
     .filter(Boolean)
     .join(TOKEN_PART_SEPARATOR);
@@ -60,15 +60,14 @@ export const mintSecret = async (prefix?: string): Promise<MintedSecret> => {
   return {
     id,
     token,
-    secretHash: Buffer.from(secretHash).toString("base64")
-  }
-}
+    secretHash: Buffer.from(secretHash).toString("base64"),
+  };
+};
 
 export const parseSecret = (
   token: string,
   prefix?: string,
 ): ParsedToken | undefined => {
-
   const parts = token.split(TOKEN_PART_SEPARATOR);
 
   const expectedNumberOfParts = prefix ? 3 : 2;
@@ -77,10 +76,10 @@ export const parseSecret = (
 
   const [id, secret] = parts.slice(prefix ? 1 : 0);
 
-  if(!id?.length || !secret?.length) return undefined;
+  if (!id?.length || !secret?.length) return undefined;
 
   return { id, secret };
-}
+};
 
 /** Anything filed under an id and proved by a secret: a session, an access token. */
 type Verifiable = { readonly secretHash: string };

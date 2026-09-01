@@ -6,14 +6,14 @@ export type CredentialRecord = {
   readonly name: string;
   readonly passwordHash: string;
   readonly changedAt: Timestamp;
-}
+};
 
 export type SessionRecord = {
   readonly id: SessionId;
   readonly secretHash: string;
   readonly createdAt: Timestamp;
   readonly expiresAt: Timestamp;
-}
+};
 
 export type TokenRecord = {
   readonly id: TokenId;
@@ -22,7 +22,7 @@ export type TokenRecord = {
   readonly createdAt: Timestamp;
   readonly expiresAt?: Timestamp;
   readonly lastUsedAt?: Timestamp;
-}
+};
 
 export type AuthStore = {
   getCredential(): Promise<CredentialRecord | undefined>;
@@ -43,11 +43,11 @@ export type AuthStore = {
   addToken(token: TokenRecord): Promise<void>;
   getToken(id: TokenId): Promise<TokenRecord | undefined>;
   touchToken(id: TokenId, at: Timestamp): Promise<void>;
-  listTokens(): Promise<readonly TokenRecord[]>
+  listTokens(): Promise<readonly TokenRecord[]>;
   deleteToken(id: TokenId): Promise<void>;
   deleteAllTokens(): Promise<void>;
 
   cleanExpired(now: Timestamp): Promise<void>;
 
   close(): Promise<void>;
-}
+};

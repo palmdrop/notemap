@@ -119,7 +119,8 @@ const SAID: {
   "no-such-asset": "the upload is gone; pick the file again",
   "no-such-item": "that item is not here",
   "no-such-record": "that routing record is not here",
-  "not-a-session": "an access token is not a session to sign out of; revoke it instead",
+  "not-a-session":
+    "an access token is not a session to sign out of; revoke it instead",
   "not-archived": "that item is not archived",
   "not-retired": "that destination is not retired",
   "not-pending": "that delivery has already been decided",

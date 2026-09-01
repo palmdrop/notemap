@@ -22,5 +22,5 @@ export const MIGRATIONS: readonly string[] = [
     expires_at    INTEGER,
     last_used_at  INTEGER
   ) STRICT;
-  `
+  `,
 ];

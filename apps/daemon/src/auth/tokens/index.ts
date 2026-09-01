@@ -8,7 +8,7 @@ import { TOUCH_AFTER_MS } from "./config";
 
 type TokensOptions = {
   clock: Clock;
-}
+};
 
 export type Tokens = {
   mint(name: string, expiresAt?: Timestamp): Promise<MintedToken>;
@@ -29,7 +29,10 @@ const recordToToken = (record: TokenRecord): Token => ({
   ...(record.lastUsedAt === undefined ? {} : { lastUsedAt: record.lastUsedAt }),
 });
 
-export const createTokens = (store: AuthStore, { clock }: TokensOptions): Tokens => ({
+export const createTokens = (
+  store: AuthStore,
+  { clock }: TokensOptions,
+): Tokens => ({
   mint: async (name, expiresAt) => {
     const minted = await mintSecret(TOKEN_PREFIX);
 
@@ -39,7 +42,7 @@ export const createTokens = (store: AuthStore, { clock }: TokensOptions): Tokens
       secretHash: minted.secretHash,
       createdAt: clock.now(),
       ...(expiresAt === undefined ? {} : { expiresAt }),
-    }
+    };
 
     await store.addToken(tokenRecord);
 
@@ -47,7 +50,7 @@ export const createTokens = (store: AuthStore, { clock }: TokensOptions): Tokens
 
     return {
       ...token,
-      token: minted.token
+      token: minted.token,
     };
   },
 
@@ -58,7 +61,7 @@ export const createTokens = (store: AuthStore, { clock }: TokensOptions): Tokens
       TOKEN_PREFIX,
     );
 
-    if(!record) return undefined;
+    if (!record) return undefined;
 
     const now = clock.now();
 
@@ -69,21 +72,25 @@ export const createTokens = (store: AuthStore, { clock }: TokensOptions): Tokens
     // The row stays either way: a token is a named thing someone reads in a
     // list, and seeing it sitting there expired is what answers why a client
     // stopped working. Taking it away is a deliberate revoke.
-    if(isExpired) return undefined;
+    if (isExpired) return undefined;
 
     // Bookkeeping on a read path, so a failure here may not fail the request.
-    if(needsTouch(now, record.lastUsedAt)) {
+    if (needsTouch(now, record.lastUsedAt)) {
       try {
         await store.touchToken(record.id, now);
       } catch (cause) {
-        console.warn(`notemap: could not record use of token ${record.id}`, cause);
+        console.warn(
+          `notemap: could not record use of token ${record.id}`,
+          cause,
+        );
       }
     }
 
     return recordToToken(record);
   },
 
-  list: async () => (await store.listTokens()).map(record => recordToToken(record)),
+  list: async () =>
+    (await store.listTokens()).map((record) => recordToToken(record)),
   revoke: async (id) => {
     await store.deleteToken(id);
   },

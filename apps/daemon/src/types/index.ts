@@ -57,7 +57,7 @@ export type DaemonRefusal =
   | { readonly kind: "unauthenticated" }
   | { readonly kind: "not-a-session"; readonly presented: "token" }
   | { readonly kind: "session-required" }
-  | { readonly kind: "too-many-attempts"; readonly retryAfter: number }
+  | { readonly kind: "too-many-attempts"; readonly retryAfter: number };
 
 export type PageQuery =
   | {

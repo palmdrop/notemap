@@ -4,7 +4,10 @@ import { z } from "zod";
 export const loginRequestSchema = z
   .object({
     name: z.string().min(1).openapi({ example: "anton" }),
-    password: z.string().min(1).openapi({ example: "correct horse battery staple" }),
+    password: z
+      .string()
+      .min(1)
+      .openapi({ example: "correct horse battery staple" }),
   })
   .openapi("LoginRequest");
 

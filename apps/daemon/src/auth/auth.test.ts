@@ -231,8 +231,14 @@ describe("what a request is", () => {
     const opened = await signedIn();
 
     for (const token of ["", "nonsense", "nmp.a.b"]) {
-      expect(await opened.auth.authenticate("session", token), token).toBeUndefined();
-      expect(await opened.auth.authenticate("token", token), token).toBeUndefined();
+      expect(
+        await opened.auth.authenticate("session", token),
+        token,
+      ).toBeUndefined();
+      expect(
+        await opened.auth.authenticate("token", token),
+        token,
+      ).toBeUndefined();
     }
   });
 });
@@ -314,9 +320,9 @@ describe("access tokens through the service", () => {
       {
         id: minted.id,
         name: "laptop",
-        createdAt: START
-      }
-    ])
+        createdAt: START,
+      },
+    ]);
   });
 
   it("stops a revoked token on the next request", async () => {
@@ -325,7 +331,9 @@ describe("access tokens through the service", () => {
 
     await opened.auth.revokeToken(minted.id);
 
-    expect(await opened.auth.authenticate("token", minted.token)).toBeUndefined();
+    expect(
+      await opened.auth.authenticate("token", minted.token),
+    ).toBeUndefined();
   });
 
   it("stops one whose expiry has passed", async () => {
@@ -340,7 +348,9 @@ describe("access tokens through the service", () => {
 
     clock.set("2026-10-01T09:00:00.000Z");
 
-    expect(await opened.auth.authenticate("token", minted.token)).toBeUndefined();
+    expect(
+      await opened.auth.authenticate("token", minted.token),
+    ).toBeUndefined();
   });
 });
 

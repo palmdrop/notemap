@@ -7,7 +7,10 @@ function escapeRegExp(value: string): string {
 }
 
 /** Read off what is registered, so it cannot drift from the routes themselves. */
-export function methodsFor<E extends Env>(app: Hono<E>, path: string): string[] {
+export function methodsFor<E extends Env>(
+  app: Hono<E>,
+  path: string,
+): string[] {
   const allowed = new Set<string>();
 
   for (const route of app.routes) {

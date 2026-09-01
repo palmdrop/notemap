@@ -116,7 +116,9 @@ describe("verifying a presented session", () => {
     const [, secret] = minted.token.split(TOKEN_PART_SEPARATOR);
 
     expect(
-      await opened.sessions.verify(`nosuchsession11${TOKEN_PART_SEPARATOR}${secret}`),
+      await opened.sessions.verify(
+        `nosuchsession11${TOKEN_PART_SEPARATOR}${secret}`,
+      ),
     ).toBeUndefined();
   });
 
@@ -127,7 +129,9 @@ describe("verifying a presented session", () => {
     const [, otherSecret] = other.token.split(TOKEN_PART_SEPARATOR);
 
     expect(
-      await opened.sessions.verify(`${minted.id}${TOKEN_PART_SEPARATOR}${otherSecret}`),
+      await opened.sessions.verify(
+        `${minted.id}${TOKEN_PART_SEPARATOR}${otherSecret}`,
+      ),
     ).toBeUndefined();
   });
 
@@ -139,7 +143,9 @@ describe("verifying a presented session", () => {
     // The length guard in front of `timingSafeEqual`, which throws on operands
     // of unequal length rather than answering false.
     expect(
-      await opened.sessions.verify(`${minted.id}${TOKEN_PART_SEPARATOR}${short}`),
+      await opened.sessions.verify(
+        `${minted.id}${TOKEN_PART_SEPARATOR}${short}`,
+      ),
     ).toBeUndefined();
   });
 

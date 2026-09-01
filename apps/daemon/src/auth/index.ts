@@ -1,16 +1,16 @@
 import type { Clock } from "@notemap/core";
 
 import { UnreadableHash } from "./passwords/errors";
-import { hashPassword, needsRehash, verifyPassword } from "./passwords"
+import { hashPassword, needsRehash, verifyPassword } from "./passwords";
 import { sameSecretly } from "./secret";
 import { createSessions } from "./sessions";
-import type { AuthStore } from "./store/types"
+import type { AuthStore } from "./store/types";
 import { createTokens } from "./tokens";
 import type { Auth } from "./types";
 
 type AuthParams = {
-  clock: Clock
-}
+  clock: Clock;
+};
 
 export const createAuth = (store: AuthStore, { clock }: AuthParams): Auth => {
   const sessions = createSessions(store, { clock });
@@ -22,26 +22,26 @@ export const createAuth = (store: AuthStore, { clock }: AuthParams): Auth => {
       return credential !== undefined;
     },
     authenticate: async (kind, token) => {
-      if(kind === 'session') {
+      if (kind === "session") {
         const session = await sessions.verify(token);
 
-        if(!session) return undefined;
+        if (!session) return undefined;
 
         return {
           kind: "session",
           id: session.id,
-        }
+        };
       }
 
       const accessToken = await tokens.verify(token);
 
-      if(!accessToken) return undefined;
+      if (!accessToken) return undefined;
 
       return {
         kind: "token",
         id: accessToken.id,
         name: accessToken.name,
-      }
+      };
     },
     setPassword: async (name, password) => {
       const passwordHash = await hashPassword(password);
@@ -55,7 +55,7 @@ export const createAuth = (store: AuthStore, { clock }: AuthParams): Auth => {
     login: async (name, password) => {
       const credential = await store.getCredential();
 
-      if(!credential) {
+      if (!credential) {
         return undefined;
       }
 
@@ -106,6 +106,6 @@ export const createAuth = (store: AuthStore, { clock }: AuthParams): Auth => {
 
     close: async () => {
       await store.close();
-    }
-  }
+    },
+  };
 };

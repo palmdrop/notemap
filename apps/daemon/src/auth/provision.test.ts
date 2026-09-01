@@ -66,9 +66,9 @@ describe("where the password may arrive from", () => {
   });
 
   it("or a file, which is what a secret is mounted as", () => {
-    expect(
-      passwordFromEnvironment({ [PASSWORD_FILE]: secret(GIVEN) }),
-    ).toEqual({ password: GIVEN, variable: PASSWORD_FILE });
+    expect(passwordFromEnvironment({ [PASSWORD_FILE]: secret(GIVEN) })).toEqual(
+      { password: GIVEN, variable: PASSWORD_FILE },
+    );
   });
 
   /**
@@ -76,8 +76,9 @@ describe("where the password may arrive from", () => {
    * may not carry — so keeping it would refuse every secret written that way.
    */
   it("takes the newline off the end of a file, and only the end", () => {
-    expect(passwordFromEnvironment({ [PASSWORD_FILE]: secret(`${GIVEN}\n`) }))
-      .toHaveProperty("password", GIVEN);
+    expect(
+      passwordFromEnvironment({ [PASSWORD_FILE]: secret(`${GIVEN}\n`) }),
+    ).toHaveProperty("password", GIVEN);
     expect(
       passwordFromEnvironment({ [PASSWORD_FILE]: secret(`${GIVEN}\r\n`) }),
     ).toHaveProperty("password", GIVEN);
@@ -120,7 +121,9 @@ describe("a daemon starting with a password in its environment", () => {
     const it_ = auth();
     await it_.setPassword("someone", "a password of their own");
 
-    const warned = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warned = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
     await provisionCredential(it_, { [PASSWORD]: GIVEN });
 
     // The database is what a person changed; a restart must not undo it.

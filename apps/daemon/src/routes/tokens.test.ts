@@ -82,7 +82,9 @@ describe("minting a token over the wire", () => {
 
   it("never shows the token again", async () => {
     const { app, cookie } = await guarded();
-    const minted = (await body(await mint(app, cookie, { name: "laptop" }))) as {
+    const minted = (await body(
+      await mint(app, cookie, { name: "laptop" }),
+    )) as {
       token: string;
     };
 
@@ -135,7 +137,9 @@ describe("minting a token over the wire", () => {
 describe("a minted token as a credential", () => {
   it("opens the door as a bearer token", async () => {
     const { app, cookie } = await guarded();
-    const minted = (await body(await mint(app, cookie, { name: "laptop" }))) as {
+    const minted = (await body(
+      await mint(app, cookie, { name: "laptop" }),
+    )) as {
       token: string;
     };
 
@@ -148,7 +152,9 @@ describe("a minted token as a credential", () => {
 
   it("is refused once revoked", async () => {
     const { app, cookie } = await guarded();
-    const minted = (await body(await mint(app, cookie, { name: "laptop" }))) as {
+    const minted = (await body(
+      await mint(app, cookie, { name: "laptop" }),
+    )) as {
       token: string;
       id: string;
     };
@@ -170,7 +176,9 @@ describe("a minted token as a credential", () => {
 
   it("is refused when the header is not a bearer", async () => {
     const { app, cookie } = await guarded();
-    const minted = (await body(await mint(app, cookie, { name: "laptop" }))) as {
+    const minted = (await body(
+      await mint(app, cookie, { name: "laptop" }),
+    )) as {
       token: string;
     };
 
@@ -191,9 +199,9 @@ describe("a minted token as a credential", () => {
 
     expect(response.status).toBe(401);
     expect(response.headers.get("set-cookie")).toBeNull();
-    expect((await app.request("/v1/feed", { headers: { cookie } })).status).toBe(
-      200,
-    );
+    expect(
+      (await app.request("/v1/feed", { headers: { cookie } })).status,
+    ).toBe(200);
   });
 });
 
@@ -211,7 +219,9 @@ describe("who may manage tokens", () => {
     // A leaked token could otherwise mint a replacement that outlives revoking
     // the original, so revocation would not be the end of it.
     const { app, cookie } = await guarded();
-    const minted = (await body(await mint(app, cookie, { name: "laptop" }))) as {
+    const minted = (await body(
+      await mint(app, cookie, { name: "laptop" }),
+    )) as {
       token: string;
     };
 
@@ -254,7 +264,9 @@ describe("who may manage tokens", () => {
 
   it("still lets a token through the doors it is for", async () => {
     const { app, cookie } = await guarded();
-    const minted = (await body(await mint(app, cookie, { name: "laptop" }))) as {
+    const minted = (await body(
+      await mint(app, cookie, { name: "laptop" }),
+    )) as {
       token: string;
     };
 

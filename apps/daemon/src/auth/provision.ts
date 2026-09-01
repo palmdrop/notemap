@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
 
 import { DEFAULT_CREDENTIALS_NAME } from "./config";
-import { MAX_PASSWORD_BYTE_LENGTH, MIN_PASSWORD_LENGTH } from "./passwords/config";
+import {
+  MAX_PASSWORD_BYTE_LENGTH,
+  MIN_PASSWORD_LENGTH,
+} from "./passwords/config";
 import { UnusablePassword, type PasswordRefusal } from "./passwords/errors";
 import type { Auth } from "./types";
 

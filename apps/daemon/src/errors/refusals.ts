@@ -168,7 +168,7 @@ export const ADDRESS_STATUS = {
 } as const;
 
 export const AUTH_STATUS = {
-  "unauthenticated": 401,
+  unauthenticated: 401,
   /** Authenticated, and by something that is not a session to end. */
   "not-a-session": 422,
   /** Authenticated, and by something not trusted to do this. */
@@ -184,7 +184,7 @@ const DAEMON_STATUS = {
   ...SUBJECT_STATUS,
   ...CANDIDATES_REQUEST_STATUS,
   ...ADDRESS_STATUS,
-  ...AUTH_STATUS
+  ...AUTH_STATUS,
 } as const satisfies Record<DaemonRefusal["kind"], number>;
 
 export function captureStatus(refusal: CaptureRefusal): number {

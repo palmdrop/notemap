@@ -56,8 +56,8 @@
       />
 
       <p class="mt-4 text-ink-muted">
-        Run <code class="font-mono">notemap password set</code> where the daemon
-        runs to close the door.
+        Run <code class="font-mono">notemap password set</code> where the daemon runs
+        to close the door.
       </p>
     {/if}
   </Section>

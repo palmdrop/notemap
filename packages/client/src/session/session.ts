@@ -71,7 +71,12 @@ export function createSessions({ api, forget }: SessionDeps): Sessions {
       : {
           as:
             answer.identity.kind === "token"
-              ? { kind: "token" as const, ...(answer.identity.name === undefined ? {} : { name: answer.identity.name }) }
+              ? {
+                  kind: "token" as const,
+                  ...(answer.identity.name === undefined
+                    ? {}
+                    : { name: answer.identity.name }),
+                }
               : { kind: "session" as const },
         }),
   });
@@ -87,7 +92,11 @@ export function createSessions({ api, forget }: SessionDeps): Sessions {
     },
 
     login: async (name, password) => {
-      state.set(took(await answered(api.POST("/v1/session", { body: { name, password } }))));
+      state.set(
+        took(
+          await answered(api.POST("/v1/session", { body: { name, password } })),
+        ),
+      );
     },
 
     logout: async () => {
@@ -97,7 +106,11 @@ export function createSessions({ api, forget }: SessionDeps): Sessions {
         await acknowledged(api.DELETE("/v1/session"));
       } finally {
         await forget();
-        state.set({ required: state.get().required, signedIn: false, known: true });
+        state.set({
+          required: state.get().required,
+          signedIn: false,
+          known: true,
+        });
       }
     },
 

@@ -94,7 +94,9 @@ test("settings offers signing out where there is a session to end", async () => 
 
   render(Session);
 
-  expect(await screen.findByRole("button", { name: /sign out/i })).toBeDefined();
+  expect(
+    await screen.findByRole("button", { name: /sign out/i }),
+  ).toBeDefined();
 });
 
 /** There is no door to come back out of, so offering the way out would be a lie. */
@@ -115,13 +117,16 @@ test("signing out tells the daemon", async () => {
     if (route === "GET /v1/session") {
       return said(true, true, { kind: "session", id: "abc" });
     }
-    if (route === "DELETE /v1/session") return new Response(null, { status: 204 });
+    if (route === "DELETE /v1/session")
+      return new Response(null, { status: 204 });
     return json(200, {});
   });
 
   render(Session);
 
-  await fireEvent.click(await screen.findByRole("button", { name: /sign out/i }));
+  await fireEvent.click(
+    await screen.findByRole("button", { name: /sign out/i }),
+  );
 
   await waitFor(() => {
     expect(asked()).toContain("DELETE /v1/session");

@@ -258,7 +258,10 @@ describe("draining", () => {
   });
 
   it("parks every entry behind it, not only the one that met the door", async () => {
-    const { outbox, state, answer } = engineOver([anItem("one"), anItem("two")]);
+    const { outbox, state, answer } = engineOver([
+      anItem("one"),
+      anItem("two"),
+    ]);
 
     await outbox.enqueue(ARCHIVE);
     await outbox.enqueue({ kind: "archive", item: "two" });
