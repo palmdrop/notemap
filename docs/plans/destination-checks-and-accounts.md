@@ -164,27 +164,30 @@ without the developer's confirmation.**
 
 Depends on phase 4.
 
-- [ ] `DestinationProbe` in the domain types, `probe` on the port and on the adapter interface, and
+- [x] `DestinationProbe` in the domain types, `probe` on the port and on the adapter interface, and
       the registry's absent-method case
-- [ ] The pool's own `probe`, alongside `describe` in `pool/destinations/`, running the same
+- [x] The pool's own `probe`, alongside `describe` in `pool/destinations/`, running the same
       usability check first so an unusable destination is never asked anything
-- [ ] Filesystem: `stat` the root and check write access. Not there is `rejected`; the errno list
+- [x] Filesystem: `stat` the root and check write access. Not there is `rejected`; the errno list
       the adapter already treats as unreachable stays `unreachable`; an overlap with the daemon's
       own paths is `unusable`, as `describe()` already answers it
-- [ ] Webdav: resolve the account — undeclared or unreadable is `rejected`, naming which — then
+- [x] Webdav: resolve the account — undeclared or unreadable is `rejected`, naming which — then
       `PROPFIND` depth 0 on the root. Answered is `ready`; `401`/`403` is `rejected` naming the
       credentials; `404` is `rejected` naming the folder; a socket that never opened or a `5xx` is
       `unreachable`
-- [ ] `Dav` gains the one method that asks whether a collection is there. It has `get`, `create`,
+- [x] `Dav` gains the one method that asks whether a collection is there. It has `get`, `create`,
       `replace` and `makeCollection` and nothing that only looks
-- [ ] Tests beside each: every branch of both adapters, and the registry's `not-offered`
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
-- [ ] `git commit`
+- [x] Tests beside each: every branch of both adapters, and the registry's `not-offered`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
+- [x] `git commit`
 
-**Unknown**: whether the servers worth caring about accept a `PROPFIND` with no body. The
-specification allows it and reads it as `allprop`; some servers do not. Fallback is the minimal
-`resourcetype` request body, which is what a broad server accepts either way — cheap enough that it
-may simply be what gets written first.
+**Named `Rejected`, not `Refused`** — both adapters already have a `Refused` of their own for a
+delivery that will not be attempted again, and a second one imported from core would have collided
+in the two files that need it most. It is named for the answer it produces.
+
+**Settled**: `PROPFIND` is sent with a minimal `resourcetype` body rather than none. The specification allows an empty one
+and reads it as `allprop`, but servers that refuse one are common and asking for a single property
+is cheaper anyway, so the fallback was simply what got written.
 
 ### Phase 6 — the route, the client, and the row
 

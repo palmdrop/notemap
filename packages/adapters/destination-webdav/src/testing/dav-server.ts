@@ -5,8 +5,8 @@ import type { AddressInfo } from "node:net";
  * A DAV server standing in for Nextcloud, in this process and in memory.
  *
  * It is a **fake**, and the parts of DAV it implements are the parts this
- * adapter uses: conditional `PUT`, `MKCOL` a level at a time, and `GET` with an
- * `ETag`. Whether the real thing agrees is what the hand verification against a
+ * adapter uses: conditional `PUT`, `MKCOL` a level at a time, `GET` with an
+ * `ETag`, and `PROPFIND` answering only whether something is there. Whether the real thing agrees is what the hand verification against a
  * real instance is for; nothing here can answer it.
  */
 export type DavServer = {
@@ -91,6 +91,20 @@ export async function startDavServer(): Promise<DavServer> {
         return;
       }
       response.writeHead(200, { etag: etagOf(entry) }).end(entry.content);
+      return;
+    }
+
+    if (method === "PROPFIND") {
+      if (entry === undefined) {
+        response.writeHead(404).end();
+        return;
+      }
+      // Enough of a multi-status for a caller asking only whether it is there.
+      response
+        .writeHead(207, { "content-type": "application/xml; charset=utf-8" })
+        .end(
+          `<?xml version="1.0"?><multistatus xmlns="DAV:"><response><href>/${BASE}/${path}</href></response></multistatus>`,
+        );
       return;
     }
 

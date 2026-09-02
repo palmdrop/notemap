@@ -33,6 +33,7 @@ import { deliveryFor } from "../routing/delivery";
 
 import { candidates as candidatesFor, NotOffered } from "./candidates";
 import { create, edit, remove, retire, unretire } from "./lifecycle";
+import { probe as probeOne, Rejected } from "./probe";
 import { describe as describeOne, list } from "./reports";
 
 const FILESYSTEM = "filesystem" as DestinationKindName;
@@ -294,6 +295,77 @@ describe("what a destination reports about itself", () => {
     expect(
       await describeOne(ports(), "ghost" as DestinationId),
     ).toBeUndefined();
+  });
+});
+
+describe("what a destination answers when it is asked whether it is there", () => {
+  it("is unusable before it is ever asked, on the same terms as describing it", async () => {
+    const stale = fakeDestinationRow({ id: "old", kind: "kanban" });
+    const wired = ports({ destinations: [stale] });
+
+    expect(await probeOne(wired, stale.id)).toEqual({
+      kind: "unusable",
+      detail: "nothing here speaks the kanban kind",
+    });
+  });
+
+  it("is ready where the adapter reached it and said nothing", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
+    const wired = ports({ destinations: [vault] });
+
+    expect(await probeOne(wired, vault.id)).toEqual({ kind: "ready" });
+  });
+
+  /** The distinction the whole call exists for: a person's to fix, not a retry's. */
+  it("is rejected where it answered and said no", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
+    const wired = ports({ destinations: [vault] });
+    wired.adapters.cannotBeProbed(
+      new Rejected("no webdav account named home is configured"),
+    );
+
+    expect(await probeOne(wired, vault.id)).toEqual({
+      kind: "rejected",
+      detail: "no webdav account named home is configured",
+    });
+  });
+
+  it("is unreachable where it could not be reached at all", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
+    const wired = ports({ destinations: [vault] });
+    wired.adapters.cannotBeProbed("ECONNREFUSED");
+
+    expect(await probeOne(wired, vault.id)).toEqual({
+      kind: "unreachable",
+      detail: "ECONNREFUSED",
+    });
+  });
+
+  it("is unusable where the adapter itself says so", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
+    const wired = ports({ destinations: [vault] });
+    wired.adapters.cannotBeProbed(
+      new Unusable("/vault overlaps notemap's own state"),
+    );
+
+    expect(await probeOne(wired, vault.id)).toEqual({
+      kind: "unusable",
+      detail: "/vault overlaps notemap's own state",
+    });
+  });
+
+  it("is not-offered where the kind does not do this at all", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
+    const wired = ports({ destinations: [vault] });
+    wired.adapters.cannotBeProbed(
+      new NotOffered("the filesystem kind cannot be probed"),
+    );
+
+    expect(await probeOne(wired, vault.id)).toEqual({ kind: "not-offered" });
+  });
+
+  it("answers nothing at all for an id no destination has", async () => {
+    expect(await probeOne(ports(), "ghost" as DestinationId)).toBeUndefined();
   });
 });
 

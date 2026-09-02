@@ -174,6 +174,12 @@ export interface Destinations {
     request: CandidatesRequest,
     signal?: AbortSignal,
   ): Promise<CandidatesAnswer>;
+  /**
+   * Resolves where the destination is really there. Rejects with `Rejected`
+   * where it answered no, with `NotOffered` where the adapter has none, and
+   * with anything else where it could not be reached.
+   */
+  probe(destination: Destination, signal?: AbortSignal): Promise<void>;
 }
 
 export interface DestinationKindAdapter extends DestinationKind {
@@ -192,6 +198,13 @@ export interface DestinationKindAdapter extends DestinationKind {
     request: CandidatesRequest,
     signal?: AbortSignal,
   ): Promise<CandidatesAnswer>;
+  /**
+   * Goes and asks whether the destination is there, without writing anything.
+   * Resolving is `ready`; throwing `Rejected` is a no a person must act on,
+   * and throwing anything else is a destination that could not be reached.
+   * Absent is `not-offered`, as an absent `candidates` is.
+   */
+  probe?(destination: Destination, signal?: AbortSignal): Promise<void>;
 }
 
 export interface ProviderAdapter {

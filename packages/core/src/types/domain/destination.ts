@@ -97,6 +97,24 @@ export type CandidatesReport =
   | { readonly kind: "unusable"; readonly detail: string }
   | { readonly kind: "not-offered" };
 
+/**
+ * Whether a destination is really there, having been asked. `ready` was
+ * reached, accepted the credential and had the root; `rejected` answered and
+ * said no, which is a person's to fix; `unreachable` could not be reached or
+ * could not decide, which is not; `unusable` could not be asked at all, on
+ * `DestinationReport`'s terms; `not-offered` is a kind that does not do this.
+ *
+ * `rejected` and `unreachable` are `DeliveryOutcome`'s own words for the same
+ * distinction one call earlier. `ready` is not a promise that a write will
+ * land: nothing writes to find out.
+ */
+export type DestinationProbe =
+  | { readonly kind: "ready" }
+  | { readonly kind: "rejected"; readonly detail: string }
+  | { readonly kind: "unreachable"; readonly detail: string }
+  | { readonly kind: "unusable"; readonly detail: string }
+  | { readonly kind: "not-offered" };
+
 /** What a person supplies to create one. The id, the timestamps and retirement are not theirs. */
 export type DestinationDraft = {
   readonly name: string;

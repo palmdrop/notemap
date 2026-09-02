@@ -20,6 +20,7 @@ import type {
   DestinationChanges,
   DestinationDraft,
   DestinationKind,
+  DestinationProbe,
   DestinationReport,
 } from "../domain/destination";
 import type { Artifact, EnrichmentStatus } from "../domain/enrichment";
@@ -139,6 +140,14 @@ export interface DestinationsApi {
     request: CandidatesRequest,
     signal?: AbortSignal,
   ): Promise<CandidatesReport | undefined>;
+  /**
+   * Whether it is really there, which describing never asks. Reaches the
+   * outside world and writes nothing. Absent means no destination has that id.
+   */
+  probe(
+    id: DestinationId,
+    signal?: AbortSignal,
+  ): Promise<DestinationProbe | undefined>;
   /** Every kind the host wired an adapter for, with the schema its settings must satisfy. */
   kinds(): readonly DestinationKind[];
 

@@ -1,3 +1,4 @@
+import { Rejected } from "@notemap/core";
 import type { DeliveryOutcome, PayloadTypeName } from "@notemap/core";
 import { linkTo, type Renderer } from "@notemap/output-markdown";
 import { afterEach, describe, expect, it } from "vitest";
@@ -585,5 +586,91 @@ describe("an asset is streamed, not buffered", () => {
     expect(server.arrivedChunked("V/long-cccccccc.wav")).toBe(true);
     // The note is a string the adapter already holds, so it is measured.
     expect(server.arrivedChunked("V/a.md")).toBe(false);
+  });
+});
+
+describe("probing a webdav destination", () => {
+  it("resolves for a folder that is there, without writing anything", async () => {
+    const server = await vault();
+    server.makeCollection("Notes");
+
+    await expect(
+      adapter(server).probe?.(destinationRow({ root: "Notes" })),
+    ).resolves.toBeUndefined();
+
+    expect(server.requests()).toEqual(["PROPFIND /Notes"]);
+    expect(server.files()).toEqual({});
+  });
+
+  it("resolves for a blank root, which is the account's own folder", async () => {
+    const server = await vault();
+
+    await expect(
+      adapter(server).probe?.(destinationRow({ root: "" })),
+    ).resolves.toBeUndefined();
+  });
+
+  it("rejects a folder that is not there, naming it", async () => {
+    const server = await vault();
+
+    await expect(
+      adapter(server).probe?.(destinationRow({ root: "Nowhere" })),
+    ).rejects.toThrow(/Nowhere is not there/);
+  });
+
+  /**
+   * An account nobody declared is `Rejected` here and `unreachable` to a
+   * delivery: what that difference protects is the delivery's retry, which a
+   * person asking once has none of.
+   */
+  it("rejects an account nothing declares, rather than calling it unreachable", async () => {
+    const server = await vault();
+
+    await expect(
+      adapter(server).probe?.(
+        destinationRow({ account: "not-declared", root: "" }),
+      ),
+    ).rejects.toThrow(Rejected);
+  });
+
+  it("rejects credentials the server would not take", async () => {
+    const server = await vault();
+    const kind = createWebdavDestination({
+      accepts: [TEXT],
+      credentials: () =>
+        Promise.resolve({
+          baseUrl: server.baseUrl,
+          username: server.username,
+          password: "the old one",
+        }),
+    });
+
+    await expect(kind.probe?.(destinationRow({ root: "" }))).rejects.toThrow(
+      /credentials were refused, with 401/,
+    );
+  });
+
+  it("is unreachable, not rejected, where nothing answered at all", async () => {
+    const server = await vault();
+    const gone = server.baseUrl;
+    await server.close();
+    servers.splice(servers.indexOf(server), 1);
+
+    const kind = createWebdavDestination({
+      accepts: [TEXT],
+      credentials: () =>
+        Promise.resolve({
+          baseUrl: gone,
+          username: "alice",
+          password: "an-app-password",
+        }),
+    });
+
+    const failed = await kind
+      .probe?.(destinationRow({ root: "" }))
+      .catch((cause: unknown) => cause);
+
+    expect(failed).toBeInstanceOf(Error);
+    expect(failed).not.toBeInstanceOf(Rejected);
   });
 });

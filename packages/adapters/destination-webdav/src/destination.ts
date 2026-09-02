@@ -4,18 +4,20 @@ import {
   CREATE_FILE,
   type Renderers,
 } from "@notemap/output-markdown";
-import type {
-  Delivery,
-  DeliveryOutcome,
-  Destination,
-  DestinationKindAdapter,
-  PayloadTypeName,
+import {
+  Rejected,
+  type Delivery,
+  type DeliveryOutcome,
+  type Destination,
+  type DestinationKindAdapter,
+  type PayloadTypeName,
 } from "@notemap/core";
 
 import type { CredentialResolver } from "./credentials";
 import { createDav, type Dav } from "./dav";
 import { Refused, Unreachable } from "./errors";
 import { appendToNote, createNote, type Wiring } from "./notes";
+import { contain } from "./paths";
 import { asWebdavSettings, WEBDAV, webdavSettings } from "./settings";
 
 /** What the host wires: neither a renderer nor a credential is a person's setting. */
@@ -92,7 +94,48 @@ export function createWebdavDestination(
         return failure(cause);
       }
     },
+
+    /**
+     * A `PROPFIND` at the root and nothing else: the account resolves, the
+     * server answers, it accepts the credential, and the folder is there. That
+     * a note can be *written* is inferred from all four, never proved, since
+     * proving it means putting a file in somebody's vault.
+     *
+     * A rejected credential is `Rejected` here and `Unreachable` to a delivery.
+     * The delivery is right to retry one — a password may have just been
+     * rotated — and a person asking now is owed the answer that it is wrong.
+     */
+    probe: async (destination, signal) => {
+      const settings = asWebdavSettings(destination.settings);
+      if (settings === undefined) throw unreadable(destination);
+
+      let dav: Dav;
+      try {
+        dav = createDav(await config.credentials(settings.account));
+      } catch (cause) {
+        throw new Rejected(why(cause), { cause });
+      }
+
+      const root = contain(settings.root, "");
+      if (root.kind === "refused") throw new Rejected(root.detail);
+
+      const looked = await dav.look(root.path.encoded, signal);
+      if (looked.kind === "there") return;
+
+      throw new Rejected(
+        looked.kind === "not-there"
+          ? `${named(settings.root)} is not there`
+          : looked.status === 401 || looked.status === 403
+            ? `the account's credentials were refused, with ${looked.status}`
+            : `${named(settings.root)} answered ${looked.status}`,
+      );
+    },
   };
+}
+
+/** A blank root is the account's own collection, which has no name to give. */
+function named(root: string): string {
+  return root === "" ? "the account's own folder" : root;
 }
 
 function carryOut(

@@ -53,6 +53,7 @@ const renderWithAssets: Renderer = (each, where) => ({
 type Bound = {
   describe(): Promise<DestinationDescriptor>;
   deliver(delivery: Delivery, signal?: AbortSignal): Promise<DeliveryOutcome>;
+  probe(): Promise<void>;
 };
 
 type Vault = {
@@ -72,6 +73,7 @@ function bind(
   return {
     describe: () => kind.describe(row),
     deliver: (each, signal) => kind.deliver(row, each, signal),
+    probe: () => kind.probe?.(row) ?? Promise.resolve(),
   };
 }
 
@@ -655,5 +657,68 @@ describe("a root that overlaps notemap's own state", () => {
     await expect(destination.describe()).resolves.toMatchObject({
       capabilities: expect.any(Array),
     });
+  });
+});
+
+describe("probing a filesystem destination", () => {
+  it("resolves for a root that is there and can be written to", async () => {
+    const { destination } = await vault();
+
+    await expect(destination.probe()).resolves.toBeUndefined();
+  });
+
+  /**
+   * The person's to fix, so `Rejected` rather than the unreachable an
+   * unmounted drive gets — the two are what the whole call is for.
+   */
+  it("rejects a root that is not there", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    const kind = createFilesystemDestination({ accepts: [TEXT] });
+
+    await expect(
+      kind.probe?.(destinationRow({ root: join(made.path, "nowhere") })),
+    ).rejects.toThrow(/is not there/);
+  });
+
+  it("rejects a root that is a file rather than a folder", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    await mkdir(made.path, { recursive: true });
+    const note = join(made.path, "a-note.md");
+    await writeFile(note, "not a folder\n");
+    const kind = createFilesystemDestination({ accepts: [TEXT] });
+
+    await expect(kind.probe?.(destinationRow({ root: note }))).rejects.toThrow(
+      /is not a directory/,
+    );
+  });
+
+  /** The one kind that can answer this without writing: the kernel says. */
+  it("rejects a root that cannot be written to", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    await mkdir(made.path, { recursive: true });
+    await chmod(made.path, 0o500);
+    cleanups.push(() => void chmod(made.path, 0o700).catch(() => undefined));
+    const kind = createFilesystemDestination({ accepts: [TEXT] });
+
+    await expect(
+      kind.probe?.(destinationRow({ root: made.path })),
+    ).rejects.toThrow(/cannot be written to/);
+  });
+
+  it("is unusable where the root overlaps notemap's own state", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    await mkdir(made.path, { recursive: true });
+    const kind = createFilesystemDestination({
+      accepts: [TEXT],
+      reserved: [made.path],
+    });
+
+    await expect(
+      kind.probe?.(destinationRow({ root: made.path })),
+    ).rejects.toThrow(Unusable);
   });
 });

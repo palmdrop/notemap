@@ -8,6 +8,17 @@ export type Fetched =
 /** Whether a conditional write went through, or lost to whoever wrote first. */
 export type Conditional = "written" | "condition-failed";
 
+/**
+ * What looking at a collection found. A status the server will say again is
+ * carried out whole, for a caller that reads 401 differently from 404;
+ * anything a later attempt could find different never gets here, having been
+ * thrown as `Unreachable`.
+ */
+export type Looked =
+  | { readonly kind: "there" }
+  | { readonly kind: "not-there" }
+  | { readonly kind: "refused"; readonly status: number };
+
 export type Dav = {
   get(path: string, signal?: AbortSignal): Promise<Fetched>;
   /** `PUT` that must not overwrite. */
@@ -21,6 +32,8 @@ export type Dav = {
   ): Promise<Conditional>;
   /** Makes one collection. A collection that is already there is the outcome asked for. */
   makeCollection(path: string, signal?: AbortSignal): Promise<void>;
+  /** Whether something is there, asked without writing anything. */
+  look(path: string, signal?: AbortSignal): Promise<Looked>;
 };
 
 export type Body = string | AsyncIterable<Uint8Array>;
@@ -35,6 +48,14 @@ const NOT_THERE = 404;
 
 /** A `PUT` or `MKCOL` whose parent collection does not exist. */
 const NO_PARENT = 409;
+
+/**
+ * The smallest thing a `PROPFIND` can ask for. A body rather than none,
+ * which the specification allows and reads as `allprop`: servers that refuse
+ * an empty one are common enough, and asking for one property is cheaper than
+ * asking for every property anyway.
+ */
+const RESOURCE_TYPE = `<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><prop><resourcetype/></prop></propfind>`;
 
 export function createDav(credential: WebdavCredential): Dav {
   const authorization = `Basic ${Buffer.from(
@@ -146,6 +167,34 @@ export function createDav(credential: WebdavCredential): Dav {
       }
       await ok(response, path);
       void response.body?.cancel();
+    },
+
+    look: async (path, signal) => {
+      const response = await send("PROPFIND", path, {
+        body: RESOURCE_TYPE,
+        headers: {
+          depth: "0",
+          "content-type": "application/xml; charset=utf-8",
+        },
+        signal,
+      });
+      void response.body?.cancel();
+
+      // `207` is the ordinary answer and is a success status, so nothing here
+      // names it: what a multi-status body holds is not this question.
+      if (response.ok) return { kind: "there" };
+      if (response.status === NOT_THERE) return { kind: "not-there" };
+      if (
+        response.status >= 500 ||
+        response.status === 429 ||
+        response.status === 408
+      ) {
+        throw new Unreachable(
+          `${path} answered ${response.status} to PROPFIND`,
+        );
+      }
+
+      return { kind: "refused", status: response.status };
     },
   };
 }

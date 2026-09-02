@@ -1,7 +1,8 @@
-import { readFile, stat } from "node:fs/promises";
+import { access, constants, readFile, stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import {
+  Rejected,
   Unusable,
   type Delivery,
   type DeliveryOutcome,
@@ -124,7 +125,48 @@ export function createFilesystemDestination(
 
     candidates: (destination, request) =>
       filesystemCandidates({ reserved }, destination, request),
+
+    /**
+     * The one kind that can answer "will a write land" without writing: the
+     * root either is a directory this process may write into or it is not, and
+     * the kernel says which. A root that is not there is the person's to fix
+     * and a root that cannot be read is the machine's, which is the whole of
+     * the rejected-against-unreachable split.
+     */
+    probe: async (destination) => {
+      const settings = asFilesystemSettings(destination.settings);
+      if (settings === undefined) throw unreadable(destination);
+
+      let realRoot: string;
+      try {
+        realRoot = await realRootOf(settings.root);
+      } catch (cause) {
+        throw missing(cause)
+          ? new Rejected(`${settings.root} is not there`, { cause })
+          : new Error(`${settings.root}: ${why(cause)}`, { cause });
+      }
+
+      const overlap = overlapsAny(realRoot, reserved);
+      if (overlap !== undefined) {
+        throw new Unusable(overlapDetail(realRoot, overlap));
+      }
+
+      if (!(await stat(realRoot)).isDirectory()) {
+        throw new Rejected(`${settings.root} is not a directory`);
+      }
+
+      try {
+        await access(realRoot, constants.W_OK);
+      } catch (cause) {
+        throw new Rejected(`${settings.root} cannot be written to`, { cause });
+      }
+    },
   };
+}
+
+/** A root that is not there, as opposed to one that could not be read. */
+function missing(cause: unknown): boolean {
+  return (cause as { code?: unknown } | null)?.code === "ENOENT";
 }
 
 /** Core checks settings against the schema first, so this is the two disagreeing. */
