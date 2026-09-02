@@ -185,7 +185,16 @@ Depends on phase 4.
 delivery that will not be attempted again, and a second one imported from core would have collided
 in the two files that need it most. It is named for the answer it produces.
 
-**Settled**: `PROPFIND` is sent with a minimal `resourcetype` body rather than none. The specification allows an empty one
+**Settled**: `PROPFIND` is sent with a minimal `resourcetype` body rather than none, and the answer
+is read for it. **Found reviewing the PR, 2026-09-02**: treating any success as "there" let a root
+that is a *note* probe `ready`, where the filesystem kind already says a root that is a file is not
+a directory. Both kinds now refuse it, and the fake DAV server answers a namespace-prefixed
+multi-status so the reading is tested against the spelling a real server uses rather than the one
+that happened to be convenient.
+
+**Also found there**: the filesystem write-permission test asserts something that cannot hold as
+root, where `access(W_OK)` says yes to everything. The probe is right in that case — root *can*
+write there — so the test is skipped rather than the code guarded. The specification allows an empty one
 and reads it as `allprop`, but servers that refuse one are common and asking for a single property
 is cheaper anyway, so the fallback was simply what got written.
 

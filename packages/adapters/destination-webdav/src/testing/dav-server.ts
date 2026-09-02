@@ -6,7 +6,8 @@ import type { AddressInfo } from "node:net";
  *
  * It is a **fake**, and the parts of DAV it implements are the parts this
  * adapter uses: conditional `PUT`, `MKCOL` a level at a time, `GET` with an
- * `ETag`, and `PROPFIND` answering only whether something is there. Whether the real thing agrees is what the hand verification against a
+ * `ETag`, and `PROPFIND` answering whether something is there and whether it is
+ * a collection. Whether the real thing agrees is what the hand verification against a
  * real instance is for; nothing here can answer it.
  */
 export type DavServer = {
@@ -99,11 +100,13 @@ export async function startDavServer(): Promise<DavServer> {
         response.writeHead(404).end();
         return;
       }
-      // Enough of a multi-status for a caller asking only whether it is there.
+      // Namespace-prefixed, as Nextcloud answers: a caller reading this must
+      // not be written against the one spelling a bare `DAV:` default gives.
+      const resourceType = entry.kind === "collection" ? "<d:collection/>" : "";
       response
         .writeHead(207, { "content-type": "application/xml; charset=utf-8" })
         .end(
-          `<?xml version="1.0"?><multistatus xmlns="DAV:"><response><href>/${BASE}/${path}</href></response></multistatus>`,
+          `<?xml version="1.0"?><d:multistatus xmlns:d="DAV:"><d:response><d:href>/${BASE}/${path}</d:href><d:propstat><d:prop><d:resourcetype>${resourceType}</d:resourcetype></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>`,
         );
       return;
     }

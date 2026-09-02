@@ -15,7 +15,7 @@ export type Conditional = "written" | "condition-failed";
  * thrown as `Unreachable`.
  */
 export type Looked =
-  | { readonly kind: "there" }
+  | { readonly kind: "there"; readonly collection: boolean }
   | { readonly kind: "not-there" }
   | { readonly kind: "refused"; readonly status: number };
 
@@ -32,7 +32,7 @@ export type Dav = {
   ): Promise<Conditional>;
   /** Makes one collection. A collection that is already there is the outcome asked for. */
   makeCollection(path: string, signal?: AbortSignal): Promise<void>;
-  /** Whether something is there, asked without writing anything. */
+  /** Whether something is there, and whether it is a collection, without writing anything. */
   look(path: string, signal?: AbortSignal): Promise<Looked>;
 };
 
@@ -178,11 +178,16 @@ export function createDav(credential: WebdavCredential): Dav {
         },
         signal,
       });
-      void response.body?.cancel();
-
       // `207` is the ordinary answer and is a success status, so nothing here
-      // names it: what a multi-status body holds is not this question.
-      if (response.ok) return { kind: "there" };
+      // names it.
+      if (response.ok) {
+        return {
+          kind: "there",
+          collection: isCollection(await response.text()),
+        };
+      }
+
+      void response.body?.cancel();
       if (response.status === NOT_THERE) return { kind: "not-there" };
       if (
         response.status >= 500 ||
@@ -228,6 +233,18 @@ function failure(response: Response, path: string): Error {
   }
 
   return new Refused(at);
+}
+
+/**
+ * Whether a `PROPFIND` body says the thing is a collection. Matched rather than
+ * parsed: the one element that decides it may carry any namespace prefix or
+ * none, and an XML parser to answer a yes-or-no about a single empty tag is
+ * more machinery than the question is worth. A body this fails to see
+ * `collection` in reads as a file, which refuses a destination rather than
+ * accepting one that cannot hold a note.
+ */
+function isCollection(body: string): boolean {
+  return /<[a-z0-9]*:?collection\b[^>]*\/?>/i.test(body);
 }
 
 function why(cause: unknown): string {

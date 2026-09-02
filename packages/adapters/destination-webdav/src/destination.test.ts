@@ -610,6 +610,16 @@ describe("probing a webdav destination", () => {
     ).resolves.toBeUndefined();
   });
 
+  /** The filesystem kind says this of a root that is a file; nothing here did. */
+  it("rejects a root that is a note rather than a folder", async () => {
+    const server = await vault();
+    server.put("a-note.md", "a thought\n");
+
+    await expect(
+      adapter(server).probe?.(destinationRow({ root: "a-note.md" })),
+    ).rejects.toThrow(/is not a folder/);
+  });
+
   it("rejects a folder that is not there, naming it", async () => {
     const server = await vault();
 

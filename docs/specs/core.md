@@ -836,9 +836,10 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   something that will come back on its own and is already being retried. Optional on the adapter,
   with the port turning an absent method into `not-offered`, on `candidates`' terms.
 - **`ready` means reached, not writable.** A probe never writes: proving a vault is writable means
-  creating and deleting a file in it, which is not what a check does. It takes a writability answer
-  where one is free — a filesystem kind asks the kernel — and infers it everywhere else from having
-  reached the place at all. Nothing consults a probe before a delivery: what a delivery finds out is
+  creating and deleting a file in it, which is not what a check does. It takes an answer where one
+  is free — a filesystem kind asks the kernel, and both kinds refuse a root that turns out to be a
+  file, which is a note rather than somewhere notes go — and infers the rest from having reached
+  the place at all. Nothing consults a probe before a delivery: what a delivery finds out is
   still a delivery's to find out.
 - **A capability's accepted payload types may be a wildcard**, for a destination whose fallback
   genuinely handles anything. It is a promise rather than a shrug: claiming it trades away the

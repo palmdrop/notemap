@@ -823,8 +823,9 @@ GET /v1/destinations/019a3f2c-.../candidates?capability=create-file&field=direct
   call earlier: something a person must fix, against something that will come back and is already
   being retried. Every answer but `ready` carries a `detail`.
 - **`ready` does not promise a write will land.** The probe reads. Where a kind can learn about
-  writing without writing it does — a filesystem destination asks the kernel — and everywhere else
-  it is inferred from having reached the place.
+  writing without writing it does — a filesystem destination asks the kernel, and both kinds refuse
+  a root that is a file rather than a folder — and beyond that it is inferred from having reached
+  the place.
 - An id no destination has is `404 unknown-destination`.
 
 `POST /v1/destinations` — create one, from a name, a kind and that kind's settings. The id is

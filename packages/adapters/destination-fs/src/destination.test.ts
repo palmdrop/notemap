@@ -694,19 +694,26 @@ describe("probing a filesystem destination", () => {
     );
   });
 
-  /** The one kind that can answer this without writing: the kernel says. */
-  it("rejects a root that cannot be written to", async () => {
-    const made = root();
-    cleanups.push(made.cleanup);
-    await mkdir(made.path, { recursive: true });
-    await chmod(made.path, 0o500);
-    cleanups.push(() => void chmod(made.path, 0o700).catch(() => undefined));
-    const kind = createFilesystemDestination({ accepts: [TEXT] });
+  /**
+   * The one kind that can answer this without writing: the kernel says. Skipped
+   * as root, where it says yes to everything — the probe is not wrong there,
+   * the premise is: a root a normal user cannot write to, root can.
+   */
+  it.skipIf(process.getuid?.() === 0)(
+    "rejects a root that cannot be written to",
+    async () => {
+      const made = root();
+      cleanups.push(made.cleanup);
+      await mkdir(made.path, { recursive: true });
+      await chmod(made.path, 0o500);
+      cleanups.push(() => void chmod(made.path, 0o700).catch(() => undefined));
+      const kind = createFilesystemDestination({ accepts: [TEXT] });
 
-    await expect(
-      kind.probe?.(destinationRow({ root: made.path })),
-    ).rejects.toThrow(/cannot be written to/);
-  });
+      await expect(
+        kind.probe?.(destinationRow({ root: made.path })),
+      ).rejects.toThrow(/cannot be written to/);
+    },
+  );
 
   it("is unusable where the root overlaps notemap's own state", async () => {
     const made = root();

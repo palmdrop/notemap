@@ -120,7 +120,14 @@ export function createWebdavDestination(
       if (root.kind === "refused") throw new Rejected(root.detail);
 
       const looked = await dav.look(root.path.encoded, signal);
-      if (looked.kind === "there") return;
+      if (looked.kind === "there") {
+        // A note is not somewhere notes go, which the filesystem kind says of
+        // a root that is a file. Nothing else would notice until a delivery.
+        if (!looked.collection) {
+          throw new Rejected(`${named(settings.root)} is not a folder`);
+        }
+        return;
+      }
 
       throw new Rejected(
         looked.kind === "not-there"
