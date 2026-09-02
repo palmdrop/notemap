@@ -633,3 +633,111 @@ test("a tag taken in the composer stays applied when the route fails", async () 
       .getAttribute("aria-pressed"),
   ).toBe("true");
 });
+
+const typing = () =>
+  screen.getByRole("combobox", { name: "which destination" });
+
+test("takes a destination by typing enough of its name", async () => {
+  serving([aDestination(), aDestination({ id: BOARD, name: "Board" })]);
+
+  draw();
+  await screen.findByRole("button", { name: /Vault/ });
+
+  await fireEvent.input(typing(), { target: { value: "vau" } });
+  await fireEvent.keyDown(typing(), { key: "Enter" });
+
+  await screen.findByRole("button", { name: /create-file/ });
+  expect(asked()).toContain(`GET /v1/destinations/${VAULT}/description`);
+});
+
+/** Taking one of several would be a guess, and the line does not guess. */
+test("an ambiguous prefix takes nothing", async () => {
+  serving([
+    aDestination({ name: "Vault one" }),
+    aDestination({ id: BOARD, name: "Vault two" }),
+  ]);
+
+  draw();
+  await screen.findByRole("button", { name: /Vault one/ });
+
+  await fireEvent.input(typing(), { target: { value: "vault" } });
+  await fireEvent.keyDown(typing(), { key: "Enter" });
+
+  expect(screen.getByText("2 match")).toBeDefined();
+  expect(asked()).not.toContain(`GET /v1/destinations/${VAULT}/description`);
+});
+
+/** It never becomes a segment of anything, so a space in it needs no rule. */
+test("completes a name with a space in it", async () => {
+  serving([aDestination({ name: "obsidian vault" })]);
+
+  draw();
+  await screen.findByRole("button", { name: /obsidian vault/ });
+
+  await fireEvent.input(typing(), { target: { value: "obsidian v" } });
+  await fireEvent.keyDown(typing(), { key: "Tab" });
+
+  await screen.findByRole("button", { name: /create-file/ });
+});
+
+test("the destination leaves the line and reads in the chrome", async () => {
+  serving([aDestination()]);
+
+  draw();
+  await choose(/Vault/);
+  await screen.findByRole("button", { name: /create-file/ });
+
+  expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe(
+    "route · Vault",
+  );
+  expect(
+    screen.queryByRole("combobox", { name: "which destination" }),
+  ).toBeNull();
+});
+
+test("backspacing out of an empty line gives the destination back", async () => {
+  servingVault([]);
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+  await choose(/create-or-append-file/);
+
+  const line = await screen.findByRole("combobox", { name: "path" });
+  await fireEvent.keyDown(line, { key: "Backspace" });
+
+  await vi.waitFor(() => {
+    expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe("route");
+  });
+  expect(
+    screen.getByRole("combobox", { name: "which destination" }),
+  ).toBeDefined();
+});
+
+/** Present and unavailable is not the same as unreachable, and it stays visible. */
+test("an unusable destination is not takeable by typing either", async () => {
+  serving([aDestination()], {
+    kind: "unusable",
+    detail: "nothing here speaks the kanban kind",
+  });
+
+  draw();
+  await choose(/Vault/);
+  await screen.findByText(/nothing here speaks the kanban kind/);
+
+  await fireEvent.input(typing(), { target: { value: "vau" } });
+  await fireEvent.keyDown(typing(), { key: "Enter" });
+
+  expect(screen.queryByRole("button", { name: /create-file/ })).toBeNull();
+  expect(screen.getByRole("button", { name: /Vault/ })).toBeDefined();
+});
+
+test("the list still works, typing being an accelerator and not a replacement", async () => {
+  serving([aDestination()]);
+
+  draw();
+  await choose(/Vault/);
+
+  expect(
+    await screen.findByRole("button", { name: /create-file/ }),
+  ).toBeDefined();
+});

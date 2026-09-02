@@ -255,20 +255,20 @@ dropping whole rather than half-landing.
 
 Depends on phase 2. **Droppable**: the existing `where` list keeps working.
 
-- [ ] Before a destination is settled, the line completes over destination names: `obs` narrows to
+- [x] Before a destination is settled, the line completes over destination names: `obs` narrows to
       `obsidian vault`, `⏎` or `⇥` takes it. Once taken, **the destination leaves the line** and
       reads in the chrome; the line then holds nothing but the place. It is never a segment of the
       path, so a name with a space or a slash in it needs no escaping and no rule
-- [ ] The `where` list stays as the way in for a pointer and for a reader who does not know the
+- [x] The `where` list stays as the way in for a pointer and for a reader who does not know the
       names. Typing is an accelerator, not a replacement
-- [ ] Backspacing past the head of an empty line gives the destination back, so a wrong one is not
+- [x] Backspacing past the head of an empty line gives the destination back, so a wrong one is not
       a reason to close the composer
-- [ ] An `unusable` destination stays in the list saying why and cannot be taken — which is what
+- [x] An `unusable` destination stays in the list saying why and cannot be taken — which is what
       `RoutingComposer` does today, and is not what unreachable means
-- [ ] Tests: typing takes a destination; an ambiguous prefix does not; a name with a space
+- [x] Tests: typing takes a destination; an ambiguous prefix does not; a name with a space
       completes; the destination is absent from the submitted path; the list still works
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
+- [x] `git commit`
 
 ### Phase 7 — when there is nothing to ask
 

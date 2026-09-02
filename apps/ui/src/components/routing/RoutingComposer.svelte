@@ -6,6 +6,7 @@
   } from "@notemap/client";
 
   import ComposerTags from "$components/routing/ComposerTags.svelte";
+  import DestinationLine from "$components/routing/DestinationLine.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import Commit from "$components/primitives/composer/Commit.svelte";
   import Group from "$components/primitives/composer/Group.svelte";
@@ -65,6 +66,22 @@
   );
 
   const ready = $derived(chosen !== undefined && capability !== undefined);
+
+  /** Taken, the destination leaves the line and reads here instead. */
+  const chrome = $derived(
+    chosen === undefined
+      ? "route"
+      : `route · ${$destinations.find((one) => one.id === chosen)?.name ?? ""}`,
+  );
+
+  /** A wrong destination is not a reason to close the composer. */
+  function release(): void {
+    chosen = undefined;
+    described = undefined;
+    capability = undefined;
+    args = {};
+    said = "";
+  }
 
   // Which destinations exist is not stable for the life of a connection, so
   // opening the composer reads them again rather than trusting what it holds.
@@ -145,11 +162,18 @@
   }
 </script>
 
-<Modal title="route" {subject} {onclose}>
+<Modal title={chrome} {subject} {onclose}>
   <!-- Above `where` is where a decision that arrived pre-filled with an
        attribution goes. Nothing produces that shape yet. -->
 
   <Group name="where">
+    {#if chosen === undefined}
+      <DestinationLine
+        destinations={$destinations}
+        unusable={refusing}
+        ontake={(id) => void choose(id)}
+      />
+    {/if}
     {#each $destinations as one (one.id)}
       <Option
         label={one.name}
@@ -191,6 +215,7 @@
           said={field.name === LINE_FIELD ? { content, item } : undefined}
           onchange={(value) => (args = { ...args, [field.name]: value })}
           onsubmit={(beside) => void send(beside)}
+          onrelease={release}
         />
       {:else}
         <input

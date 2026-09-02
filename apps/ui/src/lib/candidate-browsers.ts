@@ -25,6 +25,8 @@ export type BrowserProps = {
    * when what is typed is already there and a new note was meant.
    */
   onsubmit?: (beside?: string) => void;
+  /** Backspacing out of an empty control, where its keys reach that far. */
+  onrelease?: () => void;
 };
 
 export type BrowserRegistry = Partial<Record<string, Component<BrowserProps>>>;

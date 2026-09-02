@@ -37,6 +37,7 @@
     said,
     onchange,
     onsubmit,
+    onrelease,
   }: {
     destination: string;
     capability: string;
@@ -55,6 +56,8 @@
      * note rather than adding to the one that is there.
      */
     onsubmit?: (beside?: string) => void;
+    /** Backspacing past the head of an empty line: a wrong destination is not a reason to close. */
+    onrelease?: () => void;
   } = $props();
 
   let levels = $state<readonly Level[]>([]);
@@ -255,11 +258,11 @@
     if (
       event.key === "Backspace" &&
       path.typing === "" &&
-      value !== "" &&
       input?.selectionStart === value.length
     ) {
       event.preventDefault();
-      onchange(popped(value));
+      if (value === "") onrelease?.();
+      else onchange(popped(value));
     }
   }
 
