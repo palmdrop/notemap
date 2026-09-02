@@ -11,6 +11,13 @@ export type Field = {
   readonly description?: string;
   /** Carries `x-notemap-candidates`: a destination can be asked what it could hold. */
   readonly askable: boolean;
+  /**
+   * The values a kind published for this field, which a form offers instead of
+   * a text box. They constrain nothing — a schema that validated them would
+   * refuse settings a running daemon should still be able to describe — so a
+   * value already held that is not among them is offered too.
+   */
+  readonly examples?: readonly string[];
 };
 
 type Schema = Record<string, unknown> | undefined;
@@ -32,6 +39,7 @@ export function fieldsOf(schema: Schema): readonly Field[] {
   return Object.entries(properties as Record<string, unknown>).map(
     ([name, property]) => {
       const meta = propertyOf(property);
+      const examples = examplesOf(meta);
       return {
         name,
         required: required.includes(name),
@@ -41,9 +49,23 @@ export function fieldsOf(schema: Schema): readonly Field[] {
           ? { description: meta["description"] }
           : {}),
         askable: meta["x-notemap-candidates"] === true,
+        ...(examples === undefined ? {} : { examples }),
       };
     },
   );
+}
+
+/** Strings only: what a form can offer as a list is what it can put in an input. */
+function examplesOf(
+  meta: Record<string, unknown>,
+): readonly string[] | undefined {
+  const examples = meta["examples"];
+  if (!Array.isArray(examples)) return undefined;
+
+  const strings = examples.filter(
+    (each): each is string => typeof each === "string",
+  );
+  return strings.length === 0 ? undefined : strings;
 }
 
 function kindOf(property: unknown): Field["kind"] {

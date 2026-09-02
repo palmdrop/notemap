@@ -100,6 +100,7 @@ export function openPool(options: OpenPoolConfig): OpenPool {
 
   const renderers = destinationRenderers();
   const accounts = options.accounts ?? [];
+  const webdavAccounts = accounts.filter((account) => account.kind === WEBDAV);
 
   const destinations = destinationRegistry([
     createFilesystemDestination({
@@ -111,6 +112,7 @@ export function openPool(options: OpenPoolConfig): OpenPool {
       renderers,
       accepts: everyPayloadType,
       credentials: accountsFor(WEBDAV, accounts),
+      accounts: webdavAccounts.map((account) => account.name),
     }),
   ]);
 
@@ -146,9 +148,7 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     blobs,
     ...(mirrorWriter === undefined ? {} : { mirrorWriter }),
     destinations,
-    warnings: transportWarnings(
-      accounts.filter((account) => account.kind === WEBDAV),
-    ),
+    warnings: transportWarnings(webdavAccounts),
   };
 }
 

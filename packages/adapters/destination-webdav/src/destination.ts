@@ -16,7 +16,7 @@ import type { CredentialResolver } from "./credentials";
 import { createDav, type Dav } from "./dav";
 import { Refused, Unreachable } from "./errors";
 import { appendToNote, createNote, type Wiring } from "./notes";
-import { asWebdavSettings, WEBDAV, WEBDAV_SETTINGS } from "./settings";
+import { asWebdavSettings, WEBDAV, webdavSettings } from "./settings";
 
 /** What the host wires: neither a renderer nor a credential is a person's setting. */
 export type WebdavDestinationConfig = {
@@ -26,6 +26,12 @@ export type WebdavDestinationConfig = {
   readonly accepts: readonly PayloadTypeName[];
   /** Turns an account's name into the account. The adapter never learns where one is held. */
   readonly credentials: CredentialResolver;
+  /**
+   * The names of the accounts declared for this kind, so a person is offered
+   * them rather than told to go and read the config. Names only: an address or
+   * a secret here would be one `GET /v1/destination-kinds` answers with.
+   */
+  readonly accounts?: readonly string[];
 };
 
 export function createWebdavDestination(
@@ -35,7 +41,7 @@ export function createWebdavDestination(
 
   return {
     name: WEBDAV,
-    settingsSchema: WEBDAV_SETTINGS,
+    settingsSchema: webdavSettings(config.accounts ?? []),
 
     /**
      * Never touches the network, exactly as the filesystem kind refuses to

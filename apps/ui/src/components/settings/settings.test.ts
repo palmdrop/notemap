@@ -202,6 +202,71 @@ test("shows what a kind says one of its fields is for", async () => {
   ).toBeDefined();
 });
 
+/** What the daemon declares under `[[accounts]]`, published as the field's own examples. */
+function webdavKind(accounts: readonly string[]) {
+  return {
+    name: "webdav",
+    settingsSchema: {
+      type: "object",
+      required: ["account", "root"],
+      properties: {
+        account: { type: "string", examples: [...accounts] },
+        root: { type: "string" },
+      },
+    },
+  };
+}
+
+test("offers the accounts the daemon declares, rather than a box to type one into", async () => {
+  serving([], {
+    "GET /v1/destination-kinds": () =>
+      json(200, { values: [webdavKind(["home", "work"])] }),
+  });
+
+  render(Destinations);
+  await press("Add a destination");
+
+  const account = await screen.findByLabelText("account");
+  expect(account.tagName).toBe("SELECT");
+  expect(
+    [...(account as HTMLSelectElement).options].map((one) => one.value),
+  ).toEqual(["", "home", "work"]);
+
+  // A field with nothing published stays a box: a daemon declaring no accounts
+  // must not leave the only way of naming one behind an empty list.
+  expect(screen.getByLabelText("root").tagName).toBe("INPUT");
+});
+
+test("keeps an account the daemon no longer declares, and says it does not", async () => {
+  serving(
+    [
+      aDestination({
+        kind: "webdav",
+        settings: { account: "retired-last-week", root: "Notes" },
+      }),
+    ],
+    {
+      "GET /v1/destination-kinds": () =>
+        json(200, { values: [webdavKind(["home", "work"])] }),
+    },
+  );
+
+  render(Destinations);
+  await open("Vault");
+  await press("Edit");
+
+  const account = (await screen.findByLabelText(
+    "account",
+  )) as HTMLSelectElement;
+
+  // Held rather than rewritten: opening the form must not quietly move the
+  // destination to whichever account happens to sort first.
+  expect(account.value).toBe("retired-last-week");
+  expect([...account.options].map((one) => one.textContent?.trim())).toContain(
+    "retired-last-week \u2014 not declared",
+  );
+});
+
 test("checks a root nothing has used before, and writes nothing until confirmed", async () => {
   serving([]);
 

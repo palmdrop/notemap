@@ -42,35 +42,35 @@ but the settings screen, and any probe that writes.
 
 Depends on nothing.
 
-- [ ] Create branch `agent/destination-checks-and-accounts`
-- [ ] `WebdavDestinationConfig` takes the names of the accounts declared for its kind, beside the
+- [x] Create branch `agent/destination-checks-and-accounts`
+- [x] `WebdavDestinationConfig` takes the names of the accounts declared for its kind, beside the
       resolver it already closes over. Names only: no base URL and no secret reaches the adapter,
       so ADR 28's property — nothing secret in core, in the pool, or in anything `/v1` answers with
       — holds unchanged
-- [ ] `WEBDAV_SETTINGS` becomes a function of those names, publishing them as `examples` on the
+- [x] `WEBDAV_SETTINGS` becomes a function of those names, publishing them as `examples` on the
       `account` property. **Not `enum`**: `usability()` re-validates a destination's settings
       against its kind's schema on every `describe()`, so a constraining schema would turn a
       destination into `unusable` the moment an account is renamed in config — which is precisely
       the outcome ADR 28 decided against, and it would strand a destination a rebuild restored.
       `examples` is a JSON Schema annotation and constrains nothing
-- [ ] `apps/daemon/src/ports.ts` hands the webdav adapter the names of the accounts of its kind,
+- [x] `apps/daemon/src/ports.ts` hands the webdav adapter the names of the accounts of its kind,
       from the list it already filters for `transportWarnings`
-- [ ] `fieldsOf` in `apps/ui/src/lib/schema-form.ts` carries a field's `examples`
-- [ ] `DestinationForm` draws a `<select>` for a field that has them, and the text input it draws
+- [x] `fieldsOf` in `apps/ui/src/lib/schema-form.ts` carries a field's `examples`
+- [x] `DestinationForm` draws a `<select>` for a field that has them, and the text input it draws
       today for one that does not — so a daemon with no accounts declared leaves the field typeable
       rather than trapping a person behind an empty list, and says where accounts are declared
-- [ ] A value the destination already holds that is **not** among the examples is carried as an
+- [x] A value the destination already holds that is **not** among the examples is carried as an
       option of its own, marked as no longer declared. Without this, opening the form on a
       destination whose account was renamed silently rewrites the setting to whichever name sorts
       first
-- [ ] Tests: the form offers the declared accounts and nothing else; a stale account survives being
+- [x] Tests: the form offers the declared accounts and nothing else; a stale account survives being
       edited; a kind with no examples still gets a text input
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
+- [x] `git commit`
 
-**Unknown**: whether the schema validator's strict mode objects to `examples`. It already tolerates
-`x-notemap-candidates`, so the settings are likely permissive enough. If not, the fallback is
-`x-notemap-examples` on the same terms as the existing keyword — annotation either way.
+**Settled 2026-09-02**: ajv's strict mode takes `examples` without being told about it — it is a
+standard annotation of the dialect, unlike `x-notemap-candidates` — so the fallback keyword was not
+needed.
 
 ### Phase 2 — the daemon row reads the reachability the client already holds
 
