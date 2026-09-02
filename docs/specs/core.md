@@ -4,6 +4,14 @@
 **Last updated**: 2026-09-02
 **Shipped**:
 
+- 2026-09-02 — **The pool answers what a field has already held.** Beside `candidates`, which asks
+  the destination, a read that asks the pool: what has been routed to this destination through this
+  capability's field, how often, and when last. Nothing goes and looks, so it answers when the
+  destination cannot — which is what keeps a place completable against a vault that is not mounted.
+  Facts rather than an order, per destination rather than pool-wide, and counting a reservation
+  that is still being retried but not one that was given up on.
+  ([plan](../plans/typed-routing-composer.md))
+
 - 2026-09-02 — **A capability may name an outcome and decide at delivery.** The kinds that write
   files gained a third capability that means *put this note here* and settles create-against-append
   itself, when it is holding the vault and the answer is true, rather than making a composer commit
@@ -834,6 +842,20 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   terms `describe()`'s own report already uses. `not-offered` is one answer however it was reached
   — a kind whose adapter implements none of this, and a field an adapter does not answer for, are
   the same fact to a caller: nothing here can be browsed.
+- **The pool can be asked what a field has already held on a destination** (added 2026-09-02).
+  The same question `candidates` asks — a destination, a capability, a field — answered from the
+  routing records the pool already holds rather than from the destination. The two are deliberately
+  the same shape and deliberately different reads: one is the destination's answer and can be
+  `unreachable`, the other is the pool's own and cannot, which is what lets a surface keep
+  completing a place while the destination behind it is not there. It answers **facts and not an
+  order** — each distinct value, how many records used it, when the last one was — because which to
+  put first is presentation and belongs to whatever draws it; changing that must not be a change to
+  the read. **Per destination, never pool-wide**: a place in one vault means nothing in another.
+  What counts as a use is *delivered, or still being tried*: a `delivered` record counts outright,
+  and a `pending` one counts unless its delivery was abandoned — which is the one place this is
+  more than a query over records, since `RoutingRecordState` carries no failure and the answer
+  lives on the job. Capped on `candidates`' own terms, so a pool with thousands of records cannot
+  make it unbounded.
 - **A destination can be asked whether it is really there** (added 2026-09-02,
   [ADR 30](../adr/0030-a-destination-can-be-asked-whether-it-is-really-there.md)), through a third
   method, **`probe`**. `describe()` answers from a declared shape and never leaves the process, so

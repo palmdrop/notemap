@@ -24,15 +24,30 @@ const file = (label: string, value: string): Entry => ({ label, value });
 /** A vault answering per scope, the way `filesystemCandidates` does. */
 function serving(
   answerAt: (scope: string | undefined) => Record<string, unknown>,
+  places: readonly Record<string, unknown>[] = [],
 ) {
   return pool((request) => {
-    if (routeOf(request).endsWith("/candidates")) {
+    const route = routeOf(request);
+    if (route.endsWith("/candidates")) {
       const scope = new URL(request.url).searchParams.get("scope") ?? undefined;
       return json(200, answerAt(scope));
+    }
+    if (route.endsWith("/remembered")) {
+      return json(200, { truncated: false, places });
     }
     return json(404, { error: { code: "unknown-route" } });
   });
 }
+
+const used = (
+  value: string,
+  uses: number,
+  lastAt = "2026-09-01T10:00:00.000Z",
+) => ({
+  value,
+  uses,
+  lastAt,
+});
 
 const TREE: Record<string, readonly Entry[]> = {
   "": [folder("journal", "journal"), folder("projects", "projects")],
@@ -193,10 +208,23 @@ test("moves through the deepest level with the arrows and takes with enter", asy
 
   await screen.findByText("notes/");
   await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
+  await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
   await fireEvent.keyDown(line.line(), { key: "Enter" });
 
   expect(line.value()).toBe("projects/notemap/readme.md");
   expect(line.submitted).not.toHaveBeenCalled();
+});
+
+/** The first press lands on the first entry rather than skipping it. */
+test("the first arrow reaches the first entry", async () => {
+  servingTree();
+  const line = draw("projects/notemap/");
+
+  await screen.findByText("notes/");
+  await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
+  await fireEvent.keyDown(line.line(), { key: "Enter" });
+
+  expect(line.value()).toBe("projects/notemap/notes/");
 });
 
 test("enter with nothing picked commits, which is the ordinary way through", async () => {
@@ -322,4 +350,147 @@ test("draws no word at all where the destination could not be asked", async () =
   await screen.findByText(/not mounted/);
   expect(screen.queryByText("create")).toBeNull();
   expect(screen.queryByText("append")).toBeNull();
+});
+
+test("ranks places used before above what the vault merely offers", async () => {
+  serving(
+    () => answered([folder("journal", "journal")]),
+    [used("projects/notemap/notes/", 41), used("projects/kontradiktion/", 6)],
+  );
+  draw("pro");
+
+  const places = await screen.findByRole("listbox", { name: "places" });
+  await vi.waitFor(() => {
+    expect(places.textContent).toContain("projects/notemap/notes/");
+  });
+
+  const drawn = [...places.querySelectorAll('[role="option"]')].map((each) =>
+    (each.textContent ?? "").trim(),
+  );
+  expect(drawn[0]).toContain("projects/notemap/notes/");
+  expect(drawn[1]).toContain("projects/kontradiktion/");
+});
+
+test("offers the best remembered place as a greyed continuation", async () => {
+  serving(
+    () => answered([folder("projects", "projects")]),
+    [used("projects/notemap/notes/", 41)],
+  );
+  draw("pro");
+
+  await vi.waitFor(() => {
+    expect(screen.getByText("jects/notemap/notes/")).toBeDefined();
+  });
+});
+
+/** Two keys, never one: `⇥` completes a segment and `→` takes the whole thing. */
+test("the right arrow takes the whole continuation and tab does not", async () => {
+  serving(
+    () => answered([folder("projects", "projects")]),
+    [used("projects/notemap/notes/", 41)],
+  );
+  const line = draw("pro");
+
+  await screen.findByText("projects/");
+  await vi.waitFor(() => {
+    expect(screen.getByText("jects/notemap/notes/")).toBeDefined();
+  });
+
+  line.line().setSelectionRange(3, 3);
+  await fireEvent.keyDown(line.line(), { key: "Tab" });
+  expect(line.value()).toBe("projects/");
+});
+
+test("the right arrow takes it whole", async () => {
+  serving(
+    () => answered([folder("projects", "projects")]),
+    [used("projects/notemap/notes/", 41)],
+  );
+  const line = draw("pro");
+
+  await vi.waitFor(() => {
+    expect(screen.getByText("jects/notemap/notes/")).toBeDefined();
+  });
+
+  line.line().setSelectionRange(3, 3);
+  await fireEvent.keyDown(line.line(), { key: "ArrowRight" });
+
+  expect(line.value()).toBe("projects/notemap/notes/");
+});
+
+test("a place the listing does not hold is marked gone in the list", async () => {
+  serving(
+    () => answered([folder("journal", "journal")]),
+    [used("drafts/", 12)],
+  );
+  const places = draw("dra") && screen.getByRole("listbox", { name: "places" });
+
+  await vi.waitFor(() => {
+    expect(places.textContent).toContain("drafts/");
+    expect(places.textContent).toContain("gone");
+  });
+});
+
+/** A discrepancy has to be looked at, so it is never the thing taken without reading. */
+test("a gone place is never the greyed continuation", async () => {
+  serving(
+    () => answered([folder("journal", "journal")]),
+    [used("drafts/", 12)],
+  );
+  const line = draw("dra");
+
+  const places = await screen.findByRole("listbox", { name: "places" });
+  await vi.waitFor(() => {
+    expect(places.textContent).toContain("gone");
+  });
+
+  line.line().setSelectionRange(3, 3);
+  await fireEvent.keyDown(line.line(), { key: "ArrowRight" });
+  expect(line.value()).toBe("dra");
+});
+
+test("but the arrows reach it deliberately", async () => {
+  serving(
+    () => answered([folder("journal", "journal")]),
+    [used("drafts/", 12)],
+  );
+  const line = draw("dra");
+
+  const places = await screen.findByRole("listbox", { name: "places" });
+  await vi.waitFor(() => {
+    expect(places.textContent).toContain("gone");
+  });
+
+  await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
+  await fireEvent.keyDown(line.line(), { key: "Enter" });
+
+  expect(line.value()).toBe("drafts/");
+});
+
+test("says gone beside the drawn state once such a place is typed whole", async () => {
+  serving(
+    () => answered([folder("journal", "journal")]),
+    [used("drafts/", 12)],
+  );
+  draw("drafts/", SAID);
+
+  await vi.waitFor(() => {
+    expect(screen.getByText("gone")).toBeDefined();
+  });
+});
+
+/** The pool holds these and the pool is reachable whenever the composer is open. */
+test("still completes remembered places against an unreachable destination", async () => {
+  serving(
+    () => ({ kind: "unreachable", detail: "the vault is not mounted" }),
+    [used("projects/notemap/notes/", 41)],
+  );
+  const line = draw("pro");
+
+  await vi.waitFor(() => {
+    expect(screen.getByText("jects/notemap/notes/")).toBeDefined();
+  });
+
+  await fireEvent.keyDown(line.line(), { key: "ArrowRight" });
+  expect(line.value()).toBe("projects/notemap/notes/");
 });

@@ -84,3 +84,32 @@ export type RoutingRecord = {
   readonly at: Timestamp;
   readonly pointer?: string;
 };
+
+/**
+ * What one argument field of one capability has already held on a destination,
+ * asked the way `candidates` is and answered from the other side: the vault
+ * says what it offers, the pool says what has been used. A place in one
+ * destination means nothing in another, so this is never pool-wide.
+ */
+export type RememberedRequest = {
+  readonly destination: DestinationId;
+  readonly capability: CapabilityName;
+  readonly field: string;
+};
+
+/**
+ * Facts, not an order. How often and how recently are what the pool knows;
+ * which of them to put first is presentation, and belongs to whatever draws it
+ * — so changing between most-used and most-recent stays a surface's change.
+ */
+export type RememberedPlace = {
+  readonly value: string;
+  readonly uses: number;
+  readonly lastAt: Timestamp;
+};
+
+export type RememberedAnswer = {
+  readonly places: readonly RememberedPlace[];
+  /** True where the pool held more than it answered, on `candidates`' own terms. */
+  readonly truncated: boolean;
+};

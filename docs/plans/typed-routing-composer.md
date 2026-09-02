@@ -208,48 +208,48 @@ Depends on phase 3. Small, and separable from everything around it.
 Depends on phase 3. **Droppable**: the line works without it. Crosses every layer, so it is worth
 dropping whole rather than half-landing.
 
-- [ ] **A new read, shaped like `candidates` and answered from the other side.** Same request —
+- [x] **A new read, shaped like `candidates` and answered from the other side.** Same request —
       destination, capability, field — but the pool answers what that field *has held*, from the
       routing records it already holds, rather than what the destination offers. One is the
       vault's answer and one is the pool's, and the composer merges them
-- [ ] It answers **facts, not an order**: each distinct value with how many records used it and
+- [x] It answers **facts, not an order**: each distinct value with how many records used it and
       when the last one was. The shell ranks. Capped and `truncated` on the same terms as
       `candidates`, so a pool with thousands of records cannot make this read unbounded
-- [ ] Per destination, never pool-wide: a place in one vault means nothing in another
-- [ ] **What counts as a use: delivered, or still being tried.** A hard failure does not.
+- [x] Per destination, never pool-wide: a place in one vault means nothing in another
+- [x] **What counts as a use: delivered, or still being tried.** A hard failure does not.
       `RoutingRecordState` is `pending | delivered` and carries no failure, so this is not a filter
       on the record: `delivery.ts` maps `rejected` to `retryable: false` and `unreachable` to
       `true`, and a job is `done`, `retry` or `abandoned` (`work.ts`). A `delivered` record counts
       outright; a `pending` one counts unless its delivery job was abandoned. **The read therefore
       reaches the job for pending records**, which is the one place this phase is more than a query
       over records — say so in the core query rather than discovering it in the store
-- [ ] Core query, `/v1` route, regenerated OpenAPI document, client method, and
+- [x] Core query, `/v1` route, regenerated OpenAPI document, client method, and
       `docs/specs/http-v1.md` and `docs/specs/client.md` say what it is
-- [ ] In the line, a remembered place is **ranked into the completion list**, and the best one is
+- [x] In the line, a remembered place is **ranked into the completion list**, and the best one is
       offered as a greyed continuation after the caret
-- [ ] **`⇥` and `→` are different keys and stay different.** `⇥` completes the current segment from
+- [x] **`⇥` and `→` are different keys and stay different.** `⇥` completes the current segment from
       what the destination offered; `→` takes the whole remembered continuation. One key that means
       either depending on invisible state is the failure mode here, and fish already teaches this
       distinction on this developer's own machine
-- [ ] **A remembered place that is no longer there is said, not silently re-created.** A folder
+- [x] **A remembered place that is no longer there is said, not silently re-created.** A folder
       routed to twelve times and now absent is not a new folder somebody meant to make — it is a
       sign the vault was restructured, and the composer is the last place that can say so before
       the folder comes back. It is marked `gone` in the completion list, and at the caret it reads
       `create · + drafts/ · gone`, so the discrepancy is visible at the moment of committing
-- [ ] **A `gone` place is never the greyed continuation.** The ghost is the thing a person takes
+- [x] **A `gone` place is never the greyed continuation.** The ghost is the thing a person takes
       without reading; a discrepancy must be looked at, so it stays in the list where `↑↓` reaches
       it deliberately. This is the rule that keeps `→` safe
-- [ ] Both are only possible where candidates answered. Against an unreachable destination there is
+- [x] Both are only possible where candidates answered. Against an unreachable destination there is
       nothing to check against and the `unreachable` word already carries that — a remembered place
       is offered plainly and no claim is made about whether it is still there
-- [ ] `gone` is an ordinary condition and not one of the three alarms `docs/specs/shell.md` defines
-- [ ] The shell derives folder prefixes from remembered file paths itself; the read has no business
+- [x] `gone` is an ordinary condition and not one of the three alarms `docs/specs/shell.md` defines
+- [x] The shell derives folder prefixes from remembered file paths itself; the read has no business
       enumerating them
-- [ ] Tests: the read counts records per value; a place used more ranks above one used later; the
+- [x] Tests: the read counts records per value; a place used more ranks above one used later; the
       continuation is offered and taken by `→` alone; a remembered place absent from the listing
       draws as a creation; `⇥` still completes only a segment
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack`
+- [x] `git commit`
 
 ### Phase 6 — the destination, by typing
 

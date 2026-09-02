@@ -1,6 +1,8 @@
 import type {
   Action,
   Agent,
+  CapabilityName,
+  DestinationId,
   Duration,
   Item,
   ItemId,
@@ -1587,5 +1589,149 @@ describe("closing", () => {
     await p.close();
 
     await expect(p.close()).resolves.toBeUndefined();
+  });
+});
+
+describe("places a field has already held", () => {
+  const ask = (p: SqlitePoolStore, field = "path") =>
+    p.remembered({
+      destination: "vault" as DestinationId,
+      capability: "create-note" as CapabilityName,
+      field,
+    });
+
+  /** One item per record: a record is item state and cascades with it. */
+  async function held(
+    ...records: readonly { at: string; path: string; state?: "pending" }[]
+  ) {
+    const opened = pool();
+    await putDestinations(opened.pool, destination());
+
+    const made: RoutingRecord[] = [];
+    for (const [index, each] of records.entries()) {
+      const item = capture({ id: `item-${index}` });
+      await appendCapture(opened.pool, item);
+      const record =
+        each.state === "pending"
+          ? reserved(item, {
+              id: `routing-${index}`,
+              at: each.at,
+              arguments: { path: each.path },
+            })
+          : {
+              ...reserved(item, {
+                id: `routing-${index}`,
+                at: each.at,
+                arguments: { path: each.path },
+              }),
+              state: "delivered" as const,
+            };
+      made.push(record);
+      await opened.pool.transaction((tx) => tx.insertRoutingRecord(record));
+    }
+
+    return { ...opened, records: made };
+  }
+
+  it("counts the records that used each value, and when the last one was", async () => {
+    const { pool: p } = await held(
+      { at: "2026-08-03T10:00:00.000Z", path: "notes/a.md" },
+      { at: "2026-08-03T11:00:00.000Z", path: "notes/a.md" },
+      { at: "2026-08-03T12:00:00.000Z", path: "journal/b.md" },
+    );
+
+    expect(await ask(p)).toEqual({
+      truncated: false,
+      places: [
+        { value: "notes/a.md", uses: 2, lastAt: "2026-08-03T11:00:00.000Z" },
+        { value: "journal/b.md", uses: 1, lastAt: "2026-08-03T12:00:00.000Z" },
+      ],
+    });
+  });
+
+  it("answers nothing for a field no record's arguments carry", async () => {
+    const { pool: p } = await held({
+      at: "2026-08-03T10:00:00.000Z",
+      path: "notes/a.md",
+    });
+
+    expect(await ask(p, "heading")).toEqual({ truncated: false, places: [] });
+  });
+
+  it("answers nothing for a capability nothing was routed with", async () => {
+    const { pool: p } = await held({
+      at: "2026-08-03T10:00:00.000Z",
+      path: "notes/a.md",
+    });
+
+    expect(
+      await p.remembered({
+        destination: "vault" as DestinationId,
+        capability: "post-to-board" as CapabilityName,
+        field: "path",
+      }),
+    ).toEqual({ truncated: false, places: [] });
+  });
+
+  /**
+   * A reservation still being retried is a place somebody is using. One that
+   * was given up on is not, and that is the only reason this reaches the job.
+   */
+  it("counts a pending record whose delivery is still owed", async () => {
+    const { pool: p, records } = await held({
+      at: "2026-08-03T10:00:00.000Z",
+      path: "notes/a.md",
+      state: "pending",
+    });
+    const record = records[0];
+    if (record === undefined) throw new Error("expected a record");
+    await p.transaction((tx) => tx.enqueue([deliveryJob(record)]));
+
+    expect((await ask(p)).places).toEqual([
+      { value: "notes/a.md", uses: 1, lastAt: "2026-08-03T10:00:00.000Z" },
+    ]);
+  });
+
+  it("drops a pending record whose delivery was abandoned", async () => {
+    const { pool: p, records } = await held({
+      at: "2026-08-03T10:00:00.000Z",
+      path: "notes/a.md",
+      state: "pending",
+    });
+    const record = records[0];
+    if (record === undefined) throw new Error("expected a record");
+    await p.transaction((tx) => tx.enqueue([deliveryJob(record)]));
+
+    const [lease] = await p.claim(
+      { kinds: ["delivery"], limit: 1, leaseFor: 60_000 as Duration },
+      at("2026-08-03T10:00:30.000Z"),
+    );
+    if (lease === undefined) throw new Error("expected a lease");
+    await p.transaction((tx) =>
+      tx.resolveJob(lease.id, {
+        kind: "abandoned",
+        attempt: 1,
+        abandonedAt: at("2026-08-03T10:01:00.000Z"),
+        failure: { code: "rejected", detail: "no" },
+      }),
+    );
+
+    expect((await ask(p)).places).toEqual([]);
+  });
+
+  it("keeps a delivered record whatever became of any job", async () => {
+    const { pool: p } = await held({
+      at: "2026-08-03T10:00:00.000Z",
+      path: "notes/a.md",
+    });
+
+    expect((await ask(p)).places).toHaveLength(1);
+  });
+
+  it("says nothing for a destination nothing has ever named", async () => {
+    const { pool: p } = pool();
+    await putDestinations(p, destination());
+
+    expect(await ask(p)).toEqual({ truncated: false, places: [] });
   });
 });

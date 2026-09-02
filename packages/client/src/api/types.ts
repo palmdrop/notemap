@@ -58,6 +58,11 @@ export type DestinationProbe = components["schemas"]["DestinationProbe"];
 export type CandidateEntry = components["schemas"]["CandidateEntry"];
 export type CandidatesRequest =
   paths["/v1/destinations/{id}/candidates"]["get"]["parameters"]["query"];
+export type DestinationRemembered =
+  components["schemas"]["DestinationRemembered"];
+export type RememberedPlace = components["schemas"]["RememberedPlace"];
+export type RememberedRequest =
+  paths["/v1/destinations/{id}/remembered"]["get"]["parameters"]["query"];
 export type Token = components["schemas"]["Token"];
 export type MintedToken = components["schemas"]["MintedToken"];
 export type MintTokenRequest = components["schemas"]["MintTokenRequest"];

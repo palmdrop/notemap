@@ -31,6 +31,7 @@ import {
 import {
   createDestinationRequestSchema,
   destinationCandidatesSchema,
+  destinationRememberedSchema,
   destinationDescriptionSchema,
   destinationKindsSchema,
   destinationProbeSchema,
@@ -746,6 +747,43 @@ export const destinationProbeRoute = createRoute({
   },
 });
 
+const rememberedQuery = z.object({
+  capability: z
+    .string()
+    .min(1)
+    .openapi({
+      param: { name: "capability", in: "query" },
+      description:
+        "Which capability's records to read. One nothing was ever routed with answers no places.",
+      example: "create-or-append-file",
+    }),
+  field: z
+    .string()
+    .min(1)
+    .openapi({
+      param: { name: "field", in: "query" },
+      description:
+        "A property of that capability's arguments. One no record carries answers no places.",
+      example: "path",
+    }),
+});
+
+export const destinationRememberedRoute = createRoute({
+  method: "get",
+  path: "/v1/destinations/{id}/remembered",
+  summary: "Read what a field has already held on one destination",
+  description:
+    "The same question `/candidates` asks, answered from the other side: `/candidates` says what the destination offers, this says what the pool's own routing records have used, with how often and when last. **Nothing goes and looks**, so it answers whether or not the destination can be reached — which is most of what makes a place still typeable against an unmounted drive. Facts and not an order: which to put first is presentation, and belongs to whatever draws it. Per destination, never pool-wide, because a place in one vault means nothing in another. A `delivered` record counts outright; a `pending` one counts unless its delivery was abandoned. Capped rather than paginated, on the same terms `/candidates` is.",
+  request: { params: destinationId, query: rememberedQuery },
+  responses: {
+    200: {
+      description: "Every distinct value the field has held, capped.",
+      content: { [JSON_MEDIA_TYPE]: { schema: destinationRememberedSchema } },
+    },
+    404: errorResponse("No destination has that id.", 404, DESTINATION_STATUS),
+  },
+});
+
 export const destinationKindsRoute = createRoute({
   method: "get",
   path: "/v1/destination-kinds",
@@ -1077,6 +1115,7 @@ export const ROUTES = [
   destinationDescriptionRoute,
   destinationCandidatesRoute,
   destinationProbeRoute,
+  destinationRememberedRoute,
   updateDestinationRoute,
   retireDestinationRoute,
   unretireDestinationRoute,

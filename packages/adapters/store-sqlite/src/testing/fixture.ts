@@ -22,6 +22,7 @@ import type {
   ItemRecord,
   Job,
   JobId,
+  JsonObject,
   MintableId,
   PayloadTypeName,
   RoutingRecord,
@@ -238,7 +239,12 @@ export function markedProcessed(
 
 export function reserved(
   item: ItemRecord,
-  overrides: { id?: string; at?: string; capability?: string } = {},
+  overrides: {
+    id?: string;
+    at?: string;
+    capability?: string;
+    arguments?: JsonObject;
+  } = {},
 ): RoutingRecord {
   return {
     id: (overrides.id ?? `routing-${item.id}`) as RoutingRecordId,
@@ -247,7 +253,7 @@ export function reserved(
       kind: "destination",
       destination: "vault" as DestinationId,
       capability: (overrides.capability ?? "create-note") as CapabilityName,
-      arguments: { path: "inbox/a-thought.md" },
+      arguments: overrides.arguments ?? { path: "inbox/a-thought.md" },
     },
     state: "pending",
     at: at(overrides.at ?? "2026-08-03T10:00:00.000Z"),

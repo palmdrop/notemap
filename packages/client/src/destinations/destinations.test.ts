@@ -324,3 +324,72 @@ describe("asking what a field could hold", () => {
     expect(writes).not.toContain("writeDestinations");
   });
 });
+
+describe("places a field has already held", () => {
+  it("asks the pool, and answers the facts it gave", async () => {
+    const { client, transport } = clientOver(() =>
+      json(200, {
+        truncated: false,
+        places: [
+          {
+            value: "projects/notemap/notes/",
+            uses: 41,
+            lastAt: "2026-09-01T10:00:00.000Z",
+          },
+        ],
+      }),
+    );
+
+    const answer = await client.destinations.remembered(aDestination().id, {
+      capability: "create-or-append-file",
+      field: "path",
+    });
+
+    expect(answer.places).toEqual([
+      {
+        value: "projects/notemap/notes/",
+        uses: 41,
+        lastAt: "2026-09-01T10:00:00.000Z",
+      },
+    ]);
+
+    const request = sentTo(transport).at(-1);
+    expect(request === undefined ? undefined : routeOf(request)).toBe(
+      `GET /v1/destinations/${aDestination().id}/remembered`,
+    );
+    const query = new URL(request?.url ?? "").searchParams;
+    expect(query.get("capability")).toBe("create-or-append-file");
+    expect(query.get("field")).toBe("path");
+  });
+
+  /** The pool answers this, so it is not a claim about the destination at all. */
+  it("says whether the pool held more than it answered", async () => {
+    const { client } = clientOver(() =>
+      json(200, { truncated: true, places: [] }),
+    );
+
+    expect(
+      (
+        await client.destinations.remembered(aDestination().id, {
+          capability: "create-or-append-file",
+          field: "path",
+        })
+      ).truncated,
+    ).toBe(true);
+  });
+
+  it("writes nothing to the store", async () => {
+    const transport = mockTransport(() =>
+      json(200, { truncated: false, places: [] }),
+    );
+    const { store, writes } = spyingOn(createMemoryStore());
+    const client = createClient({ transport, store });
+
+    await client.destinations.remembered(aDestination().id, {
+      capability: "create-or-append-file",
+      field: "path",
+    });
+
+    expect(writes).not.toContain("writeDestinations");
+  });
+});

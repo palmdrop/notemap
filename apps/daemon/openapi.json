@@ -1190,6 +1190,43 @@
           }
         ]
       },
+      "DestinationRemembered": {
+        "type": "object",
+        "properties": {
+          "places": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RememberedPlace"
+            }
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "places",
+          "truncated"
+        ]
+      },
+      "RememberedPlace": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "uses": {
+            "type": "integer"
+          },
+          "lastAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "uses",
+          "lastAt"
+        ]
+      },
       "UpdateDestinationRequest": {
         "type": "object",
         "properties": {
@@ -3839,6 +3876,89 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DestinationProbe"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No destination has that id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unknown-destination"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/destinations/{id}/remembered": {
+      "get": {
+        "summary": "Read what a field has already held on one destination",
+        "description": "The same question `/candidates` asks, answered from the other side: `/candidates` says what the destination offers, this says what the pool's own routing records have used, with how often and when last. **Nothing goes and looks**, so it answers whether or not the destination can be reached — which is most of what makes a place still typeable against an unmounted drive. Facts and not an order: which to put first is presentation, and belongs to whatever draws it. Per destination, never pool-wide, because a place in one vault means nothing in another. A `delivered` record counts outright; a `pending` one counts unless its delivery was abandoned. Capped rather than paginated, on the same terms `/candidates` is.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Which capability's records to read. One nothing was ever routed with answers no places.",
+              "example": "create-or-append-file"
+            },
+            "required": true,
+            "description": "Which capability's records to read. One nothing was ever routed with answers no places.",
+            "name": "capability",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "A property of that capability's arguments. One no record carries answers no places.",
+              "example": "path"
+            },
+            "required": true,
+            "description": "A property of that capability's arguments. One no record carries answers no places.",
+            "name": "field",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every distinct value the field has held, capped.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DestinationRemembered"
                 }
               }
             }

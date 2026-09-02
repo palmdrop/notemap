@@ -40,6 +40,8 @@ import type { AbandonedPosition } from "../domain/position";
 import type {
   Delivery,
   DeliveryOutcome,
+  RememberedAnswer,
+  RememberedRequest,
   RoutingRecord,
 } from "../domain/routing";
 import type { Suggestion } from "../domain/suggestion";
@@ -234,6 +236,13 @@ export interface PoolReads {
   suggestion(id: SuggestionId): Promise<Suggestion | undefined>;
   routingRecords(item: ItemId): Promise<readonly RoutingRecord[]>;
   routingRecord(id: RoutingRecordId): Promise<RoutingRecord | undefined>;
+  /**
+   * What one field of one capability has held on this destination, with how
+   * often and when last. A `delivered` record counts outright; a `pending` one
+   * counts unless its delivery was abandoned, which is why this reaches the job
+   * and is not a query over records alone.
+   */
+  remembered(request: RememberedRequest): Promise<RememberedAnswer>;
 
   /** Every destination the pool holds, retired ones included, oldest first. */
   destinations(): Promise<readonly Destination[]>;

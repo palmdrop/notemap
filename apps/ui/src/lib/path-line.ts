@@ -1,4 +1,4 @@
-import type { CandidateEntry } from "@notemap/client";
+import type { CandidateEntry, RememberedPlace } from "@notemap/client";
 
 /**
  * A typed path, split where the line reads it. Everything before the last slash
@@ -176,4 +176,95 @@ export function popped(value: string): string {
 export function withTyping(path: TypedPath, typing: string): string {
   const head = path.complete.join("/");
   return head === "" ? typing : `${head}/${typing}`;
+}
+
+/**
+ * A place from the pool's own records, beside what the destination offers.
+ * `gone` where the listing was answered and does not hold it — a folder routed
+ * to twelve times and now absent is not a new folder somebody meant to make,
+ * it is a sign the vault was restructured, and this is the last moment anything
+ * can say so.
+ */
+export type Remembered = RememberedPlace & { readonly gone: boolean };
+
+/**
+ * Most used first, then most recent. Ranking is the shell's, because the pool
+ * answers facts: changing this is a change here and not on the wire.
+ */
+export function ranked(places: readonly Remembered[]): readonly Remembered[] {
+  return [...places].sort(
+    (a, b) =>
+      b.uses - a.uses ||
+      Date.parse(b.lastAt) - Date.parse(a.lastAt) ||
+      a.value.localeCompare(b.value),
+  );
+}
+
+/**
+ * Whether a remembered place is still there, checked against the level whose
+ * scope holds it. **Only where that level answered**: against an unreachable
+ * destination there is nothing to check, and claiming a place is gone on no
+ * evidence is worse than making no claim.
+ */
+export function marked(
+  places: readonly RememberedPlace[],
+  levels: readonly Level[],
+): readonly Remembered[] {
+  return places.map((place) => ({
+    ...place,
+    gone: absent(place.value, levels),
+  }));
+}
+
+/**
+ * Walked from the root rather than checked at the leaf: the root is the one
+ * scope always asked about, so a top-level folder that has vanished is the case
+ * this can always see — and it is the motivating one. Past the last level that
+ * answered there is no evidence, and no claim is made.
+ */
+function absent(value: string, levels: readonly Level[]): boolean {
+  const segments = value.split("/").filter((segment) => segment !== "");
+
+  for (const [depth, segment] of segments.entries()) {
+    const holding = levels.find(
+      (level) => level.scope === segments.slice(0, depth).join("/"),
+    );
+    if (holding?.entries === undefined) return false;
+    if (!holding.entries.some((entry) => entry.label === segment)) return true;
+  }
+
+  return false;
+}
+
+/**
+ * The greyed continuation after the caret: the best remembered place the line
+ * is a prefix of, as the text still to come. A `gone` place is **never** it —
+ * the ghost is the thing a person takes without reading, and a discrepancy has
+ * to be looked at, so it stays in the list where `↑↓` reaches it deliberately.
+ */
+export function ghostFor(
+  value: string,
+  places: readonly Remembered[],
+): string | undefined {
+  if (value === "") return undefined;
+
+  const best = ranked(places).find(
+    (place) =>
+      !place.gone &&
+      place.value.length > value.length &&
+      place.value.toLowerCase().startsWith(value.toLowerCase()),
+  );
+
+  return best === undefined ? undefined : best.value.slice(value.length);
+}
+
+/** Remembered places the whole typed line is still a prefix of. */
+export function continuing(
+  value: string,
+  places: readonly Remembered[],
+): readonly Remembered[] {
+  const wanted = value.toLowerCase();
+  return ranked(places).filter((place) =>
+    place.value.toLowerCase().startsWith(wanted),
+  );
 }

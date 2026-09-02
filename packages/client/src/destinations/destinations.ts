@@ -8,6 +8,8 @@ import type {
   DestinationId,
   DestinationKind,
   DestinationProbe,
+  DestinationRemembered,
+  RememberedRequest,
   UpdateDestinationRequest,
 } from "#api/types";
 import type { DestinationsApi } from "../types";
@@ -64,6 +66,18 @@ export function createDestinations(deps: DestinationsDeps): DestinationsApi {
     ): Promise<DestinationCandidates> {
       return answered(
         api.GET("/v1/destinations/{id}/candidates", {
+          params: { path: { id }, query: request },
+        }),
+      );
+    },
+
+    /** The pool's own answer, and so the one that survives an unreachable destination. */
+    remembered(
+      id: DestinationId,
+      request: RememberedRequest,
+    ): Promise<DestinationRemembered> {
+      return answered(
+        api.GET("/v1/destinations/{id}/remembered", {
           params: { path: { id }, query: request },
         }),
       );

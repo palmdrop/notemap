@@ -5,6 +5,16 @@ editing, destinations, routing to one and health are settled; the rest is stub
 **Last updated**: 2026-09-02
 **Shipped**:
 
+- 2026-09-02 — **A destination can be asked what a field has already held on it.**
+  `GET /v1/destinations/{id}/remembered` names a capability and a field and answers each distinct
+  value the pool's own routing records have used, with how often and when the last one was. It is
+  the other half of `/candidates`: that one asks the destination what it offers and can fail; this
+  one reads the pool and cannot, so it answers whether or not the vault is reachable. Facts and not
+  an order — which to put first is the caller's. A `delivered` record counts outright and a
+  `pending` one counts unless its delivery was abandoned. Capped rather than paginated, on
+  `/candidates`' own terms.
+  ([plan](../plans/typed-routing-composer.md))
+
 - 2026-09-02 — **`GET /v1/destinations/{id}/probe`.** The third read that reaches the outside
   world, beside `/description` and `/candidates`, and the only one that answers what a person means
   by "does this work". Every answer is a `200` — `ready`, `rejected`, `unreachable`, `unusable`,

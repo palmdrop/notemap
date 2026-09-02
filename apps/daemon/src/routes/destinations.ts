@@ -140,6 +140,33 @@ export function destinationCandidatesHandler(pool: Pool) {
   };
 }
 
+/**
+ * The other side of `/candidates`, and deliberately not its shape: nothing is
+ * asked of the destination, so there is no describe to do first, no capability
+ * to check against what it declares, and no `x-notemap-candidates` to require.
+ * A capability nothing was routed with, or a field no record carries, has no
+ * places — which is a true answer rather than a refusal, and answering it
+ * without touching the destination is exactly what makes this usable when the
+ * vault is not there.
+ */
+export function destinationRememberedHandler(pool: Pool) {
+  return async (context: Context): Promise<Response> => {
+    const id = (context.req.param("id") ?? "") as DestinationId;
+    const capability = (context.req.query("capability") ??
+      "") as CapabilityName;
+    const field = context.req.query("field") ?? "";
+
+    const answer = await pool.destinations.remembered(id, {
+      capability,
+      field,
+    });
+
+    return answer === undefined
+      ? json(errorBody({ kind: "unknown-destination", destination: id }), 404)
+      : json(answer, 200);
+  };
+}
+
 export function createDestinationHandler(pool: Pool) {
   return async (context: Context): Promise<Response> => {
     const body = await readBody(context, createDestinationRequestSchema);

@@ -3,6 +3,10 @@ import { describe, expect, test } from "vitest";
 
 import {
   completionOf,
+  continuing,
+  ghostFor,
+  marked,
+  ranked,
   matching,
   parsePath,
   popped,
@@ -235,5 +239,132 @@ describe("the hierarchy as it is drawn", () => {
 
   test("draws nothing at all where the root itself answered nothing", () => {
     expect(rowsOf([{ scope: "" }], parsePath(""))).toEqual([]);
+  });
+});
+
+describe("places used before", () => {
+  const place = (value: string, uses: number, lastAt: string) => ({
+    value,
+    uses,
+    lastAt,
+  });
+
+  test("ranks a place used more above one used later", () => {
+    const order = ranked(
+      marked(
+        [
+          place("journal/", 6, "2026-09-02T10:00:00.000Z"),
+          place("notes/", 41, "2026-08-01T10:00:00.000Z"),
+        ],
+        [],
+      ),
+    ).map((each) => each.value);
+
+    expect(order).toEqual(["notes/", "journal/"]);
+  });
+
+  test("breaks a tie on how recent the last one was", () => {
+    const order = ranked(
+      marked(
+        [
+          place("a/", 3, "2026-08-01T10:00:00.000Z"),
+          place("b/", 3, "2026-09-02T10:00:00.000Z"),
+        ],
+        [],
+      ),
+    ).map((each) => each.value);
+
+    expect(order).toEqual(["b/", "a/"]);
+  });
+
+  test("marks a place the listing does not hold as gone", () => {
+    const levels: Level[] = [
+      { scope: "", entries: [folder("journal", "journal")] },
+    ];
+
+    expect(
+      marked([place("drafts", 12, "2026-09-01T10:00:00.000Z")], levels),
+    ).toEqual([
+      {
+        value: "drafts",
+        uses: 12,
+        lastAt: "2026-09-01T10:00:00.000Z",
+        gone: true,
+      },
+    ]);
+  });
+
+  test("marks a place the listing does hold as still there", () => {
+    const levels: Level[] = [
+      { scope: "", entries: [folder("journal", "journal")] },
+    ];
+
+    expect(
+      marked([place("journal", 12, "2026-09-01T10:00:00.000Z")], levels)[0]
+        ?.gone,
+    ).toBe(false);
+  });
+
+  /** No listing is no evidence, and a claim on no evidence is worse than none. */
+  test("claims nothing about a place where the level never answered", () => {
+    expect(
+      marked([place("drafts", 12, "2026-09-01T10:00:00.000Z")], [])[0]?.gone,
+    ).toBe(false);
+    expect(
+      marked(
+        [place("drafts", 12, "2026-09-01T10:00:00.000Z")],
+        [{ scope: "" }],
+      )[0]?.gone,
+    ).toBe(false);
+  });
+
+  test("continues only the places the whole line is a prefix of", () => {
+    const places = marked(
+      [
+        place("projects/notemap/notes/", 41, "2026-09-01T10:00:00.000Z"),
+        place("journal/", 6, "2026-09-01T10:00:00.000Z"),
+      ],
+      [],
+    );
+
+    expect(continuing("pro", places).map((each) => each.value)).toEqual([
+      "projects/notemap/notes/",
+    ]);
+  });
+
+  test("offers the best continuation as the text still to come", () => {
+    const places = marked(
+      [
+        place("projects/notemap/notes/", 41, "2026-09-01T10:00:00.000Z"),
+        place("projects/kontradiktion/", 6, "2026-09-01T10:00:00.000Z"),
+      ],
+      [],
+    );
+
+    expect(ghostFor("pro", places)).toBe("jects/notemap/notes/");
+  });
+
+  /** The ghost is what a person takes without reading, so a discrepancy is never it. */
+  test("never offers a gone place as the continuation", () => {
+    const levels: Level[] = [
+      { scope: "", entries: [folder("journal", "journal")] },
+    ];
+    const places = marked(
+      [place("drafts/deep/", 41, "2026-09-01T10:00:00.000Z")],
+      levels,
+    );
+
+    expect(places[0]?.gone).toBe(true);
+    expect(ghostFor("dra", places)).toBeUndefined();
+    expect(continuing("dra", places).map((each) => each.value)).toEqual([
+      "drafts/deep/",
+    ]);
+  });
+
+  test("offers nothing where the line is empty or already whole", () => {
+    const places = marked([place("notes/", 4, "2026-09-01T10:00:00.000Z")], []);
+
+    expect(ghostFor("", places)).toBeUndefined();
+    expect(ghostFor("notes/", places)).toBeUndefined();
   });
 });

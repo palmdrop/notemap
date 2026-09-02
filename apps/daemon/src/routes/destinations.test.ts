@@ -599,3 +599,102 @@ describe("DELETE /v1/destinations/{id}", () => {
     expect(response.status).toBe(404);
   });
 });
+
+describe("GET /v1/destinations/{id}/remembered", () => {
+  const ask = (
+    host: Daemon,
+    destination: string,
+    query: Record<string, string>,
+  ) =>
+    host.app.request(
+      `/v1/destinations/${destination}/remembered?${new URLSearchParams(query).toString()}`,
+    );
+
+  /** One capture per record, since a record is an item's own state. */
+  async function routeEach(
+    host: Daemon,
+    destination: string,
+    paths: readonly string[],
+  ): Promise<void> {
+    const items = await captureMany(host.app, paths.length);
+
+    for (const [index, path] of paths.entries()) {
+      const response = await send(
+        host.app,
+        `/v1/items/${String(items[index])}/route`,
+        {
+          destination,
+          capability: "create-or-append-file",
+          arguments: { path },
+        },
+      );
+      if (response.status >= 400) {
+        throw new Error(`route refused: ${await response.text()}`);
+      }
+    }
+  }
+
+  it("answers nothing for a destination nothing has been routed to", async () => {
+    const host = serving("ready");
+    const vault = await created(host);
+
+    const response = await ask(host, vault.id, {
+      capability: "create-or-append-file",
+      field: "path",
+    });
+
+    expect(response.status).toBe(200);
+    expect(await body(response)).toEqual({ truncated: false, places: [] });
+  });
+
+  it("answers what the field has held, with how often and when last", async () => {
+    const host = serving("ready");
+    const vault = await created(host);
+
+    await routeEach(host, vault.id, [
+      "notes/decisions.md",
+      "notes/decisions.md",
+      "journal/monday.md",
+    ]);
+
+    const answered = (await body(
+      await ask(host, vault.id, {
+        capability: "create-or-append-file",
+        field: "path",
+      }),
+    )) as { places: { value: string; uses: number }[] };
+
+    expect(answered.places.map((each) => [each.value, each.uses])).toEqual([
+      ["notes/decisions.md", 2],
+      ["journal/monday.md", 1],
+    ]);
+  });
+
+  /** Nothing is asked of the destination, so nothing about it can refuse this. */
+  it("answers for a capability nothing declared, rather than refusing", async () => {
+    const host = serving("ready");
+    const vault = await created(host);
+
+    const response = await ask(host, vault.id, {
+      capability: "post-to-board",
+      field: "column",
+    });
+
+    expect(response.status).toBe(200);
+    expect(await body(response)).toEqual({ truncated: false, places: [] });
+  });
+
+  it("is 404 for an id no destination has", async () => {
+    const host = serving();
+
+    const response = await ask(host, "nobody", {
+      capability: "create-or-append-file",
+      field: "path",
+    });
+
+    expect(response.status).toBe(404);
+    expect(await body(response)).toMatchObject({
+      error: { code: "unknown-destination" },
+    });
+  });
+});

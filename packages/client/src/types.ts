@@ -10,11 +10,13 @@ import type {
   DestinationProbe,
   DestinationId,
   DestinationKind,
+  DestinationRemembered,
   Item,
   ItemId,
   MintTokenRequest,
   MintedToken,
   Payload,
+  RememberedRequest,
   RouteRequest,
   RoutingRecord,
   TagUse,
@@ -96,6 +98,16 @@ export interface DestinationsApi {
     id: DestinationId,
     request: CandidatesRequest,
   ): Promise<DestinationCandidates>;
+  /**
+   * The same question, answered from the pool rather than the destination:
+   * what this field has already held here. Nothing goes and looks, so it
+   * answers whether or not the destination can be reached — which is what
+   * keeps a place typeable against a vault that is not there.
+   */
+  remembered(
+    id: DestinationId,
+    request: RememberedRequest,
+  ): Promise<DestinationRemembered>;
 
   create(request: CreateDestinationRequest): Promise<Destination>;
   update(
