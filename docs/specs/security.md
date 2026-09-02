@@ -12,7 +12,8 @@
   redaction rule to remember. It also closes what would have been the first server-side request
   forgery here — a URL in `settings` is an address the daemon sends a credential to, chosen by
   whoever can create a destination, repeatedly, on the delivery runner's timer. Redirects are not
-  followed with a credential attached, and plain HTTP is refused for anywhere but loopback.
+  followed with a credential attached, and plain HTTP is refused for anywhere but a private
+  address.
   ([plan](../plans/destination-webdav.md),
   [ADR 28](../adr/0028-a-remote-destination-names-a-credential-profile-not-a-url.md))
 
@@ -297,9 +298,18 @@ of it, and it did not exist before only because every kind was local. The set of
 daemon will authenticate to is now fixed by a file only the operator writes.
 
 Two more that are one line each to get wrong and invisible afterwards: **a redirect is never
-followed with a credential attached**, and TLS verification is never disabled. A plain-HTTP base
-URL is refused at load for anywhere but loopback, since the password would cross the network in the
-clear.
+followed with a credential attached**, and TLS verification is never disabled.
+
+**A plain-HTTP base URL is refused unless the address is private** — loopback, a private or
+link-local address, or a single-label name — since the password would otherwise cross a network
+somebody else is on. Amended 2026-09-02, from *loopback alone*, which was the wrong line in two
+ways. It refused the ordinary deployment: notemap and the server it delivers to as siblings on one
+container network, reached as `http://nextcloud`, where there is no loopback and no certificate to
+be had. And it was checked at load, so one account nothing should be sent to stopped a daemon from
+capturing at all — under a restart policy, in a loop. The check is now made when the profile is
+**resolved**, and reports `unreachable` naming the profile, which is already what a profile nothing
+declares does. What stays fatal is the file being wrong rather than an account being unsafe: an
+inline `password`, two profiles under one name, a scheme this does not speak.
 
 ### No CORS headers, which is load-bearing
 

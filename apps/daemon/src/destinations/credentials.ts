@@ -5,13 +5,17 @@ import type {
   WebdavCredential,
 } from "@notemap/destination-webdav";
 
-import type { WebdavProfile } from "../config/load";
+import { isPrivateHost, type WebdavProfile } from "../config/load";
 
 /**
  * The host half of a credential profile. The secret is read when a delivery
  * asks for it rather than at startup, so rotating one is writing the file: a
  * daemon that had read it once would go on presenting the old password until
  * somebody restarted it, which is the opposite of what rotation is for.
+ *
+ * A profile that cannot be used safely is refused here rather than at load, on
+ * the same terms as one nothing declares: the delivery reports it, and capture
+ * and every other destination go on working.
  */
 export function webdavCredentials(
   profiles: readonly WebdavProfile[],
@@ -24,6 +28,7 @@ export function webdavCredentials(
     if (profile === undefined) {
       throw new Error(`no webdav profile named ${name} is configured`);
     }
+    refusePlainHttpAcrossANetwork(profile);
 
     return {
       baseUrl: profile.baseUrl,
@@ -31,6 +36,21 @@ export function webdavCredentials(
       password: await secretOf(profile, env),
     };
   };
+}
+
+/**
+ * Checked before the secret is read, so a password is not taken out of a file
+ * to be sent somewhere it should not go. `https` anywhere, and plain HTTP only
+ * where the request cannot leave a network the operator already controls.
+ */
+function refusePlainHttpAcrossANetwork(profile: WebdavProfile): void {
+  const url = new URL(profile.baseUrl);
+
+  if (url.protocol !== "https:" && !isPrivateHost(url.hostname)) {
+    throw new Error(
+      `the webdav profile ${profile.name} reaches ${url.hostname} over plain HTTP, which would carry its password across a network somebody else is on. Use https, or an address that is private: loopback, a private or link-local address, or a single-label name such as a container's.`,
+    );
+  }
 }
 
 async function secretOf(

@@ -188,6 +188,37 @@ export function isLoopback(host: string): boolean {
 }
 
 /**
+ * Somewhere a password cannot cross a network somebody else is on. Loopback is
+ * the narrowest case of it and not the ordinary one: a service reached as
+ * `nextcloud` on a container network is a single label that resolves nowhere
+ * else, and refusing it would refuse the deployment this is written for.
+ */
+export function isPrivateHost(bracketed: string): boolean {
+  // `URL.hostname` hands an IPv6 literal back in the brackets it was written in.
+  const host = bracketed.replace(/^\[|]$/g, "");
+
+  if (isLoopback(host)) return true;
+  if (host.includes(":")) return isPrivateV6(host);
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return isPrivateV4(host);
+  return !host.includes(".");
+}
+
+function isPrivateV4(host: string): boolean {
+  const [a, b] = host.split(".").map(Number) as [number, number];
+
+  if (a === 10 || a === 127) return true;
+  if (a === 172) return b >= 16 && b <= 31;
+  if (a === 192) return b === 168;
+  return a === 169 && b === 254;
+}
+
+/** Unique-local `fc00::/7` and link-local `fe80::/10`, by the two digits that name them. */
+function isPrivateV6(host: string): boolean {
+  const address = host.toLowerCase().split("%")[0] ?? "";
+  return /^f[cd]/.test(address) || /^fe[89ab]/.test(address);
+}
+
+/**
  * The two the origin decides, which are not the same question. A browser counts
  * loopback as trustworthy whatever the scheme, so `Secure` survives plain HTTP
  * there and only a plain-HTTP origin someone else can reach gives it up. The
@@ -327,10 +358,11 @@ function isTable(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * A profile carries a secret, so the two things that would send it somewhere it
- * should not go are refused at load rather than at the first delivery: a
- * password written into a file people keep in dotfiles, and an address that
- * would carry it across a network in the clear.
+ * What makes the file itself wrong is refused here, at load: a password written
+ * into a file people keep in dotfiles, two profiles a destination could not
+ * tell apart, an address that is not one this speaks. Whether a profile can be
+ * used *safely* is asked when it is resolved instead, so one bad account does
+ * not take the daemon down with it.
  */
 function readProfiles(
   profiles: NonNullable<ConfigFile["webdav"]>,
@@ -362,9 +394,9 @@ function readProfiles(
     seen.add(profile.name);
 
     const url = new URL(profile.baseUrl);
-    if (url.protocol !== "https:" && !isLoopback(url.hostname)) {
+    if (url.protocol !== "https:" && url.protocol !== "http:") {
       throw new Error(
-        `${at} reaches ${url.hostname} over ${url.protocol}, which would carry its password across the network in the clear`,
+        `${at} is reached over ${url.protocol}, and a webdav account is reached over http or https`,
       );
     }
 

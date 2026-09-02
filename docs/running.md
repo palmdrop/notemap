@@ -336,8 +336,13 @@ passwordFile = "/run/secrets/notemap_webdav_nextcloud"
 
 `baseUrl` is the DAV collection the account is rooted at. For Nextcloud that is
 `https://<host>/remote.php/dav/files/<user>` — the whole of that user's files, with the vault a
-folder below it. Plain HTTP is refused for anything but loopback, since the password would
-otherwise cross the network in the clear.
+folder below it.
+
+Plain HTTP is allowed only where the password cannot cross a network somebody else is on: loopback,
+a private or link-local address, or a **single-label name** — which is what a container on the same
+network is called. Nextcloud in the same compose stack is `http://nextcloud/remote.php/dav/files/…`
+and needs no certificate. Anything with a dot in it and no `https` is refused when the profile is
+resolved, and the delivery says so; the daemon goes on running.
 
 Use an **app password** rather than the account's own: Nextcloud issues them under Settings →
 Security, and one can be revoked without changing the password everywhere else. It comes from

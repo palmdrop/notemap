@@ -185,6 +185,15 @@ Depends on every phase above.
       Nextcloud's web UI **without running a scan**. Then `append-to-file` onto it. Then open the
       vault in Obsidian and confirm the tags read as tags
 - [ ] Anything the fake DAV server got wrong is a finding recorded here before this plan closes
+- [x] **Found in verification, 2026-09-02, and fixed.** A Nextcloud on the same container network
+      as the daemon is reached as `http://nextcloud`, and phase 2's plain-HTTP rule refused it:
+      *loopback* was written for a DAV server on the developer's own machine and missed the
+      deployment the kind exists for. Worse, it was refused at **load**, so one such profile
+      stopped the daemon from capturing at all, in a restart loop. The rule is now a **private
+      address** — loopback, a private or link-local address, or a single-label name — and it is
+      checked when the profile is resolved, reporting `unreachable` like a profile nothing
+      declares. What is fatal is the file being wrong: an inline password, a repeated name, a
+      scheme this does not speak
 - [x] `git commit`
 
 #### What the hand verification has to answer

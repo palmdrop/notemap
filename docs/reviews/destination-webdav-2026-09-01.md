@@ -1,0 +1,225 @@
+# Review: A webdav destination kind
+
+**Date**: 2026-09-01
+**Status**: Open
+**Scope**: PR #36, `agent/destination-webdav` against `main`
+**Plan**: `docs/plans/destination-webdav.md`
+**Spec**: `docs/specs/core.md`, `docs/specs/security.md`
+
+---
+
+## Overall
+
+The shape is right and the security half is the best part of it: taking the address out of
+`settings` and shipping it with the secret closes the forgery properly rather than papering over
+it, and ADR 28 argues the case rather than announcing it. The extraction into
+`@notemap/output-markdown` is clean — the filesystem kind lost exactly what was never about a
+filesystem, no assertion changed, and the two kinds now share one capability definition instead of
+two copies drifting.
+
+The finding that matters is **#1**: assets are written before the note, and every `unreachable`
+path after that point contradicts what `core.md` says `unreachable` means — "proof that nothing was
+delivered, so a retry cannot duplicate". Here a retry does duplicate, under suffixed names, once
+per attempt. The append retry loop is careful about this within one delivery and structurally
+cannot be across deliveries.
+
+Everything else is small: a config path that is not expanded the way every other config path is,
+and three documentation lines that cannot be followed as written.
+
+---
+
+## Bugs
+
+### 0. Plain HTTP was refused for a sibling container, fatally
+
+*Found by hand on 2026-09-02, not in the blind read — recorded here because it is a finding on this
+PR, and fixed in the same commit as this entry, the shape having been settled first.*
+
+`apps/daemon/src/config/load.ts` — `readProfiles` refused any `baseUrl` that was not `https:` unless
+the hostname was `127.0.0.1`, `::1` or `localhost`, by reusing `isLoopback`. That predicate belongs
+to the cookie code, where the browser's own trust rule is exactly the question; for "would this
+password cross a network somebody else is on" it is the wrong one. A Nextcloud beside the daemon on
+a compose network is reached as `http://nextcloud`, which is never loopback and has no certificate
+to be had — so the check refused the deployment the kind was written for, and
+`docker/compose/compose.proxy.yaml` is that deployment.
+
+It also threw at **load**, so a daemon with one such profile exited before serving and compose
+restarted it into a loop: one account nothing should be sent to took capture, routing and every
+other destination down with it. That is inconsistent with ADR 28, which already accepts a profile
+that is merely undeclared validating fine and failing at delivery.
+
+Fixed: `isPrivateHost` — loopback, RFC1918, link-local, ULA, and a single-label name — and the
+check moved to `webdavCredentials`, where a refusal reports `unreachable` naming the profile. What
+the file gets wrong stays fatal: an inline password, a repeated name, a scheme this does not speak.
+`docs/specs/security.md`, `docs/running.md`, `apps/daemon/config.example.toml` and the adapter's
+README carried the old rule and were changed with it.
+
+The single-label rule is a heuristic — a DNS search domain could in principle resolve `nextcloud`
+somewhere public. Judged worth it against the alternative, a per-profile opt-out field that every
+doc describing a profile would have to explain.
+
+### 1. `unreachable` is returned after assets have already landed, so a retry duplicates them
+
+`packages/adapters/destination-webdav/src/notes.ts:47`, `:100` — `placeAssets` runs before the
+note is written, in both capabilities. Every failure after that point that maps to `Unreachable`
+is retried by the delivery runner, and the retry calls `placeAssets` again with a fresh `taken`
+set. The names are now occupied by the previous attempt's uploads, so `alternatives()` suffixes.
+
+```
+attempt 1: photo.png uploaded → note PUT answers 503 → unreachable
+attempt 2: photo.png taken → photo-1.png uploaded → 503 → unreachable
+attempt 3: photo-2.png …
+```
+
+The append path reaches this by design, not only by accident: exhausting `ATTEMPTS` on `412`
+returns `unreachable` (`notes.ts:136`) with the assets for that delivery already in the vault. So a
+contended daily note carrying a picture accumulates a copy of the picture per delivery attempt,
+and the note that eventually lands links to only the last one.
+
+`docs/specs/core.md:725` is explicit that this is the invariant retry is keyed on. The comment at
+`notes.ts:89` claims the narrow version of the property — "an attempt that loses a race re-reads
+rather than re-uploading an hour of audio" — which is true within one delivery and is what makes
+the gap easy to miss.
+
+Fix: either place assets after the note is written (which trades duplication for orphans on the
+window between the two, and is the smaller failure), or make asset placement idempotent for a
+retry — a `HEAD`/`PROPFIND` on the wanted name plus a content check, or naming an asset from its
+blob hash so a second upload of the same bytes lands on the same name.
+
+The same ordering exists in `destination-fs`, but there `unreachable` needs `EIO`/`ENOSPC`, where
+here it is the ordinary outcome of a busy server. Whatever is decided should probably be decided
+for both, since the ordering now lives in two copies of one design.
+
+### 2. `passwordFile` is not tilde-expanded, and the example config uses `~`
+
+`apps/daemon/src/config/load.ts` — `readProfiles` returns `profile.passwordFile` verbatim, while
+every other path in the same file goes through `expandHome`/`resolve` (`:406`, `:407`, `:415`,
+`:423`). `apps/daemon/config.example.toml` documents:
+
+```toml
+# passwordFile = "~/.config/notemap/nextcloud-app-password"
+```
+
+`readFile("~/.config/…")` is `ENOENT`, so a person following the annotated example gets a daemon
+that starts fine and reports every delivery `unreachable` with "could not be read from
+~/.config/…". The `~` in that message reads as the shell's own path, which makes it a slow thing
+to spot.
+
+Fix: `expandHome(profile.passwordFile)` — the helper is three lines above it, and the file's own
+comment at `:236` says `~` is the shell's, not the filesystem's.
+
+---
+
+## Design
+
+### 3. A weak `ETag` turns every append into "somebody else wrote it"
+
+`packages/adapters/destination-webdav/src/notes.ts:125` sends the `ETag` from the `GET` straight
+back as `If-Match`. `If-Match` uses strong comparison, so a server that answers `W/"…"` fails the
+condition on every attempt regardless of contention — four rounds, then `unreachable` saying
+"was written by somebody else during each of 4 attempts". That is a cause the code has not
+established, and it is the message a person debugging will believe.
+
+This is not theoretical for the target deployment: a reverse proxy compressing responses is the
+ordinary way a strong `ETag` becomes weak, and `docker/compose/compose.proxy.yaml` is exactly that
+deployment. The fake server only ever issues strong tags, so nothing in the suite can see it.
+
+Fix: notice `W/` on the way in and say so — either refuse the append naming the weak validator, or
+strip the prefix deliberately and accept that the comparison is then weaker than the guarantee the
+README states. Silently losing to it is the one option worth ruling out. Worth adding to the
+phase 7 questions either way; it sits beside the `ETag`-stability unknown already recorded there.
+
+### 4. `RenderingContext.directory` now means two different things
+
+`packages/output-markdown/src/renderers.ts:13` — the field is undocumented, and the two kinds pass
+structurally different values: `destination-fs` passes an absolute filesystem path
+(`destination.ts:188`), `destination-webdav` a vault-relative URL path
+(`notes.ts:168`). Nothing reads it today, which is why the tests are green, so this is a contract
+being set rather than a break.
+
+It matters because the package's whole point is that a renderer written once produces the same
+note for both kinds, and this field is the one place that promise does not hold. Either state what
+it means — "where the note is going, as that destination names it", which is webdav's reading and
+the one a renderer could use — and change the filesystem kind to match, or drop the field until
+something needs it.
+
+---
+
+## Minor
+
+### 5. The commented profile in `config.example.toml` cannot be uncommented
+
+`apps/daemon/config.example.toml` shows both `passwordFile` and `passwordEnv` in one `[[webdav]]`
+block. The prose two lines above says "exactly one", and `readProfiles` refuses both being set, so
+uncommenting the block as printed fails at load. Comment one of the two out a second time, or show
+the `passwordEnv` form as a separate note.
+
+### 6. The compose secret path in `docker/compose/config.toml` does not exist
+
+`docker/compose/config.toml:70` names `/run/secrets/notemap-webdav-nextcloud`, while the secret
+declared in both compose files is `notemap_webdav_nextcloud` and therefore mounts at
+`/run/secrets/notemap_webdav_nextcloud`. `docs/running.md` has the underscored form, and the
+existing `notemap_password` secret is underscored too. Following the file that sits next to the
+compose files gives an unreadable password.
+
+### 7. `compose.proxy.yaml` has two commented `secrets:` blocks
+
+`docker/compose/compose.proxy.yaml:73` and `:86` — the new one was appended after `networks:`
+instead of extending the existing one, so the file now documents the same top-level key twice with
+different contents. Uncommenting both is a duplicate mapping key. `compose.yaml` got this right by
+editing the block in place.
+
+### 8. The README says a note with no `ETag` is refused; the code reports it unreachable
+
+`packages/adapters/destination-webdav/README.md` — "A note served with no `ETag` is refused rather
+than written over blind", but `notes.ts:120` throws `Unreachable`, so the delivery is retried until
+`maxAttempts` rather than handed back. The case is also missing from the README's own
+refused/unreachable table, which is otherwise complete. `unreachable` is arguably the right answer
+— a proxy stripping the header may stop — but the two should agree on which it is.
+
+### 9. An asset name that collides re-uploads the whole stream per candidate
+
+`packages/adapters/destination-webdav/src/assets.ts:209` — `alternatives()` yields up to 100 names
+and each one is a full `PUT` of a reopened stream. On a local disk that is free; over the network
+an hour of audio hitting a run of taken names is uploaded repeatedly before one lands. Unlikely to
+fire, and the shared naming is worth more than the saving, but a smaller bound for remote kinds
+would cost nothing.
+
+---
+
+## Non-issues
+
+- **`describe()` never resolves the profile** — deliberate, and argued in ADR 28: a destination
+  naming a profile that is not declared validates fine and reports `unreachable` at delivery, on
+  the same terms as an unmounted drive. `describe()` doing I/O is what would make a settings screen
+  stall on a Nextcloud that is merely asleep.
+- **Containment is string arithmetic with no second check** — correct here. Segments are split on
+  `/` before resolution and reassembled one `encodeURIComponent` at a time, so nothing a name holds
+  can address outside the base URL, and there are no links to chase.
+- **A rejected credential is `unreachable`** — matches the filesystem kind's treatment of
+  permission errors, and a just-rotated password is the ordinary case. Bounded by `maxAttempts`.
+- **`redirect: "manual"` and the 3xx throw** — the one line that would otherwise carry the
+  credential to an address the answer chose. Node's fetch returns the real 3xx here rather than an
+  opaque response, so the `location` in the message is genuinely available.
+- **`create-file` refusing a taken name rather than suffixing** — settled in the plan on 2026-09-01
+  and the filesystem kind already behaved this way; `docs/running.md` was the thing that was wrong,
+  and this PR corrects it.
+- **`asCreateFileArguments` accepting `filename: ""`** — the schema's `minLength: 1` is checked by
+  core at route time (`packages/core/src/pool/routing/route.ts:92`), so the empty string never
+  reaches the adapter. Shared with the filesystem kind.
+- **Assets orphaned when a create is refused** — real, but the filesystem kind has done this since
+  it shipped and the ordering is the same in both. Folded into finding #1, which is where the
+  decision belongs.
+- **`js-yaml` moving from `destination-fs` to `output-markdown`** — follows the frontmatter code;
+  `destination-fs` no longer imports it and correctly dropped the dependency. The lockfile change
+  is an add, not a regeneration.
+- **The `Shipped:` trail** — the plan is `In progress`, and `core.md`, `security.md` and
+  `shell.md` all carry dated 2026-09-01 entries linking back to it. Nothing owed.
+
+---
+
+## Verification
+
+`pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm lint` are green on the branch as it stands.
+`pnpm test:stack` not run; nothing here crosses the HTTP surface beyond the kinds list, which
+`apps/daemon/src/routes/destinations.test.ts` covers.
