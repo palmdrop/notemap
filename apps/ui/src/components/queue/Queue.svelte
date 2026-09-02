@@ -98,6 +98,7 @@
     item={subject.id}
     subject={client.says(subject) || subject.payload.type}
     content={subject.payload.content}
+    tags={(subject.tags ?? []).map((tag) => tag.name)}
     onclose={() => (routing = undefined)}
   />
 {/if}

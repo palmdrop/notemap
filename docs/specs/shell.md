@@ -312,6 +312,19 @@ person types. They are an offer and never a limit: a name that is on no list is 
 it, and the chooser stays useful once the pool goes out of reach, which is the whole reason tagging
 sits on the collapsed row.
 
+**Tagging is offered in two places, and they are not redundant** (added 2026-09-02). The composer
+offers the same chooser beside the place being routed to, because classifying and filing are one
+thought and making the person close one surface to finish the other splits it. This costs nothing:
+routing is never an outbox operation and the composer only opens when the pool is reachable, so
+the composer's chooser is a convenience that exists exactly when routing does. The **collapsed
+row's chooser is the one that survives an unreachable pool**, and that is why it stays where it is
+rather than moving into the composer.
+
+The two drain apart. A tag taken in the composer is the same outbox operation the row makes, and
+it lands whatever becomes of the route beside it — a route that fails leaves the tags applied,
+which is the honest outcome: the person said what the item was, and that was true independently of
+where it was going.
+
 Describing a destination is I/O that can hang on an unmounted drive, so **only the chosen one is
 ever described** — which is why the composer's capabilities are a second step and not a flattened
 destination×capability list.

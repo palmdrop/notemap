@@ -189,19 +189,19 @@ Depends on phases 1 and 2.
 
 Depends on phase 3. Small, and separable from everything around it.
 
-- [ ] The composer gains a `tags` row in the terse labelled shape: the pool's tags in use as spaced
+- [x] The composer gains a `tags` row in the terse labelled shape: the pool's tags in use as spaced
       words, filtered as you type, free entry beside them. `TagsApi.inUse` is already loaded and is
       what the row's chooser reads
-- [ ] It is the same classification the row makes, through the outbox, and therefore **drains
+- [x] It is the same classification the row makes, through the outbox, and therefore **drains
       independently of the route**. If the route then fails the tags stay applied, which is the
       honest outcome and is worth a test rather than a comment
-- [ ] `docs/specs/shell.md` — the **Tagging** section says tagging is offered in two places and why
+- [x] `docs/specs/shell.md` — the **Tagging** section says tagging is offered in two places and why
       they are not redundant: the collapsed row's chooser is the one that survives an unreachable
       pool, and the composer's is a convenience that exists only when routing does. The reasoning
       the section already carries stays; it is added to, not replaced
-- [ ] Tests: a tag taken in the composer reaches the outbox; a failed route leaves it applied
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
-- [ ] `git commit`
+- [x] Tests: a tag taken in the composer reaches the outbox; a failed route leaves it applied
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
+- [x] `git commit`
 
 ### Phase 5 — places you have used before
 

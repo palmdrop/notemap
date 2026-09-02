@@ -5,6 +5,7 @@
     type DestinationDescription,
   } from "@notemap/client";
 
+  import ComposerTags from "$components/routing/ComposerTags.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import Commit from "$components/primitives/composer/Commit.svelte";
   import Group from "$components/primitives/composer/Group.svelte";
@@ -24,6 +25,7 @@
     item,
     subject,
     content,
+    tags = [],
     onclose,
   }: {
     item: string;
@@ -31,6 +33,8 @@
     subject: string;
     /** The item's own payload, from which the name of an unnamed note is derived. */
     content?: unknown;
+    /** What the item already carries, so the composer's own row draws them as taken. */
+    tags?: readonly string[];
     onclose: () => void;
   } = $props();
 
@@ -198,6 +202,8 @@
       {/if}
     </Group>
   {/each}
+
+  <ComposerTags {item} names={tags} />
 
   <Commit>
     <Action primary disabled={!ready || busy} onclick={() => void send()}

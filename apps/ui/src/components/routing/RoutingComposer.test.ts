@@ -3,7 +3,7 @@ import { expect, test, vi } from "vitest";
 
 import { asked as sentTo, json, routeOf } from "@notemap/client/testing";
 
-import { asked, pool } from "$testing/pool";
+import { asked, client, pool } from "$testing/pool";
 import RoutingComposer from "./RoutingComposer.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
@@ -585,4 +585,51 @@ test("a blank leaf submits a path that ends in a slash", async () => {
   await vi.waitFor(async () => {
     expect((await routed(transport)).arguments).toEqual({ path: "drafts/" });
   });
+});
+
+/**
+ * Two decisions, made together and drained apart. The person classified the
+ * item and that was true; the route failing is not a reason to un-say it.
+ */
+test("a tag taken in the composer stays applied when the route fails", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "filesystem" })] });
+    }
+    if (route === "GET /v1/tags") {
+      return json(200, { values: [{ name: "seedling", items: 3 }] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE_OR_APPEND] });
+    }
+    if (route.endsWith("/candidates")) return json(200, answered([]));
+    if (route === "POST /v1/items/one/tag") return json(200, {});
+    if (route === "POST /v1/items/one/route") {
+      return json(503, { error: { code: "unreachable" } });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+  await client.tags.load();
+
+  const closed = drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+  await choose(/create-or-append-file/);
+
+  await choose("seedling");
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/tag");
+  });
+
+  await choose("route");
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+
+  expect(closed).not.toHaveBeenCalled();
+  expect(
+    screen
+      .getByRole("button", { name: "seedling" })
+      .getAttribute("aria-pressed"),
+  ).toBe("true");
 });
