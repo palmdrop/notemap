@@ -8,6 +8,7 @@
   let {
     one,
     described,
+    asking,
     opened,
     offline,
     onopen,
@@ -19,6 +20,8 @@
   }: {
     one: Destination;
     described?: DestinationDescription;
+    /** Being asked now, which is the ordinary state of a row that has just been drawn. */
+    asking: boolean;
     opened: boolean;
     offline: boolean;
     onopen: () => void;
@@ -80,6 +83,8 @@
         ⚠ {refusing}
       {:else if can !== undefined}
         ✓ answered
+      {:else if asking}
+        ↻ asking
       {:else if retired}
         retired · offered to nothing new
       {:else}
@@ -93,6 +98,8 @@
       <Fact name="can" empty={can === undefined}>
         {#if can !== undefined}
           {can}
+        {:else if asking}
+          asking now
         {:else if retired}
           not offered, so not asked
         {:else}
@@ -110,7 +117,7 @@
       <div
         class="mt-4 flex flex-wrap items-baseline gap-x-6 border-t border-t-ink/20 pt-3"
       >
-        <Action onclick={oncheck}>
+        <Action disabled={asking} onclick={oncheck}>
           <span aria-hidden="true" class="text-ink-muted">↻</span>
           {can === undefined && refusing === undefined
             ? "Check"

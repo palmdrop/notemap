@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { untrack } from "svelte";
+
   import {
     saidBy,
     type Destination as One,
@@ -26,6 +28,7 @@
 
   /** Per destination rather than for the list: what one can do is I/O that may hang. */
   let described = $state<Record<string, DestinationDescription>>({});
+  let asking = $state<Record<string, boolean>>({});
 
   const tally = $derived(
     (() => {
@@ -65,13 +68,47 @@
   }
 
   async function check(one: One) {
-    await attempt(async () => {
-      described = {
-        ...described,
-        [one.id]: await client.destinations.describe(one.id),
-      };
-    });
+    await attempt(() => describing(one));
   }
+
+  async function describing(one: One): Promise<void> {
+    asking = { ...asking, [one.id]: true };
+    try {
+      // Read after the answer, never spread around the await: two rows asking
+      // at once both spread the same record and the slower one wins.
+      const answer = await client.destinations.describe(one.id);
+      described = { ...described, [one.id]: answer };
+    } finally {
+      asking = { ...asking, [one.id]: false };
+    }
+  }
+
+  /**
+   * Asked per row rather than as one read of the list: both kinds shipped today
+   * describe themselves without touching disk or network, but the first that
+   * goes and looks must leave one row waiting rather than the page.
+   *
+   * A retired one is not asked — it is offered to nothing new — and one that
+   * answered is not asked again, while one that could not is, since coming back
+   * into reach is the moment that changes.
+   */
+  $effect(() => {
+    const yes = pool.yes;
+    const held = $destinations;
+    if (!yes) return;
+
+    untrack(() => {
+      for (const one of held) {
+        if (one.retired === true) continue;
+        if (described[one.id]?.kind === "described") continue;
+        if (asking[one.id] === true) continue;
+
+        // Quietly: a pool out of reach is already said by the chrome, and one
+        // line per destination saying it again is not news.
+        void describing(one).catch(() => undefined);
+      }
+    });
+  });
 </script>
 
 <Section name="destinations" aside={tally}>
@@ -92,6 +129,7 @@
     <Destination
       {one}
       described={described[one.id]}
+      asking={asking[one.id] === true}
       opened={opened === one.id}
       offline={!pool.yes}
       onopen={() => {

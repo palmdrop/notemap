@@ -384,10 +384,17 @@ countable: a **section** is muted ink at the widest tracking with a full-weight 
 case, muted, in a column of its own. Nothing is bigger and nothing is bold.
 
 Four sections *(two when this was written, and the door brought the others)*. **Destinations** says
-how many are offered and how many retired, then one line per destination: a mark for offered or retired, its name, its kind, and whether anything has asked it
-lately. Opening one adds what it can do, the settings its kind asked for, its id, and the four
-things that can be done to it — check, edit, retire, delete — with the rule and the distance
-separating what can be undone from what cannot.
+how many are offered and how many retired, then one line per destination: a mark for offered or
+retired, its name, its kind, and what it last answered. Opening one adds what it can do, the
+settings its kind asked for, its id, and the four things that can be done to it — check, edit,
+retire, delete — with the rule and the distance separating what can be undone from what cannot.
+
+**Each one is asked what it can do as the page draws** *(2026-09-02)*, without waiting to be told
+to. Asked **per row**, so the first kind that has to go and look leaves one line saying it is asking
+rather than holding up a list that is already drawn from pool state. A **retired** one is not asked
+— it is offered to nothing new — and keeps the control for a person who wants to know anyway. One
+that answered is not asked again; one that could not is, when the pool comes back into reach, since
+that is the moment worth re-asking on.
 
 **Daemon** says where this shell is talking to, and carries the way to `/log` and the exit to the
 daemon's `/docs` — one of this shell's own routes and one the browser leaves for, marked apart. Its

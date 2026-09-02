@@ -110,20 +110,25 @@ so widening it cost six assertions and no design.
 
 Depends on nothing. Touches the same component as phase 6.
 
-- [ ] `Destinations.svelte` describes every destination it lists on mount and on return to reach,
+- [x] `Destinations.svelte` describes every destination it lists on mount and on return to reach,
       concurrently, each row holding its own state. The `described` record is already keyed by id;
       what is missing is that anything fills it
-- [ ] A retired destination is not asked automatically — it is offered to nothing new — and keeps
+- [x] A retired destination is not asked automatically — it is offered to nothing new — and keeps
       the manual control
-- [ ] The row's states become four: asking, described, refused with the reason, and not asked, which
+- [x] The row's states become four: asking, described, refused with the reason, and not asked, which
       is now only ever a retired one
-- [ ] Both shipped kinds `describe()` without touching disk or network, by contract, so this costs
+- [x] Both shipped kinds `describe()` without touching disk or network, by contract, so this costs
       nothing today. It is written per row rather than as one list-wide read because the first kind
       that goes and looks must leave one row saying "asking" instead of stalling the page
-- [ ] Tests: the page describes what it lists; a destination that cannot describe itself shows the
+- [x] Tests: the page describes what it lists; a destination that cannot describe itself shows the
       reason without the rest of the list waiting for it
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
+- [x] `git commit`
+
+**Found 2026-09-02**: describing wrote `described = { ...described, [id]: await … }`, which spreads
+the record *before* the answer arrives — so two rows asking at once both spread the same snapshot
+and the slower answer dropped the faster one. Invisible while a person could only ask one row at a
+time, which is exactly the kind of thing this phase was going to surface.
 
 ### Phase 4 — decide what a probe answers, in the docs
 

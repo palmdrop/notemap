@@ -69,11 +69,19 @@ async function open(name: string) {
 const press = async (name: string | RegExp) =>
   fireEvent.click(await screen.findByRole("button", { name }));
 
-test("lists what the pool holds without asking any destination anything", async () => {
-  serving([
-    aDestination(),
-    aDestination({ id: "b", name: "Board", retired: true }),
-  ]);
+test("lists what the pool holds, and asks each offered one what it can do", async () => {
+  serving(
+    [aDestination(), aDestination({ id: "b", name: "Board", retired: true })],
+    {
+      [`GET /v1/destinations/${VAULT}/description`]: () =>
+        json(200, {
+          kind: "described",
+          capabilities: [
+            { name: "create-file", accepts: [], argumentsSchema: {} },
+          ],
+        }),
+    },
+  );
 
   render(Destinations);
   await screen.findByRole("button", { name: "Vault" });
@@ -84,11 +92,54 @@ test("lists what the pool holds without asking any destination anything", async 
   expect(screen.getByText("1 offered \u00b7 1 retired")).toBeDefined();
   expect(screen.getByText(/offered to nothing new/)).toBeDefined();
 
-  // The split is the point: listing must not probe an unmounted drive.
+  // The list still fills from pool state alone; describing follows it, per row
+  // and never for one that is offered to nothing new.
+  await screen.findByText(/answered/);
   expect(asked()).toEqual([
     "GET /v1/destination-kinds",
     "GET /v1/destinations",
+    `GET /v1/destinations/${VAULT}/description`,
   ]);
+});
+
+test("says what a destination can do without anyone asking it to", async () => {
+  serving([aDestination()], {
+    [`GET /v1/destinations/${VAULT}/description`]: () =>
+      json(200, {
+        kind: "described",
+        capabilities: [
+          { name: "create-file", accepts: [], argumentsSchema: {} },
+        ],
+      }),
+  });
+
+  render(Destinations);
+  await open("Vault");
+
+  await screen.findByText("create-file");
+});
+
+/**
+ * One row waiting is the point of asking per row: the first kind that goes and
+ * looks must not stall the page, and the rest of the list is already drawn.
+ */
+test("leaves one that cannot describe itself saying so, and the rest listed", async () => {
+  serving([aDestination(), aDestination({ id: "b", name: "Board" })], {
+    [`GET /v1/destinations/${VAULT}/description`]: () =>
+      json(200, { kind: "undescribable", detail: "the drive is not mounted" }),
+    "GET /v1/destinations/b/description": () =>
+      json(200, {
+        kind: "described",
+        capabilities: [
+          { name: "create-file", accepts: [], argumentsSchema: {} },
+        ],
+      }),
+  });
+
+  render(Destinations);
+
+  await screen.findByText(/the drive is not mounted/);
+  await screen.findByText(/answered/);
 });
 
 /** Everything that can be done to one is behind opening it, as on a queue row. */
