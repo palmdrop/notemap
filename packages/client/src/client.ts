@@ -1,6 +1,7 @@
 import { filter, skip } from "rxjs";
 import { v7 as uuidv7 } from "uuid";
 
+import { createActions } from "./actions/actions";
 import { createApi, answered } from "./api/http";
 import type { AssetId, Item, ItemId, PoolIdentity } from "./api/types";
 import { releasedBy } from "./assets/assets";
@@ -453,6 +454,8 @@ export function createClient(config: ClientConfig): Client {
     }),
 
     tags,
+
+    actions: createActions({ api }),
 
     drain,
     dismiss: (operation) => after(() => outbox.dismiss(operation)),

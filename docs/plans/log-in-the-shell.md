@@ -1,7 +1,7 @@
 # The action log becomes a surface of the shell
 
 **Date**: 2026-09-02
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: In progress <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/client.md`, `docs/specs/http-v1.md`, `docs/specs/shell.md`
 **Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
 
@@ -60,23 +60,23 @@ note rather than an edit over the old reasoning.
 Depends on nothing. `@notemap/client` has **no actions surface at all** today: the page hand-rolls
 `fetch("/v1/actions")` and builds its own URLs, which is exactly what a shell surface may not do.
 
-- [ ] Create branch `agent/log-in-the-shell`
-- [ ] An `ActionsApi` on the client, a sibling of `TagsApi` and `RoutingApi` rather than a third
+- [x] Create branch `agent/log-in-the-shell`
+- [x] An `ActionsApi` on the client, a sibling of `TagsApi` and `RoutingApi` rather than a third
       `Observable<ListState>` beside the feed and the queue. **It is not put in the durable store**:
       the log is a read for diagnosis, not a surface that has to survive an unreachable pool, and
       persisting it would grow what every client writes to disk for no offline gain
-- [ ] It pages by a **position** in the domain's terms — a capture time and an id, as
+- [x] It pages by a **position** in the domain's terms — a capture time and an id, as
       `CONTEXT.md` defines one — not by following the `next` URL the page follows today. `/v1`
       answers `next`; a client that hands its callers a URL has leaked the wire into the surface
-- [ ] It takes an order and a subject filter, matching what `GET /v1/actions` already answers.
+- [x] It takes an order and a subject filter, matching what `GET /v1/actions` already answers.
       Naming an order the surface is not in turns it around and starts again, on the same terms as
       `loadFeed`
-- [ ] `docs/specs/client.md` says what the read is and that it is not durable
-- [ ] Tests beside it: a page is read; a position continues it; an order change restarts; a subject
+- [x] `docs/specs/client.md` says what the read is and that it is not durable
+- [x] Tests beside it: a page is read; a position continues it; an order change restarts; a subject
       filter narrows; a refusal surfaces through `saidBy` like every other read
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack` — the
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack` — the
       client's transport is one of the layers that suite is for
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 2 — the surface
 

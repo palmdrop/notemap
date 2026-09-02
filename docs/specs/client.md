@@ -283,6 +283,28 @@ processed — routed or archived — which the pool decides, not the scroll.
   belongs to the order that produced it, and two orders cannot be stitched into one list. The order
   a surface is in is part of what it reports, so a control can draw it.
 
+### The action log
+
+**Everything the pool has done is read, and none of it is held.** A client reads
+`GET /v1/actions` a page at a time, taking an **order** and, where a reader has narrowed it, one
+subject. It is not one of the surfaces: there is no held page, no projection to subscribe to and
+no reconnect that reads it again. What has been walked belongs to whoever is looking at it, and
+goes when they do.
+
+- **A position, not a URL.** A read continues from a position in the domain's terms — the instant
+  and the id of the last row the previous page handed out ([CONTEXT.md](../../CONTEXT.md)) — which
+  the client reads out of the `next` link `/v1` answers rather than passing back. A client that
+  hands its callers a URL has leaked the wire into the surface. The position is absent on the last
+  page, which is what says it is the last.
+- **It is not in the cache and not in the store.** The log is read for diagnosis rather than
+  drained, so persisting it would grow what every client writes to disk for no offline gain, and a
+  pool out of reach answers nothing rather than a stale page. Reading it does not seed the item
+  cache either: the subjects it names are ids, not items.
+- **A subject filter is never validated.** The log outlives the material it describes
+  ([core.md](core.md#the-action-log)), so an id no item has is a filter matching nothing.
+- A refusal and an unreachable pool are told apart here as they are everywhere else; the caller
+  is the one that decides what to draw.
+
 ### The outbox
 
 Every mutation a client makes is an **outbox operation**: applied to the client's cache at once,

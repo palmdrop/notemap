@@ -1,4 +1,6 @@
 import type {
+  Action,
+  ActionId,
   AssetId,
   CandidatesRequest,
   CreateDestinationRequest,
@@ -109,6 +111,35 @@ export interface TagsApi {
   load(): Promise<readonly TagUse[]>;
 }
 
+/** Where a read of the log continues from: the sort key of the last row it handed out. */
+export type ActionPosition = {
+  readonly at: string;
+  /** Absent bounds the read on the instant alone, and may skip rows sharing it. */
+  readonly id?: ActionId;
+};
+
+export type ActionsRequest = {
+  readonly order: Order;
+  /** Narrows the read to one subject. Never validated: the log outlives the material. */
+  readonly item?: ItemId;
+  readonly after?: ActionPosition;
+};
+
+export type ActionsPage = {
+  readonly values: readonly Action[];
+  /** Where the next read continues from; absent on the last page. */
+  readonly after?: ActionPosition;
+};
+
+/**
+ * Everything the pool has done. Not a surface with a held page and not in the
+ * store: the log is read for diagnosis rather than drained, so what has been
+ * walked belongs to whoever is looking and nothing about it survives them.
+ */
+export interface ActionsApi {
+  read(request: ActionsRequest): Promise<ActionsPage>;
+}
+
 /**
  * Routing reaches the pool directly and is never an outbox operation: a
  * decision to deliver cannot be replayed from a client that was offline when it
@@ -210,6 +241,7 @@ export interface Client {
   readonly routing: RoutingApi;
   readonly destinations: DestinationsApi;
   readonly tags: TagsApi;
+  readonly actions: ActionsApi;
 
   /** Called on every mutation, and again to retry what is still pending. */
   drain(): Promise<void>;
