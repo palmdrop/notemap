@@ -6,7 +6,7 @@
   import OrderSelector from "$components/primitives/controls/OrderSelector.svelte";
   import { client } from "$lib/client";
   import { log } from "$lib/log.svelte";
-  import { orderFor, remember, withOrder, type Surface } from "$lib/order";
+  import { remember, withOrder, type Surface } from "$lib/order";
 
   const queue = client.queue;
   const feed = client.feed;
@@ -20,13 +20,11 @@
 
   const reading = $derived(READING[page.url.pathname]);
 
-  // The log's order lives on the URL and nowhere else, so the control draws it
-  // from there rather than from a page that has not been turned around yet.
   const order = $derived(
     reading === undefined
       ? undefined
       : reading === "log"
-        ? orderFor("log", page.url)
+        ? log.order
         : reading === "feed"
           ? $feed.order
           : $queue.order,
@@ -46,9 +44,9 @@
     remember(reading, wanted);
     replaceState(withOrder(page.url, wanted), {});
 
-    // The log route reads the URL back; the other two hold a page of their own.
     if (reading === "feed") void client.loadFeed(wanted);
     else if (reading === "queue") void client.loadQueue(wanted);
+    else log.turn(wanted);
   }
 </script>
 

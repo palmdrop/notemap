@@ -70,6 +70,19 @@ async function walk(from: ActionPosition | undefined): Promise<void> {
   }
 }
 
+/** Walks from the start: a position belongs to the order and the filter that made it. */
+function restart(wanted: Order, subject: ItemId | undefined): void {
+  walking += 1;
+  started = true;
+  order = wanted;
+  item = subject;
+  rows = [];
+  after = undefined;
+  more = false;
+  answered = false;
+  void walk(undefined);
+}
+
 export const log = {
   get order() {
     return order;
@@ -97,23 +110,19 @@ export const log = {
     return rows.length;
   },
 
-  /**
-   * Reads the log as the URL now names it. A position belongs to the order and
-   * the filter that produced it, so changing either walks again from the start
-   * rather than stitching two of them together.
-   */
+  /** Reads the log as the URL names it, where that is not what it is reading already. */
   reading(wanted: Order, subject: ItemId | undefined): void {
     if (started && wanted === order && subject === item) return;
+    restart(wanted, subject);
+  },
 
-    walking += 1;
-    started = true;
-    order = wanted;
-    item = subject;
-    rows = [];
-    after = undefined;
-    more = false;
-    answered = false;
-    void walk(undefined);
+  /**
+   * Turned around by the control, which has to say so rather than write the URL
+   * and leave this to notice: `replaceState` moves the address bar without
+   * assigning `page.url`, so nothing here can be driven by reading it back.
+   */
+  turn(wanted: Order): void {
+    restart(wanted, item);
   },
 
   next(): void {
