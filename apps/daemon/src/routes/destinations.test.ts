@@ -277,11 +277,17 @@ describe("GET /v1/destinations/{id}/description", () => {
     };
     expect(described.kind).toBe("described");
     expect(described.capabilities.map((each) => each.name)).toEqual([
+      "create-or-append-file",
       "create-file",
       "append-to-file",
     ]);
+    // That the schema reaches the wire intact, annotation and all: the composer
+    // reads `x-notemap-candidates` off exactly this to know what it may ask about.
     expect(described.capabilities[0]?.argumentsSchema).toMatchObject({
-      required: ["directory"],
+      properties: { path: { "x-notemap-candidates": true } },
+    });
+    expect(described.capabilities[2]?.argumentsSchema).toMatchObject({
+      required: ["path"],
     });
   });
 

@@ -50,6 +50,47 @@ const PATH: CandidatesRequest = {
   field: "path",
 };
 
+const LINE: CandidatesRequest = {
+  capability: "create-or-append-file" as CapabilityName,
+  field: "path",
+};
+
+describe("what the typed line's path offers", () => {
+  it("answers folders and files together, as the line's tree reads them", async () => {
+    const { path, candidates } = await vault();
+    await mkdir(join(path, "projects"));
+    await writeFile(join(path, "decisions.md"), "a note");
+
+    const answer = await candidates(LINE);
+
+    expect(answer.entries).toEqual([
+      { label: "projects", scope: "projects" },
+      { label: "decisions.md", value: "decisions.md" },
+    ]);
+  });
+
+  it("descends a scope the way append-to-file's path does", async () => {
+    const { path, candidates } = await vault();
+    await mkdir(join(path, "projects", "notemap"), { recursive: true });
+    await writeFile(join(path, "projects", "a.md"), "a note");
+
+    const answer = await candidates({ ...LINE, scope: "projects" });
+
+    expect(answer.entries).toEqual([
+      { label: "notemap", scope: "projects/notemap" },
+      { label: "a.md", value: "projects/a.md" },
+    ]);
+  });
+
+  it("offers nothing for its heading, which is free text", async () => {
+    const { candidates } = await vault();
+
+    await expect(candidates({ ...LINE, field: "heading" })).rejects.toThrow(
+      NotOffered,
+    );
+  });
+});
+
 describe("what create-file's directory offers", () => {
   it("lists folders at the root, and nothing else", async () => {
     const { path, candidates } = await vault();

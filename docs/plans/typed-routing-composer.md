@@ -1,7 +1,7 @@
 # A routing composer you can type
 
 **Date**: 2026-09-01
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: In progress <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`
 **Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
 
@@ -106,33 +106,33 @@ Settled with the developer 2026-09-01/02.
 Depends on [destination-webdav](destination-webdav.md) having merged, so both kinds gain the new
 capability together. Nothing in the shell changes in this phase.
 
-- [ ] Create branch `agent/typed-routing-composer`
-- [ ] `create-file`'s `directory` stops being `required` in
+- [x] Create branch `agent/typed-routing-composer`
+- [x] `create-file`'s `directory` stops being `required` in
       `packages/adapters/destination-fs/src/capabilities.ts`, and `asCreateFileArguments` reads an
       absent one as `""`. Absent means the vault's root, which is what an empty string already
       means and what the adapter already accepts: the schema misdescribes the code
-- [ ] `create-or-append-file`, taking `{ path, heading? }`. `path` carries
+- [x] `create-or-append-file`, taking `{ path, heading? }`. `path` carries
       `x-notemap-candidates`; `heading` does not. Neither is `required` — an absent `path` is the
       root, and the filename is derived
-- [ ] The filesystem kind implements it by composing what `create-file` and `append-to-file`
+- [x] The filesystem kind implements it by composing what `create-file` and `append-to-file`
       already do rather than reimplementing either: a missing folder is made, an absent file is
       created, a present one is appended to under `heading`
-- [ ] The webdav kind implements it on the same terms, over the `If-None-Match: *` create and the
+- [x] The webdav kind implements it on the same terms, over the `If-None-Match: *` create and the
       `If-Match` read-modify-write append that [destination-webdav](destination-webdav.md) phases 4
       and 5 build. Contention stays `unreachable`, not `rejected`
-- [ ] `filesystemCandidates` answers the new capability's `path` field the way it answers
+- [x] `filesystemCandidates` answers the new capability's `path` field the way it answers
       `append-to-file`'s — folders and files together, which is what the composer's tree reads
-- [ ] **Record it as an ADR.** Why a third capability rather than the composer storing what it
+- [x] **Record it as an ADR.** Why a third capability rather than the composer storing what it
       inferred: delivery is deferred, the record is made against a destination that may be
       unreachable, and a decision taken when the vault could not be asked is a guess the adapter is
       in a position to make truthfully later. Also why the other two were kept. None of this is
       visible from the code
-- [ ] `docs/specs/core.md` gains the capability alongside the other two
-- [ ] Tests, both kinds: an absent file is created; a present one is appended to; a missing folder
+- [x] `docs/specs/core.md` gains the capability alongside the other two
+- [x] Tests, both kinds: an absent file is created; a present one is appended to; a missing folder
       is made; a trailing slash derives the filename; a `heading` inserts under it
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack` — an
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack` — an
       arguments schema is served over `/v1`, so this crosses the layers
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 2 — the path line
 

@@ -2,6 +2,7 @@ import {
   APPEND_TO_FILE,
   capabilitiesFor,
   CREATE_FILE,
+  CREATE_OR_APPEND_FILE,
   type Renderers,
 } from "@notemap/output-markdown";
 import {
@@ -16,7 +17,12 @@ import {
 import type { CredentialResolver } from "./credentials";
 import { createDav, type Dav } from "./dav";
 import { Refused, Unreachable } from "./errors";
-import { appendToNote, createNote, type Wiring } from "./notes";
+import {
+  appendToNote,
+  createNote,
+  createOrAppendToNote,
+  type Wiring,
+} from "./notes";
 import { contain } from "./paths";
 import { asWebdavSettings, WEBDAV, webdavSettings } from "./settings";
 
@@ -162,6 +168,8 @@ function carryOut(
       return createNote(wiring, delivery, signal);
     case APPEND_TO_FILE:
       return appendToNote(wiring, delivery, signal);
+    case CREATE_OR_APPEND_FILE:
+      return createOrAppendToNote(wiring, delivery, signal);
     default:
       return Promise.reject(
         new Refused(`no capability named ${delivery.capability}`),

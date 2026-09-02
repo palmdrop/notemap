@@ -15,10 +15,13 @@ import {
   APPEND_TO_FILE,
   asAppendToFileArguments,
   asCreateFileArguments,
+  asCreateOrAppendFileArguments,
   capabilitiesFor,
   CREATE_FILE,
+  CREATE_OR_APPEND_FILE,
   deriveFilename,
   insertUnder,
+  placeOf,
   renderNote,
   RenderingFailed,
   type Renderers,
@@ -204,13 +207,14 @@ function carryOut(
       return createNote(wiring, delivery, signal);
     case APPEND_TO_FILE:
       return appendToNote(wiring, delivery, signal);
+    case CREATE_OR_APPEND_FILE:
+      return createOrAppendToNote(wiring, delivery, signal);
     default:
       throw new Refused(`no capability named ${delivery.capability}`);
   }
 }
 
-/** An asset written before a `link` that then loses a race is left as debris, in exchange for never overwriting. */
-async function createNote(
+function createNote(
   wiring: Wiring,
   delivery: Delivery,
   signal?: AbortSignal,
@@ -221,7 +225,58 @@ async function createNote(
   }
 
   const filename = args.filename ?? deriveFilename(delivery);
-  const note = await locate(wiring.realRoot, join(args.directory, filename));
+  return create(wiring, delivery, join(args.directory, filename), signal);
+}
+
+function appendToNote(
+  wiring: Wiring,
+  delivery: Delivery,
+  signal?: AbortSignal,
+): Promise<string> {
+  const args = asAppendToFileArguments(delivery.arguments);
+  if (args === undefined) {
+    throw new Refused("that is not an append-to-file argument set");
+  }
+
+  return append(wiring, delivery, args.path, args.heading, signal);
+}
+
+/**
+ * Composed of the other two rather than deciding anything of its own: an absent
+ * file is what `append` already creates, and a missing folder is what writing
+ * one already makes. What this capability adds is *when* the choice is made —
+ * here, against the vault as it is, rather than in a composer that may have had
+ * nothing to ask.
+ */
+function createOrAppendToNote(
+  wiring: Wiring,
+  delivery: Delivery,
+  signal?: AbortSignal,
+): Promise<string> {
+  const args = asCreateOrAppendFileArguments(delivery.arguments);
+  if (args === undefined) {
+    throw new Refused("that is not a create-or-append-file argument set");
+  }
+
+  const place = placeOf(args.path);
+  const filename = place.filename ?? deriveFilename(delivery);
+  return append(
+    wiring,
+    delivery,
+    join(place.directory, filename),
+    args.heading,
+    signal,
+  );
+}
+
+/** An asset written before a `link` that then loses a race is left as debris, in exchange for never overwriting. */
+async function create(
+  wiring: Wiring,
+  delivery: Delivery,
+  target: string,
+  signal?: AbortSignal,
+): Promise<string> {
+  const note = await locate(wiring.realRoot, target);
 
   if (await exists(note.absolute)) {
     throw new Refused(`${note.relative} is already there`);
@@ -239,17 +294,14 @@ async function createNote(
 }
 
 /** **Not atomic against a concurrent editor**: an open editor's buffer will overwrite this on save. */
-async function appendToNote(
+async function append(
   wiring: Wiring,
   delivery: Delivery,
+  target: string,
+  heading?: string,
   signal?: AbortSignal,
 ): Promise<string> {
-  const args = asAppendToFileArguments(delivery.arguments);
-  if (args === undefined) {
-    throw new Refused("that is not an append-to-file argument set");
-  }
-
-  const note = await locate(wiring.realRoot, args.path);
+  const note = await locate(wiring.realRoot, target);
   const directory = dirname(note.absolute);
 
   const assets = await placeAssets(directory, delivery.assets, signal);
@@ -262,12 +314,12 @@ async function appendToNote(
   if (existing === undefined) {
     await createFile(
       note.absolute,
-      `${rendered.frontmatter}\n${insertUnder("", rendered.body, args.heading)}`,
+      `${rendered.frontmatter}\n${insertUnder("", rendered.body, heading)}`,
     );
   } else {
     await replaceFile(
       note.absolute,
-      insertUnder(existing, rendered.body, args.heading),
+      insertUnder(existing, rendered.body, heading),
     );
   }
 

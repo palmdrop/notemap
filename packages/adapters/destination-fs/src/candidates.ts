@@ -10,7 +10,11 @@ import {
   type Destination,
 } from "@notemap/core";
 
-import { APPEND_TO_FILE, CREATE_FILE } from "@notemap/output-markdown";
+import {
+  APPEND_TO_FILE,
+  CREATE_FILE,
+  CREATE_OR_APPEND_FILE,
+} from "@notemap/output-markdown";
 
 import { contain, overlapsAny, realRootOf } from "./paths";
 import { asFilesystemSettings } from "./settings";
@@ -25,12 +29,20 @@ export type CandidatesConfig = {
 /** What the field may hold. A folder is walked through either way. */
 type Offered = "directory" | "file";
 
-/** What `create-file`'s `directory` and `append-to-file`'s `path` each offer. Nothing else does. */
+/** Which fields offer anything, and which of the two things they offer. Nothing else does. */
 function offered(request: CandidatesRequest): Offered | undefined {
   if (request.capability === CREATE_FILE && request.field === "directory") {
     return "directory";
   }
   if (request.capability === APPEND_TO_FILE && request.field === "path") {
+    return "file";
+  }
+  // The typed line reads folders and files together: one call per level draws
+  // the tree and says whether the leaf is there.
+  if (
+    request.capability === CREATE_OR_APPEND_FILE &&
+    request.field === "path"
+  ) {
     return "file";
   }
   return undefined;

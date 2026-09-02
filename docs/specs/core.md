@@ -4,6 +4,16 @@
 **Last updated**: 2026-09-02
 **Shipped**:
 
+- 2026-09-02 — **A capability may name an outcome and decide at delivery.** The kinds that write
+  files gained a third capability that means *put this note here* and settles create-against-append
+  itself, when it is holding the vault and the answer is true, rather than making a composer commit
+  a guess against a destination it may not have been able to reach. The two that decide nothing are
+  kept, because refusing to overwrite and requiring a note to already be there are promises a rule
+  wants and an outcome-shaped capability cannot make. Nothing in core moved — this is a rule about
+  what a capability should be named after.
+  ([plan](../plans/typed-routing-composer.md),
+  [ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md))
+
 - 2026-09-02 — **A destination can be asked whether it is really there.** `destinations.probe`
   joins `describe` and `candidates`, optional on a kind adapter and answering `ready`, `rejected`,
   `unreachable`, `unusable` or `not-offered`. Describing answers from a declared shape and never
@@ -841,6 +851,21 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   file, which is a note rather than somewhere notes go — and infers the rest from having reached
   the place at all. Nothing consults a probe before a delivery: what a delivery finds out is
   still a delivery's to find out.
+- **A capability may defer its own decision to delivery** (added 2026-09-02,
+  [ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md)). A routing decision is
+  recorded against a destination that may be asleep, and the gap before the delivery lands is
+  unbounded, so a capability that asks the caller to state what is *already there* is asking about
+  a fact nobody at that moment holds. Such a capability instead names the outcome and lets the
+  adapter resolve it against the destination as it finds it — the adapter is holding the vault at
+  the moment of the write, and it is the only thing that ever knows. A surface may still forecast
+  what will happen, from `candidates`, and say so before committing; the forecast is drawn and
+  never stored. Core is unchanged by this: it validates arguments against the declared schema and
+  refuses a capability that was not declared, exactly as before. What the decision settles is a
+  rule about **how a capability should be named** — after the outcome a person wants, not after
+  the mechanism that will achieve it — and it is why the kinds that write files offer both a
+  capability that decides at delivery and two that refuse rather than decide, since *never add to
+  a note* and *this must already exist* are promises a rule can want and an outcome-shaped
+  capability cannot make.
 - **A capability's accepted payload types may be a wildcard**, for a destination whose fallback
   genuinely handles anything. It is a promise rather than a shrug: claiming it trades away the
   refusal core would otherwise make up front, so what would have been an immediate

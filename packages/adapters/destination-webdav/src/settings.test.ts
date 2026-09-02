@@ -99,6 +99,7 @@ describe("describing a destination", () => {
     const described = await adapter().describe(destinationRow({ root: "V" }));
 
     expect(described.capabilities.map((each) => each.name)).toEqual([
+      "create-or-append-file",
       "create-file",
       "append-to-file",
     ]);
