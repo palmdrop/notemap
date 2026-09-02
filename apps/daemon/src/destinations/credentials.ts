@@ -13,9 +13,6 @@ import { isPrivateHost, type WebdavProfile } from "../config/load";
  * daemon that had read it once would go on presenting the old password until
  * somebody restarted it, which is the opposite of what rotation is for.
  *
- * A profile that cannot be used safely is refused here rather than at load, on
- * the same terms as one nothing declares: the delivery reports it, and capture
- * and every other destination go on working.
  */
 export function webdavCredentials(
   profiles: readonly WebdavProfile[],
@@ -28,7 +25,6 @@ export function webdavCredentials(
     if (profile === undefined) {
       throw new Error(`no webdav profile named ${name} is configured`);
     }
-    refusePlainHttpAcrossANetwork(profile);
 
     return {
       baseUrl: profile.baseUrl,
@@ -39,18 +35,23 @@ export function webdavCredentials(
 }
 
 /**
- * Checked before the secret is read, so a password is not taken out of a file
- * to be sent somewhere it should not go. `https` anywhere, and plain HTTP only
- * where the request cannot leave a network the operator already controls.
+ * Said once at startup for every account whose password would leave a network
+ * the operator controls, and not enforced: where the address is not private,
+ * whether plain HTTP is acceptable is a thing only the person who wrote the
+ * address knows, and a daemon that refused would refuse deployments that are
+ * fine — a private VLAN, a tunnel, a mesh interface — for a guess.
  */
-function refusePlainHttpAcrossANetwork(profile: WebdavProfile): void {
-  const url = new URL(profile.baseUrl);
+export function plainHttpWarnings(
+  profiles: readonly WebdavProfile[],
+): readonly string[] {
+  return profiles.flatMap((profile) => {
+    const url = new URL(profile.baseUrl);
+    if (url.protocol === "https:" || isPrivateHost(url.hostname)) return [];
 
-  if (url.protocol !== "https:" && !isPrivateHost(url.hostname)) {
-    throw new Error(
-      `the webdav profile ${profile.name} reaches ${url.hostname} over plain HTTP, which would carry its password across a network somebody else is on. Use https, or an address that is private: loopback, a private or link-local address, or a single-label name such as a container's.`,
-    );
-  }
+    return [
+      `the webdav account ${profile.name} reaches ${url.hostname} over plain HTTP, so its password crosses the network in the clear — put TLS in front of it, or reach it at a private address`,
+    ];
+  });
 }
 
 async function secretOf(

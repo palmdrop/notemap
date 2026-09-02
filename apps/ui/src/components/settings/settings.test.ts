@@ -164,6 +164,44 @@ test("adds one from the kind's own schema", async () => {
   expect(created).toHaveLength(1);
 });
 
+/**
+ * A field named `profile` is a box nobody can fill in from the name alone. What
+ * says an account is meant, and that it is one the daemon's config declares, is
+ * the kind's own description of the field, so the form has to show it.
+ */
+test("shows what a kind says one of its fields is for", async () => {
+  serving([], {
+    "GET /v1/destination-kinds": () =>
+      json(200, {
+        values: [
+          {
+            name: "webdav",
+            settingsSchema: {
+              type: "object",
+              required: ["profile"],
+              properties: {
+                profile: {
+                  type: "string",
+                  title: "Account",
+                  description: "The name of an account in the configuration.",
+                },
+              },
+            },
+          },
+        ],
+      }),
+  });
+
+  render(Destinations);
+  await press("Add a destination");
+
+  expect(
+    await screen.findByText("The name of an account in the configuration.", {
+      selector: "p",
+    }),
+  ).toBeDefined();
+});
+
 test("checks a root nothing has used before, and writes nothing until confirmed", async () => {
   serving([]);
 

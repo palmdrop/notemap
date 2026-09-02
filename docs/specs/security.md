@@ -12,8 +12,8 @@
   redaction rule to remember. It also closes what would have been the first server-side request
   forgery here — a URL in `settings` is an address the daemon sends a credential to, chosen by
   whoever can create a destination, repeatedly, on the delivery runner's timer. Redirects are not
-  followed with a credential attached, and plain HTTP is refused for anywhere but a private
-  address.
+  followed with a credential attached, and an account reached over plain HTTP at an address that is
+  not private is named on startup as one whose password crosses the network in the clear.
   ([plan](../plans/destination-webdav.md),
   [ADR 28](../adr/0028-a-remote-destination-names-a-credential-profile-not-a-url.md))
 
@@ -300,16 +300,24 @@ daemon will authenticate to is now fixed by a file only the operator writes.
 Two more that are one line each to get wrong and invisible afterwards: **a redirect is never
 followed with a credential attached**, and TLS verification is never disabled.
 
-**A plain-HTTP base URL is refused unless the address is private** — loopback, a private or
-link-local address, or a single-label name — since the password would otherwise cross a network
-somebody else is on. Amended 2026-09-02, from *loopback alone*, which was the wrong line in two
-ways. It refused the ordinary deployment: notemap and the server it delivers to as siblings on one
-container network, reached as `http://nextcloud`, where there is no loopback and no certificate to
-be had. And it was checked at load, so one account nothing should be sent to stopped a daemon from
-capturing at all — under a restart policy, in a loop. The check is now made when the profile is
-**resolved**, and reports `unreachable` naming the profile, which is already what a profile nothing
-declares does. What stays fatal is the file being wrong rather than an account being unsafe: an
-inline `password`, two profiles under one name, a scheme this does not speak.
+**A plain-HTTP base URL is warned about, not refused** (settled 2026-09-02). Where the address is
+not private — not loopback, not a private or link-local address, not a single-label name, which is
+what a container on the same network is called — the daemon names that account on startup and says
+its password crosses the network in the clear. Then it delivers.
+
+It was written as a refusal at load and that was wrong twice over. It refused the ordinary
+deployment, notemap and the server it delivers to as siblings on one container network reached as
+`http://nextcloud`, where there is no loopback and no certificate to be had. And refusing at load
+meant one account nothing should be sent to stopped the daemon from capturing at all, in a restart
+loop. Whether plain HTTP is acceptable beyond that is not a thing the daemon can know — a private
+VLAN, a tunnel and a mesh interface all look like the open internet from here — so it is the
+operator's call, made in a file only they can write, and the daemon's job is that nobody makes it
+unknowingly.
+
+What is still fatal is the file being wrong rather than an account being exposed: an inline
+`password`, two profiles under one name, a scheme this does not speak. And the warning is a warning
+about the *transport*; nothing about it relaxes the rule above, which is that the secret and the
+address are the host's and never a destination's.
 
 ### No CORS headers, which is load-bearing
 

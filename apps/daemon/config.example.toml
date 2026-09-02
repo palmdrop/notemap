@@ -101,12 +101,12 @@ batch = 4           # deliveries claimed per pass
 # is `https://<host>/remote.php/dav/files/<user>`, which is the whole of that
 # user's files; a vault below it is the destination's own folder.
 #
-# Plain HTTP is allowed only where the password cannot cross a network somebody
+# Plain HTTP costs nothing where the password cannot cross a network somebody
 # else is on: loopback, a private or link-local address, or a single-label name
 # — which is what a container on the same network is called, so a Nextcloud in
 # the same compose stack is `http://nextcloud/remote.php/dav/files/alice`.
-# Anything else without `https` is refused when the profile is resolved, and the
-# delivery reports it; the daemon starts either way.
+# Anywhere else it still works, and the daemon names the account on startup as
+# one whose password crosses the network in the clear.
 #
 # The secret is `passwordFile` or `passwordEnv` — exactly one, and never an
 # inline `password`, which would put it in this file. It is read when a delivery

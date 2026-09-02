@@ -27,10 +27,10 @@ whole of it.
 
 **Redirects are never followed** — a `3xx` is reported rather than chased, because following one
 carries the credential to whatever address the answer names, which is the one thing a fixed base URL
-exists to prevent. TLS verification is never disabled, and the host refuses to resolve a profile
-that would send its password over plain HTTP to anywhere but a private address — loopback, a
-private or link-local address, or a single-label name, which is what a container on the same
-network is called.
+exists to prevent. TLS verification is never disabled. An account reached over plain HTTP at an
+address that is not private — not loopback, not a private or link-local address, not a single-label
+name, which is what a container on the same network is called — is named on startup as one whose
+password crosses the network in the clear, and then used: the host says it, and does not decide it.
 
 ## The two capabilities
 

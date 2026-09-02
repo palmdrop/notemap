@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { parseConfig } from "../config/load";
-import { webdavCredentials } from "./credentials";
+import { plainHttpWarnings, webdavCredentials } from "./credentials";
 
 const directories: string[] = [];
 
@@ -162,12 +162,12 @@ passwordEnv = "A"`;
   });
 
   /**
-   * A profile is loaded whatever its address, and refused when it is resolved:
-   * one account nothing should be sent to is not a reason for a daemon to stop
-   * capturing. Whether the scheme is one this speaks at all is a different
-   * question, and that one is the file being wrong.
+   * A profile is loaded whatever its address: the operator wrote it, and the
+   * daemon says what it thinks of it rather than refusing to run. Whether the
+   * scheme is one this speaks at all is a different question, and that one is
+   * the file being wrong.
    */
-  it("loads a profile that will be refused when something asks for it", () => {
+  it("loads a profile reached over plain HTTP, which is only warned about", () => {
     const { config } = declare(`
 name = "nextcloud"
 baseUrl = "http://cloud.example/dav"
@@ -188,15 +188,26 @@ passwordEnv = "A"`),
   });
 });
 
-describe("where a password may be sent", () => {
-  const resolving = (baseUrl: string): ReturnType<typeof webdavCredentials> =>
-    webdavCredentials([{ ...PROFILE, baseUrl, passwordEnv: "NC" }], {
-      NC: "an-app-password",
-    });
+/**
+ * Said, and not enforced: whether plain HTTP to an address that is not private
+ * is acceptable is the operator's to know. What the daemon owes is that nobody
+ * does it without being told.
+ */
+describe("warning about a password that crosses a network in the clear", () => {
+  const warnings = (...urls: readonly string[]): readonly string[] =>
+    plainHttpWarnings(
+      urls.map((baseUrl, index) => ({
+        ...PROFILE,
+        name: `profile-${index}`,
+        baseUrl,
+        passwordEnv: "NC",
+      })),
+    );
 
-  it("refuses plain HTTP to anywhere the password would cross a network", async () => {
-    await expect(resolving("http://cloud.example/dav")("nextcloud")).rejects
-      .toThrow(/plain HTTP/);
+  it("names the account, the host, and what to do about it", () => {
+    expect(warnings("http://cloud.example/dav")).toEqual([
+      expect.stringMatching(/profile-0 reaches cloud\.example over plain HTTP/),
+    ]);
   });
 
   /**
@@ -204,57 +215,54 @@ describe("where a password may be sent", () => {
    * network, where the address is a service name and there is no loopback and
    * no certificate to be had.
    */
-  it("allows plain HTTP to a single-label name, which is a container's", async () => {
-    await expect(
-      resolving("http://nextcloud:80/remote.php/dav/files/alice")("nextcloud"),
-    ).resolves.toMatchObject({ password: "an-app-password" });
+  it("says nothing about a single-label name, which is a container's", () => {
+    expect(warnings("http://nextcloud:80/remote.php/dav/files/alice")).toEqual(
+      [],
+    );
   });
 
-  it("allows plain HTTP to loopback and to a private address", async () => {
-    for (const baseUrl of [
-      "http://localhost:8080/dav",
-      "http://127.0.0.1:8080/dav",
-      "http://10.1.2.3/dav",
-      "http://172.20.0.4/dav",
-      "http://192.168.1.5/dav",
-      "http://[fd00::1]/dav",
-    ]) {
-      await expect(resolving(baseUrl)("nextcloud")).resolves.toMatchObject({
-        baseUrl,
-      });
-    }
+  it("says nothing about loopback or a private address", () => {
+    expect(
+      warnings(
+        "http://localhost:8080/dav",
+        "http://127.0.0.1:8080/dav",
+        "http://10.1.2.3/dav",
+        "http://172.20.0.4/dav",
+        "http://192.168.1.5/dav",
+        "http://[fd00::1]/dav",
+        "http://[fe80::1]/dav",
+      ),
+    ).toEqual([]);
   });
 
-  it("refuses plain HTTP to an address that only looks private", async () => {
-    for (const baseUrl of [
-      "http://172.15.0.1/dav",
-      "http://172.32.0.1/dav",
-      "http://192.169.1.1/dav",
-      "http://11.0.0.1/dav",
-      "http://[2001:db8::1]/dav",
-    ]) {
-      await expect(resolving(baseUrl)("nextcloud")).rejects.toThrow(
-        /plain HTTP/,
-      );
-    }
+  it("warns about an address that only looks private", () => {
+    expect(
+      warnings(
+        "http://172.15.0.1/dav",
+        "http://172.32.0.1/dav",
+        "http://192.169.1.1/dav",
+        "http://11.0.0.1/dav",
+        "http://[2001:db8::1]/dav",
+      ),
+    ).toHaveLength(5);
   });
 
-  it("says nothing about the address where the scheme is https", async () => {
-    await expect(
-      resolving("https://cloud.example/dav")("nextcloud"),
-    ).resolves.toMatchObject({ password: "an-app-password" });
+  it("says nothing at all where the scheme is https", () => {
+    expect(warnings("https://cloud.example/dav")).toEqual([]);
   });
+});
 
-  /** The address is answered first, so a secret is never read to be refused. */
-  it("refuses before the secret is read", async () => {
-    const resolve = webdavCredentials([
-      {
-        ...PROFILE,
-        baseUrl: "http://cloud.example/dav",
-        passwordFile: "/nothing/is/here",
-      },
-    ]);
+describe("resolving a profile that is reached in the clear", () => {
+  /** Warned about, not refused: the operator said so, and the delivery is theirs to make. */
+  it("hands over the credential anyway", async () => {
+    const resolve = webdavCredentials(
+      [{ ...PROFILE, baseUrl: "http://cloud.example/dav", passwordEnv: "NC" }],
+      { NC: "an-app-password" },
+    );
 
-    await expect(resolve("nextcloud")).rejects.toThrow(/plain HTTP/);
+    await expect(resolve("nextcloud")).resolves.toMatchObject({
+      baseUrl: "http://cloud.example/dav",
+      password: "an-app-password",
+    });
   });
 });

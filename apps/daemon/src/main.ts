@@ -8,6 +8,7 @@ import { createApp } from "./app";
 import { startSweeper } from "./assets/sweeper";
 import { cookieOptionsFor, loadConfig } from "./config/load";
 import { SHUTDOWN_GRACE_MS } from "./constants";
+import { plainHttpWarnings } from "./destinations/credentials";
 import { startDeliveryRunner } from "./destinations/runner";
 import { startMirrorRunner } from "./mirror/runner";
 import { openPool, openAuth } from "./ports";
@@ -33,6 +34,10 @@ async function start(): Promise<void> {
     console.warn(
       `notemap: ${config.origin} is plain HTTP, so a session cookie crosses the network in the clear — put TLS in front of the daemon`,
     );
+  }
+
+  for (const line of plainHttpWarnings(config.webdav)) {
+    console.warn(`notemap: ${line}`);
   }
 
   mkdirSync(dirname(config.pool), { recursive: true });

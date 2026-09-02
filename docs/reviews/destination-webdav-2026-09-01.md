@@ -48,15 +48,34 @@ restarted it into a loop: one account nothing should be sent to took capture, ro
 other destination down with it. That is inconsistent with ADR 28, which already accepts a profile
 that is merely undeclared validating fine and failing at delivery.
 
-Fixed: `isPrivateHost` — loopback, RFC1918, link-local, ULA, and a single-label name — and the
-check moved to `webdavCredentials`, where a refusal reports `unreachable` naming the profile. What
-the file gets wrong stays fatal: an inline password, a repeated name, a scheme this does not speak.
+Fixed in two steps, the second on the developer's call: `isPrivateHost` — loopback, RFC1918,
+link-local, ULA, and a single-label name — now decides only whether to **warn**, and plain HTTP
+anywhere is delivered to. The daemon names the account on startup beside the warning it already
+prints for its own plain-HTTP origin. Whether the transport is acceptable past a private address is
+not a thing the daemon can tell — a VLAN, a tunnel and a mesh interface all look like the open
+internet from here — so it says it and the operator decides. What the file gets wrong stays fatal:
+an inline password, a repeated name, a scheme this does not speak.
+
+Worth recording against it: `load.ts:150` refuses an inline `password` by name precisely because
+"a warning nobody reads" is not a control, and this is now the daemon relying on one. The
+difference is that the transport is a line the operator typed on purpose and the daemon cannot
+evaluate, where an inline password is unambiguously wrong wherever it appears.
+
 `docs/specs/security.md`, `docs/running.md`, `apps/daemon/config.example.toml` and the adapter's
 README carried the old rule and were changed with it.
 
-The single-label rule is a heuristic — a DNS search domain could in principle resolve `nextcloud`
-somewhere public. Judged worth it against the alternative, a per-profile opt-out field that every
-doc describing a profile would have to explain.
+### 0b. A destination's settings form shows property names and no descriptions
+
+`apps/ui/src/components/settings/DestinationForm.svelte:131` — the form labels each field with its
+raw property name, deliberately: "the label read is the label an error will name". But it drops
+`description` entirely, while `RoutingComposer.svelte:149` shows both the title and the description
+for a capability's arguments. So the webdav kind's `profile` field arrived as a bare box labelled
+`profile`, with the sentence that explains it — "The name of an account in the daemon's
+configuration. The address and the password are its, not this destination's." — written into the
+schema and never displayed. That is what a person creating the destination has to guess.
+
+Fixed by rendering the description under the label, which leaves the property-name decision intact.
+The two forms still disagree about the *label*; that is worth settling, and it is not this PR's.
 
 ### 1. `unreachable` is returned after assets have already landed, so a retry duplicates them
 

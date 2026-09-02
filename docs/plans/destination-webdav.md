@@ -189,11 +189,15 @@ Depends on every phase above.
       as the daemon is reached as `http://nextcloud`, and phase 2's plain-HTTP rule refused it:
       *loopback* was written for a DAV server on the developer's own machine and missed the
       deployment the kind exists for. Worse, it was refused at **load**, so one such profile
-      stopped the daemon from capturing at all, in a restart loop. The rule is now a **private
-      address** — loopback, a private or link-local address, or a single-label name — and it is
-      checked when the profile is resolved, reporting `unreachable` like a profile nothing
-      declares. What is fatal is the file being wrong: an inline password, a repeated name, a
-      scheme this does not speak
+      stopped the daemon from capturing at all, in a restart loop. Plain HTTP is now **warned
+      about and not refused** — named on startup where the address is not private, meaning not
+      loopback, not a private or link-local address, and not a single-label name. Whether the
+      transport is acceptable beyond that is the operator's to know and not the daemon's to guess.
+      What stays fatal is the file being wrong: an inline password, a repeated name, a scheme this
+      does not speak
+- [x] **Also found there.** A destination's settings form showed each field's property name and
+      nothing else, so `profile` was a box with no way to know an account name was wanted. It now
+      shows the kind's own description of the field, as the composer already did for arguments
 - [x] `git commit`
 
 #### What the hand verification has to answer
