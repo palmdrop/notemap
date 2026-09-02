@@ -1,9 +1,9 @@
 # A webdav destination kind
 
 **Date**: 2026-08-26
-**Status**: In progress — phases 1–6 and the wiring are done; the hand verification against a real Nextcloud is not
+**Status**: Done
 **Spec**: `docs/specs/core.md`, `docs/specs/security.md`
-**Closed**:
+**Closed**: 2026-09-02
 
 ---
 
@@ -180,11 +180,12 @@ Depends on every phase above.
 - [x] `docker/compose` gains a commented-out secret file for the account's app password, beside the
       one the daemon's own password already uses, and `running.md` gains the whole of what a person
       does. *(The plan said `packaging/docker`; the directory is `docker/`.)*
-- [ ] **Outstanding, and the only thing left.** Verify by hand against the real Nextcloud: create
+- [x] **Verified by hand, 2026-09-02, against the real Nextcloud**: create
       the destination in settings, route a capture with `create-file`, and see the note in
       Nextcloud's web UI **without running a scan**. Then `append-to-file` onto it. Then open the
       vault in Obsidian and confirm the tags read as tags
-- [ ] Anything the fake DAV server got wrong is a finding recorded here before this plan closes
+- [x] Anything the fake DAV server got wrong is a finding recorded here before this plan closes.
+      Two findings, both below, both fixed
 - [x] **Found in verification, 2026-09-02, and fixed.** A Nextcloud on the same container network
       as the daemon is reached as `http://nextcloud`, and phase 2's plain-HTTP rule refused it:
       *loopback* was written for a DAV server on the developer's own machine and missed the
