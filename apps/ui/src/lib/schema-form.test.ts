@@ -55,6 +55,28 @@ describe("what a person typed, as the value the schema asks for", () => {
     });
   });
 
+  /**
+   * The folder field of a filesystem destination is required and means the root
+   * when it is empty. Dropping it left the schema refusing it as missing, so
+   * routing into the root was a thing the form could describe and not do.
+   */
+  test("sends a required field somebody left blank, since blank is a value there", () => {
+    expect(valuesFrom(fields, { path: "  ", tags: "one" })).toEqual({
+      path: "",
+      tags: ["one"],
+    });
+  });
+
+  test("sends a required list left blank as no items rather than as nothing", () => {
+    const required = fieldsOf({
+      type: "object",
+      required: ["tags"],
+      properties: { tags: { type: "array", items: { type: "string" } } },
+    });
+
+    expect(valuesFrom(required, { tags: " " })).toEqual({ tags: [] });
+  });
+
   test("puts a value already held back into what an input holds", () => {
     expect(typedFrom({ path: "inbox", tags: ["one", "two"] })).toEqual({
       path: "inbox",

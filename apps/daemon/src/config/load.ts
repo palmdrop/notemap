@@ -44,6 +44,29 @@ export type SweepConfig = {
   readonly intervalMs: number;
 };
 
+/**
+ * One account a credential-holding destination kind may be pointed at: which
+ * kind speaks to it, the collection it is rooted in, who is reaching it, and
+ * where the secret is read from. The base URL travels with the secret rather
+ * than being a destination's field, so nothing created over `/v1` can aim the
+ * daemon somewhere else with the credential attached.
+ *
+ * Not named after any one kind: the daemon reads accounts and secrets, and
+ * which kind an account is for is a string it passes on rather than a branch it
+ * takes.
+ */
+export type Account = {
+  /** The destination kind that speaks to it, which is how an adapter finds its own. */
+  readonly kind: string;
+  readonly name: string;
+  /** The collection the account is rooted at, without a trailing slash. */
+  readonly baseUrl: string;
+  readonly username: string;
+  /** Exactly one of these two. The secret is read when a delivery needs it. */
+  readonly passwordFile?: string;
+  readonly passwordEnv?: string;
+};
+
 export type DaemonConfig = {
   /** The SQLite file the pool lives in. */
   readonly pool: string;
@@ -62,6 +85,8 @@ export type DaemonConfig = {
   readonly sweep: SweepConfig;
   /** The cadence the delivery runner claims at. Destinations are pool state, not this file's. */
   readonly delivery: DeliveryConfig;
+  /** The accounts a destination may name, by kind. Empty is a daemon with nothing remote to reach. */
+  readonly accounts: readonly Account[];
   readonly poolConfig: PoolConfig;
 };
 
@@ -118,6 +143,22 @@ const fileSchema = z.object({
       batch: z.number().int().positive().optional(),
     })
     .optional(),
+  accounts: z
+    .array(
+      z.object({
+        kind: z.string().min(1),
+        name: z.string().min(1),
+        baseUrl: z.string().url(),
+        username: z.string().min(1),
+        passwordFile: z.string().min(1).optional(),
+        passwordEnv: z.string().min(1).optional(),
+        // Known so it can be refused by name rather than dropped as an
+        // unrecognised key, which would start a daemon with no credential and
+        // a warning nobody reads.
+        password: z.string().optional(),
+      }),
+    )
+    .default([]),
   sources: z
     .array(
       z.object({
@@ -292,6 +333,67 @@ function isTable(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/**
+ * What makes the file itself wrong is refused here, at load: a password written
+ * into a file people keep in dotfiles, two accounts a destination could not
+ * tell apart, an address that is not one this speaks. Whether an account can be
+ * used *safely* is asked when it is resolved instead, so one bad account does
+ * not take the daemon down with it.
+ */
+function readAccounts(
+  accounts: NonNullable<ConfigFile["accounts"]>,
+  from: string,
+): readonly Account[] {
+  const seen = new Set<string>();
+
+  return accounts.map((account) => {
+    const at = `${from}: the ${account.kind} account ${account.name}`;
+
+    if (account.password !== undefined) {
+      throw new Error(
+        `${at} sets password inline, which puts a secret in a file that is backed up and pasted into issues. Use passwordFile or passwordEnv.`,
+      );
+    }
+    if (
+      (account.passwordFile === undefined) ===
+      (account.passwordEnv === undefined)
+    ) {
+      throw new Error(
+        `${at} must set exactly one of passwordFile and passwordEnv`,
+      );
+    }
+    if (seen.has(`${account.kind}\u0000${account.name}`)) {
+      throw new Error(
+        `${at} is declared twice, and a destination of that kind names one by name`,
+      );
+    }
+    seen.add(`${account.kind}\u0000${account.name}`);
+
+    const url = new URL(account.baseUrl);
+    if (url.protocol !== "https:" && url.protocol !== "http:") {
+      throw new Error(
+        `${at} is reached over ${url.protocol}, and an account is reached over http or https`,
+      );
+    }
+
+    return {
+      kind: account.kind,
+      name: account.name,
+      baseUrl: account.baseUrl.replace(/\/+$/, ""),
+      username: account.username,
+      // `~` and a relative path mean here what they mean for every other path
+      // in this file: a secret named `~/.config/…` is the one in a home
+      // directory, not a directory called `~` beside the daemon.
+      ...(account.passwordFile === undefined
+        ? {}
+        : { passwordFile: resolve(expandHome(account.passwordFile)) }),
+      ...(account.passwordEnv === undefined
+        ? {}
+        : { passwordEnv: account.passwordEnv }),
+    };
+  });
+}
+
 export function parseConfig(source: string, from: string): LoadedConfig {
   let raw: unknown;
   try {
@@ -340,6 +442,7 @@ export function parseConfig(source: string, from: string): LoadedConfig {
         DEFAULT_DELIVERY.leaseMs) as Duration,
       batch: file.delivery?.batch ?? DEFAULT_DELIVERY.batch,
     },
+    accounts: readAccounts(file.accounts, from),
     poolConfig: {
       sources: file.sources.map((source) => ({
         id: source.id as SourceId,

@@ -1,6 +1,6 @@
 import type { Delivery, JsonValue } from "@notemap/core";
 
-import { oneSegment } from "./paths";
+import { oneSegment } from "./names";
 
 const MAX_STEM = 60;
 

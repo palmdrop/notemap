@@ -1,8 +1,19 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-08-31
+**Last updated**: 2026-09-01
 **Shipped**:
+
+- 2026-09-01 — **A second destination kind, and what a kind holding a credential may be told.** A
+  `webdav` destination delivers a note to a folder on a WebDAV server, with the filesystem kind's
+  own two capabilities and the same note: what turning a delivery into markdown *is* now lives
+  beside both kinds rather than inside one of them, so the two cannot drift into two dialects.
+  Nothing in core moved — a new kind reaches the composer by being registered, which is what the
+  settings schema and `describe()` were for. What did change is a rule about settings: for a kind
+  that holds a credential, *which endpoint* is no longer a person's free-text field, because
+  settings are pool state and a free-text address is somewhere the daemon would send a password.
+  ([plan](../plans/destination-webdav.md),
+  [ADR 28](../adr/0028-a-remote-destination-names-a-credential-profile-not-a-url.md))
 
 - 2026-08-31 — **A destination can be asked what one field of one capability's arguments could
   hold.** `destinations.candidates` joins `describe` on the pool API and on the `Destinations`

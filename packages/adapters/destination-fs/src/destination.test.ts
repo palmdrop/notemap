@@ -18,7 +18,7 @@ import type {
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createFilesystemDestination } from "./destination";
-import { linkTo, type Renderer } from "./renderers";
+import { linkTo, type Renderer } from "@notemap/output-markdown";
 import {
   bytes,
   delivery,
@@ -358,9 +358,12 @@ describe("appending to a file", () => {
 });
 
 describe("assets", () => {
-  it("land beside the note under the names they were uploaded with", async () => {
+  const ONE = "a".repeat(64);
+  const TWO = "b".repeat(64);
+
+  it("land beside the note, named for the upload and for what is in them", async () => {
     const { path, destination } = await vault({ image: renderWithAssets });
-    const photo = deliveredAsset("image", "photo.png", bytes("PNG"));
+    const photo = deliveredAsset("image", "photo.png", bytes("PNG"), ONE);
 
     await destination.deliver(
       delivery({
@@ -370,16 +373,19 @@ describe("assets", () => {
       }),
     );
 
-    expect(await filesUnder(path)).toEqual(["inbox/a.md", "inbox/photo.png"]);
-    expect(await readFile(join(path, "inbox", "photo.png"), "utf8")).toBe(
-      "PNG",
-    );
+    expect(await filesUnder(path)).toEqual([
+      "inbox/a.md",
+      "inbox/photo-aaaaaaaa.png",
+    ]);
+    expect(
+      await readFile(join(path, "inbox", "photo-aaaaaaaa.png"), "utf8"),
+    ).toBe("PNG");
     expect(await readFile(join(path, "inbox", "a.md"), "utf8")).toContain(
-      "![](photo.png)",
+      "![](photo-aaaaaaaa.png)",
     );
   });
 
-  it("suffixes the second of two sharing one name, rather than losing it", async () => {
+  it("tells two sharing one uploaded name apart by their content", async () => {
     const { path, destination } = await vault({ image: renderWithAssets });
 
     await destination.deliver(
@@ -387,19 +393,23 @@ describe("assets", () => {
         type: "image" as PayloadTypeName,
         arguments: { directory: "", filename: "a.md" },
         assets: [
-          deliveredAsset("one", "photo.png", bytes("first")),
-          deliveredAsset("two", "photo.png", bytes("second")),
+          deliveredAsset("one", "photo.png", bytes("first"), ONE),
+          deliveredAsset("two", "photo.png", bytes("second"), TWO),
         ],
       }),
     );
 
     expect(await filesUnder(path)).toEqual([
       "a.md",
-      "photo-1.png",
-      "photo.png",
+      "photo-aaaaaaaa.png",
+      "photo-bbbbbbbb.png",
     ]);
-    expect(await readFile(join(path, "photo.png"), "utf8")).toBe("first");
-    expect(await readFile(join(path, "photo-1.png"), "utf8")).toBe("second");
+    expect(await readFile(join(path, "photo-aaaaaaaa.png"), "utf8")).toBe(
+      "first",
+    );
+    expect(await readFile(join(path, "photo-bbbbbbbb.png"), "utf8")).toBe(
+      "second",
+    );
   });
 
   it("steps around a file the vault already had, rather than replacing it", async () => {
@@ -410,12 +420,14 @@ describe("assets", () => {
       delivery({
         type: "image" as PayloadTypeName,
         arguments: { directory: "", filename: "a.md" },
-        assets: [deliveredAsset("one", "photo.png", bytes("ours"))],
+        assets: [deliveredAsset("one", "photo.png", bytes("ours"), ONE)],
       }),
     );
 
     expect(await readFile(join(path, "photo.png"), "utf8")).toBe("theirs");
-    expect(await readFile(join(path, "photo-1.png"), "utf8")).toBe("ours");
+    expect(await readFile(join(path, "photo-aaaaaaaa.png"), "utf8")).toBe(
+      "ours",
+    );
   });
 
   it("links an asset whose name has spaces so the link still resolves", async () => {
@@ -433,7 +445,7 @@ describe("assets", () => {
 
     // A bare destination would end at the first space, taking the link with it.
     expect(await readFile(join(path, "a.md"), "utf8")).toContain(
-      "![](<Screenshot 2026-08-14.png>)",
+      "![](<Screenshot 2026-08-14-00000000.png>)",
     );
   });
 
@@ -448,10 +460,13 @@ describe("assets", () => {
       }),
     );
 
-    expect(await filesUnder(path)).toEqual(["a.md", "authorized_keys"]);
+    expect(await filesUnder(path)).toEqual([
+      "a.md",
+      "authorized_keys-00000000",
+    ]);
     expect(await filesUnder(join(path, ".."))).toEqual([
       "vault/a.md",
-      "vault/authorized_keys",
+      "vault/authorized_keys-00000000",
     ]);
   });
 
@@ -478,7 +493,9 @@ describe("assets", () => {
       }),
     );
 
-    expect(new Uint8Array(await readFile(join(path, "raw.bin")))).toEqual(raw);
+    expect(
+      new Uint8Array(await readFile(join(path, "raw-00000000.bin"))),
+    ).toEqual(raw);
   });
 });
 

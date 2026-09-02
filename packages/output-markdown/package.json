@@ -1,0 +1,23 @@
+{
+  "name": "@notemap/output-markdown",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@notemap/core": "workspace:*",
+    "js-yaml": "^5.2.3",
+    "mdast-util-from-markdown": "^2.0.3"
+  },
+  "devDependencies": {
+    "@types/mdast": "^4.0.4",
+    "@types/node": "^24.10.1",
+    "vitest": "^4.1.10"
+  }
+}

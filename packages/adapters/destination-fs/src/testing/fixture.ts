@@ -57,13 +57,14 @@ export function deliveredAsset(
   slot: string,
   filename: string,
   content: Uint8Array,
+  blob = "0".repeat(64),
 ): DeliveredAsset & { opens: () => number } {
   let opens = 0;
   const asset: Asset = {
     id: `asset-${filename}` as AssetId,
     filename,
     mime: "application/octet-stream",
-    blob: "0".repeat(64) as Asset["blob"],
+    blob: blob as Asset["blob"],
     bytes: content.byteLength,
   };
 

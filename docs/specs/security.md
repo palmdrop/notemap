@@ -4,6 +4,19 @@
 **Last updated**: 2026-09-01
 **Shipped**:
 
+- 2026-09-01 — **The first destination kind that holds a credential, and it holds neither the
+  credential nor the address.** The rule written ahead of it is satisfied by taking both out of
+  `settings`: the host's config declares named accounts carrying a base URL, a username and a
+  secret read from a file or an environment variable, and a destination names one of those and a
+  folder under it. So nothing secret enters the pool, the mirror or an API answer, and there is no
+  redaction rule to remember. It also closes what would have been the first server-side request
+  forgery here — a URL in `settings` is an address the daemon sends a credential to, chosen by
+  whoever can create a destination, repeatedly, on the delivery runner's timer. Redirects are not
+  followed with a credential attached, and an account reached over plain HTTP at an address that is
+  not private is named on startup as one whose password crosses the network in the clear.
+  ([plan](../plans/destination-webdav.md),
+  [ADR 28](../adr/0028-a-remote-destination-names-a-credential-profile-not-a-url.md))
+
 - 2026-09-01 — **The spec says what is true now that there is a door.** The boundary is two layers
   rather than one; the bind section describes the shapes a deployment takes — loopback, a LAN, a
   routable address, a tunnel, a container network — instead of one deployment's story; the proxy
@@ -271,9 +284,43 @@ Two things make it a rule rather than a preference, both verified 2026-08-26:
   the mirror survives being deleted from anywhere else.
 
 So a destination that needs a credential holds a **reference** to one — a name the daemon resolves
-out of its own configuration or its auth database — and never the credential itself.
-[destination-webdav](../plans/destination-webdav.md)'s phase 2 is the first thing that has to
-satisfy this.
+out of its own configuration — and never the credential itself.
+
+**Settled 2026-09-01, and it went further than a reference to the secret**
+([ADR 28](../adr/0028-a-remote-destination-names-a-credential-profile-not-a-url.md)). The host's
+config declares named **accounts** under `[[accounts]]`, each naming the destination kind that
+speaks to it and carrying a base URL, a username and where its secret is read from, resolved
+together; a destination's settings name an account and a path within it, and have nowhere to put
+either a URL or a password. The block is not named after any kind — the daemon reads accounts and
+secrets, and an adapter picks out its own by `kind` — so a second kind needing a credential adds no
+config code. The second half is what decided the shape. A
+destination is created over `/v1`, so a URL in `settings` is an address the daemon will then send a
+credential to — another container, a loopback service, a host of somebody's choosing — repeatedly,
+on the delivery runner's own timer. That is request forgery with credential disclosure at the end
+of it, and it did not exist before only because every kind was local. The set of addresses the
+daemon will authenticate to is now fixed by a file only the operator writes.
+
+Two more that are one line each to get wrong and invisible afterwards: **a redirect is never
+followed with a credential attached**, and TLS verification is never disabled.
+
+**A plain-HTTP base URL is warned about, not refused** (settled 2026-09-02). Where the address is
+not private — not loopback, not a private or link-local address, not a single-label name, which is
+what a container on the same network is called — the daemon names that account on startup and says
+its password crosses the network in the clear. Then it delivers.
+
+It was written as a refusal at load and that was wrong twice over. It refused the ordinary
+deployment, notemap and the server it delivers to as siblings on one container network reached as
+`http://nextcloud`, where there is no loopback and no certificate to be had. And refusing at load
+meant one account nothing should be sent to stopped the daemon from capturing at all, in a restart
+loop. Whether plain HTTP is acceptable beyond that is not a thing the daemon can know — a private
+VLAN, a tunnel and a mesh interface all look like the open internet from here — so it is the
+operator's call, made in a file only they can write, and the daemon's job is that nobody makes it
+unknowingly.
+
+What is still fatal is the file being wrong rather than an account being exposed: an inline
+`password`, two profiles under one name, a scheme this does not speak. And the warning is a warning
+about the *transport*; nothing about it relaxes the rule above, which is that the secret and the
+address are the host's and never a destination's.
 
 ### No CORS headers, which is load-bearing
 

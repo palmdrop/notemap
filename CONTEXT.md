@@ -359,16 +359,31 @@ drain it, and the client's cache is left holding something the pool never accept
 and dismissed rather than retried.
 _Avoid_: failed, error, rejected (reserved for suggestions)
 
+### Reaching out
+
+**Account**:
+A login the daemon holds on **another** system, so that a destination can deliver to it — a
+Nextcloud, and whatever comes after. Declared in the daemon's config under `[[accounts]]`, one per
+kind and name, carrying the base URL, the username and where the secret is read from, and resolved
+as one thing when a delivery needs it. Never in a destination's settings, which are pool state:
+a destination names an account and a folder under it, and has nowhere to put a URL or a password
+([ADR 28](docs/adr/0028-a-remote-destination-names-a-credential-profile-not-a-url.md)).
+
+The one word in this glossary that points outward. The daemon's own **credential** is not an
+account and is never called one; an account is never notemap's, and belongs to a server somebody
+else's software is running.
+_Avoid_: profile, connection, endpoint, integration, remote
+
 ### The door
 
 **Credential**:
 The one username and password a daemon holds, or nothing. Stored beside the pool and never in it,
 so a rebuild from the mirror restores no way in. Setting one closes the door on the next request;
 a daemon with none asks for nothing and lets every request through. There is exactly one, and it
-belongs to the person running the daemon — it is not an account and there is nothing to register.
-It is set from the command line, or from the environment on a daemon that holds none, which never
-replaces one that is already there.
-_Avoid_: account, user, login (as a noun), identity
+belongs to the person running the daemon — there is nothing to register. It is set from the command
+line, or from the environment on a daemon that holds none, which never replaces one that is already
+there. Not an **account**, which in notemap is always somewhere *else's*: see below.
+_Avoid_: account (for this), user, login (as a noun), identity
 
 **Session**:
 What a person holds after signing in: a secret in an `HttpOnly` cookie, and a row the daemon keeps

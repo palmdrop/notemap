@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@notemap/core": "workspace:*",
-    "js-yaml": "^5.2.3"
+    "@notemap/output-markdown": "workspace:*"
   },
   "devDependencies": {
     "@notemap/schema-ajv": "workspace:*",

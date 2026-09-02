@@ -12,6 +12,7 @@
     "@notemap/core": "workspace:*",
     "@notemap/destination-fs": "workspace:*",
     "@notemap/mirror-fs": "workspace:*",
+    "@notemap/output-markdown": "workspace:*",
     "@notemap/schema-ajv": "workspace:*",
     "@notemap/store-sqlite": "workspace:*",
     "@types/node": "^24.10.1",

@@ -1,4 +1,8 @@
-import { linkTo, type Renderer, type Renderers } from "@notemap/destination-fs";
+import {
+  linkTo,
+  type Renderer,
+  type Renderers,
+} from "@notemap/output-markdown";
 import type { PayloadTypeName } from "@notemap/core";
 
 /**

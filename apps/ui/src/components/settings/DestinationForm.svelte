@@ -134,6 +134,9 @@
       <span class="text-ink-muted">
         {field.name}{field.required ? "" : " (optional)"}
       </span>
+      {#if field.description !== undefined}
+        <p class="text-ink-muted">{field.description}</p>
+      {/if}
       <input
         bind:value={typed[field.name]}
         aria-label={field.name}

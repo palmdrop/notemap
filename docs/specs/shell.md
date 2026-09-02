@@ -1,8 +1,15 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-08-31
+**Last updated**: 2026-09-01
 **Shipped**:
+
+- 2026-09-01 — **A required field left blank is sent blank, not dropped.** Both forms built from a
+  schema — the composer's arguments and a destination's settings — omitted every empty field, so a
+  filesystem destination's `directory`, which is required and means the root when it is empty, was
+  refused as missing. Routing into a vault's own root was a thing the form described and could not
+  do. An optional field left blank is still absent, which is what optional means.
+  ([plan](../plans/destination-webdav.md))
 
 - 2026-08-31 — **The composer walks what a field could hold.** A field carrying
   `x-notemap-candidates` draws a browser in the `Group`/`Option` idiom `where` and `do` already

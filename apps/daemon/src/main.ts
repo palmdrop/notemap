@@ -37,12 +37,25 @@ async function start(): Promise<void> {
 
   mkdirSync(dirname(config.pool), { recursive: true });
 
-  const { pool, ports, mirrorWriter, destinations } = openPool({
+  const {
+    pool,
+    ports,
+    mirrorWriter,
+    destinations,
+    warnings: wired,
+  } = openPool({
     file: config.pool,
     config: config.poolConfig,
     assetRoot: config.assets.root,
     ...(config.mirror === undefined ? {} : { mirrorRoot: config.mirror.root }),
+    accounts: config.accounts,
   });
+
+  // What the adapters make of the accounts they were handed. The daemon prints
+  // it and does not author it: which kinds exist is `ports.ts`'s knowledge.
+  for (const line of wired) {
+    console.warn(`notemap: ${line}`);
+  }
 
   mkdirSync(dirname(config.auth), { recursive: true });
 
@@ -116,6 +129,12 @@ async function start(): Promise<void> {
           : `notemap: mirroring to ${config.mirror.root}`,
       );
       console.log(`notemap: assets in ${config.assets.root}`);
+
+      if (config.accounts.length > 0) {
+        console.log(
+          `notemap: accounts ${config.accounts.map((each) => `${each.name} (${each.kind})`).join(", ")}`,
+        );
+      }
 
       void pool.destinations.list().then((held) => {
         console.log(

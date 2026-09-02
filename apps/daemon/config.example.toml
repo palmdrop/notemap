@@ -82,6 +82,59 @@ pollInterval = 5000 # milliseconds between claims
 leaseFor = 300000   # how long a claimed delivery is held before anyone may retake it
 batch = 4           # deliveries claimed per pass
 
+# The accounts a destination may be pointed at. This is the one part of a
+# destination that is not created in settings, and the reason is that it carries
+# a password: a destination's settings are pool state, answered verbatim by
+# `GET /v1/destinations` and written to the mirror in the clear, so a credential
+# in one is a credential every access token can read and every backup keeps.
+#
+# The base URL travels with the secret rather than being a field on the
+# destination. Otherwise whoever can create a destination over `/v1` could aim
+# the daemon at any address it can reach and have it deliver there with this
+# password attached, over and over, on the delivery runner's own timer.
+#
+# A destination then names an account and a folder under it — never a URL, never
+# a secret. Several vaults on one account are several destinations naming one
+# account.
+#
+# `kind` is the destination kind that speaks to it, and it is what an adapter
+# finds its own accounts by; the daemon reads this block without knowing what
+# any of the kinds are. A name has to be unique within its kind and nowhere
+# else, so two kinds may each have a `main`.
+#
+# `baseUrl` is the collection the account is rooted at. For Nextcloud over
+# webdav that is `https://<host>/remote.php/dav/files/<user>`, which is the
+# whole of that user's files; a vault below it is the destination's own folder.
+#
+# Plain HTTP costs nothing where the password cannot cross a network somebody
+# else is on: loopback, a private or link-local address, or a single-label name
+# — which is what a container on the same network is called, so a Nextcloud in
+# the same compose stack is `http://nextcloud/remote.php/dav/files/alice`.
+# Anywhere else it still works, and the daemon names the account on startup as
+# one whose password crosses the network in the clear.
+#
+# The secret is `passwordFile` or `passwordEnv` — exactly one, and never an
+# inline `password`, which would put it in this file. It is read when a delivery
+# needs it rather than at startup, so rotating one is writing the file. Use an
+# app password rather than the account's own where the server offers them.
+#
+# [[accounts]]
+# kind = "webdav"
+# name = "nextcloud"
+# baseUrl = "https://cloud.example.com/remote.php/dav/files/alice"
+# username = "alice"
+# passwordFile = "~/.config/notemap/nextcloud-app-password"
+#
+# The same account, taking its secret from the environment instead. Exactly one
+# of the two, so this is an alternative to the line above and not a companion.
+#
+# [[accounts]]
+# kind = "webdav"
+# name = "nextcloud"
+# baseUrl = "https://cloud.example.com/remote.php/dav/files/alice"
+# username = "alice"
+# passwordEnv = "NOTEMAP_WEBDAV_NEXTCLOUD"
+
 # A source needs no declaration to capture; declaring one attaches policy.
 #
 # A source is the capture *channel*, not the shell: the web app stamps a typed

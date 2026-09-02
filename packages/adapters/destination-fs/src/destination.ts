@@ -10,33 +10,29 @@ import {
   type PayloadTypeName,
 } from "@notemap/core";
 
-import { placeAssets } from "./assets";
-import { createFile, replaceFile } from "./atomic";
-import { filesystemCandidates } from "./candidates";
-import { Refused } from "./errors";
 import {
   APPEND_TO_FILE,
   asAppendToFileArguments,
   asCreateFileArguments,
-  CREATE_FILE,
   capabilitiesFor,
-} from "./capabilities";
-import { deriveFilename } from "./filename";
-import { FIXED_KEYS, fixedFrontmatter, toYaml } from "./frontmatter";
-import type { FrontmatterValue } from "./frontmatter";
-import { contain, overlapsAny, realRootOf, type Contained } from "./paths";
-import {
-  renderAsJson,
+  CREATE_FILE,
+  deriveFilename,
+  insertUnder,
+  renderNote,
+  RenderingFailed,
   type Renderers,
-  type Rendering,
-  type RenderingContext,
-} from "./renderers";
+} from "@notemap/output-markdown";
+
+import { placeAssets } from "./assets";
+import { createFile, replaceFile } from "./atomic";
+import { filesystemCandidates } from "./candidates";
+import { Refused } from "./errors";
+import { contain, overlapsAny, realRootOf, type Contained } from "./paths";
 import {
   asFilesystemSettings,
   FILESYSTEM,
   FILESYSTEM_SETTINGS,
 } from "./settings";
-import { insertUnder } from "./sections";
 
 /** What the host wires: neither a renderer nor the payload types that exist is a person's setting. */
 export type FilesystemDestinationConfig = {
@@ -88,7 +84,12 @@ export function createFilesystemDestination(
         );
       }
 
-      return Promise.resolve({ capabilities: capabilitiesFor(config.accepts) });
+      return Promise.resolve({
+        capabilities: capabilitiesFor({
+          accepts: config.accepts,
+          browsable: true,
+        }),
+      });
     },
 
     deliver: async (
@@ -187,7 +188,10 @@ async function createNote(
 
   const directory = dirname(note.absolute);
   const assets = await placeAssets(directory, delivery.assets, signal);
-  const rendered = render(wiring.renderers, delivery, { directory, assets });
+  const rendered = renderNote(wiring.renderers, delivery, {
+    directory: within(note),
+    assets,
+  });
 
   await createFile(note.absolute, `${rendered.frontmatter}\n${rendered.body}`);
   return note.relative;
@@ -208,7 +212,10 @@ async function appendToNote(
   const directory = dirname(note.absolute);
 
   const assets = await placeAssets(directory, delivery.assets, signal);
-  const rendered = render(wiring.renderers, delivery, { directory, assets });
+  const rendered = renderNote(wiring.renderers, delivery, {
+    directory: within(note),
+    assets,
+  });
 
   const existing = await readIfPresent(note.absolute);
   if (existing === undefined) {
@@ -226,6 +233,16 @@ async function appendToNote(
   return note.relative;
 }
 
+/**
+ * The folder the note is in as the *vault* names it, which is what a renderer
+ * is told. The absolute path is this adapter's business and stays here: a note
+ * carrying `/var/lib/notemap/vaults/…` would be carrying the daemon's
+ * filesystem into somebody's vault.
+ */
+function within(note: Contained): string {
+  return note.relative.split("/").slice(0, -1).join("/");
+}
+
 /** A file inside the root, or a refusal that names what was wrong with the path. */
 async function locate(realRoot: string, target: string): Promise<Contained> {
   const contained = await contain(realRoot, target);
@@ -234,37 +251,6 @@ async function locate(realRoot: string, target: string): Promise<Contained> {
     throw new Refused(`${target} names the destination itself`);
   }
   return contained.path;
-}
-
-function render(
-  renderers: Renderers,
-  delivery: Delivery,
-  at: RenderingContext,
-): { frontmatter: string; body: string } {
-  const rendered = renderOrRefuse(renderers, delivery, at);
-
-  const entries = new Map<string, FrontmatterValue>(fixedFrontmatter(delivery));
-  for (const [key, value] of rendered.frontmatter ?? []) {
-    if (!FIXED_KEYS.includes(key)) entries.set(key, value);
-  }
-
-  return { frontmatter: toYaml(entries), body: rendered.body };
-}
-
-function renderOrRefuse(
-  renderers: Renderers,
-  delivery: Delivery,
-  at: RenderingContext,
-): Rendering {
-  const renderer = renderers[delivery.payload.type] ?? renderAsJson;
-  try {
-    return renderer(delivery, at);
-  } catch (cause) {
-    // It will throw identically on every attempt, so retrying is pointless.
-    throw new Refused(
-      `the renderer for ${delivery.payload.type} threw: ${why(cause)}`,
-    );
-  }
 }
 
 async function exists(path: string): Promise<boolean> {
@@ -296,7 +282,9 @@ function unreachable(detail: string): DeliveryOutcome {
  * abandoned on the first attempt, because retrying cannot change it.
  */
 function failure(cause: unknown): DeliveryOutcome {
-  if (cause instanceof Refused) return { kind: "rejected", detail: why(cause) };
+  if (cause instanceof Refused || cause instanceof RenderingFailed) {
+    return { kind: "rejected", detail: why(cause) };
+  }
 
   const code = (cause as NodeJS.ErrnoException).code;
   return code !== undefined && UNREACHABLE.includes(code)
