@@ -4,6 +4,7 @@ import { beforeEach, expect, test, vi } from "vitest";
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { pool } from "$testing/pool";
+import { log } from "$lib/log.svelte";
 import Order from "./Order.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
@@ -24,6 +25,8 @@ vi.mock("$app/navigation", () => ({
 
 beforeEach(() => {
   replaced.urls = [];
+  // Module-scoped, and the log a test turned around is not the next one's.
+  log.forget();
 });
 
 function serving(surface: "queue" | "feed", handler?: () => Promise<void>) {
@@ -55,6 +58,26 @@ test("turns the queue around and reads it again from that end", async () => {
 
   await vi.waitFor(() => {
     expect(ordersOf(transport, "queue")).toEqual(["newest-first"]);
+  });
+});
+
+/**
+ * The log has to be told. `replaceState` moves the address bar without
+ * assigning `page.url`, so a surface waiting to read its own order off the URL
+ * waits until somebody reloads.
+ */
+test("turns the log around and reads it again from that end", async () => {
+  at.path = "/log";
+  const transport = pool(() => json(200, { values: [] }));
+
+  render(Order);
+
+  await fireEvent.change(screen.getByLabelText("Order"), {
+    target: { value: "oldest-first" },
+  });
+
+  await vi.waitFor(() => {
+    expect(ordersOf(transport, "actions")).toEqual(["oldest-first"]);
   });
 });
 

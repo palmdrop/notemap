@@ -1,8 +1,15 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-08-31
+**Last updated**: 2026-09-02
 **Shipped**:
+
+- 2026-09-02 — **The client reads the action log.** `ActionsApi.read` takes an order, an optional
+  subject filter and a position, and answers a page with the position the next one continues from.
+  Not a surface with a held page and not in the durable store: the log is read for diagnosis rather
+  than drained. The position is the domain's — an instant and an id — read out of the `next` link
+  `/v1` answers rather than passed back as a URL.
+  ([plan](../plans/log-in-the-shell.md), [ADR 29](../adr/0029-the-action-log-is-a-shell-surface.md))
 
 - 2026-08-31 — **A destination can be asked what a field could hold, and the answer is never
   cached.** `DestinationsApi.candidates()` is a passthrough over
@@ -282,6 +289,28 @@ processed — routed or archived — which the pool decides, not the scroll.
   the surface is not already in **turns it around and reads it again from the start**: a position
   belongs to the order that produced it, and two orders cannot be stitched into one list. The order
   a surface is in is part of what it reports, so a control can draw it.
+
+### The action log
+
+**Everything the pool has done is read, and none of it is held.** A client reads
+`GET /v1/actions` a page at a time, taking an **order** and, where a reader has narrowed it, one
+subject. It is not one of the surfaces: there is no held page, no projection to subscribe to and
+no reconnect that reads it again. What has been walked belongs to whoever is looking at it, and
+goes when they do.
+
+- **A position, not a URL.** A read continues from a position in the domain's terms — the instant
+  and the id of the last row the previous page handed out ([CONTEXT.md](../../CONTEXT.md)) — which
+  the client reads out of the `next` link `/v1` answers rather than passing back. A client that
+  hands its callers a URL has leaked the wire into the surface. The position is absent on the last
+  page, which is what says it is the last.
+- **It is not in the cache and not in the store.** The log is read for diagnosis rather than
+  drained, so persisting it would grow what every client writes to disk for no offline gain, and a
+  pool out of reach answers nothing rather than a stale page. Reading it does not seed the item
+  cache either: the subjects it names are ids, not items.
+- **A subject filter is never validated.** The log outlives the material it describes
+  ([core.md](core.md#the-action-log)), so an id no item has is a filter matching nothing.
+- A refusal and an unreachable pool are told apart here as they are everywhere else; the caller
+  is the one that decides what to draw.
 
 ### The outbox
 

@@ -2,8 +2,14 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one and health are settled; the rest is stub
-**Last updated**: 2026-08-31
+**Last updated**: 2026-09-02
 **Shipped**:
+
+- 2026-09-02 — **`GET /log` is gone.** The page the daemon served for the action log is deleted and
+  the app answers that path, an unmatched extensionless path already falling through to it.
+  `GET /v1/actions` is unchanged and was always the promise; the page was host surface this spec
+  had already called removable.
+  ([plan](../plans/log-in-the-shell.md), [ADR 29](../adr/0029-the-action-log-is-a-shell-surface.md))
 
 - 2026-09-01 — **Every `/v1` write declares its media type, carrying a body or not.** The rule
   used to skip the routes that read no body and the ones whose optional body was absent, which
@@ -136,6 +142,9 @@ editing, destinations, routing to one and health are settled; the rest is stub
   position parsing is shared with the feed, and `next` carries whatever a surface pages by. A
   page at `/log` renders it, on the same host-surface terms as `/docs`.
   ([plan](../plans/action-log-feed.md))
+  *Superseded 2026-09-02*: `/log` is a route of the app, not a page the daemon serves. What this
+  spec promised is `GET /v1/actions`, which is unchanged.
+  ([plan](../plans/log-in-the-shell.md), [ADR 29](../adr/0029-the-action-log-is-a-shell-surface.md))
 - 2026-08-10 — The document is served with something that reads it: an OpenAPI playground at
   `/docs`, Swagger UI vendored out of `swagger-ui-dist` by the daemon's build step and pointed
   at `/v1/openapi.json`. Host surface, outside the contract and absent from the document.
@@ -195,7 +204,8 @@ Settled (2026-08-11, amended 2026-08-25): asset upload and download — `PUT /v1
 `GET /v1/assets/:id/content`, the upload's integrity check and size limit, and which media types
 are served inline.
 
-Settled (2026-08-11): `GET /v1/actions`, and the log page at `/log`.
+Settled (2026-08-11, amended 2026-09-02): `GET /v1/actions`. The page at `/log` was the daemon's
+until 2026-09-02 and is the app's now, which this spec does not describe.
 
 Settled (2026-08-14): `GET /v1/queue` and `GET /v1/archived`, both paginated by a capture-time
 position *(the key was content time until 2026-08-24)*; archiving and unarchiving an item; marking
@@ -262,13 +272,13 @@ discovered: [security.md](security.md).
   header is the moment to reconsider authentication rather than a convenience. Binding wider
   than localhost exposes an unauthenticated pool to whoever can reach the address — the
   configuration allows it, and nothing in `/v1` defends it.
-- The app is served at `/`, the action log page at `/log`, and the playground at `/docs`.
+- The app is served at `/` and every path of its own it routes, and the playground at `/docs`.
   Everything the API itself answers is under `/v1`.
 - **The pages the daemon serves stay reachable without a credential, and what they ask for does
-  not.** `/`, `/log` and `/docs` are files: they are the application, not the pool, and something
+  not.** The app and `/docs` are files: they are the application, not the pool, and something
   has to be able to draw a login. Each draws nothing until it calls `/v1`, and every one of those
-  calls is behind the door — an unauthenticated `/log` is a page that reports a refusal rather
-  than a page full of somebody's actions. Shutting them would also answer a person a JSON refusal
+  calls is behind the door — an unauthenticated app is a surface that reports a refusal rather
+  than one full of somebody's material. Shutting them would also answer a person a JSON refusal
   where they asked a browser for a page. `/v1/openapi.json` is open for the same reason and one
   more: it describes the routes and never the pool, so closing it would break a signed-out
   operator's only way to read the API without withholding anything the source does not say.
@@ -1229,20 +1239,6 @@ The playground is **host surface, not contract**. It is absent from the document
 `/v1` refers to it, and removing it changes no promise this spec makes. `/v1/openapi.json`
 remains the interop surface; `/docs` is a convenience over it.
 
-### The log page
-
-`GET /log` is a page the daemon serves itself, reading `GET /v1/actions` from the daemon that
-served it and paging by following `next`. It exists so that the log can be looked at without a
-database client, which is the difference between a trace that is kept and one that is read.
-
-It is **host surface on the same terms as the playground**: absent from the document, referred to
-by nothing in `/v1`, and removable without changing a promise this spec makes.
-
-*Amended 2026-08-25*: it is drawn in the shell's visual language ([shell.md](shell.md#the-daemons-own-pages))
-rather than a second one of its own. It still loads nothing from anywhere but the daemon, so the
-roles are restated in the page rather than imported, and a test holds that copy to
-`apps/ui/src/styles/tokens.css`.
-
 ---
 
 ## Constraints
@@ -1385,11 +1381,9 @@ roles are restated in the page rather than imported, and a test holds that copy 
   its entries were written still returns them.
 - `GET /docs` returns a page that loads its script, its stylesheet and the OpenAPI document from
   the daemon itself, and nothing from anywhere else.
-- `GET /log` returns a page that loads nothing from anywhere but the daemon, and renders entries
-  it read from `GET /v1/actions`.
 - A `/docs` path naming anything but the vendored Swagger UI files returns `404 unknown-route`,
   and no `/docs` path reaches a file outside the vendored directory.
-- Neither the playground nor the log page appears anywhere in `GET /v1/openapi.json`.
+- The playground appears nowhere in `GET /v1/openapi.json`.
 - Bytes uploaded to `PUT /v1/assets/{id}` come back from `GET /v1/assets/:id/content` byte for byte,
   under the filename they were uploaded with, for content that is not valid UTF-8 and for a
   filename that is not ASCII.

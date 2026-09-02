@@ -4,7 +4,6 @@ import type { Pool } from "@notemap/core";
 
 import { docsFileHandler } from "./docs/assets";
 import { docsPage } from "./docs/page";
-import { logPage } from "./log/page";
 import { requireJsonBody } from "./middleware/content-type";
 import { methodsFor, notFound } from "./middleware/not-found";
 import { openApiDocument } from "./openapi";
@@ -210,10 +209,6 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
   app.get(honoPath(assetContentRoute.path), assetContentHandler(pool));
 
   app.get("/v1/openapi.json", () => json(openApiDocument(), 200));
-
-  app.get("/log", (context) =>
-    context.html(logPage(), 200, { "cache-control": "no-cache" }),
-  );
 
   app.get("/docs", (context) =>
     context.html(docsPage(), 200, { "cache-control": "no-cache" }),

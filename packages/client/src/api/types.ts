@@ -24,6 +24,10 @@ export type ItemSlice = components["schemas"]["ItemSlice"];
 export type Payload = Item["payload"];
 export type Tag = NonNullable<Item["tags"]>[number];
 
+export type Action = components["schemas"]["Action"];
+/** Who did it. `notemap` is work core drives on nobody's behalf. */
+export type Agent = Action["by"];
+
 export type Asset = components["schemas"]["Asset"];
 type WireCaptureEnvelope = components["schemas"]["CaptureEnvelope"];
 
@@ -65,6 +69,7 @@ export type TagUse = components["schemas"]["TagUse"];
 /** Which pool this is: opaque, and stable for as long as the pool exists. */
 export type PoolIdentity = components["schemas"]["Health"]["pool"];
 
+export type ActionId = Action["id"];
 export type ItemId = Item["id"];
 export type AssetId = Asset["id"];
 export type DestinationId = Destination["id"];

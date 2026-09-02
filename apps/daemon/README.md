@@ -8,9 +8,9 @@ and nothing reaches the pool except through `createPool`.
 The surface it answers is specified in [docs/specs/http-v1.md](../../docs/specs/http-v1.md).
 Today that is capture, feed, assets and the action log: `POST /v1/captures`, `GET /v1/feed`,
 `GET /v1/items/:id`, `PUT /v1/assets/:id`, `GET /v1/assets/:id`, `GET /v1/assets/:id/content`,
-`GET /v1/actions`, plus `GET /v1/openapi.json`. It also serves three pages of its own, outside
-the contract: the capture page at `/`, the action log at `/log`, and an OpenAPI playground at
-`/docs`.
+`GET /v1/actions`, plus `GET /v1/openapi.json`. Outside the contract it serves the app — at `/`
+and at every path the app routes, the action log included — and an OpenAPI playground of its own
+at `/docs`.
 
 ## Running it
 

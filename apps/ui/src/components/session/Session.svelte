@@ -5,6 +5,7 @@
   import Row from "$components/settings/Row.svelte";
   import Section from "$components/settings/Section.svelte";
   import { client } from "$lib/client";
+  import { log } from "$lib/log.svelte";
   import { session } from "$lib/session.svelte";
 
   const who = session();
@@ -23,6 +24,9 @@
       failed = saidBy(error);
     } finally {
       going = false;
+      // Dropped either way, on the same terms as the client's own cache: the
+      // log is the pool's and this shell is the only thing holding it.
+      log.forget();
     }
   }
 </script>

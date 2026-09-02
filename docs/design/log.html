@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>notemap — the action log</title>
+    <link rel="stylesheet" href="log.css" />
+  </head>
+  <body>
+    <div class="frame">
+      <div class="bar">
+        <a class="wordmark" href="#">notemap</a>
+        <span class="nav">
+          <a href="#">queue</a>
+          <a href="#">feed</a>
+        </span>
+        <span class="chrome">
+          <label class="order">
+            <select aria-label="Order">
+              <option>newest</option>
+              <option>oldest</option>
+            </select>
+            <span aria-hidden="true">▾</span>
+          </label>
+          <span class="said">8 shown</span>
+          <a href="#">api</a>
+          <a href="#">settings</a>
+        </span>
+      </div>
+
+      <p class="lede">Everything this pool has done, in the order it happened.</p>
+
+      <div class="register">
+        <div class="rail">
+          <div class="when"><time datetime="2026-09-02T11:14">2026-09-02</time><span class="time">11:14</span></div>
+          <div class="by">source shell-note</div>
+        </div>
+        <div class="body">
+          <span class="kind">captured</span>
+          <div class="about">about <a class="id" href="#">0198f0c2…5e6f</a></div>
+        </div>
+
+        <div class="rail">
+          <div class="when"><time datetime="2026-09-02T11:14">2026-09-02</time><span class="time">11:14</span></div>
+          <div class="by">you</div>
+        </div>
+        <div class="body">
+          <span class="kind">tagged</span>
+          <div class="about">about <a class="id" href="#">0198f0c2…5e6f</a></div>
+          <div class="pairs"><span class="k">tags</span><span class="v">seedling</span></div>
+        </div>
+
+        <div class="rail">
+          <div class="when"><time datetime="2026-09-02T11:15">2026-09-02</time><span class="time">11:15</span></div>
+          <div class="by">provider ollama</div>
+        </div>
+        <div class="body">
+          <span class="kind">suggestion-added</span>
+          <div class="about">about <a class="id" href="#">0198f0c2…5e6f</a></div>
+          <div class="pairs">
+            <span class="k">kind</span><span class="v">tag</span>
+            <span class="k">value</span><span class="v">notemap</span>
+            <span class="k">confidence</span><span class="v">0.82</span>
+          </div>
+        </div>
+
+        <div class="rail">
+          <div class="when"><time datetime="2026-09-02T11:16">2026-09-02</time><span class="time">11:16</span></div>
+          <div class="by">you</div>
+        </div>
+        <div class="body">
+          <span class="kind">routed</span>
+          <div class="about">about <a class="id" href="#">0198f0c2…5e6f</a></div>
+          <div class="pairs">
+            <span class="k">destination</span><span class="v">0198e1aa…0001</span>
+            <span class="k">capability</span><span class="v">create-or-append-file</span>
+            <span class="k">arguments.path</span><span class="v">projects/notemap/notes/decisions.md</span>
+          </div>
+        </div>
+
+        <div class="rail">
+          <div class="when"><time datetime="2026-09-02T11:16">2026-09-02</time><span class="time">11:16</span></div>
+          <div class="by">notemap</div>
+        </div>
+        <div class="body">
+          <span class="kind bad">delivery-failed</span>
+          <div class="about">about <a class="id" href="#">0198f0c2…5e6f</a></div>
+          <div class="pairs">
+            <span class="k">code</span><span class="v bad">unreachable</span>
+            <span class="k">detail</span><span class="v">/vaults/obsidian: ENOENT</span>
+          </div>
+        </div>
+
+        <div class="rail">
+          <div class="when"><time datetime="2026-09-02T11:20">2026-09-02</time><span class="time">11:20</span></div>
+          <div class="by">you</div>
+        </div>
+        <div class="body">
+          <span class="kind">destination-reconfigured</span>
+          <div class="pairs">
+            <span class="k">destination</span><span class="v">archive drive</span>
+            <span class="k">root</span><span class="v">/vaults/archive</span>
+          </div>
+        </div>
+
+        <div class="rail">
+          <div class="when"><time datetime="2026-09-02T11:22">2026-09-02</time><span class="time">11:22</span></div>
+          <div class="by">notemap</div>
+        </div>
+        <div class="body">
+          <span class="kind bad">work-abandoned</span>
+          <div class="about">about <a class="id" href="#">0198f0c2…5e70</a></div>
+          <div class="pairs">
+            <span class="k">job</span><span class="v">delivery</span>
+            <span class="k">attempts</span><span class="v">5</span>
+          </div>
+        </div>
+
+        <div class="rail">
+          <div class="when"><time datetime="2026-09-02T11:30">2026-09-02</time><span class="time">11:30</span></div>
+          <div class="by">notemap</div>
+        </div>
+        <div class="body">
+          <span class="kind">purged</span>
+          <div class="pairs"><span class="k">items</span><span class="v">3</span></div>
+        </div>
+
+        <div class="foot"><button type="button">load more</button></div>
+      </div>
+
+      <div class="also">
+        <h2>the rest of it</h2>
+
+        <div class="case">
+          <div class="a">what changed</div>
+          <div class="b">
+            <p class="note">
+              Drawn as three corrections to the daemon's own page, which is where the log lived
+              when this was made. It is a route of the app now, and the corrections stand: the kind
+              was body text and is the register's own state mark; <code>detail</code> was
+              <code>JSON.stringify</code> and is pairs; the rail was 17rem for a stamp and one
+              short word.
+            </p>
+          </div>
+        </div>
+
+        <div class="case">
+          <div class="a">detail</div>
+          <div class="b">
+            <p class="note">
+              Flattened generically, never per kind: dotted keys, strings unquoted, arrays joined,
+              nested objects flattened. <code>ActionKind</code> has twenty-seven members and will gain more, so
+              a renderer per kind is that many places to drift from a detail shape nobody updates.
+              A kind nobody has written yet reads correctly for free.
+            </p>
+          </div>
+        </div>
+
+        <div class="case">
+          <div class="a">accent</div>
+          <div class="b">
+            <p class="note">
+              Spent on <code>delivery-failed</code>, <code>work-failed</code> and
+              <code>work-abandoned</code>, and on the failure code beside them. Not on
+              <code>purged</code>, <code>destination-deleted</code> or
+              <code>actions-cleared</code>: those are facts, not warnings, and a log where half the
+              rows are red says nothing.
+            </p>
+          </div>
+        </div>
+
+        <div class="case">
+          <div class="a">nothing yet</div>
+          <div class="b">
+            <div class="panel">
+              <div class="register">
+                <div class="rail"><div class="nothing"><span class="word">quiet</span></div></div>
+                <div class="body"><div class="nothing">Nothing has happened yet.</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="case">
+          <div class="a">one item</div>
+          <div class="b">
+            <div class="panel">
+              <p class="lede" style="margin: 0">
+                Everything this pool has done, in the order it happened. Only what is about
+                <span class="id">0198f0c2…5e6f</span> — <a href="#">show everything</a>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="case">
+          <div class="a">refused</div>
+          <div class="b">
+            <div class="panel">
+              <span class="chrome"><span class="said bad">unauthorized — try again</span></span>
+            </div>
+            <p class="note">
+              In the chrome where the count sits, in accent. The page itself stays served with the
+              door shut, because it is the application and not the pool — the read behind it is what
+              refuses.
+            </p>
+          </div>
+        </div>
+
+        <div class="case">
+          <div class="a">ids</div>
+          <div class="b">
+            <p class="note">
+              A subject is shortened to its head and tail and links to the log filtered to it. The
+              destination on a <code>routed</code> row stays an id because that is what the action
+              recorded; resolving it to a name is a second read of
+              <code>/v1/destinations</code> — allowed, since it is the same daemon — and is not
+              done here.
+            </p>
+          </div>
+        </div>
+
+        <div class="case">
+          <div class="a">styles</div>
+          <div class="b">
+            <p class="note">
+              Both sides of each <code>light-dark()</code> are written out here because the page
+              this was drawn against restated every role inline, loading nothing from anywhere but
+              the daemon. The app has the tokens, so it needs none of that;
+              <code>apps/ui/src/styles/tokens.css</code> is the source of truth, and these values
+              are what it says.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

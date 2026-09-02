@@ -5,29 +5,51 @@
 
   import OrderSelector from "$components/primitives/controls/OrderSelector.svelte";
   import { client } from "$lib/client";
-  import { remember, withOrder } from "$lib/order";
+  import { log } from "$lib/log.svelte";
+  import { remember, withOrder, type Surface } from "$lib/order";
 
   const queue = client.queue;
   const feed = client.feed;
 
   /** Settings has no end to start from, so it is offered none. */
-  const reading = $derived(page.url.pathname === "/feed" ? "feed" : "queue");
-  const surface = $derived(reading === "feed" ? $feed : $queue);
-  const drawn = $derived(["/", "/feed"].includes(page.url.pathname));
+  const READING: Record<string, Surface> = {
+    "/": "queue",
+    "/feed": "feed",
+    "/log": "log",
+  };
 
-  function turn(order: Order) {
-    remember(reading, order);
-    replaceState(withOrder(page.url, order), {});
+  const reading = $derived(READING[page.url.pathname]);
 
-    if (reading === "feed") void client.loadFeed(order);
-    else void client.loadQueue(order);
+  const order = $derived(
+    reading === undefined
+      ? undefined
+      : reading === "log"
+        ? log.order
+        : reading === "feed"
+          ? $feed.order
+          : $queue.order,
+  );
+
+  const reloading = $derived(
+    reading === "log"
+      ? log.loading
+      : reading === "feed"
+        ? $feed.loading
+        : $queue.loading,
+  );
+
+  function turn(wanted: Order) {
+    if (reading === undefined) return;
+
+    remember(reading, wanted);
+    replaceState(withOrder(page.url, wanted), {});
+
+    if (reading === "feed") void client.loadFeed(wanted);
+    else if (reading === "queue") void client.loadQueue(wanted);
+    else log.turn(wanted);
   }
 </script>
 
-{#if drawn}
-  <OrderSelector
-    order={surface.order}
-    reading={surface.loading}
-    onchoose={turn}
-  />
+{#if order !== undefined}
+  <OrderSelector {order} reading={reloading} onchoose={turn} />
 {/if}

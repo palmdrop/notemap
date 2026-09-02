@@ -75,15 +75,16 @@
     </span>
   </Row>
 
-  <!-- The daemon serves these, not this app: let the browser leave. -->
-  <a href="/log" data-sveltekit-reload class="block hover:text-accent">
-    <Row mark="↗" what="log" why="every change this pool has made, in order" />
+  <a href="/log" class="block hover:text-accent">
+    <Row mark="→" what="log" why="every change this pool has made, in order" />
   </a>
+
+  <!-- The daemon serves this one, not this app: let the browser leave. -->
   <a href="/docs" data-sveltekit-reload class="block hover:text-accent">
     <Row mark="↗" what="api" why="the reference the daemon serves for itself" />
   </a>
 
   <p class="mt-4 text-ink-muted">
-    Log and api are the daemon's own pages, in its own markup.
+    The api reference is the daemon's own page, in its own markup.
   </p>
 </Section>

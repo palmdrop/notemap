@@ -1,0 +1,172 @@
+/* The routing composer, as typed-routing-composer.md builds it.
+   Sibling of shell.css and deliberately standalone: shell.css still draws the
+   composer as a panel beside the row, which the modal superseded on 2026-08-24. */
+
+:root {
+  --paper: oklch(0.972 0.009 85);
+  --ink: oklch(0.24 0.013 55);
+  --ink-2: oklch(0.58 0.011 55);
+  --red: oklch(0.55 0.215 28);
+  --face-prose: serif;
+  --face-mono: monospace;
+  --size: 1.0625rem;
+  --size-prose: 1.25rem;
+  --gutter: 7.5rem;
+  --gap: 1.4rem;
+  --modal: 30rem;
+  --wide: 44rem;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--face-prose);
+  font-size: var(--size);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.sheet { min-height: 100vh; padding: 1.6rem 1.1rem 8rem; }
+.column { max-width: 62rem; margin: 0 auto; }
+
+.bar {
+  font-family: var(--face-mono);
+  display: flex;
+  align-items: baseline;
+  gap: 1.6rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--ink);
+}
+.bar .name {
+  font-family: var(--face-prose);
+  font-variant-caps: small-caps;
+  text-transform: lowercase;
+  letter-spacing: 0.12em;
+}
+.bar .state { margin-left: auto; color: var(--ink-2); }
+
+.lede { max-width: 44rem; margin: 1.6rem 0 0; }
+.lede p { margin: 0 0 0.7rem; }
+.lede code { font-family: var(--face-mono); font-size: 0.95em; }
+
+/* Label in the gutter, the thing itself in the body — the register's own shape. */
+.case {
+  display: grid;
+  grid-template-columns: var(--gutter) 1fr;
+  column-gap: var(--gap);
+  padding: 2.2rem 0 0;
+}
+.case > .a { font-family: var(--face-mono); color: var(--ink-2); }
+.case > .b { min-width: 0; }
+.note { font-family: var(--face-mono); color: var(--ink-2); margin-top: 0.6rem; }
+
+hr.sep {
+  border: 0;
+  border-top: 1px solid var(--ink);
+  margin: 2.2rem 0 0 calc(var(--gutter) + var(--gap));
+}
+
+/* ---- the modal ---- */
+
+.modal {
+  font-family: var(--face-mono);
+  font-size: var(--size);
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  padding: 0.9rem 1.2rem 1.4rem;
+  max-width: var(--modal);
+}
+.modal.wide { max-width: var(--wide); }
+.modal.phone { max-width: 390px; padding: 0.8rem 1rem 1.2rem; }
+
+.top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--ink);
+  padding-bottom: 0.7rem;
+}
+.subject {
+  margin-top: 0.8rem;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* A state is a word, inverted. The register has no icon set and gains none. */
+.word { background: var(--ink); color: var(--paper); padding: 0 0.35rem; white-space: nowrap; }
+
+.line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  border-bottom: 1px solid var(--ink);
+  padding-bottom: 0.25rem;
+  margin-top: 1rem;
+}
+.seg { color: var(--ink-2); }
+.seg.now { color: var(--ink); }
+/* What the line will be, once nothing more is typed. */
+.ghost { color: var(--ink-2); }
+.caret {
+  display: inline-block;
+  width: 0.5ch;
+  height: 1.05em;
+  background: var(--ink);
+  transform: translateY(0.16em);
+  margin-left: 0.15ch;
+}
+.right { margin-left: auto; color: var(--ink-2); padding-left: 2ch; }
+
+.status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 1.4rem;
+  margin-top: 0.5rem;
+}
+.status .n { color: var(--ink-2); }
+.new { color: var(--red); }
+.muted { color: var(--ink-2); }
+
+.opts { margin-top: 0.5rem; }
+.opt { display: flex; align-items: baseline; gap: 0.6rem; padding: 0.05rem 0; }
+.opt .ptr { width: 1ch; flex: none; }
+.opt.on > .what { background: var(--ink); color: var(--paper); padding: 0 0.35rem; margin: 0 -0.35rem; }
+.opt.dim > .what { color: var(--ink-2); }
+.opt .why { margin-left: auto; color: var(--ink-2); padding-left: 2ch; white-space: nowrap; }
+.hit { border-bottom: 2px solid currentColor; }
+hr.rule { border: 0; border-top: 1px solid var(--ink-2); opacity: 0.45; margin: 0.5rem 0; }
+
+.tree { margin-top: 0.6rem; }
+.node { display: flex; align-items: baseline; gap: 0.6rem; padding: 0.05rem 0; color: var(--ink-2); }
+.node.l1 { padding-left: 2ch; }
+.node.l2 { padding-left: 4ch; }
+.node.l3 { padding-left: 6ch; }
+.node.on { color: var(--ink); }
+.node.made > .what { color: var(--red); }
+.node.here > .what { background: var(--ink); color: var(--paper); padding: 0 0.35rem; margin: 0 -0.35rem; }
+
+/* Tags and headings are spaced words. The register has no chips in it. */
+.labelled {
+  display: grid;
+  grid-template-columns: 3.6rem 1fr;
+  column-gap: 1rem;
+  align-items: baseline;
+  margin-top: 1rem;
+}
+.labelled > .k { color: var(--ink-2); }
+.set { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 1.4rem; }
+.set .off { color: var(--ink-2); }
+
+.commit { margin-top: 1.6rem; display: flex; gap: 1.4rem; align-items: baseline; }
+.commit .go { background: var(--red); color: var(--paper); padding: 0.05rem 0.7rem; }
+.keys { margin-left: auto; color: var(--ink-2); padding-left: 2ch; }
+
+@media (max-width: 46rem) {
+  .case { grid-template-columns: 1fr; row-gap: 0.6rem; }
+  hr.sep { margin-left: 0; }
+}
