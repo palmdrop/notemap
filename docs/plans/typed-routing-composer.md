@@ -138,25 +138,25 @@ capability together. Nothing in the shell changes in this phase.
 
 Depends on phase 1 for the field it drives, though the control is testable before the adapter is.
 
-- [ ] A new control under `apps/ui/src/components/routing/`: one monospace line holding a path,
+- [x] A new control under `apps/ui/src/components/routing/`: one monospace line holding a path,
       with the entries at the deepest complete scope beneath it. Typing filters that scope's
       entries; `/` descends; backspace at the head of a segment pops it; `⇥` completes the entry
       under the caret; `↑↓` move and `⏎` takes
-- [ ] The line is the value. There is no second input beside it — that pairing is what
+- [x] The line is the value. There is no second input beside it — that pairing is what
       `CandidateBrowser` has today and what this replaces
-- [ ] A trailing `/` means a folder and its absence means a file, matching phase 1's `path`
-- [ ] The hierarchy is **shown, not walked**: the levels along the typed path, each with its
+- [x] A trailing `/` means a folder and its absence means a file, matching phase 1's `path`
+- [x] The hierarchy is **shown, not walked**: the levels along the typed path, each with its
       siblings, indented. Ancestors are drawn from the answers already in hand
-- [ ] One `candidates` call per level, debounced, with every answer but the newest dropped — the
+- [x] One `candidates` call per level, debounced, with every answer but the newest dropped — the
       race `CandidateBrowser` already guards against, for the same reason
-- [ ] `truncated` is said, not swallowed. A scope over the adapter's 500 cannot be filtered
+- [x] `truncated` is said, not swallowed. A scope over the adapter's 500 cannot be filtered
       client-side into completeness and the line must not pretend otherwise
-- [ ] Registered in `browserFor` against the `filesystem` and `webdav` kinds. Every other kind keeps
+- [x] Registered in `browserFor` against the `filesystem` and `webdav` kinds. Every other kind keeps
       the existing schema-driven browser, unchanged
-- [ ] Tests beside it: a path parses into segments; a trailing slash reads as a folder; a filter
+- [x] Tests beside it: a path parses into segments; a trailing slash reads as a folder; a filter
       narrows; `⇥` completes; ancestors survive a descent; a truncated answer is reported
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
+- [x] `git commit`
 
 ### Phase 3 — what will happen, in one word
 

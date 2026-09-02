@@ -73,10 +73,15 @@ function serving(
   });
 }
 
-/** A destination whose `create-file` capability's `directory` can be browsed. */
+/**
+ * A destination whose `create-file` capability's `directory` can be browsed.
+ * The kind is one nothing registers a control for, so this draws the
+ * schema-driven browser; the kinds that hold a filesystem draw the typed line
+ * and are exercised in `PathLine.test.ts`.
+ */
 function servingBrowsable(
   answerAt: (scope: string | undefined) => Record<string, unknown>,
-  kind = "filesystem",
+  kind = "kanban",
 ) {
   return pool((request) => {
     const route = routeOf(request);
@@ -308,20 +313,37 @@ test("a typed value that was never listed still routes", async () => {
 });
 
 test("an unregistered kind gets the schema-driven control", async () => {
-  servingBrowsable(
-    () => ({
-      kind: "answered",
-      entries: [{ label: "inbox", value: "inbox" }],
-      truncated: false,
-    }),
-    "kanban",
-  );
+  servingBrowsable(() => ({
+    kind: "answered",
+    entries: [{ label: "inbox", value: "inbox" }],
+    truncated: false,
+  }));
 
   draw();
   await choose(/Vault/);
   await choose(/create-file/);
 
   expect(await screen.findByRole("button", { name: "inbox" })).toBeDefined();
+  expect(screen.queryByRole("combobox")).toBeNull();
+});
+
+/** The seam decides on the kind alone, and a filesystem-shaped one draws the line. */
+test("a kind that holds a filesystem gets the typed line instead", async () => {
+  servingBrowsable(
+    () => ({
+      kind: "answered",
+      entries: [{ label: "inbox", value: "inbox" }],
+      truncated: false,
+    }),
+    "filesystem",
+  );
+
+  draw();
+  await choose(/Vault/);
+  await choose(/create-file/);
+
+  expect(await screen.findByRole("combobox")).toBeDefined();
+  expect(screen.queryByRole("button", { name: "inbox" })).toBeNull();
 });
 
 const answered = (entries: readonly Record<string, unknown>[]) => ({
@@ -406,7 +428,7 @@ test("drops an answer for a scope it has already left", async () => {
   pool(async (request) => {
     const route = routeOf(request);
     if (route === "GET /v1/destinations") {
-      return json(200, { values: [aDestination()] });
+      return json(200, { values: [aDestination({ kind: "kanban" })] });
     }
     if (route.endsWith("/description")) {
       return json(200, {

@@ -156,16 +156,19 @@
           destination={chosen}
           {capability}
           field={field.name}
+          label={field.title ?? field.name}
           value={args[field.name] ?? ""}
-          onchoose={(value) => (args = { ...args, [field.name]: value })}
+          onchange={(value) => (args = { ...args, [field.name]: value })}
+          onsubmit={() => void send()}
+        />
+      {:else}
+        <input
+          bind:value={args[field.name]}
+          placeholder={field.required ? "required" : "optional"}
+          aria-label={field.title ?? field.name}
+          class="mt-1.5 w-full border-b border-ink bg-transparent font-mono placeholder:text-ink-muted"
         />
       {/if}
-      <input
-        bind:value={args[field.name]}
-        placeholder={field.required ? "required" : "optional"}
-        aria-label={field.title ?? field.name}
-        class="mt-1.5 w-full border-b border-ink bg-transparent font-mono placeholder:text-ink-muted"
-      />
     </Group>
   {/each}
 

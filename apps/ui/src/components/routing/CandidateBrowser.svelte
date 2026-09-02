@@ -11,23 +11,27 @@
 
   /**
    * The schema-driven browser: entries at the current scope, a way back to
-   * the one before it, and a way to take the scope stood in. Placed beside
-   * the field's own free-text input rather than instead of it — a folder
-   * that does not exist yet cannot be browsed to.
+   * the one before it, and a way to take the scope stood in. It carries the
+   * field's own free-text input rather than sitting beside one — a folder that
+   * does not exist yet cannot be browsed to, and must still be typeable.
    */
   let {
     destination,
     capability,
     field,
+    label,
     value,
-    onchoose,
+    onchange,
+    onsubmit,
   }: {
     destination: string;
     capability: string;
     field: string;
+    label: string;
     /** What the field already holds, so a listed entry it names reads back as marked. */
     value: string;
-    onchoose: (value: string) => void;
+    onchange: (value: string) => void;
+    onsubmit?: () => void;
   } = $props();
 
   type Crumb = {
@@ -97,7 +101,7 @@
    */
   function open(entry: CandidateEntry): void {
     if (entry.scope === undefined) {
-      if (entry.value !== undefined) onchoose(String(entry.value));
+      if (entry.value !== undefined) onchange(String(entry.value));
       return;
     }
     history = [
@@ -115,7 +119,7 @@
   }
 
   function take(): void {
-    if (here?.value !== undefined) onchoose(here.value);
+    if (here?.value !== undefined) onchange(here.value);
   }
 
   /**
@@ -124,7 +128,7 @@
    * Offered only at the top, since `back` is what leaves a scope.
    */
   function clear(): void {
-    onchoose("");
+    onchange("");
   }
 </script>
 
@@ -157,3 +161,15 @@
     <p class="text-ink-muted">and more than this shows</p>
   {/if}
 {/if}
+
+<input
+  {value}
+  oninput={(event) => onchange(event.currentTarget.value)}
+  onkeydown={(event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    onsubmit?.();
+  }}
+  aria-label={label}
+  class="mt-1.5 w-full border-b border-ink bg-transparent font-mono placeholder:text-ink-muted"
+/>

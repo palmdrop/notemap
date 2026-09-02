@@ -2,6 +2,7 @@ import type { Component } from "svelte";
 import { describe, expect, it } from "vitest";
 
 import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
+import PathLine from "$components/routing/PathLine.svelte";
 import Option from "$components/primitives/composer/Option.svelte";
 
 import { browserFor, type BrowserProps } from "./candidate-browsers";
@@ -20,8 +21,12 @@ describe("which control a destination kind's field draws through", () => {
     );
   });
 
-  it("is the schema-driven browser for every kind, nothing being registered yet", () => {
-    expect(browserFor("filesystem")).toBe(CandidateBrowser);
+  it("is the typed line for the kinds that hold a filesystem", () => {
+    expect(browserFor("filesystem")).toBe(PathLine);
+    expect(browserFor("webdav")).toBe(PathLine);
+  });
+
+  it("is the schema-driven browser for a kind with no filesystem in it", () => {
     expect(browserFor("kanban")).toBe(CandidateBrowser);
   });
 });
