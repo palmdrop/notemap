@@ -23,12 +23,12 @@ describe("the action log", () => {
 
     const first = await client.actions.read({ order: "oldest-first" });
     expect(first.values).toHaveLength(TAGS);
-    expect(first.after).toBeDefined();
 
-    const second = await client.actions.read({
-      order: "oldest-first",
-      after: first.after,
-    });
+    const after = first.after;
+    if (after === undefined)
+      throw new Error("the first page named no position");
+
+    const second = await client.actions.read({ order: "oldest-first", after });
     expect(second.after).toBeUndefined();
 
     // The position continued the walk rather than starting it again.

@@ -37,6 +37,10 @@
   /* Settings is read rather than scanned, so it takes a narrower measure than
      the register — which is itself the signal that it is a different page. */
   --spacing-read: 46rem;
+
+  /* The log's rail holds a stamp and one short word; the register's holds a
+     row's whole account, and 17rem of it would be empty here. */
+  --spacing-log-rail: 11rem;
   --spacing-mark: 1.8rem;
 
   --breakpoint-narrow: 44rem;
@@ -48,5 +52,8 @@
   :root {
     --spacing-rail: 6.5rem;
     --spacing-gap: 1rem;
+    /* Not the register's 6.5rem: `2026-09-02` is ten monospace characters and
+       wraps mid-date below that, which reads as a different day. */
+    --spacing-log-rail: 7.5rem;
   }
 }

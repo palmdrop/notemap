@@ -1,6 +1,6 @@
 import type { Order } from "@notemap/client";
 
-export type Surface = "queue" | "feed";
+export type Surface = "queue" | "feed" | "log";
 
 export const PARAM = "order";
 
@@ -10,11 +10,13 @@ const ORDERS: readonly Order[] = ["oldest-first", "newest-first"];
 
 /**
  * The end each surface starts from before anyone has said otherwise. The queue
- * is a queue because it starts at the oldest; the feed is read newest first.
+ * is a queue because it starts at the oldest; the feed and the log are read
+ * newest first, being an account of what has happened.
  */
 const DEFAULTS: Record<Surface, Order> = {
   queue: "oldest-first",
   feed: "newest-first",
+  log: "newest-first",
 };
 
 function known(said: string | null): Order | undefined {

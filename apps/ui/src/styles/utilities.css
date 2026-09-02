@@ -9,6 +9,14 @@
   margin-inline: -0.375rem;
 }
 
+/** The same mark, where what it names went wrong. */
+@utility inverted-accent {
+  background: var(--color-accent);
+  color: var(--color-paper);
+  padding-inline: 0.375rem;
+  margin-inline: -0.375rem;
+}
+
 /**
  * The room a surface has rather than the room a row has. The drained queue is
  * the thing the queue exists to reach, so it is not drawn as a notice.

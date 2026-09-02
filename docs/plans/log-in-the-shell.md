@@ -83,32 +83,32 @@ Depends on nothing. `@notemap/client` has **no actions surface at all** today: t
 Depends on phase 1. The daemon's `/log` route still shadows this path until phase 3, so this phase
 is verified against `pnpm dev`, where the shell is served directly and nothing shadows it.
 
-- [ ] `apps/ui/src/routes/log/`, built from [`docs/design/log.html`](../design/log.html): the
+- [x] `apps/ui/src/routes/log/`, built from [`docs/design/log.html`](../design/log.html): the
       register, the kind as the shell's own `StateWord`, the flattened `detail`, the bar with the
       order control and the count
-- [ ] **`detail` is flattened generically, never per kind** — dotted keys, strings unquoted, arrays
+- [x] **`detail` is flattened generically, never per kind** — dotted keys, strings unquoted, arrays
       joined, nested objects flattened. `ActionKind` has 28 members and will gain more; a renderer
       per kind is that many places to drift from a shape nobody updates, and a kind nobody has
       written yet reads correctly for free
-- [ ] **Accent is spent on `delivery-failed`, `work-failed` and `work-abandoned`**, and on the
+- [x] **Accent is spent on `delivery-failed`, `work-failed` and `work-abandoned`**, and on the
       failure code beside them. Not on `purged`, `destination-deleted` or `actions-cleared`: those
       are facts rather than warnings, and a log where half the rows are red says nothing
-- [ ] A subject is shortened to its head and tail and links to the log filtered to it. Resolving a
+- [x] A subject is shortened to its head and tail and links to the log filtered to it. Resolving a
       `routed` row's destination id to a name is **not** done here — it is a second read and a
       cache, and the action recorded an id
-- [ ] The empty, subject-filtered and refused states all exist, because the page being replaced has
+- [x] The empty, subject-filtered and refused states all exist, because the page being replaced has
       them and a redesign is where they get quietly dropped
-- [ ] **Responsiveness is done here properly.** The rail this surface wants is not the register's —
+- [x] **Responsiveness is done here properly.** The rail this surface wants is not the register's —
       `--spacing-read` is the precedent for a surface naming its own measure. Below `narrow` the
       stamp stacks (both children, not just the container) and a `detail` pair stacks so the value
       takes the measure
-- [ ] Tests beside the components, as `src/components` already does: flattening handles nesting,
+- [x] Tests beside the components, as `src/components` already does: flattening handles nesting,
       arrays and an unknown kind; the accent rule picks exactly three kinds; a stamp stacks below
       the breakpoint
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`; and by eye against
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`; and by eye against
       `docs/design/shots/log-1440.png` and `log-390.png` with `pnpm dev`, per the command
       `docs/design/README.md` carries
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 3 — the daemon's page goes
 
