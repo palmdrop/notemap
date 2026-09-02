@@ -2,6 +2,7 @@
   import {
     saidBy,
     type CandidateEntry,
+    type DestinationCandidates,
     type RememberedPlace,
   } from "@notemap/client";
 
@@ -81,6 +82,7 @@
    * a folder still being typed, which is not a refusal of anything.
    */
   const refusal = $derived(levels[0]?.refusal);
+  const why = $derived(levels[0]?.why);
 
   const checked = $derived(marked(places, levels));
   const remembered = $derived(continuing(value, checked));
@@ -168,16 +170,33 @@
       if (answer.kind === "answered") {
         return { scope, entries: answer.entries, truncated: answer.truncated };
       }
+      return { scope, ...refused(answer) };
+    } catch (error) {
       return {
         scope,
-        refusal:
-          answer.kind === "not-offered"
-            ? "not offered"
-            : `${answer.kind} · ${answer.detail}`,
+        refusal: "unreachable · best effort",
+        why: saidBy(error),
       };
-    } catch (error) {
-      return { scope, refusal: saidBy(error) };
     }
+  }
+
+  /**
+   * A word and a mark, never a sentence. **`unreachable` here is the
+   * destination**, not the pool — the pool being out of reach is a different
+   * condition, and one in which the composer never opens, because the row's
+   * `route` is disabled. It is an ordinary state and not one of the three
+   * alarms: the line is still typed, the record is still made, and the delivery
+   * is deferred, which is exactly what `best effort` says. The detail is kept
+   * where a hover reaches it rather than spent on a line.
+   */
+  function refused(
+    answer: Exclude<DestinationCandidates, { kind: "answered" }>,
+  ): { refusal: string; why?: string } {
+    if (answer.kind === "not-offered") return { refusal: "not offered" };
+    if (answer.kind === "unusable") {
+      return { refusal: "unusable", why: answer.detail };
+    }
+    return { refusal: "unreachable · best effort", why: answer.detail };
   }
 
   $effect(() => {
@@ -308,7 +327,7 @@
   </div>
 
   {#if refusal !== undefined}
-    <p class="mt-2 text-ink-muted">{refusal}</p>
+    <p class="mt-2 text-ink-muted" title={why}>{refusal}</p>
   {:else if forecast !== undefined}
     <div class="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
       <StateWord word={forecast.word} inline />

@@ -255,14 +255,15 @@ test("keeps the levels that answered when a deeper scope is not there yet", asyn
   expect(screen.queryByText(/ENOENT/)).toBeNull();
 });
 
-test("says why when the destination itself cannot be asked", async () => {
+test("says a destination that cannot be asked is best effort, not a refusal", async () => {
   serving(() => ({ kind: "unreachable", detail: "the vault is not mounted" }));
   draw();
 
   await settled();
-  expect(
-    await screen.findByText(/unreachable · the vault is not mounted/),
-  ).toBeDefined();
+  const said = await screen.findByText("unreachable · best effort");
+  expect(said).toBeDefined();
+  // The detail is kept where a hover reaches it rather than spent on a line.
+  expect(said.getAttribute("title")).toBe("the vault is not mounted");
   expect(screen.queryByRole("alert")).toBeNull();
 });
 
@@ -347,7 +348,7 @@ test("draws no word at all where the destination could not be asked", async () =
   serving(() => ({ kind: "unreachable", detail: "the vault is not mounted" }));
   draw("picker.md", SAID);
 
-  await screen.findByText(/not mounted/);
+  await screen.findByText("unreachable · best effort");
   expect(screen.queryByText("create")).toBeNull();
   expect(screen.queryByText("append")).toBeNull();
 });
@@ -493,4 +494,34 @@ test("still completes remembered places against an unreachable destination", asy
 
   await fireEvent.keyDown(line.line(), { key: "ArrowRight" });
   expect(line.value()).toBe("projects/notemap/notes/");
+});
+
+/** The record is still made and the delivery deferred, which is what best effort means. */
+test("an unreachable destination leaves the line typed and the tree empty", async () => {
+  serving(() => ({ kind: "unreachable", detail: "the vault is not mounted" }));
+  const line = draw("projects/notemap/decisions.md", SAID);
+
+  await screen.findByText("unreachable · best effort");
+
+  expect(line.line().value).toBe("projects/notemap/decisions.md");
+  expect(
+    screen
+      .getByRole("listbox", { name: "places" })
+      .querySelectorAll('[role="option"]'),
+  ).toHaveLength(0);
+});
+
+test("a kind that offers nothing draws the same plain typed path", async () => {
+  serving(() => ({ kind: "not-offered" }));
+  const line = draw("drafts/picker.md", SAID);
+
+  await screen.findByText("not offered");
+
+  expect(line.line().value).toBe("drafts/picker.md");
+  expect(screen.queryByText("create")).toBeNull();
+  expect(
+    screen
+      .getByRole("listbox", { name: "places" })
+      .querySelectorAll('[role="option"]'),
+  ).toHaveLength(0);
 });

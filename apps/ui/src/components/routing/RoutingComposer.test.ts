@@ -741,3 +741,72 @@ test("the list still works, typing being an accelerator and not a replacement", 
     await screen.findByRole("button", { name: /create-file/ }),
   ).toBeDefined();
 });
+
+/**
+ * The property deferred delivery rests on: a vault that is asleep must still be
+ * routable, with the record made and the delivery deferred. Phase 1 is what
+ * makes it honest — there is nothing to infer and nothing that needs inferring.
+ */
+test("an unreachable destination is still routable", async () => {
+  const transport = pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "filesystem" })] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE_OR_APPEND] });
+    }
+    if (route.endsWith("/remembered")) {
+      return json(200, { truncated: false, places: [] });
+    }
+    if (route.endsWith("/candidates")) {
+      return json(200, {
+        kind: "unreachable",
+        detail: "the vault is not mounted",
+      });
+    }
+    if (route === "POST /v1/items/one/route") {
+      return json(200, { id: "r", item: "one", state: "pending", target: {} });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  const closed = drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+  await choose(/create-or-append-file/);
+
+  const line = await screen.findByRole("combobox", { name: "path" });
+  await fireEvent.input(line, { target: { value: "notes/decisions.md" } });
+  await screen.findByText("unreachable · best effort");
+
+  const commit = screen.getByRole("button", { name: "route" });
+  expect((commit as HTMLButtonElement).disabled).toBe(false);
+  expect(screen.queryByRole("alert")).toBeNull();
+
+  await fireEvent.click(commit);
+  await vi.waitFor(() => {
+    expect(closed).toHaveBeenCalled();
+  });
+
+  expect(await routed(transport)).toMatchObject({
+    capability: "create-or-append-file",
+    arguments: { path: "notes/decisions.md" },
+  });
+});
+
+/** `browserFor` decides on the kind alone, so this one keeps Group/Option. */
+test("a kind with no filesystem in it draws neither line nor tree", async () => {
+  servingBrowsable(() => ({
+    kind: "answered",
+    entries: [{ label: "inbox", value: "inbox", scope: "inbox" }],
+    truncated: false,
+  }));
+
+  draw();
+  await choose(/Vault/);
+  await choose(/create-file/);
+
+  expect(await screen.findByRole("button", { name: "inbox" })).toBeDefined();
+  expect(screen.queryByRole("combobox", { name: "directory" })).toBeNull();
+  expect(screen.queryByRole("listbox", { name: "places" })).toBeNull();
+});

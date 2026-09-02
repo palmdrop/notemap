@@ -274,25 +274,25 @@ Depends on phase 2. **Droppable**: the existing `where` list keeps working.
 
 Depends on phase 3. This is the phase that keeps the offline property honest.
 
-- [ ] **An unreachable destination is not a refusal.** No tree, no drawn state, the line still
+- [x] **An unreachable destination is not a refusal.** No tree, no drawn state, the line still
       typed, `route` still live. `docs/plans/destination-webdav.md` states the property this
       protects: an unreachable destination must still be routable, with the record made and the
       delivery deferred. Phase 1 is what makes this honest — there is nothing to infer and nothing
       that needs inferring
-- [ ] Distinguish it in the copy from an unreachable **pool**, which is a different condition and
+- [x] Distinguish it in the copy from an unreachable **pool**, which is a different condition and
       one in which the composer does not open at all
-- [ ] The refusal lands in the asking as a muted line — `unreachable · best effort` — never as one
+- [x] The refusal lands in the asking as a muted line — `unreachable · best effort` — never as one
       of the three alarms `docs/specs/shell.md` defines. It is the ordinary condition
-- [ ] `not-offered` draws the same way: a plain typed path, no tree, no drawn state
-- [ ] Where phase 5 landed, remembered places still complete against an unreachable destination:
+- [x] `not-offered` draws the same way: a plain typed path, no tree, no drawn state
+- [x] Where phase 5 landed, remembered places still complete against an unreachable destination:
       the pool holds them and the pool is reachable. That is most of what makes the line usable
       with nothing to ask
-- [ ] A kind with no filesystem in it draws neither line nor tree and keeps the `Group`/`Option`
+- [x] A kind with no filesystem in it draws neither line nor tree and keeps the `Group`/`Option`
       idiom it has today. `browserFor` is what decides, on the kind alone
-- [ ] Tests: an unreachable destination is still routable; `not-offered` draws a typed path with no
+- [x] Tests: an unreachable destination is still routable; `not-offered` draws a typed path with no
       tree; a non-filesystem kind draws the existing browser
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
+- [x] `git commit`
 
 ### Phase 8 — the docs catch up
 

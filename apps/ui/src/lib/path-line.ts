@@ -47,6 +47,8 @@ export type Level = {
   readonly truncated?: boolean;
   /** Why it answered nothing. At the root that is the destination refusing; deeper it is a folder that is not there. */
   readonly refusal?: string;
+  /** What the destination said, kept where a hover reaches it rather than spent on a line. */
+  readonly why?: string;
 };
 
 /** A folder is anywhere there is more to look at, whether or not it may be taken. */
