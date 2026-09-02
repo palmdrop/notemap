@@ -215,6 +215,35 @@ describe("editing a destination", () => {
   });
 });
 
+describe("asking whether a destination is really there", () => {
+  it("asks the probe route and answers what came back", async () => {
+    const { client, transport } = clientOver(() =>
+      json(200, { kind: "ready" }),
+    );
+
+    expect(await client.destinations.probe(aDestination().id)).toEqual({
+      kind: "ready",
+    });
+
+    const request = sentTo(transport).at(-1);
+    expect(request === undefined ? undefined : routeOf(request)).toBe(
+      `GET /v1/destinations/${aDestination().id}/probe`,
+    );
+  });
+
+  /** Every answer but `ready` is a fact about the destination, not a failure here. */
+  it("reads a rejection as an answer rather than throwing", async () => {
+    const { client } = clientOver(() =>
+      json(200, { kind: "rejected", detail: "Notes is not there" }),
+    );
+
+    expect(await client.destinations.probe(aDestination().id)).toEqual({
+      kind: "rejected",
+      detail: "Notes is not there",
+    });
+  });
+});
+
 describe("asking what a field could hold", () => {
   it("carries the capability, field and scope as query parameters", async () => {
     const { client, transport } = clientOver(() =>

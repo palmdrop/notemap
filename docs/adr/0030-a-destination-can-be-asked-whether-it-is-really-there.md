@@ -1,4 +1,4 @@
-# 29. A destination can be asked whether it is really there
+# 30. A destination can be asked whether it is really there
 
 **Date**: 2026-09-02
 **Status**: Accepted — extends the routing section of [core.md](../specs/core.md)

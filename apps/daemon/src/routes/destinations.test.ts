@@ -298,6 +298,49 @@ describe("GET /v1/destinations/{id}/description", () => {
   });
 });
 
+describe("GET /v1/destinations/{id}/probe", () => {
+  it("is ready for a root that is there", async () => {
+    const host = serving("ready");
+    const vault = await created(host);
+
+    const response = await host.app.request(
+      `/v1/destinations/${vault.id}/probe`,
+    );
+
+    expect(response.status).toBe(200);
+    expect(await body(response)).toEqual({ kind: "ready" });
+  });
+
+  /** What `/description` cannot say, and the reason this route exists. */
+  it("is rejected for a root that is not there, where describing it is content", async () => {
+    const host = serving("ready");
+    const vault = await created(host, {
+      settings: { root: join(host.vaultRoot, "nowhere") },
+    });
+
+    const described = await body(
+      await host.app.request(`/v1/destinations/${vault.id}/description`),
+    );
+    expect(described).toMatchObject({ kind: "described" });
+
+    const probed = await body(
+      await host.app.request(`/v1/destinations/${vault.id}/probe`),
+    );
+    expect(probed).toMatchObject({ kind: "rejected" });
+  });
+
+  it("is 404 for an id no destination has", async () => {
+    const host = serving();
+
+    const response = await host.app.request("/v1/destinations/nobody/probe");
+
+    expect(response.status).toBe(404);
+    expect(await body(response)).toMatchObject({
+      error: { code: "unknown-destination" },
+    });
+  });
+});
+
 describe("GET /v1/destinations/{id}/candidates", () => {
   async function ask(
     host: Daemon,

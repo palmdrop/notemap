@@ -1913,6 +1913,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/destinations/{id}/probe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ask one destination whether it is really there
+         * @description The third read that reaches the outside world, and the only one that answers what a person means by "does this work": `/description` answers from a destination's declared shape and never leaves the process, so an unmounted drive and an account nobody declared both describe themselves without complaint. `ready` was reached, took the credential and had its root; `rejected` answered and said no, which is a person's to fix; `unreachable` could not be reached or could not decide, which a retry may find different; `unusable` could not be asked at all; `not-offered` is a kind that does not do this. Nothing is written to find out, so `ready` does not promise a write will land.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What it answered. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DestinationProbe"];
+                    };
+                };
+                /** @description No destination has that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unknown-destination";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/destinations/{id}": {
         parameters: {
             query?: never;
@@ -3040,6 +3098,25 @@ export interface components {
             label: string;
             value?: unknown;
             scope?: string;
+        };
+        DestinationProbe: {
+            /** @enum {string} */
+            kind: "ready";
+        } | {
+            /** @enum {string} */
+            kind: "rejected";
+            detail: string;
+        } | {
+            /** @enum {string} */
+            kind: "unreachable";
+            detail: string;
+        } | {
+            /** @enum {string} */
+            kind: "unusable";
+            detail: string;
+        } | {
+            /** @enum {string} */
+            kind: "not-offered";
         };
         UpdateDestinationRequest: {
             name?: string;

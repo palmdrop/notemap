@@ -5,6 +5,13 @@ editing, destinations, routing to one and health are settled; the rest is stub
 **Last updated**: 2026-09-02
 **Shipped**:
 
+- 2026-09-02 — **`GET /v1/destinations/{id}/probe`.** The third read that reaches the outside
+  world, beside `/description` and `/candidates`, and the only one that answers what a person means
+  by "does this work". Every answer is a `200` — `ready`, `rejected`, `unreachable`, `unusable`,
+  `not-offered` — because a destination that is asleep is not a broken request.
+  ([plan](../plans/destination-checks-and-accounts.md),
+  [ADR 30](../adr/0030-a-destination-can-be-asked-whether-it-is-really-there.md))
+
 - 2026-09-02 — **`GET /log` is gone.** The page the daemon served for the action log is deleted and
   the app answers that path, an unmatched extensionless path already falling through to it.
   `GET /v1/actions` is unchanged and was always the promise; the page was host surface this spec
@@ -804,7 +811,7 @@ GET /v1/destinations/019a3f2c-.../candidates?capability=create-file&field=direct
 
 - **The third read that reaches the outside world**, beside `/description` and `/candidates`, and
   the only one that answers what a person means by "does this work"
-  ([ADR 29](../adr/0029-a-destination-can-be-asked-whether-it-is-really-there.md)). `/description`
+  ([ADR 30](../adr/0030-a-destination-can-be-asked-whether-it-is-really-there.md)). `/description`
   answers from a destination's declared shape and never leaves the process, so an unmounted drive
   and an account nobody declared both describe themselves without complaint.
 - **`200` carries every answer**, as `/candidates` does: `ready` where it was reached, its

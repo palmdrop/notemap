@@ -7,6 +7,7 @@ import type {
   DestinationDescription,
   DestinationId,
   DestinationKind,
+  DestinationProbe,
   UpdateDestinationRequest,
 } from "#api/types";
 import type { DestinationsApi } from "../types";
@@ -42,6 +43,15 @@ export function createDestinations(deps: DestinationsDeps): DestinationsApi {
     describe(id: DestinationId): Promise<DestinationDescription> {
       return answered(
         api.GET("/v1/destinations/{id}/description", {
+          params: { path: { id } },
+        }),
+      );
+    },
+
+    /** Whether it is really there, which describing never asks. Kept by nothing here. */
+    probe(id: DestinationId): Promise<DestinationProbe> {
+      return answered(
+        api.GET("/v1/destinations/{id}/probe", {
           params: { path: { id } },
         }),
       );

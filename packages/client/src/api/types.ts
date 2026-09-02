@@ -54,6 +54,7 @@ export type UpdateDestinationRequest =
 export type Capability = components["schemas"]["Capability"];
 export type DestinationCandidates =
   components["schemas"]["DestinationCandidates"];
+export type DestinationProbe = components["schemas"]["DestinationProbe"];
 export type CandidateEntry = components["schemas"]["CandidateEntry"];
 export type CandidatesRequest =
   paths["/v1/destinations/{id}/candidates"]["get"]["parameters"]["query"];

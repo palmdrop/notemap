@@ -88,7 +88,7 @@ Chosen: **option 3**.
   nothing about the destination is wrong; `describe()` still answers, doing no I/O, and the
   delivery reports `unreachable` naming what it could not read — the same answer an unmounted drive
   gets, and retried on the same terms.
-  *Narrowed 2026-09-02 by [ADR 29](0029-a-destination-can-be-asked-whether-it-is-really-there.md):
+  *Narrowed 2026-09-02 by [ADR 30](0030-a-destination-can-be-asked-whether-it-is-really-there.md):
   a **probe** answers the same fact `rejected` rather than `unreachable`. What this clause protects
   is retry semantics — a delivery that could not read a credential must stay pending and be
   attempted again — and a probe has none to protect. It is a person asking once, and the true answer

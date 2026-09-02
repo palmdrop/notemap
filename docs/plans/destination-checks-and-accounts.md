@@ -1,9 +1,9 @@
 # Destinations that say whether they are actually configured
 
 **Date**: 2026-09-02
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-09-02
 
 ---
 
@@ -193,20 +193,20 @@ is cheaper anyway, so the fallback was simply what got written.
 
 Depends on phase 5.
 
-- [ ] `GET /v1/destinations/{id}/probe`, beside `/description` and `/candidates`, and its entry in
+- [x] `GET /v1/destinations/{id}/probe`, beside `/description` and `/candidates`, and its entry in
       the daemon's own API definitions
-- [ ] `DestinationsApi.probe`, on `describe`'s terms: asked now, cached by nothing
-- [ ] `Destinations.svelte` probes what it describes, automatically, for every destination that is
+- [x] `DestinationsApi.probe`, on `describe`'s terms: asked now, cached by nothing
+- [x] `Destinations.svelte` probes what it describes, automatically, for every destination that is
       not retired. The row carries both answers: what it can do, and whether it is really there
-- [ ] Only the settings screen probes automatically. The routing composer does not — it must never
+- [x] Only the settings screen probes automatically. The routing composer does not — it must never
       stall on a destination that is asleep, and a decision to route is worth making whether or not
       the delivery can happen yet
-- [ ] Tests: the page probes what it lists; each answer draws distinctly; a `not-offered` kind says
+- [x] Tests: the page probes what it lists; each answer draws distinctly; a `not-offered` kind says
       so rather than looking broken
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, and `pnpm test:stack` —
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, and `pnpm test:stack` —
       this phase crosses the HTTP surface, the host's wiring and the client's transport, which is
       what that suite is for
-- [ ] `git commit`
+- [x] `git commit`
 
 ---
 

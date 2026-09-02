@@ -7,6 +7,7 @@ import type {
   Destination,
   DestinationCandidates,
   DestinationDescription,
+  DestinationProbe,
   DestinationId,
   DestinationKind,
   Item,
@@ -77,8 +78,14 @@ export interface DestinationsApi {
   load(): Promise<readonly Destination[]>;
   /** Every kind the daemon has an adapter for, with the schema a form is built from. */
   kinds(): Promise<readonly DestinationKind[]>;
-  /** What one can do, asked now. The only call here that reaches past the pool. */
+  /** What one can do, asked now. Answered from a declared shape, so it reaches nothing. */
   describe(id: DestinationId): Promise<DestinationDescription>;
+  /**
+   * Whether it is really there, asked now and kept by nothing: what a probe
+   * found is true of a moment, and a cached one would say a vault is fine long
+   * after somebody unplugged it.
+   */
+  probe(id: DestinationId): Promise<DestinationProbe>;
   /**
    * What one field of one capability's arguments could hold, asked now and
    * never cached: a vault's contents are somebody else's state, stale the

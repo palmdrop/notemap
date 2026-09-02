@@ -4,6 +4,12 @@
 **Last updated**: 2026-09-02
 **Shipped**:
 
+- 2026-09-02 — **Settings stops waiting to be asked.** The daemon row draws from the client's own
+  reachability rather than knocking with a destination read, and says how long ago the pool last
+  answered; every offered destination is asked what it can do and whether it is really there as the
+  page draws, per row. A webdav destination's account is chosen from what the daemon declares
+  instead of typed. ([plan](../plans/destination-checks-and-accounts.md))
+
 - 2026-09-02 — **The action log is a surface of this shell.** `/log` is a route of the app rather
   than a page the daemon serves: the same register, the kind wearing the state mark, `detail`
   flattened generically into pairs rather than stringified, and the accent spent on the three kinds
@@ -389,12 +395,24 @@ retired, its name, its kind, and what it last answered. Opening one adds what it
 settings its kind asked for, its id, and the four things that can be done to it — check, edit,
 retire, delete — with the rule and the distance separating what can be undone from what cannot.
 
-**Each one is asked what it can do as the page draws** *(2026-09-02)*, without waiting to be told
-to. Asked **per row**, so the first kind that has to go and look leaves one line saying it is asking
-rather than holding up a list that is already drawn from pool state. A **retired** one is not asked
-— it is offered to nothing new — and keeps the control for a person who wants to know anyway. One
-that answered is not asked again; one that could not is, when the pool comes back into reach, since
-that is the moment worth re-asking on.
+**Each one is asked what it can do, and whether it is really there, as the page draws**
+*(2026-09-02)*, without waiting to be told to. Asked **per row**, so the first kind that has to go
+and look leaves one line saying it is asking rather than holding up a list that is already drawn
+from pool state. A **retired** one is not asked — it is offered to nothing new — and keeps the
+control for a person who wants to know anyway. One that answered is not asked again; one that could
+not is, when the pool comes back into reach, since that is the moment worth re-asking on.
+
+**What it answered about being there is what the row leads with**, because it is the stronger fact:
+`reached` in green, and a refusal in the accent, which is the colour for a thing a person has to
+act on. A destination whose kind cannot be probed says nothing at all and looks exactly as it did
+before probing existed. What could not be *described* still wins over both, an unusable destination
+being a bigger fact than an unreachable one.
+
+**A settings field the kind published values for is chosen, not typed** *(2026-09-02)*. A webdav
+destination's account is one of the accounts the daemon declares, drawn as a list; a field with
+nothing published stays a box, so a daemon declaring no accounts does not trap a person behind an
+empty one. A value the destination already holds that the daemon no longer declares is offered too,
+marked as such — opening the form must not quietly move a destination somewhere else.
 
 **Daemon** says where this shell is talking to, and carries the way to `/log` and the exit to the
 daemon's `/docs` — one of this shell's own routes and one the browser leaves for, marked apart. Its

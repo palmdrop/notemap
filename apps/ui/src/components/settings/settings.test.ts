@@ -61,6 +61,12 @@ function serving(
   });
 }
 
+const described = () =>
+  json(200, {
+    kind: "described",
+    capabilities: [{ name: "create-file", accepts: [], argumentsSchema: {} }],
+  });
+
 /** Processing a destination happens on the row, which opens on its own name. */
 async function open(name: string) {
   return fireEvent.click(await screen.findByRole("button", { name }));
@@ -69,17 +75,13 @@ async function open(name: string) {
 const press = async (name: string | RegExp) =>
   fireEvent.click(await screen.findByRole("button", { name }));
 
-test("lists what the pool holds, and asks each offered one what it can do", async () => {
+test("lists what the pool holds, and asks each offered one about itself", async () => {
   serving(
     [aDestination(), aDestination({ id: "b", name: "Board", retired: true })],
     {
-      [`GET /v1/destinations/${VAULT}/description`]: () =>
-        json(200, {
-          kind: "described",
-          capabilities: [
-            { name: "create-file", accepts: [], argumentsSchema: {} },
-          ],
-        }),
+      [`GET /v1/destinations/${VAULT}/description`]: () => described(),
+      [`GET /v1/destinations/${VAULT}/probe`]: () =>
+        json(200, { kind: "ready" }),
     },
   );
 
@@ -92,13 +94,14 @@ test("lists what the pool holds, and asks each offered one what it can do", asyn
   expect(screen.getByText("1 offered \u00b7 1 retired")).toBeDefined();
   expect(screen.getByText(/offered to nothing new/)).toBeDefined();
 
-  // The list still fills from pool state alone; describing follows it, per row
-  // and never for one that is offered to nothing new.
-  await screen.findByText(/answered/);
-  expect(asked()).toEqual([
+  // The list still fills from pool state alone; both questions follow it, per
+  // row and never for one that is offered to nothing new.
+  await screen.findByText(/reached/);
+  expect(asked().sort()).toEqual([
     "GET /v1/destination-kinds",
     "GET /v1/destinations",
     `GET /v1/destinations/${VAULT}/description`,
+    `GET /v1/destinations/${VAULT}/probe`,
   ]);
 });
 
@@ -117,6 +120,36 @@ test("says what a destination can do without anyone asking it to", async () => {
   await open("Vault");
 
   await screen.findByText("create-file");
+});
+
+/**
+ * The whole point of the probe: describing answers from a declared shape, so a
+ * destination whose folder somebody moved describes itself perfectly well.
+ */
+test("says a destination is not really there, though it describes itself fine", async () => {
+  serving([aDestination()], {
+    [`GET /v1/destinations/${VAULT}/description`]: () => described(),
+    [`GET /v1/destinations/${VAULT}/probe`]: () =>
+      json(200, { kind: "rejected", detail: "~/notes is not there" }),
+  });
+
+  render(Destinations);
+
+  await screen.findByText(/~\/notes is not there/);
+});
+
+/** A kind that does not do this looks as it did before the probe existed. */
+test("says nothing at all where the kind cannot be probed", async () => {
+  serving([aDestination()], {
+    [`GET /v1/destinations/${VAULT}/description`]: () => described(),
+    [`GET /v1/destinations/${VAULT}/probe`]: () =>
+      json(200, { kind: "not-offered" }),
+  });
+
+  render(Destinations);
+
+  await screen.findByText(/answered/);
+  expect(screen.queryByText(/not-offered/)).toBeNull();
 });
 
 /**

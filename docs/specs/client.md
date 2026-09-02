@@ -4,6 +4,13 @@
 **Last updated**: 2026-09-02
 **Shipped**:
 
+- 2026-09-02 — **The reachability mark says when, and a destination can be probed.**
+  `reachable` carries the time the pool last answered anything and, where the probe was what
+  asked, how long it took — so a shell draws "answered eight seconds ago" without holding a second
+  notion of reach, and `probe()` re-asks out of turn. `DestinationsApi.probe()` is a passthrough
+  over `GET /v1/destinations/{id}/probe`, cached by nothing: what a probe found is true of a
+  moment. ([plan](../plans/destination-checks-and-accounts.md))
+
 - 2026-09-02 — **The client reads the action log.** `ActionsApi.read` takes an order, an optional
   subject filter and a position, and answers a page with the position the next one continues from.
   Not a surface with a held page and not in the durable store: the log is read for diagnosis rather

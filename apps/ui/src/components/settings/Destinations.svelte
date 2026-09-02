@@ -6,6 +6,7 @@
     type Destination as One,
     type DestinationDescription,
     type DestinationKind,
+    type DestinationProbe,
   } from "@notemap/client";
 
   import Destination from "$components/settings/Destination.svelte";
@@ -28,6 +29,7 @@
 
   /** Per destination rather than for the list: what one can do is I/O that may hang. */
   let described = $state<Record<string, DestinationDescription>>({});
+  let probed = $state<Record<string, DestinationProbe>>({});
   let asking = $state<Record<string, boolean>>({});
 
   const tally = $derived(
@@ -68,7 +70,7 @@
   }
 
   async function check(one: One) {
-    await attempt(() => describing(one));
+    await attempt(() => Promise.all([describing(one), probing(one)]));
   }
 
   async function describing(one: One): Promise<void> {
@@ -81,6 +83,11 @@
     } finally {
       asking = { ...asking, [one.id]: false };
     }
+  }
+
+  async function probing(one: One): Promise<void> {
+    const answer = await client.destinations.probe(one.id);
+    probed = { ...probed, [one.id]: answer };
   }
 
   /**
@@ -100,12 +107,17 @@
     untrack(() => {
       for (const one of held) {
         if (one.retired === true) continue;
-        if (described[one.id]?.kind === "described") continue;
         if (asking[one.id] === true) continue;
 
         // Quietly: a pool out of reach is already said by the chrome, and one
-        // line per destination saying it again is not news.
-        void describing(one).catch(() => undefined);
+        // line per destination saying it again is not news. Each is asked on
+        // its own, so an answer already held is not asked for twice.
+        if (described[one.id]?.kind !== "described") {
+          void describing(one).catch(() => undefined);
+        }
+        if (probed[one.id] === undefined) {
+          void probing(one).catch(() => undefined);
+        }
       }
     });
   });
@@ -129,6 +141,7 @@
     <Destination
       {one}
       described={described[one.id]}
+      probed={probed[one.id]}
       asking={asking[one.id] === true}
       opened={opened === one.id}
       offline={!pool.yes}

@@ -1,8 +1,18 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-09-01
+**Last updated**: 2026-09-02
 **Shipped**:
+
+- 2026-09-02 — **A destination can be asked whether it is really there.** `destinations.probe`
+  joins `describe` and `candidates`, optional on a kind adapter and answering `ready`, `rejected`,
+  `unreachable`, `unusable` or `not-offered`. Describing answers from a declared shape and never
+  leaves the process, so an unmounted drive and an account nobody declared both describe themselves
+  cheerfully; this goes and asks. `rejected` against `unreachable` is `DeliveryOutcome`'s own
+  distinction one call earlier — a person's to fix, against one already being retried. Nothing
+  writes to find out, so `ready` is reached rather than proven writable.
+  ([plan](../plans/destination-checks-and-accounts.md),
+  [ADR 30](../adr/0030-a-destination-can-be-asked-whether-it-is-really-there.md))
 
 - 2026-09-01 — **A second destination kind, and what a kind holding a credential may be told.** A
   `webdav` destination delivers a note to a folder on a WebDAV server, with the filesystem kind's
@@ -815,7 +825,7 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   — a kind whose adapter implements none of this, and a field an adapter does not answer for, are
   the same fact to a caller: nothing here can be browsed.
 - **A destination can be asked whether it is really there** (added 2026-09-02,
-  [ADR 29](../adr/0029-a-destination-can-be-asked-whether-it-is-really-there.md)), through a third
+  [ADR 30](../adr/0030-a-destination-can-be-asked-whether-it-is-really-there.md)), through a third
   method, **`probe`**. `describe()` answers from a declared shape and never leaves the process, so
   it says nothing about an unmounted drive or an account nobody declared — both describe themselves
   cheerfully, and the first evidence either is wrong is a delivery that does not land. A probe goes

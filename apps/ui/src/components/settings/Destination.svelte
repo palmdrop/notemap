@@ -1,5 +1,9 @@
 <script lang="ts">
-  import type { Destination, DestinationDescription } from "@notemap/client";
+  import type {
+    Destination,
+    DestinationDescription,
+    DestinationProbe,
+  } from "@notemap/client";
 
   import Fact from "$components/settings/Fact.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
@@ -8,6 +12,7 @@
   let {
     one,
     described,
+    probed,
     asking,
     opened,
     offline,
@@ -20,6 +25,7 @@
   }: {
     one: Destination;
     described?: DestinationDescription;
+    probed?: DestinationProbe;
     /** Being asked now, which is the ordinary state of a row that has just been drawn. */
     asking: boolean;
     opened: boolean;
@@ -46,6 +52,23 @@
     described === undefined || described.kind === "described"
       ? undefined
       : `${described.kind} — ${described.detail}`,
+  );
+
+  /**
+   * What describing cannot say. `not-offered` is not drawn at all: a kind that
+   * does not do this looks exactly as it did before the probe existed, and a
+   * row saying so on every visit would be noise about a thing nobody asked for.
+   */
+  const reach = $derived(
+    probed === undefined || probed.kind === "not-offered"
+      ? undefined
+      : probed.kind === "ready"
+        ? { mark: "✓", said: "reached", tone: "text-good" }
+        : {
+            mark: "⚠",
+            said: `${probed.kind} — ${probed.detail}`,
+            tone: probed.kind === "rejected" ? "text-accent" : "text-ink-muted",
+          },
   );
 </script>
 
@@ -81,6 +104,8 @@
     >
       {#if refusing !== undefined}
         ⚠ {refusing}
+      {:else if reach !== undefined}
+        <span class={reach.tone}>{reach.mark} {reach.said}</span>
       {:else if can !== undefined}
         ✓ answered
       {:else if asking}
@@ -104,6 +129,19 @@
           not offered, so not asked
         {:else}
           unasked — describing one is a read that can hang
+        {/if}
+      </Fact>
+      <Fact name="reach" empty={reach === undefined}>
+        {#if reach !== undefined}
+          {reach.said}
+        {:else if probed?.kind === "not-offered"}
+          the {one.kind} kind cannot be asked whether it is there
+        {:else if asking}
+          asking now
+        {:else if retired}
+          not offered, so not asked
+        {:else}
+          unasked
         {/if}
       </Fact>
       <!-- On the open row rather than the collapsed one: a kind may want a
