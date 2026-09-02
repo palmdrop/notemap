@@ -311,7 +311,6 @@ describe("GET /v1/destinations/{id}/probe", () => {
     expect(await body(response)).toEqual({ kind: "ready" });
   });
 
-  /** What `/description` cannot say, and the reason this route exists. */
   it("is rejected for a root that is not there, where describing it is content", async () => {
     const host = serving("ready");
     const vault = await created(host, {

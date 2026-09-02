@@ -199,10 +199,8 @@ export interface DestinationKindAdapter extends DestinationKind {
     signal?: AbortSignal,
   ): Promise<CandidatesAnswer>;
   /**
-   * Goes and asks whether the destination is there, without writing anything.
-   * Resolving is `ready`; throwing `Rejected` is a no a person must act on,
-   * and throwing anything else is a destination that could not be reached.
-   * Absent is `not-offered`, as an absent `candidates` is.
+   * Resolving is `ready`; throwing `Rejected` is a no a person must act on, and
+   * throwing anything else could not be reached. Absent is `not-offered`.
    */
   probe?(destination: Destination, signal?: AbortSignal): Promise<void>;
 }

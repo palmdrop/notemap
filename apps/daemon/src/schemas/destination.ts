@@ -75,24 +75,10 @@ export const destinationCandidatesSchema = z
 
 export const destinationProbeSchema = z
   .union([
-    /** Reached, credentials accepted, root found. Not a promise that a write will land. */
     z.object({ kind: z.literal("ready") }),
-    z.object({
-      kind: z.literal("rejected"),
-      /** It answered and said no, which is a person's to fix. */
-      detail: z.string(),
-    }),
-    z.object({
-      kind: z.literal("unreachable"),
-      /** It could not be reached, or could not decide. A retry may find it different. */
-      detail: z.string(),
-    }),
-    z.object({
-      kind: z.literal("unusable"),
-      /** No adapter speaks its kind, or its settings no longer satisfy that kind. */
-      detail: z.string(),
-    }),
-    /** The kind does not do this at all. */
+    z.object({ kind: z.literal("rejected"), detail: z.string() }),
+    z.object({ kind: z.literal("unreachable"), detail: z.string() }),
+    z.object({ kind: z.literal("unusable"), detail: z.string() }),
     z.object({ kind: z.literal("not-offered") }),
   ])
   .openapi("DestinationProbe");

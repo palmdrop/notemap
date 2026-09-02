@@ -57,10 +57,6 @@ export function destinationDescriptionHandler(pool: Pool) {
   };
 }
 
-/**
- * The same animal as `/description`, one step further out: describing answers
- * from a declared shape and never leaves the process, and this goes and asks.
- */
 export function destinationProbeHandler(pool: Pool) {
   return async (context: Context): Promise<Response> => {
     const id = (context.req.param("id") ?? "") as DestinationId;

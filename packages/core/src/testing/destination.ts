@@ -53,7 +53,7 @@ export type FakeDestinations = Destinations & {
   answersCandidates(next: CandidatesAnswer): void;
   /** What `candidates` throws with, on the same terms as `cannotDescribe`. */
   cannotAnswerCandidates(detail: string | Error | undefined): void;
-  /** What `probe` throws with, on the same terms. Undefined is a destination that is there. */
+  /** What `probe` throws with. Undefined is a destination that is there. */
   cannotBeProbed(detail: string | Error | undefined): void;
 };
 

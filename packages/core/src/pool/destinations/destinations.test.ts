@@ -316,7 +316,6 @@ describe("what a destination answers when it is asked whether it is there", () =
     expect(await probeOne(wired, vault.id)).toEqual({ kind: "ready" });
   });
 
-  /** The distinction the whole call exists for: a person's to fix, not a retry's. */
   it("is rejected where it answered and said no", async () => {
     const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
     const wired = ports({ destinations: [vault] });

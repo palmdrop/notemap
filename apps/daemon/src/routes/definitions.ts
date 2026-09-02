@@ -31,9 +31,9 @@ import {
 import {
   createDestinationRequestSchema,
   destinationCandidatesSchema,
-  destinationProbeSchema,
   destinationDescriptionSchema,
   destinationKindsSchema,
+  destinationProbeSchema,
   destinationSchema,
   destinationsSchema,
   updateDestinationRequestSchema,

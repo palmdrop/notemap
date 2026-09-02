@@ -4,14 +4,7 @@ import type { DestinationId } from "#types/domain/ids";
 import { NotOffered } from "./candidates";
 import { Unusable, usability } from "./usability";
 
-/**
- * What an adapter throws where it was reached and answered no — a credential
- * refused, a root that is not there, an account nobody declared. Everything
- * else it throws is read as unreachable, which is the half a delivery would
- * retry past; this is the half a person has to go and fix. Named for the
- * answer it produces rather than for `Refused`, which both adapters already
- * use for a delivery that will not be attempted again.
- */
+/** What an adapter throws where it was reached and answered no. */
 export class Rejected extends Error {
   constructor(detail: string, options?: { cause?: unknown }) {
     super(detail, options);
@@ -19,11 +12,6 @@ export class Rejected extends Error {
   }
 }
 
-/**
- * Whether a destination is really there. Mirrors `candidates()`: usability is
- * settled before the adapter is asked anything, and a throw from asking is
- * sorted into which failure it was.
- */
 export async function probe(
   ports: PoolPorts,
   id: DestinationId,

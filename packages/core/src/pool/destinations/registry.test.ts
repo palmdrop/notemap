@@ -65,7 +65,6 @@ describe("the registry's probe dispatch", () => {
     ).resolves.toBeUndefined();
   });
 
-  /** One fact to a caller: nothing here can be asked, however that came about. */
   it("rejects with NotOffered where the registered adapter has none", async () => {
     const destinations = destinationRegistry([adapter()]);
 

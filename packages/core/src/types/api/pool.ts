@@ -141,8 +141,8 @@ export interface DestinationsApi {
     signal?: AbortSignal,
   ): Promise<CandidatesReport | undefined>;
   /**
-   * Whether it is really there, which describing never asks. Reaches the
-   * outside world and writes nothing. Absent means no destination has that id.
+   * Whether it is really there, which describing never asks. Writes nothing.
+   * Absent means no destination has that id.
    */
   probe(
     id: DestinationId,

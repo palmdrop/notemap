@@ -15,6 +15,5 @@ export { Unusable } from "./destinations/usability";
 // registry throws the same thing for an adapter that answers for none.
 export { NotOffered } from "./destinations/candidates";
 
-// And this from `probe()`, for a destination that answered and said no. Every
-// other throw from probing is read as a destination that could not be reached.
+// And this from `probe()`. Every other throw from probing reads as unreachable.
 export { Rejected } from "./destinations/probe";

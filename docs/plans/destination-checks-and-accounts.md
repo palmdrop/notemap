@@ -217,6 +217,31 @@ Depends on phase 5.
       what that suite is for
 - [x] `git commit`
 
+
+---
+
+## Found in review, 2026-09-02
+
+Co-reviewed as PR #39; findings in
+[destination-checks-and-accounts-2026-09-02](../reviews/destination-checks-and-accounts-2026-09-02.md).
+
+- **The filesystem probe sorted its errnos on `ENOENT` alone**, so a root under a path component
+  that is a file — `ENOTDIR`, and `ELOOP` with it — answered `unreachable`, which reads as "asleep,
+  already being retried" for a thing a person has to go and fix. It now sorts on the same
+  `UNREACHABLE` list a delivery does, which is what phase 5 said and not what it did. `http-v1.md`
+  gained the sentence, since nothing had written the rule down.
+- **A probe answered `unreachable` was never asked again**, though the docstring above it and
+  `shell.md` both said coming back into reach was the moment worth re-asking on. `described` and
+  `probed` were guarded on different terms; both now re-ask anything unsettled.
+- **`probing()` tracked nothing while it ran**, so the row drew "unasked" through a `PROPFIND` that
+  was in flight — the one call that can hang was the one that never said so — and a second effect
+  run inside that window re-issued it. It brackets itself now, and the row takes it as its own prop.
+- **`ADR 29` collided** with the action log's, which took the number on `main` first. This one is
+  **ADR 30**.
+- **Rejected on second thought**: disabling the account `<select>`'s blank option. The browser then
+  selects the first account and `bind:value` writes it back, which is the silent default the option
+  list exists to prevent. `required` already refuses the submit.
+
 ---
 
 ## Testing
