@@ -1,14 +1,12 @@
 <script lang="ts">
   import { shortened } from "$lib/actions";
 
-  /** Linked ids go to the log narrowed to that subject; the rest only read. */
-  let { id, link = false }: { id: string; link?: boolean } = $props();
-
-  const href = $derived(`/log?item=${encodeURIComponent(id)}`);
+  /** A linked id goes to the log narrowed to that subject; the rest only read. */
+  let { id, href }: { id: string; href?: string } = $props();
 </script>
 
-{#if link}
-  <a {href} class="border-b border-ink/35 text-ink">{shortened(id)}</a>
+{#if href === undefined}
+  <span class="border-b border-ink/35">{shortened(id)}</span>
 {:else}
-  <span class="border-b border-ink/35 text-ink">{shortened(id)}</span>
+  <a {href} class="border-b border-ink/35">{shortened(id)}</a>
 {/if}

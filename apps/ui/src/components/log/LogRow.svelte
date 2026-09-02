@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Action } from "@notemap/client";
+  import type { Action, Order } from "@notemap/client";
 
   import Body from "$components/primitives/register/Body.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
@@ -8,9 +8,14 @@
   import { agentOf, failed, flattened } from "$lib/actions";
 
   import Detail from "./Detail.svelte";
+  import { logHref } from "./href";
   import Id from "./Id.svelte";
 
-  let { action, first = false }: { action: Action; first?: boolean } = $props();
+  let {
+    action,
+    order,
+    first = false,
+  }: { action: Action; order: Order; first?: boolean } = $props();
 
   const bad = $derived(failed(action.kind));
   const pairs = $derived(flattened(action.detail));
@@ -27,7 +32,7 @@
 
     {#if action.subject !== undefined}
       <div class="mt-2 text-ink-muted">
-        about <Id id={action.subject} link />
+        about <Id id={action.subject} href={logHref(order, action.subject)} />
       </div>
     {/if}
 

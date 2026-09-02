@@ -1,13 +1,14 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
 
-import { json, routeOf } from "@notemap/client/testing";
+import { json, refusal, routeOf } from "@notemap/client/testing";
 
 import { asked, pool } from "$testing/pool";
 import { log } from "$lib/log.svelte";
 import { LOG_LEDE, NOTHING_LOGGED } from "$lib/said";
 import Log from "./Log.svelte";
 import LogRow from "./LogRow.svelte";
+import Shown from "./Shown.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
@@ -87,9 +88,10 @@ test("shortens a subject and links it to the log narrowed to that subject", asyn
   reading();
 
   const link = await screen.findByRole("link", { name: "0198f0c2…5e6f" });
+  // The order travels with it, so following one does not turn the log around.
   expect(link).toHaveProperty(
     "search",
-    "?item=0198f0c2-9d3a-7b21-8e4f-112233445e6f",
+    "?item=0198f0c2-9d3a-7b21-8e4f-112233445e6f&order=newest-first",
   );
 });
 
@@ -175,6 +177,7 @@ test("turning the log around walks it again rather than stitching two orders", a
 
 test("spends the accent on a failure and on the code beside it, and on nothing else", () => {
   render(LogRow, {
+    order: "newest-first",
     action: {
       id: "one",
       kind: "delivery-failed",
@@ -198,6 +201,7 @@ test("spends the accent on a failure and on the code beside it, and on nothing e
 
 test("leaves a destruction as a fact rather than a warning", () => {
   render(LogRow, {
+    order: "newest-first",
     action: {
       id: "one",
       kind: "purged",
@@ -210,4 +214,33 @@ test("leaves a destruction as a fact rather than a warning", () => {
   const word = screen.getByText("purged");
   expect(word.className).toContain("inverted");
   expect(word.className).not.toContain("inverted-accent");
+});
+
+test("says a refusal where the count goes, and says neither before a read", () => {
+  render(Shown);
+  expect(screen.queryByRole("status")).toBeNull();
+});
+
+test("counts what is shown once rows arrive", async () => {
+  pool(held([anAction("one"), anAction("two")]));
+  render(Shown);
+  reading();
+
+  expect(await screen.findByText("2 shown")).toBeDefined();
+});
+
+/** The read behind the page is what refuses; the page itself stays served. */
+test("puts a refusal in the chrome, in accent, instead of the count", async () => {
+  pool((request) =>
+    routeOf(request) === "GET /v1/actions"
+      ? refusal(422, "bad-position")
+      : json(200, { values: [] }),
+  );
+  render(Shown);
+  reading();
+
+  const said = await screen.findByRole("status");
+  expect(said.className).toContain("text-accent");
+  expect(said.textContent).toBe("the app lost its place in the list; reload");
+  expect(screen.queryByText(/shown/)).toBeNull();
 });
