@@ -8,12 +8,7 @@ export type Fetched =
 /** Whether a conditional write went through, or lost to whoever wrote first. */
 export type Conditional = "written" | "condition-failed";
 
-/**
- * What looking at a collection found. A status the server will say again is
- * carried out whole, for a caller that reads 401 differently from 404;
- * anything a later attempt could find different never gets here, having been
- * thrown as `Unreachable`.
- */
+/** Anything a later attempt could find different is thrown as `Unreachable` instead. */
 export type Looked =
   | { readonly kind: "there"; readonly collection: boolean }
   | { readonly kind: "not-there" }
@@ -49,12 +44,13 @@ const NOT_THERE = 404;
 /** A `PUT` or `MKCOL` whose parent collection does not exist. */
 const NO_PARENT = 409;
 
-/**
- * The smallest thing a `PROPFIND` can ask for. A body rather than none,
- * which the specification allows and reads as `allprop`: servers that refuse
- * an empty one are common enough, and asking for one property is cheaper than
- * asking for every property anyway.
- */
+const UNAUTHORIZED = 401;
+const FORBIDDEN = 403;
+const TIMED_OUT = 408;
+const RATE_LIMITED = 429;
+const SERVER_FAULT = 500;
+
+/** A body rather than none, which is allowed but which some servers refuse. */
 const RESOURCE_TYPE = `<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><prop><resourcetype/></prop></propfind>`;
 
 export function createDav(credential: WebdavCredential): Dav {
@@ -178,8 +174,6 @@ export function createDav(credential: WebdavCredential): Dav {
         },
         signal,
       });
-      // `207` is the ordinary answer and is a success status, so nothing here
-      // names it.
       if (response.ok) {
         return {
           kind: "there",
@@ -190,9 +184,9 @@ export function createDav(credential: WebdavCredential): Dav {
       void response.body?.cancel();
       if (response.status === NOT_THERE) return { kind: "not-there" };
       if (
-        response.status >= 500 ||
-        response.status === 429 ||
-        response.status === 408
+        response.status >= SERVER_FAULT ||
+        response.status === RATE_LIMITED ||
+        response.status === TIMED_OUT
       ) {
         throw new Unreachable(
           `${path} answered ${response.status} to PROPFIND`,
@@ -222,27 +216,20 @@ function failure(response: Response, path: string): Error {
     return new Unreachable(`${at}, so something above it is not there`);
   }
   if (
-    response.status >= 500 ||
-    response.status === 429 ||
-    response.status === 408
+    response.status >= SERVER_FAULT ||
+    response.status === RATE_LIMITED ||
+    response.status === TIMED_OUT
   ) {
     return new Unreachable(at);
   }
-  if (response.status === 401 || response.status === 403) {
+  if (response.status === UNAUTHORIZED || response.status === FORBIDDEN) {
     return new Unreachable(`${at}: the account would not have it`);
   }
 
   return new Refused(at);
 }
 
-/**
- * Whether a `PROPFIND` body says the thing is a collection. Matched rather than
- * parsed: the one element that decides it may carry any namespace prefix or
- * none, and an XML parser to answer a yes-or-no about a single empty tag is
- * more machinery than the question is worth. A body this fails to see
- * `collection` in reads as a file, which refuses a destination rather than
- * accepting one that cannot hold a note.
- */
+/** Matched rather than parsed: the deciding element may carry any prefix or none. */
 function isCollection(body: string): boolean {
   return /<[a-z0-9]*:?collection\b[^>]*\/?>/i.test(body);
 }

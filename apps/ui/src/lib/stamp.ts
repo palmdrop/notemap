@@ -20,11 +20,7 @@ export function briefly(at: string): string {
   return `${pad(when.getMonth() + 1)}-${pad(when.getDate())} ${timeOf(at)}`;
 }
 
-/**
- * How long ago, for a mark that is re-read while it is on screen. Coarse on
- * purpose past a minute: a reader wants to know whether it was just now, not
- * how many seconds it has been.
- */
+/** Coarse past a minute: a reader wants to know whether it was just now. */
 export function since(at: string, now: number = Date.now()): string {
   const seconds = Math.max(
     0,

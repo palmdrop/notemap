@@ -11,11 +11,9 @@ export const WEBDAV = "webdav" as DestinationKindName;
  * address or a secret: the account is the host's, declared in its config, and
  * this chooses one by name and a folder inside it.
  *
- * The declared account names are published as `examples` rather than as an
- * `enum`, which would constrain: a destination's settings are re-validated
- * against this schema every time it is described, so a constraining list would
- * make renaming an account in config turn destinations already built into
- * `unusable`. Naming one that is not declared stays a delivery's problem.
+ * Account names are `examples` rather than an `enum`, which would constrain:
+ * settings are re-validated on every describe, so a constraining list would
+ * turn a destination `unusable` the moment an account is renamed in config.
  */
 export function webdavSettings(accounts: readonly string[]): JsonSchema {
   return {

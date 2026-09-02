@@ -70,20 +70,22 @@
       !isFamiliarRoot(typedRoot, knownRoots),
   );
 
-  /**
-   * What the kind published, plus whatever this destination already holds: a
-   * value the daemon no longer declares would otherwise be rewritten to
-   * whichever name happens to sort first, silently, by opening the form.
-   * Nothing held yet is offered as the blank the browser then refuses to
-   * submit, rather than as a default nobody chose.
-   */
-  function offered(field: Field): readonly { value: string; label: string }[] {
+  type Option = { readonly value: string; readonly label: string };
+
+  // A value the daemon no longer declares is carried rather than dropped:
+  // otherwise opening the form rewrites the setting to whichever name sorts
+  // first, silently, and moves the destination somewhere nobody chose.
+  function offered(field: Field): readonly Option[] {
     const published = (field.examples ?? []).map((value) => ({
       value,
       label: value,
     }));
     const held = typed[field.name] ?? "";
 
+    // Selectable, though nobody would choose it: disabling it makes the browser
+    // select the first account instead and the binding write it back, which is
+    // the silent default this whole function exists to prevent. `required`
+    // refuses the submit.
     if (held === "") return [{ value: "", label: "—" }, ...published];
 
     return published.some((one) => one.value === held)

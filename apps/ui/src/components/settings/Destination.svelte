@@ -14,6 +14,7 @@
     described,
     probed,
     asking,
+    probing,
     opened,
     offline,
     onopen,
@@ -26,8 +27,8 @@
     one: Destination;
     described?: DestinationDescription;
     probed?: DestinationProbe;
-    /** Being asked now, which is the ordinary state of a row that has just been drawn. */
     asking: boolean;
+    probing: boolean;
     opened: boolean;
     offline: boolean;
     onopen: () => void;
@@ -54,22 +55,19 @@
       : `${described.kind} — ${described.detail}`,
   );
 
-  /**
-   * What describing cannot say. `not-offered` is not drawn at all: a kind that
-   * does not do this looks exactly as it did before the probe existed, and a
-   * row saying so on every visit would be noise about a thing nobody asked for.
-   */
-  const reach = $derived(
-    probed === undefined || probed.kind === "not-offered"
-      ? undefined
-      : probed.kind === "ready"
-        ? { mark: "✓", said: "reached", tone: "text-good" }
-        : {
-            mark: "⚠",
-            said: `${probed.kind} — ${probed.detail}`,
-            tone: probed.kind === "rejected" ? "text-accent" : "text-ink-muted",
-          },
-  );
+  // A kind that cannot be probed is drawn as it was before probing existed.
+  const reach = $derived.by(() => {
+    if (probed === undefined || probed.kind === "not-offered") return undefined;
+    if (probed.kind === "ready") {
+      return { mark: "✓", said: "reached", tone: "text-good" };
+    }
+
+    return {
+      mark: "⚠",
+      said: `${probed.kind} — ${probed.detail}`,
+      tone: probed.kind === "rejected" ? "text-accent" : "text-ink-muted",
+    };
+  });
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -106,10 +104,10 @@
         ⚠ {refusing}
       {:else if reach !== undefined}
         <span class={reach.tone}>{reach.mark} {reach.said}</span>
+      {:else if asking || probing}
+        ↻ asking
       {:else if can !== undefined}
         ✓ answered
-      {:else if asking}
-        ↻ asking
       {:else if retired}
         retired · offered to nothing new
       {:else}
@@ -136,7 +134,7 @@
           {reach.said}
         {:else if probed?.kind === "not-offered"}
           the {one.kind} kind cannot be asked whether it is there
-        {:else if asking}
+        {:else if probing}
           asking now
         {:else if retired}
           not offered, so not asked
@@ -155,7 +153,7 @@
       <div
         class="mt-4 flex flex-wrap items-baseline gap-x-6 border-t border-t-ink/20 pt-3"
       >
-        <Action disabled={asking} onclick={oncheck}>
+        <Action disabled={asking || probing} onclick={oncheck}>
           <span aria-hidden="true" class="text-ink-muted">↻</span>
           {can === undefined && refusing === undefined
             ? "Check"

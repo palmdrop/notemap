@@ -4,7 +4,7 @@ import { expect, test, vi } from "vitest";
 import { json, routeOf } from "@notemap/client/testing";
 
 import { online } from "$testing/dom";
-import { asked, pool } from "$testing/pool";
+import { client, asked, pool } from "$testing/pool";
 import Daemon from "./Daemon.svelte";
 import Destinations from "./Destinations.svelte";
 
@@ -37,7 +37,7 @@ function aDestination(overrides: Record<string, unknown> = {}) {
 /** A pool holding whatever it is given, answering every route the screen uses. */
 function serving(
   held: readonly Record<string, unknown>[],
-  overrides: Partial<Record<string, () => Response>> = {},
+  overrides: Partial<Record<string, () => Promise<Response> | Response>> = {},
 ) {
   return pool((request) => {
     const route = routeOf(request);
@@ -94,8 +94,7 @@ test("lists what the pool holds, and asks each offered one about itself", async 
   expect(screen.getByText("1 offered \u00b7 1 retired")).toBeDefined();
   expect(screen.getByText(/offered to nothing new/)).toBeDefined();
 
-  // The list still fills from pool state alone; both questions follow it, per
-  // row and never for one that is offered to nothing new.
+  // The list still fills from pool state alone; both questions follow it.
   await screen.findByText(/reached/);
   expect(asked().sort()).toEqual([
     "GET /v1/destination-kinds",
@@ -122,10 +121,6 @@ test("says what a destination can do without anyone asking it to", async () => {
   await screen.findByText("create-file");
 });
 
-/**
- * The whole point of the probe: describing answers from a declared shape, so a
- * destination whose folder somebody moved describes itself perfectly well.
- */
 test("says a destination is not really there, though it describes itself fine", async () => {
   serving([aDestination()], {
     [`GET /v1/destinations/${VAULT}/description`]: () => described(),
@@ -138,7 +133,6 @@ test("says a destination is not really there, though it describes itself fine", 
   await screen.findByText(/~\/notes is not there/);
 });
 
-/** A kind that does not do this looks as it did before the probe existed. */
 test("says nothing at all where the kind cannot be probed", async () => {
   serving([aDestination()], {
     [`GET /v1/destinations/${VAULT}/description`]: () => described(),
@@ -152,10 +146,6 @@ test("says nothing at all where the kind cannot be probed", async () => {
   expect(screen.queryByText(/not-offered/)).toBeNull();
 });
 
-/**
- * One row waiting is the point of asking per row: the first kind that goes and
- * looks must not stall the page, and the rest of the list is already drawn.
- */
 test("leaves one that cannot describe itself saying so, and the rest listed", async () => {
   serving([aDestination(), aDestination({ id: "b", name: "Board" })], {
     [`GET /v1/destinations/${VAULT}/description`]: () =>
@@ -176,6 +166,76 @@ test("leaves one that cannot describe itself saying so, and the rest listed", as
 });
 
 /** Everything that can be done to one is behind opening it, as on a queue row. */
+/** The one worth re-asking on: it may simply have been asleep. */
+test("asks a destination that was unreachable again, once the pool is back", async () => {
+  let answers = 0;
+  const transport = serving([aDestination()], {
+    [`GET /v1/destinations/${VAULT}/description`]: () => described(),
+    [`GET /v1/destinations/${VAULT}/probe`]: () => {
+      answers += 1;
+      return json(200, { kind: "unreachable", detail: "the drive is asleep" });
+    },
+  });
+
+  render(Destinations);
+  await screen.findByText(/the drive is asleep/);
+  expect(answers).toBe(1);
+
+  transport.unreachable(true);
+  online(false);
+  await vi.waitFor(() => expect(screen.getByText(/read but not changed/)).toBeDefined());
+
+  transport.unreachable(false);
+  online(true);
+  await vi.waitFor(() => expect(answers).toBe(2));
+});
+
+/** A settled answer is not asked twice: only what could not be reached is. */
+test("does not ask a destination that already answered", async () => {
+  let answers = 0;
+  serving([aDestination()], {
+    [`GET /v1/destinations/${VAULT}/description`]: () => described(),
+    [`GET /v1/destinations/${VAULT}/probe`]: () => {
+      answers += 1;
+      return json(200, { kind: "rejected", detail: "~/notes is not there" });
+    },
+  });
+
+  render(Destinations);
+  await screen.findByText(/~\/notes is not there/);
+
+  // The list re-emitting is what re-runs the asking, so it is what must not.
+  await client.destinations.load();
+  await vi.waitFor(() => expect(asked()).toContain("GET /v1/destinations"));
+  expect(answers).toBe(1);
+});
+
+/**
+ * The call that can hang is the one that must say it is running: describing
+ * answers at once, so a row whose probe is still out used to read "unasked".
+ */
+test("says a row is being asked while its probe is still out", async () => {
+  let answer: ((value: Response) => void) | undefined;
+  serving([aDestination()], {
+    [`GET /v1/destinations/${VAULT}/description`]: () => described(),
+    [`GET /v1/destinations/${VAULT}/probe`]: () =>
+      new Promise<Response>((resolve) => {
+        answer = resolve;
+      }),
+  });
+
+  render(Destinations);
+  await open("Vault");
+
+  // Describing has landed; only the probe is still out.
+  await screen.findByText("create-file");
+  expect(screen.queryByText("unasked")).toBeNull();
+  await screen.findByText("asking now");
+
+  answer?.(json(200, { kind: "ready" }));
+  await screen.findAllByText(/reached/);
+});
+
 test("keeps a destination's doings behind opening it", async () => {
   serving([aDestination()]);
 
@@ -286,7 +346,6 @@ test("shows what a kind says one of its fields is for", async () => {
   ).toBeDefined();
 });
 
-/** What the daemon declares under `[[accounts]]`, published as the field's own examples. */
 function webdavKind(accounts: readonly string[]) {
   return {
     name: "webdav",
@@ -316,8 +375,7 @@ test("offers the accounts the daemon declares, rather than a box to type one int
     [...(account as HTMLSelectElement).options].map((one) => one.value),
   ).toEqual(["", "home", "work"]);
 
-  // A field with nothing published stays a box: a daemon declaring no accounts
-  // must not leave the only way of naming one behind an empty list.
+  // A daemon declaring no accounts must not trap a person behind an empty list.
   expect(screen.getByLabelText("root").tagName).toBe("INPUT");
 });
 
@@ -343,8 +401,7 @@ test("keeps an account the daemon no longer declares, and says it does not", asy
     "account",
   )) as HTMLSelectElement;
 
-  // Held rather than rewritten: opening the form must not quietly move the
-  // destination to whichever account happens to sort first.
+  // Opening the form must not move the destination to whichever name sorts first.
   expect(account.value).toBe("retired-last-week");
   expect([...account.options].map((one) => one.textContent?.trim())).toContain(
     "retired-last-week \u2014 not declared",
@@ -499,18 +556,10 @@ test("asks again for the kinds once the daemon is reachable", async () => {
   await vi.waitFor(() => expect(adding().disabled).toBe(false));
 });
 
-/**
- * `asked()` drops the probe on purpose, so that a surface's own reads can be
- * asserted on; this row is the one place the probe *is* the subject.
- */
+/** `asked()` drops health on purpose; this row is where it is the subject. */
 const probes = (transport: { readonly sent: readonly Request[] }) =>
   transport.sent.map(routeOf).filter((route) => route === "GET /v1/health");
 
-/**
- * The client has been probing all along; the row used to hold a second,
- * manual notion of reachability and say "unasked" beside a chrome that already
- * knew.
- */
 test("says the daemon is reachable without anyone pressing anything", async () => {
   const transport = serving([aDestination()]);
 

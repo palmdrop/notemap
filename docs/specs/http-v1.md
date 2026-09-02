@@ -826,6 +826,10 @@ GET /v1/destinations/019a3f2c-.../candidates?capability=create-file&field=direct
   writing without writing it does — a filesystem destination asks the kernel, and both kinds refuse
   a root that is a file rather than a folder — and beyond that it is inferred from having reached
   the place.
+- **A root that cannot be resolved is sorted the way a delivery sorts one.** A filesystem
+  destination answers `unreachable` for the errors a later attempt could find different — no
+  permission, a read-only or full disk, a failing device — and `rejected` for everything else,
+  a path component that is a file included. The two calls must not disagree about which is which.
 - An id no destination has is `404 unknown-destination`.
 
 `POST /v1/destinations` — create one, from a name, a kind and that kind's settings. The id is

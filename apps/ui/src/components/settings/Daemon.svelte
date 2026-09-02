@@ -20,8 +20,7 @@
   let asking = $state(false);
   let said = $state("");
 
-  // The mark carries a stamp, and how long ago that was goes on changing while
-  // nobody touches anything.
+  // How long ago goes on changing while nobody touches anything.
   let now = $state(Date.now());
   onMount(() => {
     const tick = setInterval(() => (now = Date.now()), 1_000);
@@ -64,11 +63,6 @@
           },
   );
 
-  /**
-   * The probe runs on its own every few seconds and every answered request
-   * settles the same mark, so this is a person asking out of turn rather than
-   * the only thing that ever asks.
-   */
   async function knock() {
     asking = true;
     said = "";

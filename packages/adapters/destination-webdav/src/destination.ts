@@ -28,11 +28,7 @@ export type WebdavDestinationConfig = {
   readonly accepts: readonly PayloadTypeName[];
   /** Turns an account's name into the account. The adapter never learns where one is held. */
   readonly credentials: CredentialResolver;
-  /**
-   * The names of the accounts declared for this kind, so a person is offered
-   * them rather than told to go and read the config. Names only: an address or
-   * a secret here would be one `GET /v1/destination-kinds` answers with.
-   */
+  /** Names only: an address or a secret here is one `/v1` would answer with. */
   readonly accounts?: readonly string[];
 };
 
@@ -96,14 +92,9 @@ export function createWebdavDestination(
     },
 
     /**
-     * A `PROPFIND` at the root and nothing else: the account resolves, the
-     * server answers, it accepts the credential, and the folder is there. That
-     * a note can be *written* is inferred from all four, never proved, since
-     * proving it means putting a file in somebody's vault.
-     *
-     * A rejected credential is `Rejected` here and `Unreachable` to a delivery.
-     * The delivery is right to retry one — a password may have just been
-     * rotated — and a person asking now is owed the answer that it is wrong.
+     * A rejected credential is `Rejected` here and `Unreachable` to a delivery:
+     * the delivery is right to retry one, a password having possibly just been
+     * rotated, and a person asking now is owed the answer that it is wrong.
      */
     probe: async (destination, signal) => {
       const settings = asWebdavSettings(destination.settings);
@@ -120,22 +111,21 @@ export function createWebdavDestination(
       if (root.kind === "refused") throw new Rejected(root.detail);
 
       const looked = await dav.look(root.path.encoded, signal);
-      if (looked.kind === "there") {
-        // A note is not somewhere notes go, which the filesystem kind says of
-        // a root that is a file. Nothing else would notice until a delivery.
-        if (!looked.collection) {
-          throw new Rejected(`${named(settings.root)} is not a folder`);
-        }
-        return;
-      }
+      const where = named(settings.root);
 
-      throw new Rejected(
-        looked.kind === "not-there"
-          ? `${named(settings.root)} is not there`
-          : looked.status === 401 || looked.status === 403
-            ? `the account's credentials were refused, with ${looked.status}`
-            : `${named(settings.root)} answered ${looked.status}`,
-      );
+      switch (looked.kind) {
+        case "there":
+          if (!looked.collection) {
+            throw new Rejected(`${where} is a file rather than a folder`);
+          }
+          return;
+
+        case "not-there":
+          throw new Rejected(`${where} is not there`);
+
+        case "refused":
+          throw new Rejected(refusal(where, looked.status));
+      }
     },
   };
 }
@@ -143,6 +133,23 @@ export function createWebdavDestination(
 /** A blank root is the account's own collection, which has no name to give. */
 function named(root: string): string {
   return root === "" ? "the account's own folder" : root;
+}
+
+const UNAUTHORIZED = 401;
+const FORBIDDEN = 403;
+/** Answered by an address that is served but is not a DAV collection. */
+const NO_SUCH_METHOD = 405;
+
+function refusal(where: string, status: number): string {
+  if (status === UNAUTHORIZED || status === FORBIDDEN) {
+    return `the account's credentials were refused, with ${status}`;
+  }
+
+  if (status === NO_SUCH_METHOD) {
+    return `${where} does not answer PROPFIND, so the account's address is not a WebDAV collection`;
+  }
+
+  return `${where} answered ${status}`;
 }
 
 function carryOut(

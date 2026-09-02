@@ -1,3 +1,6 @@
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+
 import { Rejected } from "@notemap/core";
 import type { DeliveryOutcome, PayloadTypeName } from "@notemap/core";
 import { linkTo, type Renderer } from "@notemap/output-markdown";
@@ -617,7 +620,7 @@ describe("probing a webdav destination", () => {
 
     await expect(
       adapter(server).probe?.(destinationRow({ root: "a-note.md" })),
-    ).rejects.toThrow(/is not a folder/);
+    ).rejects.toThrow(/is a file rather than a folder/);
   });
 
   it("rejects a folder that is not there, naming it", async () => {
@@ -628,11 +631,6 @@ describe("probing a webdav destination", () => {
     ).rejects.toThrow(/Nowhere is not there/);
   });
 
-  /**
-   * An account nobody declared is `Rejected` here and `unreachable` to a
-   * delivery: what that difference protects is the delivery's retry, which a
-   * person asking once has none of.
-   */
   it("rejects an account nothing declares, rather than calling it unreachable", async () => {
     const server = await vault();
 
@@ -658,6 +656,32 @@ describe("probing a webdav destination", () => {
     await expect(kind.probe?.(destinationRow({ root: "" }))).rejects.toThrow(
       /credentials were refused, with 401/,
     );
+  });
+
+  /** The likeliest way a wrong base URL presents, and a bare number says nothing. */
+  it("says what a 405 means rather than only its number", async () => {
+    const server = createServer((_request, response) =>
+      response.writeHead(405).end(),
+    );
+    await new Promise<void>((ready) => server.listen(0, "127.0.0.1", ready));
+    const { port } = server.address() as AddressInfo;
+    const kind = createWebdavDestination({
+      accepts: [TEXT],
+      credentials: () =>
+        Promise.resolve({
+          baseUrl: `http://127.0.0.1:${port}`,
+          username: "alice",
+          password: "an-app-password",
+        }),
+    });
+
+    try {
+      await expect(kind.probe?.(destinationRow({ root: "" }))).rejects.toThrow(
+        /does not answer PROPFIND/,
+      );
+    } finally {
+      await new Promise<void>((shut) => server.close(() => shut()));
+    }
   });
 
   it("is unreachable, not rejected, where nothing answered at all", async () => {

@@ -11,12 +11,7 @@ export type Field = {
   readonly description?: string;
   /** Carries `x-notemap-candidates`: a destination can be asked what it could hold. */
   readonly askable: boolean;
-  /**
-   * The values a kind published for this field, which a form offers instead of
-   * a text box. They constrain nothing — a schema that validated them would
-   * refuse settings a running daemon should still be able to describe — so a
-   * value already held that is not among them is offered too.
-   */
+  /** Offered as a list rather than typed. Annotation only: these constrain nothing. */
   readonly examples?: readonly string[];
 };
 
@@ -55,7 +50,6 @@ export function fieldsOf(schema: Schema): readonly Field[] {
   );
 }
 
-/** Strings only: what a form can offer as a list is what it can put in an input. */
 function examplesOf(
   meta: Record<string, unknown>,
 ): readonly string[] | undefined {

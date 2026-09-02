@@ -3,13 +3,13 @@
 
   import {
     saidBy,
-    type Destination as One,
+    type Destination,
     type DestinationDescription,
     type DestinationKind,
     type DestinationProbe,
   } from "@notemap/client";
 
-  import Destination from "$components/settings/Destination.svelte";
+  import DestinationRow from "$components/settings/Destination.svelte";
   import DestinationForm from "$components/settings/DestinationForm.svelte";
   import Doomed from "$components/settings/Doomed.svelte";
   import Section from "$components/settings/Section.svelte";
@@ -24,13 +24,14 @@
   let adding = $state(false);
   let opened = $state<string | undefined>(undefined);
   let editing = $state<string | undefined>(undefined);
-  let doomed = $state<One | undefined>(undefined);
+  let doomed = $state<Destination | undefined>(undefined);
   let said = $state("");
 
-  /** Per destination rather than for the list: what one can do is I/O that may hang. */
+  /** Per destination rather than for the list: either question is I/O that may hang. */
   let described = $state<Record<string, DestinationDescription>>({});
   let probed = $state<Record<string, DestinationProbe>>({});
   let asking = $state<Record<string, boolean>>({});
+  let reaching = $state<Record<string, boolean>>({});
 
   const tally = $derived(
     (() => {
@@ -69,11 +70,11 @@
     }
   }
 
-  async function check(one: One) {
+  async function check(one: Destination) {
     await attempt(() => Promise.all([describing(one), probing(one)]));
   }
 
-  async function describing(one: One): Promise<void> {
+  async function describing(one: Destination): Promise<void> {
     asking = { ...asking, [one.id]: true };
     try {
       // Read after the answer, never spread around the await: two rows asking
@@ -85,20 +86,25 @@
     }
   }
 
-  async function probing(one: One): Promise<void> {
-    const answer = await client.destinations.probe(one.id);
-    probed = { ...probed, [one.id]: answer };
+  async function probing(one: Destination): Promise<void> {
+    reaching = { ...reaching, [one.id]: true };
+    try {
+      const answer = await client.destinations.probe(one.id);
+      probed = { ...probed, [one.id]: answer };
+    } finally {
+      reaching = { ...reaching, [one.id]: false };
+    }
   }
 
-  /**
-   * Asked per row rather than as one read of the list: both kinds shipped today
-   * describe themselves without touching disk or network, but the first that
-   * goes and looks must leave one row waiting rather than the page.
-   *
-   * A retired one is not asked — it is offered to nothing new — and one that
-   * answered is not asked again, while one that could not is, since coming back
-   * into reach is the moment that changes.
-   */
+  /** Anything else is worth asking again when the pool comes back into reach. */
+  const SETTLED: readonly DestinationProbe["kind"][] = [
+    "ready",
+    "rejected",
+    "not-offered",
+  ];
+
+  // A retired one is offered to nothing new, so nothing asks it anything.
+  // Refusals stay quiet: a pool out of reach is already said by the chrome.
   $effect(() => {
     const yes = pool.yes;
     const held = $destinations;
@@ -107,15 +113,14 @@
     untrack(() => {
       for (const one of held) {
         if (one.retired === true) continue;
-        if (asking[one.id] === true) continue;
 
-        // Quietly: a pool out of reach is already said by the chrome, and one
-        // line per destination saying it again is not news. Each is asked on
-        // its own, so an answer already held is not asked for twice.
-        if (described[one.id]?.kind !== "described") {
+        if (asking[one.id] !== true && described[one.id]?.kind !== "described") {
           void describing(one).catch(() => undefined);
         }
-        if (probed[one.id] === undefined) {
+
+        const answer = probed[one.id];
+        const settled = answer !== undefined && SETTLED.includes(answer.kind);
+        if (reaching[one.id] !== true && !settled) {
           void probing(one).catch(() => undefined);
         }
       }
@@ -138,11 +143,12 @@
   {/if}
 
   {#each $destinations as one (one.id)}
-    <Destination
+    <DestinationRow
       {one}
       described={described[one.id]}
       probed={probed[one.id]}
       asking={asking[one.id] === true}
+      probing={reaching[one.id] === true}
       opened={opened === one.id}
       offline={!pool.yes}
       onopen={() => {
@@ -170,7 +176,7 @@
           />
         </div>
       {/if}
-    </Destination>
+    </DestinationRow>
   {/each}
 
   {#if adding}
@@ -202,12 +208,12 @@
     }}
     ondelete={() =>
       void attempt(async () => {
-        await client.destinations.delete((doomed as One).id);
+        await client.destinations.delete((doomed as Destination).id);
         doomed = undefined;
       })}
     onretire={() =>
       void attempt(async () => {
-        await client.destinations.retire((doomed as One).id);
+        await client.destinations.retire((doomed as Destination).id);
         doomed = undefined;
       })}
   />

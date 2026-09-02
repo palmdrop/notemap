@@ -399,8 +399,10 @@ retire, delete — with the rule and the distance separating what can be undone 
 *(2026-09-02)*, without waiting to be told to. Asked **per row**, so the first kind that has to go
 and look leaves one line saying it is asking rather than holding up a list that is already drawn
 from pool state. A **retired** one is not asked — it is offered to nothing new — and keeps the
-control for a person who wants to know anyway. One that answered is not asked again; one that could
-not is, when the pool comes back into reach, since that is the moment worth re-asking on.
+control for a person who wants to know anyway. A **settled** answer is not asked again: what it can
+do once it has said, and whether it is there once that is `ready`, `rejected` or a kind that cannot
+be asked. One that could not be reached *is* asked again when the pool comes back into reach, since
+that is the moment worth re-asking on.
 
 **What it answered about being there is what the row leads with**, because it is the stronger fact:
 `reached` in green, and a refusal in the accent, which is the colour for a thing a person has to

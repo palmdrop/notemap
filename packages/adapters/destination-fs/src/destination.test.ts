@@ -8,7 +8,7 @@ import {
 } from "node:fs/promises";
 import { join } from "node:path";
 
-import { Unusable } from "@notemap/core";
+import { Rejected, Unusable } from "@notemap/core";
 import type {
   Delivery,
   DeliveryOutcome,
@@ -667,10 +667,6 @@ describe("probing a filesystem destination", () => {
     await expect(destination.probe()).resolves.toBeUndefined();
   });
 
-  /**
-   * The person's to fix, so `Rejected` rather than the unreachable an
-   * unmounted drive gets — the two are what the whole call is for.
-   */
   it("rejects a root that is not there", async () => {
     const made = root();
     cleanups.push(made.cleanup);
@@ -694,11 +690,7 @@ describe("probing a filesystem destination", () => {
     );
   });
 
-  /**
-   * The one kind that can answer this without writing: the kernel says. Skipped
-   * as root, where it says yes to everything — the probe is not wrong there,
-   * the premise is: a root a normal user cannot write to, root can.
-   */
+  /** Skipped as root, which can write anywhere: the premise fails, not the probe. */
   it.skipIf(process.getuid?.() === 0)(
     "rejects a root that cannot be written to",
     async () => {
@@ -712,6 +704,47 @@ describe("probing a filesystem destination", () => {
       await expect(
         kind.probe?.(destinationRow({ root: made.path })),
       ).rejects.toThrow(/cannot be written to/);
+    },
+  );
+
+  /**
+   * The sorting a delivery already does: those five errnos are the machine's,
+   * and everything else — a component that is a file — is a person's to fix.
+   */
+  it("rejects a root whose parent is a file rather than a folder", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    await mkdir(made.path, { recursive: true });
+    const note = join(made.path, "a-note.md");
+    await writeFile(note, "not a folder\n");
+    const kind = createFilesystemDestination({ accepts: [TEXT] });
+
+    await expect(
+      kind.probe?.(destinationRow({ root: join(note, "inside") })),
+    ).rejects.toThrow(Rejected);
+  });
+
+  it.skipIf(process.getuid?.() === 0)(
+    "is unreachable, not rejected, where the root cannot be read at all",
+    async () => {
+      const made = root();
+      const shut = join(made.path, "shut");
+      await mkdir(join(shut, "vault"), { recursive: true });
+      // Restored before the directory is removed, or the removal cannot read it.
+      cleanups.push(async () => {
+        await chmod(shut, 0o700).catch(() => undefined);
+        made.cleanup();
+      });
+      await chmod(shut, 0o000);
+      const kind = createFilesystemDestination({ accepts: [TEXT] });
+
+      const failed = await kind
+        .probe?.(destinationRow({ root: join(shut, "vault") }))
+        .then(() => undefined)
+        .catch((cause: unknown) => cause);
+
+      expect(failed).toBeInstanceOf(Error);
+      expect(failed).not.toBeInstanceOf(Rejected);
     },
   );
 
