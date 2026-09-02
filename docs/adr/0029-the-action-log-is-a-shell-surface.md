@@ -1,4 +1,4 @@
-# 28. The action log is a surface of the shell, not a page the daemon serves
+# 29. The action log is a surface of the shell, not a page the daemon serves
 
 **Date**: 2026-09-02
 **Status**: Accepted

@@ -9,7 +9,7 @@
   Not a surface with a held page and not in the durable store: the log is read for diagnosis rather
   than drained. The position is the domain's — an instant and an id — read out of the `next` link
   `/v1` answers rather than passed back as a URL.
-  ([plan](../plans/log-in-the-shell.md), [ADR 28](../adr/0028-the-action-log-is-a-shell-surface.md))
+  ([plan](../plans/log-in-the-shell.md), [ADR 29](../adr/0029-the-action-log-is-a-shell-surface.md))
 
 - 2026-08-31 — **A destination can be asked what a field could hold, and the answer is never
   cached.** `DestinationsApi.candidates()` is a passthrough over

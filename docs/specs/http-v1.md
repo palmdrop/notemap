@@ -9,7 +9,7 @@ editing, destinations, routing to one and health are settled; the rest is stub
   the app answers that path, an unmatched extensionless path already falling through to it.
   `GET /v1/actions` is unchanged and was always the promise; the page was host surface this spec
   had already called removable.
-  ([plan](../plans/log-in-the-shell.md), [ADR 28](../adr/0028-the-action-log-is-a-shell-surface.md))
+  ([plan](../plans/log-in-the-shell.md), [ADR 29](../adr/0029-the-action-log-is-a-shell-surface.md))
 
 - 2026-09-01 — **Every `/v1` write declares its media type, carrying a body or not.** The rule
   used to skip the routes that read no body and the ones whose optional body was absent, which
@@ -144,7 +144,7 @@ editing, destinations, routing to one and health are settled; the rest is stub
   ([plan](../plans/action-log-feed.md))
   *Superseded 2026-09-02*: `/log` is a route of the app, not a page the daemon serves. What this
   spec promised is `GET /v1/actions`, which is unchanged.
-  ([plan](../plans/log-in-the-shell.md), [ADR 28](../adr/0028-the-action-log-is-a-shell-surface.md))
+  ([plan](../plans/log-in-the-shell.md), [ADR 29](../adr/0029-the-action-log-is-a-shell-surface.md))
 - 2026-08-10 — The document is served with something that reads it: an OpenAPI playground at
   `/docs`, Swagger UI vendored out of `swagger-ui-dist` by the daemon's build step and pointed
   at `/v1/openapi.json`. Host surface, outside the contract and absent from the document.

@@ -10,7 +10,7 @@
   that are failures and on the failure code beside them. Its rail takes a measure of its own, and
   the order and the subject filter live on the URL. The count of what is shown, and a refusal in
   its place, sit in the chrome.
-  ([plan](../plans/log-in-the-shell.md), [ADR 28](../adr/0028-the-action-log-is-a-shell-surface.md))
+  ([plan](../plans/log-in-the-shell.md), [ADR 29](../adr/0029-the-action-log-is-a-shell-surface.md))
 
 - 2026-09-01 — **A required field left blank is sent blank, not dropped.** Both forms built from a
   schema — the composer's arguments and a destination's settings — omitted every empty field, so a
@@ -62,7 +62,7 @@
 - 2026-09-02 — **The action log is a surface of this shell.** `/log` is a route of the app,
   drawn from the same primitives as the queue and the feed and reading through
   `@notemap/client`. The daemon's page is gone.
-  ([plan](../plans/log-in-the-shell.md), [ADR 28](../adr/0028-the-action-log-is-a-shell-surface.md))
+  ([plan](../plans/log-in-the-shell.md), [ADR 29](../adr/0029-the-action-log-is-a-shell-surface.md))
 - 2026-08-25 — **The action log is a register.** `/log` stopped being a second visual language —
   rounded cards, a system sans, a weight nothing else uses — and became the same two columns as
   the queue and the feed, with the shell's bar on top. It still loads nothing but the daemon, so
@@ -70,7 +70,7 @@
   stays as it is. ([plan](../plans/queue-two-column-rail.md))
   *Superseded 2026-09-02*: drawing the register in two places was the cost this carried, and it
   came due. The page is deleted rather than repaired, and the copied palette and its test go with
-  it ([ADR 28](../adr/0028-the-action-log-is-a-shell-surface.md)).
+  it ([ADR 29](../adr/0029-the-action-log-is-a-shell-surface.md)).
 - 2026-08-24 — **Settings is legible.** One column at a reading measure, no rail and nothing to
   furl, with the hierarchy carried by capitals, tracking and rules rather than by a second type
   size. Destinations open in place to what they can do and the four things that can be done to
@@ -653,7 +653,7 @@ the page a person actually reads. Three-character indents on successive paragrap
       `/docs` is a vendored Swagger UI and stays as it is. **Answered again 2026-09-02**, the other
       way: `/log` is not the daemon's page at all any more, so there is no copy to hold and no
       second language to keep in step. `/docs` is unchanged, and the answer for it is the original
-      one ([ADR 28](../adr/0028-the-action-log-is-a-shell-surface.md)).
+      one ([ADR 29](../adr/0029-the-action-log-is-a-shell-surface.md)).
 - [x] 2026-08-19 — **Nothing can enumerate a destination's folders.** Answered 2026-08-31: the
       destination port gained `candidates`, asked about a field rather than a path
       ([ADR 26](../adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md)), and the
