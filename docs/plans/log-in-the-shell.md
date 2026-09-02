@@ -1,9 +1,9 @@
 # The action log becomes a surface of the shell
 
 **Date**: 2026-09-02
-**Status**: In progress <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/client.md`, `docs/specs/http-v1.md`, `docs/specs/shell.md`
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-09-02
 
 ---
 
@@ -133,19 +133,19 @@ unreachable, so this is the phase that switches it over.
 
 Depends on every phase above.
 
-- [ ] **An ADR.** Why the log moved from host surface to shell surface: what the copied palette and
+- [x] **An ADR.** Why the log moved from host surface to shell surface: what the copied palette and
       its guarding test cost, what a checkout with no UI build loses, and why `/v1/actions` being
       the only promise is what made this cheap. `AGENTS.md` asks for a new ADR or a superseding note
       rather than an edit over the old reasoning, and the 2026-08-25 decision had reasoning worth
       keeping
-- [ ] `docs/specs/shell.md` — the 2026-08-25 entry gets a superseding note rather than a rewrite;
+- [x] `docs/specs/shell.md` — the 2026-08-25 entry gets a superseding note rather than a rewrite;
       the answered question dated 2026-08-19 says what the answer became; and the line under *what
       this shell does not draw* that reads "`/log` is no longer in this list: it is the daemon's
       markup still" is now wrong twice over
-- [ ] `docs/design/README.md` and the prose in `docs/design/log.html` both describe corrections to a
+- [x] `docs/design/README.md` and the prose in `docs/design/log.html` both describe corrections to a
       daemon page that no longer exists. Say what the file is now
-- [ ] Verify: the specs and the code agree; no doc still calls `/log` the daemon's markup
-- [ ] `git commit`
+- [x] Verify: the specs and the code agree; no doc still calls `/log` the daemon's markup
+- [x] `git commit`
 
 ---
 

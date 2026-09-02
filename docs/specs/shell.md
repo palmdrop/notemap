@@ -1,8 +1,16 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-01
+**Last updated**: 2026-09-02
 **Shipped**:
+
+- 2026-09-02 — **The action log is a surface of this shell.** `/log` is a route of the app rather
+  than a page the daemon serves: the same register, the kind wearing the state mark, `detail`
+  flattened generically into pairs rather than stringified, and the accent spent on the three kinds
+  that are failures and on the failure code beside them. Its rail takes a measure of its own, and
+  the order and the subject filter live on the URL. The count of what is shown, and a refusal in
+  its place, sit in the chrome.
+  ([plan](../plans/log-in-the-shell.md), [ADR 28](../adr/0028-the-action-log-is-a-shell-surface.md))
 
 - 2026-09-01 — **A required field left blank is sent blank, not dropped.** Both forms built from a
   schema — the composer's arguments and a destination's settings — omitted every empty field, so a
@@ -51,11 +59,18 @@
   named on the URL and remembered per surface, so a read reloads as the one that was being read and
   a shared link opens at the end it was shared at. The queue and the feed keep their own, having
   different ends to start from. ([plan](../plans/reconnect-and-remembered-order.md))
+- 2026-09-02 — **The action log is a surface of this shell.** `/log` is a route of the app,
+  drawn from the same primitives as the queue and the feed and reading through
+  `@notemap/client`. The daemon's page is gone.
+  ([plan](../plans/log-in-the-shell.md), [ADR 28](../adr/0028-the-action-log-is-a-shell-surface.md))
 - 2026-08-25 — **The action log is a register.** `/log` stopped being a second visual language —
   rounded cards, a system sans, a weight nothing else uses — and became the same two columns as
   the queue and the feed, with the shell's bar on top. It still loads nothing but the daemon, so
   the roles are restated in the page and a test holds that copy to `styles/tokens.css`. `/docs`
   stays as it is. ([plan](../plans/queue-two-column-rail.md))
+  *Superseded 2026-09-02*: drawing the register in two places was the cost this carried, and it
+  came due. The page is deleted rather than repaired, and the copied palette and its test go with
+  it ([ADR 28](../adr/0028-the-action-log-is-a-shell-surface.md)).
 - 2026-08-24 — **Settings is legible.** One column at a reading measure, no rail and nothing to
   furl, with the hierarchy carried by capitals, tracking and rules rather than by a second type
   size. Destinations open in place to what they can do and the four things that can be done to
@@ -142,8 +157,8 @@ fills in. It does not name a colour or a font; those come out of the design sess
 - **A standalone item route.** Processing happens in the row (below), so `/items/:id` is not a
   surface this shell draws.
 - **`/docs`.** The playground is a vendored Swagger UI, and restyling somebody else's application
-  is not this design's job. `/log` is no longer in this list: it is the daemon's markup still, but
-  it is drawn in this language (below).
+  is not this design's job. `/log` left this list on 2026-08-25, being drawn in this language while
+  still the daemon's markup, and is a surface of this shell outright since 2026-09-02 (below).
 - **Enrichment.** Suggestions and artifacts are not on the wire — `Item` carries no enrichment
   field and the two suggestion operations have no encoder — so there is nothing to draw and no
   slot is guessed at.
@@ -161,8 +176,10 @@ two-pane desktop, no bottom bar, no sheet. *Amended 2026-08-24*: the second colu
 rail, and it survives a phone rather than collapsing into the first.
 
 Navigation names **two** surfaces — the queue and the feed. Capture is not one of them: it is the
-first row of the queue. Settings holds the destination list and the exits to the daemon's `/log`
-and `/docs`, which are not app surfaces and do not sit beside them as equals. **Settings sits at
+first row of the queue. The log is not one either: it is a surface of this shell and reached from
+settings, being what a person opens when something has gone wrong rather than part of the round
+they make. Settings holds the destination list, the way to the log, and the exit to the daemon's
+`/docs`, none of which sit beside the two as equals. **Settings sits at
 the bar's right end**, after the reachability mark, with the other thing that is true of the shell
 rather than of a surface — not beside the two surfaces as a third.
 
@@ -376,7 +393,8 @@ lately. Opening one adds what it can do, the settings its kind asked for, its id
 things that can be done to it — check, edit, retire, delete — with the rule and the distance
 separating what can be undone from what cannot.
 
-**Daemon** says where this shell is talking to, and carries the exits to `/log` and `/docs`. Its
+**Daemon** says where this shell is talking to, and carries the way to `/log` and the exit to the
+daemon's `/docs` — one of this shell's own routes and one the browser leaves for, marked apart. Its
 first row is the one fact on the page that is about *now* rather than about configuration: whether
 the daemon answers, how long it took, and when it was asked. **The destination list is the probe** —
 knocking on the daemon and refreshing what the page shows are the same request, and there is no
@@ -398,20 +416,41 @@ and the asking offers retiring instead. Only the pool knows whether a record has
 destination, so its refusal is the answer — and the refusal lands *in the asking*, where the
 alternative it leaves is already on screen.
 
-### The daemon's own pages
+### The log
 
-`/log` is the daemon's markup, served by the daemon, and it is drawn in this language anyway. It is
-the same register: a rail carrying the stamp and who did it, a body carrying what happened, what it
-was about and the detail, one rule across the top of every cell. The bar is the shell's, so leaving
-the app and coming back does not change what the page looks like.
+`/log` is the same register: a rail carrying the stamp and who did it, a body carrying what
+happened, what it was about and the detail, one rule across the top of every cell. It is a surface
+of this shell like any other *(2026-09-02; it was the daemon's markup, drawn in this language,
+until then)*, so there is no leaving the app and coming back, and no second copy of anything to
+hold in step.
 
-It **loads nothing from anywhere but the daemon** — that is a rule of that page, not a preference —
-so it cannot reach the app's compiled stylesheet and restates the roles inline. Two copies of a
-palette drift the moment one moves, so a test holds the copy to `styles/tokens.css`, which stays
-the source of truth.
+**The kind is what the row is**, and it wears the register's state mark rather than reading as body
+text. **The accent is spent on `delivery-failed`, `work-failed` and `work-abandoned`**, and on the
+failure code beside them — not on `purged`, `destination-deleted` or `actions-cleared`, which are
+facts rather than warnings. A log where half the rows are red says nothing.
 
-`/docs` is a vendored Swagger UI and is left alone: restyling somebody else's application is not
-this design's job.
+**`detail` is flattened generically, never per kind**: dotted keys, strings unquoted, arrays
+joined, nested objects flattened. `ActionKind` has twenty-seven members and will gain more, so a
+renderer per kind is that many places to drift from a shape nobody updates — and a kind nobody has
+written yet reads correctly for free.
+
+**A subject is shortened to its head and tail and links to the log narrowed to it.** The
+destination on a `routed` row stays an id: the action recorded one, and resolving it to a name is a
+second read and a cache. The order and the filter both live on the URL, so a reload and a shared
+link come back to the same reading.
+
+**The rail takes a measure of its own**, narrower than the register's — it holds a stamp and one
+short word where the register's holds a row's whole account — and `2026-09-02` fits on one line at
+every width. Below the breakpoint the stamp stacks and a `detail` pair stacks, so a path takes the
+measure rather than what is left beside its key.
+
+The count of what is shown sits in the chrome, and a refusal takes its place there, in accent. A
+pool that never answered is not one: the reachability mark already says *offline* once, for the
+whole shell, and no surface repeats it.
+
+`/docs` is the daemon's own page, a vendored Swagger UI, and is left alone: restyling somebody
+else's application is not this design's job. Settings marks the two apart — one of this shell's
+routes, and one the browser leaves for.
 
 ### Content
 
@@ -611,7 +650,10 @@ the page a person actually reads. Three-character indents on successive paragrap
 - [x] 2026-08-19 — **`/log` and `/docs` remain in the daemon's own visual language.** Answered
       2026-08-25 for half of it: `/log` is drawn in this language, restated in the page because it
       loads nothing from anywhere but the daemon, with a test holding the copy to `tokens.css`.
-      `/docs` is a vendored Swagger UI and stays as it is.
+      `/docs` is a vendored Swagger UI and stays as it is. **Answered again 2026-09-02**, the other
+      way: `/log` is not the daemon's page at all any more, so there is no copy to hold and no
+      second language to keep in step. `/docs` is unchanged, and the answer for it is the original
+      one ([ADR 28](../adr/0028-the-action-log-is-a-shell-surface.md)).
 - [x] 2026-08-19 — **Nothing can enumerate a destination's folders.** Answered 2026-08-31: the
       destination port gained `candidates`, asked about a field rather than a path
       ([ADR 26](../adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md)), and the
@@ -668,8 +710,10 @@ the page a person actually reads. Three-character indents on successive paragrap
   is readable without dismissing anything.
 - The daemon section reports reachable, unreachable and unasked as three distinguishable states,
   and asking costs one request that the page needed anyway.
-- Leaving the app for `/log` and coming back does not change what the interface looks like, and the
-  log page still fetches nothing from outside the daemon.
-- The log page's palette cannot drift from the shell's without a test failing.
+- `/log` is reached without leaving the app, draws the same register as the queue and the feed, and
+  reads what it draws through `@notemap/client`.
+- A `detail` of a kind nobody has written a renderer for is still readable, and the accent falls on
+  the three kinds that are failures and on nothing else.
+- The log's rail holds `2026-09-02` on one line at every width.
 - No component in `apps/ui` names a colour; every colour comes from a token role defined in
   `styles/tokens.css`, and switching the palette requires no change to a component.

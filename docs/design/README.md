@@ -11,7 +11,7 @@ plan](../plans/shell-design-port.md) is written against; the prose account of
 | `queue.html` | The queue, with capture as its first row and a routing composer open beside one item. |
 | `feed.html` | The feed, including a routed item, an archived one, and a clamped long note. |
 | `composer.html`, `composer.css` | Every state the routing composer has, for [typed-routing-composer](../plans/typed-routing-composer.md). Standalone, and it supersedes what `queue.html` and `shell.css` show. |
-| `log.html`, `log.css` | The action log as it should be drawn — corrections to `apps/daemon/public/log.html`, which exists and is already a register. Carries both sides of every `light-dark()`, since that page restates its roles inline. |
+| `log.html`, `log.css` | The action log as it should be drawn. Built as [log-in-the-shell](../plans/log-in-the-shell.md), which made it a route of the app; it was drawn against the daemon's own page, which is why it carries both sides of every `light-dark()` where the others name a token. |
 | `shots/` | Each surface rendered at 1440 and at 390, so a change can be compared without opening a browser. |
 
 **`shell.css` and `queue.html` are behind the code on one point**: they draw the composer as a

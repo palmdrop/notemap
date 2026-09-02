@@ -1,9 +1,8 @@
 /* The action log, as it should be drawn.
    Sibling of shell.css. Unlike the other files here it carries both sides of
-   every colour: the real page restates its roles inline, because it loads
-   nothing from anywhere but the daemon, so an implementer needs both values.
-   `apps/ui/src/styles/tokens.css` stays the source of truth, and
-   `apps/daemon/src/log/log.test.ts` fails when the copy disagrees. */
+   every colour, having been drawn against the daemon's own page, which restated
+   its roles inline. The log is a route of the app now and names tokens like
+   everything else; `apps/ui/src/styles/tokens.css` is the source of truth. */
 
 :root {
   color-scheme: light dark;
