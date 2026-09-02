@@ -814,6 +814,22 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   terms `describe()`'s own report already uses. `not-offered` is one answer however it was reached
   — a kind whose adapter implements none of this, and a field an adapter does not answer for, are
   the same fact to a caller: nothing here can be browsed.
+- **A destination can be asked whether it is really there** (added 2026-09-02,
+  [ADR 29](../adr/0029-a-destination-can-be-asked-whether-it-is-really-there.md)), through a third
+  method, **`probe`**. `describe()` answers from a declared shape and never leaves the process, so
+  it says nothing about an unmounted drive or an account nobody declared — both describe themselves
+  cheerfully, and the first evidence either is wrong is a delivery that does not land. A probe goes
+  and asks: it resolves what it needs, opens the connection, presents the credential and asks
+  whether the root is there. The answer is `ready`, `rejected`, `unreachable`, `unusable` or
+  `not-offered`. `rejected` against `unreachable` is the whole point of it and is
+  `DeliveryOutcome`'s own distinction one call earlier — something a person must go and fix, against
+  something that will come back on its own and is already being retried. Optional on the adapter,
+  with the port turning an absent method into `not-offered`, on `candidates`' terms.
+- **`ready` means reached, not writable.** A probe never writes: proving a vault is writable means
+  creating and deleting a file in it, which is not what a check does. It takes a writability answer
+  where one is free — a filesystem kind asks the kernel — and infers it everywhere else from having
+  reached the place at all. Nothing consults a probe before a delivery: what a delivery finds out is
+  still a delivery's to find out.
 - **A capability's accepted payload types may be a wildcard**, for a destination whose fallback
   genuinely handles anything. It is a promise rather than a shrug: claiming it trades away the
   refusal core would otherwise make up front, so what would have been an immediate

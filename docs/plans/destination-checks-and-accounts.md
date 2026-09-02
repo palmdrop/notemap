@@ -135,29 +135,30 @@ time, which is exactly the kind of thing this phase was going to surface.
 Depends on nothing. Settle it before phase 5 writes anything against it. **Nothing lands here
 without the developer's confirmation.**
 
-- [ ] A new ADR: **a destination can be asked whether it is really there**. `probe` joins `describe`
+- [x] A new ADR: **a destination can be asked whether it is really there**. `probe` joins `describe`
       and `candidates` on `DestinationKindAdapter` and the `Destinations` port, optional on the
       adapter, with the registry turning an absent method into `not-offered` — exactly the shape
       ADR 26 settled for `candidates`, and for the same reason: "nothing here can be asked" is one
       fact to a caller however it was arrived at
-- [ ] The answer is `ready`, `rejected`, `unreachable`, `unusable` or `not-offered`. The
+- [x] The answer is `ready`, `rejected`, `unreachable`, `unusable` or `not-offered`. The
       `rejected`/`unreachable` split is `DeliveryOutcome`'s, already in the domain, and it is the
       distinction a person needs: something you must go and fix, against something that is merely
       asleep and will be retried
-- [ ] `describe()` is untouched and stays offline-safe. This is the third call, not a change to the
+- [x] `describe()` is untouched and stays offline-safe. This is the third call, not a change to the
       first — the reasoning ADR 26 and ADR 28 both spend paragraphs on holds
-- [ ] Amend ADR 28: an undeclared account or an unreadable secret answers a probe `rejected`, though
+- [x] Amend ADR 28: an undeclared account or an unreadable secret answers a probe `rejected`, though
       it stays `unreachable` to a **delivery**. What that ADR protects is retry semantics — a
       pending delivery must come back — and a probe has none to protect
-- [ ] `ready` means the account resolved, the destination answered, the credentials were accepted
+- [x] `ready` means the account resolved, the destination answered, the credentials were accepted
       and the root is there. It does **not** mean writable: proving that means creating and deleting
       a file in somebody else's vault, which is not what a button labelled "check" should do.
       Settled 2026-09-02, one line in the spec, inferred rather than proven
-- [ ] The routing section of `core.md` and the Destinations section of `http-v1.md` change in the
+- [x] The routing section of `core.md` and the Destinations section of `http-v1.md` change in the
       same commit as the ADR, per the project's rule that docs and code agree
-- [ ] Verify: the docs read back coherently, and the developer confirms the vocabulary before phase
-      5 starts
-- [ ] `git commit`
+- [x] Verify: the docs read back coherently, and the developer confirms the vocabulary before phase
+      5 starts. **Confirmed 2026-09-02**: the five answers as written, and ADR 28 narrowed rather
+      than left alone — a probe says `rejected` where a delivery still says `unreachable`
+- [x] `git commit`
 
 ### Phase 5 — core and the two adapters
 

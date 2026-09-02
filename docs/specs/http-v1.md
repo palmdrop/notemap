@@ -792,6 +792,34 @@ GET /v1/destinations/019a3f2c-.../candidates?capability=create-file&field=direct
   three is an error status — a destination that is merely asleep is not a broken request.
 - An id no destination has is `404 unknown-destination`.
 
+`GET /v1/destinations/{id}/probe` — whether that one is really there, asked now.
+
+```json
+{ "kind": "ready" }
+```
+
+```json
+{ "kind": "rejected", "detail": "no webdav account named home is configured" }
+```
+
+- **The third read that reaches the outside world**, beside `/description` and `/candidates`, and
+  the only one that answers what a person means by "does this work"
+  ([ADR 29](../adr/0029-a-destination-can-be-asked-whether-it-is-really-there.md)). `/description`
+  answers from a destination's declared shape and never leaves the process, so an unmounted drive
+  and an account nobody declared both describe themselves without complaint.
+- **`200` carries every answer**, as `/candidates` does: `ready` where it was reached, its
+  credentials accepted and its root found; `rejected` where it answered and said no; `unreachable`
+  where it could not be reached or could not decide; `unusable` where nothing speaks its kind or its
+  settings no longer satisfy it; `not-offered` where the kind does not do this at all. A destination
+  that is asleep is not a broken request.
+- **`rejected` and `unreachable` are `DeliveryOutcome`'s own words**, for the same distinction one
+  call earlier: something a person must fix, against something that will come back and is already
+  being retried. Every answer but `ready` carries a `detail`.
+- **`ready` does not promise a write will land.** The probe reads. Where a kind can learn about
+  writing without writing it does — a filesystem destination asks the kernel — and everywhere else
+  it is inferred from having reached the place.
+- An id no destination has is `404 unknown-destination`.
+
 `POST /v1/destinations` — create one, from a name, a kind and that kind's settings. The id is
 minted and answered; a name is a label and need not be unique.
 
