@@ -59,10 +59,6 @@
   named on the URL and remembered per surface, so a read reloads as the one that was being read and
   a shared link opens at the end it was shared at. The queue and the feed keep their own, having
   different ends to start from. ([plan](../plans/reconnect-and-remembered-order.md))
-- 2026-09-02 — **The action log is a surface of this shell.** `/log` is a route of the app,
-  drawn from the same primitives as the queue and the feed and reading through
-  `@notemap/client`. The daemon's page is gone.
-  ([plan](../plans/log-in-the-shell.md), [ADR 29](../adr/0029-the-action-log-is-a-shell-surface.md))
 - 2026-08-25 — **The action log is a register.** `/log` stopped being a second visual language —
   rounded cards, a system sans, a weight nothing else uses — and became the same two columns as
   the queue and the feed, with the shell's bar on top. It still loads nothing but the daemon, so

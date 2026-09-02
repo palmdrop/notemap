@@ -87,7 +87,7 @@ is verified against `pnpm dev`, where the shell is served directly and nothing s
       register, the kind as the shell's own `StateWord`, the flattened `detail`, the bar with the
       order control and the count
 - [x] **`detail` is flattened generically, never per kind** — dotted keys, strings unquoted, arrays
-      joined, nested objects flattened. `ActionKind` has 28 members and will gain more; a renderer
+      joined, nested objects flattened. `ActionKind` has twenty-seven members and will gain more; a renderer
       per kind is that many places to drift from a shape nobody updates, and a kind nobody has
       written yet reads correctly for free
 - [x] **Accent is spent on `delivery-failed`, `work-failed` and `work-abandoned`**, and on the
@@ -104,7 +104,8 @@ is verified against `pnpm dev`, where the shell is served directly and nothing s
       takes the measure
 - [x] Tests beside the components, as `src/components` already does: flattening handles nesting,
       arrays and an unknown kind; the accent rule picks exactly three kinds; a stamp stacks below
-      the breakpoint
+      the breakpoint — which `Stamp` already did before this plan, so that one pins existing
+      behaviour rather than new
 - [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`; and by eye against
       `docs/design/shots/log-1440.png` and `log-390.png` with `pnpm dev`, per the command
       `docs/design/README.md` carries

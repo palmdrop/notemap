@@ -2,11 +2,7 @@ import type { Agent } from "@notemap/client";
 
 export type Pair = { readonly key: string; readonly value: string };
 
-/**
- * The kinds worth an accent. Not `purged`, `destination-deleted` or
- * `actions-cleared`: those are facts rather than warnings, and a log where half
- * the rows are red says nothing.
- */
+/** The kinds the accent is spent on, and the whole of them. */
 const FAILURES: ReadonlySet<string> = new Set([
   "delivery-failed",
   "work-failed",
@@ -44,8 +40,8 @@ function into(pairs: Pair[], key: string, value: unknown): void {
   }
 
   if (Array.isArray(value)) {
-    // Joined while it holds only scalars, which is what makes `tags` read as a
-    // list rather than as a column of numbered rows.
+    // One value while it holds only scalars; a column of numbered rows once it
+    // does not, since a joined object says nothing.
     if (value.some(nested)) {
       value.forEach((held, at) => {
         into(pairs, `${key}.${String(at)}`, held);
@@ -61,9 +57,7 @@ function into(pairs: Pair[], key: string, value: unknown): void {
 
 /**
  * Every kind's `detail` read the same way: dotted keys, strings unquoted,
- * arrays joined, nested objects flattened. A renderer per kind would be
- * twenty-seven places to drift from a shape nobody updates, and a kind nobody
- * has written yet reads correctly for free.
+ * arrays joined, nested objects flattened.
  *
  * A key with nothing under it — an empty object or an empty array — yields no
  * pair, so every pair drawn has a value.

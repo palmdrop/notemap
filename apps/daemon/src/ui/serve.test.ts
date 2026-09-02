@@ -88,16 +88,27 @@ describe("serving the app", () => {
    * `/v1` for, and that is what the door is on. Shutting its own paths would
    * answer a person a refusal envelope where they asked for a page — which is
    * the property `/log` carried while the daemon served its own markup for it.
+   *
+   * Asserted against `/`, because "not 401" is free on a checkout: with no
+   * build every one of these is a 404, and a path the door had shut would be
+   * one too. What holds either way is that they are answered alike.
    */
   it("does not shut its own paths when the door is shut", async () => {
     const serving = await guarded();
+    const root = await serving.request("/");
 
-    for (const path of ["/", "/log", "/settings"]) {
-      expect((await serving.request(path)).status).not.toBe(401);
+    for (const path of ["/log", "/settings"]) {
+      const response = await serving.request(path);
+
+      expect(response.status).toBe(root.status);
+      expect(response.headers.get("content-type")).toBe(
+        root.headers.get("content-type"),
+      );
     }
 
     // What those paths would draw is refused to whoever asks for it.
     expect((await serving.request("/v1/actions")).status).toBe(401);
+    expect(root.status).not.toBe(401);
   });
 
   it("still refuses a method the daemon does not answer", async () => {
