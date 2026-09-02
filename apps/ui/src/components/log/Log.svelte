@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { untrack } from "svelte";
+
   import Body from "$components/primitives/register/Body.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
@@ -8,17 +10,23 @@
   import { reachable } from "$lib/reachable.svelte";
   import { LOG_LEDE, NOTHING_LOGGED } from "$lib/said";
 
+  import { logHref } from "./href";
   import Id from "./Id.svelte";
   import LogRow from "./LogRow.svelte";
 
   const pool = reachable();
+
+  // A read that failed left nothing, and there is no cache to draw meanwhile.
+  $effect(() => {
+    if (pool.yes) untrack(() => log.again());
+  });
 </script>
 
 <p class="mt-8 font-mono text-ink-muted">
   {LOG_LEDE}
   {#if log.item !== undefined}
     Only what is about <Id id={log.item} /> —
-    <a href="/log" class="text-ink underline">show everything</a>
+    <a href={logHref(log.order)} class="text-ink">show everything</a>
   {/if}
 </p>
 
@@ -34,7 +42,7 @@
     {/if}
 
     {#each log.rows as action, at (action.id)}
-      <LogRow {action} first={at === 0} />
+      <LogRow {action} order={log.order} first={at === 0} />
     {/each}
 
     {#if log.more}

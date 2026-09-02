@@ -28,7 +28,9 @@ let refused = $state<string | undefined>(undefined);
  * turned around is answering for a page that no longer exists.
  */
 let walking = 0;
-let started = false;
+
+/** Whether anything has ever asked. Plain, so no effect can take a dependency on it. */
+let asked = false;
 
 /**
  * A duplicate id is a keyed block crashing the whole surface, which is the
@@ -73,7 +75,7 @@ async function walk(from: ActionPosition | undefined): Promise<void> {
 /** Walks from the start: a position belongs to the order and the filter that made it. */
 function restart(wanted: Order, subject: ItemId | undefined): void {
   walking += 1;
-  started = true;
+  asked = true;
   order = wanted;
   item = subject;
   rows = [];
@@ -110,10 +112,24 @@ export const log = {
     return rows.length;
   },
 
-  /** Reads the log as the URL names it, where that is not what it is reading already. */
+  /**
+   * Reads the log as the URL names it. A page already answered for that reading
+   * is kept — coming back to a surface is not a reason to throw away a long
+   * walk — but a read that failed is not a page, so re-entering asks again.
+   */
   reading(wanted: Order, subject: ItemId | undefined): void {
-    if (started && wanted === order && subject === item) return;
+    const same = wanted === order && subject === item;
+    if (same && (answered || loading)) return;
     restart(wanted, subject);
+  },
+
+  /**
+   * Asks again where the last read left nothing. The client re-reads the feed
+   * and the queue when the pool comes back into reach; this surface holds no
+   * cache for it to keep, so it has to ask for itself or stay blank.
+   */
+  again(): void {
+    if (asked && !answered && !loading) restart(order, item);
   },
 
   /**
@@ -135,7 +151,8 @@ export const log = {
    */
   forget(): void {
     walking += 1;
-    started = false;
+    asked = false;
+    loading = false;
     order = "newest-first";
     item = undefined;
     rows = [];
