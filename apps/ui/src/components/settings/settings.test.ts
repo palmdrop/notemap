@@ -415,17 +415,40 @@ test("asks again for the kinds once the daemon is reachable", async () => {
   await vi.waitFor(() => expect(adding().disabled).toBe(false));
 });
 
-/** Whether the daemon answers is the one fact here about now, so it is asked. */
-test("knocks on the daemon and says what came back", async () => {
-  serving([aDestination()]);
+/**
+ * `asked()` drops the probe on purpose, so that a surface's own reads can be
+ * asserted on; this row is the one place the probe *is* the subject.
+ */
+const probes = (transport: { readonly sent: readonly Request[] }) =>
+  transport.sent.map(routeOf).filter((route) => route === "GET /v1/health");
+
+/**
+ * The client has been probing all along; the row used to hold a second,
+ * manual notion of reachability and say "unasked" beside a chrome that already
+ * knew.
+ */
+test("says the daemon is reachable without anyone pressing anything", async () => {
+  const transport = serving([aDestination()]);
 
   render(Daemon);
-  expect(screen.getByText("unasked")).toBeDefined();
-
-  await press("Check now");
 
   await screen.findByText("reachable");
-  expect(asked()).toContain("GET /v1/destinations");
+  await screen.findByText(/just now/);
+  expect(probes(transport).length).toBeGreaterThan(0);
+});
+
+test("asks again on request, out of the probe's own turn", async () => {
+  const transport = serving([aDestination()]);
+
+  render(Daemon);
+  await screen.findByText("reachable");
+  const before = probes(transport).length;
+
+  await press("Check again");
+
+  await vi.waitFor(() =>
+    expect(probes(transport).length).toBeGreaterThan(before),
+  );
 });
 
 test("says the daemon is unreachable rather than saying nothing", async () => {
@@ -433,7 +456,6 @@ test("says the daemon is unreachable rather than saying nothing", async () => {
   transport.unreachable(true);
 
   render(Daemon);
-  await press("Check now");
 
   await screen.findByText("unreachable");
 });

@@ -6,25 +6,42 @@ const SOONEST = 1_000;
 const SLOWEST = 10_000;
 const STEADY = 10_000;
 
+/**
+ * Whether the pool is answering, and when it last did. Every request is
+ * evidence, not only the probe, which is why the time is worth carrying: a
+ * client being used says how long ago it was last answered without ever having
+ * sent a probe.
+ */
+export type Reach = {
+  readonly yes: boolean;
+  /** Absent until something has answered: the first mark is optimism, not evidence. */
+  readonly at?: string;
+  /** How long the round trip took, where the probe was the one that measured it. */
+  readonly ms?: number;
+};
+
 export type Reachability = {
-  readonly changes: Observable<boolean>;
+  readonly changes: Observable<Reach>;
   answered(reached: boolean): void;
   ask(): Promise<void>;
   watched(yes: boolean): void;
   stop(): void;
 };
 
-export function reachability(probe: () => Promise<boolean>): Reachability {
-  const reached = writable(true);
+export function reachability(
+  probe: () => Promise<boolean>,
+  now: () => string,
+): Reachability {
+  const reached = writable<Reach>({ yes: true });
   let waiting: ReturnType<typeof setTimeout> | undefined;
   let backoff = SOONEST;
   let stopped = false;
   let watching = true;
 
-  function settle(answered: boolean): void {
+  function settle(answered: boolean, ms?: number): void {
     if (stopped) return;
 
-    const changed = reached.get() !== answered;
+    const changed = reached.get().yes !== answered;
 
     if (answered) {
       backoff = SOONEST;
@@ -37,7 +54,13 @@ export function reachability(probe: () => Promise<boolean>): Reachability {
       again(wait);
     }
 
-    if (changed) reached.set(answered);
+    // Set on every answer rather than only on a flip: what changed is when it
+    // was last answered, which is the whole of what a person reads off it.
+    reached.set({
+      yes: answered,
+      at: now(),
+      ...(ms === undefined ? {} : { ms }),
+    });
   }
 
   function again(wait: number): void {
@@ -53,7 +76,10 @@ export function reachability(probe: () => Promise<boolean>): Reachability {
 
   async function ask(): Promise<void> {
     if (stopped) return;
-    settle(await probe().catch(() => false));
+
+    const from = Date.now();
+    const answered = await probe().catch(() => false);
+    settle(answered, Date.now() - from);
   }
 
   return {

@@ -1,7 +1,7 @@
 # Destinations that say whether they are actually configured
 
 **Date**: 2026-09-02
-**Status**: Todo
+**Status**: In progress
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`
 **Closed**:
 
@@ -76,30 +76,35 @@ needed.
 
 Depends on nothing.
 
-- [ ] `reachability()` publishes when it was last answered, not only whether: `at` on every settle,
+- [x] `reachability()` publishes when it was last answered, not only whether: `at` on every settle,
       and a measured `ms` only where the explicit probe measured one. Ordinary requests feed
       `settle()` through the `watching()` wrapper and carry no timing, which is the honest reason
       the latency is sometimes absent and the timestamp never is
-- [ ] `Client.reachable` widens to that shape, and `client.probe()` exposes `reach.ask()` so a
+- [x] `Client.reachable` widens to that shape, and `client.probe()` exposes `reach.ask()` so a
       button can re-ask without inventing a second notion of reachability
-- [ ] `apps/ui/src/lib/reachable.svelte.ts` reads the wider mark and exposes when it was answered
-- [ ] `$lib/stamp` gains a relative reading — `timeOf` is minute-granular and cannot say "10 seconds
+- [x] `apps/ui/src/lib/reachable.svelte.ts` reads the wider mark and exposes when it was answered
+- [x] `$lib/stamp` gains a relative reading — `timeOf` is minute-granular and cannot say "10 seconds
       ago"
-- [ ] `Daemon.svelte` drops its own `answer` state and the `destinations.load()` knock. The comment
+- [x] `Daemon.svelte` drops its own `answer` state and the `destinations.load()` knock. The comment
       justifying that knock — that `/v1` has no route whose only job is to answer yes — is wrong:
       `/v1/health` is that route, and the client has been probing it every ten seconds all along,
       which is why the row said "unasked" while the chrome said reachable. The row is green from the
       client's mark, says when it was last answered, and ticks while it is mounted
-- [ ] "Check again" stays, wired to `client.probe()`
-- [ ] Tests: the row is green without anyone pressing anything; it names how long ago; the button
+- [x] "Check again" stays, wired to `client.probe()`
+- [x] Tests: the row is green without anyone pressing anything; it names how long ago; the button
       re-asks
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
+- [x] `git commit`
 
-**Unknown**: what else subscribes to `client.reachable`. `reachable.svelte.ts` is the only reader
-found, but the client's own tests assert on it. If widening proves noisy, the fallback is to keep
-`reachable` a boolean and publish the answer time beside it — worse, because two observables of one
-fact drift.
+**Found 2026-09-02, and not in the plan.** A mark that settles on every answer wakes every reader of
+it, and `Destinations.svelte` re-read its kinds once per answered request. The client is right to
+publish it — the stamp genuinely moved — so the shell's `reachable()` holds `yes`, `at` and `ms`
+apart, and a surface reading only whether the pool answers is left alone. Two spec statements went
+with the change: `shell.md`'s "the destination list is the connectivity probe", superseded rather
+than erased, and a paragraph in `client.md` on what the mark now carries.
+
+**Settled**: nothing but `reachable.svelte.ts` and the client's own tests read `client.reachable`,
+so widening it cost six assertions and no design.
 
 ### Phase 3 — a destination describes itself without being asked
 

@@ -174,7 +174,7 @@ describe("reachability", () => {
     transport.unreachable(true);
     await vi.advanceTimersByTimeAsync(10_000);
 
-    expect(read(client.reachable)).toBe(false);
+    expect(read(client.reachable).yes).toBe(false);
     client.close();
   });
 
@@ -229,7 +229,7 @@ describe("reachability", () => {
     const client = createClient({ transport, store: createMemoryStore() });
     await quiet();
 
-    expect(read(client.reachable)).toBe(false);
+    expect(read(client.reachable).yes).toBe(false);
     client.close();
   });
 
@@ -241,7 +241,63 @@ describe("reachability", () => {
     const client = createClient({ transport, store: createMemoryStore() });
     await quiet();
 
-    expect(read(client.reachable)).toBe(true);
+    expect(read(client.reachable).yes).toBe(true);
+    client.close();
+  });
+
+  it("says nothing about when, until something has actually answered", async () => {
+    const transport = mockTransport(() => json(200, { values: [] }));
+    const client = createClient({ transport, store: createMemoryStore() });
+
+    // Optimistic, and honest about being optimistic: nothing has answered yet.
+    expect(read(client.reachable)).toEqual({ yes: true });
+    client.close();
+  });
+
+  it("says when it was last answered, whatever asked", async () => {
+    vi.useFakeTimers();
+    const transport = mockTransport(() => json(200, { values: [] }));
+    const client = createClient({
+      transport,
+      store: createMemoryStore(),
+      now: () => "2026-09-02T09:00:00.000Z",
+    });
+    await quiet();
+
+    // The probe measures its own round trip, which nothing else can.
+    await client.probe();
+    expect(read(client.reachable).ms).toBeTypeOf("number");
+
+    // An ordinary read is evidence of reach too, and carries no timing with it.
+    await client.loadFeed();
+    expect(read(client.reachable)).toEqual({
+      yes: true,
+      at: "2026-09-02T09:00:00.000Z",
+    });
+    client.close();
+  });
+
+  it("drains once on a return, however many answers arrive after it", async () => {
+    vi.useFakeTimers();
+    const transport = mockTransport(() => json(200, { values: [] }));
+    const client = createClient({ transport, store: createMemoryStore() });
+    await quiet();
+
+    transport.unreachable(true);
+    await client.loadFeed().catch(() => undefined);
+    expect(read(client.reachable).yes).toBe(false);
+
+    transport.unreachable(false);
+    const before = transport.sent.length;
+    await client.loadFeed();
+    await quiet();
+    const onTheReturn = transport.sent.length - before;
+
+    // Every answer settles the mark now, so only the flip may drain: without
+    // that, each subsequent answer would start another read of every surface.
+    await client.loadFeed();
+    await quiet();
+    expect(transport.sent.length - before).toBeLessThan(onTheReturn * 2);
     client.close();
   });
 
@@ -249,15 +305,15 @@ describe("reachability", () => {
     const transport = mockTransport(() => json(200, { values: [] }));
     const client = createClient({ transport, store: createMemoryStore() });
 
-    expect(read(client.reachable)).toBe(true);
+    expect(read(client.reachable).yes).toBe(true);
 
     transport.unreachable(true);
     await client.loadFeed();
-    expect(read(client.reachable)).toBe(false);
+    expect(read(client.reachable).yes).toBe(false);
 
     transport.unreachable(false);
     await client.loadFeed();
-    expect(read(client.reachable)).toBe(true);
+    expect(read(client.reachable).yes).toBe(true);
     client.close();
   });
 });

@@ -690,6 +690,13 @@ read is asking nothing, so nothing notices the daemon go away, and the mark stay
 someone acts on it. Every answered request pushes the probe out by its interval, so the used client
 still sends none: the probe fires only when nothing else has spoken for ten seconds.
 
+**The mark says when it was last answered, not only whether** *(added 2026-09-02)*. Every answered
+request settles it, so the time is one a client being used carries without ever having sent a probe;
+a duration is carried only where the probe was what asked, because nothing else measures its own
+round trip. Before anything has answered the mark carries no time at all — the client starts
+optimistic, and optimism is not evidence. A surface reading only *whether* the pool answers must not
+be redrawn by a stamp that moved, which is the shell's to arrange and not the client's.
+
 **The probe pauses while nobody is watching.** A client is told whether anyone is looking at what it
 draws ([CONTEXT.md](../../CONTEXT.md)); unwatched it asks nothing, and it asks once when it is
 watched again rather than waiting out the interval. So the cost is one request every ten seconds per

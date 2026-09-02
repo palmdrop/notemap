@@ -1,10 +1,17 @@
 import { onMount } from "svelte";
 
+import type { Reach } from "@notemap/client";
+
 import { client } from "./client";
 
 /** The browser's own opinion is kept only as a second no; the client's is the first. */
 let online = $state(true);
+// Held apart rather than as the one mark: every answered request settles it,
+// so a surface reading only whether the pool answers must not be woken by a
+// stamp that moved.
 let answering = $state(true);
+let answeredAt = $state<string | undefined>(undefined);
+let answeredIn = $state<number | undefined>(undefined);
 
 let readers = 0;
 let drop: (() => void) | undefined;
@@ -27,8 +34,10 @@ function hold(): () => void {
     window.addEventListener("online", up);
     window.addEventListener("offline", down);
 
-    const held = client.reachable.subscribe((yes) => {
-      answering = yes;
+    const held = client.reachable.subscribe((mark: Reach) => {
+      answering = mark.yes;
+      answeredAt = mark.at;
+      answeredIn = mark.ms;
     });
 
     drop = () => {
@@ -55,6 +64,14 @@ export function reachable() {
   return {
     get yes() {
       return online && answering;
+    },
+    /** When the pool last answered anything, or absent before it ever has. */
+    get at() {
+      return answeredAt;
+    },
+    /** Only where the probe measured it; an ordinary answer carries no timing. */
+    get ms() {
+      return answeredIn;
     },
   };
 }

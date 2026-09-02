@@ -392,9 +392,11 @@ separating what can be undone from what cannot.
 **Daemon** says where this shell is talking to, and carries the way to `/log` and the exit to the
 daemon's `/docs` — one of this shell's own routes and one the browser leaves for, marked apart. Its
 first row is the one fact on the page that is about *now* rather than about configuration: whether
-the daemon answers, how long it took, and when it was asked. **The destination list is the probe** —
-knocking on the daemon and refreshing what the page shows are the same request, and there is no
-route here whose only job is to answer yes.
+the daemon answers, when it last did, and — where the probe was what asked — how long it took.
+**Nothing is pressed to find out** *(2026-09-02)*: the client probes on its own while anyone is
+watching and every answered request settles the same mark, so the row is drawn from what the client
+already knows rather than from a second, manual notion of reach. The control beside it asks again,
+out of the probe's turn, for a person who would rather not wait for the next one.
 
 **Session** says whether this browser holds one and offers the way out, or — on a daemon nobody has
 set a password on — says the door is open and names the command that shuts it.
@@ -593,6 +595,11 @@ the page a person actually reads. Three-character indents on successive paragrap
   job is to answer yes, and adding one to learn what a read already proves is a route to keep
   forever. Reading the destinations answers both questions at once and refreshes the page while it
   is at it.
+  *Superseded 2026-09-02.* `/v1/health` is that route and has been since
+  [client-minted-assets-and-health](../plans/client-minted-assets-and-health.md); the client has
+  been probing it every ten seconds all along. The row was holding a second notion of reachability
+  and drawing "unasked" beside a chrome that already knew, which is the cost this reasoning did not
+  foresee: the objection was to *adding* a route, and by the time it was written one existed.
 - **The rail is one column, not two jobs.** *2026-08-24.* The left column used to be a stamp
   collapsed and a label gutter opened, which made it dead space on every row a reader was only
   scanning. Carrying the same metadata whether a row is open or shut costs nothing at a desk, gives

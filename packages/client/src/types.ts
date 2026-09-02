@@ -25,6 +25,7 @@ import type { Observable } from "rxjs";
 import type { SessionState } from "./session/session";
 
 import type { OperationId, PendingOperation } from "./outbox/operations";
+import type { Reach } from "./pool/reachability";
 import type { ClientStore } from "./ports/store";
 import type { Transport } from "./ports/transport";
 
@@ -173,8 +174,11 @@ export interface TokensApi {
 }
 
 export interface Client {
-  /** Whether the pool is answering. Optimistic before anything has asked. */
-  readonly reachable: Observable<boolean>;
+  /**
+   * Whether the pool is answering, and when it last did. Optimistic before
+   * anything has asked, which is the one state carrying no time.
+   */
+  readonly reachable: Observable<Reach>;
 
   /**
    * Who this client is to the daemon, and whether the daemon asks at all. A
@@ -252,6 +256,13 @@ export interface Client {
    * pool nothing and asks once when it is looked at again.
    */
   watched(yes: boolean): void;
+
+  /**
+   * Asks the pool now, out of turn, and settles `reachable` with what it says.
+   * The probe runs on its own; this is for a person who would rather not wait
+   * for the next one.
+   */
+  probe(): Promise<void>;
   dismiss(operation: OperationId): Promise<void>;
 
   /**
