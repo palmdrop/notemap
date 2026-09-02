@@ -44,7 +44,7 @@ describe("against a real listener", () => {
     const base = await listening();
 
     expect((await fetch(`${base}/v1/feed`)).status).toBe(200);
-    expect((await fetch(`${base}/log`)).status).toBe(200);
+    expect((await fetch(`${base}/docs`)).status).toBe(200);
   });
 
   it("still refuses a POST that is not JSON", async () => {

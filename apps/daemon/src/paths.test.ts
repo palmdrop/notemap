@@ -19,12 +19,9 @@ describe("the public directory", () => {
     expect(JSON.parse(manifest).name).toBe("@notemap/daemon");
   });
 
-  it("holds the pages the daemon serves", () => {
+  it("holds the page the daemon serves", () => {
     expect(readFileSync(join(PUBLIC_DIR, "docs.html"), "utf8")).toContain(
       "/v1/openapi.json",
-    );
-    expect(readFileSync(join(PUBLIC_DIR, "log.html"), "utf8")).toContain(
-      "/v1/actions",
     );
   });
 });

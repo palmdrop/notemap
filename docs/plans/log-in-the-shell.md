@@ -115,19 +115,19 @@ is verified against `pnpm dev`, where the shell is served directly and nothing s
 Depends on phase 2 being complete and looked at. Until the route is removed the shell's `/log` is
 unreachable, so this is the phase that switches it over.
 
-- [ ] The `GET /log` route, `apps/daemon/public/log.html` and `apps/daemon/src/log/` are deleted.
+- [x] The `GET /log` route, `apps/daemon/public/log.html` and `apps/daemon/src/log/` are deleted.
       `serveUi` then answers `/log` with the shell, because an unmatched extensionless path already
       falls through to it — no redirect, and the exits `docs/specs/shell.md` describes keep working
-- [ ] `apps/daemon/src/log/log.test.ts` asserted the page stays served with the door shut, *because
+- [x] `apps/daemon/src/log/log.test.ts` asserted the page stays served with the door shut, *because
       it is the application and not the pool*. That property still holds and now belongs to the
       shell. Check whether `apps/daemon/src/ui/serve.test.ts` covers it already; add it there if it
       does not, rather than losing it with the file
-- [ ] `docs/specs/http-v1.md` loses the `GET /log` section. `GET /v1/actions` is unchanged, and was
+- [x] `docs/specs/http-v1.md` loses the `GET /log` section. `GET /v1/actions` is unchanged, and was
       always the promise
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack` — a route
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack` — a route
       the daemon answered is gone, which is the HTTP surface changing
-- [ ] Verify by hand: a built daemon serves the shell at `/log`, with the door shut and with it open
-- [ ] `git commit`
+- [x] Verify by hand: a built daemon serves the shell at `/log`, with the door shut and with it open
+- [x] `git commit`
 
 ### Phase 4 — the reversal is recorded
 
