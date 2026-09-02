@@ -162,28 +162,28 @@ Depends on phase 1 for the field it drives, though the control is testable befor
 
 Depends on phases 1 and 2.
 
-- [ ] The leaf is looked up in the deepest scope's answer: an entry with a matching `value` means
+- [x] The leaf is looked up in the deepest scope's answer: an entry with a matching `value` means
       the file is there and the word is `append`; no match means `create`. A prefix segment with no
       matching `scope` is a folder that will be made. **This is what is drawn, never what is
       stored** — `create-or-append-file` is what is stored, and the adapter decides again at
       delivery
-- [ ] The status sits **under** the line, as design `3a`: the state as an inverted word — the
+- [x] The status sits **under** the line, as design `3a`: the state as an inverted word — the
       `StateWord.svelte` treatment the register already uses — then the folders to be made, in
       accent, as `+ drafts/`
-- [ ] `⇧⏎` says *make a new one beside it* and names what it would be called. It stores
+- [x] `⇧⏎` says *make a new one beside it* and names what it would be called. It stores
       `create-file`, which is the capability that means exactly that. It sits on the status row
       beside the state it overrides rather than in the key hints: appending to somebody's file when
       a new one was meant is the one place *nothing to choose* can surprise, and the escape belongs
       next to the surprise
-- [ ] A blank leaf is not a gap. The derived name is shown before committing, and the derivation is
+- [x] A blank leaf is not a gap. The derived name is shown before committing, and the derivation is
       unchanged — first line of the content, per `destination-fs/src/filename.ts`. Not a timestamp:
       `picker-needs-a-trail.md` reads in a vault listing and `2026-09-01-1432.md` does not
-- [ ] Copy throughout is a word or a mark, never a sentence: `create`, `append`, `unreachable`,
+- [x] Copy throughout is a word or a mark, never a sentence: `create`, `append`, `unreachable`,
       `root gone`, `derived`, `best effort`, `+ drafts/`. A count is a number
-- [ ] Tests: a free name draws create; a taken name draws append; a missing prefix reports the
+- [x] Tests: a free name draws create; a taken name draws append; a missing prefix reports the
       folders it will make; `⇧⏎` stores `create-file`; a blank leaf submits a path ending in `/`
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
+- [x] `git commit`
 
 ### Phase 4 — tags, in the composer
 

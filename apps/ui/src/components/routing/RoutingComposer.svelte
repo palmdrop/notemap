@@ -10,18 +10,27 @@
   import Group from "$components/primitives/composer/Group.svelte";
   import Modal from "$components/primitives/composer/Modal.svelte";
   import Option from "$components/primitives/composer/Option.svelte";
+  import { placeOf } from "@notemap/output-markdown/naming";
+
   import { browserFor } from "$lib/candidate-browsers";
   import { client } from "$lib/client";
   import { fieldsOf, valuesFrom } from "$lib/schema-form";
 
+  const CREATE_FILE = "create-file";
+  /** The one field the typed line drives, and the only one `⇧⏎` has to re-read. */
+  const LINE_FIELD = "path";
+
   let {
     item,
     subject,
+    content,
     onclose,
   }: {
     item: string;
     /** What the row said, since the row itself is now behind the veil. */
     subject: string;
+    /** The item's own payload, from which the name of an unnamed note is derived. */
+    content?: unknown;
     onclose: () => void;
   } = $props();
 
@@ -65,6 +74,17 @@
     })();
   });
 
+  function freshFile(beside: string): {
+    capability: string;
+    arguments: Record<string, unknown>;
+  } {
+    const place = placeOf(args[LINE_FIELD] ?? "");
+    return {
+      capability: CREATE_FILE,
+      arguments: { directory: place.directory, filename: beside },
+    };
+  }
+
   function reasonFor(id: string, retired: boolean): string | undefined {
     if (retired) return "retired";
     return refusing[id];
@@ -95,7 +115,12 @@
     }
   }
 
-  async function send() {
+  /**
+   * `beside` is `⇧⏎`: the person meant a new note rather than an addition to
+   * the one that is there, and `create-file` is the capability that promises
+   * exactly that — it refuses a name that is taken rather than writing into it.
+   */
+  async function send(beside?: string) {
     if (chosen === undefined || capability === undefined) return;
 
     busy = true;
@@ -103,8 +128,9 @@
     try {
       await client.routing.route(item, {
         destination: chosen,
-        capability,
-        arguments: valuesFrom(fields, args),
+        ...(beside === undefined
+          ? { capability, arguments: valuesFrom(fields, args) }
+          : freshFile(beside)),
       });
       onclose();
     } catch (error) {
@@ -158,8 +184,9 @@
           field={field.name}
           label={field.title ?? field.name}
           value={args[field.name] ?? ""}
+          said={field.name === LINE_FIELD ? { content, item } : undefined}
           onchange={(value) => (args = { ...args, [field.name]: value })}
-          onsubmit={() => void send()}
+          onsubmit={(beside) => void send(beside)}
         />
       {:else}
         <input
@@ -173,7 +200,9 @@
   {/each}
 
   <Commit>
-    <Action primary disabled={!ready || busy} onclick={send}>route</Action>
+    <Action primary disabled={!ready || busy} onclick={() => void send()}
+      >route</Action
+    >
     <Action onclick={onclose}>cancel</Action>
     {#if said !== ""}
       <span role="status" class="text-ink-muted">{said}</span>

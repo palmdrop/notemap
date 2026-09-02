@@ -2,6 +2,7 @@ import type { Component } from "svelte";
 
 import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
 import PathLine from "$components/routing/PathLine.svelte";
+import type { Said } from "$lib/forecast";
 
 /**
  * A control for one askable field, and the whole of it — the text the field
@@ -16,9 +17,14 @@ export type BrowserProps = {
   /** What the field is called, for the label the control's own input carries. */
   label: string;
   value: string;
+  /** What the item says, for a control that can show the name a note would get. */
+  said?: Said;
   onchange: (value: string) => void;
-  /** Committing from inside the control, where its keys reach that far. */
-  onsubmit?: () => void;
+  /**
+   * Committing from inside the control. `beside` is the name a control offers
+   * when what is typed is already there and a new note was meant.
+   */
+  onsubmit?: (beside?: string) => void;
 };
 
 export type BrowserRegistry = Partial<Record<string, Component<BrowserProps>>>;

@@ -39,6 +39,18 @@ const CREATE_FILE_ASKABLE = {
 
 const APPEND = { name: "append", accepts: ["text"] };
 
+const CREATE_OR_APPEND = {
+  name: "create-or-append-file",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    properties: {
+      path: { type: "string", "x-notemap-candidates": true },
+      heading: { type: "string" },
+    },
+  },
+};
+
 function aDestination(overrides: Record<string, unknown> = {}) {
   return {
     id: VAULT,
@@ -464,4 +476,113 @@ test("drops an answer for a scope it has already left", async () => {
 
   expect(screen.queryByRole("button", { name: "buried" })).toBeNull();
   expect(screen.getByRole("button", { name: "inbox" })).toBeDefined();
+});
+
+/** A filesystem vault holding one note, so the line has something to forecast against. */
+function servingVault(entries: readonly Record<string, unknown>[]) {
+  return pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "filesystem" })] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, {
+        kind: "described",
+        capabilities: [CREATE_OR_APPEND],
+      });
+    }
+    if (route.endsWith("/candidates")) {
+      const scope = new URL(request.url).searchParams.get("scope");
+      return json(200, scope === null ? answered(entries) : answered([]));
+    }
+    if (route === "POST /v1/items/one/route") {
+      return json(200, {
+        id: "r",
+        item: "one",
+        state: "delivered",
+        target: {},
+      });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+}
+
+function drawAbout(content: unknown) {
+  const closed = vi.fn();
+  render(RoutingComposer, {
+    props: { item: "one", subject: "a note", content, onclose: closed },
+  } as never);
+  return closed;
+}
+
+const routed = async (transport: ReturnType<typeof pool>) => {
+  const sent = sentTo(transport).find(
+    (request) => routeOf(request) === "POST /v1/items/one/route",
+  );
+  return (await sent?.clone().json()) as {
+    capability: string;
+    arguments: Record<string, unknown>;
+  };
+};
+
+test("stores what the person meant, not the word that was drawn", async () => {
+  const transport = servingVault([
+    { label: "decisions.md", value: "decisions.md" },
+  ]);
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+  await choose(/create-or-append-file/);
+
+  const line = await screen.findByRole("combobox");
+  await fireEvent.input(line, { target: { value: "decisions.md" } });
+  await screen.findByText("append");
+  await choose("route");
+
+  await vi.waitFor(async () => {
+    expect(await routed(transport)).toMatchObject({
+      capability: "create-or-append-file",
+      arguments: { path: "decisions.md" },
+    });
+  });
+});
+
+/** The one capability that promises never to write into somebody's note. */
+test("shift-enter stores create-file under the free name it offered", async () => {
+  const transport = servingVault([
+    { label: "decisions.md", value: "notes/decisions.md" },
+  ]);
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+  await choose(/create-or-append-file/);
+
+  const line = await screen.findByRole("combobox");
+  await fireEvent.input(line, { target: { value: "decisions.md" } });
+  await screen.findByText("append");
+  await fireEvent.keyDown(line, { key: "Enter", shiftKey: true });
+
+  await vi.waitFor(async () => {
+    expect(await routed(transport)).toMatchObject({
+      capability: "create-file",
+      arguments: { directory: "", filename: "decisions-1.md" },
+    });
+  });
+});
+
+test("a blank leaf submits a path that ends in a slash", async () => {
+  const transport = servingVault([]);
+
+  drawAbout({ text: "Picker needs a trail" });
+  await choose(/Vault/);
+  await choose(/create-or-append-file/);
+
+  const line = await screen.findByRole("combobox");
+  await fireEvent.input(line, { target: { value: "drafts/" } });
+  await screen.findByText(/derived · Picker needs a trail\.md/);
+  await choose("route");
+
+  await vi.waitFor(async () => {
+    expect((await routed(transport)).arguments).toEqual({ path: "drafts/" });
+  });
 });

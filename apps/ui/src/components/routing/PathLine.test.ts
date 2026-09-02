@@ -58,7 +58,7 @@ const servingTree = () =>
  * The line is controlled, so the harness holds the value the way the composer
  * does and re-renders on every change.
  */
-function draw(value = "") {
+function draw(value = "", said: unknown = undefined) {
   const submitted = vi.fn();
   const { rerender } = render(PathLine, {
     props: {
@@ -67,12 +67,13 @@ function draw(value = "") {
       field: "path",
       label: "where",
       value,
+      said,
       onchange: (next: string) => {
         held = next;
         void rerender({ value: next } as never);
       },
       onsubmit: submitted,
-    },
+    } as never,
   });
 
   let held = value;
@@ -252,4 +253,73 @@ test("still holds a typed path nothing ever listed", async () => {
   await line.type("brand-new/folder.md");
 
   expect(line.value()).toBe("brand-new/folder.md");
+});
+
+const SAID = { content: { text: "Picker needs a trail" }, item: "item-1" };
+
+const servingFolder = (entries: readonly Entry[]) =>
+  serving((scope) =>
+    scope === undefined ? answered(entries) : { kind: "not-offered" },
+  );
+
+test("says create in one word for a name the folder does not hold", async () => {
+  servingFolder([file("decisions.md", "decisions.md")]);
+  draw("picker.md", SAID);
+
+  expect(await screen.findByText("create")).toBeDefined();
+});
+
+test("says append for a name it does", async () => {
+  servingFolder([file("decisions.md", "decisions.md")]);
+  draw("decisions.md", SAID);
+
+  expect(await screen.findByText("append")).toBeDefined();
+});
+
+test("names the folders it will make, in the accent", async () => {
+  servingFolder([]);
+  draw("drafts/deep/picker.md", SAID);
+
+  expect(await screen.findByText("+ drafts/")).toBeDefined();
+  expect(screen.getByText("+ deep/")).toBeDefined();
+});
+
+test("shows the name a blank leaf would get rather than a gap", async () => {
+  servingFolder([]);
+  draw("", SAID);
+
+  expect(
+    await screen.findByText("derived · Picker needs a trail.md"),
+  ).toBeDefined();
+});
+
+test("offers a free name beside one that is taken, and shift-enter takes it", async () => {
+  servingFolder([file("decisions.md", "decisions.md")]);
+  const line = draw("decisions.md", SAID);
+
+  await screen.findByText("append");
+  expect(screen.getByRole("button", { name: /decisions-1\.md/ })).toBeDefined();
+
+  await fireEvent.keyDown(line.line(), { key: "Enter", shiftKey: true });
+  expect(line.submitted).toHaveBeenCalledWith("decisions-1.md");
+});
+
+/** Nothing is being overridden, so there is nothing for the key to mean. */
+test("shift-enter does nothing where the name is free", async () => {
+  servingFolder([]);
+  const line = draw("picker.md", SAID);
+
+  await screen.findByText("create");
+  await fireEvent.keyDown(line.line(), { key: "Enter", shiftKey: true });
+
+  expect(line.submitted).not.toHaveBeenCalled();
+});
+
+test("draws no word at all where the destination could not be asked", async () => {
+  serving(() => ({ kind: "unreachable", detail: "the vault is not mounted" }));
+  draw("picker.md", SAID);
+
+  await screen.findByText(/not mounted/);
+  expect(screen.queryByText("create")).toBeNull();
+  expect(screen.queryByText("append")).toBeNull();
 });

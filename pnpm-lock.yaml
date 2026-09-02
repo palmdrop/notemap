@@ -310,6 +310,9 @@ importers:
       '@notemap/client':
         specifier: workspace:*
         version: link:../../packages/client
+      '@notemap/output-markdown':
+        specifier: workspace:*
+        version: link:../../packages/output-markdown
       idb:
         specifier: ^8.0.3
         version: 8.0.3

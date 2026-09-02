@@ -1,7 +1,9 @@
 <script lang="ts">
   import { saidBy, type CandidateEntry } from "@notemap/client";
 
+  import StateWord from "$components/primitives/marks/StateWord.svelte";
   import { client } from "$lib/client";
+  import { forecastOf, type Said } from "$lib/forecast";
   import {
     completionOf,
     parsePath,
@@ -25,6 +27,7 @@
     field,
     label,
     value,
+    said,
     onchange,
     onsubmit,
   }: {
@@ -33,9 +36,18 @@
     field: string;
     label: string;
     value: string;
+    /**
+     * What the item says, so a path that named only a folder can show the name
+     * the note is about to get rather than a gap. Absent where the control is
+     * drawing a field that is not a note's place.
+     */
+    said?: Said;
     onchange: (value: string) => void;
-    /** `⏎` on the line commits the whole composer, which is what the key means here. */
-    onsubmit?: () => void;
+    /**
+     * `⏎` on the line commits the whole composer. `beside` is `⇧⏎`: make a new
+     * note rather than adding to the one that is there.
+     */
+    onsubmit?: (beside?: string) => void;
   } = $props();
 
   let levels = $state<readonly Level[]>([]);
@@ -55,6 +67,10 @@
    * a folder still being typed, which is not a refusal of anything.
    */
   const refusal = $derived(levels[0]?.refusal);
+
+  const forecast = $derived(
+    said === undefined ? undefined : forecastOf(levels, value, said),
+  );
 
   export function focus(): void {
     input?.focus();
@@ -137,6 +153,11 @@
 
     if (event.key === "Enter") {
       event.preventDefault();
+      if (event.shiftKey) {
+        if (forecast?.beside !== undefined) onsubmit?.(forecast.beside);
+        return;
+      }
+
       const chosen = here[at];
       // `↑↓` having moved is what makes `⏎` mean *take this one*; left alone it
       // means *route*, which is the ordinary way through the line.
@@ -199,6 +220,29 @@
 
   {#if refusal !== undefined}
     <p class="mt-2 text-ink-muted">{refusal}</p>
+  {:else if forecast !== undefined}
+    <div class="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <StateWord word={forecast.word} inline />
+      {#each forecast.making as folder (folder)}
+        <span class="text-accent">+ {folder}/</span>
+      {/each}
+      {#if forecast.derived}
+        <span class="text-ink-muted">derived · {forecast.leaf}</span>
+      {/if}
+      {#if forecast.beside !== undefined}
+        <!-- Beside the state it overrides rather than in the key hints:
+             adding to somebody's note when a new one was meant is the one
+             place *nothing to choose* can surprise. -->
+        <button
+          type="button"
+          class="ml-auto text-ink-muted hover:text-accent"
+          onmousedown={(event) => {
+            event.preventDefault();
+            onsubmit?.(forecast.beside);
+          }}>⇧⏎ {forecast.beside}</button
+        >
+      {/if}
+    </div>
   {/if}
 
   <div id="path-line-places" role="listbox" aria-label="places" class="mt-2">

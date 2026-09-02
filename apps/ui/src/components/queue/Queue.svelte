@@ -97,6 +97,7 @@
   <RoutingComposer
     item={subject.id}
     subject={client.says(subject) || subject.payload.type}
+    content={subject.payload.content}
     onclose={() => (routing = undefined)}
   />
 {/if}
