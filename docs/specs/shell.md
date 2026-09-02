@@ -4,6 +4,17 @@
 **Last updated**: 2026-09-02
 **Shipped**:
 
+- 2026-09-02 — **A routing composer you can type.** The place is one monospace line with the
+  hierarchy drawn beneath it rather than walked through, what will happen read off it and said in
+  one word, and the folders that are not there named before anything is committed. Places routed to
+  before rank into the completion list and the best is offered as a greyed continuation, taken by
+  its own key; one that has since vanished is marked rather than silently re-made. The destination
+  is taken by typing as well as by pointing, and leaves the line once it is. `do` stops being a
+  step where the line draws the place, tags are offered beside it, and a destination that cannot be
+  asked refuses nothing.
+  ([plan](../plans/typed-routing-composer.md),
+  [ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md))
+
 - 2026-09-02 — **Settings stops waiting to be asked.** The daemon row draws from the client's own
   reachability rather than knocking with a destination read, and says how long ago the pool last
   answered; every offered destination is asked what it can do and whether it is really there as the
@@ -268,21 +279,80 @@ behind it, and the veil, the cross and Escape all put it away. Nothing in the re
 width or height for it, which is what the panel cost everywhere it was not open.
 
 The composer is stepped, not flat: **where** (destinations, with an unavailable one saying so
-rather than disappearing), **do** (that destination's capabilities), then the arguments its schema
-asks for. A settled step stays visible with its choice marked, so the decision reads back as it is
-built.
+rather than disappearing), then the arguments the capability's schema asks for. A settled step
+stays visible with its choice marked, so the decision reads back as it is built.
 
-**A field that can be asked about draws a browser beside its input, in the register's own
-language** (added 2026-08-31): the entries at the current scope as marked options, `back` to the
-scope before it, `use <label>` to take the scope stood in where it is something the field may hold,
-and `clear` at the top for a field that already holds something — the same `Group`/`Option` idiom
-`where` and `do` already use, not a second visual vocabulary. Free entry stays beside it regardless,
-since a folder that does not exist yet cannot be browsed to. A destination that cannot be asked, or
-a kind that does not offer this, draws the field exactly as it is otherwise, with a muted line
-saying why — the ordinary condition, not one of the [three alarms](#reachable-pending-refused). The
-control a field gets is chosen through a lookup keyed by destination kind, falling back to this
-schema-driven browser for every kind that registers nothing; no kind registers one, so every field
-draws through it today.
+**A destination is taken by typing its name as well as by pointing at it** (added 2026-09-02).
+Typing narrows the list and the only match is taken by `⏎` or `⇥`; an ambiguous prefix takes
+nothing and says how many matched, because taking one of several would be a guess. Taken, the
+destination **leaves the line and reads in the modal's own chrome**, so what is typed after it is
+nothing but the place — which is why a name holding a space or a slash needs no escaping and no
+rule. The list stays exactly as it was: typing is an accelerator, and it is the way in for a
+pointer and for somebody who does not know the names. Backspacing past the head of an empty place
+line gives the destination back, a wrong one not being a reason to close the composer.
+
+#### The place is one line you type
+
+**For a destination whose kind holds a filesystem, the place is one monospace line** (added
+2026-09-02, replacing the browser described here on 2026-08-31 — that control is what every other
+kind still draws). Typing filters the entries at the deepest settled scope, `/` descends, `⇥`
+completes the segment under the caret as far as the matches agree, `⌫` at a segment's head pops the
+whole level rather than one character of it, and `↑↓` move through what is offered while `⏎`, left
+alone, routes. **The line is the value**: there is no second input beside it holding the same
+string, which is what the browser-and-input pair did and neither half could see the other.
+
+**The hierarchy is shown, not walked**: the levels along the typed path are drawn beneath the line,
+each with its siblings, indented — so the context around a choice is there rather than replaced at
+every step. One `candidates` call per level, debounced, every answer but the newest dropped. A
+scope that answers nothing is a folder still being typed and not a failure of anything; only the
+root's answer says whether the destination can be asked at all. A cut-short answer says so, since
+a scope past the adapter's cap cannot be filtered into completeness client-side.
+
+**What will happen is read off the line and said in one word** — `create` where the folder does not
+hold that name, `append` where it does — with the folders that will be made beside it in the
+accent, as `+ drafts/`. It is **drawn and never stored**: what is stored says *put this here*, and
+the adapter decides again at delivery, when the answer is true
+([ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md)). Because the word is
+read rather than chosen, **`do` is not a step here**: the capability is settled, and the one escape
+from it sits beside the state it overrides. `⇧⏎` says *make a new one beside it*, names what it
+would be called, and stores the capability that refuses a taken name rather than writing into it —
+appending to somebody's note when a new one was meant being the one place *nothing to choose* can
+surprise. A blank leaf is not a gap: the name the note would get is shown before committing,
+derived by the same code the adapter will run.
+
+**Places routed to before rank into the completion list**, above what the destination merely
+offers, with how often each was used. They come from the pool rather than from the browser, so
+they are not per-browser, not invisible to the mirror, and not a second copy of what the routing
+records already hold; the pool answers the facts and the shell ranks, which keeps a change of mind
+about most-used against most-recent a change here alone. The best of them is offered as a **greyed
+continuation** after the caret. **`⇥` and `→` are different keys and stay different**: one
+completes a segment from what the destination offered, the other takes the whole remembered
+continuation. A single key meaning either depending on invisible state is the failure mode being
+avoided.
+
+**A remembered place the listing does not hold is said, not silently re-created.** A folder routed
+to twelve times and now absent is not a new folder somebody meant to make — it is a sign the vault
+was restructured, and this is the last moment anything can say so. It is marked `gone`, and it is
+**never the greyed continuation**: the ghost is the thing a person takes without reading, so a
+discrepancy stays in the list where `↑↓` reaches it deliberately. `gone` is an ordinary condition
+and not one of the [three alarms](#reachable-pending-refused).
+
+**A destination that cannot be asked refuses nothing.** No tree, no drawn word — there is nothing
+to infer and nothing that needs inferring — but the line is still typed and `route` is still live,
+the record being made and the delivery deferred, which is what `unreachable · best effort` says. A
+kind that offers no listing at all draws the same plain line with its own word. Both are muted
+lines rather than alarms, and both are distinct from an unreachable **pool**, which is a different
+condition and one in which the composer never opens, the row's own `route` being disabled. Where a
+place has been routed to before it still completes against either, because the pool holds those
+and the pool is reachable whenever the composer is open.
+
+**Which control a field draws is a lookup keyed by destination kind**, and it decides on the kind
+alone: what a field means is the kind's business, and a capability one kind shares with another
+does not make their contents the same shape. A kind with no filesystem in it draws neither line nor
+tree and keeps the schema-driven browser — the entries at the current scope as marked options,
+`back` to the scope before it, `use <label>` to take the scope stood in, `clear` at the top — the
+same `Group`/`Option` idiom `where` already uses, with free entry beside it, and `do` still a step,
+its capabilities being its own and nothing here able to pick among them.
 
 It is shaped for what routing is about to become. A preview of the converted bytes, and a slot
 above `where` for a decision that arrived **pre-filled with an attribution** — which is the one
@@ -326,8 +396,8 @@ which is the honest outcome: the person said what the item was, and that was tru
 where it was going.
 
 Describing a destination is I/O that can hang on an unmounted drive, so **only the chosen one is
-ever described** — which is why the composer's capabilities are a second step and not a flattened
-destination×capability list.
+ever described** — which is why a destination is settled before anything is asked of it, rather
+than a flattened destination×capability list being offered up front.
 
 ### Reachable, pending, refused
 

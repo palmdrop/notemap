@@ -532,7 +532,6 @@ test("stores what the person meant, not the word that was drawn", async () => {
 
   drawAbout({ text: "a thought" });
   await choose(/Vault/);
-  await choose(/create-or-append-file/);
 
   const line = await screen.findByRole("combobox");
   await fireEvent.input(line, { target: { value: "decisions.md" } });
@@ -555,7 +554,6 @@ test("shift-enter stores create-file under the free name it offered", async () =
 
   drawAbout({ text: "a thought" });
   await choose(/Vault/);
-  await choose(/create-or-append-file/);
 
   const line = await screen.findByRole("combobox");
   await fireEvent.input(line, { target: { value: "decisions.md" } });
@@ -575,7 +573,6 @@ test("a blank leaf submits a path that ends in a slash", async () => {
 
   drawAbout({ text: "Picker needs a trail" });
   await choose(/Vault/);
-  await choose(/create-or-append-file/);
 
   const line = await screen.findByRole("combobox");
   await fireEvent.input(line, { target: { value: "drafts/" } });
@@ -614,7 +611,6 @@ test("a tag taken in the composer stays applied when the route fails", async () 
 
   const closed = drawAbout({ text: "a thought" });
   await choose(/Vault/);
-  await choose(/create-or-append-file/);
 
   await choose("seedling");
   await vi.waitFor(() => {
@@ -700,7 +696,6 @@ test("backspacing out of an empty line gives the destination back", async () => 
 
   drawAbout({ text: "a thought" });
   await choose(/Vault/);
-  await choose(/create-or-append-file/);
 
   const line = await screen.findByRole("combobox", { name: "path" });
   await fireEvent.keyDown(line, { key: "Backspace" });
@@ -773,7 +768,6 @@ test("an unreachable destination is still routable", async () => {
 
   const closed = drawAbout({ text: "a thought" });
   await choose(/Vault/);
-  await choose(/create-or-append-file/);
 
   const line = await screen.findByRole("combobox", { name: "path" });
   await fireEvent.input(line, { target: { value: "notes/decisions.md" } });
@@ -809,4 +803,33 @@ test("a kind with no filesystem in it draws neither line nor tree", async () => 
   expect(await screen.findByRole("button", { name: "inbox" })).toBeDefined();
   expect(screen.queryByRole("combobox", { name: "directory" })).toBeNull();
   expect(screen.queryByRole("listbox", { name: "places" })).toBeNull();
+});
+
+/** The line says what will happen, so choosing it is not a step anybody takes. */
+test("the kind that draws the line settles what to do, with no do step", async () => {
+  servingVault([]);
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+
+  expect(await screen.findByRole("combobox", { name: "path" })).toBeDefined();
+  expect(
+    screen.queryByRole("button", { name: "create-or-append-file" }),
+  ).toBeNull();
+});
+
+/** Its capabilities are its own, and nothing here can pick among them. */
+test("a kind that draws the browser still chooses what to do", async () => {
+  servingBrowsable(() => ({
+    kind: "answered",
+    entries: [{ label: "inbox", value: "inbox" }],
+    truncated: false,
+  }));
+
+  draw();
+  await choose(/Vault/);
+
+  expect(
+    await screen.findByRole("button", { name: "create-file" }),
+  ).toBeDefined();
 });

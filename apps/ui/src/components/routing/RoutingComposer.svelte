@@ -14,11 +14,14 @@
   import Option from "$components/primitives/composer/Option.svelte";
   import { placeOf } from "@notemap/output-markdown/naming";
 
+  import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
   import { browserFor } from "$lib/candidate-browsers";
   import { client } from "$lib/client";
   import { fieldsOf, valuesFrom } from "$lib/schema-form";
 
   const CREATE_FILE = "create-file";
+  /** What the typed line drives: the capability that decides at delivery. */
+  const CREATE_OR_APPEND_FILE = "create-or-append-file";
   /** The one field the typed line drives, and the only one `⇧⏎` has to re-read. */
   const LINE_FIELD = "path";
 
@@ -64,6 +67,23 @@
   const destinationKind = $derived(
     $destinations.find((one) => one.id === chosen)?.kind,
   );
+
+  /**
+   * Where the line is what draws the place, *what will happen* is not a step:
+   * it is read off the line and said in one word, and `⇧⏎` is the way to the
+   * one capability that overrides it. A kind that draws the schema-driven
+   * browser still chooses, because its capabilities are its own and nothing
+   * here can pick among them.
+   */
+  const settles = $derived(
+    destinationKind !== undefined &&
+      browserFor(destinationKind) !== CandidateBrowser &&
+      capabilities.some((one) => one.name === CREATE_OR_APPEND_FILE),
+  );
+
+  $effect(() => {
+    if (settles) capability = CREATE_OR_APPEND_FILE;
+  });
 
   const ready = $derived(chosen !== undefined && capability !== undefined);
 
@@ -184,7 +204,7 @@
     {/each}
   </Group>
 
-  {#if capabilities.length > 0}
+  {#if capabilities.length > 0 && !settles}
     <Group name="do">
       {#each capabilities as one (one.name)}
         <Option

@@ -9,6 +9,7 @@
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import { client } from "$lib/client";
   import { forecastOf, type Said } from "$lib/forecast";
+  import { whenOf } from "$lib/when";
   import {
     completionOf,
     continuing,
@@ -65,6 +66,8 @@
   /** As the pool answered them. Whether one is still there is marked against the listing, which arrives separately. */
   let places = $state<readonly RememberedPlace[]>([]);
   let at = $state(0);
+  /** Read once when the line opens: a list that re-dated itself as you typed would be noise. */
+  const now = Date.now();
   /** Whether `↑↓` has been used since the list last changed, which is what makes `⏎` mean *take this one*. */
   let moved = $state(false);
   let input = $state<HTMLInputElement | undefined>(undefined);
@@ -377,7 +380,9 @@
       >
         <span>{place.value}</span>
         <span class="ml-auto text-ink-muted"
-          >{place.uses}{place.gone ? " · gone" : ""}</span
+          >{place.uses} · {place.gone
+            ? "gone"
+            : whenOf(place.lastAt, now)}</span
         >
       </div>
     {/each}

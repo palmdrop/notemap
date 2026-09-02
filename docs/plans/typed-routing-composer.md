@@ -1,9 +1,9 @@
 # A routing composer you can type
 
 **Date**: 2026-09-01
-**Status**: In progress <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-09-02
 
 ---
 
@@ -298,23 +298,25 @@ Depends on phase 3. This is the phase that keeps the offline property honest.
 
 Depends on every phase above.
 
-- [ ] `docs/specs/shell.md` — the composer section is rewritten. `do` stops being a step; the
+- [x] `docs/specs/shell.md` — the composer section is rewritten. `do` stops being a step; the
       browser paragraph added 2026-08-31 describes a control that no longer exists for a
       filesystem-shaped kind; the per-kind lookup is no longer empty. Say what replaced it and why
-- [ ] `docs/specs/core.md` — confirm phase 1's capability entry reads as domain rather than as a
+- [x] `docs/specs/core.md` — confirm phase 1's capability entry reads as domain rather than as a
       description of the adapters that implement it
-- [ ] `CONTEXT.md` — check whether the line, or a remembered place, needs a name of its own, and
+- [x] `CONTEXT.md` — check whether the line, or a remembered place, needs a name of its own, and
       add one only if the code and the spec both want to say it. Do not invent a term to have one
-- [ ] **`docs/design/` is caught up.** `composer.html` was written before the code and is the thing
+- [x] **`docs/design/` is caught up.** `composer.html` was written before the code and is the thing
       this plan was built against; now it is checked against what shipped, and where the two
       disagree the page is corrected or the code is. `queue.html` and `shell.css` are the stale
       pair — a composer beside the row and a `.tree` block that predates the candidates browser —
       and this is when they are re-rendered
-- [ ] Re-shoot every surface at 1440 and 390 with the command `docs/design/README.md` carries, and
-      drop the note there saying `composer.html` stands alone: it no longer will
-- [ ] Verify: the specs and the code agree, and a reader of `docs/design/` sees the composer that
+- [-] Re-shoot every surface at 1440 and 390 with the command `docs/design/README.md` carries, and
+      drop the note there saying `composer.html` stands alone: it no longer will _(the note is
+      dropped; the shots are not re-rendered — no browser in this environment. `README.md` says
+      which two are stale and how to redo them.)_
+- [x] Verify: the specs and the code agree, and a reader of `docs/design/` sees the composer that
       exists
-- [ ] `git commit`
+- [x] `git commit`
 
 ---
 
