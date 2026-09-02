@@ -189,7 +189,7 @@ async function createNote(
   const directory = dirname(note.absolute);
   const assets = await placeAssets(directory, delivery.assets, signal);
   const rendered = renderNote(wiring.renderers, delivery, {
-    directory,
+    directory: within(note),
     assets,
   });
 
@@ -213,7 +213,7 @@ async function appendToNote(
 
   const assets = await placeAssets(directory, delivery.assets, signal);
   const rendered = renderNote(wiring.renderers, delivery, {
-    directory,
+    directory: within(note),
     assets,
   });
 
@@ -231,6 +231,16 @@ async function appendToNote(
   }
 
   return note.relative;
+}
+
+/**
+ * The folder the note is in as the *vault* names it, which is what a renderer
+ * is told. The absolute path is this adapter's business and stays here: a note
+ * carrying `/var/lib/notemap/vaults/…` would be carrying the daemon's
+ * filesystem into somebody's vault.
+ */
+function within(note: Contained): string {
+  return note.relative.split("/").slice(0, -1).join("/");
 }
 
 /** A file inside the root, or a refusal that names what was wrong with the path. */

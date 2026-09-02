@@ -11,7 +11,7 @@ import type { AddressInfo } from "node:net";
  */
 export type DavServer = {
   readonly url: string;
-  /** The collection everything is rooted at, as a destination's profile would name it. */
+  /** The collection everything is rooted at, as a destination's account would name it. */
   readonly baseUrl: string;
   readonly username: string;
   readonly password: string;
@@ -34,6 +34,11 @@ export type DavServer = {
    * how a test writes into the vault between somebody's read and their write.
    */
   interceptOnce(method: string, run: () => void): void;
+  /**
+   * Answer every `GET` with a weak validator from here on, as a proxy
+   * compressing responses does. Nothing can then match `If-Match`.
+   */
+  weakenEtags(): void;
   close(): Promise<void>;
 };
 
@@ -54,8 +59,9 @@ export async function startDavServer(): Promise<DavServer> {
   const intercepts = new Map<string, Array<() => void>>();
 
   let versions = 0;
+  let weak = false;
   const etagOf = (entry: Entry & { kind: "file" }): string =>
-    `"v${entry.version}"`;
+    `${weak ? "W/" : ""}"v${entry.version}"`;
 
   const server = createServer((request, response) => {
     const method = request.method ?? "GET";
@@ -186,6 +192,10 @@ export async function startDavServer(): Promise<DavServer> {
     requests: () => [...seen],
 
     arrivedChunked: (path) => chunked.has(trim(path)),
+
+    weakenEtags: () => {
+      weak = true;
+    },
 
     interceptOnce: (method, run) => {
       const waiting = intercepts.get(method) ?? [];

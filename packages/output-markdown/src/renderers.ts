@@ -9,8 +9,18 @@ export type Rendering = {
   readonly frontmatter?: ReadonlyMap<string, FrontmatterValue>;
 };
 
-/** Assets are keyed by slot, because a name may have been suffixed to avoid one already there. */
+/**
+ * Where the note is going and what landed beside it. Assets are keyed by slot,
+ * because what an asset ends up called is not what it was uploaded as.
+ */
 export type RenderingContext = {
+  /**
+   * The folder the note is in, as the *destination* names it: relative to the
+   * vault's root, in URL separators, and empty for the root itself. Never an
+   * absolute path on any machine — a renderer writes into a vault somebody
+   * opens elsewhere, and the daemon's own filesystem is not a thing to leak
+   * into a note.
+   */
   readonly directory: string;
   readonly assets: ReadonlyMap<string, string>;
 };

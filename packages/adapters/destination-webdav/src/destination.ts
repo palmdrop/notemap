@@ -24,7 +24,7 @@ export type WebdavDestinationConfig = {
   readonly renderers?: Renderers;
   /** What every destination of this kind takes. */
   readonly accepts: readonly PayloadTypeName[];
-  /** Turns a profile name into an account. The adapter never learns where one is held. */
+  /** Turns an account's name into the account. The adapter never learns where one is held. */
   readonly credentials: CredentialResolver;
 };
 
@@ -41,7 +41,7 @@ export function createWebdavDestination(
      * Never touches the network, exactly as the filesystem kind refuses to
      * touch the disk: a Nextcloud that is asleep must still be routable, with
      * the record made and the delivery deferred. That property is why deferred
-     * delivery works at all. A profile that is not declared is not checked for
+     * delivery works at all. An account that is not declared is not checked for
      * here either — it satisfies the schema, and a settings screen that stalled
      * or refused over it would be answering a question nobody asked.
      */
@@ -70,7 +70,7 @@ export function createWebdavDestination(
 
       let dav: Dav;
       try {
-        dav = createDav(await config.credentials(settings.profile));
+        dav = createDav(await config.credentials(settings.account));
       } catch (cause) {
         return { kind: "unreachable", detail: why(cause) };
       }

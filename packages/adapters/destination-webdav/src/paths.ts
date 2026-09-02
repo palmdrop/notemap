@@ -3,11 +3,11 @@
  * and the same path stated the way a routing record's pointer wants it.
  */
 export type Contained = {
-  /** Every segment percent-encoded, ready to be appended to the profile's base URL. */
+  /** Every segment percent-encoded, ready to be appended to the account's base URL. */
   readonly encoded: string;
   /** Relative to the destination's root, in URL separators, so a pointer reads the same as the filesystem kind's. */
   readonly relative: string;
-  /** The whole path from the profile's own collection, undecorated. */
+  /** The whole path from the account's own collection, undecorated. */
   readonly segments: readonly string[];
   /** How many of those segments are the root's, which is where the destination starts. */
   readonly rootDepth: number;

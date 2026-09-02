@@ -1,7 +1,7 @@
 # Review: A webdav destination kind
 
 **Date**: 2026-09-01
-**Status**: Open
+**Status**: Resolved
 **Scope**: PR #36, `agent/destination-webdav` against `main`
 **Plan**: `docs/plans/destination-webdav.md`
 **Spec**: `docs/specs/core.md`, `docs/specs/security.md`
@@ -242,3 +242,67 @@ would cost nothing.
 `pnpm -r --silent test`, `pnpm -r typecheck` and `pnpm lint` are green on the branch as it stands.
 `pnpm test:stack` not run; nothing here crosses the HTTP surface beyond the kinds list, which
 `apps/daemon/src/routes/destinations.test.ts` covers.
+
+---
+
+## Resolution
+
+Reconciled with the developer's own review on 2026-09-02. Their four comments are `T1`–`T4` below,
+and one more arrived in conversation as `T5`.
+
+0. **Fixed.** `isPrivateHost` — loopback, RFC1918, link-local, ULA, and a single-label name — and
+   plain HTTP past that is **warned about on startup rather than refused**, the developer's call:
+   whether a network is safe is not a thing the daemon can tell, and refusing at load took the whole
+   daemon down over one account. The judgement moved into the adapter (see T1) and the warning is
+   printed by `main.ts` from what `ports.ts` collected.
+0b. **Fixed.** The settings form renders each field's `description`. The label is still the property
+   name, which the form decided deliberately; the two forms disagreeing about labels is left alone.
+1. **Fixed.** An asset is named `stem-<digest8>.ext` from its blob, so the name a retry computes is
+   the name the failed attempt wrote and `unreachable` stops promising something untrue. Both kinds
+   share it. `alternatives()` went with it — there is no collision to step around once the name is
+   the content — and so did the 100-candidate re-upload, which was finding #9.
+2. **Fixed.** `passwordFile` goes through `expandHome`/`resolve` like every other path in `load.ts`.
+3. **Fixed.** A weak `ETag` is named as what it is instead of being retried into a report of
+   contention. The fake can issue weak validators now, which is what tests it.
+4. **Fixed.** `RenderingContext.directory` is documented as the folder *as the destination names
+   it* — relative to the root, URL separators — and the filesystem kind stopped passing an absolute
+   path. A note can no longer carry the daemon's own filesystem into somebody's vault.
+5. **Fixed.** The example config shows the two secret forms as two blocks, since one profile may not
+   set both.
+6. **Fixed.** `docker/compose/config.toml` names the path compose actually mounts.
+7. **Fixed.** `compose.proxy.yaml` has one commented `secrets:` block again.
+8. **Fixed.** The README says unreachable, and the no-`ETag` and weak-`ETag` cases are both in its
+   table.
+9. **Fixed** by 1, above.
+
+**T1/T2 — the daemon should not know a kind's internals.** Acted on as far as it goes without a
+slice of its own. The config block is now `[[accounts]]`, generic, with `kind` a string the daemon
+passes on; `accountsFor(kind, …)` reads secrets for anybody; and the WebDAV transport judgement
+moved into `@notemap/destination-webdav` as `transportWarnings`, collected by `ports.ts` — the one
+seam ADR 8 says is the host's — and merely printed by `main.ts`. What is left is that `ports.ts`
+still names the kinds it wires, which is what wiring is. Fully plug-and-play would mean a kind
+declaring a config schema the way it declares a settings schema, and that wants its own ADR.
+
+**T3 — `[[destinations.webdav]]`.** Argued against and settled otherwise: `destinations` is taken by
+[ADR 20](../adr/0020-destinations-are-pool-state.md), and a leftover `[[destinations]]` block is
+already stripped and warned about, so the name would have been swallowed by that path. `[[accounts]]`
+answers the same complaint and T1 with it. **account** is now the word in `CONTEXT.md`, in the
+config, in the docs and in the settings field, which used to be `profile`.
+
+**T4 — an external DAV server for the tests.** Searched, and the fake stays. `webdav-server` is the
+only maintained candidate and implements no HTTP conditional requests at all — no `If-None-Match`,
+no `If-Match`, only RFC 4918's `If:` lock header — which is the whole of what these tests exercise.
+Recorded in the adapter's README so it is not re-asked.
+
+**T5 — a markdown library rather than our own.** Agreed, and it was a live bug: `sections.ts`
+carried its own `TODO` naming the hazard, and a `#` inside a fenced code block ended a section, so
+an append could land inside somebody's shell snippet. `insertUnder` now reads an
+`mdast-util-from-markdown` parse and splices the **original string** at an offset — the tree is
+never written back, because that would reformat a person's note around an insertion. Setext
+headings work now too, which the regex never saw.
+
+### Not done, and why
+
+- The label on a settings field is still the property name (`0b`). The form argues for it and the
+  composer argues the other way; worth settling, not here.
+- A kind cannot declare its own config schema (`T1`). The slice above.

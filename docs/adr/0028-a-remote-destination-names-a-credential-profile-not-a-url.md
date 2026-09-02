@@ -1,7 +1,10 @@
 # 28. A remote destination names a credential profile, not a URL
 
 **Date**: 2026-09-01
-**Status**: Accepted — narrows [ADR 20](0020-destinations-are-pool-state.md)
+**Status**: Accepted — narrows [ADR 20](0020-destinations-are-pool-state.md). Amended 2026-09-02:
+the word is **account** and the config block is `[[accounts]]`, generic across kinds, and plain
+HTTP to an address that is not private is warned about rather than refused. The decision is
+unchanged; what changed is the spelling of it and one enforcement that was wrong in practice
 **Deciders**: palmdrop, with Claude
 
 ---
@@ -53,7 +56,8 @@ So: where does a remote destination's credential live, and who decides what addr
 2. **The secret referenced by name, the URL still in `settings`** — settings name a credential the
    daemon resolves, and keep the address.
 3. **A credential profile carrying the address and the secret together** — the host's config
-   declares named profiles; settings choose one by name and a path within it.
+   declares named profiles; settings choose one by name and a path within it. *(Called an **account**
+   since 2026-09-02; the option is written here as it was weighed.)*
 
 ---
 
@@ -61,10 +65,12 @@ So: where does a remote destination's credential live, and who decides what addr
 
 Chosen: **option 3**.
 
-- The host's config declares named **credential profiles**. A profile carries the base URL, the
-  username and where the secret is read from, and is resolved as one thing.
-- A destination's settings name a **profile** and a **root** within it — never a URL, never a
-  secret. The root is a path under the profile's collection, and it is the destination, exactly as
+- The host's config declares named **accounts** (`[[accounts]]`, amended 2026-09-02 from "credential
+  profiles" — the word is [CONTEXT.md](../../CONTEXT.md)'s). An account names the kind that speaks
+  to it and carries the base URL, the username and where the secret is read from, and is resolved as
+  one thing. The daemon reads the block without knowing what any kind is.
+- A destination's settings name an **account** and a **root** within it — never a URL, never a
+  secret. The root is a path under the account's collection, and it is the destination, exactly as
   the filesystem kind's `root` is.
 - The adapter is constructed by the host and **closes over a resolver**, so neither core nor the
   pool ever holds a secret, and no route can answer with one it does not have.
@@ -73,6 +79,11 @@ Chosen: **option 3**.
   dotfile repositories and paste into issues.
 - **Redirects are never followed with a credential attached**, and TLS verification is never
   disabled. Both are one line to get wrong and neither is visible afterwards.
+- Plain HTTP to an address that is **not private** is named on startup and then used *(amended
+  2026-09-02; this was a refusal at load, and it refused the ordinary deployment — a server beside
+  the daemon on a container network, which is neither loopback nor certificated — and took the
+  whole daemon down with one such account. Whether a given network is safe is not a thing the
+  daemon can tell, so it says so and the operator decides)*.
 - A credential that will not resolve is **not** `unusable`. The settings satisfy the schema and
   nothing about the destination is wrong; `describe()` still answers, doing no I/O, and the
   delivery reports `unreachable` naming what it could not read — the same answer an unmounted drive
@@ -91,12 +102,12 @@ once, which is where a secret was always going to have to be typed anyway.
 - **Good** — a credential cannot be redirected by editing a destination. The set of addresses the
   daemon will authenticate to is fixed by a file only the operator writes, so the forgery above
   needs filesystem access, which is a different and much larger thing to have.
-- **Good** — one profile serves many destinations. Two vaults on one Nextcloud account are two
-  rows naming one profile, and rotating the password is one file.
+- **Good** — one account serves many destinations. Two vaults on one Nextcloud account are two
+  rows naming one account, and rotating the password is one file.
 - **Bad** — adding an account is no longer a form, and it needs a restart. Accepted: it is the
   one part of a destination that is genuinely the operator's, and the alternative is either a
   secret in mirrored state or a redaction scheme that has to hold in three places forever.
-- **Bad** — a destination naming a profile that is not there validates fine and fails at delivery.
+- **Bad** — a destination naming an account that is not there validates fine and fails at delivery.
   Accepted deliberately, above: `describe()` doing I/O would make every settings screen stall on a
   destination that is merely asleep ([ADR 26](0026-a-destination-can-be-asked-what-an-argument-could-hold.md)),
   and a config typo is exactly the shape of thing a retry fixes.

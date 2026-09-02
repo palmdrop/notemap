@@ -288,9 +288,12 @@ out of its own configuration — and never the credential itself.
 
 **Settled 2026-09-01, and it went further than a reference to the secret**
 ([ADR 28](../adr/0028-a-remote-destination-names-a-credential-profile-not-a-url.md)). The host's
-config declares named **accounts**, each carrying a base URL, a username and where its secret is
-read from, resolved together; a destination's settings name an account and a path within it, and
-have nowhere to put either a URL or a password. The second half is what decided the shape. A
+config declares named **accounts** under `[[accounts]]`, each naming the destination kind that
+speaks to it and carrying a base URL, a username and where its secret is read from, resolved
+together; a destination's settings name an account and a path within it, and have nowhere to put
+either a URL or a password. The block is not named after any kind — the daemon reads accounts and
+secrets, and an adapter picks out its own by `kind` — so a second kind needing a credential adds no
+config code. The second half is what decided the shape. A
 destination is created over `/v1`, so a URL in `settings` is an address the daemon will then send a
 credential to — another container, a loopback service, a host of somebody's choosing — repeatedly,
 on the delivery runner's own timer. That is request forgery with credential disclosure at the end

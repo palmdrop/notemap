@@ -121,6 +121,15 @@ export async function appendToNote(
         `${note.relative} was served with no ETag, and appending without one loses whichever write lands second`,
       );
     }
+    // `If-Match` compares strongly, so a weak validator fails it every time
+    // however quiet the vault is. Left alone it reads as four rounds of losing
+    // a race that never happened, and a proxy compressing responses is the
+    // ordinary way an ETag becomes weak.
+    if (existing.etag.startsWith("W/")) {
+      throw new Unreachable(
+        `${note.relative} was served the weak ETag ${existing.etag}, which no conditional write can match — something in front of the server is rewriting them`,
+      );
+    }
 
     const written = await wiring.dav.replace(
       note.encoded,

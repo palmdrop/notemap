@@ -10,8 +10,8 @@ note rather than two dialects of one.
 
 ## What a destination is, and what it is not
 
-Settings are a **profile** and a **root**: the name of an account in the daemon's own configuration,
-and a folder under that account's collection.
+Settings are an **account** and a **root**: the name of an account in the daemon's own
+configuration, and a folder under that account's collection.
 
 There is nowhere in them to put a URL or a password, and that is the point
 ([ADR 28](../../../docs/adr/0028-a-remote-destination-names-a-credential-profile-not-a-url.md)).
@@ -56,7 +56,8 @@ and a field that claimed otherwise would draw a browse button for an answer this
 - **No append loses a concurrent write.** The note is read, its `ETag` kept, and written back with
   `If-Match`. A `412` means somebody wrote in between, so it re-reads and tries again, four times,
   and then reports contention as unreachable rather than throwing a routing decision away over
-  somebody else typing. A note served with no `ETag` is refused rather than written over blind.
+  somebody else typing. A note served with no `ETag` — or a weak one, which no conditional write
+  can match however quiet the vault is — is reported rather than written over blind.
 - **The root is never created.** Collections below it are made with `MKCOL` a level at a time, since
   a `PUT` will not make its own parent; the root itself is not among them, because a vault that is
   not there is an account somebody has not set up rather than a folder to conjure.
@@ -70,10 +71,11 @@ The distinction decides whether a delivery is retried, so it is not about severi
 | What happened | Reported as | Because |
 |---|---|---|
 | Nothing answered, or a `5xx`, `429`, `408` | `unreachable` | A server that is down comes back |
-| A profile that is not declared, or a secret that will not read | `unreachable` | The settings are fine; a config edit fixes it |
+| An account that is not declared, or a secret that will not read | `unreachable` | The settings are fine; a config edit fixes it |
 | `401` or `403` | `unreachable` | A password that has just been rotated is the ordinary case |
 | A `3xx` | `unreachable` | The credential is not carried to it, and a redirect may be temporary |
 | Every append attempt lost its race | `unreachable` | Contention, and the runner's business |
+| The note was served no `ETag`, or a weak one | `unreachable` | Something in front of the server is rewriting them |
 | Something above the target is not there | `unreachable` | The vault is not set up yet |
 | The target escapes the root | `rejected` | No later attempt makes it legal |
 | The note is already there | `rejected` | It will be there next time too |
@@ -92,3 +94,10 @@ instance and stays fast and offline. **It is a fake**, and it implements the par
 adapter uses and no more. Whether the real thing agrees — that `If-None-Match: *` is honoured on
 `PUT`, that its `ETag` is stable enough for `If-Match`, and where a proxy's body limit sits — is
 what hand verification against a real instance is for, and nothing here can answer it.
+
+It is written rather than depended on, and that was checked rather than assumed (2026-09-02).
+`webdav-server` is the only maintained candidate on npm, and it implements no HTTP conditional
+requests at all — no `If-None-Match`, no `If-Match`, only RFC 4918's `If:` lock header — which is
+the whole of what these tests exist to exercise. `webdav-test` is a client, and `webdav-cli` wraps
+a static server. A dependency that cannot fail the way Nextcloud fails would make the suite
+quieter and prove less.

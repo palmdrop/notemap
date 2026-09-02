@@ -198,6 +198,13 @@ Depends on every phase above.
 - [x] **Also found there.** A destination's settings form showed each field's property name and
       nothing else, so `profile` was a box with no way to know an account name was wanted. It now
       shows the kind's own description of the field, as the composer already did for arguments
+- [x] **Reviewed 2026-09-01, and worked 2026-09-02.** The whole review is in
+      [destination-webdav-2026-09-01](../reviews/destination-webdav-2026-09-01.md), and what it
+      changed is: the config block is `[[accounts]]` and generic across kinds, with `account` the
+      word everywhere from `CONTEXT.md` to the settings field; assets are named for their content
+      so a retried delivery cannot duplicate them; `insertUnder` reads a CommonMark parse rather
+      than walking lines with a regex; a weak `ETag` is named rather than reported as four rounds
+      of contention; and `RenderingContext.directory` means one thing for both kinds
 - [x] `git commit`
 
 #### What the hand verification has to answer

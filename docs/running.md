@@ -327,12 +327,16 @@ that password, chosen by whoever can create a destination
 So the account goes in `config.toml`, once:
 
 ```toml
-[[webdav]]
+[[accounts]]
+kind = "webdav"
 name = "nextcloud"
 baseUrl = "https://cloud.example.com/remote.php/dav/files/alice"
 username = "alice"
 passwordFile = "/run/secrets/notemap_webdav_nextcloud"
 ```
+
+`kind` is the destination kind that speaks to it. The daemon reads this block without knowing what
+a webdav is; the adapter picks out its own.
 
 `baseUrl` is the DAV collection the account is rooted at. For Nextcloud that is
 `https://<host>/remote.php/dav/files/<user>` — the whole of that user's files, with the vault a
@@ -359,9 +363,9 @@ Security, and one can be revoked without changing the password everywhere else. 
 in both compose files. The file is read when a delivery needs it, so rotating the password is
 writing the file; the daemon prints the account names it holds on startup, and never a password.
 
-Then create a destination in settings with `profile = "nextcloud"` and `root = "Notes/Vault"` —
-where the folder is the vault inside that account, or blank for the account's own folder. Several
-vaults on one account are several destinations naming one profile.
+Then create a destination in settings with `account = "nextcloud"` — the account's **name**, not its
+URL — and `root = "Notes/Vault"`, the vault inside that account, or blank for the account's own
+folder. Several vaults on one account are several destinations naming one account.
 
 The root is never created for you, for the same reason the `filesystem` kind's is not: one that is
 not there is a vault somebody has not made yet. Folders *below* it are created as notes are filed
