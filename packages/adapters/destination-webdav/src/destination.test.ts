@@ -572,7 +572,12 @@ describe("an asset is streamed, not buffered", () => {
         type: IMAGE,
         arguments: { directory: "", filename: "a.md" },
         assets: [
-          deliveredAsset("one", "long.wav", bytes("many bytes"), "c".repeat(64)),
+          deliveredAsset(
+            "one",
+            "long.wav",
+            bytes("many bytes"),
+            "c".repeat(64),
+          ),
         ],
       }),
     );

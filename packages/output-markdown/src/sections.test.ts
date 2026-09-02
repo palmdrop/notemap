@@ -31,7 +31,8 @@ describe("inserting under a heading", () => {
 
   /** A deeper heading is part of the section, so the fragment goes below it. */
   it("passes over a heading deeper than the one it was given", () => {
-    const note = "## Captured\n\n### A morning\n\nthe first\n\n## Later\n\nlast\n";
+    const note =
+      "## Captured\n\n### A morning\n\nthe first\n\n## Later\n\nlast\n";
 
     expect(insertUnder(note, "the second", "Captured")).toBe(
       "## Captured\n\n### A morning\n\nthe first\n\nthe second\n\n## Later\n\nlast\n",
@@ -84,9 +85,16 @@ describe("inserting under a heading", () => {
     const note = ["```sh", "## Captured", "```", ""].join("\n");
 
     expect(insertUnder(note, "a thought", "Captured")).toBe(
-      ["```sh", "## Captured", "```", "", "## Captured", "", "a thought", ""].join(
-        "\n",
-      ),
+      [
+        "```sh",
+        "## Captured",
+        "```",
+        "",
+        "## Captured",
+        "",
+        "a thought",
+        "",
+      ].join("\n"),
     );
   });
 

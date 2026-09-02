@@ -39,7 +39,11 @@ async function place(
 
   // Handed to `fetch` as it is: the opener is lazy because a delivery may be
   // carrying an hour of audio, and buffering it here would give that up.
-  await dav.create(sibling(note, name).encoded, await asset.open(signal), signal);
+  await dav.create(
+    sibling(note, name).encoded,
+    await asset.open(signal),
+    signal,
+  );
 
   // A name that is taken is this asset already there — the name is its content's
   // digest, so whatever holds it is these bytes. That is what makes a retried

@@ -77,14 +77,16 @@ function textOf(source: string, heading: Heading): string {
   const end = heading.position?.end.offset;
   if (start === undefined || end === undefined) return "";
 
-  return source
-    .slice(start, end)
-    // The underline of a setext heading, which is part of the heading and not
-    // part of what it says.
-    .replace(/\n[=-]+[ \t]*$/, "")
-    .replace(/^#{1,6}\s+/, "")
-    .replace(/\s+#*\s*$/, "")
-    .trim();
+  return (
+    source
+      .slice(start, end)
+      // The underline of a setext heading, which is part of the heading and not
+      // part of what it says.
+      .replace(/\n[=-]+[ \t]*$/, "")
+      .replace(/^#{1,6}\s+/, "")
+      .replace(/\s+#*\s*$/, "")
+      .trim()
+  );
 }
 
 function head(heading: string): string {
