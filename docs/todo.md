@@ -1,4 +1,8 @@
 # Developer TODOs
+- [ ] Immediately hiding a routed item from the queue is confusing, especially if it fails. There's no good way to see pending operations.
+- [ ] Destination configuration is way too clunky, not sensible to configure in BOTH config.toml and in the UI.
+- [ ] "Checks" in the settings page against DAEMON and destinations should be done automatically. Also, destination checks only shows if the adapter is reachable, not the destination itself. Would be great with a way to check if the destination is correctly configured before trying to route to it.
+
 - [ ] Consider full POC: inbox via Memos app, routing to complex obsidian project. The "advertise
   folders" half closed 2026-08-31: the destination port can be asked what an argument could hold
   ([ADR 26](adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md)), and the
