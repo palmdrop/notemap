@@ -73,6 +73,8 @@ volumes:
 # secrets:
 #   notemap_password:
 #     file: ./notemap_password
+#   notemap_webdav_nextcloud:
+#     file: ./notemap_webdav_nextcloud
 
 networks:
   # Already there, and not created by compose. Everything else on it reaches
@@ -81,9 +83,3 @@ networks:
   proxy:
     external: true
     name: ${PROXY_NETWORK:?set PROXY_NETWORK in .env to the proxy's network}
-
-# secrets:
-#   notemap_password:
-#     file: ./notemap_password
-#   notemap_webdav_nextcloud:
-#     file: ./notemap_webdav_nextcloud

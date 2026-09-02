@@ -4,7 +4,11 @@ import { v7 as uuidv7 } from "uuid";
 
 import { createFilesystemBlobStore } from "@notemap/blob-fs";
 import { createFilesystemDestination } from "@notemap/destination-fs";
-import { createWebdavDestination } from "@notemap/destination-webdav";
+import {
+  createWebdavDestination,
+  transportWarnings,
+  WEBDAV,
+} from "@notemap/destination-webdav";
 import { createFilesystemMirrorWriter } from "@notemap/mirror-fs";
 import { createAjvSchemaValidator } from "@notemap/schema-ajv";
 import { createSqlitePoolStore } from "@notemap/store-sqlite";
@@ -24,12 +28,12 @@ import {
   type Timestamp,
 } from "@notemap/core";
 
-import { webdavCredentials } from "./destinations/credentials";
+import { accountsFor } from "./destinations/credentials";
 import { destinationRenderers } from "./destinations/renderers";
 import { renderersFor } from "./mirror/renderers";
 import { createAuth } from "./auth";
 import { createSqliteAuthStore } from "./auth/store";
-import type { WebdavProfile } from "./config/load";
+import type { Account } from "./config/load";
 
 export const systemClock: Clock = {
   now: () => new Date().toISOString() as Timestamp,
@@ -48,11 +52,11 @@ export type OpenPoolConfig = {
   /** Absent disables the mirror, and then capture enqueues nothing. */
   readonly mirrorRoot?: string;
   /**
-   * The accounts a webdav destination may name. The adapter closes over the
-   * resolver these make, so a secret reaches neither core nor the pool — and a
-   * destination cannot name an address, only one of these.
+   * The accounts a destination may name, whatever kind they are for. An adapter
+   * closes over the resolver these make, so a secret reaches neither core nor
+   * the pool — and a destination cannot name an address, only one of these.
    */
-  readonly webdav?: readonly WebdavProfile[];
+  readonly accounts?: readonly Account[];
 };
 
 /**
@@ -66,6 +70,13 @@ export type OpenPool = {
   readonly blobs: BlobStore;
   readonly mirrorWriter?: MirrorWriter;
   readonly destinations: Destinations;
+  /**
+   * What the adapters wired here have to say about the accounts they were
+   * given. Collected rather than printed, and collected here rather than where
+   * it is printed: which kinds exist is this seam's knowledge and nothing
+   * else's, so nothing above it names one.
+   */
+  readonly warnings: readonly string[];
 };
 
 export function openPool(options: OpenPoolConfig): OpenPool {
@@ -88,6 +99,7 @@ export function openPool(options: OpenPoolConfig): OpenPool {
   ];
 
   const renderers = destinationRenderers();
+  const accounts = options.accounts ?? [];
 
   const destinations = destinationRegistry([
     createFilesystemDestination({
@@ -98,7 +110,7 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     createWebdavDestination({
       renderers,
       accepts: everyPayloadType,
-      credentials: webdavCredentials(options.webdav ?? []),
+      credentials: accountsFor(WEBDAV, accounts),
     }),
   ]);
 
@@ -134,6 +146,9 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     blobs,
     ...(mirrorWriter === undefined ? {} : { mirrorWriter }),
     destinations,
+    warnings: transportWarnings(
+      accounts.filter((account) => account.kind === WEBDAV),
+    ),
   };
 }
 

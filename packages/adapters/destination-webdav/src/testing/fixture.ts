@@ -21,7 +21,7 @@ import type { DavServer } from "./dav-server";
 export const TEXT = "text" as PayloadTypeName;
 export const SCRATCHPAD = "scratchpad" as SourceId;
 export const VAULT = "vault" as DestinationId;
-export const PROFILE = "nextcloud";
+export const ACCOUNT = "nextcloud";
 
 export function at(value: string): Timestamp {
   return value as Timestamp;
@@ -29,14 +29,14 @@ export function at(value: string): Timestamp {
 
 /** A destination row of this kind, which is what every call is handed. */
 export function destinationRow(settings: {
-  profile?: string;
+  account?: string;
   root: string;
 }): Destination {
   return {
     id: VAULT,
     name: "Vault",
     kind: WEBDAV,
-    settings: { profile: settings.profile ?? PROFILE, root: settings.root },
+    settings: { account: settings.account ?? ACCOUNT, root: settings.root },
     createdAt: at("2026-09-01T09:00:00.000Z"),
     modifiedAt: at("2026-09-01T09:00:00.000Z"),
   };
@@ -44,32 +44,37 @@ export function destinationRow(settings: {
 
 /** The host half, as `ports.ts` supplies it, over a server standing in for Nextcloud. */
 export function resolverFor(server: DavServer): CredentialResolver {
-  return (profile) =>
-    profile === PROFILE
+  return (account) =>
+    account === ACCOUNT
       ? Promise.resolve({
           baseUrl: server.baseUrl,
           username: server.username,
           password: server.password,
         })
-      : Promise.reject(new Error(`no webdav profile named ${profile}`));
+      : Promise.reject(new Error(`no webdav account named ${account}`));
 }
 
 export function bytes(value: string): Uint8Array {
   return new TextEncoder().encode(value);
 }
 
-/** An asset whose bytes are held in memory, and which counts its own opens. */
+/**
+ * An asset whose bytes are held in memory, and which counts its own opens. The
+ * blob is a digest of the content in the pool, so tests that care what an asset
+ * ends up called say which one they mean rather than sharing one.
+ */
 export function deliveredAsset(
   slot: string,
   filename: string,
   content: Uint8Array,
+  blob = "0".repeat(64),
 ): DeliveredAsset & { opens: () => number } {
   let opens = 0;
   const asset: Asset = {
     id: `asset-${filename}` as AssetId,
     filename,
     mime: "application/octet-stream",
-    blob: "0".repeat(64) as Asset["blob"],
+    blob: blob as Asset["blob"],
     bytes: content.byteLength,
   };
 

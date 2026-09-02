@@ -13,15 +13,15 @@ export const WEBDAV = "webdav" as DestinationKindName;
  */
 export const WEBDAV_SETTINGS: JsonSchema = {
   type: "object",
-  required: ["profile", "root"],
+  required: ["account", "root"],
   additionalProperties: false,
   properties: {
-    profile: {
+    account: {
       type: "string",
       minLength: 1,
       title: "Account",
       description:
-        "The name of an account in the daemon's configuration. The address and the password are its, not this destination's.",
+        "The name of an account in the daemon's configuration, under `[[accounts]]`. The address and the password are the account's, not this destination's.",
     },
     root: {
       type: "string",
@@ -33,9 +33,9 @@ export const WEBDAV_SETTINGS: JsonSchema = {
 };
 
 export type WebdavSettings = {
-  /** The name of a credential profile the host resolves. */
-  readonly profile: string;
-  /** The collection the destination *is*, relative to the profile's. Empty is the profile's own. */
+  /** The name of an account the host resolves. */
+  readonly account: string;
+  /** The collection the destination *is*, relative to the account's. Empty is the account's own. */
   readonly root: string;
 };
 
@@ -43,11 +43,11 @@ export type WebdavSettings = {
 export function asWebdavSettings(
   settings: JsonObject,
 ): WebdavSettings | undefined {
-  const profile = settings["profile"];
+  const account = settings["account"];
   const root = settings["root"];
 
-  if (typeof profile !== "string" || profile === "") return undefined;
+  if (typeof account !== "string" || account === "") return undefined;
   if (typeof root !== "string") return undefined;
 
-  return { profile, root };
+  return { account, root };
 }

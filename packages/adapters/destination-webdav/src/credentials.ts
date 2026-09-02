@@ -11,9 +11,9 @@ export type WebdavCredential = {
 };
 
 /**
- * Rejects where the profile is not declared or its secret cannot be read.
+ * Rejects where the account is not declared or its secret cannot be read.
  * Neither is the destination being wrong — the settings satisfy the schema —
  * so the message names what could not be read and the delivery reports it
  * unreachable, on the same terms as an unmounted drive.
  */
-export type CredentialResolver = (profile: string) => Promise<WebdavCredential>;
+export type CredentialResolver = (account: string) => Promise<WebdavCredential>;

@@ -91,7 +91,7 @@ describe("GET /v1/destination-kinds", () => {
     const webdav = answered.values.find((each) => each.name === "webdav");
 
     expect(webdav?.settingsSchema).toMatchObject({
-      required: ["profile", "root"],
+      required: ["account", "root"],
       additionalProperties: false,
     });
   });

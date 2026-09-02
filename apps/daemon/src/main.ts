@@ -8,7 +8,6 @@ import { createApp } from "./app";
 import { startSweeper } from "./assets/sweeper";
 import { cookieOptionsFor, loadConfig } from "./config/load";
 import { SHUTDOWN_GRACE_MS } from "./constants";
-import { plainHttpWarnings } from "./destinations/credentials";
 import { startDeliveryRunner } from "./destinations/runner";
 import { startMirrorRunner } from "./mirror/runner";
 import { openPool, openAuth } from "./ports";
@@ -36,19 +35,27 @@ async function start(): Promise<void> {
     );
   }
 
-  for (const line of plainHttpWarnings(config.webdav)) {
-    console.warn(`notemap: ${line}`);
-  }
-
   mkdirSync(dirname(config.pool), { recursive: true });
 
-  const { pool, ports, mirrorWriter, destinations } = openPool({
+  const {
+    pool,
+    ports,
+    mirrorWriter,
+    destinations,
+    warnings: wired,
+  } = openPool({
     file: config.pool,
     config: config.poolConfig,
     assetRoot: config.assets.root,
     ...(config.mirror === undefined ? {} : { mirrorRoot: config.mirror.root }),
-    webdav: config.webdav,
+    accounts: config.accounts,
   });
+
+  // What the adapters make of the accounts they were handed. The daemon prints
+  // it and does not author it: which kinds exist is `ports.ts`'s knowledge.
+  for (const line of wired) {
+    console.warn(`notemap: ${line}`);
+  }
 
   mkdirSync(dirname(config.auth), { recursive: true });
 
@@ -123,9 +130,9 @@ async function start(): Promise<void> {
       );
       console.log(`notemap: assets in ${config.assets.root}`);
 
-      if (config.webdav.length > 0) {
+      if (config.accounts.length > 0) {
         console.log(
-          `notemap: webdav accounts ${config.webdav.map((each) => each.name).join(", ")}`,
+          `notemap: accounts ${config.accounts.map((each) => `${each.name} (${each.kind})`).join(", ")}`,
         );
       }
 

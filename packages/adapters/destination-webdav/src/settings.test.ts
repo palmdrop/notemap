@@ -17,15 +17,15 @@ const adapter = () =>
   });
 
 describe("the settings a person fills in", () => {
-  it("takes a profile and a folder", () => {
-    expect(check({ profile: "nextcloud", root: "Notes/Vault" })).toEqual([]);
+  it("takes an account and a folder", () => {
+    expect(check({ account: "nextcloud", root: "Notes/Vault" })).toEqual([]);
   });
 
   /** Blank is a value here, and the shape `create-file`'s own folder field has. */
   it("takes a blank folder, which is the account's own", () => {
-    expect(check({ profile: "nextcloud", root: "" })).toEqual([]);
-    expect(asWebdavSettings({ profile: "nextcloud", root: "" })).toEqual({
-      profile: "nextcloud",
+    expect(check({ account: "nextcloud", root: "" })).toEqual([]);
+    expect(asWebdavSettings({ account: "nextcloud", root: "" })).toEqual({
+      account: "nextcloud",
       root: "",
     });
   });
@@ -34,30 +34,30 @@ describe("the settings a person fills in", () => {
   it("has nowhere to put a URL or a password", () => {
     expect(
       check({
-        profile: "nextcloud",
+        account: "nextcloud",
         root: "",
         baseUrl: "https://elsewhere.example/dav",
       }),
     ).not.toEqual([]);
 
     expect(
-      check({ profile: "nextcloud", root: "", password: "hunter2" }),
+      check({ account: "nextcloud", root: "", password: "hunter2" }),
     ).not.toEqual([]);
   });
 
-  it("refuses settings with no profile", () => {
+  it("refuses settings with no account", () => {
     expect(check({ root: "Notes" })).not.toEqual([]);
-    expect(check({ profile: "", root: "Notes" })).not.toEqual([]);
+    expect(check({ account: "", root: "Notes" })).not.toEqual([]);
   });
 
   it("reads back only what it would have accepted", () => {
-    expect(asWebdavSettings({ profile: "nextcloud", root: "" })).toEqual({
-      profile: "nextcloud",
+    expect(asWebdavSettings({ account: "nextcloud", root: "" })).toEqual({
+      account: "nextcloud",
       root: "",
     });
-    expect(asWebdavSettings({ profile: 4, root: "" })).toBeUndefined();
-    expect(asWebdavSettings({ profile: "nextcloud", root: 4 })).toBeUndefined();
-    expect(asWebdavSettings({ profile: "nextcloud" })).toBeUndefined();
+    expect(asWebdavSettings({ account: 4, root: "" })).toBeUndefined();
+    expect(asWebdavSettings({ account: "nextcloud", root: 4 })).toBeUndefined();
+    expect(asWebdavSettings({ account: "nextcloud" })).toBeUndefined();
     expect(asWebdavSettings({ root: "Notes" })).toBeUndefined();
   });
 });
@@ -79,7 +79,7 @@ describe("describing a destination", () => {
    */
   it("touches the network for nothing, and asks for no credential", async () => {
     await expect(
-      adapter().describe(destinationRow({ profile: "not-declared", root: "" })),
+      adapter().describe(destinationRow({ account: "not-declared", root: "" })),
     ).resolves.toBeDefined();
   });
 
