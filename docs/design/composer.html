@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>notemap — the routing composer</title>
+    <link rel="stylesheet" href="composer.css" />
+  </head>
+  <body>
+    <div class="sheet">
+      <div class="column">
+        <div class="bar">
+          <span class="name">notemap</span>
+          <span>the routing composer</span>
+          <span class="state">reference</span>
+        </div>
+
+        <div class="lede">
+          <p>
+            Every state the composer has, as
+            <code>docs/plans/typed-routing-composer.md</code> builds it. One line holds the place;
+            what will happen is read off it and said in one word. There is no
+            <code>do</code> step.
+          </p>
+          <p>
+            A mockup, not a component. No state, no interaction, no data. What must survive is the
+            system — one line, the hierarchy shown rather than walked, a state as an inverted word,
+            red for an action and nothing else.
+          </p>
+        </div>
+
+        <hr class="sep" />
+
+        <div class="case">
+          <div class="a">where</div>
+          <div class="b">
+            <div class="modal">
+              <div class="top"><span>route</span><span>×</span></div>
+              <div class="subject">picker needs a trail — walking four levels repaints…</div>
+              <div class="line">
+                <span class="seg now">obs</span><span class="caret"></span>
+                <span class="right">1 of 3</span>
+              </div>
+              <div class="opts">
+                <div class="opt on">
+                  <span class="ptr">▸</span>
+                  <span class="what"><span class="hit">obs</span>idian vault</span>
+                </div>
+                <div class="opt dim"><span class="ptr"></span><span class="what">two do not match</span></div>
+              </div>
+              <div class="commit"><span class="go">route</span><span>cancel</span></div>
+            </div>
+            <p class="note">
+              Taken, the destination leaves the line and reads in the chrome. It is never a segment
+              of the path, so a name with a space or a slash needs no rule.
+            </p>
+          </div>
+        </div>
+
+        <hr class="sep" />
+
+        <div class="case">
+          <div class="a">create</div>
+          <div class="b">
+            <div class="modal">
+              <div class="top"><span>route · obsidian vault</span><span>×</span></div>
+              <div class="subject">picker needs a trail — walking four levels repaints…</div>
+              <div class="line">
+                <span class="seg">projects/notemap/drafts/</span><span class="seg now">picker.md</span><span class="caret"></span>
+              </div>
+              <div class="status"><span class="word">create</span><span class="new">+ drafts/</span></div>
+              <div class="tree">
+                <div class="node"><span class="ptr"></span><span class="what">journal/</span></div>
+                <div class="node on"><span class="ptr"></span><span class="what">projects/</span></div>
+                <div class="node l1"><span class="ptr"></span><span class="what">kontradiktion/</span></div>
+                <div class="node l1 on"><span class="ptr"></span><span class="what">notemap/</span></div>
+                <div class="node l2"><span class="ptr"></span><span class="what">notes/</span></div>
+                <div class="node l2"><span class="ptr"></span><span class="what">specs/</span></div>
+                <div class="node l2 on made"><span class="ptr new">+</span><span class="what">drafts/</span></div>
+                <div class="node l3 on made here"><span class="ptr new">+</span><span class="what">picker.md</span></div>
+                <div class="node"><span class="ptr"></span><span class="what">reading/</span></div>
+              </div>
+              <div class="labelled">
+                <span class="k">tags</span>
+                <div class="set">
+                  <span>#seedling</span><span class="off">#reading</span><span class="off">#daily</span><span class="off">+</span>
+                </div>
+              </div>
+              <div class="commit">
+                <span class="go">route</span><span>cancel</span>
+                <span class="keys">⏎ route · ⇥ complete · ⌫ up · esc</span>
+              </div>
+            </div>
+            <p class="note">
+              A folder that is not there is made, and says so in accent. The hierarchy is shown, not
+              walked: the levels along the path, each with its siblings.
+            </p>
+          </div>
+        </div>
+
+        <hr class="sep" />
+
+        <div class="case">
+          <div class="a">append</div>
+          <div class="b">
+            <div class="modal">
+              <div class="top"><span>route · obsidian vault</span><span>×</span></div>
+              <div class="subject">picker needs a trail — walking four levels repaints…</div>
+              <div class="line">
+                <span class="seg">projects/notemap/notes/</span><span class="seg now">decisions.md</span><span class="caret"></span>
+              </div>
+              <div class="status">
+                <span class="word">append</span><span class="n">41</span>
+                <span class="right">⇧⏎ decisions-1.md</span>
+              </div>
+              <div class="tree">
+                <div class="node on"><span class="ptr"></span><span class="what">projects/</span></div>
+                <div class="node l1 on"><span class="ptr"></span><span class="what">notemap/</span></div>
+                <div class="node l2 on"><span class="ptr"></span><span class="what">notes/</span></div>
+                <div class="node l3 on here"><span class="ptr"></span><span class="what">decisions.md</span></div>
+                <div class="node l3"><span class="ptr"></span><span class="what">glossary.md</span></div>
+                <div class="node l2"><span class="ptr"></span><span class="what">specs/</span></div>
+              </div>
+              <div class="labelled">
+                <span class="k">under</span>
+                <div class="set"><span>end</span><span class="off">## Decided</span><span class="off">## Open</span></div>
+              </div>
+              <div class="labelled">
+                <span class="k">tags</span>
+                <div class="set"><span>#seedling</span><span class="off">#reading</span><span class="off">+</span></div>
+              </div>
+              <div class="commit">
+                <span class="go">route</span><span>cancel</span>
+                <span class="keys">⏎ route · ⇥ complete · ⌫ up · esc</span>
+              </div>
+            </div>
+            <p class="note">
+              <code>⇧⏎</code> sits beside the state it overrides, not in the key hints: appending to
+              somebody's file when a new one was meant is the one place <em>nothing to choose</em>
+              can surprise. It stores <code>create-file</code>.
+            </p>
+          </div>
+        </div>
+
+        <hr class="sep" />
+
+        <div class="case">
+          <div class="a">remembered</div>
+          <div class="b">
+            <div class="modal wide">
+              <div class="line">
+                <span class="seg now">pro</span><span class="caret"></span><span class="ghost">jects/notemap/notes/</span>
+                <span class="right">→ takes it</span>
+              </div>
+              <div class="opts">
+                <div class="opt on">
+                  <span class="ptr">▸</span>
+                  <span class="what"><span class="hit">pro</span>jects/notemap/notes/</span>
+                  <span class="why">41 · yesterday</span>
+                </div>
+                <div class="opt">
+                  <span class="ptr"></span>
+                  <span class="what"><span class="hit">pro</span>jects/kontradiktion/</span>
+                  <span class="why">6 · last week</span>
+                </div>
+                <div class="opt dim">
+                  <span class="ptr"></span>
+                  <span class="what"><span class="hit">pro</span>jects/notemap/drafts/</span>
+                  <span class="why">12 · gone</span>
+                </div>
+                <hr class="rule" />
+                <div class="opt"><span class="ptr"></span><span class="what">projects/</span><span class="why">offered</span></div>
+              </div>
+            </div>
+            <p class="note">
+              Places used before rank above what the vault merely offers, with how often and how
+              recently. <code>⇥</code> completes one segment; <code>→</code> takes the whole greyed
+              continuation — two keys, never one. A place that is <code>gone</code> stays in the
+              list where <code>↑↓</code> reaches it deliberately, and is <em>never</em> the greyed
+              continuation: the ghost is what a person takes without reading.
+            </p>
+          </div>
+        </div>
+
+        <hr class="sep" />
+
+        <div class="case">
+          <div class="a">gone</div>
+          <div class="b">
+            <div class="modal">
+              <div class="line">
+                <span class="seg">projects/notemap/drafts/</span><span class="seg now">picker.md</span><span class="caret"></span>
+              </div>
+              <div class="status">
+                <span class="word">create</span><span class="new">+ drafts/</span><span class="word">gone</span>
+              </div>
+              <p class="muted" style="margin: 0.6rem 0 0">routed here 12 times · not there now</p>
+            </div>
+            <p class="note">
+              A remembered folder that has vanished is not a new folder somebody meant to make — it
+              is a sign the vault was restructured, and this is the last moment anything can say so.
+              An ordinary condition, never one of the three alarms.
+            </p>
+          </div>
+        </div>
+
+        <hr class="sep" />
+
+        <div class="case">
+          <div class="a">unreachable</div>
+          <div class="b">
+            <div class="modal">
+              <div class="top">
+                <span>route · obsidian vault <span class="word">unreachable</span></span><span>×</span>
+              </div>
+              <div class="subject">picker needs a trail — walking four levels repaints…</div>
+              <div class="line">
+                <span class="seg">projects/notemap/notes/</span><span class="seg now">decisions.md</span><span class="caret"></span>
+              </div>
+              <p class="muted" style="margin: 0.8rem 0 0">unreachable · best effort</p>
+              <div class="opts" style="margin-top: 0.8rem">
+                <div class="opt"><span class="ptr">▸</span><span class="what">projects/notemap/notes/</span><span class="why">41 · yesterday</span></div>
+                <div class="opt"><span class="ptr"></span><span class="what">journal/</span><span class="why">6 · last week</span></div>
+              </div>
+              <div class="commit">
+                <span class="go">route</span><span>cancel</span>
+                <span class="keys">⏎ route · esc</span>
+              </div>
+            </div>
+            <p class="note">
+              Still routable: the record is made and the delivery deferred. No tree and no state
+              word, because there is nothing to ask — which is why the capability decides at
+              delivery rather than here. Remembered places still complete, since the pool holds them
+              and the pool is reachable whenever this is open. An unreachable <em>pool</em> is a
+              different thing: the composer does not open at all.
+            </p>
+          </div>
+        </div>
+
+        <hr class="sep" />
+
+        <div class="case">
+          <div class="a">390</div>
+          <div class="b">
+            <div class="modal phone">
+              <div class="top"><span>route</span><span>×</span></div>
+              <div class="subject">picker needs a trail — walking…</div>
+              <div class="line">
+                <span class="seg">projects/notemap/notes/</span><span class="seg now">decisions.md</span><span class="caret"></span>
+              </div>
+              <div class="status"><span class="word">append</span><span class="n">41</span></div>
+              <div class="tree">
+                <div class="node on"><span class="ptr"></span><span class="what">projects/</span></div>
+                <div class="node l1 on"><span class="ptr"></span><span class="what">notemap/</span></div>
+                <div class="node l2 on"><span class="ptr"></span><span class="what">notes/</span></div>
+                <div class="node l3 on here"><span class="ptr"></span><span class="what">decisions.md</span></div>
+                <div class="node l3"><span class="ptr"></span><span class="what">glossary.md</span></div>
+              </div>
+              <div class="labelled">
+                <span class="k">under</span>
+                <div class="set"><span>end</span><span class="off">## Decided</span></div>
+              </div>
+              <div class="labelled">
+                <span class="k">tags</span>
+                <div class="set"><span>#seedling</span><span class="off">+</span></div>
+              </div>
+              <div class="commit"><span class="go">route</span><span>cancel</span></div>
+            </div>
+            <p class="note">Counts and key hints drop. The line and the tree do not.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
