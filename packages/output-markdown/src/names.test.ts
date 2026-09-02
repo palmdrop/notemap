@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { alternatives, oneSegment } from "./names";
+import { assetName, oneSegment } from "./names";
 
 describe("one segment", () => {
   it("flattens a name that was never a name", () => {
@@ -36,18 +36,43 @@ describe("one segment", () => {
   });
 });
 
-describe("alternatives", () => {
-  it("keeps the extension while suffixing the stem", () => {
-    const [first, second, third] = alternatives("photo.png");
-    expect([first, second, third]).toEqual([
-      "photo.png",
-      "photo-1.png",
-      "photo-2.png",
-    ]);
+describe("what an asset is called beside a note", () => {
+  const BLOB = "3f9a1c22e8b40d17".padEnd(64, "0");
+
+  /** The digest goes before the extension, so the vault still sorts and opens it. */
+  it("keeps the uploaded name and carries the content's digest", () => {
+    expect(assetName("holiday.png", BLOB, "asset-1")).toBe(
+      "holiday-3f9a1c22.png",
+    );
+    expect(assetName("recording.m4a", BLOB, "asset-1")).toBe(
+      "recording-3f9a1c22.m4a",
+    );
   });
 
-  it("suffixes a name with no extension at the end", () => {
-    const [, second] = alternatives("README");
-    expect(second).toBe("README-1");
+  /**
+   * The whole point: a delivery retried after placing an asset computes the
+   * same name, so it lands on the copy it already wrote rather than beside it.
+   */
+  it("is the same name for the same bytes, every time", () => {
+    expect(assetName("holiday.png", BLOB, "a")).toBe(
+      assetName("holiday.png", BLOB, "b"),
+    );
+  });
+
+  it("is a different name for different bytes under one uploaded name", () => {
+    expect(assetName("holiday.png", BLOB, "a")).not.toBe(
+      assetName("holiday.png", "b".repeat(64), "a"),
+    );
+  });
+
+  it("falls back where the uploaded name leaves nothing", () => {
+    expect(assetName("..", BLOB, "asset-1")).toBe("asset-1-3f9a1c22");
+    expect(assetName("", BLOB, "asset-1")).toBe("asset-1-3f9a1c22");
+  });
+
+  it("flattens a name that was never a name", () => {
+    expect(assetName("../../authorized_keys", BLOB, "a")).toBe(
+      "authorized_keys-3f9a1c22",
+    );
   });
 });

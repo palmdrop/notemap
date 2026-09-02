@@ -116,6 +116,9 @@ describe("a capture leaving for a folder on disk", () => {
     const drain = drainWith(opened);
 
     const picture = await upload(opened.pool, "photo.png", bytes("PNG-BYTES"));
+    // Named for the upload and for its content, so a delivery retried after
+    // placing it lands on the copy it wrote rather than beside it.
+    const placed = `photo-${picture.blob.slice(0, 8)}.png`;
     const thought = await captured(
       opened,
       envelope({ id: "item-text", text: "a thought", tags: ["kind/quote"] }),
@@ -144,7 +147,7 @@ describe("a capture leaving for a folder on disk", () => {
     expect(await filesUnder(root)).toEqual(
       [
         join(root, "inbox", "a-thought.md"),
-        join(root, "inbox", "photo.png"),
+        join(root, "inbox", placed),
         join(root, "inbox", "what it looked like.md"),
       ].sort(),
     );
@@ -155,12 +158,12 @@ describe("a capture leaving for a folder on disk", () => {
     expect(note).toContain("- 'kind/quote'");
     expect(note.endsWith("a thought\n")).toBe(true);
 
-    expect(await readFile(join(root, "inbox", "photo.png"), "utf8")).toBe(
+    expect(await readFile(join(root, "inbox", placed), "utf8")).toBe(
       "PNG-BYTES",
     );
     expect(
       await readFile(join(root, "inbox", "what it looked like.md"), "utf8"),
-    ).toContain("![photo.png](photo.png)");
+    ).toContain(`![${placed}](${placed})`);
 
     // The pointer names the file that is actually there.
     expect(first.pointer).toBe("inbox/a-thought.md");
@@ -186,6 +189,9 @@ describe("a capture leaving for a folder on disk", () => {
 
     const opened = await pooled(root);
     const picture = await upload(opened.pool, "photo.png", bytes("PNG-BYTES"));
+    // Named for the upload and for its content, so a delivery retried after
+    // placing it lands on the copy it wrote rather than beside it.
+    const placed = `photo-${picture.blob.slice(0, 8)}.png`;
     const item = await captured(opened, {
       id: "item-image" as ItemId,
       source: envelope().source,
@@ -200,6 +206,8 @@ describe("a capture leaving for a folder on disk", () => {
     });
 
     await route(opened, item, { directory: "", filename: "a.md" });
+
+    expect(await filesUnder(root)).toContain(join(root, placed));
 
     const stillThere = await opened.pool.assets.open(picture.id);
     if (stillThere.kind === "refused") throw new Error("the blob went");

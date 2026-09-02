@@ -2,15 +2,13 @@ import { join } from "node:path";
 
 import type { DeliveredAsset } from "@notemap/core";
 
-import { alternatives, oneSegment } from "@notemap/output-markdown";
+import { assetName } from "@notemap/output-markdown";
 
 import { createFile } from "./atomic";
-import { Refused } from "./errors";
 
 /**
- * Every asset written into `directory` under the name it was uploaded with, and
- * what each ended up called, keyed by slot. A name that is taken is suffixed
- * rather than overwritten, whoever took it.
+ * Every asset written into `directory` under the name it was uploaded with and
+ * its content's digest, and what each ended up called, keyed by slot.
  */
 export async function placeAssets(
   directory: string,
@@ -18,10 +16,9 @@ export async function placeAssets(
   signal?: AbortSignal,
 ): Promise<ReadonlyMap<string, string>> {
   const placed = new Map<string, string>();
-  const taken = new Set<string>();
 
   for (const each of assets) {
-    placed.set(each.slot, await place(directory, each, taken, signal));
+    placed.set(each.slot, await place(directory, each, signal));
   }
 
   return placed;
@@ -30,24 +27,23 @@ export async function placeAssets(
 async function place(
   directory: string,
   asset: DeliveredAsset,
-  taken: Set<string>,
   signal?: AbortSignal,
 ): Promise<string> {
-  const wanted = oneSegment(asset.asset.filename, asset.asset.id);
+  const name = assetName(
+    asset.asset.filename,
+    asset.asset.blob,
+    asset.asset.id,
+  );
 
-  for (const candidate of alternatives(wanted)) {
-    if (taken.has(candidate)) continue;
-    taken.add(candidate);
-
-    try {
-      await createFile(join(directory, candidate), await asset.open(signal));
-      return candidate;
-    } catch (cause) {
-      // The name was already somebody else's. The stream was consumed getting
-      // there, so the next candidate is opened afresh.
-      if ((cause as NodeJS.ErrnoException).code !== "EEXIST") throw cause;
-    }
+  try {
+    await createFile(join(directory, name), await asset.open(signal));
+  } catch (cause) {
+    // A name that is taken is this asset already there — the name is its
+    // content's digest, so whatever holds it is these bytes. That is what lets
+    // a delivery retried after a partial failure land on the copy it already
+    // wrote instead of beside it.
+    if ((cause as NodeJS.ErrnoException).code !== "EEXIST") throw cause;
   }
 
-  throw new Refused(`every name near ${wanted} is taken in ${directory}`);
+  return name;
 }

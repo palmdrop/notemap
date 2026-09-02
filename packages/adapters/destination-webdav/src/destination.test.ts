@@ -43,17 +43,17 @@ function adapter(server: DavServer, renderers = {}) {
 }
 
 describe("reaching the account", () => {
-  it("reports a profile nothing declares as unreachable, naming it", async () => {
+  it("reports an account nothing declares as unreachable, naming it", async () => {
     const server = await vault();
 
     const outcome = await adapter(server).deliver(
-      destinationRow({ profile: "not-declared", root: "" }),
+      destinationRow({ account: "not-declared", root: "" }),
       delivery(),
     );
 
     expect(outcome).toEqual<DeliveryOutcome>({
       kind: "unreachable",
-      detail: "no webdav profile named not-declared",
+      detail: "no webdav account named not-declared",
     });
     expect(server.requests()).toEqual([]);
   });
@@ -318,6 +318,33 @@ describe("appending to a note", () => {
     expect(writes).toBe(4);
   });
 
+  /**
+   * A gzipping proxy in front of the server is the ordinary way a strong
+   * validator becomes weak, and `If-Match` compares strongly — so this would
+   * otherwise report four rounds of contention that never happened.
+   */
+  it("names a weak ETag rather than reporting a race it did not lose", async () => {
+    const server = await vault();
+    server.put("V/daily.md", "the first line\n");
+    server.weakenEtags();
+
+    const outcome = await adapter(server).deliver(
+      destinationRow({ root: "V" }),
+      delivery({
+        capability: "append-to-file",
+        arguments: { path: "daily.md" },
+      }),
+    );
+
+    expect(outcome).toMatchObject({
+      kind: "unreachable",
+      detail: expect.stringMatching(/weak ETag/),
+    });
+    expect(server.requests().filter((each) => each.startsWith("PUT"))).toEqual(
+      [],
+    );
+  });
+
   it("refuses a path that leaves the vault", async () => {
     const server = await vault();
 
@@ -340,10 +367,13 @@ describe("assets", () => {
   const withImages = (server: DavServer) =>
     adapter(server, { [IMAGE]: renderWithAssets });
 
-  it("land beside the note under the names they were uploaded with", async () => {
+  const ONE = "a".repeat(64);
+  const TWO = "b".repeat(64);
+
+  it("land beside the note, named for the upload and for what is in them", async () => {
     const server = await vault();
     server.makeCollection("V");
-    const photo = deliveredAsset("image", "photo.png", bytes("PNG"));
+    const photo = deliveredAsset("image", "photo.png", bytes("PNG"), ONE);
 
     await withImages(server).deliver(
       destinationRow({ root: "V" }),
@@ -356,13 +386,13 @@ describe("assets", () => {
 
     expect(Object.keys(server.files())).toEqual([
       "V/inbox/a.md",
-      "V/inbox/photo.png",
+      "V/inbox/photo-aaaaaaaa.png",
     ]);
-    expect(server.files()["V/inbox/photo.png"]).toBe("PNG");
-    expect(server.files()["V/inbox/a.md"]).toContain("![](photo.png)");
+    expect(server.files()["V/inbox/photo-aaaaaaaa.png"]).toBe("PNG");
+    expect(server.files()["V/inbox/a.md"]).toContain("![](photo-aaaaaaaa.png)");
   });
 
-  it("suffixes the second of two sharing one name, rather than losing it", async () => {
+  it("tells two sharing one uploaded name apart by their content", async () => {
     const server = await vault();
     server.makeCollection("V");
 
@@ -372,18 +402,18 @@ describe("assets", () => {
         type: IMAGE,
         arguments: { directory: "", filename: "a.md" },
         assets: [
-          deliveredAsset("one", "photo.png", bytes("first")),
-          deliveredAsset("two", "photo.png", bytes("second")),
+          deliveredAsset("one", "photo.png", bytes("first"), ONE),
+          deliveredAsset("two", "photo.png", bytes("second"), TWO),
         ],
       }),
     );
 
     expect(Object.keys(server.files())).toEqual([
       "V/a.md",
-      "V/photo-1.png",
-      "V/photo.png",
+      "V/photo-aaaaaaaa.png",
+      "V/photo-bbbbbbbb.png",
     ]);
-    expect(server.files()["V/photo-1.png"]).toBe("second");
+    expect(server.files()["V/photo-bbbbbbbb.png"]).toBe("second");
   });
 
   it("writes beside a name the vault already had rather than over it", async () => {
@@ -395,12 +425,38 @@ describe("assets", () => {
       delivery({
         type: IMAGE,
         arguments: { directory: "", filename: "a.md" },
-        assets: [deliveredAsset("one", "photo.png", bytes("ours"))],
+        assets: [deliveredAsset("one", "photo.png", bytes("ours"), ONE)],
       }),
     );
 
     expect(server.files()["V/photo.png"]).toBe("theirs");
-    expect(server.files()["V/photo-1.png"]).toBe("ours");
+    expect(server.files()["V/photo-aaaaaaaa.png"]).toBe("ours");
+  });
+
+  /**
+   * What `unreachable` promises: nothing was delivered, so a retry cannot
+   * duplicate. An attempt that placed the asset and then failed leaves it under
+   * the name the next attempt computes, so the next attempt lands on it.
+   */
+  it("lands on the copy a previous attempt already wrote", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+    server.put("V/photo-aaaaaaaa.png", "PNG");
+
+    await withImages(server).deliver(
+      destinationRow({ root: "V" }),
+      delivery({
+        type: IMAGE,
+        arguments: { directory: "", filename: "a.md" },
+        assets: [deliveredAsset("one", "photo.png", bytes("PNG"), ONE)],
+      }),
+    );
+
+    expect(Object.keys(server.files())).toEqual([
+      "V/a.md",
+      "V/photo-aaaaaaaa.png",
+    ]);
+    expect(server.files()["V/a.md"]).toContain("![](photo-aaaaaaaa.png)");
   });
 
   /** An uploaded filename was never promised to be one path segment. */
@@ -413,13 +469,15 @@ describe("assets", () => {
       delivery({
         type: IMAGE,
         arguments: { directory: "", filename: "a.md" },
-        assets: [deliveredAsset("one", "../../authorized_keys", bytes("ours"))],
+        assets: [
+          deliveredAsset("one", "../../authorized_keys", bytes("ours"), ONE),
+        ],
       }),
     );
 
     expect(Object.keys(server.files())).toEqual([
       "V/a.md",
-      "V/authorized_keys",
+      "V/authorized_keys-aaaaaaaa",
     ]);
   });
 
@@ -432,19 +490,19 @@ describe("assets", () => {
       delivery({
         type: IMAGE,
         arguments: { directory: "", filename: "a.md" },
-        assets: [deliveredAsset("one", "a photo.png", bytes("PNG"))],
+        assets: [deliveredAsset("one", "a photo.png", bytes("PNG"), ONE)],
       }),
     );
 
     // Angle brackets, because a bare CommonMark destination ends at the space.
-    expect(server.files()["V/a.md"]).toContain("![](<a photo.png>)");
-    expect(server.files()["V/a photo.png"]).toBe("PNG");
+    expect(server.files()["V/a.md"]).toContain("![](<a photo-aaaaaaaa.png>)");
+    expect(server.files()["V/a photo-aaaaaaaa.png"]).toBe("PNG");
   });
 
   it("opens no stream for a delivery carrying none", async () => {
     const server = await vault();
     server.makeCollection("V");
-    const photo = deliveredAsset("image", "photo.png", bytes("PNG"));
+    const photo = deliveredAsset("image", "photo.png", bytes("PNG"), ONE);
 
     await adapter(server).deliver(
       destinationRow({ root: "V" }),
@@ -464,19 +522,19 @@ describe("assets", () => {
         type: IMAGE,
         capability: "append-to-file",
         arguments: { path: "daily.md" },
-        assets: [deliveredAsset("one", "photo.png", bytes("PNG"))],
+        assets: [deliveredAsset("one", "photo.png", bytes("PNG"), ONE)],
       }),
     );
 
-    expect(server.files()["V/photo.png"]).toBe("PNG");
-    expect(server.files()["V/daily.md"]).toContain("![](photo.png)");
+    expect(server.files()["V/photo-aaaaaaaa.png"]).toBe("PNG");
+    expect(server.files()["V/daily.md"]).toContain("![](photo-aaaaaaaa.png)");
   });
 
   /** Uploaded once even where the note has to be re-read and written again. */
   it("does not upload an asset a second time when an append loses a race", async () => {
     const server = await vault();
     server.put("V/daily.md", "the first line\n");
-    const photo = deliveredAsset("one", "photo.png", bytes("PNG"));
+    const photo = deliveredAsset("one", "photo.png", bytes("PNG"), ONE);
 
     server.interceptOnce("PUT", () => undefined); // the asset's own PUT
     server.interceptOnce("PUT", () => {
@@ -513,11 +571,13 @@ describe("an asset is streamed, not buffered", () => {
       delivery({
         type: IMAGE,
         arguments: { directory: "", filename: "a.md" },
-        assets: [deliveredAsset("one", "long.wav", bytes("many bytes"))],
+        assets: [
+          deliveredAsset("one", "long.wav", bytes("many bytes"), "c".repeat(64)),
+        ],
       }),
     );
 
-    expect(server.arrivedChunked("V/long.wav")).toBe(true);
+    expect(server.arrivedChunked("V/long-cccccccc.wav")).toBe(true);
     // The note is a string the adapter already holds, so it is measured.
     expect(server.arrivedChunked("V/a.md")).toBe(false);
   });

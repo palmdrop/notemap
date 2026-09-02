@@ -21,15 +21,29 @@ export function oneSegment(name: string, fallback: string): string {
   return trimmed === "" ? fallback : trimmed;
 }
 
-/** `name`, then `name-1`, `name-2`, … keeping the extension where there is one. */
-export function* alternatives(name: string, limit = 100): Generator<string> {
-  yield name;
+/** How much of a blob's digest is enough to tell two uploads apart in one folder. */
+const DIGEST = 8;
 
+/**
+ * What an asset is called beside the note: the name it was uploaded with, with
+ * its content's digest before the extension.
+ *
+ * The digest is what makes a delivery repeatable. A delivery that failed after
+ * placing an asset is retried — `unreachable` promises the retry cannot
+ * duplicate — and a name derived from the bytes lands on the file the first
+ * attempt wrote instead of beside it. The uploaded name stays because a vault
+ * full of digests is a vault nobody can read.
+ */
+export function assetName(
+  filename: string,
+  blob: string,
+  fallback: string,
+): string {
+  const digest = blob.slice(0, DIGEST);
+  const name = oneSegment(filename, fallback);
   const dot = name.lastIndexOf(".");
   const [stem, extension] =
     dot > 0 ? [name.slice(0, dot), name.slice(dot)] : [name, ""];
 
-  for (let suffix = 1; suffix < limit; suffix += 1) {
-    yield `${stem}-${suffix}${extension}`;
-  }
+  return `${stem}-${digest}${extension}`;
 }
