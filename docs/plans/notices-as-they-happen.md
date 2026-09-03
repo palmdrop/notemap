@@ -1,9 +1,9 @@
 # The shell says what happened
 
 **Date**: 2026-09-03
-**Status**: In progress <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/shell.md`, `docs/specs/client.md`
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-09-03
 
 ---
 
@@ -203,18 +203,18 @@ Depends on phase 4.
 
 Depends on every phase above.
 
-- [ ] `docs/specs/shell.md` — **Reachable, pending, refused** becomes four things the corner says,
+- [x] `docs/specs/shell.md` — **Reachable, pending, refused** becomes four things the corner says,
       with the rule that separates them: pending heals itself and stays quiet, a notice is a fact
       about work that has already happened, a refusal will not resolve without a person. Say that a
       gesture speaks only when its subject leaves the screen, and that a failure at a control that
       is still on screen is said at the control
-- [ ] The same section's sentence about the log — that the accent is spent on three kinds — is where
+- [x] The same section's sentence about the log — that the accent is spent on three kinds — is where
       the notice set is stated, so the two lists cannot drift
-- [ ] `docs/design/` is caught up: the stack now holds two shapes and the corner is drawn with both.
-      **[typed-routing-composer](typed-routing-composer.md) phase 8 re-shoots every surface** — the
-      second of the two to land does the shooting rather than both doing it
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
-- [ ] `git commit`
+- [-] `docs/design/` is caught up _(dropped — typed-routing-composer's phase 8 landed first and
+      re-shot every surface; the corner is recorded there as the one thing the pages are behind on,
+      rather than shot again here)_
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
+- [x] `git commit`
 
 ---
 

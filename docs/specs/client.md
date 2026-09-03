@@ -4,6 +4,13 @@
 **Last updated**: 2026-09-03
 **Shipped**:
 
+- 2026-09-03 — **A client learns what it did not ask about.** `ActionsApi.watch()` answers what the
+  pool has done since this client started looking, read from the action log on its own tempo, gated
+  on watched and on reachable, from a mark taken at start that says nothing about what came before
+  it. One page at a time, with a mark when there was more.
+  ([plan](../plans/notices-as-they-happen.md),
+  [ADR 32](../adr/0032-a-shell-learns-what-happened-by-reading-the-log.md))
+
 - 2026-09-03 — **An item is read by id, and says what it was drawn from.** `item` reaches the pool
   for an id no surface has ever drawn, so a deep link into a fresh browser answers, and falls back
   to the client's own copy where the pool does not — answering an `ItemState` that carries the

@@ -4,6 +4,15 @@
 **Last updated**: 2026-09-03
 **Shipped**:
 
+- 2026-09-03 — **The corner says what happened, not only what was refused.** A gesture that empties
+  a row says where it went, and says `deferred` where the pool recorded a decision it has not
+  carried out; the row is watched out wearing what became of it rather than vanishing; and the
+  shell learns of a delivery that failed, or was given up on, minutes later by reading the action
+  log on its own tempo. Confirmations go on their own, failures hold until they are cleared, and
+  every notice leads to where the whole of it can be read.
+  ([plan](../plans/notices-as-they-happen.md),
+  [ADR 32](../adr/0032-a-shell-learns-what-happened-by-reading-the-log.md))
+
 - 2026-09-03 — **An item has an address, and a routing record can be read.** `/items/{id}` draws
   one item as a surface of its own and `/items/{id}/records/{recordId}` draws one record in full —
   the destination by name, the capability, the state, when the decision was made, the arguments it
@@ -571,6 +580,46 @@ nothing, because the row is its own evidence and a notice per tag is noise. A fa
 that is still on screen is said **at the control** — the composer keeps its modal open on a refusal,
 a row keeps its own line — and the corner is for what has nowhere else to be said.
 
+**A routing says only what the record says.** A decision the pool recorded and delivered names
+where it landed; one it recorded and has not carried out reads as **deferred**, and claims no
+landing. The difference is not a nicety: a delivery is deferred exactly when the destination could
+not be reached, and the shell saying `routed` there would be inventing the one fact only the
+delivery can establish. What it landed as is said later, by the corner, when the pool writes it.
+
+**The row is watched out rather than vanishing.** A row that has been routed, marked done or
+archived holds its place for one beat wearing the word for what became of it, then goes. It is the
+shell drawing what it has just done and nothing about what the pool holds, so it takes no handler:
+it cannot be opened and its actions are gone with it. A reader who has asked for less movement is
+shown none — the row goes at once rather than lingering more briefly.
+
+### What happened while nobody was asking
+
+*(2026-09-03.)* A delivery is deferred and carried out later, so the interesting half of a routing
+happens when nobody is looking at it. The shell **reads the action log on its own tempo**
+([client.md](client.md#the-action-log)) and says what it finds, so a failure minutes after the
+decision reaches the person who made it without anybody opening `/log`.
+
+**Four kinds are said out loud and no others**: `routed`, `delivery-failed`, `work-failed`,
+`work-abandoned` — the three the log already spends the accent on, and the landing. Everything else
+the log holds stays in the log, which is what it is for. That set and the log's accent set are the
+same set, deliberately, and are stated together so they cannot drift.
+
+**Nothing is said twice.** A notice is keyed by the **routing record** rather than by the log entry:
+a delivery retried four times is one thing that went wrong, and a landing this shell already
+reported when the decision was made is the same fact arriving a second time.
+
+**A delivery given up on says the item is back in the queue**, because it is — giving up removes the
+reservation, and the row returns on its own. That is the one condition nothing else in the shell
+could ever explain, and it is why this exists.
+
+**A notice leads to where the whole of it can be read**: the log narrowed to the item, or the log
+plain where the work was about no item. The link carries no order — coming from outside the log
+there is none to carry, and the URL is the more specific statement about a read.
+
+**A catch-up is bounded.** A shell that has been away gets one page of what it missed and a standing
+mark that there was more, with a way through to the log. A hundred things to dismiss is not a
+report.
+
 ### Draining
 
 The queue's job is to reach zero and the API gives no count — `ItemSlice` carries values and an
@@ -666,8 +715,8 @@ until then)*, so there is no leaving the app and coming back, and no second copy
 hold in step.
 
 **The kind is what the row is**, and it wears the register's state mark rather than reading as body
-text. **The accent is spent on `delivery-failed`, `work-failed` and `work-abandoned`**, and on the
-failure code beside them — not on `purged`, `destination-deleted` or `actions-cleared`, which are
+text. **The accent is spent on `delivery-failed`, `work-failed` and `work-abandoned`**, which are
+the same three the corner says out loud, and on the failure code beside them — not on `purged`, `destination-deleted` or `actions-cleared`, which are
 facts rather than warnings. A log where half the rows are red says nothing.
 
 **`detail` is flattened generically, never per kind**: dotted keys, strings unquoted, arrays

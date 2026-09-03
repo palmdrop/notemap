@@ -1,4 +1,4 @@
-# 31. A shell learns what happened by reading the log
+# 32. A shell learns what happened by reading the log
 
 **Date**: 2026-09-03
 **Status**: Accepted — extends the action log sections of
