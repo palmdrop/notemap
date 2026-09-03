@@ -10,10 +10,13 @@ import Order from "./Order.svelte";
 vi.mock("$lib/client", () => import("$testing/pool"));
 
 /** Chrome, so it is drawn a level above whichever surface it acts on. */
-const at = vi.hoisted(() => ({ path: "/" }));
+const at = vi.hoisted(() => ({ route: "/", path: "/" }));
 vi.mock("$app/state", () => ({
   get page() {
-    return { url: new URL(`http://localhost${at.path}`) };
+    return {
+      url: new URL(`http://localhost${at.path}`),
+      route: { id: at.route },
+    };
   },
 }));
 
@@ -46,7 +49,7 @@ function ordersOf(transport: { sent: readonly Request[] }, surface: string) {
 }
 
 test("turns the queue around and reads it again from that end", async () => {
-  at.path = "/";
+  at.route = at.path = "/";
   const transport = serving("queue");
 
   const { component } = render(Order) as { component: unknown };
@@ -67,7 +70,7 @@ test("turns the queue around and reads it again from that end", async () => {
  * waits until somebody reloads.
  */
 test("turns the log around and reads it again from that end", async () => {
-  at.path = "/log";
+  at.route = at.path = "/log";
   const transport = pool(() => json(200, { values: [] }));
 
   render(Order);
@@ -82,7 +85,7 @@ test("turns the log around and reads it again from that end", async () => {
 });
 
 test("turns the surface being read, and not the other one", async () => {
-  at.path = "/feed";
+  at.route = at.path = "/feed";
   const transport = serving("feed");
 
   render(Order);
@@ -98,7 +101,7 @@ test("turns the surface being read, and not the other one", async () => {
 });
 
 test("will not turn around while a read is still walking", async () => {
-  at.path = "/";
+  at.route = at.path = "/";
   let release = () => {};
   const held = new Promise<void>((resolve) => {
     release = resolve;
@@ -118,8 +121,12 @@ test("will not turn around while a read is still walking", async () => {
   await vi.waitFor(() => expect(control.disabled).toBe(false));
 });
 
-test("says nothing on a surface with no end to start from", () => {
-  at.path = "/settings";
+test.each([
+  ["/settings", "/settings"],
+  ["/items/[id]", "/items/one"],
+])("says nothing on %s, which has no end to start from", (route, path) => {
+  at.route = route;
+  at.path = path;
   serving("queue");
 
   render(Order);
@@ -128,7 +135,7 @@ test("says nothing on a surface with no end to start from", () => {
 });
 
 test("names the order on the URL and remembers it, so a reload reads the same end", async () => {
-  at.path = "/";
+  at.route = at.path = "/";
   serving("queue");
 
   render(Order);
@@ -142,7 +149,7 @@ test("names the order on the URL and remembers it, so a reload reads the same en
 });
 
 test("remembers each surface on its own, the two starting from different ends", async () => {
-  at.path = "/feed";
+  at.route = at.path = "/feed";
   serving("feed");
 
   render(Order);

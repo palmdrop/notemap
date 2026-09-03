@@ -1,6 +1,7 @@
 <script lang="ts">
   import { replaceState } from "$app/navigation";
   import { page } from "$app/state";
+  import type { RouteId } from "$app/types";
   import type { Order } from "@notemap/client";
 
   import OrderSelector from "$components/primitives/controls/OrderSelector.svelte";
@@ -12,13 +13,15 @@
   const feed = client.feed;
 
   /** Settings and an item have no end to start from, so they are offered none. */
-  const READING: Record<string, Surface> = {
+  const READING: Partial<Record<RouteId, Surface>> = {
     "/": "queue",
     "/feed": "feed",
     "/log": "log",
   };
 
-  const reading = $derived(READING[page.url.pathname]);
+  const reading = $derived(
+    page.route.id === null ? undefined : READING[page.route.id],
+  );
 
   const order = $derived(
     reading === undefined
