@@ -3,6 +3,7 @@
     saidBy,
     type Capability,
     type DestinationDescription,
+    type RoutingRecord,
   } from "@notemap/client";
 
   import ComposerTags from "$components/routing/ComposerTags.svelte";
@@ -18,9 +19,6 @@
   import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
   import { browserFor } from "$lib/candidate-browsers";
   import { client } from "$lib/client";
-  import { nameOf } from "$lib/destinations";
-  import { notices } from "$lib/notices.svelte";
-  import { saidOf } from "$lib/routing";
   import { fieldsOf, valuesFrom } from "$lib/schema-form";
 
   const CREATE_FILE = "create-file";
@@ -44,8 +42,11 @@
     content?: unknown;
     /** What the item already carries, so the composer's own row draws them as taken. */
     tags?: readonly string[];
-    /** The decision landed. The row's place on the register is not this modal's to know. */
-    onrouted?: (word: string) => void;
+    /**
+     * The decision reached the pool. What is said about it, and where the row
+     * stood, belong to the surface rather than to a modal over it.
+     */
+    onrouted?: (record: RoutingRecord) => void;
     onclose: () => void;
   } = $props();
 
@@ -180,8 +181,7 @@
           ? { capability, arguments: valuesFrom(fields, args) }
           : freshFile(beside)),
       });
-      notices.raise(saidOf(record, nameOf));
-      onrouted?.(record.state === "delivered" ? "routed" : "deferred");
+      onrouted?.(record);
       onclose();
     } catch (error) {
       said = saidBy(error);

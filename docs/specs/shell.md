@@ -5,8 +5,8 @@
 **Shipped**:
 
 - 2026-09-03 — **The corner says what happened, not only what was refused.** A gesture that empties
-  a row says where it went, and says `deferred` where the pool recorded a decision it has not
-  carried out; the row is watched out wearing what became of it rather than vanishing; and the
+  a row says where it went, names the capture it was about, and says `retrying` where the pool
+  recorded a decision it has not carried out; the row is watched out wearing what became of it rather than vanishing; and the
   shell learns of a delivery that failed, or was given up on, minutes later by reading the action
   log on its own tempo. Confirmations go on their own, failures hold until they are cleared, and
   every notice leads to where the whole of it can be read.
@@ -581,10 +581,23 @@ that is still on screen is said **at the control** — the composer keeps its mo
 a row keeps its own line — and the corner is for what has nowhere else to be said.
 
 **A routing says only what the record says.** A decision the pool recorded and delivered names
-where it landed; one it recorded and has not carried out reads as **deferred**, and claims no
-landing. The difference is not a nicety: a delivery is deferred exactly when the destination could
-not be reached, and the shell saying `routed` there would be inventing the one fact only the
-delivery can establish. What it landed as is said later, by the corner, when the pool writes it.
+where it landed; one it recorded and has not carried out reads as **retrying**, and claims no
+landing. The difference is not a nicety: a pending record is one whose delivery was attempted and
+did not go, and the shell saying `routed` there would be inventing the one fact only the delivery
+can establish. What it landed as is said later, by the corner, when the pool writes it.
+
+**A notice names the capture, not only the place** *(2026-09-03)*. Three lines: what happened and
+where, the path a copy went to, and — muted under both — the stamp the row was read by and the
+capture's own first words. A place and a path say where something went; only the excerpt says
+*what* went, and by the time a notice is read the row it names has left the register. Where the
+notice came from the log rather than from a gesture, the item is read for it, because the log names
+an id and nobody recognises a note by its id.
+
+This is the one place the shell's **copy is more than a word or a mark**. Everything else it says
+sits beside the thing it is about, and a notice does not: it is read on its own, about a row that
+has gone, possibly minutes later. `retrying · Vault` over `not delivered yet · notes/daily.md` is
+three facts a person can act on; `deferred` was one word nobody could act on, which is what the
+brevity cost here *(amended 2026-09-03, after reading it in use)*.
 
 **The row is watched out rather than vanishing.** A row that has been routed, marked done or
 archived holds its place for one beat wearing the word for what became of it, then goes. It is the

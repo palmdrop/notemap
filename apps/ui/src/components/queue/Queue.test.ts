@@ -470,7 +470,7 @@ test("a row that leaves the queue says where it went", async () => {
   await fireEvent.click(screen.getByRole("button", { name: "mark done" }));
 
   await vi.waitFor(() => {
-    expect(notices.shown.map((notice) => notice.what)).toContain("done");
+    expect(notices.shown.map((notice) => notice.what)).toContain("marked done");
   });
 });
 
@@ -546,4 +546,152 @@ test("a departing row cannot be opened or acted on", async () => {
   });
   expect(screen.queryByRole("button", { name: "route" })).toBeNull();
   expect(screen.getByText("one")).toBeDefined();
+});
+
+/**
+ * The place and the path say where a copy went; only the excerpt says which
+ * capture went, and the row it names has left the register by then.
+ */
+test("a routing says where it went, and which capture it was", async () => {
+  const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
+
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/queue") {
+      return json(200, {
+        values: [
+          anItem("one", {
+            payload: {
+              type: "text",
+              content: { text: "the picker needs a trail" },
+              metadata: {},
+              assets: [],
+            },
+          }),
+        ],
+      });
+    }
+    if (route === "GET /v1/destinations") {
+      return json(200, {
+        values: [
+          {
+            id: VAULT,
+            name: "Vault",
+            kind: "filesystem",
+            settings: {},
+            retired: false,
+          },
+        ],
+      });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, {
+        kind: "described",
+        capabilities: [{ name: "append", accepts: ["text"] }],
+      });
+    }
+    if (route === "POST /v1/items/one/route") {
+      return json(200, {
+        id: "r",
+        item: "one",
+        at: "2026-09-03T10:00:00.000Z",
+        state: "delivered",
+        pointer: "notes/inbox/picker.md",
+        target: {
+          kind: "destination",
+          destination: VAULT,
+          capability: "append",
+          arguments: {},
+        },
+      });
+    }
+    return json(200, { values: [] });
+  });
+
+  render(Queue);
+  await screen.findByText("the picker needs a trail");
+  await open(0);
+
+  await fireEvent.click(screen.getByRole("button", { name: "route" }));
+  await fireEvent.click(await screen.findByRole("button", { name: /Vault/ }));
+  await fireEvent.click(await screen.findByRole("button", { name: /append/ }));
+
+  // Two of them: the row's action, and the composer's commit over it.
+  const commit = screen.getAllByRole("button", { name: "route" }).at(-1);
+  await fireEvent.click(commit as HTMLElement);
+
+  await vi.waitFor(() => {
+    expect(notices.shown).toHaveLength(1);
+  });
+
+  const said = notices.shown[0];
+  expect(said?.what).toBe("routed · Vault");
+  expect(said?.why).toBe("notes/inbox/picker.md");
+  expect(said?.about).toContain("the picker needs a trail");
+  expect(said?.about).toMatch(/\d\d-\d\d \d\d:\d\d/);
+
+  // And the row is watched out of the register rather than vanishing under it.
+  expect(screen.getByText("routed")).toBeDefined();
+});
+
+/** Recorded and not delivered: it was tried, and it will be tried again. */
+test("a routing the pool has not carried out says it is retrying", async () => {
+  const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
+
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/queue")
+      return json(200, { values: [anItem("one")] });
+    if (route === "GET /v1/destinations") {
+      return json(200, {
+        values: [
+          {
+            id: VAULT,
+            name: "Vault",
+            kind: "filesystem",
+            settings: {},
+            retired: false,
+          },
+        ],
+      });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, {
+        kind: "described",
+        capabilities: [{ name: "append", accepts: ["text"] }],
+      });
+    }
+    if (route === "POST /v1/items/one/route") {
+      return json(200, {
+        id: "r",
+        item: "one",
+        at: "2026-09-03T10:00:00.000Z",
+        state: "pending",
+        target: {
+          kind: "destination",
+          destination: VAULT,
+          capability: "append",
+          arguments: { path: "notes/daily.md" },
+        },
+      });
+    }
+    return json(200, { values: [] });
+  });
+
+  render(Queue);
+  await screen.findByText("one");
+  await open(0);
+
+  await fireEvent.click(screen.getByRole("button", { name: "route" }));
+  await fireEvent.click(await screen.findByRole("button", { name: /Vault/ }));
+  await fireEvent.click(await screen.findByRole("button", { name: /append/ }));
+
+  // Two of them: the row's action, and the composer's commit over it.
+  const commit = screen.getAllByRole("button", { name: "route" }).at(-1);
+  await fireEvent.click(commit as HTMLElement);
+
+  await vi.waitFor(() => {
+    expect(notices.shown[0]?.what).toBe("retrying · Vault");
+  });
+  expect(notices.shown[0]?.why).toBe("not delivered yet · notes/daily.md");
 });

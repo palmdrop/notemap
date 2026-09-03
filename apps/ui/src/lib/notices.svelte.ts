@@ -13,6 +13,8 @@ export type Notice = {
   readonly id: string;
   readonly what: string;
   readonly why?: string;
+  /** Which capture it was about: its stamp and its own first words. */
+  readonly about?: string;
   /** Held until a person clears it: anything they may have to act on. */
   readonly standing?: boolean;
   /** Where to go and look. */

@@ -5,6 +5,7 @@
   import ActionRow from "$components/primitives/controls/ActionRow.svelte";
   import { client } from "$lib/client";
   import { nameOf } from "$lib/destinations";
+  import { aboutItem } from "$lib/excerpt";
   import { editable } from "$lib/lineage";
   import { notices } from "$lib/notices.svelte";
   import { saidOf } from "$lib/routing";
@@ -37,7 +38,7 @@
 
   function archive() {
     void client.archive(item.id);
-    notices.raise({ what: "archived" });
+    notices.raise({ what: "archived", about: aboutItem(item) });
     onwent?.("archived");
   }
 
@@ -45,7 +46,7 @@
     said = "marking…";
     try {
       const record = await client.routing.markProcessed(item.id);
-      notices.raise(saidOf(record, nameOf));
+      notices.raise(saidOf(record, nameOf, aboutItem(item)));
       onwent?.("done");
       said = "";
     } catch (error) {

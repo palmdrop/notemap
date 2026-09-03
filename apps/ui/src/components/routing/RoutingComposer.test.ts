@@ -947,7 +947,8 @@ const aTarget = {
   arguments: {},
 };
 
-test("a delivery that landed says where it went", async () => {
+/** The record goes up; what is said about it belongs to the surface below. */
+test("hands the record it got back to whoever opened it", async () => {
   routing({
     id: "r",
     item: "one",
@@ -957,39 +958,29 @@ test("a delivery that landed says where it went", async () => {
     target: aTarget,
   });
 
-  draw();
+  const routed = vi.fn();
+  const closed = vi.fn();
+  render(RoutingComposer, {
+    props: {
+      item: "one",
+      subject: "a note",
+      onrouted: routed,
+      onclose: closed,
+    },
+  } as never);
+
   await choose(/Vault/);
   await choose(/append/);
   await choose("route");
 
   await vi.waitFor(() => {
-    expect(notices.shown.map((notice) => notice.what)).toContain(
-      "routed · Vault",
-    );
+    expect(routed).toHaveBeenCalled();
   });
-  expect(notices.shown[0]?.why).toBe("notes/inbox/picker.md");
-});
-
-/** The record is made and the delivery is not; claiming otherwise would be a guess. */
-test("a delivery that has not gone yet is not called routed", async () => {
-  routing({
-    id: "r",
-    item: "one",
-    at: "2026-09-03T10:00:00.000Z",
-    state: "pending",
-    target: aTarget,
+  expect(routed.mock.calls[0]?.[0]).toMatchObject({
+    state: "delivered",
+    pointer: "notes/inbox/picker.md",
   });
-
-  draw();
-  await choose(/Vault/);
-  await choose(/append/);
-  await choose("route");
-
-  await vi.waitFor(() => {
-    expect(notices.shown.map((notice) => notice.what)).toContain(
-      "deferred · Vault",
-    );
-  });
+  expect(notices.shown).toHaveLength(0);
 });
 
 test("a refusal stays at the control, and the corner is left alone", async () => {

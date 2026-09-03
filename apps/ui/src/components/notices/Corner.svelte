@@ -7,20 +7,42 @@
   import Notice from "$components/primitives/alarm/Notice.svelte";
   import { client } from "$lib/client";
   import { nameOf } from "$lib/destinations";
+  import { aboutItem } from "$lib/excerpt";
   import { noticeOf } from "$lib/happened";
   import { notices } from "$lib/notices.svelte";
 
   const shown = $derived(notices.shown);
   const folded = $derived(notices.folded);
 
+  /**
+   * Which capture a log entry was about. The log names an id, and an id is the
+   * one thing nobody can recognise a note by — so the item is read for it. The
+   * notice is worth saying without one, which is why this cannot fail loudly.
+   */
+  async function whichCapture(item: string | undefined) {
+    if (item === undefined) return undefined;
+
+    try {
+      const { item: held } = await client.item(item);
+      return held === undefined ? undefined : aboutItem(held);
+    } catch {
+      return undefined;
+    }
+  }
+
   // What happened while nobody was asking. The corner is the only reader of it,
   // so the watcher is started by the thing that draws what it answers.
   onMount(() => {
     const held = client.actions.watch().subscribe((said) => {
-      for (const action of said.actions) {
-        const raised = noticeOf(action, { nameOf, about: aboutHref });
-        if (raised !== undefined) notices.raise(raised);
-      }
+      void (async () => {
+        for (const action of said.actions) {
+          const raised = noticeOf(action, { nameOf, about: aboutHref });
+          if (raised === undefined) continue;
+
+          const about = await whichCapture(action.subject);
+          notices.raise(about === undefined ? raised : { ...raised, about });
+        }
+      })();
 
       if (said.more) {
         notices.raise({
@@ -50,6 +72,7 @@
     <Notice
       what={notice.what}
       why={notice.why}
+      about={notice.about}
       href={notice.href}
       standing={notice.standing === true}
       ondismiss={notice.standing === true

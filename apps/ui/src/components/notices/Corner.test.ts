@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
 
-import { json, refusal, routeOf } from "@notemap/client/testing";
+import { anItem, json, refusal, routeOf } from "@notemap/client/testing";
 
 import { client, pool } from "$testing/pool";
 import { notices } from "$lib/notices.svelte";
@@ -31,6 +31,17 @@ test("says what happened, and lets a standing one be dismissed", async () => {
   await vi.waitFor(() => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
+});
+
+/** The shell hovers to the accent everywhere else, which on an accent panel is gone. */
+test("keeps its controls readable on a filled panel", async () => {
+  pool(() => json(200, { values: [] }));
+  render(Corner);
+
+  notices.raise({ what: "given up", href: "/log", standing: true });
+
+  const panel = await screen.findByRole("alert");
+  expect(panel.className).toContain("filled");
 });
 
 test("a notice about something leads to where it can be read", async () => {
@@ -79,11 +90,26 @@ test("says what happened while nobody was asking", async () => {
   vi.useFakeTimers();
   let happened = [anAction("1", "captured", {})];
 
-  pool((request) =>
-    routeOf(request).startsWith("GET /v1/actions")
-      ? json(200, { values: happened })
-      : json(200, { values: [] }),
-  );
+  pool((request) => {
+    const route = routeOf(request);
+    if (route.startsWith("GET /v1/actions")) {
+      return json(200, { values: happened });
+    }
+    if (route === "GET /v1/items/one") {
+      return json(
+        200,
+        anItem("one", {
+          payload: {
+            type: "text",
+            content: { text: "the picker needs a trail" },
+            metadata: {},
+            assets: [],
+          },
+        }),
+      );
+    }
+    return json(200, { values: [] });
+  });
 
   render(Corner);
 
@@ -102,9 +128,16 @@ test("says what happened while nobody was asking", async () => {
 
   await vi.advanceTimersByTimeAsync(10_000);
 
-  const said = screen.getByRole("alert");
+  const said = await screen.findByRole("alert");
   expect(said.textContent).toContain("delivery failed");
   expect(said.textContent).toContain("the vault is not mounted");
+
+  // Which capture it was about: the log names an id, and nobody reads ids.
+  await vi.waitFor(() => {
+    expect(screen.getByRole("alert").textContent).toContain(
+      "the picker needs a trail",
+    );
+  });
 
   // And a way through to the whole of it, which is the log narrowed to the item.
   expect(screen.getByRole("link", { name: "look" }).getAttribute("href")).toBe(

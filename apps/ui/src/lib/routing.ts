@@ -30,21 +30,55 @@ export function whereItWent(
  * `pending` has been recorded and not delivered, and saying otherwise would be
  * the shell claiming something only the delivery can know.
  */
+/**
+ * Where a delivery put a copy, in the words a person could go and look with:
+ * the pointer the destination handed back, or failing that the place the
+ * decision named.
+ */
+function placeIn(record: RoutingRecord): string | undefined {
+  if (record.pointer !== undefined) return record.pointer;
+  if (record.target.kind !== "destination") return undefined;
+
+  const said = Object.values(record.target.arguments)
+    .filter((value): value is string => typeof value === "string")
+    .filter((value) => value !== "");
+
+  return said.length === 0 ? undefined : said.join(" · ");
+}
+
+/**
+ * What a decision just made says about itself. A record the pool answered as
+ * `pending` was attempted and did not go, so it reads as **retrying** — saying
+ * it was routed would be the shell claiming the one thing only the delivery
+ * can establish.
+ */
 export function saidOf(
   record: RoutingRecord,
   nameOf: (destination: string) => string,
+  about?: string,
 ): Raised {
+  const where = about === undefined ? {} : { about };
+
   if (record.target.kind !== "destination") {
-    return { what: "done", key: `record:${record.id}` };
+    return { what: "marked done", ...where, key: `record:${record.id}` };
   }
 
   const name = nameOf(record.target.destination);
+  const place = placeIn(record);
 
   return record.state === "delivered"
     ? {
         what: `routed · ${name}`,
-        ...(record.pointer === undefined ? {} : { why: record.pointer }),
+        ...(place === undefined ? {} : { why: place }),
+        ...where,
         key: `record:${record.id}`,
       }
-    : { what: `deferred · ${name}`, why: "not delivered yet" };
+    : {
+        what: `retrying · ${name}`,
+        why:
+          place === undefined
+            ? "not delivered yet"
+            : `not delivered yet · ${place}`,
+        ...where,
+      };
 }

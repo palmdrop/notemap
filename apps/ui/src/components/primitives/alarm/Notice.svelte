@@ -6,12 +6,14 @@
   let {
     what,
     why,
+    about,
     href,
     standing = false,
     ondismiss,
   }: {
     what: string;
     why?: string;
+    about?: string;
     href?: string;
     standing?: boolean;
     ondismiss?: () => void;
@@ -20,14 +22,16 @@
 
 <div
   role={standing ? "alert" : "status"}
-  class="grid gap-1.5 px-3 py-2.5 text-paper {standing
-    ? 'bg-accent'
-    : 'bg-ink'}"
+  class="grid gap-1.5 px-3 py-2.5 filled {standing ? 'bg-accent' : 'bg-ink'}"
 >
   <span class="break-words">{what}</span>
 
   {#if why !== undefined}
     <span class="break-words">{why}</span>
+  {/if}
+
+  {#if about !== undefined}
+    <span class="break-words opacity-70">{about}</span>
   {/if}
 
   {#if href !== undefined || ondismiss !== undefined}
