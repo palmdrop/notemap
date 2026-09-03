@@ -1,7 +1,7 @@
 # Review: An item has an address, and a record can be read
 
 **Date**: 2026-09-03
-**Status**: Open <!-- Open | Partially addressed | Resolved -->
+**Status**: Resolved <!-- Open | Partially addressed | Resolved -->
 **Scope**: PR #41 — `origin/main...agent/item-route-and-record-view`
 **Plan**: `docs/plans/item-route-and-record-view.md`
 **Spec**: `docs/specs/shell.md`, `docs/specs/client.md`
@@ -192,8 +192,65 @@ though one of them is guarding a third state.
 
 ## Resolution
 
-<!--
-Add once findings are addressed, and flip **Status** above. One numbered entry per finding,
-mirroring its number. Mark each: Fixed / Mitigated / Won't fix (reason).
-Until this section exists and **Status** is updated, the findings count as open.
--->
+Reconciled with the review on [#41](https://github.com/palmdrop/notemap/pull/41)
+on 2026-09-03. Findings 10–13 are the second reviewer's and are numbered on from
+this file's own; every row was settled before anything was implemented.
+
+1. **Fixed.** `recordsOf` (`apps/ui/src/lib/records.svelte.ts`) swallows
+   `Unreachable` and carries back only a refusal, and clears it per attempt. The
+   read failure no longer reaches `Actions`, which now reports only what it did —
+   its `said` prop is gone. Regression test: the offline item surface holds no
+   `role="status"` node at all.
+2. **Fixed.** The one reader empties on a change of item and guards what lands
+   against what is still wanted. Regression test rerenders `Item` from a routed
+   item to an unrouted one and asserts the record link is gone.
+3. **Fixed.** `shell.md`'s row section is amended in place rather than left
+   asserting there is no item surface.
+4. **Fixed.** `described` is cleared when the target changes and the answer is
+   guarded on resolve, like the two effects above it.
+5. **Fixed.** A disabled `Action` with an `href` renders a muted
+   `aria-disabled` span — there is no anchor to disable, since a disabled one
+   still navigates.
+6. **Fixed.** The literal `item` is gone; the rail is simply empty where the
+   read failed.
+7. **Fixed.** Two tests in `cache.test.ts`: `held` follows an optimistic archive,
+   and answers `undefined` for an id no read has drawn.
+8. **Fixed.** A `user` record with no note draws the `note` heading with `none`
+   beneath it, as an empty argument set does.
+9. **Fixed.** Both surfaces spell it `!pool.yes`, through the shared reader.
+10. **Fixed.** `Facts` owns the two columns and each `Fact` is `display: contents`,
+    so a block's labels share one width and the longest widens it instead of
+    running under its value. The two labels that overflowed are also gone:
+    `destination` is now `where`, and `capability` is not a label at all.
+11. **Fixed.** The id and the source leave the item surface and the opened queue
+    row; the record view drops its own id. `shell.md`'s list of the opened row's
+    facts is amended in the same change. A record's link to its item is labelled
+    by the item's own words, falling back to `this item` rather than a UUID.
+12. **Fixed, and narrower than asked.** The label is not `action`:
+    [CONTEXT.md](../../CONTEXT.md) defines **Action** as an entry in the pool's
+    log and lists `action` among the words a **Capability** must not borrow. The
+    field is drawn without a label instead — a sentence saying what happened,
+    which is what the request was for. `Created a note`, `Appended to a note`,
+    `Created or appended to a note`.
+
+    **Not delivered: the act, as distinct from the promise.**
+    `DeliveryOutcome` is `{ kind: "delivered"; pointer?: string }`
+    (`packages/core/src/types/domain/routing.ts:58`), so nothing anywhere records
+    whether `create-or-append-file` created or appended. The sentence names both
+    because both are true until the adapter reaches the vault. Saying which would
+    need the adapter to report the act and that to survive into the record, the
+    wire and the client. [ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md)
+    assigns this view exactly that job, so the gap is real and is left open
+    deliberately; the durable home for the readable phrase is likely a `title` on
+    `Capability`, answered by the adapter rather than mapped in the shell.
+13. **Fixed, and swept.** `href.ts` builds addresses with `resolve()` from
+    `$app/paths`, typed against the route tree `svelte-kit sync` generates — a
+    misspelt path or a wrong param name fails `svelte-check`, which
+    `pnpm -r typecheck` runs. Every other constructed address in the shell went
+    the same way, and `Order` keys its map by route id. `/docs` stays a literal:
+    the daemon serves it, and it is not a route of this shell, which the type
+    error proves rather than a comment claiming it.
+
+    Not converted: `Nav` takes addresses rather than route ids. `resolve()`
+    refuses an open `RouteId` because a parameterised route needs its params, so
+    the resolving belongs at the call site holding the literal.
