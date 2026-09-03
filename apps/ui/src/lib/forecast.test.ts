@@ -71,6 +71,25 @@ describe("what committing the line would do", () => {
     );
   });
 
+  /** A listing still in flight is not evidence that a folder is missing. */
+  test("says nothing at all where a level along the path never answered", () => {
+    const partial: Level[] = [VAULT[0] as Level, { scope: "projects" }];
+
+    expect(forecastOf(partial, "projects/notemap/decisions.md", SAID)).toBe(
+      undefined,
+    );
+    expect(forecastOf([VAULT[0] as Level], "projects/x.md", SAID)).toBe(
+      undefined,
+    );
+  });
+
+  /** Nothing under a folder that is not there is there either. */
+  test("names every folder past the first one that is missing", () => {
+    expect(
+      forecastOf(VAULT, "projects/nope/deeper/a.md", SAID)?.making,
+    ).toEqual(["nope", "deeper"]);
+  });
+
   test("makes nothing where every folder along the path is there", () => {
     expect(
       forecastOf(VAULT, "projects/notemap/picker.md", SAID)?.making,

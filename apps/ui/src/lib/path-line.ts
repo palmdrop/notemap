@@ -80,6 +80,8 @@ export type Row = {
   readonly onPath: boolean;
   /** In the deepest answered scope, which is the level `↑↓` moves through. */
   readonly here: boolean;
+  /** Not there yet: typed, and about to be made by the delivery. Never takeable. */
+  readonly made?: boolean;
 };
 
 /**
@@ -114,6 +116,36 @@ export function rowsOf(
 
   walk(0);
   return rows;
+}
+
+/**
+ * The tail of the typed path that is not there yet, drawn where it will be
+ * rather than named off to one side: the folders still to be made, indented
+ * under the deepest one that exists, and the note itself under those. It is
+ * what the design draws with a `+`, and it is the same forecast the status word
+ * is read from — this only puts it where the eye already is.
+ */
+export function pending(
+  path: TypedPath,
+  making: readonly string[],
+  leaf: string,
+): readonly Row[] {
+  const from = path.complete.length - making.length;
+  const settled = path.complete.slice(0, from);
+
+  return [...making, leaf].map((label, at) => {
+    const folder = at < making.length;
+    // The scope it would have, so it reads as a folder and indents like one.
+    const scope = [...settled, ...making.slice(0, at + 1)].join("/");
+
+    return {
+      entry: folder ? { label, scope } : { label },
+      depth: from + at,
+      onPath: folder,
+      here: false,
+      made: true,
+    };
+  });
 }
 
 /** The rows `↑↓` moves through: the deepest level's, which the typed text filters. */
@@ -248,16 +280,28 @@ export function ghostFor(
   value: string,
   places: readonly Remembered[],
 ): string | undefined {
+  return continuationOf(value, places)?.slice(value.length);
+}
+
+/**
+ * The whole line `→` leaves behind. **Case-sensitively**, unlike the list
+ * beneath it: the ghost is drawn as the text still to come, so a prefix that
+ * only matches when case is ignored would draw `Projects/` over a `projects/`
+ * that is what taking it would write. The list stays case-insensitive, where
+ * `↑↓` reaches the place and replaces the line outright.
+ */
+export function continuationOf(
+  value: string,
+  places: readonly Remembered[],
+): string | undefined {
   if (value === "") return undefined;
 
-  const best = ranked(places).find(
+  return ranked(places).find(
     (place) =>
       !place.gone &&
       place.value.length > value.length &&
-      place.value.toLowerCase().startsWith(value.toLowerCase()),
-  );
-
-  return best === undefined ? undefined : best.value.slice(value.length);
+      place.value.startsWith(value),
+  )?.value;
 }
 
 /** Remembered places the whole typed line is still a prefix of. */

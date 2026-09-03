@@ -10,6 +10,7 @@
   import Action from "$components/primitives/controls/Action.svelte";
   import Commit from "$components/primitives/composer/Commit.svelte";
   import Group from "$components/primitives/composer/Group.svelte";
+  import Labelled from "$components/primitives/composer/Labelled.svelte";
   import Modal from "$components/primitives/composer/Modal.svelte";
   import Option from "$components/primitives/composer/Option.svelte";
   import { placeOf } from "@notemap/output-markdown/naming";
@@ -219,11 +220,10 @@
     </Group>
   {/if}
 
+  <!-- A field's own `description` is a sentence, and the composer's copy is a
+       word or a mark. What a field means is the label and the control. -->
   {#each fields as field (field.name)}
-    <Group name={field.title ?? field.name}>
-      {#if field.description !== undefined}
-        <p class="mb-1 text-ink-muted">{field.description}</p>
-      {/if}
+    {#snippet control()}
       {#if field.askable && chosen !== undefined && capability !== undefined && destinationKind !== undefined}
         {@const Browser = browserFor(destinationKind)}
         <Browser
@@ -242,10 +242,23 @@
           bind:value={args[field.name]}
           placeholder={field.required ? "required" : "optional"}
           aria-label={field.title ?? field.name}
-          class="mt-1.5 w-full border-b border-ink bg-transparent font-mono placeholder:text-ink-muted"
+          class="w-full border-b border-ink bg-transparent font-mono placeholder:text-ink-muted"
         />
       {/if}
-    </Group>
+    {/snippet}
+
+    {#if settles}
+      <!-- Where the line draws the place, nothing here is a step: the line is
+           the decision and what sits beside it is a terse row, as `tags` is. -->
+      {#if field.name === LINE_FIELD}
+        <div class="mt-4">{@render control()}</div>
+      {:else}
+        <Labelled name={field.title ?? field.name}>{@render control()}</Labelled
+        >
+      {/if}
+    {:else}
+      <Group name={field.title ?? field.name}>{@render control()}</Group>
+    {/if}
   {/each}
 
   <ComposerTags {item} names={tags} />

@@ -82,7 +82,7 @@ function createOrAppendFileArguments(browsable: boolean): JsonSchema {
     properties: {
       path: {
         type: "string",
-        title: "Where",
+        title: "place",
         description:
           "The note, relative to the vault's root. Ending in `/` names a folder, and the filename is derived.",
         ...(browsable ? { "x-notemap-candidates": true } : {}),
@@ -90,7 +90,7 @@ function createOrAppendFileArguments(browsable: boolean): JsonSchema {
       heading: {
         type: "string",
         minLength: 1,
-        title: "Heading",
+        title: "under",
         description:
           "The heading to append under, where the note is already there. Left blank, the item is appended at the end of it.",
       },

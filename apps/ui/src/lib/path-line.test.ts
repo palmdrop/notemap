@@ -9,6 +9,7 @@ import {
   ranked,
   matching,
   parsePath,
+  pending,
   popped,
   reachable,
   rowsOf,
@@ -242,6 +243,37 @@ describe("the hierarchy as it is drawn", () => {
   });
 });
 
+describe("the path that is not there yet", () => {
+  test("draws the folders to be made under the deepest one that is", () => {
+    const path = parsePath("projects/notemap/drafts/deep/picker.md");
+
+    expect(
+      pending(path, ["drafts", "deep"], "picker.md").map((row) => [
+        row.entry.label,
+        row.depth,
+        row.made,
+      ]),
+    ).toEqual([
+      ["drafts", 2, true],
+      ["deep", 3, true],
+      ["picker.md", 4, true],
+    ]);
+  });
+
+  test("draws the note alone where every folder along the path is there", () => {
+    expect(
+      pending(parsePath("projects/a.md"), [], "a.md").map((row) => row.depth),
+    ).toEqual([1]);
+  });
+
+  /** They are not entries the destination offered, so nothing may land on one. */
+  test("puts none of them where the arrow keys reach", () => {
+    const rows = pending(parsePath("drafts/a.md"), ["drafts"], "a.md");
+
+    expect(reachable(rows)).toEqual([]);
+  });
+});
+
 describe("places used before", () => {
   const place = (value: string, uses: number, lastAt: string) => ({
     value,
@@ -358,6 +390,19 @@ describe("places used before", () => {
     expect(ghostFor("dra", places)).toBeUndefined();
     expect(continuing("dra", places).map((each) => each.value)).toEqual([
       "drafts/deep/",
+    ]);
+  });
+
+  /** The ghost is drawn as the text to come, so it may not correct what is there. */
+  test("offers no continuation where only ignoring case would match", () => {
+    const places = marked(
+      [place("projects/notes/", 4, "2026-09-01T10:00:00.000Z")],
+      [],
+    );
+
+    expect(ghostFor("Proj", places)).toBeUndefined();
+    expect(continuing("Proj", places).map((each) => each.value)).toEqual([
+      "projects/notes/",
     ]);
   });
 

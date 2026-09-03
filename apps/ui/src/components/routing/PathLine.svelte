@@ -12,10 +12,12 @@
   import { whenOf } from "$lib/when";
   import {
     completionOf,
+    continuationOf,
     continuing,
     ghostFor,
     marked,
     parsePath,
+    pending,
     popped,
     reachable,
     rowsOf,
@@ -71,6 +73,19 @@
   /** Whether `↑↓` has been used since the list last changed, which is what makes `⏎` mean *take this one*. */
   let moved = $state(false);
   let input = $state<HTMLInputElement | undefined>(undefined);
+  let shown = $state<HTMLElement | undefined>(undefined);
+
+  /**
+   * The input's own text is transparent and the layer beneath is what is read,
+   * so a line longer than the box has to be scrolled by the same amount or the
+   * caret sits over the wrong character. Deep paths are what this control is
+   * for, so this is not a rare state.
+   */
+  function follow(): void {
+    if (shown !== undefined && input !== undefined) {
+      shown.scrollLeft = input.scrollLeft;
+    }
+  }
 
   const path = $derived(parsePath(value));
   const rows = $derived(rowsOf(levels, path));
@@ -110,9 +125,20 @@
     said === undefined ? undefined : forecastOf(levels, value, said),
   );
 
-  export function focus(): void {
-    input?.focus();
-  }
+  /**
+   * The typed tail that is not there yet, drawn under the deepest folder that
+   * is rather than named off beside the word. Only where there is a forecast:
+   * with nothing answered there is nothing to say is missing.
+   */
+  const drawn = $derived(
+    forecast === undefined
+      ? rows
+      : [...rows, ...pending(path, forecast.making, forecast.leaf)],
+  );
+
+  // The place is what a composer with a destination in its chrome is for, so
+  // the caret is here rather than waiting to be clicked into.
+  $effect(() => input?.focus());
 
   // Every answer but the newest is dropped: typing a segment leaves several
   // rounds of asks in flight, and without this a slower one paints the entries
@@ -242,8 +268,10 @@
       ghost !== undefined &&
       input?.selectionStart === value.length
     ) {
+      const whole = continuationOf(value, checked);
+      if (whole === undefined) return;
       event.preventDefault();
-      onchange(value + ghost);
+      onchange(whole);
       return;
     }
 
@@ -262,8 +290,10 @@
 
     if (event.key === "Enter") {
       event.preventDefault();
+      // Nothing is taken, so there is nothing to make a new one beside: what
+      // `create-or-append-file` will do is already make it.
       if (event.shiftKey) {
-        if (forecast?.beside !== undefined) onsubmit?.(forecast.beside);
+        onsubmit?.(forecast?.beside);
         return;
       }
 
@@ -299,6 +329,7 @@
          settled part of the path and the one being typed can be drawn
          differently. Alignment is exact: one monospace face, one size. -->
     <div
+      bind:this={shown}
       aria-hidden="true"
       class="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre"
     >
@@ -312,7 +343,13 @@
     <input
       bind:this={input}
       {value}
-      oninput={(event) => onchange(event.currentTarget.value)}
+      oninput={(event) => {
+        onchange(event.currentTarget.value);
+        follow();
+      }}
+      onscroll={follow}
+      onkeyup={follow}
+      onclick={follow}
       {onkeydown}
       spellcheck="false"
       autocapitalize="off"
@@ -332,16 +369,15 @@
   {#if refusal !== undefined}
     <p class="mt-2 text-ink-muted" title={why}>{refusal}</p>
   {:else if forecast !== undefined}
-    <div class="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+    <!-- The folders to be made are drawn in the tree below, where they will
+         be, rather than listed here beside the word. -->
+    <div class="mt-2 flex items-baseline gap-x-3">
       <StateWord word={forecast.word} inline />
-      {#each forecast.making as folder (folder)}
-        <span class="text-accent">+ {folder}/</span>
-      {/each}
+      {#if forecast.derived}
+        <span class="truncate text-ink-muted">derived · {forecast.leaf}</span>
+      {/if}
       {#if goneHere}
         <StateWord word="gone" inline />
-      {/if}
-      {#if forecast.derived}
-        <span class="text-ink-muted">derived · {forecast.leaf}</span>
       {/if}
       {#if forecast.beside !== undefined}
         <!-- Beside the state it overrides rather than in the key hints:
@@ -349,7 +385,7 @@
              place *nothing to choose* can surprise. -->
         <button
           type="button"
-          class="ml-auto text-ink-muted hover:text-accent"
+          class="ml-auto shrink-0 text-ink-muted hover:text-accent"
           onmousedown={(event) => {
             event.preventDefault();
             onsubmit?.(forecast.beside);
@@ -387,11 +423,11 @@
       </div>
     {/each}
 
-    {#if remembered.length > 0 && rows.length > 0}
-      <hr class="my-1.5 border-ink-muted" />
+    {#if remembered.length > 0 && drawn.length > 0}
+      <div role="separator" class="my-1.5 border-t border-ink-muted"></div>
     {/if}
 
-    {#each rows as row (`${row.depth}:${row.entry.scope ?? String(row.entry.value)}`)}
+    {#each drawn as row (`${row.depth}:${row.made === true ? "+" : ""}${row.entry.label}`)}
       {@const chosen =
         moved &&
         row.here &&
@@ -402,21 +438,24 @@
         role="option"
         tabindex="-1"
         aria-selected={chosen}
+        aria-disabled={row.made === true ? "true" : undefined}
         style="padding-left: {row.depth * 1.1}rem"
-        class="cursor-default {row.onPath || chosen
-          ? 'text-ink'
-          : 'text-ink-muted'} {chosen ? 'inverted' : ''}"
+        class="cursor-default {row.made === true
+          ? 'text-accent'
+          : row.onPath || chosen
+            ? 'text-ink'
+            : 'text-ink-muted'} {chosen ? 'inverted' : ''}"
         onmousedown={(event) => {
           event.preventDefault();
-          take(row.entry);
+          if (row.made !== true) take(row.entry);
         }}
       >
-        {textOf(row.entry)}
+        {row.made === true ? `+ ${textOf(row.entry)}` : textOf(row.entry)}
       </div>
     {/each}
-
-    {#if deepest?.truncated === true}
-      <p class="mt-1 text-ink-muted">more than this shows</p>
-    {/if}
   </div>
+
+  {#if deepest?.truncated === true}
+    <p class="mt-1 text-ink-muted">more than this shows</p>
+  {/if}
 </div>

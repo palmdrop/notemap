@@ -39,14 +39,25 @@ const CREATE_FILE_ASKABLE = {
 
 const APPEND = { name: "append", accepts: ["text"] };
 
+/** As the adapter declares it, titles and sentences and all. */
 const CREATE_OR_APPEND = {
   name: "create-or-append-file",
   accepts: ["text"],
   argumentsSchema: {
     type: "object",
     properties: {
-      path: { type: "string", "x-notemap-candidates": true },
-      heading: { type: "string" },
+      path: {
+        type: "string",
+        title: "place",
+        description:
+          "The note, relative to the vault's root. Ending in `/` names a folder, and the filename is derived.",
+        "x-notemap-candidates": true,
+      },
+      heading: {
+        type: "string",
+        title: "under",
+        description: "The heading to append under.",
+      },
     },
   },
 };
@@ -697,7 +708,7 @@ test("backspacing out of an empty line gives the destination back", async () => 
   drawAbout({ text: "a thought" });
   await choose(/Vault/);
 
-  const line = await screen.findByRole("combobox", { name: "path" });
+  const line = await screen.findByRole("combobox", { name: "place" });
   await fireEvent.keyDown(line, { key: "Backspace" });
 
   await vi.waitFor(() => {
@@ -769,7 +780,7 @@ test("an unreachable destination is still routable", async () => {
   const closed = drawAbout({ text: "a thought" });
   await choose(/Vault/);
 
-  const line = await screen.findByRole("combobox", { name: "path" });
+  const line = await screen.findByRole("combobox", { name: "place" });
   await fireEvent.input(line, { target: { value: "notes/decisions.md" } });
   await screen.findByText("unreachable · best effort");
 
@@ -812,7 +823,7 @@ test("the kind that draws the line settles what to do, with no do step", async (
   drawAbout({ text: "a thought" });
   await choose(/Vault/);
 
-  expect(await screen.findByRole("combobox", { name: "path" })).toBeDefined();
+  expect(await screen.findByRole("combobox", { name: "place" })).toBeDefined();
   expect(
     screen.queryByRole("button", { name: "create-or-append-file" }),
   ).toBeNull();
@@ -832,4 +843,79 @@ test("a kind that draws the browser still chooses what to do", async () => {
   expect(
     await screen.findByRole("button", { name: "create-file" }),
   ).toBeDefined();
+});
+
+/** A composer you type into has to be one the caret is already in. */
+test("the destination line has the caret when the composer opens", async () => {
+  servingVault([]);
+  drawAbout({ text: "a note" });
+
+  const line = await screen.findByRole("combobox", {
+    name: "which destination",
+  });
+  expect(document.activeElement).toBe(line);
+});
+
+test("the place line takes the caret when a destination is taken", async () => {
+  servingVault([{ label: "notes", scope: "notes" }]);
+  drawAbout({ text: "a note" });
+
+  await choose(/Vault/);
+
+  const place = await screen.findByRole("combobox", { name: "place" });
+  expect(document.activeElement).toBe(place);
+});
+
+test("the destination line takes it back when the place is released", async () => {
+  servingVault([]);
+  drawAbout({ text: "a note" });
+
+  await choose(/Vault/);
+  const place = await screen.findByRole("combobox", { name: "place" });
+  await fireEvent.keyDown(place, { key: "Backspace" });
+
+  const line = await screen.findByRole("combobox", {
+    name: "which destination",
+  });
+  expect(document.activeElement).toBe(line);
+});
+
+/** The whole list is drawn below it already; narrowing nothing is not a choice. */
+test("does not say the destination list twice before one is typed", async () => {
+  servingVault([]);
+  drawAbout({ text: "a note" });
+
+  await screen.findByRole("button", { name: "Vault" });
+  expect(screen.getAllByText("Vault")).toHaveLength(1);
+});
+
+test("says it once narrowed, and once in the list, when typing narrows", async () => {
+  servingVault([]);
+  drawAbout({ text: "a note" });
+
+  await screen.findByRole("button", { name: "Vault" });
+  const line = screen.getByRole("combobox", { name: "which destination" });
+  await fireEvent.input(line, { target: { value: "Va" } });
+
+  expect(screen.getAllByText("Vault")).toHaveLength(2);
+});
+
+/** A sentence out of a schema is not the composer's voice. */
+test("draws no field description", async () => {
+  servingVault([]);
+  drawAbout({ text: "a note" });
+  await choose(/Vault/);
+
+  await screen.findByRole("combobox", { name: "place" });
+  expect(screen.queryByText(/relative to the vault/)).toBeNull();
+});
+
+/** `where` is the destination's own label, one step above. */
+test("does not label the place with the destination step's word", async () => {
+  servingVault([]);
+  drawAbout({ text: "a note" });
+  await choose(/Vault/);
+
+  await screen.findByRole("combobox", { name: "place" });
+  expect(screen.queryByRole("combobox", { name: "Where" })).toBeNull();
 });

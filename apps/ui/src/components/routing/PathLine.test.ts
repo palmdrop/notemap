@@ -305,12 +305,24 @@ test("says append for a name it does", async () => {
   expect(await screen.findByText("append")).toBeDefined();
 });
 
-test("names the folders it will make, in the accent", async () => {
+/** In the tree, where they will be, rather than named off beside the word. */
+test("draws the folders it will make under the deepest one that is there", async () => {
   servingFolder([]);
   draw("drafts/deep/picker.md", SAID);
 
   expect(await screen.findByText("+ drafts/")).toBeDefined();
   expect(screen.getByText("+ deep/")).toBeDefined();
+  expect(screen.getByText("+ picker.md")).toBeDefined();
+
+  const made = screen.getByText("+ drafts/");
+  expect(made.getAttribute("aria-disabled")).toBe("true");
+});
+
+test("draws the note itself under the folder that already holds it", async () => {
+  servingFolder([folder("drafts", "drafts")]);
+  draw("picker.md", SAID);
+
+  expect(await screen.findByText("+ picker.md")).toBeDefined();
 });
 
 test("shows the name a blank leaf would get rather than a gap", async () => {
@@ -333,15 +345,19 @@ test("offers a free name beside one that is taken, and shift-enter takes it", as
   expect(line.submitted).toHaveBeenCalledWith("decisions-1.md");
 });
 
-/** Nothing is being overridden, so there is nothing for the key to mean. */
-test("shift-enter does nothing where the name is free", async () => {
+/**
+ * Nothing is taken, so there is nothing to make a new one beside — and making
+ * one is what routing already does. Swallowing the key would leave a keystroke
+ * that does nothing at all.
+ */
+test("shift-enter routes where the name is free", async () => {
   servingFolder([]);
   const line = draw("picker.md", SAID);
 
   await screen.findByText("create");
   await fireEvent.keyDown(line.line(), { key: "Enter", shiftKey: true });
 
-  expect(line.submitted).not.toHaveBeenCalled();
+  expect(line.submitted).toHaveBeenCalledWith(undefined);
 });
 
 test("draws no word at all where the destination could not be asked", async () => {

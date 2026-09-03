@@ -13,7 +13,7 @@ export type Forecast = {
   readonly leaf: string;
   /** Whether that name came from the item rather than from the line. */
   readonly derived: boolean;
-  /** Folders along the path that are not there, outermost first. */
+  /** Folders along the path that are not there, outermost first. Every one past the first, since nothing under an absent folder is there either. */
   readonly making: readonly string[];
   /**
    * A free name beside the one that is taken, for the person who meant a new
@@ -29,8 +29,9 @@ export type Said = {
 };
 
 /**
- * Absent where the destination never answered: with nothing to look at there is
- * nothing to forecast, and a word guessed from no evidence is worse than none.
+ * Absent where the destination never answered, or answered only as far as a
+ * folder above the one being typed: with nothing to look at there is nothing to
+ * forecast, and a word guessed from no evidence is worse than none.
  */
 export function forecastOf(
   levels: readonly Level[],
@@ -43,16 +44,25 @@ export function forecastOf(
   const segments = place.directory === "" ? [] : place.directory.split("/");
   const leaf = place.filename ?? filenameFrom(said.content, said.item);
 
-  const making = segments.filter(
-    (segment, depth) =>
-      !(levels[depth]?.entries ?? []).some(
-        (entry) => isFolder(entry) && entry.label === segment,
-      ),
-  );
+  // A level that never answered is no evidence either way, and past the first
+  // of those there is nothing to say about anything deeper: claiming a folder
+  // will be made because the listing has not arrived is a claim on no evidence.
+  const making: string[] = [];
+  for (const [depth, segment] of segments.entries()) {
+    const entries = levels[depth]?.entries;
+    if (entries === undefined) return undefined;
+    if (!entries.some((entry) => isFolder(entry) && entry.label === segment)) {
+      making.push(...segments.slice(depth));
+      break;
+    }
+  }
 
   // The folder the note lands in is the level past the last segment, which is
-  // the one `scopesAlong` asked about last.
+  // the one `scopesAlong` asked about last. A folder that is there but has not
+  // said what it holds cannot settle the word either.
   const holding = making.length > 0 ? undefined : levels[segments.length];
+  if (making.length === 0 && holding?.entries === undefined) return undefined;
+
   const taken = (holding?.entries ?? []).filter((entry) => !isFolder(entry));
   const there = taken.some((entry) => entry.label === leaf);
 

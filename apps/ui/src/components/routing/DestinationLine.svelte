@@ -23,6 +23,11 @@
   } = $props();
 
   let typed = $state("");
+  let input = $state<HTMLInputElement | undefined>(undefined);
+
+  // The first step of a composer you type is this line, so it takes the caret
+  // rather than waiting to be clicked into.
+  $effect(() => input?.focus());
 
   const takeable = $derived(
     destinations.filter(
@@ -41,6 +46,12 @@
     typed.trim() !== "" && matching.length === 1 ? matching[0] : undefined,
   );
 
+  /**
+   * Nothing typed narrows nothing, and the whole list is already drawn beneath
+   * this — twice over is not a choice, it is the same list said again.
+   */
+  const narrowed = $derived(typed.trim() === "" ? [] : matching);
+
   function take(): void {
     if (only !== undefined) ontake(only.id);
   }
@@ -55,6 +66,7 @@
 
 <div class="font-mono">
   <input
+    bind:this={input}
     bind:value={typed}
     {onkeydown}
     spellcheck="false"
@@ -63,7 +75,7 @@
     aria-label="which destination"
     role="combobox"
     aria-autocomplete="list"
-    aria-expanded={matching.length > 0}
+    aria-expanded={narrowed.length > 0}
     aria-controls="destination-line-matches"
     class="w-full border-b border-ink bg-transparent outline-none"
   />
@@ -74,14 +86,14 @@
     aria-label="destinations"
     class="mt-2"
   >
-    {#each matching as one (one.id)}
+    {#each narrowed as one (one.id)}
       <div role="option" tabindex="-1" aria-selected={only?.id === one.id}>
         {one.name}
       </div>
     {/each}
 
-    {#if typed.trim() !== "" && matching.length > 1}
-      <p class="mt-1 text-ink-muted">{matching.length} match</p>
+    {#if narrowed.length > 1}
+      <p class="mt-1 text-ink-muted">{narrowed.length} match</p>
     {/if}
   </div>
 </div>
