@@ -1,9 +1,9 @@
 # An item has an address, and a record can be read
 
 **Date**: 2026-08-30
-**Status**: In progress <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/shell.md`, `docs/specs/client.md`
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-09-03
 
 ---
 
@@ -104,25 +104,27 @@ Depends on phase 1.
 
 Depends on phases 1–3.
 
-- [ ] `shell.md` gains the item surface and the record view: what each says, what an address costs,
+- [x] `shell.md` gains the item surface and the record view: what each says, what an address costs,
       and that the register's rows stay for triage. It also settles what the spec says about routing
       records being "an item's detail, not a row's" — that is still true and now has somewhere to be
       read
-- [ ] `client.md` records what `Client.item` does for an id the cache has never held, which phase 1
+- [x] `client.md` records what `Client.item` does for an id the cache has never held, which phase 1
       settles
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
+- [x] `git commit`
 
 ---
 
 ## Unknowns
 
-- **Whether `Client.item` reaches the pool.** Phase 1 settles it. If it does not, a deep link into a
-  fresh browser draws nothing, and the fallback is a read that does — which is a client change this
-  plan would rather not make and will make if the link has to work.
-- **What leads into the item view.** Making the row body navigate would be the smallest gesture and
-  the one most likely to steal a click from opening the row in place. Fallback: an action beside the
-  others, which is duller and cannot be triggered by accident.
+- **Whether `Client.item` reaches the pool.** *Answered.* It does, so a deep link into a fresh
+  browser draws. The client change was made anyway, for the other half: it used to throw when the
+  pool was out of reach and never look at the cache, so it now answers an `ItemState` — the item,
+  whether it came from the cache, and the failure — as a list surface already does, with `held`
+  following the copy the client holds afterwards so an action taken here marks the item at once.
+- **What leads into the item view.** *Answered:* the fallback, `open`, beside the others on the
+  opened queue row and on every feed row — as a link rather than a button, so the browser's own
+  gestures come with it. The row's body goes on opening the row in place.
 - **Whether the item view makes the opened row redundant.** It should not — triage is a register and
   a register is rows — but the two will overlap, and the honest answer may be that the row sheds
   something once there is somewhere else for it to live. Worth watching rather than deciding now.

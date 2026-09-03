@@ -1,8 +1,15 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-09-02
+**Last updated**: 2026-09-03
 **Shipped**:
+
+- 2026-09-03 — **An item is read by id, and says what it was drawn from.** `item` reaches the pool
+  for an id no surface has ever drawn, so a deep link into a fresh browser answers, and falls back
+  to the client's own copy where the pool does not — answering an `ItemState` that carries the
+  item, whether it came from the cache, and the failure if there was one, as a list surface
+  already does. `held` follows the copy the client holds afterwards.
+  ([plan](../plans/item-route-and-record-view.md))
 
 - 2026-09-02 — **The client reads the places a field has already held.**
   `DestinationsApi.remembered` names a destination, a capability and a field and answers the
@@ -266,6 +273,15 @@ A client presents four surfaces, each a thin projection of core:
   ([core.md](core.md#routing)) — how many records, how many pending, where they went — so a row
   says what became of an item without a request of its own; the records themselves are read when
   a person opens one.
+  **It is read by id whether or not a surface has ever drawn it** *(2026-09-03)*, which is what
+  makes it addressable: `item` reaches the pool for any id, and answers what it drew, whether that
+  was the pool's answer or the client's own copy, and what went wrong where the pool did not
+  answer — the same three things a surface reports, about one item. An item the pool answers *no
+  such item* for is an absent item with no failure beside it: the pool decided, and a link that
+  outlives what it names is not a failure of anything. The cached copy is kept either way, an
+  answer about the pool being no statement about what this client holds. What the client holds is
+  then followed rather than re-read (`held`), so a mutation made where one item is drawn marks it
+  the way it marks a row.
 
 ### The queue
 
