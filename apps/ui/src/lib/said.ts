@@ -10,6 +10,12 @@ export const NO_MORE_OFFLINE = "offline; more when the daemon answers";
 
 export const NO_ITEM_OFFLINE = "offline; this item when the daemon answers";
 
+export const NO_RECORDS_OFFLINE = "offline; records when the daemon answers";
+
+export const NO_SUCH_RECORD = `No such record.
+
+This item has no record by that name. A decision that was cancelled or abandoned leaves none, nothing having happened to record.`;
+
 export const NO_SUCH_ITEM = `No such item.
 
 This pool has never held it, or does not hold it any more. A link outlives the item it names.`;

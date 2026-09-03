@@ -79,26 +79,26 @@ Depends on phase 1.
 
 Depends on phase 1.
 
-- [ ] `/items/{id}/records/{recordId}` draws one routing record in full: the destination by name,
+- [x] `/items/{id}/records/{recordId}` draws one routing record in full: the destination by name,
       the capability, the state, the time the decision was made, the **arguments** it was given, and
       the pointer to where it landed. Every one of those is already stored and already answered by
       `GET /v1/items/{id}/routing`; the shell has drawn three of them and ignored the rest
-- [ ] The arguments are drawn against the capability's own schema where it can be read, so a person
+- [x] The arguments are drawn against the capability's own schema where it can be read, so a person
       sees `directory` and `filename` with the titles [destination-targets](destination-targets.md)
       gives them rather than a JSON blob — and as a JSON blob when the destination cannot be
       described, which is the honest fallback and not a failure
-- [ ] The pointer is drawn as text. It becomes a link when
+- [x] The pointer is drawn as text. It becomes a link when
       [delivery-output-and-preview](delivery-output-and-preview.md) gives a destination somewhere to
       put one; the shell never guesses whether a string is a URL
-- [ ] Records need the pool: `recordsFor` reaches it and nothing caches the answer. Out of reach is
+- [x] Records need the pool: `recordsFor` reaches it and nothing caches the answer. Out of reach is
       said as out of reach, with the item still drawn from what the client holds — one surface, two
       different answers about freshness, which is the case shell.md's three conditions exist for
-- [ ] The opened row keeps its one line per record and gains the way in. It is a summary and stays
+- [x] The opened row keeps its one line per record and gains the way in. It is a summary and stays
       one; nothing that fits on a row moves out of it
-- [ ] Tests: a record draws its arguments and pointer, an undescribable destination falls back, an
+- [x] Tests: a record draws its arguments and pointer, an undescribable destination falls back, an
       unreachable pool says so while the item still draws
-- [ ] Verify: `pnpm --filter @notemap/ui test`
-- [ ] `git commit`
+- [x] Verify: `pnpm --filter @notemap/ui test`
+- [x] `git commit`
 
 ### Phase 4 — The specs say so
 

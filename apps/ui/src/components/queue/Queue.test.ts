@@ -393,3 +393,50 @@ test("offers the way to an item without taking the gesture that opens the row", 
   );
   expect(screen.getAllByRole("button", { expanded: true })).toHaveLength(1);
 });
+
+test("keeps a record to one line on the opened row, and makes it the way in", async () => {
+  pool((request) => {
+    switch (routeOf(request)) {
+      case "GET /v1/queue":
+        return json(200, {
+          values: [
+            anItem("one", {
+              routing: {
+                records: 1,
+                pending: 0,
+                to: [{ kind: "destination", destination: "vault" }],
+              },
+            }),
+          ],
+        });
+      case "GET /v1/items/one/routing":
+        return json(200, {
+          values: [
+            {
+              id: "rec",
+              item: "one",
+              target: {
+                kind: "destination",
+                destination: "vault",
+                capability: "create-note",
+                arguments: { directory: "drafts" },
+              },
+              state: "delivered",
+              at: "2026-08-19T22:14:00.000Z",
+            },
+          ],
+        });
+      default:
+        return json(200, { values: [] });
+    }
+  });
+
+  render(Queue);
+  await screen.findByText("one");
+  await open(0);
+
+  // A summary and nothing more: what the record was given is read elsewhere.
+  const line = await screen.findByRole("link", { name: /create-note/ });
+  expect(line.getAttribute("href")).toBe("/items/one/records/rec");
+  expect(screen.queryByText("drafts")).toBeNull();
+});

@@ -7,7 +7,7 @@ import { anItem, json, read, routeOf } from "@notemap/client/testing";
 import Queue from "$components/queue/Queue.svelte";
 import { asked, client, pool } from "$testing/pool";
 import { remember } from "$lib/order";
-import { NO_ITEM_OFFLINE } from "$lib/said";
+import { NO_ITEM_OFFLINE, NO_RECORDS_OFFLINE } from "$lib/said";
 import Item from "./Item.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
@@ -118,4 +118,62 @@ test("costs the queue neither its order nor its place", async () => {
       .filter((request) => routeOf(request) === "GET /v1/queue")
       .map((request) => new URL(request.url).searchParams.get("order")),
   ).toEqual(["newest-first"]);
+});
+
+const ROUTED = {
+  routing: {
+    records: 1,
+    pending: 0,
+    to: [{ kind: "destination" as const, destination: "vault" }],
+  },
+};
+
+const RECORD = {
+  id: "rec",
+  item: "routed",
+  target: {
+    kind: "destination",
+    destination: "vault",
+    capability: "create-note",
+    arguments: { directory: "drafts" },
+  },
+  state: "delivered",
+  at: "2026-08-19T22:14:00.000Z",
+};
+
+function routed(records: readonly unknown[]) {
+  return (request: Request) => {
+    switch (routeOf(request)) {
+      case "GET /v1/items/routed":
+        return json(200, anItem("routed", ROUTED));
+      case "GET /v1/items/routed/routing":
+        return json(200, { values: records });
+      default:
+        return json(200, { values: [] });
+    }
+  };
+}
+
+test("gives every record it draws the way into it", async () => {
+  pool(routed([RECORD]));
+
+  render(Item, { id: "routed" });
+
+  // One line per record, which is what the opened row draws too.
+  const way = await screen.findByRole("link", { name: /create-note/ });
+  expect(way.getAttribute("href")).toBe("/items/routed/records/rec");
+});
+
+test("says the records are out of reach while the item still draws", async () => {
+  const transport = pool(routed([RECORD]));
+  await client.item("routed");
+  transport.unreachable(true);
+
+  render(Item, { id: "routed" });
+
+  // Two answers about freshness on one surface: the item is the client's own
+  // copy, and nothing caches a record at all.
+  expect(await screen.findByText("from cache")).toBeDefined();
+  expect(screen.getByText(NO_RECORDS_OFFLINE)).toBeDefined();
+  expect(screen.queryByRole("link", { name: /create-note/ })).toBeNull();
 });

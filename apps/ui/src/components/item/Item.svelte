@@ -21,7 +21,7 @@
   import { became } from "$lib/lineage";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
-  import { NO_ITEM_OFFLINE, NO_SUCH_ITEM } from "$lib/said";
+  import { NO_ITEM_OFFLINE, NO_RECORDS_OFFLINE, NO_SUCH_ITEM } from "$lib/said";
   import { briefly } from "$lib/stamp";
 
   let { id }: { id: string } = $props();
@@ -91,6 +91,12 @@
 
       <Tags {item} />
       <Routing summary={item.routing} {records} />
+
+      <!-- The item may be the client's own and the records never are, so the
+           one surface answers for the two of them separately. -->
+      {#if item.routing !== undefined && records.length === 0 && !pool.yes}
+        <div class="mt-2 text-ink-muted">{NO_RECORDS_OFFLINE}</div>
+      {/if}
 
       <Facts>
         <Fact name="payload">{item.payload.type}</Fact>
