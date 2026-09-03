@@ -1,5 +1,6 @@
 import type { Dirent } from "node:fs";
-import { readdir } from "node:fs/promises";
+import { lstat, readdir } from "node:fs/promises";
+import { join } from "node:path";
 
 import {
   NotOffered,
@@ -87,19 +88,52 @@ async function resolveRoot(root: string): Promise<string> {
   }
 }
 
-async function list(directory: string): Promise<readonly Dirent[]> {
+/** One entry, with the question `readdir` sometimes cannot answer already settled. */
+export type Listed = { readonly name: string; readonly kind: Offered | undefined };
+
+async function list(directory: string): Promise<readonly Listed[]> {
+  let entries: readonly Dirent[];
   try {
-    return await readdir(directory, { withFileTypes: true });
+    entries = await readdir(directory, { withFileTypes: true });
   } catch (cause) {
     throw new Error(`${directory}: ${why(cause)}`, { cause });
   }
+
+  return Promise.all(entries.map((entry) => settle(directory, entry)));
+}
+
+/**
+ * A `readdir` that cannot say what an entry is answers `DT_UNKNOWN`, and every
+ * predicate on the `Dirent` is then false — which is indistinguishable from a
+ * socket unless the entry is asked about directly. FUSE and overlay mounts do
+ * this routinely, and a vault on one would otherwise list as empty.
+ *
+ * `lstat` rather than `stat`, so a symlink stays the thing that is never
+ * offered rather than becoming whatever it points at.
+ */
+export async function settle(
+  directory: string,
+  entry: Dirent,
+): Promise<Listed> {
+  if (entry.isDirectory()) return { name: entry.name, kind: "directory" };
+  if (entry.isFile()) return { name: entry.name, kind: "file" };
+  if (entry.isSymbolicLink()) return { name: entry.name, kind: undefined };
+
+  try {
+    const found = await lstat(join(directory, entry.name));
+    if (found.isDirectory()) return { name: entry.name, kind: "directory" };
+    if (found.isFile()) return { name: entry.name, kind: "file" };
+  } catch {
+    // Gone between the listing and the question, which is not this read's problem.
+  }
+  return { name: entry.name, kind: undefined };
 }
 
 /**
  * Dotfiles cover both the ordinary hidden ones and the `.notemap-*` temporaries
  * a crashed delivery leaves — one rule for both, since the second is a case of
- * the first. A symlinked child is neither a directory nor a file to `readdir`,
- * which does not follow it, so it is silently never offered.
+ * the first. A symlinked child is silently never offered: `readdir` does not
+ * follow it and neither does the `lstat` behind it.
  *
  * A folder is always somewhere to look further, and is something the field may
  * hold only where the field holds folders: browsing for a note to append to
@@ -110,17 +144,17 @@ async function list(directory: string): Promise<readonly Dirent[]> {
 function page(
   kind: Offered,
   prefix: string,
-  entries: readonly Dirent[],
+  entries: readonly Listed[],
 ): CandidatesAnswer {
-  const named = (entry: Dirent): string =>
+  const named = (entry: Listed): string =>
     prefix === "" ? entry.name : `${prefix}/${entry.name}`;
 
   const visible = entries.filter((entry) => !entry.name.startsWith("."));
-  const byName = (a: Dirent, b: Dirent): number =>
+  const byName = (a: Listed, b: Listed): number =>
     a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
 
   const folders = visible
-    .filter((entry) => entry.isDirectory())
+    .filter((entry) => entry.kind === "directory")
     .sort(byName)
     .map((entry): CandidateEntry => {
       const path = named(entry);
@@ -133,7 +167,7 @@ function page(
     kind === "directory"
       ? []
       : visible
-          .filter((entry) => entry.isFile())
+          .filter((entry) => entry.kind === "file")
           .sort(byName)
           .map((entry): CandidateEntry => ({
             label: entry.name,

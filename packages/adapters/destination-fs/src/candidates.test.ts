@@ -1,3 +1,4 @@
+import type { Dirent } from "node:fs";
 import { mkdir, symlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -9,6 +10,7 @@ import {
 } from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { settle } from "./candidates";
 import { createFilesystemDestination } from "./destination";
 import { destinationRow, root, TEXT } from "./testing/fixture";
 
@@ -311,5 +313,57 @@ describe("a field this kind does not offer candidates for", () => {
         field: "filename",
       }),
     ).rejects.toThrow(NotOffered);
+  });
+});
+
+/**
+ * `readdir` answers `DT_UNKNOWN` on FUSE and overlay mounts — a synced vault is
+ * the ordinary way to be on one — and every predicate on the `Dirent` is then
+ * false. Dropped, a whole vault lists as empty, which reads as a folder with
+ * nothing in it and forecasts every note as new.
+ */
+describe("an entry readdir could not classify", () => {
+  const nameless = (name: string): Dirent =>
+    ({
+      name,
+      isDirectory: () => false,
+      isFile: () => false,
+      isSymbolicLink: () => false,
+    }) as Dirent;
+
+  it("is asked about rather than dropped", async () => {
+    const { path } = await vault();
+    await mkdir(join(path, "projects"));
+    await writeFile(join(path, "decisions.md"), "a note");
+
+    expect(await settle(path, nameless("projects"))).toEqual({
+      name: "projects",
+      kind: "directory",
+    });
+    expect(await settle(path, nameless("decisions.md"))).toEqual({
+      name: "decisions.md",
+      kind: "file",
+    });
+  });
+
+  /** `lstat`, so what is never offered stays never offered. */
+  it("keeps a symlink unoffered even when readdir did not say so", async () => {
+    const { path } = await vault();
+    await writeFile(join(path, "real.md"), "a note");
+    await symlink(join(path, "real.md"), join(path, "linked.md"));
+
+    expect(await settle(path, nameless("linked.md"))).toEqual({
+      name: "linked.md",
+      kind: undefined,
+    });
+  });
+
+  it("says nothing about one that went away between the two calls", async () => {
+    const { path } = await vault();
+
+    expect(await settle(path, nameless("gone.md"))).toEqual({
+      name: "gone.md",
+      kind: undefined,
+    });
   });
 });
