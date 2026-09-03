@@ -19,12 +19,15 @@
     address,
     onroute,
     onedit,
+    onwent,
   }: {
     item: Item;
     offline: boolean;
     address?: string;
     onroute: () => void;
     onedit: () => void;
+    /** The item left. Where its row stood is the register's to know, not this row's. */
+    onwent?: (word: string) => void;
   } = $props();
 
   /** What this row did, and only that: a failed read is said where it was read. */
@@ -35,14 +38,15 @@
   function archive() {
     void client.archive(item.id);
     notices.raise({ what: "archived" });
+    onwent?.("archived");
   }
 
   async function markDone() {
     said = "marking…";
     try {
-      notices.raise(
-        saidOf(await client.routing.markProcessed(item.id), nameOf),
-      );
+      const record = await client.routing.markProcessed(item.id);
+      notices.raise(saidOf(record, nameOf));
+      onwent?.("done");
       said = "";
     } catch (error) {
       said = saidBy(error);

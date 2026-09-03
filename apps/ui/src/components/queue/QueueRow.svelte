@@ -14,6 +14,7 @@
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import { itemHref } from "$components/item/href";
+  import { leaving } from "$lib/leaving.svelte";
   import { became, editable, finished } from "$lib/lineage";
   import { recordsOf } from "$lib/records.svelte";
   import { briefly } from "$lib/stamp";
@@ -24,6 +25,7 @@
     offline,
     furled,
     pending = false,
+    before,
     onopen,
     onroute,
   }: {
@@ -32,6 +34,8 @@
     offline: boolean;
     furled: boolean;
     pending?: boolean;
+    /** The row under this one, so a departure goes from where it stood. */
+    before?: string;
     onopen: () => void;
     onroute: () => void;
   } = $props();
@@ -109,6 +113,7 @@
       address={itemHref(item.id)}
       onroute={() => onroute()}
       onedit={() => (editing = !editing)}
+      onwent={(word) => leaving.after(item, word, before)}
     />
   {/if}
 </Body>

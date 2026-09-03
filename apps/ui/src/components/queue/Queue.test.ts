@@ -5,6 +5,7 @@ import { tick } from "svelte";
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool } from "$testing/pool";
+import { leaving } from "$lib/leaving.svelte";
 import { notices } from "$lib/notices.svelte";
 import { NO_MORE_OFFLINE } from "$lib/said";
 import { briefly } from "$lib/stamp";
@@ -19,6 +20,7 @@ vi.mock("$lib/client", () => import("$testing/pool"));
 afterEach(() => {
   if (rail.furled) rail.toggle();
   notices.clear();
+  leaving.clear();
 });
 
 function queued(...ids: string[]) {
@@ -503,4 +505,45 @@ test("tagging says nothing in the corner", async () => {
     expect(asked()).toContain("POST /v1/items/one/tag");
   });
   expect(notices.shown).toHaveLength(0);
+});
+
+test("a row that has gone is watched out, wearing what became of it", async () => {
+  let queued = [anItem("one"), anItem("two")];
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/queue") return json(200, { values: queued });
+    if (route === "POST /v1/items/one/archive") {
+      queued = queued.filter((item) => item.id !== "one");
+      return json(204, undefined);
+    }
+    return json(200, { values: [] });
+  });
+
+  render(Queue);
+  await screen.findByText("one");
+  await open(0);
+
+  await fireEvent.click(screen.getByRole("button", { name: "archive" }));
+
+  // Gone from the queue and still on the register, saying what became of it.
+  await vi.waitFor(() => {
+    expect(screen.getByText("archived")).toBeDefined();
+  });
+  expect(screen.getByText("one")).toBeDefined();
+});
+
+/** It is a row being watched out, not one to use: the pool no longer has it as work. */
+test("a departing row cannot be opened or acted on", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+  await open(0);
+  await fireEvent.click(screen.getByRole("button", { name: "archive" }));
+
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("button", { name: "archive" })).toBeNull();
+  });
+  expect(screen.queryByRole("button", { name: "route" })).toBeNull();
+  expect(screen.getByText("one")).toBeDefined();
 });

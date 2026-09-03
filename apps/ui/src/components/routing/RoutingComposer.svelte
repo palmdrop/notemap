@@ -34,6 +34,7 @@
     subject,
     content,
     tags = [],
+    onrouted,
     onclose,
   }: {
     item: string;
@@ -43,6 +44,8 @@
     content?: unknown;
     /** What the item already carries, so the composer's own row draws them as taken. */
     tags?: readonly string[];
+    /** The decision landed. The row's place on the register is not this modal's to know. */
+    onrouted?: (word: string) => void;
     onclose: () => void;
   } = $props();
 
@@ -178,6 +181,7 @@
           : freshFile(beside)),
       });
       notices.raise(saidOf(record, nameOf));
+      onrouted?.(record.state === "delivered" ? "routed" : "deferred");
       onclose();
     } catch (error) {
       said = saidBy(error);

@@ -110,36 +110,36 @@ Depends on nothing.
 
 Depends on phase 1.
 
-- [ ] Routing says the outcome the record carries and **never more than it knows**: a `delivered`
+- [x] Routing says the outcome the record carries and **never more than it knows**: a `delivered`
       record is `routed`, named by destination and by pointer where there is one; a `pending` record
       says the delivery is deferred and does not claim to have landed. The distinction is the whole
       honesty of this phase — phase 4 is what finishes the sentence later
-- [ ] Mark done and archive say so. Both take the row away
-- [ ] Tagging, editing and capture say nothing. Their subject is still on screen
-- [ ] A failure at a control that is still on screen stays at the control: the composer keeps its
+- [x] Mark done and archive say so. Both take the row away
+- [x] Tagging, editing and capture say nothing. Their subject is still on screen
+- [x] A failure at a control that is still on screen stays at the control: the composer keeps its
       modal open on a refusal and the row keeps its `said`. The corner is for what has nowhere else
       to be said
-- [ ] The destination is named rather than identified. `client.destinations` already holds the names
+- [x] The destination is named rather than identified. `client.destinations` already holds the names
       the composer drew from; an id in a notice is the shell talking to itself
-- [ ] Tests: a delivered record draws where it landed, a pending one says deferred and names no
+- [x] Tests: a delivered record draws where it landed, a pending one says deferred and names no
       landing, marking done says so, a refusal at an open control raises no notice
-- [ ] Verify: `pnpm --filter @notemap/ui test`
-- [ ] `git commit`
+- [x] Verify: `pnpm --filter @notemap/ui test`
+- [x] `git commit`
 
 ### Phase 3 — The row leaves visibly
 
 Depends on phase 2. **Droppable**: the notice carries the confirmation without it.
 
-- [ ] A row that has been routed, marked done or archived holds its place for one beat wearing its
+- [x] A row that has been routed, marked done or archived holds its place for one beat wearing its
       state word — the `StateWord.svelte` treatment the register already uses — and then goes
-- [ ] It is the shell's animation over its own list, not a claim about the pool. The item has
+- [x] It is the shell's animation over its own list, not a claim about the pool. The item has
       already left the queue as far as the client is concerned, and nothing about the linger may
       make a stale row look live: it is not openable, and its actions are gone
-- [ ] `prefers-reduced-motion` removes the linger rather than shortening it
-- [ ] Tests: a routed row is drawn once more with its word and then is not; it cannot be opened
+- [x] `prefers-reduced-motion` removes the linger rather than shortening it
+- [x] Tests: a routed row is drawn once more with its word and then is not; it cannot be opened
       while it lingers; reduced motion skips it
-- [ ] Verify: `pnpm --filter @notemap/ui test`
-- [ ] `git commit`
+- [x] Verify: `pnpm --filter @notemap/ui test`
+- [x] `git commit`
 
 ### Phase 4 — What happened while you were not asking
 
