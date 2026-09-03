@@ -301,15 +301,20 @@ line gives the destination back, a wrong one not being a reason to close the com
 2026-09-02, replacing the browser described here on 2026-08-31 — that control is what every other
 kind still draws). Typing filters the entries at the deepest settled scope, `/` descends, `⇥`
 completes the segment under the caret as far as the matches agree, `⌫` at the end of a line that
-ends in one pops the whole segment rather than one character of it, and `↑↓` move through what is
-offered while `⏎`, left alone, routes. **The line is the value**: there is no second input beside it holding the same
+ends in one pops the whole segment rather than one character of it, and `↑↓` move through
+everything the tree drew — every row the pointer could take, in the order it is drawn — while `⏎`,
+left alone, routes. **The line is the value**: there is no second input beside it holding the same
 string, which is what the browser-and-input pair did and neither half could see the other.
 
 **The hierarchy is shown, not walked**: the levels along the typed path are drawn beneath the line,
 each with its siblings, indented — so the context around a choice is there rather than replaced at
 every step. **Taking one is going to it**, not adding its name to what is typed: an entry carries
 its own path from the root, so a folder two levels up drills the line down to exactly that folder
-and a note sets the line to the note. Anything else makes folders nobody meant. One `candidates` call per level, debounced, every answer but the newest dropped. A
+and a note sets the line to the note. Anything else makes folders nobody meant. **Only the level
+the caret is in is narrowed** by what is being typed — not the deepest that happened to answer,
+which inside a folder that is not there yet is the folder above, and matching a half-typed note
+against its contents empties the trail exactly while a folder is being made. `⇥` completes from
+that same level and no other, so it can never finish a name into a folder that never offered it. One `candidates` call per level, debounced, every answer but the newest dropped. A
 scope that answers nothing is a folder still being typed and not a failure of anything; only the
 root's answer says whether the destination can be asked at all. A cut-short answer says so, since
 a scope past the adapter's cap cannot be filtered into completeness client-side.

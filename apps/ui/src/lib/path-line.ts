@@ -91,30 +91,39 @@ export type Row = {
   readonly depth: number;
   /** The segment the typed path took at this level, so the trail reads down the tree. */
   readonly onPath: boolean;
-  /** In the deepest answered scope, which is the level `↑↓` moves through. */
-  readonly here: boolean;
   /** Not there yet: typed, and about to be made by the delivery. Never takeable. */
   readonly made?: boolean;
 };
 
 /**
+ * Which level the typed text filters: the one whose scope is the settled part
+ * of the path, and no other. Not the deepest that *answered* — inside a folder
+ * that is not there yet, that is the folder above, and matching a half-typed
+ * note against its contents empties the trail exactly where the context is
+ * needed most.
+ */
+export function filtered(path: TypedPath): number {
+  return path.complete.length;
+}
+
+/**
  * The hierarchy as it is drawn: each level's entries under the ancestor the
  * path took, rather than one level's whole listing after another's. Every level
  * shows its siblings, which is what makes the tree *shown* rather than walked;
- * only the deepest is filtered by what is being typed.
+ * only the level the caret is in is filtered by what is being typed.
  */
 export function rowsOf(
   levels: readonly Level[],
   path: TypedPath,
 ): readonly Row[] {
-  const answered = levels.findLastIndex((level) => level.entries !== undefined);
+  const here = filtered(path);
   const rows: Row[] = [];
 
   const walk = (depth: number): void => {
     const level = levels[depth];
     if (level?.entries === undefined) return;
 
-    const deepest = depth === answered;
+    const deepest = depth === here;
     const entries = deepest
       ? matching(level.entries, path.typing)
       : level.entries;
@@ -122,13 +131,21 @@ export function rowsOf(
 
     for (const entry of entries) {
       const onPath = !deepest && entry.label === onward;
-      rows.push({ entry, depth, onPath, here: deepest });
+      rows.push({ entry, depth, onPath });
       if (onPath) walk(depth + 1);
     }
   };
 
   walk(0);
   return rows;
+}
+
+/** What the caret is in, which is what `⇥` completes from and what says it was cut short. */
+export function levelAt(
+  levels: readonly Level[],
+  path: TypedPath,
+): Level | undefined {
+  return levels[filtered(path)];
 }
 
 /**
@@ -155,15 +172,20 @@ export function pending(
       entry: folder ? { label, scope } : { label },
       depth: from + at,
       onPath: folder,
-      here: false,
       made: true,
     };
   });
 }
 
-/** The rows `↑↓` moves through: the deepest level's, which the typed text filters. */
+/**
+ * The rows `↑↓` moves through: every one that can be taken, which is every one
+ * drawn but the folders still to be made. The tree is shown rather than walked,
+ * so a folder two levels up is as takeable as a sibling at the caret — and the
+ * keyboard reaching less than the pointer does would be the pointer's tree and
+ * the keyboard's being two different trees.
+ */
 export function reachable(rows: readonly Row[]): readonly Row[] {
-  return rows.filter((row) => row.here);
+  return rows.filter((row) => row.made !== true);
 }
 
 /**

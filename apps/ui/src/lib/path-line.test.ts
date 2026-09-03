@@ -8,6 +8,7 @@ import {
   marked,
   ranked,
   matching,
+  levelAt,
   parsePath,
   pathOf,
   pending,
@@ -208,21 +209,32 @@ describe("the hierarchy as it is drawn", () => {
     expect(trail).toEqual(["projects", "notemap"]);
   });
 
-  test("filters the deepest level alone", () => {
+  test("narrows the level the caret is in, and leaves the rest whole", () => {
     const rows = rowsOf(levels, parsePath("projects/notemap/no"));
+    const drawn = rows.map((row) => row.entry.label);
 
-    expect(
-      rows.filter((row) => row.here).map((row) => row.entry.label),
-    ).toEqual(["notes"]);
-    expect(rows.map((row) => row.entry.label)).toContain("journal");
+    expect(drawn.filter((label) => label === "readme.md")).toEqual([]);
+    expect(drawn).toContain("notes");
+    expect(drawn).toContain("journal");
+    expect(drawn).toContain("kontradiktion");
   });
 
-  test("moves through the deepest level alone", () => {
+  /**
+   * Every one that is drawn, in the order it is drawn: the tree is shown rather
+   * than walked, and a keyboard reaching less of it than the pointer would make
+   * them two different trees.
+   */
+  test("moves through everything the tree drew", () => {
     const rows = rowsOf(levels, parsePath("projects/notemap/"));
 
     expect(reachable(rows).map((row) => row.entry.label)).toEqual([
+      "journal",
+      "projects",
+      "kontradiktion",
+      "notemap",
       "notes",
       "readme.md",
+      "reading",
     ]);
   });
 
@@ -233,14 +245,79 @@ describe("the hierarchy as it is drawn", () => {
       parsePath("projects/nope/"),
     );
 
-    expect(reachable(rows).map((row) => row.entry.label)).toEqual([
+    expect(rows.map((row) => row.entry.label)).toEqual([
+      "journal",
+      "projects",
       "kontradiktion",
       "notemap",
+      "reading",
     ]);
   });
 
   test("draws nothing at all where the root itself answered nothing", () => {
     expect(rowsOf([{ scope: "" }], parsePath(""))).toEqual([]);
+  });
+});
+
+describe("which level the typed text filters", () => {
+  const VAULT: Level[] = [
+    {
+      scope: "",
+      entries: [folder("journal", "journal"), folder("projects", "projects")],
+    },
+    {
+      scope: "projects",
+      entries: [folder("notemap", "projects/notemap")],
+    },
+    {
+      scope: "projects/notemap",
+      entries: [
+        folder("notes", "projects/notemap/notes"),
+        file("readme.md", "projects/notemap/readme.md"),
+      ],
+    },
+  ];
+
+  /**
+   * The folder is not there, so its level never answered. Matching the note
+   * being typed against the folder *above* empties the trail exactly where the
+   * context is needed most — while a folder is being made.
+   */
+  test("leaves every level whole where the caret's own has not answered", () => {
+    const path = parsePath("projects/notemap/drafts/picker.md");
+    const levels = [...VAULT, { scope: "projects/notemap/drafts" }];
+
+    expect(
+      rowsOf(levels, path).map((row) => [row.entry.label, row.depth]),
+    ).toEqual([
+      ["journal", 0],
+      ["projects", 0],
+      ["notemap", 1],
+      ["notes", 2],
+      ["readme.md", 2],
+    ]);
+  });
+
+  test("filters the caret's own level, and no other", () => {
+    const path = parsePath("projects/notemap/re");
+
+    expect(rowsOf(VAULT, path).map((row) => row.entry.label)).toEqual([
+      "journal",
+      "projects",
+      "notemap",
+      "readme.md",
+    ]);
+  });
+
+  /** `⇥` completes from the folder the caret is in, never the one above it. */
+  test("names the caret's own level, answered or not", () => {
+    expect(levelAt(VAULT, parsePath("projects/notemap/re"))?.scope).toBe(
+      "projects/notemap",
+    );
+    expect(
+      levelAt(VAULT, parsePath("projects/notemap/drafts/pi")),
+    ).toBeUndefined();
+    expect(levelAt(VAULT, parsePath("jour"))?.scope).toBe("");
   });
 });
 

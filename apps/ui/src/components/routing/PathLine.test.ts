@@ -245,29 +245,46 @@ test("leaves an ordinary backspace to the input", async () => {
   expect(line.value()).toBe("projects/note");
 });
 
-test("moves through the deepest level with the arrows and takes with enter", async () => {
+/**
+ * Down the tree as it is drawn, not one level of it: the pointer takes any row,
+ * so the arrows reach any row, or they are two different trees.
+ */
+test("moves down the drawn tree with the arrows and takes with enter", async () => {
   servingTree();
   const line = draw("projects/notemap/");
 
   await screen.findByText("notes/");
-  await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
-  await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
-  await fireEvent.keyDown(line.line(), { key: "Enter" });
-
-  expect(line.value()).toBe("projects/notemap/readme.md");
-  expect(line.submitted).not.toHaveBeenCalled();
-});
-
-/** The first press lands on the first entry rather than skipping it. */
-test("the first arrow reaches the first entry", async () => {
-  servingTree();
-  const line = draw("projects/notemap/");
-
-  await screen.findByText("notes/");
-  await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
+  for (let press = 0; press < 5; press += 1) {
+    await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
+  }
   await fireEvent.keyDown(line.line(), { key: "Enter" });
 
   expect(line.value()).toBe("projects/notemap/notes/");
+  expect(line.submitted).not.toHaveBeenCalled();
+});
+
+/** The first press lands on the first row rather than skipping it. */
+test("the first arrow reaches the first row of the tree", async () => {
+  servingTree();
+  const line = draw("projects/notemap/");
+
+  await screen.findByText("notes/");
+  await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
+  await fireEvent.keyDown(line.line(), { key: "Enter" });
+
+  expect(line.value()).toBe("journal/");
+});
+
+/** Which is the whole point of reaching them: a folder two levels up is takeable. */
+test("takes an ancestor's sibling the arrows reached", async () => {
+  servingTree();
+  const line = draw("projects/notemap/");
+
+  await screen.findByText("notes/");
+  await fireEvent.keyDown(line.line(), { key: "ArrowUp" });
+  await fireEvent.keyDown(line.line(), { key: "Enter" });
+
+  expect(line.value()).toBe("projects/notemap/readme.md");
 });
 
 test("enter with nothing picked commits, which is the ordinary way through", async () => {

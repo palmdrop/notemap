@@ -15,6 +15,7 @@
     continuationOf,
     continuing,
     ghostFor,
+    levelAt,
     marked,
     parsePath,
     pathOf,
@@ -90,10 +91,12 @@
 
   const path = $derived(parsePath(value));
   const rows = $derived(rowsOf(levels, path));
-  const here = $derived(reachable(rows));
-  const deepest = $derived(
-    levels.findLast((level) => level.entries !== undefined),
-  );
+  /**
+   * The level the caret is in, which is not the deepest that answered: inside a
+   * folder that is not there yet, that would be the folder above, and
+   * completing from it puts a name in a place it was never listed.
+   */
+  const caretIn = $derived(levelAt(levels, path));
 
   /**
    * The root is the destination itself, so its answer is the one that says
@@ -112,16 +115,6 @@
     checked.some((place) => place.value === value && place.gone),
   );
 
-  /**
-   * One list for `↑↓`: places used before rank above what the vault merely
-   * offers, and a `gone` one is reachable here deliberately — which is what
-   * makes it safe to keep it out of the ghost.
-   */
-  const choices = $derived([
-    ...remembered.map((place) => ({ kind: "remembered" as const, place })),
-    ...here.map((row) => ({ kind: "entry" as const, row })),
-  ]);
-
   const forecast = $derived(
     said === undefined ? undefined : forecastOf(levels, value, said),
   );
@@ -136,6 +129,19 @@
       ? rows
       : [...rows, ...pending(path, forecast.making, forecast.leaf)],
   );
+
+  /** In the order they are drawn, so `↑↓` moves down the tree as the eye does. */
+  const here = $derived(reachable(drawn));
+
+  /**
+   * One list for `↑↓`: places used before rank above what the vault merely
+   * offers, and a `gone` one is reachable here deliberately — which is what
+   * makes it safe to keep it out of the ghost.
+   */
+  const choices = $derived([
+    ...remembered.map((place) => ({ kind: "remembered" as const, place })),
+    ...here.map((row) => ({ kind: "entry" as const, row })),
+  ]);
 
   // The place is what a composer with a destination in its chrome is for, so
   // the caret is here rather than waiting to be clicked into.
@@ -257,7 +263,7 @@
 
   function onkeydown(event: KeyboardEvent): void {
     if (event.key === "Tab" && !event.shiftKey) {
-      const finished = completionOf(deepest?.entries ?? [], path.typing);
+      const finished = completionOf(caretIn?.entries ?? [], path.typing);
       if (finished === undefined) return;
       event.preventDefault();
       onchange(withTyping(path, finished));
@@ -434,7 +440,6 @@
     {#each drawn as row (`${row.depth}:${row.made === true ? "+" : ""}${row.entry.label}`)}
       {@const chosen =
         moved &&
-        row.here &&
         choices[at]?.kind === "entry" &&
         here[at - remembered.length] === row}
       <div
@@ -459,7 +464,7 @@
     {/each}
   </div>
 
-  {#if deepest?.truncated === true}
+  {#if caretIn?.truncated === true}
     <p class="mt-1 text-ink-muted">more than this shows</p>
   {/if}
 </div>
