@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { saidBy, type Item, type RoutingRecord } from "@notemap/client";
+  import type { Item } from "@notemap/client";
 
   import Actions from "$components/item/Actions.svelte";
   import Edit from "$components/item/Edit.svelte";
@@ -14,8 +14,8 @@
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import { itemHref } from "$components/item/href";
-  import { client } from "$lib/client";
   import { became, editable, finished } from "$lib/lineage";
+  import { recordsOf } from "$lib/records.svelte";
   import { briefly } from "$lib/stamp";
 
   let {
@@ -37,22 +37,13 @@
   } = $props();
 
   let editing = $state(false);
-  let said = $state("");
-  let records = $state<readonly RoutingRecord[]>([]);
 
   // Only ever for the one row that is open, and only where the item's summary
   // says there is something to read: a request per triage at the very most.
-  $effect(() => {
-    if (!opened || offline || item.routing === undefined) return;
-
-    void (async () => {
-      try {
-        records = await client.routing.recordsFor(item.id);
-      } catch (error) {
-        said = saidBy(error);
-      }
-    })();
-  });
+  const records = recordsOf(
+    () => (item.routing === undefined ? undefined : item.id),
+    () => opened && !offline,
+  );
 
   const word = $derived(became(item));
   const mayEdit = $derived(editable(item));
@@ -72,7 +63,11 @@
   {/if}
 
   <Tags {item} />
-  <Routing summary={item.routing} records={opened ? records : []} />
+  <Routing summary={item.routing} records={records.all} />
+
+  {#if records.refused !== ""}
+    <div role="status" class="mt-2 text-accent">{records.refused}</div>
+  {/if}
 
   {#if opened}
     <Facts>
@@ -82,8 +77,6 @@
           ? "not since capture"
           : briefly(item.contentUpdatedAt)}
       </Fact>
-      <Fact name="source">{item.source}</Fact>
-      <Fact name="id">{item.id}</Fact>
     </Facts>
   {/if}
 </Rail>
@@ -113,7 +106,6 @@
     <Actions
       {item}
       {offline}
-      {said}
       address={itemHref(item.id)}
       onroute={() => onroute()}
       onedit={() => (editing = !editing)}

@@ -143,3 +143,66 @@ test("reads a decision the person carried out themselves", async () => {
   expect(screen.getByText("pasted into the fiction-a vault")).toBeDefined();
   expect(screen.getByText("not recorded")).toBeDefined();
 });
+
+/** The name the wire carries, and what a person should read instead of it. */
+test.each([
+  ["create-file", "Created a note"],
+  ["append-to-file", "Appended to a note"],
+  ["create-or-append-file", "Created or appended to a note"],
+])("says what %s did", async (capability, said) => {
+  pool(answering([{ ...RECORD, target: { ...RECORD.target, capability } }]));
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  expect(await screen.findByText(said)).toBeDefined();
+  expect(screen.queryByText(capability)).toBeNull();
+});
+
+test("says a capability it has never heard of by its name", async () => {
+  pool(
+    answering([
+      { ...RECORD, target: { ...RECORD.target, capability: "post-to-board" } },
+    ]),
+  );
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  // The names are the wire's, and one this shell does not know is still what
+  // happened: saying nothing would be worse than saying it technically.
+  expect(await screen.findByText("post-to-board")).toBeDefined();
+});
+
+test("draws the record and not its bookkeeping", async () => {
+  pool(answering());
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+  await screen.findByText("Fiction vault");
+
+  // Both ids are in the address bar, which is where an id belongs.
+  expect(screen.queryByText("rec")).toBeNull();
+  expect(screen.queryByText("record")).toBeNull();
+});
+
+test("says a decision the person carried out with nothing written down", async () => {
+  pool(
+    answering([
+      {
+        id: "rec",
+        item: "one",
+        target: { kind: "user" },
+        state: "delivered",
+        at: "2026-08-19T22:14:00.000Z",
+      },
+    ]),
+  );
+
+  render(Record, { item: "one", record: "rec" });
+
+  expect(await screen.findByText("Marked done by hand")).toBeDefined();
+  // The heading stands with `none` beneath it, as an empty argument set does.
+  expect(screen.getByText("note")).toBeDefined();
+  expect(screen.getByText("none")).toBeDefined();
+});

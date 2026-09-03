@@ -36,6 +36,10 @@
   <button type={submit ? "submit" : "button"} {disabled} {onclick} class={look}>
     {@render children()}
   </button>
+{:else if disabled}
+  <span aria-disabled="true" class="font-mono text-ink-muted">
+    {@render children()}
+  </span>
 {:else}
   <a {href} class={look}>{@render children()}</a>
 {/if}

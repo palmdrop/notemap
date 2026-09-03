@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { saidBy, type ItemState, type RoutingRecord } from "@notemap/client";
+  import type { ItemState } from "@notemap/client";
 
   import Actions from "$components/item/Actions.svelte";
   import Edit from "$components/item/Edit.svelte";
@@ -21,6 +21,7 @@
   import { became } from "$lib/lineage";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
+  import { recordsOf } from "$lib/records.svelte";
   import { NO_ITEM_OFFLINE, NO_RECORDS_OFFLINE, NO_SUCH_ITEM } from "$lib/said";
   import { briefly } from "$lib/stamp";
 
@@ -32,13 +33,16 @@
   let read = $state<ItemState | undefined>(undefined);
   let editing = $state(false);
   let routing = $state(false);
-  let said = $state("");
-  let records = $state<readonly RoutingRecord[]>([]);
 
   // The read settles what is drawn and what it was drawn from; the item itself
   // is then the client's held copy, so an archive made here marks it at once.
   const held = $derived(client.held(id));
   const item = $derived($held);
+
+  const records = recordsOf(
+    () => (item?.routing === undefined ? undefined : item.id),
+    () => pool.yes,
+  );
 
   $effect(() => {
     const wanted = id;
@@ -48,19 +52,6 @@
     void (async () => {
       const answer = await client.item(wanted);
       if (wanted === id) read = answer;
-    })();
-  });
-
-  $effect(() => {
-    if (item === undefined || pool.yes === false || item.routing === undefined)
-      return;
-
-    void (async () => {
-      try {
-        records = await client.routing.recordsFor(item.id);
-      } catch (error) {
-        said = saidBy(error);
-      }
     })();
   });
 
@@ -90,12 +81,16 @@
       {/if}
 
       <Tags {item} />
-      <Routing summary={item.routing} {records} />
+      <Routing summary={item.routing} records={records.all} />
 
       <!-- The item may be the client's own and the records never are, so the
            one surface answers for the two of them separately. -->
-      {#if item.routing !== undefined && records.length === 0 && !pool.yes}
+      {#if item.routing !== undefined && records.all.length === 0 && !pool.yes}
         <div class="mt-2 text-ink-muted">{NO_RECORDS_OFFLINE}</div>
+      {/if}
+
+      {#if records.refused !== ""}
+        <div role="status" class="mt-2 text-accent">{records.refused}</div>
       {/if}
 
       <Facts>
@@ -105,8 +100,6 @@
             ? "not since capture"
             : briefly(item.contentUpdatedAt)}
         </Fact>
-        <Fact name="source">{item.source}</Fact>
-        <Fact name="id">{item.id}</Fact>
       </Facts>
     </Rail>
 
@@ -120,7 +113,6 @@
       <Actions
         {item}
         offline={!pool.yes}
-        {said}
         onroute={() => (routing = true)}
         onedit={() => (editing = !editing)}
       />
@@ -129,8 +121,6 @@
     <Rail first>
       {#if refused === undefined && read.failure === undefined}
         <StateWord word="gone" />
-      {:else}
-        item
       {/if}
     </Rail>
     <Body first>

@@ -7,38 +7,35 @@
   import { editable } from "$lib/lineage";
 
   /**
-   * `said` is what the caller has to report; marking done reports its own.
    * `address` is where this item is read, and is absent on the surface that
    * already is it.
    */
   let {
     item,
     offline,
-    said = "",
     address,
     onroute,
     onedit,
   }: {
     item: Item;
     offline: boolean;
-    said?: string;
     address?: string;
     onroute: () => void;
     onedit: () => void;
   } = $props();
 
-  let reported = $state("");
+  /** What this row did, and only that: a failed read is said where it was read. */
+  let said = $state("");
 
   const mayEdit = $derived(editable(item));
-  const word = $derived(reported === "" ? said : reported);
 
   async function markDone() {
-    reported = "marking…";
+    said = "marking…";
     try {
       await client.routing.markProcessed(item.id);
-      reported = "";
+      said = "";
     } catch (error) {
-      reported = saidBy(error);
+      said = saidBy(error);
     }
   }
 </script>
@@ -61,7 +58,7 @@
     <Action href={address}>open</Action>
   {/if}
 
-  {#if word !== ""}
-    <span role="status" class="text-ink-muted">{word}</span>
+  {#if said !== ""}
+    <span role="status" class="text-ink-muted">{said}</span>
   {/if}
 </ActionRow>

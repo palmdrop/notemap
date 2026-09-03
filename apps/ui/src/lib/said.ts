@@ -8,6 +8,9 @@ Everything captured has been routed, marked done, or archived. Anything new goes
 
 export const NO_MORE_OFFLINE = "offline; more when the daemon answers";
 
+/** A link needs a label, and the address bar already carries the id. */
+export const THIS_ITEM = "this item";
+
 export const NO_ITEM_OFFLINE = "offline; this item when the daemon answers";
 
 export const NO_RECORDS_OFFLINE = "offline; records when the daemon answers";

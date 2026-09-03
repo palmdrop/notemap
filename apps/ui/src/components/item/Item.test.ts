@@ -34,8 +34,20 @@ test("draws an item the cache has never held, reaching the pool for it", async (
 
   expect(await screen.findByText("what the link names")).toBeDefined();
   expect(screen.getByText("payload")).toBeDefined();
-  expect(screen.getByText("linked")).toBeDefined();
   expect(asked()).toContain("GET /v1/items/linked");
+});
+
+test("draws the item and not its bookkeeping", async () => {
+  pool(holding(saying("linked", "what the link names")));
+
+  render(Item, { id: "linked" });
+  await screen.findByText("what the link names");
+
+  // An id and a channel are notemap's business, and a person reading one item
+  // is not doing notemap's business.
+  expect(screen.queryByText("linked")).toBeNull();
+  expect(screen.queryByText("id")).toBeNull();
+  expect(screen.queryByText("source")).toBeNull();
 });
 
 test("says there is no such item plainly, and not as a failure", async () => {
@@ -176,4 +188,46 @@ test("says the records are out of reach while the item still draws", async () =>
   expect(await screen.findByText("from cache")).toBeDefined();
   expect(screen.getByText(NO_RECORDS_OFFLINE)).toBeDefined();
   expect(screen.queryByRole("link", { name: /create-note/ })).toBeNull();
+});
+
+test("says the pool is out of reach once, and not in the client's own words", async () => {
+  const transport = pool(routed([RECORD]));
+  await client.item("routed");
+  transport.unreachable(true);
+
+  const { container } = render(Item, { id: "routed" });
+  await screen.findByText(NO_RECORDS_OFFLINE);
+
+  // The rail's sentence is the whole of what this surface has to say about it.
+  // A raw client error beside the actions says the same thing twice, in words
+  // chosen for a developer, from the slot an action reports through.
+  expect(container.querySelectorAll('[role="status"]')).toHaveLength(0);
+});
+
+test("drops a record when the address moves to another item", async () => {
+  pool((request) => {
+    switch (routeOf(request)) {
+      case "GET /v1/items/routed":
+        return json(200, anItem("routed", ROUTED));
+      case "GET /v1/items/routed/routing":
+        return json(200, { values: [RECORD] });
+      case "GET /v1/items/plain":
+        return json(200, saying("plain", "nothing was routed"));
+      default:
+        return json(200, { values: [] });
+    }
+  });
+
+  const { rerender } = render(Item, { id: "routed" });
+  await screen.findByRole("link", { name: /create-note/ });
+
+  await rerender({ id: "plain" });
+  await screen.findByText("nothing was routed");
+
+  // One item's history under another item's stamp, with a link proving whose
+  // it was: the surface is reused across a change of address.
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("link", { name: /create-note/ })).toBeNull();
+  });
+  expect(screen.getByText("unrouted")).toBeDefined();
 });

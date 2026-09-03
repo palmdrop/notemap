@@ -1,9 +1,5 @@
 <script lang="ts">
-  import {
-    saidBy,
-    type DestinationDescription,
-    type RoutingRecord,
-  } from "@notemap/client";
+  import type { DestinationDescription } from "@notemap/client";
 
   import { itemHref } from "$components/item/href";
   import Body from "$components/primitives/register/Body.svelte";
@@ -15,17 +11,17 @@
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
   import { argumentsOf } from "$lib/arguments";
+  import { didWhat } from "$lib/capability";
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
-  import { NO_RECORDS_OFFLINE, NO_SUCH_RECORD } from "$lib/said";
+  import { recordsOf } from "$lib/records.svelte";
+  import { NO_RECORDS_OFFLINE, NO_SUCH_RECORD, THIS_ITEM } from "$lib/said";
 
   let { item: id, record: wanted }: { item: string; record: string } = $props();
 
   const pool = reachable();
   const destinations = client.destinations.all;
 
-  let records = $state<readonly RoutingRecord[] | undefined>(undefined);
-  let refused = $state("");
   let described = $state<DestinationDescription | undefined>(undefined);
 
   const held = $derived(client.held(id));
@@ -37,35 +33,28 @@
     void client.item(id);
   });
 
-  // Nothing caches a record, so this surface has the pool or it has nothing.
-  $effect(() => {
-    if (!pool.yes) return;
+  const records = recordsOf(
+    () => id,
+    () => pool.yes,
+  );
 
-    const asking = id;
-    void (async () => {
-      try {
-        const answered = await client.routing.recordsFor(asking);
-        if (asking === id) records = answered;
-      } catch (error) {
-        if (asking === id) refused = saidBy(error);
-      }
-    })();
-  });
-
-  const record = $derived(records?.find((one) => one.id === wanted));
+  const record = $derived(records.all.find((one) => one.id === wanted));
   const target = $derived(record?.target);
 
   $effect(() => {
+    described = undefined;
     if (target === undefined || target.kind !== "destination") return;
 
     const asking = target.destination;
     void (async () => {
       try {
-        described = await client.destinations.describe(asking);
+        const answer = await client.destinations.describe(asking);
+        if (target?.kind === "destination" && asking === target.destination) {
+          described = answer;
+        }
       } catch {
         // A destination that cannot be described is drawn by its own keys,
         // which is the honest fallback rather than a failure of this surface.
-        described = undefined;
       }
     })();
   });
@@ -101,13 +90,17 @@
       <Stamp at={record.at} />
       <StateWord word={record.state} />
 
+      <div class="mt-2 break-words">
+        {target.kind === "destination"
+          ? didWhat(target.capability)
+          : "Marked done by hand"}
+      </div>
+
       <Facts>
-        <Fact name="destination">{destination}</Fact>
-        {#if target.kind === "destination"}
-          <Fact name="capability">{target.capability}</Fact>
-        {/if}
-        <Fact name="item"><a href={itemHref(id)}>{said || id}</a></Fact>
-        <Fact name="record">{record.id}</Fact>
+        <Fact name="where">{destination}</Fact>
+        <Fact name="item">
+          <a href={itemHref(id)}>{said || THIS_ITEM}</a>
+        </Fact>
       </Facts>
     </Rail>
 
@@ -125,9 +118,13 @@
             {/each}
           </Facts>
         {/if}
-      {:else if target.note !== undefined}
+      {:else}
         <div class="font-mono text-ink-muted">note</div>
-        <div class="mt-2 break-words">{target.note}</div>
+        {#if target.note === undefined}
+          <div class="mt-2 font-mono text-ink-muted">none</div>
+        {:else}
+          <div class="mt-2 break-words">{target.note}</div>
+        {/if}
       {/if}
 
       <div class="mt-6 font-mono text-ink-muted">pointer</div>
@@ -142,18 +139,20 @@
     </Body>
   {:else}
     <Rail first>
-      {#if records !== undefined}
+      {#if records.settled && records.refused === ""}
         <StateWord word="gone" />
       {/if}
 
       <Facts>
-        <Fact name="item"><a href={itemHref(id)}>{said || id}</a></Fact>
+        <Fact name="item">
+          <a href={itemHref(id)}>{said || THIS_ITEM}</a>
+        </Fact>
       </Facts>
     </Rail>
     <Body first>
-      {#if refused !== ""}
-        <div role="status" class="font-mono text-accent">{refused}</div>
-      {:else if records !== undefined}
+      {#if records.refused !== ""}
+        <div role="status" class="font-mono text-accent">{records.refused}</div>
+      {:else if records.settled}
         <Prose text={NO_SUCH_RECORD} />
       {:else if !pool.yes}
         <div class="font-mono text-ink-muted">{NO_RECORDS_OFFLINE}</div>

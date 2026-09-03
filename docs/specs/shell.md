@@ -12,7 +12,9 @@
   record as links. An item surface is not a register — no fold, no order, no position — and the
   two surfaces that are keep theirs while a person reads one item. It is also the one surface that
   says what it was drawn from, having no count to mislead and being where a person looks to find
-  out what happened. ([plan](../plans/item-route-and-record-view.md))
+  out what happened. A record says what the delivery did rather than the capability that did it,
+  every address in the shell is a route the compiler checks, and the rail sheds the source and the
+  id on every surface that drew them. ([plan](../plans/item-route-and-record-view.md))
 
 - 2026-09-03 — **Both kinds that write files draw the typed line.** The webdav kind answers
   `candidates`, so a Nextcloud vault completes the way a folder does rather than falling back to a
@@ -242,8 +244,10 @@ add to it at the top of it.
 
 **Processing happens in the row, opened in place.** The queue is one scrollable list a person works
 freely ([client.md](client.md#the-queue)), and leaving it to process an item costs the reader their
-place. So the row has two states and there is no separate item surface. **One row is open at a
-time.**
+place. So the row has two states, and triage never leaves them. **One row is open at a time.**
+*Amended 2026-09-03*: there is an item surface as well ([below](#an-item-has-an-address)), and it
+took nothing from the row — it is where what a row cannot hold is read, and the queue keeps its
+place while a person is there.
 
 **Collapsed, a row is for picking.** It carries:
 
@@ -440,10 +444,20 @@ says out of reach as out of reach, muted and offering nothing, while the item be
 drawing from whatever the client holds — one surface, two answers about freshness, which is what
 the three conditions are for.
 
-**A record is drawn in full**: the destination by name, the capability, the state, when the
+**A record is drawn in full**: what the delivery did, the destination by name, the state, when the
 decision was made, the arguments it was given, and the pointer to where it landed. Marking
 processed is routing whose destination is the person, so it reads as one, with its note where the
-arguments would be. The **arguments are drawn against the capability's own schema** where the
+arguments would be, and `none` where there is no note.
+
+**What it did is said, not the capability that did it.** A capability name is what a destination
+advertises and what a rule is written against ([CONTEXT.md](../../CONTEXT.md)), and a person
+reading one record wants what happened: `Created a note`, `Appended to a note`, `Created or
+appended to a note` for the one that is both until the adapter reaches the vault
+([ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md)). The word is the
+shell's, since nothing on the wire carries a readable one; a capability this shell has never heard
+of is said by its name, which is worse than a sentence and better than silence. It is not labelled
+`action`, that being an entry in the pool's log and a word the glossary tells a capability not to
+borrow. The **arguments are drawn against the capability's own schema** where the
 destination can be described, so a person reads `Directory` rather than `directory`; where it
 cannot be described they are drawn by their own keys, which is the honest fallback and not a
 failure. Anything the record carries that the schema does not name is drawn all the same: the
@@ -698,8 +712,10 @@ reads as a dated entry in a ledger, which is why the capture time is its title.
 **Two columns do the work that type hierarchy usually does.** *Amended 2026-08-24.* The left
 column is a **metadata rail**, and it carries the same things whether a row is open or shut: the
 stamp, the state word where there is one, the tags, and where the item went. Opening a row adds the
-item's facts under them — payload type, edited, source, id — rather than changing what the column
-is for. The right column holds nothing but what was captured, and its actions once the row is open.
+item's facts under them — payload type, edited — rather than changing what the column is for.
+*Amended 2026-09-03*: the source and the id left that list. They are notemap's bookkeeping rather
+than the item, an id is in the address of the surface that has one, and a rail carrying four facts
+where two are unreadable is what made the column look like a debug pane. The right column holds nothing but what was captured, and its actions once the row is open.
 One system, reused, and nothing is distinguished by being bigger.
 
 **The rail can be furled.** An arrow rides the seam the rail's edge makes, in its own strip above
@@ -934,5 +950,11 @@ the page a person actually reads. Three-character indents on successive paragrap
   place, and the row still opens in place.
 - A routing record's arguments are readable as the destination names them, and still readable as
   keys when it cannot be described; its pointer is never a link.
+- A routing record says what happened to the item in a sentence, and says it by the capability's
+  name only where this shell has no sentence for it.
+- No surface draws an item's id or its source, and no label in a rail runs under the value beside
+  it however long the label is.
+- Every address this shell builds is a route id checked against the route tree, so a path that no
+  longer exists fails `pnpm -r typecheck` rather than a click.
 - No component in `apps/ui` names a colour; every colour comes from a token role defined in
   `styles/tokens.css`, and switching the palette requires no change to a component.

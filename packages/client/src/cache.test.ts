@@ -242,3 +242,29 @@ describe("one item, read", () => {
     expect(drawn.failure?.refused).toBe(false);
   });
 });
+
+describe("the copy the client holds", () => {
+  it("follows a mutation made where one item is drawn", async () => {
+    const { client } = clientOver(createMemoryStore(), (request) =>
+      routeOf(request) === "GET /v1/items/one"
+        ? json(200, at("one", 2021))
+        : nothing(),
+    );
+
+    await client.item("one");
+    const held = client.held("one");
+    expect(read(held)?.archived).toBeUndefined();
+
+    // An archive is applied before the pool agrees, so the surface that took
+    // it marks the item at once rather than on the next read.
+    await client.archive("one");
+
+    expect(read(held)?.archived?.archivedAt).toBeDefined();
+  });
+
+  it("holds nothing for an id no read has drawn", () => {
+    const { client } = clientOver(createMemoryStore(), nothing);
+
+    expect(read(client.held("never"))).toBeUndefined();
+  });
+});
