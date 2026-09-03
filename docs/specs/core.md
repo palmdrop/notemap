@@ -16,7 +16,7 @@
   files gained a third capability that means *put this note here* and settles create-against-append
   itself, when it is holding the vault and the answer is true, rather than making a composer commit
   a guess against a destination it may not have been able to reach. The two that decide nothing are
-  kept, because refusing to overwrite and requiring a note to already be there are promises a rule
+  kept, because refusing to overwrite and naming a path nothing may derive from are promises a rule
   wants and an outcome-shaped capability cannot make. Nothing in core moved — this is a rule about
   what a capability should be named after.
   ([plan](../plans/typed-routing-composer.md),
@@ -891,10 +891,12 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   never stored. Core is unchanged by this: it validates arguments against the declared schema and
   refuses a capability that was not declared, exactly as before. What the decision settles is a
   rule about **how a capability should be named** — after the outcome a person wants, not after
-  the mechanism that will achieve it — and it is why the kinds that write files offer both a
-  capability that decides at delivery and two that refuse rather than decide, since *never add to
-  a note* and *this must already exist* are promises a rule can want and an outcome-shaped
-  capability cannot make.
+  the mechanism that will achieve it — and it is why the kinds that write files offer a capability
+  that decides at delivery beside two that are stated up front. `create-file` promises *never add
+  to a note*, which an outcome-shaped capability cannot. `append-to-file` promises a *named path*:
+  nothing is derived from the item, so a rule files into exactly the note it names. Neither
+  promises the note is already there — both kinds write one that is not, which is what a daily
+  note whose sections appear as things are filed into them needs.
 - **A capability's accepted payload types may be a wildcard**, for a destination whose fallback
   genuinely handles anything. It is a promise rather than a shrug: claiming it trades away the
   refusal core would otherwise make up front, so what would have been an immediate

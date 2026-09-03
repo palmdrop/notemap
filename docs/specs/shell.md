@@ -4,6 +4,10 @@
 **Last updated**: 2026-09-02
 **Shipped**:
 
+- 2026-09-03 — **Both kinds that write files draw the typed line.** The webdav kind answers
+  `candidates`, so a Nextcloud vault completes the way a folder does rather than falling back to a
+  plain field. ([plan](../plans/typed-routing-composer.md))
+
 - 2026-09-02 — **A routing composer you can type.** The place is one monospace line with the
   hierarchy drawn beneath it rather than walked through, what will happen read off it and said in
   one word, and the folders that are not there named before anything is committed. Places routed to
@@ -296,9 +300,9 @@ line gives the destination back, a wrong one not being a reason to close the com
 **For a destination whose kind holds a filesystem, the place is one monospace line** (added
 2026-09-02, replacing the browser described here on 2026-08-31 — that control is what every other
 kind still draws). Typing filters the entries at the deepest settled scope, `/` descends, `⇥`
-completes the segment under the caret as far as the matches agree, `⌫` at a segment's head pops the
-whole level rather than one character of it, and `↑↓` move through what is offered while `⏎`, left
-alone, routes. **The line is the value**: there is no second input beside it holding the same
+completes the segment under the caret as far as the matches agree, `⌫` at the end of a line that
+ends in one pops the whole segment rather than one character of it, and `↑↓` move through what is
+offered while `⏎`, left alone, routes. **The line is the value**: there is no second input beside it holding the same
 string, which is what the browser-and-input pair did and neither half could see the other.
 
 **The hierarchy is shown, not walked**: the levels along the typed path are drawn beneath the line,
@@ -309,8 +313,11 @@ root's answer says whether the destination can be asked at all. A cut-short answ
 a scope past the adapter's cap cannot be filtered into completeness client-side.
 
 **What will happen is read off the line and said in one word** — `create` where the folder does not
-hold that name, `append` where it does — with the folders that will be made beside it in the
-accent, as `+ drafts/`. It is **drawn and never stored**: what is stored says *put this here*, and
+hold that name, `append` where it does — and the folders that will be made are drawn **in the tree
+beneath it**, in the accent as `+ drafts/`, under the deepest one that is there and with the note
+itself under those. Where they will be, rather than named off to one side. The word is said only
+where there is something to read it off: a level that has not answered is no evidence either way,
+and nothing under a folder that is not there can be looked up at all. It is **drawn and never stored**: what is stored says *put this here*, and
 the adapter decides again at delivery, when the answer is true
 ([ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md)). Because the word is
 read rather than chosen, **`do` is not a step here**: the capability is settled, and the one escape
@@ -325,9 +332,11 @@ offers, with how often each was used. They come from the pool rather than from t
 they are not per-browser, not invisible to the mirror, and not a second copy of what the routing
 records already hold; the pool answers the facts and the shell ranks, which keeps a change of mind
 about most-used against most-recent a change here alone. The best of them is offered as a **greyed
-continuation** after the caret. **`⇥` and `→` are different keys and stay different**: one
-completes a segment from what the destination offered, the other takes the whole remembered
-continuation. A single key meaning either depending on invisible state is the failure mode being
+continuation** after the caret, matched case-sensitively — the ghost is drawn as the text still to
+come, so a match that only holds when case is ignored would draw a path over the one taking it
+would write. The list beneath is not case-sensitive, `↑↓` reaching a place there replacing the line
+outright. **`⇥` and `→` are different keys and stay different**: one completes a segment from what
+the destination offered, the other takes the whole remembered continuation. A single key meaning either depending on invisible state is the failure mode being
 avoided.
 
 **A remembered place the listing does not hold is said, not silently re-created.** A folder routed
@@ -346,9 +355,16 @@ condition and one in which the composer never opens, the row's own `route` being
 place has been routed to before it still completes against either, because the pool holds those
 and the pool is reachable whenever the composer is open.
 
+**The composer says a word, never a sentence.** A field's own `description` is a sentence written
+for a schema and is not drawn here; what a field means is its label and its control. Where the line
+draws the place it carries no label at all — `where` is the destination's step, one above — and
+what sits beside it is a terse row rather than a step, as `tags` is. The caret is in the composer
+from the moment it opens: the destination line has it, the place line takes it when a destination
+is taken, and the destination line takes it back when the place is released.
+
 **Which control a field draws is a lookup keyed by destination kind**, and it decides on the kind
 alone: what a field means is the kind's business, and a capability one kind shares with another
-does not make their contents the same shape. A kind with no filesystem in it draws neither line nor
+does not make their contents the same shape. A kind that cannot enumerate what it holds draws neither line nor
 tree and keeps the schema-driven browser — the entries at the current scope as marked options,
 `back` to the scope before it, `use <label>` to take the scope stood in, `clear` at the top — the
 same `Group`/`Option` idiom `where` already uses, with free entry beside it, and `do` still a step,

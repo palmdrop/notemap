@@ -14,17 +14,30 @@ plan](../plans/shell-design-port.md) is written against; the prose account of
 | `log.html`, `log.css` | The action log as it should be drawn. Built as [log-in-the-shell](../plans/log-in-the-shell.md), which made it a route of the app; it was drawn against the daemon's own page, which is why it carries both sides of every `light-dark()` where the others name a token. |
 | `shots/` | Each surface rendered at 1440 and at 390, so a change can be compared without opening a browser. |
 
-**These agree with the code as of 2026-09-02.** `queue.html` and `shell.css` no longer draw the
+**These agree with the code as of 2026-09-03.** `queue.html` and `shell.css` no longer draw the
 composer at all: it was a panel beside the row, which a modal superseded on 2026-08-24, and
 `shell.css` carried a `.tree` block that predated the candidates browser and never described the
 one that shipped. Nothing in the register reserves width for a modal, so the stage is one column
 and `composer.html` is the whole account. `.opt` stays in `shell.css` because the register's own
 choosers are drawn with it.
 
-`composer.html` was drawn before the code and has since been corrected against it on two points:
-`under` is a typed field rather than a chooser over a note's own headings, which is I/O neither
-adapter does, and the counts beside a state word are gone, `CandidateEntry` having no field for
-them. The counts in the remembered list stayed — the pool does answer how often and when last.
+`composer.html` was drawn before the code and has since been corrected against it, on 2026-09-02
+and again on 2026-09-03 after a review read the two side by side:
+
+- `under` is a typed field rather than a chooser over a note's own headings, which is I/O neither
+  adapter does.
+- The counts beside a state word are gone, `CandidateEntry` having no field for them. The counts in
+  the remembered list stayed — the pool does answer how often and when last.
+- The folders that are not there are drawn **in the tree**, where they will be, rather than named
+  beside the state word. The page always drew them both ways; the code now draws the tree.
+- **No key hints.** The commit row carried `⏎ route · ⇥ complete · ⌫ up · esc`; nothing draws it,
+  and a row of keys is a sentence in a surface whose copy is a word or a mark.
+- **No count under a single match.** The `where` case drew `1 match` beneath the one destination
+  that matched; the count is only said where a prefix is ambiguous, which is the only time it
+  answers anything.
+
+The line itself carries no label. `where` is the destination's step, and the place is the thing the
+modal is for.
 
 Open any page directly — `file://` works, there is nothing to serve.
 
@@ -39,7 +52,7 @@ The same command drives a screenshot of the real app: run `pnpm dev`, point it
 at `http://localhost:5173/`, and read the two images side by side. Check 390 as
 well as 1440 — the register's columns tighten below 34rem.
 
-**`shots/` is stale for `queue.html` and `composer.html`** as of 2026-09-02:
+**`shots/` is stale for `queue.html` and `composer.html`** as of 2026-09-03:
 both pages changed and no browser was available to re-render them. Re-run the
 command above for each surface at both widths.
 

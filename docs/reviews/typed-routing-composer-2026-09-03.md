@@ -1,7 +1,7 @@
 # Review: A routing composer you can type (PR #40)
 
 **Date**: 2026-09-03
-**Status**: Open <!-- Open | Partially addressed | Resolved -->
+**Status**: Resolved <!-- Open | Partially addressed | Resolved -->
 **Scope**: `git diff origin/main` — 8 commits, `452135a..3b0dfda`
 **Plan**: `docs/plans/typed-routing-composer.md`
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`
@@ -15,7 +15,7 @@ The shape is right and it is well tested where it is testable: `path-line.ts`, `
 four specs, and everything passes — `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, and
 `pnpm test:stack` (43 tests, 11 files).
 
-Two things need answering before this merges. **ADR 30's stated reason for keeping
+Two things need answering before this merges. **ADR 31's stated reason for keeping
 `append-to-file` is contradicted by the code it describes** — both adapters create a note that is
 not there, and the ADR itself says so three paragraphs above the claim (finding 1). And **the
 composer that shipped is not the page `docs/design/README.md` now asserts it agrees with**
@@ -33,7 +33,7 @@ nobody can type into without reaching for the mouse first (4).
 
 ### 1. `append-to-file` does not require the note to exist, and the ADR is built on saying it does
 
-`docs/adr/0030-...md`, `docs/specs/core.md:850` — the ADR's *Decision outcome* keeps
+`docs/adr/0031-...md` (numbered 30 when this was written), `docs/specs/core.md:850` — the ADR's *Decision outcome* keeps
 `append-to-file` on this ground:
 
 > `append-to-file` is the only way to say *this must already exist*, which is what a rule aimed at
@@ -280,8 +280,69 @@ but the two words this affects are the two exact ones.
 
 ## Resolution
 
-<!--
-Add once findings are addressed, and flip **Status** above. One numbered entry per finding,
-mirroring its number. Mark each: Fixed / Mitigated / Won't fix (reason).
-Until this section exists and **Status** is updated, the findings count as open.
--->
+Reconciled with the developer's own review 2026-09-03; every finding here was accepted. Their
+review added five more, recorded below as 22–26.
+
+1. **Fixed.** ADR 31 (renumbered from 30, main having taken the number) and `docs/specs/core.md`
+   drop the claim that `append-to-file` requires the note to exist. What it actually carries is a
+   *named path* — `path` is required, so nothing is derived from the item — and the ADR now says
+   that a capability meaning *this must already exist* does not exist, and would be a fourth name
+   rather than a reinterpretation of this one. The plan's own bullet is corrected in place.
+2. **Fixed.** `forecastOf` stops at the first level that never answered and returns nothing, as
+   `marked`/`absent` already did; a folder that is there but has not said what it holds cannot
+   settle the word either. Every folder past the first missing one is now named, nothing under an
+   absent folder being there.
+3. **Fixed.** `→` takes the whole remembered place rather than gluing its tail onto what was
+   typed. The ghost matches case-sensitively to match, the list beneath does not.
+4. **Fixed.** The destination line takes the caret when the composer opens, the place line when a
+   destination is taken, the destination line back when the place is released. `Modal` yields
+   rather than pulling focus to the panel. The unreachable `PathLine.focus()` export is gone.
+5. **Fixed.** `Where` is `place` and `Heading` is `under`; descriptions are not drawn; the line
+   carries no label and `under` is a terse row rather than a step; the folders to be made are in
+   the tree. Key hints stay undrawn and the design page drops them.
+6. **Fixed.** `composer.html`'s `where` case no longer draws `1 match` under a single match.
+7. **Fixed.** The composer's tags narrow as a name is typed, with what is applied staying visible
+   however the filter cuts.
+8. **Fixed.** The overlay scrolls with the input.
+9. **Won't fix.** `settles` still asks `browserFor(kind) !== CandidateBrowser`. A second
+   specialised browser that does not settle would need a registry that says so; there is one
+   browser and one line, and inventing the seam before the second kind of control exists is
+   guessing at its shape.
+10. **Fixed.** The comment sits above `Bound` again.
+11. **Fixed.** The field is quoted into the JSON path, with a test for a name holding a `.` and one
+    holding a `-`.
+12. **Fixed.** `⇧⏎` on a free name routes rather than swallowing the keystroke.
+13. **Won't fix.** `create-file` has no `heading` and `additionalProperties: false`, so `⇧⏎` cannot
+    carry one. Making the key unavailable where a heading is typed trades a rare silent loss for a
+    key that sometimes does nothing, which is the worse of the two.
+14. **Fixed.** The separator is a `role="separator"`, and `more than this shows` sits outside the
+    listbox.
+15. **Fixed.** `docs/specs/shell.md` says `⌫` pops at the end of a line that ends in a slash, which
+    is what the code does.
+16. **Fixed.** `tests/full-stack/src/routing-places.test.ts` drives both reads and the capability
+    over a real port.
+17. **Fixed.** Dropping a tag is answered at once, as taking one was.
+18. **Fixed.** `today` and `yesterday` turn over at the reader's own midnight. The tests build
+    their timestamps locally so they hold in any zone.
+
+### From the developer's review
+
+19. **Fixed.** Too much text in the composer — see 5.
+20. **Fixed.** `Where` colliding with the destination step's `where` — see 5.
+21. **Fixed.** `derived` moved beside the state word, the folders it displaced now being in
+    the tree.
+22. **Fixed, with a caveat.** *Pre-existing files are not completable and a file that is there
+    still says `create`.* Not reproducible here: over a real daemon `/candidates` answers both
+    folders and files for `create-or-append-file`, and a jsdom composer driven with that exact
+    payload lists the note and forecasts `append`. One mechanism fits every symptom, though —
+    `page()` dropped any entry whose `Dirent` reported neither file nor directory, which is what
+    `DT_UNKNOWN` gives on FUSE and overlay mounts, and a vault on one listed as empty. Empty
+    reads as a folder with nothing in it, which forecasts every note as new and leaves only the
+    remembered places to complete from. `list()` now asks with `lstat` where `readdir` could not
+    say. **If it persists after this, it is something else and needs a browser to find.**
+23. **Fixed.** The webdav kind answers `candidates` over `PROPFIND` at `Depth: 1`. It had declared
+    its fields unbrowsable, so `browserFor`'s `webdav` registration could never fire.
+24. **Fixed.** The folders to be made are drawn in the tree, under the deepest one that is there,
+    with the note beneath them.
+25. **Fixed.** The destination line narrows nothing while nothing is typed, so the list is said
+    once rather than twice.

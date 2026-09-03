@@ -3,7 +3,7 @@
 **Date**: 2026-09-01
 **Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`
-**Closed**: 2026-09-02
+**Closed**: 2026-09-03
 
 ---
 
@@ -79,8 +79,10 @@ Settled with the developer 2026-09-01/02.
   when nothing is there to look at.
 - **`create-file` and `append-to-file` stay.** `create-file` is what `⇧⏎` stores, being the only
   capability that guarantees never-overwrite through `alternatives()` suffixing; `append-to-file`
-  is the only way to say *this must already exist*, which a rule aimed at a daily file wants. Three
-  names, and both kinds implement all three.
+  is the only one whose `path` is required, so a rule aimed at a daily file names it outright and
+  nothing is derived. Three names, and both kinds implement all three. *(Corrected 2026-09-03: this
+  bullet said `append-to-file` means "this must already exist". It does not — both kinds write a
+  note that is not there. See [ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md).)*
 - **Counts on candidate entries are dropped.** `41 notes`, `9`, `41 lines` appear in the mockups
   and `CandidateEntry` has no field for any of them. Adding one means core, the port, `/v1`, the
   regenerated OpenAPI document and the client — for decoration.
@@ -319,6 +321,26 @@ Depends on every phase above.
 - [x] `git commit`
 
 ---
+
+## What review changed
+
+Reviewed 2026-09-03 against the branch, twice over — a written review in
+[`docs/reviews/typed-routing-composer-2026-09-03.md`](../reviews/typed-routing-composer-2026-09-03.md)
+and the developer's own, reconciled together. What it moved, beyond the findings that file records:
+
+- **The webdav kind answers `candidates`**, which this plan had assumed and never checked. It
+  declared its fields unbrowsable, so the composer drew a plain field and a Nextcloud destination
+  offered nothing at all — phase 2's registration of `webdav` in `browserFor` was dead code. The
+  enumeration [destination-webdav](destination-webdav.md) deferred lands here instead, over
+  `PROPFIND` at `Depth: 1`.
+- **A vault entry `readdir` could not classify was dropped**, so a vault on a FUSE or overlay mount
+  listed as empty: no tree, nothing to complete, and every note forecast as new. Pre-existing to
+  this plan, and only visible once something drew the listing a level at a time.
+- **The folders to be made moved into the tree**, where the design always drew them.
+- **The composer stopped drawing a field's `description`**, and `Where` became `place`: it sat
+  directly under the destination step's own `where`.
+- **The caret is in the composer from the moment it opens.** Nothing focused anything, so a
+  composer built to be typed into had to be clicked into first.
 
 ## Deferred, deliberately
 

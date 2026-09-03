@@ -14,8 +14,9 @@ and commits, and nothing asks them whether that is a note to make or a note to a
 is read off the vault's own listing and said in one word above the button.
 
 That word has to be stored as *something*. The two capabilities that existed were `create-file`,
-which refuses a name that is taken, and `append-to-file`, which requires one that is not. Both are
-decisions, and the composer would have to pick one at the moment of routing.
+which refuses a name that is taken, and `append-to-file`, which adds to a note and writes one that
+is not there yet. Both are decisions the caller states up front, and the composer would have to
+pick one at the moment of routing.
 
 The trouble is when routing happens relative to when delivery happens. A routing decision is
 recorded against a destination that may be asleep, unmounted or unreachable — that property is what
@@ -43,8 +44,8 @@ So: who decides whether the note is created or appended to, and when?
   line is that create-or-append is not a question anybody answers. Storing one of the two as though
   they had chosen it makes the record say something they never said.
 - **The adapter is the only thing in a position to know.** It is holding the vault, at the moment
-  of the write, and it already makes exactly this call — `append-to-file` creates a note that is
-  not there.
+  of the write, and it already makes exactly this call: `append-to-file` writes a note that is not
+  there rather than refusing.
 
 ---
 
@@ -75,10 +76,19 @@ true.
 
 **Why the other two are kept.** `create-file` is the only capability that guarantees a note is
 never added to — it is what `⇧⏎` stores when somebody explicitly means *make a new one beside it*,
-and its refusal on a taken name is the guarantee, not a bug. `append-to-file` is the only way to
-say *this must already exist*, which is what a rule aimed at a daily note wants: silently making
-`2026-09-02.md` in the wrong vault is worse than failing. Three capabilities, three different
-promises, and both kinds implement all three.
+and its refusal on a taken name is the guarantee, not a bug.
+
+`append-to-file` earns its place on a narrower ground, and it is worth being exact about which,
+because the obvious one is not true: **it does not require the note to already be there.** Both
+kinds write one that is not, deliberately — the motivating case is a daily note whose sections
+appear as things are filed into them. What it does carry that `create-or-append-file` cannot is a
+*named path*: `path` is required, so nothing is ever derived, and a rule written against it files
+into exactly the note it names or fails. `create-or-append-file` reads a trailing slash and derives
+a filename from the item, which is what the composer wants and what a rule does not.
+
+So: two capabilities that decide up front and one that defers, rather than three different
+promises about what is already there. **A capability that means *this must already exist* does not
+exist**, and if a rule ever wants one it is a fourth name, not a reinterpretation of this one.
 
 **Why not option 1.** It has the composer commit an answer it could not check, to a question nobody
 asked, which then fails hours later in the one way that cannot be retried. Against an unreachable
