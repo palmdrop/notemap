@@ -13,6 +13,7 @@ import type {
   Delivery,
   DeliveryOutcome,
   DestinationDescriptor,
+  JsonObject,
   PayloadTypeName,
 } from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
@@ -96,18 +97,44 @@ async function noVault(): Promise<Vault> {
 }
 
 describe("what it says it can do", () => {
-  it("declares both capabilities over the payload types it was given", async () => {
+  it("declares all three capabilities over the payload types it was given", async () => {
     const { destination } = await vault();
     const described = await destination.describe();
 
     expect(described.capabilities.map((each) => each.name)).toEqual([
+      "create-or-append-file",
       "create-file",
       "append-to-file",
     ]);
     expect(described.capabilities[0]?.accepts).toEqual([TEXT, "image"]);
-    expect(described.capabilities[1]?.argumentsSchema).toMatchObject({
+    expect(described.capabilities[2]?.argumentsSchema).toMatchObject({
       required: ["path"],
     });
+  });
+
+  it("asks nothing of create-or-append-file but offers candidates for its path", async () => {
+    const { destination } = await vault();
+    const described = await destination.describe();
+    const schema = described.capabilities[0]?.argumentsSchema as JsonObject;
+
+    expect(schema["required"]).toBeUndefined();
+    expect(schema["properties"]).toMatchObject({
+      path: { "x-notemap-candidates": true },
+      heading: {},
+    });
+    expect((schema["properties"] as JsonObject)["heading"]).not.toHaveProperty(
+      "x-notemap-candidates",
+    );
+  });
+
+  /** The schema used to demand a folder the adapter has always read as the root. */
+  it("no longer requires create-file's directory", async () => {
+    const { destination } = await vault();
+    const described = await destination.describe();
+
+    expect(described.capabilities[1]?.argumentsSchema).not.toHaveProperty(
+      "required",
+    );
   });
 });
 
@@ -356,6 +383,129 @@ describe("appending to a file", () => {
     expect(await readFile(join(path, "daily.md"), "utf8")).toBe(
       "# Monday\n\n## Captured\n\na thought\n",
     );
+  });
+});
+
+describe("creating or appending, decided here", () => {
+  const asked = (args: Record<string, string>) =>
+    delivery({ capability: "create-or-append-file", arguments: args });
+
+  it("creates the note when it is not there", async () => {
+    const { path, destination } = await vault({ text: renderText });
+
+    const outcome = await destination.deliver(
+      asked({ path: "notes/decisions.md" }),
+    );
+
+    expect(outcome).toMatchObject({ pointer: "notes/decisions.md" });
+    const written = await readFile(join(path, "notes", "decisions.md"), "utf8");
+    expect(written).toContain("id: 'item-1'");
+    expect(written).toContain("a thought");
+  });
+
+  it("appends to the note when it is already there", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    await writeFile(join(path, "decisions.md"), "an earlier line\n");
+
+    const outcome = await destination.deliver(asked({ path: "decisions.md" }));
+
+    expect(outcome).toMatchObject({ pointer: "decisions.md" });
+    expect(await readFile(join(path, "decisions.md"), "utf8")).toBe(
+      "an earlier line\n\na thought\n",
+    );
+  });
+
+  it("makes a folder that is not there", async () => {
+    const { path, destination } = await vault({ text: renderText });
+
+    await destination.deliver(asked({ path: "projects/notemap/drafts/a.md" }));
+
+    expect(await filesUnder(path)).toEqual(["projects/notemap/drafts/a.md"]);
+  });
+
+  it("derives the filename from a path that ends in a slash", async () => {
+    const { destination } = await vault({ text: renderText });
+
+    const outcome = await destination.deliver(
+      delivery({
+        capability: "create-or-append-file",
+        arguments: { path: "drafts/" },
+        content: { text: "Read: Borges — Ficciones\nand then the rest" },
+      }),
+    );
+
+    expect(outcome).toMatchObject({
+      pointer: "drafts/Read- Borges - Ficciones.md",
+    });
+  });
+
+  /** Without the slash there is nothing to tell a new folder from an extensionless note. */
+  it("reads the same name without a slash as the note itself", async () => {
+    const { path, destination } = await vault({ text: renderText });
+
+    await destination.deliver(asked({ path: "drafts" }));
+
+    expect(await filesUnder(path)).toEqual(["drafts"]);
+  });
+
+  it("derives into the root when the path is empty", async () => {
+    const { destination } = await vault({ text: renderText });
+
+    expect(
+      await destination.deliver(
+        delivery({
+          capability: "create-or-append-file",
+          arguments: { path: "" },
+          content: { count: 4 },
+        }),
+      ),
+    ).toMatchObject({ pointer: "item-1.md" });
+  });
+
+  it("inserts under a heading that is already in the note", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    await writeFile(
+      join(path, "daily.md"),
+      ["## Notes", "", "an earlier line", "", "## Later", "", "after", ""].join(
+        "\n",
+      ),
+    );
+
+    await destination.deliver(asked({ path: "daily.md", heading: "Notes" }));
+
+    expect(await readFile(join(path, "daily.md"), "utf8")).toBe(
+      [
+        "## Notes",
+        "",
+        "an earlier line",
+        "",
+        "a thought",
+        "",
+        "## Later",
+        "",
+        "after",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("writes the heading itself when the note is new", async () => {
+    const { path, destination } = await vault({ text: renderText });
+
+    await destination.deliver(asked({ path: "daily.md", heading: "Notes" }));
+
+    expect(await readFile(join(path, "daily.md"), "utf8")).toContain(
+      "## Notes\n\na thought\n",
+    );
+  });
+
+  it("refuses a path that leaves the root", async () => {
+    const { path, destination } = await vault({ text: renderText });
+
+    const outcome = await destination.deliver(asked({ path: "../escaped.md" }));
+
+    expect(outcome.kind).toBe("rejected");
+    expect(await filesUnder(path)).toEqual([]);
   });
 });
 

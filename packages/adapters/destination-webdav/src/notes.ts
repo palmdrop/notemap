@@ -2,8 +2,10 @@ import type { Delivery } from "@notemap/core";
 import {
   asAppendToFileArguments,
   asCreateFileArguments,
+  asCreateOrAppendFileArguments,
   deriveFilename,
   insertUnder,
+  placeOf,
   renderNote,
   type Renderers,
 } from "@notemap/output-markdown";
@@ -25,7 +27,7 @@ export type Wiring = {
  * creates racing for one name leave one note and one refusal, where asking and
  * then writing would have left one note and one silent loss.
  */
-export async function createNote(
+export function createNote(
   wiring: Wiring,
   delivery: Delivery,
   signal?: AbortSignal,
@@ -36,10 +38,48 @@ export async function createNote(
   }
 
   const filename = args.filename ?? deriveFilename(delivery);
-  // An empty directory names the root itself, and joining it blindly would
-  // make an absolute path, which is the one shape containment refuses outright.
-  const target =
-    args.directory === "" ? filename : `${args.directory}/${filename}`;
+  return create(wiring, delivery, under(args.directory, filename), signal);
+}
+
+/**
+ * Composed of the other two rather than deciding anything of its own: a note
+ * that is not there is what appending already creates, and a missing collection
+ * is what writing one already makes. What this capability adds is *when* the
+ * choice is made — here, against the vault as it is, rather than in a composer
+ * that may have had nothing to ask.
+ */
+export function createOrAppendToNote(
+  wiring: Wiring,
+  delivery: Delivery,
+  signal?: AbortSignal,
+): Promise<string> {
+  const args = asCreateOrAppendFileArguments(delivery.arguments);
+  if (args === undefined) {
+    throw new Refused("that is not a create-or-append-file argument set");
+  }
+
+  const place = placeOf(args.path);
+  const filename = place.filename ?? deriveFilename(delivery);
+  return append(
+    wiring,
+    delivery,
+    under(place.directory, filename),
+    args.heading,
+    signal,
+  );
+}
+
+/** An empty directory names the root itself, and joining it blindly would make an absolute path, which containment refuses outright. */
+function under(directory: string, filename: string): string {
+  return directory === "" ? filename : `${directory}/${filename}`;
+}
+
+async function create(
+  wiring: Wiring,
+  delivery: Delivery,
+  target: string,
+  signal?: AbortSignal,
+): Promise<string> {
   const wanted = locate(wiring.root, target);
 
   await makeCollections(wiring.dav, wanted, signal);
@@ -74,7 +114,7 @@ const ATTEMPTS = 4;
  * the motivating case is a daily note whose sections appear as things are filed
  * into them, and it is the filesystem kind's behaviour under the same words.
  */
-export async function appendToNote(
+export function appendToNote(
   wiring: Wiring,
   delivery: Delivery,
   signal?: AbortSignal,
@@ -84,7 +124,17 @@ export async function appendToNote(
     throw new Refused("that is not an append-to-file argument set");
   }
 
-  const note = locate(wiring.root, args.path);
+  return append(wiring, delivery, args.path, args.heading, signal);
+}
+
+async function append(
+  wiring: Wiring,
+  delivery: Delivery,
+  target: string,
+  heading?: string,
+  signal?: AbortSignal,
+): Promise<string> {
+  const note = locate(wiring.root, target);
 
   // Placed once, whatever happens to the note after: the collection they go in
   // is the note's, and an attempt that loses a race re-reads rather than
@@ -108,7 +158,7 @@ export async function appendToNote(
     if (existing === undefined) {
       const created = await wiring.dav.create(
         note.encoded,
-        `${rendered.frontmatter}\n${insertUnder("", rendered.body, args.heading)}`,
+        `${rendered.frontmatter}\n${insertUnder("", rendered.body, heading)}`,
         signal,
       );
       // Somebody made it between the read and the write, so it is an append now.
@@ -133,7 +183,7 @@ export async function appendToNote(
 
     const written = await wiring.dav.replace(
       note.encoded,
-      insertUnder(existing.body, rendered.body, args.heading),
+      insertUnder(existing.body, rendered.body, heading),
       existing.etag,
       signal,
     );

@@ -2,7 +2,11 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 
 import { Rejected } from "@notemap/core";
-import type { DeliveryOutcome, PayloadTypeName } from "@notemap/core";
+import type {
+  DeliveryOutcome,
+  JsonObject,
+  PayloadTypeName,
+} from "@notemap/core";
 import { linkTo, type Renderer } from "@notemap/output-markdown";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -220,13 +224,17 @@ describe("creating a note", () => {
     expect(server.files()).toEqual({});
   });
 
+  /**
+   * A missing `directory` is the root now, so only a wrong type is left for the
+   * reader to catch — an extra key is the schema's business at core's boundary.
+   */
   it("refuses arguments that are not a create-file argument set", async () => {
     const server = await vault();
 
     expect(
       await adapter(server).deliver(
         destinationRow({ root: "V" }),
-        delivery({ arguments: { folder: "inbox" } }),
+        delivery({ arguments: { directory: 5 } as unknown as JsonObject }),
       ),
     ).toMatchObject({ kind: "rejected" });
   });
@@ -364,6 +372,108 @@ describe("appending to a note", () => {
     expect(await append(server, { note: "daily.md" })).toMatchObject({
       kind: "rejected",
     });
+  });
+});
+
+describe("creating or appending, decided here", () => {
+  const send = (server: DavServer, args: Record<string, string>) =>
+    adapter(server).deliver(
+      destinationRow({ root: "V" }),
+      delivery({ capability: "create-or-append-file", arguments: args }),
+    );
+
+  it("creates the note when it is not there", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+
+    const outcome = await send(server, { path: "notes/decisions.md" });
+
+    expect(outcome).toMatchObject({ pointer: "notes/decisions.md" });
+    expect(server.files()["V/notes/decisions.md"] ?? "").toContain(
+      "derived_from: 'urn:commons:item:item-1'",
+    );
+  });
+
+  it("appends to the note when it is already there", async () => {
+    const server = await vault();
+    server.put("V/decisions.md", "an earlier line\n");
+
+    const outcome = await send(server, { path: "decisions.md" });
+
+    expect(outcome).toMatchObject({ pointer: "decisions.md" });
+    expect(server.files()["V/decisions.md"]).toContain("an earlier line");
+    expect(server.files()["V/decisions.md"]).not.toContain("derived_from");
+  });
+
+  it("makes a collection that is not there", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+
+    const outcome = await send(server, {
+      path: "projects/notemap/drafts/a.md",
+    });
+
+    expect(outcome).toMatchObject({ pointer: "projects/notemap/drafts/a.md" });
+    expect(Object.keys(server.files())).toEqual([
+      "V/projects/notemap/drafts/a.md",
+    ]);
+  });
+
+  it("derives the filename from a path that ends in a slash", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+
+    const outcome = await adapter(server).deliver(
+      destinationRow({ root: "V" }),
+      delivery({
+        capability: "create-or-append-file",
+        arguments: { path: "drafts/" },
+        content: { text: "# A thought\nand more of it" },
+      }),
+    );
+
+    expect(outcome).toMatchObject({ pointer: "drafts/A thought.md" });
+  });
+
+  /** Without the slash there is nothing to tell a new collection from an extensionless note. */
+  it("reads the same name without a slash as the note itself", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+
+    const outcome = await send(server, { path: "drafts" });
+
+    expect(outcome).toMatchObject({ pointer: "drafts" });
+    expect(Object.keys(server.files())).toEqual(["V/drafts"]);
+  });
+
+  it("inserts under a heading that is already in the note", async () => {
+    const server = await vault();
+    server.put("V/daily.md", "# Monday\n\n## Notes\n\nthe first one\n");
+
+    await send(server, { path: "daily.md", heading: "Notes" });
+
+    expect(server.files()["V/daily.md"]).toContain(
+      "## Notes\n\nthe first one\n\n",
+    );
+  });
+
+  it("writes the heading itself when the note is new", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+
+    await send(server, { path: "daily.md", heading: "Notes" });
+
+    expect(server.files()["V/daily.md"] ?? "").toContain("## Notes");
+  });
+
+  it("refuses a path that leaves the vault", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+
+    expect(await send(server, { path: "../escaped.md" })).toMatchObject({
+      kind: "rejected",
+    });
+    expect(Object.keys(server.files())).toEqual([]);
   });
 });
 

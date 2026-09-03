@@ -44,6 +44,8 @@ import type { AbandonedPosition } from "../domain/position";
 import type {
   AttemptableDelivery,
   DeliveryRequest,
+  RememberedAnswer,
+  RememberedRequest,
   RoutingRecord,
 } from "../domain/routing";
 import type { Suggestion } from "../domain/suggestion";
@@ -140,6 +142,16 @@ export interface DestinationsApi {
     request: CandidatesRequest,
     signal?: AbortSignal,
   ): Promise<CandidatesReport | undefined>;
+  /**
+   * The same question `candidates` asks, answered from the pool's own routing
+   * records: what this field has already held here, how often, and when last.
+   * Nothing goes and looks, so this answers whether or not the destination can
+   * be reached. Absent means no destination has that id.
+   */
+  remembered(
+    id: DestinationId,
+    request: Omit<RememberedRequest, "destination">,
+  ): Promise<RememberedAnswer | undefined>;
   /**
    * Whether it is really there, which describing never asks. Writes nothing.
    * Absent means no destination has that id.

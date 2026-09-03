@@ -3,7 +3,7 @@ import { expect, test, vi } from "vitest";
 
 import { asked as sentTo, json, routeOf } from "@notemap/client/testing";
 
-import { asked, pool } from "$testing/pool";
+import { asked, client, pool } from "$testing/pool";
 import RoutingComposer from "./RoutingComposer.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
@@ -39,6 +39,29 @@ const CREATE_FILE_ASKABLE = {
 
 const APPEND = { name: "append", accepts: ["text"] };
 
+/** As the adapter declares it, titles and sentences and all. */
+const CREATE_OR_APPEND = {
+  name: "create-or-append-file",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    properties: {
+      path: {
+        type: "string",
+        title: "place",
+        description:
+          "The note, relative to the vault's root. Ending in `/` names a folder, and the filename is derived.",
+        "x-notemap-candidates": true,
+      },
+      heading: {
+        type: "string",
+        title: "under",
+        description: "The heading to append under.",
+      },
+    },
+  },
+};
+
 function aDestination(overrides: Record<string, unknown> = {}) {
   return {
     id: VAULT,
@@ -73,10 +96,15 @@ function serving(
   });
 }
 
-/** A destination whose `create-file` capability's `directory` can be browsed. */
+/**
+ * A destination whose `create-file` capability's `directory` can be browsed.
+ * The kind is one nothing registers a control for, so this draws the
+ * schema-driven browser; the kinds that hold a filesystem draw the typed line
+ * and are exercised in `PathLine.test.ts`.
+ */
 function servingBrowsable(
   answerAt: (scope: string | undefined) => Record<string, unknown>,
-  kind = "filesystem",
+  kind = "kanban",
 ) {
   return pool((request) => {
     const route = routeOf(request);
@@ -308,20 +336,37 @@ test("a typed value that was never listed still routes", async () => {
 });
 
 test("an unregistered kind gets the schema-driven control", async () => {
-  servingBrowsable(
-    () => ({
-      kind: "answered",
-      entries: [{ label: "inbox", value: "inbox" }],
-      truncated: false,
-    }),
-    "kanban",
-  );
+  servingBrowsable(() => ({
+    kind: "answered",
+    entries: [{ label: "inbox", value: "inbox" }],
+    truncated: false,
+  }));
 
   draw();
   await choose(/Vault/);
   await choose(/create-file/);
 
   expect(await screen.findByRole("button", { name: "inbox" })).toBeDefined();
+  expect(screen.queryByRole("combobox")).toBeNull();
+});
+
+/** The seam decides on the kind alone, and a filesystem-shaped one draws the line. */
+test("a kind that holds a filesystem gets the typed line instead", async () => {
+  servingBrowsable(
+    () => ({
+      kind: "answered",
+      entries: [{ label: "inbox", value: "inbox" }],
+      truncated: false,
+    }),
+    "filesystem",
+  );
+
+  draw();
+  await choose(/Vault/);
+  await choose(/create-file/);
+
+  expect(await screen.findByRole("combobox")).toBeDefined();
+  expect(screen.queryByRole("button", { name: "inbox" })).toBeNull();
 });
 
 const answered = (entries: readonly Record<string, unknown>[]) => ({
@@ -406,7 +451,7 @@ test("drops an answer for a scope it has already left", async () => {
   pool(async (request) => {
     const route = routeOf(request);
     if (route === "GET /v1/destinations") {
-      return json(200, { values: [aDestination()] });
+      return json(200, { values: [aDestination({ kind: "kanban" })] });
     }
     if (route.endsWith("/description")) {
       return json(200, {
@@ -442,4 +487,435 @@ test("drops an answer for a scope it has already left", async () => {
 
   expect(screen.queryByRole("button", { name: "buried" })).toBeNull();
   expect(screen.getByRole("button", { name: "inbox" })).toBeDefined();
+});
+
+/** A filesystem vault holding one note, so the line has something to forecast against. */
+function servingVault(entries: readonly Record<string, unknown>[]) {
+  return pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "filesystem" })] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, {
+        kind: "described",
+        capabilities: [CREATE_OR_APPEND],
+      });
+    }
+    if (route.endsWith("/candidates")) {
+      const scope = new URL(request.url).searchParams.get("scope");
+      return json(200, scope === null ? answered(entries) : answered([]));
+    }
+    if (route === "POST /v1/items/one/route") {
+      return json(200, {
+        id: "r",
+        item: "one",
+        state: "delivered",
+        target: {},
+      });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+}
+
+function drawAbout(content: unknown) {
+  const closed = vi.fn();
+  render(RoutingComposer, {
+    props: { item: "one", subject: "a note", content, onclose: closed },
+  } as never);
+  return closed;
+}
+
+const routed = async (transport: ReturnType<typeof pool>) => {
+  const sent = sentTo(transport).find(
+    (request) => routeOf(request) === "POST /v1/items/one/route",
+  );
+  return (await sent?.clone().json()) as {
+    capability: string;
+    arguments: Record<string, unknown>;
+  };
+};
+
+test("stores what the person meant, not the word that was drawn", async () => {
+  const transport = servingVault([
+    { label: "decisions.md", value: "decisions.md" },
+  ]);
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+
+  const line = await screen.findByRole("combobox");
+  await fireEvent.input(line, { target: { value: "decisions.md" } });
+  await screen.findByText("append");
+  await choose("route");
+
+  await vi.waitFor(async () => {
+    expect(await routed(transport)).toMatchObject({
+      capability: "create-or-append-file",
+      arguments: { path: "decisions.md" },
+    });
+  });
+});
+
+/** The one capability that promises never to write into somebody's note. */
+test("shift-enter stores create-file under the free name it offered", async () => {
+  const transport = servingVault([
+    { label: "decisions.md", value: "notes/decisions.md" },
+  ]);
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+
+  const line = await screen.findByRole("combobox");
+  await fireEvent.input(line, { target: { value: "decisions.md" } });
+  await screen.findByText("append");
+  await fireEvent.keyDown(line, { key: "Enter", shiftKey: true });
+
+  await vi.waitFor(async () => {
+    expect(await routed(transport)).toMatchObject({
+      capability: "create-file",
+      arguments: { directory: "", filename: "decisions-1.md" },
+    });
+  });
+});
+
+test("a blank leaf submits a path that ends in a slash", async () => {
+  const transport = servingVault([]);
+
+  drawAbout({ text: "Picker needs a trail" });
+  await choose(/Vault/);
+
+  const line = await screen.findByRole("combobox");
+  await fireEvent.input(line, { target: { value: "drafts/" } });
+  await screen.findByText(/derived · Picker needs a trail\.md/);
+  await choose("route");
+
+  await vi.waitFor(async () => {
+    expect((await routed(transport)).arguments).toEqual({ path: "drafts/" });
+  });
+});
+
+/**
+ * Two decisions, made together and drained apart. The person classified the
+ * item and that was true; the route failing is not a reason to un-say it.
+ */
+test("a tag taken in the composer stays applied when the route fails", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "filesystem" })] });
+    }
+    if (route === "GET /v1/tags") {
+      return json(200, { values: [{ name: "seedling", items: 3 }] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE_OR_APPEND] });
+    }
+    if (route.endsWith("/candidates")) return json(200, answered([]));
+    if (route === "POST /v1/items/one/tag") return json(200, {});
+    if (route === "POST /v1/items/one/route") {
+      return json(503, { error: { code: "unreachable" } });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+  await client.tags.load();
+
+  const closed = drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+
+  await choose("seedling");
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/tag");
+  });
+
+  await choose("route");
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+
+  expect(closed).not.toHaveBeenCalled();
+  expect(
+    screen
+      .getByRole("button", { name: "seedling" })
+      .getAttribute("aria-pressed"),
+  ).toBe("true");
+});
+
+const typing = () =>
+  screen.getByRole("combobox", { name: "which destination" });
+
+test("takes a destination by typing enough of its name", async () => {
+  serving([aDestination(), aDestination({ id: BOARD, name: "Board" })]);
+
+  draw();
+  await screen.findByRole("button", { name: /Vault/ });
+
+  await fireEvent.input(typing(), { target: { value: "vau" } });
+  await fireEvent.keyDown(typing(), { key: "Enter" });
+
+  await screen.findByRole("button", { name: /create-file/ });
+  expect(asked()).toContain(`GET /v1/destinations/${VAULT}/description`);
+});
+
+/** Taking one of several would be a guess, and the line does not guess. */
+test("an ambiguous prefix takes nothing", async () => {
+  serving([
+    aDestination({ name: "Vault one" }),
+    aDestination({ id: BOARD, name: "Vault two" }),
+  ]);
+
+  draw();
+  await screen.findByRole("button", { name: /Vault one/ });
+
+  await fireEvent.input(typing(), { target: { value: "vault" } });
+  await fireEvent.keyDown(typing(), { key: "Enter" });
+
+  expect(screen.getByText("2 match")).toBeDefined();
+  expect(asked()).not.toContain(`GET /v1/destinations/${VAULT}/description`);
+});
+
+/** It never becomes a segment of anything, so a space in it needs no rule. */
+test("completes a name with a space in it", async () => {
+  serving([aDestination({ name: "obsidian vault" })]);
+
+  draw();
+  await screen.findByRole("button", { name: /obsidian vault/ });
+
+  await fireEvent.input(typing(), { target: { value: "obsidian v" } });
+  await fireEvent.keyDown(typing(), { key: "Tab" });
+
+  await screen.findByRole("button", { name: /create-file/ });
+});
+
+test("the destination leaves the line and reads in the chrome", async () => {
+  serving([aDestination()]);
+
+  draw();
+  await choose(/Vault/);
+  await screen.findByRole("button", { name: /create-file/ });
+
+  expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe(
+    "route · Vault",
+  );
+  expect(
+    screen.queryByRole("combobox", { name: "which destination" }),
+  ).toBeNull();
+});
+
+test("backspacing out of an empty line gives the destination back", async () => {
+  servingVault([]);
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+
+  const line = await screen.findByRole("combobox", { name: "place" });
+  await fireEvent.keyDown(line, { key: "Backspace" });
+
+  await vi.waitFor(() => {
+    expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe("route");
+  });
+  expect(
+    screen.getByRole("combobox", { name: "which destination" }),
+  ).toBeDefined();
+});
+
+/** Present and unavailable is not the same as unreachable, and it stays visible. */
+test("an unusable destination is not takeable by typing either", async () => {
+  serving([aDestination()], {
+    kind: "unusable",
+    detail: "nothing here speaks the kanban kind",
+  });
+
+  draw();
+  await choose(/Vault/);
+  await screen.findByText(/nothing here speaks the kanban kind/);
+
+  await fireEvent.input(typing(), { target: { value: "vau" } });
+  await fireEvent.keyDown(typing(), { key: "Enter" });
+
+  expect(screen.queryByRole("button", { name: /create-file/ })).toBeNull();
+  expect(screen.getByRole("button", { name: /Vault/ })).toBeDefined();
+});
+
+test("the list still works, typing being an accelerator and not a replacement", async () => {
+  serving([aDestination()]);
+
+  draw();
+  await choose(/Vault/);
+
+  expect(
+    await screen.findByRole("button", { name: /create-file/ }),
+  ).toBeDefined();
+});
+
+/**
+ * The property deferred delivery rests on: a vault that is asleep must still be
+ * routable, with the record made and the delivery deferred. Phase 1 is what
+ * makes it honest — there is nothing to infer and nothing that needs inferring.
+ */
+test("an unreachable destination is still routable", async () => {
+  const transport = pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "filesystem" })] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE_OR_APPEND] });
+    }
+    if (route.endsWith("/remembered")) {
+      return json(200, { truncated: false, places: [] });
+    }
+    if (route.endsWith("/candidates")) {
+      return json(200, {
+        kind: "unreachable",
+        detail: "the vault is not mounted",
+      });
+    }
+    if (route === "POST /v1/items/one/route") {
+      return json(200, { id: "r", item: "one", state: "pending", target: {} });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  const closed = drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+
+  const line = await screen.findByRole("combobox", { name: "place" });
+  await fireEvent.input(line, { target: { value: "notes/decisions.md" } });
+  await screen.findByText("unreachable · best effort");
+
+  const commit = screen.getByRole("button", { name: "route" });
+  expect((commit as HTMLButtonElement).disabled).toBe(false);
+  expect(screen.queryByRole("alert")).toBeNull();
+
+  await fireEvent.click(commit);
+  await vi.waitFor(() => {
+    expect(closed).toHaveBeenCalled();
+  });
+
+  expect(await routed(transport)).toMatchObject({
+    capability: "create-or-append-file",
+    arguments: { path: "notes/decisions.md" },
+  });
+});
+
+/** `browserFor` decides on the kind alone, so this one keeps Group/Option. */
+test("a kind with no filesystem in it draws neither line nor tree", async () => {
+  servingBrowsable(() => ({
+    kind: "answered",
+    entries: [{ label: "inbox", value: "inbox", scope: "inbox" }],
+    truncated: false,
+  }));
+
+  draw();
+  await choose(/Vault/);
+  await choose(/create-file/);
+
+  expect(await screen.findByRole("button", { name: "inbox" })).toBeDefined();
+  expect(screen.queryByRole("combobox", { name: "directory" })).toBeNull();
+  expect(screen.queryByRole("listbox", { name: "places" })).toBeNull();
+});
+
+/** The line says what will happen, so choosing it is not a step anybody takes. */
+test("the kind that draws the line settles what to do, with no do step", async () => {
+  servingVault([]);
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+
+  expect(await screen.findByRole("combobox", { name: "place" })).toBeDefined();
+  expect(
+    screen.queryByRole("button", { name: "create-or-append-file" }),
+  ).toBeNull();
+});
+
+/** Its capabilities are its own, and nothing here can pick among them. */
+test("a kind that draws the browser still chooses what to do", async () => {
+  servingBrowsable(() => ({
+    kind: "answered",
+    entries: [{ label: "inbox", value: "inbox" }],
+    truncated: false,
+  }));
+
+  draw();
+  await choose(/Vault/);
+
+  expect(
+    await screen.findByRole("button", { name: "create-file" }),
+  ).toBeDefined();
+});
+
+/** A composer you type into has to be one the caret is already in. */
+test("the destination line has the caret when the composer opens", async () => {
+  servingVault([]);
+  drawAbout({ text: "a note" });
+
+  const line = await screen.findByRole("combobox", {
+    name: "which destination",
+  });
+  expect(document.activeElement).toBe(line);
+});
+
+test("the place line takes the caret when a destination is taken", async () => {
+  servingVault([{ label: "notes", scope: "notes" }]);
+  drawAbout({ text: "a note" });
+
+  await choose(/Vault/);
+
+  const place = await screen.findByRole("combobox", { name: "place" });
+  expect(document.activeElement).toBe(place);
+});
+
+test("the destination line takes it back when the place is released", async () => {
+  servingVault([]);
+  drawAbout({ text: "a note" });
+
+  await choose(/Vault/);
+  const place = await screen.findByRole("combobox", { name: "place" });
+  await fireEvent.keyDown(place, { key: "Backspace" });
+
+  const line = await screen.findByRole("combobox", {
+    name: "which destination",
+  });
+  expect(document.activeElement).toBe(line);
+});
+
+/** The whole list is drawn below it already; narrowing nothing is not a choice. */
+test("does not say the destination list twice before one is typed", async () => {
+  servingVault([]);
+  drawAbout({ text: "a note" });
+
+  await screen.findByRole("button", { name: "Vault" });
+  expect(screen.getAllByText("Vault")).toHaveLength(1);
+});
+
+test("says it once narrowed, and once in the list, when typing narrows", async () => {
+  servingVault([]);
+  drawAbout({ text: "a note" });
+
+  await screen.findByRole("button", { name: "Vault" });
+  const line = screen.getByRole("combobox", { name: "which destination" });
+  await fireEvent.input(line, { target: { value: "Va" } });
+
+  expect(screen.getAllByText("Vault")).toHaveLength(2);
+});
+
+/** A sentence out of a schema is not the composer's voice. */
+test("draws no field description", async () => {
+  servingVault([]);
+  drawAbout({ text: "a note" });
+  await choose(/Vault/);
+
+  await screen.findByRole("combobox", { name: "place" });
+  expect(screen.queryByText(/relative to the vault/)).toBeNull();
+});
+
+/** `where` is the destination's own label, one step above. */
+test("does not label the place with the destination step's word", async () => {
+  servingVault([]);
+  drawAbout({ text: "a note" });
+  await choose(/Vault/);
+
+  await screen.findByRole("combobox", { name: "place" });
+  expect(screen.queryByRole("combobox", { name: "Where" })).toBeNull();
 });

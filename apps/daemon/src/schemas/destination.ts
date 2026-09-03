@@ -83,6 +83,25 @@ export const destinationProbeSchema = z
   ])
   .openapi("DestinationProbe");
 
+export const rememberedPlaceSchema = z
+  .object({
+    /** What the field held. A string, since it is a place a person typed. */
+    value: z.string(),
+    /** How many routing records used it. */
+    uses: z.number().int(),
+    /** When the last of them was made. */
+    lastAt: z.string(),
+  })
+  .openapi("RememberedPlace");
+
+export const destinationRememberedSchema = z
+  .object({
+    places: z.array(rememberedPlaceSchema),
+    /** True where the pool held more than it answered. */
+    truncated: z.boolean(),
+  })
+  .openapi("DestinationRemembered");
+
 export const destinationKindSchema = z
   .object({
     name: z.string(),

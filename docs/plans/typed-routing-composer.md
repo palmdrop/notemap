@@ -1,9 +1,9 @@
 # A routing composer you can type
 
 **Date**: 2026-09-01
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-09-03
 
 ---
 
@@ -79,8 +79,10 @@ Settled with the developer 2026-09-01/02.
   when nothing is there to look at.
 - **`create-file` and `append-to-file` stay.** `create-file` is what `⇧⏎` stores, being the only
   capability that guarantees never-overwrite through `alternatives()` suffixing; `append-to-file`
-  is the only way to say *this must already exist*, which a rule aimed at a daily file wants. Three
-  names, and both kinds implement all three.
+  is the only one whose `path` is required, so a rule aimed at a daily file names it outright and
+  nothing is derived. Three names, and both kinds implement all three. *(Corrected 2026-09-03: this
+  bullet said `append-to-file` means "this must already exist". It does not — both kinds write a
+  note that is not there. See [ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md).)*
 - **Counts on candidate entries are dropped.** `41 notes`, `9`, `41 lines` appear in the mockups
   and `CandidateEntry` has no field for any of them. Adding one means core, the port, `/v1`, the
   regenerated OpenAPI document and the client — for decoration.
@@ -106,217 +108,239 @@ Settled with the developer 2026-09-01/02.
 Depends on [destination-webdav](destination-webdav.md) having merged, so both kinds gain the new
 capability together. Nothing in the shell changes in this phase.
 
-- [ ] Create branch `agent/typed-routing-composer`
-- [ ] `create-file`'s `directory` stops being `required` in
+- [x] Create branch `agent/typed-routing-composer`
+- [x] `create-file`'s `directory` stops being `required` in
       `packages/adapters/destination-fs/src/capabilities.ts`, and `asCreateFileArguments` reads an
       absent one as `""`. Absent means the vault's root, which is what an empty string already
       means and what the adapter already accepts: the schema misdescribes the code
-- [ ] `create-or-append-file`, taking `{ path, heading? }`. `path` carries
+- [x] `create-or-append-file`, taking `{ path, heading? }`. `path` carries
       `x-notemap-candidates`; `heading` does not. Neither is `required` — an absent `path` is the
       root, and the filename is derived
-- [ ] The filesystem kind implements it by composing what `create-file` and `append-to-file`
+- [x] The filesystem kind implements it by composing what `create-file` and `append-to-file`
       already do rather than reimplementing either: a missing folder is made, an absent file is
       created, a present one is appended to under `heading`
-- [ ] The webdav kind implements it on the same terms, over the `If-None-Match: *` create and the
+- [x] The webdav kind implements it on the same terms, over the `If-None-Match: *` create and the
       `If-Match` read-modify-write append that [destination-webdav](destination-webdav.md) phases 4
       and 5 build. Contention stays `unreachable`, not `rejected`
-- [ ] `filesystemCandidates` answers the new capability's `path` field the way it answers
+- [x] `filesystemCandidates` answers the new capability's `path` field the way it answers
       `append-to-file`'s — folders and files together, which is what the composer's tree reads
-- [ ] **Record it as an ADR.** Why a third capability rather than the composer storing what it
+- [x] **Record it as an ADR.** Why a third capability rather than the composer storing what it
       inferred: delivery is deferred, the record is made against a destination that may be
       unreachable, and a decision taken when the vault could not be asked is a guess the adapter is
       in a position to make truthfully later. Also why the other two were kept. None of this is
       visible from the code
-- [ ] `docs/specs/core.md` gains the capability alongside the other two
-- [ ] Tests, both kinds: an absent file is created; a present one is appended to; a missing folder
+- [x] `docs/specs/core.md` gains the capability alongside the other two
+- [x] Tests, both kinds: an absent file is created; a present one is appended to; a missing folder
       is made; a trailing slash derives the filename; a `heading` inserts under it
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack` — an
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack` — an
       arguments schema is served over `/v1`, so this crosses the layers
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 2 — the path line
 
 Depends on phase 1 for the field it drives, though the control is testable before the adapter is.
 
-- [ ] A new control under `apps/ui/src/components/routing/`: one monospace line holding a path,
+- [x] A new control under `apps/ui/src/components/routing/`: one monospace line holding a path,
       with the entries at the deepest complete scope beneath it. Typing filters that scope's
       entries; `/` descends; backspace at the head of a segment pops it; `⇥` completes the entry
       under the caret; `↑↓` move and `⏎` takes
-- [ ] The line is the value. There is no second input beside it — that pairing is what
+- [x] The line is the value. There is no second input beside it — that pairing is what
       `CandidateBrowser` has today and what this replaces
-- [ ] A trailing `/` means a folder and its absence means a file, matching phase 1's `path`
-- [ ] The hierarchy is **shown, not walked**: the levels along the typed path, each with its
+- [x] A trailing `/` means a folder and its absence means a file, matching phase 1's `path`
+- [x] The hierarchy is **shown, not walked**: the levels along the typed path, each with its
       siblings, indented. Ancestors are drawn from the answers already in hand
-- [ ] One `candidates` call per level, debounced, with every answer but the newest dropped — the
+- [x] One `candidates` call per level, debounced, with every answer but the newest dropped — the
       race `CandidateBrowser` already guards against, for the same reason
-- [ ] `truncated` is said, not swallowed. A scope over the adapter's 500 cannot be filtered
+- [x] `truncated` is said, not swallowed. A scope over the adapter's 500 cannot be filtered
       client-side into completeness and the line must not pretend otherwise
-- [ ] Registered in `browserFor` against the `filesystem` and `webdav` kinds. Every other kind keeps
+- [x] Registered in `browserFor` against the `filesystem` and `webdav` kinds. Every other kind keeps
       the existing schema-driven browser, unchanged
-- [ ] Tests beside it: a path parses into segments; a trailing slash reads as a folder; a filter
+- [x] Tests beside it: a path parses into segments; a trailing slash reads as a folder; a filter
       narrows; `⇥` completes; ancestors survive a descent; a truncated answer is reported
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
+- [x] `git commit`
 
 ### Phase 3 — what will happen, in one word
 
 Depends on phases 1 and 2.
 
-- [ ] The leaf is looked up in the deepest scope's answer: an entry with a matching `value` means
+- [x] The leaf is looked up in the deepest scope's answer: an entry with a matching `value` means
       the file is there and the word is `append`; no match means `create`. A prefix segment with no
       matching `scope` is a folder that will be made. **This is what is drawn, never what is
       stored** — `create-or-append-file` is what is stored, and the adapter decides again at
       delivery
-- [ ] The status sits **under** the line, as design `3a`: the state as an inverted word — the
+- [x] The status sits **under** the line, as design `3a`: the state as an inverted word — the
       `StateWord.svelte` treatment the register already uses — then the folders to be made, in
       accent, as `+ drafts/`
-- [ ] `⇧⏎` says *make a new one beside it* and names what it would be called. It stores
+- [x] `⇧⏎` says *make a new one beside it* and names what it would be called. It stores
       `create-file`, which is the capability that means exactly that. It sits on the status row
       beside the state it overrides rather than in the key hints: appending to somebody's file when
       a new one was meant is the one place *nothing to choose* can surprise, and the escape belongs
       next to the surprise
-- [ ] A blank leaf is not a gap. The derived name is shown before committing, and the derivation is
+- [x] A blank leaf is not a gap. The derived name is shown before committing, and the derivation is
       unchanged — first line of the content, per `destination-fs/src/filename.ts`. Not a timestamp:
       `picker-needs-a-trail.md` reads in a vault listing and `2026-09-01-1432.md` does not
-- [ ] Copy throughout is a word or a mark, never a sentence: `create`, `append`, `unreachable`,
+- [x] Copy throughout is a word or a mark, never a sentence: `create`, `append`, `unreachable`,
       `root gone`, `derived`, `best effort`, `+ drafts/`. A count is a number
-- [ ] Tests: a free name draws create; a taken name draws append; a missing prefix reports the
+- [x] Tests: a free name draws create; a taken name draws append; a missing prefix reports the
       folders it will make; `⇧⏎` stores `create-file`; a blank leaf submits a path ending in `/`
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
+- [x] `git commit`
 
 ### Phase 4 — tags, in the composer
 
 Depends on phase 3. Small, and separable from everything around it.
 
-- [ ] The composer gains a `tags` row in the terse labelled shape: the pool's tags in use as spaced
+- [x] The composer gains a `tags` row in the terse labelled shape: the pool's tags in use as spaced
       words, filtered as you type, free entry beside them. `TagsApi.inUse` is already loaded and is
       what the row's chooser reads
-- [ ] It is the same classification the row makes, through the outbox, and therefore **drains
+- [x] It is the same classification the row makes, through the outbox, and therefore **drains
       independently of the route**. If the route then fails the tags stay applied, which is the
       honest outcome and is worth a test rather than a comment
-- [ ] `docs/specs/shell.md` — the **Tagging** section says tagging is offered in two places and why
+- [x] `docs/specs/shell.md` — the **Tagging** section says tagging is offered in two places and why
       they are not redundant: the collapsed row's chooser is the one that survives an unreachable
       pool, and the composer's is a convenience that exists only when routing does. The reasoning
       the section already carries stays; it is added to, not replaced
-- [ ] Tests: a tag taken in the composer reaches the outbox; a failed route leaves it applied
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
-- [ ] `git commit`
+- [x] Tests: a tag taken in the composer reaches the outbox; a failed route leaves it applied
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
+- [x] `git commit`
 
 ### Phase 5 — places you have used before
 
 Depends on phase 3. **Droppable**: the line works without it. Crosses every layer, so it is worth
 dropping whole rather than half-landing.
 
-- [ ] **A new read, shaped like `candidates` and answered from the other side.** Same request —
+- [x] **A new read, shaped like `candidates` and answered from the other side.** Same request —
       destination, capability, field — but the pool answers what that field *has held*, from the
       routing records it already holds, rather than what the destination offers. One is the
       vault's answer and one is the pool's, and the composer merges them
-- [ ] It answers **facts, not an order**: each distinct value with how many records used it and
+- [x] It answers **facts, not an order**: each distinct value with how many records used it and
       when the last one was. The shell ranks. Capped and `truncated` on the same terms as
       `candidates`, so a pool with thousands of records cannot make this read unbounded
-- [ ] Per destination, never pool-wide: a place in one vault means nothing in another
-- [ ] **What counts as a use: delivered, or still being tried.** A hard failure does not.
+- [x] Per destination, never pool-wide: a place in one vault means nothing in another
+- [x] **What counts as a use: delivered, or still being tried.** A hard failure does not.
       `RoutingRecordState` is `pending | delivered` and carries no failure, so this is not a filter
       on the record: `delivery.ts` maps `rejected` to `retryable: false` and `unreachable` to
       `true`, and a job is `done`, `retry` or `abandoned` (`work.ts`). A `delivered` record counts
       outright; a `pending` one counts unless its delivery job was abandoned. **The read therefore
       reaches the job for pending records**, which is the one place this phase is more than a query
       over records — say so in the core query rather than discovering it in the store
-- [ ] Core query, `/v1` route, regenerated OpenAPI document, client method, and
+- [x] Core query, `/v1` route, regenerated OpenAPI document, client method, and
       `docs/specs/http-v1.md` and `docs/specs/client.md` say what it is
-- [ ] In the line, a remembered place is **ranked into the completion list**, and the best one is
+- [x] In the line, a remembered place is **ranked into the completion list**, and the best one is
       offered as a greyed continuation after the caret
-- [ ] **`⇥` and `→` are different keys and stay different.** `⇥` completes the current segment from
+- [x] **`⇥` and `→` are different keys and stay different.** `⇥` completes the current segment from
       what the destination offered; `→` takes the whole remembered continuation. One key that means
       either depending on invisible state is the failure mode here, and fish already teaches this
       distinction on this developer's own machine
-- [ ] **A remembered place that is no longer there is said, not silently re-created.** A folder
+- [x] **A remembered place that is no longer there is said, not silently re-created.** A folder
       routed to twelve times and now absent is not a new folder somebody meant to make — it is a
       sign the vault was restructured, and the composer is the last place that can say so before
       the folder comes back. It is marked `gone` in the completion list, and at the caret it reads
       `create · + drafts/ · gone`, so the discrepancy is visible at the moment of committing
-- [ ] **A `gone` place is never the greyed continuation.** The ghost is the thing a person takes
+- [x] **A `gone` place is never the greyed continuation.** The ghost is the thing a person takes
       without reading; a discrepancy must be looked at, so it stays in the list where `↑↓` reaches
       it deliberately. This is the rule that keeps `→` safe
-- [ ] Both are only possible where candidates answered. Against an unreachable destination there is
+- [x] Both are only possible where candidates answered. Against an unreachable destination there is
       nothing to check against and the `unreachable` word already carries that — a remembered place
       is offered plainly and no claim is made about whether it is still there
-- [ ] `gone` is an ordinary condition and not one of the three alarms `docs/specs/shell.md` defines
-- [ ] The shell derives folder prefixes from remembered file paths itself; the read has no business
+- [x] `gone` is an ordinary condition and not one of the three alarms `docs/specs/shell.md` defines
+- [x] The shell derives folder prefixes from remembered file paths itself; the read has no business
       enumerating them
-- [ ] Tests: the read counts records per value; a place used more ranks above one used later; the
+- [x] Tests: the read counts records per value; a place used more ranks above one used later; the
       continuation is offered and taken by `→` alone; a remembered place absent from the listing
       draws as a creation; `⇥` still completes only a segment
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack`
+- [x] `git commit`
 
 ### Phase 6 — the destination, by typing
 
 Depends on phase 2. **Droppable**: the existing `where` list keeps working.
 
-- [ ] Before a destination is settled, the line completes over destination names: `obs` narrows to
+- [x] Before a destination is settled, the line completes over destination names: `obs` narrows to
       `obsidian vault`, `⏎` or `⇥` takes it. Once taken, **the destination leaves the line** and
       reads in the chrome; the line then holds nothing but the place. It is never a segment of the
       path, so a name with a space or a slash in it needs no escaping and no rule
-- [ ] The `where` list stays as the way in for a pointer and for a reader who does not know the
+- [x] The `where` list stays as the way in for a pointer and for a reader who does not know the
       names. Typing is an accelerator, not a replacement
-- [ ] Backspacing past the head of an empty line gives the destination back, so a wrong one is not
+- [x] Backspacing past the head of an empty line gives the destination back, so a wrong one is not
       a reason to close the composer
-- [ ] An `unusable` destination stays in the list saying why and cannot be taken — which is what
+- [x] An `unusable` destination stays in the list saying why and cannot be taken — which is what
       `RoutingComposer` does today, and is not what unreachable means
-- [ ] Tests: typing takes a destination; an ambiguous prefix does not; a name with a space
+- [x] Tests: typing takes a destination; an ambiguous prefix does not; a name with a space
       completes; the destination is absent from the submitted path; the list still works
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
+- [x] `git commit`
 
 ### Phase 7 — when there is nothing to ask
 
 Depends on phase 3. This is the phase that keeps the offline property honest.
 
-- [ ] **An unreachable destination is not a refusal.** No tree, no drawn state, the line still
+- [x] **An unreachable destination is not a refusal.** No tree, no drawn state, the line still
       typed, `route` still live. `docs/plans/destination-webdav.md` states the property this
       protects: an unreachable destination must still be routable, with the record made and the
       delivery deferred. Phase 1 is what makes this honest — there is nothing to infer and nothing
       that needs inferring
-- [ ] Distinguish it in the copy from an unreachable **pool**, which is a different condition and
+- [x] Distinguish it in the copy from an unreachable **pool**, which is a different condition and
       one in which the composer does not open at all
-- [ ] The refusal lands in the asking as a muted line — `unreachable · best effort` — never as one
+- [x] The refusal lands in the asking as a muted line — `unreachable · best effort` — never as one
       of the three alarms `docs/specs/shell.md` defines. It is the ordinary condition
-- [ ] `not-offered` draws the same way: a plain typed path, no tree, no drawn state
-- [ ] Where phase 5 landed, remembered places still complete against an unreachable destination:
+- [x] `not-offered` draws the same way: a plain typed path, no tree, no drawn state
+- [x] Where phase 5 landed, remembered places still complete against an unreachable destination:
       the pool holds them and the pool is reachable. That is most of what makes the line usable
       with nothing to ask
-- [ ] A kind with no filesystem in it draws neither line nor tree and keeps the `Group`/`Option`
+- [x] A kind with no filesystem in it draws neither line nor tree and keeps the `Group`/`Option`
       idiom it has today. `browserFor` is what decides, on the kind alone
-- [ ] Tests: an unreachable destination is still routable; `not-offered` draws a typed path with no
+- [x] Tests: an unreachable destination is still routable; `not-offered` draws a typed path with no
       tree; a non-filesystem kind draws the existing browser
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
+- [x] `git commit`
 
 ### Phase 8 — the docs catch up
 
 Depends on every phase above.
 
-- [ ] `docs/specs/shell.md` — the composer section is rewritten. `do` stops being a step; the
+- [x] `docs/specs/shell.md` — the composer section is rewritten. `do` stops being a step; the
       browser paragraph added 2026-08-31 describes a control that no longer exists for a
       filesystem-shaped kind; the per-kind lookup is no longer empty. Say what replaced it and why
-- [ ] `docs/specs/core.md` — confirm phase 1's capability entry reads as domain rather than as a
+- [x] `docs/specs/core.md` — confirm phase 1's capability entry reads as domain rather than as a
       description of the adapters that implement it
-- [ ] `CONTEXT.md` — check whether the line, or a remembered place, needs a name of its own, and
+- [x] `CONTEXT.md` — check whether the line, or a remembered place, needs a name of its own, and
       add one only if the code and the spec both want to say it. Do not invent a term to have one
-- [ ] **`docs/design/` is caught up.** `composer.html` was written before the code and is the thing
+- [x] **`docs/design/` is caught up.** `composer.html` was written before the code and is the thing
       this plan was built against; now it is checked against what shipped, and where the two
       disagree the page is corrected or the code is. `queue.html` and `shell.css` are the stale
       pair — a composer beside the row and a `.tree` block that predates the candidates browser —
       and this is when they are re-rendered
-- [ ] Re-shoot every surface at 1440 and 390 with the command `docs/design/README.md` carries, and
-      drop the note there saying `composer.html` stands alone: it no longer will
-- [ ] Verify: the specs and the code agree, and a reader of `docs/design/` sees the composer that
+- [-] Re-shoot every surface at 1440 and 390 with the command `docs/design/README.md` carries, and
+      drop the note there saying `composer.html` stands alone: it no longer will _(the note is
+      dropped; the shots are not re-rendered — no browser in this environment. `README.md` says
+      which two are stale and how to redo them.)_
+- [x] Verify: the specs and the code agree, and a reader of `docs/design/` sees the composer that
       exists
-- [ ] `git commit`
+- [x] `git commit`
 
 ---
+
+## What review changed
+
+Reviewed 2026-09-03 against the branch, twice over — a written review in
+[`docs/reviews/typed-routing-composer-2026-09-03.md`](../reviews/typed-routing-composer-2026-09-03.md)
+and the developer's own, reconciled together. What it moved, beyond the findings that file records:
+
+- **The webdav kind answers `candidates`**, which this plan had assumed and never checked. It
+  declared its fields unbrowsable, so the composer drew a plain field and a Nextcloud destination
+  offered nothing at all — phase 2's registration of `webdav` in `browserFor` was dead code. The
+  enumeration [destination-webdav](destination-webdav.md) deferred lands here instead, over
+  `PROPFIND` at `Depth: 1`.
+- **A vault entry `readdir` could not classify was dropped**, so a vault on a FUSE or overlay mount
+  listed as empty: no tree, nothing to complete, and every note forecast as new. Pre-existing to
+  this plan, and only visible once something drew the listing a level at a time.
+- **The folders to be made moved into the tree**, where the design always drew them.
+- **The composer stopped drawing a field's `description`**, and `Where` became `place`: it sat
+  directly under the destination step's own `where`.
+- **The caret is in the composer from the moment it opens.** Nothing focused anything, so a
+  composer built to be typed into had to be clicked into first.
 
 ## Deferred, deliberately
 

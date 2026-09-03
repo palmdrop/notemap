@@ -21,6 +21,9 @@ the wrong uid.
 
 Enumerating what is already in the vault is **not** in this plan
 ([destination-targets](destination-targets.md)). This one delivers to a path a person supplies.
+*(Landed 2026-09-03 in [typed-routing-composer](typed-routing-composer.md) instead: the typed line
+needs both kinds to answer `candidates`, and one that could not made the line useless on the kind
+this plan added.)*
 
 `/v1` does not change. `GET /v1/destination-kinds` publishes each kind's settings schema and
 `describe()` answers capabilities live, so a new kind reaches the composer without a route being

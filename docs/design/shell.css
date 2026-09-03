@@ -29,9 +29,6 @@ a:hover { color: var(--red); }
 .sheet { min-height: 100vh; padding: 1.6rem 1.1rem 12rem; }
 .column { max-width: 44rem; margin: 0 auto; }
 
-/* A composer needs room beside the register; nothing else does. */
-.column.wide { max-width: 68rem; }
-
 .bar {
   font-family: var(--face-mono);
   display: flex;
@@ -55,9 +52,10 @@ a:hover { color: var(--red); }
 }
 .bar .state { margin-left: auto; }
 
+/* The composer is a modal over the surface, so nothing reserves width for it.
+   `solo` is what every stage is now; the two-column form is kept only because
+   the panel is what the columns below were measured against. */
 .stage { display: grid; grid-template-columns: 1fr var(--panel); }
-
-/* No composer open: the register takes the width. */
 .stage.solo { grid-template-columns: 1fr; }
 .left { border-right: 1px solid var(--ink); padding-right: var(--spine); min-width: 0; }
 
@@ -170,21 +168,9 @@ a:hover { color: var(--red); }
   padding: 0.2rem 0.1rem;
 }
 
-.composer {
-  position: absolute;
-  top: 1.5rem;
-  left: calc(100% + var(--spine) + 1px + var(--gap));
-  width: calc(var(--panel) - var(--gap));
-  font-family: var(--face-mono);
-  font-size: var(--size);
-}
-.composer .top {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-}
-.composer .x { cursor: pointer; }
+/* The routing composer is `composer.html` and its own stylesheet: a modal
+   over the surface since 2026-08-24, and one typed line since 2026-09-02.
+   `.opt` stays because the register's own choosers are drawn with it. */
 
 .group { margin-top: 1.6rem; }
 .group .name { color: var(--ink-2); }
@@ -200,24 +186,6 @@ a:hover { color: var(--red); }
 }
 .opt .why { color: var(--ink-2); margin-left: auto; }
 .opt.dim .what { color: var(--ink-2); }
-
-.tree { margin-top: 0.35rem; }
-.tree .node { display: flex; gap: 0.6rem; }
-.tree .in1 { padding-left: 2ch; }
-.tree .leaf { color: var(--ink-2); }
-
-.composer .field { margin-top: 0.35rem; }
-.composer .commit {
-  margin-top: 1.8rem;
-  display: flex;
-  gap: 1.4rem;
-  align-items: baseline;
-}
-.composer .commit .go {
-  background: var(--red);
-  color: var(--paper);
-  padding: 0.1rem 0.7rem;
-}
 
 .alarm {
   position: fixed;
@@ -235,12 +203,6 @@ a:hover { color: var(--red); }
 
 @media (max-width: 56rem) {
   .stage { grid-template-columns: 1fr; }
-  .composer {
-    position: static;
-    width: auto;
-    grid-column: 1 / -1;
-    margin-top: 1.4rem;
-  }
   .link { display: none; }
 }
 

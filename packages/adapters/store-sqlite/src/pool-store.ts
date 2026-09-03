@@ -16,6 +16,8 @@ import type {
   DestinationRecord,
   JobResolution,
   JobSubject,
+  RememberedAnswer,
+  RememberedRequest,
   RoutingRecord,
   RoutingRecordId,
   IdGenerator,
@@ -146,6 +148,16 @@ function direction(order: ReadOrder): {
     ? { sql: "DESC", comparison: "<" }
     : { sql: "ASC", comparison: ">" };
 }
+
+/** However much history a pool accumulates, past this the list is a search problem. */
+const REMEMBERED_LIMIT = 50;
+
+/** `json_extract` answers whatever the arguments held, so the value is narrowed on the way out. */
+type RememberedRow = {
+  readonly value: unknown;
+  readonly uses: number;
+  readonly last_at: number;
+};
 
 /** A position in the store's own units. */
 type Bound = { readonly at: number; readonly id?: string };
@@ -360,6 +372,43 @@ export function createSqlitePoolStore(
     const routingById = source.query<RoutingRecordRow, [string]>(
       `SELECT ${ROUTING_COLUMNS} FROM routing_records WHERE id = ?`,
     );
+
+    /**
+     * What a field has held on one destination, and how much. A `delivered`
+     * record counts outright; a `pending` one counts unless its delivery was
+     * abandoned — a reservation still being retried is a place somebody is
+     * using, and one that was given up on is not. That is the whole reason this
+     * reaches `jobs` rather than reading records alone.
+     *
+     * One past the cap is read so `truncated` can be answered without counting
+     * the whole history.
+     *
+     * The field is quoted into the JSON path rather than concatenated bare: a
+     * name holding a `.` would otherwise walk into a nested object, and one
+     * holding a `-` would match nothing and say so as an empty answer.
+     */
+    const rememberedPlaces = source.query<
+      RememberedRow,
+      [string, string, string, string, number]
+    >(
+      `SELECT json_extract(r.arguments, '$."' || ? || '"') AS value,
+              COUNT(*) AS uses,
+              MAX(r.at) AS last_at
+         FROM routing_records r
+        WHERE r.destination = ?
+          AND r.capability = ?
+          AND r.target_kind = 'destination'
+          AND json_extract(r.arguments, '$."' || ? || '"') IS NOT NULL
+          AND (r.state = 'delivered'
+               OR NOT EXISTS (SELECT 1 FROM jobs j
+                               WHERE j.kind = 'delivery'
+                                 AND j.subject_kind = 'routing-record'
+                                 AND j.subject_id = r.id
+                                 AND j.abandoned_at IS NOT NULL))
+        GROUP BY value
+        ORDER BY uses DESC, last_at DESC, value
+        LIMIT ?`,
+    );
     const everyDestination = source.query<DestinationRow, []>(
       `SELECT ${DESTINATION_COLUMNS} FROM destinations
        ORDER BY created_at, id`,
@@ -520,6 +569,27 @@ export function createSqlitePoolStore(
         return row === undefined ? undefined : toRoutingRecord(row);
       },
 
+      remembered: async (
+        request: RememberedRequest,
+      ): Promise<RememberedAnswer> => {
+        const rows = rememberedPlaces.all(
+          request.field,
+          request.destination,
+          request.capability,
+          request.field,
+          REMEMBERED_LIMIT + 1,
+        );
+
+        return {
+          truncated: rows.length > REMEMBERED_LIMIT,
+          places: rows.slice(0, REMEMBERED_LIMIT).map((row) => ({
+            value: String(row.value),
+            uses: row.uses,
+            lastAt: toTimestamp(row.last_at),
+          })),
+        };
+      },
+
       destinations: async (): Promise<readonly Destination[]> =>
         everyDestination.all().map(toDestination),
 
@@ -639,6 +709,7 @@ export function createSqlitePoolStore(
       tagsInUse: guard(uncommitted.tagsInUse),
       routingRecords: guard(uncommitted.routingRecords),
       routingRecord: guard(uncommitted.routingRecord),
+      remembered: guard(uncommitted.remembered),
       destinations: guard(uncommitted.destinations),
       destination: guard(uncommitted.destination),
       destinationEverNamed: guard(uncommitted.destinationEverNamed),

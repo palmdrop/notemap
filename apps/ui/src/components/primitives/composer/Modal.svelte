@@ -16,7 +16,16 @@
 
   let panel = $state<HTMLElement>();
 
-  $effect(() => panel?.focus());
+  /**
+   * Unless something inside has already claimed it. A composer whose first step
+   * is a line you type focuses that line, and the panel taking it back would
+   * make the first keystroke go nowhere.
+   */
+  $effect(() => {
+    if (panel === undefined) return;
+    if (panel.contains(document.activeElement)) return;
+    panel.focus();
+  });
 </script>
 
 <svelte:window

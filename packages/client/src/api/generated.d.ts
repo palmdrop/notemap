@@ -1971,6 +1971,69 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/destinations/{id}/remembered": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read what a field has already held on one destination
+         * @description The same question `/candidates` asks, answered from the other side: `/candidates` says what the destination offers, this says what the pool's own routing records have used, with how often and when last. **Nothing goes and looks**, so it answers whether or not the destination can be reached — which is most of what makes a place still typeable against an unmounted drive. Facts and not an order: which to put first is presentation, and belongs to whatever draws it. Per destination, never pool-wide, because a place in one vault means nothing in another. A `delivered` record counts outright; a `pending` one counts unless its delivery was abandoned. Capped rather than paginated, on the same terms `/candidates` is.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Which capability's records to read. One nothing was ever routed with answers no places. */
+                    capability: string;
+                    /** @description A property of that capability's arguments. One no record carries answers no places. */
+                    field: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Every distinct value the field has held, capped. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DestinationRemembered"];
+                    };
+                };
+                /** @description No destination has that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unknown-destination";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/destinations/{id}": {
         parameters: {
             query?: never;
@@ -3117,6 +3180,15 @@ export interface components {
         } | {
             /** @enum {string} */
             kind: "not-offered";
+        };
+        DestinationRemembered: {
+            places: components["schemas"]["RememberedPlace"][];
+            truncated: boolean;
+        };
+        RememberedPlace: {
+            value: string;
+            uses: number;
+            lastAt: string;
         };
         UpdateDestinationRequest: {
             name?: string;

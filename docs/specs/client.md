@@ -4,6 +4,14 @@
 **Last updated**: 2026-09-02
 **Shipped**:
 
+- 2026-09-02 — **The client reads the places a field has already held.**
+  `DestinationsApi.remembered` names a destination, a capability and a field and answers the
+  pool's own record of what has been routed there, with how often and when last. A passthrough on
+  `candidates`' terms — asked now, cached by nothing, written to no store — but answered by the
+  pool rather than the destination, which is what lets a shell go on completing a place while the
+  vault behind it is unreachable.
+  ([plan](../plans/typed-routing-composer.md))
+
 - 2026-09-02 — **The reachability mark says when, and a destination can be probed.**
   `reachable` carries the time the pool last answered anything and, where the probe was what
   asked, how long it took — so a shell draws "answered eight seconds ago" without holding a second

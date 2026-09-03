@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@notemap/client": "workspace:*",
+    "@notemap/output-markdown": "workspace:*",
     "idb": "^8.0.3"
   }
 }

@@ -14,6 +14,13 @@ export type Looked =
   | { readonly kind: "not-there" }
   | { readonly kind: "refused"; readonly status: number };
 
+/** One child of a collection, as its `PROPFIND` answer named it. */
+export type Child = {
+  /** The last segment of its href, decoded. */
+  readonly name: string;
+  readonly collection: boolean;
+};
+
 export type Dav = {
   get(path: string, signal?: AbortSignal): Promise<Fetched>;
   /** `PUT` that must not overwrite. */
@@ -29,6 +36,8 @@ export type Dav = {
   makeCollection(path: string, signal?: AbortSignal): Promise<void>;
   /** Whether something is there, and whether it is a collection, without writing anything. */
   look(path: string, signal?: AbortSignal): Promise<Looked>;
+  /** What a collection holds, one level down. The collection itself is not among them. */
+  list(path: string, signal?: AbortSignal): Promise<readonly Child[]>;
 };
 
 export type Body = string | AsyncIterable<Uint8Array>;
@@ -165,6 +174,26 @@ export function createDav(credential: WebdavCredential): Dav {
       void response.body?.cancel();
     },
 
+    list: async (path, signal) => {
+      const response = await send("PROPFIND", path, {
+        body: RESOURCE_TYPE,
+        headers: {
+          depth: "1",
+          "content-type": "application/xml; charset=utf-8",
+        },
+        signal,
+      });
+      if (!response.ok) {
+        void response.body?.cancel();
+        if (response.status === NOT_THERE) return [];
+        throw new Unreachable(
+          `${path} answered ${response.status} to PROPFIND`,
+        );
+      }
+
+      return childrenOf(path, await response.text());
+    },
+
     look: async (path, signal) => {
       const response = await send("PROPFIND", path, {
         body: RESOURCE_TYPE,
@@ -232,6 +261,49 @@ function failure(response: Response, path: string): Error {
 /** Matched rather than parsed: the deciding element may carry any prefix or none. */
 function isCollection(body: string): boolean {
   return /<[a-z0-9]*:?collection\b[^>]*\/?>/i.test(body);
+}
+
+/**
+ * Read rather than parsed: one `<response>` per entry, each carrying an `href`
+ * and a `resourcetype`. A `Depth: 1` answer names the collection itself among
+ * its children, which is dropped by comparing the href's own segments — servers
+ * disagree about the trailing slash and about how much of the path the href
+ * repeats, so only the last segment is trusted and the collection is the one
+ * whose href ends where the request did.
+ */
+function childrenOf(path: string, body: string): readonly Child[] {
+  const asked = lastSegment(path);
+  const children: Child[] = [];
+
+  for (const [, inner] of body.matchAll(
+    /<[a-z0-9]*:?response\b[^>]*>([\s\S]*?)<\/[a-z0-9]*:?response>/gi,
+  )) {
+    if (inner === undefined) continue;
+
+    const href = /<[a-z0-9]*:?href\b[^>]*>([\s\S]*?)<\/[a-z0-9]*:?href>/i.exec(
+      inner,
+    )?.[1];
+    if (href === undefined) continue;
+
+    const name = lastSegment(href.trim());
+    if (name === "" || name === asked) continue;
+
+    children.push({ name, collection: isCollection(inner) });
+  }
+
+  return children;
+}
+
+/** Decoded, since an href is percent-encoded and a name is what a person reads. */
+function lastSegment(href: string): string {
+  const segments = href.split("/").filter((segment) => segment !== "");
+  const last = segments[segments.length - 1] ?? "";
+
+  try {
+    return decodeURIComponent(last);
+  } catch {
+    return last;
+  }
 }
 
 function why(cause: unknown): string {

@@ -4,6 +4,24 @@
 **Last updated**: 2026-09-02
 **Shipped**:
 
+- 2026-09-02 — **The pool answers what a field has already held.** Beside `candidates`, which asks
+  the destination, a read that asks the pool: what has been routed to this destination through this
+  capability's field, how often, and when last. Nothing goes and looks, so it answers when the
+  destination cannot — which is what keeps a place completable against a vault that is not mounted.
+  Facts rather than an order, per destination rather than pool-wide, and counting a reservation
+  that is still being retried but not one that was given up on.
+  ([plan](../plans/typed-routing-composer.md))
+
+- 2026-09-02 — **A capability may name an outcome and decide at delivery.** The kinds that write
+  files gained a third capability that means *put this note here* and settles create-against-append
+  itself, when it is holding the vault and the answer is true, rather than making a composer commit
+  a guess against a destination it may not have been able to reach. The two that decide nothing are
+  kept, because refusing to overwrite and naming a path nothing may derive from are promises a rule
+  wants and an outcome-shaped capability cannot make. Nothing in core moved — this is a rule about
+  what a capability should be named after.
+  ([plan](../plans/typed-routing-composer.md),
+  [ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md))
+
 - 2026-09-02 — **A destination can be asked whether it is really there.** `destinations.probe`
   joins `describe` and `candidates`, optional on a kind adapter and answering `ready`, `rejected`,
   `unreachable`, `unusable` or `not-offered`. Describing answers from a declared shape and never
@@ -13,6 +31,13 @@
   writes to find out, so `ready` is reached rather than proven writable.
   ([plan](../plans/destination-checks-and-accounts.md),
   [ADR 30](../adr/0030-a-destination-can-be-asked-whether-it-is-really-there.md))
+
+- 2026-09-03 — **A webdav vault can be enumerated.** The kind answers `candidates` from one
+  `PROPFIND` at `Depth: 1` per scope, which is the round trip per level the filesystem kind pays a
+  `readdir` for, so both kinds now draw the same typed line. It reaches the server, unlike
+  `describe`, so an account that is asleep answers unreachable and the line goes on being typed
+  against what the pool remembers.
+  ([plan](../plans/typed-routing-composer.md))
 
 - 2026-09-01 — **A second destination kind, and what a kind holding a credential may be told.** A
   `webdav` destination delivers a note to a folder on a WebDAV server, with the filesystem kind's
@@ -824,6 +849,20 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   terms `describe()`'s own report already uses. `not-offered` is one answer however it was reached
   — a kind whose adapter implements none of this, and a field an adapter does not answer for, are
   the same fact to a caller: nothing here can be browsed.
+- **The pool can be asked what a field has already held on a destination** (added 2026-09-02).
+  The same question `candidates` asks — a destination, a capability, a field — answered from the
+  routing records the pool already holds rather than from the destination. The two are deliberately
+  the same shape and deliberately different reads: one is the destination's answer and can be
+  `unreachable`, the other is the pool's own and cannot, which is what lets a surface keep
+  completing a place while the destination behind it is not there. It answers **facts and not an
+  order** — each distinct value, how many records used it, when the last one was — because which to
+  put first is presentation and belongs to whatever draws it; changing that must not be a change to
+  the read. **Per destination, never pool-wide**: a place in one vault means nothing in another.
+  What counts as a use is *delivered, or still being tried*: a `delivered` record counts outright,
+  and a `pending` one counts unless its delivery was abandoned — which is the one place this is
+  more than a query over records, since `RoutingRecordState` carries no failure and the answer
+  lives on the job. Capped on `candidates`' own terms, so a pool with thousands of records cannot
+  make it unbounded.
 - **A destination can be asked whether it is really there** (added 2026-09-02,
   [ADR 30](../adr/0030-a-destination-can-be-asked-whether-it-is-really-there.md)), through a third
   method, **`probe`**. `describe()` answers from a declared shape and never leaves the process, so
@@ -841,6 +880,23 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   file, which is a note rather than somewhere notes go — and infers the rest from having reached
   the place at all. Nothing consults a probe before a delivery: what a delivery finds out is
   still a delivery's to find out.
+- **A capability may defer its own decision to delivery** (added 2026-09-02,
+  [ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md)). A routing decision is
+  recorded against a destination that may be asleep, and the gap before the delivery lands is
+  unbounded, so a capability that asks the caller to state what is *already there* is asking about
+  a fact nobody at that moment holds. Such a capability instead names the outcome and lets the
+  adapter resolve it against the destination as it finds it — the adapter is holding the vault at
+  the moment of the write, and it is the only thing that ever knows. A surface may still forecast
+  what will happen, from `candidates`, and say so before committing; the forecast is drawn and
+  never stored. Core is unchanged by this: it validates arguments against the declared schema and
+  refuses a capability that was not declared, exactly as before. What the decision settles is a
+  rule about **how a capability should be named** — after the outcome a person wants, not after
+  the mechanism that will achieve it — and it is why the kinds that write files offer a capability
+  that decides at delivery beside two that are stated up front. `create-file` promises *never add
+  to a note*, which an outcome-shaped capability cannot. `append-to-file` promises a *named path*:
+  nothing is derived from the item, so a rule files into exactly the note it names. Neither
+  promises the note is already there — both kinds write one that is not, which is what a daily
+  note whose sections appear as things are filed into them needs.
 - **A capability's accepted payload types may be a wildcard**, for a destination whose fallback
   genuinely handles anything. It is a promise rather than a shrug: claiming it trades away the
   refusal core would otherwise make up front, so what would have been an immediate

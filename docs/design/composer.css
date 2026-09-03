@@ -128,7 +128,6 @@ hr.sep {
   gap: 0 1.4rem;
   margin-top: 0.5rem;
 }
-.status .n { color: var(--ink-2); }
 .new { color: var(--red); }
 .muted { color: var(--ink-2); }
 
@@ -161,10 +160,11 @@ hr.rule { border: 0; border-top: 1px solid var(--ink-2); opacity: 0.45; margin: 
 .labelled > .k { color: var(--ink-2); }
 .set { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 1.4rem; }
 .set .off { color: var(--ink-2); }
+/* A field that is typed rather than chosen: the rule is the input, not a value. */
+.set .typed { color: var(--ink-2); border-bottom: 1px solid var(--ink-2); flex: 1; }
 
 .commit { margin-top: 1.6rem; display: flex; gap: 1.4rem; align-items: baseline; }
 .commit .go { background: var(--red); color: var(--paper); padding: 0.05rem 0.7rem; }
-.keys { margin-left: auto; color: var(--ink-2); padding-left: 2ch; }
 
 @media (max-width: 46rem) {
   .case { grid-template-columns: 1fr; row-gap: 0.6rem; }

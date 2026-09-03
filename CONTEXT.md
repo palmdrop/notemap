@@ -289,6 +289,16 @@ every read that answers items, and absent where there are none — so a surface 
 say an item was routed and where, and reads the records themselves only when someone opens one.
 _Avoid_: routing status, routing state, processed flag
 
+**Remembered place**:
+One value a capability's argument field has already held on one destination, with how often the
+routing records used it and when the last of them was. Answered by the pool from its own records,
+never by going and looking, so it is offered while the destination itself is out of reach — which
+is what distinguishes it from a **candidate**, the destination's own answer about what a field
+could hold. Per destination, because a place in one vault means nothing in another. Facts and not
+an order: whatever draws them ranks them. A remembered place the destination's listing does not
+hold is **gone**, which is said rather than silently re-created.
+_Avoid_: recent, history, favourite, suggestion
+
 **Archive**:
 To hide an item from the queue without deleting it. Presented in the UI as delete when the user
 means "this is noise"; the item stays in the feed and stays processable.
