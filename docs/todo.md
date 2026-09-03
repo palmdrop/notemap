@@ -1,7 +1,25 @@
 # Developer TODOs
+- [ ] fix minor UI issues
+  - composer, when showing that a new file/folder will be created in an existing folder, where there are sibling folders below that existing folder, will indicate that the new file/folder will be created in the bottom-most sibling folder, not necessarily the folder that the user has actually inputted
+  - composer shows previously routed items high up, confusing the user regarding what the action they are performing right now will do/create 
+  - lack of visual hierarchy is a problem in composer, it is hard to follow what is going on
+  - input fields in composer are just indicated with an underline, same as separators. Confusing.
+  - "create" button shows the derived file name correctly, but the "derived" word should be cut, just showing the title
+  - selecting a capture makes it highlighted (gray) but the highlight has no left-padding, producing a sharp line at the metadata text
+  - clicking an item in the feed should show additional metadata
+  - double-clicking an item in the feed/queue should open it
+  - "mark done" on routed items is meaningless - we need to consider "mark done", it should in essence be a way to indicate "manual routing", for example copy paste
+  - user needs way to copy paste capture contents
+  - capture input field should be auto-focused
+  - capture input shows ugly blue line around it
+  - when pressing shift+enter in capture input, it should press enter to capture
+  - attaching an image should preview it in the capture input, before user commits the capture, so they can verify that they added the right image. 
+- [ ] add new UI views
+  - routing view, showing all routed items
+
 - [ ] Immediately hiding a routed item from the queue is confusing, especially if it fails. There's no good way to see pending operations.
 - [ ] Destination configuration is way too clunky, not sensible to configure in BOTH config.toml and in the UI.
-- [ ] "Checks" in the settings page against DAEMON and destinations should be done automatically. Also, destination checks only shows if the adapter is reachable, not the destination itself. Would be great with a way to check if the destination is correctly configured before trying to route to it.
+- [x] "Checks" in the settings page against DAEMON and destinations should be done automatically. Also, destination checks only shows if the adapter is reachable, not the destination itself. Would be great with a way to check if the destination is correctly configured before trying to route to it.
 
 - [ ] Consider full POC: inbox via Memos app, routing to complex obsidian project. The "advertise
   folders" half closed 2026-08-31: the destination port can be asked what an argument could hold
