@@ -49,19 +49,27 @@ function place(
  */
 export function noticeOf(
   action: Action,
-  nameOf: (destination: string) => string,
+  said: {
+    nameOf: (destination: string) => string;
+    /** Where the whole of it can be read. */
+    about: (item: string) => string;
+  },
 ): Raised | undefined {
   if (!SAID.has(action.kind)) return undefined;
 
   const detail = action.detail as Record<string, unknown>;
   const record = stringAt(detail, "record");
-  const named = place(detail, nameOf);
+  const named = place(detail, said.nameOf);
+  const href =
+    action.subject === undefined ? undefined : said.about(action.subject);
+  const where = href === undefined ? {} : { href };
 
   if (action.kind === "routed") {
     const pointer = stringAt(detail, "pointer");
     return {
       what: named === undefined ? "done" : `routed · ${named}`,
       ...(pointer === undefined ? {} : { why: pointer }),
+      ...where,
       ...(record === undefined ? {} : { key: `record:${record}` }),
     };
   }
@@ -72,6 +80,7 @@ export function noticeOf(
       what:
         named === undefined ? "delivery failed" : `delivery failed · ${named}`,
       ...(why === undefined ? {} : { why }),
+      ...where,
       standing: true,
       ...(record === undefined ? {} : { key: `failed:${record}` }),
     };
@@ -86,6 +95,7 @@ export function noticeOf(
     return {
       what: "given up",
       why: record === undefined ? failureIn(detail) : "back in the queue",
+      ...where,
       standing: true,
       key: `abandoned:${record ?? action.id}`,
     };
@@ -94,6 +104,7 @@ export function noticeOf(
   return {
     what: "work failed",
     ...(failureIn(detail) === undefined ? {} : { why: failureIn(detail) }),
+    ...where,
     standing: true,
     key: `work:${action.id}`,
   };

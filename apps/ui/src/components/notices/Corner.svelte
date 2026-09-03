@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
+  import { aboutHref } from "$components/log/href";
   import Refusals from "$components/outbox/Refusals.svelte";
   import Alarm from "$components/primitives/alarm/Alarm.svelte";
   import Notice from "$components/primitives/alarm/Notice.svelte";
@@ -17,7 +18,7 @@
   onMount(() => {
     const held = client.actions.watch().subscribe((said) => {
       for (const action of said.actions) {
-        const raised = noticeOf(action, nameOf);
+        const raised = noticeOf(action, { nameOf, about: aboutHref });
         if (raised !== undefined) notices.raise(raised);
       }
 

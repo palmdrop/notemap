@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { logHref } from "./href";
+import { aboutHref, logHref } from "./href";
 
 test("narrows to a subject and carries the order it is being read in", () => {
   expect(logHref("oldest-first", "0198f0c2-item")).toBe(
@@ -14,4 +14,8 @@ test("widens again without losing the order", () => {
 
 test("escapes a subject that is not a bare id", () => {
   expect(logHref("newest-first", "a b&c")).toContain("item=a+b%26c");
+});
+
+test("names the subject and leaves the order to whoever follows it", () => {
+  expect(aboutHref("item-1")).toBe("/log?item=item-1");
 });

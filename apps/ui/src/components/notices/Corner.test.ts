@@ -106,6 +106,11 @@ test("says what happened while nobody was asking", async () => {
   expect(said.textContent).toContain("delivery failed");
   expect(said.textContent).toContain("the vault is not mounted");
 
+  // And a way through to the whole of it, which is the log narrowed to the item.
+  expect(screen.getByRole("link", { name: "look" }).getAttribute("href")).toBe(
+    "/log?item=one",
+  );
+
   vi.useRealTimers();
 });
 

@@ -188,16 +188,16 @@ Depends on phase 1. The phase this plan exists for.
 
 Depends on phase 4.
 
-- [ ] Every notice about an item leads to the log narrowed to it. `logHref` already composes that
+- [x] Every notice about an item leads to the log narrowed to it. `logHref` already composes that
       link and carries the order with it
-- [ ] Where [item-route-and-record-view](item-route-and-record-view.md) has landed, it leads to the
+- [x] Where [item-route-and-record-view](item-route-and-record-view.md) has landed, it leads to the
       item instead, which is the better address for the same question. If it has not, this is one
       href and changing it later is a line
-- [ ] A notice about work with no item — `work-failed` on a subject that is not an item — leads to
+- [x] A notice about work with no item — `work-failed` on a subject that is not an item — leads to
       the unnarrowed log
-- [ ] Tests: a notice about an item links to it; one about nothing in particular links to the log
-- [ ] Verify: `pnpm --filter @notemap/ui test`
-- [ ] `git commit`
+- [x] Tests: a notice about an item links to it; one about nothing in particular links to the log
+- [x] Verify: `pnpm --filter @notemap/ui test`
+- [x] `git commit`
 
 ### Phase 6 — The specs catch up
 
