@@ -15,7 +15,7 @@
     "typecheck": "tsc -p tsconfig.json && pnpm -r typecheck",
     "test": "pnpm -r test",
     "test:stack": "pnpm --filter @notemap/full-stack-tests test:stack",
-    "lint": "eslint .",
+    "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
