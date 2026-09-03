@@ -547,6 +547,30 @@ will not resolve without a person; it does not go to the corner, which belongs t
 operation, with an id, that a person dismisses — and a failed read has neither. A read the pool
 never answered still draws no failure at all.
 
+### The corner says what happened
+
+*(2026-09-03.)* The corner a refusal has always had is where the shell says anything at all in its
+own voice, and a refusal is one of the things it says rather than the whole of it. A **notice** is
+work that has already happened, reported to somebody who did not ask: an item routed and where it
+went, a delivery that failed, a delivery given up on. **One place, with gradations** — a second
+corner would be a reader learning where to look to learn nothing more.
+
+**A confirmation goes on its own and a failure holds.** Anything a person may have to act on stays
+until they clear it, which is the rule the refusal already followed; a success is a glance and
+leaves after a few seconds. The accent is spent on the second kind and on nothing else, as it is in
+the log.
+
+**The refusals sit at the bottom of the stack**, being the ones that will not clear themselves, and
+the bottom of the corner is its reachable end. Above them the newest notice sits nearest, and the
+corner holds four: past that the oldest confirmations go, standing notices never do, and any it has
+no room for are counted with a way through to the log.
+
+**A gesture speaks when its subject leaves the screen.** Routing, marking done and archiving take
+the row away and therefore say where it went; tagging and editing leave it in front of you and say
+nothing, because the row is its own evidence and a notice per tag is noise. A failure at a control
+that is still on screen is said **at the control** — the composer keeps its modal open on a refusal,
+a row keeps its own line — and the corner is for what has nowhere else to be said.
+
 ### Draining
 
 The queue's job is to reach zero and the API gives no count — `ItemSlice` carries values and an

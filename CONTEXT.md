@@ -363,6 +363,14 @@ asks the pool nothing and asks once when it is watched again, so a mark that is 
 asked costs nothing while nobody is reading it.
 _Avoid_: visible, focused, active, foreground
 
+**Notice**:
+Something the shell says in its own voice, in the corner, about work that has already happened, to
+somebody who did not ask. A confirmation goes on its own; anything a person may have to act on holds
+until they clear it. Not an **action**, which is the pool's durable record of the same event and is
+what a notice is derived from; not a **refusal**, which is the one notice a person must clear before
+the client stops holding something the pool never took.
+_Avoid_: toast, notification, alert, banner, message
+
 **Refused**:
 Said of an outbox operation the pool answered no to. Terminal without a person: waiting will not
 drain it, and the client's cache is left holding something the pool never accepted, so it is shown

@@ -4,8 +4,8 @@
   import { page } from "$app/state";
 
   import Shown from "$components/log/Shown.svelte";
+  import Corner from "$components/notices/Corner.svelte";
   import Order from "$components/order/Order.svelte";
-  import Refusals from "$components/outbox/Refusals.svelte";
   import SignIn from "$components/session/SignIn.svelte";
   import ThemeToggle from "$components/theme/ThemeToggle.svelte";
   import Bar from "$components/primitives/frame/Bar.svelte";
@@ -85,6 +85,6 @@
 </Sheet>
 
 {#if !shut}
-  <Refusals />
+  <Corner />
 {/if}
 <ThemeToggle />
