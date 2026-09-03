@@ -145,44 +145,44 @@ Depends on phase 2. **Droppable**: the notice carries the confirmation without i
 
 Depends on phase 1. The phase this plan exists for.
 
-- [ ] **An ADR.** Why the shell learns from the log rather than being told: the pool already writes
+- [x] **An ADR.** Why the shell learns from the log rather than being told: the pool already writes
       `routed`, `delivery-failed` and `work-abandoned` with everything a notice needs, so a push
       channel would be a second delivery of facts that are already durable — and a durable log read
       late is right where a socket dropped mid-failure is not. Say what it was chosen over: an
       SSE or websocket feed, a new `delivered` action kind, and polling the routing records of
       pending items. Record that the reachability probe cannot carry the poll, and why
-- [ ] A watcher in the client, answering an observable of actions it has not answered before. It
+- [x] A watcher in the client, answering an observable of actions it has not answered before. It
       belongs to the client rather than the shell: the client owns the transport, the `watched`
       signal and the reachability mark, and a fake clock is how this gets tested at all.
       **Settle the name with the developer** before writing it — `client.happened` beside
       `client.reachable` and `client.undrained` is the proposal, and `ActionsApi` is the wrong home
       because it is stateless by decision and says so
-- [ ] Its own timer, gated on **watched** and on reachable. Unwatched asks nothing, unreachable asks
+- [x] Its own timer, gated on **watched** and on reachable. Unwatched asks nothing, unreachable asks
       nothing, and coming back to either asks once
-- [ ] **The mark starts at the newest action, and that first read says nothing.** A shell that opens
+- [x] **The mark starts at the newest action, and that first read says nothing.** A shell that opens
       by announcing yesterday is worse than one that says nothing at all
-- [ ] Four kinds become notices and no others: `routed`, `delivery-failed`, `work-failed`,
+- [x] Four kinds become notices and no others: `routed`, `delivery-failed`, `work-failed`,
       `work-abandoned`. The first is quiet, the rest stand. Everything else the log holds stays in
       the log, which is what it is for
-- [ ] **Nothing is said twice.** An action the shell already spoke about — the `routed` written by
+- [x] **Nothing is said twice.** An action the shell already spoke about — the `routed` written by
       the inline path phase 2 has just confirmed — is recognised and dropped. Match on the action id
       the watcher hands over and on the routing record in its detail, since the gesture knows the
       record and not the entry
-- [ ] **`work-abandoned` on a routing record says the item is back in the queue**, because it is:
+- [x] **`work-abandoned` on a routing record says the item is back in the queue**, because it is:
       the reservation is removed and the decision is the person's again. This is the notice that
       answers the disappearing row
-- [ ] A reconnect after a long absence catches up **one page** and no further. More than that
+- [x] A reconnect after a long absence catches up **one page** and no further. More than that
       collapses into one standing notice with a count, pointing at `/log`
-- [ ] `docs/specs/client.md` says what the watcher is, what gates it, and that it holds nothing
+- [x] `docs/specs/client.md` says what the watcher is, what gates it, and that it holds nothing
       across a restart
-- [ ] Tests in the client, over a fake clock and a fake transport: the first read says nothing;
+- [x] Tests in the client, over a fake clock and a fake transport: the first read says nothing;
       only new entries are answered; unwatched stops it; unreachable stops it; a reconnect catches
       up once and is bounded. Tests in the shell: each kind draws its notice, a duplicate is
       dropped, an abandoned delivery says the item is back
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack` — the
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack` — the
       client's transport gains a read of its own accord, which is a layer crossing even though the
       wire is unchanged
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 5 — A notice names where to look
 

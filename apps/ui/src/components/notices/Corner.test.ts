@@ -62,3 +62,75 @@ test("a refusal is still drawn, in the same corner", async () => {
   const said = await screen.findByRole("alert");
   expect(said.textContent).toContain("capture");
 });
+
+function anAction(id: string, kind: string, detail: Record<string, unknown>) {
+  return {
+    id,
+    kind,
+    subject: "one",
+    by: { kind: "notemap" },
+    at: `2026-09-03T10:0${id}:00.000Z`,
+    detail,
+  };
+}
+
+/** The log is the only place this is written, and nobody was reading it. */
+test("says what happened while nobody was asking", async () => {
+  vi.useFakeTimers();
+  let happened = [anAction("1", "captured", {})];
+
+  pool((request) =>
+    routeOf(request).startsWith("GET /v1/actions")
+      ? json(200, { values: happened })
+      : json(200, { values: [] }),
+  );
+
+  render(Corner);
+
+  // The first read is the mark, and says nothing about what was already there.
+  await vi.advanceTimersByTimeAsync(100);
+  expect(screen.queryByRole("alert")).toBeNull();
+
+  happened = [
+    anAction("2", "delivery-failed", {
+      record: "r1",
+      attempt: 3,
+      failure: { code: "unreachable", detail: "the vault is not mounted" },
+    }),
+    ...happened,
+  ];
+
+  await vi.advanceTimersByTimeAsync(10_000);
+
+  const said = screen.getByRole("alert");
+  expect(said.textContent).toContain("delivery failed");
+  expect(said.textContent).toContain("the vault is not mounted");
+
+  vi.useRealTimers();
+});
+
+test("does not repeat a landing this shell has already reported", async () => {
+  vi.useFakeTimers();
+  let happened: ReturnType<typeof anAction>[] = [];
+
+  pool((request) =>
+    routeOf(request).startsWith("GET /v1/actions")
+      ? json(200, { values: happened })
+      : json(200, { values: [] }),
+  );
+
+  render(Corner);
+  await vi.advanceTimersByTimeAsync(100);
+
+  // What the composer said when the decision was made.
+  notices.raise({ what: "routed · Vault", key: "record:r1" });
+  happened = [anAction("2", "routed", { record: "r1", pointer: "a.md" })];
+
+  await vi.advanceTimersByTimeAsync(10_000);
+
+  // The corner would be holding the poll's copy of it, had it raised one.
+  expect(notices.shown).toHaveLength(0);
+  expect(notices.said("record:r1")).toBe(true);
+
+  vi.useRealTimers();
+});

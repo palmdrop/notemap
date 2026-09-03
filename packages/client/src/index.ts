@@ -20,6 +20,7 @@ export type {
   PendingOperation,
 } from "./outbox/operations";
 
+export type { Happened } from "./actions/watching";
 export type { Reach } from "./pool/reachability";
 export type { ClientStore } from "./ports/store";
 export type { Transport } from "./ports/transport";

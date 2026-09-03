@@ -27,6 +27,7 @@ import type { Observable } from "rxjs";
 
 import type { SessionState } from "./session/session";
 
+import type { Happened } from "./actions/watching";
 import type { OperationId, PendingOperation } from "./outbox/operations";
 import type { Reach } from "./pool/reachability";
 import type { ClientStore } from "./ports/store";
@@ -171,6 +172,12 @@ export type ActionsPage = {
  */
 export interface ActionsApi {
   read(request: ActionsRequest): Promise<ActionsPage>;
+  /**
+   * What the pool has done since this client started looking, in the order it
+   * happened. Asked for on its own tempo while the client is watched and the
+   * pool answers; the first read is the mark it counts from and says nothing.
+   */
+  watch(): Observable<Happened>;
 }
 
 /**

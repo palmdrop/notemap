@@ -343,6 +343,24 @@ goes when they do.
 - A refusal and an unreachable pool are told apart here as they are everywhere else; the caller
   is the one that decides what to draw.
 
+**The log is also how a client learns what it did not ask about** *(2026-09-03)*. `watch()` answers
+what the pool has done since this client started looking, in the order it happened, so a delivery
+that fails minutes after the decision is something a shell can say rather than something a person
+has to go and find. It reads the same route on its own tempo and holds one thing: a **mark**, taken
+from its first read.
+
+- **The first read is the mark and says nothing.** Everything before a client started looking is
+  history, and a shell that opens by announcing yesterday is worse than one that says nothing.
+- **It asks only while the client is watched and the pool is answering**, and asks at once on
+  regaining either. It cannot ride the reachability probe: an answered request pushes that probe
+  out, so a client whose requests are being answered never sends one — which is exactly when
+  somebody is here to be told something.
+- **It answers a page, and says when there was more than a page.** A client that was away for a day
+  gets what one read holds and a mark that there is more, which is the log's to show rather than
+  this to enumerate.
+- **A read that fails says nothing.** Silence is not an event; reachability is what a person reads.
+- **It is lazy.** A client nobody asks to watch never asks the pool anything on its own.
+
 ### The outbox
 
 Every mutation a client makes is an **outbox operation**: applied to the client's cache at once,

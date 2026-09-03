@@ -1,11 +1,38 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
   import Refusals from "$components/outbox/Refusals.svelte";
   import Alarm from "$components/primitives/alarm/Alarm.svelte";
   import Notice from "$components/primitives/alarm/Notice.svelte";
+  import { client } from "$lib/client";
+  import { nameOf } from "$lib/destinations";
+  import { noticeOf } from "$lib/happened";
   import { notices } from "$lib/notices.svelte";
 
   const shown = $derived(notices.shown);
   const folded = $derived(notices.folded);
+
+  // What happened while nobody was asking. The corner is the only reader of it,
+  // so the watcher is started by the thing that draws what it answers.
+  onMount(() => {
+    const held = client.actions.watch().subscribe((said) => {
+      for (const action of said.actions) {
+        const raised = noticeOf(action, nameOf);
+        if (raised !== undefined) notices.raise(raised);
+      }
+
+      if (said.more) {
+        notices.raise({
+          what: "more happened",
+          why: "than this can hold",
+          href: "/log",
+          standing: true,
+        });
+      }
+    });
+
+    return () => held.unsubscribe();
+  });
 </script>
 
 <!--

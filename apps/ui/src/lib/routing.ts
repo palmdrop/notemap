@@ -34,7 +34,9 @@ export function saidOf(
   record: RoutingRecord,
   nameOf: (destination: string) => string,
 ): Raised {
-  if (record.target.kind !== "destination") return { what: "done" };
+  if (record.target.kind !== "destination") {
+    return { what: "done", key: `record:${record.id}` };
+  }
 
   const name = nameOf(record.target.destination);
 
