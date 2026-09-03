@@ -21,7 +21,7 @@ const timers = new SvelteMap<string, ReturnType<typeof setTimeout>>();
  * what it just did, and it makes no claim about what the pool holds — which is
  * why nothing on it can be opened or acted on.
  */
-export const leaving = {
+export const lingering = {
   after(item: Item, word: string, before?: string): void {
     if (stillness()) return;
 

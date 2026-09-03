@@ -101,9 +101,10 @@ export function noticeOf(
     };
   }
 
+  const why = failureIn(detail);
   return {
     what: "work failed",
-    ...(failureIn(detail) === undefined ? {} : { why: failureIn(detail) }),
+    ...(why === undefined ? {} : { why }),
     ...where,
     standing: true,
     key: `work:${action.id}`,

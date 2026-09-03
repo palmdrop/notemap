@@ -46,15 +46,20 @@ function drop(id: string): void {
 }
 
 /**
- * The oldest confirmations go where the corner has run out of room. A standing
- * notice is never one of them: it is there because nothing but a person will
- * resolve it.
+ * The oldest confirmations go where the corner has run out of room. Two are
+ * never among them: a standing notice, which is there because nothing but a
+ * person will resolve it, and the one just raised — a corner full of failures
+ * would otherwise swallow the confirmation of what somebody has this second
+ * done, which is the one they are waiting for. What there is still no room for
+ * is counted rather than dropped.
  */
 function trimmed(notices: Notice[]): Notice[] {
   const kept = [...notices];
 
   while (kept.length > SHOWN) {
-    const at = kept.findIndex((notice) => notice.standing !== true);
+    const at = kept
+      .slice(0, -1)
+      .findIndex((notice) => notice.standing !== true);
     if (at === -1) return kept;
 
     const [gone] = kept.splice(at, 1);
@@ -123,7 +128,7 @@ export const notices = {
     drop(id);
   },
 
-  /** For a test, and for a shell that has just been signed out of. */
+  /** Everything, said and remembered: a shut door leaves none of it standing. */
   clear(): void {
     for (const notice of held) forget(notice.id);
     held = [];

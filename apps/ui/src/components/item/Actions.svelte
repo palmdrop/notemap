@@ -27,8 +27,12 @@
     address?: string;
     onroute: () => void;
     onedit: () => void;
-    /** The item left. Where its row stood is the register's to know, not this row's. */
-    onwent?: (word: string) => void;
+    /**
+     * The item is on its way out of a list. Asked before the pool is, because
+     * where the row stood is gone by the time it answers; what it hands back is
+     * told what became of the item.
+     */
+    onwent?: () => (going: string) => void;
   } = $props();
 
   /** What this row did, and only that: a failed read is said where it was read. */
@@ -36,18 +40,29 @@
 
   const mayEdit = $derived(editable(item));
 
+  /**
+   * Said at once, the way every outbox operation is: enqueueing it is what the
+   * shell knows, a pool that then refuses it is the corner's to say, and only a
+   * store that could not take it at all leaves this row the one able to report.
+   */
   function archive() {
-    void client.archive(item.id);
+    const went = onwent?.();
     notices.raise({ what: "archived", about: aboutItem(item) });
-    onwent?.("archived");
+    went?.("archived");
+
+    void client.archive(item.id).catch((error: unknown) => {
+      said = saidBy(error);
+    });
   }
 
   async function markDone() {
+    const went = onwent?.();
+    const about = aboutItem(item);
     said = "marking…";
     try {
       const record = await client.routing.markProcessed(item.id);
-      notices.raise(saidOf(record, nameOf, aboutItem(item)));
-      onwent?.("done");
+      notices.raise(saidOf(record, nameOf, about));
+      went?.("done");
       said = "";
     } catch (error) {
       said = saidBy(error);

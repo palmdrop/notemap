@@ -72,3 +72,31 @@ test("a key outlives the notice it was said with", () => {
   expect(notices.shown).toHaveLength(0);
   expect(notices.raise({ what: "routed", key: "record-3" })).toBeUndefined();
 });
+
+test("a confirmation into a corner full of failures is the one thing not dropped", () => {
+  for (let at = 0; at < 4; at += 1) {
+    notices.raise({ what: `failure ${String(at)}`, standing: true });
+  }
+
+  notices.raise({ what: "routed · obsidian" });
+
+  const said = notices.shown.map((notice) => notice.what);
+  expect(said).toContain("routed · obsidian");
+  expect(said).not.toContain("failure 0");
+  expect(notices.folded).toBe(1);
+});
+
+test("that confirmation still goes on its own, leaving the failures behind", () => {
+  for (let at = 0; at < 4; at += 1) {
+    notices.raise({ what: `failure ${String(at)}`, standing: true });
+  }
+  notices.raise({ what: "routed · obsidian" });
+
+  vi.advanceTimersByTime(10_000);
+
+  expect(notices.shown.map((notice) => notice.what)).not.toContain(
+    "routed · obsidian",
+  );
+  expect(notices.shown).toHaveLength(4);
+  expect(notices.folded).toBe(0);
+});

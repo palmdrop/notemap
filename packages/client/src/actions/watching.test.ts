@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Action } from "#api/types";
 import type { ActionsPage } from "../types";
-import { watching, type Happened } from "./watching";
+import { watching, type ActionsSince } from "./watching";
 
 const EVERY = 10_000;
 
@@ -27,7 +27,7 @@ function page(ids: readonly string[], more = false): ActionsPage {
 
 function over(answers: readonly ActionsPage[]) {
   let at = 0;
-  const heard: Happened[] = [];
+  const heard: ActionsSince[] = [];
   const held = watching(
     () => {
       const answer = answers[Math.min(at, answers.length - 1)];
@@ -130,7 +130,7 @@ describe("watching what the pool has done", () => {
   /** Silence is not something to report: reachability is what a person reads. */
   it("says nothing when the read fails, and asks again on the next tick", async () => {
     let at = 0;
-    const heard: Happened[] = [];
+    const heard: ActionsSince[] = [];
     const held = watching(
       () => {
         at += 1;

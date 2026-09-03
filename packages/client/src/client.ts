@@ -481,6 +481,7 @@ export function createClient(config: ClientConfig): Client {
     destinations: createDestinations({
       api,
       all: derived(state.changes, (current) => current.destinations),
+      held: () => state.get().destinations,
       cached: (destinations) =>
         after(() => state.update((current) => ({ ...current, destinations }))),
       settled: (id, held) =>

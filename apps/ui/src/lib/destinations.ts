@@ -6,12 +6,8 @@ import { client } from "./client";
  * rather than shown.
  */
 export function nameOf(id: string): string {
-  let name = "a destination";
-
-  const held = client.destinations.all.subscribe((all) => {
-    name = all.find((one) => one.id === id)?.name ?? name;
-  });
-  held.unsubscribe();
-
-  return name;
+  return (
+    client.destinations.held.find((one) => one.id === id)?.name ??
+    "a destination"
+  );
 }

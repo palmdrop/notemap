@@ -13,7 +13,7 @@ afterEach(() => {
   notices.clear();
 });
 
-test("says what happened, and lets a standing one be dismissed", async () => {
+test("says what logged, and lets a standing one be dismissed", async () => {
   pool(() => json(200, { values: [] }));
   render(Corner);
 
@@ -86,14 +86,14 @@ function anAction(id: string, kind: string, detail: Record<string, unknown>) {
 }
 
 /** The log is the only place this is written, and nobody was reading it. */
-test("says what happened while nobody was asking", async () => {
+test("says what logged while nobody was asking", async () => {
   vi.useFakeTimers();
-  let happened = [anAction("1", "captured", {})];
+  let logged = [anAction("1", "captured", {})];
 
   pool((request) => {
     const route = routeOf(request);
     if (route.startsWith("GET /v1/actions")) {
-      return json(200, { values: happened });
+      return json(200, { values: logged });
     }
     if (route === "GET /v1/items/one") {
       return json(
@@ -117,13 +117,13 @@ test("says what happened while nobody was asking", async () => {
   await vi.advanceTimersByTimeAsync(100);
   expect(screen.queryByRole("alert")).toBeNull();
 
-  happened = [
+  logged = [
     anAction("2", "delivery-failed", {
       record: "r1",
       attempt: 3,
       failure: { code: "unreachable", detail: "the vault is not mounted" },
     }),
-    ...happened,
+    ...logged,
   ];
 
   await vi.advanceTimersByTimeAsync(10_000);
@@ -149,11 +149,11 @@ test("says what happened while nobody was asking", async () => {
 
 test("does not repeat a landing this shell has already reported", async () => {
   vi.useFakeTimers();
-  let happened: ReturnType<typeof anAction>[] = [];
+  let logged: ReturnType<typeof anAction>[] = [];
 
   pool((request) =>
     routeOf(request).startsWith("GET /v1/actions")
-      ? json(200, { values: happened })
+      ? json(200, { values: logged })
       : json(200, { values: [] }),
   );
 
@@ -162,13 +162,83 @@ test("does not repeat a landing this shell has already reported", async () => {
 
   // What the composer said when the decision was made.
   notices.raise({ what: "routed · Vault", key: "record:r1" });
-  happened = [anAction("2", "routed", { record: "r1", pointer: "a.md" })];
+  logged = [anAction("2", "routed", { record: "r1", pointer: "a.md" })];
 
   await vi.advanceTimersByTimeAsync(10_000);
 
   // The corner would be holding the poll's copy of it, had it raised one.
   expect(notices.shown).toHaveLength(0);
   expect(notices.said("record:r1")).toBe(true);
+
+  vi.useRealTimers();
+});
+
+/**
+ * A read that could not reach back to its mark is somebody who has been away.
+ * A page of failures nobody may dismiss is not a report of what they missed.
+ */
+test("a catch-up too long to read out is counted, not enumerated", async () => {
+  vi.useFakeTimers();
+  let logged = [anAction("1", "captured", {})];
+  const paged: { next?: string } = {};
+
+  pool((request) => {
+    const route = routeOf(request);
+    if (route.startsWith("GET /v1/actions")) {
+      return json(200, { values: logged, ...paged });
+    }
+    return json(200, { values: [] });
+  });
+
+  render(Corner);
+  await vi.advanceTimersByTimeAsync(100);
+
+  // Nothing on the page reaches the mark, and there is a page after it.
+  logged = ["9", "8", "7"].map((id) =>
+    anAction(id, "delivery-failed", { record: `r${id}`, failure: {} }),
+  );
+  paged.next = "/v1/actions?after=2026-09-03T00%3A00%3A00.000Z%2C6";
+
+  await vi.advanceTimersByTimeAsync(10_000);
+
+  const said = await screen.findByRole("alert");
+  expect(said.textContent).toContain("3 or more things happened");
+  expect(said.textContent).not.toContain("delivery failed");
+  expect(screen.getAllByRole("alert")).toHaveLength(1);
+  expect(screen.getByRole("link", { name: "look" }).getAttribute("href")).toBe(
+    "/log",
+  );
+
+  vi.useRealTimers();
+});
+
+test("a second long absence replaces the mark left by the first", async () => {
+  vi.useFakeTimers();
+  let logged = [anAction("1", "captured", {})];
+  const paged: { next?: string } = {};
+
+  pool((request) => {
+    const route = routeOf(request);
+    if (route.startsWith("GET /v1/actions")) {
+      return json(200, { values: logged, ...paged });
+    }
+    return json(200, { values: [] });
+  });
+
+  render(Corner);
+  await vi.advanceTimersByTimeAsync(100);
+
+  paged.next = "/v1/actions?after=2026-09-03T00%3A00%3A00.000Z%2C6";
+  logged = [anAction("9", "delivery-failed", { record: "r9", failure: {} })];
+  await vi.advanceTimersByTimeAsync(10_000);
+  await screen.findByRole("alert");
+
+  logged = [anAction("99", "delivery-failed", { record: "r99", failure: {} })];
+  await vi.advanceTimersByTimeAsync(10_000);
+
+  await vi.waitFor(() => {
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+  });
 
   vi.useRealTimers();
 });

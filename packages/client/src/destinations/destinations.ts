@@ -19,6 +19,8 @@ export type DestinationsDeps = {
   readonly api: Api;
   /** The cache a screen renders from, which every call here keeps current. */
   readonly all: Observable<readonly Destination[]>;
+  /** The same cache, read now rather than subscribed to. */
+  readonly held: () => readonly Destination[];
   readonly cached: (destinations: readonly Destination[]) => Promise<void>;
   /** Replaces or drops one, so a mutation does not cost a second read. */
   readonly settled: (id: DestinationId, held?: Destination) => Promise<void>;
@@ -30,6 +32,10 @@ export function createDestinations(deps: DestinationsDeps): DestinationsApi {
 
   return {
     all: deps.all,
+
+    get held() {
+      return deps.held();
+    },
 
     async load(): Promise<readonly Destination[]> {
       const answer = await answered(api.GET("/v1/destinations"));

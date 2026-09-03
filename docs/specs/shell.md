@@ -6,10 +6,10 @@
 
 - 2026-09-03 — **The corner says what happened, not only what was refused.** A gesture that empties
   a row says where it went, names the capture it was about, and says `retrying` where the pool
-  recorded a decision it has not carried out; the row is watched out wearing what became of it rather than vanishing; and the
-  shell learns of a delivery that failed, or was given up on, minutes later by reading the action
-  log on its own tempo. Confirmations go on their own, failures hold until they are cleared, and
-  every notice leads to where the whole of it can be read.
+  recorded a decision it has not carried out; the row lingers wearing what became of it rather than
+  vanishing; and the shell learns of a delivery that failed, or was given up on, minutes later by
+  reading the action log on its own tempo. Confirmations go on their own, failures hold until they
+  are cleared, and every notice leads to where the whole of it can be read.
   ([plan](../plans/notices-as-they-happen.md),
   [ADR 32](../adr/0032-a-shell-learns-what-happened-by-reading-the-log.md))
 
@@ -571,8 +571,10 @@ the log.
 
 **The refusals sit at the bottom of the stack**, being the ones that will not clear themselves, and
 the bottom of the corner is its reachable end. Above them the newest notice sits nearest, and the
-corner holds four: past that the oldest confirmations go, standing notices never do, and any it has
-no room for are counted with a way through to the log.
+corner holds four: past that the oldest confirmations go, and standing notices never do. Neither
+does the one just raised — a corner full of failures that swallowed the confirmation of what
+somebody has this second done would be hiding the one thing they are waiting for. What there is
+still no room for is counted, with a way through to the log.
 
 **A gesture speaks when its subject leaves the screen.** Routing, marking done and archiving take
 the row away and therefore say where it went; tagging and editing leave it in front of you and say
@@ -598,6 +600,10 @@ sits beside the thing it is about, and a notice does not: it is read on its own,
 has gone, possibly minutes later. `retrying · Vault` over `not delivered yet · notes/daily.md` is
 three facts a person can act on; `deferred` was one word nobody could act on, which is what the
 brevity cost here *(amended 2026-09-03, after reading it in use)*.
+
+**Signing out leaves nothing standing.** The corner is emptied with the rest of what the door
+shuts on: a failure about a delivery nobody can now look up would outlive the session that raised
+it.
 
 **The row is watched out rather than vanishing.** A row that has been routed, marked done or
 archived holds its place for one beat wearing the word for what became of it, then goes. It is the
@@ -629,9 +635,11 @@ could ever explain, and it is why this exists.
 plain where the work was about no item. The link carries no order — coming from outside the log
 there is none to carry, and the URL is the more specific statement about a read.
 
-**A catch-up is bounded.** A shell that has been away gets one page of what it missed and a standing
-mark that there was more, with a way through to the log. A hundred things to dismiss is not a
-report.
+**A catch-up is bounded, and a long one is not read out at all.** A shell that has been away a
+moment is told each thing that happened. One that has been away long enough for the read not to
+reach back to its mark is told only how many, standing, with a way through to the log — a page of
+failures nobody may dismiss is not a report of a day. There is one such mark at a time: a second
+long absence replaces the first rather than stacking on it.
 
 ### Draining
 
@@ -729,8 +737,9 @@ hold in step.
 
 **The kind is what the row is**, and it wears the register's state mark rather than reading as body
 text. **The accent is spent on `delivery-failed`, `work-failed` and `work-abandoned`**, which are
-the same three the corner says out loud, and on the failure code beside them — not on `purged`, `destination-deleted` or `actions-cleared`, which are
-facts rather than warnings. A log where half the rows are red says nothing.
+the same three the corner says out loud, and on the failure code beside them — not on `purged`,
+`destination-deleted` or `actions-cleared`, which are facts rather than warnings. A log where half
+the rows are red says nothing.
 
 **`detail` is flattened generically, never per kind**: dotted keys, strings unquoted, arrays
 joined, nested objects flattened. `ActionKind` has twenty-seven members and will gain more, so a

@@ -5,7 +5,7 @@ import { tick } from "svelte";
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool } from "$testing/pool";
-import { leaving } from "$lib/leaving.svelte";
+import { lingering } from "$lib/lingering.svelte";
 import { notices } from "$lib/notices.svelte";
 import { NO_MORE_OFFLINE } from "$lib/said";
 import { briefly } from "$lib/stamp";
@@ -20,7 +20,7 @@ vi.mock("$lib/client", () => import("$testing/pool"));
 afterEach(() => {
   if (rail.furled) rail.toggle();
   notices.clear();
-  leaving.clear();
+  lingering.clear();
 });
 
 function queued(...ids: string[]) {
@@ -694,4 +694,80 @@ test("a routing the pool has not carried out says it is retrying", async () => {
     expect(notices.shown[0]?.what).toBe("retrying · Vault");
   });
   expect(notices.shown[0]?.why).toBe("not delivered yet · notes/daily.md");
+});
+
+/**
+ * Where it stood, not where the list starts. The item is out of the queue
+ * before `route()` answers, so the neighbour is read while the row still has
+ * one — a routed row rising to the top of the register is a row that vanished
+ * and something else appearing, which is what the linger exists to prevent.
+ */
+test("a routed row is watched out from where it stood", async () => {
+  const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
+
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/queue") {
+      return json(200, {
+        values: ["one", "two", "three"].map((id) => anItem(id)),
+      });
+    }
+    if (route === "GET /v1/destinations") {
+      return json(200, {
+        values: [
+          {
+            id: VAULT,
+            name: "Vault",
+            kind: "filesystem",
+            settings: {},
+            retired: false,
+          },
+        ],
+      });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, {
+        kind: "described",
+        capabilities: [{ name: "append", accepts: ["text"] }],
+      });
+    }
+    if (route === "POST /v1/items/two/route") {
+      return json(200, {
+        id: "r",
+        item: "two",
+        at: "2026-09-03T10:00:00.000Z",
+        state: "delivered",
+        pointer: "notes/inbox/two.md",
+        target: {
+          kind: "destination",
+          destination: VAULT,
+          capability: "append",
+          arguments: {},
+        },
+      });
+    }
+    return json(200, { values: [] });
+  });
+
+  render(Queue);
+  await screen.findByText("two");
+
+  // The middle row, so a departure from the foot and from the head both read
+  // as wrong.
+  await open(1);
+  await fireEvent.click(screen.getByRole("button", { name: "route" }));
+  await fireEvent.click(await screen.findByRole("button", { name: /Vault/ }));
+  await fireEvent.click(await screen.findByRole("button", { name: /append/ }));
+  await fireEvent.click(
+    screen.getAllByRole("button", { name: "route" }).at(-1) as HTMLElement,
+  );
+
+  const word = await screen.findByText("routed");
+
+  // DOCUMENT_POSITION_FOLLOWING is 4, PRECEDING is 2.
+  const after = screen.getByText("one").compareDocumentPosition(word) & 4;
+  const before = screen.getByText("three").compareDocumentPosition(word) & 2;
+
+  expect(after).toBeTruthy();
+  expect(before).toBeTruthy();
 });

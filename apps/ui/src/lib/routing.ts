@@ -26,11 +26,6 @@ export function whereItWent(
 }
 
 /**
- * What a decision just made says about itself. A record the pool answered as
- * `pending` has been recorded and not delivered, and saying otherwise would be
- * the shell claiming something only the delivery can know.
- */
-/**
  * Where a delivery put a copy, in the words a person could go and look with:
  * the pointer the destination handed back, or failing that the place the
  * decision named.

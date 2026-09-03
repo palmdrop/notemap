@@ -27,7 +27,7 @@ import type { Observable } from "rxjs";
 
 import type { SessionState } from "./session/session";
 
-import type { Happened } from "./actions/watching";
+import type { ActionsSince } from "./actions/watching";
 import type { OperationId, PendingOperation } from "./outbox/operations";
 import type { Reach } from "./pool/reachability";
 import type { ClientStore } from "./ports/store";
@@ -89,6 +89,12 @@ export type CaptureInput = {
 export interface DestinationsApi {
   /** What was last read, for a screen to render while the pool is unreachable. */
   readonly all: Observable<readonly Destination[]>;
+  /**
+   * The same cache, read now. For the callers that are not a rendered screen
+   * and have no subscription to hang on: naming a destination in a line of
+   * text is a question with an answer, not a thing to redraw.
+   */
+  readonly held: readonly Destination[];
 
   /** Fills the cache `all` answers from, and answers the same list. */
   load(): Promise<readonly Destination[]>;
@@ -177,7 +183,7 @@ export interface ActionsApi {
    * happened. Asked for on its own tempo while the client is watched and the
    * pool answers; the first read is the mark it counts from and says nothing.
    */
-  watch(): Observable<Happened>;
+  watch(): Observable<ActionsSince>;
 }
 
 /**

@@ -7,7 +7,8 @@
 - 2026-09-03 — **A client learns what it did not ask about.** `ActionsApi.watch()` answers what the
   pool has done since this client started looking, read from the action log on its own tempo, gated
   on watched and on reachable, from a mark taken at start that says nothing about what came before
-  it. One page at a time, with a mark when there was more.
+  it. One page at a time, with a mark when there was more. `DestinationsApi.held` reads the
+  destinations cache synchronously, for the callers that name one in a line of text.
   ([plan](../plans/notices-as-they-happen.md),
   [ADR 32](../adr/0032-a-shell-learns-what-happened-by-reading-the-log.md))
 
@@ -364,7 +365,8 @@ from its first read.
   somebody is here to be told something.
 - **It answers a page, and says when there was more than a page.** A client that was away for a day
   gets what one read holds and a mark that there is more, which is the log's to show rather than
-  this to enumerate.
+  this to enumerate. A reader that is told there was more is being told to go to the log, not handed
+  a page to read out.
 - **A read that fails says nothing.** Silence is not an event; reachability is what a person reads.
 - **It is lazy.** A client nobody asks to watch never asks the pool anything on its own.
 
@@ -424,6 +426,12 @@ not in the outbox: whether a root exists, and whether settings satisfy the kind 
 is actually running, are questions only the daemon can answer, so an offline edit would validate
 against a cached schema and hand back an acceptance the pool may then refuse. The settings screen is
 readable offline and its controls are disabled, like a route.
+
+**The destinations cache is read two ways** *(2026-09-03)*. `all` is the observable a screen
+renders from. `held` answers the same cache **now**, for the callers that are not a rendered screen
+and have nowhere to hang a subscription — naming a destination inside a line of text is a question
+with an answer rather than a thing to redraw. Both read one cache, so they cannot disagree, and
+neither reaches the pool.
 
 **What a field could hold is asked, never cached** (added 2026-08-31). `describe()`'s capabilities
 are read like any destination's, but a folder's contents, a note's existence, or the tags a vault

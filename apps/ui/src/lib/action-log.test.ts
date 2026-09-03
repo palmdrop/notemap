@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 
 import type { Action } from "@notemap/client";
 
-import { noticeOf } from "./happened";
+import { noticeOf } from "./action-log";
 
 const reading = {
   nameOf: (id: string) => (id === "vault" ? "Vault" : "a destination"),

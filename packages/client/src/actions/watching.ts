@@ -12,14 +12,14 @@ import type { ActionPosition, ActionsPage } from "../types";
  */
 const STEADY = 10_000;
 
-export type Happened = {
+export type ActionsSince = {
   readonly actions: readonly Action[];
   /** More happened than one read answers, so this is a page of it and not all of it. */
   readonly more: boolean;
 };
 
 export type Watching = {
-  readonly changes: Observable<Happened>;
+  readonly changes: Observable<ActionsSince>;
   watched(yes: boolean): void;
   answering(yes: boolean): void;
   stop(): void;
@@ -42,7 +42,7 @@ export function watching(
 ): Watching {
   const every = gates.every ?? STEADY;
 
-  const happened = emitter<Happened>();
+  const reported = emitter<ActionsSince>();
 
   let mark: ActionPosition | undefined;
   let waiting: ReturnType<typeof setTimeout> | undefined;
@@ -72,7 +72,7 @@ export function watching(
    * was cleared from under the read, which is the same answer: a count, and a
    * way through to the log.
    */
-  function since(page: ActionsPage): Happened {
+  function since(page: ActionsPage): ActionsSince {
     const values = page.values;
     const at = values.findIndex((action) => action.id === mark?.id);
 
@@ -94,7 +94,7 @@ export function watching(
       const said = mark === undefined ? undefined : since(page);
       mark = positionOf(newest);
 
-      if (said !== undefined && said.actions.length > 0) happened.next(said);
+      if (said !== undefined && said.actions.length > 0) reported.next(said);
     } catch {
       // A pool that did not answer says nothing rather than something wrong.
       // The next tick asks again, and reachability is what a person reads.
@@ -119,7 +119,7 @@ export function watching(
   gate();
 
   return {
-    changes: happened.changes,
+    changes: reported.changes,
 
     watched(yes) {
       if (yes === looking) return;
@@ -138,7 +138,7 @@ export function watching(
       stopped = true;
       clearTimeout(waiting);
       waiting = undefined;
-      happened.end();
+      reported.end();
     },
   };
 }

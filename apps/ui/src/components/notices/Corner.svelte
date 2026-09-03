@@ -1,14 +1,16 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
+  import type { Action } from "@notemap/client";
+
   import { aboutHref } from "$components/log/href";
   import Refusals from "$components/outbox/Refusals.svelte";
   import Alarm from "$components/primitives/alarm/Alarm.svelte";
   import Notice from "$components/primitives/alarm/Notice.svelte";
+  import { noticeOf } from "$lib/action-log";
   import { client } from "$lib/client";
   import { nameOf } from "$lib/destinations";
   import { aboutItem } from "$lib/excerpt";
-  import { noticeOf } from "$lib/happened";
   import { notices } from "$lib/notices.svelte";
 
   const shown = $derived(notices.shown);
@@ -30,28 +32,44 @@
     }
   }
 
+  /** The one standing mark that a catch-up was too long to read out. */
+  let missed = $state<string | undefined>(undefined);
+
+  /**
+   * A read that could not reach back to the mark is a person who has been away,
+   * and a page of failures nobody may dismiss is not a report of it. They are
+   * counted and left in the log, which is where a day's worth belongs.
+   */
+  function tooMuch(since: number) {
+    if (missed !== undefined) notices.dismiss(missed);
+    missed = notices.raise({
+      what: `${String(since)} or more things happened`,
+      why: "while this was away",
+      href: "/log",
+      standing: true,
+    });
+  }
+
+  async function say(actions: readonly Action[]) {
+    for (const action of actions) {
+      const raised = noticeOf(action, { nameOf, about: aboutHref });
+      if (raised === undefined) continue;
+
+      const about = await whichCapture(action.subject);
+      notices.raise(about === undefined ? raised : { ...raised, about });
+    }
+  }
+
   // What happened while nobody was asking. The corner is the only reader of it,
   // so the watcher is started by the thing that draws what it answers.
   onMount(() => {
-    const held = client.actions.watch().subscribe((said) => {
-      void (async () => {
-        for (const action of said.actions) {
-          const raised = noticeOf(action, { nameOf, about: aboutHref });
-          if (raised === undefined) continue;
-
-          const about = await whichCapture(action.subject);
-          notices.raise(about === undefined ? raised : { ...raised, about });
-        }
-      })();
-
-      if (said.more) {
-        notices.raise({
-          what: "more happened",
-          why: "than this can hold",
-          href: "/log",
-          standing: true,
-        });
+    const held = client.actions.watch().subscribe((since) => {
+      if (since.more) {
+        tooMuch(since.actions.length);
+        return;
       }
+
+      void say(since.actions);
     });
 
     return () => held.unsubscribe();

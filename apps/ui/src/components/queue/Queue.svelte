@@ -7,7 +7,7 @@
 
   import CaptureRow from "$components/capture/CaptureRow.svelte";
   import Drained from "$components/queue/Drained.svelte";
-  import Leaving from "$components/queue/Leaving.svelte";
+  import Lingering from "$components/queue/Lingering.svelte";
   import QueueRow from "$components/queue/QueueRow.svelte";
   import RoutingComposer from "$components/routing/RoutingComposer.svelte";
   import More from "$components/primitives/register/More.svelte";
@@ -16,7 +16,7 @@
   import { client } from "$lib/client";
   import { nameOf } from "$lib/destinations";
   import { aboutItem } from "$lib/excerpt";
-  import { leaving } from "$lib/leaving.svelte";
+  import { lingering } from "$lib/lingering.svelte";
   import { notices } from "$lib/notices.svelte";
   import { orderFor } from "$lib/order";
   import { pending } from "$lib/pending.svelte";
@@ -36,11 +36,12 @@
   let opened = $state<string | undefined>(undefined);
 
   /**
-   * The item itself rather than its id: routing takes it out of the queue the
-   * moment the pool answers, and a subject derived from the list would be gone
-   * before the decision it produced could be reported.
+   * The item itself, and the row it stood above, rather than an id and a lookup:
+   * routing takes the item out of the queue before it answers, so both would be
+   * gone by the time the decision they produced could be reported.
    */
-  let subject = $state<Item | undefined>(undefined);
+  let routing = $state<{ item: Item; before?: string } | undefined>(undefined);
+  const subject = $derived(routing?.item);
 
   const refused = $derived(refusalIn($queue));
 
@@ -60,7 +61,7 @@
 
   const rows = $derived.by<Row[]>(() => {
     const live = $queue.items;
-    const going = leaving
+    const going = lingering
       .going()
       .filter((held) => !live.some((item) => item.id === held.item.id));
 
@@ -102,16 +103,20 @@
     opened = opened === id ? undefined : id;
   }
 
+  /** Where the row stands now, read while it is still standing there. */
+  function route(item: Item, before?: string) {
+    routing = { item, ...(before === undefined ? {} : { before }) };
+  }
+
   /**
    * The composer sits over the register, so what is said about a decision and
    * where the row stood are both the queue's to know.
    */
-  function went(item: Item, record: RoutingRecord) {
-    notices.raise(saidOf(record, nameOf, aboutItem(item)));
+  function went(going: { item: Item; before?: string }, record: RoutingRecord) {
+    notices.raise(saidOf(record, nameOf, aboutItem(going.item)));
 
-    const at = $queue.items.findIndex((held) => held.id === item.id);
     const word = record.state === "delivered" ? "routed" : "retrying";
-    leaving.after(item, word, $queue.items[at + 1]?.id);
+    lingering.after(going.item, word, going.before);
   }
 </script>
 
@@ -128,7 +133,7 @@
 
   {#each rows as row, at (row.item.id)}
     {#if row.word !== undefined}
-      <Leaving item={row.item} word={row.word} furled={rail.furled} />
+      <Lingering item={row.item} word={row.word} furled={rail.furled} />
     {:else}
       <QueueRow
         item={row.item}
@@ -138,7 +143,7 @@
         pending={undrained.has(row.item.id)}
         before={rows[at + 1]?.item.id}
         onopen={() => show(row.item.id)}
-        onroute={() => (subject = row.item)}
+        onroute={() => route(row.item, rows[at + 1]?.item.id)}
       />
     {/if}
   {/each}
@@ -158,7 +163,9 @@
     subject={client.says(subject) || subject.payload.type}
     content={subject.payload.content}
     tags={(subject.tags ?? []).map((tag) => tag.name)}
-    onrouted={(record) => went(subject as Item, record)}
-    onclose={() => (subject = undefined)}
+    onrouted={(record) => {
+      if (routing !== undefined) went(routing, record);
+    }}
+    onclose={() => (routing = undefined)}
   />
 {/if}

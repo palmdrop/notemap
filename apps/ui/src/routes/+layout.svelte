@@ -15,6 +15,8 @@
   import Sheet from "$components/primitives/frame/Sheet.svelte";
   import Waiting from "$components/primitives/frame/Waiting.svelte";
   import { client } from "$lib/client";
+  import { lingering } from "$lib/lingering.svelte";
+  import { notices } from "$lib/notices.svelte";
   import { reachable, watched } from "$lib/reachable.svelte";
   import { session } from "$lib/session.svelte";
   import { waiting } from "$lib/waiting.svelte";
@@ -47,6 +49,14 @@
   // said is how much unsent work is held, because that is the person's and its
   // loss would otherwise be silent.
   const shut = $derived(who.shut);
+
+  // Signing out is the pool's work leaving with it. A standing failure about a
+  // delivery nobody can now look up would outlive the session that raised it.
+  $effect(() => {
+    if (!shut) return;
+    notices.clear();
+    lingering.clear();
+  });
 </script>
 
 <Sheet>
