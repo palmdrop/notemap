@@ -63,17 +63,17 @@ Depends on nothing.
 
 Depends on phase 1.
 
-- [ ] A queue row and a feed row lead to it. Which gesture — the row's own body, or an action beside
+- [x] A queue row and a feed row lead to it. Which gesture — the row's own body, or an action beside
       the others — is a design decision to settle here rather than assume: opening a row in place is
       what triage is, and this must not replace it
-- [ ] Back returns to the surface you came from, in the order it was in, at the position it held.
+- [x] Back returns to the surface you came from, in the order it was in, at the position it held.
       Both are already remembered per surface ([reconnect-and-remembered-order](reconnect-and-remembered-order.md)),
       and an item view that loses them would make reading one record cost your place in the queue
-- [ ] The item view is not a register and remembers no order of its own. Say so where the order
+- [x] The item view is not a register and remembers no order of its own. Say so where the order
       machinery is, so the next surface does not inherit a rule that was never meant to be general
-- [ ] Tests: leaving and returning keeps order and position; the row still opens in place
-- [ ] Verify: `pnpm --filter @notemap/ui test`
-- [ ] `git commit`
+- [x] Tests: leaving and returning keeps order and position; the row still opens in place
+- [x] Verify: `pnpm --filter @notemap/ui test`
+- [x] `git commit`
 
 ### Phase 3 — A record is a thing you can read
 

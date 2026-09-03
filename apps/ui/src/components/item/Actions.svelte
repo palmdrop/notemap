@@ -6,17 +6,23 @@
   import { client } from "$lib/client";
   import { editable } from "$lib/lineage";
 
-  /** `said` is what the caller has to report; marking done reports its own. */
+  /**
+   * `said` is what the caller has to report; marking done reports its own.
+   * `address` is where this item is read, and is absent on the surface that
+   * already is it.
+   */
   let {
     item,
     offline,
     said = "",
+    address,
     onroute,
     onedit,
   }: {
     item: Item;
     offline: boolean;
     said?: string;
+    address?: string;
     onroute: () => void;
     onedit: () => void;
   } = $props();
@@ -47,6 +53,12 @@
        append a revision, which the queue is not where to do. -->
   {#if mayEdit}
     <Action onclick={onedit}>edit</Action>
+  {/if}
+
+  <!-- Somewhere to go rather than something to do, and last, so the gesture
+       that opens a row in place is never the one that leaves it. -->
+  {#if address !== undefined}
+    <Action href={address}>open</Action>
   {/if}
 
   {#if word !== ""}

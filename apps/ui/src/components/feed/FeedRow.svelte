@@ -11,6 +11,7 @@
   import Pending from "$components/primitives/marks/Pending.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
+  import { itemHref } from "$components/item/href";
   import { client } from "$lib/client";
   import { became, finished } from "$lib/lineage";
 
@@ -65,9 +66,12 @@
 
   <Payload {item} muted={finished(item)} />
 
-  {#if archived}
-    <ActionRow>
+  <ActionRow>
+    {#if archived}
       <Action onclick={() => void client.unarchive(item.id)}>unarchive</Action>
-    </ActionRow>
-  {/if}
+    {/if}
+    <!-- The feed is read rather than worked, so the way into an item is the
+         only thing every row here offers. -->
+    <Action href={itemHref(item.id)}>open</Action>
+  </ActionRow>
 </Body>

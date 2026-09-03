@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/svelte";
+import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
 import { tick } from "svelte";
 
@@ -325,4 +325,33 @@ test("keeps the row's marks when the rail furls, and draws each of them once", a
     expect(screen.getAllByText("archived")).toHaveLength(1);
   });
   expect(screen.getAllByText("pending")).toHaveLength(1);
+});
+
+test("leads to every row's own address without asking a row to open", async () => {
+  pool(held(anItem("one"), anItem("two")));
+
+  render(Feed);
+  await screen.findByText("one");
+
+  const ways = screen.getAllByRole("link", { name: "open" });
+  expect(ways.map((way) => way.getAttribute("href"))).toEqual([
+    "/items/one",
+    "/items/two",
+  ]);
+});
+
+test("puts the view back where the reader left it to read one item", async () => {
+  pool(held(anItem("one")));
+
+  render(Feed);
+  await screen.findByText("one");
+  Object.defineProperty(window, "scrollY", { configurable: true, value: 320 });
+  await fireEvent.scroll(window);
+
+  cleanup();
+  render(Feed);
+
+  await vi.waitFor(() => {
+    expect(window.scrollTo).toHaveBeenCalledWith({ top: 320 });
+  });
 });

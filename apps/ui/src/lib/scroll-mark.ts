@@ -13,3 +13,19 @@ export function readMark(surface: string): number {
 export function writeMark(surface: string, at: number): void {
   sessionStorage.setItem(`${KEY}:${surface}`, String(Math.round(at)));
 }
+
+/** Puts the view back where this surface was left, once its rows are drawn. */
+export function restorePlace(surface: string): void {
+  window.scrollTo({ top: readMark(surface) });
+}
+
+/**
+ * Remembers where the reader is for as long as the surface is drawn. A surface
+ * that is not drawn writes nothing, which is what leaves a place to come back
+ * to while a person is reading one item.
+ */
+export function keepPlace(surface: string): () => void {
+  const remember = () => writeMark(surface, window.scrollY);
+  window.addEventListener("scroll", remember, { passive: true });
+  return () => window.removeEventListener("scroll", remember);
+}

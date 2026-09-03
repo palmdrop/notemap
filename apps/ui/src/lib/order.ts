@@ -1,5 +1,10 @@
 import type { Order } from "@notemap/client";
 
+/**
+ * Every surface a reader starts from one end of. An item is not one: it is one
+ * entity rather than a register, so it has no end and remembers no order. A
+ * surface added here is claiming to have both.
+ */
 export type Surface = "queue" | "feed" | "log";
 
 export const PARAM = "order";

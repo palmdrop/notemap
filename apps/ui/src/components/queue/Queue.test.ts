@@ -376,3 +376,20 @@ test("draws a picture before it is sent, and the pool's copy after", async () =>
     );
   });
 });
+
+test("offers the way to an item without taking the gesture that opens the row", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  // Triage is opening a row in place, and the address is behind that rather
+  // than instead of it.
+  expect(screen.queryByRole("link", { name: "open" })).toBeNull();
+
+  await open(0);
+  expect(screen.getByRole("link", { name: "open" }).getAttribute("href")).toBe(
+    "/items/one",
+  );
+  expect(screen.getAllByRole("button", { expanded: true })).toHaveLength(1);
+});

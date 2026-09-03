@@ -1,10 +1,12 @@
-import { render, screen } from "@testing-library/svelte";
+import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
 import { expect, test, vi } from "vitest";
 
 import type { Item as Held } from "@notemap/client";
-import { anItem, json, routeOf } from "@notemap/client/testing";
+import { anItem, json, read, routeOf } from "@notemap/client/testing";
 
+import Queue from "$components/queue/Queue.svelte";
 import { asked, client, pool } from "$testing/pool";
+import { remember } from "$lib/order";
 import { NO_ITEM_OFFLINE } from "$lib/said";
 import Item from "./Item.svelte";
 
@@ -76,4 +78,44 @@ test("says what is missing where nothing is held and the pool is out of reach", 
 
   expect(await screen.findByText(NO_ITEM_OFFLINE)).toBeDefined();
   expect(screen.queryByText(/No such item/)).toBeNull();
+});
+
+/** Where the person had scrolled, as the browser would report it. */
+function scrolledTo(at: number) {
+  Object.defineProperty(window, "scrollY", { configurable: true, value: at });
+  return fireEvent.scroll(window);
+}
+
+test("costs the queue neither its order nor its place", async () => {
+  remember("queue", "newest-first");
+  const transport = pool((request) =>
+    routeOf(request) === "GET /v1/queue"
+      ? json(200, { values: [saying("held", "still in the queue")] })
+      : json(200, { values: [] }),
+  );
+
+  render(Queue);
+  await screen.findByText("still in the queue");
+  await scrolledTo(240);
+  cleanup();
+
+  // An item view is scrolled like anything else, and none of that is the
+  // queue's place: it is not a register and remembers nothing of its own.
+  render(Item, { id: "held" });
+  await screen.findByText("still in the queue");
+  await scrolledTo(900);
+  cleanup();
+
+  render(Queue);
+  await screen.findByText("still in the queue");
+
+  await vi.waitFor(() => {
+    expect(window.scrollTo).toHaveBeenCalledWith({ top: 240 });
+  });
+  expect(read(client.queue).order).toBe("newest-first");
+  expect(
+    transport.sent
+      .filter((request) => routeOf(request) === "GET /v1/queue")
+      .map((request) => new URL(request.url).searchParams.get("order")),
+  ).toEqual(["newest-first"]);
 });

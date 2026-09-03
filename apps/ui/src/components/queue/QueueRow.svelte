@@ -13,6 +13,7 @@
   import Pending from "$components/primitives/marks/Pending.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
+  import { itemHref } from "$components/item/href";
   import { client } from "$lib/client";
   import { became, editable, finished } from "$lib/lineage";
   import { briefly } from "$lib/stamp";
@@ -113,6 +114,7 @@
       {item}
       {offline}
       {said}
+      address={itemHref(item.id)}
       onroute={() => onroute()}
       onedit={() => (editing = !editing)}
     />

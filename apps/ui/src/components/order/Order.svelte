@@ -11,7 +11,7 @@
   const queue = client.queue;
   const feed = client.feed;
 
-  /** Settings has no end to start from, so it is offered none. */
+  /** Settings and an item have no end to start from, so they are offered none. */
   const READING: Record<string, Surface> = {
     "/": "queue",
     "/feed": "feed",
