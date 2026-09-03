@@ -47,6 +47,24 @@ type Entry =
   | { readonly kind: "collection" }
   | { kind: "file"; content: string; version: number };
 
+/** One level down, which is all `Depth: 1` promises. */
+function childrenOf(tree: Map<string, Entry>, path: string): readonly string[] {
+  const prefix = path === "" ? "" : `${path}/`;
+
+  return [...tree.keys()].filter((each) => {
+    if (!each.startsWith(prefix) || each === path) return false;
+    return !each.slice(prefix.length).includes("/");
+  });
+}
+
+function propfindResponse(tree: Map<string, Entry>, path: string): string {
+  const resourceType =
+    tree.get(path)?.kind === "collection" ? "<d:collection/>" : "";
+  const href = `/${BASE}/${path.split("/").map(encodeURIComponent).join("/")}`;
+
+  return `<d:response><d:href>${href}</d:href><d:propstat><d:prop><d:resourcetype>${resourceType}</d:resourcetype></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>`;
+}
+
 const BASE = "dav";
 
 export async function startDavServer(): Promise<DavServer> {
@@ -102,11 +120,17 @@ export async function startDavServer(): Promise<DavServer> {
       }
       // Namespace-prefixed, as Nextcloud answers: a caller reading this must
       // not be written against the one spelling a bare `DAV:` default gives.
-      const resourceType = entry.kind === "collection" ? "<d:collection/>" : "";
+      // At `Depth: 1` the collection names itself among its children, which is
+      // what a caller has to drop, so it is answered here too.
+      const deep = request.headers["depth"] === "1";
+      const listed = [path, ...(deep ? childrenOf(tree, path) : [])];
+
       response
         .writeHead(207, { "content-type": "application/xml; charset=utf-8" })
         .end(
-          `<?xml version="1.0"?><d:multistatus xmlns:d="DAV:"><d:response><d:href>/${BASE}/${path}</d:href><d:propstat><d:prop><d:resourcetype>${resourceType}</d:resourcetype></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>`,
+          `<?xml version="1.0"?><d:multistatus xmlns:d="DAV:">${listed
+            .map((each) => propfindResponse(tree, each))
+            .join("")}</d:multistatus>`,
         );
       return;
     }

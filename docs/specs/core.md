@@ -32,6 +32,13 @@
   ([plan](../plans/destination-checks-and-accounts.md),
   [ADR 30](../adr/0030-a-destination-can-be-asked-whether-it-is-really-there.md))
 
+- 2026-09-03 — **A webdav vault can be enumerated.** The kind answers `candidates` from one
+  `PROPFIND` at `Depth: 1` per scope, which is the round trip per level the filesystem kind pays a
+  `readdir` for, so both kinds now draw the same typed line. It reaches the server, unlike
+  `describe`, so an account that is asleep answers unreachable and the line goes on being typed
+  against what the pool remembers.
+  ([plan](../plans/typed-routing-composer.md))
+
 - 2026-09-01 — **A second destination kind, and what a kind holding a credential may be told.** A
   `webdav` destination delivers a note to a folder on a WebDAV server, with the filesystem kind's
   own two capabilities and the same note: what turning a delivery into markdown *is* now lives

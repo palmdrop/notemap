@@ -14,6 +14,7 @@ import {
   type PayloadTypeName,
 } from "@notemap/core";
 
+import { webdavCandidates } from "./candidates";
 import type { CredentialResolver } from "./credentials";
 import { createDav, type Dav } from "./dav";
 import { Refused, Unreachable } from "./errors";
@@ -64,10 +65,7 @@ export function createWebdavDestination(
       return Promise.resolve({
         capabilities: capabilitiesFor({
           accepts: config.accepts,
-          // Enumerating what is already in the vault is a slice of its own, and
-          // a field claiming it can be browsed draws a button that answers
-          // not-offered.
-          browsable: false,
+          browsable: true,
         }),
       });
     },
@@ -96,6 +94,14 @@ export function createWebdavDestination(
         return failure(cause);
       }
     },
+
+    /**
+     * One `PROPFIND` at `Depth: 1` per scope, which is what the typed line asks
+     * for a level at a time. It reaches the server, so an account that is
+     * asleep answers unreachable here and the line goes on being typed — the
+     * same arrangement the filesystem kind has with an unmounted drive.
+     */
+    candidates: webdavCandidates(config.credentials),
 
     /**
      * A rejected credential is `Rejected` here and `Unreachable` to a delivery:

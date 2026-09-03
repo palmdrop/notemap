@@ -116,18 +116,22 @@ describe("describing a destination", () => {
     ).resolves.toBeDefined();
   });
 
-  it("does not claim its fields can be browsed", async () => {
+  it("says which of its fields can be browsed, and which cannot", async () => {
     const described = await adapter().describe(destinationRow({ root: "V" }));
+    const line = described.capabilities.find(
+      (each) => each.name === "create-or-append-file",
+    );
+    const properties = (line?.argumentsSchema as Record<string, unknown>)[
+      "properties"
+    ] as Record<string, Record<string, unknown>>;
 
-    for (const capability of described.capabilities) {
-      expect(JSON.stringify(capability.argumentsSchema)).not.toContain(
-        "x-notemap-candidates",
-      );
-    }
+    expect(properties["path"]).toHaveProperty("x-notemap-candidates", true);
+    expect(properties["heading"]).not.toHaveProperty("x-notemap-candidates");
   });
 
-  it("offers no candidates at all, there being nothing it could enumerate", () => {
-    expect(adapter().candidates).toBeUndefined();
+  /** Describing never touches the network; enumerating is the call that does. */
+  it("offers candidates, which is a second call and not this one", () => {
+    expect(adapter().candidates).toBeTypeOf("function");
   });
 
   it("refuses settings the schema and the reader disagree about", async () => {

@@ -89,7 +89,10 @@ async function resolveRoot(root: string): Promise<string> {
 }
 
 /** One entry, with the question `readdir` sometimes cannot answer already settled. */
-export type Listed = { readonly name: string; readonly kind: Offered | undefined };
+export type Listed = {
+  readonly name: string;
+  readonly kind: Offered | undefined;
+};
 
 async function list(directory: string): Promise<readonly Listed[]> {
   let entries: readonly Dirent[];
