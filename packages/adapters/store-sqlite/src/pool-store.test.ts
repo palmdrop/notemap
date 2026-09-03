@@ -1633,6 +1633,39 @@ describe("places a field has already held", () => {
     return { ...opened, records: made };
   }
 
+  /**
+   * `$.` and a bare name walks into a nested object where the name holds a dot,
+   * and matches nothing where it holds a dash — which reads as a field nobody
+   * has ever routed with rather than as a name the path could not express.
+   */
+  it("reads a field whose name a bare json path could not express", async () => {
+    const opened = pool();
+    await putDestinations(opened.pool, destination());
+
+    const item = capture({ id: "item-0" });
+    await appendCapture(opened.pool, item);
+    await opened.pool.transaction((tx) =>
+      tx.insertRoutingRecord({
+        ...reserved(item, {
+          id: "routing-0",
+          arguments: { "board.column": "doing", "list-name": "today" },
+        }),
+        state: "delivered" as const,
+      }),
+    );
+
+    expect((await ask(opened.pool, "board.column")).places).toEqual([
+      {
+        value: "doing",
+        uses: 1,
+        lastAt: at("2026-08-03T10:00:00.000Z"),
+      },
+    ]);
+    expect(
+      (await ask(opened.pool, "list-name")).places.map((each) => each.value),
+    ).toEqual(["today"]);
+  });
+
   it("counts the records that used each value, and when the last one was", async () => {
     const { pool: p } = await held(
       { at: "2026-08-03T10:00:00.000Z", path: "notes/a.md" },

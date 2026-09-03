@@ -76,3 +76,45 @@ test("takes a tag the pool has never seen", async () => {
     expect(asked()).toContain("POST /v1/items/one/tag");
   });
 });
+
+test("narrows what is offered as a name is typed", async () => {
+  await serving(["reading", "recipe", "seedling"]);
+  draw();
+
+  await vi.waitFor(() => expect(word("reading")).toBeDefined());
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  await fireEvent.input(screen.getByRole("textbox", { name: "Add a tag" }), {
+    target: { value: "re" },
+  });
+
+  expect(word("reading")).toBeDefined();
+  expect(word("recipe")).toBeDefined();
+  expect(screen.queryByRole("button", { name: "seedling" })).toBeNull();
+});
+
+/** A tag the item carries is its state, not a suggestion: hiding it reads as dropped. */
+test("keeps what is applied visible however the filter narrows", async () => {
+  await serving(["reading", "seedling"]);
+  draw(["seedling"]);
+
+  await vi.waitFor(() => expect(word("reading")).toBeDefined());
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  await fireEvent.input(screen.getByRole("textbox", { name: "Add a tag" }), {
+    target: { value: "re" },
+  });
+
+  expect(word("seedling").getAttribute("aria-pressed")).toBe("true");
+});
+
+/** Taking one is answered at once, so dropping one has to be too. */
+test("stops saying a tag is applied the moment it is dropped", async () => {
+  await serving(["seedling"]);
+  draw(["seedling"]);
+
+  await vi.waitFor(() =>
+    expect(word("seedling").getAttribute("aria-pressed")).toBe("true"),
+  );
+
+  await fireEvent.click(word("seedling"));
+  expect(word("seedling").getAttribute("aria-pressed")).toBe("false");
+});

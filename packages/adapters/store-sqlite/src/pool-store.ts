@@ -149,7 +149,6 @@ function direction(order: ReadOrder): {
     : { sql: "ASC", comparison: ">" };
 }
 
-/** A position in the store's own units. */
 /** However much history a pool accumulates, past this the list is a search problem. */
 const REMEMBERED_LIMIT = 50;
 
@@ -160,6 +159,7 @@ type RememberedRow = {
   readonly last_at: number;
 };
 
+/** A position in the store's own units. */
 type Bound = { readonly at: number; readonly id?: string };
 
 function bound(position: Position): Bound {
@@ -382,19 +382,23 @@ export function createSqlitePoolStore(
      *
      * One past the cap is read so `truncated` can be answered without counting
      * the whole history.
+     *
+     * The field is quoted into the JSON path rather than concatenated bare: a
+     * name holding a `.` would otherwise walk into a nested object, and one
+     * holding a `-` would match nothing and say so as an empty answer.
      */
     const rememberedPlaces = source.query<
       RememberedRow,
       [string, string, string, string, number]
     >(
-      `SELECT json_extract(r.arguments, '$.' || ?) AS value,
+      `SELECT json_extract(r.arguments, '$."' || ? || '"') AS value,
               COUNT(*) AS uses,
               MAX(r.at) AS last_at
          FROM routing_records r
         WHERE r.destination = ?
           AND r.capability = ?
           AND r.target_kind = 'destination'
-          AND json_extract(r.arguments, '$.' || ?) IS NOT NULL
+          AND json_extract(r.arguments, '$."' || ? || '"') IS NOT NULL
           AND (r.state = 'delivered'
                OR NOT EXISTS (SELECT 1 FROM jobs j
                                WHERE j.kind = 'delivery'
