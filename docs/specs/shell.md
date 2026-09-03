@@ -1,8 +1,20 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-02
+**Last updated**: 2026-09-03
 **Shipped**:
+
+- 2026-09-03 — **An item has an address, and a routing record can be read.** `/items/{id}` draws
+  one item as a surface of its own and `/items/{id}/records/{recordId}` draws one record in full —
+  the destination by name, the capability, the state, when the decision was made, the arguments it
+  was given against the capability's own schema, and the pointer, as text. Triage is untouched:
+  the row still opens in place, keeps its one line per record, and gains `open` and the way into a
+  record as links. An item surface is not a register — no fold, no order, no position — and the
+  two surfaces that are keep theirs while a person reads one item. It is also the one surface that
+  says what it was drawn from, having no count to mislead and being where a person looks to find
+  out what happened. A record says what the delivery did rather than the capability that did it,
+  every address in the shell is a route the compiler checks, and the rail sheds the source and the
+  id on every surface that drew them. ([plan](../plans/item-route-and-record-view.md))
 
 - 2026-09-03 — **Both kinds that write files draw the typed line.** The webdav kind answers
   `candidates`, so a Nextcloud vault completes the way a folder does rather than falling back to a
@@ -159,6 +171,9 @@ fills in. It does not name a colour or a font; those come out of the design sess
   answers.
 - **The row**: one design serving both the list and an item being processed, in a collapsed and an
   opened state.
+- **An item at an address**, and one of its **routing records** at an address under it: what an
+  item is and what became of it, and what one decision was — where it went, what it was given, and
+  where it landed.
 - **The chrome**: navigation over three surfaces, the reachability indicator, and where a refused
   operation goes.
 - The **token roles** — colour, type, spacing, named by role — that every component is written
@@ -173,6 +188,10 @@ fills in. It does not name a colour or a font; those come out of the design sess
   marked where they appear in the feed; nothing lists them.
 - **A standalone item route.** Processing happens in the row (below), so `/items/:id` is not a
   surface this shell draws.
+  *Superseded 2026-09-03*: it is one. Triage never left the row, but a routing record carries an
+  argument object, a pointer and shortly the whole content that was delivered, none of which fits
+  in a register row and none of which anyone reads at a glance
+  ([below](#an-item-has-an-address)).
 - **`/docs`.** The playground is a vendored Swagger UI, and restyling somebody else's application
   is not this design's job. `/log` left this list on 2026-08-25, being drawn in this language while
   still the daemon's markup, and is a surface of this shell outright since 2026-09-02 (below).
@@ -225,8 +244,10 @@ add to it at the top of it.
 
 **Processing happens in the row, opened in place.** The queue is one scrollable list a person works
 freely ([client.md](client.md#the-queue)), and leaving it to process an item costs the reader their
-place. So the row has two states and there is no separate item surface. **One row is open at a
-time.**
+place. So the row has two states, and triage never leaves them. **One row is open at a time.**
+*Amended 2026-09-03*: there is an item surface as well ([below](#an-item-has-an-address)), and it
+took nothing from the row — it is where what a row cannot hold is read, and the queue keeps its
+place while a person is there.
 
 **Collapsed, a row is for picking.** It carries:
 
@@ -382,6 +403,68 @@ above `where` for a decision that arrived **pre-filled with an attribution** —
 shape a routing rule, a capture template and an enrichment suggestion all produce. Neither exists
 yet; the composer leaves them somewhere to land.
 
+### An item has an address
+
+**`/items/{id}` draws one item, and `/items/{id}/records/{recordId}` draws one of its routing
+records** *(added 2026-09-03)*. Both are surfaces rather than modals: the modal idiom belongs to
+the composer, which is a decision being made, and these are things being read.
+
+**Triage is still the row, and nothing left it.** What an address adds is somewhere to read
+deliberately. The register goes on drawing one line per record, because that is a summary and a
+summary is what a row is for; what the line gains is the way into the record it summarises.
+
+**The way in is `open`** — last in the opened queue row's actions, and on every feed row, the feed
+being read rather than worked. It is a link and not a button, so a new tab and a copied address
+come with it. Making the row's body navigate was the rejected half: on the queue that click is
+triage, and an address must not cost it.
+
+**An item surface is not a register.** It offers no fold, remembers no order and holds no position
+of its own — it is one entity rather than a list with an end to start from. The queue and the feed
+remember theirs while they are drawn and stop while they are not, so leaving one to read an item
+and coming back reads the same order at the same place.
+
+**The actions are the row's**: route, mark done, archive, edit, and tagging, which is on every row
+in this shell. A surface that could only be read would be the one place a tag cannot be added. The
+overlap with the opened row is real and is being watched rather than resolved; nothing that fits
+on a row has moved off it.
+
+**It says what it was drawn from, and it is the only surface that does.** Every other one says
+nothing (above), because the chrome and the row already say it twice and a third sentence over
+three cached rows reads as a queue nearly drained. Neither holds for one item: there is no count
+to mislead, and nothing else on the surface is saying it. An item view is exactly where a person
+looks to find out what happened, so it is the worst place to imply the pool has answered. The mark
+is `from cache`, in the rail, in `pending`'s muted idiom rather than the inverted one — what this
+client holds is not what became of the item.
+
+**An item the pool does not have is said plainly, and is not a failure.** A link outlives the item
+it names.
+
+**Records are the pool's or they are nothing.** Nothing caches one, so a surface drawing records
+says out of reach as out of reach, muted and offering nothing, while the item beside it goes on
+drawing from whatever the client holds — one surface, two answers about freshness, which is what
+the three conditions are for.
+
+**A record is drawn in full**: what the delivery did, the destination by name, the state, when the
+decision was made, the arguments it was given, and the pointer to where it landed. Marking
+processed is routing whose destination is the person, so it reads as one, with its note where the
+arguments would be, and `none` where there is no note.
+
+**What it did is said, not the capability that did it.** A capability name is what a destination
+advertises and what a rule is written against ([CONTEXT.md](../../CONTEXT.md)), and a person
+reading one record wants what happened: `Created a note`, `Appended to a note`, `Created or
+appended to a note` for the one that is both until the adapter reaches the vault
+([ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md)). The word is the
+shell's, since nothing on the wire carries a readable one; a capability this shell has never heard
+of is said by its name, which is worse than a sentence and better than silence. It is not labelled
+`action`, that being an entry in the pool's log and a word the glossary tells a capability not to
+borrow. The **arguments are drawn against the capability's own schema** where the
+destination can be described, so a person reads `Directory` rather than `directory`; where it
+cannot be described they are drawn by their own keys, which is the honest fallback and not a
+failure. Anything the record carries that the schema does not name is drawn all the same: the
+record is what happened and the schema is only what is offered now. The **pointer is text**. It
+becomes a link once a destination has somewhere to put one; the shell never guesses whether a
+string is a URL.
+
 ### Actions
 
 An opened row's actions are not five of a kind and are not drawn as five of a kind.
@@ -455,6 +538,9 @@ can be fetched — muted, in the foot's own place, with no action offered. It is
 reachability rather than from what the surface holds, because a surface drawn from the cache while
 the pool answers is one whose read is about to land and it has nothing to say. A surface read to
 the end says nothing either: there is no next page to be denied.
+
+*Amended 2026-09-03*: one surface does say it — an item at its own address, which draws one thing
+and has no count to mislead ([above](#an-item-has-an-address)).
 
 A read the pool **refused** keeps the register entry, in the accent, being the one read failure that
 will not resolve without a person; it does not go to the corner, which belongs to the outbox — an
@@ -626,8 +712,10 @@ reads as a dated entry in a ledger, which is why the capture time is its title.
 **Two columns do the work that type hierarchy usually does.** *Amended 2026-08-24.* The left
 column is a **metadata rail**, and it carries the same things whether a row is open or shut: the
 stamp, the state word where there is one, the tags, and where the item went. Opening a row adds the
-item's facts under them — payload type, edited, source, id — rather than changing what the column
-is for. The right column holds nothing but what was captured, and its actions once the row is open.
+item's facts under them — payload type, edited — rather than changing what the column is for.
+*Amended 2026-09-03*: the source and the id left that list. They are notemap's bookkeeping rather
+than the item, an id is in the address of the surface that has one, and a rail carrying four facts
+where two are unreadable is what made the column look like a debug pane. The right column holds nothing but what was captured, and its actions once the row is open.
 One system, reused, and nothing is distinguished by being bigger.
 
 **The rail can be furled.** An arrow rides the seam the rail's edge makes, in its own strip above
@@ -715,6 +803,11 @@ the page a person actually reads. Three-character indents on successive paragrap
   freely, and an item route would cost them their place on every item. One design serves the list
   and the processing surface, and routing records and lineage get somewhere to live without the
   collapsed row accreting controls.
+  *Amended 2026-09-03.* There is an item surface now, and the reasoning above is what shaped it
+  rather than what it overturned: the row is unchanged, the way in is an action rather than the
+  row's own body, and the place a reader had is kept by both surfaces while they are away from it.
+  What the row cannot hold is what earned the address — an argument object, a pointer, and the
+  delivered content that is coming — none of it triage.
 - **Settings is not a register.** *2026-08-24.* It inherited the two-column layout because
   everything did, and paid for it: a label gutter down a page whose content is already
   label-and-value, and a fold control on a page with nothing worth reading without its left column.
@@ -851,5 +944,17 @@ the page a person actually reads. Three-character indents on successive paragrap
 - A `detail` of a kind nobody has written a renderer for is still readable, and the accent falls on
   the three kinds that are failures and on nothing else.
 - The log's rail holds `2026-09-02` on one line at every width.
+- An item opened at its own address draws what the opened row draws, and one followed with the
+  pool out of reach draws what the client holds and says that is what it is.
+- Leaving the queue or the feed to read one item and coming back reads the same order at the same
+  place, and the row still opens in place.
+- A routing record's arguments are readable as the destination names them, and still readable as
+  keys when it cannot be described; its pointer is never a link.
+- A routing record says what happened to the item in a sentence, and says it by the capability's
+  name only where this shell has no sentence for it.
+- No surface draws an item's id or its source, and no label in a rail runs under the value beside
+  it however long the label is.
+- Every address this shell builds is a route id checked against the route tree, so a path that no
+  longer exists fails `pnpm -r typecheck` rather than a click.
 - No component in `apps/ui` names a colour; every colour comes from a token role defined in
   `styles/tokens.css`, and switching the palette requires no change to a component.

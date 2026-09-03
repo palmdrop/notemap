@@ -8,6 +8,21 @@ Everything captured has been routed, marked done, or archived. Anything new goes
 
 export const NO_MORE_OFFLINE = "offline; more when the daemon answers";
 
+/** A link needs a label, and the address bar already carries the id. */
+export const THIS_ITEM = "this item";
+
+export const NO_ITEM_OFFLINE = "offline; this item when the daemon answers";
+
+export const NO_RECORDS_OFFLINE = "offline; records when the daemon answers";
+
+export const NO_SUCH_RECORD = `No such record.
+
+This item has no record by that name. A decision that was cancelled or abandoned leaves none, nothing having happened to record.`;
+
+export const NO_SUCH_ITEM = `No such item.
+
+This pool has never held it, or does not hold it any more. A link outlives the item it names.`;
+
 export const LOG_LEDE =
   "Everything this pool has done, in the order it happened.";
 

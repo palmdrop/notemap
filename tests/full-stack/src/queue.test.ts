@@ -58,7 +58,7 @@ describe("editing", () => {
     expect(read(client.queue).items.map((item) => item.id)).toEqual([
       captured.id,
     ]);
-    const held = await client.item(captured.id);
+    const { item: held } = await client.item(captured.id);
     expect(held?.payload.content["text"]).toBe("a better thought");
     expect(held?.revisedInto).toEqual([]);
     expect(await queueOf(running.url)).toEqual([captured.id]);
@@ -83,7 +83,7 @@ describe("editing", () => {
     );
     await client.drain();
 
-    const from = await client.item(captured.id);
+    const { item: from } = await client.item(captured.id);
     const revision = from?.revisedInto[0];
     if (revision === undefined) throw new Error("expected a revision");
 

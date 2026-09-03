@@ -59,6 +59,19 @@ export type ListState = {
   readonly failure?: ReadFailure;
 };
 
+/**
+ * One item, read. The pool's answer where it gave one and the client's own copy
+ * where it did not, which is the same fallback a surface makes and said the
+ * same way: an absent item with no failure beside it is the pool having
+ * answered that there is no such item.
+ */
+export type ItemState = {
+  readonly item?: Item;
+  /** Whether the item here is what the client holds rather than what the pool holds. */
+  readonly fromCache: boolean;
+  readonly failure?: ReadFailure;
+};
+
 export type CaptureInput = {
   /** The capture channel, stamped as the item's source. */
   readonly channel: string;
@@ -231,7 +244,18 @@ export interface Client {
    */
   loadFeed(order?: Order): Promise<void>;
   loadQueue(order?: Order): Promise<void>;
-  item(id: ItemId): Promise<Item | undefined>;
+  /**
+   * One item, whether or not a surface has ever drawn it, so an address the
+   * cache has never held is still somewhere a person can go. A pool that does
+   * not answer leaves the client's own copy, which is why this says which it is.
+   */
+  item(id: ItemId): Promise<ItemState>;
+  /**
+   * The copy the client holds, as the outbox and the pool change it. A surface
+   * drawing one item reads this after `item` has settled what to draw, so an
+   * archive made there marks the item the way it marks a row.
+   */
+  held(id: ItemId): Observable<Item | undefined>;
 
   /** Answers as soon as the operation is applied, not when the pool agrees. */
   capture(input: CaptureInput): Promise<Item>;

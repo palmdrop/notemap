@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { resolve } from "$app/paths";
   import { page } from "$app/state";
 
   import Shown from "$components/log/Shown.svelte";
@@ -29,8 +30,8 @@
   watched();
 
   const SURFACES = [
-    { href: "/", label: "queue" },
-    { href: "/feed", label: "feed" },
+    { href: resolve("/"), label: "queue" },
+    { href: resolve("/feed"), label: "feed" },
   ];
 
   // Swallowed because an unreachable pool is what the reachability mark is for:
@@ -63,14 +64,14 @@
       >
         {#if !shut}
           <Order />
-          {#if page.url.pathname === "/log"}
+          {#if page.route.id === "/log"}
             <Shown />
           {/if}
         {/if}
         <Waiting count={held.count} />
         <Reachability yes={pool.yes} />
         {#if !shut}
-          <a href="/settings">settings</a>
+          <a href={resolve("/settings")}>settings</a>
         {/if}
       </span>
     </Bar>

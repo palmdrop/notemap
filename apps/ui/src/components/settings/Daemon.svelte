@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
+  import { resolve } from "$app/paths";
+
   import { saidBy } from "@notemap/client";
 
   import Row from "$components/settings/Row.svelte";
@@ -90,7 +92,7 @@
     </span>
   </Row>
 
-  <a href="/log" class="block hover:text-accent">
+  <a href={resolve("/log")} class="block hover:text-accent">
     <Row mark="→" what="log" why="every change this pool has made, in order" />
   </a>
 

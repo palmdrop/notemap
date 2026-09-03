@@ -13,6 +13,31 @@ test("an unavailable action reads as unavailable rather than as broken", () => {
   expect((action as HTMLButtonElement).disabled).toBe(true);
 });
 
+test("somewhere to go is a link, so the browser's own gestures come with it", () => {
+  render(ActionFixture, {
+    label: "open",
+    href: "/items/one",
+    onclick: vi.fn(),
+  });
+
+  expect(screen.getByRole("link", { name: "open" }).getAttribute("href")).toBe(
+    "/items/one",
+  );
+});
+
+test("somewhere that cannot be gone to is not a link at all", () => {
+  render(ActionFixture, {
+    label: "open",
+    href: "/items/one",
+    disabled: true,
+    onclick: vi.fn(),
+  });
+
+  // A disabled anchor still navigates, so there is no anchor to disable.
+  expect(screen.queryByRole("link")).toBeNull();
+  expect(screen.getByText("open").getAttribute("aria-disabled")).toBe("true");
+});
+
 test("an available action is taken once", async () => {
   const taken = vi.fn();
   render(ActionFixture, { label: "capture", primary: true, onclick: taken });

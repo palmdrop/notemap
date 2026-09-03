@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
 
   import { page } from "$app/state";
 
@@ -16,6 +16,7 @@
   import { rail } from "$lib/rail.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { refusalIn } from "$lib/refusal";
+  import { keepPlace, restorePlace } from "$lib/scroll-mark";
   import { NOTHING_CAPTURED } from "$lib/said";
 
   const SURFACE = "feed";
@@ -33,7 +34,15 @@
       $feed.items.length === 0,
   );
 
-  onMount(() => void client.loadFeed(orderFor(SURFACE, page.url)));
+  onMount(() => {
+    void (async () => {
+      await client.loadFeed(orderFor(SURFACE, page.url));
+      await tick();
+      restorePlace(SURFACE);
+    })();
+
+    return keepPlace(SURFACE);
+  });
 </script>
 
 <Register furled={rail.furled} onfurl={() => rail.toggle()}>

@@ -15,7 +15,7 @@
   import { pending } from "$lib/pending.svelte";
   import { rail } from "$lib/rail.svelte";
   import { reachable } from "$lib/reachable.svelte";
-  import { readMark, writeMark } from "$lib/scroll-mark";
+  import { keepPlace, restorePlace } from "$lib/scroll-mark";
   import { refusalIn } from "$lib/refusal";
 
   const SURFACE = "queue";
@@ -46,14 +46,13 @@
     void (async () => {
       await client.loadQueue(orderFor(SURFACE, page.url));
       await tick();
-      window.scrollTo({ top: readMark(SURFACE) });
+      restorePlace(SURFACE);
     })();
 
     // Scrolling past an item is a skip, and a skip changes nothing: this is
-    // only where to put the view back on reload.
-    const remember = () => writeMark(SURFACE, window.scrollY);
-    window.addEventListener("scroll", remember, { passive: true });
-    return () => window.removeEventListener("scroll", remember);
+    // only where to put the view back on reload, and on the way back from
+    // reading one of these items.
+    return keepPlace(SURFACE);
   });
 
   function show(id: string) {
