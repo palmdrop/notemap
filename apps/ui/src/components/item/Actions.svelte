@@ -4,7 +4,10 @@
   import Action from "$components/primitives/controls/Action.svelte";
   import ActionRow from "$components/primitives/controls/ActionRow.svelte";
   import { client } from "$lib/client";
+  import { nameOf } from "$lib/destinations";
   import { editable } from "$lib/lineage";
+  import { notices } from "$lib/notices.svelte";
+  import { saidOf } from "$lib/routing";
 
   /**
    * `address` is where this item is read, and is absent on the surface that
@@ -29,10 +32,17 @@
 
   const mayEdit = $derived(editable(item));
 
+  function archive() {
+    void client.archive(item.id);
+    notices.raise({ what: "archived" });
+  }
+
   async function markDone() {
     said = "marking…";
     try {
-      await client.routing.markProcessed(item.id);
+      notices.raise(
+        saidOf(await client.routing.markProcessed(item.id), nameOf),
+      );
       said = "";
     } catch (error) {
       said = saidBy(error);
@@ -45,7 +55,7 @@
        cannot, so it is not offered rather than promised. -->
   <Action primary disabled={offline} onclick={onroute}>route</Action>
   <Action disabled={offline} onclick={markDone}>mark done</Action>
-  <Action onclick={() => void client.archive(item.id)}>archive</Action>
+  <Action onclick={archive}>archive</Action>
   <!-- A processed item is not this row's to rewrite: editing it would
        append a revision, which the queue is not where to do. -->
   {#if mayEdit}

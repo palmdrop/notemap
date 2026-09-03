@@ -18,6 +18,9 @@
   import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
   import { browserFor } from "$lib/candidate-browsers";
   import { client } from "$lib/client";
+  import { nameOf } from "$lib/destinations";
+  import { notices } from "$lib/notices.svelte";
+  import { saidOf } from "$lib/routing";
   import { fieldsOf, valuesFrom } from "$lib/schema-form";
 
   const CREATE_FILE = "create-file";
@@ -168,12 +171,13 @@
     busy = true;
     said = "routing…";
     try {
-      await client.routing.route(item, {
+      const record = await client.routing.route(item, {
         destination: chosen,
         ...(beside === undefined
           ? { capability, arguments: valuesFrom(fields, args) }
           : freshFile(beside)),
       });
+      notices.raise(saidOf(record, nameOf));
       onclose();
     } catch (error) {
       said = saidBy(error);

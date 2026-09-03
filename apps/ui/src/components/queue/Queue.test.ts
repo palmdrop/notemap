@@ -5,6 +5,7 @@ import { tick } from "svelte";
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool } from "$testing/pool";
+import { notices } from "$lib/notices.svelte";
 import { NO_MORE_OFFLINE } from "$lib/said";
 import { briefly } from "$lib/stamp";
 import { online } from "$testing/dom";
@@ -17,6 +18,7 @@ vi.mock("$lib/client", () => import("$testing/pool"));
 // Module-scoped reading preference, so a test that furls the rail unfurls it.
 afterEach(() => {
   if (rail.furled) rail.toggle();
+  notices.clear();
 });
 
 function queued(...ids: string[]) {
@@ -439,4 +441,66 @@ test("keeps a record to one line on the opened row, and makes it the way in", as
   const line = await screen.findByRole("link", { name: /create-note/ });
   expect(line.getAttribute("href")).toBe("/items/one/records/rec");
   expect(screen.queryByText("drafts")).toBeNull();
+});
+
+test("a row that leaves the queue says where it went", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/queue") {
+      return json(200, { values: [anItem("one")] });
+    }
+    if (route === "POST /v1/items/one/mark-processed") {
+      return json(200, {
+        id: "r",
+        item: "one",
+        at: "2026-09-03T10:00:00.000Z",
+        state: "delivered",
+        target: { kind: "user" },
+      });
+    }
+    return json(200, { values: [] });
+  });
+
+  render(Queue);
+  await screen.findByText("one");
+  await open(0);
+
+  await fireEvent.click(screen.getByRole("button", { name: "mark done" }));
+
+  await vi.waitFor(() => {
+    expect(notices.shown.map((notice) => notice.what)).toContain("done");
+  });
+});
+
+test("archiving says so, the row having gone with no other trace", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+  await open(0);
+
+  await fireEvent.click(screen.getByRole("button", { name: "archive" }));
+
+  await vi.waitFor(() => {
+    expect(notices.shown.map((notice) => notice.what)).toContain("archived");
+  });
+});
+
+/** The row is still there to say it: a notice would be a second voice. */
+test("tagging says nothing in the corner", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+  await open(0);
+
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  const field = screen.getByLabelText("Add a tag");
+  await fireEvent.input(field, { target: { value: "research" } });
+  await fireEvent.submit(field.closest("form") as HTMLFormElement);
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/tag");
+  });
+  expect(notices.shown).toHaveLength(0);
 });

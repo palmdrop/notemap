@@ -24,7 +24,7 @@ export type Notice = {
   readonly key?: string;
 };
 
-type Raised = Omit<Notice, "id">;
+export type Raised = Omit<Notice, "id">;
 
 let held = $state<Notice[]>([]);
 let minted = 0;
