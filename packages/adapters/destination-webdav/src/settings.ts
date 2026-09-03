@@ -10,27 +10,34 @@ export const WEBDAV = "webdav" as DestinationKindName;
  * What a person fills in, and the whole of it. Neither field can name an
  * address or a secret: the account is the host's, declared in its config, and
  * this chooses one by name and a folder inside it.
+ *
+ * Account names are `examples` rather than an `enum`, which would constrain:
+ * settings are re-validated on every describe, so a constraining list would
+ * turn a destination `unusable` the moment an account is renamed in config.
  */
-export const WEBDAV_SETTINGS: JsonSchema = {
-  type: "object",
-  required: ["account", "root"],
-  additionalProperties: false,
-  properties: {
-    account: {
-      type: "string",
-      minLength: 1,
-      title: "Account",
-      description:
-        "The name of an account in the daemon's configuration, under `[[accounts]]`. The address and the password are the account's, not this destination's.",
+export function webdavSettings(accounts: readonly string[]): JsonSchema {
+  return {
+    type: "object",
+    required: ["account", "root"],
+    additionalProperties: false,
+    properties: {
+      account: {
+        type: "string",
+        minLength: 1,
+        title: "Account",
+        description:
+          "The name of an account in the daemon's configuration, under `[[accounts]]`. The address and the password are the account's, not this destination's.",
+        ...(accounts.length === 0 ? {} : { examples: [...accounts] }),
+      },
+      root: {
+        type: "string",
+        title: "Folder",
+        description:
+          "The folder this destination is, under the account's own. Left blank, the destination is the account's folder itself.",
+      },
     },
-    root: {
-      type: "string",
-      title: "Folder",
-      description:
-        "The folder this destination is, under the account's own. Left blank, the destination is the account's folder itself.",
-    },
-  },
-};
+  };
+}
 
 export type WebdavSettings = {
   /** The name of an account the host resolves. */

@@ -3,12 +3,12 @@ import { createAjvSchemaValidator } from "@notemap/schema-ajv";
 import { describe, expect, it } from "vitest";
 
 import { createWebdavDestination } from "./destination";
-import { asWebdavSettings, WEBDAV_SETTINGS } from "./settings";
+import { asWebdavSettings, webdavSettings } from "./settings";
 import { destinationRow, TEXT } from "./testing/fixture";
 
 const validator = createAjvSchemaValidator();
 const check = (settings: JsonObject) =>
-  validator.validate(WEBDAV_SETTINGS, settings);
+  validator.validate(webdavSettings([]), settings);
 
 const adapter = () =>
   createWebdavDestination({
@@ -48,6 +48,38 @@ describe("the settings a person fills in", () => {
   it("refuses settings with no account", () => {
     expect(check({ root: "Notes" })).not.toEqual([]);
     expect(check({ account: "", root: "Notes" })).not.toEqual([]);
+  });
+
+  /**
+   * The whole reason the declared accounts are `examples` and not an `enum`:
+   * a destination whose account was renamed in config must go on describing
+   * itself, and fail where a delivery finds out.
+   */
+  it("takes an account that is not one of the declared ones", () => {
+    const declared = validator.validate(webdavSettings(["home", "work"]), {
+      account: "retired-last-week",
+      root: "Notes",
+    });
+
+    expect(declared).toEqual([]);
+  });
+
+  it("publishes the declared accounts for a person to choose from", () => {
+    const properties = webdavSettings(["home", "work"])["properties"] as Record<
+      string,
+      Record<string, unknown>
+    >;
+
+    expect(properties["account"]?.["examples"]).toEqual(["home", "work"]);
+  });
+
+  it("publishes none where the daemon declares none", () => {
+    const properties = webdavSettings([])["properties"] as Record<
+      string,
+      Record<string, unknown>
+    >;
+
+    expect(properties["account"]).not.toHaveProperty("examples");
   });
 
   it("reads back only what it would have accepted", () => {

@@ -10,7 +10,12 @@
   import Action from "$components/primitives/controls/Action.svelte";
   import { client } from "$lib/client";
   import { isFamiliarRoot } from "$lib/roots";
-  import { fieldsOf, typedFrom, valuesFrom } from "$lib/schema-form";
+  import {
+    fieldsOf,
+    typedFrom,
+    valuesFrom,
+    type Field,
+  } from "$lib/schema-form";
 
   let {
     kinds,
@@ -64,6 +69,29 @@
       typedRoot.trim() !== "" &&
       !isFamiliarRoot(typedRoot, knownRoots),
   );
+
+  type Option = { readonly value: string; readonly label: string };
+
+  // A value the daemon no longer declares is carried rather than dropped:
+  // otherwise opening the form rewrites the setting to whichever name sorts
+  // first, silently, and moves the destination somewhere nobody chose.
+  function offered(field: Field): readonly Option[] {
+    const published = (field.examples ?? []).map((value) => ({
+      value,
+      label: value,
+    }));
+    const held = typed[field.name] ?? "";
+
+    // Selectable, though nobody would choose it: disabling it makes the browser
+    // select the first account instead and the binding write it back, which is
+    // the silent default this whole function exists to prevent. `required`
+    // refuses the submit.
+    if (held === "") return [{ value: "", label: "—" }, ...published];
+
+    return published.some((one) => one.value === held)
+      ? published
+      : [...published, { value: held, label: `${held} — not declared` }];
+  }
 
   async function submit(event: SubmitEvent) {
     event.preventDefault();
@@ -137,11 +165,24 @@
       {#if field.description !== undefined}
         <p class="text-ink-muted">{field.description}</p>
       {/if}
-      <input
-        bind:value={typed[field.name]}
-        aria-label={field.name}
-        class="mt-0.5 block w-full border-b border-ink bg-transparent py-0.5 font-mono"
-      />
+      {#if field.examples !== undefined}
+        <select
+          bind:value={typed[field.name]}
+          aria-label={field.name}
+          required={field.required}
+          class="mt-0.5 block w-full cursor-pointer appearance-none border-b border-ink bg-transparent py-0.5 font-mono"
+        >
+          {#each offered(field) as one (one.value)}
+            <option value={one.value}>{one.label}</option>
+          {/each}
+        </select>
+      {:else}
+        <input
+          bind:value={typed[field.name]}
+          aria-label={field.name}
+          class="mt-0.5 block w-full border-b border-ink bg-transparent py-0.5 font-mono"
+        />
+      {/if}
     </label>
   {/each}
 

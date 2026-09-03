@@ -61,6 +61,7 @@ const destinations: Destinations = {
   describe: () => Promise.resolve({ capabilities: [] }),
   deliver: () => Promise.resolve({ kind: "delivered" }),
   candidates: () => Promise.reject(new Error("no candidates in this test")),
+  probe: () => Promise.reject(new Error("no probe in this test")),
 };
 
 describe("a delivery the runner cannot even prepare", () => {

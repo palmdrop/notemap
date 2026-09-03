@@ -8,7 +8,7 @@ import {
 } from "node:fs/promises";
 import { join } from "node:path";
 
-import { Unusable } from "@notemap/core";
+import { Rejected, Unusable } from "@notemap/core";
 import type {
   Delivery,
   DeliveryOutcome,
@@ -53,6 +53,7 @@ const renderWithAssets: Renderer = (each, where) => ({
 type Bound = {
   describe(): Promise<DestinationDescriptor>;
   deliver(delivery: Delivery, signal?: AbortSignal): Promise<DeliveryOutcome>;
+  probe(): Promise<void>;
 };
 
 type Vault = {
@@ -72,6 +73,7 @@ function bind(
   return {
     describe: () => kind.describe(row),
     deliver: (each, signal) => kind.deliver(row, each, signal),
+    probe: () => kind.probe?.(row) ?? Promise.resolve(),
   };
 }
 
@@ -655,5 +657,108 @@ describe("a root that overlaps notemap's own state", () => {
     await expect(destination.describe()).resolves.toMatchObject({
       capabilities: expect.any(Array),
     });
+  });
+});
+
+describe("probing a filesystem destination", () => {
+  it("resolves for a root that is there and can be written to", async () => {
+    const { destination } = await vault();
+
+    await expect(destination.probe()).resolves.toBeUndefined();
+  });
+
+  it("rejects a root that is not there", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    const kind = createFilesystemDestination({ accepts: [TEXT] });
+
+    await expect(
+      kind.probe?.(destinationRow({ root: join(made.path, "nowhere") })),
+    ).rejects.toThrow(/is not there/);
+  });
+
+  it("rejects a root that is a file rather than a folder", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    await mkdir(made.path, { recursive: true });
+    const note = join(made.path, "a-note.md");
+    await writeFile(note, "not a folder\n");
+    const kind = createFilesystemDestination({ accepts: [TEXT] });
+
+    await expect(kind.probe?.(destinationRow({ root: note }))).rejects.toThrow(
+      /is not a directory/,
+    );
+  });
+
+  /** Skipped as root, which can write anywhere: the premise fails, not the probe. */
+  it.skipIf(process.getuid?.() === 0)(
+    "rejects a root that cannot be written to",
+    async () => {
+      const made = root();
+      cleanups.push(made.cleanup);
+      await mkdir(made.path, { recursive: true });
+      await chmod(made.path, 0o500);
+      cleanups.push(() => void chmod(made.path, 0o700).catch(() => undefined));
+      const kind = createFilesystemDestination({ accepts: [TEXT] });
+
+      await expect(
+        kind.probe?.(destinationRow({ root: made.path })),
+      ).rejects.toThrow(/cannot be written to/);
+    },
+  );
+
+  /**
+   * The sorting a delivery already does: those five errnos are the machine's,
+   * and everything else — a component that is a file — is a person's to fix.
+   */
+  it("rejects a root whose parent is a file rather than a folder", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    await mkdir(made.path, { recursive: true });
+    const note = join(made.path, "a-note.md");
+    await writeFile(note, "not a folder\n");
+    const kind = createFilesystemDestination({ accepts: [TEXT] });
+
+    await expect(
+      kind.probe?.(destinationRow({ root: join(note, "inside") })),
+    ).rejects.toThrow(Rejected);
+  });
+
+  it.skipIf(process.getuid?.() === 0)(
+    "is unreachable, not rejected, where the root cannot be read at all",
+    async () => {
+      const made = root();
+      const shut = join(made.path, "shut");
+      await mkdir(join(shut, "vault"), { recursive: true });
+      // Restored before the directory is removed, or the removal cannot read it.
+      cleanups.push(async () => {
+        await chmod(shut, 0o700).catch(() => undefined);
+        made.cleanup();
+      });
+      await chmod(shut, 0o000);
+      const kind = createFilesystemDestination({ accepts: [TEXT] });
+
+      const failed = await kind
+        .probe?.(destinationRow({ root: join(shut, "vault") }))
+        .then(() => undefined)
+        .catch((cause: unknown) => cause);
+
+      expect(failed).toBeInstanceOf(Error);
+      expect(failed).not.toBeInstanceOf(Rejected);
+    },
+  );
+
+  it("is unusable where the root overlaps notemap's own state", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    await mkdir(made.path, { recursive: true });
+    const kind = createFilesystemDestination({
+      accepts: [TEXT],
+      reserved: [made.path],
+    });
+
+    await expect(
+      kind.probe?.(destinationRow({ root: made.path })),
+    ).rejects.toThrow(Unusable);
   });
 });

@@ -1,5 +1,9 @@
 <script lang="ts">
-  import type { Destination, DestinationDescription } from "@notemap/client";
+  import type {
+    Destination,
+    DestinationDescription,
+    DestinationProbe,
+  } from "@notemap/client";
 
   import Fact from "$components/settings/Fact.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
@@ -8,6 +12,9 @@
   let {
     one,
     described,
+    probed,
+    asking,
+    probing,
     opened,
     offline,
     onopen,
@@ -19,6 +26,9 @@
   }: {
     one: Destination;
     described?: DestinationDescription;
+    probed?: DestinationProbe;
+    asking: boolean;
+    probing: boolean;
     opened: boolean;
     offline: boolean;
     onopen: () => void;
@@ -44,6 +54,20 @@
       ? undefined
       : `${described.kind} — ${described.detail}`,
   );
+
+  // A kind that cannot be probed is drawn as it was before probing existed.
+  const reach = $derived.by(() => {
+    if (probed === undefined || probed.kind === "not-offered") return undefined;
+    if (probed.kind === "ready") {
+      return { mark: "✓", said: "reached", tone: "text-good" };
+    }
+
+    return {
+      mark: "⚠",
+      said: `${probed.kind} — ${probed.detail}`,
+      tone: probed.kind === "rejected" ? "text-accent" : "text-ink-muted",
+    };
+  });
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -78,6 +102,10 @@
     >
       {#if refusing !== undefined}
         ⚠ {refusing}
+      {:else if reach !== undefined}
+        <span class={reach.tone}>{reach.mark} {reach.said}</span>
+      {:else if asking || probing}
+        ↻ asking
       {:else if can !== undefined}
         ✓ answered
       {:else if retired}
@@ -93,10 +121,25 @@
       <Fact name="can" empty={can === undefined}>
         {#if can !== undefined}
           {can}
+        {:else if asking}
+          asking now
         {:else if retired}
           not offered, so not asked
         {:else}
           unasked — describing one is a read that can hang
+        {/if}
+      </Fact>
+      <Fact name="reach" empty={reach === undefined}>
+        {#if reach !== undefined}
+          {reach.said}
+        {:else if probed?.kind === "not-offered"}
+          the {one.kind} kind cannot be asked whether it is there
+        {:else if probing}
+          asking now
+        {:else if retired}
+          not offered, so not asked
+        {:else}
+          unasked
         {/if}
       </Fact>
       <!-- On the open row rather than the collapsed one: a kind may want a
@@ -110,7 +153,7 @@
       <div
         class="mt-4 flex flex-wrap items-baseline gap-x-6 border-t border-t-ink/20 pt-3"
       >
-        <Action onclick={oncheck}>
+        <Action disabled={asking || probing} onclick={oncheck}>
           <span aria-hidden="true" class="text-ink-muted">↻</span>
           {can === undefined && refusing === undefined
             ? "Check"

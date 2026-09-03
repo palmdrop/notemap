@@ -57,6 +57,17 @@ export function destinationDescriptionHandler(pool: Pool) {
   };
 }
 
+export function destinationProbeHandler(pool: Pool) {
+  return async (context: Context): Promise<Response> => {
+    const id = (context.req.param("id") ?? "") as DestinationId;
+    const report = await pool.destinations.probe(id);
+
+    return report === undefined
+      ? json(errorBody({ kind: "unknown-destination", destination: id }), 404)
+      : json(report, 200);
+  };
+}
+
 /** What a field's own schema carries when a person may browse it rather than type it. */
 const CANDIDATES_KEYWORD = "x-notemap-candidates";
 

@@ -133,6 +133,7 @@ const noDestinations: Destinations = {
   describe: () => absent("destination kind"),
   deliver: () => absent("destination kind"),
   candidates: () => absent("destination kind"),
+  probe: () => absent("destination kind"),
 };
 
 export type Harness = {

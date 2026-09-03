@@ -4,6 +4,12 @@
 **Last updated**: 2026-09-02
 **Shipped**:
 
+- 2026-09-02 — **Settings stops waiting to be asked.** The daemon row draws from the client's own
+  reachability rather than knocking with a destination read, and says how long ago the pool last
+  answered; every offered destination is asked what it can do and whether it is really there as the
+  page draws, per row. A webdav destination's account is chosen from what the daemon declares
+  instead of typed. ([plan](../plans/destination-checks-and-accounts.md))
+
 - 2026-09-02 — **The action log is a surface of this shell.** `/log` is a route of the app rather
   than a page the daemon serves: the same register, the kind wearing the state mark, `detail`
   flattened generically into pairs rather than stringified, and the accent spent on the three kinds
@@ -384,17 +390,40 @@ countable: a **section** is muted ink at the widest tracking with a full-weight 
 case, muted, in a column of its own. Nothing is bigger and nothing is bold.
 
 Four sections *(two when this was written, and the door brought the others)*. **Destinations** says
-how many are offered and how many retired, then one line per destination: a mark for offered or retired, its name, its kind, and whether anything has asked it
-lately. Opening one adds what it can do, the settings its kind asked for, its id, and the four
-things that can be done to it — check, edit, retire, delete — with the rule and the distance
-separating what can be undone from what cannot.
+how many are offered and how many retired, then one line per destination: a mark for offered or
+retired, its name, its kind, and what it last answered. Opening one adds what it can do, the
+settings its kind asked for, its id, and the four things that can be done to it — check, edit,
+retire, delete — with the rule and the distance separating what can be undone from what cannot.
+
+**Each one is asked what it can do, and whether it is really there, as the page draws**
+*(2026-09-02)*, without waiting to be told to. Asked **per row**, so the first kind that has to go
+and look leaves one line saying it is asking rather than holding up a list that is already drawn
+from pool state. A **retired** one is not asked — it is offered to nothing new — and keeps the
+control for a person who wants to know anyway. A **settled** answer is not asked again: what it can
+do once it has said, and whether it is there once that is `ready`, `rejected` or a kind that cannot
+be asked. One that could not be reached *is* asked again when the pool comes back into reach, since
+that is the moment worth re-asking on.
+
+**What it answered about being there is what the row leads with**, because it is the stronger fact:
+`reached` in green, and a refusal in the accent, which is the colour for a thing a person has to
+act on. A destination whose kind cannot be probed says nothing at all and looks exactly as it did
+before probing existed. What could not be *described* still wins over both, an unusable destination
+being a bigger fact than an unreachable one.
+
+**A settings field the kind published values for is chosen, not typed** *(2026-09-02)*. A webdav
+destination's account is one of the accounts the daemon declares, drawn as a list; a field with
+nothing published stays a box, so a daemon declaring no accounts does not trap a person behind an
+empty one. A value the destination already holds that the daemon no longer declares is offered too,
+marked as such — opening the form must not quietly move a destination somewhere else.
 
 **Daemon** says where this shell is talking to, and carries the way to `/log` and the exit to the
 daemon's `/docs` — one of this shell's own routes and one the browser leaves for, marked apart. Its
 first row is the one fact on the page that is about *now* rather than about configuration: whether
-the daemon answers, how long it took, and when it was asked. **The destination list is the probe** —
-knocking on the daemon and refreshing what the page shows are the same request, and there is no
-route here whose only job is to answer yes.
+the daemon answers, when it last did, and — where the probe was what asked — how long it took.
+**Nothing is pressed to find out** *(2026-09-02)*: the client probes on its own while anyone is
+watching and every answered request settles the same mark, so the row is drawn from what the client
+already knows rather than from a second, manual notion of reach. The control beside it asks again,
+out of the probe's turn, for a person who would rather not wait for the next one.
 
 **Session** says whether this browser holds one and offers the way out, or — on a daemon nobody has
 set a password on — says the door is open and names the command that shuts it.
@@ -593,6 +622,11 @@ the page a person actually reads. Three-character indents on successive paragrap
   job is to answer yes, and adding one to learn what a read already proves is a route to keep
   forever. Reading the destinations answers both questions at once and refreshes the page while it
   is at it.
+  *Superseded 2026-09-02.* `/v1/health` is that route and has been since
+  [client-minted-assets-and-health](../plans/client-minted-assets-and-health.md); the client has
+  been probing it every ten seconds all along. The row was holding a second notion of reachability
+  and drawing "unasked" beside a chrome that already knew, which is the cost this reasoning did not
+  foresee: the objection was to *adding* a route, and by the time it was written one existed.
 - **The rail is one column, not two jobs.** *2026-08-24.* The left column used to be a stamp
   collapsed and a label gutter opened, which made it dead space on every row a reader was only
   scanning. Carrying the same metadata whether a row is open or shut costs nothing at a desk, gives

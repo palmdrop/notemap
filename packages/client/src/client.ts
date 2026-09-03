@@ -1,4 +1,4 @@
-import { filter, skip } from "rxjs";
+import { distinctUntilChanged, filter, map, skip } from "rxjs";
 import { v7 as uuidv7 } from "uuid";
 
 import { createActions } from "./actions/actions";
@@ -128,7 +128,7 @@ export function createClient(config: ClientConfig): Client {
     update: (change) => held.update((current) => retained(change(current))),
     changes: held.changes,
   };
-  const reach = reachability(() => askedHealth());
+  const reach = reachability(() => askedHealth(), now);
 
   // The sessions object needs the api, and the api needs to tell it about a
   // 401, so the notice goes through a binding rather than through either.
@@ -306,11 +306,18 @@ export function createClient(config: ClientConfig): Client {
     void drain();
   }
 
-  // skip(1): the first value is where reachability starts, not a return.
+  // A return, not an answer: the mark carries when it was last answered and so
+  // says something on every request, and only a flip back to reachable is one.
+  // skip(1) then drops where reachability starts, which is not a return either.
   // The surfaces are read after the drain rather than beside it, so the page the
   // pool answers already holds what was waiting to be sent.
   const onReturn = reach.changes
-    .pipe(skip(1), filter(Boolean))
+    .pipe(
+      map((mark) => mark.yes),
+      distinctUntilChanged(),
+      skip(1),
+      filter(Boolean),
+    )
     .subscribe(() => {
       // The surfaces are read whichever drain this is: a read cannot start a
       // drain, so nothing here can loop.
@@ -327,6 +334,7 @@ export function createClient(config: ClientConfig): Client {
 
   return {
     reachable: reach.changes,
+    probe: () => reach.ask(),
 
     session: sessions.changes,
     askSession: () => sessions.ask(),

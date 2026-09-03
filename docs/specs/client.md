@@ -4,6 +4,13 @@
 **Last updated**: 2026-09-02
 **Shipped**:
 
+- 2026-09-02 — **The reachability mark says when, and a destination can be probed.**
+  `reachable` carries the time the pool last answered anything and, where the probe was what
+  asked, how long it took — so a shell draws "answered eight seconds ago" without holding a second
+  notion of reach, and `probe()` re-asks out of turn. `DestinationsApi.probe()` is a passthrough
+  over `GET /v1/destinations/{id}/probe`, cached by nothing: what a probe found is true of a
+  moment. ([plan](../plans/destination-checks-and-accounts.md))
+
 - 2026-09-02 — **The client reads the action log.** `ActionsApi.read` takes an order, an optional
   subject filter and a position, and answers a page with the position the next one continues from.
   Not a surface with a held page and not in the durable store: the log is read for diagnosis rather
@@ -689,6 +696,13 @@ has better evidence than a poll is an argument about a client being *used* — a
 read is asking nothing, so nothing notices the daemon go away, and the mark stays wrong until
 someone acts on it. Every answered request pushes the probe out by its interval, so the used client
 still sends none: the probe fires only when nothing else has spoken for ten seconds.
+
+**The mark says when it was last answered, not only whether** *(added 2026-09-02)*. Every answered
+request settles it, so the time is one a client being used carries without ever having sent a probe;
+a duration is carried only where the probe was what asked, because nothing else measures its own
+round trip. Before anything has answered the mark carries no time at all — the client starts
+optimistic, and optimism is not evidence. A surface reading only *whether* the pool answers must not
+be redrawn by a stamp that moved, which is the shell's to arrange and not the client's.
 
 **The probe pauses while nobody is watching.** A client is told whether anyone is looking at what it
 draws ([CONTEXT.md](../../CONTEXT.md)); unwatched it asks nothing, and it asks once when it is

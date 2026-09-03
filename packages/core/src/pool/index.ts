@@ -14,3 +14,6 @@ export { Unusable } from "./destinations/usability";
 // And this from `candidates()`, for a field it does not answer for. The
 // registry throws the same thing for an adapter that answers for none.
 export { NotOffered } from "./destinations/candidates";
+
+// And this from `probe()`. Every other throw from probing reads as unreachable.
+export { Rejected } from "./destinations/probe";

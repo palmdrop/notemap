@@ -5,8 +5,9 @@ import type { AddressInfo } from "node:net";
  * A DAV server standing in for Nextcloud, in this process and in memory.
  *
  * It is a **fake**, and the parts of DAV it implements are the parts this
- * adapter uses: conditional `PUT`, `MKCOL` a level at a time, and `GET` with an
- * `ETag`. Whether the real thing agrees is what the hand verification against a
+ * adapter uses: conditional `PUT`, `MKCOL` a level at a time, `GET` with an
+ * `ETag`, and `PROPFIND` answering whether something is there and whether it is
+ * a collection. Whether the real thing agrees is what the hand verification against a
  * real instance is for; nothing here can answer it.
  */
 export type DavServer = {
@@ -91,6 +92,22 @@ export async function startDavServer(): Promise<DavServer> {
         return;
       }
       response.writeHead(200, { etag: etagOf(entry) }).end(entry.content);
+      return;
+    }
+
+    if (method === "PROPFIND") {
+      if (entry === undefined) {
+        response.writeHead(404).end();
+        return;
+      }
+      // Namespace-prefixed, as Nextcloud answers: a caller reading this must
+      // not be written against the one spelling a bare `DAV:` default gives.
+      const resourceType = entry.kind === "collection" ? "<d:collection/>" : "";
+      response
+        .writeHead(207, { "content-type": "application/xml; charset=utf-8" })
+        .end(
+          `<?xml version="1.0"?><d:multistatus xmlns:d="DAV:"><d:response><d:href>/${BASE}/${path}</d:href><d:propstat><d:prop><d:resourcetype>${resourceType}</d:resourcetype></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>`,
+        );
       return;
     }
 

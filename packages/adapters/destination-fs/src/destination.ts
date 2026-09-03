@@ -1,7 +1,8 @@
-import { readFile, stat } from "node:fs/promises";
+import { access, constants, readFile, stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import {
+  Rejected,
   Unusable,
   type Delivery,
   type DeliveryOutcome,
@@ -124,7 +125,47 @@ export function createFilesystemDestination(
 
     candidates: (destination, request) =>
       filesystemCandidates({ reserved }, destination, request),
+
+    probe: async (destination) => {
+      const settings = asFilesystemSettings(destination.settings);
+      if (settings === undefined) throw unreadable(destination);
+
+      let realRoot: string;
+      try {
+        realRoot = await realRootOf(settings.root);
+      } catch (cause) {
+        throw unresolvable(settings.root, cause);
+      }
+
+      const overlap = overlapsAny(realRoot, reserved);
+      if (overlap !== undefined) {
+        throw new Unusable(overlapDetail(realRoot, overlap));
+      }
+
+      if (!(await stat(realRoot)).isDirectory()) {
+        throw new Rejected(`${settings.root} is not a directory`);
+      }
+
+      try {
+        await access(realRoot, constants.W_OK);
+      } catch (cause) {
+        throw new Rejected(`${settings.root} cannot be written to`, { cause });
+      }
+    },
   };
+}
+
+/** Sorted on the list a delivery already sorts on, so the two answer alike. */
+function unresolvable(root: string, cause: unknown): Error {
+  const code = (cause as NodeJS.ErrnoException).code;
+  if (code !== undefined && UNREACHABLE.includes(code)) {
+    return new Error(`${root}: ${why(cause)}`, { cause });
+  }
+
+  return new Rejected(
+    code === "ENOENT" ? `${root} is not there` : `${root}: ${why(cause)}`,
+    { cause },
+  );
 }
 
 /** Core checks settings against the schema first, so this is the two disagreeing. */

@@ -53,6 +53,8 @@ export type FakeDestinations = Destinations & {
   answersCandidates(next: CandidatesAnswer): void;
   /** What `candidates` throws with, on the same terms as `cannotDescribe`. */
   cannotAnswerCandidates(detail: string | Error | undefined): void;
+  /** What `probe` throws with. Undefined is a destination that is there. */
+  cannotBeProbed(detail: string | Error | undefined): void;
 };
 
 export type FakeDestinationsOptions = {
@@ -139,6 +141,7 @@ export function fakeDestinations(
     truncated: false,
   };
   let cannotAnswer: string | Error | undefined;
+  let cannotProbe: string | Error | undefined;
 
   async function read(
     delivery: Delivery,
@@ -200,6 +203,13 @@ export function fakeDestinations(
               : new Error(cannotAnswer),
           ),
 
+    probe: () =>
+      cannotProbe === undefined
+        ? Promise.resolve()
+        : Promise.reject(
+            cannotProbe instanceof Error ? cannotProbe : new Error(cannotProbe),
+          ),
+
     received,
     answers: (next) => {
       standing = next;
@@ -215,6 +225,9 @@ export function fakeDestinations(
     },
     cannotAnswerCandidates: (detail) => {
       cannotAnswer = detail;
+    },
+    cannotBeProbed: (detail) => {
+      cannotProbe = detail;
     },
   };
 }

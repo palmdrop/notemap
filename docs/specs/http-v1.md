@@ -5,6 +5,13 @@ editing, destinations, routing to one and health are settled; the rest is stub
 **Last updated**: 2026-09-02
 **Shipped**:
 
+- 2026-09-02 — **`GET /v1/destinations/{id}/probe`.** The third read that reaches the outside
+  world, beside `/description` and `/candidates`, and the only one that answers what a person means
+  by "does this work". Every answer is a `200` — `ready`, `rejected`, `unreachable`, `unusable`,
+  `not-offered` — because a destination that is asleep is not a broken request.
+  ([plan](../plans/destination-checks-and-accounts.md),
+  [ADR 30](../adr/0030-a-destination-can-be-asked-whether-it-is-really-there.md))
+
 - 2026-09-02 — **`GET /log` is gone.** The page the daemon served for the action log is deleted and
   the app answers that path, an unmatched extensionless path already falling through to it.
   `GET /v1/actions` is unchanged and was always the promise; the page was host surface this spec
@@ -790,6 +797,39 @@ GET /v1/destinations/019a3f2c-.../candidates?capability=create-file&field=direct
   nothing speaks its kind or its settings no longer satisfy it; `not-offered` where the kind does
   not do this at all, whether the adapter said so or was never asked to implement it. None of the
   three is an error status — a destination that is merely asleep is not a broken request.
+- An id no destination has is `404 unknown-destination`.
+
+`GET /v1/destinations/{id}/probe` — whether that one is really there, asked now.
+
+```json
+{ "kind": "ready" }
+```
+
+```json
+{ "kind": "rejected", "detail": "no webdav account named home is configured" }
+```
+
+- **The third read that reaches the outside world**, beside `/description` and `/candidates`, and
+  the only one that answers what a person means by "does this work"
+  ([ADR 30](../adr/0030-a-destination-can-be-asked-whether-it-is-really-there.md)). `/description`
+  answers from a destination's declared shape and never leaves the process, so an unmounted drive
+  and an account nobody declared both describe themselves without complaint.
+- **`200` carries every answer**, as `/candidates` does: `ready` where it was reached, its
+  credentials accepted and its root found; `rejected` where it answered and said no; `unreachable`
+  where it could not be reached or could not decide; `unusable` where nothing speaks its kind or its
+  settings no longer satisfy it; `not-offered` where the kind does not do this at all. A destination
+  that is asleep is not a broken request.
+- **`rejected` and `unreachable` are `DeliveryOutcome`'s own words**, for the same distinction one
+  call earlier: something a person must fix, against something that will come back and is already
+  being retried. Every answer but `ready` carries a `detail`.
+- **`ready` does not promise a write will land.** The probe reads. Where a kind can learn about
+  writing without writing it does — a filesystem destination asks the kernel, and both kinds refuse
+  a root that is a file rather than a folder — and beyond that it is inferred from having reached
+  the place.
+- **A root that cannot be resolved is sorted the way a delivery sorts one.** A filesystem
+  destination answers `unreachable` for the errors a later attempt could find different — no
+  permission, a read-only or full disk, a failing device — and `rejected` for everything else,
+  a path component that is a file included. The two calls must not disagree about which is which.
 - An id no destination has is `404 unknown-destination`.
 
 `POST /v1/destinations` — create one, from a name, a kind and that kind's settings. The id is

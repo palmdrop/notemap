@@ -4,19 +4,21 @@ import {
   CREATE_FILE,
   type Renderers,
 } from "@notemap/output-markdown";
-import type {
-  Delivery,
-  DeliveryOutcome,
-  Destination,
-  DestinationKindAdapter,
-  PayloadTypeName,
+import {
+  Rejected,
+  type Delivery,
+  type DeliveryOutcome,
+  type Destination,
+  type DestinationKindAdapter,
+  type PayloadTypeName,
 } from "@notemap/core";
 
 import type { CredentialResolver } from "./credentials";
 import { createDav, type Dav } from "./dav";
 import { Refused, Unreachable } from "./errors";
 import { appendToNote, createNote, type Wiring } from "./notes";
-import { asWebdavSettings, WEBDAV, WEBDAV_SETTINGS } from "./settings";
+import { contain } from "./paths";
+import { asWebdavSettings, WEBDAV, webdavSettings } from "./settings";
 
 /** What the host wires: neither a renderer nor a credential is a person's setting. */
 export type WebdavDestinationConfig = {
@@ -26,6 +28,8 @@ export type WebdavDestinationConfig = {
   readonly accepts: readonly PayloadTypeName[];
   /** Turns an account's name into the account. The adapter never learns where one is held. */
   readonly credentials: CredentialResolver;
+  /** Names only: an address or a secret here is one `/v1` would answer with. */
+  readonly accounts?: readonly string[];
 };
 
 export function createWebdavDestination(
@@ -35,7 +39,7 @@ export function createWebdavDestination(
 
   return {
     name: WEBDAV,
-    settingsSchema: WEBDAV_SETTINGS,
+    settingsSchema: webdavSettings(config.accounts ?? []),
 
     /**
      * Never touches the network, exactly as the filesystem kind refuses to
@@ -86,7 +90,66 @@ export function createWebdavDestination(
         return failure(cause);
       }
     },
+
+    /**
+     * A rejected credential is `Rejected` here and `Unreachable` to a delivery:
+     * the delivery is right to retry one, a password having possibly just been
+     * rotated, and a person asking now is owed the answer that it is wrong.
+     */
+    probe: async (destination, signal) => {
+      const settings = asWebdavSettings(destination.settings);
+      if (settings === undefined) throw unreadable(destination);
+
+      let dav: Dav;
+      try {
+        dav = createDav(await config.credentials(settings.account));
+      } catch (cause) {
+        throw new Rejected(why(cause), { cause });
+      }
+
+      const root = contain(settings.root, "");
+      if (root.kind === "refused") throw new Rejected(root.detail);
+
+      const looked = await dav.look(root.path.encoded, signal);
+      const where = named(settings.root);
+
+      switch (looked.kind) {
+        case "there":
+          if (!looked.collection) {
+            throw new Rejected(`${where} is a file rather than a folder`);
+          }
+          return;
+
+        case "not-there":
+          throw new Rejected(`${where} is not there`);
+
+        case "refused":
+          throw new Rejected(refusal(where, looked.status));
+      }
+    },
   };
+}
+
+/** A blank root is the account's own collection, which has no name to give. */
+function named(root: string): string {
+  return root === "" ? "the account's own folder" : root;
+}
+
+const UNAUTHORIZED = 401;
+const FORBIDDEN = 403;
+/** Answered by an address that is served but is not a DAV collection. */
+const NO_SUCH_METHOD = 405;
+
+function refusal(where: string, status: number): string {
+  if (status === UNAUTHORIZED || status === FORBIDDEN) {
+    return `the account's credentials were refused, with ${status}`;
+  }
+
+  if (status === NO_SUCH_METHOD) {
+    return `${where} does not answer PROPFIND, so the account's address is not a WebDAV collection`;
+  }
+
+  return `${where} answered ${status}`;
 }
 
 function carryOut(

@@ -38,5 +38,14 @@ export function destinationRegistry(
       }
       return adapter.candidates(destination, request, signal);
     },
+    probe: (destination, signal) => {
+      const adapter = reach(destination);
+      if (adapter.probe === undefined) {
+        return Promise.reject(
+          new NotOffered(`the ${adapter.name} kind cannot be probed`),
+        );
+      }
+      return adapter.probe(destination, signal);
+    },
   };
 }

@@ -1,12 +1,15 @@
 <script lang="ts">
+  import { untrack } from "svelte";
+
   import {
     saidBy,
-    type Destination as One,
+    type Destination,
     type DestinationDescription,
     type DestinationKind,
+    type DestinationProbe,
   } from "@notemap/client";
 
-  import Destination from "$components/settings/Destination.svelte";
+  import DestinationRow from "$components/settings/Destination.svelte";
   import DestinationForm from "$components/settings/DestinationForm.svelte";
   import Doomed from "$components/settings/Doomed.svelte";
   import Section from "$components/settings/Section.svelte";
@@ -21,11 +24,14 @@
   let adding = $state(false);
   let opened = $state<string | undefined>(undefined);
   let editing = $state<string | undefined>(undefined);
-  let doomed = $state<One | undefined>(undefined);
+  let doomed = $state<Destination | undefined>(undefined);
   let said = $state("");
 
-  /** Per destination rather than for the list: what one can do is I/O that may hang. */
+  /** Per destination rather than for the list: either question is I/O that may hang. */
   let described = $state<Record<string, DestinationDescription>>({});
+  let probed = $state<Record<string, DestinationProbe>>({});
+  let asking = $state<Record<string, boolean>>({});
+  let reaching = $state<Record<string, boolean>>({});
 
   const tally = $derived(
     (() => {
@@ -64,14 +70,65 @@
     }
   }
 
-  async function check(one: One) {
-    await attempt(async () => {
-      described = {
-        ...described,
-        [one.id]: await client.destinations.describe(one.id),
-      };
-    });
+  async function check(one: Destination) {
+    await attempt(() => Promise.all([describing(one), probing(one)]));
   }
+
+  async function describing(one: Destination): Promise<void> {
+    asking = { ...asking, [one.id]: true };
+    try {
+      // Read after the answer, never spread around the await: two rows asking
+      // at once both spread the same record and the slower one wins.
+      const answer = await client.destinations.describe(one.id);
+      described = { ...described, [one.id]: answer };
+    } finally {
+      asking = { ...asking, [one.id]: false };
+    }
+  }
+
+  async function probing(one: Destination): Promise<void> {
+    reaching = { ...reaching, [one.id]: true };
+    try {
+      const answer = await client.destinations.probe(one.id);
+      probed = { ...probed, [one.id]: answer };
+    } finally {
+      reaching = { ...reaching, [one.id]: false };
+    }
+  }
+
+  /** Anything else is worth asking again when the pool comes back into reach. */
+  const SETTLED: readonly DestinationProbe["kind"][] = [
+    "ready",
+    "rejected",
+    "not-offered",
+  ];
+
+  // A retired one is offered to nothing new, so nothing asks it anything.
+  // Refusals stay quiet: a pool out of reach is already said by the chrome.
+  $effect(() => {
+    const yes = pool.yes;
+    const held = $destinations;
+    if (!yes) return;
+
+    untrack(() => {
+      for (const one of held) {
+        if (one.retired === true) continue;
+
+        if (
+          asking[one.id] !== true &&
+          described[one.id]?.kind !== "described"
+        ) {
+          void describing(one).catch(() => undefined);
+        }
+
+        const answer = probed[one.id];
+        const settled = answer !== undefined && SETTLED.includes(answer.kind);
+        if (reaching[one.id] !== true && !settled) {
+          void probing(one).catch(() => undefined);
+        }
+      }
+    });
+  });
 </script>
 
 <Section name="destinations" aside={tally}>
@@ -89,9 +146,12 @@
   {/if}
 
   {#each $destinations as one (one.id)}
-    <Destination
+    <DestinationRow
       {one}
       described={described[one.id]}
+      probed={probed[one.id]}
+      asking={asking[one.id] === true}
+      probing={reaching[one.id] === true}
       opened={opened === one.id}
       offline={!pool.yes}
       onopen={() => {
@@ -119,7 +179,7 @@
           />
         </div>
       {/if}
-    </Destination>
+    </DestinationRow>
   {/each}
 
   {#if adding}
@@ -151,12 +211,12 @@
     }}
     ondelete={() =>
       void attempt(async () => {
-        await client.destinations.delete((doomed as One).id);
+        await client.destinations.delete((doomed as Destination).id);
         doomed = undefined;
       })}
     onretire={() =>
       void attempt(async () => {
-        await client.destinations.retire((doomed as One).id);
+        await client.destinations.retire((doomed as Destination).id);
         doomed = undefined;
       })}
   />

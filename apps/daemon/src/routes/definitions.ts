@@ -33,6 +33,7 @@ import {
   destinationCandidatesSchema,
   destinationDescriptionSchema,
   destinationKindsSchema,
+  destinationProbeSchema,
   destinationSchema,
   destinationsSchema,
   updateDestinationRequestSchema,
@@ -729,6 +730,22 @@ export const destinationCandidatesRoute = createRoute({
   },
 });
 
+export const destinationProbeRoute = createRoute({
+  method: "get",
+  path: "/v1/destinations/{id}/probe",
+  summary: "Ask one destination whether it is really there",
+  description:
+    "The third read that reaches the outside world, and the only one that answers what a person means by \"does this work\": `/description` answers from a destination's declared shape and never leaves the process, so an unmounted drive and an account nobody declared both describe themselves without complaint. `ready` was reached, took the credential and had its root; `rejected` answered and said no, which is a person's to fix; `unreachable` could not be reached or could not decide, which a retry may find different; `unusable` could not be asked at all; `not-offered` is a kind that does not do this. Nothing is written to find out, so `ready` does not promise a write will land.",
+  request: { params: destinationId },
+  responses: {
+    200: {
+      description: "What it answered.",
+      content: { [JSON_MEDIA_TYPE]: { schema: destinationProbeSchema } },
+    },
+    404: errorResponse("No destination has that id.", 404, DESTINATION_STATUS),
+  },
+});
+
 export const destinationKindsRoute = createRoute({
   method: "get",
   path: "/v1/destination-kinds",
@@ -1059,6 +1076,7 @@ export const ROUTES = [
   destinationKindsRoute,
   destinationDescriptionRoute,
   destinationCandidatesRoute,
+  destinationProbeRoute,
   updateDestinationRoute,
   retireDestinationRoute,
   unretireDestinationRoute,

@@ -73,6 +73,16 @@ export const destinationCandidatesSchema = z
   ])
   .openapi("DestinationCandidates");
 
+export const destinationProbeSchema = z
+  .union([
+    z.object({ kind: z.literal("ready") }),
+    z.object({ kind: z.literal("rejected"), detail: z.string() }),
+    z.object({ kind: z.literal("unreachable"), detail: z.string() }),
+    z.object({ kind: z.literal("unusable"), detail: z.string() }),
+    z.object({ kind: z.literal("not-offered") }),
+  ])
+  .openapi("DestinationProbe");
+
 export const destinationKindSchema = z
   .object({
     name: z.string(),

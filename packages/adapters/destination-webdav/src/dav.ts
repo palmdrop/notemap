@@ -8,6 +8,12 @@ export type Fetched =
 /** Whether a conditional write went through, or lost to whoever wrote first. */
 export type Conditional = "written" | "condition-failed";
 
+/** Anything a later attempt could find different is thrown as `Unreachable` instead. */
+export type Looked =
+  | { readonly kind: "there"; readonly collection: boolean }
+  | { readonly kind: "not-there" }
+  | { readonly kind: "refused"; readonly status: number };
+
 export type Dav = {
   get(path: string, signal?: AbortSignal): Promise<Fetched>;
   /** `PUT` that must not overwrite. */
@@ -21,6 +27,8 @@ export type Dav = {
   ): Promise<Conditional>;
   /** Makes one collection. A collection that is already there is the outcome asked for. */
   makeCollection(path: string, signal?: AbortSignal): Promise<void>;
+  /** Whether something is there, and whether it is a collection, without writing anything. */
+  look(path: string, signal?: AbortSignal): Promise<Looked>;
 };
 
 export type Body = string | AsyncIterable<Uint8Array>;
@@ -35,6 +43,15 @@ const NOT_THERE = 404;
 
 /** A `PUT` or `MKCOL` whose parent collection does not exist. */
 const NO_PARENT = 409;
+
+const UNAUTHORIZED = 401;
+const FORBIDDEN = 403;
+const TIMED_OUT = 408;
+const RATE_LIMITED = 429;
+const SERVER_FAULT = 500;
+
+/** A body rather than none, which is allowed but which some servers refuse. */
+const RESOURCE_TYPE = `<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><prop><resourcetype/></prop></propfind>`;
 
 export function createDav(credential: WebdavCredential): Dav {
   const authorization = `Basic ${Buffer.from(
@@ -147,6 +164,37 @@ export function createDav(credential: WebdavCredential): Dav {
       await ok(response, path);
       void response.body?.cancel();
     },
+
+    look: async (path, signal) => {
+      const response = await send("PROPFIND", path, {
+        body: RESOURCE_TYPE,
+        headers: {
+          depth: "0",
+          "content-type": "application/xml; charset=utf-8",
+        },
+        signal,
+      });
+      if (response.ok) {
+        return {
+          kind: "there",
+          collection: isCollection(await response.text()),
+        };
+      }
+
+      void response.body?.cancel();
+      if (response.status === NOT_THERE) return { kind: "not-there" };
+      if (
+        response.status >= SERVER_FAULT ||
+        response.status === RATE_LIMITED ||
+        response.status === TIMED_OUT
+      ) {
+        throw new Unreachable(
+          `${path} answered ${response.status} to PROPFIND`,
+        );
+      }
+
+      return { kind: "refused", status: response.status };
+    },
   };
 }
 
@@ -168,17 +216,22 @@ function failure(response: Response, path: string): Error {
     return new Unreachable(`${at}, so something above it is not there`);
   }
   if (
-    response.status >= 500 ||
-    response.status === 429 ||
-    response.status === 408
+    response.status >= SERVER_FAULT ||
+    response.status === RATE_LIMITED ||
+    response.status === TIMED_OUT
   ) {
     return new Unreachable(at);
   }
-  if (response.status === 401 || response.status === 403) {
+  if (response.status === UNAUTHORIZED || response.status === FORBIDDEN) {
     return new Unreachable(`${at}: the account would not have it`);
   }
 
   return new Refused(at);
+}
+
+/** Matched rather than parsed: the deciding element may carry any prefix or none. */
+function isCollection(body: string): boolean {
+  return /<[a-z0-9]*:?collection\b[^>]*\/?>/i.test(body);
 }
 
 function why(cause: unknown): string {

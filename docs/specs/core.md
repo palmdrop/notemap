@@ -1,8 +1,18 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-09-01
+**Last updated**: 2026-09-02
 **Shipped**:
+
+- 2026-09-02 — **A destination can be asked whether it is really there.** `destinations.probe`
+  joins `describe` and `candidates`, optional on a kind adapter and answering `ready`, `rejected`,
+  `unreachable`, `unusable` or `not-offered`. Describing answers from a declared shape and never
+  leaves the process, so an unmounted drive and an account nobody declared both describe themselves
+  cheerfully; this goes and asks. `rejected` against `unreachable` is `DeliveryOutcome`'s own
+  distinction one call earlier — a person's to fix, against one already being retried. Nothing
+  writes to find out, so `ready` is reached rather than proven writable.
+  ([plan](../plans/destination-checks-and-accounts.md),
+  [ADR 30](../adr/0030-a-destination-can-be-asked-whether-it-is-really-there.md))
 
 - 2026-09-01 — **A second destination kind, and what a kind holding a credential may be told.** A
   `webdav` destination delivers a note to a folder on a WebDAV server, with the filesystem kind's
@@ -814,6 +824,23 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   terms `describe()`'s own report already uses. `not-offered` is one answer however it was reached
   — a kind whose adapter implements none of this, and a field an adapter does not answer for, are
   the same fact to a caller: nothing here can be browsed.
+- **A destination can be asked whether it is really there** (added 2026-09-02,
+  [ADR 30](../adr/0030-a-destination-can-be-asked-whether-it-is-really-there.md)), through a third
+  method, **`probe`**. `describe()` answers from a declared shape and never leaves the process, so
+  it says nothing about an unmounted drive or an account nobody declared — both describe themselves
+  cheerfully, and the first evidence either is wrong is a delivery that does not land. A probe goes
+  and asks: it resolves what it needs, opens the connection, presents the credential and asks
+  whether the root is there. The answer is `ready`, `rejected`, `unreachable`, `unusable` or
+  `not-offered`. `rejected` against `unreachable` is the whole point of it and is
+  `DeliveryOutcome`'s own distinction one call earlier — something a person must go and fix, against
+  something that will come back on its own and is already being retried. Optional on the adapter,
+  with the port turning an absent method into `not-offered`, on `candidates`' terms.
+- **`ready` means reached, not writable.** A probe never writes: proving a vault is writable means
+  creating and deleting a file in it, which is not what a check does. It takes an answer where one
+  is free — a filesystem kind asks the kernel, and both kinds refuse a root that turns out to be a
+  file, which is a note rather than somewhere notes go — and infers the rest from having reached
+  the place at all. Nothing consults a probe before a delivery: what a delivery finds out is
+  still a delivery's to find out.
 - **A capability's accepted payload types may be a wildcard**, for a destination whose fallback
   genuinely handles anything. It is a promise rather than a shrug: claiming it trades away the
   refusal core would otherwise make up front, so what would have been an immediate

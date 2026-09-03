@@ -97,6 +97,17 @@ export type CandidatesReport =
   | { readonly kind: "unusable"; readonly detail: string }
   | { readonly kind: "not-offered" };
 
+/**
+ * Whether a destination is really there, having been asked. `ready` is not a
+ * promise that a write will land: nothing writes to find out.
+ */
+export type DestinationProbe =
+  | { readonly kind: "ready" }
+  | { readonly kind: "rejected"; readonly detail: string }
+  | { readonly kind: "unreachable"; readonly detail: string }
+  | { readonly kind: "unusable"; readonly detail: string }
+  | { readonly kind: "not-offered" };
+
 /** What a person supplies to create one. The id, the timestamps and retirement are not theirs. */
 export type DestinationDraft = {
   readonly name: string;
