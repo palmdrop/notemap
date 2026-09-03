@@ -7,7 +7,7 @@ import type { AssetId, Item, ItemId, PoolIdentity } from "./api/types";
 import { releasedBy } from "./assets/assets";
 import { envelopeFor, optimisticItem } from "./capture/envelope";
 import { rewritten, saidIn } from "./capture/says";
-import { PoolChanged, Refused, Unreachable } from "./errors";
+import { PoolChanged, Refused, saidBy, Unreachable } from "./errors";
 import { derived, writable, type Writable } from "./observable/observable";
 import { createDestinations } from "./destinations/destinations";
 import { createOutbox } from "./outbox/outbox";
@@ -369,15 +369,31 @@ export function createClient(config: ClientConfig): Client {
 
     item: (id) =>
       after(async () => {
-        const item = await fetched(id);
-        if (item !== undefined) {
-          state.update((current) => ({
-            ...current,
-            items: cached(current, [item]),
-          }));
+        try {
+          const item = await fetched(id);
+          if (item !== undefined) {
+            state.update((current) => ({
+              ...current,
+              items: cached(current, [item]),
+            }));
+          }
+          return { fromCache: false, ...(item === undefined ? {} : { item }) };
+        } catch (error) {
+          // The cached copy is kept rather than dropped: nothing the pool
+          // refused to answer says anything about what the client holds.
+          const held = state.get().items.get(id);
+          return {
+            fromCache: held !== undefined,
+            ...(held === undefined ? {} : { item: held }),
+            failure: {
+              said: saidBy(error),
+              refused: !(error instanceof Unreachable),
+            },
+          };
         }
-        return item;
       }),
+
+    held: (id) => derived(state.changes, (current) => current.items.get(id)),
 
     async capture(input) {
       const id = uuidv7();

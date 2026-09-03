@@ -16,7 +16,7 @@ describe("a daemon told to stop", () => {
     expect(await first.stop()).toBe(0);
 
     const again = await daemon(first.world);
-    const item = await again.client.item(captured.id);
+    const { item } = await again.client.item(captured.id);
 
     expect(item?.id).toBe(captured.id);
     expect(item?.payload.content["text"]).toBe("still here in the morning");

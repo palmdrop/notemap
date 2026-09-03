@@ -1,7 +1,7 @@
 # An item has an address, and a record can be read
 
 **Date**: 2026-08-30
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: In progress <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/shell.md`, `docs/specs/client.md`
 **Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
 
@@ -42,22 +42,22 @@ does not need a second one yet.
 
 Depends on nothing.
 
-- [ ] Create branch `agent/item-route-and-record-view`
-- [ ] `/items/{id}` draws one item: its payload, its tags, its marks, and the routing records the
+- [x] Create branch `agent/item-route-and-record-view`
+- [x] `/items/{id}` draws one item: its payload, its tags, its marks, and the routing records the
       opened row already reads. It is a surface, not a modal — the modal idiom belongs to the
       composer, which is a decision being made rather than a thing being read
-- [ ] It reads through `Client.item`, which already exists. Settle in this phase whether that
+- [x] It reads through `Client.item`, which already exists. Settle in this phase whether that
       reaches the pool for an id the cache has never held, or answers `undefined` — a deep link into
       a fresh browser is the case that decides it, and the answer belongs in `client.md` either way
-- [ ] An item the pool does not have is said plainly, and is not an error. A link outlives the item
+- [x] An item the pool does not have is said plainly, and is not an error. A link outlives the item
       it names: purge exists in the specs and a tombstone is a real answer
-- [ ] Drawn from the cache, it says so, in the words the surfaces already use for it
+- [x] Drawn from the cache, it says so, in the words the surfaces already use for it
       ([shell.md](../specs/shell.md)'s three conditions). An item view is exactly where a person
       looks when they are trying to find out what happened, so it is the worst place to imply
       freshness
-- [ ] Tests beside the route: a known item draws, an unknown one says so, a cached one is marked
-- [ ] Verify: `pnpm --filter @notemap/ui test`
-- [ ] `git commit`
+- [x] Tests beside the route: a known item draws, an unknown one says so, a cached one is marked
+- [x] Verify: `pnpm --filter @notemap/ui test`
+- [x] `git commit`
 
 ### Phase 2 — Getting there, and getting back
 

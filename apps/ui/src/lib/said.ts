@@ -8,6 +8,12 @@ Everything captured has been routed, marked done, or archived. Anything new goes
 
 export const NO_MORE_OFFLINE = "offline; more when the daemon answers";
 
+export const NO_ITEM_OFFLINE = "offline; this item when the daemon answers";
+
+export const NO_SUCH_ITEM = `No such item.
+
+This pool has never held it, or does not hold it any more. A link outlives the item it names.`;
+
 export const LOG_LEDE =
   "Everything this pool has done, in the order it happened.";
 

@@ -175,7 +175,7 @@ describe("amend versus revise", () => {
     await client.edit("one", payload("edited"), TYPED);
     await client.drain();
 
-    const original = await client.item("one");
+    const { item: original } = await client.item("one");
     expect(original?.payload.content["text"]).toBe("one");
   });
 

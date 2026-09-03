@@ -28,7 +28,7 @@ describe("bytes the client attached to a capture", () => {
     expect(new Uint8Array(await served.arrayBuffer())).toEqual(BYTES);
 
     // The item the pool holds names the asset, so the two halves agree.
-    const item = await client.item(captured.id);
+    const { item } = await client.item(captured.id);
     expect(item?.payload.assets).toEqual([{ slot: "image", asset }]);
   });
 });

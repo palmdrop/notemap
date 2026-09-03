@@ -313,7 +313,7 @@ describe("the queue", () => {
 
     expect(read(client.queue).items.map((item) => item.id)).toEqual(["two"]);
     // Out of the queue, not out of the pool: the feed reads everything.
-    expect(await client.item("one")).toBeDefined();
+    expect((await client.item("one")).item).toBeDefined();
   });
 
   /** The row stays in the feed, and is what a reader sees the decision on. */

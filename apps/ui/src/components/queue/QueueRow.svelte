@@ -1,12 +1,11 @@
 <script lang="ts">
   import { saidBy, type Item, type RoutingRecord } from "@notemap/client";
 
+  import Actions from "$components/item/Actions.svelte";
   import Edit from "$components/item/Edit.svelte";
   import Payload from "$components/item/Payload.svelte";
   import Routing from "$components/item/Routing.svelte";
   import Tags from "$components/item/Tags.svelte";
-  import Action from "$components/primitives/controls/Action.svelte";
-  import ActionRow from "$components/primitives/controls/ActionRow.svelte";
   import Body from "$components/primitives/register/Body.svelte";
   import Fact from "$components/primitives/register/Fact.svelte";
   import Facts from "$components/primitives/register/Facts.svelte";
@@ -56,15 +55,6 @@
 
   const word = $derived(became(item));
   const mayEdit = $derived(editable(item));
-
-  async function markDone() {
-    said = "marking…";
-    try {
-      await client.routing.markProcessed(item.id);
-    } catch (error) {
-      said = saidBy(error);
-    }
-  }
 </script>
 
 <Rail lit={opened} onpick={onopen}>
@@ -119,21 +109,12 @@
   {/if}
 
   {#if opened}
-    <ActionRow>
-      <!-- An archive, an edit and a tag replay from the outbox; a delivery
-           cannot, so it is not offered rather than promised. -->
-      <Action primary disabled={offline} onclick={onroute}>route</Action>
-      <Action disabled={offline} onclick={markDone}>mark done</Action>
-      <Action onclick={() => void client.archive(item.id)}>archive</Action>
-      <!-- A processed item is not this row's to rewrite: editing it would
-           append a revision, which the queue is not where to do. -->
-      {#if mayEdit}
-        <Action onclick={() => (editing = !editing)}>edit</Action>
-      {/if}
-
-      {#if said !== ""}
-        <span role="status" class="text-ink-muted">{said}</span>
-      {/if}
-    </ActionRow>
+    <Actions
+      {item}
+      {offline}
+      {said}
+      onroute={() => onroute()}
+      onedit={() => (editing = !editing)}
+    />
   {/if}
 </Body>

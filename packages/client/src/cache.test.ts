@@ -186,3 +186,59 @@ describe("a surface drawn from the cache", () => {
     expect(read(client.queue).failure).toBeDefined();
   });
 });
+
+describe("one item, read", () => {
+  it("reaches the pool for an id no surface has drawn", async () => {
+    const { client, transport } = clientOver(createMemoryStore(), (request) =>
+      routeOf(request) === "GET /v1/items/linked"
+        ? json(200, at("linked", 2021))
+        : nothing(),
+    );
+
+    const drawn = await client.item("linked");
+
+    expect(drawn.item?.id).toBe("linked");
+    expect(drawn.fromCache).toBe(false);
+    expect(transport.sent.map(routeOf)).toContain("GET /v1/items/linked");
+  });
+
+  it("says there is no such item without saying anything failed", async () => {
+    const { client } = clientOver(createMemoryStore(), (request) =>
+      routeOf(request) === "GET /v1/items/gone"
+        ? json(404, { error: { code: "no-such-item" } })
+        : nothing(),
+    );
+
+    const drawn = await client.item("gone");
+
+    expect(drawn.item).toBeUndefined();
+    expect(drawn.failure).toBeUndefined();
+    expect(drawn.fromCache).toBe(false);
+  });
+
+  it("falls back to what it holds when the pool does not answer, and says so", async () => {
+    const store = createMemoryStore();
+    await store.writeItems([at("cached", 2020)]);
+
+    const { client, transport } = clientOver(store, nothing);
+    await until(() => ids(read(client.queue)).length > 0);
+    transport.unreachable(true);
+
+    const drawn = await client.item("cached");
+
+    expect(drawn.item?.id).toBe("cached");
+    expect(drawn.fromCache).toBe(true);
+    expect(drawn.failure?.refused).toBe(false);
+  });
+
+  it("holds nothing for an id it never cached, and says why", async () => {
+    const { client, transport } = clientOver(createMemoryStore(), nothing);
+    transport.unreachable(true);
+
+    const drawn = await client.item("never");
+
+    expect(drawn.item).toBeUndefined();
+    expect(drawn.fromCache).toBe(false);
+    expect(drawn.failure?.refused).toBe(false);
+  });
+});
