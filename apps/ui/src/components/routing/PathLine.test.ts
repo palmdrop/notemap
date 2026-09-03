@@ -128,6 +128,49 @@ test("draws the levels along the path, each with its siblings", async () => {
   expect(line.value()).toBe("projects/notemap/");
 });
 
+/**
+ * The tree shows every level at once, so pointing at one is going there — not
+ * adding its name to the end of what is typed, which made folders nobody meant.
+ */
+test("drills down to a folder taken from a level above the caret", async () => {
+  servingTree();
+  const line = draw("projects/notemap/");
+
+  await screen.findByText("notes/");
+  await fireEvent.mouseDown(screen.getByText("journal/"));
+
+  expect(line.value()).toBe("journal/");
+});
+
+test("drills down to a folder taken from a level between", async () => {
+  servingTree();
+  const line = draw("projects/notemap/");
+
+  await screen.findByText("notes/");
+  await fireEvent.mouseDown(screen.getByText("kontradiktion/"));
+
+  expect(line.value()).toBe("projects/kontradiktion/");
+});
+
+test("takes a note as the whole line, so what happens next is an append", async () => {
+  servingTree();
+  const line = draw("projects/notemap/");
+
+  const note = await screen.findByText("readme.md");
+  await fireEvent.mouseDown(note);
+
+  expect(line.value()).toBe("projects/notemap/readme.md");
+});
+
+test("takes a folder under the caret without repeating the path", async () => {
+  servingTree();
+  const line = draw("projects/notemap/");
+
+  await fireEvent.mouseDown(await screen.findByText("notes/"));
+
+  expect(line.value()).toBe("projects/notemap/notes/");
+});
+
 test("asks once per level along the path", async () => {
   servingTree();
   draw("projects/notemap/");

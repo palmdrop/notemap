@@ -9,6 +9,7 @@ import {
   ranked,
   matching,
   parsePath,
+  pathOf,
   pending,
   popped,
   reachable,
@@ -240,6 +241,34 @@ describe("the hierarchy as it is drawn", () => {
 
   test("draws nothing at all where the root itself answered nothing", () => {
     expect(rowsOf([{ scope: "" }], parsePath(""))).toEqual([]);
+  });
+});
+
+describe("taking an entry the tree drew", () => {
+  test("drills the line down to a folder, wherever in the tree it sits", () => {
+    expect(pathOf(folder("kontradiktion", "projects/kontradiktion"))).toBe(
+      "projects/kontradiktion/",
+    );
+  });
+
+  test("sets the line to a note, so what happens next is an append", () => {
+    expect(pathOf(file("readme.md", "projects/notemap/readme.md"))).toBe(
+      "projects/notemap/readme.md",
+    );
+  });
+
+  /** The whole point: a sibling three levels up is not a segment of what is typed. */
+  test("replaces the typed path rather than appending to it", () => {
+    const deep = parsePath("projects/notemap/notes/");
+
+    expect(withTyping(deep, textOf(folder("journal", "journal")))).toBe(
+      "projects/notemap/notes/journal/",
+    );
+    expect(pathOf(folder("journal", "journal"))).toBe("journal/");
+  });
+
+  test("takes a folder at the root without a leading slash", () => {
+    expect(pathOf(folder("journal", "journal"))).toBe("journal/");
   });
 });
 

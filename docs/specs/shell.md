@@ -307,7 +307,9 @@ string, which is what the browser-and-input pair did and neither half could see 
 
 **The hierarchy is shown, not walked**: the levels along the typed path are drawn beneath the line,
 each with its siblings, indented — so the context around a choice is there rather than replaced at
-every step. One `candidates` call per level, debounced, every answer but the newest dropped. A
+every step. **Taking one is going to it**, not adding its name to what is typed: an entry carries
+its own path from the root, so a folder two levels up drills the line down to exactly that folder
+and a note sets the line to the note. Anything else makes folders nobody meant. One `candidates` call per level, debounced, every answer but the newest dropped. A
 scope that answers nothing is a folder still being typed and not a failure of anything; only the
 root's answer says whether the destination can be asked at all. A cut-short answer says so, since
 a scope past the adapter's cap cannot be filtered into completeness client-side.

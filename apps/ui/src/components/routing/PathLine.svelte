@@ -17,6 +17,7 @@
     ghostFor,
     marked,
     parsePath,
+    pathOf,
     pending,
     popped,
     reachable,
@@ -236,8 +237,11 @@
     moved = false;
   });
 
+  // The whole line, not a segment appended to it: the tree shows every level at
+  // once, so a folder two levels up is taken by going there rather than by
+  // gluing its name onto the end of what is typed.
   function take(entry: CandidateEntry): void {
-    onchange(withTyping(path, textOf(entry)));
+    onchange(pathOf(entry));
     input?.focus();
   }
 

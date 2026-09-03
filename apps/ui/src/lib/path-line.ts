@@ -61,6 +61,19 @@ export function textOf(entry: CandidateEntry): string {
   return isFolder(entry) ? `${entry.label}/` : entry.label;
 }
 
+/**
+ * The whole line a listed entry names, rather than a name to append to what was
+ * typed. An entry carries its own path from the destination's root, and the
+ * tree draws every level at once — so taking one three levels up drills the
+ * line down to exactly that folder, which is what pointing at it means. A
+ * folder keeps its slash, so typing simply continues inside it.
+ */
+export function pathOf(entry: CandidateEntry): string {
+  if (entry.scope !== undefined) return `${entry.scope}/`;
+  if (entry.value === undefined) return entry.label;
+  return String(entry.value);
+}
+
 /** Case-insensitively, and by prefix rather than substring: this completes a name being typed. */
 export function matching(
   entries: readonly CandidateEntry[],
