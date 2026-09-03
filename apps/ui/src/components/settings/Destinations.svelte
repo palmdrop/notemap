@@ -114,7 +114,10 @@
       for (const one of held) {
         if (one.retired === true) continue;
 
-        if (asking[one.id] !== true && described[one.id]?.kind !== "described") {
+        if (
+          asking[one.id] !== true &&
+          described[one.id]?.kind !== "described"
+        ) {
           void describing(one).catch(() => undefined);
         }
 

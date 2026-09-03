@@ -183,7 +183,9 @@ test("asks a destination that was unreachable again, once the pool is back", asy
 
   transport.unreachable(true);
   online(false);
-  await vi.waitFor(() => expect(screen.getByText(/read but not changed/)).toBeDefined());
+  await vi.waitFor(() =>
+    expect(screen.getByText(/read but not changed/)).toBeDefined(),
+  );
 
   transport.unreachable(false);
   online(true);
