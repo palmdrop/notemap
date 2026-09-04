@@ -281,3 +281,18 @@ test("leaves the pointer as text where the url is not one to follow", async () =
 
   expect((await screen.findByText("drafts/note.md")).closest("a")).toBeNull();
 });
+
+test("says why what was sent could not be read, and lets it be asked again", async () => {
+  pool(
+    answering([WITH_OUTPUT], DESCRIBED, () =>
+      json(404, { error: { code: "blob-missing", facts: {} } }),
+    ),
+  );
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+  await fireEvent.click(await screen.findByRole("button", { name: "read it" }));
+
+  expect(await screen.findByText(/could not be read/)).toBeDefined();
+  expect(screen.getByRole("button", { name: "read it" })).toBeDefined();
+});

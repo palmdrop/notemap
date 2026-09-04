@@ -42,12 +42,17 @@
   {#if truncated}
     <div class="mt-1 font-mono text-ink-muted">shown in part</div>
   {/if}
-{:else if onread !== undefined}
-  <div class="mt-2">
-    <Action disabled={busy} onclick={onread}>
-      {busy ? "reading…" : "read it"}
-    </Action>
-  </div>
-{:else if said !== ""}
-  <div role="status" class="mt-2 font-mono text-ink-muted">{said}</div>
+{:else}
+  <!-- Both, and not one or the other: a read that failed says why and stays
+       available, which is what makes the failure worth reporting at all. -->
+  {#if said !== ""}
+    <div role="status" class="mt-2 font-mono text-ink-muted">{said}</div>
+  {/if}
+  {#if onread !== undefined}
+    <div class="mt-2">
+      <Action disabled={busy} onclick={onread}>
+        {busy ? "reading…" : "read it"}
+      </Action>
+    </div>
+  {/if}
 {/if}
