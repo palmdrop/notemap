@@ -378,6 +378,71 @@ describe("the path that is not there yet", () => {
 
     expect(reachable(rows)).toEqual([]);
   });
+
+  const VAULT: Level[] = [
+    {
+      scope: "",
+      entries: [folder("projects", "projects"), folder("reading", "reading")],
+    },
+    {
+      scope: "projects",
+      entries: [folder("notemap", "projects/notemap")],
+    },
+    {
+      scope: "projects/notemap",
+      entries: [
+        folder("notes", "projects/notemap/notes"),
+        file("readme.md", "projects/notemap/readme.md"),
+      ],
+    },
+  ];
+
+  /**
+   * The bug this is here for: appended after the walk, the tail lands past
+   * `reading/` and reads as a note about to be made inside it.
+   */
+  test("draws the tail where the trail runs out, not after the whole tree", () => {
+    const path = parsePath("projects/notemap/drafts/picker.md");
+    const levels = [...VAULT, { scope: "projects/notemap/drafts" }];
+
+    expect(
+      rowsOf(levels, path, pending(path, ["drafts"], "picker.md")).map(
+        (row) => [textOf(row.entry), row.depth],
+      ),
+    ).toEqual([
+      ["projects/", 0],
+      ["notemap/", 1],
+      ["notes/", 2],
+      ["readme.md", 2],
+      ["drafts/", 2],
+      ["picker.md", 3],
+      ["reading/", 0],
+    ]);
+  });
+
+  test("draws a note under the folder that holds it, above that folder's siblings", () => {
+    const path = parsePath("projects/notemap/");
+
+    expect(
+      rowsOf(VAULT, path, pending(path, [], "picker.md")).map((row) => [
+        textOf(row.entry),
+        row.depth,
+      ]),
+    ).toEqual([
+      ["projects/", 0],
+      ["notemap/", 1],
+      ["notes/", 2],
+      ["readme.md", 2],
+      ["picker.md", 2],
+      ["reading/", 0],
+    ]);
+  });
+
+  test("leaves the tree alone where there is nothing to make", () => {
+    const path = parsePath("projects/notemap/");
+
+    expect(rowsOf(VAULT, path)).toEqual(rowsOf(VAULT, path, []));
+  });
 });
 
 describe("places used before", () => {

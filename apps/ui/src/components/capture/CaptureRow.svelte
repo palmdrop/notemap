@@ -15,6 +15,10 @@
   let busy = $state(false);
   let said = $state("");
   let picker: HTMLInputElement;
+  let box = $state<HTMLTextAreaElement | undefined>(undefined);
+
+  // The queue is where capture happens, and this is the first row of it.
+  $effect(() => box?.focus());
 
   /**
    * The row shows a minute and the capture is stamped when it is sent, so the
@@ -78,10 +82,11 @@
 <Body first>
   <form onsubmit={submit}>
     <textarea
+      bind:this={box}
       bind:value={text}
       placeholder="Anything worth keeping…"
       aria-label="What to capture"
-      class="min-h-18 w-full resize-y bg-transparent font-prose text-prose placeholder:text-ink-muted"
+      class="min-h-18 w-full resize-y bg-transparent font-prose text-prose outline-none placeholder:text-ink-muted"
     ></textarea>
 
     <ActionRow>

@@ -607,7 +607,10 @@ test("a blank leaf submits a path that ends in a slash", async () => {
 
   const line = await screen.findByRole("combobox");
   await fireEvent.input(line, { target: { value: "drafts/" } });
-  await screen.findByText(/derived · Picker needs a trail\.md/);
+  // Beside the word and again in the tree, where the note is about to land.
+  expect(await screen.findAllByText(/Picker needs a trail\.md/)).toHaveLength(
+    2,
+  );
   await choose("route");
 
   await vi.waitFor(async () => {
