@@ -146,7 +146,11 @@
   {#if record !== undefined && target !== undefined}
     <Rail first>
       <Stamp at={record.at} />
-      <StateWord word={record.state} />
+
+      <!-- A record that is not saying otherwise was delivered. -->
+      {#if record.state !== "delivered"}
+        <StateWord word={record.state} />
+      {/if}
 
       <div class="mt-2 break-words">
         {target.kind === "destination"

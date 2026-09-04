@@ -185,7 +185,7 @@ test("gives every record it draws the way into it", async () => {
   render(Item, { id: "routed" });
 
   // One line per record, which is what the opened row draws too.
-  const way = await screen.findByRole("link", { name: /create-note/ });
+  const way = await screen.findByRole("link", { name: /drafts/ });
   expect(way.getAttribute("href")).toBe("/items/routed/records/rec");
 });
 
@@ -200,7 +200,7 @@ test("says the records are out of reach while the item still draws", async () =>
   // copy, and nothing caches a record at all.
   expect(await screen.findByText("from cache")).toBeDefined();
   expect(screen.getByText(NO_RECORDS_OFFLINE)).toBeDefined();
-  expect(screen.queryByRole("link", { name: /create-note/ })).toBeNull();
+  expect(screen.queryByRole("link", { name: /drafts/ })).toBeNull();
 });
 
 test("says the pool is out of reach once, and not in the client's own words", async () => {
@@ -232,7 +232,7 @@ test("drops a record when the address moves to another item", async () => {
   });
 
   const { rerender } = render(Item, { id: "routed" });
-  await screen.findByRole("link", { name: /create-note/ });
+  await screen.findByRole("link", { name: /drafts/ });
 
   await rerender({ id: "plain" });
   await screen.findByText("nothing was routed");
@@ -240,7 +240,7 @@ test("drops a record when the address moves to another item", async () => {
   // One item's history under another item's stamp, with a link proving whose
   // it was: the surface is reused across a change of address.
   await vi.waitFor(() => {
-    expect(screen.queryByRole("link", { name: /create-note/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /drafts/ })).toBeNull();
   });
   expect(screen.getByText("unrouted")).toBeDefined();
 });
@@ -402,7 +402,7 @@ test("reads the records again after a decision made on this surface", async () =
   );
 
   render(Item, { id: "one" });
-  await screen.findByRole("link", { name: /create-note/ });
+  await screen.findByRole("link", { name: /drafts/ });
 
   const read = () =>
     asked().filter((route) => route === "GET /v1/items/one/routing").length;
@@ -453,7 +453,7 @@ test("offers no undo on a record the pool delivered", async () => {
   pool(routed([RECORD]));
 
   render(Item, { id: "routed" });
-  await screen.findByRole("link", { name: /create-note/ });
+  await screen.findByRole("link", { name: /drafts/ });
 
   expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
 });

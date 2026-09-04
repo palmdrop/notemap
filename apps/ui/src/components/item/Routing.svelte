@@ -35,7 +35,7 @@
   const lines = $derived(
     records.length > 0
       ? records.map((record) => ({
-          said: `${wentTo(record, nameOf)} · ${record.state}`,
+          ...wentTo(record, nameOf),
           href: recordHref(record.item, record.id),
           // Only a decision the person made by hand is theirs to take back:
           // a delivery is the pool's, and cancelling one it has carried out
@@ -47,6 +47,7 @@
         : [
             {
               said: whereItWent(summary, nameOf),
+              aside: undefined,
               href: undefined,
               taken: undefined,
             },
@@ -76,6 +77,10 @@
             {line.said}
           {:else}
             <a href={line.href}>{line.said}</a>
+          {/if}
+          <!-- What the person wrote about it, or the one state worth saying. -->
+          {#if line.aside !== undefined}
+            <span class="text-ink-muted">· {line.aside}</span>
           {/if}
         </span>
 

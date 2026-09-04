@@ -2,14 +2,29 @@ import type { RoutingRecord, RoutingSummary } from "@notemap/client";
 
 import type { Raised } from "./notices.svelte";
 
-/** Marking processed is routing whose destination is the person, so it reads as one. */
+/**
+ * What one record says on a row: where it went, and the place it landed. The
+ * capability is the adapter's vocabulary rather than a person's, and a record
+ * that is not saying otherwise was delivered — so the words those two spent are
+ * the words the place needed. Marking processed is routing whose destination is
+ * the person, so it reads as one.
+ */
 export function wentTo(
   record: RoutingRecord,
   nameOf: (destination: string) => string,
-): string {
-  return record.target.kind === "destination"
-    ? `${nameOf(record.target.destination)} · ${record.target.capability}`
-    : "marked done";
+): { readonly said: string; readonly aside?: string } {
+  if (record.target.kind !== "destination") {
+    const note = record.target.note;
+    return { said: "done", ...(note === undefined ? {} : { aside: note }) };
+  }
+
+  const name = nameOf(record.target.destination);
+  const place = placeIn(record);
+
+  return {
+    said: place === undefined ? name : `${name} · ${place}`,
+    ...(record.state === "delivered" ? {} : { aside: record.state }),
+  };
 }
 
 export function whereItWent(

@@ -448,10 +448,12 @@ test("keeps a record to one line on the opened row, and makes it the way in", as
   await screen.findByText("one");
   await open(0);
 
-  // A summary and nothing more: what the record was given is read elsewhere.
-  const line = await screen.findByRole("link", { name: /create-note/ });
+  // Where it went and the place it landed: the capability is the adapter's
+  // word and delivered is what a record with no alarm on it already means.
+  const line = await screen.findByRole("link", { name: /drafts/ });
   expect(line.getAttribute("href")).toBe("/items/one/records/rec");
-  expect(screen.queryByText("drafts")).toBeNull();
+  expect(screen.queryByText(/create-note/)).toBeNull();
+  expect(screen.queryByText(/delivered/)).toBeNull();
 });
 
 test("a row that leaves the queue says where it went", async () => {

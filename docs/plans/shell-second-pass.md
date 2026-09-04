@@ -75,13 +75,13 @@ Depends on phase 1. This is the phase that changes what a person can do.
 
 Depends on nothing; touches `lib/routing.ts` and the two surfaces that draw a record.
 
-- [ ] A record reads as its destination and the place it landed, from the pointer `placeIn()`
+- [x] A record reads as its destination and the place it landed, from the pointer `placeIn()`
       already computes
-- [ ] `delivered` goes; a state is said only where it is not that
-- [ ] The capability goes; it is the adapter's word
-- [ ] `shell.md`: what a routing record says on a row and on the record surface
-- [ ] `pnpm -r --silent test`
-- [ ] `git commit`
+- [x] `delivered` goes; a state is said only where it is not that
+- [x] The capability goes; it is the adapter's word
+- [x] `shell.md`: what a routing record says on a row and on the record surface
+- [x] `pnpm -r --silent test`
+- [x] `git commit`
 
 ### Phase 5 — the composer's two columns
 

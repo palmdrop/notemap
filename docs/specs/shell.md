@@ -464,6 +464,14 @@ the composer, which is a decision being made, and these are things being read.
 deliberately. The register goes on drawing one line per record, because that is a summary and a
 summary is what a row is for; what the line gains is the way into the record it summarises.
 
+**On a row, a record reads as its destination and the place it landed** *(2026-09-04)* — the
+pointer the destination handed back, or failing that the place the decision named. The capability
+went with it, `create-file` being the adapter's vocabulary rather than a person's, and so did
+`delivered`, which is what a record not saying otherwise already means. Those are the two words the
+place needed. **A state is said only where it is not that**, muted and after the place, since a
+record the pool has recorded and not carried out claims no landing. A decision made by hand reads
+as `done` with what the person wrote about it beside it, and carries the `undo` that cancels it.
+
 **The way in is `open`** — last in the opened queue row's actions, and on every feed row, the feed
 being read rather than worked. It is a link and not a button, so a new tab and a copied address
 come with it. Making the row's body navigate was the rejected half: on the queue that click is
@@ -495,8 +503,9 @@ says out of reach as out of reach, muted and offering nothing, while the item be
 drawing from whatever the client holds — one surface, two answers about freshness, which is what
 the three conditions are for.
 
-**A record is drawn in full**: what the delivery did, the destination by name, the state, when the
-decision was made, the arguments it was given, and the pointer to where it landed. Marking
+**A record is drawn in full**: what the delivery did, the destination by name, when the decision
+was made, the arguments it was given, and the pointer to where it landed. The **state** is there
+only where it is not `delivered` *(amended 2026-09-04)*, on the same reasoning as the row's line. Marking
 processed is routing whose destination is the person, so it reads as one, with its note where the
 arguments would be, and `none` where there is no note.
 
