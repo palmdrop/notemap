@@ -54,7 +54,12 @@ the reasoning for the ones worth it.
   if the output is the inserted bytes, converting them reads nothing at the destination. The port
   still allows `unreachable`, for a kind whose conversion does need to look.
 - **The preview route is `POST /v1/items/{id}/route/preview`** — under the verb it previews, taking
-  the same body. `/routing` on an item is the record list, and a preview is not about records.
+  the same body. `/routing` on an item is the record list, and a preview is not about records. The
+  output fetch follows the same rule and is `GET /v1/routing/{record}/output` rather than the
+  plan's `/v1/routing-records/{id}/output`: `/v1/routing/{record}/cancel` is already the surface a
+  record is acted on through, and a third noun for one route would be a spelling nothing else uses.
+- **The record's output carries the blob hash on the wire**, beside the media type. It is not the
+  content, an asset already answers its own blob, and it is the `ETag` the output fetch sets.
 - **Over the wire a preview answers JSON**, `{ mediaType, note?, content }`, with the content
   inline as text: it stores nothing, so there is no bytes URL to hand out afterwards, and the shell
   draws a preview and a stored output through one component. The port keeps one output shape for
@@ -145,16 +150,16 @@ Depends on phase 2.
 
 Depends on phases 2 and 3.
 
-- [ ] A routing record answers with the note, the media type, the URL and whether it has an output —
+- [x] A routing record answers with the note, the media type, the URL and whether it has an output —
       not the content, which is a separate fetch and may be large
-- [ ] `GET /v1/routing-records/{id}/output` answers the bytes with their media type. It carries the
+- [x] `GET /v1/routing-records/{id}/output` answers the bytes with their media type. It carries the
       same inert headers an asset response does: this is content a destination produced, and
       `security.md`'s reasoning about bytes on the daemon's own origin applies to it unchanged
-- [ ] Refusals: no such record, and a record that has no output — which is ordinary and not an error
+- [x] Refusals: no such record, and a record that has no output — which is ordinary and not an error
       condition anywhere else
-- [ ] Route tests beside the route, and the OpenAPI document regenerated
-- [ ] Verify: `pnpm --filter @notemap/daemon test`
-- [ ] `git commit`
+- [x] Route tests beside the route, and the OpenAPI document regenerated
+- [x] Verify: `pnpm --filter @notemap/daemon test`
+- [x] `git commit`
 
 ### Phase 5 — A destination can be asked what it would write
 

@@ -787,6 +787,12 @@
           },
           "pointer": {
             "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "output": {
+            "$ref": "#/components/schemas/DeliveryOutput"
           }
         },
         "required": [
@@ -796,6 +802,36 @@
           "state",
           "at"
         ]
+      },
+      "DeliveryOutput": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "object",
+            "properties": {
+              "blob": {
+                "type": "string"
+              },
+              "mediaType": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "blob",
+              "mediaType"
+            ],
+            "description": "Present where there are bytes to read at `/v1/routing/{record}/output`.",
+            "example": {
+              "blob": "e3b0c44298fc1c14...",
+              "mediaType": "text/markdown"
+            }
+          },
+          "note": {
+            "type": "string",
+            "description": "What the destination could not carry, in its own words. Free prose: nothing parses it.",
+            "example": "the two pictures were not carried"
+          }
+        }
       },
       "MarkProcessedRequest": {
         "type": "object",
@@ -4689,6 +4725,84 @@
                           "enum": [
                             "not-pending",
                             "delivery-in-flight"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/routing/{record}/output": {
+      "get": {
+        "summary": "Read what a delivery produced",
+        "description": "The bytes the destination said it wrote, in the media type the record names. A separate fetch because an output may be large, and the record itself answers only whether there is one. Carries the inert headers an asset's bytes carry, for the same reason: this is content a destination produced, served from the daemon's own origin. `ETag` is the blob, and the response is immutable — a delivered record never changes what it produced.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "record",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The bytes.",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string",
+                  "example": "\"e3b0c44298fc1c14...\""
+                },
+                "required": true
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string",
+                  "example": "inline; filename=\"output.md\""
+                },
+                "required": true
+              }
+            },
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No record has that id, the record produced no output, or its blob is gone from disk. A record with no output is ordinary rather than a fault.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "no-such-record",
+                            "no-output",
+                            "blob-missing"
                           ]
                         }
                       },

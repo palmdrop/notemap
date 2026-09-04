@@ -45,6 +45,8 @@ type Record_ = {
   item: string;
   state: string;
   pointer?: string;
+  url?: string;
+  output?: { content?: { blob: string; mediaType: string }; note?: string };
   target: { kind: string; destination?: string; arguments?: unknown };
 };
 
@@ -412,5 +414,76 @@ describe("a delivery the runner picks up", () => {
     expect(
       await readFile(join(host.vaultRoot, "inbox", "a-thought.md"), "utf8"),
     ).toContain("a thought");
+  });
+});
+
+describe("GET /v1/routing/{record}/output", () => {
+  it("says on the record that there is one, without the bytes", async () => {
+    const host = await vaulted("ready");
+    const item = await only(host);
+
+    const record = (await body(await route(host, item))) as Record_;
+
+    expect(record.output).toEqual({
+      content: {
+        blob: expect.stringMatching(/^[0-9a-f]{64}$/) as unknown as string,
+        mediaType: "text/markdown",
+      },
+    });
+    // The filesystem kind carries everything and can offer no link.
+    expect(record.output?.note).toBeUndefined();
+    expect(record.url).toBeUndefined();
+  });
+
+  it("answers the bytes the destination wrote, inert and immutable", async () => {
+    const host = await vaulted("ready");
+    const item = await only(host);
+    const record = (await body(await route(host, item))) as Record_;
+
+    const response = await host.app.request(`/v1/routing/${record.id}/output`);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("text/markdown");
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(response.headers.get("content-security-policy")).toBe(
+      "default-src 'none'; sandbox",
+    );
+    expect(response.headers.get("etag")).toMatch(/^"[0-9a-f]{64}"$/);
+    expect(response.headers.get("cache-control")).toContain("immutable");
+    expect(response.headers.get("content-disposition")).toContain(
+      `${record.id}.md`,
+    );
+
+    const written = await readFile(
+      join(host.vaultRoot, record.pointer ?? ""),
+      "utf8",
+    );
+    expect(await response.text()).toBe(written);
+  });
+
+  it("is 404 with its own code for a record that produced none", async () => {
+    const host = await vaulted("ready");
+    const item = await only(host);
+    const record = (await body(
+      await send(host.app, `/v1/items/${item}/mark-processed`, {}),
+    )) as Record_;
+
+    const response = await host.app.request(`/v1/routing/${record.id}/output`);
+
+    expect(response.status).toBe(404);
+    expect(await body(response)).toMatchObject({
+      error: { code: "no-output" },
+    });
+  });
+
+  it("is 404 for an id no record has", async () => {
+    const host = await vaulted("ready");
+
+    const response = await host.app.request("/v1/routing/nobody/output");
+
+    expect(response.status).toBe(404);
+    expect(await body(response)).toMatchObject({
+      error: { code: "no-such-record" },
+    });
   });
 });

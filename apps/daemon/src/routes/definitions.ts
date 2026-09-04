@@ -16,6 +16,7 @@ import {
   DESTINATION_DELETION_STATUS,
   DESTINATION_STATUS,
   EDIT_STATUS,
+  OUTPUT_STATUS,
   PARAMETER_STATUS,
   RETIRE_STATUS,
   ROUTING_STATUS,
@@ -986,6 +987,36 @@ export const cancelDeliveryRoute = createRoute({
   },
 });
 
+export const routingOutputRoute = createRoute({
+  method: "get",
+  path: "/v1/routing/{record}/output",
+  summary: "Read what a delivery produced",
+  description:
+    "The bytes the destination said it wrote, in the media type the record names. A separate fetch because an output may be large, and the record itself answers only whether there is one. Carries the inert headers an asset's bytes carry, for the same reason: this is content a destination produced, served from the daemon's own origin. `ETag` is the blob, and the response is immutable — a delivered record never changes what it produced.",
+  request: {
+    params: z.object({
+      record: z.string().openapi({ param: { name: "record", in: "path" } }),
+    }),
+  },
+  responses: {
+    200: {
+      description: "The bytes.",
+      headers: z.object({
+        ETag: z.string().openapi({ example: '"e3b0c44298fc1c14..."' }),
+        "Content-Disposition": z
+          .string()
+          .openapi({ example: 'inline; filename="output.md"' }),
+      }),
+      content: { "*/*": { schema: z.string().openapi({ format: "binary" }) } },
+    },
+    404: errorResponse(
+      "No record has that id, the record produced no output, or its blob is gone from disk. A record with no output is ordinary rather than a fault.",
+      404,
+      OUTPUT_STATUS,
+    ),
+  },
+});
+
 const assetId = z.object({
   id: z.string().openapi({ param: { name: "id", in: "path" } }),
 });
@@ -1122,6 +1153,7 @@ export const ROUTES = [
   deleteDestinationRoute,
   routeItemRoute,
   cancelDeliveryRoute,
+  routingOutputRoute,
   actionsRoute,
   assetUploadRoute,
   assetRoute,

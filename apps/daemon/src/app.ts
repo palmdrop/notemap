@@ -25,6 +25,7 @@ import {
   assetRoute,
   assetUploadRoute,
   cancelDeliveryRoute,
+  routingOutputRoute,
   captureRoute,
   createDestinationRoute,
   deleteDestinationRoute,
@@ -79,6 +80,7 @@ import {
   cancelDeliveryHandler,
   markProcessedHandler,
   routeHandler,
+  routingOutputHandler,
   routingRecordsHandler,
 } from "./routes/routing";
 import {
@@ -212,6 +214,7 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
   );
   app.post(honoPath(routeItemRoute.path), routeHandler(pool));
   app.post(honoPath(cancelDeliveryRoute.path), cancelDeliveryHandler(pool));
+  app.get(honoPath(routingOutputRoute.path), routingOutputHandler(pool));
   app.get(honoPath(actionsRoute.path), actionsHandler(pool));
 
   app.put(honoPath(assetUploadRoute.path), assetUploadHandler(pool, limits));

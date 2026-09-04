@@ -8,6 +8,7 @@ import type {
   DestinationDeletionRefusal,
   DestinationRefusal,
   EditRefusal,
+  OutputRefusal,
   RetireRefusal,
   RoutingRefusal,
   TagRefusal,
@@ -142,6 +143,21 @@ export const CANCEL_STATUS = {
   "delivery-in-flight": 409,
 } as const satisfies Record<CancelRefusal["kind"], number>;
 
+/**
+ * Reading what a delivery produced. All three are `404`, distinguished by code:
+ * a record with no output is ordinary rather than a fault, and nothing else in
+ * the domain has a state for it.
+ */
+export const OUTPUT_STATUS = {
+  "no-such-record": 404,
+  "no-output": 404,
+  "blob-missing": 404,
+} as const satisfies Record<OutputRefusal["kind"], number>;
+
+export function outputStatus(refusal: OutputRefusal): number {
+  return OUTPUT_STATUS[refusal.kind];
+}
+
 /** Anything wrong with a query parameter. */
 export const PARAMETER_STATUS = {
   "limit-too-large": 422,
@@ -253,6 +269,7 @@ export function errorBody(
     | DestinationDeletionRefusal
     | DestinationRefusal
     | EditRefusal
+    | OutputRefusal
     | RetireRefusal
     | RoutingRefusal
     | TagRefusal,

@@ -2554,6 +2554,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/routing/{record}/output": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read what a delivery produced
+         * @description The bytes the destination said it wrote, in the media type the record names. A separate fetch because an output may be large, and the record itself answers only whether there is one. Carries the inert headers an asset's bytes carry, for the same reason: this is content a destination produced, served from the daemon's own origin. `ETag` is the blob, and the response is immutable — a delivered record never changes what it produced.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    record: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The bytes. */
+                200: {
+                    headers: {
+                        ETag: string;
+                        "Content-Disposition": string;
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": string;
+                    };
+                };
+                /** @description No record has that id, the record produced no output, or its blob is gone from disk. A record with no output is ordinary rather than a fault. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "no-such-record" | "no-output" | "blob-missing";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/actions": {
         parameters: {
             query?: never;
@@ -3067,6 +3127,26 @@ export interface components {
             state: "pending" | "delivered";
             at: string;
             pointer?: string;
+            url?: string;
+            output?: components["schemas"]["DeliveryOutput"];
+        };
+        DeliveryOutput: {
+            /**
+             * @description Present where there are bytes to read at `/v1/routing/{record}/output`.
+             * @example {
+             *       "blob": "e3b0c44298fc1c14...",
+             *       "mediaType": "text/markdown"
+             *     }
+             */
+            content?: {
+                blob: string;
+                mediaType: string;
+            };
+            /**
+             * @description What the destination could not carry, in its own words. Free prose: nothing parses it.
+             * @example the two pictures were not carried
+             */
+            note?: string;
         };
         MarkProcessedRequest: {
             /**
