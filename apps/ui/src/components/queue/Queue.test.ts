@@ -16,11 +16,18 @@ import Queue from "./Queue.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
+/** Leaving the surface needs a router, and there is none outside the app. */
+const went = vi.hoisted(() => ({ to: [] as string[] }));
+vi.mock("$app/navigation", () => ({
+  goto: (url: string) => void went.to.push(url),
+}));
+
 // Module-scoped reading preference, so a test that furls the rail unfurls it.
 afterEach(() => {
   if (rail.furled) rail.toggle();
   notices.clear();
   lingering.clear();
+  went.to = [];
 });
 
 function queued(...ids: string[]) {
@@ -770,4 +777,19 @@ test("a routed row is watched out from where it stood", async () => {
 
   expect(after).toBeTruthy();
   expect(before).toBeTruthy();
+});
+
+test("goes to the item's own surface on a double click, and leaves the row open", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  const body = await screen.findByText("one");
+
+  await fireEvent.click(body, { detail: 1 });
+  await fireEvent.click(body, { detail: 2 });
+  await fireEvent.dblClick(body);
+
+  expect(went.to).toEqual(["/items/one"]);
+  // The second click of a double is not a toggle: open, nothing, go.
+  expect(screen.getAllByRole("button", { expanded: true })).toHaveLength(1);
 });

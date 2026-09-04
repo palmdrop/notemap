@@ -8,7 +8,7 @@
   import CaptureRow from "$components/capture/CaptureRow.svelte";
   import Drained from "$components/queue/Drained.svelte";
   import Lingering from "$components/queue/Lingering.svelte";
-  import QueueRow from "$components/queue/QueueRow.svelte";
+  import Row from "$components/item/Row.svelte";
   import RoutingComposer from "$components/routing/RoutingComposer.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
@@ -103,6 +103,14 @@
     opened = opened === id ? undefined : id;
   }
 
+  /**
+   * Where this row stands, read before the gesture rather than after it: the
+   * item has left the queue by the time the pool answers, and this row with it.
+   */
+  function departing(item: Item, before?: string) {
+    return (going: string) => lingering.after(item, going, before);
+  }
+
   /** Where the row stands now, read while it is still standing there. */
   function route(item: Item, before?: string) {
     routing = { item, ...(before === undefined ? {} : { before }) };
@@ -135,15 +143,15 @@
     {#if row.word !== undefined}
       <Lingering item={row.item} word={row.word} furled={rail.furled} />
     {:else}
-      <QueueRow
+      <Row
         item={row.item}
         opened={opened === row.item.id}
         offline={!pool.yes}
         furled={rail.furled}
         pending={undrained.has(row.item.id)}
-        before={rows[at + 1]?.item.id}
         onopen={() => show(row.item.id)}
         onroute={() => route(row.item, rows[at + 1]?.item.id)}
+        onwent={() => departing(row.item, rows[at + 1]?.item.id)}
       />
     {/if}
   {/each}

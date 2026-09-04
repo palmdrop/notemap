@@ -32,16 +32,16 @@ entry, so a row can tell it has been marked done without reading its records.
 Depends on nothing. `FeedRow` and `QueueRow` differ in what they offer, not in what they are, and
 the finding asks for exactly this.
 
-- [ ] Create branch `agent/shell-second-pass`
-- [ ] One row component, taking what the surface offers rather than which surface it is
-- [ ] The feed's row opens in place, with the facts the queue's has
-- [ ] A feed row carries one fact the queue's does not: where it went, from the records the row
+- [x] Create branch `agent/shell-second-pass`
+- [x] One row component, taking what the surface offers rather than which surface it is
+- [x] The feed's row opens in place, with the facts the queue's has
+- [x] A feed row carries one fact the queue's does not: where it went, from the records the row
       reads when it opens
-- [ ] Double-click opens the item's own surface, from either surface; the second click of one
+- [x] Double-click opens the item's own surface, from either surface; the second click of one
       leaves the row as the first click left it
-- [ ] `shell.md`: the row section says one row serves both, and what each surface offers
-- [ ] `pnpm -r --silent test`; `Feed.test.ts` still asserts no per-row routing read
-- [ ] `git commit`
+- [x] `shell.md`: the row section says one row serves both, and what each surface offers
+- [x] `pnpm -r --silent test`; `Feed.test.ts` still asserts no per-row routing read
+- [x] `git commit`
 
 ### Phase 2 — one band, fewer facts, a quiet empty queue
 

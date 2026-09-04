@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Item } from "@notemap/client";
 
+  import { goto } from "$app/navigation";
+
   import Actions from "$components/item/Actions.svelte";
   import Edit from "$components/item/Edit.svelte";
   import Payload from "$components/item/Payload.svelte";
@@ -14,30 +16,35 @@
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import { itemHref } from "$components/item/href";
-  import { lingering } from "$lib/lingering.svelte";
   import { became, editable, finished } from "$lib/lineage";
   import { recordsOf } from "$lib/records.svelte";
   import { briefly } from "$lib/stamp";
 
+  /**
+   * One row, on either register. What a surface offers it differs — a departure
+   * to go from, a composer to open — and which surface it is does not.
+   */
   let {
     item,
     opened,
     offline,
     furled,
+    first = false,
     pending = false,
-    before,
     onopen,
     onroute,
+    onwent,
   }: {
     item: Item;
     opened: boolean;
     offline: boolean;
     furled: boolean;
+    first?: boolean;
     pending?: boolean;
-    /** The row under this one, so a departure goes from where it stood. */
-    before?: string;
     onopen: () => void;
     onroute: () => void;
+    /** Absent on a surface that keeps the row it is about in front of the reader. */
+    onwent?: () => (going: string) => void;
   } = $props();
 
   let editing = $state(false);
@@ -51,29 +58,24 @@
 
   const word = $derived(became(item));
   const mayEdit = $derived(editable(item));
-
-  /**
-   * Where this row stands, read before the gesture rather than after it: the
-   * item has left the queue by the time the pool answers, and this row with it,
-   * so `before` is by then a prop with no source.
-   */
-  function departing() {
-    const stood = before;
-    return (going: string) => lingering.after(item, going, stood);
-  }
 </script>
 
-<Rail lit={opened} onpick={onopen}>
+<Rail
+  {first}
+  lit={opened}
+  onpick={onopen}
+  onreach={() => void goto(itemHref(item.id))}
+>
   {#if !furled}
     <Stamp at={item.createdAt} {opened} onopen={() => onopen()} />
-  {/if}
 
-  {#if !furled && word !== undefined}
-    <StateWord {word} />
-  {/if}
+    {#if word !== undefined}
+      <StateWord {word} />
+    {/if}
 
-  {#if !furled && pending}
-    <Pending />
+    {#if pending}
+      <Pending />
+    {/if}
   {/if}
 
   <Tags {item} />
@@ -95,7 +97,12 @@
   {/if}
 </Rail>
 
-<Body lit={opened} onpick={onopen}>
+<Body
+  {first}
+  lit={opened}
+  onpick={onopen}
+  onreach={() => void goto(itemHref(item.id))}
+>
   {#if furled}
     <div class="mb-2 flex flex-wrap items-baseline gap-3 font-mono">
       <Stamp at={item.createdAt} {opened} onopen={() => onopen()} />
@@ -123,7 +130,7 @@
       address={itemHref(item.id)}
       onroute={() => onroute()}
       onedit={() => (editing = !editing)}
-      onwent={departing}
+      {onwent}
     />
   {/if}
 </Body>

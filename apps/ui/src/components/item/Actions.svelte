@@ -42,6 +42,7 @@
   let said = $state("");
 
   const mayEdit = $derived(editable(item));
+  const archived = $derived(item.archived !== undefined);
 
   /**
    * Said at once, the way every outbox operation is: enqueueing it is what the
@@ -86,7 +87,12 @@
        cannot, so it is not offered rather than promised. -->
   <Action primary disabled={offline} onclick={onroute}>route</Action>
   <Action disabled={offline} onclick={markDone}>mark done</Action>
-  <Action onclick={archive}>archive</Action>
+  {#if archived}
+    <!-- Unarchiving leaves the row in front of the reader, so it says nothing. -->
+    <Action onclick={() => void client.unarchive(item.id)}>unarchive</Action>
+  {:else}
+    <Action onclick={archive}>archive</Action>
+  {/if}
   <!-- A processed item is not this row's to rewrite: editing it would
        append a revision, which the queue is not where to do. -->
   {#if mayEdit}

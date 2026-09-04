@@ -293,15 +293,22 @@ place while a person is there.
   an unprocessed item can be edited in place any number of times with nothing else recording that
   it changed, and read among the facts a row opens with rather than on every collapsed one.
 
+**One row serves both surfaces** *(2026-09-04)*. The queue's and the feed's differed in what they
+offered and never in what they were, so there is one of them, and what a surface hands it is what
+differs: the queue offers a place to depart from, since a row that leaves it has to be watched out,
+and the feed offers none, keeping every row it holds. Both offer a composer. **The feed's row opens
+in place**, with the facts the queue's has and one more.
+
 **In the feed, a row says what became of it.** The feed is the pool read completely, so routed and
 archived items are in it. The state is an inverted word in the left column, under the time —
 `routed`, `archived` — and a routed row carries a `routing` line naming the places it went and
 what has not landed yet, which is what the item's routing summary holds
-([core.md](core.md#routing)). The capability and the time belong to a record, so they are the
-opened row's, not the feed's: naming them per row would be a read per row. Tags stay editable on
-every row in the feed, including an archived one, which
-also offers `unarchive`. A finished row's prose is muted, so live captures stand out while
-scrolling.
+([core.md](core.md#routing)). The time belongs to a record, so it is the opened row's, not the
+feed's: naming it per row would be a read per row. That is the one fact a feed row carries that a
+queue row does not — **where it went**, read off the records the row asks for when it opens, on
+whichever surface it is. Tags stay editable on every row in the feed, including an archived one,
+which also offers `unarchive` among an opened row's actions. A finished row's prose is muted, so
+live captures stand out while scrolling.
 
 **Opened, a row is for triage.** It adds the item's **routing records**, the facts about it the
 rail holds back while scanning, and the actions — route, mark done, archive, edit. Everything there
@@ -313,6 +320,12 @@ stopped being the thing that explains where a row sits and became a fact like an
 and a body carrying prose both want. A control inside one — a tag, an action, a field — is worth
 clicking for its own sake and is not that click. The stamp stays a button, and is what says a row
 opens at all.
+
+**Double-clicking one goes to the item's own surface**, from either register *(2026-09-04)*.
+Opening is a toggle, so a naive double would open the row, shut it, and then navigate — a flicker
+nobody asked for. A click carries how many of them it is and the row takes only the first, so the
+gesture reads: open, nothing, go. The single click costs no delay, which is what waiting to find
+out whether a second one is coming would have cost.
 
 **Routing is not one of those, and it does not happen in the row.** It is the only act in the shell
 that composes an object rather than selecting a value: where, then what to do there, then exactly
