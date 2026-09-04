@@ -1,7 +1,7 @@
 # What went, and what would go
 
 **Date**: 2026-08-30
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: In progress <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/mirror.md`, `docs/specs/client.md`, `docs/specs/shell.md`
 **Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
 
@@ -35,6 +35,34 @@ of deciding.
 that decides *how* a destination converts. This plan carries the conversion's evidence, not the
 conversion.
 
+## Amended 2026-09-04 — the unknowns settled
+
+Confirmed with the developer before phase 1 landed, and
+[ADR 33](../adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md) records
+the reasoning for the ones worth it.
+
+- **The mirror carries the hash, and the bytes need no second home.** The largest unknown mostly
+  dissolves: the mirror already carries no bytes for anything. `assets/` is one content-addressed
+  store the blob driver writes and both the pool and the mirror reference, so an output stored
+  through the same `BlobStore` lands there by construction. A mirrored record names the hash, the
+  media type, the note and the URL, exactly as it names an asset's blob, and a rebuild beside a
+  surviving `assets/` answers *what* was sent as well as where. `mirror.md` says what a rebuild
+  from mirror text alone can and cannot answer.
+- **The output of `append-to-file` is what was inserted**, not the file it was inserted into, and
+  `create-or-append-file` follows it. The record answers what this delivery put there.
+- **A preview needs no reachability for the filesystem kind**, which follows from the line above:
+  if the output is the inserted bytes, converting them reads nothing at the destination. The port
+  still allows `unreachable`, for a kind whose conversion does need to look.
+- **The preview route is `POST /v1/items/{id}/route/preview`** — under the verb it previews, taking
+  the same body. `/routing` on an item is the record list, and a preview is not about records.
+- **Over the wire a preview answers JSON**, `{ mediaType, note?, content }`, with the content
+  inline as text: it stores nothing, so there is no bytes URL to hand out afterwards, and the shell
+  draws a preview and a stored output through one component. The port keeps one output shape for
+  both `deliver` and `preview`; only the daemon decodes.
+- **The note stays prose.** ADR 33 says what would have to be true to change that.
+
+---
+
 ---
 
 ## Tasks
@@ -43,25 +71,25 @@ conversion.
 
 Depends on nothing.
 
-- [ ] Create branch `agent/delivery-output-and-preview`
-- [ ] An ADR extending [ADR 19](../adr/0019-a-destination-converts-and-the-delivery-records-what-went.md).
+- [x] Create branch `agent/delivery-output-and-preview`
+- [x] An ADR extending [ADR 19](../adr/0019-a-destination-converts-and-the-delivery-records-what-went.md).
       Three things worth the reasoning: a delivery **may convert lossily** and that is a delivery
       rather than a refusal, with `rejected` kept for a capture the destination can make no sense of;
       the record keeps the **output** and a short prose **note** about what was not carried; and a
       **preview is indicative**, with the alternatives it was chosen over — a binding preview whose
       bytes are committed with the decision, and a dry-run flag on `deliver`
-- [ ] Say why the flag was refused: it makes preview and delivery incapable of disagreeing, at the
+- [x] Say why the flag was refused: it makes preview and delivery incapable of disagreeing, at the
       price of one boolean between showing a person something and writing into their vault, which
       core cannot verify and an adapter can get wrong once
-- [ ] `CONTEXT.md` gains **Output** — the content a delivery produced, which the record may name.
+- [x] `CONTEXT.md` gains **Output** — the content a delivery produced, which the record may name.
       Its Avoid line names rendition, artifact and receipt: rendition collides with **Rendering**,
       artifact belongs to enrichment and says so in ADR 19, and receipt implies the destination
       acknowledged something, which nothing here does
-- [ ] **Destination**'s Avoid line loses `output` in the same change and keeps `target` and `sink`.
+- [x] **Destination**'s Avoid line loses `output` in the same change and keeps `target` and `sink`.
       A glossary cannot both define a word and ban it; the ban was against calling a destination an
       output, and the entry can say so
-- [ ] Verify: the ADR is written and confirmed; `pnpm lint`
-- [ ] `git commit`
+- [x] Verify: the ADR is written and confirmed; `pnpm lint`
+- [x] `git commit`
 
 ### Phase 2 — A delivery says what went
 
