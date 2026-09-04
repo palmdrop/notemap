@@ -247,7 +247,9 @@ turn the button is pressed whether or not the daemon is there — and the row at
 in one gesture, bytes with no capture behind them being bytes nothing will claim.
 
 The queue is therefore where notemap opens: the surface you are meant to empty, with the way to
-add to it at the top of it.
+add to it at the top of it. **The field takes the caret when the queue is drawn** *(added
+2026-09-04)*, as the composer's own first control does: the surface exists to be typed into, and a
+click before the first keystroke is a click nothing asked for.
 
 ### The row
 

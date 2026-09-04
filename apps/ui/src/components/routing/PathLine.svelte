@@ -90,7 +90,6 @@
   }
 
   const path = $derived(parsePath(value));
-  const rows = $derived(rowsOf(levels, path));
   /**
    * The level the caret is in, which is not the deepest that answered: inside a
    * folder that is not there yet, that would be the folder above, and
@@ -125,9 +124,13 @@
    * with nothing answered there is nothing to say is missing.
    */
   const drawn = $derived(
-    forecast === undefined
-      ? rows
-      : [...rows, ...pending(path, forecast.making, forecast.leaf)],
+    rowsOf(
+      levels,
+      path,
+      forecast === undefined
+        ? []
+        : pending(path, forecast.making, forecast.leaf),
+    ),
   );
 
   /** In the order they are drawn, so `↑↓` moves down the tree as the eye does. */
@@ -384,7 +387,7 @@
     <div class="mt-2 flex items-baseline gap-x-3">
       <StateWord word={forecast.word} inline />
       {#if forecast.derived}
-        <span class="truncate text-ink-muted">derived · {forecast.leaf}</span>
+        <span class="truncate text-ink-muted">{forecast.leaf}</span>
       {/if}
       {#if goneHere}
         <StateWord word="gone" inline />

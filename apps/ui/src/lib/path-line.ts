@@ -111,12 +111,19 @@ export function filtered(path: TypedPath): number {
  * path took, rather than one level's whole listing after another's. Every level
  * shows its siblings, which is what makes the tree *shown* rather than walked;
  * only the level the caret is in is filtered by what is being typed.
+ *
+ * `unmade` is the typed tail that is not there yet, from `pending`, and it goes
+ * in where the trail runs out rather than after the whole tree: the walk keeps
+ * emitting shallower siblings as it unwinds, so a `+ folder/` appended past all
+ * of them reads as sitting inside the last root folder drawn.
  */
 export function rowsOf(
   levels: readonly Level[],
   path: TypedPath,
+  unmade: readonly Row[] = [],
 ): readonly Row[] {
   const here = filtered(path);
+  const into = unmade[0]?.depth;
   const rows: Row[] = [];
 
   const walk = (depth: number): void => {
@@ -134,6 +141,8 @@ export function rowsOf(
       rows.push({ entry, depth, onPath });
       if (onPath) walk(depth + 1);
     }
+
+    if (depth === into) rows.push(...unmade);
   };
 
   walk(0);

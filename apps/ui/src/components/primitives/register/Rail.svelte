@@ -24,7 +24,7 @@
   class="col-start-1 min-w-0 border-t border-t-ink/20 font-mono group-data-furled:hidden
     {first ? 'border-t-0 pt-3.5 pb-6' : 'py-6'}
     {onpick === undefined ? '' : 'cursor-pointer'}
-    {lit ? 'bg-ink/5' : ''}"
+    {lit ? '-ml-3.5 bg-ink/5 pl-3.5' : ''}"
 >
   {@render children()}
 </div>
