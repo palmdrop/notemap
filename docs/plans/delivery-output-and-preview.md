@@ -68,6 +68,12 @@ the reasoning for the ones worth it.
   both `deliver` and `preview`; only the daemon decodes.
 - **The note stays prose.** ADR 33 says what would have to be true to change that.
 
+**Amended 2026-09-04, from review**: the record view **reads the output on arrival** rather than
+behind a press. Phase 7 said "fetched when asked for", and opening the record turned out to be the
+asking — the press was a step between a person and the one thing that surface exists to answer.
+The fetch is still a fetch: nothing prefetches, a record nobody opens is never read, and a read
+that fails is not retried on its own.
+
 **Added after the slice landed, 2026-09-04**: the **webdav kind** answers an output and a preview
 too. Phases 3 and 5 scoped both to the filesystem kind, which left the other kind that writes
 files recording where it went and not what went. It shares `@notemap/output-markdown` with the

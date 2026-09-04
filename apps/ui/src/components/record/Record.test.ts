@@ -237,22 +237,31 @@ test("says a delivery that kept no copy of what it sent", async () => {
   expect(screen.queryByRole("button", { name: "read it" })).toBeNull();
 });
 
-test("draws the note at once and reads what was sent only when asked", async () => {
+test("draws the note and reads what was sent, without being asked twice", async () => {
   pool(answering([WITH_OUTPUT], DESCRIBED, markdown));
   await client.destinations.load();
 
   render(Record, { item: "one", record: "rec" });
 
-  // The note is on the record; the bytes are a fetch, and one nobody made yet.
+  // Opening the record is the asking: the bytes arrive without a press.
   expect(
     await screen.findByText("the two pictures were not carried"),
   ).toBeDefined();
-  expect(asked()).not.toContain("GET /v1/routing/rec/output");
-
-  await fireEvent.click(screen.getByRole("button", { name: "read it" }));
-
   expect(await screen.findByText(/# a thought/)).toBeDefined();
-  expect(asked()).toContain("GET /v1/routing/rec/output");
+  expect(screen.queryByRole("button", { name: "read it" })).toBeNull();
+  expect(
+    asked().filter((route) => route === "GET /v1/routing/rec/output"),
+  ).toHaveLength(1);
+});
+
+test("asks for nothing where the record kept no copy", async () => {
+  pool(answering());
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  expect(await screen.findByText(NO_OUTPUT_KEPT)).toBeDefined();
+  expect(asked()).not.toContain("GET /v1/routing/rec/output");
 });
 
 test("makes the pointer a link where the destination offered one", async () => {
@@ -283,37 +292,56 @@ test("leaves the pointer as text where the url is not one to follow", async () =
 });
 
 test("says why what was sent could not be read, and lets it be asked again", async () => {
+  let refuse = true;
   pool(
-    answering([WITH_OUTPUT], DESCRIBED, () =>
-      json(404, { error: { code: "blob-missing", facts: {} } }),
-    ),
+    answering([WITH_OUTPUT], DESCRIBED, () => {
+      if (!refuse) return markdown();
+      refuse = false;
+      return json(404, { error: { code: "blob-missing", facts: {} } });
+    }),
   );
   await client.destinations.load();
 
   render(Record, { item: "one", record: "rec" });
-  await fireEvent.click(await screen.findByRole("button", { name: "read it" }));
 
+  // The read on arrival failed, and is not tried again on its own.
   expect(await screen.findByText(/could not be read/)).toBeDefined();
-  expect(screen.getByRole("button", { name: "read it" })).toBeDefined();
+  const again = await screen.findByRole("button", { name: "read it" });
+  expect(
+    asked().filter((route) => route === "GET /v1/routing/rec/output"),
+  ).toHaveLength(1);
+
+  await fireEvent.click(again);
+
+  expect(await screen.findByText(/# a thought/)).toBeDefined();
 });
 
 test("drops what one record sent when another is drawn", async () => {
-  pool((request) =>
-    answering(
-      [WITH_OUTPUT, { ...WITH_OUTPUT, id: "rec-2" }],
-      DESCRIBED,
-      markdown,
-    )(request),
-  );
+  const both = [WITH_OUTPUT, { ...WITH_OUTPUT, id: "rec-2" }];
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/routing/rec/output") {
+      return new Response("# the first one\n", {
+        status: 200,
+        headers: { "content-type": "text/markdown" },
+      });
+    }
+    if (route === "GET /v1/routing/rec-2/output") {
+      return new Response("# the second one\n", {
+        status: 200,
+        headers: { "content-type": "text/markdown" },
+      });
+    }
+    return answering(both, DESCRIBED, markdown)(request);
+  });
   await client.destinations.load();
 
   const drawn = render(Record, { item: "one", record: "rec" });
-  await fireEvent.click(await screen.findByRole("button", { name: "read it" }));
-  expect(await screen.findByText(/# a thought/)).toBeDefined();
+  expect(await screen.findByText(/# the first one/)).toBeDefined();
 
   // The page component is reused across a change of record.
   await drawn.rerender({ item: "one", record: "rec-2" });
 
-  expect(await screen.findByRole("button", { name: "read it" })).toBeDefined();
-  expect(screen.queryByText(/# a thought/)).toBeNull();
+  expect(await screen.findByText(/# the second one/)).toBeDefined();
+  expect(screen.queryByText(/# the first one/)).toBeNull();
 });

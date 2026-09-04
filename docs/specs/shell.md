@@ -9,7 +9,7 @@
   write now with the sentence saying that is what it is. A destination that offers no preview and
   one that could not be reached are drawn as the ordinary conditions they are, with routing still
   live. The record view draws the destination's note about what it could not carry, reads the
-  output when asked, and makes the pointer a link where the destination offered one to follow.
+  output on arrival, and makes the pointer a link where the destination offered one to follow.
   ([plan](../plans/delivery-output-and-preview.md))
 
 - 2026-09-03 — **The corner says what happened, not only what was refused.** A gesture that empties
@@ -509,11 +509,18 @@ is always text; the field is there for the kind that has somewhere to point.
 
 **What was sent is drawn where the pointer is** *(added 2026-09-04)*. The destination's **note**
 about what it could not carry is on the record and is drawn at once, because it is the half a
-person needs to know a conversion was lossy at all. The **output** itself is a fetch and is read
-when asked for — most records are never opened for it, and one may be long. A record whose delivery
-kept no copy says so plainly: that is ordinary, and a destination posting to an API has nothing
-meaningful to keep. It is the component the composer's preview draws, because a preview and an
-output are one shape and reading them is one act.
+person needs to know a conversion was lossy at all. The **output** is a fetch rather than something
+the record carries — it may be long, and a page of records would otherwise drag every one of them
+along — but **opening a record is the asking**: whoever came to this address came to see what was
+sent, and a press between them and it is a step that answers nothing. So the fetch runs on arrival
+and nothing waits on a button. What that costs is one request per record opened, which is the
+narrowest place to pay it: nothing prefetches, and a record nobody opens is never read.
+
+A read that fails says why and offers to go again, and **is not retried on its own** — a blob that
+is gone stays gone, and a surface that kept asking would be a loop nobody asked for. A record whose
+delivery kept no copy says so plainly and asks for nothing: that is ordinary, and a destination
+posting to an API has nothing meaningful to keep. It is the component the composer's preview draws,
+because a preview and an output are one shape and reading them is one act.
 
 ### Actions
 

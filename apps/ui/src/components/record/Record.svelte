@@ -94,7 +94,6 @@
 
   const link = $derived(followable(record?.url));
 
-  /** Fetched when asked for: an output may be large, and most are never read. */
   let output = $state<string | undefined>(undefined);
   let reading = $state(false);
   let unreadable = $state("");
@@ -105,6 +104,18 @@
     void wanted;
     output = undefined;
     unreadable = "";
+  });
+
+  /**
+   * Read on arrival: whoever opened a record came to see what was sent. Still a
+   * fetch rather than something the record carries, so nothing pays for it
+   * until this surface is the one being drawn — and a read that failed is not
+   * tried again on its own, the guards below being what stops the loop.
+   */
+  $effect(() => {
+    if (record?.output?.content === undefined) return;
+    if (output !== undefined || unreadable !== "" || reading) return;
+    void read();
   });
 
   const saidAboutOutput = $derived(
