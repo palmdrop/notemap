@@ -339,6 +339,24 @@ The composer is stepped, not flat: **where** (destinations, with an unavailable 
 rather than disappearing), then the arguments the capability's schema asks for. A settled step
 stays visible with its choice marked, so the decision reads back as it is built.
 
+**Taking a destination puts the composer in two columns** *(2026-09-04)*, where the place is a line
+you type (below): the line, the word it reads off and the tree on the left; everything **consulted
+or settled after it** on the right — what was used before, what sits beside the line, the tags, and
+the commit that ends it. Untaken there is one column — the destination line, the `where` list, the
+commit — because there is nothing to consult yet: the split is a consequence of the decision rather
+than a frame waiting for it, and once the chrome carries the destination the list it was taken from
+is what `⌫` at the head of an empty line gives back. A kind that draws the schema-driven browser
+keeps its one column and keeps that list, having no line to back out of.
+
+**The composer takes a measure of its own** — `--spacing-composer` — and **the modal grows when it
+gains its second column**, which is the one moment it is allowed to change size: a decision was
+just made. `--spacing-modal` stays 30rem, for the untaken composer and for the confirm that shares
+it. Below the register's own narrow breakpoint the two columns stack in reading order rather than
+earning a second breakpoint to keep in step.
+
+**A typed field is a faint ground and carries no rule**, so the only rule in the modal is the
+chrome's — which leaves a rule meaning one thing, a division between bands.
+
 **A destination is taken by typing its name as well as by pointing at it** (added 2026-09-02).
 Typing narrows the list and the only match is taken by `⏎` or `⇥`; an ambiguous prefix takes
 nothing and says how many matched, because taking one of several would be a guess. Taken, the
@@ -377,7 +395,9 @@ hold that name, `append` where it does — and the folders that will be made are
 beneath it**, in the accent as `+ drafts/`, under the deepest one that is there and with the note
 itself under those. Where they will be, rather than named off to one side. The word is said only
 where there is something to read it off: a level that has not answered is no evidence either way,
-and nothing under a folder that is not there can be looked up at all. It is **drawn and never stored**: what is stored says *put this here*, and
+and nothing under a folder that is not there can be looked up at all. **The name a derived leaf
+would get is not said beside the word** *(amended 2026-09-04)*: the tree draws it where the note
+lands, which is where the eye already is, and saying it twice made the state word a sentence. It is **drawn and never stored**: what is stored says *put this here*, and
 the adapter decides again at delivery, when the answer is true
 ([ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md)). Because the word is
 read rather than chosen, **`do` is not a step here**: the capability is settled, and the one escape
@@ -387,8 +407,10 @@ appending to somebody's note when a new one was meant being the one place *nothi
 surprise. A blank leaf is not a gap: the name the note would get is shown before committing,
 derived by the same code the adapter will run.
 
-**Places routed to before rank into the completion list**, above what the destination merely
-offers, with how often each was used. They come from the pool rather than from the browser, so
+**Places routed to before are consulted beside the line** *(amended 2026-09-04: they used to sit
+under it)*, above what the destination merely offers, under their own label, with **how often each
+was used and when, beneath the path rather than beside it** — the path is the thing being read and
+it never truncates to leave room for a count. They come from the pool rather than from the browser, so
 they are not per-browser, not invisible to the mirror, and not a second copy of what the routing
 records already hold; the pool answers the facts and the shell ranks, which keeps a change of mind
 about most-used against most-recent a change here alone. The best of them is offered as a **greyed
@@ -399,12 +421,13 @@ outright. **`⇥` and `→` are different keys and stay different**: one complet
 the destination offered, the other takes the whole remembered continuation. A single key meaning either depending on invisible state is the failure mode being
 avoided.
 
-**A remembered place the listing does not hold is said, not silently re-created.** A folder routed
-to twelve times and now absent is not a new folder somebody meant to make — it is a sign the vault
-was restructured, and this is the last moment anything can say so. It is marked `gone`, and it is
-**never the greyed continuation**: the ghost is the thing a person takes without reading, so a
-discrepancy stays in the list where `↑↓` reaches it deliberately. `gone` is an ordinary condition
-and not one of the [three alarms](#reachable-pending-refused).
+**A remembered place the listing does not hold is kept out of the ghost.** *Amended 2026-09-04*:
+`gone` is no longer drawn anywhere — not beside the state word, and not where a date belongs in the
+list, where it read as a fourth alarm for an ordinary condition. What the check is still for is the
+half that was doing the work: the greyed continuation is the thing a person takes without reading,
+so a place the vault no longer holds is never it, and stays in the list where `↑↓` reaches it
+deliberately. Dropping the check as well would let the ghost offer a vanished folder, which is what
+it was added to stop.
 
 **A destination that cannot be asked refuses nothing.** No tree, no drawn word — there is nothing
 to infer and nothing that needs inferring — but the line is still typed and `route` is still live,
@@ -421,6 +444,14 @@ draws the place it carries no label at all — `where` is the destination's step
 what sits beside it is a terse row rather than a step, as `tags` is. The caret is in the composer
 from the moment it opens: the destination line has it, the place line takes it when a destination
 is taken, and the destination line takes it back when the place is released.
+
+**A field beside the line is drawn only where the composer does not know a new note is being
+made** *(2026-09-04)*. The line is drawn for exactly one capability and the only field beside it is
+the heading an append would use, which is nothing to a note that does not exist yet — so it goes
+where the forecast says `create`, and stays where the forecast says `append` **or says nothing at
+all**. An absent forecast is not knowing, and not knowing keeps the field. This needs no schema
+hint: a second such capability, with a field that applies either way, is what would make one
+necessary, and that is the moment to add it.
 
 **Which control a field draws is a lookup keyed by destination kind**, and it decides on the kind
 alone: what a field means is the kind's business, and a capability one kind shares with another

@@ -32,6 +32,13 @@
   --spacing-gap: 2.2rem;
   --spacing-fact: 5.5rem;
   --spacing-modal: 30rem;
+
+  /* The composer earns a measure of its own once it has two columns, and the
+     modal growing when it gains the second is the one moment it may change
+     size: a decision was just made. `--spacing-modal` stays what the untaken
+     composer and the confirm that shares it want. */
+  --spacing-composer: 48rem;
+  --spacing-consult: 17rem;
   --spacing-measure: 72rem;
 
   /* Settings is read rather than scanned, so it takes a narrower measure than

@@ -269,7 +269,9 @@ export type Remembered = RememberedPlace & { readonly gone: boolean };
  * Most used first, then most recent. Ranking is the shell's, because the pool
  * answers facts: changing this is a change here and not on the wire.
  */
-export function ranked(places: readonly Remembered[]): readonly Remembered[] {
+export function ranked<T extends RememberedPlace>(
+  places: readonly T[],
+): readonly T[] {
   return [...places].sort(
     (a, b) =>
       b.uses - a.uses ||
@@ -349,10 +351,10 @@ export function continuationOf(
 }
 
 /** Remembered places the whole typed line is still a prefix of. */
-export function continuing(
+export function continuing<T extends RememberedPlace>(
   value: string,
-  places: readonly Remembered[],
-): readonly Remembered[] {
+  places: readonly T[],
+): readonly T[] {
   const wanted = value.toLowerCase();
   return ranked(places).filter((place) =>
     place.value.toLowerCase().startsWith(wanted),

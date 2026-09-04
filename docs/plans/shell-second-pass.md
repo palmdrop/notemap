@@ -87,27 +87,27 @@ Depends on nothing; touches `lib/routing.ts` and the two surfaces that draw a re
 
 Depends on nothing. The largest phase; `RoutingComposer` and `PathLine` both change shape.
 
-- [ ] Taken, a destination puts the composer in two columns: the line, the state word and the tree
+- [x] Taken, a destination puts the composer in two columns: the line, the state word and the tree
       on the left, everything consulted or settled after it on the right, ending in the commit
-- [ ] Untaken, there is one column: the destination line, the `where` list, the commit
-- [ ] A typed field is a faint ground and carries no rule, so the only rule in the modal is the
+- [x] Untaken, there is one column: the destination line, the `where` list, the commit
+- [x] A typed field is a faint ground and carries no rule, so the only rule in the modal is the
       chrome's
-- [ ] `used before` moves to the right column under its own label, the count beneath the path
+- [x] `used before` moves to the right column under its own label, the count beneath the path
       rather than beside it
-- [ ] The derived name leaves the state word; the tree is where the note lands
-- [ ] `gone` leaves both places it is drawn. The flag stays and keeps a vanished place out of the
+- [x] The derived name leaves the state word; the tree is where the note lands
+- [x] `gone` leaves both places it is drawn. The flag stays and keeps a vanished place out of the
       greyed continuation, which is the half that was doing work
-- [ ] A field beside the line is hidden only where the forecast says `create`. An absent forecast
+- [x] A field beside the line is hidden only where the forecast says `create`. An absent forecast
       is not knowing, and not knowing keeps the field
-- [ ] An unreachable destination keeps the line and its muted word in the left column, and no tree
-- [ ] `--spacing-composer` is the two-column measure; `--spacing-modal` keeps 30rem for the
+- [x] An unreachable destination keeps the line and its muted word in the left column, and no tree
+- [x] `--spacing-composer` is the two-column measure; `--spacing-modal` keeps 30rem for the
       untaken composer and for the confirm that shares it
-- [ ] Below the register's narrow breakpoint the two columns stack in reading order
-- [ ] `shell.md`: the composer's shape, both columns, what `gone` no longer says, and that a field
+- [x] Below the register's narrow breakpoint the two columns stack in reading order
+- [x] `shell.md`: the composer's shape, both columns, what `gone` no longer says, and that a field
       beside the line goes only where the composer knows a new note is being made
-- [ ] `pnpm -r --silent test`; `PathLine.test.ts` keeps its ghost-excludes-gone test and loses its
+- [x] `pnpm -r --silent test`; `PathLine.test.ts` keeps its ghost-excludes-gone test and loses its
       gone-is-drawn ones
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 6 — the composer stops moving
 

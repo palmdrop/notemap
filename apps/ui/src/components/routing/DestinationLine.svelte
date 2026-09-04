@@ -77,7 +77,7 @@
     aria-autocomplete="list"
     aria-expanded={narrowed.length > 0}
     aria-controls="destination-line-matches"
-    class="w-full border-b border-ink bg-transparent outline-none"
+    class="w-full px-2 py-0.5 outline-none field"
   />
 
   <div

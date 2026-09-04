@@ -95,7 +95,7 @@
         autofocus
         onblur={add}
         aria-label="Add a tag"
-        class="w-24 border-b border-ink bg-transparent font-mono"
+        class="w-24 px-2 py-0.5 font-mono outline-none field"
       />
     </form>
   {:else}

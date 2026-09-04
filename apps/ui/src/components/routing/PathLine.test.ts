@@ -21,11 +21,18 @@ const answered = (entries: readonly Entry[], truncated = false) => ({
 const folder = (label: string, scope: string): Entry => ({ label, scope });
 const file = (label: string, value: string): Entry => ({ label, value });
 
+/**
+ * Places routed to before are the composer's to read, and it hands them down.
+ * Held here so a test naming them still reads as one arrangement.
+ */
+let offered: readonly Record<string, unknown>[] = [];
+
 /** A vault answering per scope, the way `filesystemCandidates` does. */
 function serving(
   answerAt: (scope: string | undefined) => Record<string, unknown>,
   places: readonly Record<string, unknown>[] = [],
 ) {
+  offered = places;
   return pool((request) => {
     const route = routeOf(request);
     if (route.endsWith("/candidates")) {
@@ -83,6 +90,7 @@ function draw(value = "", said: unknown = undefined) {
       label: "where",
       value,
       said,
+      places: offered,
       onchange: (next: string) => {
         held = next;
         void rerender({ value: next } as never);
@@ -385,11 +393,12 @@ test("draws the note itself under the folder that already holds it", async () =>
   expect(await screen.findByText("+ picker.md")).toBeDefined();
 });
 
+/** In the tree, where the note lands, rather than beside the word it is not. */
 test("shows the name a blank leaf would get rather than a gap", async () => {
   servingFolder([]);
   draw("", SAID);
 
-  expect(await screen.findByText("Picker needs a trail.md")).toBeDefined();
+  expect(await screen.findByText("+ Picker needs a trail.md")).toBeDefined();
 });
 
 /**
@@ -449,25 +458,6 @@ test("draws no word at all where the destination could not be asked", async () =
   expect(screen.queryByText("append")).toBeNull();
 });
 
-test("ranks places used before above what the vault merely offers", async () => {
-  serving(
-    () => answered([folder("journal", "journal")]),
-    [used("projects/notemap/notes/", 41), used("projects/kontradiktion/", 6)],
-  );
-  draw("pro");
-
-  const places = await screen.findByRole("listbox", { name: "places" });
-  await vi.waitFor(() => {
-    expect(places.textContent).toContain("projects/notemap/notes/");
-  });
-
-  const drawn = [...places.querySelectorAll('[role="option"]')].map((each) =>
-    (each.textContent ?? "").trim(),
-  );
-  expect(drawn[0]).toContain("projects/notemap/notes/");
-  expect(drawn[1]).toContain("projects/kontradiktion/");
-});
-
 test("offers the best remembered place as a greyed continuation", async () => {
   serving(
     () => answered([folder("projects", "projects")]),
@@ -515,65 +505,41 @@ test("the right arrow takes it whole", async () => {
   expect(line.value()).toBe("projects/notemap/notes/");
 });
 
-test("a place the listing does not hold is marked gone in the list", async () => {
-  serving(
-    () => answered([folder("journal", "journal")]),
-    [used("drafts/", 12)],
-  );
-  const places = draw("dra") && screen.getByRole("listbox", { name: "places" });
-
-  await vi.waitFor(() => {
-    expect(places.textContent).toContain("drafts/");
-    expect(places.textContent).toContain("gone");
-  });
-});
-
-/** A discrepancy has to be looked at, so it is never the thing taken without reading. */
+/**
+ * `gone` is drawn nowhere any more, the flag being kept for exactly one thing:
+ * a discrepancy has to be looked at, so it is never the thing taken without
+ * reading.
+ */
 test("a gone place is never the greyed continuation", async () => {
   serving(
-    () => answered([folder("journal", "journal")]),
+    () =>
+      answered([folder("dossiers", "dossiers"), folder("journal", "journal")]),
     [used("drafts/", 12)],
   );
-  const line = draw("dra");
+  const line = draw("d");
 
-  const places = await screen.findByRole("listbox", { name: "places" });
-  await vi.waitFor(() => {
-    expect(places.textContent).toContain("gone");
-  });
+  await screen.findByText("dossiers/");
+  expect(document.querySelector("[data-ghost]")).toBeNull();
 
-  line.line().setSelectionRange(3, 3);
+  line.line().setSelectionRange(1, 1);
   await fireEvent.keyDown(line.line(), { key: "ArrowRight" });
-  expect(line.value()).toBe("dra");
+  expect(line.value()).toBe("d");
 });
 
 test("but the arrows reach it deliberately", async () => {
   serving(
-    () => answered([folder("journal", "journal")]),
+    () =>
+      answered([folder("dossiers", "dossiers"), folder("journal", "journal")]),
     [used("drafts/", 12)],
   );
-  const line = draw("dra");
+  const line = draw("d");
 
-  const places = await screen.findByRole("listbox", { name: "places" });
-  await vi.waitFor(() => {
-    expect(places.textContent).toContain("gone");
-  });
+  await screen.findByText("dossiers/");
 
   await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
   await fireEvent.keyDown(line.line(), { key: "Enter" });
 
   expect(line.value()).toBe("drafts/");
-});
-
-test("says gone beside the drawn state once such a place is typed whole", async () => {
-  serving(
-    () => answered([folder("journal", "journal")]),
-    [used("drafts/", 12)],
-  );
-  draw("drafts/", SAID);
-
-  await vi.waitFor(() => {
-    expect(screen.getByText("gone")).toBeDefined();
-  });
 });
 
 /** The pool holds these and the pool is reachable whenever the composer is open. */
