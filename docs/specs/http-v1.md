@@ -1027,8 +1027,9 @@ committed. It takes exactly the body `/route` takes.
   be a claim about an item rather than a filter that matched nothing.
 - A `pointer` is present only where a delivery recorded one, and is best-effort: it says where an
   item once went, never where it is. A `url` may sit beside it where the destination could offer a
-  link to the same place; the filesystem kind never can, a path on the daemon's host being nowhere
-  a phone can follow.
+  link to the same place; neither kind that writes files offers one — a path on the daemon's host
+  is nowhere a phone can follow, and a WebDAV address is the daemon's credential rather than a link
+  anyone else holds.
 - **An `output` says what the delivery produced, without the bytes.** Its `note` is the
   destination's own prose about what it could not carry, and its `content` — the blob and the media
   type — is present exactly where there is something to fetch at

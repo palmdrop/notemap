@@ -1,16 +1,19 @@
 import type { Delivery } from "@notemap/core";
 import {
+  APPEND_TO_FILE,
   asAppendToFileArguments,
   asCreateFileArguments,
   asCreateOrAppendFileArguments,
+  CREATE_FILE,
   deriveFilename,
   insertUnder,
   placeOf,
   renderNote,
+  type Note,
   type Renderers,
 } from "@notemap/output-markdown";
 
-import { placeAssets } from "./assets";
+import { assetNames, placeAssets } from "./assets";
 import type { Dav } from "./dav";
 import { Refused, Unreachable } from "./errors";
 import { collectionsUnder, contain, type Contained } from "./paths";
@@ -19,6 +22,16 @@ export type Wiring = {
   readonly dav: Dav;
   readonly root: string;
   readonly renderers: Renderers;
+};
+
+/**
+ * Where the note is, and the markdown this delivery put there — which for an
+ * append into a note that was already there is what was inserted rather than
+ * the note it was inserted into.
+ */
+export type Landed = {
+  readonly pointer: string;
+  readonly written: string;
 };
 
 /**
@@ -31,14 +44,18 @@ export function createNote(
   wiring: Wiring,
   delivery: Delivery,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<Landed> {
+  return create(wiring, delivery, createTarget(delivery), signal);
+}
+
+function createTarget(delivery: Delivery): string {
   const args = asCreateFileArguments(delivery.arguments);
   if (args === undefined) {
     throw new Refused("that is not a create-file argument set");
   }
 
   const filename = args.filename ?? deriveFilename(delivery);
-  return create(wiring, delivery, under(args.directory, filename), signal);
+  return under(args.directory, filename);
 }
 
 /**
@@ -52,7 +69,15 @@ export function createOrAppendToNote(
   wiring: Wiring,
   delivery: Delivery,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<Landed> {
+  const wanted = createOrAppendTarget(delivery);
+  return append(wiring, delivery, wanted.target, wanted.heading, signal);
+}
+
+function createOrAppendTarget(delivery: Delivery): {
+  target: string;
+  heading?: string;
+} {
   const args = asCreateOrAppendFileArguments(delivery.arguments);
   if (args === undefined) {
     throw new Refused("that is not a create-or-append-file argument set");
@@ -60,13 +85,10 @@ export function createOrAppendToNote(
 
   const place = placeOf(args.path);
   const filename = place.filename ?? deriveFilename(delivery);
-  return append(
-    wiring,
-    delivery,
-    under(place.directory, filename),
-    args.heading,
-    signal,
-  );
+  return {
+    target: under(place.directory, filename),
+    ...(args.heading === undefined ? {} : { heading: args.heading }),
+  };
 }
 
 /** An empty directory names the root itself, and joining it blindly would make an absolute path, which containment refuses outright. */
@@ -79,7 +101,7 @@ async function create(
   delivery: Delivery,
   target: string,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<Landed> {
   const wanted = locate(wiring.root, target);
 
   await makeCollections(wiring.dav, wanted, signal);
@@ -89,16 +111,14 @@ async function create(
     directory: collectionOfPointer(wanted),
     assets,
   });
-  const written = await wiring.dav.create(
-    wanted.encoded,
-    `${rendered.frontmatter}\n${rendered.body}`,
-    signal,
-  );
+  const note = whole(rendered);
+
+  const written = await wiring.dav.create(wanted.encoded, note, signal);
   if (written === "condition-failed") {
     throw new Refused(`${wanted.relative} is already there`);
   }
 
-  return wanted.relative;
+  return { pointer: wanted.relative, written: note };
 }
 
 /** How many times a note is re-read and written again before contention is somebody else's problem. */
@@ -118,13 +138,24 @@ export function appendToNote(
   wiring: Wiring,
   delivery: Delivery,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<Landed> {
+  const wanted = appendTarget(delivery);
+  return append(wiring, delivery, wanted.target, wanted.heading, signal);
+}
+
+function appendTarget(delivery: Delivery): {
+  target: string;
+  heading?: string;
+} {
   const args = asAppendToFileArguments(delivery.arguments);
   if (args === undefined) {
     throw new Refused("that is not an append-to-file argument set");
   }
 
-  return append(wiring, delivery, args.path, args.heading, signal);
+  return {
+    target: args.path,
+    ...(args.heading === undefined ? {} : { heading: args.heading }),
+  };
 }
 
 async function append(
@@ -133,7 +164,7 @@ async function append(
   target: string,
   heading?: string,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<Landed> {
   const note = locate(wiring.root, target);
 
   // Placed once, whatever happens to the note after: the collection they go in
@@ -156,13 +187,14 @@ async function append(
     });
 
     if (existing === undefined) {
-      const created = await wiring.dav.create(
-        note.encoded,
-        `${rendered.frontmatter}\n${insertUnder("", rendered.body, heading)}`,
-        signal,
-      );
+      // Everything in a note this delivery brought into being is what it put
+      // there, frontmatter included.
+      const fresh = wholeUnder(rendered, heading);
+      const created = await wiring.dav.create(note.encoded, fresh, signal);
       // Somebody made it between the read and the write, so it is an append now.
-      if (created === "written") return note.relative;
+      if (created === "written") {
+        return { pointer: note.relative, written: fresh };
+      }
       continue;
     }
 
@@ -187,7 +219,11 @@ async function append(
       existing.etag,
       signal,
     );
-    if (written === "written") return note.relative;
+    // What was inserted, not the note it was inserted into: the heading it went
+    // under is the note's own structure rather than this delivery's.
+    if (written === "written") {
+      return { pointer: note.relative, written: rendered.body };
+    }
   }
 
   // Contention, not a decision: this is retryable and the delivery runner's
@@ -195,6 +231,57 @@ async function append(
   throw new Unreachable(
     `${note.relative} was written by somebody else during each of ${ATTEMPTS} attempts`,
   );
+}
+
+/** The whole of a note, as `create` writes one. */
+function whole(rendered: Note): string {
+  return `${rendered.frontmatter}\n${rendered.body}`;
+}
+
+/** The whole of a note an append brings into being, which may open with a heading. */
+function wholeUnder(rendered: Note, heading?: string): string {
+  return `${rendered.frontmatter}\n${insertUnder("", rendered.body, heading)}`;
+}
+
+/**
+ * What a delivery would put there, and nothing put there. It makes exactly the
+ * reads a delivery makes and none of its writes: `create` never asks whether
+ * the note is there — its `PUT` is conditional and the server decides — so
+ * neither does this, and an append reads the note it would append to because
+ * whether that note exists is what decides the answer.
+ *
+ * Assets are named rather than placed: a name is arithmetic on the content and
+ * the filename, so the links are the ones the delivery would write.
+ */
+export async function previewNote(
+  wiring: Wiring,
+  delivery: Delivery,
+  signal?: AbortSignal,
+): Promise<string> {
+  if (delivery.capability === CREATE_FILE) {
+    const note = locate(wiring.root, createTarget(delivery));
+    return whole(render(wiring, delivery, note));
+  }
+
+  const wanted =
+    delivery.capability === APPEND_TO_FILE
+      ? appendTarget(delivery)
+      : createOrAppendTarget(delivery);
+
+  const note = locate(wiring.root, wanted.target);
+  const rendered = render(wiring, delivery, note);
+  const existing = await wiring.dav.get(note.encoded, signal);
+
+  return existing === undefined
+    ? wholeUnder(rendered, wanted.heading)
+    : rendered.body;
+}
+
+function render(wiring: Wiring, delivery: Delivery, note: Contained): Note {
+  return renderNote(wiring.renderers, delivery, {
+    directory: collectionOfPointer(note),
+    assets: assetNames(delivery.assets),
+  });
 }
 
 /**

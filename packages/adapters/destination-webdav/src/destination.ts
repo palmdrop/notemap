@@ -3,6 +3,7 @@ import {
   capabilitiesFor,
   CREATE_FILE,
   CREATE_OR_APPEND_FILE,
+  markdownOutput,
   type Renderers,
 } from "@notemap/output-markdown";
 import {
@@ -22,6 +23,8 @@ import {
   appendToNote,
   createNote,
   createOrAppendToNote,
+  previewNote,
+  type Landed,
   type Wiring,
 } from "./notes";
 import { contain } from "./paths";
@@ -89,9 +92,48 @@ export function createWebdavDestination(
           delivery,
           signal,
         );
-        return { kind: "delivered", pointer: landed };
+        // No url: what a person opens is their own client against their own
+        // server, and the address this adapter speaks to is the daemon's
+        // credential rather than a link anybody else can follow.
+        return {
+          kind: "delivered",
+          pointer: landed.pointer,
+          output: markdownOutput(landed.written),
+        };
       } catch (cause) {
         return failure(cause);
+      }
+    },
+
+    /**
+     * The same conversion `deliver` runs, answered instead of written. It makes
+     * the reads a delivery makes and none of its writes, so an account that is
+     * asleep cannot be previewed against — which stops the seeing and not the
+     * deciding.
+     */
+    preview: async (destination, delivery, signal) => {
+      const settings = asWebdavSettings(destination.settings);
+      if (settings === undefined) {
+        throw new Rejected(why(unreadable(destination)));
+      }
+
+      const dav = createDav(await config.credentials(settings.account));
+
+      try {
+        return markdownOutput(
+          await previewNote(
+            { dav, root: settings.root, renderers },
+            delivery,
+            signal,
+          ),
+        );
+      } catch (cause) {
+        // Sorted the way a delivery's own failure is: anything about the
+        // target is a no a person must act on, and everything else is a server
+        // that could not be reached.
+        const failed = failure(cause);
+        if (failed.kind === "rejected") throw new Rejected(failed.detail);
+        throw cause;
       }
     },
 
@@ -168,7 +210,7 @@ function carryOut(
   wiring: Wiring,
   delivery: Delivery,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<Landed> {
   switch (delivery.capability) {
     case CREATE_FILE:
       return createNote(wiring, delivery, signal);

@@ -293,8 +293,9 @@ lands; a reservation whose delivery is abandoned or cancelled is removed, since 
 record. So a record that is not pending means bytes reached somewhere. Where a destination reshaped
 the item on its way out, the record may also name the **output**, so the pool can answer what it
 sent and not only where. Beside the pointer it may carry a **URL**, where the destination can offer
-a link to the same place; the filesystem kind never can, a path on the daemon's host being nowhere
-a phone can follow.
+a link to the same place; neither kind that writes files ever does — a path on the daemon's host is
+nowhere a phone can follow, and a WebDAV address is the daemon's credential rather than a link
+anyone else holds.
 _Avoid_: routing status, delivery flag
 
 **Routing summary**:

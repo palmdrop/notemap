@@ -130,8 +130,9 @@ routing decision; they stop the seeing of it.
 
 The human-readable pointer stays what it is — a path a person recognises — and a destination that
 can offer a link offers one, so a shell may make the pointer a link instead of guessing whether a
-string is one. The filesystem kind answers a path and no URL, permanently: a path on the daemon's
-host is not reachable from the phone reading the shell. Both are best-effort and both may be
+string is one. Neither kind that writes files answers a URL, and neither ever will: a path on the
+daemon's host is not reachable from the phone reading the shell, and a WebDAV address is the
+daemon's credential rather than a link anyone else holds. Both are best-effort and both may be
 stale, which the glossary already says of the pointer alone.
 
 ### Consequences
@@ -184,7 +185,8 @@ stale, which the glossary already says of the pointer alone.
 ## More information
 
 Plan: [delivery-output-and-preview](../plans/delivery-output-and-preview.md). The output on the
-record and the note are phase 2, the filesystem kind's own answers phase 3, `preview` phase 5.
+record and the note are phase 2, the filesystem kind's own answers phase 3, `preview` phase 5. The
+webdav kind answers both on the same terms, added 2026-09-04 after the plan's slice landed.
 `CONTEXT.md` gains **Output** in the same change, and **Destination**'s Avoid line stops banning
 the word.
 

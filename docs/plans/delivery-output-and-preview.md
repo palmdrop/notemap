@@ -66,6 +66,14 @@ the reasoning for the ones worth it.
   both `deliver` and `preview`; only the daemon decodes.
 - **The note stays prose.** ADR 33 says what would have to be true to change that.
 
+**Added after the slice landed, 2026-09-04**: the **webdav kind** answers an output and a preview
+too. Phases 3 and 5 scoped both to the filesystem kind, which left the other kind that writes
+files recording where it went and not what went. It shares `@notemap/output-markdown` with the
+filesystem kind, so it shares the answers: `create` reports the whole note, an append reports what
+it inserted, and its preview makes the reads its delivery makes and none of the writes — which for
+`create-file` is no request at all, its `PUT` being conditional, and for an append is the one `GET`
+that decides whether the note is there.
+
 ---
 
 ---

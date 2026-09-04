@@ -5,11 +5,19 @@ import type { Dav } from "./dav";
 import { sibling, type Contained } from "./paths";
 
 /**
- * Every asset put into the note's own collection under the name it was uploaded
- * with and its content's digest, and what each ended up called, keyed by slot.
- * The naming is shared, so a webdav vault and a filesystem vault call the same
- * picture the same thing.
+ * What each asset would be called, keyed by slot. A name is its content's
+ * digest and its uploaded filename, so it is arithmetic rather than a fact
+ * about the server — which is what lets a note be rendered without anything
+ * being uploaded. The naming is shared, so a webdav vault and a filesystem
+ * vault call the same picture the same thing.
  */
+export function assetNames(
+  assets: readonly DeliveredAsset[],
+): ReadonlyMap<string, string> {
+  return new Map(assets.map((each) => [each.slot, nameOf(each)]));
+}
+
+/** Every asset put into the note's own collection under the name `assetNames` gives it. */
 export async function placeAssets(
   dav: Dav,
   note: Contained,
@@ -25,17 +33,17 @@ export async function placeAssets(
   return placed;
 }
 
+function nameOf(asset: DeliveredAsset): string {
+  return assetName(asset.asset.filename, asset.asset.blob, asset.asset.id);
+}
+
 async function place(
   dav: Dav,
   note: Contained,
   asset: DeliveredAsset,
   signal?: AbortSignal,
 ): Promise<string> {
-  const name = assetName(
-    asset.asset.filename,
-    asset.asset.blob,
-    asset.asset.id,
-  );
+  const name = nameOf(asset);
 
   // Handed to `fetch` as it is: the opener is lazy because a delivery may be
   // carrying an hour of audio, and buffering it here would give that up.

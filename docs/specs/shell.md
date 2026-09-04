@@ -499,8 +499,8 @@ record is what happened and the schema is only what is offered now.
 The **pointer is a link where the record carries a URL**, and text everywhere else *(amended
 2026-09-04)*: the shell never guesses whether a string is one, and it follows only `http` and
 `https` — a `javascript:` URL in an `href` is script on this origin, and the string came from an
-adapter rather than from a person. The filesystem kind offers none, permanently, a path on the
-daemon's host being nowhere a phone can follow.
+adapter rather than from a person. Neither kind that writes files offers one, so today the pointer
+is always text; the field is there for the kind that has somewhere to point.
 
 **What was sent is drawn where the pointer is** *(added 2026-09-04)*. The destination's **note**
 about what it could not carry is on the record and is drawn at once, because it is the half a
