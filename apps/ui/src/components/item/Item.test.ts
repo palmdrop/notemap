@@ -299,11 +299,13 @@ test("remembers the decision it stayed quiet about, so the log does not say it",
 
 const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
 
-test("routes from here without saying so, and remembers that decision too", async () => {
-  pool((request) => {
+/** A pool a decision can be made against: one destination, one capability. */
+function deciding(held: () => unknown, records: readonly unknown[] = []) {
+  return (request: Request) => {
     const route = routeOf(request);
-    if (route === "GET /v1/items/one") {
-      return json(200, saying("one", "still here"));
+    if (route === "GET /v1/items/one") return json(200, held());
+    if (route === "GET /v1/items/one/routing") {
+      return json(200, { values: records });
     }
     if (route === "GET /v1/destinations") {
       return json(200, {
@@ -340,11 +342,11 @@ test("routes from here without saying so, and remembers that decision too", asyn
       });
     }
     return json(200, { values: [] });
-  });
+  };
+}
 
-  render(Item, { id: "one" });
-  await screen.findByText("still here");
-
+/** Through the composer, as a person makes one. */
+async function decide() {
   await fireEvent.click(screen.getByRole("button", { name: "route" }));
   await fireEvent.click(await screen.findByRole("button", { name: /Vault/ }));
   await fireEvent.click(await screen.findByRole("button", { name: /append/ }));
@@ -352,6 +354,15 @@ test("routes from here without saying so, and remembers that decision too", asyn
   // Two of them: the surface's action, and the composer's commit over it.
   const commit = screen.getAllByRole("button", { name: "route" }).at(-1);
   await fireEvent.click(commit as HTMLElement);
+}
+
+test("routes from here without saying so, and remembers that decision too", async () => {
+  pool(deciding(() => saying("one", "still here")));
+
+  render(Item, { id: "one" });
+  await screen.findByText("still here");
+
+  await decide();
 
   await vi.waitFor(() => {
     expect(notices.said("record:r")).toBe(true);
@@ -363,4 +374,30 @@ test("routes from here without saying so, and remembers that decision too", asyn
   expect(notices.shown).toHaveLength(0);
   expect(screen.getAllByRole("button", { name: "route" })).toHaveLength(1);
   expect(screen.getByText(/Vault/)).toBeDefined();
+});
+
+/**
+ * Which is what lets this surface stay quiet: the records are the pool's and
+ * nothing caches them, so a decision made here is only drawn if it is read back.
+ */
+test("reads the records again after a decision made on this surface", async () => {
+  pool(
+    deciding(
+      () => anItem("one", ROUTED),
+      [{ ...RECORD, id: "rec-one", item: "one" }],
+    ),
+  );
+
+  render(Item, { id: "one" });
+  await screen.findByRole("link", { name: /create-note/ });
+
+  const read = () =>
+    asked().filter((route) => route === "GET /v1/items/one/routing").length;
+  const before = read();
+
+  await decide();
+
+  await vi.waitFor(() => {
+    expect(read()).toBe(before + 1);
+  });
 });
