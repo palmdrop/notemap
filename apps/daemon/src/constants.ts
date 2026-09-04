@@ -57,3 +57,11 @@ export const DEFAULT_DELIVERY = {
 
 /** How much of a lease is kept back for reporting the outcome the attempt produced. */
 export const DELIVERY_REPORT_MARGIN_MS = 5_000;
+
+/**
+ * How much of a preview is read into the answer. A preview is drawn for a
+ * person to read, so a converter that produced a hundred megabytes of it is
+ * answering a question nobody asked — and the answer is JSON, held whole in
+ * memory on the way out. What is cut short says so.
+ */
+export const MAX_PREVIEW_BYTES = 1024 * 1024;

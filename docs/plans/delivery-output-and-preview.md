@@ -186,16 +186,16 @@ Depends on phase 2, for the shape of what it answers.
 
 Depends on phase 5.
 
-- [ ] **Proposed: `POST /v1/items/{id}/routing/preview`**, taking the destination, the capability and
+- [x] **Proposed: `POST /v1/items/{id}/routing/preview`**, taking the destination, the capability and
       the arguments — the body a route takes, answering an output instead of a record. A `POST` that
       writes nothing, which wants a sentence in `http-v1.md` rather than being smuggled in. Confirm
       the shape before building it
-- [ ] It has the refusals routing already has — unknown destination, undeclared capability, arguments
+- [x] It has the refusals routing already has — unknown destination, undeclared capability, arguments
       that fail the schema, payload type not accepted — plus unreachable and not-offered. A preview
       that refuses for the same reasons a route would is worth more than one that always answers
-- [ ] Route tests, and the OpenAPI document regenerated
-- [ ] Verify: `pnpm --filter @notemap/daemon test`
-- [ ] `git commit`
+- [x] Route tests, and the OpenAPI document regenerated
+- [x] Verify: `pnpm --filter @notemap/daemon test`
+- [x] `git commit`
 
 ### Phase 7 — The composer asks, and the record view shows
 

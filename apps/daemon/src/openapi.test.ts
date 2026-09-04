@@ -51,6 +51,7 @@ describe("GET /v1/openapi.json", () => {
       "/v1/items/{id}/edit",
       "/v1/items/{id}/mark-processed",
       "/v1/items/{id}/route",
+      "/v1/items/{id}/route/preview",
       "/v1/items/{id}/routing",
       "/v1/items/{id}/tag",
       "/v1/items/{id}/unarchive",

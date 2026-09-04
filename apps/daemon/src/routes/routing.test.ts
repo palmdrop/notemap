@@ -487,3 +487,109 @@ describe("GET /v1/routing/{record}/output", () => {
     });
   });
 });
+
+describe("POST /v1/items/{id}/route/preview", () => {
+  type Preview = {
+    kind: string;
+    detail?: string;
+    note?: string;
+    content?: { mediaType: string; text?: string; truncated: boolean };
+  };
+
+  async function preview(
+    host: Vaulted,
+    item: string,
+    args: unknown = { directory: "inbox", filename: "a-thought.md" },
+  ): Promise<Response> {
+    return send(host.app, `/v1/items/${item}/route/preview`, {
+      destination: host.vault.id,
+      capability: "create-file",
+      arguments: args,
+    });
+  }
+
+  it("answers the markdown it would write, and writes nothing", async () => {
+    const host = await vaulted("ready");
+    const item = await only(host);
+
+    const response = await preview(host, item);
+    expect(response.status).toBe(200);
+
+    const shown = (await body(response)) as Preview;
+    expect(shown.kind).toBe("previewed");
+    expect(shown.content?.mediaType).toBe("text/markdown");
+    expect(shown.content?.text).toContain("a thought");
+    expect(shown.content?.truncated).toBe(false);
+    expect(shown.note).toBeUndefined();
+
+    // Nothing decided, nothing written, and the item is still work.
+    const records = (await body(
+      await host.app.request(`/v1/items/${item}/routing`),
+    )) as { values: unknown[] };
+    expect(records.values).toEqual([]);
+    expect(await queued(host)).toEqual([item]);
+  });
+
+  it("is what the delivery then writes", async () => {
+    const host = await vaulted("ready");
+    const item = await only(host);
+
+    const shown = (await body(await preview(host, item))) as Preview;
+    const record = (await body(await route(host, item))) as Record_;
+
+    expect(
+      await readFile(join(host.vaultRoot, record.pointer ?? ""), "utf8"),
+    ).toBe(shown.content?.text);
+  });
+
+  it("answers unreachable for a vault that is not there, and routing still works", async () => {
+    const host = await vaulted("missing");
+    const item = await only(host);
+
+    const shown = (await body(await preview(host, item))) as Preview;
+
+    expect(shown.kind).toBe("unreachable");
+    expect(shown.detail).toBeTruthy();
+    expect(((await body(await route(host, item))) as Record_).state).toBe(
+      "pending",
+    );
+  });
+
+  it("answers rejected where the delivery would be refused", async () => {
+    const host = await vaulted("ready");
+    const item = await only(host);
+    await route(host, item);
+
+    const shown = (await body(await preview(host, item))) as Preview;
+
+    expect(shown).toMatchObject({ kind: "rejected" });
+    expect(shown.detail).toContain("already there");
+  });
+
+  it("refuses a capability the destination never declared", async () => {
+    const host = await vaulted("ready");
+    const item = await only(host);
+
+    const response = await send(host.app, `/v1/items/${item}/route/preview`, {
+      destination: host.vault.id,
+      capability: "post-to-board",
+      arguments: {},
+    });
+
+    expect(response.status).toBe(422);
+    expect(await body(response)).toMatchObject({
+      error: { code: "capability-undeclared" },
+    });
+  });
+
+  it("is 404 for an item that is not here", async () => {
+    const host = await vaulted("ready");
+
+    const response = await preview(host, "nobody");
+
+    expect(response.status).toBe(404);
+    expect(await body(response)).toMatchObject({
+      error: { code: "no-such-item" },
+    });
+  });
+});

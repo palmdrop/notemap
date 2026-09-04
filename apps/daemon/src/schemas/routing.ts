@@ -93,3 +93,34 @@ export const capabilitySchema = z
     argumentsSchema: jsonObject,
   })
   .openapi("Capability");
+
+/**
+ * What a destination says it would write. **Indicative, never binding**: the
+ * delivery converts again when it runs.
+ *
+ * The content is inline because a preview is stored nowhere — there is no
+ * second fetch to hand out — and it is text because that is what a person is
+ * being shown. A media type that is not text answers what it would be and
+ * nothing to read.
+ */
+export const previewSchema = z
+  .discriminatedUnion("kind", [
+    z.object({
+      kind: z.literal("previewed"),
+      content: z
+        .object({
+          mediaType: z.string(),
+          /** Absent where the media type is not one this route can put in JSON. */
+          text: z.string().optional(),
+          /** True where the preview was longer than this daemon inlines. */
+          truncated: z.boolean(),
+        })
+        .optional(),
+      /** What the destination says it would not carry. Free prose. */
+      note: z.string().optional(),
+    }),
+    z.object({ kind: z.literal("rejected"), detail: z.string() }),
+    z.object({ kind: z.literal("unreachable"), detail: z.string() }),
+    z.object({ kind: z.literal("not-offered") }),
+  ])
+  .openapi("RoutingPreview");

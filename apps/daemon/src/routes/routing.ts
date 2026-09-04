@@ -6,6 +6,7 @@ import type {
   ItemId,
   JsonObject,
   Pool,
+  PreviewReport,
   RoutingRecordId,
 } from "@notemap/core";
 
@@ -21,6 +22,7 @@ import {
   routeRequestSchema,
 } from "../schemas/routing";
 import { contentDisposition } from "../assets/content-disposition";
+import { MAX_PREVIEW_BYTES } from "../constants";
 import { dispositionFor, essence } from "../assets/disposition";
 import { readBody } from "../utils/body";
 import { json, refuse } from "../utils/responses";
@@ -93,6 +95,96 @@ export function routeHandler(pool: Pool) {
       ? json(errorBody(result.refusal), deliveryStatus(result.refusal))
       : json(result.value, 200);
   };
+}
+
+/**
+ * What the destination says it would write, answered rather than written: this
+ * `POST` reserves nothing, appends nothing and touches nothing at the
+ * destination beyond whatever it had to read to answer.
+ */
+export function previewHandler(pool: Pool) {
+  return async (context: Context): Promise<Response> => {
+    const body = await readBody(context, routeRequestSchema);
+    if (!body.ok) return refuse(body.refusal);
+
+    const id = context.req.param("id") ?? "";
+    const result = await pool.routing.preview(
+      id as ItemId,
+      {
+        destination: body.value.destination as DestinationId,
+        capability: body.value.capability as CapabilityName,
+        arguments: body.value.arguments as JsonObject,
+      },
+      context.req.raw.signal,
+    );
+
+    if (result.kind === "refused") {
+      return json(errorBody(result.refusal), deliveryStatus(result.refusal));
+    }
+
+    const report = result.value;
+    return json(
+      report.kind === "previewed" ? await readable(report) : report,
+      200,
+    );
+  };
+}
+
+/**
+ * The bytes, in the answer rather than behind a second fetch: a preview is
+ * stored nowhere, so there is nothing to hand out a URL to. Text only, because
+ * this is JSON and because a preview is something a person reads.
+ */
+async function readable(report: PreviewReport & { kind: "previewed" }) {
+  const { content, note } = report;
+  const said = note === undefined ? {} : { note };
+
+  if (content === undefined) return { kind: "previewed" as const, ...said };
+
+  const read = TEXTUAL.test(essence(content.mediaType))
+    ? await take(await content.open(), MAX_PREVIEW_BYTES)
+    : undefined;
+
+  return {
+    kind: "previewed" as const,
+    content: {
+      mediaType: content.mediaType,
+      ...(read === undefined ? {} : { text: read.text }),
+      truncated: read?.truncated ?? false,
+    },
+    ...said,
+  };
+}
+
+/** What can be put in a JSON string honestly. Anything else says what it is and nothing more. */
+const TEXTUAL = /^text\/|^application\/(json|xml|yaml)$|\+(json|xml)$/;
+
+async function take(
+  bytes: AsyncIterable<Uint8Array>,
+  limit: number,
+): Promise<{ text: string; truncated: boolean }> {
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  let truncated = false;
+
+  for await (const chunk of bytes) {
+    if (size + chunk.byteLength > limit) {
+      chunks.push(chunk.subarray(0, limit - size));
+      truncated = true;
+      break;
+    }
+    chunks.push(chunk);
+    size += chunk.byteLength;
+  }
+
+  const joined = new Uint8Array(size + (truncated ? limit - size : 0));
+  let at = 0;
+  for (const chunk of chunks) {
+    joined.set(chunk, at);
+    at += chunk.byteLength;
+  }
+
+  return { text: new TextDecoder().decode(joined), truncated };
 }
 
 /**

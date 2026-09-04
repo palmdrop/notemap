@@ -60,6 +60,7 @@ import {
 import {
   markProcessedRequestSchema,
   routeRequestSchema,
+  previewSchema,
   routingRecordSchema,
   routingRecordsSchema,
 } from "../schemas/routing";
@@ -987,6 +988,45 @@ export const cancelDeliveryRoute = createRoute({
   },
 });
 
+export const previewRouteRoute = createRoute({
+  method: "post",
+  path: "/v1/items/{id}/route/preview",
+  summary: "Ask what a destination would write, before committing to it",
+  description:
+    "Takes exactly what `/route` takes and answers what would be written instead of writing it. **A `POST` that changes nothing**: no routing record, no delivery job, nothing in the action log, and nothing at the destination beyond whatever it had to read to answer. It is a `POST` because the question carries a body — the capability's arguments are an object of the destination's own shape, which a query string cannot carry honestly.\n\n**The answer is indicative, never binding.** The delivery converts again when it runs, so where a destination's converter is not deterministic the two will differ; that is a fact about the destination rather than a fault. The content comes back inline and as text, because a preview is stored nowhere and there is no second fetch to point at.\n\nIt is refused for the reasons `/route` is refused, because a preview that answered where a route would refuse would be describing a decision nobody can make. `unreachable` and `not-offered` are answers rather than refusals: neither stops the decision being made, only the seeing of it.",
+  request: {
+    params: itemId,
+    body: {
+      required: true,
+      content: { [JSON_MEDIA_TYPE]: { schema: routeRequestSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description:
+        "What it would write, why it would refuse, why it could not be reached, or a kind that does not offer this.",
+      content: { [JSON_MEDIA_TYPE]: { schema: previewSchema } },
+    },
+    400: errorResponse(
+      "The body could not be read as this request.",
+      400,
+      BODY_STATUS,
+    ),
+    404: errorResponse("No item has that id.", 404, ROUTING_STATUS),
+    409: errorResponse(
+      "The destination is retired, or the running code cannot make sense of it.",
+      409,
+      DELIVERY_STATUS,
+    ),
+    415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
+    422: errorResponse(
+      "The destination, the capability, the payload type or the arguments were declined.",
+      422,
+      DELIVERY_STATUS,
+    ),
+  },
+});
+
 export const routingOutputRoute = createRoute({
   method: "get",
   path: "/v1/routing/{record}/output",
@@ -1152,6 +1192,7 @@ export const ROUTES = [
   unretireDestinationRoute,
   deleteDestinationRoute,
   routeItemRoute,
+  previewRouteRoute,
   cancelDeliveryRoute,
   routingOutputRoute,
   actionsRoute,
