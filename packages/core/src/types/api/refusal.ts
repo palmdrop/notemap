@@ -171,6 +171,12 @@ export type DeliveryRefusal = PreparationRefusal | AttemptFailure;
 
 export type RoutingRefusal = SubjectRefusal;
 
+/** A record with no output is ordinary, and not an error condition anywhere else. */
+export type OutputRefusal =
+  | { readonly kind: "no-such-record"; readonly record: RoutingRecordId }
+  | { readonly kind: "no-output"; readonly record: RoutingRecordId }
+  | { readonly kind: "blob-missing"; readonly blob: BlobHash };
+
 export type AssetRefusal =
   | { readonly kind: "no-such-asset"; readonly asset: AssetId }
   | { readonly kind: "blob-missing"; readonly blob: BlobHash };

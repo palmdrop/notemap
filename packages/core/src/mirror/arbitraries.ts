@@ -203,6 +203,14 @@ export const routingRecord = (): fc.Arbitrary<RoutingRecord> =>
       state: fc.constantFrom("pending" as const, "delivered" as const),
       at: stamp(),
       pointer: name(),
+      url: name(),
+      output: fc.record(
+        {
+          content: fc.record({ blob: branded<never>(), mediaType: name() }),
+          note: name(),
+        },
+        { requiredKeys: [] },
+      ),
     },
     { requiredKeys: ["id", "item", "target", "state", "at"] },
   );

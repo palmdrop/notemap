@@ -1,6 +1,7 @@
 import type {
   Action,
   Agent,
+  BlobHash,
   CapabilityName,
   DestinationId,
   Duration,
@@ -1513,13 +1514,60 @@ describe("reservations", () => {
     const { pool: p, reservation } = await reservedItem();
 
     await p.transaction((tx) =>
-      tx.resolveRoutingRecord(reservation.id, "vault/a-thought.md"),
+      tx.resolveRoutingRecord(reservation.id, {
+        pointer: "vault/a-thought.md",
+      }),
     );
 
     expect(await p.routingRecord(reservation.id)).toEqual({
       ...reservation,
       state: "delivered",
       pointer: "vault/a-thought.md",
+    });
+  });
+
+  it("becomes delivered carrying the output and a link to it", async () => {
+    const { pool: p, reservation } = await reservedItem();
+
+    await p.transaction((tx) =>
+      tx.resolveRoutingRecord(reservation.id, {
+        pointer: "vault/a-thought.md",
+        url: "https://vault.example/a-thought.md",
+        output: {
+          content: {
+            blob: "sha256-abc" as BlobHash,
+            mediaType: "text/markdown",
+          },
+          note: "the two pictures were not carried",
+        },
+      }),
+    );
+
+    expect(await p.routingRecord(reservation.id)).toEqual({
+      ...reservation,
+      state: "delivered",
+      pointer: "vault/a-thought.md",
+      url: "https://vault.example/a-thought.md",
+      output: {
+        content: { blob: "sha256-abc", mediaType: "text/markdown" },
+        note: "the two pictures were not carried",
+      },
+    });
+  });
+
+  it("keeps a note about what could not be carried with no output content", async () => {
+    const { pool: p, reservation } = await reservedItem();
+
+    await p.transaction((tx) =>
+      tx.resolveRoutingRecord(reservation.id, {
+        output: { note: "posted, and nothing worth keeping came back" },
+      }),
+    );
+
+    expect(await p.routingRecord(reservation.id)).toEqual({
+      ...reservation,
+      state: "delivered",
+      output: { note: "posted, and nothing worth keeping came back" },
     });
   });
 

@@ -44,6 +44,7 @@ import type { AbandonedPosition } from "../domain/position";
 import type {
   AttemptableDelivery,
   DeliveryRequest,
+  OpenedOutput,
   RememberedAnswer,
   RememberedRequest,
   RoutingRecord,
@@ -72,6 +73,7 @@ import type {
   EditRefusal,
   EnrichmentRefusal,
   LeaseRefusal,
+  OutputRefusal,
   PurgeRefusal,
   RetireRefusal,
   RoutingRefusal,
@@ -206,6 +208,15 @@ export interface RoutingApi {
     note?: string,
   ): Promise<Result<RoutingRecord, RoutingRefusal>>;
   recordsFor(item: ItemId): Promise<readonly RoutingRecord[]>;
+  /**
+   * What the delivery produced, streamed. A record that carries no output is
+   * refused rather than answered empty: nothing distinguishes an output of no
+   * bytes from an output nobody kept.
+   */
+  openOutput(
+    record: RoutingRecordId,
+    signal?: AbortSignal,
+  ): Promise<Result<OpenedOutput, OutputRefusal>>;
 }
 
 export interface AssetsApi {

@@ -39,6 +39,7 @@ import type { Payload } from "../domain/payload";
 import type { AbandonedPosition } from "../domain/position";
 import type {
   Delivery,
+  DeliveryLanding,
   DeliveryOutcome,
   RememberedAnswer,
   RememberedRequest,
@@ -290,7 +291,7 @@ export interface PoolTx extends PoolReads {
   /** Throws on a record that is not there: resolving one that has gone is a lost write. */
   resolveRoutingRecord(
     record: RoutingRecordId,
-    pointer?: string,
+    landing: DeliveryLanding,
   ): Promise<void>;
 
   /**
@@ -315,6 +316,10 @@ export interface PoolTx extends PoolReads {
    * Releases assets, and answers the blobs that lost their last one — which are
    * then the caller's to delete, outside this transaction. Releasing an asset an
    * item still references fails rather than succeeding quietly.
+   *
+   * A blob a routing record names as its output is never answered, however few
+   * assets are left naming it: an output is named by a record rather than by an
+   * asset, and the two may be the same bytes.
    */
   deleteAssets(assets: readonly AssetId[]): Promise<readonly BlobHash[]>;
 

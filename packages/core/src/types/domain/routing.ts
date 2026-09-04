@@ -3,6 +3,7 @@ import type { Asset } from "./asset";
 import type { Destination } from "./destination";
 import type { Artifact } from "./enrichment";
 import type {
+  BlobHash,
   CapabilityName,
   DestinationId,
   ItemId,
@@ -55,10 +56,64 @@ export type AttemptableDelivery =
     }
   | { readonly kind: "unusable"; readonly detail: string };
 
+/** Opened lazily, as `DeliveredAsset` is, so a large output is never buffered to be hashed. */
+export type DeliveredContent = {
+  readonly mediaType: string;
+  open(signal?: AbortSignal): Promise<AsyncIterable<Uint8Array>>;
+};
+
+/**
+ * What a delivery produced, and what it could not carry. Both halves are
+ * optional and independent: a destination posting to an API may have nothing
+ * worth keeping and still have something to say, and a kind that carries
+ * everything has content and nothing to confess.
+ */
+export type DeliveredOutput = {
+  readonly content?: DeliveredContent;
+  /** Free prose. Nothing parses it, on a failure `detail`'s own terms. */
+  readonly note?: string;
+};
+
+/** The same content once core has stored it: the store is content-addressed, so the record names a hash. */
+export type StoredContent = {
+  readonly blob: BlobHash;
+  readonly mediaType: string;
+};
+
+export type StoredOutput = {
+  readonly content?: StoredContent;
+  readonly note?: string;
+};
+
+/**
+ * A delivery may convert lossily and still have delivered: `rejected` is for a
+ * capture the destination can make no sense of, not for one it carried in part
+ * and said so. The `url` is a link to the same place the pointer names, for a
+ * destination that can offer one — both are best-effort and both may be stale.
+ */
 export type DeliveryOutcome =
-  | { readonly kind: "delivered"; readonly pointer?: string }
+  | {
+      readonly kind: "delivered";
+      readonly pointer?: string;
+      readonly url?: string;
+      readonly output?: DeliveredOutput;
+    }
   | { readonly kind: "unreachable"; readonly detail: string }
   | { readonly kind: "rejected"; readonly detail: string };
+
+/** An output's bytes, opened, with what they are and the blob that answers an ETag. */
+export type OpenedOutput = {
+  readonly blob: BlobHash;
+  readonly mediaType: string;
+  readonly bytes: AsyncIterable<Uint8Array>;
+};
+
+/** What a delivery that landed adds to the reservation it resolves. */
+export type DeliveryLanding = {
+  readonly pointer?: string;
+  readonly url?: string;
+  readonly output?: StoredOutput;
+};
 
 export type RoutingTarget =
   | {
@@ -83,6 +138,10 @@ export type RoutingRecord = {
   readonly state: RoutingRecordState;
   readonly at: Timestamp;
   readonly pointer?: string;
+  /** A link to what the pointer names, where the destination could offer one. */
+  readonly url?: string;
+  /** What the delivery produced. Only a delivered record ever carries one. */
+  readonly output?: StoredOutput;
 };
 
 /**

@@ -96,37 +96,37 @@ Depends on nothing.
 Depends on phase 1. Needs [destination-targets](destination-targets.md) phase 1 merged, which
 renames the field beside these ones.
 
-- [ ] A delivered outcome may carry the **output**: the content, its media type, and a short prose
+- [x] A delivered outcome may carry the **output**: the content, its media type, and a short prose
       note about what could not be carried. All three optional — a destination posting to an API
       may have nothing meaningful to keep and should not be made to invent one
-- [ ] The content is handed over as a lazy opener rather than bytes in hand, the shape
+- [x] The content is handed over as a lazy opener rather than bytes in hand, the shape
       `DeliveredAsset` already uses, so a large output is never buffered to be hashed
-- [ ] The note is free text nothing parses, on the same footing as the `detail` that already rides
+- [x] The note is free text nothing parses, on the same footing as the `detail` that already rides
       on `unreachable` and `rejected`. Resist giving it structure: a machine-readable list of what
       was dropped is a vocabulary both core and the shell would have to learn, which is the
       argument core.md:611 already had once
-- [ ] **The pointer gains a URL beside it.** The human-readable pointer stays what it is — a path a
+- [x] **The pointer gains a URL beside it.** The human-readable pointer stays what it is — a path a
       person recognises — and a destination that can offer a link offers one. The filesystem kind
       answers a path and no URL, permanently: a path on the daemon's host is not reachable from the
       phone reading the shell. Both are best-effort and both may be stale, which the glossary
       already says of the pointer alone
-- [ ] Core stores the content as a **blob**, because the store is content-addressed already
+- [x] Core stores the content as a **blob**, because the store is content-addressed already
       ([ADR 13](../adr/0013-assets-are-named-references-to-content-addressed-blobs.md)) and routing
       the same content twice should cost one copy. The routing record names the hash, the media type
       and the note
-- [ ] A migration for the new columns, appended rather than edited — the file is tracked by
+- [x] A migration for the new columns, appended rather than edited — the file is tracked by
       `PRAGMA user_version` and says at the top that a migration is never edited once applied
-- [ ] **The sweep must not take an output.** It reclaims blobs no asset names, and an output is
+- [x] **The sweep must not take an output.** It reclaims blobs no asset names, and an output is
       named by a routing record rather than an asset. Only a delivered record carries one and a
       delivered record is never removed, so nothing releases an output today — say that where the
       sweep is, so the reclaim [todo.md](../todo.md) still owes does not delete the evidence
-- [ ] The mirror carries the hash, the media type, the note and the URL on the record it already
+- [x] The mirror carries the hash, the media type, the note and the URL on the record it already
       mirrors. Whether the mirror also carries the **bytes**, so a rebuilt pool can still answer what
       it sent, is the open question in this phase and the plan's largest — see Unknowns
-- [ ] Tests: an outcome with an output stores one blob and names it; the same output twice stores
+- [x] Tests: an outcome with an output stores one blob and names it; the same output twice stores
       one blob; an outcome without one records nothing; the mirror round-trips
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
+- [x] `git commit`
 
 ### Phase 3 — The filesystem kind answers with what it wrote
 

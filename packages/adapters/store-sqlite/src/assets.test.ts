@@ -1,4 +1,4 @@
-import type { AssetId, Timestamp } from "@notemap/core";
+import type { AssetId, BlobHash, Timestamp } from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
@@ -6,8 +6,11 @@ import {
   asset,
   at,
   capture,
+  destination,
   frozenClock,
   putAssets,
+  putDestinations,
+  reserved,
   store,
 } from "./testing/fixture";
 
@@ -137,6 +140,31 @@ describe("releasing assets", () => {
         capture({ assets: [{ slot: "image", asset: "asset-nobody-minted" }] }),
       ),
     ).rejects.toThrow(/constraint/i);
+  });
+
+  it("withholds a blob a routing record names as its output", async () => {
+    const { pool: p } = pool();
+    await putAssets(p, asset({ id: "asset-1" as AssetId }));
+    await putDestinations(p, destination());
+    const item = capture();
+    await appendCapture(p, item);
+
+    await p.transaction(async (tx) => {
+      await tx.insertRoutingRecord(reserved(item));
+      // The same bytes the asset named: an output is named by a record, and
+      // releasing the last asset is not what makes it the sweep's.
+      await tx.resolveRoutingRecord(reserved(item).id, {
+        output: {
+          content: { blob: "blob-abc" as BlobHash, mediaType: "text/markdown" },
+        },
+      });
+    });
+
+    const orphaned = await p.transaction((tx) =>
+      tx.deleteAssets(["asset-1" as AssetId]),
+    );
+
+    expect(orphaned).toEqual([]);
   });
 
   it("takes nothing when asked for nothing", async () => {

@@ -16,6 +16,7 @@ import type {
   Timestamp,
 } from "#types/domain/ids";
 import type {
+  DeliveryLanding,
   DeliveryOutcome,
   DeliveryRequest,
   RoutingRecord,
@@ -26,6 +27,7 @@ import {
   destinationDetail,
   projectDelivery,
 } from "./delivery";
+import { landingFor, type Landed } from "./output";
 
 type Routed = Result<RoutingRecord, DeliveryRefusal>;
 
@@ -115,6 +117,13 @@ export async function route(
     return unresolved(ports, record, cause);
   }
 
+  // Before the transaction, because storing what came back reads a stream the
+  // adapter is still holding open, and the store locks for as long as one runs.
+  const landed =
+    outcome.kind === "delivered"
+      ? await landingFor(ports, outcome, signal)
+      : undefined;
+
   return ports.store.transaction(async (tx) => {
     // Read back while the adapter had the bytes: the record cannot be written
     // without either of them, but the entry saying bytes left the machine
@@ -122,7 +131,7 @@ export async function route(
     const present = (await tx.item(item)) !== undefined;
     const held = await tx.destination(request.destination);
 
-    await trace(ports, tx, record, outcome);
+    await trace(ports, tx, record, outcome, landed);
     if (!present) {
       return refused<RoutingRecord, DeliveryRefusal>({
         kind: "item-purged",
@@ -139,7 +148,7 @@ export async function route(
 
     switch (outcome.kind) {
       case "delivered":
-        return deliver(ports, tx, record, outcome.pointer);
+        return deliver(ports, tx, record, landed?.landing ?? {});
       case "unreachable":
         return reserve(ports, tx, record);
       case "rejected":
@@ -212,6 +221,7 @@ async function trace(
   tx: PoolTx,
   record: RoutingRecord,
   outcome: DeliveryOutcome,
+  landed: Landed | undefined,
 ): Promise<void> {
   if (outcome.kind !== "delivered") {
     await failed(ports, tx, record, {
@@ -235,6 +245,11 @@ async function trace(
       target: target.kind,
       ...destinationDetail(record),
       ...(outcome.pointer === undefined ? {} : { pointer: outcome.pointer }),
+      // The delivery landed and its evidence did not: said here, because the
+      // record has no field for an output it does not carry.
+      ...(landed?.outputLost === undefined
+        ? {}
+        : { outputLost: landed.outputLost }),
     },
   });
 }
@@ -263,12 +278,12 @@ async function deliver(
   ports: PoolPorts,
   tx: PoolTx,
   record: RoutingRecord,
-  pointer: string | undefined,
+  landing: DeliveryLanding,
 ): Promise<Routed> {
   const delivered: RoutingRecord = {
     ...record,
     state: "delivered",
-    ...(pointer === undefined ? {} : { pointer }),
+    ...landing,
   };
 
   await tx.insertRoutingRecord(delivered);
