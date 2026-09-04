@@ -1,22 +1,24 @@
 # Developer TODOs
 - [ ] fix minor UI issues
-  - composer, when showing that a new file/folder will be created in an existing folder, where there are sibling folders below that existing folder, will indicate that the new file/folder will be created in the bottom-most sibling folder, not necessarily the folder that the user has actually inputted
-  - composer shows previously routed items high up, confusing the user regarding what the action they are performing right now will do/create 
-  - lack of visual hierarchy is a problem in composer, it is hard to follow what is going on
-  - input fields in composer are just indicated with an underline, same as separators. Confusing.
-  - "create" button shows the derived file name correctly, but the "derived" word should be cut, just showing the title
-  - selecting a capture makes it highlighted (gray) but the highlight has no left-padding, producing a sharp line at the metadata text
-  - clicking an item in the feed should show additional metadata
-  - double-clicking an item in the feed/queue should open it
-  - "mark done" on routed items is meaningless - we need to consider "mark done", it should in essence be a way to indicate "manual routing", for example copy paste
-  - user needs way to copy paste capture contents
-  - capture input field should be auto-focused
-  - capture input shows ugly blue line around it
-  - when pressing shift+enter in capture input, it should press enter to capture
-  - attaching an image should preview it in the capture input, before user commits the capture, so they can verify that they added the right image. 
-  - Immediately hiding a routed item from the queue is confusing, especially if it fails. There's no good way to see pending operations.
+  - ~~composer, when showing that a new file/folder will be created in an existing folder, where there are sibling folders below that existing folder, will indicate that the new file/folder will be created in the bottom-most sibling folder, not necessarily the folder that the user has actually inputted~~ — **shipped** fa11848
+  - ~~composer shows previously routed items high up, confusing the user regarding what the action they are performing right now will do/create~~ — [shell-second-pass](plans/shell-second-pass.md)
+  - ~~lack of visual hierarchy is a problem in composer, it is hard to follow what is going on~~ — [shell-second-pass](plans/shell-second-pass.md)
+  - ~~input fields in composer are just indicated with an underline, same as separators. Confusing.~~ — [shell-second-pass](plans/shell-second-pass.md)
+  - ~~"create" button shows the derived file name correctly, but the "derived" word should be cut, just showing the title~~ — **shipped** fa11848; the name goes from the word entirely in [shell-second-pass](plans/shell-second-pass.md), the tree being where it lands
+  - ~~selecting a capture makes it highlighted (gray) but the highlight has no left-padding, producing a sharp line at the metadata text~~ — **shipped** fa11848; the two fills become one band in [shell-second-pass](plans/shell-second-pass.md)
+  - ~~clicking an item in the feed should show additional metadata~~ — [shell-second-pass](plans/shell-second-pass.md)
+  - ~~double-clicking an item in the feed/queue should open it~~ — [shell-second-pass](plans/shell-second-pass.md)
+  - ~~"mark done" on routed items is meaningless - we need to consider "mark done", it should in essence be a way to indicate "manual routing", for example copy paste~~ — [shell-second-pass](plans/shell-second-pass.md)
+  - ~~user needs way to copy paste capture contents~~ — [shell-second-pass](plans/shell-second-pass.md)
+  - ~~capture input field should be auto-focused~~ — **shipped** fa11848
+  - ~~capture input shows ugly blue line around it~~ — **shipped** fa11848
+  - ~~when pressing shift+enter in capture input, it should press enter to capture~~ — [shell-second-pass](plans/shell-second-pass.md)
+  - ~~attaching an image should preview it in the capture input, before user commits the capture, so they can verify that they added the right image.~~ — [shell-second-pass](plans/shell-second-pass.md)
+  - Immediately hiding a routed item from the queue is confusing, especially if it fails. There's no good way to see pending operations. **Not in [shell-second-pass](plans/shell-second-pass.md)** — it is about what the surface does after a decision rather than how the decision is drawn.
   - add new UI views
-    - routing view, showing all routed items
+    - routing view, showing all routed items. **Not in [shell-second-pass](plans/shell-second-pass.md)** — and reframed in
+      [misc-findings](misc-findings.md) as a filter on the action log the shell already has,
+      rather than a view of its own.
 
 - [ ] Workflow publishes a docker image for each commit, not just each release. Might not be necessary? Investigate
 
