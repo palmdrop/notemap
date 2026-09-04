@@ -47,15 +47,45 @@ test("an available action is taken once", async () => {
   expect(taken).toHaveBeenCalledTimes(1);
 });
 
+/** A word, a mark, and a panel of marked options: the shell draws its own. */
 test("the order selector reports which end the reader wants to start from", async () => {
   const chose = vi.fn();
   render(OrderSelector, { order: "oldest-first", onchoose: chose });
 
-  const control = screen.getByLabelText("Order") as HTMLSelectElement;
-  expect(control.value).toBe("oldest-first");
+  const control = screen.getByLabelText("Order");
+  expect(control.textContent).toContain("oldest");
+  expect(control.getAttribute("aria-expanded")).toBe("false");
+  expect(document.querySelector("select")).toBeNull();
 
-  await fireEvent.change(control, { target: { value: "newest-first" } });
+  await fireEvent.click(control);
+  await fireEvent.click(screen.getByRole("button", { name: "newest" }));
+
   expect(chose).toHaveBeenCalledWith("newest-first");
+  expect(control.getAttribute("aria-expanded")).toBe("false");
+});
+
+test("marks the end it is already reading from, and offers the other", async () => {
+  render(OrderSelector, { order: "newest-first", onchoose: vi.fn() });
+
+  await fireEvent.click(screen.getByLabelText("Order"));
+
+  const marked = screen
+    .getAllByRole("button")
+    .filter((one) => one.getAttribute("aria-pressed") === "true");
+  // The mark is the pointer `where` already uses.
+  expect(marked.map((one) => one.textContent?.trim())).toEqual(["▸ newest"]);
+});
+
+test("shuts on escape without choosing anything", async () => {
+  const chose = vi.fn();
+  render(OrderSelector, { order: "oldest-first", onchoose: chose });
+
+  const control = screen.getByLabelText("Order");
+  await fireEvent.click(control);
+  await fireEvent.keyDown(control, { key: "Escape" });
+
+  expect(control.getAttribute("aria-expanded")).toBe("false");
+  expect(chose).not.toHaveBeenCalled();
 });
 
 test("a tag is added by name, trimmed, and an empty one is not added at all", async () => {

@@ -801,7 +801,11 @@ explaining it, and no `zero` — a state word says what became of a *thing*, and
 not one.
 
 The reader's **order control** is in the bar and acts on whichever surface is being read; settings
-has no end to start from and it says nothing there. Which end a reader starts from is the reader's,
+has no end to start from and it says nothing there. **It is the shell's own chooser** *(2026-09-04)*
+— a word, a mark, and a panel of marked options, the idiom `where` already uses — and not the
+browser's `select`, which draws in the system's face and colours and cannot be brought into this
+one. Leaving the control shuts it, whichever way a person leaves; `esc` shuts it too, choosing
+nothing. Which end a reader starts from is the reader's,
 for the queue as for the feed ([CONTEXT.md](../../CONTEXT.md)). Turning a surface around reads it
 again from that end ([client.md](client.md#the-queue)) — a position belongs to the order that made
 it — so the control is a choice of order, not a re-sort of what is on screen.

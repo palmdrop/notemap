@@ -125,11 +125,11 @@ Depends on phase 5, which is what it holds still.
 
 Depends on nothing.
 
-- [ ] A chooser is a word, a mark, and a panel of marked options — the idiom `where` already uses
-- [ ] The order selector stops being a native `select`
-- [ ] `shell.md`: the shell draws its own choosers
-- [ ] `pnpm -r --silent test`
-- [ ] `git commit`
+- [x] A chooser is a word, a mark, and a panel of marked options — the idiom `where` already uses
+- [x] The order selector stops being a native `select`
+- [x] `shell.md`: the shell draws its own choosers
+- [x] `pnpm -r --silent test`
+- [x] `git commit`
 
 ### Phase 8 — the capture row
 
