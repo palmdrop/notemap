@@ -8,18 +8,39 @@ plan](../plans/shell-design-port.md) is written against; the prose account of
 | | |
 |---|---|
 | `shell.css` | Every token and every component style. What becomes `@theme` plus the primitives. |
-| `queue.html` | The queue, with capture as its first row and one item open. |
-| `feed.html` | The feed, including a routed item, an archived one, and a clamped long note. |
-| `composer.html`, `composer.css` | Every state the routing composer has, as [typed-routing-composer](../plans/typed-routing-composer.md) built it. The composer is a modal with its own stylesheet, so it is drawn here and nowhere else. |
+| `queue.html` | The queue, with capture as its first row, one item open, and the drained queue beneath it. |
+| `feed.html` | The feed, including an opened row, a routed item, an archived one, and a clamped long note. |
+| `composer.html`, `composer.css` | Every state the routing composer has, as [typed-routing-composer](../plans/typed-routing-composer.md) built it and [shell-second-pass](../plans/shell-second-pass.md) split it in two. The composer is a modal with its own stylesheet, so it is drawn here and nowhere else. |
 | `log.html`, `log.css` | The action log as it should be drawn. Built as [log-in-the-shell](../plans/log-in-the-shell.md), which made it a route of the app; it was drawn against the daemon's own page, which is why it carries both sides of every `light-dark()` where the others name a token. |
 | `shots/` | Each surface rendered at 1440 and at 390, so a change can be compared without opening a browser. |
 
-**These agree with the code as of 2026-09-03.** `queue.html` and `shell.css` no longer draw the
-composer at all: it was a panel beside the row, which a modal superseded on 2026-08-24, and
-`shell.css` carried a `.tree` block that predated the candidates browser and never described the
-one that shipped. Nothing in the register reserves width for a modal, so the stage is one column
-and `composer.html` is the whole account. `.opt` stays in `shell.css` because the register's own
-choosers are drawn with it.
+**These agree with the code as of 2026-09-04**, redrawn for
+[shell-second-pass](../plans/shell-second-pass.md).
+
+`shell.css` carries the register the code actually draws, which the pages had drifted from: a
+**17rem rail** with a 2.2rem gutter under a 72rem measure, rather than the 7.5rem gutter and 44rem
+column they were first drawn at. What it gained with them:
+
+- **An open row is one band.** The rail's fill runs across the gutter to meet the body's and the
+  accent edge sits at the head of the row, rather than two lit panels either side of the seam the
+  design spent an amendment removing.
+- **A row's actions on a grid**, two lines by what they do — `route done archive` above a muted
+  `copy edit open` — every cell taking the same inline padding, so the words align down the columns
+  and a line with fewer of them closes up rather than gapping.
+- **The drained queue**, which is one quiet line in the rail and no longer a paragraph beside a
+  `zero`.
+- **The corner**, which the pages did not draw at all: a confirmation in the ink, a failure in the
+  accent, refusals at the bottom.
+- **One row for both surfaces.** `feed.html` opens a row in place with the facts the queue's has
+  and the one it does not — where it went, and `undo` on a decision made by hand.
+
+`composer.html` is the two-column composer. Untaken there is one column; taking a destination
+splits it, and the modal grows to `--composer` in the one moment it may change size. The
+`remembered` case moved into that second column with the count beneath the path, the `gone` case is
+gone — the word is drawn nowhere now, and the flag survives only to keep a vanished place out of
+the ghost — and a `still` case draws the same composer one segment shallower, to show that nothing
+above the tree moves while it is typed. `create` has no field beside the line and `append` does,
+which is the rule about what the forecast knows.
 
 `composer.html` was drawn before the code and has since been corrected against it, on 2026-09-02
 and again on 2026-09-03 after a review read the two side by side:
@@ -39,11 +60,7 @@ and again on 2026-09-03 after a review read the two side by side:
 The line itself carries no label. `where` is the destination's step, and the place is the thing the
 modal is for.
 
-**Nothing here draws the corner** *(2026-09-03)*. It now holds notices as well as refusals — a
-confirmation in the ink, a failure in the accent, refusals at the bottom — and a routed row is
-watched out of the register wearing its word before it goes
-([plan](../plans/notices-as-they-happen.md)). It landed after the pages above were last re-rendered
-and is the one thing on them that is behind the code.
+**`log.html` is untouched** and still agrees with the code: nothing in this pass reached the log.
 
 Open any page directly — `file://` works, there is nothing to serve.
 
@@ -51,16 +68,17 @@ Open any page directly — `file://` works, there is nothing to serve.
 
 ```sh
 chromium --headless --disable-gpu --hide-scrollbars --virtual-time-budget=2000 \
-  --screenshot=shots/queue-1440.png --window-size=1440,1400 "file://$PWD/queue.html"
+  --screenshot=shots/queue-1440.png --window-size=1440,1750 "file://$PWD/queue.html"
 ```
 
 The same command drives a screenshot of the real app: run `pnpm dev`, point it
 at `http://localhost:5173/`, and read the two images side by side. Check 390 as
-well as 1440 — the register's columns tighten below 34rem.
+well as 1440 — the register's columns tighten below 44rem.
 
-**`shots/` is stale for `queue.html` and `composer.html`** as of 2026-09-03:
-both pages changed and no browser was available to re-render them. Re-run the
-command above for each surface at both widths.
+The window has to be tall enough for the whole page: a headless screenshot is
+the viewport and nothing more, so `queue.html` wants about 1750 at 1440 and
+`composer.html` about 4500. **`shots/` was re-rendered for every page on
+2026-09-04.**
 
 These are mockups, not components. They carry no state, no interaction and no
 data; a class here is a suggestion about structure, not a class to copy into a

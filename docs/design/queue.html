@@ -15,129 +15,150 @@
             <a href="#" class="on">queue</a>
             <a href="./feed.html">feed</a>
           </span>
-          <span class="state">online</span>
+          <span class="end">
+            <span>3 waiting</span>
+            <span>online</span>
+            <span class="chooser">oldest <span class="mark">&#9662;</span></span>
+            <a href="#">settings</a>
+          </span>
         </div>
 
-        <div class="stage solo">
-          <div class="left">
-            <div class="row">
-              <div class="a head">
-                <span class="stamp">2026-08-19</span>
-                <span class="stamp">14:32</span>
-              </div>
-              <div class="b compose wide">Anything worth keeping&hellip;</div>
+        <div class="furl"><span>&#9666;</span></div>
 
-              <div class="a lbl"></div>
-              <div class="b acts wide">
-                <span class="go">capture</span>
-                <span>attach</span>
-              </div>
-            </div>
-
-            <hr class="sep" />
-
-            <div class="strip"><span class="selector">oldest &#9662;</span></div>
-
-            <div class="row">
-              <div class="a head">
-                <span class="stamp">2026-08-14</span>
-                <span class="stamp">09:31</span>
-              </div>
-              <div class="b prose wide">
-                <p>
-                  The queue is a conveyor belt, not an archive. If it does not reach zero the
-                  design has failed, and no amount of clever sorting saves it.
-                </p>
-              </div>
-              <div class="a lbl">tags</div>
-              <div class="b set">
-                <span>design</span><span>notemap</span><span class="add">+</span>
-              </div>
-            </div>
-
-            <hr class="sep" />
-
-            <div class="row">
-              <div class="a head">
-                <span class="stamp">2026-08-15</span>
-                <span class="stamp">07:12</span>
-              </div>
-              <div class="b prose wide">
-                <p>
-                  Choosing a capture template is the decision to route, made early. That is how it
-                  survives the rule that a rule never delivers on its own.
-                </p>
-                <ul>
-                  <li>a template auto-tags</li>
-                  <li>a template may name a destination</li>
-                  <li>the person still confirms</li>
-                </ul>
-              </div>
-              <div class="a lbl">tags</div>
-              <div class="b set"><span>routing</span><span class="add">+</span></div>
-            </div>
-
-            <hr class="sep" />
-
-            <div class="row">
-              <div class="a head">
-                <span class="stamp">2026-08-16</span>
-                <span class="stamp">11:02</span>
-              </div>
-              <div class="b wide">
-                <div class="shot"><span>photographed page &mdash; 2 of 2</span></div>
-              </div>
-              <div class="a lbl">tags</div>
-              <div class="b set"><span>reading</span><span class="add">+</span></div>
-            </div>
-
-            <hr class="sep" />
-
-            <div class="row">
-              <span class="link">&#8594;</span>
-
-              <div class="a head">
-                <span class="stamp">2026-08-18</span>
-                <span class="stamp">16:20</span>
-              </div>
-              <div class="b prose wide">
-                <p>
-                  Ask whether the mirror should carry the routing record or only the fact that
-                  something left. ADR 19 says the delivery records what went, so the bytes that
-                  landed come back &mdash; but a rebuild has no destination to ask.
-                </p>
-              </div>
-
-              <div class="a lbl">tags</div>
-              <div class="b set">
-                <span>mirror</span><span>adr</span><span class="add">+</span>
-              </div>
-
-              <div class="a lbl">edited</div>
-              <div class="b value">2026-08-19 09:02</div>
-
-              <div class="a lbl">routing</div>
-              <div class="b value empty">none yet</div>
-
-              <div class="a lbl"></div>
-              <div class="b acts wide">
-                <span class="go">route</span>
-                <span>mark done</span>
-                <span>archive</span>
-                <span>edit</span>
-              </div>
-
-            </div>
-
-            <div class="foot"><span></span><span>load more</span></div>
+        <div class="register">
+          <!-- Capture is the first row of the queue, in the same two columns as
+               everything under it: the date the capture will keep on the left,
+               the field on the right, and the row's actions where a row's are. -->
+          <div class="a first">
+            <span class="stamp">2026-08-19 <span class="t">14:32</span></span>
+            <div class="pending">not captured</div>
           </div>
+          <div class="b first">
+            <div class="compose">Anything worth keeping&hellip;</div>
+            <div class="attached">
+              <span class="thumb"></span>
+              <span class="name">shot.png</span>
+              <span class="drop">drop</span>
+            </div>
+            <div class="acts" style="grid-template-columns: repeat(2, max-content)">
+              <div class="line">
+                <span class="go">capture</span><span>attach</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="a">
+            <span class="stamp">2026-08-14 <span class="t">09:31</span></span>
+            <div class="set"><span>design</span><span>notemap</span><span class="add">+</span></div>
+            <div class="went none">unrouted</div>
+          </div>
+          <div class="b">
+            <div class="prose">
+              <p>
+                The queue is a conveyor belt, not an archive. If it does not reach zero the
+                design has failed, and no amount of clever sorting saves it.
+              </p>
+            </div>
+          </div>
+
+          <div class="a">
+            <span class="stamp">2026-08-15 <span class="t">07:12</span></span>
+            <div class="set"><span>routing</span><span class="add">+</span></div>
+            <div class="went none">unrouted</div>
+          </div>
+          <div class="b">
+            <div class="prose">
+              <p>
+                Choosing a capture template is the decision to route, made early. That is how it
+                survives the rule that a rule never delivers on its own.
+              </p>
+              <ul>
+                <li>a template auto-tags</li>
+                <li>a template may name a destination</li>
+                <li>the person still confirms</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="a">
+            <span class="stamp">2026-08-16 <span class="t">11:02</span></span>
+            <div class="pending">pending</div>
+            <div class="set"><span>reading</span><span class="add">+</span></div>
+            <div class="went none">unrouted</div>
+          </div>
+          <div class="b">
+            <div class="shot"><span>photographed page &mdash; 2 of 2</span></div>
+          </div>
+
+          <!-- Opened, a row is for triage: the facts the rail holds back while
+               scanning, and the actions, on one fill that runs across the gutter. -->
+          <div class="a lit">
+            <span class="stamp">2026-08-18 <span class="t">16:20</span></span>
+            <div class="set"><span>mirror</span><span>adr</span><span class="add">+</span></div>
+            <div class="went none">unrouted</div>
+            <div class="facts">
+              <span class="k">edited</span><span class="v">08-19 09:02</span>
+            </div>
+          </div>
+          <div class="b lit">
+            <div class="prose">
+              <p>
+                Ask whether the mirror should carry the routing record or only the fact that
+                something left. ADR 19 says the delivery records what went, so the bytes that
+                landed come back &mdash; but a rebuild has no destination to ask.
+              </p>
+            </div>
+            <div class="acts">
+              <div class="line">
+                <span class="go">route</span><span>done</span><span>archive</span>
+              </div>
+              <div class="line">
+                <span class="quiet">copy</span><span class="quiet">edit</span><span class="quiet">open</span>
+              </div>
+            </div>
+            <div class="where">where it went &mdash; optional</div>
+          </div>
+
+          <div class="a"></div>
+          <div class="b foot"><span>load more</span></div>
+        </div>
+
+        <p class="caption">the queue, drained</p>
+
+        <!-- No paragraph and no `zero`: a state word says what became of a
+             thing, and an empty list is not one. -->
+        <div class="register">
+          <div class="a first">
+            <span class="stamp">2026-08-19 <span class="t">14:32</span></span>
+            <div class="pending">not captured</div>
+          </div>
+          <div class="b first">
+            <div class="compose">Anything worth keeping&hellip;</div>
+            <div class="acts" style="grid-template-columns: repeat(2, max-content)">
+              <div class="line">
+                <span class="go">capture</span><span>attach</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="a"><div class="drained">nothing waiting</div></div>
+          <div class="b"></div>
         </div>
       </div>
 
-      <div class="alarm">
-        <span>refused &mdash; tag "research" on 08-14 09:31</span>
-        <span>no such item: it was purged</span>
-        <span class="x">dismiss</span>
+      <!-- A confirmation goes on its own; a refusal holds until it is cleared,
+           and sits at the bottom, being the one that will not clear itself. -->
+      <div class="corner">
+        <div class="notice">
+          <span>copied</span>
+          <span class="about">08-18 16:20 &middot; Ask whether the mirror should carry&hellip;</span>
+        </div>
+        <div class="notice alarm">
+          <span>refused &mdash; tag &ldquo;research&rdquo;</span>
+          <span>no such item: it was purged</span>
+          <span class="about">08-14 09:31 &middot; The queue is a conveyor belt&hellip;</span>
+          <span class="ways"><span>look</span><span>dismiss</span></span>
+        </div>
       </div>
     </div>
   </body>

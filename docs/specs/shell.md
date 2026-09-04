@@ -4,6 +4,18 @@
 **Last updated**: 2026-09-04
 **Shipped**:
 
+- 2026-09-04 — **The shell's second pass.** One row serves the queue and the feed, opening in place
+  on both, and a double click on either goes to the item's own surface. An open row is one band
+  rather than two lit panels, carries only the facts that answer something, and offers its actions
+  as two aligned lines by what they do — leaving the queue, then working with the item. `done` asks
+  where it went and is not offered twice; `copy` takes the capture's text and says so in the
+  corner; a decision made by hand can be taken back. A record reads as its destination and the
+  place it landed rather than as the capability that carried it. The composer splits into two
+  columns once a destination is taken — the line, the word and the tree on one, everything
+  consulted or settled after it on the other — and stops moving while it is typed. The shell draws
+  its own choosers, the drained queue says one quiet thing, the capture row commits on `⇧⏎` and
+  shows the picture it holds. ([plan](../plans/shell-second-pass.md))
+
 - 2026-09-04 — **The composer asks what would be written, and the record shows what went.** A
   `preview` beside `route`, asked for and never volunteered, drawing what this destination would
   write now with the sentence saying that is what it is. A destination that offers no preview and

@@ -1,9 +1,9 @@
 # The shell's second pass
 
 **Date**: 2026-09-04
-**Status**: Todo
+**Status**: Done
 **Spec**: `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-09-04
 
 ---
 
@@ -146,13 +146,13 @@ Depends on nothing.
 Depends on every phase above. `docs/design/` is what the port is verified against and it currently
 describes none of this.
 
-- [ ] `composer.html` redrawn for the two columns and every state phase 5 and 6 settle
-- [ ] `queue.html` and `feed.html` redrawn for the band, the aligned actions and the drained queue
-- [ ] `shell.css` and `composer.css` carry what the pages now use
-- [ ] `shots/` re-rendered at 1440 and 390 for every page
-- [ ] `docs/design/README.md` says what agrees with the code, as of today's date
-- [ ] `todo.md` and `misc-findings.md`: the marks already written on this branch land with the rest
-- [ ] `git commit`
+- [x] `composer.html` redrawn for the two columns and every state phase 5 and 6 settle
+- [x] `queue.html` and `feed.html` redrawn for the band, the aligned actions and the drained queue
+- [x] `shell.css` and `composer.css` carry what the pages now use
+- [x] `shots/` re-rendered at 1440 and 390 for every page
+- [x] `docs/design/README.md` says what agrees with the code, as of today's date
+- [x] `todo.md` and `misc-findings.md`: the marks already written on this branch land with the rest
+- [x] `git commit`
 
 ---
 

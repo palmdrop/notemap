@@ -1,7 +1,7 @@
 > NOTE: Temporary finds
 
-Struck lines are carried by [shell-second-pass](plans/shell-second-pass.md). The two that are
-not say so.
+Struck lines were carried by [shell-second-pass](plans/shell-second-pass.md) and have shipped.
+The three that are not say so.
 
 # Misc notes
 - ~~There is no way to unmark a note as done. Also, a note can be marked done multiple times.~~ —
@@ -25,6 +25,9 @@ not say so.
   Update for newest/oldest ordering, tag picking,~~
 - **Not carried.** Editing does not allow attaching anything. It is the edit surface rather than the
   row, and wants designing on its own.
+- **Not carried.** Tag picking is still free entry beside a datalist rather than the shell's own
+  chooser, which the order control now uses. The idiom exists; converging the two is a change of
+  its own, tagging having free entry to keep.
 - ~~On the item row metadata, "edited" when there is no edits shows too long a message. Should we even
   show the field if there is no edit?~~
 - ~~On "payload" in the item row, does the user care? they can see the payload in the capture itself.
