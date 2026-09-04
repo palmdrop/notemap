@@ -14,11 +14,9 @@ const PER_RUN = 500;
  * capture arriving in between would make the delete fail against the foreign
  * key and take the whole run with it.
  *
- * **This never takes an output.** It reclaims assets nothing references, and an
- * output is named by a routing record rather than by an asset — so the store
- * withholds a blob a record names even where its last asset has gone. Nothing
- * releases an output today: only a delivered record carries one, and a
- * delivered record is never removed.
+ * **This never takes an output.** An output is named by a routing record rather
+ * than by an asset, so the store withholds a blob a record names even where its
+ * last asset has gone.
  */
 export async function sweepUnreferencedAssets(
   config: PoolConfig,

@@ -92,9 +92,7 @@ export function createWebdavDestination(
           delivery,
           signal,
         );
-        // No url: what a person opens is their own client against their own
-        // server, and the address this adapter speaks to is the daemon's
-        // credential rather than a link anybody else can follow.
+        // No url: the address here is the daemon's credential, not a link.
         return {
           kind: "delivered",
           pointer: landed.pointer,
@@ -105,12 +103,7 @@ export function createWebdavDestination(
       }
     },
 
-    /**
-     * The same conversion `deliver` runs, answered instead of written. It makes
-     * the reads a delivery makes and none of its writes, so an account that is
-     * asleep cannot be previewed against — which stops the seeing and not the
-     * deciding.
-     */
+    /** Reads what a delivery reads, so an account that is asleep cannot be previewed against. */
     preview: async (destination, delivery, signal) => {
       const settings = asWebdavSettings(destination.settings);
       if (settings === undefined) {
@@ -128,9 +121,6 @@ export function createWebdavDestination(
           ),
         );
       } catch (cause) {
-        // Sorted the way a delivery's own failure is: anything about the
-        // target is a no a person must act on, and everything else is a server
-        // that could not be reached.
         const failed = failure(cause);
         if (failed.kind === "rejected") throw new Rejected(failed.detail);
         throw cause;

@@ -204,10 +204,8 @@ export interface RoutingApi {
     record: RoutingRecordId,
   ): Promise<AttemptableDelivery | undefined>;
   /**
-   * What this destination would write for this item, without committing
-   * anything: no record, no job, nothing appended to the log. **Indicative
-   * rather than binding** — the delivery converts again when it runs, and the
-   * two may differ where a converter is not deterministic.
+   * What this destination would write, committing nothing. Indicative rather
+   * than binding: the delivery converts again when it runs.
    */
   preview(
     item: ItemId,
@@ -221,11 +219,7 @@ export interface RoutingApi {
     note?: string,
   ): Promise<Result<RoutingRecord, RoutingRefusal>>;
   recordsFor(item: ItemId): Promise<readonly RoutingRecord[]>;
-  /**
-   * What the delivery produced, streamed. A record that carries no output is
-   * refused rather than answered empty: nothing distinguishes an output of no
-   * bytes from an output nobody kept.
-   */
+  /** A record carrying no output is refused rather than answered empty. */
   openOutput(
     record: RoutingRecordId,
     signal?: AbortSignal,

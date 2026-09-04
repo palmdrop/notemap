@@ -4,13 +4,7 @@ import { assetName } from "@notemap/output-markdown";
 import type { Dav } from "./dav";
 import { sibling, type Contained } from "./paths";
 
-/**
- * What each asset would be called, keyed by slot. A name is its content's
- * digest and its uploaded filename, so it is arithmetic rather than a fact
- * about the server — which is what lets a note be rendered without anything
- * being uploaded. The naming is shared, so a webdav vault and a filesystem
- * vault call the same picture the same thing.
- */
+/** A name is arithmetic on the content and the filename, so a note can be rendered before anything is uploaded. */
 export function assetNames(
   assets: readonly DeliveredAsset[],
 ): ReadonlyMap<string, string> {

@@ -12,10 +12,7 @@ export const markProcessedRequestSchema = z
   })
   .openapi("MarkProcessedRequest");
 
-/**
- * What the delivery produced, without the bytes: those are their own fetch and
- * may be large. `content` present is a record with something to read.
- */
+/** Without the bytes, which are their own fetch and may be large. */
 export const outputSchema = z
   .object({
     content: z
@@ -94,15 +91,7 @@ export const capabilitySchema = z
   })
   .openapi("Capability");
 
-/**
- * What a destination says it would write. **Indicative, never binding**: the
- * delivery converts again when it runs.
- *
- * The content is inline because a preview is stored nowhere — there is no
- * second fetch to hand out — and it is text because that is what a person is
- * being shown. A media type that is not text answers what it would be and
- * nothing to read.
- */
+/** Indicative, never binding: the delivery converts again when it runs. */
 export const previewSchema = z
   .discriminatedUnion("kind", [
     z.object({

@@ -6,12 +6,7 @@ import { assetName } from "@notemap/output-markdown";
 
 import { createFile } from "./atomic";
 
-/**
- * What each asset would end up called, keyed by slot. A name is its content's
- * digest and its uploaded filename, so it is arithmetic rather than a fact
- * about the disk — which is what lets a note be rendered before, or without,
- * anything being written.
- */
+/** A name is arithmetic on the content and the filename, so a note can be rendered before anything is written. */
 export function assetNames(
   assets: readonly DeliveredAsset[],
 ): ReadonlyMap<string, string> {

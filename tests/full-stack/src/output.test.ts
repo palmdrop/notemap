@@ -7,11 +7,7 @@ import { daemons, MANUAL, vaults } from "./harness/index.ts";
 
 const daemon = daemons();
 
-/**
- * What went and what would go cross every layer there is: the adapter's
- * conversion, core's blob, the store's columns, two routes and the client's
- * transport. Nothing below this exercises the pair end to end.
- */
+/** Crosses the adapter, core's blob, the store, two routes and the client's transport. */
 describe("what a delivery produced, and what one would", () => {
   it("answers a preview that matches the note the delivery then writes", async () => {
     const running = await daemon();

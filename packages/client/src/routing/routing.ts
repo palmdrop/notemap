@@ -52,11 +52,7 @@ export function createRouting(deps: RoutingDeps): RoutingApi {
 
     recordsFor,
 
-    /**
-     * Asked, never volunteered, and kept by nothing here: a conversion may be a
-     * model call, and what it answers is indicative of a delivery that has not
-     * happened.
-     */
+    /** Asked, never volunteered, and kept by nothing here. */
     preview(item, request) {
       return answered(
         api.POST("/v1/items/{id}/route/preview", {

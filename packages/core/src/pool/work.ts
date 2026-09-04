@@ -101,9 +101,7 @@ export async function complete(
     throw new Error("core: recording enrichment output is not implemented yet");
   }
 
-  // Outside the transaction, for the reason `route` stores one outside its own:
-  // the bytes come off a stream the host is still holding, and the store locks
-  // for as long as a transaction runs.
+  // Outside the transaction, for the reason `route` stores one outside its own.
   const landed =
     outcome.kind === "delivered" ? await landingFor(ports, outcome) : undefined;
 

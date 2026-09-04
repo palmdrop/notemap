@@ -121,8 +121,7 @@ export function createFilesystemDestination(
           delivery,
         );
         await carryOut(composed, delivery, signal);
-        // No url, permanently: a path on the daemon's host is nowhere the
-        // phone reading the shell can follow.
+        // No url: a path on this host is nowhere a phone can follow.
         return {
           kind: "delivered",
           pointer: composed.note.relative,
@@ -133,19 +132,18 @@ export function createFilesystemDestination(
       }
     },
 
-    /**
-     * The same conversion `deliver` runs, answered instead of written. Nothing
-     * here touches the vault beyond the reads that decide what the markdown
-     * would be — which is why a root that is not there is unreachable rather
-     * than an empty answer.
-     */
+    /** Reads what a delivery reads, so a root that is not there is unreachable rather than empty. */
     preview: async (destination, delivery) => {
       const settings = asFilesystemSettings(destination.settings);
       if (settings === undefined) {
         throw new Rejected(why(unreadable(destination)));
       }
 
-      const reached = await realRootOf(settings.root);
+      // The same reach a delivery makes, so a root that is a file answers one
+      // thing rather than two.
+      const reached = await reachRoot(settings.root);
+      if (typeof reached !== "string") throw new Error(reached.detail);
+
       const overlap = overlapsAny(reached, reserved);
       if (overlap !== undefined) {
         throw new Unusable(overlapDetail(reached, overlap));
@@ -158,9 +156,6 @@ export function createFilesystemDestination(
         );
         return markdownOutput(composed.written);
       } catch (cause) {
-        // Sorted the way a delivery's own failure is: anything about the
-        // target is a no a person must act on, and everything else is a vault
-        // that could not be reached.
         const failed = failure(cause);
         if (failed.kind === "rejected") throw new Rejected(failed.detail);
         throw cause;
@@ -222,7 +217,7 @@ function overlapDetail(root: string, reserved: string): string {
 }
 
 /** The root as the filesystem holds it, or why it could not be reached. */
-async function reachRoot(root: string): Promise<string | DeliveryOutcome> {
+async function reachRoot(root: string): Promise<string | Unreachable> {
   try {
     const realRoot = await realRootOf(root);
     return (await stat(realRoot)).isDirectory()
@@ -240,18 +235,12 @@ type Wiring = {
 
 /**
  * What a delivery would put in the vault, worked out without putting any of it
- * there. Delivering is this plus the writes; previewing is this and nothing —
- * which is what makes the two share one conversion rather than promising to.
+ * there. Delivering is this plus the writes; previewing is this and nothing.
  */
 type Composition = {
   readonly note: Contained;
-  /**
-   * The markdown this delivery contributes, which is the output it reports:
-   * for an append into a note that is already there, what was inserted rather
-   * than the note it was inserted into.
-   */
+  /** What this delivery contributes: for an append into a note that is there, what was inserted. */
   readonly written: string;
-  /** The whole file afterwards, and whether it is one this delivery brings into being. */
   readonly file: string;
   readonly fresh: boolean;
 };
@@ -369,27 +358,18 @@ async function append(
 
   const existing = await readIfPresent(note.absolute);
   if (existing === undefined) {
-    // Everything in a note this delivery brought into being is what it put
-    // there, frontmatter included.
     const file = `${rendered.frontmatter}\n${insertUnder("", rendered.body, heading)}`;
     return { note, written: file, file, fresh: true };
   }
 
   return {
     note,
-    // The heading it went under is the note's own structure, not this
-    // delivery's contribution to it.
     written: rendered.body,
     file: insertUnder(existing, rendered.body, heading),
     fresh: false,
   };
 }
 
-/**
- * An asset's name is arithmetic on its content and its filename, so the note
- * can be rendered before anything is placed beside it — and without anything
- * being placed at all.
- */
 function render(wiring: Wiring, delivery: Delivery, note: Contained) {
   return renderNote(wiring.renderers, delivery, {
     directory: within(note),
@@ -436,7 +416,9 @@ async function readIfPresent(path: string): Promise<string | undefined> {
   }
 }
 
-function unreachable(detail: string): DeliveryOutcome {
+type Unreachable = { readonly kind: "unreachable"; readonly detail: string };
+
+function unreachable(detail: string): Unreachable {
   return { kind: "unreachable", detail };
 }
 

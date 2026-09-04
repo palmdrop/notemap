@@ -124,7 +124,10 @@
 - [ ] Nothing reclaims a blob no asset ever named. **Whatever closes this must not take an
   output**: a delivery's output is a blob named by a routing record rather than by an asset, so a
   reclaim that reasons from the `assets` table alone would delete the evidence of what was sent
-  (2026-09-04). The store already withholds one from the sweep's release path; a reclaim that
+  (2026-09-04). An output also *adds* to what this entry owes: the blob is written before the
+  transaction that names it, so a route refused as `item-purged` after a delivery landed, or a
+  completion whose lease was lost, leaves one behind. That is an ordinary path rather than the
+  crash the upload case describes. The store already withholds one from the sweep's release path; a reclaim that
   walks the blob store instead has to ask the same question. The sweep enumerates the `assets` table, so a
   blob written by an upload that never minted a row — a crash between the two, or a refused
   `asset-id-conflict` — is permanent, where every other kind of debris is eventually taken. Both

@@ -22,11 +22,7 @@ export type Note = {
 /** What every note either kind writes is, and what a delivery says its output was. */
 export const MARKDOWN = "text/markdown";
 
-/**
- * The bytes a delivery wrote, for a kind that has nothing to confess: this
- * rendering carries the payload, the tags and the provenance, and the assets go
- * beside the note rather than being dropped.
- */
+/** For a kind with nothing to confess: this rendering carries everything, and the assets go beside it. */
 export function markdownOutput(text: string): DeliveredOutput {
   const written = new TextEncoder().encode(text);
   return {

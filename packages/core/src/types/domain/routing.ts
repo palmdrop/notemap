@@ -63,10 +63,8 @@ export type DeliveredContent = {
 };
 
 /**
- * What a delivery produced, and what it could not carry. Both halves are
- * optional and independent: a destination posting to an API may have nothing
- * worth keeping and still have something to say, and a kind that carries
- * everything has content and nothing to confess.
+ * Both halves optional and independent: a destination may have nothing worth
+ * keeping and still have something to say about what it could not carry.
  */
 export type DeliveredOutput = {
   readonly content?: DeliveredContent;
@@ -87,9 +85,7 @@ export type StoredOutput = {
 
 /**
  * A delivery may convert lossily and still have delivered: `rejected` is for a
- * capture the destination can make no sense of, not for one it carried in part
- * and said so. The `url` is a link to the same place the pointer names, for a
- * destination that can offer one — both are best-effort and both may be stale.
+ * capture the destination can make no sense of, not for one it carried in part.
  */
 export type DeliveryOutcome =
   | {
@@ -109,13 +105,9 @@ export type OpenedOutput = {
 };
 
 /**
- * What a destination says it would write, asked before anything is committed.
- * Indicative and never binding: the delivery converts again when it runs.
- *
- * `rejected` is a delivery the destination would refuse, on `DeliveryOutcome`'s
- * own terms; `unreachable` is a destination that had to be reached to answer
- * and could not be, which does not stop the decision being made; `not-offered`
- * is a kind that does not do this at all, on `candidates`' terms.
+ * What a destination says it would write. Indicative and never binding: the
+ * delivery converts again when it runs. None of the three failures stops the
+ * decision being made — only the seeing of it.
  */
 export type PreviewReport =
   | ({ readonly kind: "previewed" } & DeliveredOutput)

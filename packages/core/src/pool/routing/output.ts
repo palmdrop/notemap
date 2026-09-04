@@ -11,10 +11,8 @@ import type {
 import type { Result } from "#types/result";
 
 /**
- * What a delivery that landed leaves on its record, with whatever could not be
- * kept of it said out loud. The bytes have already arrived at the destination
- * by the time this runs, so failing to store the evidence cannot un-deliver
- * anything and must not fail the call that records it.
+ * The bytes have already arrived at the destination by the time this runs, so
+ * failing to store the evidence must not fail the call that records it.
  */
 export type Landed = {
   readonly landing: DeliveryLanding;
@@ -50,11 +48,7 @@ export async function landingFor(
   return { landing: { ...where, ...(output === undefined ? {} : { output }) } };
 }
 
-/**
- * The content becomes a blob, because the store is content-addressed already
- * and routing the same content twice should cost one copy. An output that is
- * neither content nor note is nothing, and the record keeps nothing.
- */
+/** An output that is neither content nor note is nothing, and the record keeps nothing. */
 async function storeOutput(
   ports: PoolPorts,
   output: DeliveredOutput | undefined,
@@ -76,11 +70,7 @@ async function storeOutput(
   };
 }
 
-/**
- * The bytes a delivery produced. Does not rehash, on the same terms an asset's
- * own read does not: drift is `verify`'s to find, and a person reading what was
- * sent cannot afford a second pass over it.
- */
+/** Does not rehash, as an asset's own read does not: drift is `verify`'s to find. */
 export async function openOutput(
   ports: PoolPorts,
   id: RoutingRecordId,

@@ -99,6 +99,14 @@
   let reading = $state(false);
   let unreadable = $state("");
 
+  // The page component is reused across a change of record, so what was read
+  // for one would otherwise be drawn as what the next one sent.
+  $effect(() => {
+    void wanted;
+    output = undefined;
+    unreadable = "";
+  });
+
   const saidAboutOutput = $derived(
     record?.output?.content === undefined && record?.output?.note === undefined
       ? NO_OUTPUT_KEPT
@@ -108,12 +116,15 @@
   async function read() {
     if (record === undefined) return;
 
+    const asked = wanted;
     reading = true;
     unreadable = "";
     try {
-      output = await client.routing.output(record.id);
+      const bytes = await client.routing.output(record.id);
+      if (asked === wanted) output = bytes;
     } catch (error) {
-      unreadable = `${OUTPUT_UNREADABLE} ${saidBy(error)}`;
+      if (asked === wanted)
+        unreadable = `${OUTPUT_UNREADABLE} ${saidBy(error)}`;
     } finally {
       reading = false;
     }

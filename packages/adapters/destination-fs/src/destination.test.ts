@@ -1089,6 +1089,28 @@ describe("what it says it would write", () => {
     expect(picture.opens()).toBe(0);
   });
 
+  it("answers a root that is a file the way a delivery does", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    await mkdir(made.path.split("/").slice(0, -1).join("/"), {
+      recursive: true,
+    });
+    await writeFile(made.path, "a note, where a folder should be\n");
+    const destination = bind(made.path, [TEXT], {});
+    const each = delivery({ arguments: { directory: "", filename: "a.md" } });
+
+    const outcome = await destination.deliver(each);
+    const shown = await destination.preview(each).then(
+      () => "answered",
+      (cause: unknown) => cause,
+    );
+
+    // Unreachable from the delivery, so not a refusal from the preview.
+    expect(outcome).toMatchObject({ kind: "unreachable" });
+    expect(shown).not.toBe("answered");
+    expect(shown).not.toBeInstanceOf(Rejected);
+  });
+
   it("says a create would be refused where the name is taken", async () => {
     const { path, destination } = await vault({ text: renderText });
     await writeFile(join(path, "a.md"), "theirs\n");

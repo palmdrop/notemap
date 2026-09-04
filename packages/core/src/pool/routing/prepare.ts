@@ -11,17 +11,12 @@ import type { Delivery, DeliveryRequest } from "#types/domain/routing";
 import type { Result } from "#types/result";
 import { projectDelivery } from "./delivery";
 
-/** Everything a destination is about to be handed, and nothing written yet. */
 export type Prepared = {
   readonly destination: Destination;
   readonly delivery: Delivery;
 };
 
-/**
- * A destination that could not say what it accepts cannot have arguments
- * checked against it. What that means differs between the two callers — a route
- * refuses, a preview reports — so it is answered rather than decided here.
- */
+/** A route refuses an unreachable destination and a preview reports one, so this answers rather than decides. */
 export type Unprepared =
   | PreparationRefusal
   | { readonly kind: "unreachable"; readonly detail: string };
@@ -29,8 +24,7 @@ export type Unprepared =
 /**
  * Everything checkable, checked before anything is written or attempted: this
  * is interactive, and a typo'd argument is worth refusing while the person is
- * still looking at the item. Nothing here reserves, mints or appends, which is
- * what lets a preview run it too.
+ * still looking at the item. Nothing here reserves, mints or appends.
  */
 export async function prepare(
   ports: PoolPorts,

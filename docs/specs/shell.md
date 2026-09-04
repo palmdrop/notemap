@@ -429,9 +429,12 @@ Changing any part of the decision **drops what was shown** rather than leaving i
 preview belongs to the arguments it was asked with, and a stale one reads as a promise about the
 new ones. A kind that offers no preview, and a destination that could not be reached to give one,
 are muted lines saying so — the same idiom the typed line uses for a vault it cannot list, and
-neither ever blocks `route`. A delivery the destination says it would refuse is drawn as that, and
-is the one case where a preview is worth more than the route it precedes: the refusal arrives
-before the decision rather than after it.
+neither ever blocks `route`. A delivery the destination says it would refuse is drawn as that, and where a kind can
+say so it is the case a preview is worth most in — the refusal arriving before the decision rather
+than after it. **Not every kind can.** A refusal a delivery only discovers by attempting the write
+is one its preview cannot forecast without a request the delivery itself never makes; the webdav
+kind's conditional `PUT` is exactly that, so it shows the note and the delivery that follows is
+what refuses. A preview is indicative about refusals as it is about bytes.
 
 The composer is still shaped for one thing it does not have: a slot above `where` for a decision
 that arrived **pre-filled with an attribution**, which is the one shape a routing rule, a capture

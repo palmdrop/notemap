@@ -50,9 +50,11 @@ the reasoning for the ones worth it.
   from mirror text alone can and cannot answer.
 - **The output of `append-to-file` is what was inserted**, not the file it was inserted into, and
   `create-or-append-file` follows it. The record answers what this delivery put there.
-- **A preview needs no reachability for the filesystem kind**, which follows from the line above:
-  if the output is the inserted bytes, converting them reads nothing at the destination. The port
-  still allows `unreachable`, for a kind whose conversion does need to look.
+- **A preview reads what its delivery reads, and no more.** For the filesystem kind that is the
+  root resolved, the target stat'd, and — for an append — the note itself, because whether it is
+  there is what decides between the whole note and the inserted body. So a preview *can* be
+  `unreachable`, and against an unmounted vault it is. What the line above buys is not a preview
+  that needs nothing, but one that needs nothing a delivery would not have needed anyway.
 - **The preview route is `POST /v1/items/{id}/route/preview`** — under the verb it previews, taking
   the same body. `/routing` on an item is the record list, and a preview is not about records. The
   output fetch follows the same rule and is `GET /v1/routing/{record}/output` rather than the

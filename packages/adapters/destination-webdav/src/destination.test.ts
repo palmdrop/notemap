@@ -922,8 +922,7 @@ describe("what it says it would write", () => {
     expect(shown.mediaType).toBe("text/markdown");
     expect(shown.text).toContain("- 'project/fiction-a'");
     expect(server.files()).toEqual({});
-    // Its own `PUT` is conditional, so a delivery never asks first and neither
-    // does this: nothing was read either.
+    // Its `PUT` is conditional, so a delivery never asks first and neither does this.
     expect(server.requests()).toEqual([]);
 
     expect(

@@ -7,6 +7,7 @@ import type { Destination } from "@notemap/core";
 
 import {
   captureMany,
+  envelope,
   createVault,
   daemon,
   ids,
@@ -564,6 +565,28 @@ describe("POST /v1/items/{id}/route/preview", () => {
 
     expect(shown).toMatchObject({ kind: "rejected" });
     expect(shown.detail).toContain("already there");
+  });
+
+  it("cuts a long preview at a character rather than a byte", async () => {
+    const host = await vaulted("ready");
+    // Two bytes per character, so the megabyte cap lands mid-character unless
+    // the read is decoded as a stream.
+    const item = "0198f0c2-0000-7000-8000-0000000000aa";
+    const written = await send(host.app, "/v1/captures", {
+      ...envelope({ id: item }),
+      payload: {
+        type: "text",
+        content: { text: "é".repeat(700_000) },
+        metadata: {},
+        assets: [],
+      },
+    });
+    expect(written.status).toBe(201);
+
+    const shown = (await body(await preview(host, item))) as Preview;
+
+    expect(shown.content?.truncated).toBe(true);
+    expect(shown.content?.text).not.toContain("\uFFFD");
   });
 
   it("refuses a capability the destination never declared", async () => {

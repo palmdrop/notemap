@@ -34,9 +34,7 @@ export async function route(
   signal?: AbortSignal,
 ): Promise<Routed> {
   const prepared = await prepare(ports, item, request, signal);
-  // Nothing has been attempted and nothing written, so a destination that could
-  // not describe itself refuses rather than reserving: a record minted here
-  // would carry arguments nobody validated, and every retry would refuse again.
+  // A record minted here would carry arguments nobody validated.
   if (prepared.kind === "refused") return refused(prepared.refusal);
 
   const { destination, delivery } = prepared.value;
@@ -160,8 +158,7 @@ async function trace(
       target: target.kind,
       ...destinationDetail(record),
       ...(outcome.pointer === undefined ? {} : { pointer: outcome.pointer }),
-      // The delivery landed and its evidence did not: said here, because the
-      // record has no field for an output it does not carry.
+      // The delivery landed and its evidence did not: the record has no field for that.
       ...(landed?.outputLost === undefined
         ? {}
         : { outputLost: landed.outputLost }),

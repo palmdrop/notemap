@@ -151,8 +151,7 @@ describe("releasing assets", () => {
 
     await p.transaction(async (tx) => {
       await tx.insertRoutingRecord(reserved(item));
-      // The same bytes the asset named: an output is named by a record, and
-      // releasing the last asset is not what makes it the sweep's.
+      // The same bytes the asset named.
       await tx.resolveRoutingRecord(reserved(item).id, {
         output: {
           content: { blob: "blob-abc" as BlobHash, mediaType: "text/markdown" },

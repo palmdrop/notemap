@@ -296,3 +296,24 @@ test("says why what was sent could not be read, and lets it be asked again", asy
   expect(await screen.findByText(/could not be read/)).toBeDefined();
   expect(screen.getByRole("button", { name: "read it" })).toBeDefined();
 });
+
+test("drops what one record sent when another is drawn", async () => {
+  pool((request) =>
+    answering(
+      [WITH_OUTPUT, { ...WITH_OUTPUT, id: "rec-2" }],
+      DESCRIBED,
+      markdown,
+    )(request),
+  );
+  await client.destinations.load();
+
+  const drawn = render(Record, { item: "one", record: "rec" });
+  await fireEvent.click(await screen.findByRole("button", { name: "read it" }));
+  expect(await screen.findByText(/# a thought/)).toBeDefined();
+
+  // The page component is reused across a change of record.
+  await drawn.rerender({ item: "one", record: "rec-2" });
+
+  expect(await screen.findByRole("button", { name: "read it" })).toBeDefined();
+  expect(screen.queryByText(/# a thought/)).toBeNull();
+});

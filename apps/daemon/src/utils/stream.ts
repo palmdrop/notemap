@@ -1,8 +1,4 @@
-/**
- * A pull-driven bridge from what core streams to what a `Response` takes. Pull
- * rather than push, so a slow reader is what paces the read, and a cancelled
- * response closes the source rather than leaving it open.
- */
+/** Pull-driven, so a slow reader paces the read and a cancelled response closes the source. */
 export function webStream(
   bytes: AsyncIterable<Uint8Array>,
 ): ReadableStream<Uint8Array> {

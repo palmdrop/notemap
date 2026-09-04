@@ -28,11 +28,7 @@ import { readBody } from "../utils/body";
 import { json, refuse } from "../utils/responses";
 import { webStream } from "../utils/stream";
 
-/**
- * An output has no filename of its own — nothing named it, and the record is
- * what it belongs to. The extension is what a download needs to open sensibly,
- * and an unknown media type gets none rather than a guessed one.
- */
+/** An output has no filename of its own, and an unknown media type gets no extension rather than a guessed one. */
 const EXTENSIONS: Readonly<Record<string, string>> = {
   "text/markdown": ".md",
   "text/plain": ".txt",
@@ -97,11 +93,7 @@ export function routeHandler(pool: Pool) {
   };
 }
 
-/**
- * What the destination says it would write, answered rather than written: this
- * `POST` reserves nothing, appends nothing and touches nothing at the
- * destination beyond whatever it had to read to answer.
- */
+/** A `POST` that reserves nothing, appends nothing and writes nothing. */
 export function previewHandler(pool: Pool) {
   return async (context: Context): Promise<Response> => {
     const body = await readBody(context, routeRequestSchema);
@@ -124,25 +116,26 @@ export function previewHandler(pool: Pool) {
 
     const report = result.value;
     return json(
-      report.kind === "previewed" ? await readable(report) : report,
+      report.kind === "previewed"
+        ? await readable(report, context.req.raw.signal)
+        : report,
       200,
     );
   };
 }
 
-/**
- * The bytes, in the answer rather than behind a second fetch: a preview is
- * stored nowhere, so there is nothing to hand out a URL to. Text only, because
- * this is JSON and because a preview is something a person reads.
- */
-async function readable(report: PreviewReport & { kind: "previewed" }) {
+/** Inline, because a preview is stored nowhere and there is no second fetch to point at. */
+async function readable(
+  report: PreviewReport & { kind: "previewed" },
+  signal?: AbortSignal,
+) {
   const { content, note } = report;
   const said = note === undefined ? {} : { note };
 
   if (content === undefined) return { kind: "previewed" as const, ...said };
 
   const read = TEXTUAL.test(essence(content.mediaType))
-    ? await take(await content.open(), MAX_PREVIEW_BYTES)
+    ? await take(await content.open(signal), MAX_PREVIEW_BYTES)
     : undefined;
 
   return {
@@ -156,42 +149,34 @@ async function readable(report: PreviewReport & { kind: "previewed" }) {
   };
 }
 
-/** What can be put in a JSON string honestly. Anything else says what it is and nothing more. */
+/** What can be put in a JSON string honestly. */
 const TEXTUAL = /^text\/|^application\/(json|xml|yaml)$|\+(json|xml)$/;
 
+/**
+ * Decoded as it arrives and never flushed, so a character straddling the limit
+ * is dropped rather than becoming a replacement one.
+ */
 async function take(
   bytes: AsyncIterable<Uint8Array>,
   limit: number,
 ): Promise<{ text: string; truncated: boolean }> {
-  const chunks: Uint8Array[] = [];
+  const decoder = new TextDecoder();
+  let text = "";
   let size = 0;
-  let truncated = false;
 
   for await (const chunk of bytes) {
     if (size + chunk.byteLength > limit) {
-      chunks.push(chunk.subarray(0, limit - size));
-      truncated = true;
-      break;
+      text += decoder.decode(chunk.subarray(0, limit - size), { stream: true });
+      return { text, truncated: true };
     }
-    chunks.push(chunk);
+    text += decoder.decode(chunk, { stream: true });
     size += chunk.byteLength;
   }
 
-  const joined = new Uint8Array(size + (truncated ? limit - size : 0));
-  let at = 0;
-  for (const chunk of chunks) {
-    joined.set(chunk, at);
-    at += chunk.byteLength;
-  }
-
-  return { text: new TextDecoder().decode(joined), truncated };
+  return { text, truncated: false };
 }
 
-/**
- * The bytes a delivery produced, on the same inert terms an asset's bytes are
- * served: this is content a destination wrote, coming back from the daemon's
- * own origin.
- */
+/** On the inert terms an asset's bytes are served: this is content from the daemon's own origin. */
 export function routingOutputHandler(pool: Pool) {
   return async (context: Context): Promise<Response> => {
     const record = (context.req.param("record") ?? "") as RoutingRecordId;
@@ -206,8 +191,7 @@ export function routingOutputHandler(pool: Pool) {
 
     const { blob, mediaType, bytes } = opened.value;
 
-    // No `Content-Length`, on the asset read's own reasoning: it would come
-    // from the row, and nothing rehashes on the way out.
+    // No `Content-Length`, on the asset read's own reasoning.
     return new Response(webStream(bytes), {
       status: 200,
       headers: {

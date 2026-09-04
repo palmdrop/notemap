@@ -10,18 +10,10 @@ import type { Result } from "#types/result";
 import { prepare } from "./prepare";
 
 /**
- * What this destination would write, asked before anything is committed.
- *
- * **Indicative, never binding**: the delivery converts again when it runs, and
- * nothing here is kept. So this reserves nothing — no routing record, no job,
- * no lease, nothing appended to the log — and the pool is exactly as it was
- * whether or not it was asked.
- *
- * It is refused for the reasons a route is refused, because a preview that
- * answered where a route would refuse would be describing a decision nobody can
- * make. `unreachable` and `not-offered` are reported rather than refused: both
- * are ordinary, and neither stops the decision being made — only the seeing of
- * it.
+ * Indicative, never binding, and reserving nothing: no record, no job, no
+ * lease, nothing appended. Refused for the reasons a route is refused, since a
+ * preview that answered where a route would refuse would describe a decision
+ * nobody can make.
  */
 export async function preview(
   ports: PoolPorts,

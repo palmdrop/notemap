@@ -178,10 +178,7 @@ export interface Destinations {
     request: CandidatesRequest,
     signal?: AbortSignal,
   ): Promise<CandidatesAnswer>;
-  /**
-   * What a delivery would produce, without producing it. Rejects with
-   * `NotOffered` where the adapter registered for the kind has none.
-   */
+  /** Rejects with `NotOffered` where the adapter registered for the kind has none. */
   preview(
     destination: Destination,
     delivery: Delivery,
@@ -212,14 +209,11 @@ export interface DestinationKindAdapter extends DestinationKind {
     signal?: AbortSignal,
   ): Promise<CandidatesAnswer>;
   /**
-   * What `deliver` would produce, given the same delivery, and **nothing at
-   * the destination is touched**. Indicative rather than binding: the delivery
-   * converts again when it runs, and that the two agree is this adapter's
-   * discipline rather than something the port can enforce.
+   * What `deliver` would produce, writing nothing. That the two agree is this
+   * adapter's discipline rather than something the port can enforce.
    *
    * Throwing `Rejected` is a delivery that would be refused; throwing anything
-   * else is a destination that could not be reached, which previewing may need
-   * where delivering does. Absent is `not-offered`.
+   * else could not be reached. Absent is `not-offered`.
    */
   preview?(
     destination: Destination,

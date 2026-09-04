@@ -24,11 +24,7 @@ export type Wiring = {
   readonly renderers: Renderers;
 };
 
-/**
- * Where the note is, and the markdown this delivery put there — which for an
- * append into a note that was already there is what was inserted rather than
- * the note it was inserted into.
- */
+/** What this delivery put there: for an append into a note that was there, what was inserted. */
 export type Landed = {
   readonly pointer: string;
   readonly written: string;
@@ -187,8 +183,6 @@ async function append(
     });
 
     if (existing === undefined) {
-      // Everything in a note this delivery brought into being is what it put
-      // there, frontmatter included.
       const fresh = wholeUnder(rendered, heading);
       const created = await wiring.dav.create(note.encoded, fresh, signal);
       // Somebody made it between the read and the write, so it is an append now.
@@ -219,8 +213,6 @@ async function append(
       existing.etag,
       signal,
     );
-    // What was inserted, not the note it was inserted into: the heading it went
-    // under is the note's own structure rather than this delivery's.
     if (written === "written") {
       return { pointer: note.relative, written: rendered.body };
     }
@@ -233,25 +225,19 @@ async function append(
   );
 }
 
-/** The whole of a note, as `create` writes one. */
 function whole(rendered: Note): string {
   return `${rendered.frontmatter}\n${rendered.body}`;
 }
 
-/** The whole of a note an append brings into being, which may open with a heading. */
 function wholeUnder(rendered: Note, heading?: string): string {
   return `${rendered.frontmatter}\n${insertUnder("", rendered.body, heading)}`;
 }
 
 /**
- * What a delivery would put there, and nothing put there. It makes exactly the
- * reads a delivery makes and none of its writes: `create` never asks whether
- * the note is there — its `PUT` is conditional and the server decides — so
- * neither does this, and an append reads the note it would append to because
- * whether that note exists is what decides the answer.
- *
- * Assets are named rather than placed: a name is arithmetic on the content and
- * the filename, so the links are the ones the delivery would write.
+ * The reads a delivery makes and none of its writes. `create` never asks
+ * whether the note is there — its `PUT` is conditional and the server decides —
+ * so neither does this; an append reads, because that is what decides the
+ * answer.
  */
 export async function previewNote(
   wiring: Wiring,

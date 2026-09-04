@@ -254,8 +254,7 @@ describe("a vault that cannot be written, and then can", () => {
         ...record,
         state: "delivered",
         pointer: "inbox/a-thought.md",
-        // The retry that landed is what wrote the note, so it is what says
-        // what went: the kind carries everything, and confesses nothing.
+        // The retry that landed is what wrote the note, so it says what went.
         output: {
           content: {
             blob: expect.any(String) as unknown as string,

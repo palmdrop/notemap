@@ -1,8 +1,4 @@
-/**
- * A URL a destination gave us, if it is one a browser may be sent to. The
- * string comes from an adapter rather than a person, but it reaches an `href`
- * either way, and `javascript:` in one is script running on this origin.
- */
+/** `javascript:` in an `href` is script on this origin, and the string came from an adapter. */
 export function followable(url: string | undefined): string | undefined {
   if (url === undefined) return undefined;
 
@@ -12,8 +8,6 @@ export function followable(url: string | undefined): string | undefined {
       ? url
       : undefined;
   } catch {
-    // Not a URL at all: a pointer is a path a person recognises, and this is
-    // the field that was supposed to be more than that.
     return undefined;
   }
 }

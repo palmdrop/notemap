@@ -24,6 +24,7 @@
   import {
     NO_PREVIEW_OFFERED,
     PREVIEW_IS_INDICATIVE,
+    PREVIEW_NOT_TEXT,
     PREVIEW_UNREACHABLE,
   } from "$lib/said";
   import { fieldsOf, valuesFrom } from "$lib/schema-form";
@@ -69,7 +70,6 @@
   /** Why one cannot be routed to, learnt by asking it. Retirement needs no asking. */
   let refusing = $state<Record<string, string>>({});
 
-  /** Only ever what was asked for: a conversion may be a model call. */
   let shown = $state<RoutingPreview | undefined>(undefined);
   let showing = $state(false);
 
@@ -132,28 +132,30 @@
     shown = undefined;
   });
 
-  /**
-   * On demand and never on a keystroke: the conversion may reach the
-   * destination or a model, and only the chosen destination is ever asked.
-   */
+  /** On demand and never on a keystroke: the conversion may be a model call. */
   async function show() {
     if (chosen === undefined || capability === undefined) return;
 
+    // The answer belongs to the decision it was asked with. One that resolves
+    // after the person has moved on is dropped rather than drawn under
+    // arguments it knows nothing about.
+    const asked = decision;
     showing = true;
+    said = "";
     try {
-      shown = await client.routing.preview(item, {
+      const answer = await client.routing.preview(item, {
         destination: chosen,
         capability,
         arguments: valuesFrom(fields, args),
       });
+      if (asked === decision) shown = answer;
     } catch (error) {
-      said = saidBy(error);
+      if (asked === decision) said = saidBy(error);
     } finally {
       showing = false;
     }
   }
 
-  /** Why there is nothing to read, for the answers that are conditions rather than content. */
   const nothingShown = $derived.by(() => {
     switch (shown?.kind) {
       case "not-offered":
@@ -162,6 +164,10 @@
         return `${PREVIEW_UNREACHABLE} ${shown.detail}`;
       case "rejected":
         return `This would be refused: ${shown.detail}`;
+      case "previewed":
+        return shown.content !== undefined && shown.content.text === undefined
+          ? `${PREVIEW_NOT_TEXT} ${shown.content.mediaType}`
+          : "";
       default:
         return "";
     }
