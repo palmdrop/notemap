@@ -389,9 +389,29 @@ test("shows the name a blank leaf would get rather than a gap", async () => {
   servingFolder([]);
   draw("", SAID);
 
-  expect(
-    await screen.findByText("derived · Picker needs a trail.md"),
-  ).toBeDefined();
+  expect(await screen.findByText("Picker needs a trail.md")).toBeDefined();
+});
+
+/**
+ * Drawn after the whole tree, the tail sat under whatever root folder was drawn
+ * last — which said the note was going somewhere nobody typed.
+ */
+test("draws what it will make inside the folder that will hold it", async () => {
+  serving((scope) =>
+    scope === undefined
+      ? answered([folder("projects", "projects"), folder("reading", "reading")])
+      : scope === "projects"
+        ? answered([])
+        : { kind: "unreachable", detail: `${scope}: ENOENT` },
+  );
+  draw("projects/drafts/picker.md", SAID);
+
+  await screen.findByText("+ drafts/");
+  const drawn = [...screen.getByRole("listbox").children].map(
+    (row) => row.textContent,
+  );
+
+  expect(drawn).toEqual(["projects/", "+ drafts/", "+ picker.md", "reading/"]);
 });
 
 test("offers a free name beside one that is taken, and shift-enter takes it", async () => {

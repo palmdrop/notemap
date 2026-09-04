@@ -63,6 +63,13 @@ test("draws a capture before the pool answers, and clears the form", async () =>
   answer();
 });
 
+test("takes the caret, so the queue is typed into rather than clicked into", () => {
+  pool(() => empty.clone());
+  render(CaptureRow);
+
+  expect(document.activeElement).toBe(screen.getByLabelText("What to capture"));
+});
+
 test("stamps a typed note and a picture with different channels", async () => {
   const stamped: string[] = [];
   const named: string[] = [];

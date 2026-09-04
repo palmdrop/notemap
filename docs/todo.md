@@ -14,11 +14,14 @@
   - capture input shows ugly blue line around it
   - when pressing shift+enter in capture input, it should press enter to capture
   - attaching an image should preview it in the capture input, before user commits the capture, so they can verify that they added the right image. 
-- [ ] add new UI views
-  - routing view, showing all routed items
+  - Immediately hiding a routed item from the queue is confusing, especially if it fails. There's no good way to see pending operations.
+  - add new UI views
+    - routing view, showing all routed items
 
-- [ ] Immediately hiding a routed item from the queue is confusing, especially if it fails. There's no good way to see pending operations.
+- [ ] Workflow publishes a docker image for each commit, not just each release. Might not be necessary? Investigate
+
 - [ ] Destination configuration is way too clunky, not sensible to configure in BOTH config.toml and in the UI.
+
 - [x] "Checks" in the settings page against DAEMON and destinations should be done automatically. Also, destination checks only shows if the adapter is reachable, not the destination itself. Would be great with a way to check if the destination is correctly configured before trying to route to it.
 
 - [ ] Consider full POC: inbox via Memos app, routing to complex obsidian project. The "advertise
