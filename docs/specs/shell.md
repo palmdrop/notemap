@@ -259,6 +259,14 @@ add to it at the top of it. **The field takes the caret when the queue is drawn*
 2026-09-04)*, as the composer's own first control does: the surface exists to be typed into, and a
 click before the first keystroke is a click nothing asked for.
 
+**`⇧⏎` commits it** *(2026-09-04)*, from inside the field it is written in. `⏎` there is a new
+line, which prose wants; the modifier is what the composer's line already uses for the gesture that
+means *and do it*.
+
+**An attached picture is drawn before it is committed**, beside its name and with a way to drop it.
+The bytes go up with the capture and cannot be taken back once they have, so the one moment to look
+at what was picked is before the button, not afterwards in the feed.
+
 ### The row
 
 **Processing happens in the row, opened in place.** The queue is one scrollable list a person works

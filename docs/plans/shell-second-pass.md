@@ -135,11 +135,11 @@ Depends on nothing.
 
 Depends on nothing.
 
-- [ ] `⇧⏎` commits the capture
-- [ ] An attached picture is previewed before it is committed, with a way to drop it
-- [ ] `shell.md`: both, in the capture section
-- [ ] `pnpm -r --silent test`
-- [ ] `git commit`
+- [x] `⇧⏎` commits the capture
+- [x] An attached picture is previewed before it is committed, with a way to drop it
+- [x] `shell.md`: both, in the capture section
+- [x] `pnpm -r --silent test`
+- [x] `git commit`
 
 ### Phase 9 — the design reference catches up
 
