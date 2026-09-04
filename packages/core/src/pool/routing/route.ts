@@ -1,13 +1,8 @@
 import { recordAction } from "../actions";
-import { Unusable, usability } from "../destinations/usability";
 import { enqueueMirrorWrite } from "../mirror";
 import { ok, refused } from "#utils/result";
 import type { PoolPorts, PoolTx } from "#types/api/ports";
 import type { CancelRefusal, DeliveryRefusal } from "#types/api/refusal";
-import type {
-  Destination,
-  DestinationDescriptor,
-} from "#types/domain/destination";
 import type { FailureDetail } from "#types/domain/enrichment";
 import type {
   ItemId,
@@ -22,20 +17,15 @@ import type {
   RoutingRecord,
 } from "#types/domain/routing";
 import type { Result } from "#types/result";
-import {
-  DELIVERY_FAILURE,
-  destinationDetail,
-  projectDelivery,
-} from "./delivery";
+import { DELIVERY_FAILURE, destinationDetail } from "./delivery";
 import { landingFor, type Landed } from "./output";
+import { prepare } from "./prepare";
 
 type Routed = Result<RoutingRecord, DeliveryRefusal>;
 
 /**
- * Everything checkable is checked before anything is written or attempted,
- * because this is interactive: a typo'd argument is worth refusing while the
- * person is still looking at the item. The adapter is then called outside any
- * transaction.
+ * The decision, and one delivery attempt inline. Everything checkable is
+ * checked first, and the adapter is then called outside any transaction.
  */
 export async function route(
   ports: PoolPorts,
@@ -43,60 +33,13 @@ export async function route(
   request: DeliveryRequest,
   signal?: AbortSignal,
 ): Promise<Routed> {
-  const destination = await ports.store.destination(request.destination);
-  if (destination === undefined) {
-    return refused({
-      kind: "unknown-destination",
-      destination: request.destination,
-    });
-  }
-  if (destination.retiredAt !== undefined) {
-    return refused({
-      kind: "destination-retired",
-      destination: destination.id,
-    });
-  }
+  const prepared = await prepare(ports, item, request, signal);
+  // Nothing has been attempted and nothing written, so a destination that could
+  // not describe itself refuses rather than reserving: a record minted here
+  // would carry arguments nobody validated, and every retry would refuse again.
+  if (prepared.kind === "refused") return refused(prepared.refusal);
 
-  const usable = usability(ports, destination);
-  if (usable.kind === "unusable") {
-    return refused({
-      kind: "destination-unusable",
-      destination: destination.id,
-      detail: usable.detail,
-    });
-  }
-
-  const described = await describeOrRefuse(ports, destination, signal);
-  if (described.kind === "refused") return described;
-
-  const capability = described.value.capabilities.find(
-    (each) => each.name === request.capability,
-  );
-  if (capability === undefined) {
-    return refused({
-      kind: "capability-undeclared",
-      capability: request.capability,
-    });
-  }
-
-  const stored = await ports.store.item(item);
-  if (stored === undefined) return refused({ kind: "no-such-item", item });
-
-  if (!capability.accepts.includes(stored.payload.type)) {
-    return refused({
-      kind: "payload-type-unsupported",
-      type: stored.payload.type,
-      accepts: capability.accepts,
-    });
-  }
-
-  const issues = ports.schemas.validate(
-    capability.argumentsSchema,
-    request.arguments,
-  );
-  if (issues.length > 0) return refused({ kind: "arguments-invalid", issues });
-
-  const delivery = await projectDelivery(ports, stored, request);
+  const { destination, delivery } = prepared.value;
   const record: RoutingRecord = {
     id: ports.ids.next<RoutingRecordId>(),
     item,
@@ -158,34 +101,6 @@ export async function route(
         });
     }
   });
-}
-
-/**
- * A destination that cannot say what it accepts cannot have arguments checked
- * against it. Nothing has been attempted and nothing written, so this refuses
- * rather than reserving: a record minted here would carry arguments nobody
- * validated, and every retry would refuse it again.
- */
-async function describeOrRefuse(
-  ports: PoolPorts,
-  destination: Destination,
-  signal?: AbortSignal,
-): Promise<Result<DestinationDescriptor, DeliveryRefusal>> {
-  try {
-    return ok(await ports.destinations.describe(destination, signal));
-  } catch (cause) {
-    if (cause instanceof Unusable) {
-      return refused({
-        kind: "destination-unusable",
-        destination: destination.id,
-        detail: cause.message,
-      });
-    }
-    return refused({
-      kind: "unreachable",
-      detail: cause instanceof Error ? cause.message : String(cause),
-    });
-  }
 }
 
 /**

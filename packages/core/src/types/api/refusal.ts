@@ -169,6 +169,13 @@ export type CancelRefusal =
 
 export type DeliveryRefusal = PreparationRefusal | AttemptFailure;
 
+/**
+ * A preview is refused for the reasons a route is refused, minus the ones about
+ * an attempt: nothing is attempted. Being unable to reach the destination is
+ * reported rather than refused, since it stops the seeing and not the deciding.
+ */
+export type PreviewRefusal = PreparationRefusal;
+
 export type RoutingRefusal = SubjectRefusal;
 
 /** A record with no output is ordinary, and not an error condition anywhere else. */

@@ -10,6 +10,7 @@ import { join } from "node:path";
 
 import { Rejected, Unusable } from "@notemap/core";
 import type {
+  DeliveredOutput,
   Delivery,
   DeliveryOutcome,
   DestinationDescriptor,
@@ -50,7 +51,13 @@ function delivered(
 async function outputOf(
   outcome: DeliveryOutcome,
 ): Promise<{ mediaType: string; text: string }> {
-  const content = delivered(outcome).output?.content;
+  return textOf(delivered(outcome).output);
+}
+
+async function textOf(
+  output: DeliveredOutput | undefined,
+): Promise<{ mediaType: string; text: string }> {
+  const content = output?.content;
   if (content === undefined) throw new Error("it answered no content");
 
   const chunks: Uint8Array[] = [];
@@ -84,6 +91,7 @@ const renderWithAssets: Renderer = (each, where) => ({
 type Bound = {
   describe(): Promise<DestinationDescriptor>;
   deliver(delivery: Delivery, signal?: AbortSignal): Promise<DeliveryOutcome>;
+  preview(delivery: Delivery): Promise<DeliveredOutput>;
   probe(): Promise<void>;
 };
 
@@ -104,6 +112,9 @@ function bind(
   return {
     describe: () => kind.describe(row),
     deliver: (each, signal) => kind.deliver(row, each, signal),
+    preview: (each) =>
+      kind.preview?.(row, each) ??
+      Promise.reject(new Error("the kind offers no preview")),
     probe: () => kind.probe?.(row) ?? Promise.resolve(),
   };
 }
@@ -1001,5 +1012,101 @@ describe("probing a filesystem destination", () => {
     await expect(
       kind.probe?.(destinationRow({ root: made.path })),
     ).rejects.toThrow(Unusable);
+  });
+});
+
+describe("what it says it would write", () => {
+  it("answers the note a create would land, and writes nothing at all", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    const each = delivery({
+      arguments: { directory: "inbox", filename: "a-thought.md" },
+      tags: ["kind/quote"],
+    });
+
+    const shown = await textOf(await destination.preview(each));
+
+    expect(await filesUnder(path)).toEqual([]);
+    expect(shown.mediaType).toBe("text/markdown");
+    expect(shown.text).toContain("a thought");
+    expect(shown.text).toContain("- 'kind/quote'");
+
+    // What was shown is what the same delivery then writes.
+    const outcome = await destination.deliver(each);
+    expect((await outputOf(outcome)).text).toBe(shown.text);
+    expect(await readFile(join(path, "inbox", "a-thought.md"), "utf8")).toBe(
+      shown.text,
+    );
+  });
+
+  it("answers what an append would insert, leaving the note as it was", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    await writeFile(join(path, "log.md"), "# Log\n\nyesterday\n");
+    const each = delivery({
+      capability: APPEND_TO_FILE,
+      arguments: { path: "log.md" },
+    });
+
+    const shown = await textOf(await destination.preview(each));
+
+    expect(shown.text).toBe("a thought\n");
+    expect(await readFile(join(path, "log.md"), "utf8")).toBe(
+      "# Log\n\nyesterday\n",
+    );
+    expect((await outputOf(await destination.deliver(each))).text).toBe(
+      shown.text,
+    );
+  });
+
+  it("shows the whole note where the append would bring one into being", async () => {
+    const { path, destination } = await vault({ text: renderText });
+
+    const shown = await textOf(
+      await destination.preview(
+        delivery({ capability: APPEND_TO_FILE, arguments: { path: "log.md" } }),
+      ),
+    );
+
+    expect(shown.text).toContain("id: 'item-1'");
+    expect(await filesUnder(path)).toEqual([]);
+  });
+
+  it("places no assets, and links them by the names they would land under", async () => {
+    const { path, destination } = await vault({ text: renderWithAssets });
+    const picture = deliveredAsset("image", "photo.png", bytes("png"));
+
+    const shown = await textOf(
+      await destination.preview(
+        delivery({
+          arguments: { directory: "", filename: "a.md" },
+          assets: [picture],
+        }),
+      ),
+    );
+
+    expect(shown.text).toContain("photo");
+    expect(await filesUnder(path)).toEqual([]);
+    // A name is arithmetic on the asset, so nothing had to be read to say it.
+    expect(picture.opens()).toBe(0);
+  });
+
+  it("says a create would be refused where the name is taken", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    await writeFile(join(path, "a.md"), "theirs\n");
+
+    await expect(
+      destination.preview(
+        delivery({ arguments: { directory: "", filename: "a.md" } }),
+      ),
+    ).rejects.toThrow(Rejected);
+  });
+
+  it("cannot be shown against a root that is not there", async () => {
+    const { destination } = await noVault();
+
+    await expect(
+      destination.preview(
+        delivery({ arguments: { directory: "", filename: "a.md" } }),
+      ),
+    ).rejects.toThrow();
   });
 });

@@ -108,6 +108,21 @@ export type OpenedOutput = {
   readonly bytes: AsyncIterable<Uint8Array>;
 };
 
+/**
+ * What a destination says it would write, asked before anything is committed.
+ * Indicative and never binding: the delivery converts again when it runs.
+ *
+ * `rejected` is a delivery the destination would refuse, on `DeliveryOutcome`'s
+ * own terms; `unreachable` is a destination that had to be reached to answer
+ * and could not be, which does not stop the decision being made; `not-offered`
+ * is a kind that does not do this at all, on `candidates`' terms.
+ */
+export type PreviewReport =
+  | ({ readonly kind: "previewed" } & DeliveredOutput)
+  | { readonly kind: "rejected"; readonly detail: string }
+  | { readonly kind: "unreachable"; readonly detail: string }
+  | { readonly kind: "not-offered" };
+
 /** What a delivery that landed adds to the reservation it resolves. */
 export type DeliveryLanding = {
   readonly pointer?: string;

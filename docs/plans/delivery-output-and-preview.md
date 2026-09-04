@@ -165,22 +165,22 @@ Depends on phases 2 and 3.
 
 Depends on phase 2, for the shape of what it answers.
 
-- [ ] `preview` joins `DestinationKindAdapter` and the `Destinations` port, **optionally** — a kind
+- [x] `preview` joins `DestinationKindAdapter` and the `Destinations` port, **optionally** — a kind
       that has not implemented it says so, on the same not-offered footing as
       [destination-targets](destination-targets.md)'s question. It answers an output and touches
       nothing at the destination
-- [ ] It takes what a delivery takes, because that is what makes it faithful. Core builds the
+- [x] It takes what a delivery takes, because that is what makes it faithful. Core builds the
       delivery without reserving anything: no routing record, no job, no lease, nothing appended to
       the log
-- [ ] It may fail `unreachable`. A preview of `append-to-file` may need to read the note it would
+- [x] It may fail `unreachable`. A preview of `append-to-file` may need to read the note it would
       append to, and a vault that is asleep cannot be previewed against — which does not stop the
       routing decision being made, only the seeing of it
-- [ ] Faithfulness is the adapter's discipline: `deliver` and `preview` share one conversion. Nothing
+- [x] Faithfulness is the adapter's discipline: `deliver` and `preview` share one conversion. Nothing
       in the port can enforce that, and the ADR says so rather than implying a guarantee
-- [ ] The filesystem kind implements it: the same markdown, without the write
-- [ ] Tests: a preview writes nothing to the temporary tree, and answers what a delivery would have
-- [ ] Verify: `pnpm -r --silent test`
-- [ ] `git commit`
+- [x] The filesystem kind implements it: the same markdown, without the write
+- [x] Tests: a preview writes nothing to the temporary tree, and answers what a delivery would have
+- [x] Verify: `pnpm -r --silent test`
+- [x] `git commit`
 
 ### Phase 6 — Preview on the wire
 

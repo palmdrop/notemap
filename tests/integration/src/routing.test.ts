@@ -75,6 +75,7 @@ async function pooledWith(kind: Partial<Destinations>) {
     describe: () => Promise.resolve({ capabilities: CAPABILITIES }),
     deliver: () => Promise.resolve(DELIVERED),
     candidates: () => Promise.reject(new Error("no candidates in this test")),
+    preview: () => Promise.reject(new Error("no preview in this test")),
     probe: () => Promise.reject(new Error("no probe in this test")),
     ...kind,
   });

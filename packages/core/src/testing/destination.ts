@@ -13,7 +13,12 @@ import type {
   PayloadTypeName,
   Timestamp,
 } from "#types/domain/ids";
-import type { Delivery, DeliveryOutcome } from "#types/domain/routing";
+import type {
+  DeliveredOutput,
+  Delivery,
+  DeliveryOutcome,
+} from "#types/domain/routing";
+import { NotOffered } from "../pool/destinations/candidates";
 
 /**
  * A kind registry that fails on command. A real filesystem is never unreachable
@@ -55,6 +60,12 @@ export type FakeDestinations = Destinations & {
   cannotAnswerCandidates(detail: string | Error | undefined): void;
   /** What `probe` throws with. Undefined is a destination that is there. */
   cannotBeProbed(detail: string | Error | undefined): void;
+  /** What `preview` answers. Undefined is a kind that does not offer one. */
+  answersPreview(next: DeliveredOutput | undefined): void;
+  /** What `preview` throws with, on `cannotDescribe`'s own terms. */
+  cannotPreview(detail: string | Error | undefined): void;
+  /** Every delivery `preview` was handed, oldest first. */
+  readonly previewed: readonly Delivery[];
 };
 
 export type FakeDestinationsOptions = {
@@ -64,6 +75,8 @@ export type FakeDestinationsOptions = {
   readonly reads?: boolean;
   readonly answer?: ScriptedAnswer;
   readonly candidatesAnswer?: CandidatesAnswer;
+  /** Absent is a kind with no `preview` at all, which the registry reports as not-offered. */
+  readonly previewAnswer?: DeliveredOutput;
 };
 
 const ANY_ARGUMENTS: JsonSchema = { type: "object" };
@@ -142,6 +155,9 @@ export function fakeDestinations(
   };
   let cannotAnswer: string | Error | undefined;
   let cannotProbe: string | Error | undefined;
+  let previewAnswer: DeliveredOutput | undefined = options.previewAnswer;
+  let cannotShow: string | Error | undefined;
+  const previewed: Delivery[] = [];
 
   async function read(
     delivery: Delivery,
@@ -203,6 +219,20 @@ export function fakeDestinations(
               : new Error(cannotAnswer),
           ),
 
+    preview: (_destination, delivery) => {
+      previewed.push(delivery);
+      if (cannotShow !== undefined) {
+        return Promise.reject(
+          cannotShow instanceof Error ? cannotShow : new Error(cannotShow),
+        );
+      }
+      // The registry is what turns an absent method into not-offered, and this
+      // double is the port rather than an adapter, so it says so itself.
+      return previewAnswer === undefined
+        ? Promise.reject(new NotOffered("the fake kind offers no preview"))
+        : Promise.resolve(previewAnswer);
+    },
+
     probe: () =>
       cannotProbe === undefined
         ? Promise.resolve()
@@ -228,6 +258,13 @@ export function fakeDestinations(
     },
     cannotBeProbed: (detail) => {
       cannotProbe = detail;
+    },
+    previewed,
+    answersPreview: (next) => {
+      previewAnswer = next;
+    },
+    cannotPreview: (detail) => {
+      cannotShow = detail;
     },
   };
 }

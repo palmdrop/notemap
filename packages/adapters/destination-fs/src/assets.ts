@@ -7,33 +7,36 @@ import { assetName } from "@notemap/output-markdown";
 import { createFile } from "./atomic";
 
 /**
- * Every asset written into `directory` under the name it was uploaded with and
- * its content's digest, and what each ended up called, keyed by slot.
+ * What each asset would end up called, keyed by slot. A name is its content's
+ * digest and its uploaded filename, so it is arithmetic rather than a fact
+ * about the disk — which is what lets a note be rendered before, or without,
+ * anything being written.
  */
+export function assetNames(
+  assets: readonly DeliveredAsset[],
+): ReadonlyMap<string, string> {
+  return new Map(assets.map((each) => [each.slot, nameOf(each)]));
+}
+
+/** Every asset written into `directory` under the name `assetNames` gives it. */
 export async function placeAssets(
   directory: string,
   assets: readonly DeliveredAsset[],
   signal?: AbortSignal,
-): Promise<ReadonlyMap<string, string>> {
-  const placed = new Map<string, string>();
+): Promise<void> {
+  for (const each of assets) await place(directory, each, signal);
+}
 
-  for (const each of assets) {
-    placed.set(each.slot, await place(directory, each, signal));
-  }
-
-  return placed;
+function nameOf(asset: DeliveredAsset): string {
+  return assetName(asset.asset.filename, asset.asset.blob, asset.asset.id);
 }
 
 async function place(
   directory: string,
   asset: DeliveredAsset,
   signal?: AbortSignal,
-): Promise<string> {
-  const name = assetName(
-    asset.asset.filename,
-    asset.asset.blob,
-    asset.asset.id,
-  );
+): Promise<void> {
+  const name = nameOf(asset);
 
   try {
     await createFile(join(directory, name), await asset.open(signal));
@@ -44,6 +47,4 @@ async function place(
     // wrote instead of beside it.
     if ((cause as NodeJS.ErrnoException).code !== "EEXIST") throw cause;
   }
-
-  return name;
 }

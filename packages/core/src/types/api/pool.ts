@@ -45,6 +45,7 @@ import type {
   AttemptableDelivery,
   DeliveryRequest,
   OpenedOutput,
+  PreviewReport,
   RememberedAnswer,
   RememberedRequest,
   RoutingRecord,
@@ -74,6 +75,7 @@ import type {
   EnrichmentRefusal,
   LeaseRefusal,
   OutputRefusal,
+  PreviewRefusal,
   PurgeRefusal,
   RetireRefusal,
   RoutingRefusal,
@@ -201,6 +203,17 @@ export interface RoutingApi {
   deliveryFor(
     record: RoutingRecordId,
   ): Promise<AttemptableDelivery | undefined>;
+  /**
+   * What this destination would write for this item, without committing
+   * anything: no record, no job, nothing appended to the log. **Indicative
+   * rather than binding** — the delivery converts again when it runs, and the
+   * two may differ where a converter is not deterministic.
+   */
+  preview(
+    item: ItemId,
+    delivery: DeliveryRequest,
+    signal?: AbortSignal,
+  ): Promise<Result<PreviewReport, PreviewRefusal>>;
   /** Returns the item to the queue. */
   cancelDelivery(record: RoutingRecordId): Promise<Result<void, CancelRefusal>>;
   markProcessed(

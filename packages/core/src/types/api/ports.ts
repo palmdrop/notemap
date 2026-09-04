@@ -38,6 +38,7 @@ import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
 import type { Payload } from "../domain/payload";
 import type { AbandonedPosition } from "../domain/position";
 import type {
+  DeliveredOutput,
   Delivery,
   DeliveryLanding,
   DeliveryOutcome,
@@ -178,6 +179,15 @@ export interface Destinations {
     signal?: AbortSignal,
   ): Promise<CandidatesAnswer>;
   /**
+   * What a delivery would produce, without producing it. Rejects with
+   * `NotOffered` where the adapter registered for the kind has none.
+   */
+  preview(
+    destination: Destination,
+    delivery: Delivery,
+    signal?: AbortSignal,
+  ): Promise<DeliveredOutput>;
+  /**
    * Resolves where the destination is really there. Rejects with `Rejected`
    * where it answered no, with `NotOffered` where the adapter has none, and
    * with anything else where it could not be reached.
@@ -201,6 +211,21 @@ export interface DestinationKindAdapter extends DestinationKind {
     request: CandidatesRequest,
     signal?: AbortSignal,
   ): Promise<CandidatesAnswer>;
+  /**
+   * What `deliver` would produce, given the same delivery, and **nothing at
+   * the destination is touched**. Indicative rather than binding: the delivery
+   * converts again when it runs, and that the two agree is this adapter's
+   * discipline rather than something the port can enforce.
+   *
+   * Throwing `Rejected` is a delivery that would be refused; throwing anything
+   * else is a destination that could not be reached, which previewing may need
+   * where delivering does. Absent is `not-offered`.
+   */
+  preview?(
+    destination: Destination,
+    delivery: Delivery,
+    signal?: AbortSignal,
+  ): Promise<DeliveredOutput>;
   /**
    * Resolving is `ready`; throwing `Rejected` is a no a person must act on, and
    * throwing anything else could not be reached. Absent is `not-offered`.
