@@ -20,6 +20,8 @@
 
 - [ ] Workflow publishes a docker image for each commit, not just each release. Might not be necessary? Investigate
 
+- [ ] Consider collapsing some UI actions: "Route", "Archive", "mark done" (maybe even "Copy") could all become "Process". Pressing process opens the routing composer, which would become a "Processing composer". Processing could be routing using a configured destination, but also be archiving or marking done, or copying manually (which would then result in an automatic "mark done")
+
 - [ ] Destination configuration is way too clunky, not sensible to configure in BOTH config.toml and in the UI.
 
 - [x] "Checks" in the settings page against DAEMON and destinations should be done automatically. Also, destination checks only shows if the adapter is reachable, not the destination itself. Would be great with a way to check if the destination is correctly configured before trying to route to it.
