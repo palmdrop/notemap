@@ -1,9 +1,10 @@
 # Notemap
 
-> NOTE: This is an experimental personal notetaking app. Development uses agentic development heavily. This README is an exception, and is NOT AI generated. 
+> NOTE: This is an experimental personal notetaking app. Project uses agentic development heavily. This README is an exception, and is NOT AI generated.
+> 
 > NOTE: This repo comes with no guarantee. Notemap is in alpha, v1.0.0 is likely months away.
 
-`Notemap` is a working memory queue. 
+`Notemap` is a working memory processing queue.
 
 The problem: quick note taking often results in a big "working memory file" where links, thoughts, notes, quotes, movies to watch, 
 projects to start, end up. I've used this technique extensively for a long time. The problem: the file grows without bound. It is 
@@ -43,8 +44,8 @@ docker compose -f compose.yaml up -d
 
 Upgrade by bumping the version in `.env` and run `docker compose pull && up -d`.
 
-NOTE: No authentication yet. Recommend using a reverse proxy with auth for now. 
-Do not expose `Notemap` to the public internet.
+NOTE: Basic authentication is implemented. Password can be set using `notemap password set` inside the container.
+Not really security tested. Do not expose `Notemap` to the public internet.
 
 ## Development
 
