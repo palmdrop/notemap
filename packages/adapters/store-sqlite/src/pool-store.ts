@@ -18,6 +18,7 @@ import type {
   JobSubject,
   RememberedAnswer,
   RememberedRequest,
+  DeliveryLanding,
   RoutingRecord,
   RoutingRecordId,
   IdGenerator,
@@ -111,7 +112,7 @@ const DESTINATION_COLUMNS = `
 
 const ROUTING_COLUMNS = `
   id, item_id, target_kind, destination, capability, note, arguments, state,
-  at, pointer
+  at, pointer, url, output_blob, output_mime, output_note
 `;
 
 /** What every surface orders on: capture time, and the id only to break a tie. */
@@ -267,6 +268,14 @@ export function createSqlitePoolStore(
   const stillNamed = write.query<{ blob: string }, [string]>(
     `SELECT blob FROM assets WHERE blob = ? LIMIT 1`,
   );
+  /**
+   * An output is named by a routing record rather than by an asset, and the two
+   * may be the same bytes — so releasing the last asset that named a blob does
+   * not make it the sweep's to take.
+   */
+  const namedAsOutput = write.query<{ output_blob: string }, [string]>(
+    `SELECT output_blob FROM routing_records WHERE output_blob = ? LIMIT 1`,
+  );
   const insertDestination = write.query<
     never,
     ReturnType<typeof destinationParams>
@@ -291,11 +300,24 @@ export function createSqlitePoolStore(
     ReturnType<typeof routingRecordParams>
   >(`
     INSERT INTO routing_records (${ROUTING_COLUMNS})
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  const deliverRouting = write.query<never, [string | null, string]>(
-    `UPDATE routing_records SET state = 'delivered', pointer = ? WHERE id = ?`,
-  );
+  const deliverRouting = write.query<
+    never,
+    [
+      string | null,
+      string | null,
+      string | null,
+      string | null,
+      string | null,
+      string,
+    ]
+  >(`
+    UPDATE routing_records
+    SET state = 'delivered', pointer = ?, url = ?, output_blob = ?,
+        output_mime = ?, output_note = ?
+    WHERE id = ?
+  `);
   const deleteRouting = write.query<never, [string]>(
     `DELETE FROM routing_records WHERE id = ?`,
   );
@@ -838,13 +860,24 @@ export function createSqlitePoolStore(
       ),
 
       resolveRoutingRecord: guard(
-        async (record: RoutingRecordId, pointer?: string): Promise<void> => {
+        async (
+          record: RoutingRecordId,
+          landing: DeliveryLanding,
+        ): Promise<void> => {
           const row = routingItem.get(record);
           if (row === undefined) {
             throw new Error(`no routing record ${record} to resolve`);
           }
 
-          deliverRouting.run(pointer ?? null, record);
+          const output = landing.output;
+          deliverRouting.run(
+            landing.pointer ?? null,
+            landing.url ?? null,
+            output?.content?.blob ?? null,
+            output?.content?.mediaType ?? null,
+            output?.note ?? null,
+            record,
+          );
           touchItem.run(nextModifiedAt(), row.item_id);
         },
       ),
@@ -910,7 +943,11 @@ export function createSqlitePoolStore(
 
           return named
             .map((row) => row.blob)
-            .filter((blob) => stillNamed.get(blob) === undefined)
+            .filter(
+              (blob) =>
+                stillNamed.get(blob) === undefined &&
+                namedAsOutput.get(blob) === undefined,
+            )
             .map((blob) => blob as BlobHash);
         },
       ),

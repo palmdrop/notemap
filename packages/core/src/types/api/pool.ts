@@ -44,6 +44,8 @@ import type { AbandonedPosition } from "../domain/position";
 import type {
   AttemptableDelivery,
   DeliveryRequest,
+  OpenedOutput,
+  PreviewReport,
   RememberedAnswer,
   RememberedRequest,
   RoutingRecord,
@@ -72,6 +74,8 @@ import type {
   EditRefusal,
   EnrichmentRefusal,
   LeaseRefusal,
+  OutputRefusal,
+  PreviewRefusal,
   PurgeRefusal,
   RetireRefusal,
   RoutingRefusal,
@@ -199,6 +203,15 @@ export interface RoutingApi {
   deliveryFor(
     record: RoutingRecordId,
   ): Promise<AttemptableDelivery | undefined>;
+  /**
+   * What this destination would write, committing nothing. Indicative rather
+   * than binding: the delivery converts again when it runs.
+   */
+  preview(
+    item: ItemId,
+    delivery: DeliveryRequest,
+    signal?: AbortSignal,
+  ): Promise<Result<PreviewReport, PreviewRefusal>>;
   /** Returns the item to the queue. */
   cancelDelivery(record: RoutingRecordId): Promise<Result<void, CancelRefusal>>;
   markProcessed(
@@ -206,6 +219,11 @@ export interface RoutingApi {
     note?: string,
   ): Promise<Result<RoutingRecord, RoutingRefusal>>;
   recordsFor(item: ItemId): Promise<readonly RoutingRecord[]>;
+  /** A record carrying no output is refused rather than answered empty. */
+  openOutput(
+    record: RoutingRecordId,
+    signal?: AbortSignal,
+  ): Promise<Result<OpenedOutput, OutputRefusal>>;
 }
 
 export interface AssetsApi {

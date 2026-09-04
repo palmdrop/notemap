@@ -52,6 +52,26 @@ export function createRouting(deps: RoutingDeps): RoutingApi {
 
     recordsFor,
 
+    /** Asked, never volunteered, and kept by nothing here. */
+    preview(item, request) {
+      return answered(
+        api.POST("/v1/items/{id}/route/preview", {
+          params: { path: { id: item } },
+          body: request,
+        }),
+      );
+    },
+
+    /** Text, because that is what a shell draws; the record says what it is. */
+    output(record) {
+      return answered(
+        api.GET("/v1/routing/{record}/output", {
+          params: { path: { record } },
+          parseAs: "text",
+        }),
+      );
+    },
+
     async cancel(record, item) {
       await acknowledged(
         api.POST("/v1/routing/{record}/cancel", {

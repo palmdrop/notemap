@@ -38,7 +38,9 @@ import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
 import type { Payload } from "../domain/payload";
 import type { AbandonedPosition } from "../domain/position";
 import type {
+  DeliveredOutput,
   Delivery,
+  DeliveryLanding,
   DeliveryOutcome,
   RememberedAnswer,
   RememberedRequest,
@@ -176,6 +178,12 @@ export interface Destinations {
     request: CandidatesRequest,
     signal?: AbortSignal,
   ): Promise<CandidatesAnswer>;
+  /** Rejects with `NotOffered` where the adapter registered for the kind has none. */
+  preview(
+    destination: Destination,
+    delivery: Delivery,
+    signal?: AbortSignal,
+  ): Promise<DeliveredOutput>;
   /**
    * Resolves where the destination is really there. Rejects with `Rejected`
    * where it answered no, with `NotOffered` where the adapter has none, and
@@ -200,6 +208,18 @@ export interface DestinationKindAdapter extends DestinationKind {
     request: CandidatesRequest,
     signal?: AbortSignal,
   ): Promise<CandidatesAnswer>;
+  /**
+   * What `deliver` would produce, writing nothing. That the two agree is this
+   * adapter's discipline rather than something the port can enforce.
+   *
+   * Throwing `Rejected` is a delivery that would be refused; throwing anything
+   * else could not be reached. Absent is `not-offered`.
+   */
+  preview?(
+    destination: Destination,
+    delivery: Delivery,
+    signal?: AbortSignal,
+  ): Promise<DeliveredOutput>;
   /**
    * Resolving is `ready`; throwing `Rejected` is a no a person must act on, and
    * throwing anything else could not be reached. Absent is `not-offered`.
@@ -290,7 +310,7 @@ export interface PoolTx extends PoolReads {
   /** Throws on a record that is not there: resolving one that has gone is a lost write. */
   resolveRoutingRecord(
     record: RoutingRecordId,
-    pointer?: string,
+    landing: DeliveryLanding,
   ): Promise<void>;
 
   /**
@@ -315,6 +335,10 @@ export interface PoolTx extends PoolReads {
    * Releases assets, and answers the blobs that lost their last one — which are
    * then the caller's to delete, outside this transaction. Releasing an asset an
    * item still references fails rather than succeeding quietly.
+   *
+   * A blob a routing record names as its output is never answered, however few
+   * assets are left naming it: an output is named by a record rather than by an
+   * asset, and the two may be the same bytes.
    */
   deleteAssets(assets: readonly AssetId[]): Promise<readonly BlobHash[]>;
 

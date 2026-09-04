@@ -1,10 +1,10 @@
-import { render, screen } from "@testing-library/svelte";
+import { fireEvent, render, screen } from "@testing-library/svelte";
 import { expect, test, vi } from "vitest";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
-import { client, pool } from "$testing/pool";
-import { NO_RECORDS_OFFLINE } from "$lib/said";
+import { asked, client, pool } from "$testing/pool";
+import { NO_OUTPUT_KEPT, NO_RECORDS_OFFLINE } from "$lib/said";
 import { dayOf } from "$lib/stamp";
 import Record from "./Record.svelte";
 
@@ -53,6 +53,7 @@ const DESCRIBED = {
 function answering(
   records: readonly unknown[] = [RECORD],
   description: unknown = DESCRIBED,
+  output: (() => Response) | undefined = undefined,
 ) {
   return (request: Request) => {
     switch (routeOf(request)) {
@@ -64,11 +65,30 @@ function answering(
         return json(200, { values: [VAULT] });
       case "GET /v1/destinations/vault/description":
         return json(200, description);
+      case "GET /v1/routing/rec/output":
+        return (
+          output?.() ?? json(404, { error: { code: "no-output", facts: {} } })
+        );
       default:
         return json(200, { values: [] });
     }
   };
 }
+
+const WITH_OUTPUT = {
+  ...RECORD,
+  url: "https://vault.example/drafts/note.md",
+  output: {
+    content: { blob: "abc", mediaType: "text/markdown" },
+    note: "the two pictures were not carried",
+  },
+};
+
+const markdown = () =>
+  new Response("# a thought\n", {
+    status: 200,
+    headers: { "content-type": "text/markdown" },
+  });
 
 test("draws a record in full, against the capability's own schema", async () => {
   pool(answering());
@@ -205,4 +225,123 @@ test("says a decision the person carried out with nothing written down", async (
   // The heading stands with `none` beneath it, as an empty argument set does.
   expect(screen.getByText("note")).toBeDefined();
   expect(screen.getByText("none")).toBeDefined();
+});
+
+test("says a delivery that kept no copy of what it sent", async () => {
+  pool(answering());
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  expect(await screen.findByText(NO_OUTPUT_KEPT)).toBeDefined();
+  expect(screen.queryByRole("button", { name: "read it" })).toBeNull();
+});
+
+test("draws the note and reads what was sent, without being asked twice", async () => {
+  pool(answering([WITH_OUTPUT], DESCRIBED, markdown));
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  // Opening the record is the asking: the bytes arrive without a press.
+  expect(
+    await screen.findByText("the two pictures were not carried"),
+  ).toBeDefined();
+  expect(await screen.findByText(/# a thought/)).toBeDefined();
+  expect(screen.queryByRole("button", { name: "read it" })).toBeNull();
+  expect(
+    asked().filter((route) => route === "GET /v1/routing/rec/output"),
+  ).toHaveLength(1);
+});
+
+test("asks for nothing where the record kept no copy", async () => {
+  pool(answering());
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  expect(await screen.findByText(NO_OUTPUT_KEPT)).toBeDefined();
+  expect(asked()).not.toContain("GET /v1/routing/rec/output");
+});
+
+test("makes the pointer a link where the destination offered one", async () => {
+  pool(answering([WITH_OUTPUT], DESCRIBED, markdown));
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  const pointer = await screen.findByText("drafts/note.md");
+  expect(pointer.closest("a")?.getAttribute("href")).toBe(
+    "https://vault.example/drafts/note.md",
+  );
+});
+
+test("leaves the pointer as text where the url is not one to follow", async () => {
+  pool(
+    answering(
+      [{ ...WITH_OUTPUT, url: "javascript:alert(1)" }],
+      DESCRIBED,
+      markdown,
+    ),
+  );
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  expect((await screen.findByText("drafts/note.md")).closest("a")).toBeNull();
+});
+
+test("says why what was sent could not be read, and lets it be asked again", async () => {
+  let refuse = true;
+  pool(
+    answering([WITH_OUTPUT], DESCRIBED, () => {
+      if (!refuse) return markdown();
+      refuse = false;
+      return json(404, { error: { code: "blob-missing", facts: {} } });
+    }),
+  );
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  // The read on arrival failed, and is not tried again on its own.
+  expect(await screen.findByText(/could not be read/)).toBeDefined();
+  const again = await screen.findByRole("button", { name: "read it" });
+  expect(
+    asked().filter((route) => route === "GET /v1/routing/rec/output"),
+  ).toHaveLength(1);
+
+  await fireEvent.click(again);
+
+  expect(await screen.findByText(/# a thought/)).toBeDefined();
+});
+
+test("drops what one record sent when another is drawn", async () => {
+  const both = [WITH_OUTPUT, { ...WITH_OUTPUT, id: "rec-2" }];
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/routing/rec/output") {
+      return new Response("# the first one\n", {
+        status: 200,
+        headers: { "content-type": "text/markdown" },
+      });
+    }
+    if (route === "GET /v1/routing/rec-2/output") {
+      return new Response("# the second one\n", {
+        status: 200,
+        headers: { "content-type": "text/markdown" },
+      });
+    }
+    return answering(both, DESCRIBED, markdown)(request);
+  });
+  await client.destinations.load();
+
+  const drawn = render(Record, { item: "one", record: "rec" });
+  expect(await screen.findByText(/# the first one/)).toBeDefined();
+
+  // The page component is reused across a change of record.
+  await drawn.rerender({ item: "one", record: "rec-2" });
+
+  expect(await screen.findByText(/# the second one/)).toBeDefined();
+  expect(screen.queryByText(/# the first one/)).toBeNull();
 });

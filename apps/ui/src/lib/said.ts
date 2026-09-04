@@ -27,3 +27,24 @@ export const LOG_LEDE =
   "Everything this pool has done, in the order it happened.";
 
 export const NOTHING_LOGGED = "Nothing has happened yet.";
+
+/**
+ * What a preview is, said where it is drawn: a person about to commit needs to
+ * know this is what the destination would write now rather than a promise.
+ */
+export const PREVIEW_IS_INDICATIVE =
+  "What this destination would write now. The delivery converts again when it runs.";
+
+export const NO_PREVIEW_OFFERED =
+  "This destination cannot show what it would write.";
+
+export const PREVIEW_UNREACHABLE =
+  "The destination could not be reached to show this. Routing to it still works.";
+
+/** Followed by the media type it would have written. */
+export const PREVIEW_NOT_TEXT =
+  "This would not be text, so it cannot be shown here:";
+
+export const NO_OUTPUT_KEPT = "This delivery kept no copy of what it sent.";
+
+export const OUTPUT_UNREADABLE = "What was sent could not be read.";

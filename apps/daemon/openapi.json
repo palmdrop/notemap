@@ -787,6 +787,12 @@
           },
           "pointer": {
             "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "output": {
+            "$ref": "#/components/schemas/DeliveryOutput"
           }
         },
         "required": [
@@ -796,6 +802,36 @@
           "state",
           "at"
         ]
+      },
+      "DeliveryOutput": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "object",
+            "properties": {
+              "blob": {
+                "type": "string"
+              },
+              "mediaType": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "blob",
+              "mediaType"
+            ],
+            "description": "Present where there are bytes to read at `/v1/routing/{record}/output`.",
+            "example": {
+              "blob": "e3b0c44298fc1c14...",
+              "mediaType": "text/markdown"
+            }
+          },
+          "note": {
+            "type": "string",
+            "description": "What the destination could not carry, in its own words. Free prose: nothing parses it.",
+            "example": "the two pictures were not carried"
+          }
+        }
       },
       "MarkProcessedRequest": {
         "type": "object",
@@ -1272,6 +1308,95 @@
           "arguments"
         ],
         "additionalProperties": false
+      },
+      "RoutingPreview": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "previewed"
+                ]
+              },
+              "content": {
+                "type": "object",
+                "properties": {
+                  "mediaType": {
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  },
+                  "truncated": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "mediaType",
+                  "truncated"
+                ]
+              },
+              "note": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "rejected"
+                ]
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "detail"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "unreachable"
+                ]
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "detail"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "not-offered"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        ]
       },
       "ActionSlice": {
         "type": "object",
@@ -4625,6 +4750,208 @@
         }
       }
     },
+    "/v1/items/{id}/route/preview": {
+      "post": {
+        "summary": "Ask what a destination would write, before committing to it",
+        "description": "Takes exactly what `/route` takes and answers what would be written instead of writing it. **A `POST` that changes nothing**: no routing record, no delivery job, nothing in the action log, and nothing at the destination beyond whatever it had to read to answer. It is a `POST` because the question carries a body — the capability's arguments are an object of the destination's own shape, which a query string cannot carry honestly.\n\n**The answer is indicative, never binding.** The delivery converts again when it runs, so where a destination's converter is not deterministic the two will differ; that is a fact about the destination rather than a fault. The content comes back inline and as text, because a preview is stored nowhere and there is no second fetch to point at.\n\nIt is refused for the reasons `/route` is refused, because a preview that answered where a route would refuse would be describing a decision nobody can make. `unreachable` and `not-offered` are answers rather than refusals: neither stops the decision being made, only the seeing of it.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "What it would write, why it would refuse, why it could not be reached, or a kind that does not offer this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutingPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body could not be read as this request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "malformed-json",
+                            "malformed-envelope"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No item has that id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "no-such-item",
+                            "item-purged"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The destination is retired, or the running code cannot make sense of it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "destination-retired",
+                            "destination-unusable"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The body was not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unsupported-media-type"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The destination, the capability, the payload type or the arguments were declined.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unknown-destination",
+                            "capability-undeclared",
+                            "payload-type-unsupported",
+                            "arguments-invalid",
+                            "rejected-by-destination",
+                            "delivery-outcome-unknown",
+                            "unreachable"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/routing/{record}/cancel": {
       "post": {
         "summary": "Cancel a pending delivery",
@@ -4689,6 +5016,84 @@
                           "enum": [
                             "not-pending",
                             "delivery-in-flight"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/routing/{record}/output": {
+      "get": {
+        "summary": "Read what a delivery produced",
+        "description": "The bytes the destination said it wrote, in the media type the record names. A separate fetch because an output may be large, and the record itself answers only whether there is one. Carries the inert headers an asset's bytes carry, for the same reason: this is content a destination produced, served from the daemon's own origin. `ETag` is the blob, and the response is immutable — a delivered record never changes what it produced.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "record",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The bytes.",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string",
+                  "example": "\"e3b0c44298fc1c14...\""
+                },
+                "required": true
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string",
+                  "example": "inline; filename=\"output.md\""
+                },
+                "required": true
+              }
+            },
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No record has that id, the record produced no output, or its blob is gone from disk. A record with no output is ordinary rather than a fault.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "no-such-record",
+                            "no-output",
+                            "blob-missing"
                           ]
                         }
                       },

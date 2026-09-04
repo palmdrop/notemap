@@ -21,13 +21,14 @@ import {
   CREATE_OR_APPEND_FILE,
   deriveFilename,
   insertUnder,
+  markdownOutput,
   placeOf,
   renderNote,
   RenderingFailed,
   type Renderers,
 } from "@notemap/output-markdown";
 
-import { placeAssets } from "./assets";
+import { assetNames, placeAssets } from "./assets";
 import { createFile, replaceFile } from "./atomic";
 import { filesystemCandidates } from "./candidates";
 import { Refused } from "./errors";
@@ -115,14 +116,49 @@ export function createFilesystemDestination(
       }
 
       try {
-        const landed = await carryOut(
+        const composed = await compose(
           { realRoot: reached, renderers },
           delivery,
-          signal,
         );
-        return { kind: "delivered", pointer: landed };
+        await carryOut(composed, delivery, signal);
+        // No url: a path on this host is nowhere a phone can follow.
+        return {
+          kind: "delivered",
+          pointer: composed.note.relative,
+          output: markdownOutput(composed.written),
+        };
       } catch (cause) {
         return failure(cause);
+      }
+    },
+
+    /** Reads what a delivery reads, so a root that is not there is unreachable rather than empty. */
+    preview: async (destination, delivery) => {
+      const settings = asFilesystemSettings(destination.settings);
+      if (settings === undefined) {
+        throw new Rejected(why(unreadable(destination)));
+      }
+
+      // The same reach a delivery makes, so a root that is a file answers one
+      // thing rather than two.
+      const reached = await reachRoot(settings.root);
+      if (typeof reached !== "string") throw new Error(reached.detail);
+
+      const overlap = overlapsAny(reached, reserved);
+      if (overlap !== undefined) {
+        throw new Unusable(overlapDetail(reached, overlap));
+      }
+
+      try {
+        const composed = await compose(
+          { realRoot: reached, renderers },
+          delivery,
+        );
+        return markdownOutput(composed.written);
+      } catch (cause) {
+        const failed = failure(cause);
+        if (failed.kind === "rejected") throw new Rejected(failed.detail);
+        throw cause;
       }
     },
 
@@ -181,7 +217,7 @@ function overlapDetail(root: string, reserved: string): string {
 }
 
 /** The root as the filesystem holds it, or why it could not be reached. */
-async function reachRoot(root: string): Promise<string | DeliveryOutcome> {
+async function reachRoot(root: string): Promise<string | Unreachable> {
   try {
     const realRoot = await realRootOf(root);
     return (await stat(realRoot)).isDirectory()
@@ -197,48 +233,75 @@ type Wiring = {
   readonly renderers: Renderers;
 };
 
-function carryOut(
-  wiring: Wiring,
-  delivery: Delivery,
-  signal?: AbortSignal,
-): Promise<string> {
+/**
+ * What a delivery would put in the vault, worked out without putting any of it
+ * there. Delivering is this plus the writes; previewing is this and nothing.
+ */
+type Composition = {
+  readonly note: Contained;
+  /** What this delivery contributes: for an append into a note that is there, what was inserted. */
+  readonly written: string;
+  readonly file: string;
+  readonly fresh: boolean;
+};
+
+function compose(wiring: Wiring, delivery: Delivery): Promise<Composition> {
   switch (delivery.capability) {
     case CREATE_FILE:
-      return createNote(wiring, delivery, signal);
+      return composeCreate(wiring, delivery);
     case APPEND_TO_FILE:
-      return appendToNote(wiring, delivery, signal);
+      return composeAppend(wiring, delivery);
     case CREATE_OR_APPEND_FILE:
-      return createOrAppendToNote(wiring, delivery, signal);
+      return composeCreateOrAppend(wiring, delivery);
     default:
       throw new Refused(`no capability named ${delivery.capability}`);
   }
 }
 
-function createNote(
-  wiring: Wiring,
+/**
+ * The assets land before the note that links them: one written before a `link`
+ * that then loses a race is left as debris, in exchange for never overwriting.
+ */
+async function carryOut(
+  composed: Composition,
   delivery: Delivery,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<void> {
+  await placeAssets(dirname(composed.note.absolute), delivery.assets, signal);
+
+  if (composed.fresh) {
+    await createFile(composed.note.absolute, composed.file);
+    return;
+  }
+
+  // **Not atomic against a concurrent editor**: an open editor's buffer will
+  // overwrite this on save.
+  await replaceFile(composed.note.absolute, composed.file);
+}
+
+function composeCreate(
+  wiring: Wiring,
+  delivery: Delivery,
+): Promise<Composition> {
   const args = asCreateFileArguments(delivery.arguments);
   if (args === undefined) {
     throw new Refused("that is not a create-file argument set");
   }
 
   const filename = args.filename ?? deriveFilename(delivery);
-  return create(wiring, delivery, join(args.directory, filename), signal);
+  return create(wiring, delivery, join(args.directory, filename));
 }
 
-function appendToNote(
+function composeAppend(
   wiring: Wiring,
   delivery: Delivery,
-  signal?: AbortSignal,
-): Promise<string> {
+): Promise<Composition> {
   const args = asAppendToFileArguments(delivery.arguments);
   if (args === undefined) {
     throw new Refused("that is not an append-to-file argument set");
   }
 
-  return append(wiring, delivery, args.path, args.heading, signal);
+  return append(wiring, delivery, args.path, args.heading);
 }
 
 /**
@@ -248,11 +311,10 @@ function appendToNote(
  * here, against the vault as it is, rather than in a composer that may have had
  * nothing to ask.
  */
-function createOrAppendToNote(
+function composeCreateOrAppend(
   wiring: Wiring,
   delivery: Delivery,
-  signal?: AbortSignal,
-): Promise<string> {
+): Promise<Composition> {
   const args = asCreateOrAppendFileArguments(delivery.arguments);
   if (args === undefined) {
     throw new Refused("that is not a create-or-append-file argument set");
@@ -265,65 +327,54 @@ function createOrAppendToNote(
     delivery,
     join(place.directory, filename),
     args.heading,
-    signal,
   );
 }
 
-/** An asset written before a `link` that then loses a race is left as debris, in exchange for never overwriting. */
 async function create(
   wiring: Wiring,
   delivery: Delivery,
   target: string,
-  signal?: AbortSignal,
-): Promise<string> {
+): Promise<Composition> {
   const note = await locate(wiring.realRoot, target);
 
   if (await exists(note.absolute)) {
     throw new Refused(`${note.relative} is already there`);
   }
 
-  const directory = dirname(note.absolute);
-  const assets = await placeAssets(directory, delivery.assets, signal);
-  const rendered = renderNote(wiring.renderers, delivery, {
-    directory: within(note),
-    assets,
-  });
+  const rendered = render(wiring, delivery, note);
+  const file = `${rendered.frontmatter}\n${rendered.body}`;
 
-  await createFile(note.absolute, `${rendered.frontmatter}\n${rendered.body}`);
-  return note.relative;
+  return { note, written: file, file, fresh: true };
 }
 
-/** **Not atomic against a concurrent editor**: an open editor's buffer will overwrite this on save. */
 async function append(
   wiring: Wiring,
   delivery: Delivery,
   target: string,
   heading?: string,
-  signal?: AbortSignal,
-): Promise<string> {
+): Promise<Composition> {
   const note = await locate(wiring.realRoot, target);
-  const directory = dirname(note.absolute);
-
-  const assets = await placeAssets(directory, delivery.assets, signal);
-  const rendered = renderNote(wiring.renderers, delivery, {
-    directory: within(note),
-    assets,
-  });
+  const rendered = render(wiring, delivery, note);
 
   const existing = await readIfPresent(note.absolute);
   if (existing === undefined) {
-    await createFile(
-      note.absolute,
-      `${rendered.frontmatter}\n${insertUnder("", rendered.body, heading)}`,
-    );
-  } else {
-    await replaceFile(
-      note.absolute,
-      insertUnder(existing, rendered.body, heading),
-    );
+    const file = `${rendered.frontmatter}\n${insertUnder("", rendered.body, heading)}`;
+    return { note, written: file, file, fresh: true };
   }
 
-  return note.relative;
+  return {
+    note,
+    written: rendered.body,
+    file: insertUnder(existing, rendered.body, heading),
+    fresh: false,
+  };
+}
+
+function render(wiring: Wiring, delivery: Delivery, note: Contained) {
+  return renderNote(wiring.renderers, delivery, {
+    directory: within(note),
+    assets: assetNames(delivery.assets),
+  });
 }
 
 /**
@@ -365,7 +416,9 @@ async function readIfPresent(path: string): Promise<string | undefined> {
   }
 }
 
-function unreachable(detail: string): DeliveryOutcome {
+type Unreachable = { readonly kind: "unreachable"; readonly detail: string };
+
+function unreachable(detail: string): Unreachable {
   return { kind: "unreachable", detail };
 }
 

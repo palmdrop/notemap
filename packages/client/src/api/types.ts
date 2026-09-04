@@ -68,6 +68,9 @@ export type MintedToken = components["schemas"]["MintedToken"];
 export type MintTokenRequest = components["schemas"]["MintTokenRequest"];
 
 export type RouteRequest = components["schemas"]["RouteRequest"];
+/** What a destination says it would write. Indicative, never binding. */
+export type RoutingPreview = components["schemas"]["RoutingPreview"];
+export type DeliveryOutput = components["schemas"]["DeliveryOutput"];
 export type RoutingRecord = components["schemas"]["RoutingRecord"];
 export type RoutingSummary = components["schemas"]["RoutingSummary"];
 export type TagUse = components["schemas"]["TagUse"];

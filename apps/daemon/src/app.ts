@@ -25,6 +25,7 @@ import {
   assetRoute,
   assetUploadRoute,
   cancelDeliveryRoute,
+  routingOutputRoute,
   captureRoute,
   createDestinationRoute,
   deleteDestinationRoute,
@@ -49,6 +50,7 @@ import {
   markProcessedRoute,
   queueRoute,
   retireDestinationRoute,
+  previewRouteRoute,
   routeItemRoute,
   routingRecordsRoute,
   tagRoute,
@@ -78,7 +80,9 @@ import { tagHandler, tagsInUseHandler } from "./routes/tags";
 import {
   cancelDeliveryHandler,
   markProcessedHandler,
+  previewHandler,
   routeHandler,
+  routingOutputHandler,
   routingRecordsHandler,
 } from "./routes/routing";
 import {
@@ -211,7 +215,9 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
     deleteDestinationHandler(pool),
   );
   app.post(honoPath(routeItemRoute.path), routeHandler(pool));
+  app.post(honoPath(previewRouteRoute.path), previewHandler(pool));
   app.post(honoPath(cancelDeliveryRoute.path), cancelDeliveryHandler(pool));
+  app.get(honoPath(routingOutputRoute.path), routingOutputHandler(pool));
   app.get(honoPath(actionsRoute.path), actionsHandler(pool));
 
   app.put(honoPath(assetUploadRoute.path), assetUploadHandler(pool, limits));

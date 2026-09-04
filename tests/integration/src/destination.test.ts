@@ -250,7 +250,18 @@ describe("a vault that cannot be written, and then can", () => {
     expect(await deliver()).toBe(1);
 
     expect(await opened.pool.routing.recordsFor(item)).toEqual([
-      { ...record, state: "delivered", pointer: "inbox/a-thought.md" },
+      {
+        ...record,
+        state: "delivered",
+        pointer: "inbox/a-thought.md",
+        // The retry that landed is what wrote the note, so it says what went.
+        output: {
+          content: {
+            blob: expect.any(String) as unknown as string,
+            mediaType: "text/markdown",
+          },
+        },
+      },
     ]);
     expect(
       await readFile(join(root, "inbox", "a-thought.md"), "utf8"),
@@ -297,5 +308,63 @@ describe("a root that overlaps notemap's own state", () => {
       refusal: { kind: "destination-unusable" },
     });
     expect(await filesUnder(root)).toEqual([]);
+  });
+});
+
+describe("asking the vault what it would write", () => {
+  it("answers the note, writes nothing, and matches the delivery that follows", async () => {
+    const { root } = vault();
+    await mkdir(root, { recursive: true });
+    const opened = await pooled(root);
+    const item = await captured(opened, envelope({ text: "a thought" }));
+
+    const asked = await opened.pool.routing.preview(item, {
+      destination: VAULT,
+      capability: CREATE,
+      arguments: { directory: "inbox", filename: "a-thought.md" },
+    });
+    if (asked.kind === "refused") {
+      throw new Error(`refused: ${JSON.stringify(asked.refusal)}`);
+    }
+    const report = asked.value;
+    if (report.kind !== "previewed" || report.content === undefined) {
+      throw new Error(`nothing to read: ${report.kind}`);
+    }
+
+    const would = new TextDecoder().decode(
+      await collect(await report.content.open()),
+    );
+    expect(would).toContain("a thought");
+    expect(await filesUnder(root)).toEqual([]);
+    expect(await opened.pool.routing.recordsFor(item)).toEqual([]);
+
+    const record = await route(opened, item, {
+      directory: "inbox",
+      filename: "a-thought.md",
+    });
+    expect(await readFile(join(root, record.pointer ?? ""), "utf8")).toBe(
+      would,
+    );
+  });
+
+  it("cannot be shown against a vault that is not there, and routing still can be", async () => {
+    const { root } = vault();
+    const opened = await pooled(root);
+    const item = await captured(opened, envelope({ text: "a thought" }));
+
+    const asked = await opened.pool.routing.preview(item, {
+      destination: VAULT,
+      capability: CREATE,
+      arguments: { directory: "inbox", filename: "a-thought.md" },
+    });
+
+    expect(asked).toMatchObject({
+      kind: "ok",
+      value: { kind: "unreachable" },
+    });
+    // The decision is still available: it is the seeing that failed.
+    expect((await route(opened, item, { directory: "inbox" })).state).toBe(
+      "pending",
+    );
   });
 });

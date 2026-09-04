@@ -224,7 +224,8 @@ _Avoid_: done, handled, cleared
 Anywhere an item can be delivered — a vault, a single file, a board, another app. Notemap does not
 own the place and does not know its shape, but it does own the destination: one is pool state, with
 a name a person can change and a **kind** that says how it is reached. What a routing record names,
-which is why a destination is never removed once one has named it.
+which is why a destination is never removed once one has named it. Never itself called an
+**output** — that is what a delivery to one produces.
 _Avoid_: target, sink
 
 **Destination kind**:
@@ -269,6 +270,18 @@ never to the capture — so one item reaches several destinations in several for
 is the item.
 _Avoid_: push, transfer, upload
 
+**Output**:
+The content a delivery produced — what the destination actually wrote, in the destination's own
+dialect rather than the item's. Optional, because a destination posting to an API may have nothing
+meaningful to keep, and named by the **routing record** rather than by the item, since two
+destinations produce two outputs from one item. Carries a media type and may carry a **note**: free
+prose about what could not be carried, which nothing parses. A destination may also be asked for
+one **before** anything is committed, which is a **preview** — indicative and never binding, since
+the delivery converts again when it runs.
+_Avoid_: rendition, artifact, receipt. Rendition collides with **Rendering**, which is the mirror's
+readable file; an **artifact** is an enrichment's output and belongs to an item; a receipt would
+imply the destination acknowledged something, which nothing here does.
+
 **Routing record**:
 One delivery, and the whole of what notemap remembers about it: destination, capability, the
 arguments the capability was given, the time the decision was made, and a best-effort pointer to
@@ -277,9 +290,12 @@ is acceptable. The arguments are remembered rather than consumed, because a deli
 landed is attempted again from the record alone. A record begins as a
 **reservation** the moment the decision is made and joins the append-only log when its delivery
 lands; a reservation whose delivery is abandoned or cancelled is removed, since nothing happened to
-record. So a record that is not pending means bytes reached somewhere. Where a destination
-reshaped the item on its way out, the record may also name **what was delivered**, so the pool can
-answer what it sent and not only where.
+record. So a record that is not pending means bytes reached somewhere. Where a destination reshaped
+the item on its way out, the record may also name the **output**, so the pool can answer what it
+sent and not only where. Beside the pointer it may carry a **URL**, where the destination can offer
+a link to the same place; neither kind that writes files ever does — a path on the daemon's host is
+nowhere a phone can follow, and a WebDAV address is the daemon's credential rather than a link
+anyone else holds.
 _Avoid_: routing status, delivery flag
 
 **Routing summary**:

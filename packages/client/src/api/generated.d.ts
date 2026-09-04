@@ -2481,6 +2481,140 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/items/{id}/route/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask what a destination would write, before committing to it
+         * @description Takes exactly what `/route` takes and answers what would be written instead of writing it. **A `POST` that changes nothing**: no routing record, no delivery job, nothing in the action log, and nothing at the destination beyond whatever it had to read to answer. It is a `POST` because the question carries a body — the capability's arguments are an object of the destination's own shape, which a query string cannot carry honestly.
+         *
+         *     **The answer is indicative, never binding.** The delivery converts again when it runs, so where a destination's converter is not deterministic the two will differ; that is a fact about the destination rather than a fault. The content comes back inline and as text, because a preview is stored nowhere and there is no second fetch to point at.
+         *
+         *     It is refused for the reasons `/route` is refused, because a preview that answered where a route would refuse would be describing a decision nobody can make. `unreachable` and `not-offered` are answers rather than refusals: neither stops the decision being made, only the seeing of it.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RouteRequest"];
+                };
+            };
+            responses: {
+                /** @description What it would write, why it would refuse, why it could not be reached, or a kind that does not offer this. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RoutingPreview"];
+                    };
+                };
+                /** @description The body could not be read as this request. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "malformed-json" | "malformed-envelope";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description No item has that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "no-such-item" | "item-purged";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The destination is retired, or the running code cannot make sense of it. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "destination-retired" | "destination-unusable";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The body was not JSON. */
+                415: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unsupported-media-type";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The destination, the capability, the payload type or the arguments were declined. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "arguments-invalid" | "rejected-by-destination" | "delivery-outcome-unknown" | "unreachable";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/routing/{record}/cancel": {
         parameters: {
             query?: never;
@@ -2548,6 +2682,66 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/routing/{record}/output": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read what a delivery produced
+         * @description The bytes the destination said it wrote, in the media type the record names. A separate fetch because an output may be large, and the record itself answers only whether there is one. Carries the inert headers an asset's bytes carry, for the same reason: this is content a destination produced, served from the daemon's own origin. `ETag` is the blob, and the response is immutable — a delivered record never changes what it produced.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    record: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The bytes. */
+                200: {
+                    headers: {
+                        ETag: string;
+                        "Content-Disposition": string;
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": string;
+                    };
+                };
+                /** @description No record has that id, the record produced no output, or its blob is gone from disk. A record with no output is ordinary rather than a fault. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "no-such-record" | "no-output" | "blob-missing";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3067,6 +3261,26 @@ export interface components {
             state: "pending" | "delivered";
             at: string;
             pointer?: string;
+            url?: string;
+            output?: components["schemas"]["DeliveryOutput"];
+        };
+        DeliveryOutput: {
+            /**
+             * @description Present where there are bytes to read at `/v1/routing/{record}/output`.
+             * @example {
+             *       "blob": "e3b0c44298fc1c14...",
+             *       "mediaType": "text/markdown"
+             *     }
+             */
+            content?: {
+                blob: string;
+                mediaType: string;
+            };
+            /**
+             * @description What the destination could not carry, in its own words. Free prose: nothing parses it.
+             * @example the two pictures were not carried
+             */
+            note?: string;
         };
         MarkProcessedRequest: {
             /**
@@ -3217,6 +3431,27 @@ export interface components {
             arguments: {
                 [key: string]: unknown;
             };
+        };
+        RoutingPreview: {
+            /** @enum {string} */
+            kind: "previewed";
+            content?: {
+                mediaType: string;
+                text?: string;
+                truncated: boolean;
+            };
+            note?: string;
+        } | {
+            /** @enum {string} */
+            kind: "rejected";
+            detail: string;
+        } | {
+            /** @enum {string} */
+            kind: "unreachable";
+            detail: string;
+        } | {
+            /** @enum {string} */
+            kind: "not-offered";
         };
         ActionSlice: {
             values: components["schemas"]["Action"][];

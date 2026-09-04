@@ -7,6 +7,7 @@ import type { Destination } from "@notemap/core";
 
 import {
   captureMany,
+  envelope,
   createVault,
   daemon,
   ids,
@@ -45,6 +46,8 @@ type Record_ = {
   item: string;
   state: string;
   pointer?: string;
+  url?: string;
+  output?: { content?: { blob: string; mediaType: string }; note?: string };
   target: { kind: string; destination?: string; arguments?: unknown };
 };
 
@@ -412,5 +415,204 @@ describe("a delivery the runner picks up", () => {
     expect(
       await readFile(join(host.vaultRoot, "inbox", "a-thought.md"), "utf8"),
     ).toContain("a thought");
+  });
+});
+
+describe("GET /v1/routing/{record}/output", () => {
+  it("says on the record that there is one, without the bytes", async () => {
+    const host = await vaulted("ready");
+    const item = await only(host);
+
+    const record = (await body(await route(host, item))) as Record_;
+
+    expect(record.output).toEqual({
+      content: {
+        blob: expect.stringMatching(/^[0-9a-f]{64}$/) as unknown as string,
+        mediaType: "text/markdown",
+      },
+    });
+    // The filesystem kind carries everything and can offer no link.
+    expect(record.output?.note).toBeUndefined();
+    expect(record.url).toBeUndefined();
+  });
+
+  it("answers the bytes the destination wrote, inert and immutable", async () => {
+    const host = await vaulted("ready");
+    const item = await only(host);
+    const record = (await body(await route(host, item))) as Record_;
+
+    const response = await host.app.request(`/v1/routing/${record.id}/output`);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("text/markdown");
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(response.headers.get("content-security-policy")).toBe(
+      "default-src 'none'; sandbox",
+    );
+    expect(response.headers.get("etag")).toMatch(/^"[0-9a-f]{64}"$/);
+    expect(response.headers.get("cache-control")).toContain("immutable");
+    expect(response.headers.get("content-disposition")).toContain(
+      `${record.id}.md`,
+    );
+
+    const written = await readFile(
+      join(host.vaultRoot, record.pointer ?? ""),
+      "utf8",
+    );
+    expect(await response.text()).toBe(written);
+  });
+
+  it("is 404 with its own code for a record that produced none", async () => {
+    const host = await vaulted("ready");
+    const item = await only(host);
+    const record = (await body(
+      await send(host.app, `/v1/items/${item}/mark-processed`, {}),
+    )) as Record_;
+
+    const response = await host.app.request(`/v1/routing/${record.id}/output`);
+
+    expect(response.status).toBe(404);
+    expect(await body(response)).toMatchObject({
+      error: { code: "no-output" },
+    });
+  });
+
+  it("is 404 for an id no record has", async () => {
+    const host = await vaulted("ready");
+
+    const response = await host.app.request("/v1/routing/nobody/output");
+
+    expect(response.status).toBe(404);
+    expect(await body(response)).toMatchObject({
+      error: { code: "no-such-record" },
+    });
+  });
+});
+
+describe("POST /v1/items/{id}/route/preview", () => {
+  type Preview = {
+    kind: string;
+    detail?: string;
+    note?: string;
+    content?: { mediaType: string; text?: string; truncated: boolean };
+  };
+
+  async function preview(
+    host: Vaulted,
+    item: string,
+    args: unknown = { directory: "inbox", filename: "a-thought.md" },
+  ): Promise<Response> {
+    return send(host.app, `/v1/items/${item}/route/preview`, {
+      destination: host.vault.id,
+      capability: "create-file",
+      arguments: args,
+    });
+  }
+
+  it("answers the markdown it would write, and writes nothing", async () => {
+    const host = await vaulted("ready");
+    const item = await only(host);
+
+    const response = await preview(host, item);
+    expect(response.status).toBe(200);
+
+    const shown = (await body(response)) as Preview;
+    expect(shown.kind).toBe("previewed");
+    expect(shown.content?.mediaType).toBe("text/markdown");
+    expect(shown.content?.text).toContain("a thought");
+    expect(shown.content?.truncated).toBe(false);
+    expect(shown.note).toBeUndefined();
+
+    // Nothing decided, nothing written, and the item is still work.
+    const records = (await body(
+      await host.app.request(`/v1/items/${item}/routing`),
+    )) as { values: unknown[] };
+    expect(records.values).toEqual([]);
+    expect(await queued(host)).toEqual([item]);
+  });
+
+  it("is what the delivery then writes", async () => {
+    const host = await vaulted("ready");
+    const item = await only(host);
+
+    const shown = (await body(await preview(host, item))) as Preview;
+    const record = (await body(await route(host, item))) as Record_;
+
+    expect(
+      await readFile(join(host.vaultRoot, record.pointer ?? ""), "utf8"),
+    ).toBe(shown.content?.text);
+  });
+
+  it("answers unreachable for a vault that is not there, and routing still works", async () => {
+    const host = await vaulted("missing");
+    const item = await only(host);
+
+    const shown = (await body(await preview(host, item))) as Preview;
+
+    expect(shown.kind).toBe("unreachable");
+    expect(shown.detail).toBeTruthy();
+    expect(((await body(await route(host, item))) as Record_).state).toBe(
+      "pending",
+    );
+  });
+
+  it("answers rejected where the delivery would be refused", async () => {
+    const host = await vaulted("ready");
+    const item = await only(host);
+    await route(host, item);
+
+    const shown = (await body(await preview(host, item))) as Preview;
+
+    expect(shown).toMatchObject({ kind: "rejected" });
+    expect(shown.detail).toContain("already there");
+  });
+
+  it("cuts a long preview at a character rather than a byte", async () => {
+    const host = await vaulted("ready");
+    // Two bytes per character, so the megabyte cap lands mid-character unless
+    // the read is decoded as a stream.
+    const item = "0198f0c2-0000-7000-8000-0000000000aa";
+    const written = await send(host.app, "/v1/captures", {
+      ...envelope({ id: item }),
+      payload: {
+        type: "text",
+        content: { text: "é".repeat(700_000) },
+        metadata: {},
+        assets: [],
+      },
+    });
+    expect(written.status).toBe(201);
+
+    const shown = (await body(await preview(host, item))) as Preview;
+
+    expect(shown.content?.truncated).toBe(true);
+    expect(shown.content?.text).not.toContain("\uFFFD");
+  });
+
+  it("refuses a capability the destination never declared", async () => {
+    const host = await vaulted("ready");
+    const item = await only(host);
+
+    const response = await send(host.app, `/v1/items/${item}/route/preview`, {
+      destination: host.vault.id,
+      capability: "post-to-board",
+      arguments: {},
+    });
+
+    expect(response.status).toBe(422);
+    expect(await body(response)).toMatchObject({
+      error: { code: "capability-undeclared" },
+    });
+  });
+
+  it("is 404 for an item that is not here", async () => {
+    const host = await vaulted("ready");
+
+    const response = await preview(host, "nobody");
+
+    expect(response.status).toBe(404);
+    expect(await body(response)).toMatchObject({
+      error: { code: "no-such-item" },
+    });
   });
 });

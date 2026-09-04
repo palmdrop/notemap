@@ -13,6 +13,10 @@ const PER_RUN = 500;
  * The list is read inside the transaction that deletes it. Read outside, a
  * capture arriving in between would make the delete fail against the foreign
  * key and take the whole run with it.
+ *
+ * **This never takes an output.** An output is named by a routing record rather
+ * than by an asset, so the store withholds a blob a record names even where its
+ * last asset has gone.
  */
 export async function sweepUnreferencedAssets(
   config: PoolConfig,

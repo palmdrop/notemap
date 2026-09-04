@@ -3,6 +3,7 @@ import type { AddressInfo } from "node:net";
 
 import { Rejected } from "@notemap/core";
 import type {
+  DeliveredOutput,
   DeliveryOutcome,
   JsonObject,
   PayloadTypeName,
@@ -34,6 +35,37 @@ async function vault(): Promise<DavServer> {
 }
 
 const IMAGE = "image" as PayloadTypeName;
+
+function delivered(
+  outcome: DeliveryOutcome,
+): DeliveryOutcome & { kind: "delivered" } {
+  if (outcome.kind !== "delivered") {
+    throw new Error(`not delivered: ${JSON.stringify(outcome)}`);
+  }
+  return outcome;
+}
+
+/** What the destination said it wrote, read back as text. */
+function outputOf(
+  outcome: DeliveryOutcome,
+): Promise<{ mediaType: string; text: string }> {
+  return textOf(delivered(outcome).output);
+}
+
+async function textOf(
+  output: DeliveredOutput | undefined,
+): Promise<{ mediaType: string; text: string }> {
+  const content = output?.content;
+  if (content === undefined) throw new Error("it answered no content");
+
+  const chunks: Uint8Array[] = [];
+  for await (const chunk of await content.open()) chunks.push(chunk);
+
+  return {
+    mediaType: content.mediaType,
+    text: chunks.map((chunk) => new TextDecoder().decode(chunk)).join(""),
+  };
+}
 
 /** Links every asset it was handed, so the names they landed under are visible. */
 const renderWithAssets: Renderer = (_delivery, where) => ({
@@ -816,5 +848,163 @@ describe("probing a webdav destination", () => {
 
     expect(failed).toBeInstanceOf(Error);
     expect(failed).not.toBeInstanceOf(Rejected);
+  });
+});
+
+describe("what it says it wrote", () => {
+  it("answers the whole note it created, and nothing to confess", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+
+    const outcome = await adapter(server).deliver(
+      destinationRow({ root: "V" }),
+      delivery({ arguments: { directory: "", filename: "note.md" } }),
+    );
+
+    expect(await outputOf(outcome)).toEqual({
+      mediaType: "text/markdown",
+      text: server.files()["V/note.md"],
+    });
+    expect(delivered(outcome).output?.note).toBeUndefined();
+    // The address is the daemon's credential, not a link anyone else follows.
+    expect(delivered(outcome).url).toBeUndefined();
+  });
+
+  it("answers what an append inserted, not the note it was inserted into", async () => {
+    const server = await vault();
+    server.put("V/daily.md", "# Monday\n\nyesterday\n");
+
+    const outcome = await adapter(server).deliver(
+      destinationRow({ root: "V" }),
+      delivery({
+        capability: "append-to-file",
+        arguments: { path: "daily.md" },
+      }),
+    );
+
+    const said = (await outputOf(outcome)).text;
+    expect(said).toContain('"text": "a thought"');
+    expect(said).not.toContain("yesterday");
+    expect(server.files()["V/daily.md"]).toContain("yesterday");
+  });
+
+  it("answers the whole note where the append brought one into being", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+
+    const outcome = await adapter(server).deliver(
+      destinationRow({ root: "V" }),
+      delivery({
+        capability: "append-to-file",
+        arguments: { path: "daily.md" },
+      }),
+    );
+
+    expect((await outputOf(outcome)).text).toBe(server.files()["V/daily.md"]);
+  });
+});
+
+describe("what it says it would write", () => {
+  const preview = (server: DavServer, each = delivery()) =>
+    adapter(server).preview?.(destinationRow({ root: "V" }), each) ??
+    Promise.reject(new Error("the kind offers no preview"));
+
+  it("answers the note a create would land, and writes nothing", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+    const each = delivery({
+      arguments: { directory: "", filename: "note.md" },
+      tags: ["project/fiction-a"],
+    });
+
+    const shown = await textOf(await preview(server, each));
+
+    expect(shown.mediaType).toBe("text/markdown");
+    expect(shown.text).toContain("- 'project/fiction-a'");
+    expect(server.files()).toEqual({});
+    // Its `PUT` is conditional, so a delivery never asks first and neither does this.
+    expect(server.requests()).toEqual([]);
+
+    expect(
+      (
+        await outputOf(
+          await adapter(server).deliver(destinationRow({ root: "V" }), each),
+        )
+      ).text,
+    ).toBe(shown.text);
+  });
+
+  it("reads the note an append would go into, and leaves it as it was", async () => {
+    const server = await vault();
+    server.put("V/daily.md", "# Monday\n\nyesterday\n");
+    const each = delivery({
+      capability: "append-to-file",
+      arguments: { path: "daily.md" },
+    });
+
+    const shown = await textOf(await preview(server, each));
+
+    expect(shown.text).not.toContain("yesterday");
+    expect(server.files()["V/daily.md"]).toBe("# Monday\n\nyesterday\n");
+    expect(server.requests().every((each) => each.startsWith("GET"))).toBe(
+      true,
+    );
+
+    const outcome = await adapter(server).deliver(
+      destinationRow({ root: "V" }),
+      each,
+    );
+    expect((await outputOf(outcome)).text).toBe(shown.text);
+  });
+
+  it("shows the whole note where the append would bring one into being", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+
+    const shown = await textOf(
+      await preview(
+        server,
+        delivery({
+          capability: "append-to-file",
+          arguments: { path: "daily.md" },
+        }),
+      ),
+    );
+
+    expect(shown.text).toContain("derived_from: 'urn:commons:item:item-1'");
+    expect(server.files()).toEqual({});
+  });
+
+  it("uploads no assets, and links them by the names they would land under", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+    const picture = deliveredAsset("image", "photo.png", bytes("PNG"));
+
+    const shown = await textOf(
+      await preview(
+        server,
+        delivery({
+          arguments: { directory: "", filename: "note.md" },
+          assets: [picture],
+        }),
+      ),
+    );
+
+    expect(shown.text).toContain("photo");
+    expect(server.files()).toEqual({});
+    // A name is arithmetic on the asset, so nothing had to be read to say it.
+    expect(picture.opens()).toBe(0);
+  });
+
+  it("refuses a path that leaves the vault, as a delivery would", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+
+    await expect(
+      preview(
+        server,
+        delivery({ arguments: { directory: "../..", filename: "note.md" } }),
+      ),
+    ).rejects.toThrow(Rejected);
   });
 });

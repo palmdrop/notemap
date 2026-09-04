@@ -9,6 +9,7 @@ import type {
   Timestamp,
 } from "./ids";
 import type { MirrorSubject } from "./mirror";
+import type { DeliveredOutput } from "./routing";
 import type { SuggestionDraft } from "./suggestion";
 
 export type JobKind = "enrichment" | "mirror" | "mirror-remove" | "delivery";
@@ -52,7 +53,13 @@ export type Lease = {
 
 export type WorkOutcome =
   | { readonly kind: "succeeded" }
-  | { readonly kind: "delivered"; readonly pointer?: string }
+  | {
+      readonly kind: "delivered";
+      readonly pointer?: string;
+      readonly url?: string;
+      /** Core stores the content and the record names the blob; nothing durable holds an opener. */
+      readonly output?: DeliveredOutput;
+    }
   | {
       readonly kind: "enriched";
       readonly artifacts: readonly ArtifactDraft[];

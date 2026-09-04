@@ -1,6 +1,7 @@
 import { recordAction } from "./actions";
 import { enqueueMirrorWrite } from "./mirror";
 import { DELIVERY_FAILURE, destinationDetail } from "./routing/delivery";
+import { landingFor, type Landed } from "./routing/output";
 import { ok, refused } from "#utils/result";
 import type { PoolConfig } from "#types/api/config";
 import type { PoolPorts, PoolTx } from "#types/api/ports";
@@ -100,6 +101,10 @@ export async function complete(
     throw new Error("core: recording enrichment output is not implemented yet");
   }
 
+  // Outside the transaction, for the reason `route` stores one outside its own.
+  const landed =
+    outcome.kind === "delivered" ? await landingFor(ports, outcome) : undefined;
+
   return ports.store.transaction(async (tx) => {
     const held = await tx.leasedJob(lease);
     if (held === undefined) return refused({ kind: "lease-lost", lease });
@@ -115,12 +120,7 @@ export async function complete(
 
     if (outcome.kind === "succeeded" || outcome.kind === "delivered") {
       if (held.job.subject.kind === "routing-record") {
-        await land(
-          ports,
-          tx,
-          held.job.subject.record,
-          outcome.kind === "delivered" ? outcome.pointer : undefined,
-        );
+        await land(ports, tx, held.job.subject.record, landed);
       }
 
       await tx.resolveJob(lease, { kind: "done" });
@@ -165,14 +165,15 @@ async function land(
   ports: PoolPorts,
   tx: PoolTx,
   id: RoutingRecordId,
-  pointer: string | undefined,
+  landed: Landed | undefined,
 ): Promise<void> {
   const record = await tx.routingRecord(id);
   // Cancelled from under the attempt, and whoever removed it left the entry saying so.
   if (record === undefined) return;
 
+  const landing = landed?.landing ?? {};
   const at = ports.clock.now();
-  await tx.resolveRoutingRecord(id, pointer);
+  await tx.resolveRoutingRecord(id, landing);
   await enqueueMirrorWrite(ports, tx, { kind: "item", item: record.item }, at);
   await recordAction(ports, tx, {
     kind: "routed",
@@ -188,7 +189,10 @@ async function land(
             capability: record.target.capability,
           }
         : {}),
-      ...(pointer === undefined ? {} : { pointer }),
+      ...(landing.pointer === undefined ? {} : { pointer: landing.pointer }),
+      ...(landed?.outputLost === undefined
+        ? {}
+        : { outputLost: landed.outputLost }),
     },
   });
 }

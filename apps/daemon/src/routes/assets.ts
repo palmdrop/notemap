@@ -18,6 +18,7 @@ import { guarded, type UploadLimits } from "../assets/upload";
 import { assetStatus, assetStoreStatus, errorBody } from "../errors/refusals";
 import { RefusedUpload } from "../errors/refused-upload";
 import { json, refuse } from "../utils/responses";
+import { webStream } from "../utils/stream";
 
 export type { UploadLimits };
 
@@ -113,21 +114,4 @@ export function assetContentHandler(pool: Pool) {
       },
     });
   };
-}
-
-function webStream(
-  bytes: AsyncIterable<Uint8Array>,
-): ReadableStream<Uint8Array> {
-  const chunks = bytes[Symbol.asyncIterator]();
-
-  return new ReadableStream({
-    pull: async (controller) => {
-      const { done, value } = await chunks.next();
-      if (done) controller.close();
-      else controller.enqueue(value);
-    },
-    cancel: async (reason) => {
-      await chunks.return?.(reason);
-    },
-  });
 }

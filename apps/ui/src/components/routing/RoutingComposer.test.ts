@@ -5,6 +5,7 @@ import { asked as sentTo, json, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool } from "$testing/pool";
 import { notices } from "$lib/notices.svelte";
+import { NO_PREVIEW_OFFERED, PREVIEW_IS_INDICATIVE } from "$lib/said";
 import RoutingComposer from "./RoutingComposer.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
@@ -84,11 +85,22 @@ function serving(
     kind: "described",
     capabilities: [CREATE_FILE],
   },
+  preview: Record<string, unknown> = {
+    kind: "previewed",
+    content: {
+      mediaType: "text/markdown",
+      text: "# a thought\n",
+      truncated: false,
+    },
+  },
 ) {
   return pool((request) => {
     const route = routeOf(request);
     if (route === "GET /v1/destinations") return json(200, { values: held });
     if (route.endsWith("/description")) return json(200, description);
+    if (route === "POST /v1/items/one/route/preview") {
+      return json(200, preview);
+    }
     if (route === "POST /v1/items/one/route") {
       return json(200, {
         id: "r",
@@ -1009,4 +1021,193 @@ test("a refusal stays at the control, and the corner is left alone", async () =>
   await screen.findByText(/that destination needs different arguments/);
   expect(closed).not.toHaveBeenCalled();
   expect(notices.shown).toHaveLength(0);
+});
+
+test("shows what would be written only when it is asked for", async () => {
+  serving([aDestination()]);
+
+  draw();
+  await choose(/Vault/);
+  await choose(/create-file/);
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "inbox" },
+  });
+
+  // A conversion may be a model call, so nothing asks on a keystroke.
+  expect(asked()).not.toContain("POST /v1/items/one/route/preview");
+
+  await choose("preview");
+
+  expect(await screen.findByText(/# a thought/)).toBeDefined();
+  expect(asked()).toContain("POST /v1/items/one/route/preview");
+  // What it is, said where it is drawn.
+  expect(screen.getByText(PREVIEW_IS_INDICATIVE)).toBeDefined();
+});
+
+test("drops what was shown when the decision under it changes", async () => {
+  serving([aDestination()]);
+
+  draw();
+  await choose(/Vault/);
+  await choose(/create-file/);
+  const directory = await screen.findByLabelText("directory");
+  await fireEvent.input(directory, { target: { value: "inbox" } });
+  await choose("preview");
+  await screen.findByText(/# a thought/);
+
+  await fireEvent.input(directory, { target: { value: "drafts" } });
+
+  await vi.waitFor(() => {
+    expect(screen.queryByText(/# a thought/)).toBeNull();
+  });
+});
+
+test("drops a preview that resolves after the decision moved on", async () => {
+  let release: ((value: Response) => void) | undefined;
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE_FILE] });
+    }
+    if (route === "POST /v1/items/one/route/preview") {
+      return new Promise<Response>((resolve) => (release = resolve));
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  draw();
+  await choose(/Vault/);
+  await choose(/create-file/);
+  const directory = await screen.findByLabelText("directory");
+  await fireEvent.input(directory, { target: { value: "inbox" } });
+  await choose("preview");
+
+  // The person types on while the request is out.
+  await fireEvent.input(directory, { target: { value: "drafts" } });
+  release?.(
+    json(200, {
+      kind: "previewed",
+      content: {
+        mediaType: "text/markdown",
+        text: "# for inbox\n",
+        truncated: false,
+      },
+    }),
+  );
+
+  await vi.waitFor(() => {
+    expect(
+      (screen.getByRole("button", { name: "preview" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false);
+  });
+  expect(screen.queryByText(/# for inbox/)).toBeNull();
+});
+
+test("says what a preview would write that it cannot show", async () => {
+  serving([aDestination()], undefined, {
+    kind: "previewed",
+    content: { mediaType: "application/pdf", truncated: false },
+  });
+
+  draw();
+  await choose(/Vault/);
+  await choose(/create-file/);
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "inbox" },
+  });
+  await choose("preview");
+
+  expect(await screen.findByText(/application\/pdf/)).toBeDefined();
+});
+
+test("clears a failed preview's message when the next one succeeds", async () => {
+  let fail = true;
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE_FILE] });
+    }
+    if (route === "POST /v1/items/one/route/preview") {
+      if (fail) {
+        fail = false;
+        return json(422, {
+          error: { code: "arguments-invalid", facts: {} },
+        });
+      }
+      return json(200, {
+        kind: "previewed",
+        content: {
+          mediaType: "text/markdown",
+          text: "# a thought\n",
+          truncated: false,
+        },
+      });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  draw();
+  await choose(/Vault/);
+  await choose(/create-file/);
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "inbox" },
+  });
+  await choose("preview");
+  expect(
+    await screen.findByText(/that destination needs different arguments/),
+  ).toBeDefined();
+
+  await choose("preview");
+
+  expect(await screen.findByText(/# a thought/)).toBeDefined();
+  expect(
+    screen.queryByText(/that destination needs different arguments/),
+  ).toBeNull();
+});
+
+test("draws a kind that offers no preview as such, and still routes", async () => {
+  serving([aDestination()], undefined, { kind: "not-offered" });
+
+  const closed = draw();
+  await choose(/Vault/);
+  await choose(/create-file/);
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "inbox" },
+  });
+  await choose("preview");
+
+  expect(await screen.findByText(NO_PREVIEW_OFFERED)).toBeDefined();
+
+  await choose("route");
+  await vi.waitFor(() => {
+    expect(closed).toHaveBeenCalled();
+  });
+});
+
+test("says a destination that could not be reached, and routing is still available", async () => {
+  serving([aDestination()], undefined, {
+    kind: "unreachable",
+    detail: "the vault is asleep",
+  });
+
+  draw();
+  await choose(/Vault/);
+  await choose(/create-file/);
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "inbox" },
+  });
+  await choose("preview");
+
+  expect(await screen.findByText(/the vault is asleep/)).toBeDefined();
+  expect(
+    (screen.getByRole("button", { name: "route" }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(false);
 });

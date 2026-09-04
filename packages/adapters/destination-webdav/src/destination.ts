@@ -3,6 +3,7 @@ import {
   capabilitiesFor,
   CREATE_FILE,
   CREATE_OR_APPEND_FILE,
+  markdownOutput,
   type Renderers,
 } from "@notemap/output-markdown";
 import {
@@ -22,6 +23,8 @@ import {
   appendToNote,
   createNote,
   createOrAppendToNote,
+  previewNote,
+  type Landed,
   type Wiring,
 } from "./notes";
 import { contain } from "./paths";
@@ -89,9 +92,38 @@ export function createWebdavDestination(
           delivery,
           signal,
         );
-        return { kind: "delivered", pointer: landed };
+        // No url: the address here is the daemon's credential, not a link.
+        return {
+          kind: "delivered",
+          pointer: landed.pointer,
+          output: markdownOutput(landed.written),
+        };
       } catch (cause) {
         return failure(cause);
+      }
+    },
+
+    /** Reads what a delivery reads, so an account that is asleep cannot be previewed against. */
+    preview: async (destination, delivery, signal) => {
+      const settings = asWebdavSettings(destination.settings);
+      if (settings === undefined) {
+        throw new Rejected(why(unreadable(destination)));
+      }
+
+      const dav = createDav(await config.credentials(settings.account));
+
+      try {
+        return markdownOutput(
+          await previewNote(
+            { dav, root: settings.root, renderers },
+            delivery,
+            signal,
+          ),
+        );
+      } catch (cause) {
+        const failed = failure(cause);
+        if (failed.kind === "rejected") throw new Rejected(failed.detail);
+        throw cause;
       }
     },
 
@@ -168,7 +200,7 @@ function carryOut(
   wiring: Wiring,
   delivery: Delivery,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<Landed> {
   switch (delivery.capability) {
     case CREATE_FILE:
       return createNote(wiring, delivery, signal);

@@ -1,9 +1,9 @@
 # What went, and what would go
 
 **Date**: 2026-08-30
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/mirror.md`, `docs/specs/client.md`, `docs/specs/shell.md`
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-09-04 <!-- YYYY-MM-DD, set when Status becomes Done -->
 
 ---
 
@@ -35,6 +35,55 @@ of deciding.
 that decides *how* a destination converts. This plan carries the conversion's evidence, not the
 conversion.
 
+## Amended 2026-09-04 — the unknowns settled
+
+Confirmed with the developer before phase 1 landed, and
+[ADR 33](../adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md) records
+the reasoning for the ones worth it.
+
+- **The mirror carries the hash, and the bytes need no second home.** The largest unknown mostly
+  dissolves: the mirror already carries no bytes for anything. `assets/` is one content-addressed
+  store the blob driver writes and both the pool and the mirror reference, so an output stored
+  through the same `BlobStore` lands there by construction. A mirrored record names the hash, the
+  media type, the note and the URL, exactly as it names an asset's blob, and a rebuild beside a
+  surviving `assets/` answers *what* was sent as well as where. `mirror.md` says what a rebuild
+  from mirror text alone can and cannot answer.
+- **The output of `append-to-file` is what was inserted**, not the file it was inserted into, and
+  `create-or-append-file` follows it. The record answers what this delivery put there.
+- **A preview reads what its delivery reads, and no more.** For the filesystem kind that is the
+  root resolved, the target stat'd, and — for an append — the note itself, because whether it is
+  there is what decides between the whole note and the inserted body. So a preview *can* be
+  `unreachable`, and against an unmounted vault it is. What the line above buys is not a preview
+  that needs nothing, but one that needs nothing a delivery would not have needed anyway.
+- **The preview route is `POST /v1/items/{id}/route/preview`** — under the verb it previews, taking
+  the same body. `/routing` on an item is the record list, and a preview is not about records. The
+  output fetch follows the same rule and is `GET /v1/routing/{record}/output` rather than the
+  plan's `/v1/routing-records/{id}/output`: `/v1/routing/{record}/cancel` is already the surface a
+  record is acted on through, and a third noun for one route would be a spelling nothing else uses.
+- **The record's output carries the blob hash on the wire**, beside the media type. It is not the
+  content, an asset already answers its own blob, and it is the `ETag` the output fetch sets.
+- **Over the wire a preview answers JSON**, `{ mediaType, note?, content }`, with the content
+  inline as text: it stores nothing, so there is no bytes URL to hand out afterwards, and the shell
+  draws a preview and a stored output through one component. The port keeps one output shape for
+  both `deliver` and `preview`; only the daemon decodes.
+- **The note stays prose.** ADR 33 says what would have to be true to change that.
+
+**Amended 2026-09-04, from review**: the record view **reads the output on arrival** rather than
+behind a press. Phase 7 said "fetched when asked for", and opening the record turned out to be the
+asking — the press was a step between a person and the one thing that surface exists to answer.
+The fetch is still a fetch: nothing prefetches, a record nobody opens is never read, and a read
+that fails is not retried on its own.
+
+**Added after the slice landed, 2026-09-04**: the **webdav kind** answers an output and a preview
+too. Phases 3 and 5 scoped both to the filesystem kind, which left the other kind that writes
+files recording where it went and not what went. It shares `@notemap/output-markdown` with the
+filesystem kind, so it shares the answers: `create` reports the whole note, an append reports what
+it inserted, and its preview makes the reads its delivery makes and none of the writes — which for
+`create-file` is no request at all, its `PUT` being conditional, and for an append is the one `GET`
+that decides whether the note is there.
+
+---
+
 ---
 
 ## Tasks
@@ -43,169 +92,169 @@ conversion.
 
 Depends on nothing.
 
-- [ ] Create branch `agent/delivery-output-and-preview`
-- [ ] An ADR extending [ADR 19](../adr/0019-a-destination-converts-and-the-delivery-records-what-went.md).
+- [x] Create branch `agent/delivery-output-and-preview`
+- [x] An ADR extending [ADR 19](../adr/0019-a-destination-converts-and-the-delivery-records-what-went.md).
       Three things worth the reasoning: a delivery **may convert lossily** and that is a delivery
       rather than a refusal, with `rejected` kept for a capture the destination can make no sense of;
       the record keeps the **output** and a short prose **note** about what was not carried; and a
       **preview is indicative**, with the alternatives it was chosen over — a binding preview whose
       bytes are committed with the decision, and a dry-run flag on `deliver`
-- [ ] Say why the flag was refused: it makes preview and delivery incapable of disagreeing, at the
+- [x] Say why the flag was refused: it makes preview and delivery incapable of disagreeing, at the
       price of one boolean between showing a person something and writing into their vault, which
       core cannot verify and an adapter can get wrong once
-- [ ] `CONTEXT.md` gains **Output** — the content a delivery produced, which the record may name.
+- [x] `CONTEXT.md` gains **Output** — the content a delivery produced, which the record may name.
       Its Avoid line names rendition, artifact and receipt: rendition collides with **Rendering**,
       artifact belongs to enrichment and says so in ADR 19, and receipt implies the destination
       acknowledged something, which nothing here does
-- [ ] **Destination**'s Avoid line loses `output` in the same change and keeps `target` and `sink`.
+- [x] **Destination**'s Avoid line loses `output` in the same change and keeps `target` and `sink`.
       A glossary cannot both define a word and ban it; the ban was against calling a destination an
       output, and the entry can say so
-- [ ] Verify: the ADR is written and confirmed; `pnpm lint`
-- [ ] `git commit`
+- [x] Verify: the ADR is written and confirmed; `pnpm lint`
+- [x] `git commit`
 
 ### Phase 2 — A delivery says what went
 
 Depends on phase 1. Needs [destination-targets](destination-targets.md) phase 1 merged, which
 renames the field beside these ones.
 
-- [ ] A delivered outcome may carry the **output**: the content, its media type, and a short prose
+- [x] A delivered outcome may carry the **output**: the content, its media type, and a short prose
       note about what could not be carried. All three optional — a destination posting to an API
       may have nothing meaningful to keep and should not be made to invent one
-- [ ] The content is handed over as a lazy opener rather than bytes in hand, the shape
+- [x] The content is handed over as a lazy opener rather than bytes in hand, the shape
       `DeliveredAsset` already uses, so a large output is never buffered to be hashed
-- [ ] The note is free text nothing parses, on the same footing as the `detail` that already rides
+- [x] The note is free text nothing parses, on the same footing as the `detail` that already rides
       on `unreachable` and `rejected`. Resist giving it structure: a machine-readable list of what
       was dropped is a vocabulary both core and the shell would have to learn, which is the
       argument core.md:611 already had once
-- [ ] **The pointer gains a URL beside it.** The human-readable pointer stays what it is — a path a
+- [x] **The pointer gains a URL beside it.** The human-readable pointer stays what it is — a path a
       person recognises — and a destination that can offer a link offers one. The filesystem kind
       answers a path and no URL, permanently: a path on the daemon's host is not reachable from the
       phone reading the shell. Both are best-effort and both may be stale, which the glossary
       already says of the pointer alone
-- [ ] Core stores the content as a **blob**, because the store is content-addressed already
+- [x] Core stores the content as a **blob**, because the store is content-addressed already
       ([ADR 13](../adr/0013-assets-are-named-references-to-content-addressed-blobs.md)) and routing
       the same content twice should cost one copy. The routing record names the hash, the media type
       and the note
-- [ ] A migration for the new columns, appended rather than edited — the file is tracked by
+- [x] A migration for the new columns, appended rather than edited — the file is tracked by
       `PRAGMA user_version` and says at the top that a migration is never edited once applied
-- [ ] **The sweep must not take an output.** It reclaims blobs no asset names, and an output is
+- [x] **The sweep must not take an output.** It reclaims blobs no asset names, and an output is
       named by a routing record rather than an asset. Only a delivered record carries one and a
       delivered record is never removed, so nothing releases an output today — say that where the
       sweep is, so the reclaim [todo.md](../todo.md) still owes does not delete the evidence
-- [ ] The mirror carries the hash, the media type, the note and the URL on the record it already
+- [x] The mirror carries the hash, the media type, the note and the URL on the record it already
       mirrors. Whether the mirror also carries the **bytes**, so a rebuilt pool can still answer what
       it sent, is the open question in this phase and the plan's largest — see Unknowns
-- [ ] Tests: an outcome with an output stores one blob and names it; the same output twice stores
+- [x] Tests: an outcome with an output stores one blob and names it; the same output twice stores
       one blob; an outcome without one records nothing; the mirror round-trips
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
+- [x] `git commit`
 
 ### Phase 3 — The filesystem kind answers with what it wrote
 
 Depends on phase 2.
 
-- [ ] `create-file` and `append-to-file` answer with the markdown they produced, its media type, and
+- [x] `create-file` and `append-to-file` answer with the markdown they produced, its media type, and
       no note — this kind carries everything, writes the assets beside the note, and has nothing to
       confess. A kind with nothing to confess is the case that proves the note is optional
-- [ ] For `append-to-file`, settle and state which bytes are the output: what was inserted, not the
+- [x] For `append-to-file`, settle and state which bytes are the output: what was inserted, not the
       file it was inserted into. The record answers what this delivery put there
-- [ ] Tests beside the adapter, over a temporary tree
-- [ ] Verify: `pnpm -r --silent test`
-- [ ] `git commit`
+- [x] Tests beside the adapter, over a temporary tree
+- [x] Verify: `pnpm -r --silent test`
+- [x] `git commit`
 
 ### Phase 4 — On the wire
 
 Depends on phases 2 and 3.
 
-- [ ] A routing record answers with the note, the media type, the URL and whether it has an output —
+- [x] A routing record answers with the note, the media type, the URL and whether it has an output —
       not the content, which is a separate fetch and may be large
-- [ ] `GET /v1/routing-records/{id}/output` answers the bytes with their media type. It carries the
+- [x] `GET /v1/routing-records/{id}/output` answers the bytes with their media type. It carries the
       same inert headers an asset response does: this is content a destination produced, and
       `security.md`'s reasoning about bytes on the daemon's own origin applies to it unchanged
-- [ ] Refusals: no such record, and a record that has no output — which is ordinary and not an error
+- [x] Refusals: no such record, and a record that has no output — which is ordinary and not an error
       condition anywhere else
-- [ ] Route tests beside the route, and the OpenAPI document regenerated
-- [ ] Verify: `pnpm --filter @notemap/daemon test`
-- [ ] `git commit`
+- [x] Route tests beside the route, and the OpenAPI document regenerated
+- [x] Verify: `pnpm --filter @notemap/daemon test`
+- [x] `git commit`
 
 ### Phase 5 — A destination can be asked what it would write
 
 Depends on phase 2, for the shape of what it answers.
 
-- [ ] `preview` joins `DestinationKindAdapter` and the `Destinations` port, **optionally** — a kind
+- [x] `preview` joins `DestinationKindAdapter` and the `Destinations` port, **optionally** — a kind
       that has not implemented it says so, on the same not-offered footing as
       [destination-targets](destination-targets.md)'s question. It answers an output and touches
       nothing at the destination
-- [ ] It takes what a delivery takes, because that is what makes it faithful. Core builds the
+- [x] It takes what a delivery takes, because that is what makes it faithful. Core builds the
       delivery without reserving anything: no routing record, no job, no lease, nothing appended to
       the log
-- [ ] It may fail `unreachable`. A preview of `append-to-file` may need to read the note it would
+- [x] It may fail `unreachable`. A preview of `append-to-file` may need to read the note it would
       append to, and a vault that is asleep cannot be previewed against — which does not stop the
       routing decision being made, only the seeing of it
-- [ ] Faithfulness is the adapter's discipline: `deliver` and `preview` share one conversion. Nothing
+- [x] Faithfulness is the adapter's discipline: `deliver` and `preview` share one conversion. Nothing
       in the port can enforce that, and the ADR says so rather than implying a guarantee
-- [ ] The filesystem kind implements it: the same markdown, without the write
-- [ ] Tests: a preview writes nothing to the temporary tree, and answers what a delivery would have
-- [ ] Verify: `pnpm -r --silent test`
-- [ ] `git commit`
+- [x] The filesystem kind implements it: the same markdown, without the write
+- [x] Tests: a preview writes nothing to the temporary tree, and answers what a delivery would have
+- [x] Verify: `pnpm -r --silent test`
+- [x] `git commit`
 
 ### Phase 6 — Preview on the wire
 
 Depends on phase 5.
 
-- [ ] **Proposed: `POST /v1/items/{id}/routing/preview`**, taking the destination, the capability and
+- [x] **Proposed: `POST /v1/items/{id}/routing/preview`**, taking the destination, the capability and
       the arguments — the body a route takes, answering an output instead of a record. A `POST` that
       writes nothing, which wants a sentence in `http-v1.md` rather than being smuggled in. Confirm
       the shape before building it
-- [ ] It has the refusals routing already has — unknown destination, undeclared capability, arguments
+- [x] It has the refusals routing already has — unknown destination, undeclared capability, arguments
       that fail the schema, payload type not accepted — plus unreachable and not-offered. A preview
       that refuses for the same reasons a route would is worth more than one that always answers
-- [ ] Route tests, and the OpenAPI document regenerated
-- [ ] Verify: `pnpm --filter @notemap/daemon test`
-- [ ] `git commit`
+- [x] Route tests, and the OpenAPI document regenerated
+- [x] Verify: `pnpm --filter @notemap/daemon test`
+- [x] `git commit`
 
 ### Phase 7 — The composer asks, and the record view shows
 
 Depends on phases 4 and 6, and on
 [item-route-and-record-view](item-route-and-record-view.md) for somewhere to draw a record.
 
-- [ ] The client can ask for a preview and fetch an output. Neither is an outbox operation, for the
+- [x] The client can ask for a preview and fetch an output. Neither is an outbox operation, for the
       reason routing is not one: a decision made offline cannot be replayed, and a preview of a
       destination that could not be reached is not a thing to queue
-- [ ] The composer offers a preview **on demand**, once the arguments are settled — never
+- [x] The composer offers a preview **on demand**, once the arguments are settled — never
       automatically. The conversion may be a model call, and the shell already reasons this way about
       I/O: only the chosen destination is ever described
-- [ ] The preview says what it is: what this destination would write **now**, not a promise about
+- [x] The preview says what it is: what this destination would write **now**, not a promise about
       what will be written. Where it differs from the delivery is where a converter is
       non-deterministic, and that is a fact about the destination rather than a fault
-- [ ] Not-offered and unreachable are the ordinary conditions, drawn as such: no preview, a line
+- [x] Not-offered and unreachable are the ordinary conditions, drawn as such: no preview, a line
       saying why, and routing still available. Nothing here may block a decision
-- [ ] The record view draws the note and the output, fetched when asked for, in the same component
+- [x] The record view draws the note and the output, fetched when asked for, in the same component
       the preview uses — they are the same shape and reading them is the same act
-- [ ] The pointer becomes a link where the record carries a URL, and stays text where it does not
-- [ ] Tests in the client and the shell: a preview is asked for only when asked for, a kind that does
+- [x] The pointer becomes a link where the record carries a URL, and stays text where it does not
+- [x] Tests in the client and the shell: a preview is asked for only when asked for, a kind that does
       not offer one is drawn without it, an unreachable destination does not prevent routing, and a
       record with no output draws without one
-- [ ] Verify: `pnpm --filter @notemap/client test`, `pnpm --filter @notemap/ui test`
-- [ ] `git commit`
+- [x] Verify: `pnpm --filter @notemap/client test`, `pnpm --filter @notemap/ui test`
+- [x] `git commit`
 
 ### Phase 8 — The specs say so
 
 Depends on everything above.
 
-- [ ] `core.md`: the output on the record, the note, lossy conversion as a delivery rather than a
+- [x] `core.md`: the output on the record, the note, lossy conversion as a delivery rather than a
       refusal, and preview as a third question a destination answers — with the sentence that it is
       indicative, because that is the one a reader will come looking for
-- [ ] `http-v1.md`: the output fetch, the preview route, and the `POST` that writes nothing
-- [ ] `mirror.md`: what a mirrored record carries, and what a rebuilt pool can and cannot answer
+- [x] `http-v1.md`: the output fetch, the preview route, and the `POST` that writes nothing
+- [x] `mirror.md`: what a mirrored record carries, and what a rebuilt pool can and cannot answer
       about what it sent
-- [ ] `client.md`: neither is an outbox operation, and neither is cached durably
-- [ ] `shell.md`: the preview in the composer, and the output in the record view
-- [ ] `docs/todo.md`: the preview half of routing auto-processing closes and names this plan; the
+- [x] `client.md`: neither is an outbox operation, and neither is cached durably
+- [x] `shell.md`: the preview in the composer, and the output in the record view
+- [x] `docs/todo.md`: the preview half of routing auto-processing closes and names this plan; the
       templates entry stays open and now has the seam it will use
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack` — this
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack` — this
       crosses core, the store, the mirror, the HTTP surface, the client and the shell
-- [ ] `git commit`
+- [x] `git commit`
 
 ---
 

@@ -4,12 +4,14 @@ import { assetName } from "@notemap/output-markdown";
 import type { Dav } from "./dav";
 import { sibling, type Contained } from "./paths";
 
-/**
- * Every asset put into the note's own collection under the name it was uploaded
- * with and its content's digest, and what each ended up called, keyed by slot.
- * The naming is shared, so a webdav vault and a filesystem vault call the same
- * picture the same thing.
- */
+/** A name is arithmetic on the content and the filename, so a note can be rendered before anything is uploaded. */
+export function assetNames(
+  assets: readonly DeliveredAsset[],
+): ReadonlyMap<string, string> {
+  return new Map(assets.map((each) => [each.slot, nameOf(each)]));
+}
+
+/** Every asset put into the note's own collection under the name `assetNames` gives it. */
 export async function placeAssets(
   dav: Dav,
   note: Contained,
@@ -25,17 +27,17 @@ export async function placeAssets(
   return placed;
 }
 
+function nameOf(asset: DeliveredAsset): string {
+  return assetName(asset.asset.filename, asset.asset.blob, asset.asset.id);
+}
+
 async function place(
   dav: Dav,
   note: Contained,
   asset: DeliveredAsset,
   signal?: AbortSignal,
 ): Promise<string> {
-  const name = assetName(
-    asset.asset.filename,
-    asset.asset.blob,
-    asset.asset.id,
-  );
+  const name = nameOf(asset);
 
   // Handed to `fetch` as it is: the opener is lazy because a delivery may be
   // carrying an hour of audio, and buffering it here would give that up.

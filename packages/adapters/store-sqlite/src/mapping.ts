@@ -28,6 +28,7 @@ import type {
   RoutingSummary,
   RoutingTarget,
   SourceId,
+  StoredOutput,
   TagName,
   Timestamp,
 } from "@notemap/core";
@@ -262,6 +263,25 @@ export function toRoutingRecord(row: RoutingRecordRow): RoutingRecord {
     state: row.state,
     at: toTimestamp(row.at),
     ...(row.pointer === null ? {} : { pointer: row.pointer }),
+    ...(row.url === null ? {} : { url: row.url }),
+    ...toOutput(row),
+  };
+}
+
+/** The pairing of blob and media type is the schema's; a record with neither and no note has no output. */
+function toOutput(row: RoutingRecordRow): { output?: StoredOutput } {
+  const content =
+    row.output_blob === null || row.output_mime === null
+      ? undefined
+      : { blob: row.output_blob as BlobHash, mediaType: row.output_mime };
+
+  if (content === undefined && row.output_note === null) return {};
+
+  return {
+    output: {
+      ...(content === undefined ? {} : { content }),
+      ...(row.output_note === null ? {} : { note: row.output_note }),
+    },
   };
 }
 
@@ -292,8 +312,13 @@ export function routingRecordParams(
   RoutingRecordRow["state"],
   number,
   string | null,
+  string | null,
+  string | null,
+  string | null,
+  string | null,
 ] {
   const target = record.target;
+  const output = record.output;
 
   return [
     record.id,
@@ -306,6 +331,10 @@ export function routingRecordParams(
     record.state,
     toMillis(record.at),
     record.pointer ?? null,
+    record.url ?? null,
+    output?.content?.blob ?? null,
+    output?.content?.mediaType ?? null,
+    output?.note ?? null,
   ];
 }
 

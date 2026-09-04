@@ -90,6 +90,13 @@ export type RoutingRecordRow = {
   readonly state: "pending" | "delivered";
   readonly at: number;
   readonly pointer: string | null;
+  /** A link to what the pointer names, where the destination could offer one. */
+  readonly url: string | null;
+  /** The blob holding what the delivery produced, and what those bytes are. */
+  readonly output_blob: string | null;
+  readonly output_mime: string | null;
+  /** Prose about what the delivery could not carry, and never `note`, which is a person's own word. */
+  readonly output_note: string | null;
 };
 
 /** What a page needs of an item's routing records, without their targets. */
@@ -178,6 +185,10 @@ export const TABLE_COLUMNS = {
     "state",
     "at",
     "pointer",
+    "url",
+    "output_blob",
+    "output_mime",
+    "output_note",
   ],
   actions: ["id", "kind", "subject", "by_kind", "by_ref", "at", "detail"],
   pool_meta: ["key", "value"],

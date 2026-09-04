@@ -27,6 +27,8 @@ import type {
   RoutingRecord,
   RoutingRecordState,
   RoutingTarget,
+  StoredContent,
+  StoredOutput,
 } from "#types/domain/routing";
 
 /** Sorted at every depth, including inside a payload's open JSON, so one state has one serialisation. */
@@ -197,6 +199,25 @@ function readRouting(value: unknown, at: string): RoutingRecord {
     state: readState(row["state"], `${at}.state`),
     at: stamp(row["at"], `${at}.at`),
     ...present("pointer", row, at, text),
+    ...present("url", row, at, text),
+    ...present("output", row, at, readOutput),
+  };
+}
+
+/** Both halves optional, and an output that is neither is not one a projection writes. */
+function readOutput(value: unknown, at: string): StoredOutput {
+  const row = object(value, at);
+  return {
+    ...present("content", row, at, readOutputContent),
+    ...present("note", row, at, text),
+  };
+}
+
+function readOutputContent(value: unknown, at: string): StoredContent {
+  const row = object(value, at);
+  return {
+    blob: text(row["blob"], `${at}.blob`) as BlobHash,
+    mediaType: text(row["mediaType"], `${at}.mediaType`),
   };
 }
 

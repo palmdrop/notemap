@@ -1,8 +1,20 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-09-02
+**Last updated**: 2026-09-04
 **Shipped**:
+
+- 2026-09-04 — **A delivery says what went, and a destination can be asked what would go.** A
+  delivered outcome may carry the content it produced, its media type and a short prose note about
+  what it could not carry; core stores the content as a blob and the routing record names it, so
+  "what did I actually send to my vault?" is answerable. Converting lossily is a delivery rather
+  than a refusal, which is only honest because the note and the output are there to read. Beside
+  it, `preview`: a fourth thing a destination can be asked, taking what a delivery takes,
+  reserving nothing, and **indicative rather than binding** — the delivery converts again when it
+  runs. The sweep gained a rule to go with the first half: a blob a record names as its output is
+  never reclaimed.
+  ([plan](../plans/delivery-output-and-preview.md),
+  [ADR 33](../adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md))
 
 - 2026-09-02 — **The pool answers what a field has already held.** Beside `candidates`, which asks
   the destination, a read that asks the pool: what has been routed to this destination through this
@@ -825,6 +837,54 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   may have nothing meaningful to keep — and it belongs to the delivery rather than the item,
   because two destinations with two templates produce two outputs from one item. Routing records
   are mirrored, so a rebuild restores it.
+- **A conversion that loses something is a delivery, not a refusal** (added 2026-09-04,
+  [ADR 33](../adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md)). A
+  todo-list destination that inserts one line prefixed `- [ ]` flattens a capture and drops its
+  pictures, and it delivered: routing delivers a copy and the item is untouched. `rejected` is kept
+  for a capture the destination can make no sense of at all — a payload type it cannot read, a place
+  it will not write. Spending it on a partial carry would make an ordinary conversion unretryable
+  and hand the decision back for something that worked.
+- **What went is the output, and what did not is a note.** A delivered outcome may carry the
+  **output**: the content, its media type, and a short prose note about what could not be carried.
+  All three are optional and independent — a destination with nothing worth keeping may still have
+  something to say, and a kind that carries everything has content and nothing to confess. The
+  content is handed over as a **lazy opener**, the shape a delivered asset already uses, so a large
+  output is never buffered in order to be hashed. Core stores it as a **blob**, the store being
+  content-addressed already, and the record names the hash, the media type and the note.
+- **The note is free text nothing parses**, on the same footing as the `detail` that rides on
+  `unreachable` and `rejected`. A machine-readable list of what was dropped is a vocabulary both
+  core and every shell would have to learn, and would be wrong the first time a destination lost
+  something the vocabulary has no word for — which is the argument this section already had once
+  over capability names.
+- **The pointer may carry a URL beside it.** The human-readable pointer stays what it is, a path a
+  person recognises, and a destination that can offer a link offers one. The filesystem kind
+  answers a path and no URL, permanently: a path on the daemon's host is not reachable from the
+  phone reading the shell. Both are best-effort and both may be stale.
+- **The sweep never takes an output.** It reclaims blobs no *asset* names, and an output is named
+  by a routing record rather than by an asset — the two may be the same bytes, so releasing the
+  last asset that named a blob does not make it the sweep's. Nothing releases an output today:
+  only a delivered record carries one, and a delivered record is never removed.
+- **A destination can be asked what it would write** (added 2026-09-04), through a fourth method,
+  **`preview`**. It takes what a delivery takes, answers an output, and touches nothing at the
+  destination beyond whatever it had to read to answer. Core builds the delivery and **reserves
+  nothing**: no routing record, no job, no lease, nothing appended to the log.
+- **A preview is indicative, never binding.** The delivery converts again when it runs, and where a
+  converter is not deterministic the two will differ — a fact about the destination rather than a
+  fault. Committing the preview's bytes with the decision was rejected: it would put bytes in a
+  reservation that is a pure decision, and it cannot be honest for a capability whose right output
+  depends on the destination at the moment of writing, which `append-to-file` and
+  `create-or-append-file` both are. A dry-run flag on `deliver` was rejected for one sentence: it
+  puts one boolean between showing a person something and writing into their vault, which core
+  cannot verify and an adapter can get wrong once.
+- **That the two agree is the adapter's discipline**, not a guarantee the port makes. `deliver` and
+  `preview` share one conversion because the kind is written that way; nothing in core can enforce
+  it, and a kind whose preview drifts from its delivery is a bug in that kind.
+- **A preview is refused for the reasons a route is refused** — an unknown destination, an
+  undeclared capability, a payload type not accepted, arguments that fail the schema — because one
+  that answered where a route would refuse would be describing a decision nobody can make.
+  `unreachable`, `rejected` and `not-offered` are **reported** rather than refused: none of them
+  stops the decision being made, only the seeing of it. Optional on the adapter, with the port
+  turning an absent method into `not-offered`, on `candidates`' terms.
 - **A destination is asked what it can do, and may need to go and look** (added 2026-08-17).
   Describing a destination is asynchronous: a vault whose templates are files, a board whose
   columns come from an API, or another pool cannot answer from a constant fixed at wiring time. A

@@ -18,6 +18,7 @@ import type {
   Payload,
   RememberedRequest,
   RouteRequest,
+  RoutingPreview,
   RoutingRecord,
   TagUse,
   Token,
@@ -193,6 +194,11 @@ export interface ActionsApi {
  */
 export interface RoutingApi {
   route(item: ItemId, request: RouteRequest): Promise<RoutingRecord>;
+  /**
+   * Indicative rather than binding: the delivery converts again when it runs.
+   * Not an outbox operation and not cached.
+   */
+  preview(item: ItemId, request: RouteRequest): Promise<RoutingPreview>;
   markProcessed(item: ItemId, note?: string): Promise<RoutingRecord>;
   recordsFor(item: ItemId): Promise<readonly RoutingRecord[]>;
   /**
@@ -201,6 +207,8 @@ export interface RoutingApi {
    * it still holds and the pool answers nothing on a cancel.
    */
   cancel(record: RoutingRecord["id"], item: ItemId): Promise<void>;
+  /** As text; the record says what the bytes are, and one carrying none refuses. */
+  output(record: RoutingRecord["id"]): Promise<string>;
 }
 
 /**

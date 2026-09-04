@@ -608,6 +608,32 @@ export const MIGRATIONS: readonly string[] = [
   -- across without a rebuild of its own.
   ALTER TABLE routing_records RENAME COLUMN target TO arguments;
   `,
+
+  `
+  -- What a delivery produced, beside where it landed. The blob is the same
+  -- content-addressed store an asset's bytes are in, so routing one item to two
+  -- destinations that convert alike costs one copy.
+  --
+  -- Added one column at a time because the pairing CHECK below names the column
+  -- added before it: SQLite resolves an added column's CHECK against the table
+  -- as it stands, and cannot see one that arrives later.
+  --
+  -- No foreign key and no reference count: blobs are the blob driver's, and
+  -- nothing here is an asset. \`output_note\` is not \`note\` — that one is the
+  -- word a person left when they carried the item themselves.
+  ALTER TABLE routing_records ADD COLUMN url TEXT;
+  ALTER TABLE routing_records ADD COLUMN output_blob TEXT;
+  ALTER TABLE routing_records ADD COLUMN output_mime TEXT
+    CHECK ((output_blob IS NULL) = (output_mime IS NULL));
+  ALTER TABLE routing_records ADD COLUMN output_note TEXT;
+
+  -- What the sweep asks before releasing a blob whose last asset has gone: an
+  -- output is named by a record rather than by an asset, and the two may be the
+  -- same bytes.
+  CREATE INDEX routing_records_output
+    ON routing_records (output_blob)
+    WHERE output_blob IS NOT NULL;
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

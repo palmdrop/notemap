@@ -116,6 +116,7 @@ const SAID: {
   "missing-asset-slot": (facts) =>
     `a capture of this type needs a file in "${String(facts["slot"])}"`,
   "missing-filename": "the file has no name",
+  "no-output": "that delivery kept no copy of what it sent",
   "no-such-asset": "the upload is gone; pick the file again",
   "no-such-item": "that item is not here",
   "no-such-record": "that routing record is not here",

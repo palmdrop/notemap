@@ -55,5 +55,14 @@ export const DEFAULT_DELIVERY = {
   batch: 4,
 };
 
-/** How much of a lease is kept back for reporting the outcome the attempt produced. */
+/**
+ * How much of a lease is kept back for reporting the outcome the attempt
+ * produced — which includes **storing the output** it came back with, so this
+ * is bounded by whatever a destination decided to hand over rather than by the
+ * report alone. Overrunning it abandons a delivery that landed. Both kinds that
+ * produce one today hand over a string held in memory.
+ */
 export const DELIVERY_REPORT_MARGIN_MS = 5_000;
+
+/** How much of a preview is inlined. The answer is JSON, held whole in memory on the way out. */
+export const MAX_PREVIEW_BYTES = 1024 * 1024;

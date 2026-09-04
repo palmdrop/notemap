@@ -1,8 +1,16 @@
 # Spec: The mirror on disk
 
 **Status**: Draft
-**Last updated**: 2026-08-25
+**Last updated**: 2026-09-04
 **Shipped**:
+
+- 2026-09-04 — **A mirrored routing record says what was sent, not only where.** A delivery may
+  now record the content it produced, and the record carries its blob hash, its media type, a
+  prose note about what could not be carried, and a URL where the destination offered one. No new
+  body of content: the bytes are a blob in `assets/`, which the pool and the mirror already share,
+  so the record names them exactly as it names an asset's.
+  ([plan](../plans/delivery-output-and-preview.md),
+  [ADR 33](../adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md))
 
 - 2026-08-25 — **The pool identity this spec has been asserting is readable now is.** A pool mints
   one when it is created and answers the same one for as long as it exists; `GET /v1/health` serves
@@ -119,7 +127,10 @@ restore that item. It carries
 - the item's **delivered** routing records — a record still pending delivery is a reservation
   rather than durable state, and a rebuild that restored one would restore a promise no job
   exists to keep (added 2026-08-13,
-  [ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md));
+  [ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)) — each with the
+  **output** its delivery reported, where it reported one: the blob hash, the media type and the
+  prose note about what could not be carried, beside the pointer and the URL (added 2026-09-04,
+  [ADR 33](../adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md));
 - the item's `modified_at`, recorded for verification only and never restored.
 
 It does not carry suggestions, decided or pending; enrichment states; jobs, leases or the action
@@ -140,6 +151,13 @@ It is the one place the material-not-operational rule needs stating rather than 
 destination is something the user set up and would otherwise recreate by hand, which puts it on the
 material side, while the delivery cadence that drives it stays in `config.toml` and is not
 mirrored.
+
+**An output's bytes need no home of their own.** They are a blob like any other, so a mirrored
+record names a hash and `assets/` holds the content once however many records name it. A mirror
+copied without `assets/` answers *where* an item went and no longer *what* went — the same loss a
+missing blob is for an asset, and reported the same way rather than being fatal. A **preview** is
+never mirrored, having never been stored anywhere: it is indicative, and the delivery that follows
+it is what leaves a record.
 
 **Media is stored once**, in `assets/`, referenced by both the pool and the mirror. Blobs are
 content-addressed and sharded by hash prefix
@@ -379,7 +397,9 @@ items directly, enqueues nothing and logs nothing.
 - **A missing or drifted blob is reported, never fatal.** The item is restored with its asset
   references intact and the blob is simply absent or drifted. A voice memo keeps its text, tags,
   corrected transcript and routing history when its audio is gone; refusing the whole rebuild
-  over one bad blob would fail at the moment recovery matters most.
+  over one bad blob would fail at the moment recovery matters most. **An output's blob is the same
+  case**: the record is restored naming it, and a rebuilt pool whose `assets/` came with it can
+  still answer what it sent.
 - **A rebuilt pool mints a new identity.** Its `modified_at` sequence restarts from zero, and
   delta cursors name that store-internal sequence
   ([ADR 14](../adr/0014-pagination-by-domain-position.md)), so every cached client cursor becomes

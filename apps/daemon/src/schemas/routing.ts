@@ -12,6 +12,29 @@ export const markProcessedRequestSchema = z
   })
   .openapi("MarkProcessedRequest");
 
+/** Without the bytes, which are their own fetch and may be large. */
+export const outputSchema = z
+  .object({
+    content: z
+      .object({
+        /** The same hash the output fetch answers as its `ETag`. */
+        blob: z.string(),
+        mediaType: z.string(),
+      })
+      .optional()
+      .openapi({
+        description:
+          "Present where there are bytes to read at `/v1/routing/{record}/output`.",
+        example: { blob: "e3b0c44298fc1c14...", mediaType: "text/markdown" },
+      }),
+    note: z.string().optional().openapi({
+      description:
+        "What the destination could not carry, in its own words. Free prose: nothing parses it.",
+      example: "the two pictures were not carried",
+    }),
+  })
+  .openapi("DeliveryOutput");
+
 export const routingRecordSchema = z
   .object({
     id: z.string(),
@@ -31,6 +54,9 @@ export const routingRecordSchema = z
     at: z.string(),
     /** Best-effort: where the item once went, never where it is. */
     pointer: z.string().optional(),
+    /** A link to the same place, where the destination could offer one. */
+    url: z.string().optional(),
+    output: outputSchema.optional(),
   })
   .openapi("RoutingRecord");
 
@@ -64,3 +90,26 @@ export const capabilitySchema = z
     argumentsSchema: jsonObject,
   })
   .openapi("Capability");
+
+/** Indicative, never binding: the delivery converts again when it runs. */
+export const previewSchema = z
+  .discriminatedUnion("kind", [
+    z.object({
+      kind: z.literal("previewed"),
+      content: z
+        .object({
+          mediaType: z.string(),
+          /** Absent where the media type is not one this route can put in JSON. */
+          text: z.string().optional(),
+          /** True where the preview was longer than this daemon inlines. */
+          truncated: z.boolean(),
+        })
+        .optional(),
+      /** What the destination says it would not carry. Free prose. */
+      note: z.string().optional(),
+    }),
+    z.object({ kind: z.literal("rejected"), detail: z.string() }),
+    z.object({ kind: z.literal("unreachable"), detail: z.string() }),
+    z.object({ kind: z.literal("not-offered") }),
+  ])
+  .openapi("RoutingPreview");

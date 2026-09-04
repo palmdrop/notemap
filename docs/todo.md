@@ -67,7 +67,14 @@
   from it meanwhile, which seals it for good, since rewriting it would leave that revision's trace
   naming content which never produced it
   ([ADR 21](adr/0021-an-item-is-editable-until-it-is-processed.md)).
-- [ ] Routing auto-processing - routing a note to a specific destination converts it to a specified format. A todo list, a prose paragraph, a markdown image link, whatever. The format could be a templating language, or natural language, with an LLM in the loop, or a mix. ADR 19 answers _where the work happens_; the interesting half is still open - **preview**. Composing a routing decision with a template means wanting to see the result before committing, which is a third method on the destination port and needs the conversion to be repeatable enough that a preview means something. Carried by [delivery-output-and-preview](plans/delivery-output-and-preview.md) — deliberately not built alongside `candidates` (2026-08-31): the two turned out not to share a seam after all, `candidates` answering "what could this hold" and preview answering "what would this produce", which is a question about the payload rather than about the destination.
+- [ ] Routing auto-processing - routing a note to a specific destination converts it to a specified format. A todo list, a prose paragraph, a markdown image link, whatever. The format could be a templating language, or natural language, with an LLM in the loop, or a mix. ADR 19 answers _where the work happens_, and the **preview** half is now closed: the destination port has `preview`, the composer asks for one on demand, and a delivery records the output it produced so what went is readable after the fact
+  ([delivery-output-and-preview](plans/delivery-output-and-preview.md),
+  [ADR 33](adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md)). What is
+  left is the conversion itself — templates, how they are configured, and what a model in the loop
+  costs — and it has the seam it will use: a kind converts inside `deliver`, answers the same
+  output from `preview`, and a conversion that loses something says so in a note nobody parses.
+  The repeatability worry this line carried is answered rather than solved: a preview is
+  **indicative**, so a non-deterministic converter is allowed and the shell says what a preview is.
 - [ ] Routing rules - core.md has carried "how rules are expressed, how fan-out to several destinations is presented, and whether a rule may ever be trusted to fire unattended" since 2026-08-02. Capture templates that auto-route are the first thing to touch it: choosing a template _is_ a person's decision to route, made early, which is how it survives "a rule never delivers on its own" - but that sentence wants writing deliberately rather than discovering later.
 - [ ] Reconsider where revisions *appear*. Half-answered on 2026-08-24: a revision now carries its
   own capture time, so it sorts at the moment it was written and no longer ties with what it came
@@ -116,7 +123,14 @@
     ([ADR 26](adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md),
     [destination-targets](plans/destination-targets.md)). Preview did not, in the end, share the
     seam this line predicted — see above.
-- [ ] Nothing reclaims a blob no asset ever named. The sweep enumerates the `assets` table, so a
+- [ ] Nothing reclaims a blob no asset ever named. **Whatever closes this must not take an
+  output**: a delivery's output is a blob named by a routing record rather than by an asset, so a
+  reclaim that reasons from the `assets` table alone would delete the evidence of what was sent
+  (2026-09-04). An output also *adds* to what this entry owes: the blob is written before the
+  transaction that names it, so a route refused as `item-purged` after a delivery landed, or a
+  completion whose lease was lost, leaves one behind. That is an ordinary path rather than the
+  crash the upload case describes. The store already withholds one from the sweep's release path; a reclaim that
+  walks the blob store instead has to ask the same question. The sweep enumerates the `assets` table, so a
   blob written by an upload that never minted a row — a crash between the two, or a refused
   `asset-id-conflict` — is permanent, where every other kind of debris is eventually taken. Both
   [core.md](specs/core.md) and [ADR 22](adr/0022-the-uploader-mints-the-asset-id.md) park this on
