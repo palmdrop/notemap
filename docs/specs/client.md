@@ -1,8 +1,16 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-09-03
+**Last updated**: 2026-09-04
 **Shipped**:
+
+- 2026-09-04 — **Asking what would go, and reading what went.** `RoutingApi.preview` asks a
+  destination what it would write before anything is committed, and `RoutingApi.output` reads what
+  a delivery actually produced. Neither is an outbox operation, for the reason routing is not one —
+  a decision made offline cannot be replayed, and a preview of a destination that could not be
+  reached is not a thing to queue — and neither is cached: both describe a moment rather than
+  state the pool holds.
+  ([plan](../plans/delivery-output-and-preview.md))
 
 - 2026-09-03 — **A client learns what it did not ask about.** `ActionsApi.watch()` answers what the
   pool has done since this client started looking, read from the action log on its own tempo, gated
@@ -419,6 +427,14 @@ asymmetry is deliberate and the interface makes it visible: an archive is availa
 route or a mark-done is disabled until the pool is reachable, rather than queued into a promise the
 outbox cannot keep.
 
+**A preview and an output are reads that reach the pool, and neither is queued** (added
+2026-09-04). Asking what a destination would write is a question only the pool can answer, and one
+whose answer describes a moment — queuing it would mean asking later and drawing the answer as
+though it were about now. Reading what a delivery produced is a fetch of bytes the pool holds, on
+the same terms as an asset's. Both fail rather than waiting when the pool is out of reach, and
+neither is kept: a preview is indicative and stale the instant anything changes
+([core.md](core.md#routing)), and an output is read by someone who went looking for it.
+
 **Editing destinations is the second exception, on the same terms** (added 2026-08-17,
 [ADR 20](../adr/0020-destinations-are-pool-state.md)). Destinations are pool state and a client
 reads them like anything else, cached for display. Creating, editing, retiring and deleting one are
@@ -736,6 +752,11 @@ by anything owed to a person:
 
 Nothing warms the cache. It fills from what surfaces actually read, so an offline working set is as
 large as the person's reading made it.
+
+**A preview and a delivery's output are not in it.** The first is indicative and belongs to the
+moment it was asked in; the second is bytes a person went looking for, which nothing offline can
+use. A record's `note` and media type *are* cached, being fields of a record the client already
+holds — what is not cached is the content behind them.
 
 ### Reachability, and a pool that is not the one we cached
 

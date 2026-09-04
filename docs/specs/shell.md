@@ -1,8 +1,16 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-03
+**Last updated**: 2026-09-04
 **Shipped**:
+
+- 2026-09-04 — **The composer asks what would be written, and the record shows what went.** A
+  `preview` beside `route`, asked for and never volunteered, drawing what this destination would
+  write now with the sentence saying that is what it is. A destination that offers no preview and
+  one that could not be reached are drawn as the ordinary conditions they are, with routing still
+  live. The record view draws the destination's note about what it could not carry, reads the
+  output when asked, and makes the pointer a link where the destination offered one to follow.
+  ([plan](../plans/delivery-output-and-preview.md))
 
 - 2026-09-03 — **The corner says what happened, not only what was refused.** A gesture that empties
   a row says where it went, names the capture it was about, and says `retrying` where the pool
@@ -407,10 +415,26 @@ tree and keeps the schema-driven browser — the entries at the current scope as
 same `Group`/`Option` idiom `where` already uses, with free entry beside it, and `do` still a step,
 its capabilities being its own and nothing here able to pick among them.
 
-It is shaped for what routing is about to become. A preview of the converted bytes, and a slot
-above `where` for a decision that arrived **pre-filled with an attribution** — which is the one
-shape a routing rule, a capture template and an enrichment suggestion all produce. Neither exists
-yet; the composer leaves them somewhere to land.
+**A preview is asked for, never volunteered** (added 2026-09-04). `preview` sits beside `route` and
+runs once the arguments are settled, because the conversion may reach the destination or a model —
+the same reasoning that describes only the destination a person chose. What comes back says what it
+is: **what this destination would write now**, not a promise about what will be written. The
+delivery converts again when it runs
+([ADR 33](../adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md)), and
+where the two differ that is a fact about the destination rather than a fault.
+
+Changing any part of the decision **drops what was shown** rather than leaving it under the line: a
+preview belongs to the arguments it was asked with, and a stale one reads as a promise about the
+new ones. A kind that offers no preview, and a destination that could not be reached to give one,
+are muted lines saying so — the same idiom the typed line uses for a vault it cannot list, and
+neither ever blocks `route`. A delivery the destination says it would refuse is drawn as that, and
+is the one case where a preview is worth more than the route it precedes: the refusal arrives
+before the decision rather than after it.
+
+The composer is still shaped for one thing it does not have: a slot above `where` for a decision
+that arrived **pre-filled with an attribution**, which is the one shape a routing rule, a capture
+template and an enrichment suggestion all produce. It does not exist yet; the composer leaves it
+somewhere to land.
 
 ### An item has an address
 
@@ -470,9 +494,21 @@ borrow. The **arguments are drawn against the capability's own schema** where th
 destination can be described, so a person reads `Directory` rather than `directory`; where it
 cannot be described they are drawn by their own keys, which is the honest fallback and not a
 failure. Anything the record carries that the schema does not name is drawn all the same: the
-record is what happened and the schema is only what is offered now. The **pointer is text**. It
-becomes a link once a destination has somewhere to put one; the shell never guesses whether a
-string is a URL.
+record is what happened and the schema is only what is offered now.
+
+The **pointer is a link where the record carries a URL**, and text everywhere else *(amended
+2026-09-04)*: the shell never guesses whether a string is one, and it follows only `http` and
+`https` — a `javascript:` URL in an `href` is script on this origin, and the string came from an
+adapter rather than from a person. The filesystem kind offers none, permanently, a path on the
+daemon's host being nowhere a phone can follow.
+
+**What was sent is drawn where the pointer is** *(added 2026-09-04)*. The destination's **note**
+about what it could not carry is on the record and is drawn at once, because it is the half a
+person needs to know a conversion was lossy at all. The **output** itself is a fetch and is read
+when asked for — most records are never opened for it, and one may be long. A record whose delivery
+kept no copy says so plainly: that is ordinary, and a destination posting to an API has nothing
+meaningful to keep. It is the component the composer's preview draws, because a preview and an
+output are one shape and reading them is one act.
 
 ### Actions
 

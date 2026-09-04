@@ -2,8 +2,17 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one and health are settled; the rest is stub
-**Last updated**: 2026-09-02
+**Last updated**: 2026-09-04
 **Shipped**:
+
+- 2026-09-04 — **What a delivery produced, and what one would produce.** A routing record now says
+  whether it kept an output, what those bytes are and what the destination could not carry, with
+  `GET /v1/routing/{record}/output` answering the bytes themselves under the inert headers an
+  asset's own read carries. Beside it, `POST /v1/items/{id}/route/preview`: the body `/route`
+  takes, answering what would be written instead of writing it — a `POST` that changes nothing,
+  said out loud rather than smuggled in, and refused for the reasons `/route` is refused.
+  ([plan](../plans/delivery-output-and-preview.md),
+  [ADR 33](../adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md))
 
 - 2026-09-02 — **A destination can be asked what a field has already held on it.**
   `GET /v1/destinations/{id}/remembered` names a capability and a field and answers each distinct
@@ -930,6 +939,61 @@ level up: the daemon publishes what a kind needs and holds no opinion about how 
   `payload-invalid` uses. None of them touches the destination.
 - An id no item has is `404 no-such-item`.
 
+### Asking what would be written
+
+`POST /v1/items/{id}/route/preview` — what this destination would write, before anything is
+committed. It takes exactly the body `/route` takes.
+
+```json
+{ "kind": "previewed",
+  "content": { "mediaType": "text/markdown", "text": "---\nid: '0198f0c2-...'\n---\n\na thought\n",
+               "truncated": false },
+  "note": "the two pictures were not carried" }
+```
+
+- **A `POST` that changes nothing**, which this document has no other example of and so says out
+  loud rather than leaving to be inferred. No routing record, no delivery job, nothing in the
+  action log, and nothing at the destination beyond whatever it had to read to answer. It is a
+  `POST` because the question carries a body: the capability's arguments are an object of the
+  destination's own shape, and a query string cannot carry one honestly.
+- **The answer is indicative, never binding**
+  ([ADR 33](../adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md)). The
+  delivery converts again when it runs, so a destination whose converter is not deterministic will
+  write something else. A client that presents this as a promise is misrepresenting it.
+- **The content comes back inline and as text**, because a preview is stored nowhere and there is
+  no second fetch to point at. A media type that is not text answers what it would be and nothing
+  to read; a preview longer than this daemon inlines is cut short with `truncated` saying so.
+- `kind` is `previewed`, `rejected`, `unreachable` or `not-offered`, and every one of them is a
+  `200`. A delivery the destination would refuse, one that could not be reached, and a kind that
+  does not offer previewing at all are answers rather than failures: none of them stops the
+  decision being made, only the seeing of it.
+- **Refused for the reasons `/route` is refused** — `422 unknown-destination`,
+  `422 capability-undeclared`, `422 payload-type-unsupported`, `422 arguments-invalid`,
+  `409 destination-retired`, `409 destination-unusable`, `404 no-such-item` — because a preview
+  that answered where a route would refuse would be describing a decision nobody can make.
+- Nothing is cached: a shell asks when a person asks, and the answer describes a moment.
+
+### Reading what a delivery produced
+
+`GET /v1/routing/{record}/output` — the bytes the destination said it wrote.
+
+- The record itself says whether there is one and what it is; this is the fetch, kept separate
+  because an output may be large and most are never read.
+- **The same inert headers an asset's bytes carry** — the recorded media type served honestly,
+  `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox`, and
+  `Content-Disposition` by the allowlist in [inline or attachment](#inline-or-attachment). This is
+  content a destination produced, coming back from the daemon's own origin, and
+  [security.md](security.md)'s reasoning about bytes on that origin applies to it unchanged.
+- `ETag` is the blob and the response is immutable: a delivered record never changes what it
+  produced. The filename is the record's id and an extension the media type implies, since an
+  output has no name of its own.
+- **A record that produced none is `404 no-output`**, which is ordinary rather than a fault: most
+  records carry no output at all. An id no record has is `404 no-such-record`, and bytes gone from
+  disk under a record that still names them is `404 blob-missing` — three codes, one status, on
+  the terms asset reads already use.
+- Beside the cancel, this is the second path naming a single routing record, and it takes the same
+  `/v1/routing/{record}/` shape.
+
 ### Cancelling a pending delivery
 
 `POST /v1/routing/{record}/cancel` — calling off a delivery that has not landed. It takes no body.
@@ -962,7 +1026,15 @@ level up: the daemon publishes what a kind needs and holds no opinion about how 
   records are the item's own state and go when it does, so an empty list for an unknown id would
   be a claim about an item rather than a filter that matched nothing.
 - A `pointer` is present only where a delivery recorded one, and is best-effort: it says where an
-  item once went, never where it is.
+  item once went, never where it is. A `url` may sit beside it where the destination could offer a
+  link to the same place; the filesystem kind never can, a path on the daemon's host being nowhere
+  a phone can follow.
+- **An `output` says what the delivery produced, without the bytes.** Its `note` is the
+  destination's own prose about what it could not carry, and its `content` — the blob and the media
+  type — is present exactly where there is something to fetch at
+  `GET /v1/routing/{record}/output`. Both halves are optional and independent: a destination with
+  nothing worth keeping may still have something to say. The bytes are not inlined here because
+  they may be large and a page of records would carry every one of them.
 - **`state` is `pending` or `delivered`**, and a client may not read a record as arrival without it
   ([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)). Marking an item
   processed is delivered by construction; a record routed to a destination may be either, and the

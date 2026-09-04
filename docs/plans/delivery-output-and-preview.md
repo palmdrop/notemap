@@ -1,9 +1,9 @@
 # What went, and what would go
 
 **Date**: 2026-08-30
-**Status**: In progress <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/mirror.md`, `docs/specs/client.md`, `docs/specs/shell.md`
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-09-04 <!-- YYYY-MM-DD, set when Status becomes Done -->
 
 ---
 
@@ -226,19 +226,19 @@ Depends on phases 4 and 6, and on
 
 Depends on everything above.
 
-- [ ] `core.md`: the output on the record, the note, lossy conversion as a delivery rather than a
+- [x] `core.md`: the output on the record, the note, lossy conversion as a delivery rather than a
       refusal, and preview as a third question a destination answers — with the sentence that it is
       indicative, because that is the one a reader will come looking for
-- [ ] `http-v1.md`: the output fetch, the preview route, and the `POST` that writes nothing
-- [ ] `mirror.md`: what a mirrored record carries, and what a rebuilt pool can and cannot answer
+- [x] `http-v1.md`: the output fetch, the preview route, and the `POST` that writes nothing
+- [x] `mirror.md`: what a mirrored record carries, and what a rebuilt pool can and cannot answer
       about what it sent
-- [ ] `client.md`: neither is an outbox operation, and neither is cached durably
-- [ ] `shell.md`: the preview in the composer, and the output in the record view
-- [ ] `docs/todo.md`: the preview half of routing auto-processing closes and names this plan; the
+- [x] `client.md`: neither is an outbox operation, and neither is cached durably
+- [x] `shell.md`: the preview in the composer, and the output in the record view
+- [x] `docs/todo.md`: the preview half of routing auto-processing closes and names this plan; the
       templates entry stays open and now has the seam it will use
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack` — this
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack` — this
       crosses core, the store, the mirror, the HTTP surface, the client and the shell
-- [ ] `git commit`
+- [x] `git commit`
 
 ---
 
