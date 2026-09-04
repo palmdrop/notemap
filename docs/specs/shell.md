@@ -582,6 +582,12 @@ nothing, because the row is its own evidence and a notice per tag is noise. A fa
 that is still on screen is said **at the control** — the composer keeps its modal open on a refusal,
 a row keeps its own line — and the corner is for what has nowhere else to be said.
 
+The rule is about the subject rather than the gesture, so **the same gesture is silent on the item
+surface** *(2026-09-04)*: `/items/{id}` keeps what it is about, and the decision is drawn there in
+the routing summary a moment later. What such a gesture does instead is **remember the record**, so
+that the log — read on its own tempo, and holding the pool's own account of the same decision —
+does not report it back minutes later as news.
+
 **A routing says only what the record says.** A decision the pool recorded and delivered names
 where it landed; one it recorded and has not carried out reads as **retrying**, and claims no
 landing. The difference is not a nicety: a pending record is one whose delivery was attempted and
@@ -631,9 +637,10 @@ reported when the decision was made is the same fact arriving a second time.
 reservation, and the row returns on its own. That is the one condition nothing else in the shell
 could ever explain, and it is why this exists.
 
-**A notice leads to where the whole of it can be read**: the log narrowed to the item, or the log
-plain where the work was about no item. The link carries no order — coming from outside the log
-there is none to carry, and the URL is the more specific statement about a read.
+**A notice leads to where the whole of it can be read**: the item it happened to, or the log plain
+where the work was about no item. The item surface is the better address for the question a notice
+raises — what happened to this capture — because it draws the record itself rather than the log's
+line about it *(amended 2026-09-04, once there was an item to lead to)*.
 
 **A catch-up is bounded, and a long one is not read out at all.** A shell that has been away a
 moment is told each thing that happened. One that has been away long enough for the read not to

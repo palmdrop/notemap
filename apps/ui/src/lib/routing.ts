@@ -42,6 +42,14 @@ function placeIn(record: RoutingRecord): string | undefined {
 }
 
 /**
+ * One decision, however many ways the shell comes to hear of it: from the
+ * gesture that made it, and from the log a poll later.
+ */
+export function keyFor(record: string): string {
+  return `record:${record}`;
+}
+
+/**
  * What a decision just made says about itself. A record the pool answered as
  * `pending` was attempted and did not go, so it reads as **retrying** — saying
  * it was routed would be the shell claiming the one thing only the delivery
@@ -55,7 +63,7 @@ export function saidOf(
   const where = about === undefined ? {} : { about };
 
   if (record.target.kind !== "destination") {
-    return { what: "marked done", ...where, key: `record:${record.id}` };
+    return { what: "marked done", ...where, key: keyFor(record.id) };
   }
 
   const name = nameOf(record.target.destination);
@@ -66,7 +74,7 @@ export function saidOf(
         what: `routed · ${name}`,
         ...(place === undefined ? {} : { why: place }),
         ...where,
-        key: `record:${record.id}`,
+        key: keyFor(record.id),
       }
     : {
         what: `retrying · ${name}`,

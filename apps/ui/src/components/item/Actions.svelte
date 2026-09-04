@@ -8,7 +8,7 @@
   import { aboutItem } from "$lib/excerpt";
   import { editable } from "$lib/lineage";
   import { notices } from "$lib/notices.svelte";
-  import { saidOf } from "$lib/routing";
+  import { keyFor, saidOf } from "$lib/routing";
 
   /**
    * `address` is where this item is read, and is absent on the surface that
@@ -29,8 +29,11 @@
     onedit: () => void;
     /**
      * The item is on its way out of a list. Asked before the pool is, because
-     * where the row stood is gone by the time it answers; what it hands back is
-     * told what became of the item.
+     * where the row stood is gone by the time it answers, and what it hands
+     * back is told what became of the item. A surface that keeps its subject in
+     * front of the reader gives none, and nothing here is said in the corner:
+     * the thing itself is the evidence, and a notice about it would be a second
+     * voice saying what the reader is already looking at.
      */
     onwent?: () => (going: string) => void;
   } = $props();
@@ -47,8 +50,10 @@
    */
   function archive() {
     const went = onwent?.();
-    notices.raise({ what: "archived", about: aboutItem(item) });
-    went?.("archived");
+    if (went !== undefined) {
+      notices.raise({ what: "archived", about: aboutItem(item) });
+      went("archived");
+    }
 
     void client.archive(item.id).catch((error: unknown) => {
       said = saidBy(error);
@@ -61,8 +66,14 @@
     said = "marking…";
     try {
       const record = await client.routing.markProcessed(item.id);
-      notices.raise(saidOf(record, nameOf, about));
-      went?.("done");
+      if (went === undefined) {
+        // Quiet, but remembered: the pool writes this decision to the log, and
+        // the corner would read it back minutes later as news.
+        notices.mark(keyFor(record.id));
+      } else {
+        notices.raise(saidOf(record, nameOf, about));
+        went("done");
+      }
       said = "";
     } catch (error) {
       said = saidBy(error);

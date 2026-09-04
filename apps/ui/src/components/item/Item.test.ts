@@ -1,16 +1,21 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
-import { expect, test, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 
 import type { Item as Held } from "@notemap/client";
 import { anItem, json, read, routeOf } from "@notemap/client/testing";
 
 import Queue from "$components/queue/Queue.svelte";
 import { asked, client, pool } from "$testing/pool";
+import { notices } from "$lib/notices.svelte";
 import { remember } from "$lib/order";
 import { NO_ITEM_OFFLINE, NO_RECORDS_OFFLINE } from "$lib/said";
 import Item from "./Item.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
+
+afterEach(() => {
+  notices.clear();
+});
 
 /** The words a capture holds, kept apart from the id it is reached by. */
 function saying(id: string, text: string): Held {
@@ -230,4 +235,132 @@ test("drops a record when the address moves to another item", async () => {
     expect(screen.queryByRole("link", { name: /create-note/ })).toBeNull();
   });
   expect(screen.getByText("unrouted")).toBeDefined();
+});
+
+/** What a gesture on this surface is answered with, so the pool is not the subject. */
+const MARKED = {
+  id: "rec-done",
+  item: "one",
+  at: "2026-09-04T09:00:00.000Z",
+  state: "delivered",
+  target: { kind: "user" },
+};
+
+function acting(item: Held) {
+  return (request: Request) => {
+    switch (routeOf(request)) {
+      case `GET /v1/items/${item.id}`:
+        return json(200, item);
+      case `POST /v1/items/${item.id}/mark-processed`:
+        return json(200, MARKED);
+      default:
+        return json(200, { values: [] });
+    }
+  };
+}
+
+/**
+ * The rule is about the subject rather than the gesture: this surface keeps
+ * what it is about, and the item under the corner is its own evidence.
+ */
+test("says nothing in the corner about work done to the item it is drawing", async () => {
+  pool(acting(saying("one", "still here")));
+
+  render(Item, { id: "one" });
+  await screen.findByText("still here");
+
+  await fireEvent.click(screen.getByRole("button", { name: "mark done" }));
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/mark-processed");
+  });
+
+  await fireEvent.click(screen.getByRole("button", { name: "archive" }));
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/archive");
+  });
+
+  expect(notices.shown).toHaveLength(0);
+});
+
+test("remembers the decision it stayed quiet about, so the log does not say it", async () => {
+  pool(acting(saying("one", "still here")));
+
+  render(Item, { id: "one" });
+  await screen.findByText("still here");
+
+  await fireEvent.click(screen.getByRole("button", { name: "mark done" }));
+
+  // The pool writes this decision to its log, which the corner reads on its
+  // own tempo and would otherwise report back as news.
+  await vi.waitFor(() => {
+    expect(notices.said("record:rec-done")).toBe(true);
+  });
+});
+
+const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
+
+test("routes from here without saying so, and remembers that decision too", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/items/one") {
+      return json(200, saying("one", "still here"));
+    }
+    if (route === "GET /v1/destinations") {
+      return json(200, {
+        values: [
+          {
+            id: VAULT,
+            name: "Vault",
+            kind: "filesystem",
+            settings: {},
+            retired: false,
+          },
+        ],
+      });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, {
+        kind: "described",
+        capabilities: [{ name: "append", accepts: ["text"] }],
+      });
+    }
+    if (route === "POST /v1/items/one/route") {
+      return json(200, {
+        id: "r",
+        item: "one",
+        at: "2026-09-04T09:00:00.000Z",
+        state: "delivered",
+        pointer: "notes/inbox/one.md",
+        target: {
+          kind: "destination",
+          destination: VAULT,
+          capability: "append",
+          arguments: {},
+        },
+      });
+    }
+    return json(200, { values: [] });
+  });
+
+  render(Item, { id: "one" });
+  await screen.findByText("still here");
+
+  await fireEvent.click(screen.getByRole("button", { name: "route" }));
+  await fireEvent.click(await screen.findByRole("button", { name: /Vault/ }));
+  await fireEvent.click(await screen.findByRole("button", { name: /append/ }));
+
+  // Two of them: the surface's action, and the composer's commit over it.
+  const commit = screen.getAllByRole("button", { name: "route" }).at(-1);
+  await fireEvent.click(commit as HTMLElement);
+
+  await vi.waitFor(() => {
+    expect(notices.said("record:r")).toBe(true);
+  });
+
+  // The record is drawn where the reader already is, so the corner has nothing
+  // to add — now or when the log is read back. The composer has closed, so the
+  // destination named on the surface is the summary's and not the modal's.
+  expect(notices.shown).toHaveLength(0);
+  expect(screen.getAllByRole("button", { name: "route" })).toHaveLength(1);
+  expect(screen.getByText(/Vault/)).toBeDefined();
 });

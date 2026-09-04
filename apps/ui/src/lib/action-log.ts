@@ -1,6 +1,7 @@
 import type { Action } from "@notemap/client";
 
 import type { Raised } from "./notices.svelte";
+import { keyFor } from "./routing";
 
 /**
  * The kinds worth saying to somebody who did not ask. Everything else the log
@@ -70,7 +71,7 @@ export function noticeOf(
       what: named === undefined ? "done" : `routed · ${named}`,
       ...(pointer === undefined ? {} : { why: pointer }),
       ...where,
-      ...(record === undefined ? {} : { key: `record:${record}` }),
+      ...(record === undefined ? {} : { key: keyFor(record) }),
     };
   }
 

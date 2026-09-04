@@ -50,12 +50,12 @@ test("a notice about something leads to where it can be read", async () => {
 
   notices.raise({
     what: "work abandoned",
-    href: "/log?item=abc",
+    href: "/items/abc",
     standing: true,
   });
 
   const look = await screen.findByRole("link", { name: "look" });
-  expect(look.getAttribute("href")).toBe("/log?item=abc");
+  expect(look.getAttribute("href")).toBe("/items/abc");
 });
 
 test("a refusal is still drawn, in the same corner", async () => {
@@ -139,9 +139,9 @@ test("says what logged while nobody was asking", async () => {
     );
   });
 
-  // And a way through to the whole of it, which is the log narrowed to the item.
+  // And a way through to the whole of it, which is the item it happened to.
   expect(screen.getByRole("link", { name: "look" }).getAttribute("href")).toBe(
-    "/log?item=one",
+    "/items/one",
   );
 
   vi.useRealTimers();

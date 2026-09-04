@@ -3,7 +3,7 @@
 
   import type { Action } from "@notemap/client";
 
-  import { aboutHref } from "$components/log/href";
+  import { itemHref } from "$components/item/href";
   import Refusals from "$components/outbox/Refusals.svelte";
   import Alarm from "$components/primitives/alarm/Alarm.svelte";
   import Notice from "$components/primitives/alarm/Notice.svelte";
@@ -52,7 +52,7 @@
 
   async function say(actions: readonly Action[]) {
     for (const action of actions) {
-      const raised = noticeOf(action, { nameOf, about: aboutHref });
+      const raised = noticeOf(action, { nameOf, about: itemHref });
       if (raised === undefined) continue;
 
       const about = await whichCapture(action.subject);
