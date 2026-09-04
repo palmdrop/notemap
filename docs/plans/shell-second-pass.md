@@ -60,16 +60,16 @@ Depends on phase 1 for the row it changes.
 
 Depends on phase 1. This is the phase that changes what a person can do.
 
-- [ ] Two aligned lines on a grid, every cell taking the same inline padding: `route done archive`
+- [x] Two aligned lines on a grid, every cell taking the same inline padding: `route done archive`
       above `copy edit open`, the second muted
-- [ ] `mark done` becomes `done`, and opens one optional field for where it went; `⏎` sends it,
+- [x] `mark done` becomes `done`, and opens one optional field for where it went; `⏎` sends it,
       empty or not; `esc` puts it away
-- [ ] `done` is not offered to an item whose summary already names the person
-- [ ] `copy` takes the capture's text and says so in the corner, naming what it took
-- [ ] `undo` on a record the person made, which cancels it
-- [ ] `shell.md`: the action row, what `done` is, and that a decision made by hand can be taken back
-- [ ] `pnpm -r --silent test`
-- [ ] `git commit`
+- [x] `done` is not offered to an item whose summary already names the person
+- [x] `copy` takes the capture's text and says so in the corner, naming what it took
+- [x] `undo` on a record the person made, which cancels it
+- [x] `shell.md`: the action row, what `done` is, and that a decision made by hand can be taken back
+- [x] `pnpm -r --silent test`
+- [x] `git commit`
 
 ### Phase 4 — what a record says
 

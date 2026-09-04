@@ -79,7 +79,11 @@
   {/if}
 
   <Tags {item} />
-  <Routing summary={item.routing} records={records.all} />
+  <Routing
+    summary={item.routing}
+    records={records.all}
+    onundone={() => records.reread()}
+  />
 
   {#if records.refused !== ""}
     <div role="status" class="mt-2 text-accent">{records.refused}</div>

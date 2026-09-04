@@ -83,7 +83,11 @@
       {/if}
 
       <Tags {item} />
-      <Routing summary={item.routing} records={records.all} />
+      <Routing
+        summary={item.routing}
+        records={records.all}
+        onundone={() => records.reread()}
+      />
 
       <!-- The item may be the client's own and the records never are, so the
            one surface answers for the two of them separately. -->

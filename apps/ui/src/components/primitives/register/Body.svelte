@@ -29,7 +29,7 @@
     {first ? 'border-t-0 pt-3.5 pb-6' : 'py-6'}
     {onpick === undefined ? '' : 'cursor-pointer'}
     {lit
-    ? '-mr-3.5 bg-ink/5 pr-3.5 group-data-furled:-ml-3.5 group-data-furled:border-l-2 group-data-furled:border-l-accent group-data-furled:pl-3'
+    ? '-mr-3.5 bg-ink/5 pr-3.5 [--field-ground:var(--color-paper)] group-data-furled:-ml-3.5 group-data-furled:border-l-2 group-data-furled:border-l-accent group-data-furled:pl-3'
     : ''}"
 >
   {@render children?.()}

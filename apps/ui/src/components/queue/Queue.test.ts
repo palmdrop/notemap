@@ -80,7 +80,7 @@ test("archives with the pool unreachable, and disables what it cannot queue", as
   const disabled = (name: string) =>
     (screen.getByRole("button", { name }) as HTMLButtonElement).disabled;
 
-  expect(disabled("mark done")).toBe(true);
+  expect(disabled("done")).toBe(true);
   expect(disabled("route")).toBe(true);
   expect(disabled("archive")).toBe(false);
 
@@ -476,7 +476,10 @@ test("a row that leaves the queue says where it went", async () => {
   await screen.findByText("one");
   await open(0);
 
-  await fireEvent.click(screen.getByRole("button", { name: "mark done" }));
+  await fireEvent.click(screen.getByRole("button", { name: "done" }));
+  await fireEvent.keyDown(screen.getByLabelText("where it went"), {
+    key: "Enter",
+  });
 
   await vi.waitFor(() => {
     expect(notices.shown.map((notice) => notice.what)).toContain("marked done");

@@ -29,7 +29,7 @@
     {first ? 'border-t-0 pt-3.5 pb-6' : 'py-6'}
     {onpick === undefined ? '' : 'cursor-pointer'}
     {lit
-    ? '-mr-gap -ml-3.5 border-l-2 border-l-accent bg-ink/5 pr-gap pl-3'
+    ? '-mr-gap -ml-3.5 border-l-2 border-l-accent bg-ink/5 pr-gap pl-3 [--field-ground:var(--color-paper)]'
     : ''}"
 >
   {@render children()}

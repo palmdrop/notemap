@@ -1,5 +1,9 @@
 <script lang="ts">
-  import type { RoutingRecord, RoutingSummary } from "@notemap/client";
+  import {
+    saidBy,
+    type RoutingRecord,
+    type RoutingSummary,
+  } from "@notemap/client";
 
   import { recordHref } from "$components/item/href";
   import { client } from "$lib/client";
@@ -9,10 +13,15 @@
   let {
     summary,
     records = [],
+    onundone,
   }: {
     summary: RoutingSummary | undefined;
     records?: readonly RoutingRecord[];
+    /** A cancelled record leaves what was read of them out of date. */
+    onundone?: () => void;
   } = $props();
+
+  let said = $state("");
 
   const destinations = client.destinations.all;
 
@@ -28,11 +37,31 @@
       ? records.map((record) => ({
           said: `${wentTo(record, nameOf)} · ${record.state}`,
           href: recordHref(record.item, record.id),
+          // Only a decision the person made by hand is theirs to take back:
+          // a delivery is the pool's, and cancelling one it has carried out
+          // would be undoing something that has already happened elsewhere.
+          taken: record.target.kind === "user" ? record : undefined,
         }))
       : summary === undefined
         ? []
-        : [{ said: whereItWent(summary, nameOf), href: undefined }],
+        : [
+            {
+              said: whereItWent(summary, nameOf),
+              href: undefined,
+              taken: undefined,
+            },
+          ],
   );
+
+  async function undo(record: RoutingRecord) {
+    said = "";
+    try {
+      await client.routing.cancel(record.id, record.item);
+      onundone?.();
+    } catch (error) {
+      said = saidBy(error);
+    }
+  }
 </script>
 
 <div class="mt-2">
@@ -40,14 +69,29 @@
     <div class="text-ink-muted">unrouted</div>
   {:else}
     {#each lines as line (line.href ?? line.said)}
-      <div class="break-words">
-        <span aria-hidden="true" class="text-accent">→</span>
-        {#if line.href === undefined}
-          {line.said}
-        {:else}
-          <a href={line.href}>{line.said}</a>
+      <div class="flex flex-wrap items-baseline gap-x-4">
+        <span class="min-w-0 break-words">
+          <span aria-hidden="true" class="text-accent">→</span>
+          {#if line.href === undefined}
+            {line.said}
+          {:else}
+            <a href={line.href}>{line.said}</a>
+          {/if}
+        </span>
+
+        {#if line.taken !== undefined}
+          {@const record = line.taken}
+          <button
+            type="button"
+            onclick={() => void undo(record)}
+            class="shrink-0 text-ink-muted hover:text-accent">undo</button
+          >
         {/if}
       </div>
     {/each}
+  {/if}
+
+  {#if said !== ""}
+    <div role="status" class="mt-1 text-accent">{said}</div>
   {/if}
 </div>

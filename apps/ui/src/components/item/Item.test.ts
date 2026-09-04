@@ -13,14 +13,23 @@ import Item from "./Item.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
+/** `done` opens the field for where it went, and `⏎` sends it, empty or not. */
+async function done() {
+  await fireEvent.click(screen.getByRole("button", { name: "done" }));
+  await fireEvent.keyDown(screen.getByLabelText("where it went"), {
+    key: "Enter",
+  });
+}
+
 afterEach(() => {
   notices.clear();
 });
 
 /** The words a capture holds, kept apart from the id it is reached by. */
-function saying(id: string, text: string): Held {
+function saying(id: string, text: string, more: object = {}): Held {
   return anItem(id, {
     payload: { type: "text", content: { text }, metadata: {}, assets: [] },
+    ...more,
   });
 }
 
@@ -237,6 +246,11 @@ test("drops a record when the address moves to another item", async () => {
 });
 
 /** What a gesture on this surface is answered with, so the pool is not the subject. */
+/** A summary that names the person, which is what a hand-marked item carries. */
+const BY_HAND = {
+  routing: { records: 1, pending: 0, to: [{ kind: "user" as const }] },
+};
+
 const MARKED = {
   id: "rec-done",
   item: "one",
@@ -268,7 +282,7 @@ test("says nothing in the corner about work done to the item it is drawing", asy
   render(Item, { id: "one" });
   await screen.findByText("still here");
 
-  await fireEvent.click(screen.getByRole("button", { name: "mark done" }));
+  await done();
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/mark-processed");
   });
@@ -287,7 +301,7 @@ test("remembers the decision it stayed quiet about, so the log does not say it",
   render(Item, { id: "one" });
   await screen.findByText("still here");
 
-  await fireEvent.click(screen.getByRole("button", { name: "mark done" }));
+  await done();
 
   // The pool writes this decision to its log, which the corner reads on its
   // own tempo and would otherwise report back as news.
@@ -399,4 +413,47 @@ test("reads the records again after a decision made on this surface", async () =
   await vi.waitFor(() => {
     expect(read()).toBe(before + 1);
   });
+});
+
+/**
+ * `routing.cancel` is what makes marking done a decision rather than a fact
+ * about the past, and it is the other half of not offering `done` twice.
+ */
+test("takes back a decision the person made by hand, and reads the records again", async () => {
+  let cancelled = false;
+  pool((request: Request) => {
+    switch (routeOf(request)) {
+      case "GET /v1/items/one":
+        return json(200, saying("one", "still here", BY_HAND));
+      case "GET /v1/items/one/routing":
+        return json(200, { values: cancelled ? [] : [MARKED] });
+      case "POST /v1/routing/rec-done/cancel":
+        cancelled = true;
+        return json(204, undefined);
+      default:
+        return json(200, { values: [] });
+    }
+  });
+
+  render(Item, { id: "one" });
+  const way = await screen.findByRole("button", { name: "undo" });
+
+  await fireEvent.click(way);
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/routing/rec-done/cancel");
+  });
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
+  });
+});
+
+/** A delivery is the pool's; only what the person did by hand is theirs to undo. */
+test("offers no undo on a record the pool delivered", async () => {
+  pool(routed([RECORD]));
+
+  render(Item, { id: "routed" });
+  await screen.findByRole("link", { name: /create-note/ });
+
+  expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
 });

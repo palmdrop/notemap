@@ -537,14 +537,41 @@ because a preview and an output are one shape and reading them is one act.
 
 ### Actions
 
-An opened row's actions are not five of a kind and are not drawn as five of a kind.
+An opened row's actions are not six of a kind and are not drawn as six of a kind.
 
 - **Route leads.** Items are supposed to leave; the interface says so.
 - **Tags sit close behind it.** They are processing, not decoration, and their control converges
   with routing's (below).
-- **Mark done** and **archive** group together as the other two ways an item leaves — marking
+- **Done** and **archive** group together as the other two ways an item leaves — marking
   processed being, in the domain's words, routing whose destination is the user.
 - **Edit** is an affordance on the content, not an entry in a list of actions.
+
+**Two lines on a grid, by what they do** *(2026-09-04)*. `route done archive` is how an item leaves
+the queue; `copy edit open` is working with the one in front of you, and reads muted. Nothing is
+hidden and no control is added: the split is the one the queue is about. **Every cell takes the
+same inline padding** — the padding the accent fill needs — so the words align down the columns and
+not merely the boxes, and a line with fewer of them closes up rather than leaving a hole where one
+would have been.
+
+**`done` asks where it went, and takes no answer for one.** It opens a single optional field; `⏎`
+sends it, written or empty, `esc` puts it away, and `done` again sends what is there — the field
+being the only thing the pool is told beyond the fact itself. **It is not offered twice**: an item
+whose routing summary already names the person has been marked, and asking again would make a
+second record of one decision. That is a rule about the summary, which every row holds, and not
+about the records, which only an open row has read.
+
+**A decision made by hand can be taken back.** `undo` sits on the record it cancels, and only
+there: a delivery is the pool's and has already happened somewhere else, while marking done is a
+person saying so and is theirs to unsay. Cancelling reads the records again, the one drawn being
+out of date the moment it goes.
+
+**`copy` is the one action that has to say so.** It takes the capture's text, and everything else
+here either changes the row or takes you somewhere — this puts nothing on the screen at all. So it
+speaks in the corner, naming what it took rather than saying *copied* into the air, which is the
+one place [the rule about subjects leaving the screen](#the-corner-says-what-happened) is answered
+by a subject that never appears. It uses `navigator.clipboard` and nothing else, which needs a
+secure context: HTTPS, or `localhost`. A deployment reached over plain HTTP at a LAN address cannot
+copy, and that is a later change rather than a fallback built now.
 
 ### Tagging
 
