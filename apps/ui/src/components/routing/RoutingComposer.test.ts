@@ -1,12 +1,17 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
-import { expect, test, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 
 import { asked as sentTo, json, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool } from "$testing/pool";
+import { notices } from "$lib/notices.svelte";
 import RoutingComposer from "./RoutingComposer.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
+
+afterEach(() => {
+  notices.clear();
+});
 
 const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
 const BOARD = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a78";
@@ -518,6 +523,21 @@ function servingVault(entries: readonly Record<string, unknown>[]) {
   });
 }
 
+/** A destination whose route answers whatever the delivery did. */
+function routing(record: Record<string, unknown>) {
+  return pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [APPEND] });
+    }
+    if (route === "POST /v1/items/one/route") return json(200, record);
+    return json(404, { error: { code: "unknown-route" } });
+  });
+}
+
 function drawAbout(content: unknown) {
   const closed = vi.fn();
   render(RoutingComposer, {
@@ -918,4 +938,72 @@ test("does not label the place with the destination step's word", async () => {
 
   await screen.findByRole("combobox", { name: "place" });
   expect(screen.queryByRole("combobox", { name: "Where" })).toBeNull();
+});
+
+const aTarget = {
+  kind: "destination",
+  destination: VAULT,
+  capability: "append",
+  arguments: {},
+};
+
+/** The record goes up; what is said about it belongs to the surface below. */
+test("hands the record it got back to whoever opened it", async () => {
+  routing({
+    id: "r",
+    item: "one",
+    at: "2026-09-03T10:00:00.000Z",
+    state: "delivered",
+    pointer: "notes/inbox/picker.md",
+    target: aTarget,
+  });
+
+  const routed = vi.fn();
+  const closed = vi.fn();
+  render(RoutingComposer, {
+    props: {
+      item: "one",
+      subject: "a note",
+      onrouted: routed,
+      onclose: closed,
+    },
+  } as never);
+
+  await choose(/Vault/);
+  await choose(/append/);
+  await choose("route");
+
+  await vi.waitFor(() => {
+    expect(routed).toHaveBeenCalled();
+  });
+  expect(routed.mock.calls[0]?.[0]).toMatchObject({
+    state: "delivered",
+    pointer: "notes/inbox/picker.md",
+  });
+  expect(notices.shown).toHaveLength(0);
+});
+
+test("a refusal stays at the control, and the corner is left alone", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [APPEND] });
+    }
+    if (route === "POST /v1/items/one/route") {
+      return json(400, { error: { code: "arguments-invalid" } });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  const closed = draw();
+  await choose(/Vault/);
+  await choose(/append/);
+  await choose("route");
+
+  await screen.findByText(/that destination needs different arguments/);
+  expect(closed).not.toHaveBeenCalled();
+  expect(notices.shown).toHaveLength(0);
 });

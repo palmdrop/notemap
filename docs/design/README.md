@@ -39,6 +39,12 @@ and again on 2026-09-03 after a review read the two side by side:
 The line itself carries no label. `where` is the destination's step, and the place is the thing the
 modal is for.
 
+**Nothing here draws the corner** *(2026-09-03)*. It now holds notices as well as refusals — a
+confirmation in the ink, a failure in the accent, refusals at the bottom — and a routed row is
+watched out of the register wearing its word before it goes
+([plan](../plans/notices-as-they-happen.md)). It landed after the pages above were last re-rendered
+and is the one thing on them that is behind the code.
+
 Open any page directly — `file://` works, there is nothing to serve.
 
 ## Re-rendering the shots

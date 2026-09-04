@@ -3,6 +3,7 @@
     saidBy,
     type Capability,
     type DestinationDescription,
+    type RoutingRecord,
   } from "@notemap/client";
 
   import ComposerTags from "$components/routing/ComposerTags.svelte";
@@ -31,6 +32,7 @@
     subject,
     content,
     tags = [],
+    onrouted,
     onclose,
   }: {
     item: string;
@@ -40,6 +42,11 @@
     content?: unknown;
     /** What the item already carries, so the composer's own row draws them as taken. */
     tags?: readonly string[];
+    /**
+     * The decision reached the pool. What is said about it, and where the row
+     * stood, belong to the surface rather than to a modal over it.
+     */
+    onrouted?: (record: RoutingRecord) => void;
     onclose: () => void;
   } = $props();
 
@@ -168,12 +175,13 @@
     busy = true;
     said = "routing…";
     try {
-      await client.routing.route(item, {
+      const record = await client.routing.route(item, {
         destination: chosen,
         ...(beside === undefined
           ? { capability, arguments: valuesFrom(fields, args) }
           : freshFile(beside)),
       });
+      onrouted?.(record);
       onclose();
     } catch (error) {
       said = saidBy(error);

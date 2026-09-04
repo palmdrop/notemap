@@ -149,6 +149,18 @@ export function createClient(config: ClientConfig): Client {
 
   noticeLapsed = sessions.lapsed;
 
+  const actions = createActions({ api });
+
+  // The watcher keeps its own tempo, and only the gates are the client's to
+  // hold: it asks nothing while nobody is reading and nothing while the pool
+  // is not answering.
+  const onReach = reach.changes
+    .pipe(
+      map((mark) => mark.yes),
+      distinctUntilChanged(),
+    )
+    .subscribe((yes) => actions.answering(yes));
+
   /**
    * Hydration is started here and waited on by everything that touches state,
    * so no caller can observe a half-read cache. A store that cannot be read
@@ -469,6 +481,7 @@ export function createClient(config: ClientConfig): Client {
     destinations: createDestinations({
       api,
       all: derived(state.changes, (current) => current.destinations),
+      held: () => state.get().destinations,
       cached: (destinations) =>
         after(() => state.update((current) => ({ ...current, destinations }))),
       settled: (id, held) =>
@@ -479,15 +492,20 @@ export function createClient(config: ClientConfig): Client {
 
     tags,
 
-    actions: createActions({ api }),
+    actions,
 
     drain,
     dismiss: (operation) => after(() => outbox.dismiss(operation)),
-    watched: (yes) => reach.watched(yes),
+    watched: (yes) => {
+      reach.watched(yes);
+      actions.watched(yes);
+    },
 
     close() {
       reach.stop();
+      actions.stop();
       onReturn.unsubscribe();
+      onReach.unsubscribe();
     },
   };
 }

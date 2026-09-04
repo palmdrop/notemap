@@ -14,6 +14,7 @@
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import { itemHref } from "$components/item/href";
+  import { lingering } from "$lib/lingering.svelte";
   import { became, editable, finished } from "$lib/lineage";
   import { recordsOf } from "$lib/records.svelte";
   import { briefly } from "$lib/stamp";
@@ -24,6 +25,7 @@
     offline,
     furled,
     pending = false,
+    before,
     onopen,
     onroute,
   }: {
@@ -32,6 +34,8 @@
     offline: boolean;
     furled: boolean;
     pending?: boolean;
+    /** The row under this one, so a departure goes from where it stood. */
+    before?: string;
     onopen: () => void;
     onroute: () => void;
   } = $props();
@@ -47,6 +51,16 @@
 
   const word = $derived(became(item));
   const mayEdit = $derived(editable(item));
+
+  /**
+   * Where this row stands, read before the gesture rather than after it: the
+   * item has left the queue by the time the pool answers, and this row with it,
+   * so `before` is by then a prop with no source.
+   */
+  function departing() {
+    const stood = before;
+    return (going: string) => lingering.after(item, going, stood);
+  }
 </script>
 
 <Rail lit={opened} onpick={onopen}>
@@ -109,6 +123,7 @@
       address={itemHref(item.id)}
       onroute={() => onroute()}
       onedit={() => (editing = !editing)}
+      onwent={departing}
     />
   {/if}
 </Body>

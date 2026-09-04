@@ -24,3 +24,18 @@
 @utility cleared {
   padding-block: 5rem;
 }
+
+/**
+ * A panel filled with a role colour, carrying paper text. The shell hovers to
+ * the accent everywhere else, which on a panel that is already filled is a
+ * control that disappears under the pointer.
+ */
+@utility filled {
+  color: var(--color-paper);
+
+  a:hover,
+  button:hover {
+    color: var(--color-paper);
+    opacity: 0.7;
+  }
+}

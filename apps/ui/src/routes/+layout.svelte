@@ -4,8 +4,8 @@
   import { page } from "$app/state";
 
   import Shown from "$components/log/Shown.svelte";
+  import Corner from "$components/notices/Corner.svelte";
   import Order from "$components/order/Order.svelte";
-  import Refusals from "$components/outbox/Refusals.svelte";
   import SignIn from "$components/session/SignIn.svelte";
   import ThemeToggle from "$components/theme/ThemeToggle.svelte";
   import Bar from "$components/primitives/frame/Bar.svelte";
@@ -15,6 +15,8 @@
   import Sheet from "$components/primitives/frame/Sheet.svelte";
   import Waiting from "$components/primitives/frame/Waiting.svelte";
   import { client } from "$lib/client";
+  import { lingering } from "$lib/lingering.svelte";
+  import { notices } from "$lib/notices.svelte";
   import { reachable, watched } from "$lib/reachable.svelte";
   import { session } from "$lib/session.svelte";
   import { waiting } from "$lib/waiting.svelte";
@@ -47,6 +49,14 @@
   // said is how much unsent work is held, because that is the person's and its
   // loss would otherwise be silent.
   const shut = $derived(who.shut);
+
+  // Signing out is the pool's work leaving with it. A standing failure about a
+  // delivery nobody can now look up would outlive the session that raised it.
+  $effect(() => {
+    if (!shut) return;
+    notices.clear();
+    lingering.clear();
+  });
 </script>
 
 <Sheet>
@@ -85,6 +95,6 @@
 </Sheet>
 
 {#if !shut}
-  <Refusals />
+  <Corner />
 {/if}
 <ThemeToggle />

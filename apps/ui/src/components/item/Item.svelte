@@ -19,9 +19,11 @@
   import Prose from "$components/primitives/text/Prose.svelte";
   import { client } from "$lib/client";
   import { became } from "$lib/lineage";
+  import { notices } from "$lib/notices.svelte";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { recordsOf } from "$lib/records.svelte";
+  import { keyFor } from "$lib/routing";
   import { NO_ITEM_OFFLINE, NO_RECORDS_OFFLINE, NO_SUCH_ITEM } from "$lib/said";
   import { briefly } from "$lib/stamp";
 
@@ -135,12 +137,16 @@
   {/if}
 </Register>
 
+<!-- Nothing said in the corner: the decision is drawn on this very surface a
+     moment later. The record is remembered so that the log, read on its own
+     tempo, does not report it back as news. -->
 {#if routing && item !== undefined}
   <RoutingComposer
     item={item.id}
     subject={client.says(item) || item.payload.type}
     content={item.payload.content}
     tags={(item.tags ?? []).map((tag) => tag.name)}
+    onrouted={(record) => notices.mark(keyFor(record.id))}
     onclose={() => (routing = false)}
   />
 {/if}

@@ -2,6 +2,7 @@ import {
   BehaviorSubject,
   distinctUntilChanged,
   map,
+  Subject,
   type Observable,
 } from "rxjs";
 
@@ -38,4 +39,29 @@ export function derived<T, U>(
   same?: (one: U, other: U) => boolean,
 ): Observable<U> {
   return source.pipe(map(project), distinctUntilChanged(same));
+}
+
+/**
+ * Something that happened, rather than something that is. A late subscriber
+ * gets what happens next and nothing about what it missed, which is the whole
+ * difference from `writable`: replaying an event to whoever arrives after it
+ * would have a shell say a thing twice.
+ *
+ * The subject stays inside, on the same terms: ending the stream belongs to
+ * whoever made it.
+ */
+export interface Emitter<T> {
+  next(value: T): void;
+  end(): void;
+  readonly changes: Observable<T>;
+}
+
+export function emitter<T>(): Emitter<T> {
+  const subject = new Subject<T>();
+
+  return {
+    next: (value) => subject.next(value),
+    end: () => subject.complete(),
+    changes: subject.asObservable(),
+  };
 }

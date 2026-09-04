@@ -6,7 +6,7 @@
   import FeedRow from "$components/feed/FeedRow.svelte";
   import Body from "$components/primitives/register/Body.svelte";
   import More from "$components/primitives/register/More.svelte";
-  import Notice from "$components/primitives/register/Notice.svelte";
+  import Refused from "$components/primitives/register/Refused.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
@@ -47,7 +47,7 @@
 
 <Register furled={rail.furled} onfurl={() => rail.toggle()}>
   {#if refused !== undefined}
-    <Notice first surface="feed" {refused} />
+    <Refused first surface="feed" {refused} />
   {/if}
 
   {#if bare}

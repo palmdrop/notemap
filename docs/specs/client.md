@@ -4,6 +4,14 @@
 **Last updated**: 2026-09-03
 **Shipped**:
 
+- 2026-09-03 — **A client learns what it did not ask about.** `ActionsApi.watch()` answers what the
+  pool has done since this client started looking, read from the action log on its own tempo, gated
+  on watched and on reachable, from a mark taken at start that says nothing about what came before
+  it. One page at a time, with a mark when there was more. `DestinationsApi.held` reads the
+  destinations cache synchronously, for the callers that name one in a line of text.
+  ([plan](../plans/notices-as-they-happen.md),
+  [ADR 32](../adr/0032-a-shell-learns-what-happened-by-reading-the-log.md))
+
 - 2026-09-03 — **An item is read by id, and says what it was drawn from.** `item` reaches the pool
   for an id no surface has ever drawn, so a deep link into a fresh browser answers, and falls back
   to the client's own copy where the pool does not — answering an `ItemState` that carries the
@@ -343,6 +351,25 @@ goes when they do.
 - A refusal and an unreachable pool are told apart here as they are everywhere else; the caller
   is the one that decides what to draw.
 
+**The log is also how a client learns what it did not ask about** *(2026-09-03)*. `watch()` answers
+what the pool has done since this client started looking, in the order it happened, so a delivery
+that fails minutes after the decision is something a shell can say rather than something a person
+has to go and find. It reads the same route on its own tempo and holds one thing: a **mark**, taken
+from its first read.
+
+- **The first read is the mark and says nothing.** Everything before a client started looking is
+  history, and a shell that opens by announcing yesterday is worse than one that says nothing.
+- **It asks only while the client is watched and the pool is answering**, and asks at once on
+  regaining either. It cannot ride the reachability probe: an answered request pushes that probe
+  out, so a client whose requests are being answered never sends one — which is exactly when
+  somebody is here to be told something.
+- **It answers a page, and says when there was more than a page.** A client that was away for a day
+  gets what one read holds and a mark that there is more, which is the log's to show rather than
+  this to enumerate. A reader that is told there was more is being told to go to the log, not handed
+  a page to read out.
+- **A read that fails says nothing.** Silence is not an event; reachability is what a person reads.
+- **It is lazy.** A client nobody asks to watch never asks the pool anything on its own.
+
 ### The outbox
 
 Every mutation a client makes is an **outbox operation**: applied to the client's cache at once,
@@ -399,6 +426,12 @@ not in the outbox: whether a root exists, and whether settings satisfy the kind 
 is actually running, are questions only the daemon can answer, so an offline edit would validate
 against a cached schema and hand back an acceptance the pool may then refuse. The settings screen is
 readable offline and its controls are disabled, like a route.
+
+**The destinations cache is read two ways** *(2026-09-03)*. `all` is the observable a screen
+renders from. `held` answers the same cache **now**, for the callers that are not a rendered screen
+and have nowhere to hang a subscription — naming a destination inside a line of text is a question
+with an answer rather than a thing to redraw. Both read one cache, so they cannot disagree, and
+neither reaches the pool.
 
 **What a field could hold is asked, never cached** (added 2026-08-31). `describe()`'s capabilities
 are read like any destination's, but a folder's contents, a note's existence, or the tags a vault
