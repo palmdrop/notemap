@@ -350,7 +350,6 @@ test("opens a row in place, with what the queue's row offers", async () => {
   await open();
 
   expect(screen.getByRole("button", { name: "route" })).toBeDefined();
-  expect(screen.getByText("edited")).toBeDefined();
   expect(screen.getByRole("link", { name: "open" }).getAttribute("href")).toBe(
     "/items/one",
   );

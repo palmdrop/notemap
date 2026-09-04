@@ -715,7 +715,11 @@ The queue's job is to reach zero and the API gives no count — `ItemSlice` carr
 optional `next` link, nothing more. So the shell claims no number. `Load more` is the honest
 statement that more exists — and while the pool is out of reach the foot says that instead of
 offering a page it cannot fetch. **The empty state is designed as the thing you were working
-toward**, not as a grey apology.
+toward**, not as a grey apology — and *(amended 2026-09-04)* what that turned out to want is
+less, not more. Reaching the end is what the queue is for, so it is said the way the shell says
+everything else it has done: **once, quietly, in the rail**, and in no other idiom. No paragraph
+explaining it, and no `zero` — a state word says what became of a *thing*, and an empty list is
+not one.
 
 The reader's **order control** is in the bar and acts on whichever surface is being read; settings
 has no end to start from and it says nothing there. Which end a reader starts from is the reader's,
@@ -875,7 +879,10 @@ reads as a dated entry in a ledger, which is why the capture time is its title.
 **Two columns do the work that type hierarchy usually does.** *Amended 2026-08-24.* The left
 column is a **metadata rail**, and it carries the same things whether a row is open or shut: the
 stamp, the state word where there is one, the tags, and where the item went. Opening a row adds the
-item's facts under them — payload type, edited — rather than changing what the column is for.
+item's facts under them rather than changing what the column is for.
+*Amended 2026-09-04*: **a fact is drawn only where it answers something**. `payload` went, the
+capture itself being right there and saying what it is; `edited` is absent where there is none,
+rather than spending three words to say nothing happened — an absent fact already reads as no.
 *Amended 2026-09-03*: the source and the id left that list. They are notemap's bookkeeping rather
 than the item, an id is in the address of the surface that has one, and a rail carrying four facts
 where two are unreadable is what made the column look like a debug pane. The right column holds nothing but what was captured, and its actions once the row is open.
@@ -909,6 +916,12 @@ on four sides. A rule runs across the top of every cell, lighter than the bar's 
 the gap between the columns — so a row reads as two entries side by side rather than as a band
 across the page. *Amended 2026-08-24*: the separator that ran into the spine, and the spine itself,
 are gone. Nothing needs a vertical rule now that the second column is real.
+
+**An open row is one fill, not two panels** *(2026-09-04)*. The rail's ground runs across the
+gutter to meet the body's, so the row a person is working reads as a single band, and the accent
+edge sits at the **head of the row** rather than on the seam between the columns — the seam being
+the one place the design has spent a whole amendment removing. With the rail furled there is no
+head but the body's, and the edge goes there.
 
 **The frame has a measure.** The page is capped short of a desktop's width and nothing widens it,
 routing having left the register for a modal.

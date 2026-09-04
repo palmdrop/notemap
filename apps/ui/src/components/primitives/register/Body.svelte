@@ -15,7 +15,8 @@
     onpick?: () => void;
     /** Somewhere to go rather than something to do: the item's own surface. */
     onreach?: () => void;
-    children: Snippet;
+    /** Absent where the row is all rail: the cell still holds the column open. */
+    children?: Snippet;
   } = $props();
 </script>
 
@@ -24,10 +25,12 @@
 <div
   onclick={onpick === undefined ? undefined : pickable(onpick)}
   ondblclick={onreach === undefined ? undefined : doubled(onreach)}
-  class="col-start-2 min-w-0 border-t border-l-2 border-t-ink/20
+  class="col-start-2 min-w-0 border-t border-t-ink/20
     {first ? 'border-t-0 pt-3.5 pb-6' : 'py-6'}
     {onpick === undefined ? '' : 'cursor-pointer'}
-    {lit ? 'border-l-accent bg-ink/5 pl-3.5' : 'border-l-transparent'}"
+    {lit
+    ? '-mr-3.5 bg-ink/5 pr-3.5 group-data-furled:-ml-3.5 group-data-furled:border-l-2 group-data-furled:border-l-accent group-data-furled:pl-3'
+    : ''}"
 >
-  {@render children()}
+  {@render children?.()}
 </div>

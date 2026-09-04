@@ -38,7 +38,6 @@ test("draws an item the cache has never held, reaching the pool for it", async (
   render(Item, { id: "linked" });
 
   expect(await screen.findByText("what the link names")).toBeDefined();
-  expect(screen.getByText("payload")).toBeDefined();
   expect(asked()).toContain("GET /v1/items/linked");
 });
 

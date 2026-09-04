@@ -47,14 +47,14 @@ the finding asks for exactly this.
 
 Depends on phase 1 for the row it changes.
 
-- [ ] An open row is one fill: the rail's runs across the gutter to meet the body's, and the
+- [x] An open row is one fill: the rail's runs across the gutter to meet the body's, and the
       accent edge moves to the head of the row
-- [ ] `payload` leaves the facts
-- [ ] `edited` is absent where there is none, rather than saying so
-- [ ] The drained queue loses its paragraph and its `zero`, and says one quiet thing in the rail
-- [ ] `shell.md`: what an open row looks like, which facts a row carries, what a drained queue says
-- [ ] `pnpm -r --silent test`; the drained queue's copy constant goes with its paragraph
-- [ ] `git commit`
+- [x] `payload` leaves the facts
+- [x] `edited` is absent where there is none, rather than saying so
+- [x] The drained queue loses its paragraph and its `zero`, and says one quiet thing in the rail
+- [x] `shell.md`: what an open row looks like, which facts a row carries, what a drained queue says
+- [x] `pnpm -r --silent test`; the drained queue's copy constant goes with its paragraph
+- [x] `git commit`
 
 ### Phase 3 — the row's actions
 

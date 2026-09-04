@@ -87,7 +87,7 @@ test("archives with the pool unreachable, and disables what it cannot queue", as
   await fireEvent.click(screen.getByRole("button", { name: "archive" }));
 
   // The pool never answered it, and the item left the queue all the same.
-  await screen.findByText("zero");
+  await screen.findByText("nothing waiting");
   expect(asked()).toContain("POST /v1/items/one/archive");
 });
 
@@ -121,7 +121,7 @@ test("opens a row without asking where an item has never been", async () => {
 
   await open(0);
 
-  expect(await screen.findByText("payload")).toBeDefined();
+  expect(await screen.findByRole("button", { name: "route" })).toBeDefined();
   expect(asked()).not.toContain("GET /v1/items/one/routing");
 });
 
@@ -130,7 +130,7 @@ test("draws the way to add to the queue even when the queue is empty", async () 
 
   render(Queue);
 
-  expect(await screen.findByText("zero")).toBeDefined();
+  expect(await screen.findByText("nothing waiting")).toBeDefined();
   expect(screen.getByLabelText("What to capture")).toBeDefined();
 });
 
@@ -139,10 +139,10 @@ test("reads the drained queue as the thing it was working toward", async () => {
 
   render(Queue);
 
-  // The state word idiom, which is what the register says became of a thing.
-  expect(await screen.findByText("zero")).toBeDefined();
-  expect(screen.getByText(/The queue is empty/)).toBeDefined();
-  expect(screen.queryByText(/Empty —/)).toBeNull();
+  // Once, quietly, in the rail. Not a state word, and not a paragraph.
+  expect(await screen.findByText("nothing waiting")).toBeDefined();
+  expect(screen.queryByText("zero")).toBeNull();
+  expect(screen.queryByText(/The queue is empty/)).toBeNull();
 });
 
 test("offers the edit on an unprocessed row and not on a processed one", async () => {
@@ -196,9 +196,11 @@ test("says on the row it opens when an item was last touched", async () => {
   await open(0);
   expect(await screen.findByText(briefly(touchedAt))).toBeDefined();
 
-  // The other row, which is now the only collapsed one left.
+  // A row with no edit says nothing about one: an absent fact already reads
+  // as no, and three words spent saying it is three words nobody reads.
   await open(0);
-  expect(await screen.findByText("not since capture")).toBeDefined();
+  expect(screen.queryByText("not since capture")).toBeNull();
+  expect(screen.queryAllByText("edited")).toHaveLength(0);
 });
 
 /** Furling hides the rail, and the stamp is the only way into a row. */
@@ -254,7 +256,7 @@ test("says a capture is pending until the pool has taken it", async () => {
   );
 
   render(Queue);
-  await screen.findByText("zero");
+  await screen.findByText("nothing waiting");
   transport.unreachable(true);
 
   await capture("made with the pool out of reach");
@@ -286,7 +288,7 @@ test("does not draw a refused operation as pending", async () => {
   // The pool put the row back, and the operation it refused is still held.
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/archive");
-    expect(screen.queryByText("zero")).toBeNull();
+    expect(screen.queryByText("nothing waiting")).toBeNull();
   });
   expect(screen.queryByText("pending")).toBeNull();
 });
@@ -302,7 +304,7 @@ test("says nothing in the register about a queue the pool has not answered for",
   // register repeats neither that nor what the surface is drawn from.
   expect(screen.queryByText("queue")).toBeNull();
   expect(screen.queryByText("the daemon is not reachable")).toBeNull();
-  expect(screen.queryByText("zero")).toBeNull();
+  expect(screen.queryByText("nothing waiting")).toBeNull();
 });
 
 test("offers no page it cannot fetch while the pool is out of reach", async () => {
@@ -360,7 +362,7 @@ test("draws a picture before it is sent, and the pool's copy after", async () =>
   });
 
   render(Queue);
-  await screen.findByText("zero");
+  await screen.findByText("nothing waiting");
   transport.unreachable(true);
 
   await fireEvent.change(screen.getByLabelText("A picture to capture"), {
