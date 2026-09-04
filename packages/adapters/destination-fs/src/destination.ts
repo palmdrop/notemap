@@ -21,6 +21,7 @@ import {
   CREATE_OR_APPEND_FILE,
   deriveFilename,
   insertUnder,
+  markdownOutput,
   placeOf,
   renderNote,
   RenderingFailed,
@@ -120,7 +121,13 @@ export function createFilesystemDestination(
           delivery,
           signal,
         );
-        return { kind: "delivered", pointer: landed };
+        // No url, permanently: a path on the daemon's host is nowhere the
+        // phone reading the shell can follow.
+        return {
+          kind: "delivered",
+          pointer: landed.pointer,
+          output: markdownOutput(landed.written),
+        };
       } catch (cause) {
         return failure(cause);
       }
@@ -197,11 +204,20 @@ type Wiring = {
   readonly renderers: Renderers;
 };
 
+/**
+ * Where the note is, and the markdown this delivery put there — which for an
+ * append is what was inserted rather than the file it was inserted into.
+ */
+type Landed = {
+  readonly pointer: string;
+  readonly written: string;
+};
+
 function carryOut(
   wiring: Wiring,
   delivery: Delivery,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<Landed> {
   switch (delivery.capability) {
     case CREATE_FILE:
       return createNote(wiring, delivery, signal);
@@ -218,7 +234,7 @@ function createNote(
   wiring: Wiring,
   delivery: Delivery,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<Landed> {
   const args = asCreateFileArguments(delivery.arguments);
   if (args === undefined) {
     throw new Refused("that is not a create-file argument set");
@@ -232,7 +248,7 @@ function appendToNote(
   wiring: Wiring,
   delivery: Delivery,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<Landed> {
   const args = asAppendToFileArguments(delivery.arguments);
   if (args === undefined) {
     throw new Refused("that is not an append-to-file argument set");
@@ -252,7 +268,7 @@ function createOrAppendToNote(
   wiring: Wiring,
   delivery: Delivery,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<Landed> {
   const args = asCreateOrAppendFileArguments(delivery.arguments);
   if (args === undefined) {
     throw new Refused("that is not a create-or-append-file argument set");
@@ -275,7 +291,7 @@ async function create(
   delivery: Delivery,
   target: string,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<Landed> {
   const note = await locate(wiring.realRoot, target);
 
   if (await exists(note.absolute)) {
@@ -289,8 +305,9 @@ async function create(
     assets,
   });
 
-  await createFile(note.absolute, `${rendered.frontmatter}\n${rendered.body}`);
-  return note.relative;
+  const written = `${rendered.frontmatter}\n${rendered.body}`;
+  await createFile(note.absolute, written);
+  return { pointer: note.relative, written };
 }
 
 /** **Not atomic against a concurrent editor**: an open editor's buffer will overwrite this on save. */
@@ -300,7 +317,7 @@ async function append(
   target: string,
   heading?: string,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<Landed> {
   const note = await locate(wiring.realRoot, target);
   const directory = dirname(note.absolute);
 
@@ -312,18 +329,22 @@ async function append(
 
   const existing = await readIfPresent(note.absolute);
   if (existing === undefined) {
-    await createFile(
-      note.absolute,
-      `${rendered.frontmatter}\n${insertUnder("", rendered.body, heading)}`,
-    );
-  } else {
-    await replaceFile(
-      note.absolute,
-      insertUnder(existing, rendered.body, heading),
-    );
+    // Everything in a note this delivery brought into being is what it put
+    // there, frontmatter included.
+    const written = `${rendered.frontmatter}\n${insertUnder("", rendered.body, heading)}`;
+    await createFile(note.absolute, written);
+    return { pointer: note.relative, written };
   }
 
-  return note.relative;
+  await replaceFile(
+    note.absolute,
+    insertUnder(existing, rendered.body, heading),
+  );
+
+  // What was inserted, not the note it was inserted into: the record answers
+  // what this delivery put there, and the heading it went under is the note's
+  // own structure.
+  return { pointer: note.relative, written: rendered.body };
 }
 
 /**

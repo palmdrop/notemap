@@ -1,4 +1,4 @@
-import type { Delivery } from "@notemap/core";
+import type { Delivery, DeliveredOutput } from "@notemap/core";
 
 import { FIXED_KEYS, fixedFrontmatter, toYaml } from "./frontmatter";
 import type { FrontmatterValue } from "./frontmatter";
@@ -18,6 +18,28 @@ export type Note = {
   /** CommonMark, and on its own what an append carries. */
   readonly body: string;
 };
+
+/** What every note either kind writes is, and what a delivery says its output was. */
+export const MARKDOWN = "text/markdown";
+
+/**
+ * The bytes a delivery wrote, for a kind that has nothing to confess: this
+ * rendering carries the payload, the tags and the provenance, and the assets go
+ * beside the note rather than being dropped.
+ */
+export function markdownOutput(text: string): DeliveredOutput {
+  const written = new TextEncoder().encode(text);
+  return {
+    content: {
+      mediaType: MARKDOWN,
+      open: () => Promise.resolve(once(written)),
+    },
+  };
+}
+
+async function* once(written: Uint8Array): AsyncGenerator<Uint8Array> {
+  yield written;
+}
 
 /**
  * One delivery as a note, wherever the note is going. A renderer may add

@@ -19,7 +19,12 @@ import type {
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createFilesystemDestination } from "./destination";
-import { linkTo, type Renderer } from "@notemap/output-markdown";
+import {
+  APPEND_TO_FILE,
+  CREATE_OR_APPEND_FILE,
+  linkTo,
+  type Renderer,
+} from "@notemap/output-markdown";
 import {
   bytes,
   delivery,
@@ -31,6 +36,31 @@ import {
 } from "./testing/fixture";
 
 const cleanups: Array<() => void> = [];
+
+function delivered(
+  outcome: DeliveryOutcome,
+): DeliveryOutcome & { kind: "delivered" } {
+  if (outcome.kind !== "delivered") {
+    throw new Error(`not delivered: ${JSON.stringify(outcome)}`);
+  }
+  return outcome;
+}
+
+/** What the destination said it wrote, read back as text. */
+async function outputOf(
+  outcome: DeliveryOutcome,
+): Promise<{ mediaType: string; text: string }> {
+  const content = delivered(outcome).output?.content;
+  if (content === undefined) throw new Error("it answered no content");
+
+  const chunks: Uint8Array[] = [];
+  for await (const chunk of await content.open()) chunks.push(chunk);
+
+  return {
+    mediaType: content.mediaType,
+    text: chunks.map((chunk) => new TextDecoder().decode(chunk)).join(""),
+  };
+}
 
 afterEach(() => {
   for (const cleanup of cleanups.splice(0)) cleanup();
@@ -149,7 +179,7 @@ describe("creating a file", () => {
       }),
     );
 
-    expect(outcome).toEqual({
+    expect(outcome).toMatchObject({
       kind: "delivered",
       pointer: "inbox/a-thought.md",
     });
@@ -224,6 +254,67 @@ describe("creating a file", () => {
     );
 
     expect(await readFile(join(path, "a.md"), "utf8")).toContain("```json");
+  });
+});
+
+describe("what it says it wrote", () => {
+  it("answers the whole note it created, and nothing to confess", async () => {
+    const { path, destination } = await vault({ text: renderText });
+
+    const outcome = await destination.deliver(
+      delivery({ arguments: { directory: "inbox", filename: "a-thought.md" } }),
+    );
+
+    const written = await readFile(join(path, "inbox", "a-thought.md"), "utf8");
+    expect(await outputOf(outcome)).toEqual({
+      mediaType: "text/markdown",
+      text: written,
+    });
+    expect(delivered(outcome).output?.note).toBeUndefined();
+    // A path on this host is nowhere the shell can follow.
+    expect(delivered(outcome).url).toBeUndefined();
+  });
+
+  it("answers what an append inserted, not the note it was inserted into", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    await writeFile(join(path, "log.md"), "# Log\n\nyesterday\n");
+
+    const outcome = await destination.deliver(
+      delivery({
+        capability: APPEND_TO_FILE,
+        arguments: { path: "log.md" },
+        content: { text: "a thought" },
+      }),
+    );
+
+    expect((await outputOf(outcome)).text).toBe("a thought\n");
+    expect(await readFile(join(path, "log.md"), "utf8")).toContain("yesterday");
+  });
+
+  it("answers the whole note where the append brought one into being", async () => {
+    const { path, destination } = await vault({ text: renderText });
+
+    const outcome = await destination.deliver(
+      delivery({ capability: APPEND_TO_FILE, arguments: { path: "log.md" } }),
+    );
+
+    const written = await readFile(join(path, "log.md"), "utf8");
+    expect((await outputOf(outcome)).text).toBe(written);
+    expect(written).toContain("id: 'item-1'");
+  });
+
+  it("answers the inserted fragment for the capability that decides at delivery", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    await writeFile(join(path, "log.md"), "# Log\n\nyesterday\n");
+
+    const outcome = await destination.deliver(
+      delivery({
+        capability: CREATE_OR_APPEND_FILE,
+        arguments: { path: "log.md" },
+      }),
+    );
+
+    expect((await outputOf(outcome)).text).toBe("a thought\n");
   });
 });
 

@@ -250,7 +250,19 @@ describe("a vault that cannot be written, and then can", () => {
     expect(await deliver()).toBe(1);
 
     expect(await opened.pool.routing.recordsFor(item)).toEqual([
-      { ...record, state: "delivered", pointer: "inbox/a-thought.md" },
+      {
+        ...record,
+        state: "delivered",
+        pointer: "inbox/a-thought.md",
+        // The retry that landed is what wrote the note, so it is what says
+        // what went: the kind carries everything, and confesses nothing.
+        output: {
+          content: {
+            blob: expect.any(String) as unknown as string,
+            mediaType: "text/markdown",
+          },
+        },
+      },
     ]);
     expect(
       await readFile(join(root, "inbox", "a-thought.md"), "utf8"),

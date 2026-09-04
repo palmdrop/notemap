@@ -132,14 +132,14 @@ renames the field beside these ones.
 
 Depends on phase 2.
 
-- [ ] `create-file` and `append-to-file` answer with the markdown they produced, its media type, and
+- [x] `create-file` and `append-to-file` answer with the markdown they produced, its media type, and
       no note — this kind carries everything, writes the assets beside the note, and has nothing to
       confess. A kind with nothing to confess is the case that proves the note is optional
-- [ ] For `append-to-file`, settle and state which bytes are the output: what was inserted, not the
+- [x] For `append-to-file`, settle and state which bytes are the output: what was inserted, not the
       file it was inserted into. The record answers what this delivery put there
-- [ ] Tests beside the adapter, over a temporary tree
-- [ ] Verify: `pnpm -r --silent test`
-- [ ] `git commit`
+- [x] Tests beside the adapter, over a temporary tree
+- [x] Verify: `pnpm -r --silent test`
+- [x] `git commit`
 
 ### Phase 4 — On the wire
 
