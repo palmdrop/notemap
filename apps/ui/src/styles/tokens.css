@@ -39,6 +39,11 @@
      composer and the confirm that shares it want. */
   --spacing-composer: 48rem;
   --spacing-consult: 17rem;
+
+  /* The room four or five levels need. A tree that gains and loses a whole
+     level as a segment is typed moves everything under it, and the control
+     being typed into must not move under the caret. */
+  --spacing-tree: 12.5rem;
   --spacing-measure: 72rem;
 
   /* Settings is read rather than scanned, so it takes a narrower measure than

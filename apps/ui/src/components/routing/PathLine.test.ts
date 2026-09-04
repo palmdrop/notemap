@@ -209,6 +209,45 @@ test("completes the segment under the caret with Tab", async () => {
   expect(line.value()).toBe("projects/");
 });
 
+/**
+ * The line is what the composer is for, and leaving it is a gesture worth
+ * making deliberately: `⇧⇥`, or the pointer.
+ */
+test("tab with nothing to complete does nothing rather than handing focus away", async () => {
+  servingTree();
+  const line = draw("zz");
+
+  await settled();
+
+  const went = fireEvent.keyDown(line.line(), { key: "Tab" });
+  // `fireEvent` answers false where the default was prevented.
+  expect(await went).toBe(false);
+  expect(line.value()).toBe("zz");
+});
+
+/**
+ * A tree that gains and loses a whole level as a segment is typed moves
+ * everything under it, and the control being typed into must not move.
+ */
+test("keeps a floor under the tree, so a shallow answer leaves room", async () => {
+  servingTree();
+  draw("");
+
+  await settled();
+  const tree = screen.getByRole("listbox", { name: "places" });
+  expect(tree.className).toContain("--spacing-tree");
+});
+
+test("keeps no floor where there is no tree to hold up", async () => {
+  serving(() => ({ kind: "unreachable", detail: "not mounted" }));
+  draw("");
+
+  await screen.findByText("unreachable · best effort");
+  expect(
+    screen.getByRole("listbox", { name: "places" }).className,
+  ).not.toContain("--spacing-tree");
+});
+
 test("completes only as far as several matches agree", async () => {
   serving(() =>
     answered([folder("projects", "projects"), folder("promises", "promises")]),

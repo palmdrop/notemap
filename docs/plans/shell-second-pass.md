@@ -113,13 +113,13 @@ Depends on nothing. The largest phase; `RoutingComposer` and `PathLine` both cha
 
 Depends on phase 5, which is what it holds still.
 
-- [ ] The modal takes a fixed distance from the top rather than being centred
-- [ ] The tree keeps a floor under it, so a shallow answer leaves room rather than collapsing
-- [ ] `⇥` with nothing to complete does nothing, rather than handing focus away
-- [ ] `shell.md`: the composer does not move while it is typed, and what `⇥` does when it cannot
+- [x] The modal takes a fixed distance from the top rather than being centred
+- [x] The tree keeps a floor under it, so a shallow answer leaves room rather than collapsing
+- [x] `⇥` with nothing to complete does nothing, rather than handing focus away
+- [x] `shell.md`: the composer does not move while it is typed, and what `⇥` does when it cannot
       complete
-- [ ] `pnpm -r --silent test`
-- [ ] `git commit`
+- [x] `pnpm -r --silent test`
+- [x] `git commit`
 
 ### Phase 7 — our own chooser
 

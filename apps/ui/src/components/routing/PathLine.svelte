@@ -253,9 +253,12 @@
 
   function onkeydown(event: KeyboardEvent): void {
     if (event.key === "Tab" && !event.shiftKey) {
+      // With nothing to complete it does nothing, rather than handing focus to
+      // whatever is next: the line is what the composer is for, and leaving it
+      // is `⇧⇥` or the pointer.
+      event.preventDefault();
       const finished = completionOf(caretIn?.entries ?? [], path.typing);
       if (finished === undefined) return;
-      event.preventDefault();
       onchange(withTyping(path, finished));
       return;
     }
@@ -398,7 +401,14 @@
     </div>
   {/if}
 
-  <div id="path-line-places" role="listbox" aria-label="places" class="mt-2.5">
+  <!-- A floor, so a shallow answer leaves room rather than collapsing the
+       column and moving everything the eye is on. -->
+  <div
+    id="path-line-places"
+    role="listbox"
+    aria-label="places"
+    class="mt-2.5 {refusal === undefined ? 'min-h-[var(--spacing-tree)]' : ''}"
+  >
     {#each drawn as row (`${row.depth}:${row.made === true ? "+" : ""}${row.entry.label}`)}
       {@const picked =
         moved &&

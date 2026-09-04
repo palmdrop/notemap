@@ -357,6 +357,16 @@ earning a second breakpoint to keep in step.
 **A typed field is a faint ground and carries no rule**, so the only rule in the modal is the
 chrome's — which leaves a rule meaning one thing, a division between bands.
 
+**The composer does not move while it is being typed** *(2026-09-04)*. Two things moved it: the
+tree gaining and losing a whole level as a segment is typed, which shifted everything under it, and
+the modal being vertically centred, which shifted the line and the state word *upward* as the tree
+grew — the worse of the two, the control being typed into moving under the caret. So the modal
+takes a **fixed distance from the top** instead of being centred, and the tree keeps a **floor**
+under it, the room four or five levels need, so a shallow answer leaves space rather than
+collapsing the column. A destination that cannot be asked draws no tree and needs no floor: nothing
+there moves. This is a different thing from the modal growing when it gains its second column,
+which is a decision having been made rather than a line being typed.
+
 **A destination is taken by typing its name as well as by pointing at it** (added 2026-09-02).
 Typing narrows the list and the only match is taken by `⏎` or `⇥`; an ambiguous prefix takes
 nothing and says how many matched, because taking one of several would be a guess. Taken, the
@@ -371,8 +381,10 @@ line gives the destination back, a wrong one not being a reason to close the com
 **For a destination whose kind holds a filesystem, the place is one monospace line** (added
 2026-09-02, replacing the browser described here on 2026-08-31 — that control is what every other
 kind still draws). Typing filters the entries at the deepest settled scope, `/` descends, `⇥`
-completes the segment under the caret as far as the matches agree, `⌫` at the end of a line that
-ends in one pops the whole segment rather than one character of it, and `↑↓` move through
+completes the segment under the caret as far as the matches agree — and **does nothing where there
+is nothing to complete** *(added 2026-09-04)*, rather than handing focus to whatever is next: the
+line is what the composer is for, and leaving it is `⇧⇥` or the pointer — `⌫` at the end of a line
+that ends in one pops the whole segment rather than one character of it, and `↑↓` move through
 everything the tree drew — every row the pointer could take, in the order it is drawn — while `⏎`,
 left alone, routes. **The line is the value**: there is no second input beside it holding the same
 string, which is what the browser-and-input pair did and neither half could see the other.
