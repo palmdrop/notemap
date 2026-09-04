@@ -519,6 +519,65 @@ describe("routing", () => {
     );
   });
 
+  it("asks for a preview without queuing anything, and answers what it says", async () => {
+    const { client, transport } = clientOver(() =>
+      json(200, {
+        kind: "previewed",
+        content: {
+          mediaType: "text/markdown",
+          text: "# a thought\n",
+          truncated: false,
+        },
+      }),
+    );
+
+    await expect(
+      client.routing.preview("one", {
+        destination: "vault",
+        capability: "create-file",
+        arguments: { directory: "inbox" },
+      }),
+    ).resolves.toMatchObject({ kind: "previewed" });
+
+    expect(asked(transport).map(routeOf)).toEqual([
+      "POST /v1/items/one/route/preview",
+    ]);
+    expect(read(client.outbox)).toEqual([]);
+  });
+
+  it("fails a preview rather than queuing it when the pool cannot be reached", async () => {
+    const { client, transport } = clientOver(() => json(200, {}));
+    transport.unreachable(true);
+
+    await expect(
+      client.routing.preview("one", {
+        destination: "vault",
+        capability: "create-file",
+        arguments: {},
+      }),
+    ).rejects.toBeInstanceOf(Unreachable);
+    expect(read(client.outbox)).toEqual([]);
+  });
+
+  it("reads an output as text, and says so when a record kept none", async () => {
+    const { client } = clientOver(
+      () =>
+        new Response("# a thought\n", {
+          status: 200,
+          headers: { "content-type": "text/markdown" },
+        }),
+    );
+
+    await expect(client.routing.output("record-1")).resolves.toBe(
+      "# a thought\n",
+    );
+
+    const { client: empty } = clientOver(() => refusal(404, "no-output"));
+    await expect(empty.routing.output("record-1")).rejects.toThrow(
+      "that delivery kept no copy of what it sent",
+    );
+  });
+
   it("surfaces a destination's refusal as itself", async () => {
     const { client } = clientOver(() => refusal(422, "unknown-destination"));
 

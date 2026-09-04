@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { DestinationDescription } from "@notemap/client";
 
+  import Output from "$components/routing/Output.svelte";
   import { itemHref } from "$components/item/href";
   import Body from "$components/primitives/register/Body.svelte";
   import Fact from "$components/primitives/register/Fact.svelte";
@@ -15,7 +16,15 @@
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
   import { recordsOf } from "$lib/records.svelte";
-  import { NO_RECORDS_OFFLINE, NO_SUCH_RECORD, THIS_ITEM } from "$lib/said";
+  import { followable } from "$lib/link";
+  import {
+    NO_OUTPUT_KEPT,
+    NO_RECORDS_OFFLINE,
+    NO_SUCH_RECORD,
+    OUTPUT_UNREADABLE,
+    THIS_ITEM,
+  } from "$lib/said";
+  import { saidBy } from "@notemap/client";
 
   let { item: id, record: wanted }: { item: string; record: string } = $props();
 
@@ -82,6 +91,33 @@
   );
 
   const said = $derived(item === undefined ? "" : client.says(item));
+
+  const link = $derived(followable(record?.url));
+
+  /** Fetched when asked for: an output may be large, and most are never read. */
+  let output = $state<string | undefined>(undefined);
+  let reading = $state(false);
+  let unreadable = $state("");
+
+  const saidAboutOutput = $derived(
+    record?.output?.content === undefined && record?.output?.note === undefined
+      ? NO_OUTPUT_KEPT
+      : unreadable,
+  );
+
+  async function read() {
+    if (record === undefined) return;
+
+    reading = true;
+    unreadable = "";
+    try {
+      output = await client.routing.output(record.id);
+    } catch (error) {
+      unreadable = `${OUTPUT_UNREADABLE} ${saidBy(error)}`;
+    } finally {
+      reading = false;
+    }
+  }
 </script>
 
 <Register>
@@ -128,13 +164,27 @@
       {/if}
 
       <div class="mt-6 font-mono text-ink-muted">pointer</div>
-      <!-- Text, never a link: the shell never guesses whether a string is a URL. -->
+      <!-- A link only where the destination offered one: the shell never
+           guesses whether a string is a URL. -->
       <div class="mt-2 font-mono break-words">
         {#if record.pointer === undefined}
           <span class="text-ink-muted">not recorded</span>
-        {:else}
+        {:else if link === undefined}
           {record.pointer}
+        {:else}
+          <a href={link} rel="noreferrer">{record.pointer}</a>
         {/if}
+      </div>
+
+      <div class="mt-6">
+        <Output
+          heading="what was sent"
+          note={record.output?.note}
+          text={output}
+          said={saidAboutOutput}
+          onread={record.output?.content === undefined ? undefined : read}
+          busy={reading}
+        />
       </div>
     </Body>
   {:else}

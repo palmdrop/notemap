@@ -18,6 +18,7 @@ import type {
   Payload,
   RememberedRequest,
   RouteRequest,
+  RoutingPreview,
   RoutingRecord,
   TagUse,
   Token,
@@ -193,6 +194,13 @@ export interface ActionsApi {
  */
 export interface RoutingApi {
   route(item: ItemId, request: RouteRequest): Promise<RoutingRecord>;
+  /**
+   * What the destination says it would write, asked before anything is
+   * committed. **Indicative rather than binding**: the delivery converts again
+   * when it runs. Not an outbox operation and not cached — a preview of a
+   * destination that could not be reached is not a thing to queue.
+   */
+  preview(item: ItemId, request: RouteRequest): Promise<RoutingPreview>;
   markProcessed(item: ItemId, note?: string): Promise<RoutingRecord>;
   recordsFor(item: ItemId): Promise<readonly RoutingRecord[]>;
   /**
@@ -201,6 +209,12 @@ export interface RoutingApi {
    * it still holds and the pool answers nothing on a cancel.
    */
   cancel(record: RoutingRecord["id"], item: ItemId): Promise<void>;
+  /**
+   * What a delivery produced, as text. The record says what the bytes are and
+   * whether there are any, so a surface reads that first and asks for a media
+   * type it can draw. A record carrying none refuses.
+   */
+  output(record: RoutingRecord["id"]): Promise<string>;
 }
 
 /**

@@ -3,6 +3,7 @@
     saidBy,
     type Capability,
     type DestinationDescription,
+    type RoutingPreview,
     type RoutingRecord,
   } from "@notemap/client";
 
@@ -17,8 +18,14 @@
   import { placeOf } from "@notemap/output-markdown/naming";
 
   import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
+  import Output from "$components/routing/Output.svelte";
   import { browserFor } from "$lib/candidate-browsers";
   import { client } from "$lib/client";
+  import {
+    NO_PREVIEW_OFFERED,
+    PREVIEW_IS_INDICATIVE,
+    PREVIEW_UNREACHABLE,
+  } from "$lib/said";
   import { fieldsOf, valuesFrom } from "$lib/schema-form";
 
   const CREATE_FILE = "create-file";
@@ -61,6 +68,10 @@
 
   /** Why one cannot be routed to, learnt by asking it. Retirement needs no asking. */
   let refusing = $state<Record<string, string>>({});
+
+  /** Only ever what was asked for: a conversion may be a model call. */
+  let shown = $state<RoutingPreview | undefined>(undefined);
+  let showing = $state(false);
 
   const capabilities = $derived<readonly Capability[]>(
     described?.kind === "described" ? described.capabilities : [],
@@ -110,6 +121,51 @@
     args = {};
     said = "";
   }
+
+  /** Serialised because a keystroke changes a field of `args` rather than `args`. */
+  const decision = $derived(JSON.stringify({ chosen, capability, args }));
+
+  // What was shown was shown for the decision as it then stood, so changing any
+  // part of it drops the answer rather than leaving a stale one under the line.
+  $effect(() => {
+    void decision;
+    shown = undefined;
+  });
+
+  /**
+   * On demand and never on a keystroke: the conversion may reach the
+   * destination or a model, and only the chosen destination is ever asked.
+   */
+  async function show() {
+    if (chosen === undefined || capability === undefined) return;
+
+    showing = true;
+    try {
+      shown = await client.routing.preview(item, {
+        destination: chosen,
+        capability,
+        arguments: valuesFrom(fields, args),
+      });
+    } catch (error) {
+      said = saidBy(error);
+    } finally {
+      showing = false;
+    }
+  }
+
+  /** Why there is nothing to read, for the answers that are conditions rather than content. */
+  const nothingShown = $derived.by(() => {
+    switch (shown?.kind) {
+      case "not-offered":
+        return NO_PREVIEW_OFFERED;
+      case "unreachable":
+        return `${PREVIEW_UNREACHABLE} ${shown.detail}`;
+      case "rejected":
+        return `This would be refused: ${shown.detail}`;
+      default:
+        return "";
+    }
+  });
 
   // Which destinations exist is not stable for the life of a connection, so
   // opening the composer reads them again rather than trusting what it holds.
@@ -271,10 +327,31 @@
 
   <ComposerTags {item} names={tags} />
 
+  {#if shown !== undefined}
+    <div class="mt-6">
+      <Output
+        heading="would write"
+        note={shown.kind === "previewed" ? shown.note : undefined}
+        text={shown.kind === "previewed" ? shown.content?.text : undefined}
+        truncated={shown.kind === "previewed" &&
+          shown.content?.truncated === true}
+        said={nothingShown}
+      />
+      {#if shown.kind === "previewed"}
+        <div class="mt-2 font-mono text-ink-muted">
+          {PREVIEW_IS_INDICATIVE}
+        </div>
+      {/if}
+    </div>
+  {/if}
+
   <Commit>
     <Action primary disabled={!ready || busy} onclick={() => void send()}
       >route</Action
     >
+    <Action disabled={!ready || busy || showing} onclick={() => void show()}>
+      {showing ? "asking…" : "preview"}
+    </Action>
     <Action onclick={onclose}>cancel</Action>
     {#if said !== ""}
       <span role="status" class="text-ink-muted">{said}</span>

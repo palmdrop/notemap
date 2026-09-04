@@ -202,25 +202,25 @@ Depends on phase 5.
 Depends on phases 4 and 6, and on
 [item-route-and-record-view](item-route-and-record-view.md) for somewhere to draw a record.
 
-- [ ] The client can ask for a preview and fetch an output. Neither is an outbox operation, for the
+- [x] The client can ask for a preview and fetch an output. Neither is an outbox operation, for the
       reason routing is not one: a decision made offline cannot be replayed, and a preview of a
       destination that could not be reached is not a thing to queue
-- [ ] The composer offers a preview **on demand**, once the arguments are settled — never
+- [x] The composer offers a preview **on demand**, once the arguments are settled — never
       automatically. The conversion may be a model call, and the shell already reasons this way about
       I/O: only the chosen destination is ever described
-- [ ] The preview says what it is: what this destination would write **now**, not a promise about
+- [x] The preview says what it is: what this destination would write **now**, not a promise about
       what will be written. Where it differs from the delivery is where a converter is
       non-deterministic, and that is a fact about the destination rather than a fault
-- [ ] Not-offered and unreachable are the ordinary conditions, drawn as such: no preview, a line
+- [x] Not-offered and unreachable are the ordinary conditions, drawn as such: no preview, a line
       saying why, and routing still available. Nothing here may block a decision
-- [ ] The record view draws the note and the output, fetched when asked for, in the same component
+- [x] The record view draws the note and the output, fetched when asked for, in the same component
       the preview uses — they are the same shape and reading them is the same act
-- [ ] The pointer becomes a link where the record carries a URL, and stays text where it does not
-- [ ] Tests in the client and the shell: a preview is asked for only when asked for, a kind that does
+- [x] The pointer becomes a link where the record carries a URL, and stays text where it does not
+- [x] Tests in the client and the shell: a preview is asked for only when asked for, a kind that does
       not offer one is drawn without it, an unreachable destination does not prevent routing, and a
       record with no output draws without one
-- [ ] Verify: `pnpm --filter @notemap/client test`, `pnpm --filter @notemap/ui test`
-- [ ] `git commit`
+- [x] Verify: `pnpm --filter @notemap/client test`, `pnpm --filter @notemap/ui test`
+- [x] `git commit`
 
 ### Phase 8 — The specs say so
 

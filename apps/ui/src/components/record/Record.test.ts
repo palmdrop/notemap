@@ -1,10 +1,10 @@
-import { render, screen } from "@testing-library/svelte";
+import { fireEvent, render, screen } from "@testing-library/svelte";
 import { expect, test, vi } from "vitest";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
-import { client, pool } from "$testing/pool";
-import { NO_RECORDS_OFFLINE } from "$lib/said";
+import { asked, client, pool } from "$testing/pool";
+import { NO_OUTPUT_KEPT, NO_RECORDS_OFFLINE } from "$lib/said";
 import { dayOf } from "$lib/stamp";
 import Record from "./Record.svelte";
 
@@ -53,6 +53,7 @@ const DESCRIBED = {
 function answering(
   records: readonly unknown[] = [RECORD],
   description: unknown = DESCRIBED,
+  output: (() => Response) | undefined = undefined,
 ) {
   return (request: Request) => {
     switch (routeOf(request)) {
@@ -64,11 +65,30 @@ function answering(
         return json(200, { values: [VAULT] });
       case "GET /v1/destinations/vault/description":
         return json(200, description);
+      case "GET /v1/routing/rec/output":
+        return (
+          output?.() ?? json(404, { error: { code: "no-output", facts: {} } })
+        );
       default:
         return json(200, { values: [] });
     }
   };
 }
+
+const WITH_OUTPUT = {
+  ...RECORD,
+  url: "https://vault.example/drafts/note.md",
+  output: {
+    content: { blob: "abc", mediaType: "text/markdown" },
+    note: "the two pictures were not carried",
+  },
+};
+
+const markdown = () =>
+  new Response("# a thought\n", {
+    status: 200,
+    headers: { "content-type": "text/markdown" },
+  });
 
 test("draws a record in full, against the capability's own schema", async () => {
   pool(answering());
@@ -205,4 +225,59 @@ test("says a decision the person carried out with nothing written down", async (
   // The heading stands with `none` beneath it, as an empty argument set does.
   expect(screen.getByText("note")).toBeDefined();
   expect(screen.getByText("none")).toBeDefined();
+});
+
+test("says a delivery that kept no copy of what it sent", async () => {
+  pool(answering());
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  expect(await screen.findByText(NO_OUTPUT_KEPT)).toBeDefined();
+  expect(screen.queryByRole("button", { name: "read it" })).toBeNull();
+});
+
+test("draws the note at once and reads what was sent only when asked", async () => {
+  pool(answering([WITH_OUTPUT], DESCRIBED, markdown));
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  // The note is on the record; the bytes are a fetch, and one nobody made yet.
+  expect(
+    await screen.findByText("the two pictures were not carried"),
+  ).toBeDefined();
+  expect(asked()).not.toContain("GET /v1/routing/rec/output");
+
+  await fireEvent.click(screen.getByRole("button", { name: "read it" }));
+
+  expect(await screen.findByText(/# a thought/)).toBeDefined();
+  expect(asked()).toContain("GET /v1/routing/rec/output");
+});
+
+test("makes the pointer a link where the destination offered one", async () => {
+  pool(answering([WITH_OUTPUT], DESCRIBED, markdown));
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  const pointer = await screen.findByText("drafts/note.md");
+  expect(pointer.closest("a")?.getAttribute("href")).toBe(
+    "https://vault.example/drafts/note.md",
+  );
+});
+
+test("leaves the pointer as text where the url is not one to follow", async () => {
+  pool(
+    answering(
+      [{ ...WITH_OUTPUT, url: "javascript:alert(1)" }],
+      DESCRIBED,
+      markdown,
+    ),
+  );
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  expect((await screen.findByText("drafts/note.md")).closest("a")).toBeNull();
 });
