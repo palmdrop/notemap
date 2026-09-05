@@ -117,16 +117,20 @@ Depends on phase 1.
 
 Depends on nothing in this plan; do it before phase 4.
 
-- [ ] A capture carries an optional **UTC offset in minutes**, through the domain type, the store,
+- [x] A capture carries an optional **UTC offset in minutes**, through the domain type, the store,
       the mirror record and its parse, and `POST /v1/captures`
-- [ ] The web shell sends it, from the browser, at the moment of capture. The client's outbox
-      carries it, so a capture made offline and drained tomorrow still says which day it was
-- [ ] The host names the **fallback zone**, an IANA name in `config.toml`, supplied to core beside
+- [x] The web shell sends it, from the browser, at the moment of capture — through the client's
+      own default rather than a line in the shell, since `-getTimezoneOffset()` is the browser's
+      answer wherever it is asked. The client's outbox carries it, so a capture made offline and
+      drained tomorrow still says which day it was
+- [x] The host names the **fallback zone**, an IANA name in `config.toml`, supplied to core beside
       the clock on the terms `core.md` already sets for operational knobs
-- [ ] Tests: the mirror round-trips an offset and its absence; a capture with no offset falls back
-      to the host's zone rather than to UTC
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
-- [ ] `git commit`
+- [x] Tests: the mirror round-trips an offset and its absence, as part of the property that
+      already generates every optional field; the config names the zone, defaults to this host's
+      own and refuses one that is not IANA. *Falling back* is phase 4's — nothing reads the zone
+      until the expander does
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
+- [x] `git commit`
 
 ### Phase 4 — Patterns expand
 

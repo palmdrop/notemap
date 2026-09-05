@@ -53,6 +53,7 @@ export const itemSchema = z
     payload: payloadSchema,
     tags: z.array(tag),
     createdAt: z.string(),
+    utcOffset: z.number().int().optional(),
     contentUpdatedAt: z.string().optional(),
     revisionOf: z.string().optional(),
     archived: z

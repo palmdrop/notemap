@@ -176,6 +176,28 @@ describe("what a config may leave out", () => {
   });
 });
 
+describe("the zone a capture with no offset is read in", () => {
+  it("is the one the config names", () => {
+    const config = parse(`[capture]\nzone = "Pacific/Auckland"`);
+
+    expect(config.poolConfig.zone).toBe("Pacific/Auckland");
+  });
+
+  it("falls back to this host's own, and never to a silent UTC", () => {
+    const config = parse("");
+
+    expect(config.poolConfig.zone).toBe(
+      Intl.DateTimeFormat().resolvedOptions().timeZone,
+    );
+  });
+
+  it("refuses a zone no one has heard of, rather than a date read wrong weeks later", () => {
+    expect(() => parse(`[capture]\nzone = "Europe/Nowhere"`)).toThrow(
+      /not an IANA time zone/,
+    );
+  });
+});
+
 /**
  * An upgrade or a downgrade must never leave the daemon unable to start over a
  * block it does not know, and a stale `[[destinations]]` is now exactly that:

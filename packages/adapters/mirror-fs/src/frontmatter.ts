@@ -19,6 +19,7 @@ const KEYS = {
   sourceItemId: "source_id",
   payload: "payload_type",
   createdAt: "captured_at",
+  utcOffset: "captured_utc_offset",
   contentUpdatedAt: "updated_at",
   archived: "archived_at",
   tags: "tags",
@@ -44,6 +45,11 @@ export function fixedFrontmatter(
     ["wasAttributedTo", item.source],
   ]);
 
+  // Carried rather than dropped: `captured_at` is UTC, so without this a reader
+  // of the file cannot tell which day the capture was made on.
+  if (item.utcOffset !== undefined) {
+    entries.set(KEYS.utcOffset, item.utcOffset);
+  }
   if (item.contentUpdatedAt !== undefined) {
     entries.set(KEYS.contentUpdatedAt, item.contentUpdatedAt);
   }

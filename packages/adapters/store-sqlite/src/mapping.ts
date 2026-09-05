@@ -145,6 +145,7 @@ export function toItem(
       addedAt: toTimestamp(tag.added_at),
     })),
     createdAt: toTimestamp(row.created_at),
+    ...(row.utc_offset === null ? {} : { utcOffset: row.utc_offset }),
     ...(row.content_updated_at === null
       ? {}
       : { contentUpdatedAt: toTimestamp(row.content_updated_at) }),
@@ -180,6 +181,7 @@ export function itemParams(
   string,
   number,
   number | null,
+  number | null,
   number,
   string | null,
   number | null,
@@ -193,6 +195,7 @@ export function itemParams(
     JSON.stringify(record.payload.content),
     JSON.stringify(record.payload.metadata),
     toMillis(record.createdAt),
+    record.utcOffset ?? null,
     record.contentUpdatedAt === undefined
       ? null
       : toMillis(record.contentUpdatedAt),

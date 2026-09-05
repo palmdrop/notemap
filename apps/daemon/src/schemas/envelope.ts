@@ -22,6 +22,8 @@ export const captureEnvelopeSchema = z
     source: z.string().min(1),
     sourceItemId: z.string().min(1),
     capturedAt: instant,
+    /** Minutes east of UTC where it was made; a browser is the only thing that knows. */
+    utcOffset: z.number().int().min(-1440).max(1440).optional(),
     payload: payloadSchema,
     tags: z.array(z.string().min(1)).optional(),
   })
@@ -39,6 +41,7 @@ export function toEnvelope(
     source: parsed.source as SourceId,
     sourceItemId: parsed.sourceItemId,
     capturedAt: toTimestamp(parsed.capturedAt),
+    ...(parsed.utcOffset === undefined ? {} : { utcOffset: parsed.utcOffset }),
     payload: toPayload(parsed.payload),
     ...(parsed.tags === undefined ? {} : { tags: parsed.tags as TagName[] }),
   };

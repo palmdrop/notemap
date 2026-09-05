@@ -92,6 +92,7 @@ function canonicalItem(item: Item): ItemRecord {
     payload: canonicalPayload(item.payload),
     tags: [...item.tags].map(canonicalTag).sort(byKey((tag) => tag.name)),
     createdAt: instant(item.createdAt),
+    ...(item.utcOffset === undefined ? {} : { utcOffset: item.utcOffset }),
     ...(item.contentUpdatedAt === undefined
       ? {}
       : { contentUpdatedAt: instant(item.contentUpdatedAt) }),

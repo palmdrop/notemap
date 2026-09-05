@@ -3146,6 +3146,7 @@ export interface components {
                 addedAt: string;
             }[];
             createdAt: string;
+            utcOffset?: number;
             contentUpdatedAt?: string;
             revisionOf?: string;
             archived?: {
@@ -3177,6 +3178,7 @@ export interface components {
              * @example 2026-08-08T09:00:00.000Z
              */
             capturedAt: string;
+            utcOffset?: number;
             payload: {
                 type: string;
                 content: {

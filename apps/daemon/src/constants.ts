@@ -26,6 +26,16 @@ export const DEFAULT_SWEEP = {
   intervalMs: 3_600_000,
 };
 
+/**
+ * Where a capture carrying no offset of its own is read from. The host's own
+ * zone rather than UTC: a capture from a source belongs to the day the person
+ * running the pool is living in, and `Intl` is where this machine says which
+ * that is.
+ */
+export function defaultZone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
 /** Generous enough for a phone photo or a long voice memo. */
 export const DEFAULT_MAX_UPLOAD_BYTES = 256 * 1024 * 1024;
 

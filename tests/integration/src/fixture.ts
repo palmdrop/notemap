@@ -88,6 +88,7 @@ export const CONFIG: PoolConfig = {
     maxBackoff: 60000 as Duration,
   },
   sweep: { grace: 86_400_000 as Duration },
+  zone: "Europe/Stockholm",
 };
 
 /** A clock that stands still until a test moves it. */
@@ -296,6 +297,7 @@ type EnvelopeOverrides = {
   readonly sourceItemId?: string;
   readonly text?: string;
   readonly capturedAt?: string;
+  readonly utcOffset?: number;
   readonly tags?: readonly string[];
   readonly assets?: readonly { slot: string; asset: string }[];
 };
@@ -306,6 +308,9 @@ export function envelope(overrides: EnvelopeOverrides = {}): CaptureEnvelope {
     source: overrides.source ?? SCRATCHPAD,
     sourceItemId: overrides.sourceItemId ?? "src-1",
     capturedAt: at(overrides.capturedAt ?? "2026-08-06T09:00:00.000Z"),
+    ...(overrides.utcOffset === undefined
+      ? {}
+      : { utcOffset: overrides.utcOffset }),
     payload: {
       type: TEXT,
       content: { text: overrides.text ?? "a thought" },

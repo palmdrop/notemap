@@ -344,6 +344,11 @@ export type ClientConfig = {
   /** The clock that stamps an operation-time. A port, so a test can hold it still. */
   readonly now?: () => string;
   /**
+   * Minutes east of UTC, asked at the moment of capture so a capture carries the
+   * zone it was made in. A port for the same reason the clock is one.
+   */
+  readonly utcOffset?: () => number;
+  /**
    * Where a failure with no caller waiting on it goes. A shell decides whether
    * that is a console, a log or something a person sees; unwired, these are
    * swallowed as they were before.

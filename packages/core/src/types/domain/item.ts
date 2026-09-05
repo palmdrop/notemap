@@ -45,6 +45,8 @@ export type ItemRecord = {
   readonly payload: Payload;
   readonly tags: readonly Tag[];
   readonly createdAt: Timestamp;
+  /** Minutes east of UTC at the moment of capture, where the capture knew it. */
+  readonly utcOffset?: number;
   readonly contentUpdatedAt?: Timestamp;
   readonly revisionOf?: ItemId;
   readonly archived?: ArchiveState;

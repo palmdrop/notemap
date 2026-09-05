@@ -17,6 +17,8 @@ export type ItemRow = {
   readonly payload_content: string;
   readonly payload_metadata: string;
   readonly created_at: number;
+  /** Minutes east of UTC where the capture was made, where it knew. */
+  readonly utc_offset: number | null;
   readonly content_updated_at: number | null;
   readonly modified_at: number;
   readonly revision_of: string | null;
@@ -157,6 +159,7 @@ export const TABLE_COLUMNS = {
     "payload_content",
     "payload_metadata",
     "created_at",
+    "utc_offset",
     "content_updated_at",
     "modified_at",
     "revision_of",

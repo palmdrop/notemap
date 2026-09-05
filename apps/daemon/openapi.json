@@ -351,6 +351,9 @@
           "createdAt": {
             "type": "string"
           },
+          "utcOffset": {
+            "type": "integer"
+          },
           "contentUpdatedAt": {
             "type": "string"
           },
@@ -480,6 +483,11 @@
             ],
             "description": "An ISO 8601 instant: a date-time carrying an offset (`2026-08-08T09:00:00Z`, `2026-08-08T09:00:00+02:00`), or a date alone, which means midnight UTC. A date-time without an offset is refused — there is no way to tell which zone it was written in.",
             "example": "2026-08-08T09:00:00.000Z"
+          },
+          "utcOffset": {
+            "type": "integer",
+            "minimum": -1440,
+            "maximum": 1440
           },
           "payload": {
             "type": "object",

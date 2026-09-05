@@ -52,6 +52,7 @@ export const CONFIG: PoolConfig = {
     maxBackoff: 60_000 as Duration,
   },
   sweep: { grace: 86_400_000 as Duration },
+  zone: "Europe/Stockholm",
 };
 
 /** Uploads bytes the way a client does — under an id it minted — and answers the response. */

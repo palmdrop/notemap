@@ -119,6 +119,10 @@ function listOf(state: ClientState, surface: Surface): ListState {
 export function createClient(config: ClientConfig): Client {
   const { transport, store } = config;
   const now = config.now ?? (() => new Date().toISOString());
+  // Inverted: `getTimezoneOffset` counts minutes *behind* UTC, and the domain
+  // counts them east of it.
+  const utcOffsetNow =
+    config.utcOffset ?? (() => -new Date().getTimezoneOffset());
   const report = config.onError ?? (() => undefined);
   const held = writable<ClientState>(emptyState());
   // Every state change passes through here, so no path can forget retention.
@@ -409,7 +413,7 @@ export function createClient(config: ClientConfig): Client {
 
     async capture(input) {
       const id = uuidv7();
-      const envelope = envelopeFor(input, id, now());
+      const envelope = envelopeFor(input, id, now(), utcOffsetNow());
 
       await mutate({ kind: "capture", envelope });
       return optimisticItem(envelope);

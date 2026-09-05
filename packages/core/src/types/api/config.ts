@@ -10,4 +10,11 @@ export type PoolConfig = {
   readonly enrichments: readonly EnrichmentDescriptor[];
   readonly retry: RetryPolicy;
   readonly sweep: SweepPolicy;
+  /**
+   * An IANA zone name, for reading the date of a capture that carries no offset
+   * of its own. The host's, never core's to invent, and never a silent UTC: a
+   * capture from a source is filed on the day the person running the pool is
+   * living in.
+   */
+  readonly zone: string;
 };

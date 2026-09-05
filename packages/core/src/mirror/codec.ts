@@ -132,6 +132,7 @@ function readItem(value: unknown, at: string): ItemRecord {
     payload: readPayload(row["payload"], `${at}.payload`),
     tags: list(row["tags"], `${at}.tags`, readTag),
     createdAt: stamp(row["createdAt"], `${at}.createdAt`),
+    ...present("utcOffset", row, at, minutes),
     ...present("contentUpdatedAt", row, at, stamp),
     ...present(
       "revisionOf",
@@ -327,6 +328,19 @@ function text(value: unknown, at: string): string {
 
 function flag(value: unknown, at: string): boolean {
   if (typeof value !== "boolean") reject(at, "a boolean");
+  return value;
+}
+
+/** Every real zone is a whole number of minutes from UTC, and none is a day away. */
+function minutes(value: unknown, at: string): number {
+  if (
+    typeof value !== "number" ||
+    !Number.isInteger(value) ||
+    value < -1440 ||
+    value > 1440
+  ) {
+    reject(at, "an offset in minutes");
+  }
   return value;
 }
 

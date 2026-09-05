@@ -80,6 +80,9 @@ async function append(
         : [{ name: tag, by, addedAt: envelope.capturedAt }];
     }),
     createdAt: envelope.capturedAt,
+    ...(envelope.utcOffset === undefined
+      ? {}
+      : { utcOffset: envelope.utcOffset }),
   };
 
   const item = await tx.insertItem(record);
@@ -129,6 +132,7 @@ function fixedByItem(item: Item): FixedByCapture {
     source: item.source,
     sourceItemId: item.sourceItemId,
     capturedAtMs: Date.parse(item.createdAt),
+    ...(item.utcOffset === undefined ? {} : { utcOffset: item.utcOffset }),
     payload: canonicalPayload(item.payload),
   };
 }

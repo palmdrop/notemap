@@ -14,6 +14,12 @@ export function envelopeFor(
   input: CaptureInput,
   id: string,
   at: string,
+  /**
+   * Minutes east of UTC, from the browser that captured it. Carried in the
+   * outbox, so a capture made offline and drained tomorrow still says which day
+   * it was made on.
+   */
+  utcOffset?: number,
 ): CaptureEnvelope {
   const asset = input.asset;
 
@@ -30,6 +36,7 @@ export function envelopeFor(
     source: input.channel,
     sourceItemId: id,
     capturedAt: at,
+    ...(utcOffset === undefined ? {} : { utcOffset }),
     payload: {
       ...body,
       metadata: {},
@@ -46,6 +53,9 @@ export function optimisticItem(envelope: CaptureEnvelope): Item {
     payload: envelope.payload,
     tags: [],
     createdAt: envelope.capturedAt,
+    ...(envelope.utcOffset === undefined
+      ? {}
+      : { utcOffset: envelope.utcOffset }),
     modifiedAt: envelope.capturedAt,
     revisedInto: [],
   };

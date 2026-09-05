@@ -132,6 +132,7 @@ export const item = (): fc.Arbitrary<Item> =>
         { maxLength: 3, selector: (tag) => tag.name },
       ),
       createdAt: stamp(),
+      utcOffset: fc.integer({ min: -720, max: 840 }),
       contentUpdatedAt: stamp(),
       revisionOf: branded(),
       archived: fc.record(

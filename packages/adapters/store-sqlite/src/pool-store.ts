@@ -106,7 +106,7 @@ export type SqlitePoolStoreConfig = {
 
 const ITEM_COLUMNS = `
   id, source_id, source_item_id, payload_type, payload_content,
-  payload_metadata, created_at, content_updated_at, modified_at,
+  payload_metadata, created_at, utc_offset, content_updated_at, modified_at,
   revision_of, archived_at, archive_reason
 `;
 
@@ -243,7 +243,7 @@ export function createSqlitePoolStore(
 
   const insertItem = write.query(`
     INSERT INTO items (${ITEM_COLUMNS})
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const amend = write.query<
     never,

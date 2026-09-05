@@ -50,6 +50,16 @@ pollInterval = 1000 # milliseconds between sweeps for owed writes
 leaseFor = 60000    # how long a claimed write is held before anyone may retake it
 batch = 16          # writes claimed per sweep
 
+# What a capture with no offset of its own is read in. A browser sends the zone
+# it was in with every capture; a source-supplied one sends none, and this is
+# where its date comes from — a filename derived from a capture date is
+# otherwise a day out for exactly the person who cared enough to configure it.
+#
+# Absent means this host's own zone, which is what `Intl` reports. Never UTC
+# unless that is genuinely where this machine lives.
+[capture]
+# zone = "Europe/Stockholm"
+
 [retry]
 maxAttempts = 5
 initialBackoff = 1000 # milliseconds

@@ -733,6 +733,14 @@ export const MIGRATIONS: readonly string[] = [
     ON jobs (abandoned_at, subject_kind, subject_id, kind)
     WHERE abandoned_at IS NOT NULL;
   `,
+
+  `
+  -- What the clock said where the capture was made: minutes east of UTC, DST
+  -- included. Only a browser knows it exactly, so it is optional, and a capture
+  -- without one falls back to the zone the host names.
+  ALTER TABLE items ADD COLUMN utc_offset INTEGER
+    CHECK (utc_offset BETWEEN -1440 AND 1440);
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";
