@@ -391,6 +391,12 @@ export function toRoutingTemplate(row: RoutingTemplateRow): RoutingTemplate {
       : { establishedAt: toTimestamp(row.established_at) }),
     createdAt: toTimestamp(row.created_at),
     modifiedAt: toTimestamp(row.modified_at),
+    fired: {
+      records: row.fired_records,
+      ...(row.fired_last_at === null
+        ? {}
+        : { lastAt: toTimestamp(row.fired_last_at) }),
+    },
   };
 }
 

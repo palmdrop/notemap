@@ -585,6 +585,7 @@ describe("deleting a destination", () => {
           folder: "create",
           createdAt: "2026-09-05T08:00:00.000Z" as Timestamp,
           modifiedAt: "2026-09-05T08:00:00.000Z" as Timestamp,
+          fired: { records: 0 },
         },
       ],
     });

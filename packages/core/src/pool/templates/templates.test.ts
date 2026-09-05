@@ -50,6 +50,7 @@ function ports(wiring: Wiring = {}): Wired {
     const stored: RoutingTemplate = {
       ...record,
       modifiedAt: `2026-09-05T10:00:0${String(ticks)}.000Z` as Timestamp,
+      fired: { records: 0 },
     };
     held.set(stored.id, stored);
     return stored;

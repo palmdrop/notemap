@@ -23,6 +23,7 @@ function aTemplate(overrides: Partial<RoutingTemplate> = {}): RoutingTemplate {
     arguments: { path: "research/{{captured_at}}.md" },
     folder: "create",
     triggerTag: "route/research",
+    fired: { records: 0 },
     ...overrides,
   };
 }

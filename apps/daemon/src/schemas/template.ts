@@ -20,6 +20,11 @@ export const templateSchema = z
     triggerTag: z.string().optional(),
     /** When the first delivery from it landed. Only `establish` reads it. */
     establishedAt: z.string().optional(),
+    /** What the pool made from it: how many records name it, and when the last did. */
+    fired: z.object({
+      records: z.number().int().nonnegative(),
+      lastAt: z.string().optional(),
+    }),
   })
   .openapi("RoutingTemplate");
 

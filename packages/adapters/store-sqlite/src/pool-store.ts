@@ -122,9 +122,24 @@ const ROUTING_COLUMNS = `
   fired_by_tag
 `;
 
+/**
+ * What a template is, and what the pool made from it. The two counts are a
+ * correlated subquery rather than a join and a group: a template with no
+ * records still has to answer, and a `LEFT JOIN … GROUP BY` over ten templates
+ * reads every routing record to say so.
+ */
 const TEMPLATE_COLUMNS = `
   id, name, destination_id, capability, arguments, folder, trigger_tag,
   established_at, created_at, modified_at
+`;
+
+/** The columns above, and what the pool made from the template beside them. */
+const TEMPLATE_READ = `
+  ${TEMPLATE_COLUMNS},
+  (SELECT COUNT(*) FROM routing_records r WHERE r.template_id = routing_templates.id)
+    AS fired_records,
+  (SELECT MAX(at) FROM routing_records r WHERE r.template_id = routing_templates.id)
+    AS fired_last_at
 `;
 
 /** What every surface orders on: capture time, and the id only to break a tie. */
@@ -485,17 +500,17 @@ export function createSqlitePoolStore(
       `SELECT 1 AS one FROM routing_records WHERE destination = ? LIMIT 1`,
     );
     const everyTemplate = source.query<RoutingTemplateRow, []>(
-      `SELECT ${TEMPLATE_COLUMNS} FROM routing_templates
+      `SELECT ${TEMPLATE_READ} FROM routing_templates
        ORDER BY created_at, id`,
     );
     const templateById = source.query<RoutingTemplateRow, [string]>(
-      `SELECT ${TEMPLATE_COLUMNS} FROM routing_templates WHERE id = ?`,
+      `SELECT ${TEMPLATE_READ} FROM routing_templates WHERE id = ?`,
     );
     const templateByTag = source.query<RoutingTemplateRow, [string]>(
-      `SELECT ${TEMPLATE_COLUMNS} FROM routing_templates WHERE trigger_tag = ?`,
+      `SELECT ${TEMPLATE_READ} FROM routing_templates WHERE trigger_tag = ?`,
     );
     const templatesNaming = source.query<RoutingTemplateRow, [string]>(
-      `SELECT ${TEMPLATE_COLUMNS} FROM routing_templates
+      `SELECT ${TEMPLATE_READ} FROM routing_templates
        WHERE destination_id = ?
        ORDER BY created_at, id`,
     );

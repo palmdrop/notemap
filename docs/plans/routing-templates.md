@@ -219,28 +219,31 @@ Depends on phase 6. **The feature is usable at the end of this phase**, minus th
 
 Depends on phase 7.
 
-- [ ] A **Templates** section on the settings page, under the same three levels of hierarchy the
+- [x] A **Templates** section on the settings page, under the same three levels of hierarchy the
       page already has: a line per template with its name, its destination and what it last
       answered; opening one adds the arguments, the folder mode, the trigger tag, when it last
-      fired, and the ways to edit and delete it
-- [ ] A form for the arguments built from the same `argumentsSchema` the composer builds from, with
+      fired, and the ways to edit and delete it. *When it last fired* is a derived field the
+      store computes beside the row, on the terms an item's routing summary is already derived —
+      the page asks nothing extra for it. Not drawn: what a pattern **reads as**, which needs an
+      item to expand against and would otherwise be a second expander on this side
+- [x] A form for the arguments built from the same `argumentsSchema` the composer builds from, with
       the patterns typed as text and the static refusal drawn where it belongs
-- [ ] Each row **asks its own report as the page draws**, per row, so the first template whose
+- [x] Each row **asks its own report as the page draws**, per row, so the first template whose
       destination has to go and look does not hold up a list already drawn from pool state. A
       settled answer is not asked again; one that could not be reached is asked when the pool comes
       back
-- [ ] A **stranded** template — one whose destination was deleted — leads with that, and is deleted
+- [x] A **stranded** template — one whose destination was deleted — leads with that, and is deleted
       or **repointed**, which is an ordinary edit of its destination field followed by the report
       saying whether the capability and the arguments still fit where it now points
-- [ ] The folder check reads the **literal prefix** of the path — the part with no pattern in it,
+- [x] The folder check reads the **literal prefix** of the path — the part with no pattern in it,
       which is exactly the part that moves — through `candidates`
-- [ ] **Unreachable is not an alarm.** A destination that cannot be asked says so quietly and draws
+- [x] **Unreachable is not an alarm.** A destination that cannot be asked says so quietly and draws
       no accent. The `gone` mark removed from the composer on 2026-09-04 is the mistake being
       avoided
-- [ ] Tests: the report's four cases; an unreachable destination draws no alarm; the prefix check
+- [x] Tests: the report's four cases; an unreachable destination draws no alarm; the prefix check
       asks the right scope
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
+- [x] `git commit`
 
 ### Phase 9 — A tag applies it
 

@@ -70,6 +70,9 @@ export type RoutingTemplateRow = {
   readonly established_at: number | null;
   readonly created_at: number;
   readonly modified_at: number;
+  /** Derived, on the terms an item's routing summary is: what records name it. */
+  readonly fired_records: number;
+  readonly fired_last_at: number | null;
 };
 
 export type JobRow = {

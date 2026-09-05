@@ -3853,6 +3853,10 @@ export interface components {
             folder: "create" | "require" | "establish";
             triggerTag?: string;
             establishedAt?: string;
+            fired: {
+                records: number;
+                lastAt?: string;
+            };
         };
         CreateRoutingTemplateRequest: {
             name: string;

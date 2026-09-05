@@ -34,8 +34,16 @@ export type RoutingTemplateRecord = {
   readonly createdAt: Timestamp;
 };
 
+/** How much of the pool this template made, derived from the records naming it. */
+export type TemplateFirings = {
+  readonly records: number;
+  readonly lastAt?: Timestamp;
+};
+
+/** A record plus what the store derives from the rest of the pool around it. */
 export type RoutingTemplate = RoutingTemplateRecord & {
   readonly modifiedAt: Timestamp;
+  readonly fired: TemplateFirings;
 };
 
 /** What a person supplies to create one. The id and the timestamps are not theirs. */

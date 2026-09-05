@@ -1331,6 +1331,21 @@
           },
           "establishedAt": {
             "type": "string"
+          },
+          "fired": {
+            "type": "object",
+            "properties": {
+              "records": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "lastAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "records"
+            ]
           }
         },
         "required": [
@@ -1339,7 +1354,8 @@
           "destination",
           "capability",
           "arguments",
-          "folder"
+          "folder",
+          "fired"
         ]
       },
       "CreateRoutingTemplateRequest": {

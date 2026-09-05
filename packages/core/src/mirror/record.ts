@@ -64,7 +64,7 @@ export function projectDestinationRecord(
 export function projectTemplateRecord(
   template: RoutingTemplate,
 ): RoutingTemplateMirrorRecord {
-  const { modifiedAt, ...record } = template;
+  const { modifiedAt, fired: _fired, ...record } = template;
 
   return {
     kind: "template",

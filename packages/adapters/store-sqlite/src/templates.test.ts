@@ -42,7 +42,34 @@ describe("the routing templates a pool holds", () => {
     ]);
     expect(
       await p.routingTemplate("tpl-research" as RoutingTemplateId),
-    ).toEqual({ ...template(), modifiedAt: expect.any(String) });
+    ).toEqual({
+      ...template(),
+      modifiedAt: expect.any(String),
+      fired: { records: 0 },
+    });
+  });
+
+  it("counts what was routed from it, and when the last of it was", async () => {
+    const { pool: p } = pool();
+    await putDestinations(p, destination());
+    await putTemplates(p, template());
+    const item = capture();
+
+    await p.transaction(async (tx) => {
+      await tx.insertItem(item);
+      await tx.insertRoutingRecord({
+        ...reserved(item),
+        at: at("2026-09-05T10:00:00.000Z"),
+        applied: {
+          template: "tpl-research" as RoutingTemplateId,
+          firedByTag: true,
+        },
+      });
+    });
+
+    expect(
+      (await p.routingTemplate("tpl-research" as RoutingTemplateId))?.fired,
+    ).toEqual({ records: 1, lastAt: at("2026-09-05T10:00:00.000Z") });
   });
 
   it("carries the patterns as written, and expands nothing", async () => {

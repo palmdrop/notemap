@@ -270,6 +270,10 @@ export const routingTemplate = (): fc.Arbitrary<RoutingTemplate> =>
       establishedAt: stamp(),
       createdAt: stamp(),
       modifiedAt: stamp(),
+      fired: fc.record(
+        { records: fc.nat({ max: 200 }), lastAt: stamp() },
+        { requiredKeys: ["records"] },
+      ),
     },
     {
       requiredKeys: [
@@ -281,6 +285,7 @@ export const routingTemplate = (): fc.Arbitrary<RoutingTemplate> =>
         "folder",
         "createdAt",
         "modifiedAt",
+        "fired",
       ],
     },
   );

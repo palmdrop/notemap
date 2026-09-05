@@ -34,6 +34,7 @@ function declared(template: RoutingTemplate) {
     ...(template.establishedAt === undefined
       ? {}
       : { establishedAt: template.establishedAt }),
+    fired: template.fired,
   };
 }
 
