@@ -9,7 +9,10 @@ import Actions from "./Actions.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
-afterEach(() => notices.clear());
+afterEach(() => {
+  notices.clear();
+  Reflect.deleteProperty(navigator, "clipboard");
+});
 
 /** What the browser hands a secure context, which jsdom has none of. */
 function clipboard(): { writeText: ReturnType<typeof vi.fn> } {
@@ -19,6 +22,13 @@ function clipboard(): { writeText: ReturnType<typeof vi.fn> } {
     value: held,
   });
   return held;
+}
+
+/** A capture with words in it, which is what `copy` has something to take of. */
+function saying(text: string) {
+  return anItem("one", {
+    payload: { type: "text", content: { text }, metadata: {}, assets: [] },
+  });
 }
 
 const marked = {
@@ -49,17 +59,47 @@ function draw(item = anItem("one")) {
   });
 }
 
-test("draws leaving the queue on one line and working with the item on the other", () => {
-  const { container } = draw();
-
-  const lines = [...(container.firstElementChild?.children ?? [])].map((line) =>
+/** The lines as drawn, which is what "aligned" is a claim about. */
+function lines(container: Element) {
+  return [...(container.firstElementChild?.children ?? [])].map((line) =>
     [...line.children].map((cell) => cell.textContent?.trim()),
   );
+}
 
-  expect(lines).toEqual([
+test("draws leaving the queue on one line and working with the item on the other", () => {
+  clipboard();
+  const { container } = draw(saying("a note"));
+
+  expect(lines(container)).toEqual([
     ["route", "done", "archive"],
     ["copy", "edit", "open"],
   ]);
+});
+
+/**
+ * `navigator.clipboard` is a secure context's alone — HTTPS or `localhost` — and
+ * a daemon reached over plain HTTP at a LAN address has none. There is nothing
+ * to fall back to, so the line closes up rather than offering what would fail.
+ */
+test("offers no copy where the browser hands over no clipboard", () => {
+  const { container } = draw(saying("a note"));
+
+  expect(screen.queryByRole("button", { name: "copy" })).toBeNull();
+  expect(lines(container)).toEqual([
+    ["route", "done", "archive"],
+    ["edit", "open"],
+  ]);
+});
+
+test("offers no copy of a capture that says nothing", () => {
+  clipboard();
+  draw(
+    anItem("one", {
+      payload: { type: "image", content: {}, metadata: {}, assets: [] },
+    }),
+  );
+
+  expect(screen.queryByRole("button", { name: "copy" })).toBeNull();
 });
 
 test("opens one field for where it went, and `⏎` sends it", async () => {
@@ -77,7 +117,11 @@ test("opens one field for where it went, and `⏎` sends it", async () => {
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/mark-processed");
   });
-  expect(screen.queryByLabelText("where it went")).toBeNull();
+  // Put away by the answer rather than by the keystroke, so a refusal has
+  // something to leave behind.
+  await vi.waitFor(() => {
+    expect(screen.queryByLabelText("where it went")).toBeNull();
+  });
 });
 
 test("sends an empty field as readily as a written one", async () => {
@@ -103,6 +147,32 @@ test("`esc` puts the field away without marking anything", async () => {
 
   expect(screen.queryByLabelText("where it went")).toBeNull();
   expect(asked()).not.toContain("POST /v1/items/one/mark-processed");
+});
+
+/** The row's one typed thing: a refusal that emptied the field would take it. */
+test("keeps what was written when the pool refuses the decision", async () => {
+  pool((request) =>
+    routeOf(request) === "POST /v1/items/one/mark-processed"
+      ? json(400, { error: { code: "arguments-invalid" } })
+      : json(200, { values: [] }),
+  );
+
+  render(Actions, {
+    item: anItem("one"),
+    offline: false,
+    onroute: () => undefined,
+    onedit: () => undefined,
+  });
+
+  await fireEvent.click(screen.getByRole("button", { name: "done" }));
+  const field = screen.getByLabelText("where it went");
+  await fireEvent.input(field, { target: { value: "the standup doc" } });
+  await fireEvent.keyDown(field, { key: "Enter" });
+
+  await screen.findByRole("status");
+  expect(
+    (screen.getByLabelText("where it went") as HTMLInputElement).value,
+  ).toBe("the standup doc");
 });
 
 /**

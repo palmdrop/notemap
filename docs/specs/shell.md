@@ -347,6 +347,12 @@ nobody asked for. A click carries how many of them it is and the row takes only 
 gesture reads: open, nothing, go. The single click costs no delay, which is what waiting to find
 out whether a second one is coming would have cost.
 
+**A double the browser has already spent goes nowhere** *(amended 2026-09-05)*. Double-clicking a
+word selects it, which is how anybody takes text out of a page and is exactly what a person reaching
+into a capture is doing; leaving the surface out from under a selection they just made is not what
+they asked for. So the row goes only where the double selected nothing — which is most of it, the
+gutter, the marks and the space around the prose — and the body's words stay the browser's.
+
 **Routing is not one of those, and it does not happen in the row.** It is the only act in the shell
 that composes an object rather than selecting a value: where, then what to do there, then exactly
 where and how, each step depending on the last. A row of controls asserts those are siblings when
@@ -642,8 +648,13 @@ here either changes the row or takes you somewhere — this puts nothing on the 
 speaks in the corner, naming what it took rather than saying *copied* into the air, which is the
 one place [the rule about subjects leaving the screen](#the-corner-says-what-happened) is answered
 by a subject that never appears. It uses `navigator.clipboard` and nothing else, which needs a
-secure context: HTTPS, or `localhost`. A deployment reached over plain HTTP at a LAN address cannot
-copy, and that is a later change rather than a fallback built now.
+secure context: HTTPS, or `localhost`. **Where that is missing the action is not drawn** *(amended
+2026-09-05)*: reached over plain HTTP at a LAN address — a plausible way to reach a self-hosted
+daemon from a phone — the browser hands over no clipboard at all, and a control that can only fail
+is worse than an absent one. There is still no fallback, and building one is still a later change;
+what changed is that the shell stops offering what it cannot do. **Nor is it drawn where there is
+nothing to take**: a picture captured without a caption says nothing, and copying it would put an
+empty string on the clipboard and then claim in the corner to have taken something.
 
 ### Tagging
 
@@ -825,7 +836,11 @@ has no end to start from and it says nothing there. **It is the shell's own choo
 — a word, a mark, and a panel of marked options, the idiom `where` already uses — and not the
 browser's `select`, which draws in the system's face and colours and cannot be brought into this
 one. Leaving the control shuts it, whichever way a person leaves; `esc` shuts it too, choosing
-nothing. Which end a reader starts from is the reader's,
+nothing — and *(added 2026-09-05)* **pointing at the panel moves no caret into it**, the same
+default the place line prevents for the same reason: leaving is what shuts this, so a pointer that
+took the focus on its way in would shut it out from under the click that was choosing. What it
+draws is **a named group of marked buttons and not a `listbox`**, which would promise options
+nothing here renders. Which end a reader starts from is the reader's,
 for the queue as for the feed ([CONTEXT.md](../../CONTEXT.md)). Turning a surface around reads it
 again from that end ([client.md](client.md#the-queue)) — a position belongs to the order that made
 it — so the control is a choice of order, not a re-sort of what is on screen.
@@ -895,7 +910,10 @@ section it would only be refused. One line per token, with when it was made and 
 used, which is what says whether one is safe to revoke. Minting takes a name and answers with the
 string **once** — the daemon kept a hash and has nothing to answer with a second time — so it is
 shown in the accent, selectable, with a way to copy it, and dismissing it is a deliberate act rather
-than a navigation.
+than a navigation. **Selectable is what carries the weight**: the way to copy it goes where the
+browser hands over no clipboard *(amended 2026-09-05, on the same reasoning as
+[`copy` on a row](#actions))*, and the string being on the screen to select is why it can go
+without anything said in its place.
 
 **Deleting is the one thing on this page that cannot be undone, so it is the one thing that asks**,
 and the asking offers retiring instead. Only the pool knows whether a record has ever named a

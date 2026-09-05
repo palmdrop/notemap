@@ -4,6 +4,7 @@
   import Action from "$components/primitives/controls/Action.svelte";
   import ActionGrid from "$components/primitives/controls/ActionGrid.svelte";
   import { client } from "$lib/client";
+  import { copyable } from "$lib/clipboard";
   import { nameOf } from "$lib/destinations";
   import { aboutItem } from "$lib/excerpt";
   import { editable } from "$lib/lineage";
@@ -44,6 +45,8 @@
   /** Open, `done` is waiting for where it went; `⏎` sends it, empty or not. */
   let where = $state<string | undefined>(undefined);
   let field = $state<HTMLInputElement | undefined>(undefined);
+  /** The field outlives the request now, so `⏎` twice is not two decisions. */
+  let marking = $state(false);
 
   $effect(() => {
     if (where !== undefined) field?.focus();
@@ -51,6 +54,10 @@
 
   const mayEdit = $derived(editable(item));
   const archived = $derived(item.archived !== undefined);
+
+  /** What `copy` would take. A picture with no caption says nothing, and an
+      action that would put nothing on the clipboard is not offered. */
+  const holds = $derived(client.says(item));
 
   /**
    * Marking processed is routing whose destination is the person, so an item
@@ -77,22 +84,32 @@
     });
   }
 
+  function unarchive() {
+    void client.unarchive(item.id).catch((error: unknown) => {
+      said = saidBy(error);
+    });
+  }
+
   async function markDone() {
     if (where === undefined) {
       where = "";
       return;
     }
+    if (marking) return;
 
     const note = where.trim();
+    marking = true;
     const went = onwent?.();
     const about = aboutItem(item);
-    where = undefined;
     said = "marking…";
     try {
       const record = await client.routing.markProcessed(
         item.id,
         note === "" ? undefined : note,
       );
+      // Put away once the pool has it: a refusal that emptied the field would
+      // take what was written with it, and this is the row's one typed thing.
+      where = undefined;
       if (went === undefined) {
         // Quiet, but remembered: the pool writes this decision to the log, and
         // the corner would read it back minutes later as news.
@@ -104,6 +121,8 @@
       said = "";
     } catch (error) {
       said = saidBy(error);
+    } finally {
+      marking = false;
     }
   }
 
@@ -114,7 +133,7 @@
    */
   async function copy() {
     try {
-      await navigator.clipboard.writeText(client.says(item));
+      await navigator.clipboard.writeText(holds);
       notices.raise({ what: "copied", about: aboutItem(item) });
     } catch (error) {
       said = saidBy(error);
@@ -135,17 +154,20 @@
     {/if}
 
     {#if archived}
-      <!-- Unarchiving leaves the row in front of the reader, so it says nothing. -->
-      <Action cell onclick={() => void client.unarchive(item.id)}>
-        unarchive
-      </Action>
+      <!-- Unarchiving leaves the row in front of the reader, so it says nothing
+           of what it did — only what it could not do. -->
+      <Action cell onclick={unarchive}>unarchive</Action>
     {:else}
       <Action cell onclick={archive}>archive</Action>
     {/if}
   {/snippet}
 
   {#snippet working()}
-    <Action cell onclick={() => void copy()}>copy</Action>
+    <!-- Offered only where the browser has a clipboard to give: without a
+         secure context there is nothing to fall back to. -->
+    {#if copyable() && holds !== ""}
+      <Action cell onclick={() => void copy()}>copy</Action>
+    {/if}
 
     <!-- A processed item is not this row's to rewrite: editing it would
          append a revision, which the queue is not where to do. -->
