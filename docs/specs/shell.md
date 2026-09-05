@@ -10,8 +10,9 @@
   destination gives — `manual`, which asks where it went and offers to take the text, and
   `discard`, which acts when it is taken and is offered back from the corner. The composer opens
   with the pool out of reach, drawing what cannot be taken as unavailable, so a queue can still be
-  drained offline. `unarchive` stays beside `process` on the rows that have it, and the shell stops
-  saying `done`. ([plan](../plans/one-way-to-process.md))
+  drained offline. `unarchive` stays beside `process` on the rows that have it, all four actions
+  fit one line, and `esc` gives a step back before it gives up the composer.
+  ([plan](../plans/one-way-to-process.md))
 
 - 2026-09-04 — **The shell's second pass.** One row serves the queue and the feed, opening in place
   on both, and a double click on either goes to the item's own surface. An open row is one band
@@ -367,8 +368,9 @@ shell that composes an object rather than selecting a value: where, then what to
 exactly where and how, each step depending on the last. A row of controls asserts those are
 siblings when they are a chain. So `process` opens a **composer** *(amended 2026-09-05: it was
 `route`)*. *Amended 2026-08-24*: it is a **modal over the surface** rather than a panel beside the
-row. It names the capture it is about, since the row is behind it, and the veil, the cross and
-Escape all put it away. Nothing in the register reserves width or height for it, which is what the
+row. It names the capture it is about, since the row is behind it, and the veil and the cross put
+it away — as does `esc`, once there is no step left to give back
+([below](#the-composer-is-for-processing)). Nothing in the register reserves width or height for it, which is what the
 panel cost everywhere it was not open.
 
 The composer is stepped, not flat: **where** (destinations, with an unavailable one saying so
@@ -1302,8 +1304,9 @@ the page a person actually reads. Three-character indents on successive paragrap
 - The whole design is legible and operable at 375px wide, with the rail intact, and no surface
   requires a second layout to be usable at a desk.
 - Furling the rail leaves every row still openable and every action still reachable.
-- Routing is dismissable without reaching for the mouse, and nothing in the register moves when it
-  opens or closes.
+- The composer is dismissable without reaching for the mouse, and nothing in the register moves when
+  it opens or closes; `esc` on a settled composer gives the step back rather than closing it, and
+  a control that consumes `esc` for itself does not also step the decision back.
 - A queue row can be told at a glance to be a revision, to be archived, or to have work not yet
   drained, without opening it and with the rail furled or not.
 - A row's capture time is the first thing read on it.
@@ -1325,7 +1328,7 @@ the page a person actually reads. Three-character indents on successive paragrap
 - Routing a queued item is reachable in two choices from the opened row when the capability needs
   no argument fields, and the modal says which capture it is about.
 - Every way an item leaves the queue is behind one control, and `copy`, `edit`, `open` and
-  `unarchive` are not behind it.
+  `unarchive` are not behind it; all of them are drawn on one line.
 - Discarding a queued item costs two gestures, says so in the corner, and is put back by one press
   on what the corner says — and the corner holds one such offer however many rows were discarded.
 - `manual` is offered once: an item whose routing summary names the person still draws the entry,

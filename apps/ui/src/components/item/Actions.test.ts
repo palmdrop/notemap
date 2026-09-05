@@ -46,23 +46,23 @@ function draw(item = anItem("one")) {
   });
 }
 
-/** The lines as drawn, which is what "aligned" is a claim about. */
-function lines(container: Element) {
-  return [...(container.firstElementChild?.children ?? [])].map((line) =>
-    [...line.children].map((cell) => cell.textContent?.trim()),
+/** The line as drawn, which is what "beside each other" is a claim about. */
+function line(container: Element) {
+  return [...(container.firstElementChild?.children ?? [])].map((cell) =>
+    cell.textContent?.trim(),
   );
 }
 
 /**
  * One way out of the queue. Route, done and archive were three controls of
  * unclear rank drawn as siblings; what differed between them is the composer's
- * first step now.
+ * first step now, and four controls need no second line to be told apart.
  */
-test("draws one way out of the queue, and working with the item on the other line", () => {
+test("draws every action on one line", () => {
   clipboard();
   const { container } = draw(saying("a note"));
 
-  expect(lines(container)).toEqual([["process"], ["copy", "edit", "open"]]);
+  expect(line(container)).toEqual(["process", "copy", "edit", "open"]);
 });
 
 /**
@@ -74,7 +74,7 @@ test("offers no copy where the browser hands over no clipboard", () => {
   const { container } = draw(saying("a note"));
 
   expect(screen.queryByRole("button", { name: "copy" })).toBeNull();
-  expect(lines(container)).toEqual([["process"], ["edit", "open"]]);
+  expect(line(container)).toEqual(["process", "edit", "open"]);
 });
 
 test("offers no copy of a capture that says nothing", () => {

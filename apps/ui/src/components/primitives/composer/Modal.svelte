@@ -6,6 +6,7 @@
     title,
     subject,
     wide = false,
+    onback,
     onclose,
     children,
   }: {
@@ -17,6 +18,12 @@
      * size, a decision having just been made.
      */
     wide?: boolean;
+    /**
+     * Where `esc` goes while there is somewhere to go back to. A decision made
+     * inside is undone a step at a time; only a composer with nothing settled
+     * is put away by it, which is what the cross and the veil do regardless.
+     */
+    onback?: () => void;
     onclose: () => void;
     children: Snippet;
   } = $props();
@@ -37,7 +44,9 @@
 
 <svelte:window
   onkeydown={(event) => {
-    if (event.key === "Escape") onclose();
+    if (event.key !== "Escape") return;
+    if (onback === undefined) onclose();
+    else onback();
   }}
 />
 

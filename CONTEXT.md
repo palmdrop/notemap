@@ -217,7 +217,9 @@ resurfaces in the queue. Marking an item processed by hand is routing whose dest
 user, and is presented in the UI as **manual**. Scrolling past an item is a **skip**, which changes
 nothing. Processed is also what fixes a capture: an unprocessed item is edited in place, a processed
 one is revised.
-_Avoid_: done, handled, cleared
+_Avoid_: done as a name for the state, handled, cleared. **Done** is spent on the gesture instead —
+it is what the button that ends the `manual` step says, a verb beside `route` rather than a word for
+what an item now is.
 
 ### Leaving
 

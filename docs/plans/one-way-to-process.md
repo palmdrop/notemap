@@ -200,3 +200,17 @@ Two things were found rather than planned:
 - **Two surface tests were racing the decision.** They waited for the request to be *sent* rather
   than for the composer to close, and then acted on a modal that was about to be unmounted. Both
   now wait for the dialog, which is what a person waits for.
+
+### Followed up 2026-09-05
+
+Three notes from using it, landed after the plan closed:
+
+- **The `manual` commit reads `done`.** `CONTEXT.md` keeps `done` off the *state* and now says so
+  precisely: the word is spent on the gesture, a verb beside `route`.
+- **`esc` gives a step back before it gives up the composer.** A taken destination or `manual` is
+  released and the caret returns to the line; a second press closes. The cross and the veil are
+  unchanged, and a control that consumes `esc` for itself keeps it — which the composer's tag field
+  did not do and now does, so one press no longer both drops a half-typed tag and steps the
+  decision back.
+- **The actions are one line.** `ActionGrid` became `ActionLine`, and `Action` gained `quiet` so
+  the muted ink that used to be a second line's is carried by the controls themselves.

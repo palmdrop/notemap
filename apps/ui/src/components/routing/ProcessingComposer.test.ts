@@ -1434,7 +1434,7 @@ test("manual asks where it went and marks processed", async () => {
   await fireEvent.input(await screen.findByLabelText("where it went"), {
     target: { value: "pasted into the fiction vault" },
   });
-  await choose("mark processed");
+  await choose("done");
 
   await vi.waitFor(() => {
     expect(closed).toHaveBeenCalled();
@@ -1540,4 +1540,64 @@ test("the composer's tags are offered whatever the pool is doing", async () => {
 
   await choose(/^manual/);
   await screen.findByText("tags");
+});
+
+/**
+ * A decision made inside is undone a step at a time. Only a composer with
+ * nothing settled is put away by `esc`, which is what the cross and the veil do
+ * whatever is settled.
+ */
+test("esc gives the destination back before it closes the composer", async () => {
+  serving([aDestination()]);
+  const closed = draw();
+
+  await choose(/Vault/);
+  await screen.findByRole("button", { name: /create-file/ });
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+
+  await screen.findByRole("combobox", { name: "which destination" });
+  expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe("process");
+  expect(closed).not.toHaveBeenCalled();
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  expect(closed).toHaveBeenCalled();
+});
+
+test("esc gives the list back from manual too", async () => {
+  serving([aDestination()]);
+  const closed = draw();
+
+  await choose(/^manual/);
+  await screen.findByLabelText("where it went");
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+
+  await screen.findByRole("combobox", { name: "which destination" });
+  expect(screen.queryByLabelText("where it went")).toBeNull();
+  expect(closed).not.toHaveBeenCalled();
+});
+
+/** One press does one thing: putting a field away is not stepping back a decision. */
+test("esc leaving the tag field leaves the decision where it was", async () => {
+  serving([aDestination()]);
+  draw();
+
+  await choose(/^manual/);
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "Add a tag" }),
+  );
+  await fireEvent.input(screen.getByLabelText("Add a tag"), {
+    target: { value: "resea" },
+  });
+
+  await fireEvent.keyDown(screen.getByLabelText("Add a tag"), {
+    key: "Escape",
+  });
+
+  expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe(
+    "process · manual",
+  );
+  // And what was half-typed is dropped rather than applied by the blur.
+  expect(asked()).not.toContain("POST /v1/items/one/tag");
 });

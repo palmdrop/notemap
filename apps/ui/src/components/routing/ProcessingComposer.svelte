@@ -142,6 +142,9 @@
 
   const ready = $derived(chosen !== undefined && capability !== undefined);
 
+  /** Whether there is a step to go back to, which is what `esc` does first. */
+  const settled = $derived(chosen !== undefined || hand !== undefined);
+
   /** The line and what is consulted beside it, which is what earns two columns. */
   const split = $derived(chosen !== undefined && settles);
 
@@ -475,7 +478,13 @@
   {/if}
 {/snippet}
 
-<Modal title={chrome} {subject} wide={split} {onclose}>
+<Modal
+  title={chrome}
+  {subject}
+  wide={split}
+  onback={settled ? release : undefined}
+  {onclose}
+>
   <!-- Above `where` is where a decision that arrived pre-filled with an
        attribution goes. Nothing produces that shape yet. -->
 
@@ -642,7 +651,7 @@
         <!-- One door, and the true verb at the moment there is one to say. -->
         {#if hand === MANUAL}
           <Action primary disabled={busy} onclick={() => void mark()}>
-            mark processed
+            done
           </Action>
         {:else}
           <Action primary disabled={!ready || busy} onclick={() => void send()}>
