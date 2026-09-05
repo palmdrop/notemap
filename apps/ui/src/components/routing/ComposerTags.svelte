@@ -94,6 +94,14 @@
         bind:value={draft}
         autofocus
         onblur={add}
+        onkeydown={(event) => {
+          if (event.key !== "Escape") return;
+          // Putting this away is what the key did here, so the composer does
+          // not also step its decision back on the one press.
+          event.stopPropagation();
+          draft = "";
+          adding = false;
+        }}
         aria-label="Add a tag"
         class="w-24 px-2 py-0.5 font-mono outline-none field"
       />

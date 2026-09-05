@@ -6,7 +6,7 @@
   import type { Item } from "@notemap/client";
 
   import Row from "$components/item/Row.svelte";
-  import RoutingComposer from "$components/routing/RoutingComposer.svelte";
+  import ProcessingComposer from "$components/routing/ProcessingComposer.svelte";
   import Body from "$components/primitives/register/Body.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
@@ -75,7 +75,7 @@
       furled={rail.furled}
       pending={undrained.has(item.id)}
       onopen={() => (opened = opened === item.id ? undefined : item.id)}
-      onroute={() => (routing = item)}
+      onprocess={() => (routing = item)}
     />
   {/each}
 
@@ -93,11 +93,8 @@
      record is remembered so the log does not report it back as news. -->
 {#if routing !== undefined}
   {@const subject = routing}
-  <RoutingComposer
-    item={subject.id}
-    subject={client.says(subject) || subject.payload.type}
-    content={subject.payload.content}
-    tags={(subject.tags ?? []).map((tag) => tag.name)}
+  <ProcessingComposer
+    item={subject}
     onrouted={(record) => notices.mark(keyFor(record.id))}
     onclose={() => (routing = undefined)}
   />

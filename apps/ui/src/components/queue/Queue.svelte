@@ -9,7 +9,7 @@
   import Drained from "$components/queue/Drained.svelte";
   import Lingering from "$components/queue/Lingering.svelte";
   import Row from "$components/item/Row.svelte";
-  import RoutingComposer from "$components/routing/RoutingComposer.svelte";
+  import ProcessingComposer from "$components/routing/ProcessingComposer.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
   import Register from "$components/primitives/register/Register.svelte";
@@ -103,16 +103,8 @@
     opened = opened === id ? undefined : id;
   }
 
-  /**
-   * Where this row stands, read before the gesture rather than after it: the
-   * item has left the queue by the time the pool answers, and this row with it.
-   */
-  function departing(item: Item, before?: string) {
-    return (going: string) => lingering.after(item, going, before);
-  }
-
   /** Where the row stands now, read while it is still standing there. */
-  function route(item: Item, before?: string) {
+  function process(item: Item, before?: string) {
     routing = { item, ...(before === undefined ? {} : { before }) };
   }
 
@@ -123,7 +115,14 @@
   function went(going: { item: Item; before?: string }, record: RoutingRecord) {
     notices.raise(saidOf(record, nameOf, aboutItem(going.item)));
 
-    const word = record.state === "delivered" ? "routed" : "retrying";
+    // A mark by hand is born delivered, having nothing to reach, so the state
+    // says nothing about it: the word is the one the record already reads as.
+    const word =
+      record.target.kind !== "destination"
+        ? "manual"
+        : record.state === "delivered"
+          ? "routed"
+          : "retrying";
     lingering.after(going.item, word, going.before);
   }
 </script>
@@ -150,8 +149,7 @@
         furled={rail.furled}
         pending={undrained.has(row.item.id)}
         onopen={() => show(row.item.id)}
-        onroute={() => route(row.item, rows[at + 1]?.item.id)}
-        onwent={() => departing(row.item, rows[at + 1]?.item.id)}
+        onprocess={() => process(row.item, rows[at + 1]?.item.id)}
       />
     {/if}
   {/each}
@@ -166,13 +164,15 @@
 </Register>
 
 {#if subject !== undefined}
-  <RoutingComposer
-    item={subject.id}
-    subject={client.says(subject) || subject.payload.type}
-    content={subject.payload.content}
-    tags={(subject.tags ?? []).map((tag) => tag.name)}
+  <ProcessingComposer
+    item={subject}
     onrouted={(record) => {
       if (routing !== undefined) went(routing, record);
+    }}
+    ondiscarded={() => {
+      if (routing !== undefined) {
+        lingering.after(routing.item, "discarded", routing.before);
+      }
     }}
     onclose={() => (routing = undefined)}
   />

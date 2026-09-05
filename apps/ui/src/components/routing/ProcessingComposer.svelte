@@ -3,6 +3,7 @@
     saidBy,
     type Capability,
     type DestinationDescription,
+    type Item,
     type RememberedPlace,
     type RoutingPreview,
     type RoutingRecord,
@@ -24,6 +25,17 @@
   import PathLine from "$components/routing/PathLine.svelte";
   import { browserFor } from "$lib/candidate-browsers";
   import { client } from "$lib/client";
+  import { copyable } from "$lib/clipboard";
+  import { aboutItem } from "$lib/excerpt";
+  import { notices } from "$lib/notices.svelte";
+  import {
+    DISCARD,
+    HAND,
+    MANUAL,
+    refusalFor,
+    type ByHand,
+  } from "$lib/processing";
+  import { reachable } from "$lib/reachable.svelte";
   import {
     NO_PREVIEW_OFFERED,
     PREVIEW_IS_INDICATIVE,
@@ -40,28 +52,42 @@
 
   let {
     item,
-    subject,
-    content,
-    tags = [],
     onrouted,
+    ondiscarded,
     onclose,
   }: {
-    item: string;
-    /** What the row said, since the row itself is now behind the veil. */
-    subject: string;
-    /** The item's own payload, from which the name of an unnamed note is derived. */
-    content?: unknown;
-    /** What the item already carries, so the composer's own row draws them as taken. */
-    tags?: readonly string[];
+    item: Item;
     /**
      * The decision reached the pool. What is said about it, and where the row
      * stood, belong to the surface rather than to a modal over it.
      */
     onrouted?: (record: RoutingRecord) => void;
+    /**
+     * Discarding is the one decision the composer takes without a commit, so
+     * the surface is told separately: an archived item leaves the queue the way
+     * a routed one does.
+     */
+    ondiscarded?: () => void;
     onclose: () => void;
   } = $props();
 
   const destinations = client.destinations.all;
+  const pool = reachable();
+
+  const offline = $derived(!pool.yes);
+
+  /** What the row said, since the row itself is now behind the veil. */
+  const subject = $derived(client.says(item) || item.payload.type);
+  /** The item's own payload, from which the name of an unnamed note is derived. */
+  const content = $derived(item.payload.content);
+  /** What the item already carries, so the composer's own row draws them as taken. */
+  const tags = $derived((item.tags ?? []).map((tag) => tag.name));
+
+  /** Taken by hand: `manual`, which has a step, or `discard`, which acts. */
+  let hand = $state<typeof MANUAL | undefined>(undefined);
+  /** What `manual` is told beyond the fact itself. */
+  let went = $state("");
+  let copied = $state(false);
 
   let chosen = $state<string | undefined>(undefined);
   let described = $state<DestinationDescription | undefined>(undefined);
@@ -116,6 +142,9 @@
 
   const ready = $derived(chosen !== undefined && capability !== undefined);
 
+  /** Whether there is a step to go back to, which is what `esc` does first. */
+  const settled = $derived(chosen !== undefined || hand !== undefined);
+
   /** The line and what is consulted beside it, which is what earns two columns. */
   const split = $derived(chosen !== undefined && settles);
 
@@ -133,15 +162,22 @@
       : fields.filter((one) => one.name !== LINE_FIELD),
   );
 
-  /** Taken, the destination leaves the line and reads here instead. */
-  const chrome = $derived(
-    chosen === undefined
-      ? "route"
-      : `route · ${$destinations.find((one) => one.id === chosen)?.name ?? ""}`,
-  );
+  /**
+   * Taken, the choice leaves the line and reads here instead. The door says
+   * `process` until there is a decision, and the true verb once there is one.
+   */
+  const chrome = $derived.by(() => {
+    if (hand !== undefined) return `process · ${hand}`;
+    if (chosen === undefined) return "process";
+    const name = $destinations.find((one) => one.id === chosen)?.name ?? "";
+    return `process · ${name}`;
+  });
 
-  /** A wrong destination is not a reason to close the composer. */
+  /** A wrong choice is not a reason to close the composer. */
   function release(): void {
+    hand = undefined;
+    went = "";
+    copied = false;
     chosen = undefined;
     described = undefined;
     capability = undefined;
@@ -172,7 +208,7 @@
     showing = true;
     said = "";
     try {
-      const answer = await client.routing.preview(item, {
+      const answer = await client.routing.preview(item.id, {
         destination: chosen,
         capability,
         arguments: valuesFrom(fields, args),
@@ -259,11 +295,110 @@
 
   function reasonFor(id: string, retired: boolean): string | undefined {
     if (retired) return "retired";
+    if (offline) return "pool out of reach";
     return refusing[id];
+  }
+
+  /**
+   * Why each entry cannot be taken, destinations and the two by hand alike.
+   * The line reads it to refuse a name, and the options draw it beside one.
+   */
+  const unusable = $derived.by(() => {
+    const all: Record<string, string | undefined> = {};
+    for (const one of $destinations) {
+      all[one.id] = reasonFor(one.id, one.retired === true);
+    }
+    for (const one of HAND) {
+      all[one.id] = refusalFor(one.id as ByHand, item, offline);
+    }
+    return all;
+  });
+
+  /** The note takes the caret the way the place line does when a place is taken. */
+  let note = $state<HTMLInputElement | undefined>(undefined);
+
+  $effect(() => {
+    if (hand === MANUAL) note?.focus();
+  });
+
+  /**
+   * `discard` acts when it is taken and nothing else in the list does. It needs
+   * no arguments and no second step, and making the queue's commonest gesture
+   * wait for a commit would spend three where the row used to spend one. What
+   * pays for the inconsistency is the offer in the corner.
+   */
+  function discard() {
+    // Read and done with before control is handed away: closing unmounts this
+    // component, and a prop read after that is nobody's.
+    const id = item.id;
+    const about = aboutItem(item);
+
+    void client.archive(id).catch((error: unknown) => {
+      notices.raise({ what: saidBy(error), about, standing: true });
+    });
+
+    notices.raise({
+      what: "discarded",
+      about,
+      standing: true,
+      only: DISCARD,
+      offer: {
+        label: "undo",
+        take: () => {
+          void client.unarchive(id).catch(() => {
+            notices.raise({ what: "could not undo", about, standing: true });
+          });
+        },
+      },
+    });
+
+    ondiscarded?.();
+    onclose();
+  }
+
+  /** Routing whose destination is the person, with what they wrote about it. */
+  async function mark() {
+    if (busy) return;
+
+    const note = went.trim();
+    busy = true;
+    said = "marking…";
+    try {
+      const record = await client.routing.markProcessed(
+        item.id,
+        note === "" ? undefined : note,
+      );
+      onrouted?.(record);
+      onclose();
+    } catch (error) {
+      said = saidBy(error);
+    } finally {
+      busy = false;
+    }
+  }
+
+  /** The one control here whose result is nowhere on the screen, so it says so. */
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(client.says(item));
+      copied = true;
+    } catch (error) {
+      said = saidBy(error);
+    }
   }
 
   /** I/O that may hang on an unmounted drive, so it happens for the chosen one alone. */
   async function choose(id: string) {
+    if (id === DISCARD) {
+      discard();
+      return;
+    }
+
+    if (id === MANUAL) {
+      hand = MANUAL;
+      return;
+    }
+
     chosen = id;
     described = undefined;
     capability = undefined;
@@ -300,7 +435,7 @@
     busy = true;
     said = "routing…";
     try {
-      const record = await client.routing.route(item, {
+      const record = await client.routing.route(item.id, {
         destination: chosen,
         ...(beside === undefined
           ? { capability, arguments: valuesFrom(fields, args) }
@@ -326,7 +461,7 @@
       field={field.name}
       label={title}
       value={args[field.name] ?? ""}
-      said={field.name === LINE_FIELD ? { content, item } : undefined}
+      said={field.name === LINE_FIELD ? { content, item: item.id } : undefined}
       onchange={(value) => (args = { ...args, [field.name]: value })}
       onsubmit={(beside) => void send(beside)}
       onrelease={release}
@@ -343,7 +478,13 @@
   {/if}
 {/snippet}
 
-<Modal title={chrome} {subject} wide={split} {onclose}>
+<Modal
+  title={chrome}
+  {subject}
+  wide={split}
+  onback={settled ? release : undefined}
+  {onclose}
+>
   <!-- Above `where` is where a decision that arrived pre-filled with an
        attribution goes. Nothing produces that shape yet. -->
 
@@ -366,7 +507,7 @@
           field={line.name}
           label={line.title ?? line.name}
           value={args[line.name] ?? ""}
-          said={{ content, item }}
+          said={{ content, item: item.id }}
           {places}
           onchange={(value) => (args = { ...args, [line.name]: value })}
           onsubmit={(beside) => void send(beside)}
@@ -376,10 +517,10 @@
         />
       {:else}
         <Group name="where">
-          {#if chosen === undefined}
+          {#if chosen === undefined && hand === undefined}
             <DestinationLine
-              destinations={$destinations}
-              unusable={refusing}
+              destinations={[...$destinations, ...HAND]}
+              {unusable}
               ontake={(id) => void choose(id)}
             />
           {/if}
@@ -387,11 +528,47 @@
             <Option
               label={one.name}
               chosen={chosen === one.id}
-              why={reasonFor(one.id, one.retired === true)}
+              why={unusable[one.id]}
               onchoose={() => void choose(one.id)}
             />
           {/each}
+
+          <!-- The band below the rule is what the shell invents: `manual` is a
+               destination the pool records and never lists, `discard` is not a
+               destination at all. A label claiming the two have something in
+               common would be saying more than is true. -->
+          <div class="mt-1.5 border-t border-ink pt-1.5">
+            {#each HAND as one (one.id)}
+              <Option
+                label={one.name}
+                chosen={hand === one.id}
+                why={unusable[one.id]}
+                onchoose={() => void choose(one.id)}
+              />
+            {/each}
+          </div>
         </Group>
+
+        {#if hand === MANUAL}
+          <Group name="where it went">
+            <input
+              bind:this={note}
+              bind:value={went}
+              onkeydown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void mark();
+                } else if (event.key === "Backspace" && went === "") {
+                  event.preventDefault();
+                  release();
+                }
+              }}
+              placeholder="optional"
+              aria-label="where it went"
+              class="w-full px-2 py-0.5 font-mono outline-none field placeholder:text-ink-muted"
+            />
+          </Group>
+        {/if}
 
         {#if capabilities.length > 0 && !settles}
           <Group name="do">
@@ -436,8 +613,20 @@
         {/each}
       {/if}
 
-      {#if chosen !== undefined}
-        <ComposerTags {item} names={tags} />
+      {#if chosen !== undefined || hand !== undefined}
+        <ComposerTags item={item.id} names={tags} />
+      {/if}
+
+      <!-- Offered and never automatic: taking `manual` says the thought was
+           carried onward, which may have happened by acting rather than
+           pasting, and the clipboard is not this composer's to overwrite
+           unasked. -->
+      {#if hand === MANUAL && copyable() && client.says(item) !== ""}
+        <div class="mt-6">
+          <Action onclick={() => void copy()}>
+            {copied ? "copied" : "copy text"}
+          </Action>
+        </div>
       {/if}
 
       {#if shown !== undefined}
@@ -459,15 +648,22 @@
       {/if}
 
       <Commit>
-        <Action primary disabled={!ready || busy} onclick={() => void send()}>
-          route
-        </Action>
-        <Action
-          disabled={!ready || busy || showing}
-          onclick={() => void show()}
-        >
-          {showing ? "asking…" : "preview"}
-        </Action>
+        <!-- One door, and the true verb at the moment there is one to say. -->
+        {#if hand === MANUAL}
+          <Action primary disabled={busy} onclick={() => void mark()}>
+            done
+          </Action>
+        {:else}
+          <Action primary disabled={!ready || busy} onclick={() => void send()}>
+            route
+          </Action>
+          <Action
+            disabled={!ready || busy || showing}
+            onclick={() => void show()}
+          >
+            {showing ? "asking…" : "preview"}
+          </Action>
+        {/if}
         <Action onclick={onclose}>cancel</Action>
         {#if said !== ""}
           <span role="status" class="text-ink-muted">{said}</span>

@@ -422,9 +422,9 @@ person. A `403` stays a refusal — an access token on a token route will not st
 ([core.md](core.md#the-queue)), and routing is a decision that must reach the pool
 ([sync.md](sync.md), [ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)):
 the outbox carries captures and classification, never deliveries. So a client that cannot reach
-the pool can capture, tag, archive and edit — triage — but cannot route or mark an item done. This
-asymmetry is deliberate and the interface makes it visible: an archive is available offline; a
-route or a mark-done is disabled until the pool is reachable, rather than queued into a promise the
+the pool can capture, tag, archive and edit — triage — but cannot route or mark an item processed.
+This asymmetry is deliberate and the interface makes it visible: an archive is available offline; a
+route or a marking is disabled until the pool is reachable, rather than queued into a promise the
 outbox cannot keep.
 
 **A preview and an output are reads that reach the pool, and neither is queued** (added

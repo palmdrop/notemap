@@ -31,49 +31,38 @@ function saying(text: string) {
   });
 }
 
-const marked = {
-  records: 1,
-  pending: 0,
-  to: [{ kind: "user" as const }],
-};
-
 function draw(item = anItem("one")) {
   pool((request) =>
-    routeOf(request) === "POST /v1/items/one/mark-processed"
-      ? json(200, {
-          id: "rec",
-          item: "one",
-          at: "2026-09-04T10:00:00.000Z",
-          state: "delivered",
-          target: { kind: "user" },
-        })
+    routeOf(request) === "POST /v1/items/one/unarchive"
+      ? json(200, anItem("one"))
       : json(200, { values: [] }),
   );
 
   return render(Actions, {
     item,
-    offline: false,
     address: "/items/one",
-    onroute: () => undefined,
+    onprocess: () => undefined,
     onedit: () => undefined,
   });
 }
 
-/** The lines as drawn, which is what "aligned" is a claim about. */
-function lines(container: Element) {
-  return [...(container.firstElementChild?.children ?? [])].map((line) =>
-    [...line.children].map((cell) => cell.textContent?.trim()),
+/** The line as drawn, which is what "beside each other" is a claim about. */
+function line(container: Element) {
+  return [...(container.firstElementChild?.children ?? [])].map((cell) =>
+    cell.textContent?.trim(),
   );
 }
 
-test("draws leaving the queue on one line and working with the item on the other", () => {
+/**
+ * One way out of the queue. Route, done and archive were three controls of
+ * unclear rank drawn as siblings; what differed between them is the composer's
+ * first step now, and four controls need no second line to be told apart.
+ */
+test("draws every action on one line", () => {
   clipboard();
   const { container } = draw(saying("a note"));
 
-  expect(lines(container)).toEqual([
-    ["route", "done", "archive"],
-    ["copy", "edit", "open"],
-  ]);
+  expect(line(container)).toEqual(["process", "copy", "edit", "open"]);
 });
 
 /**
@@ -85,10 +74,7 @@ test("offers no copy where the browser hands over no clipboard", () => {
   const { container } = draw(saying("a note"));
 
   expect(screen.queryByRole("button", { name: "copy" })).toBeNull();
-  expect(lines(container)).toEqual([
-    ["route", "done", "archive"],
-    ["edit", "open"],
-  ]);
+  expect(line(container)).toEqual(["process", "edit", "open"]);
 });
 
 test("offers no copy of a capture that says nothing", () => {
@@ -102,116 +88,26 @@ test("offers no copy of a capture that says nothing", () => {
   expect(screen.queryByRole("button", { name: "copy" })).toBeNull();
 });
 
-test("opens one field for where it went, and `⏎` sends it", async () => {
-  draw();
-  expect(screen.queryByLabelText("where it went")).toBeNull();
-
-  await fireEvent.click(screen.getByRole("button", { name: "done" }));
-
-  const field = screen.getByLabelText("where it went");
-  await fireEvent.input(field, {
-    target: { value: "pasted into the standup doc" },
-  });
-  await fireEvent.keyDown(field, { key: "Enter" });
-
-  await vi.waitFor(() => {
-    expect(asked()).toContain("POST /v1/items/one/mark-processed");
-  });
-  // Put away by the answer rather than by the keystroke, so a refusal has
-  // something to leave behind.
-  await vi.waitFor(() => {
-    expect(screen.queryByLabelText("where it went")).toBeNull();
-  });
-});
-
-test("sends an empty field as readily as a written one", async () => {
-  draw();
-
-  await fireEvent.click(screen.getByRole("button", { name: "done" }));
-  await fireEvent.keyDown(screen.getByLabelText("where it went"), {
-    key: "Enter",
-  });
-
-  await vi.waitFor(() => {
-    expect(asked()).toContain("POST /v1/items/one/mark-processed");
-  });
-});
-
-test("`esc` puts the field away without marking anything", async () => {
-  draw();
-
-  await fireEvent.click(screen.getByRole("button", { name: "done" }));
-  await fireEvent.keyDown(screen.getByLabelText("where it went"), {
-    key: "Escape",
-  });
-
-  expect(screen.queryByLabelText("where it went")).toBeNull();
-  expect(asked()).not.toContain("POST /v1/items/one/mark-processed");
-});
-
-/** The row's one typed thing: a refusal that emptied the field would take it. */
-test("keeps what was written when the pool refuses the decision", async () => {
-  pool((request) =>
-    routeOf(request) === "POST /v1/items/one/mark-processed"
-      ? json(400, { error: { code: "arguments-invalid" } })
-      : json(200, { values: [] }),
-  );
-
-  render(Actions, {
-    item: anItem("one"),
-    offline: false,
-    onroute: () => undefined,
-    onedit: () => undefined,
-  });
-
-  await fireEvent.click(screen.getByRole("button", { name: "done" }));
-  const field = screen.getByLabelText("where it went");
-  await fireEvent.input(field, { target: { value: "the standup doc" } });
-  await fireEvent.keyDown(field, { key: "Enter" });
-
-  await screen.findByRole("status");
-  expect(
-    (screen.getByLabelText("where it went") as HTMLInputElement).value,
-  ).toBe("the standup doc");
-});
-
 /**
- * A rule about the summary, not about the records: the row draws no records
- * while it is shut, and marking one twice is what the summary already answers.
+ * Discarding replays from the outbox, so the door has to open whatever the pool
+ * is doing. What a decision needs of it is said inside the composer.
  */
-test("does not offer `done` to an item whose summary already names the person", () => {
-  draw(anItem("one", { routing: marked }));
+test("never disables the way out", () => {
+  draw();
 
-  expect(screen.queryByRole("button", { name: "done" })).toBeNull();
-  expect(screen.getByRole("button", { name: "route" })).toBeDefined();
+  const process = screen.getByRole("button", { name: "process" });
+  expect((process as HTMLButtonElement).disabled).toBe(false);
 });
 
-test("goes on offering `done` where the summary names only a destination", () => {
-  draw(
-    anItem("one", {
-      routing: {
-        records: 1,
-        pending: 0,
-        to: [{ kind: "destination", destination: "vault-1" }],
-      },
-    }),
-  );
+test("asks nothing of the pool by being drawn", () => {
+  draw(anItem("one", { routing: { records: 1, pending: 0, to: [] } }));
 
-  expect(screen.getByRole("button", { name: "done" })).toBeDefined();
+  expect(asked()).toEqual([]);
 });
 
 test("copies the capture's text and says in the corner what it took", async () => {
   const held = clipboard();
-  draw(
-    anItem("one", {
-      payload: {
-        type: "text",
-        content: { text: "a note" },
-        metadata: {},
-        assets: [],
-      },
-    }),
-  );
+  draw(saying("a note"));
 
   await fireEvent.click(screen.getByRole("button", { name: "copy" }));
 
@@ -222,9 +118,23 @@ test("copies the capture's text and says in the corner what it took", async () =
   expect(notices.shown.at(-1)?.about).toContain("a note");
 });
 
-test("offers the way back on an archived item rather than a second archive", () => {
+/**
+ * Unarchiving puts an item back rather than sending it away, so it is not
+ * behind the door that means leaving.
+ */
+test("offers the way back on an archived item, beside the way out", async () => {
   draw(anItem("one", { archived: { archivedAt: "2026-09-04T10:00:00.000Z" } }));
 
-  expect(screen.getByRole("button", { name: "unarchive" })).toBeDefined();
-  expect(screen.queryByRole("button", { name: "archive" })).toBeNull();
+  expect(screen.getByRole("button", { name: "process" })).toBeDefined();
+  await fireEvent.click(screen.getByRole("button", { name: "unarchive" }));
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/unarchive");
+  });
+});
+
+test("offers no way back on an item that is not archived", () => {
+  draw();
+
+  expect(screen.queryByRole("button", { name: "unarchive" })).toBeNull();
 });

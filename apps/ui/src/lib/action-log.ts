@@ -68,7 +68,7 @@ export function noticeOf(
   if (action.kind === "routed") {
     const pointer = stringAt(detail, "pointer");
     return {
-      what: named === undefined ? "done" : `routed · ${named}`,
+      what: named === undefined ? "marked processed" : `routed · ${named}`,
       ...(pointer === undefined ? {} : { why: pointer }),
       ...where,
       ...(record === undefined ? {} : { key: keyFor(record) }),

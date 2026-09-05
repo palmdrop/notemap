@@ -48,7 +48,11 @@
     }
   }}
   onkeydown={(event) => {
-    if (event.key === "Escape") open = false;
+    if (event.key !== "Escape" || !open) return;
+    // Shutting this is what the key did here, so nothing above it — a composer
+    // stepping back, a modal closing — also acts on the one press.
+    event.stopPropagation();
+    open = false;
   }}
 >
   <button

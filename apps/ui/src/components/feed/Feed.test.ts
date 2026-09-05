@@ -180,9 +180,7 @@ test("says where a routed row went, without asking for its records", async () =>
   render(Feed);
 
   expect(await screen.findByText("routed")).toBeDefined();
-  expect(
-    await screen.findByText("Fiction, marked done · 1 pending"),
-  ).toBeDefined();
+  expect(await screen.findByText("Fiction, manual · 1 pending")).toBeDefined();
   expect(asked()).not.toContain("GET /v1/items/sent/routing");
 });
 
@@ -349,7 +347,7 @@ test("opens a row in place, with what the queue's row offers", async () => {
   await screen.findByText("one");
   await open();
 
-  expect(screen.getByRole("button", { name: "route" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "process" })).toBeDefined();
   expect(screen.getByRole("link", { name: "open" }).getAttribute("href")).toBe(
     "/items/one",
   );

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Destination } from "@notemap/client";
+  import type { Takeable } from "$lib/processing";
 
   /**
    * Typing narrows the destinations by name. An accelerator over the list
@@ -16,7 +16,12 @@
     unusable = {},
     ontake,
   }: {
-    destinations: readonly Destination[];
+    /**
+     * Everything the `where` step offers, which is the destinations and the two
+     * the shell invents. The line does not care which is which: a choice is a
+     * name to type and an id to hand back.
+     */
+    destinations: readonly Takeable[];
     /** Why one cannot be taken, by id. A reason is shown and the name stays. */
     unusable?: Record<string, string | undefined>;
     ontake: (id: string) => void;
@@ -72,18 +77,18 @@
     spellcheck="false"
     autocapitalize="off"
     autocomplete="off"
-    aria-label="which destination"
+    aria-label="what became of it"
     role="combobox"
     aria-autocomplete="list"
     aria-expanded={narrowed.length > 0}
-    aria-controls="destination-line-matches"
+    aria-controls="where-line-matches"
     class="w-full px-2 py-0.5 outline-none field"
   />
 
   <div
-    id="destination-line-matches"
+    id="where-line-matches"
     role="listbox"
-    aria-label="destinations"
+    aria-label="where it can go"
     class="mt-2"
   >
     {#each narrowed as one (one.id)}

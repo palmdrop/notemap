@@ -32,8 +32,7 @@
     first = false,
     pending = false,
     onopen,
-    onroute,
-    onwent,
+    onprocess,
   }: {
     item: Item;
     opened: boolean;
@@ -42,9 +41,7 @@
     first?: boolean;
     pending?: boolean;
     onopen: () => void;
-    onroute: () => void;
-    /** Absent on a surface that keeps the row it is about in front of the reader. */
-    onwent?: () => (going: string) => void;
+    onprocess: () => void;
   } = $props();
 
   let editing = $state(false);
@@ -126,11 +123,9 @@
   {#if opened}
     <Actions
       {item}
-      {offline}
       address={itemHref(item.id)}
-      onroute={() => onroute()}
+      onprocess={() => onprocess()}
       onedit={() => (editing = !editing)}
-      {onwent}
     />
   {/if}
 </Body>

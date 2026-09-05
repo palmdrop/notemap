@@ -66,7 +66,7 @@ test("a pending record reads as retrying, and claims no landing", () => {
 test("marking processed is routing to the person, and says so", () => {
   const said = saidOf(aRecord({ target: { kind: "user" } }), nameOf);
 
-  expect(said.what).toBe("marked done");
+  expect(said.what).toBe("marked processed");
 });
 
 test("a record on a row reads as its destination and the place it landed", () => {
@@ -94,12 +94,12 @@ test("a decision made by hand reads as done, with the note beside it", () => {
     nameOf,
   );
 
-  expect(said.said).toBe("done");
+  expect(said.said).toBe("manual");
   expect(said.aside).toBe("pasted into the standup doc");
 });
 
 test("a decision made by hand with nothing written says only done", () => {
   expect(wentTo(aRecord({ target: { kind: "user" } }), nameOf)).toEqual({
-    said: "done",
+    said: "manual",
   });
 });
