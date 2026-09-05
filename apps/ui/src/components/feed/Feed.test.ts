@@ -349,7 +349,7 @@ test("opens a row in place, with what the queue's row offers", async () => {
   await screen.findByText("one");
   await open();
 
-  expect(screen.getByRole("button", { name: "route" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "process" })).toBeDefined();
   expect(screen.getByRole("link", { name: "open" }).getAttribute("href")).toBe(
     "/items/one",
   );

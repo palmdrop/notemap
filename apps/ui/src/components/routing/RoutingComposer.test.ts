@@ -1,7 +1,12 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
 
-import { anItem, asked as sentTo, json, routeOf } from "@notemap/client/testing";
+import {
+  anItem,
+  asked as sentTo,
+  json,
+  routeOf,
+} from "@notemap/client/testing";
 
 import { online } from "$testing/dom";
 import { asked, client, pool } from "$testing/pool";
@@ -792,7 +797,9 @@ test("backspacing out of an empty line gives the destination back", async () => 
   await fireEvent.keyDown(line, { key: "Backspace" });
 
   await vi.waitFor(() => {
-    expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe("process");
+    expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe(
+      "process",
+    );
   });
   expect(
     screen.getByRole("combobox", { name: "which destination" }),
@@ -1436,7 +1443,9 @@ test("manual asks where it went and marks processed", async () => {
   const marked = sentTo(transport).find(
     (request) => routeOf(request) === "POST /v1/items/one/mark-processed",
   );
-  expect(await marked?.json()).toEqual({ note: "pasted into the fiction vault" });
+  expect(await marked?.json()).toEqual({
+    note: "pasted into the fiction vault",
+  });
 });
 
 test("an empty field tells the pool nothing beyond the fact", async () => {

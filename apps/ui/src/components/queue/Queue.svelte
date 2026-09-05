@@ -103,16 +103,8 @@
     opened = opened === id ? undefined : id;
   }
 
-  /**
-   * Where this row stands, read before the gesture rather than after it: the
-   * item has left the queue by the time the pool answers, and this row with it.
-   */
-  function departing(item: Item, before?: string) {
-    return (going: string) => lingering.after(item, going, before);
-  }
-
   /** Where the row stands now, read while it is still standing there. */
-  function route(item: Item, before?: string) {
+  function process(item: Item, before?: string) {
     routing = { item, ...(before === undefined ? {} : { before }) };
   }
 
@@ -150,8 +142,7 @@
         furled={rail.furled}
         pending={undrained.has(row.item.id)}
         onopen={() => show(row.item.id)}
-        onroute={() => route(row.item, rows[at + 1]?.item.id)}
-        onwent={() => departing(row.item, rows[at + 1]?.item.id)}
+        onprocess={() => process(row.item, rows[at + 1]?.item.id)}
       />
     {/if}
   {/each}

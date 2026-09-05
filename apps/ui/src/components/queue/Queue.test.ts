@@ -44,6 +44,22 @@ function open(at: number) {
   );
 }
 
+/**
+ * The composer, over a row that is already open. It is a modal and the row is
+ * behind it, so a test that moves on before it opens acts on whichever of the
+ * two happens to be there.
+ */
+async function process() {
+  await fireEvent.click(screen.getByRole("button", { name: "process" }));
+  await screen.findByRole("dialog");
+}
+
+/** Discarding acts when it is taken: no second step and no commit. */
+async function discard() {
+  await process();
+  await fireEvent.click(screen.getByRole("button", { name: /^discard/ }));
+}
+
 /** Where the person had scrolled, as the browser would report it. */
 function scrolledTo(at: number) {
   Object.defineProperty(window, "scrollY", { configurable: true, value: at });
@@ -66,7 +82,7 @@ test("puts the view back where the person left it, without asking the pool", asy
   expect(asked()).toEqual(["GET /v1/queue"]);
 });
 
-test("archives with the pool unreachable, and disables what it cannot queue", async () => {
+test("discards with the pool unreachable, and says what it cannot queue", async () => {
   const transport = pool(queued("one"));
   online(false);
 
@@ -77,14 +93,18 @@ test("archives with the pool unreachable, and disables what it cannot queue", as
   // Processing happens in the row, so the actions are behind opening it.
   await fireEvent.click(screen.getByRole("button", { expanded: false }));
 
-  const disabled = (name: string) =>
+  const disabled = (name: string | RegExp) =>
     (screen.getByRole("button", { name }) as HTMLButtonElement).disabled;
 
-  expect(disabled("done")).toBe(true);
-  expect(disabled("route")).toBe(true);
-  expect(disabled("archive")).toBe(false);
+  // The door itself never closes: what a decision needs of the pool is said
+  // inside, where discarding is the one that needs nothing.
+  expect(disabled("process")).toBe(false);
+  await process();
 
-  await fireEvent.click(screen.getByRole("button", { name: "archive" }));
+  expect(disabled(/^manual/)).toBe(true);
+  expect(disabled(/^discard/)).toBe(false);
+
+  await fireEvent.click(screen.getByRole("button", { name: /^discard/ }));
 
   // The pool never answered it, and the item left the queue all the same.
   await screen.findByText("nothing waiting");
@@ -98,7 +118,7 @@ test("opens one row at a time, in place", async () => {
   await screen.findByText("one");
 
   await open(0);
-  expect(screen.getAllByRole("button", { name: "archive" })).toHaveLength(1);
+  expect(screen.getAllByRole("button", { name: "process" })).toHaveLength(1);
   expect(screen.getAllByRole("button", { expanded: true })).toHaveLength(1);
 
   await open(0);
@@ -106,7 +126,7 @@ test("opens one row at a time, in place", async () => {
   // The second row's stamp, the first one now being expanded.
   const stamps = screen.getAllByRole("button", { expanded: true });
   expect(stamps).toHaveLength(1);
-  expect(screen.getAllByRole("button", { name: "archive" })).toHaveLength(1);
+  expect(screen.getAllByRole("button", { name: "process" })).toHaveLength(1);
 });
 
 /** The queue holds unrouted items, so opening one has nothing to ask about. */
@@ -121,7 +141,7 @@ test("opens a row without asking where an item has never been", async () => {
 
   await open(0);
 
-  expect(await screen.findByRole("button", { name: "route" })).toBeDefined();
+  expect(await screen.findByRole("button", { name: "process" })).toBeDefined();
   expect(asked()).not.toContain("GET /v1/items/one/routing");
 });
 
@@ -212,7 +232,7 @@ test("keeps a way into a row with the rail furled", async () => {
   await screen.findByText("one");
 
   await open(0);
-  expect(screen.getAllByRole("button", { name: "archive" })).toHaveLength(1);
+  expect(screen.getAllByRole("button", { name: "process" })).toHaveLength(1);
 });
 
 test("reads from the end the reader last chose, not the one the queue defaults to", async () => {
@@ -283,7 +303,7 @@ test("does not draw a refused operation as pending", async () => {
   await screen.findByText("one");
 
   await fireEvent.click(screen.getByRole("button", { expanded: false }));
-  await fireEvent.click(screen.getByRole("button", { name: "archive" }));
+  await discard();
 
   // The pool put the row back, and the operation it refused is still held.
   await vi.waitFor(() => {
@@ -478,8 +498,9 @@ test("a row that leaves the queue says where it went", async () => {
   await screen.findByText("one");
   await open(0);
 
-  await fireEvent.click(screen.getByRole("button", { name: "done" }));
-  await fireEvent.keyDown(screen.getByLabelText("where it went"), {
+  await process();
+  await fireEvent.click(screen.getByRole("button", { name: /^manual/ }));
+  await fireEvent.keyDown(await screen.findByLabelText("where it went"), {
     key: "Enter",
   });
 
@@ -488,17 +509,43 @@ test("a row that leaves the queue says where it went", async () => {
   });
 });
 
-test("archiving says so, the row having gone with no other trace", async () => {
+/** Archiving makes no record, so the corner is the only place its undo can sit. */
+test("discarding says so, and offers the row back", async () => {
   pool(queued("one"));
 
   render(Queue);
   await screen.findByText("one");
   await open(0);
 
-  await fireEvent.click(screen.getByRole("button", { name: "archive" }));
+  await discard();
 
   await vi.waitFor(() => {
-    expect(notices.shown.map((notice) => notice.what)).toContain("archived");
+    expect(notices.shown.map((notice) => notice.what)).toContain("discarded");
+  });
+  const said = notices.shown.at(-1);
+  expect(said?.standing).toBe(true);
+  expect(said?.offer?.label).toBe("undo");
+});
+
+test("one discard's offer stands at a time, however many rows go", async () => {
+  pool(queued("one", "two"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await open(0);
+  await discard();
+  await vi.waitFor(() => {
+    expect(notices.shown).toHaveLength(1);
+  });
+
+  await open(0);
+  await discard();
+
+  await vi.waitFor(() => {
+    expect(
+      notices.shown.filter((notice) => notice.what === "discarded"),
+    ).toHaveLength(1);
   });
 });
 
@@ -537,11 +584,11 @@ test("a row that has gone is watched out, wearing what became of it", async () =
   await screen.findByText("one");
   await open(0);
 
-  await fireEvent.click(screen.getByRole("button", { name: "archive" }));
+  await discard();
 
   // Gone from the queue and still on the register, saying what became of it.
   await vi.waitFor(() => {
-    expect(screen.getByText("archived")).toBeDefined();
+    expect(screen.getByText("discarded")).toBeDefined();
   });
   expect(screen.getByText("one")).toBeDefined();
 });
@@ -553,12 +600,11 @@ test("a departing row cannot be opened or acted on", async () => {
   render(Queue);
   await screen.findByText("one");
   await open(0);
-  await fireEvent.click(screen.getByRole("button", { name: "archive" }));
+  await discard();
 
   await vi.waitFor(() => {
-    expect(screen.queryByRole("button", { name: "archive" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "process" })).toBeNull();
   });
-  expect(screen.queryByRole("button", { name: "route" })).toBeNull();
   expect(screen.getByText("one")).toBeDefined();
 });
 
@@ -626,13 +672,10 @@ test("a routing says where it went, and which capture it was", async () => {
   await screen.findByText("the picker needs a trail");
   await open(0);
 
-  await fireEvent.click(screen.getByRole("button", { name: "route" }));
+  await process();
   await fireEvent.click(await screen.findByRole("button", { name: /Vault/ }));
   await fireEvent.click(await screen.findByRole("button", { name: /append/ }));
-
-  // Two of them: the row's action, and the composer's commit over it.
-  const commit = screen.getAllByRole("button", { name: "route" }).at(-1);
-  await fireEvent.click(commit as HTMLElement);
+  await fireEvent.click(screen.getByRole("button", { name: "route" }));
 
   await vi.waitFor(() => {
     expect(notices.shown).toHaveLength(1);
@@ -696,13 +739,10 @@ test("a routing the pool has not carried out says it is retrying", async () => {
   await screen.findByText("one");
   await open(0);
 
-  await fireEvent.click(screen.getByRole("button", { name: "route" }));
+  await process();
   await fireEvent.click(await screen.findByRole("button", { name: /Vault/ }));
   await fireEvent.click(await screen.findByRole("button", { name: /append/ }));
-
-  // Two of them: the row's action, and the composer's commit over it.
-  const commit = screen.getAllByRole("button", { name: "route" }).at(-1);
-  await fireEvent.click(commit as HTMLElement);
+  await fireEvent.click(screen.getByRole("button", { name: "route" }));
 
   await vi.waitFor(() => {
     expect(notices.shown[0]?.what).toBe("retrying · Vault");
@@ -769,12 +809,10 @@ test("a routed row is watched out from where it stood", async () => {
   // The middle row, so a departure from the foot and from the head both read
   // as wrong.
   await open(1);
-  await fireEvent.click(screen.getByRole("button", { name: "route" }));
+  await process();
   await fireEvent.click(await screen.findByRole("button", { name: /Vault/ }));
   await fireEvent.click(await screen.findByRole("button", { name: /append/ }));
-  await fireEvent.click(
-    screen.getAllByRole("button", { name: "route" }).at(-1) as HTMLElement,
-  );
+  await fireEvent.click(screen.getByRole("button", { name: "route" }));
 
   const word = await screen.findByText("routed");
 

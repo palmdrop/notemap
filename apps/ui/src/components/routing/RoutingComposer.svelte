@@ -325,9 +325,14 @@
    * pays for the inconsistency is the offer in the corner.
    */
   function discard() {
+    // Read and done with before control is handed away: closing unmounts this
+    // component, and a prop read after that is nobody's.
+    const id = item.id;
     const about = aboutItem(item);
-    ondiscarded?.();
-    onclose();
+
+    void client.archive(id).catch((error: unknown) => {
+      notices.raise({ what: saidBy(error), about, standing: true });
+    });
 
     notices.raise({
       what: "discarded",
@@ -337,16 +342,15 @@
       offer: {
         label: "undo",
         take: () => {
-          void client.unarchive(item.id).catch(() => {
+          void client.unarchive(id).catch(() => {
             notices.raise({ what: "could not undo", about, standing: true });
           });
         },
       },
     });
 
-    void client.archive(item.id).catch((error: unknown) => {
-      notices.raise({ what: saidBy(error), about, standing: true });
-    });
+    ondiscarded?.();
+    onclose();
   }
 
   /** Routing whose destination is the person, with what they wrote about it. */

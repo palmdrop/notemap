@@ -75,7 +75,7 @@
       furled={rail.furled}
       pending={undrained.has(item.id)}
       onopen={() => (opened = opened === item.id ? undefined : item.id)}
-      onroute={() => (routing = item)}
+      onprocess={() => (routing = item)}
     />
   {/each}
 

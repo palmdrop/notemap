@@ -103,7 +103,11 @@ test("that confirmation still goes on its own, leaving the failures behind", () 
 
 test("taking what a notice offered invokes it once and resolves the notice", () => {
   const put = vi.fn();
-  const id = notices.raise({ what: "discarded", standing: true, offer: { label: "undo", take: put } });
+  const id = notices.raise({
+    what: "discarded",
+    standing: true,
+    offer: { label: "undo", take: put },
+  });
 
   notices.take(id as string);
   notices.take(id as string);

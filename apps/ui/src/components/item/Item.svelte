@@ -116,8 +116,7 @@
 
       <Actions
         {item}
-        offline={!pool.yes}
-        onroute={() => (routing = true)}
+        onprocess={() => (routing = true)}
         onedit={() => (editing = !editing)}
       />
     </Body>
