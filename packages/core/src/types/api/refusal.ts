@@ -148,6 +148,17 @@ export type RoutingTemplateRefusal =
       readonly kind: "trigger-tag-taken";
       readonly tag: TagName;
       readonly template: RoutingTemplateId;
+    }
+  /** A pattern naming something no item has. Refused when it is written. */
+  | {
+      readonly kind: "unknown-pattern-field";
+      readonly pattern: string;
+      readonly field: string;
+    }
+  | {
+      readonly kind: "unknown-pattern-format";
+      readonly pattern: string;
+      readonly format: string;
     };
 
 export type PreparationRefusal =
@@ -195,6 +206,14 @@ export type CancelRefusal =
   | { readonly kind: "delivery-in-flight"; readonly record: RoutingRecordId };
 
 export type DeliveryRefusal = PreparationRefusal | AttemptFailure;
+
+/**
+ * Routing from a template is routing, plus the one thing only a template can be
+ * refused for. Nothing about the patterns is here: what saved expands.
+ */
+export type TemplateRoutingRefusal =
+  | DeliveryRefusal
+  | { readonly kind: "unknown-template"; readonly template: RoutingTemplateId };
 
 /**
  * A preview is refused for the reasons a route is refused, minus the ones about

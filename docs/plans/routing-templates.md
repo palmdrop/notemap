@@ -136,19 +136,19 @@ Depends on nothing in this plan; do it before phase 4.
 
 Depends on phases 2 and 3.
 
-- [ ] The expander in core, over the closed vocabulary in ADR 35's table. Applied to **string
+- [x] The expander in core, over the closed vocabulary in ADR 35's table. Applied to **string
       values only**, at every depth of the argument object, with the result validated against the
       capability's `argumentsSchema` exactly as a hand-made argument set is
-- [ ] **Expansion is statically total**: an unknown field or an unknown format refuses the write
+- [x] **Expansion is statically total**: an unknown field or an unknown format refuses the write
       when the template is saved, and every field in the table is present on every item, so there
       is no second refusal at route time
-- [ ] Routing from a template: one core method taking an item and a template, expanding, and
+- [x] Routing from a template: one core method taking an item and a template, expanding, and
       landing in the same `route` path a hand-made decision takes. The record stores the expanded
       arguments and the template's id
-- [ ] Tests: each pattern in the table, including the date being read in the capture's own offset;
+- [x] Tests: each pattern in the table, including the date being read in the capture's own offset;
       the static refusals; the expanded arguments reaching the record
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
+- [x] `git commit`
 
 ### Phase 5 — Folder modes
 

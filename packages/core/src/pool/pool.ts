@@ -90,6 +90,16 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
       create: (draft) => templates.create(ports, draft),
       edit: (id, changes) => templates.edit(ports, id, changes),
       delete: (id) => templates.remove(ports, id),
+      resolve: (item, id) => templates.resolve(config, ports, item, id),
+      route: (item, id, options) =>
+        templates.routeFrom(
+          config,
+          ports,
+          item,
+          id,
+          options?.firedByTag ?? false,
+          options?.signal,
+        ),
     },
 
     routing: {

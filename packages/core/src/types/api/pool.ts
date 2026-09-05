@@ -28,6 +28,7 @@ import type {
   RoutingTemplateChanges,
   RoutingTemplateDraft,
 } from "../domain/template";
+import type { ResolvedTemplate } from "../../pool/templates/apply";
 import type { Artifact, EnrichmentStatus } from "../domain/enrichment";
 import type {
   ArtifactId,
@@ -78,6 +79,7 @@ import type {
   DestinationDeletionRefusal,
   DestinationRefusal,
   RoutingTemplateRefusal,
+  TemplateRoutingRefusal,
   EditRefusal,
   EnrichmentRefusal,
   LeaseRefusal,
@@ -215,6 +217,27 @@ export interface TemplatesApi {
    * it, since the record carries what it routed as.
    */
   delete(id: RoutingTemplateId): Promise<Result<void, RoutingTemplateRefusal>>;
+
+  /**
+   * What this template would route this item as — the destination, the
+   * capability and the expanded arguments — reserving nothing. A different
+   * question from a preview, which answers bytes. Absent means no such item or
+   * no such template.
+   */
+  resolve(
+    item: ItemId,
+    id: RoutingTemplateId,
+  ): Promise<ResolvedTemplate | undefined>;
+
+  /**
+   * The decision, made from a template. Lands in the same path a hand-made one
+   * takes, with the arguments expanded and the record naming the template.
+   */
+  route(
+    item: ItemId,
+    id: RoutingTemplateId,
+    options?: { readonly firedByTag?: boolean; readonly signal?: AbortSignal },
+  ): Promise<Result<RoutingRecord, TemplateRoutingRefusal>>;
 }
 
 export interface RoutingApi {

@@ -11,6 +11,7 @@ import type {
   Timestamp,
 } from "#types/domain/ids";
 import type {
+  AppliedTemplate,
   DeliveryLanding,
   DeliveryOutcome,
   DeliveryRequest,
@@ -32,6 +33,8 @@ export async function route(
   item: ItemId,
   request: DeliveryRequest,
   signal?: AbortSignal,
+  /** Where the decision came from a template, which the record carries. */
+  applied?: AppliedTemplate,
 ): Promise<Routed> {
   const prepared = await prepare(ports, item, request, signal);
   // A record minted here would carry arguments nobody validated.
@@ -49,6 +52,7 @@ export async function route(
     },
     state: "pending",
     at: ports.clock.now(),
+    ...(applied === undefined ? {} : { applied }),
   };
 
   let outcome: DeliveryOutcome;

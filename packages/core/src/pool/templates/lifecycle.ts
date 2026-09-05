@@ -1,6 +1,7 @@
 import { recordAction } from "../actions";
 import { enqueueMirrorRemove, enqueueMirrorWrite } from "../mirror";
 import { normalised } from "../tags";
+import { checkPatterns } from "./patterns";
 import { sameJson } from "#utils/json";
 import { ok, refused } from "#utils/result";
 import type { PoolPorts, PoolTx } from "#types/api/ports";
@@ -40,6 +41,11 @@ export function create(
         kind: "unknown-destination",
         destination: draft.destination,
       });
+    }
+
+    const unwritable = checkPatterns(draft.arguments);
+    if (unwritable !== undefined) {
+      return refused<RoutingTemplate, RoutingTemplateRefusal>(unwritable);
     }
 
     const trigger = await triggerTag(tx, draft.triggerTag, undefined);
@@ -92,6 +98,13 @@ export function edit(
         kind: "unknown-destination",
         destination: changes.destination,
       });
+    }
+
+    if (changes.arguments !== undefined) {
+      const unwritable = checkPatterns(changes.arguments);
+      if (unwritable !== undefined) {
+        return refused<RoutingTemplate, RoutingTemplateRefusal>(unwritable);
+      }
     }
 
     const trigger =
