@@ -200,20 +200,20 @@ Depends on phase 5.
 
 Depends on phase 6. **The feature is usable at the end of this phase**, minus the firing.
 
-- [ ] Templates are a **band in the `where` list**, above the destinations, reached by the same
+- [x] Templates are a **band in the `where` list**, above the destinations, reached by the same
       typed prefix match and the same `⏎` on an only match — a third band under the rule idiom the
       list already uses for `manual` and `discard`
-- [ ] Taking one draws what it resolved to — the destination in the chrome, the expanded place on
+- [x] Taking one draws what it resolved to — the destination in the chrome, the expanded place on
       the line — and **leaves it editable**. A template is where the decision starts, not a form
       that refuses to be corrected
-- [ ] A template that cannot apply is **drawn with its reason and not removed**, which is the
+- [x] A template that cannot apply is **drawn with its reason and not removed**, which is the
       list's existing idiom: a stranded template, an unusable destination, a capability no longer
       declared. Never a pattern — expansion is statically total, so there is no such reason
-- [ ] The chrome reads `process · research`, and the commit reads `route`
-- [ ] Tests: taking a template fills the line; the resolved place is editable; an inapplicable
+- [x] The chrome reads `process · research`, and the commit reads `route`
+- [x] Tests: taking a template fills the line; the resolved place is editable; an inapplicable
       template draws its reason
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
+- [x] `git commit`
 
 ### Phase 8 — Templates in settings, and what cannot support them
 

@@ -9,7 +9,7 @@ import {
 } from "@notemap/client/testing";
 
 import { online } from "$testing/dom";
-import { asked, client, pool } from "$testing/pool";
+import { asked, client, pool, sent } from "$testing/pool";
 import { notices } from "$lib/notices.svelte";
 import { NO_PREVIEW_OFFERED, PREVIEW_IS_INDICATIVE } from "$lib/said";
 import ProcessingComposer from "./ProcessingComposer.svelte";
@@ -112,10 +112,14 @@ function serving(
       truncated: false,
     },
   },
+  templates: readonly Record<string, unknown>[] = [],
 ) {
   return pool((request) => {
     const route = routeOf(request);
     if (route === "GET /v1/destinations") return json(200, { values: held });
+    if (route === "GET /v1/templates") {
+      return json(200, { values: templates });
+    }
     if (route.endsWith("/description")) return json(200, description);
     if (route === "POST /v1/items/one/route/preview") {
       return json(200, preview);
@@ -206,19 +210,120 @@ function draw(item = aCapture()) {
 const choose = async (name: string | RegExp) =>
   fireEvent.click(await screen.findByRole("button", { name }));
 
+const RESEARCH = {
+  id: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a80",
+  name: "research",
+  destination: VAULT,
+  capability: "create-file",
+  arguments: { directory: "research/{{captured_at}}" },
+  folder: "create",
+  triggerTag: "route/research",
+};
+
+/** Answers the resolve every taken template asks for, and the route it commits with. */
+function servingTemplates(
+  templates: readonly Record<string, unknown>[] = [RESEARCH],
+  resolved: Record<string, unknown> = {
+    destination: VAULT,
+    capability: "create-file",
+    arguments: { directory: "research/2026-09-04" },
+  },
+) {
+  return pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route === "GET /v1/templates") return json(200, { values: templates });
+    if (route === "GET /v1/items/one/route/resolve") {
+      return json(200, resolved);
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE_FILE] });
+    }
+    if (route === "POST /v1/items/one/route") {
+      return json(200, {
+        id: "r",
+        item: "one",
+        state: "delivered",
+        target: {},
+      });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+}
+
+test("takes a template, draws what it resolved to, and leaves it editable", async () => {
+  servingTemplates();
+
+  draw();
+  await choose("research");
+
+  const directory = (await screen.findByLabelText(
+    "directory",
+  )) as HTMLInputElement;
+  expect(directory.value).toBe("research/2026-09-04");
+  expect(screen.getByLabelText("process · research")).toBeTruthy();
+
+  await fireEvent.input(directory, { target: { value: "reading/2026" } });
+  expect(directory.value).toBe("reading/2026");
+});
+
+test("commits an untouched template as the template, so the record names it", async () => {
+  servingTemplates();
+
+  draw();
+  await choose("research");
+  await screen.findByLabelText("directory");
+  await choose("route");
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+  expect(await sent()).toContainEqual({ template: RESEARCH.id });
+});
+
+test("commits a corrected one as the decision it became", async () => {
+  servingTemplates();
+
+  draw();
+  await choose("research");
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "reading/2026" },
+  });
+  await choose("route");
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+  expect(await sent()).toContainEqual({
+    destination: VAULT,
+    capability: "create-file",
+    arguments: { directory: "reading/2026" },
+  });
+});
+
+test("draws a stranded template with its reason rather than removing it", async () => {
+  servingTemplates([{ ...RESEARCH, destination: BOARD }]);
+
+  draw();
+
+  const option = await screen.findByRole("button", { name: /research/ });
+  expect(option.textContent).toContain("its destination was deleted");
+});
+
 /** The list is pool state; what one can do is I/O, and only the chosen one pays for it. */
 test("describes the destination that was chosen and no other", async () => {
   serving([aDestination(), aDestination({ id: BOARD, name: "Board" })]);
 
   draw();
   await screen.findByRole("button", { name: /Vault/ });
-  expect(asked()).toEqual(["GET /v1/destinations"]);
+  expect(asked().filter((each) => each.endsWith("/description"))).toEqual([]);
 
   await choose(/Vault/);
   await screen.findByRole("button", { name: /create-file/ });
 
-  expect(asked()).toEqual([
-    "GET /v1/destinations",
+  expect(asked().filter((each) => each.endsWith("/description"))).toEqual([
     `GET /v1/destinations/${VAULT}/description`,
   ]);
 });
