@@ -18,10 +18,21 @@ export function pickable(onpick: () => void) {
   };
 }
 
-/** The gesture that leaves the surface rather than opening in place. */
+/** Whether the double the browser just handled took a word out of the page. */
+function selecting(): boolean {
+  const selection = window.getSelection();
+  return selection !== null && !selection.isCollapsed;
+}
+
+/**
+ * The gesture that leaves the surface rather than opening in place — except
+ * where the browser has already spent it: a double click on prose selects the
+ * word under it, which is what a person reaching for a capture's text is doing,
+ * and navigating out from under a selection they just made is not that.
+ */
 export function doubled(ondouble: () => void) {
   return (event: MouseEvent) => {
-    if (inside(event)) return;
+    if (inside(event) || selecting()) return;
     ondouble();
   };
 }
