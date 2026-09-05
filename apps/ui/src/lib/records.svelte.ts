@@ -16,8 +16,10 @@ export function recordsOf(item: () => string | undefined, when: () => boolean) {
   let drawn = $state<readonly RoutingRecord[]>([]);
   let refused = $state("");
   let settled = $state(false);
+  let again = $state(0);
 
   $effect(() => {
+    void again;
     const wanted = item();
     drawn = [];
     refused = "";
@@ -51,6 +53,10 @@ export function recordsOf(item: () => string | undefined, when: () => boolean) {
     /** Whether the pool has answered for this item, an empty answer included. */
     get settled() {
       return settled;
+    },
+    /** A decision taken back leaves what is drawn a record out of date. */
+    reread() {
+      again += 1;
     },
   };
 }

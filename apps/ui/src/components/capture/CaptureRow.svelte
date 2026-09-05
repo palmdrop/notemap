@@ -17,6 +17,24 @@
   let picker: HTMLInputElement;
   let box = $state<HTMLTextAreaElement | undefined>(undefined);
 
+  /**
+   * The bytes as the browser can draw them. A picture goes up with the capture
+   * and cannot be taken back once it has, so it is looked at before it is sent
+   * rather than recognised afterwards in the feed.
+   */
+  let preview = $state<string | undefined>(undefined);
+
+  $effect(() => {
+    if (chosen === undefined) {
+      preview = undefined;
+      return;
+    }
+
+    const url = URL.createObjectURL(chosen);
+    preview = url;
+    return () => URL.revokeObjectURL(url);
+  });
+
   // The queue is where capture happens, and this is the first row of it.
   $effect(() => box?.focus());
 
@@ -46,8 +64,12 @@
     chosen = (event.currentTarget as HTMLInputElement).files?.[0];
   }
 
-  async function submit(event: SubmitEvent) {
-    event.preventDefault();
+  function drop() {
+    chosen = undefined;
+    picker.value = "";
+  }
+
+  async function capture() {
     if (chosen === undefined && text.trim() === "") return;
 
     busy = true;
@@ -80,14 +102,45 @@
 </Rail>
 
 <Body first>
-  <form onsubmit={submit}>
+  <form
+    onsubmit={(event) => {
+      event.preventDefault();
+      void capture();
+    }}
+  >
     <textarea
       bind:this={box}
       bind:value={text}
       placeholder="Anything worth keeping…"
+      onkeydown={(event) => {
+        // The one keystroke that commits from inside the field a capture is
+        // written in: `⏎` there is a new line, which prose wants.
+        if (event.key === "Enter" && event.shiftKey) {
+          event.preventDefault();
+          void capture();
+        }
+      }}
       aria-label="What to capture"
       class="min-h-18 w-full resize-y bg-transparent font-prose text-prose outline-none placeholder:text-ink-muted"
     ></textarea>
+
+    {#if chosen !== undefined}
+      <div class="mt-3 flex items-end gap-4 font-mono">
+        {#if preview !== undefined}
+          <img
+            src={preview}
+            alt="What is about to be captured"
+            class="size-21 border border-ink object-cover"
+          />
+        {/if}
+        <span class="min-w-0 break-words text-ink-muted">{chosen.name}</span>
+        <button
+          type="button"
+          onclick={drop}
+          class="shrink-0 text-ink-muted hover:text-accent">drop</button
+        >
+      </div>
+    {/if}
 
     <ActionRow>
       <Action primary submit disabled={busy}>capture</Action>
@@ -102,9 +155,6 @@
         class="hidden"
       />
 
-      {#if chosen !== undefined}
-        <span class="break-words text-ink-muted">{chosen.name}</span>
-      {/if}
       {#if said !== ""}
         <!-- Only a failure reaches this: the capture itself waits on nothing. -->
         <span role="status" class="text-accent">{said}</span>

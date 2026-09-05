@@ -39,3 +39,15 @@
     opacity: 0.7;
   }
 }
+
+/**
+ * A typed field is a ground and never a rule, which leaves a rule meaning one
+ * thing: a division between bands. On a row that is itself filled it takes the
+ * paper back — a fainter fill over a fill is no field at all.
+ */
+@utility field {
+  background: var(
+    --field-ground,
+    color-mix(in oklab, var(--color-ink) 5%, var(--color-paper))
+  );
+}

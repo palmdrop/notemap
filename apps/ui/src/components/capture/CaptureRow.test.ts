@@ -111,3 +111,86 @@ test("stamps a typed note and a picture with different channels", async () => {
   expect(named).toEqual([minted]);
   expect(minted).not.toBe("");
 });
+
+/** jsdom draws nothing, so it implements no handle on a blob's bytes either. */
+function stubObjectUrls(): void {
+  URL.createObjectURL = vi.fn(() => "blob:held");
+  URL.revokeObjectURL = vi.fn();
+}
+
+const shot = () => new File(["bytes"], "shot.png", { type: "image/png" });
+
+async function attach(file = shot()) {
+  await fireEvent.change(screen.getByLabelText("A picture to capture"), {
+    target: { files: [file] },
+  });
+}
+
+/**
+ * A picture goes up with the capture and cannot be taken back once it has, so
+ * it is looked at before it is sent rather than recognised afterwards.
+ */
+test("draws an attached picture before it is committed, and offers a way to drop it", async () => {
+  stubObjectUrls();
+  pool(() => empty.clone());
+
+  render(CaptureRow);
+  await attach();
+
+  const drawn = await screen.findByAltText("What is about to be captured");
+  expect(drawn.getAttribute("src")).toBe("blob:held");
+  expect(screen.getByText("shot.png")).toBeDefined();
+
+  await fireEvent.click(screen.getByRole("button", { name: "drop" }));
+
+  expect(screen.queryByAltText("What is about to be captured")).toBeNull();
+  expect(screen.queryByText("shot.png")).toBeNull();
+});
+
+test("a dropped picture is not sent with the capture that follows", async () => {
+  stubObjectUrls();
+  const sent: Envelope[] = [];
+  pool(async (request) => {
+    if (routeOf(request) !== "POST /v1/captures") return empty.clone();
+    const envelope = (await request.json()) as Envelope;
+    sent.push(envelope);
+    return json(201, {
+      kind: "captured",
+      item: anItem(envelope.id),
+      matchedOn: "id",
+    });
+  });
+
+  render(CaptureRow);
+  await attach();
+  await fireEvent.click(screen.getByRole("button", { name: "drop" }));
+  await capture("just words");
+
+  await vi.waitFor(() => expect(sent).toHaveLength(1));
+  expect(sent[0]?.payload.assets).toEqual([]);
+});
+
+/** `⏎` in the field is a new line, which is what prose wants. */
+test("commits the capture with shift-enter from the field it is written in", async () => {
+  pool(async (request) => {
+    if (routeOf(request) !== "POST /v1/captures") return empty.clone();
+    const envelope = (await request.json()) as Envelope;
+    return json(201, {
+      kind: "captured",
+      item: anItem(envelope.id),
+      matchedOn: "id",
+    });
+  });
+
+  render(CaptureRow);
+  const written = screen.getByLabelText(
+    "What to capture",
+  ) as HTMLTextAreaElement;
+  await fireEvent.input(written, { target: { value: "sent by keystroke" } });
+
+  await fireEvent.keyDown(written, { key: "Enter" });
+  expect(written.value).toBe("sent by keystroke");
+
+  await fireEvent.keyDown(written, { key: "Enter", shiftKey: true });
+  await cleared(written);
+});

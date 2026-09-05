@@ -98,8 +98,10 @@ test("draws a record in full, against the capability's own schema", async () => 
 
   expect(await screen.findByText("Fiction vault")).toBeDefined();
   expect(screen.getByText("create-note")).toBeDefined();
-  expect(screen.getByText("delivered")).toBeDefined();
   expect(screen.getByText(dayOf(RECORD.at))).toBeDefined();
+
+  // A record that is not saying otherwise was delivered, so it does not say it.
+  expect(screen.queryByText("delivered")).toBeNull();
 
   // The titles the destination gives its fields, not the keys behind them.
   expect(await screen.findByText("Directory")).toBeDefined();

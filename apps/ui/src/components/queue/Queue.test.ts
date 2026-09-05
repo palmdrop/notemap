@@ -16,11 +16,18 @@ import Queue from "./Queue.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
+/** Leaving the surface needs a router, and there is none outside the app. */
+const went = vi.hoisted(() => ({ to: [] as string[] }));
+vi.mock("$app/navigation", () => ({
+  goto: (url: string) => void went.to.push(url),
+}));
+
 // Module-scoped reading preference, so a test that furls the rail unfurls it.
 afterEach(() => {
   if (rail.furled) rail.toggle();
   notices.clear();
   lingering.clear();
+  went.to = [];
 });
 
 function queued(...ids: string[]) {
@@ -73,14 +80,14 @@ test("archives with the pool unreachable, and disables what it cannot queue", as
   const disabled = (name: string) =>
     (screen.getByRole("button", { name }) as HTMLButtonElement).disabled;
 
-  expect(disabled("mark done")).toBe(true);
+  expect(disabled("done")).toBe(true);
   expect(disabled("route")).toBe(true);
   expect(disabled("archive")).toBe(false);
 
   await fireEvent.click(screen.getByRole("button", { name: "archive" }));
 
   // The pool never answered it, and the item left the queue all the same.
-  await screen.findByText("zero");
+  await screen.findByText("nothing waiting");
   expect(asked()).toContain("POST /v1/items/one/archive");
 });
 
@@ -114,7 +121,7 @@ test("opens a row without asking where an item has never been", async () => {
 
   await open(0);
 
-  expect(await screen.findByText("payload")).toBeDefined();
+  expect(await screen.findByRole("button", { name: "route" })).toBeDefined();
   expect(asked()).not.toContain("GET /v1/items/one/routing");
 });
 
@@ -123,7 +130,7 @@ test("draws the way to add to the queue even when the queue is empty", async () 
 
   render(Queue);
 
-  expect(await screen.findByText("zero")).toBeDefined();
+  expect(await screen.findByText("nothing waiting")).toBeDefined();
   expect(screen.getByLabelText("What to capture")).toBeDefined();
 });
 
@@ -132,10 +139,10 @@ test("reads the drained queue as the thing it was working toward", async () => {
 
   render(Queue);
 
-  // The state word idiom, which is what the register says became of a thing.
-  expect(await screen.findByText("zero")).toBeDefined();
-  expect(screen.getByText(/The queue is empty/)).toBeDefined();
-  expect(screen.queryByText(/Empty —/)).toBeNull();
+  // Once, quietly, in the rail. Not a state word, and not a paragraph.
+  expect(await screen.findByText("nothing waiting")).toBeDefined();
+  expect(screen.queryByText("zero")).toBeNull();
+  expect(screen.queryByText(/The queue is empty/)).toBeNull();
 });
 
 test("offers the edit on an unprocessed row and not on a processed one", async () => {
@@ -189,9 +196,11 @@ test("says on the row it opens when an item was last touched", async () => {
   await open(0);
   expect(await screen.findByText(briefly(touchedAt))).toBeDefined();
 
-  // The other row, which is now the only collapsed one left.
+  // A row with no edit says nothing about one: an absent fact already reads
+  // as no, and three words spent saying it is three words nobody reads.
   await open(0);
-  expect(await screen.findByText("not since capture")).toBeDefined();
+  expect(screen.queryByText("not since capture")).toBeNull();
+  expect(screen.queryAllByText("edited")).toHaveLength(0);
 });
 
 /** Furling hides the rail, and the stamp is the only way into a row. */
@@ -247,7 +256,7 @@ test("says a capture is pending until the pool has taken it", async () => {
   );
 
   render(Queue);
-  await screen.findByText("zero");
+  await screen.findByText("nothing waiting");
   transport.unreachable(true);
 
   await capture("made with the pool out of reach");
@@ -279,7 +288,7 @@ test("does not draw a refused operation as pending", async () => {
   // The pool put the row back, and the operation it refused is still held.
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/archive");
-    expect(screen.queryByText("zero")).toBeNull();
+    expect(screen.queryByText("nothing waiting")).toBeNull();
   });
   expect(screen.queryByText("pending")).toBeNull();
 });
@@ -295,7 +304,7 @@ test("says nothing in the register about a queue the pool has not answered for",
   // register repeats neither that nor what the surface is drawn from.
   expect(screen.queryByText("queue")).toBeNull();
   expect(screen.queryByText("the daemon is not reachable")).toBeNull();
-  expect(screen.queryByText("zero")).toBeNull();
+  expect(screen.queryByText("nothing waiting")).toBeNull();
 });
 
 test("offers no page it cannot fetch while the pool is out of reach", async () => {
@@ -353,7 +362,7 @@ test("draws a picture before it is sent, and the pool's copy after", async () =>
   });
 
   render(Queue);
-  await screen.findByText("zero");
+  await screen.findByText("nothing waiting");
   transport.unreachable(true);
 
   await fireEvent.change(screen.getByLabelText("A picture to capture"), {
@@ -439,10 +448,12 @@ test("keeps a record to one line on the opened row, and makes it the way in", as
   await screen.findByText("one");
   await open(0);
 
-  // A summary and nothing more: what the record was given is read elsewhere.
-  const line = await screen.findByRole("link", { name: /create-note/ });
+  // Where it went and the place it landed: the capability is the adapter's
+  // word and delivered is what a record with no alarm on it already means.
+  const line = await screen.findByRole("link", { name: /drafts/ });
   expect(line.getAttribute("href")).toBe("/items/one/records/rec");
-  expect(screen.queryByText("drafts")).toBeNull();
+  expect(screen.queryByText(/create-note/)).toBeNull();
+  expect(screen.queryByText(/delivered/)).toBeNull();
 });
 
 test("a row that leaves the queue says where it went", async () => {
@@ -467,7 +478,10 @@ test("a row that leaves the queue says where it went", async () => {
   await screen.findByText("one");
   await open(0);
 
-  await fireEvent.click(screen.getByRole("button", { name: "mark done" }));
+  await fireEvent.click(screen.getByRole("button", { name: "done" }));
+  await fireEvent.keyDown(screen.getByLabelText("where it went"), {
+    key: "Enter",
+  });
 
   await vi.waitFor(() => {
     expect(notices.shown.map((notice) => notice.what)).toContain("marked done");
@@ -770,4 +784,19 @@ test("a routed row is watched out from where it stood", async () => {
 
   expect(after).toBeTruthy();
   expect(before).toBeTruthy();
+});
+
+test("goes to the item's own surface on a double click, and leaves the row open", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  const body = await screen.findByText("one");
+
+  await fireEvent.click(body, { detail: 1 });
+  await fireEvent.click(body, { detail: 2 });
+  await fireEvent.dblClick(body);
+
+  expect(went.to).toEqual(["/items/one"]);
+  // The second click of a double is not a toggle: open, nothing, go.
+  expect(screen.getAllByRole("button", { expanded: true })).toHaveLength(1);
 });

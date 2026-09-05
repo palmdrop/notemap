@@ -1,15 +1,12 @@
 <script lang="ts">
   import Body from "$components/primitives/register/Body.svelte";
-  import Prose from "$components/primitives/text/Prose.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
-  import StateWord from "$components/primitives/marks/StateWord.svelte";
-  import { DRAINED } from "$lib/said";
 </script>
 
-<!-- No count: the pool gives none, and reaching the end is the only one. -->
+<!-- Reaching the end is what the queue is for, so it is said the way the shell
+     says everything else it has done: once, quietly, and in the rail. No count,
+     because the pool gives none. -->
 <Rail>
-  <div class="cleared"><StateWord word="zero" /></div>
+  <div class="cleared text-ink-muted">nothing waiting</div>
 </Rail>
-<Body>
-  <div class="cleared"><Prose text={DRAINED} /></div>
-</Body>
+<Body></Body>

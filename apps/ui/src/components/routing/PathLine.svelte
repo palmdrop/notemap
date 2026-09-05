@@ -9,7 +9,6 @@
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import { client } from "$lib/client";
   import { forecastOf, type Said } from "$lib/forecast";
-  import { whenOf } from "$lib/when";
   import {
     completionOf,
     continuationOf,
@@ -41,9 +40,12 @@
     label,
     value,
     said,
+    places = [],
     onchange,
     onsubmit,
     onrelease,
+    onforecast,
+    onwalk,
   }: {
     destination: string;
     capability: string;
@@ -56,6 +58,12 @@
      * drawing a field that is not a note's place.
      */
     said?: Said;
+    /**
+     * Places routed to before, as the pool answered them. They are drawn in the
+     * column beside this one and reached from here, `↑↓` walking the two lists
+     * as one — a keyboard reaching less than the pointer would be two lists.
+     */
+    places?: readonly RememberedPlace[];
     onchange: (value: string) => void;
     /**
      * `⏎` on the line commits the whole composer. `beside` is `⇧⏎`: make a new
@@ -64,14 +72,14 @@
     onsubmit?: (beside?: string) => void;
     /** Backspacing past the head of an empty line: a wrong destination is not a reason to close. */
     onrelease?: () => void;
+    /** What committing now would do, which decides what else the composer asks. */
+    onforecast?: (word: "create" | "append" | undefined) => void;
+    /** Which of `places` the walk has landed on, for the column that draws them. */
+    onwalk?: (at: number | undefined) => void;
   } = $props();
 
   let levels = $state<readonly Level[]>([]);
-  /** As the pool answered them. Whether one is still there is marked against the listing, which arrives separately. */
-  let places = $state<readonly RememberedPlace[]>([]);
   let at = $state(0);
-  /** Read once when the line opens: a list that re-dated itself as you typed would be noise. */
-  const now = Date.now();
   /** Whether `↑↓` has been used since the list last changed, which is what makes `⏎` mean *take this one*. */
   let moved = $state(false);
   let input = $state<HTMLInputElement | undefined>(undefined);
@@ -105,18 +113,20 @@
   const refusal = $derived(levels[0]?.refusal);
   const why = $derived(levels[0]?.why);
 
+  /**
+   * Whether a remembered place is still there is checked for one reason now:
+   * a vanished one is kept out of the greyed continuation, which is the thing a
+   * person takes without reading.
+   */
   const checked = $derived(marked(places, levels));
-  const remembered = $derived(continuing(value, checked));
+  const remembered = $derived(continuing(value, places));
   const ghost = $derived(ghostFor(value, checked));
-
-  /** The line as typed names a place that was routed to and is not there now. */
-  const goneHere = $derived(
-    checked.some((place) => place.value === value && place.gone),
-  );
 
   const forecast = $derived(
     said === undefined ? undefined : forecastOf(levels, value, said),
   );
+
+  $effect(() => onforecast?.(forecast?.word));
 
   /**
    * The typed tail that is not there yet, drawn under the deepest folder that
@@ -146,6 +156,17 @@
     ...here.map((row) => ({ kind: "entry" as const, row })),
   ]);
 
+  /**
+   * Where the walk stands, said as a position in `places` rather than in the
+   * narrowed list: the column drawing them narrows separately, and two lists
+   * that must filter alike to agree on an index agree by luck.
+   */
+  const walked = $derived(
+    moved && at < remembered.length ? places.indexOf(remembered[at]!) : -1,
+  );
+
+  $effect(() => onwalk?.(walked === -1 ? undefined : walked));
+
   // The place is what a composer with a destination in its chrome is for, so
   // the caret is here rather than waiting to be clicked into.
   $effect(() => input?.focus());
@@ -171,31 +192,6 @@
     }, 120);
 
     return () => clearTimeout(timer);
-  });
-
-  $effect(() => {
-    const wanted = { destination, capability, field };
-    let live = true;
-
-    void (async () => {
-      try {
-        const answer = await client.destinations.remembered(
-          wanted.destination,
-          {
-            capability: wanted.capability,
-            field: wanted.field,
-          },
-        );
-        if (live) places = answer.places;
-      } catch {
-        // The pool answering nothing costs the line its ghost and nothing else.
-        if (live) places = [];
-      }
-    })();
-
-    return () => {
-      live = false;
-    };
   });
 
   async function askAbout(scope: string): Promise<Level> {
@@ -266,9 +262,12 @@
 
   function onkeydown(event: KeyboardEvent): void {
     if (event.key === "Tab" && !event.shiftKey) {
+      // With nothing to complete it does nothing, rather than handing focus to
+      // whatever is next: the line is what the composer is for, and leaving it
+      // is `⇧⇥` or the pointer.
+      event.preventDefault();
       const finished = completionOf(caretIn?.entries ?? [], path.typing);
       if (finished === undefined) return;
-      event.preventDefault();
       onchange(withTyping(path, finished));
       return;
     }
@@ -310,10 +309,10 @@
         return;
       }
 
-      const chosen = choices[at];
+      const picked = choices[at];
       // `↑↓` having moved is what makes `⏎` mean *take this one*; left alone it
       // means *route*, which is the ordinary way through the line.
-      if (moved && chosen !== undefined) taken(chosen);
+      if (moved && picked !== undefined) taken(picked);
       else onsubmit?.();
       return;
     }
@@ -334,17 +333,28 @@
   const settled = $derived(
     path.complete.length === 0 ? "" : `${path.complete.join("/")}/`,
   );
+
+  /** Whichever list the walk is in, both being one list to the keyboard. */
+  const active = $derived(
+    !moved || choices[at] === undefined
+      ? undefined
+      : walked !== -1
+        ? `used-before-place-${walked}`
+        : `path-line-place-${at}`,
+  );
 </script>
 
 <div class="font-mono">
-  <div class="relative border-b border-ink">
+  <!-- A typed field is a ground and never a rule, so the only rule in the
+       modal is the chrome's. -->
+  <div class="relative px-2 py-0.5 field">
     <!-- The input's own text is transparent and this is what is read, so the
          settled part of the path and the one being typed can be drawn
          differently. Alignment is exact: one monospace face, one size. -->
     <div
       bind:this={shown}
       aria-hidden="true"
-      class="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre"
+      class="pointer-events-none absolute inset-0 overflow-hidden px-2 py-0.5 whitespace-pre"
     >
       <span class="text-ink-muted">{settled}</span><span class="text-ink"
         >{path.typing}</span
@@ -353,6 +363,9 @@
         >{/if}
     </div>
 
+    <!-- `aria-controls` names both lists because `↑↓` walks both: an active
+         option in one this did not name is somewhere a reader was told not to
+         look. `used-before-places` is drawn in the column beside this one. -->
     <input
       bind:this={input}
       {value}
@@ -371,27 +384,19 @@
       role="combobox"
       aria-autocomplete="list"
       aria-expanded={choices.length > 0}
-      aria-controls="path-line-places"
-      aria-activedescendant={moved && choices[at] !== undefined
-        ? `path-line-place-${at}`
-        : undefined}
+      aria-controls="used-before-places path-line-places"
+      aria-activedescendant={active}
       class="relative w-full bg-transparent text-transparent caret-ink outline-none"
     />
   </div>
 
   {#if refusal !== undefined}
-    <p class="mt-2 text-ink-muted" title={why}>{refusal}</p>
+    <p class="mt-3.5 text-ink-muted" title={why}>{refusal}</p>
   {:else if forecast !== undefined}
-    <!-- The folders to be made are drawn in the tree below, where they will
-         be, rather than listed here beside the word. -->
-    <div class="mt-2 flex items-baseline gap-x-3">
+    <!-- The name a derived leaf would get is not said here: the tree draws it
+         where the note lands, which is where the eye already is. -->
+    <div class="mt-3.5 flex items-baseline gap-x-3">
       <StateWord word={forecast.word} inline />
-      {#if forecast.derived}
-        <span class="truncate text-ink-muted">{forecast.leaf}</span>
-      {/if}
-      {#if goneHere}
-        <StateWord word="gone" inline />
-      {/if}
       {#if forecast.beside !== undefined}
         <!-- Beside the state it overrides rather than in the key hints:
              adding to somebody's note when a new one was meant is the one
@@ -408,55 +413,31 @@
     </div>
   {/if}
 
-  <div id="path-line-places" role="listbox" aria-label="places" class="mt-2">
-    {#each remembered as place, index (place.value)}
-      {@const chosen = moved && at === index}
-      <div
-        id={chosen ? `path-line-place-${at}` : undefined}
-        role="option"
-        tabindex="-1"
-        aria-selected={chosen}
-        class="flex cursor-default items-baseline gap-x-4 {chosen
-          ? 'inverted'
-          : place.gone
-            ? 'text-ink-muted'
-            : 'text-ink'}"
-        onmousedown={(event) => {
-          event.preventDefault();
-          onchange(place.value);
-          input?.focus();
-        }}
-      >
-        <span>{place.value}</span>
-        <span class="ml-auto text-ink-muted"
-          >{place.uses} · {place.gone
-            ? "gone"
-            : whenOf(place.lastAt, now)}</span
-        >
-      </div>
-    {/each}
-
-    {#if remembered.length > 0 && drawn.length > 0}
-      <div role="separator" class="my-1.5 border-t border-ink-muted"></div>
-    {/if}
-
+  <!-- A floor, so a shallow answer leaves room rather than collapsing the
+       column and moving everything the eye is on. -->
+  <div
+    id="path-line-places"
+    role="listbox"
+    aria-label="places"
+    class="mt-2.5 {refusal === undefined ? 'min-h-[var(--spacing-tree)]' : ''}"
+  >
     {#each drawn as row (`${row.depth}:${row.made === true ? "+" : ""}${row.entry.label}`)}
-      {@const chosen =
+      {@const picked =
         moved &&
         choices[at]?.kind === "entry" &&
         here[at - remembered.length] === row}
       <div
-        id={chosen ? `path-line-place-${at}` : undefined}
+        id={picked ? `path-line-place-${at}` : undefined}
         role="option"
         tabindex="-1"
-        aria-selected={chosen}
+        aria-selected={picked}
         aria-disabled={row.made === true ? "true" : undefined}
         style="padding-left: {row.depth * 1.1}rem"
         class="cursor-default {row.made === true
           ? 'text-accent'
-          : row.onPath || chosen
+          : row.onPath || picked
             ? 'text-ink'
-            : 'text-ink-muted'} {chosen ? 'inverted' : ''}"
+            : 'text-ink-muted'} {picked ? 'inverted' : ''}"
         onmousedown={(event) => {
           event.preventDefault();
           if (row.made !== true) take(row.entry);

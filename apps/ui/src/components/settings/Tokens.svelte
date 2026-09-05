@@ -5,6 +5,7 @@
   import Row from "$components/settings/Row.svelte";
   import Section from "$components/settings/Section.svelte";
   import { client } from "$lib/client";
+  import { copyable } from "$lib/clipboard";
   import { session } from "$lib/session.svelte";
 
   const FIELD =
@@ -122,13 +123,15 @@
           be read — one that was not written down is replaced, not recovered.
         </p>
         <p class="mt-3 font-mono break-all select-all">{minted.token}</p>
-        <p class="mt-3">
-          <Action onclick={() => void copy()}>
-            {copied ? "Copied" : "Copy"}
-          </Action>
-          <span class="ml-6">
-            <Action onclick={() => (minted = undefined)}>Done</Action>
-          </span>
+        <p class="mt-3 flex flex-wrap items-baseline gap-x-6">
+          <!-- Where the browser hands over no clipboard the string is still
+               there to be selected, which is why this can go without a word. -->
+          {#if copyable()}
+            <Action onclick={() => void copy()}>
+              {copied ? "Copied" : "Copy"}
+            </Action>
+          {/if}
+          <Action onclick={() => (minted = undefined)}>Done</Action>
         </p>
       </div>
     {/if}

@@ -619,9 +619,9 @@ test("a blank leaf submits a path that ends in a slash", async () => {
 
   const line = await screen.findByRole("combobox");
   await fireEvent.input(line, { target: { value: "drafts/" } });
-  // Beside the word and again in the tree, where the note is about to land.
+  // In the tree, where the note is about to land, and nowhere else.
   expect(await screen.findAllByText(/Picker needs a trail\.md/)).toHaveLength(
-    2,
+    1,
   );
   await choose("route");
 
@@ -1210,4 +1210,83 @@ test("says a destination that could not be reached, and routing is still availab
     (screen.getByRole("button", { name: "route" }) as HTMLButtonElement)
       .disabled,
   ).toBe(false);
+});
+
+/**
+ * The split is a consequence of the decision, not a frame waiting for it: there
+ * is nothing to consult before a destination is taken.
+ */
+test("has one column until a destination is taken, and two after", async () => {
+  servingVault([{ label: "drafts", scope: "drafts" }]);
+
+  drawAbout({ text: "a thought" });
+
+  const modal = await screen.findByRole("dialog");
+  expect(modal.className).toContain("--spacing-modal");
+  expect(screen.queryByRole("button", { name: "seedling" })).toBeNull();
+
+  await choose(/Vault/);
+  await screen.findByRole("combobox", { name: "place" });
+
+  expect(modal.className).toContain("--spacing-composer");
+});
+
+/**
+ * The heading an append would use is nothing to a note that does not exist yet.
+ * An absent forecast is not knowing, and not knowing keeps the field.
+ */
+test("drops the field beside the line where it knows a new note is being made", async () => {
+  servingVault([]);
+
+  drawAbout({ text: "Picker needs a trail" });
+  await choose(/Vault/);
+
+  const line = await screen.findByRole("combobox", { name: "place" });
+  expect(screen.getByLabelText("under")).toBeDefined();
+
+  await fireEvent.input(line, { target: { value: "drafts/" } });
+  await screen.findByText("create");
+
+  await vi.waitFor(() => {
+    expect(screen.queryByLabelText("under")).toBeNull();
+  });
+});
+
+test("keeps the field where the line would append to a note that is there", async () => {
+  servingVault([{ label: "decisions.md", value: "decisions.md" }]);
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+
+  const line = await screen.findByRole("combobox", { name: "place" });
+  await fireEvent.input(line, { target: { value: "decisions.md" } });
+
+  await screen.findByText("append");
+  expect(screen.getByLabelText("under")).toBeDefined();
+});
+
+/** No forecast is no evidence, and a field is not dropped on none. */
+test("keeps the field where the destination could not be asked at all", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "filesystem" })] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE_OR_APPEND] });
+    }
+    if (route.endsWith("/candidates")) {
+      return json(200, { kind: "unreachable", detail: "not mounted" });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+
+  const line = await screen.findByRole("combobox", { name: "place" });
+  await fireEvent.input(line, { target: { value: "drafts/" } });
+
+  await screen.findByText("unreachable · best effort");
+  expect(screen.getByLabelText("under")).toBeDefined();
 });

@@ -83,7 +83,11 @@
       {/if}
 
       <Tags {item} />
-      <Routing summary={item.routing} records={records.all} />
+      <Routing
+        summary={item.routing}
+        records={records.all}
+        onundone={() => records.reread()}
+      />
 
       <!-- The item may be the client's own and the records never are, so the
            one surface answers for the two of them separately. -->
@@ -95,14 +99,12 @@
         <div role="status" class="mt-2 text-accent">{records.refused}</div>
       {/if}
 
-      <Facts>
-        <Fact name="payload">{item.payload.type}</Fact>
-        <Fact name="edited" empty={item.contentUpdatedAt === undefined}>
-          {item.contentUpdatedAt === undefined
-            ? "not since capture"
-            : briefly(item.contentUpdatedAt)}
-        </Fact>
-      </Facts>
+      <!-- What it is, the capture says; what a fact answers is what it cannot. -->
+      {#if item.contentUpdatedAt !== undefined}
+        <Facts>
+          <Fact name="edited">{briefly(item.contentUpdatedAt)}</Fact>
+        </Facts>
+      {/if}
     </Rail>
 
     <Body first>

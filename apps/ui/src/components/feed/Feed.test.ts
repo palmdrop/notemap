@@ -13,9 +13,23 @@ import Feed from "./Feed.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
+/** Leaving the surface needs a router, and there is none outside the app. */
+const went = vi.hoisted(() => ({ to: [] as string[] }));
+vi.mock("$app/navigation", () => ({
+  goto: (url: string) => void went.to.push(url),
+}));
+
+/** A row opens on its own stamp, which is the row's title. */
+function open(at = 0) {
+  return fireEvent.click(
+    screen.getAllByRole("button", { expanded: false })[at]!,
+  );
+}
+
 // Module-scoped reading preference, so a test that furls the rail unfurls it.
 afterEach(() => {
   if (rail.furled) rail.toggle();
+  went.to = [];
 });
 
 function held(...values: Record<string, unknown>[]) {
@@ -44,6 +58,7 @@ test("says an archived row is archived, and offers the way back", async () => {
   render(Feed);
 
   expect(await screen.findByText("archived")).toBeDefined();
+  await open();
 
   await fireEvent.click(screen.getByRole("button", { name: "unarchive" }));
 
@@ -327,17 +342,84 @@ test("keeps the row's marks when the rail furls, and draws each of them once", a
   expect(screen.getAllByText("pending")).toHaveLength(1);
 });
 
-test("leads to every row's own address without asking a row to open", async () => {
-  pool(held(anItem("one"), anItem("two")));
+test("opens a row in place, with what the queue's row offers", async () => {
+  pool(held(anItem("one")));
 
   render(Feed);
   await screen.findByText("one");
+  await open();
 
-  const ways = screen.getAllByRole("link", { name: "open" });
-  expect(ways.map((way) => way.getAttribute("href"))).toEqual([
+  expect(screen.getByRole("button", { name: "route" })).toBeDefined();
+  expect(screen.getByRole("link", { name: "open" }).getAttribute("href")).toBe(
     "/items/one",
-    "/items/two",
-  ]);
+  );
+});
+
+test("reads a row's records only once it is opened", async () => {
+  pool((request) => {
+    if (routeOf(request) === "GET /v1/feed") {
+      return json(200, {
+        values: [
+          anItem("sent", {
+            routing: {
+              records: 1,
+              pending: 0,
+              to: [{ kind: "destination", destination: "vault-1" }],
+            },
+          }),
+        ],
+      });
+    }
+    if (routeOf(request) === "GET /v1/items/sent/routing") {
+      return json(200, {
+        values: [
+          {
+            id: "record-1",
+            item: "sent",
+            target: {
+              kind: "destination",
+              destination: "vault-1",
+              capability: "create-file",
+              arguments: {},
+            },
+            state: "delivered",
+            at: "2026-08-17T07:15:00.000Z",
+            pointer: "notes/decisions.md",
+          },
+        ],
+      });
+    }
+    return json(200, { values: [] });
+  });
+
+  render(Feed);
+  await screen.findByText("sent");
+  expect(asked()).not.toContain("GET /v1/items/sent/routing");
+
+  await open();
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("GET /v1/items/sent/routing");
+  });
+  const line = await screen.findByRole("link", {
+    name: /vault-1|a destination/,
+  });
+  expect(line.getAttribute("href")).toBe("/items/sent/records/record-1");
+});
+
+test("goes to the item's own surface on a double click, and leaves the row open", async () => {
+  pool(held(anItem("one")));
+
+  render(Feed);
+  const body = await screen.findByText("one");
+
+  await fireEvent.click(body, { detail: 1 });
+  await fireEvent.click(body, { detail: 2 });
+  await fireEvent.dblClick(body);
+
+  expect(went.to).toEqual(["/items/one"]);
+  // The second click of a double is not a toggle: open, nothing, go.
+  expect(screen.getByRole("button", { expanded: true })).toBeDefined();
 });
 
 test("puts the view back where the reader left it to read one item", async () => {

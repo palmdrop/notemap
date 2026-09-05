@@ -13,14 +13,23 @@ import Item from "./Item.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
+/** `done` opens the field for where it went, and `⏎` sends it, empty or not. */
+async function done() {
+  await fireEvent.click(screen.getByRole("button", { name: "done" }));
+  await fireEvent.keyDown(screen.getByLabelText("where it went"), {
+    key: "Enter",
+  });
+}
+
 afterEach(() => {
   notices.clear();
 });
 
 /** The words a capture holds, kept apart from the id it is reached by. */
-function saying(id: string, text: string): Held {
+function saying(id: string, text: string, more: object = {}): Held {
   return anItem(id, {
     payload: { type: "text", content: { text }, metadata: {}, assets: [] },
+    ...more,
   });
 }
 
@@ -38,7 +47,6 @@ test("draws an item the cache has never held, reaching the pool for it", async (
   render(Item, { id: "linked" });
 
   expect(await screen.findByText("what the link names")).toBeDefined();
-  expect(screen.getByText("payload")).toBeDefined();
   expect(asked()).toContain("GET /v1/items/linked");
 });
 
@@ -177,7 +185,7 @@ test("gives every record it draws the way into it", async () => {
   render(Item, { id: "routed" });
 
   // One line per record, which is what the opened row draws too.
-  const way = await screen.findByRole("link", { name: /create-note/ });
+  const way = await screen.findByRole("link", { name: /drafts/ });
   expect(way.getAttribute("href")).toBe("/items/routed/records/rec");
 });
 
@@ -192,7 +200,7 @@ test("says the records are out of reach while the item still draws", async () =>
   // copy, and nothing caches a record at all.
   expect(await screen.findByText("from cache")).toBeDefined();
   expect(screen.getByText(NO_RECORDS_OFFLINE)).toBeDefined();
-  expect(screen.queryByRole("link", { name: /create-note/ })).toBeNull();
+  expect(screen.queryByRole("link", { name: /drafts/ })).toBeNull();
 });
 
 test("says the pool is out of reach once, and not in the client's own words", async () => {
@@ -224,7 +232,7 @@ test("drops a record when the address moves to another item", async () => {
   });
 
   const { rerender } = render(Item, { id: "routed" });
-  await screen.findByRole("link", { name: /create-note/ });
+  await screen.findByRole("link", { name: /drafts/ });
 
   await rerender({ id: "plain" });
   await screen.findByText("nothing was routed");
@@ -232,10 +240,15 @@ test("drops a record when the address moves to another item", async () => {
   // One item's history under another item's stamp, with a link proving whose
   // it was: the surface is reused across a change of address.
   await vi.waitFor(() => {
-    expect(screen.queryByRole("link", { name: /create-note/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /drafts/ })).toBeNull();
   });
   expect(screen.getByText("unrouted")).toBeDefined();
 });
+
+/** A summary that names the person, which is what a hand-marked item carries. */
+const BY_HAND = {
+  routing: { records: 1, pending: 0, to: [{ kind: "user" as const }] },
+};
 
 /** What a gesture on this surface is answered with, so the pool is not the subject. */
 const MARKED = {
@@ -269,7 +282,7 @@ test("says nothing in the corner about work done to the item it is drawing", asy
   render(Item, { id: "one" });
   await screen.findByText("still here");
 
-  await fireEvent.click(screen.getByRole("button", { name: "mark done" }));
+  await done();
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/mark-processed");
   });
@@ -288,7 +301,7 @@ test("remembers the decision it stayed quiet about, so the log does not say it",
   render(Item, { id: "one" });
   await screen.findByText("still here");
 
-  await fireEvent.click(screen.getByRole("button", { name: "mark done" }));
+  await done();
 
   // The pool writes this decision to its log, which the corner reads on its
   // own tempo and would otherwise report back as news.
@@ -389,7 +402,7 @@ test("reads the records again after a decision made on this surface", async () =
   );
 
   render(Item, { id: "one" });
-  await screen.findByRole("link", { name: /create-note/ });
+  await screen.findByRole("link", { name: /drafts/ });
 
   const read = () =>
     asked().filter((route) => route === "GET /v1/items/one/routing").length;
@@ -400,4 +413,47 @@ test("reads the records again after a decision made on this surface", async () =
   await vi.waitFor(() => {
     expect(read()).toBe(before + 1);
   });
+});
+
+/**
+ * `routing.cancel` is what makes marking done a decision rather than a fact
+ * about the past, and it is the other half of not offering `done` twice.
+ */
+test("takes back a decision the person made by hand, and reads the records again", async () => {
+  let cancelled = false;
+  pool((request: Request) => {
+    switch (routeOf(request)) {
+      case "GET /v1/items/one":
+        return json(200, saying("one", "still here", BY_HAND));
+      case "GET /v1/items/one/routing":
+        return json(200, { values: cancelled ? [] : [MARKED] });
+      case "POST /v1/routing/rec-done/cancel":
+        cancelled = true;
+        return json(204, undefined);
+      default:
+        return json(200, { values: [] });
+    }
+  });
+
+  render(Item, { id: "one" });
+  const way = await screen.findByRole("button", { name: "undo" });
+
+  await fireEvent.click(way);
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/routing/rec-done/cancel");
+  });
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
+  });
+});
+
+/** A delivery is the pool's; only what the person did by hand is theirs to undo. */
+test("offers no undo on a record the pool delivered", async () => {
+  pool(routed([RECORD]));
+
+  render(Item, { id: "routed" });
+  await screen.findByRole("link", { name: /drafts/ });
+
+  expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
 });

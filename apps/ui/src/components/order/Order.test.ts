@@ -7,6 +7,12 @@ import { pool } from "$testing/pool";
 import { log } from "$lib/log.svelte";
 import Order from "./Order.svelte";
 
+/** A word, a mark, and a panel of marked options. */
+async function turn(word: string) {
+  await fireEvent.click(screen.getByLabelText("Order"));
+  await fireEvent.click(screen.getByRole("button", { name: word }));
+}
+
 vi.mock("$lib/client", () => import("$testing/pool"));
 
 /** Chrome, so it is drawn a level above whichever surface it acts on. */
@@ -55,9 +61,7 @@ test("turns the queue around and reads it again from that end", async () => {
   const { component } = render(Order) as { component: unknown };
   expect(component).toBeDefined();
 
-  await fireEvent.change(screen.getByLabelText("Order"), {
-    target: { value: "newest-first" },
-  });
+  await turn("newest");
 
   await vi.waitFor(() => {
     expect(ordersOf(transport, "queue")).toEqual(["newest-first"]);
@@ -75,9 +79,7 @@ test("turns the log around and reads it again from that end", async () => {
 
   render(Order);
 
-  await fireEvent.change(screen.getByLabelText("Order"), {
-    target: { value: "oldest-first" },
-  });
+  await turn("oldest");
 
   await vi.waitFor(() => {
     expect(ordersOf(transport, "actions")).toEqual(["oldest-first"]);
@@ -90,9 +92,7 @@ test("turns the surface being read, and not the other one", async () => {
 
   render(Order);
 
-  await fireEvent.change(screen.getByLabelText("Order"), {
-    target: { value: "newest-first" },
-  });
+  await turn("newest");
 
   await vi.waitFor(() => {
     expect(ordersOf(transport, "feed")).toEqual(["newest-first"]);
@@ -110,11 +110,11 @@ test("will not turn around while a read is still walking", async () => {
   const transport = serving("queue", () => held);
 
   render(Order);
-  const control = screen.getByLabelText("Order") as HTMLSelectElement;
+  const control = screen.getByLabelText("Order") as HTMLButtonElement;
 
   // Nothing is walking until something asks, which the surface does on mount.
   void transport;
-  await fireEvent.change(control, { target: { value: "newest-first" } });
+  await turn("newest");
   await vi.waitFor(() => expect(control.disabled).toBe(true));
 
   release();
@@ -140,9 +140,7 @@ test("names the order on the URL and remembers it, so a reload reads the same en
 
   render(Order);
 
-  await fireEvent.change(screen.getByLabelText("Order"), {
-    target: { value: "newest-first" },
-  });
+  await turn("newest");
 
   expect(replaced.urls).toEqual(["http://localhost/?order=newest-first"]);
   expect(localStorage.getItem("notemap:order:queue")).toBe("newest-first");
@@ -154,9 +152,7 @@ test("remembers each surface on its own, the two starting from different ends", 
 
   render(Order);
 
-  await fireEvent.change(screen.getByLabelText("Order"), {
-    target: { value: "oldest-first" },
-  });
+  await turn("oldest");
 
   expect(localStorage.getItem("notemap:order:feed")).toBe("oldest-first");
   expect(localStorage.getItem("notemap:order:queue")).toBeNull();

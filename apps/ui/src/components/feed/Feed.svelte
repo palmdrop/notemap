@@ -3,7 +3,10 @@
 
   import { page } from "$app/state";
 
-  import FeedRow from "$components/feed/FeedRow.svelte";
+  import type { Item } from "@notemap/client";
+
+  import Row from "$components/item/Row.svelte";
+  import RoutingComposer from "$components/routing/RoutingComposer.svelte";
   import Body from "$components/primitives/register/Body.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
@@ -11,11 +14,13 @@
   import Register from "$components/primitives/register/Register.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
   import { client } from "$lib/client";
+  import { notices } from "$lib/notices.svelte";
   import { orderFor } from "$lib/order";
   import { pending } from "$lib/pending.svelte";
   import { rail } from "$lib/rail.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { refusalIn } from "$lib/refusal";
+  import { keyFor } from "$lib/routing";
   import { keepPlace, restorePlace } from "$lib/scroll-mark";
   import { NOTHING_CAPTURED } from "$lib/said";
 
@@ -24,6 +29,10 @@
   const feed = client.feed;
   const pool = reachable();
   const undrained = pending();
+
+  /** One row is open at a time, as on the queue: it is the same row. */
+  let opened = $state<string | undefined>(undefined);
+  let routing = $state<Item | undefined>(undefined);
 
   const refused = $derived(refusalIn($feed));
 
@@ -58,11 +67,15 @@
   {/if}
 
   {#each $feed.items as item, at (item.id)}
-    <FeedRow
+    <Row
       {item}
       first={at === 0 && refused === undefined}
+      opened={opened === item.id}
+      offline={!pool.yes}
       furled={rail.furled}
       pending={undrained.has(item.id)}
+      onopen={() => (opened = opened === item.id ? undefined : item.id)}
+      onroute={() => (routing = item)}
     />
   {/each}
 
@@ -74,3 +87,18 @@
     />
   {/if}
 </Register>
+
+<!-- The feed keeps every row it holds, so a decision made here is drawn on the
+     row a moment later rather than reported to somebody looking at it. The
+     record is remembered so the log does not report it back as news. -->
+{#if routing !== undefined}
+  {@const subject = routing}
+  <RoutingComposer
+    item={subject.id}
+    subject={client.says(subject) || subject.payload.type}
+    content={subject.payload.content}
+    tags={(subject.tags ?? []).map((tag) => tag.name)}
+    onrouted={(record) => notices.mark(keyFor(record.id))}
+    onclose={() => (routing = undefined)}
+  />
+{/if}

@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 
 import type { RoutingRecord } from "@notemap/client";
 
-import { saidOf } from "./routing";
+import { saidOf, wentTo } from "./routing";
 
 const nameOf = (id: string) => (id === "vault" ? "Vault" : "a destination");
 
@@ -67,4 +67,39 @@ test("marking processed is routing to the person, and says so", () => {
   const said = saidOf(aRecord({ target: { kind: "user" } }), nameOf);
 
   expect(said.what).toBe("marked done");
+});
+
+test("a record on a row reads as its destination and the place it landed", () => {
+  const said = wentTo(aRecord({ pointer: "notes/inbox/picker.md" }), nameOf);
+
+  expect(said.said).toBe("Vault · notes/inbox/picker.md");
+  // The capability is the adapter's word, and delivered is what a record with
+  // no alarm on it already means.
+  expect(said.aside).toBeUndefined();
+});
+
+test("a record the pool has not carried out says the one state worth saying", () => {
+  const said = wentTo(
+    aRecord({ state: "pending", pointer: "notes/inbox/picker.md" }),
+    nameOf,
+  );
+
+  expect(said.said).toBe("Vault · notes/inbox/picker.md");
+  expect(said.aside).toBe("pending");
+});
+
+test("a decision made by hand reads as done, with the note beside it", () => {
+  const said = wentTo(
+    aRecord({ target: { kind: "user", note: "pasted into the standup doc" } }),
+    nameOf,
+  );
+
+  expect(said.said).toBe("done");
+  expect(said.aside).toBe("pasted into the standup doc");
+});
+
+test("a decision made by hand with nothing written says only done", () => {
+  expect(wentTo(aRecord({ target: { kind: "user" } }), nameOf)).toEqual({
+    said: "done",
+  });
 });

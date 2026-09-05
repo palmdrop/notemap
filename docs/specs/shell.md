@@ -4,6 +4,18 @@
 **Last updated**: 2026-09-04
 **Shipped**:
 
+- 2026-09-04 — **The shell's second pass.** One row serves the queue and the feed, opening in place
+  on both, and a double click on either goes to the item's own surface. An open row is one band
+  rather than two lit panels, carries only the facts that answer something, and offers its actions
+  as two aligned lines by what they do — leaving the queue, then working with the item. `done` asks
+  where it went and is not offered twice; `copy` takes the capture's text and says so in the
+  corner; a decision made by hand can be taken back. A record reads as its destination and the
+  place it landed rather than as the capability that carried it. The composer splits into two
+  columns once a destination is taken — the line, the word and the tree on one, everything
+  consulted or settled after it on the other — and stops moving while it is typed. The shell draws
+  its own choosers, the drained queue says one quiet thing, the capture row commits on `⇧⏎` and
+  shows the picture it holds. ([plan](../plans/shell-second-pass.md))
+
 - 2026-09-04 — **The composer asks what would be written, and the record shows what went.** A
   `preview` beside `route`, asked for and never volunteered, drawing what this destination would
   write now with the sentence saying that is what it is. A destination that offers no preview and
@@ -259,6 +271,14 @@ add to it at the top of it. **The field takes the caret when the queue is drawn*
 2026-09-04)*, as the composer's own first control does: the surface exists to be typed into, and a
 click before the first keystroke is a click nothing asked for.
 
+**`⇧⏎` commits it** *(2026-09-04)*, from inside the field it is written in. `⏎` there is a new
+line, which prose wants; the modifier is what the composer's line already uses for the gesture that
+means *and do it*.
+
+**An attached picture is drawn before it is committed**, beside its name and with a way to drop it.
+The bytes go up with the capture and cannot be taken back once they have, so the one moment to look
+at what was picked is before the button, not afterwards in the feed.
+
 ### The row
 
 **Processing happens in the row, opened in place.** The queue is one scrollable list a person works
@@ -293,15 +313,22 @@ place while a person is there.
   an unprocessed item can be edited in place any number of times with nothing else recording that
   it changed, and read among the facts a row opens with rather than on every collapsed one.
 
+**One row serves both surfaces** *(2026-09-04)*. The queue's and the feed's differed in what they
+offered and never in what they were, so there is one of them, and what a surface hands it is what
+differs: the queue offers a place to depart from, since a row that leaves it has to be watched out,
+and the feed offers none, keeping every row it holds. Both offer a composer. **The feed's row opens
+in place**, with the facts the queue's has and one more.
+
 **In the feed, a row says what became of it.** The feed is the pool read completely, so routed and
 archived items are in it. The state is an inverted word in the left column, under the time —
 `routed`, `archived` — and a routed row carries a `routing` line naming the places it went and
 what has not landed yet, which is what the item's routing summary holds
-([core.md](core.md#routing)). The capability and the time belong to a record, so they are the
-opened row's, not the feed's: naming them per row would be a read per row. Tags stay editable on
-every row in the feed, including an archived one, which
-also offers `unarchive`. A finished row's prose is muted, so live captures stand out while
-scrolling.
+([core.md](core.md#routing)). The time belongs to a record, so it is the opened row's, not the
+feed's: naming it per row would be a read per row. That is the one fact a feed row carries that a
+queue row does not — **where it went**, read off the records the row asks for when it opens, on
+whichever surface it is. Tags stay editable on every row in the feed, including an archived one,
+which also offers `unarchive` among an opened row's actions. A finished row's prose is muted, so
+live captures stand out while scrolling.
 
 **Opened, a row is for triage.** It adds the item's **routing records**, the facts about it the
 rail holds back while scanning, and the actions — route, mark done, archive, edit. Everything there
@@ -314,6 +341,18 @@ and a body carrying prose both want. A control inside one — a tag, an action, 
 clicking for its own sake and is not that click. The stamp stays a button, and is what says a row
 opens at all.
 
+**Double-clicking one goes to the item's own surface**, from either register *(2026-09-04)*.
+Opening is a toggle, so a naive double would open the row, shut it, and then navigate — a flicker
+nobody asked for. A click carries how many of them it is and the row takes only the first, so the
+gesture reads: open, nothing, go. The single click costs no delay, which is what waiting to find
+out whether a second one is coming would have cost.
+
+**A double the browser has already spent goes nowhere** *(amended 2026-09-05)*. Double-clicking a
+word selects it, which is how anybody takes text out of a page and is exactly what a person reaching
+into a capture is doing; leaving the surface out from under a selection they just made is not what
+they asked for. So the row goes only where the double selected nothing — which is most of it, the
+gutter, the marks and the space around the prose — and the body's words stay the browser's.
+
 **Routing is not one of those, and it does not happen in the row.** It is the only act in the shell
 that composes an object rather than selecting a value: where, then what to do there, then exactly
 where and how, each step depending on the last. A row of controls asserts those are siblings when
@@ -325,6 +364,34 @@ width or height for it, which is what the panel cost everywhere it was not open.
 The composer is stepped, not flat: **where** (destinations, with an unavailable one saying so
 rather than disappearing), then the arguments the capability's schema asks for. A settled step
 stays visible with its choice marked, so the decision reads back as it is built.
+
+**Taking a destination puts the composer in two columns** *(2026-09-04)*, where the place is a line
+you type (below): the line, the word it reads off and the tree on the left; everything **consulted
+or settled after it** on the right — what was used before, what sits beside the line, the tags, and
+the commit that ends it. Untaken there is one column — the destination line, the `where` list, the
+commit — because there is nothing to consult yet: the split is a consequence of the decision rather
+than a frame waiting for it, and once the chrome carries the destination the list it was taken from
+is what `⌫` at the head of an empty line gives back. A kind that draws the schema-driven browser
+keeps its one column and keeps that list, having no line to back out of.
+
+**The composer takes a measure of its own** — `--spacing-composer` — and **the modal grows when it
+gains its second column**, which is the one moment it is allowed to change size: a decision was
+just made. `--spacing-modal` stays 30rem, for the untaken composer and for the confirm that shares
+it. Below the register's own narrow breakpoint the two columns stack in reading order rather than
+earning a second breakpoint to keep in step.
+
+**A typed field is a faint ground and carries no rule**, so the only rule in the modal is the
+chrome's — which leaves a rule meaning one thing, a division between bands.
+
+**The composer does not move while it is being typed** *(2026-09-04)*. Two things moved it: the
+tree gaining and losing a whole level as a segment is typed, which shifted everything under it, and
+the modal being vertically centred, which shifted the line and the state word *upward* as the tree
+grew — the worse of the two, the control being typed into moving under the caret. So the modal
+takes a **fixed distance from the top** instead of being centred, and the tree keeps a **floor**
+under it, the room four or five levels need, so a shallow answer leaves space rather than
+collapsing the column. A destination that cannot be asked draws no tree and needs no floor: nothing
+there moves. This is a different thing from the modal growing when it gains its second column,
+which is a decision having been made rather than a line being typed.
 
 **A destination is taken by typing its name as well as by pointing at it** (added 2026-09-02).
 Typing narrows the list and the only match is taken by `⏎` or `⇥`; an ambiguous prefix takes
@@ -340,8 +407,10 @@ line gives the destination back, a wrong one not being a reason to close the com
 **For a destination whose kind holds a filesystem, the place is one monospace line** (added
 2026-09-02, replacing the browser described here on 2026-08-31 — that control is what every other
 kind still draws). Typing filters the entries at the deepest settled scope, `/` descends, `⇥`
-completes the segment under the caret as far as the matches agree, `⌫` at the end of a line that
-ends in one pops the whole segment rather than one character of it, and `↑↓` move through
+completes the segment under the caret as far as the matches agree — and **does nothing where there
+is nothing to complete** *(added 2026-09-04)*, rather than handing focus to whatever is next: the
+line is what the composer is for, and leaving it is `⇧⇥` or the pointer — `⌫` at the end of a line
+that ends in one pops the whole segment rather than one character of it, and `↑↓` move through
 everything the tree drew — every row the pointer could take, in the order it is drawn — while `⏎`,
 left alone, routes. **The line is the value**: there is no second input beside it holding the same
 string, which is what the browser-and-input pair did and neither half could see the other.
@@ -364,7 +433,9 @@ hold that name, `append` where it does — and the folders that will be made are
 beneath it**, in the accent as `+ drafts/`, under the deepest one that is there and with the note
 itself under those. Where they will be, rather than named off to one side. The word is said only
 where there is something to read it off: a level that has not answered is no evidence either way,
-and nothing under a folder that is not there can be looked up at all. It is **drawn and never stored**: what is stored says *put this here*, and
+and nothing under a folder that is not there can be looked up at all. **The name a derived leaf
+would get is not said beside the word** *(amended 2026-09-04)*: the tree draws it where the note
+lands, which is where the eye already is, and saying it twice made the state word a sentence. It is **drawn and never stored**: what is stored says *put this here*, and
 the adapter decides again at delivery, when the answer is true
 ([ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md)). Because the word is
 read rather than chosen, **`do` is not a step here**: the capability is settled, and the one escape
@@ -374,8 +445,10 @@ appending to somebody's note when a new one was meant being the one place *nothi
 surprise. A blank leaf is not a gap: the name the note would get is shown before committing,
 derived by the same code the adapter will run.
 
-**Places routed to before rank into the completion list**, above what the destination merely
-offers, with how often each was used. They come from the pool rather than from the browser, so
+**Places routed to before are consulted beside the line** *(amended 2026-09-04: they used to sit
+under it)*, above what the destination merely offers, under their own label, with **how often each
+was used and when, beneath the path rather than beside it** — the path is the thing being read and
+it never truncates to leave room for a count. They come from the pool rather than from the browser, so
 they are not per-browser, not invisible to the mirror, and not a second copy of what the routing
 records already hold; the pool answers the facts and the shell ranks, which keeps a change of mind
 about most-used against most-recent a change here alone. The best of them is offered as a **greyed
@@ -386,12 +459,13 @@ outright. **`⇥` and `→` are different keys and stay different**: one complet
 the destination offered, the other takes the whole remembered continuation. A single key meaning either depending on invisible state is the failure mode being
 avoided.
 
-**A remembered place the listing does not hold is said, not silently re-created.** A folder routed
-to twelve times and now absent is not a new folder somebody meant to make — it is a sign the vault
-was restructured, and this is the last moment anything can say so. It is marked `gone`, and it is
-**never the greyed continuation**: the ghost is the thing a person takes without reading, so a
-discrepancy stays in the list where `↑↓` reaches it deliberately. `gone` is an ordinary condition
-and not one of the [three alarms](#reachable-pending-refused).
+**A remembered place the listing does not hold is kept out of the ghost.** *Amended 2026-09-04*:
+`gone` is no longer drawn anywhere — not beside the state word, and not where a date belongs in the
+list, where it read as a fourth alarm for an ordinary condition. What the check is still for is the
+half that was doing the work: the greyed continuation is the thing a person takes without reading,
+so a place the vault no longer holds is never it, and stays in the list where `↑↓` reaches it
+deliberately. Dropping the check as well would let the ghost offer a vanished folder, which is what
+it was added to stop.
 
 **A destination that cannot be asked refuses nothing.** No tree, no drawn word — there is nothing
 to infer and nothing that needs inferring — but the line is still typed and `route` is still live,
@@ -408,6 +482,14 @@ draws the place it carries no label at all — `where` is the destination's step
 what sits beside it is a terse row rather than a step, as `tags` is. The caret is in the composer
 from the moment it opens: the destination line has it, the place line takes it when a destination
 is taken, and the destination line takes it back when the place is released.
+
+**A field beside the line is drawn only where the composer does not know a new note is being
+made** *(2026-09-04)*. The line is drawn for exactly one capability and the only field beside it is
+the heading an append would use, which is nothing to a note that does not exist yet — so it goes
+where the forecast says `create`, and stays where the forecast says `append` **or says nothing at
+all**. An absent forecast is not knowing, and not knowing keeps the field. This needs no schema
+hint: a second such capability, with a field that applies either way, is what would make one
+necessary, and that is the moment to add it.
 
 **Which control a field draws is a lookup keyed by destination kind**, and it decides on the kind
 alone: what a field means is the kind's business, and a capability one kind shares with another
@@ -451,6 +533,14 @@ the composer, which is a decision being made, and these are things being read.
 deliberately. The register goes on drawing one line per record, because that is a summary and a
 summary is what a row is for; what the line gains is the way into the record it summarises.
 
+**On a row, a record reads as its destination and the place it landed** *(2026-09-04)* — the
+pointer the destination handed back, or failing that the place the decision named. The capability
+went with it, `create-file` being the adapter's vocabulary rather than a person's, and so did
+`delivered`, which is what a record not saying otherwise already means. Those are the two words the
+place needed. **A state is said only where it is not that**, muted and after the place, since a
+record the pool has recorded and not carried out claims no landing. A decision made by hand reads
+as `done` with what the person wrote about it beside it, and carries the `undo` that cancels it.
+
 **The way in is `open`** — last in the opened queue row's actions, and on every feed row, the feed
 being read rather than worked. It is a link and not a button, so a new tab and a copied address
 come with it. Making the row's body navigate was the rejected half: on the queue that click is
@@ -482,8 +572,9 @@ says out of reach as out of reach, muted and offering nothing, while the item be
 drawing from whatever the client holds — one surface, two answers about freshness, which is what
 the three conditions are for.
 
-**A record is drawn in full**: what the delivery did, the destination by name, the state, when the
-decision was made, the arguments it was given, and the pointer to where it landed. Marking
+**A record is drawn in full**: what the delivery did, the destination by name, when the decision
+was made, the arguments it was given, and the pointer to where it landed. The **state** is there
+only where it is not `delivered` *(amended 2026-09-04)*, on the same reasoning as the row's line. Marking
 processed is routing whose destination is the person, so it reads as one, with its note where the
 arguments would be, and `none` where there is no note.
 
@@ -524,14 +615,46 @@ because a preview and an output are one shape and reading them is one act.
 
 ### Actions
 
-An opened row's actions are not five of a kind and are not drawn as five of a kind.
+An opened row's actions are not six of a kind and are not drawn as six of a kind.
 
 - **Route leads.** Items are supposed to leave; the interface says so.
 - **Tags sit close behind it.** They are processing, not decoration, and their control converges
   with routing's (below).
-- **Mark done** and **archive** group together as the other two ways an item leaves — marking
+- **Done** and **archive** group together as the other two ways an item leaves — marking
   processed being, in the domain's words, routing whose destination is the user.
 - **Edit** is an affordance on the content, not an entry in a list of actions.
+
+**Two lines on a grid, by what they do** *(2026-09-04)*. `route done archive` is how an item leaves
+the queue; `copy edit open` is working with the one in front of you, and reads muted. Nothing is
+hidden and no control is added: the split is the one the queue is about. **Every cell takes the
+same inline padding** — the padding the accent fill needs — so the words align down the columns and
+not merely the boxes, and a line with fewer of them closes up rather than leaving a hole where one
+would have been.
+
+**`done` asks where it went, and takes no answer for one.** It opens a single optional field; `⏎`
+sends it, written or empty, `esc` puts it away, and `done` again sends what is there — the field
+being the only thing the pool is told beyond the fact itself. **It is not offered twice**: an item
+whose routing summary already names the person has been marked, and asking again would make a
+second record of one decision. That is a rule about the summary, which every row holds, and not
+about the records, which only an open row has read.
+
+**A decision made by hand can be taken back.** `undo` sits on the record it cancels, and only
+there: a delivery is the pool's and has already happened somewhere else, while marking done is a
+person saying so and is theirs to unsay. Cancelling reads the records again, the one drawn being
+out of date the moment it goes.
+
+**`copy` is the one action that has to say so.** It takes the capture's text, and everything else
+here either changes the row or takes you somewhere — this puts nothing on the screen at all. So it
+speaks in the corner, naming what it took rather than saying *copied* into the air, which is the
+one place [the rule about subjects leaving the screen](#the-corner-says-what-happened) is answered
+by a subject that never appears. It uses `navigator.clipboard` and nothing else, which needs a
+secure context: HTTPS, or `localhost`. **Where that is missing the action is not drawn** *(amended
+2026-09-05)*: reached over plain HTTP at a LAN address — a plausible way to reach a self-hosted
+daemon from a phone — the browser hands over no clipboard at all, and a control that can only fail
+is worse than an absent one. There is still no fallback, and building one is still a later change;
+what changed is that the shell stops offering what it cannot do. **Nor is it drawn where there is
+nothing to take**: a picture captured without a caption says nothing, and copying it would put an
+empty string on the clipboard and then claim in the corner to have taken something.
 
 ### Tagging
 
@@ -702,10 +825,22 @@ The queue's job is to reach zero and the API gives no count — `ItemSlice` carr
 optional `next` link, nothing more. So the shell claims no number. `Load more` is the honest
 statement that more exists — and while the pool is out of reach the foot says that instead of
 offering a page it cannot fetch. **The empty state is designed as the thing you were working
-toward**, not as a grey apology.
+toward**, not as a grey apology — and *(amended 2026-09-04)* what that turned out to want is
+less, not more. Reaching the end is what the queue is for, so it is said the way the shell says
+everything else it has done: **once, quietly, in the rail**, and in no other idiom. No paragraph
+explaining it, and no `zero` — a state word says what became of a *thing*, and an empty list is
+not one.
 
 The reader's **order control** is in the bar and acts on whichever surface is being read; settings
-has no end to start from and it says nothing there. Which end a reader starts from is the reader's,
+has no end to start from and it says nothing there. **It is the shell's own chooser** *(2026-09-04)*
+— a word, a mark, and a panel of marked options, the idiom `where` already uses — and not the
+browser's `select`, which draws in the system's face and colours and cannot be brought into this
+one. Leaving the control shuts it, whichever way a person leaves; `esc` shuts it too, choosing
+nothing — and *(added 2026-09-05)* **pointing at the panel moves no caret into it**, the same
+default the place line prevents for the same reason: leaving is what shuts this, so a pointer that
+took the focus on its way in would shut it out from under the click that was choosing. What it
+draws is **a named group of marked buttons and not a `listbox`**, which would promise options
+nothing here renders. Which end a reader starts from is the reader's,
 for the queue as for the feed ([CONTEXT.md](../../CONTEXT.md)). Turning a surface around reads it
 again from that end ([client.md](client.md#the-queue)) — a position belongs to the order that made
 it — so the control is a choice of order, not a re-sort of what is on screen.
@@ -775,7 +910,10 @@ section it would only be refused. One line per token, with when it was made and 
 used, which is what says whether one is safe to revoke. Minting takes a name and answers with the
 string **once** — the daemon kept a hash and has nothing to answer with a second time — so it is
 shown in the accent, selectable, with a way to copy it, and dismissing it is a deliberate act rather
-than a navigation.
+than a navigation. **Selectable is what carries the weight**: the way to copy it goes where the
+browser hands over no clipboard *(amended 2026-09-05, on the same reasoning as
+[`copy` on a row](#actions))*, and the string being on the screen to select is why it can go
+without anything said in its place.
 
 **Deleting is the one thing on this page that cannot be undone, so it is the one thing that asks**,
 and the asking offers retiring instead. Only the pool knows whether a record has ever named a
@@ -862,7 +1000,10 @@ reads as a dated entry in a ledger, which is why the capture time is its title.
 **Two columns do the work that type hierarchy usually does.** *Amended 2026-08-24.* The left
 column is a **metadata rail**, and it carries the same things whether a row is open or shut: the
 stamp, the state word where there is one, the tags, and where the item went. Opening a row adds the
-item's facts under them — payload type, edited — rather than changing what the column is for.
+item's facts under them rather than changing what the column is for.
+*Amended 2026-09-04*: **a fact is drawn only where it answers something**. `payload` went, the
+capture itself being right there and saying what it is; `edited` is absent where there is none,
+rather than spending three words to say nothing happened — an absent fact already reads as no.
 *Amended 2026-09-03*: the source and the id left that list. They are notemap's bookkeeping rather
 than the item, an id is in the address of the surface that has one, and a rail carrying four facts
 where two are unreadable is what made the column look like a debug pane. The right column holds nothing but what was captured, and its actions once the row is open.
@@ -896,6 +1037,12 @@ on four sides. A rule runs across the top of every cell, lighter than the bar's 
 the gap between the columns — so a row reads as two entries side by side rather than as a band
 across the page. *Amended 2026-08-24*: the separator that ran into the spine, and the spine itself,
 are gone. Nothing needs a vertical rule now that the second column is real.
+
+**An open row is one fill, not two panels** *(2026-09-04)*. The rail's ground runs across the
+gutter to meet the body's, so the row a person is working reads as a single band, and the accent
+edge sits at the **head of the row** rather than on the seam between the columns — the seam being
+the one place the design has spent a whole amendment removing. With the rail furled there is no
+head but the body's, and the edge goes there.
 
 **The frame has a measure.** The page is capped short of a desktop's width and nothing widens it,
 routing having left the register for a modal.

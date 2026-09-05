@@ -1,17 +1,20 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { pickable } from "$lib/pick";
+  import { doubled, pickable } from "$lib/pick";
 
   let {
     first = false,
     lit = false,
     onpick,
+    onreach,
     children,
   }: {
     first?: boolean;
     lit?: boolean;
     onpick?: () => void;
+    /** Somewhere to go rather than something to do: the item's own surface. */
+    onreach?: () => void;
     children: Snippet;
   } = $props();
 </script>
@@ -21,10 +24,13 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   onclick={onpick === undefined ? undefined : pickable(onpick)}
+  ondblclick={onreach === undefined ? undefined : doubled(onreach)}
   class="col-start-1 min-w-0 border-t border-t-ink/20 font-mono group-data-furled:hidden
     {first ? 'border-t-0 pt-3.5 pb-6' : 'py-6'}
     {onpick === undefined ? '' : 'cursor-pointer'}
-    {lit ? '-ml-3.5 bg-ink/5 pl-3.5' : ''}"
+    {lit
+    ? '-mr-gap -ml-3.5 border-l-2 border-l-accent bg-ink/5 pr-gap pl-3 [--field-ground:var(--color-paper)]'
+    : ''}"
 >
   {@render children()}
 </div>
