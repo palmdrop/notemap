@@ -1,7 +1,7 @@
 # One tag files it where it goes
 
 **Date**: 2026-09-05
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: In progress <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/mirror.md`, `docs/specs/client.md`, `docs/specs/shell.md`
 **Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
 
@@ -14,7 +14,7 @@
 > capture date — and a **trigger tag** applies it. `route/research` on an item files it and the
 > item leaves the queue, with the corner saying so and offering the way back.
 
-Three ADRs settle the shape:
+Four ADRs settle the shape:
 [34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md) — a template is
 pool state and applying one is the decision, which rewrites `core.md`'s *"a rule never delivers on
 its own"* rather than working around it;
@@ -23,7 +23,10 @@ arguments are patterns, core expands them when the decision is made, and a captu
 offset it was made at so `{{captured_at}}` means the right day;
 [36](../adr/0036-a-folder-is-created-required-or-established-once.md) — a folder is `create`,
 `require` or `establish`, the check is the adapter's at delivery, and a moved folder is `rejected`
-so the item comes back to the queue.
+so the item comes back to the queue;
+[37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md) — a
+fired template never attempts inline, so the corner's cancel is real; the tag and the reservation
+commit together; and a reservation removed without delivering takes its trigger tag with it.
 
 **Out of this slice, deliberately**: conversion. A template says *where*, never *in what shape* —
 `todo.md`'s other "routing templates" line, the one about a local model rewriting a loose capture
@@ -56,16 +59,22 @@ Depends on nothing.
 - [x] [ADR 36](../adr/0036-a-folder-is-created-required-or-established-once.md) — three modes, two
       values reaching the adapter, and why this is an argument rather than the fourth capability
       name ADR 31 asked for
-- [ ] `CONTEXT.md` gains **Routing template** — a saved routing decision, with its Avoid line
+- [x] [ADR 37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md)
+      — a fired template enqueues its first attempt due a configured window later rather than
+      attempting inline, which is what makes the corner's cancel real against a mounted vault; the
+      tag and the reservation are one transaction, so *tagged but not reserved* cannot exist; and a
+      cancelled or abandoned reservation removes the trigger tag, since tagging is idempotent and an
+      item that keeps it can never be filed by it again
+- [x] `CONTEXT.md` gains **Routing template** — a saved routing decision, with its Avoid line
       naming *rule*, *preset* and *macro*: rule is the conditional thing this is not, and the other
       two say nothing about routing
-- [ ] `CONTEXT.md` gains **Trigger tag** — a tag under `route/` that a template declares, and whose
+- [x] `CONTEXT.md` gains **Trigger tag** — a tag under `route/` that a template declares, and whose
       arrival applies it
-- [ ] `CONTEXT.md` gains **Conversion** — a destination reshaping a copy on its way out, ADR 19's
+- [x] `CONTEXT.md` gains **Conversion** — a destination reshaping a copy on its way out, ADR 19's
       thing, with an Avoid line naming *template* now that the word means something else
-- [ ] `todo.md`: the two "routing templates" lines are retitled to conversion, and the entry that
+- [x] `todo.md`: the two "routing templates" lines are retitled to conversion, and the entry that
       wanted this feature points at this plan
-- [ ] Verify: the ADRs are confirmed with the developer; `pnpm lint`
+- [x] Verify: the ADRs are confirmed with the developer; `pnpm lint`
 - [ ] `git commit`
 
 ### Phase 2 — A template is pool state
@@ -85,8 +94,10 @@ Depends on phase 1.
       would otherwise name nothing, and a template is configuration. Everything reading a template
       tolerates a destination that is gone, and routing from one refuses with the
       `unknown-destination` that already exists
-- [ ] The **routing record names its template**, optionally: a hand-made decision names none. A
-      migration for the column, appended rather than edited
+- [ ] The **routing record names its template**, optionally: a hand-made decision names none. It
+      also says whether **the tagging made it**, which is what phase 9's untag rule reads and what
+      lets the log say a template fired rather than that somebody took one. A migration for the
+      columns, appended rather than edited
 - [ ] The mirror carries templates as its **third non-item unit**, one `.json` per template under
       `pool-mirror/templates/`, beside the destinations directory and on the same reasoning: a
       template is something a person set up and would otherwise recreate by hand. A write is owed
@@ -147,6 +158,9 @@ Depends on phase 4.
 - [ ] Tests: `require` against a missing folder is `rejected` and the abandon path returns the item
       to the queue; `establish` creates once then requires; editing the arguments clears the
       establishment; an abandoned first delivery leaves it unestablished
+
+The abandon path is also where a fired template's tag comes off, which is phase 9's rule and is
+tested there — nothing fires yet at the end of this phase.
 - [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
 - [ ] `git commit`
 
@@ -223,22 +237,40 @@ Depends on phase 7.
 
 Depends on phase 8.
 
-- [ ] `tag` resolves a trigger tag to its template and routes, **in the same act and not in a
-      job**: the inline attempt is the first attempt, and a deferred delivery already has its own
-      machinery for a destination that is not there
+- [ ] `tag` resolves a trigger tag to its template and reserves, **tagging and reserving in one
+      transaction** ([ADR 37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md)),
+      so a daemon that dies mid-act leaves either both or neither and nothing has to sweep for the
+      state in between. There is no I/O to keep out of it, because the attempt is a job
+- [ ] **No inline attempt on this path.** The delivery is enqueued with `nextAttemptAt` a configured
+      window from now — an ordinary job at `attempt` zero, which is what a backed-off retry already
+      is — so the window survives a crash and the corner's cancel is real against a mounted vault.
+      A route made by hand in the composer keeps ADR 17's inline attempt, unchanged
+- [ ] The host names the **window**, beside the fallback zone in `config.toml`, on the terms
+      `core.md` sets for operational knobs
 - [ ] Firing is on the **tagging**, so a revision copying a trigger tag fires nothing and an
-      absorbed re-tag fires nothing
+      absorbed re-tag fires nothing. An offline tag fires when the outbox drains it, in the daemon,
+      by this same path — the client's `tag` operation is what arrives, so nothing sweeps for
+      tags that ought to have routed
 - [ ] A refused route does not refuse the tag. The tag lands, the failure reaches the log, and the
       item stays in the queue — the alternative is a tag chooser that refuses input for reasons
       about a vault
+- [ ] **Cancelling or abandoning a tag-fired reservation removes the trigger tag**, since tagging is
+      idempotent and an item that keeps it can never be filed by it again. Only a tag-fired one: a
+      template taken in the composer leaves the person's own tags alone. The log says the tag came
+      off with the cancellation, so it does not read as having removed itself
 - [ ] The action log says a template fired, and which one
-- [ ] The corner says `routed · research` and carries the way to cancel, under the rule `discard`
-      already follows: it **stands** rather than lingering, and there is **one at a time**
+- [ ] The corner reads `routing · research` while the window is open and carries `cancel`; it reads
+      `routed · research` once the record resolves and carries only the way to dismiss it. Under the
+      rule `discard` already follows: it **stands** rather than lingering, and there is **one at a
+      time**
 - [ ] The tag chooser **marks a trigger tag as one**, in every place it is offered, so nobody types
       one by accident
-- [ ] Tests: tagging fires and routes; re-tagging does not; a revision carrying the tag does not; a
-      source-supplied tag does; a refused route leaves the tag and the item; the log says which
-      template
+- [ ] Tests: tagging fires and reserves in one transaction, and nothing is attempted inline; the job
+      is claimable only once the window has passed; cancelling inside it removes the reservation,
+      the tag, and returns the item to the queue; an abandoned first attempt does the same; a
+      composer-made route from the same template leaves the tag; re-tagging does not fire; a
+      revision carrying the tag does not; a source-supplied tag does; a tag drained from the outbox
+      does; a refused route leaves the tag and the item; the log says which template
 - [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
 - [ ] `git commit`
 
@@ -246,8 +278,11 @@ Depends on phase 8.
 
 Depends on phase 9.
 
-- [ ] `core.md`: a **Routing templates** section; Classification gains what a trigger tag is and
-      what firing on the tagging means; Routing's *"a rule never delivers on its own"* is rewritten
+- [ ] `core.md`: a **Routing templates** section; Classification gains what a trigger tag is, what
+      firing on the tagging means, and that a cancelled or abandoned tag-fired reservation takes the
+      tag back; Routing gains the window a fired template waits out, the transaction the tag and the
+      reservation share, and the amendment to *"the inline attempt is the first attempt"* that holds
+      for that path alone; Routing's *"a rule never delivers on its own"* is rewritten
       to *nothing delivers that a person did not ask for*; the 2026-08-02 routing-rule open question
       is marked half closed, with conditions, fan-out and precedence named as what is still open;
       the 2026-08-13 filename question notes that a template answers it for the person who
@@ -256,7 +291,8 @@ Depends on phase 9.
 - [ ] `http-v1.md`: the routes, and the `route` body's two shapes
 - [ ] `client.md`: what the cache holds and what it answers offline
 - [ ] `shell.md`: the `where` list's third band, the Templates settings section, the corner notice
-      for a fired template, and trigger tags being marked in the chooser
+      for a fired template — `routing` with a cancel while the window is open, `routed` after — and
+      trigger tags being marked in the chooser
 - [ ] `CONTEXT.md`: **Routing record** gains the template it came from
 - [ ] `todo.md`: close what this plan closed, and leave what it did not — the rule table, fan-out,
       capture templates, conversion

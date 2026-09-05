@@ -49,9 +49,9 @@
 - [ ] A schema field's **default** is not drawn. Titles, descriptions and dynamic candidates landed
   2026-08-31; a `default` an adapter declares is still ignored by the composer, which starts every
   field empty. Split off the routing-arguments line above rather than left ticked inside it.
-- [ ] Routing templates - changing or formatting an item on routing, for example, making an item a piece of a TODO list
-  - AI templates, where a local model formats an entry that may or may not be properly formatted
-  - Shape settled in [ADR 19](adr/0019-a-destination-converts-and-the-delivery-records-what-went.md): the destination converts a copy, the work happens inside the delivery, and the bytes that landed come back to be stored on the routing record. Open: whether a template is configured in the delivery's arguments or in destination config, and whether a template is itself a thing a person edits.
+- [ ] Conversion - changing or formatting an item on routing, for example, making an item a piece of a TODO list. Called conversion rather than a routing template since 2026-09-05: a **routing template** is now a saved routing decision, and the two were sharing a word.
+  - AI conversions, where a local model formats an entry that may or may not be properly formatted
+  - Shape settled in [ADR 19](adr/0019-a-destination-converts-and-the-delivery-records-what-went.md): the destination converts a copy, the work happens inside the delivery, and the bytes that landed come back to be stored on the routing record. Open: whether a conversion is configured in the delivery's arguments or in destination config, and whether one is itself a thing a person edits.
 - [ ] Routing edits - being able to freely edit an item as it is routed. Settled: **amend, then route**, two operations that already exist - a frontend can make it one smooth gesture with no new architecture. Rewriting the capture _because of where it is going_ is a dead end, and ADR 19 records why so it does not get proposed again. Open no longer, as of 2026-08-24: the amendment stands, because it was an amendment of an
   unprocessed item and the routing that sealed it never landed. Cancelling the reservation removes
   it, so the item is unprocessed again and editable in place again — unless something was revised
@@ -61,12 +61,12 @@
 - [ ] Routing auto-processing - routing a note to a specific destination converts it to a specified format. A todo list, a prose paragraph, a markdown image link, whatever. The format could be a templating language, or natural language, with an LLM in the loop, or a mix. ADR 19 answers _where the work happens_, and the **preview** half is now closed: the destination port has `preview`, the composer asks for one on demand, and a delivery records the output it produced so what went is readable after the fact
   ([delivery-output-and-preview](plans/delivery-output-and-preview.md),
   [ADR 33](adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md)). What is
-  left is the conversion itself — templates, how they are configured, and what a model in the loop
+  left is the conversion itself — how a conversion is configured, and what a model in the loop
   costs — and it has the seam it will use: a kind converts inside `deliver`, answers the same
   output from `preview`, and a conversion that loses something says so in a note nobody parses.
   The repeatability worry this line carried is answered rather than solved: a preview is
   **indicative**, so a non-deterministic converter is allowed and the shell says what a preview is.
-- [ ] Routing rules - core.md has carried "how rules are expressed, how fan-out to several destinations is presented, and whether a rule may ever be trusted to fire unattended" since 2026-08-02. Capture templates that auto-route are the first thing to touch it: choosing a template _is_ a person's decision to route, made early, which is how it survives "a rule never delivers on its own" - but that sentence wants writing deliberately rather than discovering later.
+- [ ] Routing rules - core.md has carried "how rules are expressed, how fan-out to several destinations is presented, and whether a rule may ever be trusted to fire unattended" since 2026-08-02. Half answered on 2026-09-05 by [ADR 34](adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md) and the [routing-templates plan](plans/routing-templates.md): a **routing template** is what a rule would have had for a right-hand side, a **trigger tag** applies one, and the sentence about a rule never delivering on its own was rewritten deliberately rather than discovered later. Still open, and only reachable once conditions exist: the rule table itself, fan-out to several destinations from one gesture, and precedence between rules.
 - [ ] Reconsider where revisions *appear*. Half-answered on 2026-08-24: a revision now carries its
   own capture time, so it sorts at the moment it was written and no longer ties with what it came
   from — which is what removed the chain columns from the feed key. Showing it beside its ancestor

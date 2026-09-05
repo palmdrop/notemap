@@ -273,6 +273,13 @@ never to the capture — so one item reaches several destinations in several for
 is the item.
 _Avoid_: push, transfer, upload
 
+**Conversion**:
+A destination reshaping a copy of an item on its way out — into a list entry, a front-matter block,
+a dialect of markdown that is not the item's. It happens inside the **delivery**, never to the
+capture, and what it produced is kept as the **output**. Distinct from a **routing template**, which
+says where an item goes and never what shape it arrives in.
+_Avoid_: template, transform, formatting. Template names the saved routing decision below.
+
 **Output**:
 The content a delivery produced — what the destination actually wrote, in the destination's own
 dialect rather than the item's. Optional, because a destination posting to an API may have nothing
@@ -300,6 +307,25 @@ a link to the same place; neither kind that writes files ever does — a path on
 nowhere a phone can follow, and a WebDAV address is the daemon's credential rather than a link
 anyone else holds.
 _Avoid_: routing status, delivery flag
+
+**Routing template**:
+A routing decision, saved: a destination, a capability, the arguments as **patterns**, and how its
+folder is treated. Pool state, mirrored, and reachable from every device, which a shell remembering
+your last route never was. Applying one is the decision itself, made in one gesture rather than a
+smaller one — from the composer, or by its **trigger tag** arriving. Its patterns are expanded when
+the decision is made, so the record it produces names a place a person can read. Says where an item
+goes and never what shape it arrives in, which is **conversion**.
+_Avoid_: rule, preset, macro. A rule is the conditional thing this deliberately is not; the other
+two say nothing about routing.
+
+**Trigger tag**:
+The tag a routing template declares, under the reserved `route/` namespace, whose arrival on an item
+applies the template. Declared rather than derived from the name, so renaming a template disarms no
+tag already written, and unique across templates. Fires on the **tagging** and never on the tag
+being present, so a revision carrying one fires nothing. It stays on a delivered item, where it
+reads as why the item went where it went, and comes off again where the reservation it made was
+cancelled or abandoned. A `route/` tag naming no template is an ordinary tag that fires nothing.
+_Avoid_: hotkey tag, magic tag, action tag
 
 **Routing summary**:
 What an item says about its own routing without being asked for its records: how many there are,
