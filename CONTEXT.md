@@ -214,8 +214,9 @@ _Avoid_: lock, reservation, claim
 Said of an item that has been routed, archived or revised. It is the *decision* that processes an
 item, so a routing record still pending delivery counts, and an item whose delivery is abandoned
 resurfaces in the queue. Marking an item processed by hand is routing whose destination is the
-user. Scrolling past an item is a **skip**, which changes nothing. Processed is also what fixes a
-capture: an unprocessed item is edited in place, a processed one is revised.
+user, and is presented in the UI as **manual**. Scrolling past an item is a **skip**, which changes
+nothing. Processed is also what fixes a capture: an unprocessed item is edited in place, a processed
+one is revised.
 _Avoid_: done, handled, cleared
 
 ### Leaving
@@ -316,8 +317,10 @@ hold is **gone**, which is said rather than silently re-created.
 _Avoid_: recent, history, favourite, suggestion
 
 **Archive**:
-To hide an item from the queue without deleting it. Presented in the UI as delete when the user
-means "this is noise"; the item stays in the feed and stays processable.
+To hide an item from the queue without deleting it. Presented in the UI as **discard**, the word
+for meaning "this is noise"; the item stays in the feed and stays processable. The word is spent
+here rather than on **purge**, which is what a reader would otherwise expect it to mean: purge is
+the irreversible one and has no UI, so it will want a word of its own when it gets one.
 _Avoid_: delete, dismiss, trash
 
 **Purge**:

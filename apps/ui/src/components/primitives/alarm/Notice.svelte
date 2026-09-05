@@ -8,6 +8,7 @@
     why,
     about,
     href,
+    offer,
     standing = false,
     ondismiss,
   }: {
@@ -15,6 +16,8 @@
     why?: string;
     about?: string;
     href?: string;
+    /** Something to do about it, taken here. Named by what it does. */
+    offer?: { label: string; take: () => void };
     standing?: boolean;
     ondismiss?: () => void;
   } = $props();
@@ -34,10 +37,16 @@
     <span class="break-words opacity-70">{about}</span>
   {/if}
 
-  {#if href !== undefined || ondismiss !== undefined}
+  {#if href !== undefined || offer !== undefined || ondismiss !== undefined}
     <span class="flex justify-end gap-4">
       {#if href !== undefined}
         <a {href} class="underline">look</a>
+      {/if}
+
+      {#if offer !== undefined}
+        <button type="button" onclick={offer.take} class="underline">
+          {offer.label}
+        </button>
       {/if}
 
       {#if ondismiss !== undefined}

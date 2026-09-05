@@ -9,6 +9,12 @@ const SHOWN = 4;
 /** Enough keys to stop a poll repeating itself, and no memory of the session. */
 const REMEMBERED = 200;
 
+/** Something to do about it, here, rather than somewhere to go and look. */
+export type Offer = {
+  readonly label: string;
+  readonly take: () => void;
+};
+
 export type Notice = {
   readonly id: string;
   readonly what: string;
@@ -19,11 +25,18 @@ export type Notice = {
   readonly standing?: boolean;
   /** Where to go and look. */
   readonly href?: string;
+  readonly offer?: Offer;
   /**
    * Said once, however many times it is raised. The pool writes an action for
    * work this shell already reported, and the two arrive as one fact.
    */
   readonly key?: string;
+  /**
+   * At most one notice bears a given name, the newest. An offer nobody can
+   * make twice is the case for it: a corner stacking four of them while a
+   * queue is worked is not the quiet thing it is meant to be.
+   */
+  readonly only?: string;
 };
 
 export type Raised = Omit<Notice, "id">;
@@ -100,9 +113,17 @@ export const notices = {
       remember(notice.key);
     }
 
+    let standing = held;
+    if (notice.only !== undefined) {
+      for (const gone of held) {
+        if (gone.only === notice.only) forget(gone.id);
+      }
+      standing = held.filter((one) => one.only !== notice.only);
+    }
+
     minted += 1;
     const id = `notice-${String(minted)}`;
-    held = trimmed([...held, { ...notice, id }]);
+    held = trimmed([...standing, { ...notice, id }]);
 
     if (notice.standing !== true) {
       timers.set(
@@ -122,6 +143,14 @@ export const notices = {
   /** Not the same as being said: a key is remembered so it is not repeated. */
   mark(key: string): void {
     remember(key);
+  },
+
+  /** Taking what a notice offered resolves it: the thing it was standing for is done. */
+  take(id: string): void {
+    const notice = held.find((one) => one.id === id);
+    if (notice?.offer === undefined) return;
+    notice.offer.take();
+    drop(id);
   },
 
   dismiss(id: string): void {

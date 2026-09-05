@@ -1,28 +1,17 @@
 # Developer TODOs
 - [ ] fix minor UI issues
-  - ~~composer, when showing that a new file/folder will be created in an existing folder, where there are sibling folders below that existing folder, will indicate that the new file/folder will be created in the bottom-most sibling folder, not necessarily the folder that the user has actually inputted~~ — **shipped** fa11848
-  - ~~composer shows previously routed items high up, confusing the user regarding what the action they are performing right now will do/create~~ — **shipped** in [shell-second-pass](plans/shell-second-pass.md)
-  - ~~lack of visual hierarchy is a problem in composer, it is hard to follow what is going on~~ — **shipped** in [shell-second-pass](plans/shell-second-pass.md)
-  - ~~input fields in composer are just indicated with an underline, same as separators. Confusing.~~ — **shipped** in [shell-second-pass](plans/shell-second-pass.md)
-  - ~~"create" button shows the derived file name correctly, but the "derived" word should be cut, just showing the title~~ — **shipped** fa11848; the name went from the word entirely in [shell-second-pass](plans/shell-second-pass.md), the tree being where it lands
-  - ~~selecting a capture makes it highlighted (gray) but the highlight has no left-padding, producing a sharp line at the metadata text~~ — **shipped** fa11848; the two fills became one band in [shell-second-pass](plans/shell-second-pass.md)
-  - ~~clicking an item in the feed should show additional metadata~~ — **shipped** in [shell-second-pass](plans/shell-second-pass.md)
-  - ~~double-clicking an item in the feed/queue should open it~~ — **shipped** in [shell-second-pass](plans/shell-second-pass.md)
-  - ~~"mark done" on routed items is meaningless - we need to consider "mark done", it should in essence be a way to indicate "manual routing", for example copy paste~~ — **shipped** in [shell-second-pass](plans/shell-second-pass.md)
-  - ~~user needs way to copy paste capture contents~~ — **shipped** in [shell-second-pass](plans/shell-second-pass.md)
-  - ~~capture input field should be auto-focused~~ — **shipped** fa11848
-  - ~~capture input shows ugly blue line around it~~ — **shipped** fa11848
-  - ~~when pressing shift+enter in capture input, it should press enter to capture~~ — **shipped** in [shell-second-pass](plans/shell-second-pass.md)
-  - ~~attaching an image should preview it in the capture input, before user commits the capture, so they can verify that they added the right image.~~ — **shipped** in [shell-second-pass](plans/shell-second-pass.md)
-  - Immediately hiding a routed item from the queue is confusing, especially if it fails. There's no good way to see pending operations. **Not in [shell-second-pass](plans/shell-second-pass.md)** — it is about what the surface does after a decision rather than how the decision is drawn.
-  - add new UI views
-    - routing view, showing all routed items. **Not in [shell-second-pass](plans/shell-second-pass.md)** — and reframed in
-      [misc-findings](misc-findings.md) as a filter on the action log the shell already has,
-      rather than a view of its own.
+  - Immediately hiding a routed item from the queue is confusing, especially if it fails. There's no good way to see pending operations. 
+
+- [ ] add new UI views
+    - routing view, showing all routed items. Can be implemented as a filter on the log view rather than a page of its own
 
 - [ ] Workflow publishes a docker image for each commit, not just each release. Might not be necessary? Investigate
 
 - [ ] Consider collapsing some UI actions: "Route", "Archive", "mark done" (maybe even "Copy") could all become "Process". Pressing process opens the routing composer, which would become a "Processing composer". Processing could be routing using a configured destination, but also be archiving or marking done, or copying manually (which would then result in an automatic "mark done")
+  - Designed 2026-09-05 and specified across [shell.md](specs/shell.md#one-way-out-of-the-queue)
+    and `CONTEXT.md`; built by [one-way-to-process](plans/one-way-to-process.md). `copy` stayed
+    out: it is not a way out of the queue, and copying is *offered* inside `manual` rather than
+    marking processed on its own. The two words are `manual` and `discard`.
 
 - [ ] Destination configuration is way too clunky, not sensible to configure in BOTH config.toml and in the UI.
 

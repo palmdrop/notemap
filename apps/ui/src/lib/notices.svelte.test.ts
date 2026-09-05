@@ -100,3 +100,53 @@ test("that confirmation still goes on its own, leaving the failures behind", () 
   expect(notices.shown).toHaveLength(4);
   expect(notices.folded).toBe(0);
 });
+
+test("taking what a notice offered invokes it once and resolves the notice", () => {
+  const put = vi.fn();
+  const id = notices.raise({ what: "discarded", standing: true, offer: { label: "undo", take: put } });
+
+  notices.take(id as string);
+  notices.take(id as string);
+
+  expect(put).toHaveBeenCalledTimes(1);
+  expect(notices.shown).toHaveLength(0);
+});
+
+test("only the newest of a named notice stands", () => {
+  for (const what of ["discarded · a", "discarded · b", "discarded · c"]) {
+    notices.raise({
+      what,
+      standing: true,
+      only: "discard",
+      offer: { label: "undo", take: vi.fn() },
+    });
+  }
+
+  expect(notices.shown.map((notice) => notice.what)).toEqual(["discarded · c"]);
+  expect(notices.folded).toBe(0);
+});
+
+test("a name supersedes nothing that does not bear it", () => {
+  notices.raise({ what: "delivery failed", standing: true });
+  notices.raise({ what: "discarded · a", standing: true, only: "discard" });
+  notices.raise({ what: "discarded · b", standing: true, only: "discard" });
+
+  expect(notices.shown.map((notice) => notice.what)).toEqual([
+    "delivery failed",
+    "discarded · b",
+  ]);
+});
+
+test("a standing notice carrying an offer survives a full corner", () => {
+  notices.raise({
+    what: "discarded · a",
+    standing: true,
+    only: "discard",
+    offer: { label: "undo", take: vi.fn() },
+  });
+  for (const what of ["one", "two", "three", "four", "five"]) {
+    notices.raise({ what });
+  }
+
+  expect(notices.shown.map((notice) => notice.what)).toContain("discarded · a");
+});

@@ -92,6 +92,9 @@
       why={notice.why}
       about={notice.about}
       href={notice.href}
+      offer={notice.offer === undefined
+        ? undefined
+        : { label: notice.offer.label, take: () => notices.take(notice.id) }}
       standing={notice.standing === true}
       ondismiss={notice.standing === true
         ? () => notices.dismiss(notice.id)
