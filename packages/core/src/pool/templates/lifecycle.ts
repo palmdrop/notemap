@@ -130,10 +130,19 @@ export function edit(
       ...(changes.folder === undefined ? {} : { folder: changes.folder }),
     };
     const { triggerTag: _held, ...without } = wanted;
-    const next: RoutingTemplateRecord =
+    const tagged: RoutingTemplateRecord =
       trigger.value === undefined
         ? without
         : { ...without, triggerTag: trigger.value };
+
+    // A changed place is a different place, and establishment does not carry to
+    // it. Without this a deliberate reorganisation bricks the template, and the
+    // only way out is guessing that re-saving is what fixes it.
+    const moved =
+      changes.arguments !== undefined &&
+      !sameJson(changes.arguments, held.arguments);
+    const { establishedAt: _established, ...unestablished } = tagged;
+    const next: RoutingTemplateRecord = moved ? unestablished : tagged;
 
     if (unchanged(held, next)) {
       return ok<RoutingTemplate, RoutingTemplateRefusal>(held);
@@ -229,6 +238,7 @@ function unchanged(
   next: RoutingTemplateRecord,
 ): boolean {
   return (
+    held.establishedAt === next.establishedAt &&
     held.name === next.name &&
     held.destination === next.destination &&
     held.capability === next.capability &&

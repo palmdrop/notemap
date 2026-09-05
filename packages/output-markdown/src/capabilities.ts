@@ -20,6 +20,25 @@ export type CapabilitiesOptions = {
   readonly browsable: boolean;
 };
 
+/**
+ * Whether a folder that is not there is made or refused. Orthogonal to what the
+ * capability does, so it is the same field on all three: the outcome a person
+ * wants is a note in a folder either way, and this is a condition about the
+ * world rather than a fourth outcome.
+ *
+ * `create` is the default, so every decision made before this existed is
+ * unchanged. A template's `establish` never reaches here — it resolves to one
+ * of these two when the decision is made.
+ */
+const FOLDER_MODE = {
+  type: "string",
+  enum: ["create", "require"],
+  default: "create",
+  title: "folder",
+  description:
+    "Whether a folder that is not there is made, or the delivery refused.",
+} as const;
+
 /** An absent or empty `directory` names the root itself; an absent `filename` is derived. */
 function createFileArguments(browsable: boolean): JsonSchema {
   return {
@@ -39,6 +58,7 @@ function createFileArguments(browsable: boolean): JsonSchema {
         description:
           "The note's filename. Left blank, one is derived from the item.",
       },
+      folder: FOLDER_MODE,
     },
   };
 }
@@ -65,6 +85,7 @@ function appendToFileArguments(browsable: boolean): JsonSchema {
         description:
           "The heading to append under. Left blank, the item is appended at the end of the note.",
       },
+      folder: FOLDER_MODE,
     },
   };
 }
@@ -94,6 +115,7 @@ function createOrAppendFileArguments(browsable: boolean): JsonSchema {
         description:
           "The heading to append under, where the note is already there. Left blank, the item is appended at the end of it.",
       },
+      folder: FOLDER_MODE,
     },
   };
 }
@@ -121,20 +143,26 @@ export function capabilitiesFor({
   ];
 }
 
+/** The two values that reach an adapter. `establish` is the template's alone. */
+export type FolderMode = "create" | "require";
+
 export type CreateFileArguments = {
   readonly directory: string;
   readonly filename?: string;
+  readonly folder: FolderMode;
 };
 
 export type AppendToFileArguments = {
   readonly path: string;
   readonly heading?: string;
+  readonly folder: FolderMode;
 };
 
 export type CreateOrAppendFileArguments = {
   /** Ending in `/`, or empty, names a folder; the filename is then derived. */
   readonly path: string;
   readonly heading?: string;
+  readonly folder: FolderMode;
 };
 
 /** Read rather than cast: a schema that passed once is not a type, and a record holds JSON. */
@@ -149,10 +177,21 @@ export function asCreateFileArguments(
   }
   if (filename !== undefined && typeof filename !== "string") return undefined;
 
+  const folder = folderModeOf(args);
+  if (folder === undefined) return undefined;
+
   return {
     directory: directory ?? "",
     ...(filename === undefined ? {} : { filename }),
+    folder,
   };
+}
+
+/** Absent is `create`, which is what every file-writing capability did before this. */
+export function folderModeOf(args: JsonObject): FolderMode | undefined {
+  const folder = args["folder"];
+  if (folder === undefined) return "create";
+  return folder === "create" || folder === "require" ? folder : undefined;
 }
 
 export function asCreateOrAppendFileArguments(
@@ -164,7 +203,14 @@ export function asCreateOrAppendFileArguments(
   if (path !== undefined && typeof path !== "string") return undefined;
   if (heading !== undefined && typeof heading !== "string") return undefined;
 
-  return { path: path ?? "", ...(heading === undefined ? {} : { heading }) };
+  const folder = folderModeOf(args);
+  if (folder === undefined) return undefined;
+
+  return {
+    path: path ?? "",
+    ...(heading === undefined ? {} : { heading }),
+    folder,
+  };
 }
 
 export function asAppendToFileArguments(
@@ -176,5 +222,8 @@ export function asAppendToFileArguments(
   if (typeof path !== "string" || path === "") return undefined;
   if (heading !== undefined && typeof heading !== "string") return undefined;
 
-  return { path, ...(heading === undefined ? {} : { heading }) };
+  const folder = folderModeOf(args);
+  if (folder === undefined) return undefined;
+
+  return { path, ...(heading === undefined ? {} : { heading }), folder };
 }

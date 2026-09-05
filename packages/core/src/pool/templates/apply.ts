@@ -7,6 +7,7 @@ import type { ItemId, RoutingTemplateId } from "#types/domain/ids";
 import type { Item } from "#types/domain/item";
 import type { DeliveryRequest, RoutingRecord } from "#types/domain/routing";
 import type { RoutingTemplate } from "#types/domain/template";
+import type { JsonObject } from "#types/json";
 import type { Result } from "#types/result";
 import { expandPatterns } from "./patterns";
 
@@ -78,12 +79,36 @@ function requestFor(
   return {
     destination: template.destination,
     capability: template.capability,
-    arguments: expandPatterns(template.arguments, {
-      capturedAt: item.createdAt,
-      ...(item.utcOffset === undefined ? {} : { utcOffset: item.utcOffset }),
-      zone: config.zone,
-      item: item.id,
-      source: item.source,
-    }),
+    arguments: withFolder(
+      template,
+      expandPatterns(template.arguments, {
+        capturedAt: item.createdAt,
+        ...(item.utcOffset === undefined ? {} : { utcOffset: item.utcOffset }),
+        zone: config.zone,
+        item: item.id,
+        source: item.source,
+      }),
+    ),
   };
+}
+
+/**
+ * `establish` never leaves the template: unestablished it asks for the folder to
+ * be made, established it asks for the folder to be there. So the arguments on
+ * a record are always the two-valued thing, and the record is honest about what
+ * it asked for.
+ *
+ * `create` is written as absence rather than as a value, because it is what
+ * every capability already does with a folder that is not there — and one that
+ * declares no such field would refuse an argument set carrying it.
+ */
+function withFolder(template: RoutingTemplate, args: JsonObject): JsonObject {
+  const folder =
+    template.folder === "establish"
+      ? template.establishedAt === undefined
+        ? "create"
+        : "require"
+      : template.folder;
+
+  return folder === "create" ? args : { ...args, folder };
 }

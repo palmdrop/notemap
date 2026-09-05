@@ -2,6 +2,7 @@ import { recordAction } from "./actions";
 import { enqueueMirrorWrite } from "./mirror";
 import { DELIVERY_FAILURE, destinationDetail } from "./routing/delivery";
 import { landingFor, type Landed } from "./routing/output";
+import { established } from "./templates/establish";
 import { ok, refused } from "#utils/result";
 import type { PoolConfig } from "#types/api/config";
 import type { PoolPorts, PoolTx } from "#types/api/ports";
@@ -174,6 +175,7 @@ async function land(
   const landing = landed?.landing ?? {};
   const at = ports.clock.now();
   await tx.resolveRoutingRecord(id, landing);
+  await established(ports, tx, record, at);
   await enqueueMirrorWrite(ports, tx, { kind: "item", item: record.item }, at);
   await recordAction(ports, tx, {
     kind: "routed",

@@ -6,6 +6,7 @@ import {
   asCreateOrAppendFileArguments,
   CREATE_FILE,
   deriveFilename,
+  folderModeOf,
   insertUnder,
   placeOf,
   renderNote,
@@ -16,7 +17,12 @@ import {
 import { assetNames, placeAssets } from "./assets";
 import type { Dav } from "./dav";
 import { Refused, Unreachable } from "./errors";
-import { collectionsUnder, contain, type Contained } from "./paths";
+import {
+  collectionOf,
+  collectionsUnder,
+  contain,
+  type Contained,
+} from "./paths";
 
 export type Wiring = {
   readonly dav: Dav;
@@ -100,6 +106,7 @@ async function create(
 ): Promise<Landed> {
   const wanted = locate(wiring.root, target);
 
+  await requireFolder(wiring, delivery, wanted, signal);
   await makeCollections(wiring.dav, wanted, signal);
 
   const assets = await placeAssets(wiring.dav, wanted, delivery.assets, signal);
@@ -162,6 +169,8 @@ async function append(
   signal?: AbortSignal,
 ): Promise<Landed> {
   const note = locate(wiring.root, target);
+
+  await requireFolder(wiring, delivery, note, signal);
 
   // Placed once, whatever happens to the note after: the collection they go in
   // is the note's, and an attempt that loses a race re-reads rather than
@@ -276,6 +285,40 @@ function render(wiring: Wiring, delivery: Delivery, note: Contained): Note {
  * root itself is never among them: a vault that is not there is reported as
  * unreachable, on the same terms as an unmounted drive, rather than conjured.
  */
+/**
+ * The folder `require` asked for, where it is not there. Asked at the write
+ * rather than at the decision, since a template routes against accounts that
+ * are routinely asleep, and refused rather than made — a folder that moved with
+ * a reorganisation will not come back on its own, and every note filed into a
+ * new one in the old place is a note nobody meant.
+ */
+export async function requireFolder(
+  wiring: Wiring,
+  delivery: Delivery,
+  path: Contained,
+  signal?: AbortSignal,
+): Promise<void> {
+  if (folderModeOf(delivery.arguments) !== "require") return;
+
+  const collection = collectionOf(path);
+  const looked = await wiring.dav.look(collection, signal);
+  if (looked.kind === "there" && looked.collection) return;
+  // Refused is the server declining to answer, not the folder being gone: the
+  // delivery is unreachable rather than rejected, and retrying is right.
+  if (looked.kind === "refused") {
+    throw new Unreachable(
+      `the account refused to say whether ${path.relative} has a folder (${String(looked.status)})`,
+    );
+  }
+
+  const folder = path.relative.split("/").slice(0, -1).join("/");
+  throw new Refused(
+    folder === ""
+      ? "the destination's own folder is missing"
+      : `${folder}/ is missing`,
+  );
+}
+
 export async function makeCollections(
   dav: Dav,
   path: Contained,

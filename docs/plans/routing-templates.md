@@ -154,24 +154,24 @@ Depends on phases 2 and 3.
 
 Depends on phase 4.
 
-- [ ] `folder: "create" | "require"` on the argument schemas of `create-file`, `append-to-file` and
+- [x] `folder: "create" | "require"` on the argument schemas of `create-file`, `append-to-file` and
       `create-or-append-file`, in both kinds, defaulting to `create` so every existing decision is
       unchanged
-- [ ] The filesystem kinds look for the folder before writing under `require`, and refuse with
+- [x] The filesystem kinds look for the folder before writing under `require`, and refuse with
       `rejected` and a detail naming the folder. Shared in `@notemap/output-markdown` where the
       three capabilities already share their work
-- [ ] The template's `establish` resolves at decision time: unestablished to `create`, established
+- [x] The template's `establish` resolves at decision time: unestablished to `create`, established
       to `require`. The word never reaches an adapter
-- [ ] `establishedAt` is written in the transaction that stores the **first delivered** record
+- [x] `establishedAt` is written in the transaction that stores the **first delivered** record
       naming the template, and **cleared when the template's arguments are edited**
-- [ ] Tests: `require` against a missing folder is `rejected` and the abandon path returns the item
+- [x] Tests: `require` against a missing folder is `rejected` and the abandon path returns the item
       to the queue; `establish` creates once then requires; editing the arguments clears the
       establishment; an abandoned first delivery leaves it unestablished
 
 The abandon path is also where a fired template's tag comes off, which is phase 9's rule and is
 tested there — nothing fires yet at the end of this phase.
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
+- [x] `git commit`
 
 ### Phase 6 — On the wire
 

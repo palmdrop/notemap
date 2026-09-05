@@ -19,6 +19,7 @@ import type {
 } from "#types/domain/routing";
 import type { Result } from "#types/result";
 import { DELIVERY_FAILURE, destinationDetail } from "./delivery";
+import { established } from "../templates/establish";
 import { landingFor, type Landed } from "./output";
 import { prepare } from "./prepare";
 
@@ -203,6 +204,7 @@ async function deliver(
   };
 
   await tx.insertRoutingRecord(delivered);
+  await established(ports, tx, delivered, record.at);
   await enqueueMirrorWrite(
     ports,
     tx,

@@ -1,5 +1,6 @@
 import type {
   CapabilityName,
+  JsonSchema,
   DestinationId,
   Item,
   Pool,
@@ -18,6 +19,17 @@ const CREATE_NOTE = "create-note" as CapabilityName;
 const PATH_SCHEMA = {
   type: "object",
   required: ["path"],
+  properties: {
+    path: { type: "string" },
+    folder: { type: "string", enum: ["create", "require"] },
+  },
+  additionalProperties: false,
+};
+
+/** A capability that writes nothing into a folder, and so declares no mode. */
+const FOLDERLESS_SCHEMA = {
+  type: "object",
+  required: ["path"],
   properties: { path: { type: "string" } },
   additionalProperties: false,
 };
@@ -33,10 +45,10 @@ afterEach(async () => {
   await Promise.all(open.splice(0).map((it) => it.cleanup()));
 });
 
-async function pooled() {
+async function pooled(schema: JsonSchema = PATH_SCHEMA) {
   const destination = fakeDestinations({
     capabilities: [
-      fakeCapability({ name: "create-note", argumentsSchema: PATH_SCHEMA }),
+      fakeCapability({ name: "create-note", argumentsSchema: schema }),
     ],
   });
   const opened = harness(undefined, "stub", destination);
@@ -148,6 +160,146 @@ describe("what a template would route an item as", () => {
     expect(
       await pool.templates.resolve(item.id, "tpl-nobody" as RoutingTemplateId),
     ).toBeUndefined();
+  });
+});
+
+describe("the folder a template asks for", () => {
+  it("asks for nothing where it creates, which is what routing has always done", async () => {
+    const { pool } = await pooled();
+    const template = succeeded(await pool.templates.create(draft()));
+    const item = captured(await pool.capture(envelope()));
+
+    const resolved = await pool.templates.resolve(item.id, template.id);
+
+    expect(resolved?.arguments["folder"]).toBeUndefined();
+  });
+
+  it("asks for the folder outright where it requires one", async () => {
+    const { pool } = await pooled();
+    const template = succeeded(
+      await pool.templates.create(draft({ folder: "require" })),
+    );
+    const item = captured(await pool.capture(envelope()));
+
+    const resolved = await pool.templates.resolve(item.id, template.id);
+
+    expect(resolved?.arguments["folder"]).toBe("require");
+  });
+
+  it("creates once and requires after, which is what establish means", async () => {
+    const { pool } = await pooled();
+    const template = succeeded(
+      await pool.templates.create(draft({ folder: "establish" })),
+    );
+    const first = captured(await pool.capture(envelope({ id: "item-1" })));
+    const second = captured(await pool.capture(envelope({ id: "item-2" })));
+
+    const before = await pool.templates.resolve(first.id, template.id);
+    succeeded(await pool.templates.route(first.id, template.id));
+    const after = await pool.templates.resolve(second.id, template.id);
+
+    expect(before?.arguments["folder"]).toBeUndefined();
+    expect(after?.arguments["folder"]).toBe("require");
+    expect((await pool.templates.get(template.id))?.establishedAt).toEqual(
+      expect.any(String),
+    );
+  });
+
+  it("stays unestablished where the first delivery never landed", async () => {
+    const { pool, destination } = await pooled();
+    destination.answers({ kind: "unreachable", detail: "ECONNREFUSED" });
+    const template = succeeded(
+      await pool.templates.create(draft({ folder: "establish" })),
+    );
+    const item = captured(await pool.capture(envelope()));
+
+    succeeded(await pool.templates.route(item.id, template.id));
+
+    expect(
+      (await pool.templates.get(template.id))?.establishedAt,
+    ).toBeUndefined();
+  });
+
+  it("loses its establishment when the place is edited, since that is a different place", async () => {
+    const { pool } = await pooled();
+    const template = succeeded(
+      await pool.templates.create(draft({ folder: "establish" })),
+    );
+    const item = captured(await pool.capture(envelope()));
+    succeeded(await pool.templates.route(item.id, template.id));
+
+    const edited = succeeded(
+      await pool.templates.edit(template.id, {
+        arguments: { path: "reading/{{captured_at}}.md" },
+      }),
+    );
+
+    expect(edited.establishedAt).toBeUndefined();
+  });
+
+  it("keeps it through a rename, which moves nothing", async () => {
+    const { pool } = await pooled();
+    const template = succeeded(
+      await pool.templates.create(draft({ folder: "establish" })),
+    );
+    const item = captured(await pool.capture(envelope()));
+    succeeded(await pool.templates.route(item.id, template.id));
+
+    const edited = succeeded(
+      await pool.templates.edit(template.id, { name: "Research" }),
+    );
+
+    expect(edited.establishedAt).toEqual(expect.any(String));
+  });
+
+  it("hands the item back where the folder it required is gone", async () => {
+    const { pool, destination } = await pooled();
+    destination.answers({
+      kind: "rejected",
+      detail: "research/2026/ is missing",
+    });
+    const template = succeeded(
+      await pool.templates.create(draft({ folder: "require" })),
+    );
+    const item = captured(await pool.capture(envelope()));
+
+    const refusal = await pool.templates.route(item.id, template.id);
+
+    expect(refusal).toMatchObject({
+      kind: "refused",
+      refusal: {
+        kind: "rejected-by-destination",
+        detail: "research/2026/ is missing",
+      },
+    });
+    // Abandoned on the first attempt: no reservation, and the item is back.
+    expect(await pool.routing.recordsFor(item.id)).toEqual([]);
+    expect(
+      (await pool.views.queue({ limit: 50 })).values.map((each) => each.id),
+    ).toEqual([item.id]);
+  });
+});
+
+describe("a capability that declares no folder mode", () => {
+  it("takes a template that creates, since creating is what it already did", async () => {
+    const { pool } = await pooled(FOLDERLESS_SCHEMA);
+    const template = succeeded(await pool.templates.create(draft()));
+    const item = captured(await pool.capture(envelope()));
+
+    expect((await pool.templates.route(item.id, template.id)).kind).toBe("ok");
+  });
+
+  it("refuses one that requires a folder it cannot promise", async () => {
+    const { pool } = await pooled(FOLDERLESS_SCHEMA);
+    const template = succeeded(
+      await pool.templates.create(draft({ folder: "require" })),
+    );
+    const item = captured(await pool.capture(envelope()));
+
+    expect(await pool.templates.route(item.id, template.id)).toMatchObject({
+      kind: "refused",
+      refusal: { kind: "arguments-invalid" },
+    });
   });
 });
 
