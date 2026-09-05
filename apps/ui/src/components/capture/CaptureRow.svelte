@@ -69,8 +69,7 @@
     picker.value = "";
   }
 
-  async function submit(event: SubmitEvent) {
-    event.preventDefault();
+  async function capture() {
     if (chosen === undefined && text.trim() === "") return;
 
     busy = true;
@@ -103,7 +102,12 @@
 </Rail>
 
 <Body first>
-  <form onsubmit={submit}>
+  <form
+    onsubmit={(event) => {
+      event.preventDefault();
+      void capture();
+    }}
+  >
     <textarea
       bind:this={box}
       bind:value={text}
@@ -113,7 +117,7 @@
         // written in: `⏎` there is a new line, which prose wants.
         if (event.key === "Enter" && event.shiftKey) {
           event.preventDefault();
-          void submit(new SubmitEvent("submit"));
+          void capture();
         }
       }}
       aria-label="What to capture"

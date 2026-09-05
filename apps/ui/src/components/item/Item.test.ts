@@ -245,12 +245,12 @@ test("drops a record when the address moves to another item", async () => {
   expect(screen.getByText("unrouted")).toBeDefined();
 });
 
-/** What a gesture on this surface is answered with, so the pool is not the subject. */
 /** A summary that names the person, which is what a hand-marked item carries. */
 const BY_HAND = {
   routing: { records: 1, pending: 0, to: [{ kind: "user" as const }] },
 };
 
+/** What a gesture on this surface is answered with, so the pool is not the subject. */
 const MARKED = {
   id: "rec-done",
   item: "one",
