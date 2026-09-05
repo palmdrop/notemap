@@ -144,10 +144,7 @@
      tempo, does not report it back as news. -->
 {#if routing && item !== undefined}
   <RoutingComposer
-    item={item.id}
-    subject={client.says(item) || item.payload.type}
-    content={item.payload.content}
-    tags={(item.tags ?? []).map((tag) => tag.name)}
+    {item}
     onrouted={(record) => notices.mark(keyFor(record.id))}
     onclose={() => (routing = false)}
   />

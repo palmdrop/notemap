@@ -1,8 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
 
-import { asked as sentTo, json, routeOf } from "@notemap/client/testing";
+import { anItem, asked as sentTo, json, routeOf } from "@notemap/client/testing";
 
+import { online } from "$testing/dom";
 import { asked, client, pool } from "$testing/pool";
 import { notices } from "$lib/notices.svelte";
 import { NO_PREVIEW_OFFERED, PREVIEW_IS_INDICATIVE } from "$lib/said";
@@ -12,8 +13,21 @@ vi.mock("$lib/client", () => import("$testing/pool"));
 
 afterEach(() => {
   notices.clear();
+  online(true);
+  Reflect.deleteProperty(navigator, "clipboard");
 });
 
+const WHEN = "2026-09-04T10:00:00.000Z";
+
+/** What the browser hands a secure context, which jsdom has none of. */
+function clipboard(): { writeText: ReturnType<typeof vi.fn> } {
+  const held = { writeText: vi.fn(() => Promise.resolve()) };
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: held,
+  });
+  return held;
+}
 const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
 const BOARD = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a78";
 
@@ -109,6 +123,21 @@ function serving(
         target: {},
       });
     }
+    if (route === "POST /v1/items/one/mark-processed") {
+      return json(200, {
+        id: "rec",
+        item: "one",
+        at: WHEN,
+        state: "delivered",
+        target: { kind: "user" },
+      });
+    }
+    if (route === "POST /v1/items/one/archive") {
+      return json(200, anItem("one", { archived: { archivedAt: WHEN } }));
+    }
+    if (route === "POST /v1/items/one/unarchive") {
+      return json(200, anItem("one"));
+    }
     return json(404, { error: { code: "unknown-route" } });
   });
 }
@@ -150,11 +179,22 @@ function servingBrowsable(
   });
 }
 
-function draw() {
-  const closed = vi.fn();
-  render(RoutingComposer, {
-    props: { item: "one", subject: "a note", onclose: closed },
+/** A capture with words in it, which is what a subject and a copy are read from. */
+function aCapture(overrides: Record<string, unknown> = {}) {
+  return anItem("one", {
+    payload: {
+      type: "text",
+      content: { text: "a note" },
+      metadata: {},
+      assets: [],
+    },
+    ...overrides,
   });
+}
+
+function draw(item = aCapture()) {
+  const closed = vi.fn();
+  render(RoutingComposer, { props: { item, onclose: closed } });
   return closed;
 }
 
@@ -550,11 +590,16 @@ function routing(record: Record<string, unknown>) {
   });
 }
 
-function drawAbout(content: unknown) {
+function drawAbout(content: Record<string, unknown>) {
   const closed = vi.fn();
   render(RoutingComposer, {
-    props: { item: "one", subject: "a note", content, onclose: closed },
-  } as never);
+    props: {
+      item: aCapture({
+        payload: { type: "text", content, metadata: {}, assets: [] },
+      }),
+      onclose: closed,
+    },
+  });
   return closed;
 }
 
@@ -730,7 +775,7 @@ test("the destination leaves the line and reads in the chrome", async () => {
   await screen.findByRole("button", { name: /create-file/ });
 
   expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe(
-    "route · Vault",
+    "process · Vault",
   );
   expect(
     screen.queryByRole("combobox", { name: "which destination" }),
@@ -747,7 +792,7 @@ test("backspacing out of an empty line gives the destination back", async () => 
   await fireEvent.keyDown(line, { key: "Backspace" });
 
   await vi.waitFor(() => {
-    expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe("route");
+    expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe("process");
   });
   expect(
     screen.getByRole("combobox", { name: "which destination" }),
@@ -976,13 +1021,8 @@ test("hands the record it got back to whoever opened it", async () => {
   const routed = vi.fn();
   const closed = vi.fn();
   render(RoutingComposer, {
-    props: {
-      item: "one",
-      subject: "a note",
-      onrouted: routed,
-      onclose: closed,
-    },
-  } as never);
+    props: { item: aCapture(), onrouted: routed, onclose: closed },
+  });
 
   await choose(/Vault/);
   await choose(/append/);
@@ -1289,4 +1329,206 @@ test("keeps the field where the destination could not be asked at all", async ()
 
   await screen.findByText("unreachable · best effort");
   expect(screen.getByLabelText("under")).toBeDefined();
+});
+
+/**
+ * The `where` step answers what became of the item, and a configured
+ * destination is only the commonest answer. The other two are the shell's own.
+ */
+test("offers manual and discard below the destinations", async () => {
+  serving([aDestination()]);
+  draw();
+
+  await screen.findByRole("button", { name: /Vault/ });
+  await screen.findByRole("button", { name: /^manual/ });
+  await screen.findByRole("button", { name: /^discard/ });
+});
+
+test("taking discard archives the item, closes, and offers it back", async () => {
+  const transport = serving([aDestination()]);
+  const closed = draw();
+
+  await choose(/^discard/);
+
+  expect(closed).toHaveBeenCalled();
+  await vi.waitFor(() => {
+    expect(sentTo(transport).map(routeOf)).toContain(
+      "POST /v1/items/one/archive",
+    );
+  });
+
+  const said = notices.shown.at(-1);
+  expect(said?.what).toBe("discarded");
+  expect(said?.standing).toBe(true);
+  expect(said?.offer?.label).toBe("undo");
+});
+
+test("taking the offer unarchives it", async () => {
+  const transport = serving([aDestination()]);
+  draw();
+
+  await choose(/^discard/);
+  await vi.waitFor(() => {
+    expect(sentTo(transport).map(routeOf)).toContain(
+      "POST /v1/items/one/archive",
+    );
+  });
+
+  notices.take(notices.shown.at(-1)?.id as string);
+
+  await vi.waitFor(() => {
+    expect(sentTo(transport).map(routeOf)).toContain(
+      "POST /v1/items/one/unarchive",
+    );
+  });
+});
+
+test("discard is typed like any other entry", async () => {
+  const transport = serving([aDestination()]);
+  draw();
+
+  const line = await screen.findByRole("combobox", {
+    name: "which destination",
+  });
+  await fireEvent.input(line, { target: { value: "disc" } });
+  await fireEvent.keyDown(line, { key: "Enter" });
+
+  await vi.waitFor(() => {
+    expect(sentTo(transport).map(routeOf)).toContain(
+      "POST /v1/items/one/archive",
+    );
+  });
+});
+
+test("an entry that cannot apply stays in the list and says why", async () => {
+  serving([aDestination()]);
+  draw(
+    aCapture({
+      archived: { archivedAt: WHEN },
+      routing: { records: 1, pending: 0, to: [{ kind: "user" }] },
+    }),
+  );
+
+  const discard = await screen.findByRole("button", { name: /^discard/ });
+  const manual = await screen.findByRole("button", { name: /^manual/ });
+
+  expect((discard as HTMLButtonElement).disabled).toBe(true);
+  expect(discard.textContent).toContain("already discarded");
+  expect((manual as HTMLButtonElement).disabled).toBe(true);
+  expect(manual.textContent).toContain("already marked");
+});
+
+/** The row's `done` field, moved to where the decision is made. */
+test("manual asks where it went and marks processed", async () => {
+  const transport = serving([aDestination()]);
+  const closed = draw();
+
+  await choose(/^manual/);
+  await fireEvent.input(await screen.findByLabelText("where it went"), {
+    target: { value: "pasted into the fiction vault" },
+  });
+  await choose("mark processed");
+
+  await vi.waitFor(() => {
+    expect(closed).toHaveBeenCalled();
+  });
+
+  const marked = sentTo(transport).find(
+    (request) => routeOf(request) === "POST /v1/items/one/mark-processed",
+  );
+  expect(await marked?.json()).toEqual({ note: "pasted into the fiction vault" });
+});
+
+test("an empty field tells the pool nothing beyond the fact", async () => {
+  const transport = serving([aDestination()]);
+  draw();
+
+  await choose(/^manual/);
+  await fireEvent.keyDown(await screen.findByLabelText("where it went"), {
+    key: "Enter",
+  });
+
+  const marked = await vi.waitFor(() => {
+    const held = sentTo(transport).find(
+      (request) => routeOf(request) === "POST /v1/items/one/mark-processed",
+    );
+    expect(held).toBeDefined();
+    return held;
+  });
+  expect(await marked?.json()).toEqual({});
+});
+
+test("the note takes the caret, and backspacing out of it gives the list back", async () => {
+  serving([aDestination()]);
+  draw();
+
+  await choose(/^manual/);
+  const note = await screen.findByLabelText("where it went");
+  expect(document.activeElement).toBe(note);
+
+  await fireEvent.keyDown(note, { key: "Backspace" });
+
+  await screen.findByRole("combobox", { name: "which destination" });
+  expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe("process");
+});
+
+test("manual offers to copy the text and never takes it unasked", async () => {
+  const held = clipboard();
+  serving([aDestination()]);
+  draw();
+
+  await choose(/^manual/);
+  expect(held.writeText).not.toHaveBeenCalled();
+
+  await choose("copy text");
+  expect(held.writeText).toHaveBeenCalledWith("a note");
+  await screen.findByRole("button", { name: "copied" });
+});
+
+test("nothing offers to copy where the browser has no clipboard", async () => {
+  serving([aDestination()]);
+  draw();
+
+  await choose(/^manual/);
+  await screen.findByLabelText("where it went");
+  expect(screen.queryByRole("button", { name: "copy text" })).toBeNull();
+});
+
+/**
+ * Once `process` is the only way out of the queue, a composer that refuses to
+ * open offline is a queue that cannot be drained offline.
+ */
+test("with the pool out of reach the composer opens and discards", async () => {
+  const transport = serving([aDestination()]);
+  online(false);
+
+  const closed = draw();
+
+  const vault = await screen.findByRole("button", { name: /Vault/ });
+  const manual = await screen.findByRole("button", { name: /^manual/ });
+  expect((vault as HTMLButtonElement).disabled).toBe(true);
+  expect(vault.textContent).toContain("pool out of reach");
+  expect((manual as HTMLButtonElement).disabled).toBe(true);
+
+  const discard = await screen.findByRole("button", { name: /^discard/ });
+  expect((discard as HTMLButtonElement).disabled).toBe(false);
+
+  await choose(/^discard/);
+  expect(closed).toHaveBeenCalled();
+
+  online(true);
+  await vi.waitFor(() => {
+    expect(sentTo(transport).map(routeOf)).toContain(
+      "POST /v1/items/one/archive",
+    );
+  });
+});
+
+test("the composer's tags are offered whatever the pool is doing", async () => {
+  serving([aDestination()]);
+  online(false);
+  draw();
+
+  await choose(/^manual/);
+  await screen.findByText("tags");
 });

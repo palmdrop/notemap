@@ -167,12 +167,14 @@
 
 {#if subject !== undefined}
   <RoutingComposer
-    item={subject.id}
-    subject={client.says(subject) || subject.payload.type}
-    content={subject.payload.content}
-    tags={(subject.tags ?? []).map((tag) => tag.name)}
+    item={subject}
     onrouted={(record) => {
       if (routing !== undefined) went(routing, record);
+    }}
+    ondiscarded={() => {
+      if (routing !== undefined) {
+        lingering.after(routing.item, "discarded", routing.before);
+      }
     }}
     onclose={() => (routing = undefined)}
   />
