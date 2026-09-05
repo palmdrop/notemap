@@ -20,7 +20,11 @@
     places: readonly RememberedPlace[];
     /** What is typed, which the line is still a prefix of. */
     value: string;
-    /** Which of these `↑↓` has landed on, the line owning that walk. */
+    /**
+     * Which of `places` — not of what is drawn — `↑↓` has landed on, the line
+     * owning that walk. A position in the list this narrows to would hold only
+     * as long as the two narrowed it the same way.
+     */
     chosen?: number;
     ontake: (value: string) => void;
   } = $props();
@@ -34,13 +38,14 @@
 {#if shown.length > 0}
   <Group name="used before">
     <div id="used-before-places" role="listbox" aria-label="places used before">
-      {#each shown as place, index (place.value)}
+      {#each shown as place (place.value)}
+        {@const at = places.indexOf(place)}
         <div
-          id="used-before-place-{index}"
+          id="used-before-place-{at}"
           role="option"
           tabindex="-1"
-          aria-selected={chosen === index}
-          class="cursor-default py-0.5 {chosen === index ? 'inverted' : ''}"
+          aria-selected={chosen === at}
+          class="cursor-default py-0.5 {chosen === at ? 'inverted' : ''}"
           onmousedown={(event) => {
             event.preventDefault();
             ontake(place.value);

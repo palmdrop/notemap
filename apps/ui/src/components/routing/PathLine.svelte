@@ -156,7 +156,16 @@
     ...here.map((row) => ({ kind: "entry" as const, row })),
   ]);
 
-  $effect(() => onwalk?.(moved && at < remembered.length ? at : undefined));
+  /**
+   * Where the walk stands, said as a position in `places` rather than in the
+   * narrowed list: the column drawing them narrows separately, and two lists
+   * that must filter alike to agree on an index agree by luck.
+   */
+  const walked = $derived(
+    moved && at < remembered.length ? places.indexOf(remembered[at]!) : -1,
+  );
+
+  $effect(() => onwalk?.(walked === -1 ? undefined : walked));
 
   // The place is what a composer with a destination in its chrome is for, so
   // the caret is here rather than waiting to be clicked into.
@@ -329,8 +338,8 @@
   const active = $derived(
     !moved || choices[at] === undefined
       ? undefined
-      : at < remembered.length
-        ? `used-before-place-${at}`
+      : walked !== -1
+        ? `used-before-place-${walked}`
         : `path-line-place-${at}`,
   );
 </script>
@@ -354,6 +363,9 @@
         >{/if}
     </div>
 
+    <!-- `aria-controls` names both lists because `↑↓` walks both: an active
+         option in one this did not name is somewhere a reader was told not to
+         look. `used-before-places` is drawn in the column beside this one. -->
     <input
       bind:this={input}
       {value}
@@ -372,7 +384,7 @@
       role="combobox"
       aria-autocomplete="list"
       aria-expanded={choices.length > 0}
-      aria-controls="path-line-places"
+      aria-controls="used-before-places path-line-places"
       aria-activedescendant={active}
       class="relative w-full bg-transparent text-transparent caret-ink outline-none"
     />

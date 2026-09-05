@@ -63,7 +63,12 @@ test("says nothing at all where nothing was used before", () => {
   expect(screen.queryByText("used before")).toBeNull();
 });
 
-test("marks the one the line's walk has landed on", () => {
+/**
+ * The walk names a place by where it sits in `places`, not by where this drew
+ * it: ranking happens here and narrowing happens on both sides, so a position
+ * in what is on screen is a number the two would have to agree on by luck.
+ */
+test("marks the one the line's walk has landed on, by its place in the answer", () => {
   draw("", [used("journal/", 6), used("drafts/", 12)]);
 
   const drawn = screen.getAllByRole("option");
@@ -72,11 +77,23 @@ test("marks the one the line's walk has landed on", () => {
     "false",
   ]);
 
-  draw("", [used("journal/", 6), used("drafts/", 12)], 0);
+  // One in the pool's answer, and drawn first, being the most used.
+  draw("", [used("journal/", 6), used("drafts/", 12)], 1);
   const walked = screen.getAllByRole("option").slice(2);
-  // Ranked, so the most used is the one at nought.
-  expect(walked[0]?.getAttribute("aria-selected")).toBe("true");
   expect(walked[0]?.textContent).toContain("drafts/");
+  expect(walked[0]?.getAttribute("aria-selected")).toBe("true");
+  expect(walked[1]?.getAttribute("aria-selected")).toBe("false");
+});
+
+/** The id the line points `aria-activedescendant` at is that same position. */
+test("names each row by where its place sits in the answer", () => {
+  draw("", [used("journal/", 6), used("drafts/", 12)]);
+
+  const drawn = screen.getAllByRole("option");
+  expect(drawn.map((one) => one.id)).toEqual([
+    "used-before-place-1",
+    "used-before-place-0",
+  ]);
 });
 
 test("takes a place whole when it is pointed at", async () => {
