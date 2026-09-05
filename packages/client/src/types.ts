@@ -17,12 +17,18 @@ import type {
   MintedToken,
   Payload,
   RememberedRequest,
+  ResolvedRoutingTemplate,
   RouteRequest,
   RoutingPreview,
   RoutingRecord,
+  RoutingTemplate,
+  RoutingTemplateId,
+  RoutingTemplateReport,
+  CreateRoutingTemplateRequest,
   TagUse,
   Token,
   UpdateDestinationRequest,
+  UpdateRoutingTemplateRequest,
 } from "./api/types";
 import type { Observable } from "rxjs";
 
@@ -87,6 +93,36 @@ export type CaptureInput = {
  * are questions only the daemon can answer. A shell disables these rather than
  * queuing them, and reads the cached list meanwhile.
  */
+export interface TemplatesApi {
+  /** What was last read, for a screen to render while the pool is unreachable. */
+  readonly all: Observable<readonly RoutingTemplate[]>;
+  /** The same cache, read now: a composer naming one is a question with an answer. */
+  readonly held: readonly RoutingTemplate[];
+
+  /** Fills the cache `all` answers from, and answers the same list. */
+  load(): Promise<readonly RoutingTemplate[]>;
+  /**
+   * Whether its destination can still support it, asked now and kept by
+   * nothing: a folder that was there a minute ago is not a fact about now.
+   */
+  report(id: RoutingTemplateId): Promise<RoutingTemplateReport>;
+  /**
+   * What it would route this item as, expanded, reserving nothing. What a
+   * composer draws before the commit.
+   */
+  resolve(
+    item: ItemId,
+    template: RoutingTemplateId,
+  ): Promise<ResolvedRoutingTemplate>;
+
+  create(request: CreateRoutingTemplateRequest): Promise<RoutingTemplate>;
+  update(
+    id: RoutingTemplateId,
+    changes: UpdateRoutingTemplateRequest,
+  ): Promise<RoutingTemplate>;
+  delete(id: RoutingTemplateId): Promise<void>;
+}
+
 export interface DestinationsApi {
   /** What was last read, for a screen to render while the pool is unreachable. */
   readonly all: Observable<readonly Destination[]>;
@@ -308,6 +344,7 @@ export interface Client {
 
   readonly routing: RoutingApi;
   readonly destinations: DestinationsApi;
+  readonly templates: TemplatesApi;
   readonly tags: TagsApi;
   readonly actions: ActionsApi;
 

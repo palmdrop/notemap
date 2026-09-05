@@ -177,24 +177,24 @@ tested there — nothing fires yet at the end of this phase.
 
 Depends on phase 5.
 
-- [ ] `GET /v1/templates`, `POST /v1/templates`, and edit and delete beside them, shaped on
+- [x] `GET /v1/templates`, `POST /v1/templates`, and edit and delete beside them, shaped on
       `/v1/destinations`, which is the surface a settings page already knows how to read
-- [ ] `POST /v1/items/{id}/route` accepts a **template** in place of a destination, a capability and
+- [x] `POST /v1/items/{id}/route` accepts a **template** in place of a destination, a capability and
       arguments. One route, two bodies, because it is one decision either way
-- [ ] `POST /v1/items/{id}/route/preview` takes the same body, so previewing a template costs
+- [x] `POST /v1/items/{id}/route/preview` takes the same body, so previewing a template costs
       nothing extra
-- [ ] `POST /v1/items/{id}/route/resolve` answers what a template would route as — the destination,
+- [x] `POST /v1/items/{id}/route/resolve` answers what a template would route as — the destination,
       the capability and the expanded arguments — without reserving anything. This is what lets the
       composer draw the filename before the commit, and it is a different question from preview,
       which answers bytes
-- [ ] `GET /v1/templates/{id}/report`, the live read, on `/v1/destinations/{id}/description`'s
+- [x] `GET /v1/templates/{id}/report`, the live read, on `/v1/destinations/{id}/description`'s
       terms: never folded into the list, so the settings page draws from pool state instantly and
       each row goes and looks on its own
-- [ ] The client holds templates in its cache and offers them offline, on what it already does for
+- [x] The client holds templates in its cache and offers them offline, on what it already does for
       destinations
-- [ ] Tests: the routes beside themselves; the client's cache; the OpenAPI document builds
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
-- [ ] `git commit`
+- [x] Tests: the routes beside themselves; the client's cache; the OpenAPI document builds
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
+- [x] `git commit`
 
 ### Phase 7 — The composer takes a template
 

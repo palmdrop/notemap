@@ -10,6 +10,7 @@ import { rewritten, saidIn } from "./capture/says";
 import { PoolChanged, Refused, saidBy, Unreachable } from "./errors";
 import { derived, writable, type Writable } from "./observable/observable";
 import { createDestinations } from "./destinations/destinations";
+import { createTemplates } from "./templates/templates";
 import { createOutbox } from "./outbox/outbox";
 import { sendOperation } from "./outbox/registry";
 import { undrained, waiting } from "./outbox/undrained";
@@ -30,6 +31,7 @@ import {
   rebuilt,
   settle,
   settledDestination,
+  settledTemplate,
   withBlobUrl,
   withdrawn,
   type ClientState,
@@ -491,6 +493,18 @@ export function createClient(config: ClientConfig): Client {
       settled: (id, held) =>
         after(() =>
           state.update((current) => settledDestination(current, id, held)),
+        ),
+    }),
+
+    templates: createTemplates({
+      api,
+      all: derived(state.changes, (current) => current.templates),
+      held: () => state.get().templates,
+      cached: (templates) =>
+        after(() => state.update((current) => ({ ...current, templates }))),
+      settled: (id, held) =>
+        after(() =>
+          state.update((current) => settledTemplate(current, id, held)),
         ),
     }),
 

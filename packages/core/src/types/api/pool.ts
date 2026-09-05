@@ -29,6 +29,7 @@ import type {
   RoutingTemplateDraft,
 } from "../domain/template";
 import type { ResolvedTemplate } from "../../pool/templates/apply";
+import type { RoutingTemplateReport } from "../../pool/templates/report";
 import type { Artifact, EnrichmentStatus } from "../domain/enrichment";
 import type {
   ArtifactId,
@@ -217,6 +218,16 @@ export interface TemplatesApi {
    * it, since the record carries what it routed as.
    */
   delete(id: RoutingTemplateId): Promise<Result<void, RoutingTemplateRefusal>>;
+
+  /**
+   * Whether its destination can support it *now*: the one call here that
+   * reaches the outside world, and so the one that can hang. Asked per
+   * template. Absent means no template has that id.
+   */
+  report(
+    id: RoutingTemplateId,
+    signal?: AbortSignal,
+  ): Promise<RoutingTemplateReport | undefined>;
 
   /**
    * What this template would route this item as — the destination, the

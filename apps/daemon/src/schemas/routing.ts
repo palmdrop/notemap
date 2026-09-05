@@ -64,22 +64,36 @@ export const routingRecordsSchema = z
   .object({ values: z.array(routingRecordSchema) })
   .openapi("RoutingRecords");
 
+/**
+ * One route, two bodies, because it is one decision either way: a destination
+ * with its capability and arguments, or a template that already holds all
+ * three. A template's arguments are expanded when the decision is made, so the
+ * record carries a place a person can read.
+ */
 export const routeRequestSchema = z
-  .strictObject({
-    destination: z.string().min(1).openapi({
-      description: "One of the ids `GET /v1/destinations` reports.",
-      example: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
+  .union([
+    z.strictObject({
+      destination: z.string().min(1).openapi({
+        description: "One of the ids `GET /v1/destinations` reports.",
+        example: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
+      }),
+      capability: z.string().min(1).openapi({
+        description: "One the destination declared. Anything else is refused.",
+        example: "create-file",
+      }),
+      arguments: jsonObject.openapi({
+        description:
+          "What the capability is pointed at, in its own terms. Must satisfy the capability's `argumentsSchema`.",
+        example: { directory: "inbox", filename: "a-thought.md" },
+      }),
     }),
-    capability: z.string().min(1).openapi({
-      description: "One the destination declared. Anything else is refused.",
-      example: "create-file",
+    z.strictObject({
+      template: z.string().min(1).openapi({
+        description: "One of the ids `GET /v1/templates` reports.",
+        example: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
+      }),
     }),
-    arguments: jsonObject.openapi({
-      description:
-        "What the capability is pointed at, in its own terms. Must satisfy the capability's `argumentsSchema`.",
-      example: { directory: "inbox", filename: "a-thought.md" },
-    }),
-  })
+  ])
   .openapi("RouteRequest");
 
 export const capabilitySchema = z

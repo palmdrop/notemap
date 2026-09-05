@@ -43,6 +43,13 @@ export function persist(
   );
   whole(
     state,
+    (current) => current.templates,
+    (templates) => store.writeTemplates(templates),
+    hydrated,
+    report,
+  );
+  whole(
+    state,
     (current) => current.pool,
     async (pool) => {
       if (pool !== undefined) await store.writePoolIdentity(pool);

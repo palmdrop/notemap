@@ -90,6 +90,20 @@ describe("the routing templates a pool holds", () => {
     expect(await p.routingTemplates()).toHaveLength(2);
   });
 
+  it("does not stand in the way of deleting the destination it names", async () => {
+    const { pool: p } = pool();
+    await putDestinations(p, destination());
+    await putTemplates(p, template());
+
+    await p.transaction((tx) => tx.deleteDestination(VAULT));
+
+    expect(
+      (await p.routingTemplate("tpl-research" as RoutingTemplateId))
+        ?.destination,
+    ).toBe(VAULT);
+    expect(await p.destination(VAULT)).toBeUndefined();
+  });
+
   it("says which templates a destination's deletion would strand", async () => {
     const { pool: p } = pool();
     await putDestinations(p, destination(), destination({ id: "board" }));

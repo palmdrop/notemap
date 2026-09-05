@@ -646,7 +646,11 @@ export const MIGRATIONS: readonly string[] = [
   CREATE TABLE routing_templates (
     id             TEXT    NOT NULL PRIMARY KEY,
     name           TEXT    NOT NULL,
-    destination_id TEXT    NOT NULL REFERENCES destinations (id),
+    -- No foreign key, deliberately: a destination a template names stays
+    -- deletable — a template is configuration, where a record is history — and
+    -- the stranded template goes on naming what it named, so it can be
+    -- repointed rather than silently emptied.
+    destination_id TEXT    NOT NULL,
     capability     TEXT    NOT NULL,
     arguments      TEXT    NOT NULL,
     folder         TEXT    NOT NULL CHECK (folder IN ('create', 'require', 'establish')),
