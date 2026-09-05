@@ -77,18 +77,18 @@
     spellcheck="false"
     autocapitalize="off"
     autocomplete="off"
-    aria-label="which destination"
+    aria-label="what became of it"
     role="combobox"
     aria-autocomplete="list"
     aria-expanded={narrowed.length > 0}
-    aria-controls="destination-line-matches"
+    aria-controls="where-line-matches"
     class="w-full px-2 py-0.5 outline-none field"
   />
 
   <div
-    id="destination-line-matches"
+    id="where-line-matches"
     role="listbox"
-    aria-label="destinations"
+    aria-label="where it can go"
     class="mt-2"
   >
     {#each narrowed as one (one.id)}

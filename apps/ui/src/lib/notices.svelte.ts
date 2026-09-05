@@ -113,17 +113,17 @@ export const notices = {
       remember(notice.key);
     }
 
-    let standing = held;
+    let kept = held;
     if (notice.only !== undefined) {
       for (const gone of held) {
         if (gone.only === notice.only) forget(gone.id);
       }
-      standing = held.filter((one) => one.only !== notice.only);
+      kept = held.filter((one) => one.only !== notice.only);
     }
 
     minted += 1;
     const id = `notice-${String(minted)}`;
-    held = trimmed([...standing, { ...notice, id }]);
+    held = trimmed([...kept, { ...notice, id }]);
 
     if (notice.standing !== true) {
       timers.set(

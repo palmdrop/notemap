@@ -1,7 +1,7 @@
 # Review: One way out of the queue
 
 **Date**: 2026-09-05
-**Status**: Open
+**Status**: Resolved
 **Scope**: `agent/one-way-to-process` vs `main` — `apps/ui/src/`, `docs/specs/shell.md`, `CONTEXT.md`
 **Plan**: `docs/plans/one-way-to-process.md`
 **Spec**: `docs/specs/shell.md`, `docs/specs/client.md`
@@ -143,4 +143,22 @@ processed."
 
 ## Resolution
 
-<!-- Findings are open until this section exists and Status is flipped. -->
+*2026-09-05.*
+
+1. **Fixed.** `Queue.svelte`'s `went()` reads the word off `record.target.kind` first — `manual`
+   where the target is the person, the `routed`/`retrying` pair only where a destination has it.
+   `Queue.test.ts` now asserts the word the row wears after a mark by hand, and fails without the
+   fix. `shell.md § The row is watched out` names the four words and the rule that the word comes
+   from what the record reads as rather than from its state, which is what went wrong.
+2. **Fixed.** `shell.md § The composer is for processing` says `done`, with the reason: the
+   glossary keeps the word off the state and spends it on the gesture.
+3. **Fixed.** The 2026-09-04 paragraph carries an `*Amended 2026-09-05*` note — one line, the
+   distinction spent as muted ink on the controls rather than as a line of their own — and the two
+   phrases below it stop calling `copy edit open` "the other lane".
+4. **Fixed.** The line asks `what became of it` and its listbox is `where it can go`; the internal
+   id went with them.
+5. **Fixed.** The local is `kept`.
+6. **Fixed.** `"a destination that shares a prefix with one of the two takes nothing"` — a
+   destination named `discography` beside `discard` takes nothing and says `2 match`.
+7. **Fixed.** `"keeps what was written when the pool refuses the marking"`.
+8. **Fixed.**

@@ -436,8 +436,11 @@ pool or do not happen ([client.md](client.md#the-outbox)); what changed is where
 
 **The composer says `process` until something is decided, and the true verb after.** The chrome
 reads `process`, then `process · vault` or `process · manual`; the commit reads `route` for a
-destination and `mark processed` for `manual`. One door, and the specific word at the moment there
-is one to say — which is the same instinct that makes a record read as its destination rather than
+destination and `done` for `manual`. **`done` is a verb here and nothing else** *(amended
+2026-09-05)*: the glossary keeps the word off the *state*, an item being **processed** rather than
+done, and spends it on the gesture — what a person presses to say they carried this onward
+themselves, beside `route` ([CONTEXT.md](../../CONTEXT.md)). One door, and the specific word at the
+moment there is one to say — which is the same instinct that makes a record read as its destination rather than
 as the capability that carried it.
 
 **Taking a destination puts the composer in two columns** *(2026-09-04)*, where the place is a line
@@ -706,16 +709,23 @@ padding** — the padding the accent fill needs — so the words align down the 
 the boxes, and a line with fewer of them closes up rather than leaving a hole where one would have
 been.
 
+*Amended 2026-09-05*: **one line.** The split was what a set of six of unclear rank needed, and
+there is one way out of the queue now (below) — so the leaving line is a single control, and a
+second line drawn for three quiet ones said more about the layout than about the row. What the
+grid carried survives the flattening: the distinction is still there, spent as **muted ink on the
+controls themselves** rather than as a line of their own, and every action still takes the same
+inline padding. What goes with the columns is aligning down them, there being one row to align.
+
 #### One way out of the queue
 
-*(2026-09-05.)* **`process` is the only control on the leaving line.** It was three — `route`,
+*(2026-09-05.)* **`process` is the only way out of the queue.** It was three — `route`,
 `done`, `archive` — presented as siblings a person chose between, when what a person has is one
 question with several answers: *this item is finished with, and here is what became of it*. Three
 controls of unclear rank asked them to know the shell's vocabulary before they could act on their
 own intent. So the three become one, in the accent, and what differed between them becomes the
 composer's first step ([below](#the-composer-is-for-processing)).
 
-**`copy edit open` do not fold in.** They are the other lane and stay exactly as they are: none of
+**`copy edit open` do not fold in.** They stay exactly as they are, beside it and muted: none of
 them is a way out of the queue, and putting them behind `process` would make the word mean *do
 something with this*, which is not a decision anybody makes.
 
@@ -868,8 +878,12 @@ brevity cost here *(amended 2026-09-03, after reading it in use)*.
 shuts on: a failure about a delivery nobody can now look up would outlive the session that raised
 it.
 
-**The row is watched out rather than vanishing.** A row that has been routed, marked done or
-archived holds its place for one beat wearing the word for what became of it, then goes. It is the
+**The row is watched out rather than vanishing.** A row that has been processed holds its place for
+one beat wearing the word for what became of it, then goes — `routed` where a destination has it,
+`retrying` where the pool recorded a decision it has not carried out, `manual` where the person
+carried it onward, `discarded` where it was noise *(amended 2026-09-05)*. **The word is what the
+record reads as and not what its state says**: a mark by hand is born delivered, having nothing to
+reach, so a word chosen off the state alone would name a carrier there never was. It is the
 shell drawing what it has just done and nothing about what the pool holds, so it takes no handler:
 it cannot be opened and its actions are gone with it. A reader who has asked for less movement is
 shown none — the row goes at once rather than lingering more briefly.

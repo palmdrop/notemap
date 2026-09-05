@@ -509,6 +509,11 @@ test("a row that leaves the queue says where it went", async () => {
       "marked processed",
     );
   });
+
+  // A mark by hand is born delivered, having nothing to reach, so `routed` is
+  // what the state alone would say and it names a carrier there never was.
+  expect(await screen.findByText("manual")).toBeDefined();
+  expect(screen.queryByText("routed")).toBeNull();
 });
 
 /** Archiving makes no record, so the corner is the only place its undo can sit. */

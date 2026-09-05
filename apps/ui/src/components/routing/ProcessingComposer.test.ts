@@ -727,7 +727,7 @@ test("a tag taken in the composer stays applied when the route fails", async () 
 });
 
 const typing = () =>
-  screen.getByRole("combobox", { name: "which destination" });
+  screen.getByRole("combobox", { name: "what became of it" });
 
 test("takes a destination by typing enough of its name", async () => {
   serving([aDestination(), aDestination({ id: BOARD, name: "Board" })]);
@@ -783,7 +783,7 @@ test("the destination leaves the line and reads in the chrome", async () => {
     "process · Vault",
   );
   expect(
-    screen.queryByRole("combobox", { name: "which destination" }),
+    screen.queryByRole("combobox", { name: "what became of it" }),
   ).toBeNull();
 });
 
@@ -802,7 +802,7 @@ test("backspacing out of an empty line gives the destination back", async () => 
     );
   });
   expect(
-    screen.getByRole("combobox", { name: "which destination" }),
+    screen.getByRole("combobox", { name: "what became of it" }),
   ).toBeDefined();
 });
 
@@ -938,7 +938,7 @@ test("the destination line has the caret when the composer opens", async () => {
   drawAbout({ text: "a note" });
 
   const line = await screen.findByRole("combobox", {
-    name: "which destination",
+    name: "what became of it",
   });
   expect(document.activeElement).toBe(line);
 });
@@ -962,7 +962,7 @@ test("the destination line takes it back when the place is released", async () =
   await fireEvent.keyDown(place, { key: "Backspace" });
 
   const line = await screen.findByRole("combobox", {
-    name: "which destination",
+    name: "what became of it",
   });
   expect(document.activeElement).toBe(line);
 });
@@ -981,7 +981,7 @@ test("says it once narrowed, and once in the list, when typing narrows", async (
   drawAbout({ text: "a note" });
 
   await screen.findByRole("button", { name: "Vault" });
-  const line = screen.getByRole("combobox", { name: "which destination" });
+  const line = screen.getByRole("combobox", { name: "what became of it" });
   await fireEvent.input(line, { target: { value: "Va" } });
 
   expect(screen.getAllByText("Vault")).toHaveLength(2);
@@ -1395,7 +1395,7 @@ test("discard is typed like any other entry", async () => {
   draw();
 
   const line = await screen.findByRole("combobox", {
-    name: "which destination",
+    name: "what became of it",
   });
   await fireEvent.input(line, { target: { value: "disc" } });
   await fireEvent.keyDown(line, { key: "Enter" });
@@ -1405,6 +1405,27 @@ test("discard is typed like any other entry", async () => {
       "POST /v1/items/one/archive",
     );
   });
+});
+
+/**
+ * The two the shell invents are names in the same list, so a destination can
+ * collide with one. The existing rule holds: it takes nothing and says how many
+ * matched, rather than preferring either the pool's entry or its own.
+ */
+test("a destination that shares a prefix with one of the two takes nothing", async () => {
+  const transport = serving([aDestination({ name: "discography" })]);
+  draw();
+
+  const line = await screen.findByRole("combobox", {
+    name: "what became of it",
+  });
+  await fireEvent.input(line, { target: { value: "disc" } });
+  await fireEvent.keyDown(line, { key: "Enter" });
+
+  expect(screen.getByText("2 match")).toBeDefined();
+  expect(sentTo(transport).map(routeOf)).not.toContain(
+    "POST /v1/items/one/archive",
+  );
 });
 
 test("an entry that cannot apply stays in the list and says why", async () => {
@@ -1467,6 +1488,30 @@ test("an empty field tells the pool nothing beyond the fact", async () => {
   expect(await marked?.json()).toEqual({});
 });
 
+/** The one typed thing in this step, and a refusal must not take it away. */
+test("keeps what was written when the pool refuses the marking", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route === "POST /v1/items/one/mark-processed") {
+      return json(409, { error: { code: "conflict", message: "no" } });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+  const closed = draw();
+
+  await choose(/^manual/);
+  const note = await screen.findByLabelText("where it went");
+  await fireEvent.input(note, { target: { value: "the fiction vault" } });
+  await choose("done");
+
+  await screen.findByRole("status");
+  expect((note as HTMLInputElement).value).toBe("the fiction vault");
+  expect(closed).not.toHaveBeenCalled();
+});
+
 test("the note takes the caret, and backspacing out of it gives the list back", async () => {
   serving([aDestination()]);
   draw();
@@ -1477,7 +1522,7 @@ test("the note takes the caret, and backspacing out of it gives the list back", 
 
   await fireEvent.keyDown(note, { key: "Backspace" });
 
-  await screen.findByRole("combobox", { name: "which destination" });
+  await screen.findByRole("combobox", { name: "what became of it" });
   expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe("process");
 });
 
@@ -1556,7 +1601,7 @@ test("esc gives the destination back before it closes the composer", async () =>
 
   await fireEvent.keyDown(window, { key: "Escape" });
 
-  await screen.findByRole("combobox", { name: "which destination" });
+  await screen.findByRole("combobox", { name: "what became of it" });
   expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe("process");
   expect(closed).not.toHaveBeenCalled();
 
@@ -1573,7 +1618,7 @@ test("esc gives the list back from manual too", async () => {
 
   await fireEvent.keyDown(window, { key: "Escape" });
 
-  await screen.findByRole("combobox", { name: "which destination" });
+  await screen.findByRole("combobox", { name: "what became of it" });
   expect(screen.queryByLabelText("where it went")).toBeNull();
   expect(closed).not.toHaveBeenCalled();
 });

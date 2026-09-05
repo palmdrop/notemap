@@ -115,7 +115,14 @@
   function went(going: { item: Item; before?: string }, record: RoutingRecord) {
     notices.raise(saidOf(record, nameOf, aboutItem(going.item)));
 
-    const word = record.state === "delivered" ? "routed" : "retrying";
+    // A mark by hand is born delivered, having nothing to reach, so the state
+    // says nothing about it: the word is the one the record already reads as.
+    const word =
+      record.target.kind !== "destination"
+        ? "manual"
+        : record.state === "delivered"
+          ? "routed"
+          : "retrying";
     lingering.after(going.item, word, going.before);
   }
 </script>
