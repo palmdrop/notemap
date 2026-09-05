@@ -21,12 +21,14 @@ import type {
   MintableId,
   PayloadTypeName,
   RoutingRecordId,
+  RoutingTemplateId,
   SourceId,
   Timestamp,
 } from "#types/domain/ids";
 import type { Item } from "#types/domain/item";
 import type { Job } from "#types/domain/work";
 import type { RoutingRecord } from "#types/domain/routing";
+import type { RoutingTemplate } from "#types/domain/template";
 import type { JsonObject, JsonSchema } from "#types/json";
 import { Unusable } from "./usability";
 import { deliveryFor } from "../routing/delivery";
@@ -61,6 +63,7 @@ type Wiring = {
   readonly kinds?: readonly { name: string; settingsSchema?: JsonSchema }[];
   readonly records?: readonly RoutingRecord[];
   readonly items?: readonly Item[];
+  readonly templates?: readonly RoutingTemplate[];
 };
 
 type Wired = PoolPorts & {
@@ -123,6 +126,8 @@ function ports(wiring: Wiring = {}): Wired {
       ),
     routingRecord: async (id: RoutingRecordId) =>
       records.find((record) => record.id === id),
+    routingTemplatesNaming: async (id: DestinationId) =>
+      (wiring.templates ?? []).filter((each) => each.destination === id),
     item: async (id: ItemId) => items.get(id),
     artifacts: async () => [],
     asset: async () => undefined,
@@ -565,6 +570,29 @@ describe("deleting a destination", () => {
     expect(wired.appended.map((each) => each.kind)).toEqual([
       "destination-deleted",
     ]);
+  });
+
+  it("goes where a template names it, and the entry says which it stranded", async () => {
+    const wired = ports({
+      destinations: [fakeDestinationRow({ id: "vault", kind: FILESYSTEM })],
+      templates: [
+        {
+          id: "tpl-research" as RoutingTemplateId,
+          name: "Research links",
+          destination: "vault" as DestinationId,
+          capability: "create-file" as CapabilityName,
+          arguments: {},
+          folder: "create",
+          createdAt: "2026-09-05T08:00:00.000Z" as Timestamp,
+          modifiedAt: "2026-09-05T08:00:00.000Z" as Timestamp,
+        },
+      ],
+    });
+
+    expect((await remove(wired, "vault" as DestinationId)).kind).toBe("ok");
+    expect(wired.appended.at(-1)?.detail).toMatchObject({
+      stranded: ["tpl-research"],
+    });
   });
 });
 

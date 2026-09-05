@@ -6,9 +6,18 @@ import type { ItemId, Timestamp } from "#types/domain/ids";
 import type { Item } from "#types/domain/item";
 import type { RoutingRecord } from "#types/domain/routing";
 
-import { destination, poolState, type PoolState } from "./arbitraries";
+import {
+  destination,
+  poolState,
+  routingTemplate,
+  type PoolState,
+} from "./arbitraries";
 import { parseMirrorRecord, serialiseMirrorRecord } from "./codec";
-import { projectDestinationRecord, projectMirrorRecord } from "./record";
+import {
+  projectDestinationRecord,
+  projectMirrorRecord,
+  projectTemplateRecord,
+} from "./record";
 
 const project = (state: PoolState) =>
   projectMirrorRecord(state.item, state.assets, state.artifacts, state.routing);
@@ -86,6 +95,28 @@ describe("the record round trips", () => {
     fc.assert(
       fc.property(destination(), (held) => {
         const once = serialiseMirrorRecord(projectDestinationRecord(held));
+        expect(serialiseMirrorRecord(parseMirrorRecord(once))).toBe(once);
+      }),
+      { numRuns: 500 },
+    );
+  });
+
+  it("carries a template whole, its patterns and its establishment", () => {
+    fc.assert(
+      fc.property(routingTemplate(), (held) => {
+        const record = projectTemplateRecord(held);
+        expect(parseMirrorRecord(serialiseMirrorRecord(record))).toEqual(
+          record,
+        );
+      }),
+      { numRuns: 500 },
+    );
+  });
+
+  it("keeps a template byte for byte a second time round", () => {
+    fc.assert(
+      fc.property(routingTemplate(), (held) => {
+        const once = serialiseMirrorRecord(projectTemplateRecord(held));
         expect(serialiseMirrorRecord(parseMirrorRecord(once))).toBe(once);
       }),
       { numRuns: 500 },

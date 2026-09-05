@@ -23,11 +23,17 @@ import type {
   DestinationProbe,
   DestinationReport,
 } from "../domain/destination";
+import type {
+  RoutingTemplate,
+  RoutingTemplateChanges,
+  RoutingTemplateDraft,
+} from "../domain/template";
 import type { Artifact, EnrichmentStatus } from "../domain/enrichment";
 import type {
   ArtifactId,
   AssetId,
   DestinationId,
+  RoutingTemplateId,
   Duration,
   EnrichmentName,
   ItemId,
@@ -71,6 +77,7 @@ import type {
   DeliveryRefusal,
   DestinationDeletionRefusal,
   DestinationRefusal,
+  RoutingTemplateRefusal,
   EditRefusal,
   EnrichmentRefusal,
   LeaseRefusal,
@@ -185,6 +192,29 @@ export interface DestinationsApi {
 
   /** Allowed only where no routing record has ever named it. */
   delete(id: DestinationId): Promise<Result<void, DestinationDeletionRefusal>>;
+}
+
+export interface TemplatesApi {
+  /** Instant and asking nothing: what the pool holds, oldest first. */
+  list(): Promise<readonly RoutingTemplate[]>;
+  get(id: RoutingTemplateId): Promise<RoutingTemplate | undefined>;
+
+  create(
+    draft: RoutingTemplateDraft,
+  ): Promise<Result<RoutingTemplate, RoutingTemplateRefusal>>;
+  /**
+   * Every field a person supplied, in one transaction, on `destinations.edit`'s
+   * terms. A `triggerTag` of `null` takes the tag off.
+   */
+  edit(
+    id: RoutingTemplateId,
+    changes: RoutingTemplateChanges,
+  ): Promise<Result<RoutingTemplate, RoutingTemplateRefusal>>;
+  /**
+   * Deleted rather than retired: a record made from one keeps resolving without
+   * it, since the record carries what it routed as.
+   */
+  delete(id: RoutingTemplateId): Promise<Result<void, RoutingTemplateRefusal>>;
 }
 
 export interface RoutingApi {
@@ -312,6 +342,7 @@ export interface Pool {
   readonly suggestions: SuggestionsApi;
   readonly enrichment: EnrichmentApi;
   readonly destinations: DestinationsApi;
+  readonly templates: TemplatesApi;
   readonly routing: RoutingApi;
   readonly assets: AssetsApi;
   readonly work: WorkApi;

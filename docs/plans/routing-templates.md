@@ -81,32 +81,37 @@ Depends on nothing.
 
 Depends on phase 1.
 
-- [ ] `RoutingTemplate` in `#types/domain`: an id, a name, the destination, the capability, the
+- [x] `RoutingTemplate` in `#types/domain`: an id, a name, the destination, the capability, the
       arguments as patterns, the folder mode, an optional trigger tag, `establishedAt`, and the
       timestamps a destination row already carries
-- [ ] Core's read and write halves beside `pool/destinations/`, in `pool/templates/`: list, create,
+- [x] Core's read and write halves beside `pool/destinations/`, in `pool/templates/`: list, create,
       edit, delete. Not retire — a destination is retired because records name it forever, and a
       template names nothing that outlives it
-- [ ] A trigger tag is **unique across templates** and must sit under `route/`. Refuse both, with
+- [x] A trigger tag is **unique across templates** and must sit under `route/`. Refuse both, with
       their own refusal kinds
-- [ ] **Deleting a destination a template names is allowed, and warns**, naming the templates it
+- [x] **Deleting a destination a template names is allowed, and warns**, naming the templates it
       will strand. A record naming a destination still refuses the delete: a record is history that
       would otherwise name nothing, and a template is configuration. Everything reading a template
       tolerates a destination that is gone, and routing from one refuses with the
       `unknown-destination` that already exists
-- [ ] The **routing record names its template**, optionally: a hand-made decision names none. It
+- [x] The **routing record names its template**, optionally: a hand-made decision names none. It
       also says whether **the tagging made it**, which is what phase 9's untag rule reads and what
       lets the log say a template fired rather than that somebody took one. A migration for the
       columns, appended rather than edited
-- [ ] The mirror carries templates as its **third non-item unit**, one `.json` per template under
+- [x] The mirror carries templates as its **third non-item unit**, one `.json` per template under
       `pool-mirror/templates/`, beside the destinations directory and on the same reasoning: a
       template is something a person set up and would otherwise recreate by hand. A write is owed
       when one changes
-- [ ] Rebuild restores templates before items, since a record names one
-- [ ] Tests: the trigger tag rules refuse what they should; a template round-trips through the
-      mirror; deleting a named destination is refused; a rebuilt pool holds its templates
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
-- [ ] `git commit`
+- [ ] Rebuild restores templates before items, since a record names one — **nothing to build
+      here**: rebuild does not exist (`mirror.md`), so this is a line phase 10 writes into the spec
+      beside the destination's, and the code owes it nothing today
+- [x] Tests: the trigger tag rules refuse what they should, in core and again as the store's own
+      unique index; a template round-trips through the mirror, as a property beside the
+      destination's; deleting a destination a *record* names is still refused, and deleting one a
+      *template* names goes through and names what it stranded. Not *a rebuilt pool holds its
+      templates*: there is no rebuild to run one through
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`
+- [x] `git commit`
 
 ### Phase 3 — A capture knows what time it was
 

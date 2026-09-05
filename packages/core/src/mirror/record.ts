@@ -6,9 +6,11 @@ import type { Item, ItemRecord, Tag } from "#types/domain/item";
 import type {
   DestinationMirrorRecord,
   ItemMirrorRecord,
+  RoutingTemplateMirrorRecord,
 } from "#types/domain/mirror";
 import type { Payload } from "#types/domain/payload";
 import type { RoutingRecord } from "#types/domain/routing";
+import type { RoutingTemplate } from "#types/domain/template";
 
 /**
  * One item's durable state, in the one form the mirror stores it in.
@@ -52,6 +54,25 @@ export function projectDestinationRecord(
       ...(record.retiredAt === undefined
         ? {}
         : { retiredAt: instant(record.retiredAt) }),
+      createdAt: instant(record.createdAt),
+    },
+    modifiedAt: instant(modifiedAt),
+  };
+}
+
+/** A template's durable state, on the same terms: only its instants need canonicalising. */
+export function projectTemplateRecord(
+  template: RoutingTemplate,
+): RoutingTemplateMirrorRecord {
+  const { modifiedAt, ...record } = template;
+
+  return {
+    kind: "template",
+    template: {
+      ...record,
+      ...(record.establishedAt === undefined
+        ? {}
+        : { establishedAt: instant(record.establishedAt) }),
       createdAt: instant(record.createdAt),
     },
     modifiedAt: instant(modifiedAt),

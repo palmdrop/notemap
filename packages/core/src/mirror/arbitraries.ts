@@ -8,6 +8,7 @@ import type { Artifact } from "#types/domain/enrichment";
 import type { DestinationId, Timestamp } from "#types/domain/ids";
 import type { Item, RoutingSummary } from "#types/domain/item";
 import type { RoutingRecord } from "#types/domain/routing";
+import type { RoutingTemplate } from "#types/domain/template";
 
 /**
  * Generated pool state, for the property that keeps the mirror honest. Every
@@ -202,6 +203,10 @@ export const routingRecord = (): fc.Arbitrary<RoutingRecord> =>
       ),
       state: fc.constantFrom("pending" as const, "delivered" as const),
       at: stamp(),
+      applied: fc.record({
+        template: branded<never>(),
+        firedByTag: fc.boolean(),
+      }),
       pointer: name(),
       url: name(),
       output: fc.record(
@@ -215,7 +220,7 @@ export const routingRecord = (): fc.Arbitrary<RoutingRecord> =>
     { requiredKeys: ["id", "item", "target", "state", "at"] },
   );
 
-/** The mirror's other unit, whose losslessness the same property covers. */
+/** The mirror's other units, whose losslessness the same property covers. */
 export const destination = (): fc.Arbitrary<Destination> =>
   fc.record(
     {
@@ -247,6 +252,38 @@ export type PoolState = {
 };
 
 /** Unique by id everywhere, because the pool it stands for is. */
+export const routingTemplate = (): fc.Arbitrary<RoutingTemplate> =>
+  fc.record(
+    {
+      id: branded(),
+      name: name(),
+      destination: branded<never>(),
+      capability: branded<never>(),
+      arguments: jsonObject(),
+      folder: fc.constantFrom(
+        "create" as const,
+        "require" as const,
+        "establish" as const,
+      ),
+      triggerTag: name() as fc.Arbitrary<never>,
+      establishedAt: stamp(),
+      createdAt: stamp(),
+      modifiedAt: stamp(),
+    },
+    {
+      requiredKeys: [
+        "id",
+        "name",
+        "destination",
+        "capability",
+        "arguments",
+        "folder",
+        "createdAt",
+        "modifiedAt",
+      ],
+    },
+  );
+
 export const poolState = (): fc.Arbitrary<PoolState> =>
   fc.record({
     item: item(),

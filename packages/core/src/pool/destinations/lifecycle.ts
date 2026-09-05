@@ -15,6 +15,7 @@ import type {
   DestinationRecord,
 } from "#types/domain/destination";
 import type { DestinationId, Timestamp } from "#types/domain/ids";
+import type { RoutingTemplate } from "#types/domain/template";
 import type { JsonObject } from "#types/json";
 import type { ActionKind } from "#types/domain/action-log";
 import type { Result } from "#types/result";
@@ -218,8 +219,9 @@ export function remove(
     }
 
     const at = ports.clock.now();
+    const stranded = await tx.routingTemplatesNaming(id);
     await tx.deleteDestination(id);
-    await removed(ports, tx, held, at);
+    await removed(ports, tx, held, at, stranded);
 
     return ok<void, DestinationDeletionRefusal>(undefined);
   });
@@ -257,16 +259,27 @@ function owedToMirror(
   );
 }
 
-/** The row has gone, so what the mirror holds about it is owed a removal instead. */
+/**
+ * The row has gone, so what the mirror holds about it is owed a removal instead.
+ *
+ * A template naming it does not refuse the delete the way a record does — a
+ * record is history that would otherwise name nothing, and a template is
+ * configuration — but the ones it strands are named, since nothing else will
+ * say afterwards why they stopped working.
+ */
 async function removed(
   ports: PoolPorts,
   tx: PoolTx,
   destination: Destination,
   at: Timestamp,
+  stranded: readonly RoutingTemplate[],
 ): Promise<void> {
   await trace(ports, tx, "destination-deleted", destination, at, {
     name: destination.name,
     destinationKind: destination.kind,
+    ...(stranded.length === 0
+      ? {}
+      : { stranded: stranded.map((each) => each.id) }),
   });
   await enqueueMirrorRemove(
     ports,

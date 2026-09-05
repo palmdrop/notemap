@@ -12,7 +12,9 @@ import type {
   LeaseId,
   PayloadTypeName,
   RoutingRecordId,
+  RoutingTemplateId,
   SuggestionId,
+  TagName,
   Timestamp,
 } from "../domain/ids";
 
@@ -121,6 +123,31 @@ export type DestinationDeletionRefusal =
   | {
       readonly kind: "destination-in-use";
       readonly destination: DestinationId;
+    };
+
+/**
+ * Everything a template can be refused for before anything is attempted. The
+ * arguments are not among them: a pattern is checked when it is written
+ * (statically total, so it expands for every item), and whether the capability
+ * still accepts them is a live question the report answers.
+ */
+export type RoutingTemplateRefusal =
+  | {
+      readonly kind: "unknown-template";
+      readonly template: RoutingTemplateId;
+    }
+  | {
+      readonly kind: "unknown-destination";
+      readonly destination: DestinationId;
+    }
+  /** Not a tag at all — empty, or nothing but space. */
+  | { readonly kind: "trigger-tag-invalid"; readonly tag: string }
+  /** A tag, but outside the reserved namespace a trigger tag must live in. */
+  | { readonly kind: "trigger-tag-unreserved"; readonly tag: string }
+  | {
+      readonly kind: "trigger-tag-taken";
+      readonly tag: TagName;
+      readonly template: RoutingTemplateId;
     };
 
 export type PreparationRefusal =

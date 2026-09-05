@@ -16,6 +16,7 @@ import type {
   DestinationId,
   DestinationKindName,
   DestinationRecord,
+  FolderMode,
   IdGenerator,
   Item,
   ItemId,
@@ -27,6 +28,8 @@ import type {
   PayloadTypeName,
   RoutingRecord,
   RoutingRecordId,
+  RoutingTemplateId,
+  RoutingTemplateRecord,
   SourceId,
   TagName,
   Timestamp,
@@ -180,6 +183,45 @@ export function putDestinations(
 ): Promise<void> {
   return pool.transaction(async (tx) => {
     for (const each of destinations) await tx.insertDestination(each);
+  });
+}
+
+export function template(
+  overrides: {
+    id?: string;
+    name?: string;
+    destination?: string;
+    capability?: string;
+    arguments?: JsonObject;
+    folder?: FolderMode;
+    triggerTag?: string;
+    establishedAt?: string;
+    createdAt?: string;
+  } = {},
+): RoutingTemplateRecord {
+  return {
+    id: (overrides.id ?? "tpl-research") as RoutingTemplateId,
+    name: overrides.name ?? "Research links",
+    destination: (overrides.destination ?? VAULT) as DestinationId,
+    capability: (overrides.capability ?? "create-file") as CapabilityName,
+    arguments: overrides.arguments ?? { path: "research/{{captured_at}}.md" },
+    folder: overrides.folder ?? "create",
+    ...(overrides.triggerTag === undefined
+      ? {}
+      : { triggerTag: overrides.triggerTag as TagName }),
+    ...(overrides.establishedAt === undefined
+      ? {}
+      : { establishedAt: at(overrides.establishedAt) }),
+    createdAt: at(overrides.createdAt ?? "2026-09-05T08:00:00.000Z"),
+  };
+}
+
+export function putTemplates(
+  pool: SqlitePoolStore,
+  ...templates: readonly RoutingTemplateRecord[]
+): Promise<void> {
+  return pool.transaction(async (tx) => {
+    for (const each of templates) await tx.insertRoutingTemplate(each);
   });
 }
 

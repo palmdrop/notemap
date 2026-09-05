@@ -13,6 +13,7 @@ import type {
   PoolIdentity,
   ProviderName,
   RoutingRecordId,
+  RoutingTemplateId,
   SourceId,
   SuggestionId,
   SyncCursor,
@@ -35,6 +36,10 @@ import type {
   TagUse,
 } from "../domain/item";
 import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
+import type {
+  RoutingTemplate,
+  RoutingTemplateRecord,
+} from "../domain/template";
 import type { Payload } from "../domain/payload";
 import type { AbandonedPosition } from "../domain/position";
 import type {
@@ -269,6 +274,22 @@ export interface PoolReads {
   destination(id: DestinationId): Promise<Destination | undefined>;
   /** A reservation still to land counts as much as a delivered record: both name it. */
   destinationEverNamed(id: DestinationId): Promise<boolean>;
+
+  /** Every routing template the pool holds, oldest first. */
+  routingTemplates(): Promise<readonly RoutingTemplate[]>;
+  routingTemplate(id: RoutingTemplateId): Promise<RoutingTemplate | undefined>;
+  /** At most one: a trigger tag is claimed by one template or by none. */
+  routingTemplateByTriggerTag(
+    tag: TagName,
+  ): Promise<RoutingTemplate | undefined>;
+  /**
+   * The templates a destination's deletion would strand. Deleting is allowed —
+   * a template is configuration rather than history — so this is what says
+   * which ones the person is about to break.
+   */
+  routingTemplatesNaming(
+    destination: DestinationId,
+  ): Promise<readonly RoutingTemplate[]>;
   artifacts(item: ItemId): Promise<readonly Artifact[]>;
   enrichmentStates(item: ItemId): Promise<readonly EnrichmentStatus[]>;
 
@@ -319,6 +340,19 @@ export interface PoolTx extends PoolReads {
    * a delivery abandoned after being cancelled asks for exactly that.
    */
   removeRoutingRecord(record: RoutingRecordId): Promise<void>;
+
+  insertRoutingTemplate(
+    record: RoutingTemplateRecord,
+  ): Promise<RoutingTemplate>;
+  /** Every field a person may change is written at once; the store owns `modifiedAt`. */
+  updateRoutingTemplate(
+    record: RoutingTemplateRecord,
+  ): Promise<RoutingTemplate>;
+  /**
+   * A record naming it keeps resolving: the record carries what it routed as,
+   * and the template it came from is a name that may go.
+   */
+  deleteRoutingTemplate(id: RoutingTemplateId): Promise<void>;
 
   insertDestination(record: DestinationRecord): Promise<Destination>;
   /** Every field a person may change is written at once; the store owns `modifiedAt`. */

@@ -8,6 +8,7 @@ import type {
   DestinationId,
   ItemId,
   RoutingRecordId,
+  RoutingTemplateId,
   SourceId,
   Timestamp,
 } from "./ids";
@@ -138,12 +139,24 @@ export type RoutingTarget =
 /** There is no abandoned state: a reservation that never landed is removed rather than marked. */
 export type RoutingRecordState = "pending" | "delivered";
 
+/**
+ * Where a decision came from a routing template, and whether the tag applied it
+ * — a template taken in the composer is a person's own act, and only a
+ * tag-fired one gives its tag back when the reservation is removed.
+ */
+export type AppliedTemplate = {
+  readonly template: RoutingTemplateId;
+  readonly firedByTag: boolean;
+};
+
 export type RoutingRecord = {
   readonly id: RoutingRecordId;
   readonly item: ItemId;
   readonly target: RoutingTarget;
   readonly state: RoutingRecordState;
   readonly at: Timestamp;
+  /** Absent where the decision was made by hand. */
+  readonly applied?: AppliedTemplate;
   readonly pointer?: string;
   /** A link to what the pointer names, where the destination could offer one. */
   readonly url?: string;

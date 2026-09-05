@@ -6,6 +6,7 @@ import type { OrderedPage, PageRequest, ReadOrder } from "#types/result";
 import * as archive from "./archive";
 import * as assets from "./assets";
 import * as destinations from "./destinations";
+import * as templates from "./templates";
 import { capture } from "./capture";
 import { edit } from "./edit";
 import * as maintenance from "./maintenance";
@@ -81,6 +82,14 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
       retire: (id) => destinations.retire(ports, id),
       unretire: (id) => destinations.unretire(ports, id),
       delete: (id) => destinations.remove(ports, id),
+    },
+
+    templates: {
+      list: () => templates.list(ports),
+      get: (id) => templates.read(ports, id),
+      create: (draft) => templates.create(ports, draft),
+      edit: (id, changes) => templates.edit(ports, id, changes),
+      delete: (id) => templates.remove(ports, id),
     },
 
     routing: {

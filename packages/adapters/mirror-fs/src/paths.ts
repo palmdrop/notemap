@@ -1,13 +1,20 @@
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 
-import type { DestinationId, ItemMirrorRecord } from "@notemap/core";
+import type {
+  DestinationId,
+  ItemMirrorRecord,
+  RoutingTemplateId,
+} from "@notemap/core";
 
 /** Everything a filename may contain, on every filesystem worth supporting. */
 const SAFE = /^[a-z0-9._-]+$/i;
 
 /** Beside the years rather than under one: a destination belongs to no day. */
 export const DESTINATIONS = "destinations";
+
+/** Beside the destinations, and on the same reasoning. */
+export const TEMPLATES = "templates";
 
 export type MirrorPaths = {
   readonly directory: string;
@@ -46,6 +53,10 @@ export function pathsFor(root: string, record: ItemMirrorRecord): MirrorPaths {
 
 export function destinationPathFor(root: string, id: DestinationId): string {
   return join(root, DESTINATIONS, `${filenameSafe(id)}.json`);
+}
+
+export function templatePathFor(root: string, id: RoutingTemplateId): string {
+  return join(root, TEMPLATES, `${filenameSafe(id)}.json`);
 }
 
 /** The rendering that belongs to a record file, which shares its stem. */
