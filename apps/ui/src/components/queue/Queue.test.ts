@@ -505,7 +505,9 @@ test("a row that leaves the queue says where it went", async () => {
   });
 
   await vi.waitFor(() => {
-    expect(notices.shown.map((notice) => notice.what)).toContain("marked done");
+    expect(notices.shown.map((notice) => notice.what)).toContain(
+      "marked processed",
+    );
   });
 });
 

@@ -180,9 +180,7 @@ test("says where a routed row went, without asking for its records", async () =>
   render(Feed);
 
   expect(await screen.findByText("routed")).toBeDefined();
-  expect(
-    await screen.findByText("Fiction, marked done · 1 pending"),
-  ).toBeDefined();
+  expect(await screen.findByText("Fiction, manual · 1 pending")).toBeDefined();
   expect(asked()).not.toContain("GET /v1/items/sent/routing");
 });
 

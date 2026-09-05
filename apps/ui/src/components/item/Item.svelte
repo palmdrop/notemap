@@ -6,7 +6,7 @@
   import Payload from "$components/item/Payload.svelte";
   import Routing from "$components/item/Routing.svelte";
   import Tags from "$components/item/Tags.svelte";
-  import RoutingComposer from "$components/routing/RoutingComposer.svelte";
+  import ProcessingComposer from "$components/routing/ProcessingComposer.svelte";
   import Body from "$components/primitives/register/Body.svelte";
   import Fact from "$components/primitives/register/Fact.svelte";
   import Facts from "$components/primitives/register/Facts.svelte";
@@ -142,7 +142,7 @@
      moment later. The record is remembered so that the log, read on its own
      tempo, does not report it back as news. -->
 {#if routing && item !== undefined}
-  <RoutingComposer
+  <ProcessingComposer
     {item}
     onrouted={(record) => notices.mark(keyFor(record.id))}
     onclose={() => (routing = false)}

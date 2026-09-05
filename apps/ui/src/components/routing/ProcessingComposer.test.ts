@@ -12,7 +12,7 @@ import { online } from "$testing/dom";
 import { asked, client, pool } from "$testing/pool";
 import { notices } from "$lib/notices.svelte";
 import { NO_PREVIEW_OFFERED, PREVIEW_IS_INDICATIVE } from "$lib/said";
-import RoutingComposer from "./RoutingComposer.svelte";
+import ProcessingComposer from "./ProcessingComposer.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
@@ -199,7 +199,7 @@ function aCapture(overrides: Record<string, unknown> = {}) {
 
 function draw(item = aCapture()) {
   const closed = vi.fn();
-  render(RoutingComposer, { props: { item, onclose: closed } });
+  render(ProcessingComposer, { props: { item, onclose: closed } });
   return closed;
 }
 
@@ -597,7 +597,7 @@ function routing(record: Record<string, unknown>) {
 
 function drawAbout(content: Record<string, unknown>) {
   const closed = vi.fn();
-  render(RoutingComposer, {
+  render(ProcessingComposer, {
     props: {
       item: aCapture({
         payload: { type: "text", content, metadata: {}, assets: [] },
@@ -1027,7 +1027,7 @@ test("hands the record it got back to whoever opened it", async () => {
 
   const routed = vi.fn();
   const closed = vi.fn();
-  render(RoutingComposer, {
+  render(ProcessingComposer, {
     props: { item: aCapture(), onrouted: routed, onclose: closed },
   });
 

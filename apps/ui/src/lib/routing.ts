@@ -15,7 +15,7 @@ export function wentTo(
 ): { readonly said: string; readonly aside?: string } {
   if (record.target.kind !== "destination") {
     const note = record.target.note;
-    return { said: "done", ...(note === undefined ? {} : { aside: note }) };
+    return { said: "manual", ...(note === undefined ? {} : { aside: note }) };
   }
 
   const name = nameOf(record.target.destination);
@@ -32,7 +32,7 @@ export function whereItWent(
   nameOf: (destination: string) => string,
 ): string {
   const places = summary.to.map((went) =>
-    went.kind === "destination" ? nameOf(went.destination) : "marked done",
+    went.kind === "destination" ? nameOf(went.destination) : "manual",
   );
 
   return summary.pending === 0
@@ -78,7 +78,7 @@ export function saidOf(
   const where = about === undefined ? {} : { about };
 
   if (record.target.kind !== "destination") {
-    return { what: "marked done", ...where, key: keyFor(record.id) };
+    return { what: "marked processed", ...where, key: keyFor(record.id) };
   }
 
   const name = nameOf(record.target.destination);

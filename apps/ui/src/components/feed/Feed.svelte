@@ -6,7 +6,7 @@
   import type { Item } from "@notemap/client";
 
   import Row from "$components/item/Row.svelte";
-  import RoutingComposer from "$components/routing/RoutingComposer.svelte";
+  import ProcessingComposer from "$components/routing/ProcessingComposer.svelte";
   import Body from "$components/primitives/register/Body.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
@@ -93,7 +93,7 @@
      record is remembered so the log does not report it back as news. -->
 {#if routing !== undefined}
   {@const subject = routing}
-  <RoutingComposer
+  <ProcessingComposer
     item={subject}
     onrouted={(record) => notices.mark(keyFor(record.id))}
     onclose={() => (routing = undefined)}
