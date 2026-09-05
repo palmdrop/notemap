@@ -1,10 +1,17 @@
 # Spec: The web shell
 
-**Status**: Implemented, except **one way out of the queue**
-([below](#actions)) — designed 2026-09-05, planned in
-[one-way-to-process](../plans/one-way-to-process.md), not yet built.
+**Status**: Implemented
 **Last updated**: 2026-09-05
 **Shipped**:
+
+- 2026-09-05 — **One way out of the queue.** `route`, `done` and `archive` were three controls of
+  unclear rank; they are one, `process`, which opens the composer and never closes. What differed
+  between them is the composer's first step, where a band below a rule holds the two answers no
+  destination gives — `manual`, which asks where it went and offers to take the text, and
+  `discard`, which acts when it is taken and is offered back from the corner. The composer opens
+  with the pool out of reach, drawing what cannot be taken as unavailable, so a queue can still be
+  drained offline. `unarchive` stays beside `process` on the rows that have it, and the shell stops
+  saying `done`. ([plan](../plans/one-way-to-process.md))
 
 - 2026-09-04 — **The shell's second pass.** One row serves the queue and the feed, opening in place
   on both, and a double click on either goes to the item's own surface. An open row is one band
