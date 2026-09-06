@@ -1,5 +1,7 @@
 import type { RoutingTemplate } from "@notemap/client";
 
+import { client } from "./client";
+
 /** The field each file-writing capability puts its place in. */
 const PLACE_FIELDS: Readonly<Record<string, string>> = {
   "create-file": "directory",
@@ -19,4 +21,20 @@ export function placeOf(template: RoutingTemplate): string {
   return typeof place === "string" && place !== ""
     ? place
     : JSON.stringify(template.arguments);
+}
+
+/**
+ * A template's name as it stands, for somewhere no component is reading. On
+ * `nameOf`'s terms for a destination: an id says nothing a person can read, and
+ * one that was never loaded is unnamed rather than shown.
+ */
+export function nameOf(id: string): string {
+  return (
+    client.templates.held.find((one) => one.id === id)?.name ?? "a template"
+  );
+}
+
+/** The templates whose trigger tag is this tag, if any: what marks one in a chooser. */
+export function triggeredBy(tag: string): RoutingTemplate | undefined {
+  return client.templates.held.find((one) => one.triggerTag === tag);
 }

@@ -27,6 +27,7 @@ export type ActionKind =
   | "template-created"
   | "template-edited"
   | "template-deleted"
+  | "template-fired"
   | "enrichment-requested"
   | "work-failed"
   | "work-abandoned"

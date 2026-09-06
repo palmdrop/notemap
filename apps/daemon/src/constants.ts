@@ -66,6 +66,14 @@ export const DEFAULT_DELIVERY = {
 };
 
 /**
+ * How long a template fired by its trigger tag waits before its delivery is
+ * claimable. Nothing is attempted inline on that path, so this window is the
+ * whole of what the corner's cancel has to act in — comfortably more than the
+ * delivery runner's own poll, so the wait is the window rather than the poll.
+ */
+export const DEFAULT_TRIGGER_WINDOW_MS = 15_000;
+
+/**
  * How much of a lease is kept back for reporting the outcome the attempt
  * produced — which includes **storing the output** it came back with, so this
  * is bounded by whatever a destination decided to hand over rather than by the

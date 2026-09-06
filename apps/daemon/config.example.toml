@@ -60,6 +60,18 @@ batch = 16          # writes claimed per sweep
 [capture]
 # zone = "Europe/Stockholm"
 
+# How long a template fired by its trigger tag waits before its delivery is
+# claimable. Nothing is attempted inline on that path — a route made by hand in
+# the composer still is — so this window is the whole of what the corner's
+# cancel has to act in, against a vault that is mounted and would otherwise have
+# the note written before the notice was on screen.
+#
+# It is a row rather than a timer: a daemon restarted inside the window loses
+# nothing. Setting it to 0 fires immediately and gives the cancel nothing to act
+# in, which is the thing this exists to prevent.
+[routing]
+triggerWindow = 15000 # milliseconds
+
 [retry]
 maxAttempts = 5
 initialBackoff = 1000 # milliseconds

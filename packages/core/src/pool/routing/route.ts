@@ -8,6 +8,7 @@ import type {
   ItemId,
   JobId,
   RoutingRecordId,
+  TagName,
   Timestamp,
 } from "#types/domain/ids";
 import type {
@@ -18,8 +19,13 @@ import type {
   RoutingRecord,
 } from "#types/domain/routing";
 import type { Result } from "#types/result";
-import { DELIVERY_FAILURE, destinationDetail } from "./delivery";
+import {
+  DELIVERY_FAILURE,
+  destinationDetail,
+  templateDetail,
+} from "./delivery";
 import { established } from "../templates/establish";
+import { releaseTriggerTag } from "../templates/fire";
 import { landingFor, type Landed } from "./output";
 import { prepare } from "./prepare";
 
@@ -162,6 +168,7 @@ async function trace(
       record: record.id,
       target: target.kind,
       ...destinationDetail(record),
+      ...templateDetail(record),
       ...(outcome.pointer === undefined ? {} : { pointer: outcome.pointer }),
       // The delivery landed and its evidence did not: the record has no field for that.
       ...(landed?.outputLost === undefined
@@ -265,8 +272,10 @@ export function cancelDelivery(
       return refused({ kind: "delivery-in-flight", record: id });
     }
 
+    const at = ports.clock.now();
     await tx.removeRoutingRecord(id);
-    await appendCancelled(ports, tx, record.item, id, ports.clock.now());
+    const gave = await releaseTriggerTag(ports, tx, record, at, "person");
+    await appendCancelled(ports, tx, record.item, id, at, gave);
 
     return ok<void, CancelRefusal>(undefined);
   });
@@ -278,12 +287,14 @@ function appendCancelled(
   item: ItemId,
   record: RoutingRecordId,
   at: Timestamp,
+  /** The trigger tag that came off with it, where the reservation was a tag's. */
+  gave: TagName | undefined,
 ): Promise<void> {
   return recordAction(ports, tx, {
     kind: "delivery-cancelled",
     subject: item,
     by: { kind: "person" },
     at,
-    detail: { record },
+    detail: { record, ...(gave === undefined ? {} : { tag: gave }) },
   });
 }

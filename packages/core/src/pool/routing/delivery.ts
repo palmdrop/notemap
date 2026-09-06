@@ -29,6 +29,18 @@ export function destinationDetail(record: RoutingRecord): JsonObject {
     : {};
 }
 
+/**
+ * Which template a record came from, where one did. `firedByTag` travels with
+ * it because the two read differently: a tag filed this, or a person took the
+ * template and filed it themselves.
+ */
+export function templateDetail(record: RoutingRecord): JsonObject {
+  const applied = record.applied;
+  return applied === undefined
+    ? {}
+    : { template: applied.template, firedByTag: applied.firedByTag };
+}
+
 export function asDeliveryWorkOutcome(outcome: DeliveryOutcome): WorkOutcome {
   switch (outcome.kind) {
     case "delivered":

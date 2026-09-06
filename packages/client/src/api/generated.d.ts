@@ -1078,7 +1078,11 @@ export interface paths {
         put?: never;
         /**
          * Tag an item
-         * @description Adds one tag. Classification does not move an item, so a tagged item keeps its place in the queue. A tag the item already carries is absorbed rather than refused, keeping the attribution and time it has: a tag's name is the whole of the request, unlike an archive's reason.
+         * @description Adds one tag. Classification does not move an item, so a tagged item keeps its place in the queue — unless the tag is a **trigger tag**, which applies the routing template that declared it and takes the item out of the queue by reserving a delivery. The reservation and the tag commit together, and the delivery is enqueued a configured window later rather than attempted here, so it can still be cancelled.
+         *
+         *     Firing is on the tagging: a tag the item already carries is absorbed rather than refused — keeping the attribution and time it has, since a tag's name is the whole of the request — and absorbing one fires nothing.
+         *
+         *     A trigger tag whose template cannot route is `422 trigger-refused` and **nothing is written, the tag included**: a tag that filed nothing is spent, because re-applying it would be absorbed. A destination that merely could not be reached is not that — the reservation is made and the delivery waits.
          */
         post: {
             parameters: {
@@ -1165,7 +1169,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "tag-invalid";
+                                code: "tag-invalid" | "trigger-refused";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -1191,7 +1195,7 @@ export interface paths {
         put?: never;
         /**
          * Remove a tag from an item
-         * @description Removes one tag. A tag the item does not carry is absorbed rather than refused, on the same terms as adding one it already has.
+         * @description Removes one tag. A tag the item does not carry is absorbed rather than refused, on the same terms as adding one it already has. Untagging does not unroute, and removing a trigger tag fires nothing.
          */
         post: {
             parameters: {

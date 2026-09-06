@@ -3,6 +3,7 @@
 
   import TagSet from "$components/primitives/controls/TagSet.svelte";
   import { client } from "$lib/client";
+  import { triggeredBy } from "$lib/templates";
 
   let { item }: { item: Item } = $props();
 
@@ -15,6 +16,7 @@
 <TagSet
   {names}
   {offered}
+  fires={(name) => triggeredBy(name)?.name}
   onadd={(name) => void client.tag(item.id, name)}
   onremove={(name) => void client.untag(item.id, name)}
 />

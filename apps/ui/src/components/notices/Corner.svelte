@@ -10,6 +10,7 @@
   import { noticeOf } from "$lib/action-log";
   import { client } from "$lib/client";
   import { nameOf } from "$lib/destinations";
+  import { nameOf as templateOf } from "$lib/templates";
   import { aboutItem } from "$lib/excerpt";
   import { notices } from "$lib/notices.svelte";
 
@@ -32,6 +33,17 @@
     }
   }
 
+  /**
+   * Calling off a template the tag fired, inside the window it waits out. The
+   * pool takes the trigger tag off with the reservation, so the item comes back
+   * to the queue able to be filed by that tag again.
+   */
+  function cancel(record: string, item: string): void {
+    void client.routing.cancel(record, item).catch(() => {
+      notices.raise({ what: "could not cancel", standing: true });
+    });
+  }
+
   /** The one standing mark that a catch-up was too long to read out. */
   let missed = $state<string | undefined>(undefined);
 
@@ -52,7 +64,12 @@
 
   async function say(actions: readonly Action[]) {
     for (const action of actions) {
-      const raised = noticeOf(action, { nameOf, about: itemHref });
+      const raised = noticeOf(action, {
+        nameOf,
+        templateOf,
+        about: itemHref,
+        cancel,
+      });
       if (raised === undefined) continue;
 
       const about = await whichCapture(action.subject);

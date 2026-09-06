@@ -22,6 +22,7 @@ import {
   DEFAULT_PORT,
   DEFAULT_RETRY,
   DEFAULT_SWEEP,
+  DEFAULT_TRIGGER_WINDOW_MS,
   defaultZone,
 } from "../constants";
 import type { CookieOptions } from "../auth/sessions/config";
@@ -140,6 +141,11 @@ const fileSchema = z.object({
   capture: z
     .object({
       zone: z.string().min(1).optional(),
+    })
+    .optional(),
+  routing: z
+    .object({
+      triggerWindow: z.number().int().nonnegative().optional(),
     })
     .optional(),
   delivery: z
@@ -489,6 +495,8 @@ export function parseConfig(source: string, from: string): LoadedConfig {
         grace: (file.sweep?.grace ?? DEFAULT_SWEEP.graceMs) as Duration,
       },
       zone: readZone(file.capture?.zone, from),
+      triggerWindow: (file.routing?.triggerWindow ??
+        DEFAULT_TRIGGER_WINDOW_MS) as Duration,
     },
   };
 

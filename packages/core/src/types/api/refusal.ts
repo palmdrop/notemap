@@ -54,7 +54,21 @@ export type EditRefusal =
   | { readonly kind: "source-item-changed"; readonly existing: ItemId };
 
 export type TagRefusal =
-  SubjectRefusal | { readonly kind: "tag-invalid"; readonly tag: string };
+  | SubjectRefusal
+  | { readonly kind: "tag-invalid"; readonly tag: string }
+  /**
+   * The tag is a trigger tag and its template could not route: nothing is
+   * written and the tag does not land. A tag that filed nothing would be spent
+   * — re-applying it is a no-op — and the person is the only one who can go and
+   * fix what the template says. A destination that merely could not be reached
+   * is not this: that is the delivery's business, and the reservation waits.
+   */
+  | {
+      readonly kind: "trigger-refused";
+      readonly tag: TagName;
+      readonly template: RoutingTemplateId;
+      readonly detail: string;
+    };
 
 export type ArchiveRefusal =
   | SubjectRefusal

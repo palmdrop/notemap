@@ -207,7 +207,7 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
           job.enrichment ?? null,
           job.attempt,
           at,
-          at,
+          job.notBefore === undefined ? at : toMillis(job.notBefore),
         );
       }
     },

@@ -1751,3 +1751,44 @@ test("esc leaving the tag field leaves the decision where it was", async () => {
   // And what was half-typed is dropped rather than applied by the blur.
   expect(asked()).not.toContain("POST /v1/items/one/tag");
 });
+
+/**
+ * Tagging is no longer free of consequence, so the chooser says which of them
+ * sends the item. The mark names the template rather than only saying there is
+ * one: `route/` is a namespace, and a namespace is not a decision.
+ */
+test("marks a trigger tag in the chooser with the template it applies", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "filesystem" })] });
+    }
+    if (route === "GET /v1/templates") {
+      return json(200, { values: [RESEARCH] });
+    }
+    if (route === "GET /v1/tags") {
+      return json(200, {
+        values: [
+          { name: "route/research", items: 2 },
+          { name: "seedling", items: 3 },
+        ],
+      });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE_OR_APPEND] });
+    }
+    if (route.endsWith("/candidates")) return json(200, answered([]));
+    return json(404, { error: { code: "unknown-route" } });
+  });
+  await client.tags.load();
+  await client.templates.load();
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+
+  await screen.findByRole("button", {
+    name: "route/research, routes to research",
+  });
+  // An ordinary tag is left as it was: only a tag with an effect is marked.
+  expect(screen.getByRole("button", { name: "seedling" })).toBeTruthy();
+});

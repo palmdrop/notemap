@@ -69,12 +69,29 @@ export const ARCHIVE_STATUS = {
   "not-archived": 409,
 } as const satisfies Record<ArchiveRefusal["kind"], number>;
 
-/** Both halves absorb a call for what the item already says, so nothing else declines. */
+/**
+ * Both halves absorb a call for what the item already says, so nothing else
+ * declines about the tag itself. `trigger-refused` is `422` by the table's own
+ * rule — the request was understood and declined — and the conflict it reports
+ * is with the template rather than with anything the caller sent.
+ */
 export const TAG_STATUS = {
   "no-such-item": 404,
   "item-purged": 404,
   "tag-invalid": 422,
+  "trigger-refused": 422,
 } as const satisfies Record<TagRefusal["kind"], number>;
+
+/**
+ * Untagging fires nothing, so `trigger-refused` cannot arise on that half and
+ * is not offered as if it could. A tag that has already filed an item is
+ * removed like any other: untagging does not unroute.
+ */
+export const UNTAG_STATUS = {
+  "no-such-item": 404,
+  "item-purged": 404,
+  "tag-invalid": 422,
+} as const;
 
 /**
  * `source-item-changed` is `409` on capture's terms: the envelope's identity

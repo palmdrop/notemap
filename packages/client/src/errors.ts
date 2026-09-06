@@ -145,6 +145,8 @@ const SAID: {
   "trigger-tag-unreserved":
     'a tag that files an item has to start with "route/", so nobody types one by accident',
   "trigger-tag-taken": "another template already files items with that tag",
+  "trigger-refused": (facts) =>
+    `that tag files items somewhere, and its template cannot: ${String(facts["detail"])}. The tag was not applied — fix the template in settings, then tag it again`,
   "unknown-pattern-field": (facts) =>
     `there is no "${String(facts["field"])}" to put in a place; captured_at, item and source are what there is`,
   "unknown-pattern-format": (facts) =>

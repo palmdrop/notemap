@@ -89,6 +89,7 @@ export const CONFIG: PoolConfig = {
   },
   sweep: { grace: 86_400_000 as Duration },
   zone: "Europe/Stockholm",
+  triggerWindow: 15_000 as Duration,
 };
 
 /** A clock that stands still until a test moves it. */

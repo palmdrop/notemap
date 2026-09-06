@@ -22,6 +22,7 @@ import {
   ROUTING_STATUS,
   SUBJECT_STATUS,
   TAG_STATUS,
+  UNTAG_STATUS,
   UPLOAD_STATUS,
   TEMPLATE_STATUS,
 } from "../errors/refusals";
@@ -521,7 +522,7 @@ export const tagRoute = createRoute({
   path: "/v1/items/{id}/tag",
   summary: "Tag an item",
   description:
-    "Adds one tag. Classification does not move an item, so a tagged item keeps its place in the queue. A tag the item already carries is absorbed rather than refused, keeping the attribution and time it has: a tag's name is the whole of the request, unlike an archive's reason.",
+    "Adds one tag. Classification does not move an item, so a tagged item keeps its place in the queue — unless the tag is a **trigger tag**, which applies the routing template that declared it and takes the item out of the queue by reserving a delivery. The reservation and the tag commit together, and the delivery is enqueued a configured window later rather than attempted here, so it can still be cancelled.\n\nFiring is on the tagging: a tag the item already carries is absorbed rather than refused — keeping the attribution and time it has, since a tag's name is the whole of the request — and absorbing one fires nothing.\n\nA trigger tag whose template cannot route is `422 trigger-refused` and **nothing is written, the tag included**: a tag that filed nothing is spent, because re-applying it would be absorbed. A destination that merely could not be reached is not that — the reservation is made and the delivery waits.",
   request: {
     params: itemId,
     body: {
@@ -550,7 +551,7 @@ export const untagRoute = createRoute({
   path: "/v1/items/{id}/untag",
   summary: "Remove a tag from an item",
   description:
-    "Removes one tag. A tag the item does not carry is absorbed rather than refused, on the same terms as adding one it already has.",
+    "Removes one tag. A tag the item does not carry is absorbed rather than refused, on the same terms as adding one it already has. Untagging does not unroute, and removing a trigger tag fires nothing.",
   request: {
     params: itemId,
     body: {
@@ -568,9 +569,9 @@ export const untagRoute = createRoute({
       400,
       BODY_STATUS,
     ),
-    404: errorResponse("No item has that id.", 404, TAG_STATUS),
+    404: errorResponse("No item has that id.", 404, UNTAG_STATUS),
     415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
-    422: errorResponse("The tag was declined.", 422, TAG_STATUS),
+    422: errorResponse("The tag was declined.", 422, UNTAG_STATUS),
   },
 });
 

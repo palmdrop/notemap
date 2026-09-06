@@ -71,7 +71,8 @@ export async function routeFrom(
   });
 }
 
-function requestFor(
+/** The expansion a decision from this template makes, however it was reached. */
+export function requestFor(
   config: PoolConfig,
   item: Item,
   template: RoutingTemplate,

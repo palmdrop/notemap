@@ -482,6 +482,16 @@ export function createClient(config: ClientConfig): Client {
         after(() =>
           state.update((current) => withdrawn(current, item, records)),
         ),
+      reread: async (item) => {
+        const held = await fetched(item).catch(() => undefined);
+        if (held === undefined) return;
+        await after(() =>
+          state.update((current) => ({
+            ...current,
+            items: cached(current, [held]),
+          })),
+        );
+      },
     }),
 
     destinations: createDestinations({

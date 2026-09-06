@@ -110,3 +110,84 @@ test("work about nothing in particular leads nowhere in particular", () => {
 
   expect(raised?.href).toBeUndefined();
 });
+
+const withTemplates = {
+  ...reading,
+  templateOf: (id: string) => (id === "t1" ? "Research" : "a template"),
+  cancel: (record: string, item: string) => {
+    cancelled.push([record, item]);
+  },
+};
+
+const cancelled: [string, string][] = [];
+
+test("a fired template stands while its window is open, and offers the way out", () => {
+  const said = noticeOf(
+    anAction("template-fired", {
+      record: "r1",
+      template: "t1",
+      name: "Research links",
+      destination: "vault",
+      tag: "route/research",
+    }),
+    withTemplates,
+  );
+
+  // The template's name, never the destination's: `route/research` is what was
+  // pressed, and the notice may not claim anything has been written yet.
+  expect(said?.what).toBe("routing · Research");
+  expect(said?.standing).toBe(true);
+  expect(said?.offer?.label).toBe("cancel");
+
+  said?.offer?.take();
+  expect(cancelled).toEqual([["r1", "one"]]);
+});
+
+test("one fired template stands at a time, and the landing takes its place", () => {
+  const routing = noticeOf(
+    anAction("template-fired", { record: "r1", template: "t1", name: "R" }),
+    withTemplates,
+  );
+  const landed = noticeOf(
+    anAction("routed", {
+      record: "r1",
+      template: "t1",
+      firedByTag: true,
+      destination: "vault",
+    }),
+    withTemplates,
+  );
+
+  expect(routing?.only).toBe(landed?.only);
+  expect(landed?.what).toBe("routed · Research");
+  // It carries only the way to dismiss it: nothing is left to call off.
+  expect(landed?.standing).toBe(true);
+  expect(landed?.offer).toBeUndefined();
+});
+
+test("a template a person took themselves lands as an ordinary route", () => {
+  const said = noticeOf(
+    anAction("routed", {
+      record: "r1",
+      template: "t1",
+      firedByTag: false,
+      destination: "vault",
+    }),
+    withTemplates,
+  );
+
+  expect(said?.what).toBe("routed · Vault");
+  expect(said?.standing).toBeUndefined();
+  expect(said?.only).toBeUndefined();
+});
+
+/** Nothing here can cancel, so nothing is offered that would do nothing. */
+test("a fired template offers no way out where the reader has none", () => {
+  const said = noticeOf(
+    anAction("template-fired", { record: "r1", template: "t1", name: "R" }),
+    reading,
+  );
+
+  expect(said?.what).toBe("routing · R");
+  expect(said?.offer).toBeUndefined();
+});

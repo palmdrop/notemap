@@ -1,8 +1,11 @@
 import type {
+  Action,
   CapabilityName,
   JsonSchema,
   DestinationId,
   Item,
+  ItemId,
+  Page,
   Pool,
   RoutingTemplateDraft,
   RoutingTemplateId,
@@ -11,10 +14,18 @@ import type {
 import { fakeCapability, fakeDestinations } from "@notemap/core/testing";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { envelope, harness, type Harness } from "./fixture";
+import { deliverWith, envelope, harness, type Harness } from "./fixture";
 
 const VAULT = "vault" as DestinationId;
 const CREATE_NOTE = "create-note" as CapabilityName;
+const PERSON = { kind: "person" } as const;
+const ALL: Page = { limit: 50 };
+const RESEARCH = "route/research" as TagName;
+
+/** The fixture's clock starts here, and the window is fifteen seconds wide. */
+const CAPTURED_AT = "2026-08-06T09:00:00.000Z";
+const INSIDE = "2026-08-06T09:00:10.000Z";
+const AFTER = "2026-08-06T09:00:20.000Z";
 
 const PATH_SCHEMA = {
   type: "object",
@@ -55,8 +66,17 @@ async function pooled(schema: JsonSchema = PATH_SCHEMA) {
   open.push(opened);
   await opened.putDestination({ id: VAULT });
   destination.answers(DELIVERED);
-  return { ...opened, destination };
+  return { ...opened, destination, deliver: deliverWith(opened, destination) };
 }
+
+const queued = async (pool: Pool): Promise<readonly ItemId[]> =>
+  (await pool.views.queue(ALL)).values.map((each) => each.id);
+
+const tagsOn = async (pool: Pool, item: ItemId): Promise<readonly string[]> =>
+  ((await pool.items.get(item))?.tags ?? []).map((held) => held.name);
+
+const logFor = async (pool: Pool, item: ItemId): Promise<readonly Action[]> =>
+  (await pool.actions.forItem(item, ALL)).values;
 
 function succeeded<T>(
   result: { kind: "ok"; value: T } | { kind: "refused"; refusal: unknown },
@@ -381,5 +401,264 @@ describe("routing from a template", () => {
       kind: "refused",
       refusal: { kind: "unknown-template" },
     });
+  });
+});
+
+/**
+ * The gesture this whole plan exists for. Nothing is attempted while the window
+ * is open, which is what makes the corner's cancel real rather than a control
+ * that works or does not depending on what somebody configured.
+ */
+describe("a trigger tag applying its template", () => {
+  async function tagged(overrides: Partial<RoutingTemplateDraft> = {}) {
+    const opened = await pooled();
+    const template = succeeded(
+      await opened.pool.templates.create(
+        draft({ triggerTag: RESEARCH, ...overrides }),
+      ),
+    );
+    const item = captured(await opened.pool.capture(envelope()));
+    const result = await opened.pool.items.tag(item.id, RESEARCH, PERSON);
+    return { ...opened, template, item, result };
+  }
+
+  it("reserves, and hands the destination nothing at all", async () => {
+    const { pool, destination, item, template } = await tagged();
+
+    const [record] = await pool.routing.recordsFor(item.id);
+    expect(record).toMatchObject({
+      state: "pending",
+      target: {
+        destination: VAULT,
+        arguments: { path: "research/2026-08-06.md" },
+      },
+      applied: { template: template.id, firedByTag: true },
+    });
+    expect(destination.received).toEqual([]);
+  });
+
+  it("commits the tag and the reservation together", async () => {
+    const { pool, item, result } = await tagged();
+
+    expect(result.kind).toBe("ok");
+    expect(await tagsOn(pool, item.id)).toEqual([RESEARCH]);
+    expect(await pool.routing.recordsFor(item.id)).toHaveLength(1);
+    // Reserving takes it out of the queue, although nothing has arrived.
+    expect(await queued(pool)).toEqual([]);
+  });
+
+  it("waits the window out before the delivery is claimable", async () => {
+    const { clock, deliver, destination } = await tagged();
+
+    clock.set(INSIDE);
+    expect(await deliver()).toBe(0);
+    expect(destination.received).toEqual([]);
+
+    clock.set(AFTER);
+    expect(await deliver()).toBe(1);
+    expect(destination.received).toHaveLength(1);
+  });
+
+  it("says which template fired, so the log does not read as somebody taking one", async () => {
+    const { pool, item, template } = await tagged();
+
+    expect(
+      (await logFor(pool, item.id)).find(
+        (one) => one.kind === "template-fired",
+      ),
+    ).toMatchObject({
+      detail: { template: template.id, name: "Research links", tag: RESEARCH },
+    });
+  });
+
+  it("fires nothing on a tag the item already carries", async () => {
+    const { pool, item } = await tagged();
+
+    succeeded(await pool.items.tag(item.id, RESEARCH, PERSON));
+
+    expect(await pool.routing.recordsFor(item.id)).toHaveLength(1);
+  });
+
+  it("fires nothing for a revision that carries it over", async () => {
+    const { pool, item } = await tagged();
+
+    const outcome = succeeded(
+      await pool.items.edit(
+        item.id,
+        {
+          source: item.source,
+          sourceItemId: "edit-1",
+          payload: { ...item.payload, content: { text: "a second thought" } },
+        },
+        PERSON,
+      ),
+    );
+    if (outcome.kind !== "revised") throw new Error("expected a revision");
+
+    expect(await tagsOn(pool, outcome.revision.id)).toEqual([RESEARCH]);
+    expect(await pool.routing.recordsFor(outcome.revision.id)).toEqual([]);
+  });
+
+  it("fires from a capture that arrives already carrying it", async () => {
+    const { pool, destination } = await pooled();
+    succeeded(await pool.templates.create(draft({ triggerTag: RESEARCH })));
+
+    const item = captured(
+      await pool.capture(
+        envelope({ capturedAt: CAPTURED_AT, tags: ["route/research"] }),
+      ),
+    );
+
+    expect(await pool.routing.recordsFor(item.id)).toMatchObject([
+      { state: "pending", applied: { firedByTag: true } },
+    ]);
+    expect(destination.received).toEqual([]);
+  });
+});
+
+/**
+ * A stale template is the person's to go and fix, and a tag that filed nothing
+ * is spent the moment it lands — re-applying it would be absorbed. So the tag
+ * does not land at all. A destination that merely could not be *reached* is not
+ * this: that is the delivery's business, and the reservation waits it out.
+ */
+describe("a trigger tag whose template cannot route", () => {
+  it("refuses the tag and writes nothing", async () => {
+    const { pool } = await pooled();
+    const template = succeeded(
+      await pool.templates.create(
+        draft({ triggerTag: RESEARCH, arguments: { elsewhere: "no" } }),
+      ),
+    );
+    const item = captured(await pool.capture(envelope()));
+
+    expect(await pool.items.tag(item.id, RESEARCH, PERSON)).toMatchObject({
+      kind: "refused",
+      refusal: {
+        kind: "trigger-refused",
+        tag: RESEARCH,
+        template: template.id,
+      },
+    });
+    expect(await tagsOn(pool, item.id)).toEqual([]);
+    expect(await pool.routing.recordsFor(item.id)).toEqual([]);
+    expect(await queued(pool)).toEqual([item.id]);
+  });
+
+  it("refuses it where the destination was retired out from under it", async () => {
+    const { pool } = await pooled();
+    succeeded(await pool.templates.create(draft({ triggerTag: RESEARCH })));
+    succeeded(await pool.destinations.retire(VAULT));
+    const item = captured(await pool.capture(envelope()));
+
+    expect(await pool.items.tag(item.id, RESEARCH, PERSON)).toMatchObject({
+      kind: "refused",
+      refusal: { kind: "trigger-refused" },
+    });
+    expect(await tagsOn(pool, item.id)).toEqual([]);
+  });
+
+  it("keeps the capture, and drops the tag, where a source supplied it", async () => {
+    const { pool } = await pooled();
+    succeeded(
+      await pool.templates.create(
+        draft({ triggerTag: RESEARCH, arguments: { elsewhere: "no" } }),
+      ),
+    );
+
+    const item = captured(
+      await pool.capture(envelope({ tags: ["route/research"] })),
+    );
+
+    // The capture stands and the item is work. The tag is gone rather than
+    // spent: tagging is idempotent, so one that filed nothing could never file
+    // this item once somebody had fixed the template.
+    expect(await pool.routing.recordsFor(item.id)).toEqual([]);
+    expect(await tagsOn(pool, item.id)).toEqual([]);
+    expect(await queued(pool)).toEqual([item.id]);
+  });
+});
+
+describe("a reservation a trigger tag made, removed without delivering", () => {
+  async function fired() {
+    const opened = await pooled();
+    const template = succeeded(
+      await opened.pool.templates.create(draft({ triggerTag: RESEARCH })),
+    );
+    const item = captured(await opened.pool.capture(envelope()));
+    succeeded(await opened.pool.items.tag(item.id, RESEARCH, PERSON));
+    const [record] = await opened.pool.routing.recordsFor(item.id);
+    if (record === undefined) throw new Error("expected a reservation");
+    return { ...opened, template, item, record };
+  }
+
+  it("takes the trigger tag with it when it is cancelled inside the window", async () => {
+    const { pool, item, record, clock } = await fired();
+    clock.set(INSIDE);
+
+    succeeded(await pool.routing.cancelDelivery(record.id));
+
+    expect(await tagsOn(pool, item.id)).toEqual([]);
+    expect(await pool.routing.recordsFor(item.id)).toEqual([]);
+    expect(await queued(pool)).toEqual([item.id]);
+  });
+
+  it("says the tag came off with the cancellation, so it does not read as removing itself", async () => {
+    const { pool, item, record, template, clock } = await fired();
+    clock.set(INSIDE);
+
+    succeeded(await pool.routing.cancelDelivery(record.id));
+
+    expect(
+      (await logFor(pool, item.id)).find((one) => one.kind === "untagged"),
+    ).toMatchObject({
+      detail: { tag: RESEARCH, record: record.id, template: template.id },
+    });
+  });
+
+  it("takes it back when the first attempt is abandoned", async () => {
+    const { pool, destination, deliver, item, clock } = await fired();
+    destination.answers({ kind: "rejected", detail: "research/ is missing" });
+
+    clock.set(AFTER);
+    await deliver();
+
+    expect(await tagsOn(pool, item.id)).toEqual([]);
+    expect(await pool.routing.recordsFor(item.id)).toEqual([]);
+    expect(await queued(pool)).toEqual([item.id]);
+  });
+
+  it("leaves the tag where a delivery landed, since it says why the item went there", async () => {
+    const { pool, deliver, item, clock } = await fired();
+
+    clock.set(AFTER);
+    await deliver();
+
+    expect(await tagsOn(pool, item.id)).toEqual([RESEARCH]);
+    expect(await pool.routing.recordsFor(item.id)).toMatchObject([
+      { state: "delivered" },
+    ]);
+  });
+
+  it("leaves the tag where a person took the template in the composer", async () => {
+    const { pool, destination } = await pooled();
+    destination.answers({ kind: "unreachable", detail: "ECONNREFUSED" });
+
+    // Carried before any template claimed the name, so nothing fired: the tag
+    // is the person's own classification and the route is their own decision.
+    const item = captured(
+      await pool.capture(envelope({ tags: ["route/research"] })),
+    );
+    const template = succeeded(
+      await pool.templates.create(draft({ triggerTag: RESEARCH })),
+    );
+
+    const record = succeeded(await pool.templates.route(item.id, template.id));
+    expect(record.applied?.firedByTag).toBe(false);
+    succeeded(await pool.routing.cancelDelivery(record.id));
+
+    expect(await tagsOn(pool, item.id)).toEqual([RESEARCH]);
+    expect(await pool.routing.recordsFor(item.id)).toEqual([]);
+    expect(await queued(pool)).toEqual([item.id]);
   });
 });

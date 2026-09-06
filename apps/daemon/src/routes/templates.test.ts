@@ -298,3 +298,71 @@ describe("routing an item from a template", () => {
     expect(response.status).toBe(200);
   });
 });
+
+/**
+ * The route the outbox drains a tag onto, which is what makes an offline tag
+ * fire when it arrives rather than needing anything to sweep for one.
+ */
+describe("a trigger tag arriving over the wire", () => {
+  it("applies its template and answers the item carrying the tag", async () => {
+    const host = serving();
+    const destination = await vault(host);
+    await created(host, destination, { triggerTag: "route/research" });
+    const [item] = await captureMany(host.app, 1);
+
+    const response = await send(host.app, `/v1/items/${String(item)}/tag`, {
+      tag: "route/research",
+    });
+
+    expect(response.status).toBe(200);
+    expect(await body(response)).toMatchObject({
+      tags: [{ name: "route/research" }],
+    });
+
+    const records = (await body(
+      await host.app.request(`/v1/items/${String(item)}/routing`),
+    )) as { values: { state: string; applied?: { firedByTag: boolean } }[] };
+    expect(records.values).toMatchObject([
+      { state: "pending", applied: { firedByTag: true } },
+    ]);
+  });
+
+  it("is declined where the template cannot route, and the tag does not land", async () => {
+    const host = serving();
+    const destination = await vault(host);
+    await created(host, destination, {
+      triggerTag: "route/research",
+      arguments: { nowhere: "at all" },
+    });
+    const [item] = await captureMany(host.app, 1);
+
+    const response = await send(host.app, `/v1/items/${String(item)}/tag`, {
+      tag: "route/research",
+    });
+
+    expect(response.status).toBe(422);
+    expect(await body(response)).toMatchObject({
+      error: { code: "trigger-refused" },
+    });
+
+    const read = (await body(
+      await host.app.request(`/v1/items/${String(item)}`),
+    )) as { tags: { name: string }[] };
+    expect(read.tags).toEqual([]);
+  });
+
+  it("leaves an ordinary tag alone, however it is namespaced", async () => {
+    const host = serving();
+    const [item] = await captureMany(host.app, 1);
+
+    const response = await send(host.app, `/v1/items/${String(item)}/tag`, {
+      tag: "route/nobody-declared-this",
+    });
+
+    expect(response.status).toBe(200);
+    const records = (await body(
+      await host.app.request(`/v1/items/${String(item)}/routing`),
+    )) as { values: unknown[] };
+    expect(records.values).toEqual([]);
+  });
+});
