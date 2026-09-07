@@ -730,9 +730,8 @@ person to remember it.
   rather than answering `409 item-superseded`, which is gone. Being revised is one of the three
   things that process an item, and a processed item is revised rather than refused.
 - **An edit is refused what a capture's payload is refused for**, less one: a `content` that fails
-  its type's schema is `422 payload-invalid`, a required slot left empty is
-  `422 missing-asset-slot`, and a reference to an asset the pool does not hold is
-  `422 unknown-asset`. There is no `unknown-payload-type`, because a `type` that is not the item's
+  its type's schema is `422 payload-invalid`, and a reference to an asset the pool does not hold
+  is `422 unknown-asset`. There is no `unknown-payload-type`, because a `type` that is not the item's
   own is `422 payload-type-changed` first, carrying the type it was captured as.
 - An id no item has is `404 no-such-item`.
 - The body is required: a bare `POST` is `400 malformed-envelope` rather than an empty payload.
@@ -1477,7 +1476,6 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `unknown-payload-type` | `type` | core |
 | `422` | `payload-invalid` | `issues` | core |
 | `422` | `payload-type-changed` | `from` | core |
-| `422` | `missing-asset-slot` | `slot` | core |
 | `422` | `unknown-asset` | `asset` | core |
 | `422` | `unknown-destination` | `destination` | core (routing an item) |
 | `422` | `unknown-destination-kind` | `destinationKind` | core |

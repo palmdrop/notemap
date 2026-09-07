@@ -281,6 +281,7 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 
 - **The pool** — captures, revisions, head amendment, tags, archive, purge and tombstones.
 - **Payload types** — open-ended `(type, content, metadata)`, including payloads with media.
+  There is one, `note`: optional prose and any number of attachments.
 - **Feed and queue** — ordered, paginated reads of both surfaces.
 - **Enrichment** — the job model, suggestions and artifacts, accepting and rejecting, per-source
   auto-request policy. Ports defined; **no providers wired**.
@@ -382,9 +383,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   offline caller cannot always know.
 - **An edit is refused what a capture's payload is refused for**, less the one refusal it cannot
   raise. Editing may change an attached file as readily as the text, so content that fails its
-  schema, a required slot left empty and a reference to an asset the pool does not hold are
-  refused exactly as at capture. A payload type the host does not know is not among them, since a
-  type differing from the item's own is already refused as `payload-type-changed`.
+  schema and a reference to an asset the pool does not hold are refused exactly as at capture. A
+  payload type the host does not know is not among them, since a type differing from the item's
+  own is already refused as `payload-type-changed`.
 - **The pool decides which outcome an edit gets, and the caller reads it off the answer.** A
   caller can usually predict it now, everything the seal derives from riding on the item it
   already holds, but another client may have routed that item since. Deciding server-side is what

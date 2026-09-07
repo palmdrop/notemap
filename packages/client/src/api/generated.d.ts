@@ -582,7 +582,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "unknown-payload-type" | "payload-invalid" | "missing-asset-slot" | "unknown-asset";
+                                code: "unknown-payload-type" | "payload-invalid" | "unknown-asset";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -1470,7 +1470,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "payload-invalid" | "payload-type-changed" | "missing-asset-slot" | "unknown-asset";
+                                code: "payload-invalid" | "payload-type-changed" | "unknown-asset";
                             } & {
                                 [key: string]: unknown;
                             };

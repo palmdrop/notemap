@@ -8,7 +8,7 @@ import {
   daemon,
   envelope,
   post,
-  TEXT,
+  NOTE,
   WEB,
   type Daemon,
 } from "../testing/fixture";
@@ -44,7 +44,7 @@ describe("POST /v1/captures", () => {
     expect(response.headers.get("location")).toBe("/v1/items/item-1");
     expect(await body(response)).toMatchObject({
       kind: "captured",
-      item: { id: "item-1", source: WEB, payload: { type: TEXT } },
+      item: { id: "item-1", source: WEB, payload: { type: NOTE } },
     });
   });
 
@@ -134,29 +134,15 @@ describe("a capture the pool refuses", () => {
 
     const response = await post(app, {
       ...envelope(),
-      payload: { ...envelope().payload, content: { text: "" } },
+      payload: { ...envelope().payload, content: { text: 12 } },
     });
 
     expect(response.status).toBe(422);
     expect(await body(response)).toEqual({
       error: {
         code: "payload-invalid",
-        issues: [{ path: "/text", keyword: "minLength" }],
+        issues: [{ path: "/text", keyword: "type" }],
       },
-    });
-  });
-
-  it("answers 422 for a missing asset slot", async () => {
-    const app = serving({
-      ...CONFIG,
-      payloadTypes: [{ ...CONFIG.payloadTypes[0]!, requiredSlots: ["audio"] }],
-    });
-
-    const response = await post(app, envelope());
-
-    expect(response.status).toBe(422);
-    expect(await body(response)).toEqual({
-      error: { code: "missing-asset-slot", slot: "audio" },
     });
   });
 });

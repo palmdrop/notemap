@@ -61,7 +61,7 @@ don't require model changes.
 
 | Type | Standard |
 |---|---|
-| text | CommonMark + YAML frontmatter |
+| note | CommonMark + YAML frontmatter, and any number of attachments beside it — a picture, a recording, a page snapshot. What an attachment is, is its own media type |
 | voice / audio | audio blob + **WebVTT** timed transcript (word-level timestamps, ground truth for correction) + formatted Markdown |
 | link / bookmark | URL + **SingleFile HTML** snapshot (preserved original) + extracted [Open Graph](https://ogp.me/)/schema.org metadata; [Netscape bookmark format](https://en.wikipedia.org/wiki/Bookmark_(digital)#Storage) for bulk import |
 | web annotation | [W3C Web Annotation Data Model](https://www.w3.org/TR/annotation-model/) (JSON-LD) |

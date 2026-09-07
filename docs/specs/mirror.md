@@ -57,8 +57,8 @@
   store (`@notemap/blob-fs`) writes content-addressed blobs under `assets/<2-char shard>/<sha-256>`,
   and the daemon wires it. A record can no longer fail to be made: references resolve against rows
   in the same pool, so `asset-missing` left the non-retryable list. A renderer is now told which
-  directory it is writing into and may be handed the blob driver's `pathFor`, which is how the
-  `image` type emits a markdown image pointing at the blob itself rather than at a copy.
+  directory it is writing into and may be handed the blob driver's `pathFor`, which is how a
+  rendering emits a markdown image pointing at the blob itself rather than at a copy.
   ([plan](../plans/asset-upload-and-images.md))
 - 2026-08-12 — **Frontmatter strings are single-quoted.** The YAML library is now `js-yaml`,
   which ships ESM: `yaml` is CommonJS on node, and the `require("process")` inside it survived

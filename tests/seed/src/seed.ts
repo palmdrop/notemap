@@ -9,8 +9,7 @@ import type {
 export type SeedOptions = {
   readonly source?: string;
   readonly imageSource?: string;
-  readonly textType?: string;
-  readonly imageType?: string;
+  readonly payloadType?: string;
   readonly imageSlot?: string;
   readonly capability?: string;
   /** The folder, under a destination's root, a routed item is sent to. */
@@ -122,7 +121,7 @@ export async function seed(
 
   const said = (index: number): Promise<string> =>
     capture(index, {
-      type: options.textType ?? "text",
+      type: options.payloadType ?? "note",
       content: { text: SAID[index - 1] ?? SAID[0] },
     });
 
@@ -168,8 +167,8 @@ async function captureAnImage(
   const item = await capture(
     index,
     {
-      type: options.imageType ?? "image",
-      content: { caption: "the whiteboard, before anyone rubbed it out" },
+      type: options.payloadType ?? "note",
+      content: { text: "the whiteboard, before anyone rubbed it out" },
       assets: [{ slot: options.imageSlot ?? "image", asset }],
     },
     options.imageSource ?? "web-image",

@@ -6,7 +6,7 @@ export function anItem(id: string, overrides: Partial<Item> = {}): Item {
     id,
     source: "test",
     sourceItemId: id,
-    payload: { type: "text", content: { text: id }, metadata: {}, assets: [] },
+    payload: { type: "note", content: { text: id }, metadata: {}, assets: [] },
     tags: [],
     createdAt: "2026-08-17T10:00:00.000Z",
     modifiedAt: "2026-08-17T10:00:00.000Z",

@@ -250,12 +250,29 @@ test("reads from the end the reader last chose, not the one the queue defaults t
 
 function taken(request: Request) {
   return request.json().then((body) => {
-    const envelope = body as { id: string; source: string; payload: unknown };
+    const envelope = body as {
+      id: string;
+      source: string;
+      payload: { assets: { slot: string; asset: string }[] };
+    };
     return json(201, {
       kind: "captured",
       item: anItem(envelope.id, {
         source: envelope.source,
         payload: envelope.payload as ReturnType<typeof anItem>["payload"],
+        // Resolved, as every read that answers an item does: what an
+        // attachment is, is the pool's answer and not the envelope's.
+        ...(envelope.payload.assets.length === 0
+          ? {}
+          : {
+              assets: envelope.payload.assets.map((reference) => ({
+                id: reference.asset,
+                filename: "shot.png",
+                mime: "image/png",
+                blob: "sha-256:whatever",
+                bytes: 5,
+              })),
+            }),
       }),
       matchedOn: "id",
     });

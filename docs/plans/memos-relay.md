@@ -81,46 +81,46 @@ on each asset's media type, which is only possible once the media type is there.
 atomic — capture breaks if the config drops `image` while the client still mints it — so it lands
 whole or not at all.
 
-- [ ] `text` and `image` become **`note`**: prose at `content.text`, **optional**, no `minLength`;
+- [x] `text` and `image` become **`note`**: prose at `content.text`, **optional**, no `minLength`;
       any number of attachments. `config.example.toml` and `docker/compose/config.toml` both
-- [ ] `PayloadTypeDescriptor.requiredSlots` and the `missing-asset-slot` refusal are removed, in
+- [x] `PayloadTypeDescriptor.requiredSlots` and the `missing-asset-slot` refusal are removed, in
       core and from `http-v1.md`'s error table. Its only user was `image`, and by the rule below no
       future type wants it. An empty capture — no prose, no attachment — becomes legal in core; the
       shell and each relay guard their own input, which is what core being a primitive API means
-- [ ] The four places that hardcode the two names, all of which stop naming a payload type at all:
+- [x] The four places that hardcode the two names, all of which stop naming a payload type at all:
       `client/src/capture/envelope.ts` builds the envelope, `client/src/client.ts:464` decides what
       is a picture, `daemon/src/mirror/renderers.ts:51` and `daemon/src/destinations/renderers.ts:43`
       render. A `DeliveredAsset` already carries the whole `Asset`, so both renderers can ask
-- [ ] A migration in `store-sqlite/src/migrations.ts` rewrites existing `image` payloads to `note`
+- [x] A migration in `store-sqlite/src/migrations.ts` rewrites existing `image` payloads to `note`
       and moves `caption` to `text`. It **also inserts the mirror-write jobs it makes owed**: the
       mirror is written by a job and never by a store write, so a payload rewritten underneath it
       leaves the copy describing items that no longer exist that way, and `verify` would report
       drift on every one
-- [ ] The shell keeps **two capture sources**, `web-manual` and `web-image`, though both now produce
+- [x] The shell keeps **two capture sources**, `web-manual` and `web-image`, though both now produce
       `note`. That distinction is what CONTEXT.md says a source is for — "one page may stamp two
       sources" — and it is not tidied away with the payload types
-- [ ] `CONTEXT.md`: **Payload type** gains the rule that a second type exists **only when `content`
+- [x] `CONTEXT.md`: **Payload type** gains the rule that a second type exists **only when `content`
       needs a different schema**. `link` qualifies, carrying a `{ url }` nothing else validates;
       `table` qualifies; **voice does not** — a recording's audio is an **asset** and its transcript
       an **artifact**, so a `voice` type would have `note`'s schema under another name and
       `checkPayload` could not tell them apart. Auto-transcription already keys on the **source**,
       via `autoRequest`, not on a payload type
-- [ ] `CONTEXT.md`'s **Payload type** entry names `note` and must say plainly that **Item**'s
+- [x] `CONTEXT.md`'s **Payload type** entry names `note` and must say plainly that **Item**'s
       avoid-list still stands: `note` names a payload's shape and is still the wrong word for an
       item. Without that sentence the glossary contradicts itself on one page
-- [ ] `standards.md`'s payload table: the `text` row becomes `note` and says it carries attachments.
+- [x] `standards.md`'s payload table: the `text` row becomes `note` and says it carries attachments.
       This closes an existing disagreement rather than opening one — `image` was never in that table
-- [ ] `core.md` and `shell.md` follow: what a capture may hold, and what the capture surface offers
-- [ ] ADR: **text and image collapse into one payload type**, recording the `payload-type-changed`
+- [x] `core.md` and `shell.md` follow: what a capture may hold, and what the capture surface offers
+- [x] ADR: **text and image collapse into one payload type**, recording the `payload-type-changed`
       constraint that forced it, the `content`-differs test, and `requiredSlots` losing its only
       user. Hard to reverse, surprising without context, and a real trade-off — a reader will
       otherwise ask why a photograph is typed `note`
-- [ ] Tests: a `note` with prose and pictures renders both, in slot order, in the shell and at a
+- [x] Tests: a `note` with prose and pictures renders both, in slot order, in the shell and at a
       filesystem destination; an attachment whose media type is not an image is not drawn as one;
       the migration turns a captured `image` into a `note` and leaves a mirror write owed
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack`. By hand:
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack`. By hand:
       capture text, capture a picture, capture both, and confirm an existing pool still reads
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 3 — The sources are answerable
 

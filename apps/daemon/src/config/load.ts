@@ -184,7 +184,6 @@ const fileSchema = z.object({
       z.object({
         name: z.string().min(1),
         contentSchema: jsonSchema,
-        requiredSlots: z.array(z.string()).default([]),
       }),
     )
     .default([]),
@@ -480,7 +479,6 @@ export function parseConfig(source: string, from: string): LoadedConfig {
       payloadTypes: file.payloadTypes.map((type) => ({
         name: type.name as PayloadTypeName,
         contentSchema: type.contentSchema as JsonSchema,
-        requiredSlots: type.requiredSlots,
       })),
       enrichments: file.enrichments.map((enrichment) => ({
         name: enrichment.name as EnrichmentName,

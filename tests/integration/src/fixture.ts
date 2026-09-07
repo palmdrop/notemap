@@ -69,7 +69,6 @@ export const CONFIG: PoolConfig = {
         required: ["text"],
         properties: { text: { type: "string" } },
       },
-      requiredSlots: [],
     },
     {
       name: NOTE,
@@ -78,7 +77,6 @@ export const CONFIG: PoolConfig = {
         required: ["body"],
         properties: { body: { type: "string" } },
       },
-      requiredSlots: ["recording"],
     },
   ],
   enrichments: [],

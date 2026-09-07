@@ -113,8 +113,6 @@ const SAID: {
     "the app asked for more at once than this daemon will serve",
   "malformed-envelope": "the app sent a capture this daemon cannot read",
   "malformed-json": "the app sent something this daemon cannot read",
-  "missing-asset-slot": (facts) =>
-    `a capture of this type needs a file in "${String(facts["slot"])}"`,
   "missing-filename": "the file has no name",
   "no-output": "that delivery kept no copy of what it sent",
   "no-such-asset": "the upload is gone; pick the file again",

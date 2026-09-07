@@ -28,21 +28,19 @@ import { startMirrorRunner } from "../mirror/runner";
 import { openPool, systemClock } from "../ports";
 
 export const WEB = "web" as SourceId;
-export const TEXT = "text" as PayloadTypeName;
+export const NOTE = "note" as PayloadTypeName;
 
 /** The example config, as core takes it. */
 export const CONFIG: PoolConfig = {
   sources: [{ id: WEB, autoRequest: [] }],
   payloadTypes: [
     {
-      name: TEXT,
+      name: NOTE,
       contentSchema: {
         type: "object",
-        required: ["text"],
         additionalProperties: false,
-        properties: { text: { type: "string", minLength: 1 } },
+        properties: { text: { type: "string" } },
       },
-      requiredSlots: [],
     },
   ],
   enrichments: [],
@@ -254,7 +252,7 @@ export function envelope(overrides: EnvelopeOverrides = {}) {
     sourceItemId: overrides.sourceItemId ?? id,
     capturedAt: overrides.capturedAt ?? "2026-08-08T09:00:00.000Z",
     payload: {
-      type: TEXT,
+      type: NOTE,
       content: { text: overrides.text ?? "a thought" },
       metadata: {},
       assets: [],

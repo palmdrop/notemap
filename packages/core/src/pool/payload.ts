@@ -9,8 +9,7 @@ export type PayloadRefusal =
   | {
       readonly kind: "payload-invalid";
       readonly issues: readonly SchemaIssue[];
-    }
-  | { readonly kind: "missing-asset-slot"; readonly slot: string };
+    };
 
 /** Everything wrong with a payload that is decidable without reading the pool. */
 export function checkPayload(
@@ -25,11 +24,6 @@ export function checkPayload(
 
   const issues = ports.schemas.validate(type.contentSchema, payload.content);
   if (issues.length > 0) return { kind: "payload-invalid", issues };
-
-  const filled = new Set(payload.assets.map((ref) => ref.slot));
-  const missing = type.requiredSlots.find((slot) => !filled.has(slot));
-  if (missing !== undefined)
-    return { kind: "missing-asset-slot", slot: missing };
 
   return undefined;
 }

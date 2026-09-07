@@ -32,7 +32,6 @@ export type CaptureRefusal =
       readonly kind: "payload-invalid";
       readonly issues: readonly SchemaIssue[];
     }
-  | { readonly kind: "missing-asset-slot"; readonly slot: string }
   | { readonly kind: "unknown-asset"; readonly asset: AssetId }
   | { readonly kind: "capture-id-conflict"; readonly existing: ItemId }
   | { readonly kind: "source-item-changed"; readonly existing: ItemId };
@@ -48,7 +47,6 @@ export type EditRefusal =
       readonly issues: readonly SchemaIssue[];
     }
   | { readonly kind: "payload-type-changed"; readonly from: PayloadTypeName }
-  | { readonly kind: "missing-asset-slot"; readonly slot: string }
   | { readonly kind: "unknown-asset"; readonly asset: AssetId }
   /** The envelope's identity already names an item that is not a revision of this one. */
   | { readonly kind: "source-item-changed"; readonly existing: ItemId };

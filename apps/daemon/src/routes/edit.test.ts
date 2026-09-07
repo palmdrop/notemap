@@ -26,7 +26,7 @@ afterEach(async () => {
 const body = (response: Response) => response.json() as Promise<never>;
 
 function payload(text: string): unknown {
-  return { type: "text", content: { text }, metadata: {}, assets: [] };
+  return { type: "note", content: { text }, metadata: {}, assets: [] };
 }
 
 function envelope(text: string, sourceItemId = "edit-1"): unknown {
@@ -143,7 +143,7 @@ describe("editing over the wire", () => {
 
     expect(response.status).toBe(422);
     expect(await body(response)).toEqual({
-      error: { code: "payload-type-changed", from: "text" },
+      error: { code: "payload-type-changed", from: "note" },
     });
   });
 
@@ -151,7 +151,16 @@ describe("editing over the wire", () => {
     const app = serving();
     const [first] = await captureMany(app, 1);
 
-    const response = await send(app, `/v1/items/${first}/edit`, envelope(""));
+    const response = await send(app, `/v1/items/${first}/edit`, {
+      source: "web",
+      sourceItemId: "edit-1",
+      payload: {
+        type: "note",
+        content: { text: 12 },
+        metadata: {},
+        assets: [],
+      },
+    });
 
     expect(response.status).toBe(422);
     expect(await body(response)).toMatchObject({
@@ -167,7 +176,7 @@ describe("editing over the wire", () => {
       source: "web",
       sourceItemId: "edit-1",
       payload: {
-        type: "text",
+        type: "note",
         content: { text: "a thought" },
         metadata: {},
         assets: [{ slot: "image", asset: "nothing" }],

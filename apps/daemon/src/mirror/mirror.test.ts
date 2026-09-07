@@ -73,11 +73,11 @@ describe("capturing through HTTP, with a mirror wired", () => {
     expect(await filesUnder(mirrorRoot)).toEqual([
       join(
         mirrorRoot,
-        "2026/08/11/T142305-text-0198f0c2-0000-7000-8000-000000000001.json",
+        "2026/08/11/T142305-note-0198f0c2-0000-7000-8000-000000000001.json",
       ),
       join(
         mirrorRoot,
-        "2026/08/11/T142305-text-0198f0c2-0000-7000-8000-000000000001.md",
+        "2026/08/11/T142305-note-0198f0c2-0000-7000-8000-000000000001.md",
       ),
     ]);
   });

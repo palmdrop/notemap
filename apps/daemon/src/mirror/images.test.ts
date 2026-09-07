@@ -1,34 +1,14 @@
 import { access, readdir, readFile } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 
-import type { PayloadTypeName, PoolConfig } from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { CONFIG, daemon, put, WEB, type Daemon } from "../testing/fixture";
-
-const IMAGE = "image" as PayloadTypeName;
-
-/** The example config's image type: an optional caption, one required slot. */
-const WITH_IMAGES: PoolConfig = {
-  ...CONFIG,
-  payloadTypes: [
-    ...CONFIG.payloadTypes,
-    {
-      name: IMAGE,
-      contentSchema: {
-        type: "object",
-        additionalProperties: false,
-        properties: { caption: { type: "string" } },
-      },
-      requiredSlots: ["image"],
-    },
-  ],
-};
+import { daemon, NOTE, put, WEB, type Daemon } from "../testing/fixture";
 
 const open: Daemon[] = [];
 
 function host(): Daemon {
-  const started = daemon(WITH_IMAGES, { mirroring: true });
+  const started = daemon(undefined, { mirroring: true });
   open.push(started);
   return started;
 }
@@ -41,9 +21,10 @@ async function upload(
   started: Daemon,
   filename: string,
   content: string,
+  mime = "image/png",
 ): Promise<{ id: string; blob: string }> {
   const response = await put(started.app, content, {
-    "content-type": "image/png",
+    "content-type": mime,
     "content-disposition": `attachment; filename="${filename}"`,
   });
   if (response.status !== 201) {
@@ -61,8 +42,8 @@ async function captureImage(started: Daemon, body: unknown): Promise<Response> {
 }
 
 function envelopeFor(
-  asset: string | undefined,
-  caption?: string,
+  assets: readonly { slot: string; asset: string }[],
+  text?: string,
   capturedAt = "2026-08-11T14:23:05.000Z",
 ) {
   const id = "0198f0c2-0000-7000-8000-000000000009";
@@ -72,12 +53,19 @@ function envelopeFor(
     sourceItemId: id,
     capturedAt,
     payload: {
-      type: IMAGE,
-      content: caption === undefined ? {} : { caption },
+      type: NOTE,
+      content: text === undefined ? {} : { text },
       metadata: {},
-      assets: asset === undefined ? [] : [{ slot: "image", asset }],
+      assets,
     },
   };
+}
+
+function attaching(...assets: readonly string[]) {
+  return assets.map((asset, index) => ({
+    slot: String(index).padStart(3, "0"),
+    asset,
+  }));
 }
 
 async function renderingIn(
@@ -93,14 +81,21 @@ async function renderingIn(
   return { path, text: await readFile(path, "utf8") };
 }
 
-describe("capturing an image", () => {
+/** The non-blank lines below the frontmatter the mirror writes above a rendering. */
+function bodyOf(rendering: string): readonly string[] {
+  const lines = rendering.trimEnd().split("\n");
+  const closed = lines.indexOf("---", 1);
+  return lines.slice(closed + 1).filter((line) => line !== "");
+}
+
+describe("capturing a note with attachments", () => {
   it("leaves a rendering pointing at a file that exists", async () => {
     const started = host();
     const asset = await upload(started, "photo.png", "a picture");
 
-    expect((await captureImage(started, envelopeFor(asset.id))).status).toBe(
-      201,
-    );
+    expect(
+      (await captureImage(started, envelopeFor(attaching(asset.id)))).status,
+    ).toBe(201);
     expect(await started.drain()).toBe(1);
 
     const rendering = await renderingIn(started.mirrorRoot);
@@ -118,7 +113,7 @@ describe("capturing an image", () => {
     const started = host();
     const asset = await upload(started, "photo.png", "a picture");
 
-    await captureImage(started, envelopeFor(asset.id));
+    await captureImage(started, envelopeFor(attaching(asset.id)));
     await started.drain();
 
     const rendering = await renderingIn(started.mirrorRoot);
@@ -133,7 +128,7 @@ describe("capturing an image", () => {
     const started = host();
     const asset = await upload(started, "interview-with-mum.png", "a picture");
 
-    await captureImage(started, envelopeFor(asset.id));
+    await captureImage(started, envelopeFor(attaching(asset.id)));
     await started.drain();
 
     expect((await renderingIn(started.mirrorRoot)).text).toContain(
@@ -141,11 +136,11 @@ describe("capturing an image", () => {
     );
   });
 
-  it("writes the caption below the image, and nothing when there is none", async () => {
+  it("writes the prose below the attachments", async () => {
     const started = host();
     const asset = await upload(started, "photo.png", "a picture");
 
-    await captureImage(started, envelopeFor(asset.id, "mum, 1994"));
+    await captureImage(started, envelopeFor(attaching(asset.id), "mum, 1994"));
     await started.drain();
 
     const { text } = await renderingIn(started.mirrorRoot);
@@ -161,7 +156,7 @@ describe("capturing an image", () => {
       try {
         const started = host();
         const asset = await upload(started, "photo.png", "a picture");
-        await captureImage(started, envelopeFor(asset.id));
+        await captureImage(started, envelopeFor(attaching(asset.id)));
         await started.drain();
 
         const { path, text } = await renderingIn(started.mirrorRoot);
@@ -176,14 +171,25 @@ describe("capturing an image", () => {
     );
   });
 
-  it("refuses a capture with nothing in the required slot", async () => {
+  it("draws an attachment that is not a picture as a link, not an embed", async () => {
     const started = host();
+    const picture = await upload(started, "photo.png", "a picture");
+    const recording = await upload(
+      started,
+      "interview.opus",
+      "some audio",
+      "audio/opus",
+    );
 
-    const response = await captureImage(started, envelopeFor(undefined));
+    await captureImage(
+      started,
+      envelopeFor(attaching(picture.id, recording.id)),
+    );
+    await started.drain();
 
-    expect(response.status).toBe(422);
-    expect(await response.json()).toEqual({
-      error: { code: "missing-asset-slot", slot: "image" },
-    });
+    const lines = bodyOf((await renderingIn(started.mirrorRoot)).text);
+
+    expect(lines[0]).toMatch(/^!\[photo\.png\]\(/);
+    expect(lines[1]).toMatch(/^\[interview\.opus\]\(/);
   });
 });

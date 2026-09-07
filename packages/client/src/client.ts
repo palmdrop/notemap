@@ -32,7 +32,7 @@ import {
   settle,
   settledDestination,
   settledTemplate,
-  withBlobUrl,
+  withHeld,
   withdrawn,
   type ClientState,
   type Surface,
@@ -42,8 +42,6 @@ import { createTags } from "./tags/tags";
 import { createTokens } from "./tokens/tokens";
 import { loadMore, readAfterReturn } from "./surfaces/reads";
 import type { Client, ClientConfig, ListState } from "./types";
-
-const IMAGE = "image";
 
 function copied(file: File): Promise<File> {
   return file
@@ -212,7 +210,14 @@ export function createClient(config: ClientConfig): Client {
   }
 
   function bytesOf(asset: AssetId): string {
-    return state.get().blobUrls.get(asset) ?? transport.assetUrl(asset);
+    return state.get().held.get(asset)?.url ?? transport.assetUrl(asset);
+  }
+
+  function mimeOf(item: Item, asset: AssetId): string | undefined {
+    return (
+      item.assets?.find((each) => each.id === asset)?.mime ??
+      state.get().held.get(asset)?.mime
+    );
   }
 
   const tags = createTags({
@@ -256,7 +261,7 @@ export function createClient(config: ClientConfig): Client {
    */
   async function release(operation: Parameters<typeof outbox.enqueue>[0]) {
     for (const asset of releasedBy(operation, state.get().outbox)) {
-      state.update((current) => withBlobUrl(current, asset, undefined));
+      state.update((current) => withHeld(current, asset, undefined));
       await store.removeBlob(asset).catch(report);
     }
   }
@@ -455,9 +460,12 @@ export function createClient(config: ClientConfig): Client {
         await store.writeBlob(asset, await copied(file));
 
         const url = await store.blobUrl(asset);
-        if (url !== undefined) {
-          state.update((current) => withBlobUrl(current, asset, url));
-        }
+        state.update((current) =>
+          withHeld(current, asset, {
+            mime: file.type,
+            ...(url === undefined ? {} : { url }),
+          }),
+        );
 
         return asset;
       }),
@@ -466,11 +474,18 @@ export function createClient(config: ClientConfig): Client {
 
     says: (item) => saidIn(item.payload),
 
-    /** Only `image` captures: another payload type's slot may hold anything at all. */
+    /**
+     * By media type, never by the payload's: a note carries any number of
+     * attachments and any of them may be anything at all. What the pool says
+     * an asset is wins; what this client attached is the only answer there is
+     * until the capture lands.
+     */
     images: (item) =>
-      item.payload.type === IMAGE
-        ? item.payload.assets.map((reference) => bytesOf(reference.asset))
-        : [],
+      item.payload.assets
+        .filter((reference) =>
+          mimeOf(item, reference.asset)?.startsWith("image/"),
+        )
+        .map((reference) => bytesOf(reference.asset)),
 
     routing: createRouting({
       api,

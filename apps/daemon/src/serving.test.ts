@@ -71,7 +71,7 @@ describe("against a real listener", () => {
         sourceItemId: "over-the-wire",
         capturedAt: "2026-08-08T09:00:00+02:00",
         payload: {
-          type: "text",
+          type: "note",
           content: { text: "a thought" },
           metadata: {},
           assets: [],

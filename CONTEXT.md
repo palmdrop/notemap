@@ -147,9 +147,17 @@ item still carrying its tags, and the revision that copied them is another one.
 _Avoid_: tag list, taxonomy, vocabulary, autocomplete
 
 **Payload type**:
-What a capture mechanically *is* — text, voice, link, annotation, table. Determined by what
-arrived, never a judgement. Adapters declare which payload types each of their capabilities
-accepts.
+What a capture mechanically *is*. Determined by what arrived, never a judgement. Adapters declare
+which payload types each of their capabilities accepts. There is one, **note**: prose with any
+number of attachments, either half of which may be missing.
+
+A second type exists **only when `content` needs a different schema**. `link` qualifies, carrying
+a `{ url }` nothing else validates; `table` qualifies. **Voice does not**: a recording's audio is
+an **asset** and its transcript an **artifact**, so a `voice` type would be `note`'s schema under
+another name and nothing could tell the two apart by looking. What a capture is *about* is its
+**source** and its **tags**; what an attachment is, is its media type.
+
+`note` names a payload's shape. It is still the wrong word for an item, as **Item** says.
 _Avoid_: type, kind, format
 
 **Enrichment**:

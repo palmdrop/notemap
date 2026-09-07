@@ -745,6 +745,50 @@ export const MIGRATIONS: readonly string[] = [
   ALTER TABLE items ADD COLUMN utc_offset INTEGER
     CHECK (utc_offset BETWEEN -1440 AND 1440);
   `,
+
+  `
+  -- \`text\` and \`image\` collapse into one type. An \`image\`'s caption was its
+  -- prose under another name, so it moves to where prose lives; a payload with
+  -- no caption keeps no key at all, as a capture with nothing said does.
+  UPDATE items
+  SET payload_content = CASE
+        WHEN json_extract(payload_content, '$.caption') IS NULL
+          THEN json_remove(payload_content, '$.caption')
+        ELSE json_set(
+               json_remove(payload_content, '$.caption'),
+               '$.text', json_extract(payload_content, '$.caption'))
+      END
+  WHERE payload_type = 'image';
+
+  UPDATE items SET payload_type = 'note' WHERE payload_type IN ('text', 'image');
+
+  -- The mirror is written by a job and never by a store write, so a payload
+  -- rewritten underneath it leaves the copy describing items that no longer
+  -- exist that way and \`verify\` reporting drift on every one. The id is derived
+  -- rather than minted: a migration has no id generator, and one per item is
+  -- exactly as many as this owes.
+  --
+  -- \`enqueued_at\` is the item's own \`modified_at\`, which is in the past, so
+  -- every one of these is claimable the moment the daemon comes up. On a pool
+  -- with no mirror wired nothing ever claims them, and they are what makes the
+  -- copy right if one is wired later: a job carries no snapshot.
+  INSERT INTO jobs
+    (id, kind, subject_kind, subject_id, subject_item, enrichment, attempt,
+     enqueued_at, next_attempt_at, lease_id, lease_expires_at, abandoned_at,
+     last_failure_code, last_failure_detail)
+  SELECT 'mirror-note-' || item.id, 'mirror', 'item', item.id, item.id, NULL, 0,
+         item.modified_at, item.modified_at, NULL, NULL, NULL, NULL, NULL
+  FROM items AS item
+  WHERE item.payload_type = 'note'
+    AND NOT EXISTS (
+      SELECT 1 FROM jobs AS owed
+      WHERE owed.subject_kind = 'item'
+        AND owed.subject_id = item.id
+        AND owed.kind IN ('mirror', 'mirror-remove')
+        AND owed.lease_id IS NULL
+        AND owed.abandoned_at IS NULL
+    );
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

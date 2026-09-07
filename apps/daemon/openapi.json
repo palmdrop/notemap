@@ -2595,7 +2595,6 @@
                           "enum": [
                             "unknown-payload-type",
                             "payload-invalid",
-                            "missing-asset-slot",
                             "unknown-asset"
                           ]
                         }
@@ -3820,7 +3819,6 @@
                           "enum": [
                             "payload-invalid",
                             "payload-type-changed",
-                            "missing-asset-slot",
                             "unknown-asset"
                           ]
                         }

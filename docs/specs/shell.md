@@ -231,7 +231,7 @@ fills in. It does not name a colour or a font; those come out of the design sess
   operation goes.
 - The **token roles** — colour, type, spacing, named by role — that every component is written
   against, and the rule that no component names a colour directly.
-- Rendering a text payload as CommonMark, and drawing a payload type this shell does not know.
+- Rendering a note as CommonMark, and drawing a payload type this shell does not know.
 
 ### Out of scope
 
@@ -302,6 +302,12 @@ means *and do it*.
 **An attached picture is drawn before it is committed**, beside its name and with a way to drop it.
 The bytes go up with the capture and cannot be taken back once they have, so the one moment to look
 at what was picked is before the button, not afterwards in the feed.
+
+**Every capture is a `note`** *(amended 2026-09-07)* — prose, an attachment, or both — because
+there is one payload type. What the shell still varies is the **source**: `web-manual` for a typed
+note and `web-image` for one with a picture, which is what a source is for and is where policy
+about the two can differ. The shell draws an attachment as a picture by its **media type**, never
+by the payload's, so a note carrying a recording is not drawn as a broken image.
 
 ### The row
 
@@ -786,8 +792,8 @@ secure context: HTTPS, or `localhost`. **Where that is missing the action is not
 daemon from a phone — the browser hands over no clipboard at all, and a control that can only fail
 is worse than an absent one. There is still no fallback, and building one is still a later change;
 what changed is that the shell stops offering what it cannot do. **Nor is it drawn where there is
-nothing to take**: a picture captured without a caption says nothing, and copying it would put an
-empty string on the clipboard and then claim in the corner to have taken something.
+nothing to take**: a note captured with a picture and no prose says nothing, and copying it would
+put an empty string on the clipboard and then claim in the corner to have taken something.
 
 ### Tagging
 
@@ -1253,9 +1259,9 @@ routes, and one the browser leaves for.
 
 ### Content
 
-A **text** payload renders as CommonMark, collapsed and opened — that is what
-[standards.md](../standards.md#payload-types) says a text payload is, and the shell currently shows
-its asterisks.
+A **note** renders as CommonMark, collapsed and opened — that is what
+[standards.md](../standards.md#payload-types) says a note is, and the shell currently shows its
+asterisks. Its attachments are drawn above it, in slot order, each by its own media type.
 
 A payload type this shell cannot draw **says so by name** and stays taggable, archivable and
 routable, since none of those need to understand the content. An item never becomes an invisible
