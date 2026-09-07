@@ -20,6 +20,16 @@ editing, destinations, routing to one and health are settled; the rest is stub
   [36](../adr/0036-a-folder-is-created-required-or-established-once.md),
   [37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md))
 
+- 2026-09-07 — **An `Item` answers its assets, `GET /v1/sources` answers the sources, and there is
+  one payload type.** An item carries `assets` wherever one is answered — the `Asset` rows its
+  payload references, resolved at read time and absent where it references none, on the routing
+  summary's own terms. `GET /v1/sources` lists every source an item came in through with its count
+  and its last capture, unpaginated as `GET /v1/tags` is, which is how a program feeding the pool
+  from outside is seen to still be feeding it. `missing-asset-slot` left the error table with the
+  payload types that collapsed into `note`.
+  ([plan](../plans/memos-relay.md),
+  [ADR 38](../adr/0038-text-and-image-collapse-into-one-payload-type.md))
+
 - 2026-09-04 — **What a delivery produced, and what one would produce.** A routing record now says
   whether it kept an output, what those bytes are and what the destination could not carry, with
   `GET /v1/routing/{record}/output` answering the bytes themselves under the inert headers an
@@ -270,6 +280,9 @@ Settled (2026-09-07): `GET`, `POST`, `PATCH` and `DELETE` over `/v1/templates`,
 `POST /v1/items/{id}/route` and `/route/preview` accept — a template in place of a destination, a
 capability and arguments. `POST /v1/items/{id}/tag` may now apply a template, and may refuse
 because of one.
+
+Settled (2026-09-07): `GET /v1/sources`, and `assets` on the `Item` — the payload's references
+resolved, carried by every read that answers items.
 
 Still stub, and unwritten below: suggestions and their decisions, artifacts and corrections, purge
 and tombstones, range requests over asset content, the wire form of sync delta reads, and

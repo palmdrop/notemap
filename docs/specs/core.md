@@ -21,6 +21,17 @@
   [36](../adr/0036-a-folder-is-created-required-or-established-once.md),
   [37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md))
 
+- 2026-09-07 — **One payload type, an item that answers its assets, and the sources enumerated.**
+  `text` and `image` collapse into **`note`** — optional prose, any number of attachments — because
+  a type derived from what a capture happens to hold cannot survive an edit, which may not change
+  it ([ADR 38](../adr/0038-text-and-image-collapse-into-one-payload-type.md)). `requiredSlots` and
+  the `missing-asset-slot` refusal go with it, `image` having been their only user. Every read that
+  answers an `Item` now carries its payload's assets resolved, from the same transaction, so
+  nothing has to read an attachment to find out what it is. And the sources can be enumerated:
+  every one the pool has an item from, with how much of it and when it last captured, derived from
+  the items rather than from a list anyone keeps.
+  ([plan](../plans/memos-relay.md))
+
 - 2026-09-04 — **A delivery says what went, and a destination can be asked what would go.** A
   delivered outcome may carry the content it produced, its media type and a short prose note about
   what it could not carry; core stores the content as a blob and the routing record names it, so

@@ -14,6 +14,14 @@
   ([plan](../plans/routing-templates.md),
   [ADR 34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md))
 
+- 2026-09-07 — **The client stops guessing what an attachment is.** A cached item carries the
+  resolved assets the pool answers, so a picture is told from a recording by its media type rather
+  than by the payload's type — which no longer distinguishes them, there being one. The client
+  remembers the media type of bytes it holds for a capture that has not drained, so an attachment
+  is drawn before it lands as well as after. `sources.inUse()` reads `GET /v1/sources` and caches
+  nothing: what it is asked for is whether a source has gone quiet.
+  ([plan](../plans/memos-relay.md))
+
 - 2026-09-04 — **Asking what would go, and reading what went.** `RoutingApi.preview` asks a
   destination what it would write before anything is committed, and `RoutingApi.output` reads what
   a delivery actually produced. Neither is an outbox operation, for the reason routing is not one —

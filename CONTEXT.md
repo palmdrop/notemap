@@ -461,7 +461,7 @@ not an **adapter**: a destination is in-process because core owns the decision, 
 retry and leases, and intake owns none of those — the recovery strategy for a failed poll is to
 poll again. So a relay holds nothing. It re-reads everything each poll and lets the pool's own
 dedup make that harmless, which is why it needs no job, no lease and no outbox
-([ADR 35](docs/adr/0035-a-relay-is-outside-notemap-and-reaches-v1-like-anything-else.md)).
+([ADR 39](docs/adr/0039-a-relay-is-outside-notemap-and-reaches-v1-like-anything-else.md)).
 _Avoid_: importer, connector, sync agent, ingester, adapter (for this)
 
 ### The door

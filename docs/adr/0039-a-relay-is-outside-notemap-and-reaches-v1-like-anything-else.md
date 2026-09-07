@@ -1,4 +1,4 @@
-# 35. A relay is outside notemap and reaches `/v1` like anything else
+# 39. A relay is outside notemap and reaches `/v1` like anything else
 
 **Date**: 2026-09-07
 **Status**: Accepted — bounds
@@ -127,7 +127,7 @@ here is that yet: a relay's configuration is its own TOML file, beside its own b
 ## More information
 
 Built with [the memos relay plan](../plans/memos-relay.md), whose second decision —
-[ADR 34](0034-text-and-image-collapse-into-one-payload-type.md) — is what makes one upstream thing
+[ADR 38](0038-text-and-image-collapse-into-one-payload-type.md) — is what makes one upstream thing
 map to one payload type for life, without which none of this could sync at all.
 
 Deliberately out: a push. Memos can call a webhook, and that webhook would land on the **relay**,

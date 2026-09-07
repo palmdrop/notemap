@@ -1,4 +1,4 @@
-# 34. `text` and `image` collapse into one payload type
+# 38. `text` and `image` collapse into one payload type
 
 **Date**: 2026-09-07
 **Status**: Accepted

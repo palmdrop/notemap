@@ -18,6 +18,13 @@
   [ADR 34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md),
   [37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md))
 
+- 2026-09-07 — **Every capture is a `note`, and settings says where things come from.** The shell
+  still stamps two sources — `web-manual` and `web-image` — but there is one payload type, so what
+  it draws as a picture is decided by each attachment's media type. Settings grows a fifth section:
+  every source the pool has seen, what it captured and how long ago the last of them was, counted
+  up while the page is open. It is how a relay left running is seen to still be running.
+  ([plan](../plans/memos-relay.md))
+
 - 2026-09-05 — **One way out of the queue.** `route`, `done` and `archive` were three controls of
   unclear rank; they are one, `process`, which opens the composer and never closes. What differed
   between them is the composer's first step, where a band below a rule holds the two answers no
