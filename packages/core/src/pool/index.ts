@@ -6,14 +6,15 @@ export { asDeliveryWorkOutcome, DELIVERY_FAILURE } from "./routing/delivery";
 
 export { destinationRegistry } from "./destinations/registry";
 
-// What an adapter marks a field with so core need not know its capabilities by
-// name. A kind that writes into folders marks the field a folder mode is about.
+// The words notemap itself puts in an adapter's schema and reads back out, so
+// nothing has to know a kind's capabilities by name.
 export {
   ANNOTATIONS,
   ASKABLE_FIELD,
+  FOLDER_ARGUMENT,
   PATH_FIELD,
   pathField,
-} from "./destinations/annotations";
+} from "./destinations/vocabulary";
 
 // A kind adapter throws this from `describe()` to say a destination cannot
 // be made sense of for a reason only it knows, rather than one merely

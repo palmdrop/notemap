@@ -1,5 +1,18 @@
 import { fieldsOf } from "./schema-form";
 
+/**
+ * The argument names notemap defines rather than a destination. They are drawn
+ * as their own control — a folder mode is `create · require · establish` on a
+ * form, not a place typed into one — so they are never part of the place a
+ * person reads off a row. Everything else in an arguments object is the
+ * destination's own, and is drawn without this shell knowing what it means.
+ *
+ * The client is built against the wire and does not import core, so the word is
+ * repeated here rather than shared. It is one word, and this shell already has
+ * to know it to draw the control.
+ */
+export const OWN_ARGUMENTS: readonly string[] = ["folder"];
+
 /** One argument a delivery was given, under whatever name a reader can be offered. */
 export type Argument = {
   readonly name: string;

@@ -1,4 +1,4 @@
-import { pathField } from "../destinations/annotations";
+import { FOLDER_ARGUMENT, pathField } from "../destinations/vocabulary";
 import { candidates } from "../destinations/candidates";
 import { describe } from "../destinations/reports";
 import { usability } from "../destinations/usability";
@@ -87,7 +87,7 @@ export async function report(
 function asWritten(template: RoutingTemplate): JsonObject {
   return template.folder === "require" ||
     (template.folder === "establish" && template.establishedAt !== undefined)
-    ? { ...template.arguments, folder: "require" }
+    ? { ...template.arguments, [FOLDER_ARGUMENT]: "require" }
     : template.arguments;
 }
 

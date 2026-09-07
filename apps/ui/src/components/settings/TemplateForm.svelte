@@ -10,6 +10,8 @@
 
   import Action from "$components/primitives/controls/Action.svelte";
   import Option from "$components/primitives/composer/Option.svelte";
+  import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
+  import { OWN_ARGUMENTS } from "$lib/arguments";
   import { client } from "$lib/client";
   import {
     fieldsOf,
@@ -62,10 +64,12 @@
   );
 
   /**
-   * A folder mode is the template's own, said in its own words below, so the
-   * schema's field is not drawn twice.
+   * Notemap's own arguments are drawn as their own controls below, so the
+   * schema's fields for them are not drawn twice.
    */
-  const typeable = $derived(fields.filter((one) => one.name !== "folder"));
+  const typeable = $derived(
+    fields.filter((one) => !OWN_ARGUMENTS.includes(one.name)),
+  );
 
   /**
    * Only where the capability has folders at all. A destination that files to a
@@ -224,6 +228,25 @@
               onchoose={() => (typed[field.name] = one)}
             />
           {/each}
+        </div>
+      {:else if field.askable && destination !== ""}
+        <!--
+          The schema-driven browser rather than the kind's own control: what a
+          template holds is a pattern, and the typed path line beside it
+          forecasts create-against-append for a path that does not exist yet.
+          The browser carries the field's own input, so a place that has to be
+          picked from what is there and one that has to be written are the same
+          field.
+        -->
+        <div class="mt-0.5">
+          <CandidateBrowser
+            {destination}
+            {capability}
+            field={field.name}
+            label={field.title ?? field.name}
+            value={typed[field.name] ?? ""}
+            onchange={(value) => (typed[field.name] = value)}
+          />
         </div>
       {:else}
         <input

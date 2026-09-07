@@ -1095,11 +1095,33 @@ to expand against, and there is no item on a settings page; inventing one would 
 on this side, which is the drift the one expander exists to prevent. The patterns are shown as
 written, which is what a template *is*.
 
-**The arguments are a form built from the same `argumentsSchema` the composer builds from**, with
-the patterns typed as text — a place field here holds a pattern, not a path, so the composer's typed
+**The arguments are a form built from the same `argumentsSchema` the composer builds from**, with an
+open field typed as text — a place field here holds a pattern, not a path, so the composer's typed
 line and its tree would be answering a question nobody asked. A pattern naming a field or a format
 nobody declared is refused when it is saved, and **the refusal is drawn where it belongs**: on the
 field that carries it, while the person is still looking at it.
+
+**A field the schema fixes is chosen instead of typed**, and the two are told apart by the schema
+rather than by the field's name: a value from an enumeration is offered as the options it is, and
+anything else is a box. This is what makes a destination whose places are a **fixed set** — a
+board's columns, a mailbox, a webhook — usable without the shell being taught about it, and it
+follows from what a pattern is: a pattern is in no enumeration, so a fixed field never holds one and
+an open field is exactly the one that might.
+
+**A field the destination can be asked about is browsed here too.** Where the places are neither a
+path nor a fixed set — a list only the account can answer, picked from rather than created — the
+form asks and offers what came back, through the same schema-driven browser the composer gives a
+kind it knows nothing else about. Deliberately that browser and **not** the kind's own control: a
+typed path line forecasts create-against-append for a concrete path, and what a template holds is a
+pattern. The browser carries the field's own input, so a place that has to be picked from what is
+there and one that has to be written are one field rather than two — and a destination that cannot
+be reached says so and leaves the field typable, which is what keeps a template editable against a
+sleeping account.
+
+**The folder mode is drawn only where the capability has folders.** A kind that files to a column
+declares no folder field, and offering `create · require · establish` there would be a control whose
+every setting the pool refuses. Nothing here knows which capabilities those are; it reads what the
+chosen one published.
 
 **Each row asks its own report as the page draws**, per row, exactly as a destination's is asked —
 so the first template whose destination has to go and look does not hold up a list already drawn
@@ -1113,7 +1135,9 @@ repair, because there is nothing to repair beyond the one field that is wrong.
 
 **The folder check reads the literal prefix of the path** — the part with no pattern in it, which is
 exactly the part that moves when somebody renames a folder — asked through `candidates` like any
-other look at a destination.
+other look at a destination. Which field that is comes from the capability's own schema
+([core.md](core.md#routing-templates)), so a template against a destination with no paths has no
+such check rather than a check that quietly does nothing.
 
 **Unreachable is not an alarm.** A destination that cannot be asked says so quietly and draws no
 accent, the accent being for what a person has to act on and a sleeping vault being neither wrong
@@ -1499,6 +1523,11 @@ the page a person actually reads. Three-character indents on successive paragrap
 - A capability that declares no folder mode is offered none, and saving against it sends `create`.
 - A template filing somewhere that is not a path draws its place from its arguments, with no field
   name the shell had to be taught.
+- A template form for a capability the destination can be asked about offers what came back and
+  fills the field with what was taken, and the field goes on accepting a pattern typed into it.
+  A destination that cannot be reached leaves it typable and says so.
+- A place drawn on a row holds nothing but what the destination named: a folder mode is drawn where
+  it is set and never beside the path.
 - Choosing a destination describes that destination and no other.
 - A feed row that has been routed says so and names where it went, and drawing a page of them costs
   one read; opening a queue row that has been nowhere costs none.

@@ -9,6 +9,7 @@ import type { DeliveryRequest, RoutingRecord } from "#types/domain/routing";
 import type { RoutingTemplate } from "#types/domain/template";
 import type { JsonObject } from "#types/json";
 import type { Result } from "#types/result";
+import { FOLDER_ARGUMENT } from "../destinations/vocabulary";
 import { expandPatterns } from "./patterns";
 
 /** What a template would route as, without reserving anything. */
@@ -111,5 +112,5 @@ function withFolder(template: RoutingTemplate, args: JsonObject): JsonObject {
         : "require"
       : template.folder;
 
-  return folder === "create" ? args : { ...args, folder };
+  return folder === "create" ? args : { ...args, [FOLDER_ARGUMENT]: folder };
 }

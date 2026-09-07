@@ -1,5 +1,6 @@
 import type { RoutingRecord, RoutingSummary } from "@notemap/client";
 
+import { OWN_ARGUMENTS } from "./arguments";
 import type { Raised } from "./notices.svelte";
 
 /**
@@ -45,11 +46,17 @@ export function whereItWent(
  * string it holds, in the order the destination declared them. A board column,
  * a mailbox or a capability nobody has written yet reads as well as a path
  * does, which is what keeps this from being a table of field names.
+ *
+ * Notemap's own arguments are left out. A folder mode is a condition about
+ * getting somewhere rather than the somewhere, and `research/2026.md · require`
+ * reads as though the note went to two places.
  */
 export function placeNamed(
   args: Readonly<Record<string, unknown>>,
 ): string | undefined {
-  const said = Object.values(args)
+  const said = Object.entries(args)
+    .filter(([name]) => !OWN_ARGUMENTS.includes(name))
+    .map(([, value]) => value)
     .filter((value): value is string => typeof value === "string")
     .filter((value) => value !== "");
 

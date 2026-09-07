@@ -103,3 +103,45 @@ test("a decision made by hand with nothing written says only done", () => {
     said: "manual",
   });
 });
+
+/**
+ * A folder mode is a condition about getting somewhere, not the somewhere. It
+ * is notemap's own argument rather than the destination's, drawn as its own
+ * control where a person sets it, and reading it out beside the path made one
+ * decision look like two places.
+ */
+test("a pending record's place leaves notemap's own arguments out of it", () => {
+  const said = wentTo(
+    aRecord({
+      state: "pending",
+      target: {
+        kind: "destination",
+        destination: "vault",
+        capability: "create-or-append-file",
+        arguments: { path: "research/2026-09-07.md", folder: "require" },
+      },
+    }),
+    nameOf,
+  );
+
+  expect(said.said).toBe("Vault · research/2026-09-07.md");
+  expect(said.aside).toBe("pending");
+});
+
+/** Everything the destination itself named is drawn, whatever it called it. */
+test("a place that is not a path draws every argument the destination named", () => {
+  const said = wentTo(
+    aRecord({
+      state: "pending",
+      target: {
+        kind: "destination",
+        destination: "vault",
+        capability: "add-card",
+        arguments: { column: "reading", title: "2026-09-07" },
+      },
+    }),
+    nameOf,
+  );
+
+  expect(said.said).toBe("Vault · reading · 2026-09-07");
+});

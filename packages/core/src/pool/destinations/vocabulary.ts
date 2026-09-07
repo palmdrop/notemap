@@ -2,6 +2,14 @@ import type { Capability } from "#types/domain/destination";
 import type { JsonObject, JsonSchema, JsonValue } from "#types/json";
 
 /**
+ * The words notemap itself puts into an adapter's arguments schema, and reads
+ * back out of one. Everything else in there is the adapter's own.
+ */
+
+/** The argument a folder mode is carried in, which core writes and no adapter names. */
+export const FOLDER_ARGUMENT = "folder";
+
+/**
  * The field a folder mode is about: a `/`-separated place whose last segment is
  * the leaf and whose earlier ones are folders. An adapter marks it in its own
  * arguments schema, so core reads what a kind says about itself rather than

@@ -1,4 +1,4 @@
-import { ASKABLE_FIELD, PATH_FIELD } from "@notemap/core";
+import { ASKABLE_FIELD, FOLDER_ARGUMENT, PATH_FIELD } from "@notemap/core";
 import type {
   Capability,
   CapabilityName,
@@ -64,7 +64,7 @@ function createFileArguments(browsable: boolean): JsonSchema {
         description:
           "The note's filename. Left blank, one is derived from the item.",
       },
-      folder: FOLDER_MODE,
+      [FOLDER_ARGUMENT]: FOLDER_MODE,
     },
   };
 }
@@ -92,7 +92,7 @@ function appendToFileArguments(browsable: boolean): JsonSchema {
         description:
           "The heading to append under. Left blank, the item is appended at the end of the note.",
       },
-      folder: FOLDER_MODE,
+      [FOLDER_ARGUMENT]: FOLDER_MODE,
     },
   };
 }
@@ -123,7 +123,7 @@ function createOrAppendFileArguments(browsable: boolean): JsonSchema {
         description:
           "The heading to append under, where the note is already there. Left blank, the item is appended at the end of it.",
       },
-      folder: FOLDER_MODE,
+      [FOLDER_ARGUMENT]: FOLDER_MODE,
     },
   };
 }
@@ -197,7 +197,7 @@ export function asCreateFileArguments(
 
 /** Absent is `create`, which is what every file-writing capability did before this. */
 export function folderModeOf(args: JsonObject): FolderMode | undefined {
-  const folder = args["folder"];
+  const folder = args[FOLDER_ARGUMENT];
   if (folder === undefined) return "create";
   return folder === "create" || folder === "require" ? folder : undefined;
 }

@@ -1077,7 +1077,10 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   do not to be.
 - **`establish` is the template's word alone**, and resolves at decision time: unestablished it asks
   the adapter to create, established it asks the adapter to require. No adapter ever hears it, so
-  the arguments on a record are always the two-valued thing. The establishment is written in the
+  the arguments on a record are always the two-valued thing. The **argument it is carried in is
+  notemap's own**, not a destination's — core writes it, an adapter declares it to accept it, and a
+  surface drawing where an item went leaves it out of the place, a condition about getting somewhere
+  not being the somewhere. The establishment is written in the
   transaction that stores the **first delivered** record naming the template, and is **cleared when
   the arguments are edited** — a different place has not been established. A first delivery that was
   abandoned leaves it unestablished, correctly: nothing landed.

@@ -343,3 +343,96 @@ test("draws a board template's place without knowing what a place is", async () 
   // them — never a field name this shell had to be told.
   await screen.findByText("reading · {{captured_at}}");
 });
+
+/**
+ * A destination whose places are neither a path nor a fixed set: a list only
+ * the account can answer, picked from rather than created, and flat. The form
+ * asks the destination and offers what came back, and the field stays typable
+ * because a template's value may be a pattern.
+ */
+const PUBLISH = {
+  name: "publish",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    required: ["channel"],
+    properties: {
+      channel: {
+        type: "string",
+        title: "channel",
+        "x-notemap-candidates": true,
+      },
+    },
+  },
+};
+
+function servingChannels(entries: readonly Record<string, unknown>[]) {
+  return pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "arena" })] });
+    }
+    if (route === "GET /v1/templates") return json(200, { values: [] });
+    if (route.endsWith("/candidates")) {
+      return json(200, { kind: "answered", entries, truncated: false });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [PUBLISH] });
+    }
+    if (route === "POST /v1/templates") return json(201, aTemplate());
+    return json(404, { error: { code: "unknown-route" } });
+  });
+}
+
+test("asks the destination what a browsable field could hold, and offers it", async () => {
+  servingChannels([
+    { label: "reading", value: "reading" },
+    { label: "field recordings", value: "field-recordings" },
+  ]);
+
+  render(Templates);
+  await open(/Make a template/);
+
+  await screen.findByRole("button", { name: "reading" });
+  expect(screen.getByRole("button", { name: "field recordings" })).toBeTruthy();
+});
+
+test("taking one fills the field, and the field is still typed into", async () => {
+  servingChannels([{ label: "reading", value: "reading" }]);
+
+  render(Templates);
+  await open(/Make a template/);
+  await open("reading");
+
+  const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
+  expect(field.value).toBe("reading");
+
+  // A place that has to be picked from what is there and one that has to be
+  // written are the same field: a template's value may hold a pattern.
+  await fireEvent.input(field, { target: { value: "{{source}}" } });
+  expect(field.value).toBe("{{source}}");
+});
+
+test("a destination that cannot be asked leaves the field typable", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "arena" })] });
+    }
+    if (route === "GET /v1/templates") return json(200, { values: [] });
+    if (route.endsWith("/candidates")) {
+      return json(200, { kind: "unreachable", detail: "ECONNREFUSED" });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [PUBLISH] });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  render(Templates);
+  await open(/Make a template/);
+
+  const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
+  await fireEvent.input(field, { target: { value: "reading" } });
+  expect(field.value).toBe("reading");
+});
