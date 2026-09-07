@@ -7,6 +7,7 @@ import type {
   DestinationDescriptor,
 } from "#types/domain/destination";
 import type { ItemId } from "#types/domain/ids";
+import type { Item } from "#types/domain/item";
 import type { Delivery, DeliveryRequest } from "#types/domain/routing";
 import type { Result } from "#types/result";
 import { projectDelivery } from "./delivery";
@@ -32,6 +33,44 @@ export async function prepare(
   request: DeliveryRequest,
   signal?: AbortSignal,
 ): Promise<Result<Prepared, Unprepared>> {
+  const stored = await ports.store.item(item);
+  if (stored === undefined) return refused({ kind: "no-such-item", item });
+
+  return prepareFor(ports, stored, request, signal);
+}
+
+/**
+ * Check and project, against an item the caller is already holding.
+ */
+export async function prepareFor(
+  ports: PoolPorts,
+  stored: Item,
+  request: DeliveryRequest,
+  signal?: AbortSignal,
+): Promise<Result<Prepared, Unprepared>> {
+  const checked = await checkFor(ports, stored, request, signal);
+  if (checked.kind === "refused") return checked;
+
+  return ok({
+    destination: checked.value,
+    delivery: await projectDelivery(ports, stored, request),
+  });
+}
+
+/**
+ * The checks alone, against an item the caller is holding — which for a capture
+ * arriving already tagged is the only way to make them: the item is not in the
+ * pool yet, and the reservation its tag makes has to commit with it.
+ *
+ * Nothing is projected. A decision that reserves rather than attempts has no
+ * use for a delivery, and building one reads the item's assets for nothing.
+ */
+export async function checkFor(
+  ports: PoolPorts,
+  stored: Item,
+  request: DeliveryRequest,
+  signal?: AbortSignal,
+): Promise<Result<Destination, Unprepared>> {
   const destination = await ports.store.destination(request.destination);
   if (destination === undefined) {
     return refused({
@@ -68,9 +107,6 @@ export async function prepare(
     });
   }
 
-  const stored = await ports.store.item(item);
-  if (stored === undefined) return refused({ kind: "no-such-item", item });
-
   if (!capability.accepts.includes(stored.payload.type)) {
     return refused({
       kind: "payload-type-unsupported",
@@ -85,10 +121,7 @@ export async function prepare(
   );
   if (issues.length > 0) return refused({ kind: "arguments-invalid", issues });
 
-  return ok({
-    destination,
-    delivery: await projectDelivery(ports, stored, request),
-  });
+  return ok(destination);
 }
 
 async function describeOrRefuse(

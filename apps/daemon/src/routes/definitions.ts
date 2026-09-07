@@ -22,7 +22,9 @@ import {
   ROUTING_STATUS,
   SUBJECT_STATUS,
   TAG_STATUS,
+  UNTAG_STATUS,
   UPLOAD_STATUS,
+  TEMPLATE_STATUS,
 } from "../errors/refusals";
 import { actionSliceSchema } from "../schemas/action";
 import {
@@ -40,6 +42,14 @@ import {
   destinationsSchema,
   updateDestinationRequestSchema,
 } from "../schemas/destination";
+import {
+  createTemplateRequestSchema,
+  resolvedTemplateSchema,
+  templateReportSchema,
+  templateSchema,
+  templatesSchema,
+  updateTemplateRequestSchema,
+} from "../schemas/template";
 import { captureEnvelopeSchema } from "../schemas/envelope";
 import { errorSchema } from "../schemas/error";
 import { loginRequestSchema, sessionSchema } from "../schemas/session";
@@ -512,7 +522,7 @@ export const tagRoute = createRoute({
   path: "/v1/items/{id}/tag",
   summary: "Tag an item",
   description:
-    "Adds one tag. Classification does not move an item, so a tagged item keeps its place in the queue. A tag the item already carries is absorbed rather than refused, keeping the attribution and time it has: a tag's name is the whole of the request, unlike an archive's reason.",
+    "Adds one tag. Classification does not move an item, so a tagged item keeps its place in the queue — unless the tag is a **trigger tag**, which applies the routing template that declared it and takes the item out of the queue by reserving a delivery. The reservation and the tag commit together, and the delivery is enqueued a configured window later rather than attempted here, so it can still be cancelled.\n\nFiring is on the tagging: a tag the item already carries is absorbed rather than refused — keeping the attribution and time it has, since a tag's name is the whole of the request — and absorbing one fires nothing.\n\nA trigger tag whose template cannot route is `422 trigger-refused` and **nothing is written, the tag included**: a tag that filed nothing is spent, because re-applying it would be absorbed. A destination that merely could not be reached is not that — the reservation is made and the delivery waits.",
   request: {
     params: itemId,
     body: {
@@ -541,7 +551,7 @@ export const untagRoute = createRoute({
   path: "/v1/items/{id}/untag",
   summary: "Remove a tag from an item",
   description:
-    "Removes one tag. A tag the item does not carry is absorbed rather than refused, on the same terms as adding one it already has.",
+    "Removes one tag. A tag the item does not carry is absorbed rather than refused, on the same terms as adding one it already has. Untagging does not unroute, and removing a trigger tag fires nothing.\n\nA **trigger tag that filed this item is refused** while what it filed still stands: `409 trigger-tag-held`, naming the template and the record. Putting such a tag back would file a second copy rather than undo the first, so the way back is to cancel the record — which removes the reservation and gives the tag with it.",
   request: {
     params: itemId,
     body: {
@@ -559,9 +569,14 @@ export const untagRoute = createRoute({
       400,
       BODY_STATUS,
     ),
-    404: errorResponse("No item has that id.", 404, TAG_STATUS),
+    404: errorResponse("No item has that id.", 404, UNTAG_STATUS),
+    409: errorResponse(
+      "The tag filed this item, and what it filed still stands.",
+      409,
+      UNTAG_STATUS,
+    ),
     415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
-    422: errorResponse("The tag was declined.", 422, TAG_STATUS),
+    422: errorResponse("The tag was declined.", 422, UNTAG_STATUS),
   },
 });
 
@@ -927,12 +942,166 @@ export const deleteDestinationRoute = createRoute({
   },
 });
 
+const templateId = z.object({
+  id: z.string().openapi({ param: { name: "id", in: "path" } }),
+});
+
+export const templatesRoute = createRoute({
+  method: "get",
+  path: "/v1/templates",
+  summary: "Read the routing templates the pool holds",
+  description:
+    "A saved routing decision: a destination, a capability, the arguments as patterns, how its folder is treated, and the tag that applies it. A read of pool state, on `/v1/destinations`' terms — it answers at once, cannot fail, and asks the destination nothing. Not paginated: there are as many templates as a person made.",
+  responses: {
+    200: {
+      description: "Every template the pool holds, oldest first.",
+      content: { [JSON_MEDIA_TYPE]: { schema: templatesSchema } },
+    },
+  },
+});
+
+export const createTemplateRoute = createRoute({
+  method: "post",
+  path: "/v1/templates",
+  summary: "Save a routing decision",
+  description:
+    "The arguments may hold patterns — `{{captured_at}}`, `{{item}}` — which the pool expands when a decision is made. A field or a format nobody named is refused **here**, when it is written, rather than by a delivery next week: what saves expands for every item there will ever be. A trigger tag must sit under `route/` and may be claimed by one template only.",
+  request: {
+    body: {
+      required: true,
+      content: { [JSON_MEDIA_TYPE]: { schema: createTemplateRequestSchema } },
+    },
+  },
+  responses: {
+    201: {
+      description: "Created. `Location` names the template.",
+      headers: z.object({
+        Location: z.string().openapi({ example: "/v1/templates/019a3f2c-..." }),
+      }),
+      content: { [JSON_MEDIA_TYPE]: { schema: templateSchema } },
+    },
+    400: errorResponse(
+      "The body could not be read as this request.",
+      400,
+      BODY_STATUS,
+    ),
+    409: errorResponse(
+      "Another template already claims that trigger tag.",
+      409,
+      TEMPLATE_STATUS,
+    ),
+    415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
+    422: errorResponse(
+      "The destination, the trigger tag or a pattern was refused. Nothing was written.",
+      422,
+      TEMPLATE_STATUS,
+    ),
+  },
+});
+
+export const updateTemplateRoute = createRoute({
+  method: "patch",
+  path: "/v1/templates/{id}",
+  summary: "Change a routing template",
+  description:
+    "Every field a person supplied, in one operation. `triggerTag: null` takes the tag off, which absence cannot say. Editing the arguments clears the establishment, since a changed place is a different place; renaming moves nothing and keeps it.",
+  request: {
+    params: templateId,
+    body: {
+      required: true,
+      content: { [JSON_MEDIA_TYPE]: { schema: updateTemplateRequestSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "The template as it now stands.",
+      content: { [JSON_MEDIA_TYPE]: { schema: templateSchema } },
+    },
+    400: errorResponse(
+      "The body could not be read as this request.",
+      400,
+      BODY_STATUS,
+    ),
+    404: errorResponse("No template has that id.", 404, TEMPLATE_STATUS),
+    409: errorResponse(
+      "Another template already claims that trigger tag.",
+      409,
+      TEMPLATE_STATUS,
+    ),
+    415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
+    422: errorResponse(
+      "The destination, the trigger tag or a pattern was refused. Nothing was written.",
+      422,
+      TEMPLATE_STATUS,
+    ),
+  },
+});
+
+export const deleteTemplateRoute = createRoute({
+  method: "delete",
+  path: "/v1/templates/{id}",
+  summary: "Delete a routing template",
+  description:
+    "Deleted rather than retired: a template names nothing that outlives it, and a record made from one carries what it routed as and keeps resolving without it.",
+  request: { params: templateId },
+  responses: {
+    204: { description: "Gone." },
+    404: errorResponse("No template has that id.", 404, TEMPLATE_STATUS),
+  },
+});
+
+export const templateReportRoute = createRoute({
+  method: "get",
+  path: "/v1/templates/{id}/report",
+  summary: "Ask whether a template's destination can still support it",
+  description:
+    "Split from the list on `/v1/destinations/{id}/description`'s terms: what a template *is* comes from the pool, and whether it still *works* is I/O that may hang. `fits` is the answer with nothing wrong. `stranded` is a destination that was deleted. `unreachable` is **cannot say**, which is not the same fact as anything else here — a sleeping vault is an ordinary condition and must not be drawn as an alarm. `folder-missing` is asked only where the template promised the folder would be there.",
+  request: { params: templateId },
+  responses: {
+    200: {
+      description: "What it answered.",
+      content: { [JSON_MEDIA_TYPE]: { schema: templateReportSchema } },
+    },
+    404: errorResponse("No template has that id.", 404, TEMPLATE_STATUS),
+  },
+});
+
+export const resolveTemplateRoute = createRoute({
+  method: "get",
+  path: "/v1/items/{id}/route/resolve",
+  summary: "Ask what a template would route this item as",
+  description:
+    "The destination, the capability and the **expanded** arguments, reserving nothing. A different question from `/route/preview`, which answers bytes: this answers where. It is what lets a composer draw the filename before the commit, from the one expander, rather than reimplementing it on the other side of the wire.",
+  request: {
+    params: itemId,
+    query: z.object({
+      template: z
+        .string()
+        .min(1)
+        .openapi({
+          param: { name: "template", in: "query" },
+          description: "One of the ids `GET /v1/templates` reports.",
+        }),
+    }),
+  },
+  responses: {
+    200: {
+      description: "What routing it now would record.",
+      content: { [JSON_MEDIA_TYPE]: { schema: resolvedTemplateSchema } },
+    },
+    404: errorResponse("No item has that id, or no template does.", 404, {
+      ...ROUTING_STATUS,
+      ...TEMPLATE_STATUS,
+    }),
+  },
+});
+
 export const routeItemRoute = createRoute({
   method: "post",
   path: "/v1/items/{id}/route",
-  summary: "Route an item to a destination",
+  summary: "Route an item to a destination, or from a template",
   description:
-    "Records the decision and attempts the delivery once, inline. **The record answered may name a delivery that has not happened**: `state` is `pending` when the destination could not be reached, and a job carries it out later. A destination that was reached and refused writes nothing.",
+    "Records the decision and attempts the delivery once, inline. **The record answered may name a delivery that has not happened**: `state` is `pending` when the destination could not be reached, and a job carries it out later. A destination that was reached and refused writes nothing.\n\nOne route, two bodies, because it is one decision either way: a destination with its capability and arguments, or a template that already holds all three. From a template the arguments are expanded first, so the record names a place a person can read.",
   request: {
     params: itemId,
     body: {
@@ -1191,6 +1360,12 @@ export const ROUTES = [
   retireDestinationRoute,
   unretireDestinationRoute,
   deleteDestinationRoute,
+  templatesRoute,
+  createTemplateRoute,
+  templateReportRoute,
+  updateTemplateRoute,
+  deleteTemplateRoute,
+  resolveTemplateRoute,
   routeItemRoute,
   previewRouteRoute,
   cancelDeliveryRoute,

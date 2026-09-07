@@ -6,9 +6,11 @@ import type { Item, ItemRecord, Tag } from "#types/domain/item";
 import type {
   DestinationMirrorRecord,
   ItemMirrorRecord,
+  RoutingTemplateMirrorRecord,
 } from "#types/domain/mirror";
 import type { Payload } from "#types/domain/payload";
 import type { RoutingRecord } from "#types/domain/routing";
+import type { RoutingTemplate } from "#types/domain/template";
 
 /**
  * One item's durable state, in the one form the mirror stores it in.
@@ -58,6 +60,25 @@ export function projectDestinationRecord(
   };
 }
 
+/** A template's durable state, on the same terms: only its instants need canonicalising. */
+export function projectTemplateRecord(
+  template: RoutingTemplate,
+): RoutingTemplateMirrorRecord {
+  const { modifiedAt, fired: _fired, ...record } = template;
+
+  return {
+    kind: "template",
+    template: {
+      ...record,
+      ...(record.establishedAt === undefined
+        ? {}
+        : { establishedAt: instant(record.establishedAt) }),
+      createdAt: instant(record.createdAt),
+    },
+    modifiedAt: instant(modifiedAt),
+  };
+}
+
 /**
  * Field by field, and never a spread of what it was handed: an `Item` satisfies
  * `ItemRecord` structurally, so a spread carries whatever the store derived and
@@ -71,6 +92,7 @@ function canonicalItem(item: Item): ItemRecord {
     payload: canonicalPayload(item.payload),
     tags: [...item.tags].map(canonicalTag).sort(byKey((tag) => tag.name)),
     createdAt: instant(item.createdAt),
+    ...(item.utcOffset === undefined ? {} : { utcOffset: item.utcOffset }),
     ...(item.contentUpdatedAt === undefined
       ? {}
       : { contentUpdatedAt: instant(item.contentUpdatedAt) }),

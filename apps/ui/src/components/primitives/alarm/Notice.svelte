@@ -2,6 +2,11 @@
   /**
    * Something that has already happened, said to somebody who did not ask. The
    * accent is spent where it may want acting on; a confirmation is the ink.
+   *
+   * Standing usually means something went wrong, so it carries the accent by
+   * default — but not always: a notice may stand because what it offers must
+   * not time out under somebody's hands, which is not an alarm and may not be
+   * drawn as one.
    */
   let {
     what,
@@ -10,6 +15,7 @@
     href,
     offer,
     standing = false,
+    alarm,
     ondismiss,
   }: {
     what: string;
@@ -19,13 +25,16 @@
     /** Something to do about it, taken here. Named by what it does. */
     offer?: { label: string; take: () => void };
     standing?: boolean;
+    alarm?: boolean;
     ondismiss?: () => void;
   } = $props();
+
+  const alarming = $derived(alarm ?? standing);
 </script>
 
 <div
-  role={standing ? "alert" : "status"}
-  class="grid gap-1.5 px-3 py-2.5 filled {standing ? 'bg-accent' : 'bg-ink'}"
+  role={alarming ? "alert" : "status"}
+  class="grid gap-1.5 px-3 py-2.5 filled {alarming ? 'bg-accent' : 'bg-ink'}"
 >
   <span class="break-words">{what}</span>
 

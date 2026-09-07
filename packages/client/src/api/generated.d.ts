@@ -1078,7 +1078,11 @@ export interface paths {
         put?: never;
         /**
          * Tag an item
-         * @description Adds one tag. Classification does not move an item, so a tagged item keeps its place in the queue. A tag the item already carries is absorbed rather than refused, keeping the attribution and time it has: a tag's name is the whole of the request, unlike an archive's reason.
+         * @description Adds one tag. Classification does not move an item, so a tagged item keeps its place in the queue — unless the tag is a **trigger tag**, which applies the routing template that declared it and takes the item out of the queue by reserving a delivery. The reservation and the tag commit together, and the delivery is enqueued a configured window later rather than attempted here, so it can still be cancelled.
+         *
+         *     Firing is on the tagging: a tag the item already carries is absorbed rather than refused — keeping the attribution and time it has, since a tag's name is the whole of the request — and absorbing one fires nothing.
+         *
+         *     A trigger tag whose template cannot route is `422 trigger-refused` and **nothing is written, the tag included**: a tag that filed nothing is spent, because re-applying it would be absorbed. A destination that merely could not be reached is not that — the reservation is made and the delivery waits.
          */
         post: {
             parameters: {
@@ -1165,7 +1169,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "tag-invalid";
+                                code: "tag-invalid" | "trigger-refused";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -1191,7 +1195,9 @@ export interface paths {
         put?: never;
         /**
          * Remove a tag from an item
-         * @description Removes one tag. A tag the item does not carry is absorbed rather than refused, on the same terms as adding one it already has.
+         * @description Removes one tag. A tag the item does not carry is absorbed rather than refused, on the same terms as adding one it already has. Untagging does not unroute, and removing a trigger tag fires nothing.
+         *
+         *     A **trigger tag that filed this item is refused** while what it filed still stands: `409 trigger-tag-held`, naming the template and the record. Putting such a tag back would file a second copy rather than undo the first, so the way back is to cancel the record — which removes the reservation and gives the tag with it.
          */
         post: {
             parameters: {
@@ -1245,6 +1251,23 @@ export interface paths {
                             error: {
                                 /** @enum {string} */
                                 code: "no-such-item" | "item-purged";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The tag filed this item, and what it filed still stands. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "trigger-tag-held";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -2351,6 +2374,430 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the routing templates the pool holds
+         * @description A saved routing decision: a destination, a capability, the arguments as patterns, how its folder is treated, and the tag that applies it. A read of pool state, on `/v1/destinations`' terms — it answers at once, cannot fail, and asks the destination nothing. Not paginated: there are as many templates as a person made.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Every template the pool holds, oldest first. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RoutingTemplates"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Save a routing decision
+         * @description The arguments may hold patterns — `{{captured_at}}`, `{{item}}` — which the pool expands when a decision is made. A field or a format nobody named is refused **here**, when it is written, rather than by a delivery next week: what saves expands for every item there will ever be. A trigger tag must sit under `route/` and may be claimed by one template only.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateRoutingTemplateRequest"];
+                };
+            };
+            responses: {
+                /** @description Created. `Location` names the template. */
+                201: {
+                    headers: {
+                        Location: string;
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RoutingTemplate"];
+                    };
+                };
+                /** @description The body could not be read as this request. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "malformed-json" | "malformed-envelope";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description Another template already claims that trigger tag. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "trigger-tag-taken";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The body was not JSON. */
+                415: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unsupported-media-type";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The destination, the trigger tag or a pattern was refused. Nothing was written. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unknown-destination" | "trigger-tag-invalid" | "trigger-tag-unreserved" | "unknown-pattern-field" | "unknown-pattern-format";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/templates/{id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ask whether a template's destination can still support it
+         * @description Split from the list on `/v1/destinations/{id}/description`'s terms: what a template *is* comes from the pool, and whether it still *works* is I/O that may hang. `fits` is the answer with nothing wrong. `stranded` is a destination that was deleted. `unreachable` is **cannot say**, which is not the same fact as anything else here — a sleeping vault is an ordinary condition and must not be drawn as an alarm. `folder-missing` is asked only where the template promised the folder would be there.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What it answered. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RoutingTemplateReport"];
+                    };
+                };
+                /** @description No template has that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unknown-template";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/templates/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a routing template
+         * @description Deleted rather than retired: a template names nothing that outlives it, and a record made from one carries what it routed as and keeps resolving without it.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Gone. */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description No template has that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unknown-template";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * Change a routing template
+         * @description Every field a person supplied, in one operation. `triggerTag: null` takes the tag off, which absence cannot say. Editing the arguments clears the establishment, since a changed place is a different place; renaming moves nothing and keeps it.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateRoutingTemplateRequest"];
+                };
+            };
+            responses: {
+                /** @description The template as it now stands. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RoutingTemplate"];
+                    };
+                };
+                /** @description The body could not be read as this request. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "malformed-json" | "malformed-envelope";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description No template has that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unknown-template";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description Another template already claims that trigger tag. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "trigger-tag-taken";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The body was not JSON. */
+                415: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unsupported-media-type";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The destination, the trigger tag or a pattern was refused. Nothing was written. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unknown-destination" | "trigger-tag-invalid" | "trigger-tag-unreserved" | "unknown-pattern-field" | "unknown-pattern-format";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/v1/items/{id}/route/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ask what a template would route this item as
+         * @description The destination, the capability and the **expanded** arguments, reserving nothing. A different question from `/route/preview`, which answers bytes: this answers where. It is what lets a composer draw the filename before the commit, from the one expander, rather than reimplementing it on the other side of the wire.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description One of the ids `GET /v1/templates` reports. */
+                    template: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What routing it now would record. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ResolvedRoutingTemplate"];
+                    };
+                };
+                /** @description No item has that id, or no template does. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "no-such-item" | "item-purged" | "unknown-template";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/items/{id}/route": {
         parameters: {
             query?: never;
@@ -2361,8 +2808,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Route an item to a destination
+         * Route an item to a destination, or from a template
          * @description Records the decision and attempts the delivery once, inline. **The record answered may name a delivery that has not happened**: `state` is `pending` when the destination could not be reached, and a job carries it out later. A destination that was reached and refused writes nothing.
+         *
+         *     One route, two bodies, because it is one decision either way: a destination with its capability and arguments, or a template that already holds all three. From a template the arguments are expanded first, so the record names a place a person can read.
          */
         post: {
             parameters: {
@@ -3146,6 +3595,7 @@ export interface components {
                 addedAt: string;
             }[];
             createdAt: string;
+            utcOffset?: number;
             contentUpdatedAt?: string;
             revisionOf?: string;
             archived?: {
@@ -3177,6 +3627,7 @@ export interface components {
              * @example 2026-08-08T09:00:00.000Z
              */
             capturedAt: string;
+            utcOffset?: number;
             payload: {
                 type: string;
                 content: {
@@ -3256,6 +3707,11 @@ export interface components {
                 /** @enum {string} */
                 kind: "user";
                 note?: string;
+            };
+            /** @description The routing template this decision came from, and whether its trigger tag applied it. Absent for a decision made by hand. */
+            applied?: {
+                template: string;
+                firedByTag: boolean;
             };
             /** @enum {string} */
             state: "pending" | "delivered";
@@ -3410,6 +3866,89 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        RoutingTemplates: {
+            values: components["schemas"]["RoutingTemplate"][];
+        };
+        RoutingTemplate: {
+            id: string;
+            name: string;
+            destination: string;
+            capability: string;
+            arguments: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            folder: "create" | "require" | "establish";
+            triggerTag?: string;
+            establishedAt?: string;
+            fired: {
+                records: number;
+                lastAt?: string;
+            };
+        };
+        CreateRoutingTemplateRequest: {
+            name: string;
+            destination: string;
+            capability: string;
+            arguments: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            folder?: "create" | "require" | "establish";
+            triggerTag?: string;
+        };
+        RoutingTemplateReport: {
+            /** @enum {string} */
+            kind: "fits";
+        } | {
+            /** @enum {string} */
+            kind: "stranded";
+        } | {
+            /** @enum {string} */
+            kind: "destination-retired";
+        } | {
+            /** @enum {string} */
+            kind: "destination-unusable";
+            detail: string;
+        } | {
+            /** @enum {string} */
+            kind: "capability-undeclared";
+            capability: string;
+        } | {
+            /** @enum {string} */
+            kind: "arguments-invalid";
+            issues: {
+                path: string;
+                keyword: string;
+                detail?: string;
+            }[];
+        } | {
+            /** @enum {string} */
+            kind: "folder-missing";
+            folder: string;
+        } | {
+            /** @enum {string} */
+            kind: "unreachable";
+            detail: string;
+        };
+        UpdateRoutingTemplateRequest: {
+            name?: string;
+            destination?: string;
+            capability?: string;
+            arguments?: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            folder?: "create" | "require" | "establish";
+            triggerTag?: string | null;
+        };
+        ResolvedRoutingTemplate: {
+            destination: string;
+            capability: string;
+            arguments: {
+                [key: string]: unknown;
+            };
+        };
         RouteRequest: {
             /**
              * @description One of the ids `GET /v1/destinations` reports.
@@ -3431,6 +3970,12 @@ export interface components {
             arguments: {
                 [key: string]: unknown;
             };
+        } | {
+            /**
+             * @description One of the ids `GET /v1/templates` reports.
+             * @example 019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77
+             */
+            template: string;
         };
         RoutingPreview: {
             /** @enum {string} */

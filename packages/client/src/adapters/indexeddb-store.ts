@@ -1,4 +1,4 @@
-import { openDB, type DBSchema, type IDBPDatabase } from "idb";
+import { openDB, type DBSchema, type IDBPDatabase, type StoreNames } from "idb";
 
 import type {
   AssetId,
@@ -6,6 +6,7 @@ import type {
   Item,
   ItemId,
   PoolIdentity,
+  RoutingTemplate,
   TagUse,
 } from "#api/types";
 import type { OperationId, PendingOperation } from "#outbox/operations";
@@ -13,7 +14,11 @@ import type { ClientStore } from "#ports/store";
 import { localUrls } from "./local-urls";
 
 const DATABASE = "notemap";
-const VERSION = 1;
+/**
+ * Bumped when a store is added. The upgrade makes only what is missing, so a
+ * browser holding version 1 gains `templates` and keeps everything it had.
+ */
+const VERSION = 2;
 
 /** The one key of every store holding a single whole value rather than rows. */
 const HELD = "held";
@@ -24,6 +29,7 @@ interface Notemap extends DBSchema {
   blobs: { key: AssetId; value: File };
   tags: { key: typeof HELD; value: readonly TagUse[] };
   destinations: { key: typeof HELD; value: readonly Destination[] };
+  templates: { key: typeof HELD; value: readonly RoutingTemplate[] };
   pool: { key: typeof HELD; value: PoolIdentity };
 }
 
@@ -45,12 +51,22 @@ export function createIndexedDbStore(
   function open(): Promise<IDBPDatabase<Notemap>> {
     opening ??= openDB<Notemap>(name, VERSION, {
       upgrade(database) {
-        database.createObjectStore("outbox", { keyPath: "id" });
-        database.createObjectStore("items", { keyPath: "id" });
-        database.createObjectStore("blobs");
-        database.createObjectStore("tags");
-        database.createObjectStore("destinations");
-        database.createObjectStore("pool");
+        const make = (
+          store: StoreNames<Notemap>,
+          options?: IDBObjectStoreParameters,
+        ): void => {
+          if (!database.objectStoreNames.contains(store)) {
+            database.createObjectStore(store, options);
+          }
+        };
+
+        make("outbox", { keyPath: "id" });
+        make("items", { keyPath: "id" });
+        make("blobs");
+        make("tags");
+        make("destinations");
+        make("templates");
+        make("pool");
       },
 
       // A tab left open on the old version blocks the next one's upgrade until
@@ -67,7 +83,7 @@ export function createIndexedDbStore(
     return opening;
   }
 
-  async function held<S extends "tags" | "destinations" | "pool">(
+  async function held<S extends "tags" | "destinations" | "templates" | "pool">(
     store: S,
   ): Promise<Notemap[S]["value"] | undefined> {
     return (await open()).get(store, HELD);
@@ -121,6 +137,14 @@ export function createIndexedDbStore(
 
     async writeDestinations(destinations) {
       await (await open()).put("destinations", destinations, HELD);
+    },
+
+    async readTemplates() {
+      return (await held("templates")) ?? [];
+    },
+
+    async writeTemplates(templates) {
+      await (await open()).put("templates", templates, HELD);
     },
 
     readPoolIdentity: () => held("pool"),

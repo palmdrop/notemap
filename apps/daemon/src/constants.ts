@@ -26,6 +26,16 @@ export const DEFAULT_SWEEP = {
   intervalMs: 3_600_000,
 };
 
+/**
+ * Where a capture carrying no offset of its own is read from. The host's own
+ * zone rather than UTC: a capture from a source belongs to the day the person
+ * running the pool is living in, and `Intl` is where this machine says which
+ * that is.
+ */
+export function defaultZone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
 /** Generous enough for a phone photo or a long voice memo. */
 export const DEFAULT_MAX_UPLOAD_BYTES = 256 * 1024 * 1024;
 
@@ -54,6 +64,14 @@ export const DEFAULT_DELIVERY = {
   leaseMs: 300_000,
   batch: 4,
 };
+
+/**
+ * How long a template fired by its trigger tag waits before its delivery is
+ * claimable. Nothing is attempted inline on that path, so this window is the
+ * whole of what the corner's cancel has to act in — comfortably more than the
+ * delivery runner's own poll, so the wait is the window rather than the poll.
+ */
+export const DEFAULT_TRIGGER_WINDOW_MS = 15_000;
 
 /**
  * How much of a lease is kept back for reporting the outcome the attempt

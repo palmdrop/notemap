@@ -19,7 +19,12 @@ import {
   toYaml,
   type FrontmatterValue,
 } from "./frontmatter";
-import { destinationPathFor, pathsFor, renderingBeside } from "./paths";
+import {
+  destinationPathFor,
+  pathsFor,
+  renderingBeside,
+  templatePathFor,
+} from "./paths";
 import {
   renderAsJson,
   type Rendering,
@@ -49,6 +54,14 @@ export function createFilesystemMirrorWriter(
         return;
       }
 
+      if (record.kind === "template") {
+        await writeAtomically(
+          templatePathFor(config.root, record.template.id),
+          serialiseMirrorRecord(record),
+        );
+        return;
+      }
+
       const paths = pathsFor(config.root, record);
 
       // Material before presentation: a renderer is host-supplied code, and a
@@ -65,6 +78,11 @@ export function createFilesystemMirrorWriter(
         await removeIfPresent(
           destinationPathFor(config.root, subject.destination),
         );
+        return;
+      }
+
+      if (subject.kind === "template") {
+        await removeIfPresent(templatePathFor(config.root, subject.template));
         return;
       }
 

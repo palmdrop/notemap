@@ -23,11 +23,19 @@ import type {
   DestinationProbe,
   DestinationReport,
 } from "../domain/destination";
+import type {
+  RoutingTemplate,
+  RoutingTemplateChanges,
+  RoutingTemplateDraft,
+} from "../domain/template";
+import type { ResolvedTemplate } from "../../pool/templates/apply";
+import type { RoutingTemplateReport } from "../../pool/templates/report";
 import type { Artifact, EnrichmentStatus } from "../domain/enrichment";
 import type {
   ArtifactId,
   AssetId,
   DestinationId,
+  RoutingTemplateId,
   Duration,
   EnrichmentName,
   ItemId,
@@ -71,6 +79,8 @@ import type {
   DeliveryRefusal,
   DestinationDeletionRefusal,
   DestinationRefusal,
+  RoutingTemplateRefusal,
+  TemplateRoutingRefusal,
   EditRefusal,
   EnrichmentRefusal,
   LeaseRefusal,
@@ -90,7 +100,17 @@ export interface ItemsApi {
     envelope: EditEnvelope,
     by: Agent,
   ): Promise<Result<EditOutcome, EditRefusal>>;
-  tag(id: ItemId, tag: TagName, by: Agent): Promise<Result<Item, TagRefusal>>;
+  /**
+   * The signal is the caller's, for the same reason a capture's is: a trigger
+   * tag asks the template's destination what it can do before anything is
+   * written, and that is the one thing here that reaches off this machine.
+   */
+  tag(
+    id: ItemId,
+    tag: TagName,
+    by: Agent,
+    signal?: AbortSignal,
+  ): Promise<Result<Item, TagRefusal>>;
   untag(id: ItemId, tag: TagName, by: Agent): Promise<Result<Item, TagRefusal>>;
   archive(id: ItemId, reason?: string): Promise<Result<Item, ArchiveRefusal>>;
   unarchive(id: ItemId): Promise<Result<Item, ArchiveRefusal>>;
@@ -185,6 +205,60 @@ export interface DestinationsApi {
 
   /** Allowed only where no routing record has ever named it. */
   delete(id: DestinationId): Promise<Result<void, DestinationDeletionRefusal>>;
+}
+
+export interface TemplatesApi {
+  /** Instant and asking nothing: what the pool holds, oldest first. */
+  list(): Promise<readonly RoutingTemplate[]>;
+  get(id: RoutingTemplateId): Promise<RoutingTemplate | undefined>;
+
+  create(
+    draft: RoutingTemplateDraft,
+  ): Promise<Result<RoutingTemplate, RoutingTemplateRefusal>>;
+  /**
+   * Every field a person supplied, in one transaction, on `destinations.edit`'s
+   * terms. A `triggerTag` of `null` takes the tag off.
+   */
+  edit(
+    id: RoutingTemplateId,
+    changes: RoutingTemplateChanges,
+  ): Promise<Result<RoutingTemplate, RoutingTemplateRefusal>>;
+  /**
+   * Deleted rather than retired: a record made from one keeps resolving without
+   * it, since the record carries what it routed as.
+   */
+  delete(id: RoutingTemplateId): Promise<Result<void, RoutingTemplateRefusal>>;
+
+  /**
+   * Whether its destination can support it *now*: the one call here that
+   * reaches the outside world, and so the one that can hang. Asked per
+   * template. Absent means no template has that id.
+   */
+  report(
+    id: RoutingTemplateId,
+    signal?: AbortSignal,
+  ): Promise<RoutingTemplateReport | undefined>;
+
+  /**
+   * What this template would route this item as — the destination, the
+   * capability and the expanded arguments — reserving nothing. A different
+   * question from a preview, which answers bytes. Absent means no such item or
+   * no such template.
+   */
+  resolve(
+    item: ItemId,
+    id: RoutingTemplateId,
+  ): Promise<ResolvedTemplate | undefined>;
+
+  /**
+   * The decision, made from a template. Lands in the same path a hand-made one
+   * takes, with the arguments expanded and the record naming the template.
+   */
+  route(
+    item: ItemId,
+    id: RoutingTemplateId,
+    options?: { readonly firedByTag?: boolean; readonly signal?: AbortSignal },
+  ): Promise<Result<RoutingRecord, TemplateRoutingRefusal>>;
 }
 
 export interface RoutingApi {
@@ -302,8 +376,14 @@ export interface MaintenanceApi {
 export interface Pool {
   identity(): Promise<PoolIdentity>;
 
+  /**
+   * The signal is the caller's: a capture carrying a trigger tag asks the
+   * template's destination what it can do, which is the one thing here that
+   * reaches beyond this machine and the one thing that can hang.
+   */
   capture(
     envelope: CaptureEnvelope,
+    signal?: AbortSignal,
   ): Promise<Result<CaptureOutcome, CaptureRefusal>>;
 
   readonly items: ItemsApi;
@@ -312,6 +392,7 @@ export interface Pool {
   readonly suggestions: SuggestionsApi;
   readonly enrichment: EnrichmentApi;
   readonly destinations: DestinationsApi;
+  readonly templates: TemplatesApi;
   readonly routing: RoutingApi;
   readonly assets: AssetsApi;
   readonly work: WorkApi;

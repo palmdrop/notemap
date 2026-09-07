@@ -10,6 +10,7 @@ import { rewritten, saidIn } from "./capture/says";
 import { PoolChanged, Refused, saidBy, Unreachable } from "./errors";
 import { derived, writable, type Writable } from "./observable/observable";
 import { createDestinations } from "./destinations/destinations";
+import { createTemplates } from "./templates/templates";
 import { createOutbox } from "./outbox/outbox";
 import { sendOperation } from "./outbox/registry";
 import { undrained, waiting } from "./outbox/undrained";
@@ -30,6 +31,7 @@ import {
   rebuilt,
   settle,
   settledDestination,
+  settledTemplate,
   withBlobUrl,
   withdrawn,
   type ClientState,
@@ -119,6 +121,10 @@ function listOf(state: ClientState, surface: Surface): ListState {
 export function createClient(config: ClientConfig): Client {
   const { transport, store } = config;
   const now = config.now ?? (() => new Date().toISOString());
+  // Inverted: `getTimezoneOffset` counts minutes *behind* UTC, and the domain
+  // counts them east of it.
+  const utcOffsetNow =
+    config.utcOffset ?? (() => -new Date().getTimezoneOffset());
   const report = config.onError ?? (() => undefined);
   const held = writable<ClientState>(emptyState());
   // Every state change passes through here, so no path can forget retention.
@@ -409,7 +415,7 @@ export function createClient(config: ClientConfig): Client {
 
     async capture(input) {
       const id = uuidv7();
-      const envelope = envelopeFor(input, id, now());
+      const envelope = envelopeFor(input, id, now(), utcOffsetNow());
 
       await mutate({ kind: "capture", envelope });
       return optimisticItem(envelope);
@@ -476,6 +482,16 @@ export function createClient(config: ClientConfig): Client {
         after(() =>
           state.update((current) => withdrawn(current, item, records)),
         ),
+      reread: async (item) => {
+        const held = await fetched(item).catch(() => undefined);
+        if (held === undefined) return;
+        await after(() =>
+          state.update((current) => ({
+            ...current,
+            items: cached(current, [held]),
+          })),
+        );
+      },
     }),
 
     destinations: createDestinations({
@@ -487,6 +503,18 @@ export function createClient(config: ClientConfig): Client {
       settled: (id, held) =>
         after(() =>
           state.update((current) => settledDestination(current, id, held)),
+        ),
+    }),
+
+    templates: createTemplates({
+      api,
+      all: derived(state.changes, (current) => current.templates),
+      held: () => state.get().templates,
+      cached: (templates) =>
+        after(() => state.update((current) => ({ ...current, templates }))),
+      settled: (id, held) =>
+        after(() =>
+          state.update((current) => settledTemplate(current, id, held)),
         ),
     }),
 

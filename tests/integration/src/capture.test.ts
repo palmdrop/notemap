@@ -37,6 +37,42 @@ function captured(
   return result.value.item;
 }
 
+describe("the zone a capture was made in", () => {
+  it("carries the offset the capture supplied, through the pool and back", async () => {
+    const { pool: p } = pool();
+
+    const item = captured(
+      await p.capture(envelope({ sourceItemId: "src-tz", utcOffset: 120 })),
+    );
+
+    expect(item.utcOffset).toBe(120);
+    await expect(p.items.get(item.id)).resolves.toMatchObject({
+      utcOffset: 120,
+    });
+  });
+
+  it("carries none where the capture had none to give", async () => {
+    const { pool: p } = pool();
+
+    const item = captured(
+      await p.capture(envelope({ sourceItemId: "src-no-tz" })),
+    );
+
+    expect(item.utcOffset).toBeUndefined();
+    expect((await p.items.get(item.id))?.utcOffset).toBeUndefined();
+  });
+
+  it("keeps a negative offset a western capture was made at", async () => {
+    const { pool: p } = pool();
+
+    const item = captured(
+      await p.capture(envelope({ sourceItemId: "src-west", utcOffset: -300 })),
+    );
+
+    expect(item.utcOffset).toBe(-300);
+  });
+});
+
 describe("capturing", () => {
   it("puts the payload and the source's own identity into the pool", async () => {
     const { pool: p } = pool();

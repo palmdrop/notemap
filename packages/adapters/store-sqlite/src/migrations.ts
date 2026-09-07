@@ -634,6 +634,117 @@ export const MIGRATIONS: readonly string[] = [
     ON routing_records (output_blob)
     WHERE output_blob IS NOT NULL;
   `,
+
+  `
+  -- A saved routing decision. Deleted rather than retired: a record made from
+  -- one carries what it routed as, so it keeps resolving with the template gone,
+  -- which is why the reference below is nullable and takes SET NULL.
+  --
+  -- The trigger tag is unique where it is present, and a template with none is
+  -- one applied by hand. \`established_at\` is when the first delivery from it
+  -- landed, which is the whole of what \`establish\` needs to know.
+  CREATE TABLE routing_templates (
+    id             TEXT    NOT NULL PRIMARY KEY,
+    name           TEXT    NOT NULL,
+    -- No foreign key, deliberately: a destination a template names stays
+    -- deletable — a template is configuration, where a record is history — and
+    -- the stranded template goes on naming what it named, so it can be
+    -- repointed rather than silently emptied.
+    destination_id TEXT    NOT NULL,
+    capability     TEXT    NOT NULL,
+    arguments      TEXT    NOT NULL,
+    folder         TEXT    NOT NULL CHECK (folder IN ('create', 'require', 'establish')),
+    trigger_tag    TEXT,
+    established_at INTEGER,
+    created_at     INTEGER NOT NULL,
+    modified_at    INTEGER NOT NULL
+  ) STRICT;
+
+  CREATE INDEX routing_templates_created_at ON routing_templates (created_at, id);
+  CREATE INDEX routing_templates_destination ON routing_templates (destination_id);
+
+  CREATE UNIQUE INDEX routing_templates_trigger_tag
+    ON routing_templates (trigger_tag)
+    WHERE trigger_tag IS NOT NULL;
+
+  -- Which template a decision came from, and whether the tag applied it. Stated
+  -- as a pair: fired by a tag with no template is not a state, and a hand-made
+  -- decision is neither.
+  --
+  -- No foreign key, unlike the one to \`destinations\`: a template is deleted
+  -- freely, and a record is history that should still say it was filed by
+  -- \`research\` a year after that template went. Nothing resolves it blindly.
+  ALTER TABLE routing_records ADD COLUMN template_id TEXT;
+  ALTER TABLE routing_records ADD COLUMN fired_by_tag INTEGER
+    CHECK (fired_by_tag IN (0, 1)
+           AND (template_id IS NULL) = (fired_by_tag IS NULL));
+
+  CREATE INDEX routing_records_template
+    ON routing_records (template_id)
+    WHERE template_id IS NOT NULL;
+  `,
+
+  `
+  -- A template's mirror write is about no capture at all, exactly as a
+  -- destination's is, and neither the CHECK nor \`subject_item\`'s can be
+  -- relaxed in place.
+  CREATE TABLE jobs_next (
+    id                  TEXT    NOT NULL PRIMARY KEY,
+    kind                TEXT    NOT NULL
+                        CHECK (kind IN ('enrichment', 'mirror', 'mirror-remove',
+                                        'delivery')),
+    subject_kind        TEXT    NOT NULL
+                        CHECK (subject_kind IN ('item', 'routing-record',
+                                                'destination', 'template')),
+    subject_id          TEXT    NOT NULL,
+    subject_item        TEXT    CHECK ((subject_kind IN ('destination', 'template'))
+                                       = (subject_item IS NULL)),
+    enrichment          TEXT    CHECK ((kind = 'enrichment') = (enrichment IS NOT NULL)),
+    attempt             INTEGER NOT NULL,
+    enqueued_at         INTEGER NOT NULL,
+    next_attempt_at     INTEGER NOT NULL,
+    lease_id            TEXT,
+    lease_expires_at    INTEGER CHECK ((lease_id IS NULL) = (lease_expires_at IS NULL)),
+    abandoned_at        INTEGER,
+    last_failure_code   TEXT,
+    last_failure_detail TEXT
+                        CHECK ((last_failure_code IS NULL) = (last_failure_detail IS NULL))
+  ) STRICT;
+
+  INSERT INTO jobs_next
+    (id, kind, subject_kind, subject_id, subject_item, enrichment, attempt,
+     enqueued_at, next_attempt_at, lease_id, lease_expires_at, abandoned_at,
+     last_failure_code, last_failure_detail)
+    SELECT id, kind, subject_kind, subject_id, subject_item, enrichment, attempt,
+           enqueued_at, next_attempt_at, lease_id, lease_expires_at, abandoned_at,
+           last_failure_code, last_failure_detail FROM jobs;
+
+  DROP TABLE jobs;
+  ALTER TABLE jobs_next RENAME TO jobs;
+
+  CREATE UNIQUE INDEX jobs_one_pending_mirror
+    ON jobs (subject_kind, subject_id, kind)
+    WHERE kind IN ('mirror', 'mirror-remove')
+      AND lease_id IS NULL
+      AND abandoned_at IS NULL;
+
+  CREATE UNIQUE INDEX jobs_lease ON jobs (lease_id) WHERE lease_id IS NOT NULL;
+
+  CREATE INDEX jobs_claimable ON jobs (kind, next_attempt_at, enqueued_at, id);
+  CREATE INDEX jobs_subject   ON jobs (subject_kind, subject_id, kind);
+
+  CREATE INDEX jobs_abandoned
+    ON jobs (abandoned_at, subject_kind, subject_id, kind)
+    WHERE abandoned_at IS NOT NULL;
+  `,
+
+  `
+  -- What the clock said where the capture was made: minutes east of UTC, DST
+  -- included. Only a browser knows it exactly, so it is optional, and a capture
+  -- without one falls back to the zone the host names.
+  ALTER TABLE items ADD COLUMN utc_offset INTEGER
+    CHECK (utc_offset BETWEEN -1440 AND 1440);
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

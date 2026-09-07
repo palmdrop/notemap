@@ -27,6 +27,9 @@ import type {
   RoutingRecordId,
   RoutingSummary,
   RoutingTarget,
+  RoutingTemplate,
+  RoutingTemplateId,
+  RoutingTemplateRecord,
   SourceId,
   StoredOutput,
   TagName,
@@ -44,6 +47,7 @@ import type {
   ItemTagRow,
   JobRow,
   RoutingRecordRow,
+  RoutingTemplateRow,
 } from "./rows";
 
 export function toMillis(value: Timestamp): number {
@@ -141,6 +145,7 @@ export function toItem(
       addedAt: toTimestamp(tag.added_at),
     })),
     createdAt: toTimestamp(row.created_at),
+    ...(row.utc_offset === null ? {} : { utcOffset: row.utc_offset }),
     ...(row.content_updated_at === null
       ? {}
       : { contentUpdatedAt: toTimestamp(row.content_updated_at) }),
@@ -176,6 +181,7 @@ export function itemParams(
   string,
   number,
   number | null,
+  number | null,
   number,
   string | null,
   number | null,
@@ -189,6 +195,7 @@ export function itemParams(
     JSON.stringify(record.payload.content),
     JSON.stringify(record.payload.metadata),
     toMillis(record.createdAt),
+    record.utcOffset ?? null,
     record.contentUpdatedAt === undefined
       ? null
       : toMillis(record.contentUpdatedAt),
@@ -220,6 +227,11 @@ export function toJobSubject(
         kind: "routing-record",
         record: row.subject_id as RoutingRecordId,
       };
+    case "template":
+      return {
+        kind: "template",
+        template: row.subject_id as RoutingTemplateId,
+      };
     case "destination":
       return {
         kind: "destination",
@@ -237,6 +249,8 @@ export function subjectColumns(
       return ["item", subject.item];
     case "routing-record":
       return ["routing-record", subject.record];
+    case "template":
+      return ["template", subject.template];
     case "destination":
       return ["destination", subject.destination];
   }
@@ -262,6 +276,14 @@ export function toRoutingRecord(row: RoutingRecordRow): RoutingRecord {
     target: toRoutingTarget(row),
     state: row.state,
     at: toTimestamp(row.at),
+    ...(row.template_id === null
+      ? {}
+      : {
+          applied: {
+            template: row.template_id as RoutingTemplateId,
+            firedByTag: row.fired_by_tag === 1,
+          },
+        }),
     ...(row.pointer === null ? {} : { pointer: row.pointer }),
     ...(row.url === null ? {} : { url: row.url }),
     ...toOutput(row),
@@ -316,6 +338,8 @@ export function routingRecordParams(
   string | null,
   string | null,
   string | null,
+  string | null,
+  number | null,
 ] {
   const target = record.target;
   const output = record.output;
@@ -335,6 +359,8 @@ export function routingRecordParams(
     output?.content?.blob ?? null,
     output?.content?.mediaType ?? null,
     output?.note ?? null,
+    record.applied?.template ?? null,
+    record.applied === undefined ? null : record.applied.firedByTag ? 1 : 0,
   ];
 }
 
@@ -347,6 +373,61 @@ export function toAction(row: ActionRow): Action {
     at: toTimestamp(row.at),
     detail: parseJson(row.detail),
   };
+}
+
+export function toRoutingTemplate(row: RoutingTemplateRow): RoutingTemplate {
+  return {
+    id: row.id as RoutingTemplateId,
+    name: row.name,
+    destination: row.destination_id as DestinationId,
+    capability: row.capability as CapabilityName,
+    arguments: parseJson(row.arguments),
+    folder: row.folder,
+    ...(row.trigger_tag === null
+      ? {}
+      : { triggerTag: row.trigger_tag as TagName }),
+    ...(row.established_at === null
+      ? {}
+      : { establishedAt: toTimestamp(row.established_at) }),
+    createdAt: toTimestamp(row.created_at),
+    modifiedAt: toTimestamp(row.modified_at),
+    fired: {
+      records: row.fired_records,
+      ...(row.fired_last_at === null
+        ? {}
+        : { lastAt: toTimestamp(row.fired_last_at) }),
+    },
+  };
+}
+
+/** The bound parameters for writing a template, in the order the statements declare. */
+export function routingTemplateParams(
+  record: RoutingTemplateRecord,
+  modifiedAt: number,
+): [
+  string,
+  string,
+  string,
+  string,
+  string,
+  RoutingTemplateRow["folder"],
+  string | null,
+  number | null,
+  number,
+  number,
+] {
+  return [
+    record.id,
+    record.name,
+    record.destination,
+    record.capability,
+    JSON.stringify(record.arguments),
+    record.folder,
+    record.triggerTag ?? null,
+    record.establishedAt === undefined ? null : toMillis(record.establishedAt),
+    toMillis(record.createdAt),
+    modifiedAt,
+  ];
 }
 
 export function toDestination(row: DestinationRow): Destination {

@@ -4,6 +4,7 @@ import type {
   Item,
   ItemId,
   PoolIdentity,
+  RoutingTemplate,
   TagUse,
 } from "#api/types";
 import type { OperationId, PendingOperation } from "#outbox/operations";
@@ -27,6 +28,8 @@ export interface ClientStore {
   writeTags(tags: readonly TagUse[]): Promise<void>;
   readDestinations(): Promise<readonly Destination[]>;
   writeDestinations(destinations: readonly Destination[]): Promise<void>;
+  readTemplates(): Promise<readonly RoutingTemplate[]>;
+  writeTemplates(templates: readonly RoutingTemplate[]): Promise<void>;
 
   /** Which pool everything above describes, absent until one has answered. */
   readPoolIdentity(): Promise<PoolIdentity | undefined>;

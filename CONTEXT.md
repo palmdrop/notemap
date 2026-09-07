@@ -254,8 +254,10 @@ _Avoid_: plugin, connector, integration
 One thing an adapter can do — create a note, append into an existing file, post to a board
 column. Names itself, says which payload types it accepts, and carries a schema for the
 **arguments** a delivery must supply: where it goes, and anything else that shapes it, such as a
-template or a format. Core matches and refuses; it holds no list of its own, so a new kind of
-destination needs no change in core.
+template or a format. It may also **annotate** a field — that this one can be browsed, that this
+one is a `/`-separated path — which is how anything that needs to know more than the shape asks the
+capability rather than knowing it by name. Core matches and refuses; it holds no list of its own, so
+a new kind of destination needs no change in core.
 _Avoid_: verb, action, method, operation
 
 **Route**:
@@ -272,6 +274,13 @@ pending. Reshaping the item into the destination's dialect happens here, inside 
 never to the capture — so one item reaches several destinations in several forms and none of them
 is the item.
 _Avoid_: push, transfer, upload
+
+**Conversion**:
+A destination reshaping a copy of an item on its way out — into a list entry, a front-matter block,
+a dialect of markdown that is not the item's. It happens inside the **delivery**, never to the
+capture, and what it produced is kept as the **output**. Distinct from a **routing template**, which
+says where an item goes and never what shape it arrives in.
+_Avoid_: template, transform, formatting. Template names the saved routing decision below.
 
 **Output**:
 The content a delivery produced — what the destination actually wrote, in the destination's own
@@ -298,8 +307,30 @@ the item on its way out, the record may also name the **output**, so the pool ca
 sent and not only where. Beside the pointer it may carry a **URL**, where the destination can offer
 a link to the same place; neither kind that writes files ever does — a path on the daemon's host is
 nowhere a phone can follow, and a WebDAV address is the daemon's credential rather than a link
-anyone else holds.
+anyone else holds. Where the decision came from a **routing template**, the record names it, and
+says whether a **trigger tag** made it — a decision a person made with the item in front of them and
+one a tag made are the same delivery and not the same act, and only the second gives its tag back
+where nothing landed.
 _Avoid_: routing status, delivery flag
+
+**Routing template**:
+A routing decision, saved: a destination, a capability, the arguments as **patterns**, and how its
+folder is treated. Pool state, mirrored, and reachable from every device, which a shell remembering
+your last route never was. Applying one is the decision itself, made in one gesture rather than a
+smaller one — from the composer, or by its **trigger tag** arriving. Its patterns are expanded when
+the decision is made, so the record it produces names a place a person can read. Says where an item
+goes and never what shape it arrives in, which is **conversion**.
+_Avoid_: rule, preset, macro. A rule is the conditional thing this deliberately is not; the other
+two say nothing about routing.
+
+**Trigger tag**:
+The tag a routing template declares, under the reserved `route/` namespace, whose arrival on an item
+applies the template. Declared rather than derived from the name, so renaming a template disarms no
+tag already written, and unique across templates. Fires on the **tagging** and never on the tag
+being present, so a revision carrying one fires nothing. It stays on a delivered item, where it
+reads as why the item went where it went, and comes off again where the reservation it made was
+cancelled or abandoned. A `route/` tag naming no template is an ordinary tag that fires nothing.
+_Avoid_: hotkey tag, magic tag, action tag
 
 **Routing summary**:
 What an item says about its own routing without being asked for its records: how many there are,

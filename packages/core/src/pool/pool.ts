@@ -6,6 +6,7 @@ import type { OrderedPage, PageRequest, ReadOrder } from "#types/result";
 import * as archive from "./archive";
 import * as assets from "./assets";
 import * as destinations from "./destinations";
+import * as templates from "./templates";
 import { capture } from "./capture";
 import { edit } from "./edit";
 import * as maintenance from "./maintenance";
@@ -35,12 +36,13 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
   return {
     identity: () => store.identity(),
 
-    capture: (envelope) => capture(config, ports, envelope),
+    capture: (envelope, signal) => capture(config, ports, envelope, signal),
 
     items: {
       get: (id) => store.item(id),
       edit: (id, envelope, by) => edit(config, ports, id, envelope, by),
-      tag: (id, name, by) => tags.tag(ports, id, name, by),
+      tag: (id, name, by, signal) =>
+        tags.tag(config, ports, id, name, by, signal),
       untag: (id, name, by) => tags.untag(ports, id, name, by),
       archive: (id, reason) => archive.archive(ports, id, reason),
       unarchive: (id) => archive.unarchive(ports, id),
@@ -81,6 +83,25 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
       retire: (id) => destinations.retire(ports, id),
       unretire: (id) => destinations.unretire(ports, id),
       delete: (id) => destinations.remove(ports, id),
+    },
+
+    templates: {
+      list: () => templates.list(ports),
+      get: (id) => templates.read(ports, id),
+      create: (draft) => templates.create(ports, draft),
+      edit: (id, changes) => templates.edit(ports, id, changes),
+      delete: (id) => templates.remove(ports, id),
+      report: (id, signal) => templates.report(ports, id, signal),
+      resolve: (item, id) => templates.resolve(config, ports, item, id),
+      route: (item, id, options) =>
+        templates.routeFrom(
+          config,
+          ports,
+          item,
+          id,
+          options?.firedByTag ?? false,
+          options?.signal,
+        ),
     },
 
     routing: {

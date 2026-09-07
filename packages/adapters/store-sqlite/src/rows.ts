@@ -17,6 +17,8 @@ export type ItemRow = {
   readonly payload_content: string;
   readonly payload_metadata: string;
   readonly created_at: number;
+  /** Minutes east of UTC where the capture was made, where it knew. */
+  readonly utc_offset: number | null;
   readonly content_updated_at: number | null;
   readonly modified_at: number;
   readonly revision_of: string | null;
@@ -56,15 +58,32 @@ export type DestinationRow = {
   readonly modified_at: number;
 };
 
+export type RoutingTemplateRow = {
+  readonly id: string;
+  readonly name: string;
+  readonly destination_id: string;
+  readonly capability: string;
+  /** JSON: the arguments as patterns, expanded only when a decision is made. */
+  readonly arguments: string;
+  readonly folder: "create" | "require" | "establish";
+  readonly trigger_tag: string | null;
+  readonly established_at: number | null;
+  readonly created_at: number;
+  readonly modified_at: number;
+  /** Derived, on the terms an item's routing summary is: what records name it. */
+  readonly fired_records: number;
+  readonly fired_last_at: number | null;
+};
+
 export type JobRow = {
   readonly id: string;
   readonly kind: "enrichment" | "mirror" | "mirror-remove" | "delivery";
-  readonly subject_kind: "item" | "routing-record" | "destination";
+  readonly subject_kind: "item" | "routing-record" | "destination" | "template";
   readonly subject_id: string;
   /**
    * The capture the work concerns, which outlives a subject that may be
-   * removed. Null for work about no capture at all, which a destination's
-   * mirror write is.
+   * removed. Null for work about no capture at all, which a destination's or a
+   * template's mirror write is.
    */
   readonly subject_item: string | null;
   readonly enrichment: string | null;
@@ -97,6 +116,9 @@ export type RoutingRecordRow = {
   readonly output_mime: string | null;
   /** Prose about what the delivery could not carry, and never `note`, which is a person's own word. */
   readonly output_note: string | null;
+  /** The template the decision came from, which may since have been deleted. */
+  readonly template_id: string | null;
+  readonly fired_by_tag: number | null;
 };
 
 /** What a page needs of an item's routing records, without their targets. */
@@ -140,6 +162,7 @@ export const TABLE_COLUMNS = {
     "payload_content",
     "payload_metadata",
     "created_at",
+    "utc_offset",
     "content_updated_at",
     "modified_at",
     "revision_of",
@@ -155,6 +178,18 @@ export const TABLE_COLUMNS = {
     "kind",
     "settings",
     "retired_at",
+    "created_at",
+    "modified_at",
+  ],
+  routing_templates: [
+    "id",
+    "name",
+    "destination_id",
+    "capability",
+    "arguments",
+    "folder",
+    "trigger_tag",
+    "established_at",
     "created_at",
     "modified_at",
   ],
@@ -189,6 +224,8 @@ export const TABLE_COLUMNS = {
     "output_blob",
     "output_mime",
     "output_note",
+    "template_id",
+    "fired_by_tag",
   ],
   actions: ["id", "kind", "subject", "by_kind", "by_ref", "at", "detail"],
   pool_meta: ["key", "value"],

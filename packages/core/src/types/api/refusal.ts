@@ -12,7 +12,9 @@ import type {
   LeaseId,
   PayloadTypeName,
   RoutingRecordId,
+  RoutingTemplateId,
   SuggestionId,
+  TagName,
   Timestamp,
 } from "../domain/ids";
 
@@ -52,7 +54,33 @@ export type EditRefusal =
   | { readonly kind: "source-item-changed"; readonly existing: ItemId };
 
 export type TagRefusal =
-  SubjectRefusal | { readonly kind: "tag-invalid"; readonly tag: string };
+  | SubjectRefusal
+  | { readonly kind: "tag-invalid"; readonly tag: string }
+  /**
+   * The tag is a trigger tag and its template could not route: nothing is
+   * written and the tag does not land. A tag that filed nothing would be spent
+   * — re-applying it is a no-op — and the person is the only one who can go and
+   * fix what the template says. A destination that merely could not be reached
+   * is not this: that is the delivery's business, and the reservation waits.
+   */
+  | {
+      readonly kind: "trigger-refused";
+      readonly tag: TagName;
+      readonly template: RoutingTemplateId;
+      readonly detail: string;
+    }
+  /**
+   * The tag filed this item and what it filed still stands, so it is not the
+   * person's to take off: putting it back would file a second copy rather than
+   * undo the first. Cancelling the record is the way back, and it gives the tag
+   * with it. Only `/untag` can raise this.
+   */
+  | {
+      readonly kind: "trigger-tag-held";
+      readonly tag: TagName;
+      readonly template: RoutingTemplateId;
+      readonly record: RoutingRecordId;
+    };
 
 export type ArchiveRefusal =
   | SubjectRefusal
@@ -123,6 +151,42 @@ export type DestinationDeletionRefusal =
       readonly destination: DestinationId;
     };
 
+/**
+ * Everything a template can be refused for before anything is attempted. The
+ * arguments are not among them: a pattern is checked when it is written
+ * (statically total, so it expands for every item), and whether the capability
+ * still accepts them is a live question the report answers.
+ */
+export type RoutingTemplateRefusal =
+  | {
+      readonly kind: "unknown-template";
+      readonly template: RoutingTemplateId;
+    }
+  | {
+      readonly kind: "unknown-destination";
+      readonly destination: DestinationId;
+    }
+  /** Not a tag at all — empty, or nothing but space. */
+  | { readonly kind: "trigger-tag-invalid"; readonly tag: string }
+  /** A tag, but outside the reserved namespace a trigger tag must live in. */
+  | { readonly kind: "trigger-tag-unreserved"; readonly tag: string }
+  | {
+      readonly kind: "trigger-tag-taken";
+      readonly tag: TagName;
+      readonly template: RoutingTemplateId;
+    }
+  /** A pattern naming something no item has. Refused when it is written. */
+  | {
+      readonly kind: "unknown-pattern-field";
+      readonly pattern: string;
+      readonly field: string;
+    }
+  | {
+      readonly kind: "unknown-pattern-format";
+      readonly pattern: string;
+      readonly format: string;
+    };
+
 export type PreparationRefusal =
   | SubjectRefusal
   | {
@@ -168,6 +232,14 @@ export type CancelRefusal =
   | { readonly kind: "delivery-in-flight"; readonly record: RoutingRecordId };
 
 export type DeliveryRefusal = PreparationRefusal | AttemptFailure;
+
+/**
+ * Routing from a template is routing, plus the one thing only a template can be
+ * refused for. Nothing about the patterns is here: what saved expands.
+ */
+export type TemplateRoutingRefusal =
+  | DeliveryRefusal
+  | { readonly kind: "unknown-template"; readonly template: RoutingTemplateId };
 
 /**
  * A preview is refused for the reasons a route is refused, minus the ones about

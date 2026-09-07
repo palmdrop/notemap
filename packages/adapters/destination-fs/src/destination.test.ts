@@ -329,6 +329,80 @@ describe("what it says it wrote", () => {
   });
 });
 
+describe("a folder a delivery requires", () => {
+  it("writes as ever where the folder is there", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    await mkdir(join(path, "research"), { recursive: true });
+
+    const outcome = await destination.deliver(
+      delivery({
+        arguments: {
+          directory: "research",
+          filename: "2026-09-05.md",
+          folder: "require",
+        },
+      }),
+    );
+
+    expect(outcome).toMatchObject({ kind: "delivered" });
+  });
+
+  it("is rejected where it is not, and names the folder", async () => {
+    const { path, destination } = await vault({ text: renderText });
+
+    const outcome = await destination.deliver(
+      delivery({
+        arguments: {
+          directory: "research/2026",
+          filename: "a-thought.md",
+          folder: "require",
+        },
+      }),
+    );
+
+    expect(outcome).toEqual({
+      kind: "rejected",
+      detail: "research/2026/ is missing",
+    });
+    // Rejected before anything was written, so nothing was half-done.
+    expect(await filesUnder(path)).toEqual([]);
+  });
+
+  it("makes it where the arguments say nothing, which is what they used to say", async () => {
+    const { path, destination } = await vault({ text: renderText });
+
+    const outcome = await destination.deliver(
+      delivery({ arguments: { directory: "research/2026" } }),
+    );
+
+    expect(outcome).toMatchObject({ kind: "delivered" });
+    expect(await filesUnder(path)).toHaveLength(1);
+  });
+
+  it("requires the folder of an append too, and of a create-or-append", async () => {
+    const { destination } = await vault({ text: renderText });
+
+    const appended = await destination.deliver(
+      delivery({
+        capability: APPEND_TO_FILE,
+        arguments: { path: "journal/2026-09.md", folder: "require" },
+      }),
+    );
+    const either = await destination.deliver(
+      delivery({
+        capability: CREATE_OR_APPEND_FILE,
+        arguments: { path: "journal/2026-09.md", folder: "require" },
+      }),
+    );
+
+    expect(appended).toMatchObject({ kind: "rejected" });
+    expect(either).toEqual({
+      kind: "rejected",
+      detail: "journal/ is missing",
+    });
+  });
+});
+
 describe("nothing escapes the root", () => {
   const outside = [
     { directory: "..", filename: "escaped.md" },

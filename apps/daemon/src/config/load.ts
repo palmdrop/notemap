@@ -22,6 +22,8 @@ import {
   DEFAULT_PORT,
   DEFAULT_RETRY,
   DEFAULT_SWEEP,
+  DEFAULT_TRIGGER_WINDOW_MS,
+  defaultZone,
 } from "../constants";
 import type { CookieOptions } from "../auth/sessions/config";
 
@@ -134,6 +136,16 @@ const fileSchema = z.object({
     .object({
       grace: z.number().int().nonnegative().optional(),
       interval: z.number().int().positive().optional(),
+    })
+    .optional(),
+  capture: z
+    .object({
+      zone: z.string().min(1).optional(),
+    })
+    .optional(),
+  routing: z
+    .object({
+      triggerWindow: z.number().int().nonnegative().optional(),
     })
     .optional(),
   delivery: z
@@ -394,6 +406,23 @@ function readAccounts(
   });
 }
 
+/**
+ * Refused here rather than at the first capture that needs it: a zone nobody
+ * has heard of is a typo in a config file, and finding out weeks later means a
+ * date read in the wrong place.
+ */
+function readZone(named: string | undefined, from: string): string {
+  const zone = named ?? defaultZone();
+  try {
+    new Intl.DateTimeFormat("en-GB", { timeZone: zone });
+  } catch {
+    throw new Error(
+      `${from} names capture.zone = "${zone}", which is not an IANA time zone`,
+    );
+  }
+  return zone;
+}
+
 export function parseConfig(source: string, from: string): LoadedConfig {
   let raw: unknown;
   try {
@@ -465,6 +494,9 @@ export function parseConfig(source: string, from: string): LoadedConfig {
       sweep: {
         grace: (file.sweep?.grace ?? DEFAULT_SWEEP.graceMs) as Duration,
       },
+      zone: readZone(file.capture?.zone, from),
+      triggerWindow: (file.routing?.triggerWindow ??
+        DEFAULT_TRIGGER_WINDOW_MS) as Duration,
     },
   };
 

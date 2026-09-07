@@ -21,6 +21,9 @@ import type {
   DeliveryLanding,
   RoutingRecord,
   RoutingRecordId,
+  RoutingTemplate,
+  RoutingTemplateId,
+  RoutingTemplateRecord,
   IdGenerator,
   Item,
   ItemId,
@@ -51,6 +54,7 @@ import {
   destinationParams,
   itemParams,
   routingRecordParams,
+  routingTemplateParams,
   toAction,
   toAsset,
   toDestination,
@@ -58,6 +62,7 @@ import {
   toMillis,
   toRoutingRecord,
   toRoutingSummary,
+  toRoutingTemplate,
   toTimestamp,
 } from "./mapping";
 import { poolIdentity } from "./identity";
@@ -73,6 +78,7 @@ import type {
   ItemTagRow,
   PoolMetaRow,
   RoutingRecordRow,
+  RoutingTemplateRow,
   TagUseRow,
 } from "./rows";
 import {
@@ -100,7 +106,7 @@ export type SqlitePoolStoreConfig = {
 
 const ITEM_COLUMNS = `
   id, source_id, source_item_id, payload_type, payload_content,
-  payload_metadata, created_at, content_updated_at, modified_at,
+  payload_metadata, created_at, utc_offset, content_updated_at, modified_at,
   revision_of, archived_at, archive_reason
 `;
 
@@ -112,7 +118,35 @@ const DESTINATION_COLUMNS = `
 
 const ROUTING_COLUMNS = `
   id, item_id, target_kind, destination, capability, note, arguments, state,
-  at, pointer, url, output_blob, output_mime, output_note
+  at, pointer, url, output_blob, output_mime, output_note, template_id,
+  fired_by_tag
+`;
+
+/**
+ * What a template is, and what the pool made from it. The two counts are a
+ * correlated subquery rather than a join and a group: a template with no
+ * records still has to answer, and a `LEFT JOIN … GROUP BY` over ten templates
+ * reads every routing record to say so.
+ */
+const TEMPLATE_COLUMNS = `
+  id, name, destination_id, capability, arguments, folder, trigger_tag,
+  established_at, created_at, modified_at
+`;
+
+/**
+ * The columns above, and what this template's **tag** filed beside them.
+ * `fired_by_tag` is the filter rather than an afterthought: a template taken by
+ * hand in the composer was applied, not fired, and a row saying "last fired"
+ * about somebody's own decision says the wrong thing in the project's own words.
+ */
+const TEMPLATE_READ = `
+  ${TEMPLATE_COLUMNS},
+  (SELECT COUNT(*) FROM routing_records r
+     WHERE r.template_id = routing_templates.id AND r.fired_by_tag = 1)
+    AS fired_records,
+  (SELECT MAX(at) FROM routing_records r
+     WHERE r.template_id = routing_templates.id AND r.fired_by_tag = 1)
+    AS fired_last_at
 `;
 
 /** What every surface orders on: capture time, and the id only to break a tie. */
@@ -231,7 +265,7 @@ export function createSqlitePoolStore(
 
   const insertItem = write.query(`
     INSERT INTO items (${ITEM_COLUMNS})
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const amend = write.query<
     never,
@@ -295,12 +329,42 @@ export function createSqlitePoolStore(
   const deleteDestination = write.query<never, [string]>(
     `DELETE FROM destinations WHERE id = ?`,
   );
+  const insertTemplate = write.query<
+    never,
+    ReturnType<typeof routingTemplateParams>
+  >(`
+    INSERT INTO routing_templates (${TEMPLATE_COLUMNS})
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const updateTemplate = write.query<
+    never,
+    [
+      string,
+      string,
+      string,
+      string,
+      string,
+      string | null,
+      number | null,
+      number,
+      number,
+      string,
+    ]
+  >(`
+    UPDATE routing_templates
+    SET name = ?, destination_id = ?, capability = ?, arguments = ?, folder = ?,
+        trigger_tag = ?, established_at = ?, created_at = ?, modified_at = ?
+    WHERE id = ?
+  `);
+  const deleteTemplate = write.query<never, [string]>(
+    `DELETE FROM routing_templates WHERE id = ?`,
+  );
   const insertRouting = write.query<
     never,
     ReturnType<typeof routingRecordParams>
   >(`
     INSERT INTO routing_records (${ROUTING_COLUMNS})
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const deliverRouting = write.query<
     never,
@@ -441,6 +505,21 @@ export function createSqlitePoolStore(
     /** A reservation counts as much as a delivered record: both name it. */
     const namedBy = source.query<{ one: number }, [string]>(
       `SELECT 1 AS one FROM routing_records WHERE destination = ? LIMIT 1`,
+    );
+    const everyTemplate = source.query<RoutingTemplateRow, []>(
+      `SELECT ${TEMPLATE_READ} FROM routing_templates
+       ORDER BY created_at, id`,
+    );
+    const templateById = source.query<RoutingTemplateRow, [string]>(
+      `SELECT ${TEMPLATE_READ} FROM routing_templates WHERE id = ?`,
+    );
+    const templateByTag = source.query<RoutingTemplateRow, [string]>(
+      `SELECT ${TEMPLATE_READ} FROM routing_templates WHERE trigger_tag = ?`,
+    );
+    const templatesNaming = source.query<RoutingTemplateRow, [string]>(
+      `SELECT ${TEMPLATE_READ} FROM routing_templates
+       WHERE destination_id = ?
+       ORDER BY created_at, id`,
     );
 
     function hydrate(rows: readonly ItemRow[]): Item[] {
@@ -625,6 +704,28 @@ export function createSqlitePoolStore(
       destinationEverNamed: async (id: DestinationId): Promise<boolean> =>
         namedBy.get(id) !== undefined,
 
+      routingTemplates: async (): Promise<readonly RoutingTemplate[]> =>
+        everyTemplate.all().map(toRoutingTemplate),
+
+      routingTemplate: async (
+        id: RoutingTemplateId,
+      ): Promise<RoutingTemplate | undefined> => {
+        const row = templateById.get(id);
+        return row === undefined ? undefined : toRoutingTemplate(row);
+      },
+
+      routingTemplateByTriggerTag: async (
+        tag: TagName,
+      ): Promise<RoutingTemplate | undefined> => {
+        const row = templateByTag.get(tag);
+        return row === undefined ? undefined : toRoutingTemplate(row);
+      },
+
+      routingTemplatesNaming: async (
+        destination: DestinationId,
+      ): Promise<readonly RoutingTemplate[]> =>
+        templatesNaming.all(destination).map(toRoutingTemplate),
+
       asset: async (id: AssetId): Promise<Asset | undefined> => {
         const row = assetById.get(id);
         return row === undefined ? undefined : toAsset(row);
@@ -703,6 +804,16 @@ export function createSqlitePoolStore(
     return stored;
   }
 
+  async function readTemplateBack(
+    id: RoutingTemplateId,
+  ): Promise<RoutingTemplate> {
+    const stored = await uncommitted.routingTemplate(id);
+    if (stored === undefined) {
+      throw new Error(`no routing template ${id} to read back`);
+    }
+    return stored;
+  }
+
   /** Built per transaction, because every method has to consult that transaction's fence. */
   function poolTx(fence: Fence): PoolTx {
     const guard = <A extends unknown[], R>(
@@ -735,6 +846,12 @@ export function createSqlitePoolStore(
       destinations: guard(uncommitted.destinations),
       destination: guard(uncommitted.destination),
       destinationEverNamed: guard(uncommitted.destinationEverNamed),
+      routingTemplates: guard(uncommitted.routingTemplates),
+      routingTemplate: guard(uncommitted.routingTemplate),
+      routingTemplateByTriggerTag: guard(
+        uncommitted.routingTemplateByTriggerTag,
+      ),
+      routingTemplatesNaming: guard(uncommitted.routingTemplatesNaming),
       itemBySourceIdentity: guard(uncommitted.itemBySourceIdentity),
       feed: guard(uncommitted.feed),
       queue: guard(uncommitted.queue),
@@ -850,6 +967,30 @@ export function createSqlitePoolStore(
       deleteDestination: guard(async (id: DestinationId): Promise<void> => {
         deleteDestination.run(id);
       }),
+
+      insertRoutingTemplate: guard(
+        async (record: RoutingTemplateRecord): Promise<RoutingTemplate> => {
+          insertTemplate.run(
+            ...routingTemplateParams(record, nextModifiedAt()),
+          );
+          return readTemplateBack(record.id);
+        },
+      ),
+
+      updateRoutingTemplate: guard(
+        async (record: RoutingTemplateRecord): Promise<RoutingTemplate> => {
+          const [id, ...rest] = routingTemplateParams(record, nextModifiedAt());
+          updateTemplate.run(...rest, id);
+          return readTemplateBack(record.id);
+        },
+      ),
+
+      /** No foreign key stands in the way: a record keeps what it routed as. */
+      deleteRoutingTemplate: guard(
+        async (id: RoutingTemplateId): Promise<void> => {
+          deleteTemplate.run(id);
+        },
+      ),
 
       insertRoutingRecord: guard(
         async (record: RoutingRecord): Promise<void> => {

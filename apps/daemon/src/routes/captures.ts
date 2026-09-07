@@ -24,7 +24,10 @@ export function captureHandler(pool: Pool) {
       });
     }
 
-    const result = await pool.capture(toEnvelope(parsed.data));
+    const result = await pool.capture(
+      toEnvelope(parsed.data),
+      context.req.raw.signal,
+    );
     if (result.kind === "refused") {
       return json(errorBody(result.refusal), captureStatus(result.refusal));
     }

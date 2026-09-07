@@ -11,6 +11,12 @@ export type RoutingDeps = {
     item: ItemId,
     records: readonly RoutingRecord[],
   ) => Promise<void>;
+  /**
+   * The item as the pool now has it. Cancelling a reservation a trigger tag
+   * made takes that tag off with it, so what the client holds is stale in a way
+   * the records alone do not say.
+   */
+  readonly reread: (item: ItemId) => Promise<void>;
 };
 
 /**
@@ -82,6 +88,7 @@ export function createRouting(deps: RoutingDeps): RoutingApi {
       // The pool deletes the record rather than marking it, and processed is
       // derived from holding none — so an item routed twice is still not work.
       await deps.withdrawn(item, await recordsFor(item));
+      await deps.reread(item);
     },
   };
 }

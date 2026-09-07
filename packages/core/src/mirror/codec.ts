@@ -15,6 +15,7 @@ import type {
   PayloadTypeName,
   ProviderName,
   RoutingRecordId,
+  RoutingTemplateId,
   SourceId,
   TagName,
   Timestamp,
@@ -23,7 +24,9 @@ import type { DestinationRecord } from "#types/domain/destination";
 import type { ArchiveState, ItemRecord, Tag } from "#types/domain/item";
 import type { MirrorRecord } from "#types/domain/mirror";
 import type { Payload } from "#types/domain/payload";
+import type { FolderMode, RoutingTemplateRecord } from "#types/domain/template";
 import type {
+  AppliedTemplate,
   RoutingRecord,
   RoutingRecordState,
   RoutingTarget,
@@ -64,6 +67,12 @@ export function parseMirrorRecord(source: string): MirrorRecord {
         destination: readDestination(root["destination"], "destination"),
         modifiedAt: stamp(root["modifiedAt"], "modifiedAt"),
       };
+    case "template":
+      return {
+        kind: "template",
+        template: readTemplate(root["template"], "template"),
+        modifiedAt: stamp(root["modifiedAt"], "modifiedAt"),
+      };
     default:
       reject("kind", "a mirror record kind");
   }
@@ -81,6 +90,39 @@ function readDestination(value: unknown, at: string): DestinationRecord {
   };
 }
 
+function readTemplate(value: unknown, at: string): RoutingTemplateRecord {
+  const row = object(value, at);
+  return {
+    id: text(row["id"], `${at}.id`) as RoutingTemplateId,
+    name: text(row["name"], `${at}.name`),
+    destination: text(row["destination"], `${at}.destination`) as DestinationId,
+    capability: text(row["capability"], `${at}.capability`) as CapabilityName,
+    arguments: object(row["arguments"], `${at}.arguments`) as JsonObject,
+    folder: readFolderMode(row["folder"], `${at}.folder`),
+    ...present(
+      "triggerTag",
+      row,
+      at,
+      (raw, where) => text(raw, where) as TagName,
+    ),
+    ...present("establishedAt", row, at, stamp),
+    createdAt: stamp(row["createdAt"], `${at}.createdAt`),
+  };
+}
+
+/** `establish` is carried as written: what it resolves to is decided when a decision is made. */
+function readFolderMode(value: unknown, at: string): FolderMode {
+  const spelling = text(value, at);
+  if (
+    spelling !== "create" &&
+    spelling !== "require" &&
+    spelling !== "establish"
+  ) {
+    reject(at, "a folder mode");
+  }
+  return spelling;
+}
+
 function readItem(value: unknown, at: string): ItemRecord {
   const row = object(value, at);
   return {
@@ -90,6 +132,7 @@ function readItem(value: unknown, at: string): ItemRecord {
     payload: readPayload(row["payload"], `${at}.payload`),
     tags: list(row["tags"], `${at}.tags`, readTag),
     createdAt: stamp(row["createdAt"], `${at}.createdAt`),
+    ...present("utcOffset", row, at, minutes),
     ...present("contentUpdatedAt", row, at, stamp),
     ...present(
       "revisionOf",
@@ -198,9 +241,19 @@ function readRouting(value: unknown, at: string): RoutingRecord {
     target: readTarget(row["target"], `${at}.target`),
     state: readState(row["state"], `${at}.state`),
     at: stamp(row["at"], `${at}.at`),
+    ...present("applied", row, at, readApplied),
     ...present("pointer", row, at, text),
     ...present("url", row, at, text),
     ...present("output", row, at, readOutput),
+  };
+}
+
+/** A template a record came from may have been deleted since; the record still says which. */
+function readApplied(value: unknown, at: string): AppliedTemplate {
+  const row = object(value, at);
+  return {
+    template: text(row["template"], `${at}.template`) as RoutingTemplateId,
+    firedByTag: flag(row["firedByTag"], `${at}.firedByTag`),
   };
 }
 
@@ -270,6 +323,24 @@ function object(value: unknown, at: string): Record<string, unknown> {
 
 function text(value: unknown, at: string): string {
   if (typeof value !== "string") reject(at, "a string");
+  return value;
+}
+
+function flag(value: unknown, at: string): boolean {
+  if (typeof value !== "boolean") reject(at, "a boolean");
+  return value;
+}
+
+/** Every real zone is a whole number of minutes from UTC, and none is a day away. */
+function minutes(value: unknown, at: string): number {
+  if (
+    typeof value !== "number" ||
+    !Number.isInteger(value) ||
+    value < -1440 ||
+    value > 1440
+  ) {
+    reject(at, "an offset in minutes");
+  }
   return value;
 }
 

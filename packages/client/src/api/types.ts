@@ -72,6 +72,15 @@ export type RouteRequest = components["schemas"]["RouteRequest"];
 export type RoutingPreview = components["schemas"]["RoutingPreview"];
 export type DeliveryOutput = components["schemas"]["DeliveryOutput"];
 export type RoutingRecord = components["schemas"]["RoutingRecord"];
+export type RoutingTemplate = components["schemas"]["RoutingTemplate"];
+export type RoutingTemplateReport =
+  components["schemas"]["RoutingTemplateReport"];
+export type ResolvedRoutingTemplate =
+  components["schemas"]["ResolvedRoutingTemplate"];
+export type CreateRoutingTemplateRequest =
+  components["schemas"]["CreateRoutingTemplateRequest"];
+export type UpdateRoutingTemplateRequest =
+  components["schemas"]["UpdateRoutingTemplateRequest"];
 export type RoutingSummary = components["schemas"]["RoutingSummary"];
 export type TagUse = components["schemas"]["TagUse"];
 
@@ -82,3 +91,4 @@ export type ActionId = Action["id"];
 export type ItemId = Item["id"];
 export type AssetId = Asset["id"];
 export type DestinationId = Destination["id"];
+export type RoutingTemplateId = RoutingTemplate["id"];

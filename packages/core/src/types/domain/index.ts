@@ -13,4 +13,5 @@ export * from "./routing";
 export * from "./source";
 export * from "./suggestion";
 export * from "./sync";
+export * from "./template";
 export * from "./work";

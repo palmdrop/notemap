@@ -1,6 +1,7 @@
 import {
   projectDestinationRecord,
   projectMirrorRecord,
+  projectTemplateRecord,
 } from "../mirror/record";
 import type { PoolPorts, PoolTx } from "#types/api/ports";
 import type { Asset } from "#types/domain/asset";
@@ -56,9 +57,22 @@ export async function recordFor(
   ports: PoolPorts,
   subject: MirrorSubject,
 ): Promise<MirrorRecord | undefined> {
-  return subject.kind === "destination"
-    ? destinationRecord(ports, subject)
-    : itemRecord(ports, subject);
+  switch (subject.kind) {
+    case "destination":
+      return destinationRecord(ports, subject);
+    case "template":
+      return templateRecord(ports, subject);
+    case "item":
+      return itemRecord(ports, subject);
+  }
+}
+
+async function templateRecord(
+  ports: PoolPorts,
+  subject: Extract<MirrorSubject, { kind: "template" }>,
+): Promise<MirrorRecord | undefined> {
+  const template = await ports.store.routingTemplate(subject.template);
+  return template === undefined ? undefined : projectTemplateRecord(template);
 }
 
 async function destinationRecord(

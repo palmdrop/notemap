@@ -2,6 +2,7 @@ import type { Destinations } from "#types/api/ports";
 import type { JsonObject, JsonSchema } from "#types/json";
 import type {
   CandidatesAnswer,
+  CandidatesRequest,
   Capability,
   Destination,
   DestinationKind,
@@ -41,6 +42,11 @@ export type Received = {
   readonly assets: readonly ReceivedAsset[];
 };
 
+/** An answer worked out per request, for a check that walks down more than one level. */
+export type ScriptedCandidates = (
+  request: CandidatesRequest,
+) => CandidatesAnswer;
+
 export type FakeDestinations = Destinations & {
   /** Oldest first, and live: it grows as more is handed over. */
   readonly received: readonly Received[];
@@ -54,8 +60,12 @@ export type FakeDestinations = Destinations & {
    * failure.
    */
   cannotDescribe(detail: string | Error | undefined): void;
-  /** What `candidates` answers when nothing says it should fail. */
-  answersCandidates(next: CandidatesAnswer): void;
+  /**
+   * What `candidates` answers when nothing says it should fail. A function is
+   * asked per request, which is what a test of a walk down several levels
+   * needs: the answer for `research/` is not the answer for the root.
+   */
+  answersCandidates(next: CandidatesAnswer | ScriptedCandidates): void;
   /** What `candidates` throws with, on the same terms as `cannotDescribe`. */
   cannotAnswerCandidates(detail: string | Error | undefined): void;
   /** What `probe` throws with. Undefined is a destination that is there. */
@@ -149,10 +159,11 @@ export function fakeDestinations(
     pointer: "somewhere",
   };
   let undescribable: string | Error | undefined;
-  let candidatesAnswer: CandidatesAnswer = options.candidatesAnswer ?? {
-    entries: [],
-    truncated: false,
-  };
+  let candidatesAnswer: CandidatesAnswer | ScriptedCandidates =
+    options.candidatesAnswer ?? {
+      entries: [],
+      truncated: false,
+    };
   let cannotAnswer: string | Error | undefined;
   let cannotProbe: string | Error | undefined;
   let previewAnswer: DeliveredOutput | undefined = options.previewAnswer;
@@ -210,9 +221,13 @@ export function fakeDestinations(
       });
     },
 
-    candidates: () =>
+    candidates: (_destination, request) =>
       cannotAnswer === undefined
-        ? Promise.resolve(candidatesAnswer)
+        ? Promise.resolve(
+            typeof candidatesAnswer === "function"
+              ? candidatesAnswer(request)
+              : candidatesAnswer,
+          )
         : Promise.reject(
             cannotAnswer instanceof Error
               ? cannotAnswer

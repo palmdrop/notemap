@@ -351,6 +351,9 @@
           "createdAt": {
             "type": "string"
           },
+          "utcOffset": {
+            "type": "integer"
+          },
           "contentUpdatedAt": {
             "type": "string"
           },
@@ -480,6 +483,11 @@
             ],
             "description": "An ISO 8601 instant: a date-time carrying an offset (`2026-08-08T09:00:00Z`, `2026-08-08T09:00:00+02:00`), or a date alone, which means midnight UTC. A date-time without an offset is refused — there is no way to tell which zone it was written in.",
             "example": "2026-08-08T09:00:00.000Z"
+          },
+          "utcOffset": {
+            "type": "integer",
+            "minimum": -1440,
+            "maximum": 1440
           },
           "payload": {
             "type": "object",
@@ -774,6 +782,22 @@
                 ]
               }
             ]
+          },
+          "applied": {
+            "type": "object",
+            "properties": {
+              "template": {
+                "type": "string"
+              },
+              "firedByTag": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "template",
+              "firedByTag"
+            ],
+            "description": "The routing template this decision came from, and whether its trigger tag applied it. Absent for a decision made by hand."
           },
           "state": {
             "type": "string",
@@ -1277,37 +1301,380 @@
         },
         "additionalProperties": false
       },
-      "RouteRequest": {
+      "RoutingTemplates": {
         "type": "object",
         "properties": {
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoutingTemplate"
+            }
+          }
+        },
+        "required": [
+          "values"
+        ]
+      },
+      "RoutingTemplate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
           "destination": {
-            "type": "string",
-            "minLength": 1,
-            "description": "One of the ids `GET /v1/destinations` reports.",
-            "example": "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77"
+            "type": "string"
           },
           "capability": {
-            "type": "string",
-            "minLength": 1,
-            "description": "One the destination declared. Anything else is refused.",
-            "example": "create-file"
+            "type": "string"
           },
           "arguments": {
             "type": "object",
-            "additionalProperties": {},
-            "description": "What the capability is pointed at, in its own terms. Must satisfy the capability's `argumentsSchema`.",
-            "example": {
-              "directory": "inbox",
-              "filename": "a-thought.md"
-            }
+            "additionalProperties": {}
+          },
+          "folder": {
+            "type": "string",
+            "enum": [
+              "create",
+              "require",
+              "establish"
+            ]
+          },
+          "triggerTag": {
+            "type": "string"
+          },
+          "establishedAt": {
+            "type": "string"
+          },
+          "fired": {
+            "type": "object",
+            "properties": {
+              "records": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "lastAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "records"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "destination",
+          "capability",
+          "arguments",
+          "folder",
+          "fired"
+        ]
+      },
+      "CreateRoutingTemplateRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "destination": {
+            "type": "string",
+            "minLength": 1
+          },
+          "capability": {
+            "type": "string",
+            "minLength": 1
+          },
+          "arguments": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "folder": {
+            "type": "string",
+            "enum": [
+              "create",
+              "require",
+              "establish"
+            ]
+          },
+          "triggerTag": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "name",
+          "destination",
+          "capability",
+          "arguments"
+        ],
+        "additionalProperties": false
+      },
+      "RoutingTemplateReport": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "fits"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "stranded"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "destination-retired"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "destination-unusable"
+                ]
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "detail"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "capability-undeclared"
+                ]
+              },
+              "capability": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "capability"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "arguments-invalid"
+                ]
+              },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "keyword": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "keyword"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "kind",
+              "issues"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "folder-missing"
+                ]
+              },
+              "folder": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "folder"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "unreachable"
+                ]
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "detail"
+            ]
+          }
+        ]
+      },
+      "UpdateRoutingTemplateRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "destination": {
+            "type": "string",
+            "minLength": 1
+          },
+          "capability": {
+            "type": "string",
+            "minLength": 1
+          },
+          "arguments": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "folder": {
+            "type": "string",
+            "enum": [
+              "create",
+              "require",
+              "establish"
+            ]
+          },
+          "triggerTag": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "ResolvedRoutingTemplate": {
+        "type": "object",
+        "properties": {
+          "destination": {
+            "type": "string"
+          },
+          "capability": {
+            "type": "string"
+          },
+          "arguments": {
+            "type": "object",
+            "additionalProperties": {}
           }
         },
         "required": [
           "destination",
           "capability",
           "arguments"
-        ],
-        "additionalProperties": false
+        ]
+      },
+      "RouteRequest": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "destination": {
+                "type": "string",
+                "minLength": 1,
+                "description": "One of the ids `GET /v1/destinations` reports.",
+                "example": "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77"
+              },
+              "capability": {
+                "type": "string",
+                "minLength": 1,
+                "description": "One the destination declared. Anything else is refused.",
+                "example": "create-file"
+              },
+              "arguments": {
+                "type": "object",
+                "additionalProperties": {},
+                "description": "What the capability is pointed at, in its own terms. Must satisfy the capability's `argumentsSchema`.",
+                "example": {
+                  "directory": "inbox",
+                  "filename": "a-thought.md"
+                }
+              }
+            },
+            "required": [
+              "destination",
+              "capability",
+              "arguments"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "template": {
+                "type": "string",
+                "minLength": 1,
+                "description": "One of the ids `GET /v1/templates` reports.",
+                "example": "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77"
+              }
+            },
+            "required": [
+              "template"
+            ],
+            "additionalProperties": false
+          }
+        ]
       },
       "RoutingPreview": {
         "oneOf": [
@@ -2896,7 +3263,7 @@
     "/v1/items/{id}/tag": {
       "post": {
         "summary": "Tag an item",
-        "description": "Adds one tag. Classification does not move an item, so a tagged item keeps its place in the queue. A tag the item already carries is absorbed rather than refused, keeping the attribution and time it has: a tag's name is the whole of the request, unlike an archive's reason.",
+        "description": "Adds one tag. Classification does not move an item, so a tagged item keeps its place in the queue — unless the tag is a **trigger tag**, which applies the routing template that declared it and takes the item out of the queue by reserving a delivery. The reservation and the tag commit together, and the delivery is enqueued a configured window later rather than attempted here, so it can still be cancelled.\n\nFiring is on the tagging: a tag the item already carries is absorbed rather than refused — keeping the attribution and time it has, since a tag's name is the whole of the request — and absorbing one fires nothing.\n\nA trigger tag whose template cannot route is `422 trigger-refused` and **nothing is written, the tag included**: a tag that filed nothing is spent, because re-applying it would be absorbed. A destination that merely could not be reached is not that — the reservation is made and the delivery waits.",
         "parameters": [
           {
             "schema": {
@@ -3036,7 +3403,8 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "tag-invalid"
+                            "tag-invalid",
+                            "trigger-refused"
                           ]
                         }
                       },
@@ -3060,7 +3428,7 @@
     "/v1/items/{id}/untag": {
       "post": {
         "summary": "Remove a tag from an item",
-        "description": "Removes one tag. A tag the item does not carry is absorbed rather than refused, on the same terms as adding one it already has.",
+        "description": "Removes one tag. A tag the item does not carry is absorbed rather than refused, on the same terms as adding one it already has. Untagging does not unroute, and removing a trigger tag fires nothing.\n\nA **trigger tag that filed this item is refused** while what it filed still stands: `409 trigger-tag-held`, naming the template and the record. Putting such a tag back would file a second copy rather than undo the first, so the way back is to cancel the record — which removes the reservation and gives the tag with it.",
         "parameters": [
           {
             "schema": {
@@ -3139,6 +3507,37 @@
                           "enum": [
                             "no-such-item",
                             "item-purged"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The tag filed this item, and what it filed still stands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "trigger-tag-held"
                           ]
                         }
                       },
@@ -4548,10 +4947,571 @@
         }
       }
     },
+    "/v1/templates": {
+      "get": {
+        "summary": "Read the routing templates the pool holds",
+        "description": "A saved routing decision: a destination, a capability, the arguments as patterns, how its folder is treated, and the tag that applies it. A read of pool state, on `/v1/destinations`' terms — it answers at once, cannot fail, and asks the destination nothing. Not paginated: there are as many templates as a person made.",
+        "responses": {
+          "200": {
+            "description": "Every template the pool holds, oldest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutingTemplates"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Save a routing decision",
+        "description": "The arguments may hold patterns — `{{captured_at}}`, `{{item}}` — which the pool expands when a decision is made. A field or a format nobody named is refused **here**, when it is written, rather than by a delivery next week: what saves expands for every item there will ever be. A trigger tag must sit under `route/` and may be claimed by one template only.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoutingTemplateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created. `Location` names the template.",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "example": "/v1/templates/019a3f2c-..."
+                },
+                "required": true
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutingTemplate"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body could not be read as this request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "malformed-json",
+                            "malformed-envelope"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Another template already claims that trigger tag.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "trigger-tag-taken"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The body was not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unsupported-media-type"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The destination, the trigger tag or a pattern was refused. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unknown-destination",
+                            "trigger-tag-invalid",
+                            "trigger-tag-unreserved",
+                            "unknown-pattern-field",
+                            "unknown-pattern-format"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/templates/{id}/report": {
+      "get": {
+        "summary": "Ask whether a template's destination can still support it",
+        "description": "Split from the list on `/v1/destinations/{id}/description`'s terms: what a template *is* comes from the pool, and whether it still *works* is I/O that may hang. `fits` is the answer with nothing wrong. `stranded` is a destination that was deleted. `unreachable` is **cannot say**, which is not the same fact as anything else here — a sleeping vault is an ordinary condition and must not be drawn as an alarm. `folder-missing` is asked only where the template promised the folder would be there.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What it answered.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutingTemplateReport"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No template has that id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unknown-template"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/templates/{id}": {
+      "patch": {
+        "summary": "Change a routing template",
+        "description": "Every field a person supplied, in one operation. `triggerTag: null` takes the tag off, which absence cannot say. Editing the arguments clears the establishment, since a changed place is a different place; renaming moves nothing and keeps it.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRoutingTemplateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The template as it now stands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutingTemplate"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body could not be read as this request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "malformed-json",
+                            "malformed-envelope"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No template has that id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unknown-template"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Another template already claims that trigger tag.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "trigger-tag-taken"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The body was not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unsupported-media-type"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The destination, the trigger tag or a pattern was refused. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unknown-destination",
+                            "trigger-tag-invalid",
+                            "trigger-tag-unreserved",
+                            "unknown-pattern-field",
+                            "unknown-pattern-format"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a routing template",
+        "description": "Deleted rather than retired: a template names nothing that outlives it, and a record made from one carries what it routed as and keeps resolving without it.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Gone."
+          },
+          "404": {
+            "description": "No template has that id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unknown-template"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/items/{id}/route/resolve": {
+      "get": {
+        "summary": "Ask what a template would route this item as",
+        "description": "The destination, the capability and the **expanded** arguments, reserving nothing. A different question from `/route/preview`, which answers bytes: this answers where. It is what lets a composer draw the filename before the commit, from the one expander, rather than reimplementing it on the other side of the wire.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "One of the ids `GET /v1/templates` reports."
+            },
+            "required": true,
+            "description": "One of the ids `GET /v1/templates` reports.",
+            "name": "template",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What routing it now would record.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolvedRoutingTemplate"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No item has that id, or no template does.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "no-such-item",
+                            "item-purged",
+                            "unknown-template"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/items/{id}/route": {
       "post": {
-        "summary": "Route an item to a destination",
-        "description": "Records the decision and attempts the delivery once, inline. **The record answered may name a delivery that has not happened**: `state` is `pending` when the destination could not be reached, and a job carries it out later. A destination that was reached and refused writes nothing.",
+        "summary": "Route an item to a destination, or from a template",
+        "description": "Records the decision and attempts the delivery once, inline. **The record answered may name a delivery that has not happened**: `state` is `pending` when the destination could not be reached, and a job carries it out later. A destination that was reached and refused writes nothing.\n\nOne route, two bodies, because it is one decision either way: a destination with its capability and arguments, or a template that already holds all three. From a template the arguments are expanded first, so the record names a place a person can read.",
         "parameters": [
           {
             "schema": {

@@ -17,6 +17,7 @@ import {
   asCreateFileArguments,
   asCreateOrAppendFileArguments,
   capabilitiesFor,
+  folderModeOf,
   CREATE_FILE,
   CREATE_OR_APPEND_FILE,
   deriveFilename,
@@ -120,6 +121,12 @@ export function createFilesystemDestination(
           { realRoot: reached, renderers },
           delivery,
         );
+
+        const missing = await folderMissing(composed, delivery);
+        if (missing !== undefined) {
+          return { kind: "rejected", detail: `${missing} is missing` };
+        }
+
         await carryOut(composed, delivery, signal);
         // No url: a path on this host is nowhere a phone can follow.
         return {
@@ -256,6 +263,28 @@ function compose(wiring: Wiring, delivery: Delivery): Promise<Composition> {
     default:
       throw new Refused(`no capability named ${delivery.capability}`);
   }
+}
+
+/**
+ * The folder `require` asked for, where it is not there. Looked for here rather
+ * than at the decision: a template routes against vaults that are routinely
+ * asleep, so the only moment worth asking at is the write.
+ *
+ * `rejected`, so the delivery is abandoned on the first attempt and the item
+ * comes back to the queue with the decision handed back — a folder that moved
+ * will not come back on its own.
+ */
+async function folderMissing(
+  composed: Composition,
+  delivery: Delivery,
+): Promise<string | undefined> {
+  if (folderModeOf(delivery.arguments) !== "require") return undefined;
+
+  const folder = dirname(composed.note.relative);
+  const absolute = dirname(composed.note.absolute);
+  if (await exists(absolute)) return undefined;
+
+  return folder === "." ? "the destination's own folder" : `${folder}/`;
 }
 
 /**

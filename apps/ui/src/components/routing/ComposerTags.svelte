@@ -1,6 +1,8 @@
 <script lang="ts">
   import Labelled from "$components/primitives/composer/Labelled.svelte";
   import { client } from "$lib/client";
+  import { sayItFired } from "$lib/firing";
+  import { offerable, triggeredBy } from "$lib/templates";
 
   /**
    * The same classification the collapsed row makes, offered where routing is
@@ -18,7 +20,7 @@
   } = $props();
 
   const inUse = client.tags.inUse;
-  const offered = $derived($inUse.map((use) => use.name));
+  const offered = $derived(offerable($inUse.map((use) => use.name)));
 
   let taken = $state<readonly string[]>([]);
   /** Dropped here and not yet read back, which is what the pool still says it carries. */
@@ -52,6 +54,15 @@
         ),
   );
 
+  /**
+   * A tag that files the item somewhere is not an ordinary one, and taking it
+   * by accident is what the mark exists to stop. It says which template rather
+   * than only that there is one: `route/` is a namespace, not a decision.
+   */
+  function fires(name: string): string | undefined {
+    return triggeredBy(name)?.name;
+  }
+
   function toggle(name: string): void {
     if (applied.includes(name)) {
       taken = taken.filter((each) => each !== name);
@@ -61,7 +72,13 @@
     }
     dropped = dropped.filter((each) => each !== name);
     taken = [...taken, name];
-    void client.tag(item, name);
+    void tagged(name);
+  }
+
+  /** A trigger tag files the item, so what it did is said as soon as it is known. */
+  async function tagged(name: string): Promise<void> {
+    await client.tag(item, name);
+    await sayItFired(item, name);
   }
 
   function add(event: Event): void {
@@ -79,11 +96,16 @@
       type="button"
       aria-pressed={applied.includes(name)}
       onclick={() => toggle(name)}
+      aria-label={fires(name) === undefined
+        ? undefined
+        : `${name}, routes to ${fires(name)}`}
       class="font-mono hover:text-accent {applied.includes(name)
         ? 'text-ink'
         : 'text-ink-muted'}"
     >
-      {name}
+      {name}{#if fires(name) !== undefined}<span class="text-ink-muted"
+          >&nbsp;→&nbsp;{fires(name)}</span
+        >{/if}
     </button>
   {/each}
 

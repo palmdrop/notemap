@@ -7,6 +7,8 @@ import type {
   PoolIdentity,
   RoutingRecord,
   RoutingSummary,
+  RoutingTemplate,
+  RoutingTemplateId,
   TagUse,
 } from "#api/types";
 import type { PendingOperation } from "#outbox/operations";
@@ -39,6 +41,8 @@ export type ClientState = {
   readonly outbox: readonly PendingOperation[];
   /** In the order the pool answered, for a screen to read once it is out of reach. */
   readonly destinations: readonly Destination[];
+  /** The same, for templates: a saved decision is offered while the pool is away. */
+  readonly templates: readonly RoutingTemplate[];
   /** What completion offers, most used first, as the pool last counted it. */
   readonly tags: readonly TagUse[];
   /**
@@ -61,6 +65,7 @@ export function emptyState(): ClientState {
     queue: emptyPage("oldest-first"),
     outbox: [],
     destinations: [],
+    templates: [],
     tags: [],
     blobUrls: new Map(),
   };
@@ -103,6 +108,7 @@ export function forgotten(state: ClientState): ClientState {
     feed: emptyPage(state.feed.order),
     queue: emptyPage(state.queue.order),
     destinations: [],
+    templates: [],
     tags: [],
   };
 }
@@ -127,6 +133,27 @@ export function settledDestination(
       at === -1
         ? [...state.destinations, held]
         : state.destinations.with(at, held),
+  };
+}
+
+/** One template replaced where it stood, appended where it is new, or dropped. */
+export function settledTemplate(
+  state: ClientState,
+  id: RoutingTemplateId,
+  held: RoutingTemplate | undefined,
+): ClientState {
+  if (held === undefined) {
+    return {
+      ...state,
+      templates: state.templates.filter((each) => each.id !== id),
+    };
+  }
+
+  const at = state.templates.findIndex((each) => each.id === id);
+  return {
+    ...state,
+    templates:
+      at === -1 ? [...state.templates, held] : state.templates.with(at, held),
   };
 }
 

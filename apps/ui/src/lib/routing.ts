@@ -1,5 +1,6 @@
 import type { RoutingRecord, RoutingSummary } from "@notemap/client";
 
+import { OWN_ARGUMENTS } from "./arguments";
 import type { Raised } from "./notices.svelte";
 
 /**
@@ -41,6 +42,28 @@ export function whereItWent(
 }
 
 /**
+ * What an argument set says about where, without knowing the capability: every
+ * string it holds, in the order the destination declared them. A board column,
+ * a mailbox or a capability nobody has written yet reads as well as a path
+ * does, which is what keeps this from being a table of field names.
+ *
+ * Notemap's own arguments are left out. A folder mode is a condition about
+ * getting somewhere rather than the somewhere, and `research/2026.md · require`
+ * reads as though the note went to two places.
+ */
+export function placeNamed(
+  args: Readonly<Record<string, unknown>>,
+): string | undefined {
+  const said = Object.entries(args)
+    .filter(([name]) => !OWN_ARGUMENTS.includes(name))
+    .map(([, value]) => value)
+    .filter((value): value is string => typeof value === "string")
+    .filter((value) => value !== "");
+
+  return said.length === 0 ? undefined : said.join(" · ");
+}
+
+/**
  * Where a delivery put a copy, in the words a person could go and look with:
  * the pointer the destination handed back, or failing that the place the
  * decision named.
@@ -49,11 +72,7 @@ function placeIn(record: RoutingRecord): string | undefined {
   if (record.pointer !== undefined) return record.pointer;
   if (record.target.kind !== "destination") return undefined;
 
-  const said = Object.values(record.target.arguments)
-    .filter((value): value is string => typeof value === "string")
-    .filter((value) => value !== "");
-
-  return said.length === 0 ? undefined : said.join(" · ");
+  return placeNamed(record.target.arguments);
 }
 
 /**
@@ -62,6 +81,16 @@ function placeIn(record: RoutingRecord): string | undefined {
  */
 export function keyFor(record: string): string {
   return `record:${record}`;
+}
+
+/**
+ * One firing, said once. The shell raises this the moment it tags, because the
+ * window a fired template waits out is shorter than the log is polled and a
+ * cancel nobody can see yet is no cancel at all; the log's own entry then
+ * arrives under the same name and adds nothing.
+ */
+export function firedKey(record: string): string {
+  return `fired:${record}`;
 }
 
 /**

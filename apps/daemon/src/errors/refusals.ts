@@ -11,7 +11,9 @@ import type {
   OutputRefusal,
   RetireRefusal,
   RoutingRefusal,
+  RoutingTemplateRefusal,
   TagRefusal,
+  TemplateRoutingRefusal,
 } from "@notemap/core";
 
 import type { DaemonRefusal, ErrorBody } from "../types";
@@ -67,12 +69,33 @@ export const ARCHIVE_STATUS = {
   "not-archived": 409,
 } as const satisfies Record<ArchiveRefusal["kind"], number>;
 
-/** Both halves absorb a call for what the item already says, so nothing else declines. */
+/**
+ * Both halves absorb a call for what the item already says, so nothing else
+ * declines about the tag itself. `trigger-refused` is `422` by the table's own
+ * rule — the request was understood and declined — and the conflict it reports
+ * is with the template rather than with anything the caller sent.
+ */
 export const TAG_STATUS = {
   "no-such-item": 404,
   "item-purged": 404,
   "tag-invalid": 422,
+  "trigger-refused": 422,
+  "trigger-tag-held": 409,
 } as const satisfies Record<TagRefusal["kind"], number>;
+
+/**
+ * Untagging fires nothing, so `trigger-refused` cannot arise on that half and
+ * is not offered as if it could. It raises the one thing tagging cannot:
+ * `trigger-tag-held`, `409`, where the tag filed the item and what it filed
+ * still stands. That is a conflict with the item's state rather than with what
+ * was sent, and cancelling the record is the way through it.
+ */
+export const UNTAG_STATUS = {
+  "no-such-item": 404,
+  "item-purged": 404,
+  "tag-invalid": 422,
+  "trigger-tag-held": 409,
+} as const;
 
 /**
  * `source-item-changed` is `409` on capture's terms: the envelope's identity
@@ -135,6 +158,27 @@ export const DESTINATION_DELETION_STATUS = {
   "unknown-destination": 404,
   "destination-in-use": 409,
 } as const satisfies Record<DestinationDeletionRefusal["kind"], number>;
+
+/**
+ * Saving a template. `404` is the id itself; `409` is a trigger tag another
+ * template already claims, which is a conflict with what the pool holds; the
+ * rest are `422`, the request having been understood and declined.
+ */
+export const TEMPLATE_STATUS = {
+  "unknown-template": 404,
+  "unknown-destination": 422,
+  "trigger-tag-invalid": 422,
+  "trigger-tag-unreserved": 422,
+  "trigger-tag-taken": 409,
+  "unknown-pattern-field": 422,
+  "unknown-pattern-format": 422,
+} as const satisfies Record<RoutingTemplateRefusal["kind"], number>;
+
+/** Routing from one: delivery's own table, plus the template that is not there. */
+export const TEMPLATE_ROUTING_STATUS = {
+  ...DELIVERY_STATUS,
+  "unknown-template": 404,
+} as const satisfies Record<TemplateRoutingRefusal["kind"], number>;
 
 /** The two `409`s conflict with state the caller can already read — a record that has landed, and one somebody holds a lease on. */
 export const CANCEL_STATUS = {
@@ -253,6 +297,14 @@ export function destinationDeletionStatus(
   return DESTINATION_DELETION_STATUS[refusal.kind];
 }
 
+export function templateStatus(refusal: RoutingTemplateRefusal): number {
+  return TEMPLATE_STATUS[refusal.kind];
+}
+
+export function templateRoutingStatus(refusal: TemplateRoutingRefusal): number {
+  return TEMPLATE_ROUTING_STATUS[refusal.kind];
+}
+
 export function daemonStatus(refusal: DaemonRefusal): number {
   return DAEMON_STATUS[refusal.kind];
 }
@@ -272,7 +324,9 @@ export function errorBody(
     | OutputRefusal
     | RetireRefusal
     | RoutingRefusal
-    | TagRefusal,
+    | RoutingTemplateRefusal
+    | TagRefusal
+    | TemplateRoutingRefusal,
 ): ErrorBody {
   const { kind, ...facts } = refusal;
   return { error: { code: kind, ...facts } };

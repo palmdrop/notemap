@@ -1,14 +1,21 @@
 import type { Asset } from "./asset";
 import type { DestinationRecord } from "./destination";
 import type { Artifact } from "./enrichment";
-import type { DestinationId, ItemId, Timestamp } from "./ids";
+import type {
+  DestinationId,
+  ItemId,
+  RoutingTemplateId,
+  Timestamp,
+} from "./ids";
 import type { ItemRecord } from "./item";
 import type { RoutingRecord } from "./routing";
+import type { RoutingTemplateRecord } from "./template";
 
 /** A routing record is never one: it is part of the item's record rather than a unit. */
 export type MirrorSubject =
   | { readonly kind: "item"; readonly item: ItemId }
-  | { readonly kind: "destination"; readonly destination: DestinationId };
+  | { readonly kind: "destination"; readonly destination: DestinationId }
+  | { readonly kind: "template"; readonly template: RoutingTemplateId };
 
 /**
  * One item's complete durable state: everything a rebuild needs to restore it,
@@ -30,9 +37,9 @@ export type ItemMirrorRecord = {
 };
 
 /**
- * The mirror's one non-item unit, without which a rebuild would restore records
- * naming destinations it cannot produce. Retired ones are carried: that is
- * exactly the state of a destination records still name.
+ * A non-item unit, without which a rebuild would restore records naming
+ * destinations it cannot produce. Retired ones are carried: that is exactly the
+ * state of a destination records still name.
  */
 export type DestinationMirrorRecord = {
   readonly kind: "destination";
@@ -41,4 +48,17 @@ export type DestinationMirrorRecord = {
   readonly modifiedAt: Timestamp;
 };
 
-export type MirrorRecord = ItemMirrorRecord | DestinationMirrorRecord;
+/**
+ * The other non-item unit. A template is configuration a person set up and would
+ * otherwise recreate by hand, and a record may name one, so a rebuild restores
+ * templates before items.
+ */
+export type RoutingTemplateMirrorRecord = {
+  readonly kind: "template";
+  readonly template: RoutingTemplateRecord;
+  /** Compared by verify, never restored. */
+  readonly modifiedAt: Timestamp;
+};
+
+export type MirrorRecord =
+  ItemMirrorRecord | DestinationMirrorRecord | RoutingTemplateMirrorRecord;

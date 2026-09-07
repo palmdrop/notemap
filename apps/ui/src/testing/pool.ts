@@ -42,3 +42,12 @@ afterEach(() => client.close());
 export function asked(): string[] {
   return sentTo(transport).map(routeOf);
 }
+
+/** The JSON bodies it sent, for the assertions that are about what was said. */
+export async function sent(): Promise<unknown[]> {
+  return Promise.all(
+    sentTo(transport)
+      .filter((request) => request.body !== null)
+      .map((request) => request.clone().json()),
+  );
+}

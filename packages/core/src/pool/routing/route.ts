@@ -8,16 +8,24 @@ import type {
   ItemId,
   JobId,
   RoutingRecordId,
+  TagName,
   Timestamp,
 } from "#types/domain/ids";
 import type {
+  AppliedTemplate,
   DeliveryLanding,
   DeliveryOutcome,
   DeliveryRequest,
   RoutingRecord,
 } from "#types/domain/routing";
 import type { Result } from "#types/result";
-import { DELIVERY_FAILURE, destinationDetail } from "./delivery";
+import {
+  DELIVERY_FAILURE,
+  destinationDetail,
+  templateDetail,
+} from "./delivery";
+import { established } from "../templates/establish";
+import { releaseTriggerTag } from "../templates/fire";
 import { landingFor, type Landed } from "./output";
 import { prepare } from "./prepare";
 
@@ -32,6 +40,8 @@ export async function route(
   item: ItemId,
   request: DeliveryRequest,
   signal?: AbortSignal,
+  /** Where the decision came from a template, which the record carries. */
+  applied?: AppliedTemplate,
 ): Promise<Routed> {
   const prepared = await prepare(ports, item, request, signal);
   // A record minted here would carry arguments nobody validated.
@@ -49,6 +59,7 @@ export async function route(
     },
     state: "pending",
     at: ports.clock.now(),
+    ...(applied === undefined ? {} : { applied }),
   };
 
   let outcome: DeliveryOutcome;
@@ -157,6 +168,7 @@ async function trace(
       record: record.id,
       target: target.kind,
       ...destinationDetail(record),
+      ...templateDetail(record),
       ...(outcome.pointer === undefined ? {} : { pointer: outcome.pointer }),
       // The delivery landed and its evidence did not: the record has no field for that.
       ...(landed?.outputLost === undefined
@@ -180,6 +192,7 @@ function failed(
     detail: {
       record: record.id,
       ...destinationDetail(record),
+      ...templateDetail(record),
       attempt: 1,
       failure,
     },
@@ -199,6 +212,7 @@ async function deliver(
   };
 
   await tx.insertRoutingRecord(delivered);
+  await established(ports, tx, delivered, record.at);
   await enqueueMirrorWrite(
     ports,
     tx,
@@ -259,8 +273,10 @@ export function cancelDelivery(
       return refused({ kind: "delivery-in-flight", record: id });
     }
 
+    const at = ports.clock.now();
     await tx.removeRoutingRecord(id);
-    await appendCancelled(ports, tx, record.item, id, ports.clock.now());
+    const gave = await releaseTriggerTag(ports, tx, record, at, "person");
+    await appendCancelled(ports, tx, record, at, gave);
 
     return ok<void, CancelRefusal>(undefined);
   });
@@ -269,15 +285,22 @@ export function cancelDelivery(
 function appendCancelled(
   ports: PoolPorts,
   tx: PoolTx,
-  item: ItemId,
-  record: RoutingRecordId,
+  record: RoutingRecord,
   at: Timestamp,
+  /** The trigger tag that came off with it, where the reservation was a tag's. */
+  gave: TagName | undefined,
 ): Promise<void> {
   return recordAction(ports, tx, {
     kind: "delivery-cancelled",
-    subject: item,
+    subject: record.item,
     by: { kind: "person" },
     at,
-    detail: { record },
+    detail: {
+      record: record.id,
+      // Which template this called off, so a shell saying one is on its way
+      // knows this is the entry that ends it.
+      ...templateDetail(record),
+      ...(gave === undefined ? {} : { tag: gave }),
+    },
   });
 }

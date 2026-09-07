@@ -8,6 +8,13 @@ export type CaptureEnvelope = {
   readonly source: SourceId;
   readonly sourceItemId: string;
   readonly capturedAt: Timestamp;
+  /**
+   * Minutes east of UTC at the moment of capture, DST included — `120` for a
+   * Swedish summer evening. Optional, because a source-supplied capture has
+   * none to give and neither does anything that is not a browser; where it is
+   * absent the host's zone answers instead.
+   */
+  readonly utcOffset?: number;
   readonly payload: Payload;
   readonly tags?: readonly TagName[];
 };

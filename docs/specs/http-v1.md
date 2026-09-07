@@ -2,8 +2,23 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one and health are settled; the rest is stub
-**Last updated**: 2026-09-04
+**Last updated**: 2026-09-07
 **Shipped**:
+
+- 2026-09-07 — **Routing templates on the wire, and a tag that applies one.** `GET`, `POST`,
+  `PATCH` and `DELETE` over `/v1/templates`, with `GET /v1/templates/{id}/report` as the live read
+  a settings page asks per row. `POST /v1/items/{id}/route` and `/route/preview` take a **template**
+  in place of a destination, a capability and arguments — one route, two bodies, because it is one
+  decision either way — and `GET /v1/items/{id}/route/resolve` answers what a template would route
+  an item as while reserving nothing. `POST /v1/items/{id}/tag` may now apply a template, answering
+  `422 trigger-refused` where the template is stale, and `/untag` may now refuse one:
+  `409 trigger-tag-held`, where the tag filed the item and what it filed still stands. A routing
+  record says which template it came from and whether the tag applied it.
+  ([plan](../plans/routing-templates.md),
+  [ADR 34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md),
+  [35](../adr/0035-a-templates-arguments-are-patterns-expanded-when-the-decision-is-made.md),
+  [36](../adr/0036-a-folder-is-created-required-or-established-once.md),
+  [37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md))
 
 - 2026-09-04 — **What a delivery produced, and what one would produce.** A routing record now says
   whether it kept an output, what those bytes are and what the destination could not carry, with
@@ -249,6 +264,12 @@ been, carried by every read that answers items.
 
 Settled (2026-08-25, amended 2026-08-27): `GET /v1/health` — that the daemon is up, which pool it
 is serving, and its own version.
+
+Settled (2026-09-07): `GET`, `POST`, `PATCH` and `DELETE` over `/v1/templates`,
+`GET /v1/templates/{id}/report`, `GET /v1/items/{id}/route/resolve`, and the second body shape
+`POST /v1/items/{id}/route` and `/route/preview` accept — a template in place of a destination, a
+capability and arguments. `POST /v1/items/{id}/tag` may now apply a template, and may refuse
+because of one.
 
 Still stub, and unwritten below: suggestions and their decisions, artifacts and corrections, purge
 and tombstones, range requests over asset content, the wire form of sync delta reads, and
@@ -586,6 +607,29 @@ Both answer `200 OK` with the `Item` as it now stands.
 - The body is required and strict: no `tag` is `400 malformed-envelope`, and so is a key the route
   does not know. The route does not police the tag itself: core trims it, and one that trims to
   nothing is `422 tag-invalid` carrying what was sent.
+- **A tag may apply a routing template** (added 2026-09-07). A tag under `route/` that some template
+  declared as its trigger tag applies that template: the answer is still the `Item`, and the item
+  now holds a **pending** routing record it did not before. The delivery is not attempted here —
+  it is enqueued a configured window later — so the call returns as fast as any other tag, and a
+  client that wants to know what happened reads the item's records or the action log. This is the
+  route a client's outbox drains a tag onto, which is what makes an offline tag fire when it
+  arrives rather than needing anything to look for one afterwards.
+- **A trigger tag whose template cannot route is `422 trigger-refused`**, carrying the `template`
+  and a `detail` saying why, and **nothing is written — the tag included**. The template is stale:
+  its destination was deleted or retired, its capability is no longer declared, or its expanded
+  arguments no longer fit. Landing the tag would spend it, because tagging is idempotent and the
+  same tag applied after the repair would be absorbed
+  ([core.md](core.md#classification)). A destination that could not be *reached* is not this case
+  and does not refuse: the reservation is made and the delivery waits.
+- **`/untag` raises none of that, and one thing tagging cannot.** Removing a tag fires nothing and
+  unroutes nothing, so `trigger-refused` is absent from its refusals rather than listed and
+  unreachable. But a **trigger tag that filed this item is refused while what it filed still
+  stands**: `409 trigger-tag-held`, naming the `template` and the `record`. The tag is one keystroke
+  away from every ordinary tag in the same chooser, and taking it off and putting it back would file
+  a **second copy** rather than undo the first, tagging being idempotent only about the tag.
+  Cancelling the record is the way back, and it gives the tag with it
+  ([core.md](core.md#classification)). A tag whose record was cancelled or abandoned is live again,
+  because there is then nothing it filed that stands.
 
 ### The tags in use
 
@@ -876,6 +920,103 @@ level up: the daemon publishes what a kind needs and holds no opinion about how 
   daemon is actually running, are questions only the daemon can answer.
 - Routing to a retired or unusable destination is refused, with which of the two it was.
 
+### Routing templates
+
+`GET /v1/templates` — the templates the pool holds. A read of pool state on `/v1/destinations`'
+terms: it answers at once, cannot fail, and asks no destination anything.
+
+```json
+{
+  "values": [
+    {
+      "id": "019a41b8-0e6e-7c31-9f3a-6b1f2d5c4a91",
+      "name": "Research links",
+      "destination": "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
+      "capability": "create-or-append-file",
+      "arguments": { "path": "research/{{captured_at}}.md" },
+      "folder": "establish",
+      "triggerTag": "route/research",
+      "establishedAt": "2026-09-06T08:12:00.000Z",
+      "fired": { "records": 14, "lastAt": "2026-09-07T07:40:11.000Z" }
+    }
+  ]
+}
+```
+
+- **The arguments come back as they were written**, patterns and all. What a pattern expands to
+  depends on the item, so there is no item to expand against here — `/route/resolve` is the route
+  that answers that, and a client that expanded them itself would be a second expander drifting
+  from core's ([ADR 35](../adr/0035-a-templates-arguments-are-patterns-expanded-when-the-decision-is-made.md)).
+- **`fired` is derived, not stored** — how many records name this template and when the last one
+  did — on the terms `routing` on an `Item` is already derived. It rides on the row because a
+  settings page draws a list and cannot ask per row.
+- **Not paginated**: there are as many templates as a person made.
+
+`POST /v1/templates` — save a decision. `201 Created` with the template and a `Location` naming it.
+
+```json
+{
+  "name": "Research links",
+  "destination": "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
+  "capability": "create-or-append-file",
+  "arguments": { "path": "research/{{captured_at}}.md" },
+  "folder": "establish",
+  "triggerTag": "route/research"
+}
+```
+
+- **A pattern nobody named is refused here, not next week.** `422 unknown-pattern-field` carries
+  the field, and `422 unknown-pattern-format` the format; both are checked when the template is
+  written, while the person is still looking at it. What saves expands for every item there will
+  ever be, so the write is the only place this can be refused.
+- **`folder` defaults to `create`**, which is what every routing decision did before this existed.
+- **A trigger tag must sit under `route/`** — `422 trigger-tag-unreserved` otherwise — **and may be
+  claimed by one template only**: a second claim is `409 trigger-tag-taken`, naming the template
+  that holds it, because it is a conflict with something the pool already holds. One that trims to
+  nothing is `422 trigger-tag-invalid`.
+- A destination the pool does not hold is `422 unknown-destination`: the id is a fact inside a
+  request about a template, not what the request is about.
+
+`PATCH /v1/templates/{id}` — every field a person supplied, in one operation. `200 OK` with the
+template as it now stands.
+
+- **`triggerTag: null` takes the tag off**, which an absent key cannot say. Absent leaves it as it
+  stands, which is what every other field's absence means.
+- **Editing the arguments clears the establishment**, since a changed place is a different place
+  and has not been established. Renaming moves nothing and keeps it
+  ([ADR 36](../adr/0036-a-folder-is-created-required-or-established-once.md)).
+- The refusals are `POST`'s, plus `404 unknown-template`.
+
+`DELETE /v1/templates/{id}` — `204 No Content`.
+
+- **Deleted rather than retired**, which is the split from a destination. A destination is retired
+  because a routing record names it forever; a template names nothing that outlives it, and a
+  record made from one carries what it routed *as* and goes on resolving without it.
+- Nothing is refused for a template that has fired: what it made are records, and they are intact.
+
+`GET /v1/templates/{id}/report` — whether that template's destination can still support it, asked
+now.
+
+```json
+{ "kind": "fits" }
+```
+
+- **Split from the list on `/v1/destinations/{id}/description`'s terms.** What a template *is*
+  comes from the pool and answers instantly; whether it still *works* is I/O that may hang. Folding
+  it in would make a settings page stall on the first template whose vault is asleep.
+- `kind` is `fits`, `stranded`, `destination-retired`, `destination-unusable`,
+  `capability-undeclared`, `arguments-invalid`, `folder-missing` or `unreachable`, and every one of
+  them is a `200`. This is a report, not a refusal: none of them stops the template existing.
+- **`unreachable` means *cannot say*, and is not an alarm.** A sleeping vault is an ordinary
+  condition, and a surface that accents it is telling a person to fix something that is not broken.
+- **`folder-missing` is asked only where the template promised the folder would be there** — a
+  `require`, or an `establish` that has already established — **and only where the capability says
+  which of its fields is a path**, which it does in its own arguments schema. It checks the
+  **literal prefix** of that field, the part with no pattern in it, which is exactly the part that
+  moves when somebody renames a folder. A destination with no paths at all answers `fits`: there is
+  nothing above its places to be missing.
+- `404 unknown-template` for an id no template has: here the id is what the request is about.
+
 ### Routing an item to a destination
 
 `POST /v1/items/{id}/route` — the decision that this item belongs at that destination.
@@ -938,6 +1079,62 @@ level up: the daemon publishes what a kind needs and holds no opinion about how 
   capability's schema are `422 arguments-invalid`, carrying `issues` in the same shape
   `payload-invalid` uses. None of them touches the destination.
 - An id no item has is `404 no-such-item`.
+
+**One route, two bodies** (added 2026-09-07). The same route accepts a **template** in place of the
+three fields:
+
+```json
+{ "template": "019a41b8-0e6e-7c31-9f3a-6b1f2d5c4a91" }
+```
+
+- **Because it is one decision either way.** A second route would be a second path to the same
+  effect, with the same refusals and the same record, differing only in who wrote down the
+  arguments. The record it answers is the same shape, carrying the **expanded** arguments and
+  naming the template it came from — in `applied`, beside the template, whether the trigger tag
+  applied it:
+
+  ```json
+  "applied": { "template": "019a41b8-0e6e-7c31-9f3a-6b1f2d5c4a91", "firedByTag": true }
+  ```
+
+  Absent where a person made the decision by hand. A decision a person made with the item in front
+  of them and one a tag made are the same delivery and not the same act: only the second gives its
+  tag back where nothing landed, and only the second is what a shell draws a cancel for.
+- **Exactly one of the two shapes**, and a body carrying both is `400 malformed-envelope`: a
+  request that says two things about where this item goes has not made a decision.
+- A template the pool does not hold is `404 unknown-template` — the template is what this shape of
+  the request is *about*. Everything else refuses as the destination shape refuses, because
+  applying a template lands in the same path.
+- **This shape keeps the inline attempt**, unlike a template fired by its tag. A person pressed
+  `route` with the item in front of them, and the window a fired template waits out is bought for
+  the gesture that has no review in it
+  ([ADR 37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md)).
+- `/route/preview` takes both shapes too, on the same terms: previewing a template costs nothing
+  extra, and a preview that could not take the body a route takes would be answering a different
+  question.
+
+### Asking what a template would route an item as
+
+`GET /v1/items/{id}/route/resolve?template={id}` — the destination, the capability and the
+**expanded** arguments, reserving nothing.
+
+```json
+{
+  "destination": "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
+  "capability": "create-or-append-file",
+  "arguments": { "path": "research/2026-09-07.md" }
+}
+```
+
+- **A different question from `/route/preview`**, which answers bytes. This answers *where*. Both
+  are worth asking and neither implies the other: a filename is drawn before a person commits, and
+  what the note will look like is a second thing they may or may not want to see.
+- **A `GET`, unlike preview**, because the question carries no body — an item and a template are
+  two ids — and because it reaches no destination and changes nothing.
+- **It is the one expander.** Drawing the expanded place on the other side of the wire would mean a
+  second implementation of the pattern table, and two implementations of a table drift
+  ([ADR 35](../adr/0035-a-templates-arguments-are-patterns-expanded-when-the-decision-is-made.md)).
+- `404` for an id no item has and for one no template has.
 
 ### Asking what would be written
 
@@ -1230,6 +1427,7 @@ Every error, from core or from the daemon, is one shape:
 | `404` | `blob-missing` | `blob` | core |
 | `404` | `no-such-record` | `record` | core |
 | `404` | `unknown-destination` | `destination` | core (on `/v1/destinations/{id}`) |
+| `404` | `unknown-template` | `template` | core |
 | `405` | `method-not-allowed` | `method`, `allow` | daemon (+ `Allow` header) |
 | `409` | `asset-id-conflict` | `asset` | core |
 | `409` | `capture-id-conflict` | `existing` | core |
@@ -1243,6 +1441,7 @@ Every error, from core or from the daemon, is one shape:
 | `409` | `destination-in-use` | `destination` | core |
 | `409` | `destination-retired` | `destination` | core |
 | `409` | `destination-unusable` | `destination`, `detail` | core |
+| `409` | `trigger-tag-taken` | `tag`, `template` | core |
 | `413` | `asset-too-large` | `max` | daemon |
 | `415` | `unsupported-media-type` | `contentType` | daemon |
 | `422` | `limit-too-large` | `limit`, `max` | daemon |
@@ -1253,6 +1452,11 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `bad-digest` | `digest` | daemon |
 | `422` | `digest-mismatch` | `expected`, `actual` | daemon |
 | `422` | `tag-invalid` | `tag` | core |
+| `422` | `trigger-refused` | `tag`, `template`, `detail` | core (tagging an item) |
+| `422` | `trigger-tag-invalid` | `tag` | core |
+| `422` | `trigger-tag-unreserved` | `tag` | core |
+| `422` | `unknown-pattern-field` | `field` | core |
+| `422` | `unknown-pattern-format` | `field`, `format` | core |
 | `422` | `unknown-payload-type` | `type` | core |
 | `422` | `payload-invalid` | `issues` | core |
 | `422` | `payload-type-changed` | `from` | core |
@@ -1283,7 +1487,13 @@ throw into a domain-looking refusal teaches clients to trust a fiction.
 `unknown-destination` is the one code the table carries twice, and the rule says which is which:
 where the id is what the request is *about* — every `/v1/destinations/{id}` route — it is `404`,
 the answer a missing item gets. Where it is a fact *inside* a request about something else, as it
-is when routing an item, the request was understood and declined, so it is `422`.
+is when routing an item or saving a template, the request was understood and declined, so it is
+`422`.
+
+`unknown-template` is not the same case, and is `404` everywhere it appears: on
+`/v1/templates/{id}` the id is what the request is about, and on `/v1/items/{id}/route` and
+`/route/resolve` the template *is* the whole of what the request says — a body naming one and
+nothing else has no other subject for the refusal to be a fact inside.
 
 `413 asset-too-large` is the single deliberate exception, for the reason given above: a size
 limit is a fact the transport layer acts on, and hiding it inside `422` would cost a client the
@@ -1458,6 +1668,27 @@ remains the interop surface; `/docs` is a convenience over it.
   know is `400 malformed-envelope`.
 - `GET /v1/items/{id}/routing` answers an item's records, and `404 no-such-item` for an id the
   pool does not hold.
+- `POST /v1/templates` answers `201` with a `Location`, and the arguments come back unexpanded.
+  A pattern naming a field or a format nobody declared is `422` at that moment, not at a delivery.
+- A second template claiming a trigger tag is `409 trigger-tag-taken`; one outside `route/` is
+  `422 trigger-tag-unreserved`.
+- `PATCH /v1/templates/{id}` with `triggerTag: null` answers a template with no trigger tag; with
+  the key absent, one that still has it.
+- `GET /v1/templates/{id}/report` answers `200` for every one of its kinds, including
+  `unreachable`, and `404 unknown-template` for an id no template has.
+- `POST /v1/items/{id}/route` takes a body naming only a template and answers a record carrying the
+  expanded arguments and naming that template; one naming both a template and a destination is
+  `400 malformed-envelope`; one naming a template the pool does not hold is `404 unknown-template`.
+- `GET /v1/items/{id}/route/resolve` answers what `/route` would record and reserves nothing: the
+  item is still in the queue and holds no record afterwards.
+- `POST /v1/items/{id}/tag` with a trigger tag answers the item carrying it and leaves the item
+  holding one pending record, with nothing yet handed to the destination.
+- The same call where the template cannot route is `422 trigger-refused`, and afterwards the item
+  carries neither the tag nor a record. `POST /v1/items/{id}/untag` can never answer that code.
+- `POST /v1/items/{id}/untag` naming a trigger tag whose record still stands is
+  `409 trigger-tag-held`, and the item still carries the tag; the same call after the record is
+  cancelled succeeds. Tagging with a trigger tag whose template has already filed this item answers
+  `200` with the tag applied and leaves the item holding the one record it had.
 - `POST /v1/items/{id}/tag` answers the item carrying the tag, attributed to an anonymous person; a
   tag with a slash in it round-trips; a tag that trims to nothing is `422 tag-invalid`; and tagging
   or untagging for what the item already says answers `200` with the item unchanged rather than a

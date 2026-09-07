@@ -49,9 +49,10 @@
 - [ ] A schema field's **default** is not drawn. Titles, descriptions and dynamic candidates landed
   2026-08-31; a `default` an adapter declares is still ignored by the composer, which starts every
   field empty. Split off the routing-arguments line above rather than left ticked inside it.
-- [ ] Routing templates - changing or formatting an item on routing, for example, making an item a piece of a TODO list
-  - AI templates, where a local model formats an entry that may or may not be properly formatted
-  - Shape settled in [ADR 19](adr/0019-a-destination-converts-and-the-delivery-records-what-went.md): the destination converts a copy, the work happens inside the delivery, and the bytes that landed come back to be stored on the routing record. Open: whether a template is configured in the delivery's arguments or in destination config, and whether a template is itself a thing a person edits.
+- [ ] Conversion - changing or formatting an item on routing, for example, making an item a piece of a TODO list. Called conversion rather than a routing template since 2026-09-05: a **routing template** is now a saved routing decision, and the two were sharing a word.
+  - AI conversions, where a local model formats an entry that may or may not be properly formatted
+  - Shape settled in [ADR 19](adr/0019-a-destination-converts-and-the-delivery-records-what-went.md): the destination converts a copy, the work happens inside the delivery, and the bytes that landed come back to be stored on the routing record. Open: whether a conversion is configured in the delivery's arguments or in destination config, and whether one is itself a thing a person edits.
+- [ ] A name that is taken - a capability that creates a file refuses a name that already exists, which is right and is not the whole answer. A template filing daily notes as `{{captured_at}}.md` collides on the second capture of the day: nothing is written, nothing is filed, and the item comes back to the queue. Raised 2026-09-07 from using the routing templates slice. Two answers, and they are not exclusive: `create-or-append-file` is what a daily note wants and the template that collided was pointed at the wrong capability, which the settings page could say; and a **collision policy** on the file capabilities — refuse, or append a number — which is an argument the adapters would declare and core would never interpret. The second wants its own slice and probably an ADR: it adds a word to an adapter's argument vocabulary, and it is useful to a decision made by hand as much as to a template.
 - [ ] Routing edits - being able to freely edit an item as it is routed. Settled: **amend, then route**, two operations that already exist - a frontend can make it one smooth gesture with no new architecture. Rewriting the capture _because of where it is going_ is a dead end, and ADR 19 records why so it does not get proposed again. Open no longer, as of 2026-08-24: the amendment stands, because it was an amendment of an
   unprocessed item and the routing that sealed it never landed. Cancelling the reservation removes
   it, so the item is unprocessed again and editable in place again — unless something was revised
@@ -61,12 +62,31 @@
 - [ ] Routing auto-processing - routing a note to a specific destination converts it to a specified format. A todo list, a prose paragraph, a markdown image link, whatever. The format could be a templating language, or natural language, with an LLM in the loop, or a mix. ADR 19 answers _where the work happens_, and the **preview** half is now closed: the destination port has `preview`, the composer asks for one on demand, and a delivery records the output it produced so what went is readable after the fact
   ([delivery-output-and-preview](plans/delivery-output-and-preview.md),
   [ADR 33](adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md)). What is
-  left is the conversion itself — templates, how they are configured, and what a model in the loop
+  left is the conversion itself — how a conversion is configured, and what a model in the loop
   costs — and it has the seam it will use: a kind converts inside `deliver`, answers the same
   output from `preview`, and a conversion that loses something says so in a note nobody parses.
   The repeatability worry this line carried is answered rather than solved: a preview is
   **indicative**, so a non-deterministic converter is allowed and the shell says what a preview is.
-- [ ] Routing rules - core.md has carried "how rules are expressed, how fan-out to several destinations is presented, and whether a rule may ever be trusted to fire unattended" since 2026-08-02. Capture templates that auto-route are the first thing to touch it: choosing a template _is_ a person's decision to route, made early, which is how it survives "a rule never delivers on its own" - but that sentence wants writing deliberately rather than discovering later.
+- [ ] Routing rules - core.md has carried "how rules are expressed, how fan-out to several destinations is presented, and whether a rule may ever be trusted to fire unattended" since 2026-08-02. Half answered on 2026-09-05 by [ADR 34](adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md) and the [routing-templates plan](plans/routing-templates.md): a **routing template** is what a rule would have had for a right-hand side, a **trigger tag** applies one, and the sentence about a rule never delivering on its own was rewritten deliberately rather than discovered later. Still open, and only reachable once conditions exist: the rule table itself, fan-out to several destinations from one gesture, and precedence between rules.
+  - Shipped 2026-09-07, and the half that is closed is closed in code as well as on paper: templates
+    are pool state, a `route/` tag applies one, a fired one waits out a configured window so the
+    corner's cancel is real, and a reservation a tag made that never delivered gives the tag back.
+    What the three open parts now cost is clearer for having built the rest. **Fan-out** is the
+    expensive one: one gesture reaching two destinations makes *cancel* a question about which of
+    them, and [ADR 37](adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md)
+    answers only the single-destination case. **Conditions** need a place to be written and a
+    vocabulary to be written in, neither of which exists. **Precedence** is only a question once two
+    things can match, so it follows conditions rather than standing beside them.
+- [ ] Whether a template may restrict who can fire it. A **source-supplied** trigger tag fires like
+  any other, deliberately ([ADR 34](adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md)):
+  an inbox deciding where its own captures go is the point. What it costs is that a system outside
+  notemap can cause a delivery. If that ever bites, the answer is a per-template restriction rather
+  than a different design — noted here so it is reached for rather than reinvented.
+- [ ] Whether the trigger window wants to be per template rather than per host. It is one number in
+  `config.toml` today, which is right while every template files to the same laptop; a template
+  whose destination is a mounted vault and one whose destination is a sleeping server want
+  different windows for the same reason they want different retries. Not worth splitting until
+  somebody has lived with one number and found it wrong in both directions.
 - [ ] Reconsider where revisions *appear*. Half-answered on 2026-08-24: a revision now carries its
   own capture time, so it sorts at the moment it was written and no longer ties with what it came
   from — which is what removed the chain columns from the feed key. Showing it beside its ancestor
@@ -79,6 +99,10 @@
   reach anything, so a mirror holding a stale or missing destination record has nothing that would
   notice. Whoever builds them builds this at the same time.
 - [ ] Consider capture templates: on capture time, I select a capture format which auto-tags and auto-routes (optionally) the finished capture when it is committed.
+  - Cheaper than it was, as of 2026-09-07: the auto-routing half is done. A capture that arrives
+    carrying a **trigger tag** fires its template, so a capture template that auto-tags gets the
+    routing for free and needs to decide nothing about delivery. What is left is the capture format
+    itself — what a person picks at capture time and what it fills in — which is a shell question.
 - [ ] Certain feed views allow me to view all revisions, all entries, open to see
 - [ ] Consider redis for jobs in the future. Move the jobs managed out of the store port, let it be its own. Could be a piece of the store db, could be external. (Feel like I reimplement a lot of tried and tested things here.
   - same for pool/work, all the jobs management. Is there existing tools we could use for this instead?

@@ -14,6 +14,7 @@ export type DestinationKindName = Branded<string, "DestinationKindName">;
 export type CapabilityName = Branded<string, "CapabilityName">;
 export type PayloadTypeName = Branded<string, "PayloadTypeName">;
 export type RoutingRecordId = Branded<string, "RoutingRecordId">;
+export type RoutingTemplateId = Branded<string, "RoutingTemplateId">;
 export type JobId = Branded<string, "JobId">;
 export type LeaseId = Branded<string, "LeaseId">;
 export type ActionId = Branded<string, "ActionId">;
@@ -39,6 +40,7 @@ export type MintableId =
   | SuggestionId
   | ArtifactId
   | RoutingRecordId
+  | RoutingTemplateId
   | JobId
   | LeaseId
   | ActionId;

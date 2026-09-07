@@ -5,8 +5,10 @@
     type DestinationDescription,
     type Item,
     type RememberedPlace,
+    type ResolvedRoutingTemplate,
     type RoutingPreview,
     type RoutingRecord,
+    type RoutingTemplate,
   } from "@notemap/client";
 
   import ComposerTags from "$components/routing/ComposerTags.svelte";
@@ -42,6 +44,7 @@
     PREVIEW_NOT_TEXT,
     PREVIEW_UNREACHABLE,
   } from "$lib/said";
+  import { OWN_ARGUMENTS, sameArguments } from "$lib/arguments";
   import { fieldsOf, valuesFrom } from "$lib/schema-form";
 
   const CREATE_FILE = "create-file";
@@ -72,6 +75,7 @@
   } = $props();
 
   const destinations = client.destinations.all;
+  const templates = client.templates.all;
   const pool = reachable();
 
   const offline = $derived(!pool.yes);
@@ -88,6 +92,11 @@
   /** What `manual` is told beyond the fact itself. */
   let went = $state("");
   let copied = $state(false);
+
+  /** The template a decision started from, which the chrome names and the commit may carry. */
+  let applied = $state<RoutingTemplate | undefined>(undefined);
+  /** What it resolved to, so an untouched decision commits as the template rather than as a copy of it. */
+  let resolved = $state<ResolvedRoutingTemplate | undefined>(undefined);
 
   let chosen = $state<string | undefined>(undefined);
   let described = $state<DestinationDescription | undefined>(undefined);
@@ -155,11 +164,19 @@
    * being made — the heading an append would use being nothing to a note that
    * does not exist yet. An absent forecast is not knowing, and not knowing keeps
    * the field.
+   *
+   * Notemap's own arguments are not among them. A folder mode is a template's
+   * promise about a place it files again and again; a decision made here is
+   * made with the item in front of you, and the line already draws which folders
+   * are not there yet. What a taken template resolved to still goes as it
+   * resolved — this leaves it out of the form, not out of the request.
    */
   const beside = $derived(
     forecast === "create"
       ? []
-      : fields.filter((one) => one.name !== LINE_FIELD),
+      : fields.filter(
+          (one) => one.name !== LINE_FIELD && !OWN_ARGUMENTS.includes(one.name),
+        ),
   );
 
   /**
@@ -168,6 +185,7 @@
    */
   const chrome = $derived.by(() => {
     if (hand !== undefined) return `process · ${hand}`;
+    if (applied !== undefined) return `process · ${applied.name}`;
     if (chosen === undefined) return "process";
     const name = $destinations.find((one) => one.id === chosen)?.name ?? "";
     return `process · ${name}`;
@@ -176,6 +194,8 @@
   /** A wrong choice is not a reason to close the composer. */
   function release(): void {
     hand = undefined;
+    applied = undefined;
+    resolved = undefined;
     went = "";
     copied = false;
     chosen = undefined;
@@ -248,6 +268,10 @@
         said = saidBy(error);
       }
     })();
+
+    // Separately, and quietly: a pool that cannot answer for templates is a
+    // band that stays empty, not a composer that cannot route to a destination.
+    void client.templates.load().catch(() => undefined);
   });
 
   // The pool answers these, so they are asked once the destination is settled
@@ -282,6 +306,31 @@
     };
   });
 
+  /**
+   * An untouched decision commits as the template, so the record names it and
+   * an `establish` template learns that its folder is there. Corrected, it is a
+   * decision of the person's own and goes as one — the template was where it
+   * started, not what it stayed.
+   */
+  function requestFor(beside?: string) {
+    const wanted = valuesFrom(fields, args);
+    const untouched =
+      beside === undefined &&
+      applied !== undefined &&
+      resolved !== undefined &&
+      capability === resolved.capability &&
+      sameArguments(wanted, resolved.arguments);
+
+    if (untouched) return { template: (applied as RoutingTemplate).id };
+
+    return {
+      destination: chosen as string,
+      ...(beside === undefined
+        ? { capability: capability as string, arguments: wanted }
+        : freshFile(beside)),
+    };
+  }
+
   function freshFile(beside: string): {
     capability: string;
     arguments: Record<string, unknown>;
@@ -300,19 +349,39 @@
   }
 
   /**
-   * Why each entry cannot be taken, destinations and the two by hand alike.
-   * The line reads it to refuse a name, and the options draw it beside one.
+   * Why each entry cannot be taken, templates, destinations and the two by hand
+   * alike. The line reads it to refuse a name, and the options draw it beside
+   * one. Never a pattern: expansion is statically total, so a template that
+   * saved applies to any item.
    */
   const unusable = $derived.by(() => {
     const all: Record<string, string | undefined> = {};
     for (const one of $destinations) {
       all[one.id] = reasonFor(one.id, one.retired === true);
     }
+    for (const one of $templates) {
+      all[one.id] = templateReason(one);
+    }
     for (const one of HAND) {
       all[one.id] = refusalFor(one.id as ByHand, item, offline);
     }
     return all;
   });
+
+  /**
+   * What the cache alone can say. What only the destination can — a capability
+   * it no longer declares — is learnt by taking one, as it is for a
+   * destination, and lands in `refusing`.
+   */
+  function templateReason(one: RoutingTemplate): string | undefined {
+    const destination = $destinations.find(
+      (each) => each.id === one.destination,
+    );
+    if (destination === undefined) return "its destination was deleted";
+    if (destination.retired === true) return "its destination is retired";
+    if (offline) return "pool out of reach";
+    return refusing[one.id];
+  }
 
   /** The note takes the caret the way the place line does when a place is taken. */
   let note = $state<HTMLInputElement | undefined>(undefined);
@@ -387,6 +456,44 @@
     }
   }
 
+  /** The typed line knows only names and ids; which band one came from is read here. */
+  async function taken(id: string) {
+    const template = $templates.find((one) => one.id === id);
+    if (template !== undefined) {
+      await take(template);
+      return;
+    }
+    await choose(id);
+  }
+
+  /**
+   * A template is where the decision starts, not a form that refuses to be
+   * corrected: what it resolved to is drawn on the line and stays editable.
+   */
+  async function take(one: RoutingTemplate) {
+    release();
+    applied = one;
+    said = "";
+
+    try {
+      const answer = await client.templates.resolve(item.id, one.id);
+      resolved = answer;
+      await choose(answer.destination);
+      // `choose` clears the arguments, so what it resolved to is set after it.
+      capability = answer.capability;
+      args = Object.fromEntries(
+        Object.entries(answer.arguments).map(([key, value]) => [
+          key,
+          typeof value === "string" ? value : String(value),
+        ]),
+      );
+    } catch (error) {
+      refusing = { ...refusing, [one.id]: saidBy(error) };
+      applied = undefined;
+      resolved = undefined;
+    }
+  }
+
   /** I/O that may hang on an unmounted drive, so it happens for the chosen one alone. */
   async function choose(id: string) {
     if (id === DISCARD) {
@@ -435,12 +542,7 @@
     busy = true;
     said = "routing…";
     try {
-      const record = await client.routing.route(item.id, {
-        destination: chosen,
-        ...(beside === undefined
-          ? { capability, arguments: valuesFrom(fields, args) }
-          : freshFile(beside)),
-      });
+      const record = await client.routing.route(item.id, requestFor(beside));
       onrouted?.(record);
       onclose();
     } catch (error) {
@@ -519,11 +621,27 @@
         <Group name="where">
           {#if chosen === undefined && hand === undefined}
             <DestinationLine
-              destinations={[...$destinations, ...HAND]}
+              destinations={[...$templates, ...$destinations, ...HAND]}
               {unusable}
-              ontake={(id) => void choose(id)}
+              ontake={(id) => void taken(id)}
             />
           {/if}
+
+          <!-- A band of its own, above the destinations: a template is a whole
+               decision where a destination is the start of one. -->
+          {#if $templates.length > 0}
+            <div class="mb-1.5 border-b border-ink pb-1.5">
+              {#each $templates as one (one.id)}
+                <Option
+                  label={one.name}
+                  chosen={applied?.id === one.id}
+                  why={unusable[one.id]}
+                  onchoose={() => void take(one)}
+                />
+              {/each}
+            </div>
+          {/if}
+
           {#each $destinations as one (one.id)}
             <Option
               label={one.name}

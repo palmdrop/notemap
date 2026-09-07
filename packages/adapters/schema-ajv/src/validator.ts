@@ -1,5 +1,6 @@
 import { Ajv2020, type ErrorObject, type Options } from "ajv/dist/2020.js";
 
+import { ANNOTATIONS } from "@notemap/core";
 import type {
   JsonSchema,
   JsonValue,
@@ -34,14 +35,17 @@ export function createAjvSchemaValidator(
   const ajv = new Ajv2020({ ...config.options, allErrors: true });
 
   /**
-   * `x-notemap-candidates` is a vendor annotation core validates schemas
-   * against but never interprets — declaring it here is what lets it survive
-   * strict mode, which otherwise throws on any keyword it was not told about.
-   * Left declared rather than turning strict off: a `config.toml` payload
-   * type is hand-written, and a typo'd keyword in it should still fail loudly
-   * at startup rather than silently validating less than its author meant.
+   * notemap's vendor annotations are ones core validates schemas against but
+   * never interprets as rules — declaring them is what lets them survive strict
+   * mode, which otherwise throws on any keyword it was not told about. Left
+   * declared rather than turning strict off: a `config.toml` payload type is
+   * hand-written, and a typo'd keyword in it should still fail loudly at
+   * startup rather than silently validating less than its author meant. The
+   * list is core's, so a new one is not a second place to remember.
    */
-  ajv.addKeyword({ keyword: "x-notemap-candidates", schemaType: "boolean" });
+  for (const keyword of ANNOTATIONS) {
+    ajv.addKeyword({ keyword, schemaType: "boolean" });
+  }
 
   return {
     validate(schema: JsonSchema, value: JsonValue): readonly SchemaIssue[] {

@@ -8,6 +8,7 @@ import type {
   Pool,
   PreviewReport,
   RoutingRecordId,
+  RoutingTemplateId,
 } from "@notemap/core";
 
 import {
@@ -16,6 +17,7 @@ import {
   errorBody,
   outputStatus,
   routingStatus,
+  templateRoutingStatus,
 } from "../errors/refusals";
 import {
   markProcessedRequestSchema,
@@ -81,6 +83,21 @@ export function routeHandler(pool: Pool) {
     if (!body.ok) return refuse(body.refusal);
 
     const id = context.req.param("id") ?? "";
+
+    if ("template" in body.value) {
+      const applied = await pool.templates.route(
+        id as ItemId,
+        body.value.template as RoutingTemplateId,
+      );
+
+      return applied.kind === "refused"
+        ? json(
+            errorBody(applied.refusal),
+            templateRoutingStatus(applied.refusal),
+          )
+        : json(applied.value, 200);
+    }
+
     const result = await pool.routing.route(id as ItemId, {
       destination: body.value.destination as DestinationId,
       capability: body.value.capability as CapabilityName,
@@ -100,13 +117,35 @@ export function previewHandler(pool: Pool) {
     if (!body.ok) return refuse(body.refusal);
 
     const id = context.req.param("id") ?? "";
+
+    // A template is resolved first and previewed as what it resolved to:
+    // previewing one costs nothing the composer does not already ask for.
+    const request =
+      "template" in body.value
+        ? await pool.templates.resolve(
+            id as ItemId,
+            body.value.template as RoutingTemplateId,
+          )
+        : {
+            destination: body.value.destination as DestinationId,
+            capability: body.value.capability as CapabilityName,
+            arguments: body.value.arguments as JsonObject,
+          };
+
+    if (request === undefined) {
+      return json(
+        errorBody({
+          kind: "unknown-template",
+          template: (body.value as { template: string })
+            .template as RoutingTemplateId,
+        }),
+        404,
+      );
+    }
+
     const result = await pool.routing.preview(
       id as ItemId,
-      {
-        destination: body.value.destination as DestinationId,
-        capability: body.value.capability as CapabilityName,
-        arguments: body.value.arguments as JsonObject,
-      },
+      request,
       context.req.raw.signal,
     );
 

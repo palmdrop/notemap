@@ -35,6 +35,12 @@ import {
   destinationKindsRoute,
   destinationProbeRoute,
   destinationsRoute,
+  createTemplateRoute,
+  deleteTemplateRoute,
+  resolveTemplateRoute,
+  templateReportRoute,
+  templatesRoute,
+  updateTemplateRoute,
   editRoute,
   feedRoute,
   endAllSessionsRoute,
@@ -72,6 +78,14 @@ import {
   retireDestinationHandler,
   updateDestinationHandler,
 } from "./routes/destinations";
+import {
+  createTemplateHandler,
+  deleteTemplateHandler,
+  resolveTemplateHandler,
+  templateReportHandler,
+  templatesHandler,
+  updateTemplateHandler,
+} from "./routes/templates";
 import { feedHandler } from "./routes/feed";
 import { healthHandler } from "./routes/health";
 import { itemHandler } from "./routes/items";
@@ -178,6 +192,12 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
   app.post(honoPath(editRoute.path), editHandler(pool));
   app.post(honoPath(markProcessedRoute.path), markProcessedHandler(pool));
   app.get(honoPath(routingRecordsRoute.path), routingRecordsHandler(pool));
+  app.get(honoPath(templatesRoute.path), templatesHandler(pool));
+  app.post(honoPath(createTemplateRoute.path), createTemplateHandler(pool));
+  app.get(honoPath(templateReportRoute.path), templateReportHandler(pool));
+  app.get(honoPath(resolveTemplateRoute.path), resolveTemplateHandler(pool));
+  app.patch(honoPath(updateTemplateRoute.path), updateTemplateHandler(pool));
+  app.delete(honoPath(deleteTemplateRoute.path), deleteTemplateHandler(pool));
   app.get(honoPath(destinationsRoute.path), destinationsHandler(pool));
   app.post(
     honoPath(createDestinationRoute.path),

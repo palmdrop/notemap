@@ -83,8 +83,11 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
   );
 
   function subjectItem(subject: JobSubject): string | null {
-    // A destination belongs to no capture, so there is none to resolve.
-    if (subject.kind === "destination") return null;
+    // A destination and a template belong to no capture, so there is none to
+    // resolve.
+    if (subject.kind === "destination" || subject.kind === "template") {
+      return null;
+    }
     if (subject.kind === "item") return subject.item;
 
     const row = itemOfRecord.get(subject.record);
@@ -204,7 +207,7 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
           job.enrichment ?? null,
           job.attempt,
           at,
-          at,
+          job.notBefore === undefined ? at : toMillis(job.notBefore),
         );
       }
     },

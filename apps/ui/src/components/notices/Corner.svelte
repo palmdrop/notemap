@@ -9,7 +9,9 @@
   import Notice from "$components/primitives/alarm/Notice.svelte";
   import { noticeOf } from "$lib/action-log";
   import { client } from "$lib/client";
+  import { cancelRouting } from "$lib/firing";
   import { nameOf } from "$lib/destinations";
+  import { nameOf as templateOf } from "$lib/templates";
   import { aboutItem } from "$lib/excerpt";
   import { notices } from "$lib/notices.svelte";
 
@@ -52,7 +54,12 @@
 
   async function say(actions: readonly Action[]) {
     for (const action of actions) {
-      const raised = noticeOf(action, { nameOf, about: itemHref });
+      const raised = noticeOf(action, {
+        nameOf,
+        templateOf,
+        about: itemHref,
+        cancel: cancelRouting,
+      });
       if (raised === undefined) continue;
 
       const about = await whichCapture(action.subject);
@@ -96,6 +103,7 @@
         ? undefined
         : { label: notice.offer.label, take: () => notices.take(notice.id) }}
       standing={notice.standing === true}
+      alarm={notice.alarm}
       ondismiss={notice.standing === true
         ? () => notices.dismiss(notice.id)
         : undefined}

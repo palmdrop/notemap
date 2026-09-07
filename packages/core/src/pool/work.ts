@@ -1,7 +1,14 @@
 import { recordAction } from "./actions";
 import { enqueueMirrorWrite } from "./mirror";
-import { DELIVERY_FAILURE, destinationDetail } from "./routing/delivery";
+import {
+  DELIVERY_FAILURE,
+  destinationDetail,
+  templateDetail,
+} from "./routing/delivery";
 import { landingFor, type Landed } from "./routing/output";
+import { established } from "./templates/establish";
+import { releaseTriggerTag } from "./templates/fire";
+import { later } from "#utils/time";
 import { ok, refused } from "#utils/result";
 import type { PoolConfig } from "#types/api/config";
 import type { PoolPorts, PoolTx } from "#types/api/ports";
@@ -174,6 +181,7 @@ async function land(
   const landing = landed?.landing ?? {};
   const at = ports.clock.now();
   await tx.resolveRoutingRecord(id, landing);
+  await established(ports, tx, record, at);
   await enqueueMirrorWrite(ports, tx, { kind: "item", item: record.item }, at);
   await recordAction(ports, tx, {
     kind: "routed",
@@ -183,12 +191,8 @@ async function land(
     detail: {
       record: id,
       target: record.target.kind,
-      ...(record.target.kind === "destination"
-        ? {
-            destination: record.target.destination,
-            capability: record.target.capability,
-          }
-        : {}),
+      ...destinationDetail(record),
+      ...templateDetail(record),
       ...(landing.pointer === undefined ? {} : { pointer: landing.pointer }),
       ...(landed?.outputLost === undefined
         ? {}
@@ -222,6 +226,11 @@ async function concluded(
 
   if (ended.giveUp && subject.kind === "routing-record") {
     await tx.removeRoutingRecord(subject.record);
+    // Nothing landed, so a tag that filed it there says something untrue — and
+    // one left on the item could never file it again.
+    if (record !== undefined) {
+      await releaseTriggerTag(ports, tx, record, ended.at, "notemap");
+    }
   }
 
   // One sequence of attempts reads as one kind of entry, whether the attempt
@@ -236,6 +245,9 @@ async function concluded(
       detail: {
         record: record.id,
         ...destinationDetail(record),
+        // A shell showing that a fired template is on its way has to be told
+        // when it stops being on its way, and this is where that is said.
+        ...templateDetail(record),
         attempt: ended.attempt,
         failure: ended.failure,
       },
@@ -258,7 +270,10 @@ async function concluded(
     ...(item === undefined ? {} : { subject: item }),
     by: { kind: "notemap" },
     at: ended.at,
-    detail: workDetail(job, ended),
+    detail: {
+      ...workDetail(job, ended),
+      ...(record === undefined ? {} : templateDetail(record)),
+    },
   });
 }
 
@@ -325,8 +340,4 @@ function backoff(policy: RetryPolicy, attempt: number): Duration {
     policy.initialBackoff * 2 ** doublings,
     policy.maxBackoff,
   ) as Duration;
-}
-
-function later(at: Timestamp, by: Duration): Timestamp {
-  return new Date(Date.parse(at) + by).toISOString() as Timestamp;
 }

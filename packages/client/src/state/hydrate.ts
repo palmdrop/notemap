@@ -1,6 +1,7 @@
 import type {
   AssetId,
   Destination,
+  RoutingTemplate,
   Item,
   ItemId,
   PoolIdentity,
@@ -43,17 +44,21 @@ export async function hydrate(
     }
   }
 
-  const [outbox, items, tags, destinations, pool] = await Promise.all([
-    read<readonly PendingOperation[]>("outbox", [], () => store.readOutbox()),
-    read<readonly Item[]>("items", [], () => store.readItems()),
-    read<readonly TagUse[]>("tags", [], () => store.readTags()),
-    read<readonly Destination[]>("destinations", [], () =>
-      store.readDestinations(),
-    ),
-    read<PoolIdentity | undefined>("pool identity", undefined, () =>
-      store.readPoolIdentity(),
-    ),
-  ]);
+  const [outbox, items, tags, destinations, templates, pool] =
+    await Promise.all([
+      read<readonly PendingOperation[]>("outbox", [], () => store.readOutbox()),
+      read<readonly Item[]>("items", [], () => store.readItems()),
+      read<readonly TagUse[]>("tags", [], () => store.readTags()),
+      read<readonly Destination[]>("destinations", [], () =>
+        store.readDestinations(),
+      ),
+      read<readonly RoutingTemplate[]>("templates", [], () =>
+        store.readTemplates(),
+      ),
+      read<PoolIdentity | undefined>("pool identity", undefined, () =>
+        store.readPoolIdentity(),
+      ),
+    ]);
 
   const hydrated: ClientState = {
     ...emptyState(),
@@ -64,6 +69,7 @@ export async function hydrate(
     outbox: outbox.map(attemptable),
     tags,
     destinations,
+    templates,
     ...(pool === undefined ? {} : { pool }),
   };
 

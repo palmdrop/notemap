@@ -140,6 +140,19 @@ const SAID: {
   unauthenticated: "you are signed out; sign in to reach this pool",
   "unknown-asset": "the upload is gone; pick the file again",
   "unknown-destination": "that destination is not here",
+  "unknown-template": "that template is not here",
+  "trigger-tag-invalid": "a trigger tag needs something in it",
+  "trigger-tag-unreserved":
+    'a tag that files an item has to start with "route/", so nobody types one by accident',
+  "trigger-tag-taken": "another template already files items with that tag",
+  "trigger-refused": (facts) =>
+    `that tag files items somewhere, and its template cannot: ${String(facts["detail"])}. The tag was not applied — fix the template in settings, then tag it again`,
+  "trigger-tag-held":
+    "that tag filed this item, and what it filed is still there — cancel the routing to take the tag back",
+  "unknown-pattern-field": (facts) =>
+    `there is no "${String(facts["field"])}" to put in a place; captured_at, item and source are what there is`,
+  "unknown-pattern-format": (facts) =>
+    `"${String(facts["format"])}" is not one of the ways a date can be written here`,
   "unknown-destination-kind": (facts) =>
     `this daemon has no adapter for "${String(facts["destinationKind"])}" destinations`,
   "unknown-payload-type": (facts) =>

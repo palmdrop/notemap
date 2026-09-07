@@ -31,6 +31,13 @@ export type Job = {
   readonly enrichment?: EnrichmentName;
   readonly attempt: number;
   readonly enqueuedAt: Timestamp;
+  /**
+   * When it first becomes claimable, where that is not the moment it was
+   * enqueued. A fired template waits out a window here — long enough for the
+   * corner's cancel to be real — and the wait is a row rather than a timer, so
+   * a host that dies inside it loses nothing.
+   */
+  readonly notBefore?: Timestamp;
 };
 
 export type ClaimRequest = {
