@@ -13,6 +13,13 @@ export type Field = {
   readonly askable: boolean;
   /** Offered as a list rather than typed. Annotation only: these constrain nothing. */
   readonly examples?: readonly string[];
+  /**
+   * The values the schema actually allows. Unlike `examples` these **are** the
+   * field: a destination whose places are a fixed set — a board's columns, a
+   * mailbox — says so here, and typing one from memory is not something to ask
+   * of anybody.
+   */
+  readonly options?: readonly string[];
 };
 
 type Schema = Record<string, unknown> | undefined;
@@ -35,10 +42,12 @@ export function fieldsOf(schema: Schema): readonly Field[] {
     ([name, property]) => {
       const meta = propertyOf(property);
       const examples = examplesOf(meta);
+      const options = stringsAt(meta, "enum");
       return {
         name,
         required: required.includes(name),
         kind: kindOf(property),
+        ...(options === undefined ? {} : { options }),
         ...(typeof meta["title"] === "string" ? { title: meta["title"] } : {}),
         ...(typeof meta["description"] === "string"
           ? { description: meta["description"] }
@@ -53,10 +62,17 @@ export function fieldsOf(schema: Schema): readonly Field[] {
 function examplesOf(
   meta: Record<string, unknown>,
 ): readonly string[] | undefined {
-  const examples = meta["examples"];
-  if (!Array.isArray(examples)) return undefined;
+  return stringsAt(meta, "examples");
+}
 
-  const strings = examples.filter(
+function stringsAt(
+  meta: Record<string, unknown>,
+  key: string,
+): readonly string[] | undefined {
+  const held = meta[key];
+  if (!Array.isArray(held)) return undefined;
+
+  const strings = held.filter(
     (each): each is string => typeof each === "string",
   );
   return strings.length === 0 ? undefined : strings;

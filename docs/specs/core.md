@@ -1067,6 +1067,14 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   folder under `require` is **rejected**, which is abandoned on the first attempt and hands the item
   back to the queue — so a research folder that was renamed stops the filing and says so, rather
   than making a second one beside it.
+- **A capability says which of its fields is a path**, with a vendor annotation in its own
+  arguments schema, and core reads that rather than knowing capabilities by name. It is what the
+  template report's folder check is about, and the rule it keeps is the one stated above: *core
+  holds no list of capabilities*. A destination whose places are a fixed set — a board's columns, a
+  mailbox — marks no field and has no folders, which is the ordinary case rather than a gap: there
+  is nothing to check, and nothing about a path is inferred for it. Marking a field is the whole of
+  what a new kind has to do to be folder-checked, and doing nothing is the whole of what it has to
+  do not to be.
 - **`establish` is the template's word alone**, and resolves at decision time: unestablished it asks
   the adapter to create, established it asks the adapter to require. No adapter ever hears it, so
   the arguments on a record are always the two-valued thing. The establishment is written in the
@@ -1597,5 +1605,10 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   capture stands.
 - An `establish` template creates its folder on the first delivery that lands and requires it after;
   editing its arguments makes it establish again.
+- A capability whose place field is called anything at all is folder-checked, and one that marks no
+  path field is not checked rather than checked against nothing.
+- A template against a destination with no folders and a fixed set of places saves, expands the
+  patterns in the fields that have them, leaves the fixed value untouched, routes and fires from a
+  trigger tag, with no change to core.
 - A file that is still being written is not ingested until it is complete.
 - Core can be instantiated twice over two different pools in one process without interference.

@@ -1,3 +1,4 @@
+import { ASKABLE_FIELD, PATH_FIELD } from "@notemap/core";
 import type {
   Capability,
   CapabilityName,
@@ -13,7 +14,7 @@ export const CREATE_OR_APPEND_FILE = "create-or-append-file" as CapabilityName;
 export type CapabilitiesOptions = {
   readonly accepts: readonly PayloadTypeName[];
   /**
-   * Whether the field naming the place carries `x-notemap-candidates`. A kind
+   * Whether the field naming the place carries `ASKABLE_FIELD`. A kind
    * that cannot enumerate what it holds says no, and the composer draws no
    * browse button for an answer it would refuse.
    */
@@ -29,6 +30,10 @@ export type CapabilitiesOptions = {
  * `create` is the default, so every decision made before this existed is
  * unchanged. A template's `establish` never reaches here — it resolves to one
  * of these two when the decision is made.
+ *
+ * The field this is *about* is marked with `PATH_FIELD` below, so whatever has
+ * to check a folder reads which one it is rather than knowing these three
+ * capabilities by name.
  */
 const FOLDER_MODE = {
   type: "string",
@@ -49,7 +54,8 @@ function createFileArguments(browsable: boolean): JsonSchema {
         type: "string",
         title: "Folder",
         description: "Where the note is created, relative to the vault's root.",
-        ...(browsable ? { "x-notemap-candidates": true } : {}),
+        [PATH_FIELD]: true,
+        ...(browsable ? { [ASKABLE_FIELD]: true } : {}),
       },
       filename: {
         type: "string",
@@ -76,7 +82,8 @@ function appendToFileArguments(browsable: boolean): JsonSchema {
         title: "Note",
         description:
           "The note to append to, relative to the vault's root. Created if it does not exist.",
-        ...(browsable ? { "x-notemap-candidates": true } : {}),
+        [PATH_FIELD]: true,
+        ...(browsable ? { [ASKABLE_FIELD]: true } : {}),
       },
       heading: {
         type: "string",
@@ -106,7 +113,8 @@ function createOrAppendFileArguments(browsable: boolean): JsonSchema {
         title: "place",
         description:
           "The note, relative to the vault's root. Ending in `/` names a folder, and the filename is derived.",
-        ...(browsable ? { "x-notemap-candidates": true } : {}),
+        [PATH_FIELD]: true,
+        ...(browsable ? { [ASKABLE_FIELD]: true } : {}),
       },
       heading: {
         type: "string",

@@ -1077,9 +1077,14 @@ marked as such — opening the form must not quietly move a destination somewher
 
 **Templates** *(added 2026-09-07)* sits under Destinations, on the same three levels and for the
 same reason it comes second: a template names a destination, so the thing it names is above it. One
-line per template with its name, the destination it files to, and what it last answered. Opening one
-adds the arguments, the folder mode, the trigger tag, **when it last fired**, and the ways to edit
-and delete it.
+line per template with its name, the place it files to, the destination, and what it last answered.
+Opening one adds the arguments, the folder mode, the trigger tag, **when it last fired**, and the
+ways to edit and delete it.
+
+**The place is read off the arguments**, never off the capability: every string they hold, in the
+order the destination declared them, which is what a routing record's place already does. This page
+draws from pool state and has asked no destination what its fields mean, so a template filing to
+`reading · {{captured_at}}` on a board reads as well as one filing to a path.
 
 **When it last fired is a derived field the pool computes beside the row**, on the terms an item's
 routing summary is already derived ([core.md](core.md#routing-templates)) — so the page asks nothing
@@ -1489,6 +1494,11 @@ the page a person actually reads. Three-character indents on successive paragrap
   carrying neither the tag nor a pending record.
 - The Templates section draws from pool state at once, each row asking its own report; a template
   whose destination is merely unreachable draws no accent.
+- A template form for a capability whose field the schema fixes offers those values to choose from
+  and no box to mistype one in, while a field the schema leaves open stays typed.
+- A capability that declares no folder mode is offered none, and saving against it sends `create`.
+- A template filing somewhere that is not a path draws its place from its arguments, with no field
+  name the shell had to be taught.
 - Choosing a destination describes that destination and no other.
 - A feed row that has been routed says so and names where it went, and drawing a page of them costs
   one read; opening a queue row that has been nowhere costs none.

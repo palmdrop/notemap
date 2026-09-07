@@ -6,6 +6,15 @@ export { asDeliveryWorkOutcome, DELIVERY_FAILURE } from "./routing/delivery";
 
 export { destinationRegistry } from "./destinations/registry";
 
+// What an adapter marks a field with so core need not know its capabilities by
+// name. A kind that writes into folders marks the field a folder mode is about.
+export {
+  ANNOTATIONS,
+  ASKABLE_FIELD,
+  PATH_FIELD,
+  pathField,
+} from "./destinations/annotations";
+
 // A kind adapter throws this from `describe()` to say a destination cannot
 // be made sense of for a reason only it knows, rather than one merely
 // unreachable — see `destinations/usability.ts`.

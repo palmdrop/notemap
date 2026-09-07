@@ -41,6 +41,22 @@ export function whereItWent(
 }
 
 /**
+ * What an argument set says about where, without knowing the capability: every
+ * string it holds, in the order the destination declared them. A board column,
+ * a mailbox or a capability nobody has written yet reads as well as a path
+ * does, which is what keeps this from being a table of field names.
+ */
+export function placeNamed(
+  args: Readonly<Record<string, unknown>>,
+): string | undefined {
+  const said = Object.values(args)
+    .filter((value): value is string => typeof value === "string")
+    .filter((value) => value !== "");
+
+  return said.length === 0 ? undefined : said.join(" · ");
+}
+
+/**
  * Where a delivery put a copy, in the words a person could go and look with:
  * the pointer the destination handed back, or failing that the place the
  * decision named.
@@ -49,11 +65,7 @@ function placeIn(record: RoutingRecord): string | undefined {
   if (record.pointer !== undefined) return record.pointer;
   if (record.target.kind !== "destination") return undefined;
 
-  const said = Object.values(record.target.arguments)
-    .filter((value): value is string => typeof value === "string")
-    .filter((value) => value !== "");
-
-  return said.length === 0 ? undefined : said.join(" · ");
+  return placeNamed(record.target.arguments);
 }
 
 /**

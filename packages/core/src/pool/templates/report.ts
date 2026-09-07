@@ -1,7 +1,9 @@
+import { pathField } from "../destinations/annotations";
 import { candidates } from "../destinations/candidates";
 import { describe } from "../destinations/reports";
 import { usability } from "../destinations/usability";
 import type { PoolPorts } from "#types/api/ports";
+import type { Capability } from "#types/domain/destination";
 import type { CapabilityName, RoutingTemplateId } from "#types/domain/ids";
 import type { RoutingTemplate } from "#types/domain/template";
 import type { JsonObject, SchemaIssue } from "#types/json";
@@ -31,13 +33,6 @@ export type RoutingTemplateReport =
   /** Only for `require`, and for an `establish` that has landed once. */
   | { readonly kind: "folder-missing"; readonly folder: string }
   | { readonly kind: "unreachable"; readonly detail: string };
-
-/** The field each capability's place lives in, which is the one carrying a folder. */
-const PLACE_FIELDS: Readonly<Record<string, string>> = {
-  "create-file": "directory",
-  "append-to-file": "path",
-  "create-or-append-file": "path",
-};
 
 export async function report(
   ports: PoolPorts,
@@ -80,7 +75,7 @@ export async function report(
   );
   if (issues.length > 0) return { kind: "arguments-invalid", issues };
 
-  return folderReport(ports, template, signal);
+  return folderReport(ports, template, capability, signal);
 }
 
 /**
@@ -97,14 +92,20 @@ function asWritten(template: RoutingTemplate): JsonObject {
 }
 
 /**
- * Only where the template promised the folder would be there. The **literal
- * prefix** is what is checked — the part of the path with no pattern in it,
- * which is exactly the part that moves — one level at a time, so the answer
- * names the segment that is actually missing rather than the whole path.
+ * Only where the template promised the folder would be there, and only where
+ * the capability says which field the promise is about. A destination with no
+ * folders above its places — a board column, a webhook — marks no field, and
+ * there is nothing here to check rather than something failing quietly.
+ *
+ * The **literal prefix** is what is checked — the part of the path with no
+ * pattern in it, which is exactly the part that moves — one level at a time, so
+ * the answer names the segment that is actually missing rather than the whole
+ * path.
  */
 async function folderReport(
   ports: PoolPorts,
   template: RoutingTemplate,
+  capability: Capability,
   signal?: AbortSignal,
 ): Promise<RoutingTemplateReport> {
   const required =
@@ -112,7 +113,7 @@ async function folderReport(
     (template.folder === "establish" && template.establishedAt !== undefined);
   if (!required) return { kind: "fits" };
 
-  const field = PLACE_FIELDS[template.capability];
+  const field = pathField(capability);
   if (field === undefined) return { kind: "fits" };
 
   const place = template.arguments[field];

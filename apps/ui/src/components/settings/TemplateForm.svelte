@@ -11,7 +11,12 @@
   import Action from "$components/primitives/controls/Action.svelte";
   import Option from "$components/primitives/composer/Option.svelte";
   import { client } from "$lib/client";
-  import { fieldsOf, typedFrom, valuesFrom } from "$lib/schema-form";
+  import {
+    fieldsOf,
+    typedFrom,
+    valuesFrom,
+    type Field,
+  } from "$lib/schema-form";
 
   let {
     destinations,
@@ -57,10 +62,25 @@
   );
 
   /**
-   * A folder mode is the template's own, said in its own words above, so the
+   * A folder mode is the template's own, said in its own words below, so the
    * schema's field is not drawn twice.
    */
   const typeable = $derived(fields.filter((one) => one.name !== "folder"));
+
+  /**
+   * Only where the capability has folders at all. A destination that files to a
+   * board column or a mailbox declares no folder mode, and offering one would
+   * be a control whose every setting the pool refuses.
+   */
+  const folders = $derived(fields.some((one) => one.name === "folder"));
+
+  /**
+   * A field the schema constrains is chosen; anything else is typed, because a
+   * template's value may be a pattern and a pattern is in no enumeration. So a
+   * fixed set of places is picked from and a path is written.
+   */
+  const fixed = (field: Field): readonly string[] | undefined =>
+    field.options ?? field.examples;
 
   // The list may arrive after the form opens, and a form that started with
   // nothing to point at would never find one.
@@ -105,7 +125,9 @@
       destination,
       capability,
       arguments: valuesFrom(typeable, typed),
-      folder,
+      // A capability with no folders has nothing to establish, and a mode left
+      // over from the one chosen before would be refused as an argument.
+      folder: folders ? folder : ("create" as const),
       triggerTag: tag.trim() === "" ? undefined : `${NAMESPACE}${tag.trim()}`,
     };
 
@@ -193,34 +215,52 @@
   {#each typeable as field (field.name)}
     <div class="mt-4">
       <div class="text-ink-muted">{field.title ?? field.name}</div>
-      <input
-        bind:value={typed[field.name]}
-        aria-label={field.title ?? field.name}
-        placeholder={field.required ? "required" : "optional"}
-        class="mt-0.5 w-full border-0 border-b border-b-ink bg-transparent px-0 py-0.5 outline-none placeholder:text-ink-muted"
-      />
+      {#if fixed(field) !== undefined}
+        <div class="mt-0.5">
+          {#each fixed(field) ?? [] as one (one)}
+            <Option
+              label={one}
+              chosen={typed[field.name] === one}
+              onchoose={() => (typed[field.name] = one)}
+            />
+          {/each}
+        </div>
+      {:else}
+        <input
+          bind:value={typed[field.name]}
+          aria-label={field.title ?? field.name}
+          placeholder={field.required ? "required" : "optional"}
+          class="mt-0.5 w-full border-0 border-b border-b-ink bg-transparent px-0 py-0.5 outline-none placeholder:text-ink-muted"
+        />
+      {/if}
     </div>
   {/each}
 
   <!-- Said once, terse, rather than a paragraph per pattern: what each comes
-       out as is the pool's answer, and the pool refuses one it does not know. -->
-  <p class="mt-2 text-ink-muted">
-    {"{{captured_at}} · {{captured_at:month}} · {{captured_at:week}} · {{item}} · {{source}}"}
-  </p>
+       out as is the pool's answer, and the pool refuses one it does not know.
+       Only where something can hold one: a form of nothing but chosen fields
+       has nowhere to put a pattern. -->
+  {#if typeable.some((field) => fixed(field) === undefined)}
+    <p class="mt-2 text-ink-muted">
+      {"{{captured_at}} · {{captured_at:month}} · {{captured_at:week}} · {{item}} · {{source}}"}
+    </p>
+  {/if}
 
-  <div class="mt-4">
-    <div class="text-ink-muted">folder</div>
-    <div class="mt-0.5">
-      {#each FOLDERS as one (one.name)}
-        <Option
-          label={one.name}
-          why={one.why}
-          chosen={folder === one.name}
-          onchoose={() => (folder = one.name)}
-        />
-      {/each}
+  {#if folders}
+    <div class="mt-4">
+      <div class="text-ink-muted">folder</div>
+      <div class="mt-0.5">
+        {#each FOLDERS as one (one.name)}
+          <Option
+            label={one.name}
+            why={one.why}
+            chosen={folder === one.name}
+            onchoose={() => (folder = one.name)}
+          />
+        {/each}
+      </div>
     </div>
-  </div>
+  {/if}
 
   {#if said !== ""}
     <p role="status" class="mt-3 text-accent">{said}</p>

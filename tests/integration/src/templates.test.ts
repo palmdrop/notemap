@@ -11,6 +11,7 @@ import type {
   RoutingTemplateId,
   TagName,
 } from "@notemap/core";
+import { PATH_FIELD } from "@notemap/core";
 import { fakeCapability, fakeDestinations } from "@notemap/core/testing";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -660,5 +661,135 @@ describe("a reservation a trigger tag made, removed without delivering", () => {
     expect(await tagsOn(pool, item.id)).toEqual([RESEARCH]);
     expect(await pool.routing.recordsFor(item.id)).toEqual([]);
     expect(await queued(pool)).toEqual([item.id]);
+  });
+});
+
+/**
+ * The question every one of these answers: what does a template do against a
+ * destination nobody had written when it was designed. Core reads what a
+ * capability says about itself, so a kind whose places are a fixed set — a
+ * board's columns, a mailbox, a webhook — needs no change anywhere.
+ */
+describe("a destination that is not filesystem-shaped", () => {
+  const COLUMN_SCHEMA = {
+    type: "object",
+    required: ["column"],
+    properties: {
+      column: { type: "string", enum: ["reading", "done"] },
+      title: { type: "string" },
+    },
+    additionalProperties: false,
+  };
+
+  /** A place field under a name core has never heard of, marked as the path it is. */
+  const NOTEBOOK_SCHEMA = {
+    type: "object",
+    required: ["notebook"],
+    properties: {
+      notebook: { type: "string", [PATH_FIELD]: true },
+      folder: { type: "string", enum: ["create", "require"] },
+    },
+    additionalProperties: false,
+  };
+
+  it("saves a template whose place is a value from a fixed set", async () => {
+    const { pool } = await pooled(COLUMN_SCHEMA);
+
+    const template = succeeded(
+      await pool.templates.create(
+        draft({ arguments: { column: "reading", title: "{{captured_at}}" } }),
+      ),
+    );
+
+    expect(template.arguments).toEqual({
+      column: "reading",
+      title: "{{captured_at}}",
+    });
+  });
+
+  it("expands the patterns and leaves the fixed value exactly as it is", async () => {
+    const { pool } = await pooled(COLUMN_SCHEMA);
+    const template = succeeded(
+      await pool.templates.create(
+        draft({ arguments: { column: "reading", title: "{{captured_at}}" } }),
+      ),
+    );
+    const item = captured(
+      await pool.capture(
+        envelope({ capturedAt: "2026-09-07T20:32:00.000Z", utcOffset: 120 }),
+      ),
+    );
+
+    const record = succeeded(await pool.templates.route(item.id, template.id));
+
+    expect(record.target).toMatchObject({
+      arguments: { column: "reading", title: "2026-09-07" },
+    });
+  });
+
+  it("reports fits, having no folders to go and look for", async () => {
+    const { pool } = await pooled(COLUMN_SCHEMA);
+    const template = succeeded(
+      await pool.templates.create(draft({ arguments: { column: "reading" } })),
+    );
+
+    expect(await pool.templates.report(template.id)).toEqual({ kind: "fits" });
+  });
+
+  it("fires from a trigger tag like anything else", async () => {
+    const { pool, destination } = await pooled(COLUMN_SCHEMA);
+    succeeded(
+      await pool.templates.create(
+        draft({ arguments: { column: "reading" }, triggerTag: RESEARCH }),
+      ),
+    );
+    const item = captured(await pool.capture(envelope()));
+
+    succeeded(await pool.items.tag(item.id, RESEARCH, PERSON));
+
+    expect(await pool.routing.recordsFor(item.id)).toMatchObject([
+      { state: "pending", applied: { firedByTag: true } },
+    ]);
+    expect(destination.received).toEqual([]);
+  });
+
+  /**
+   * The table this replaced was keyed on the three capability names that
+   * existed, so a field called anything else was never checked.
+   */
+  it("checks the folder of a path field whatever the capability calls it", async () => {
+    const { pool, destination } = await pooled(NOTEBOOK_SCHEMA);
+    destination.answersCandidates({ entries: [], truncated: false });
+    const template = succeeded(
+      await pool.templates.create(
+        draft({
+          arguments: { notebook: "research/{{captured_at}}.md" },
+          folder: "require",
+        }),
+      ),
+    );
+
+    expect(await pool.templates.report(template.id)).toEqual({
+      kind: "folder-missing",
+      folder: "research/",
+    });
+  });
+
+  it("says it fits once that folder is there", async () => {
+    const { pool, destination } = await pooled(NOTEBOOK_SCHEMA);
+    destination.answersCandidates({
+      entries: [{ label: "research", scope: "research/" }],
+      truncated: false,
+    });
+    const template = succeeded(
+      await pool.templates.create(
+        draft({
+          arguments: { notebook: "research/{{captured_at}}.md" },
+          folder: "require",
+        }),
+      ),
+    );
+
+    expect(await pool.templates.report(template.id)).toEqual({ kind: "fits" });
   });
 });

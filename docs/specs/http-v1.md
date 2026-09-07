@@ -988,9 +988,11 @@ now.
 - **`unreachable` means *cannot say*, and is not an alarm.** A sleeping vault is an ordinary
   condition, and a surface that accents it is telling a person to fix something that is not broken.
 - **`folder-missing` is asked only where the template promised the folder would be there** — a
-  `require`, or an `establish` that has already established. It checks the **literal prefix** of the
-  path, the part with no pattern in it, which is exactly the part that moves when somebody renames
-  a folder.
+  `require`, or an `establish` that has already established — **and only where the capability says
+  which of its fields is a path**, which it does in its own arguments schema. It checks the
+  **literal prefix** of that field, the part with no pattern in it, which is exactly the part that
+  moves when somebody renames a folder. A destination with no paths at all answers `fits`: there is
+  nothing above its places to be missing.
 - `404 unknown-template` for an id no template has: here the id is what the request is about.
 
 ### Routing an item to a destination

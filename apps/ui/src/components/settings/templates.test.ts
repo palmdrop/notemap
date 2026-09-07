@@ -239,3 +239,107 @@ test("says templates can be read but not changed while the pool is away", async 
   ).toBeTruthy();
   online(true);
 });
+
+/**
+ * A destination whose places are a fixed set, and which has no folders at all.
+ * The form is built from what the capability published, so none of this is a
+ * case the shell was told about.
+ */
+const ADD_CARD = {
+  name: "add-card",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    required: ["column"],
+    properties: {
+      column: { type: "string", enum: ["reading", "done"] },
+      title: { type: "string" },
+    },
+  },
+};
+
+function servingBoard(templates: readonly Record<string, unknown>[] = []) {
+  return pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "board" })] });
+    }
+    if (route === "GET /v1/templates") {
+      return json(200, { values: templates });
+    }
+    if (route.endsWith("/report")) return json(200, { kind: "fits" });
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [ADD_CARD] });
+    }
+    if (route === "POST /v1/templates") return json(201, aTemplate());
+    return json(404, { error: { code: "unknown-route" } });
+  });
+}
+
+test("a field the schema fixes is chosen rather than typed", async () => {
+  servingBoard();
+
+  render(Templates);
+  await open(/Make a template/);
+
+  // The values the capability declared, offered; and no box to mistype one in.
+  expect(await screen.findByRole("button", { name: "reading" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "done" })).toBeTruthy();
+  expect(screen.queryByLabelText("column")).toBeNull();
+
+  // A field the schema leaves open is still typed, patterns and all.
+  expect(screen.getByLabelText("title")).toBeTruthy();
+});
+
+test("a capability with no folders is offered no folder mode", async () => {
+  servingBoard();
+
+  render(Templates);
+  await open(/Make a template/);
+
+  await screen.findByRole("button", { name: "reading" });
+  expect(screen.queryByRole("button", { name: "establish" })).toBeNull();
+  expect(screen.queryByText("folder")).toBeNull();
+});
+
+test("saves what was chosen, and says create where there are no folders", async () => {
+  servingBoard();
+
+  render(Templates);
+  await open(/Make a template/);
+
+  await fireEvent.input(await screen.findByLabelText("name"), {
+    target: { value: "Reading list" },
+  });
+  await open("reading");
+  await fireEvent.input(screen.getByLabelText("title"), {
+    target: { value: "{{captured_at}}" },
+  });
+  await open("Save");
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/templates");
+  });
+  expect(await sent()).toContainEqual({
+    name: "Reading list",
+    destination: VAULT,
+    capability: "add-card",
+    arguments: { column: "reading", title: "{{captured_at}}" },
+    folder: "create",
+  });
+});
+
+test("draws a board template's place without knowing what a place is", async () => {
+  servingBoard([
+    aTemplate({
+      capability: "add-card",
+      arguments: { column: "reading", title: "{{captured_at}}" },
+    }),
+  ]);
+
+  render(Templates);
+
+  // Every string the arguments hold, in the order the destination declared
+  // them — never a field name this shell had to be told.
+  await screen.findByText("reading · {{captured_at}}");
+});
