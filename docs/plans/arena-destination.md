@@ -36,8 +36,10 @@ Resolved 2026-09-07 against [`are-na-openapi.json`](../research/are-na-openapi.j
   **`metadata`** — custom key-value pairs set on the **block itself**, not only on the connection.
   Provenance goes there. Keys are alphanumeric or underscore and at most 40 characters, values are
   scalars with strings capped at 2000, and there is a limit of 50 keys and 32KB.
-- **A channel is named by ID *or slug*** in both `channels` and the legacy `channel_ids`
-  (`ConnectTo.id` is documented as "Channel ID or slug"). The slug decision holds.
+- **A channel is named by ID *or slug*** in both `channels` and the legacy `channel_ids` —
+  `ChannelIds` accepts "numeric IDs, string IDs, or channel slugs", and `ConnectTo.id` is
+  documented the same way. The `channel` argument therefore takes **either**, at no cost, and
+  `candidates` answers slugs. See the note on retitling below.
 - **`GET /v3/me` does not expose the token's scope.** `Me` is `User` plus `counts` and `email`, and
   `scope` appears nowhere but the `POST /v3/oauth/token` exchange response — which a pasted
   personal access token never produces. So a probe **cannot** catch a read-only token, and the
@@ -60,14 +62,29 @@ Resolved 2026-09-07 against [`are-na-openapi.json`](../research/are-na-openapi.j
   are.na's long-standing public form but is not a documented contract. Noted rather than hidden: if
   it is ever wrong, the record carries a broken link rather than none.
 
-### Still open
+### A slug does not survive a retitle
 
-- [ ] **Whether a channel's slug survives a retitle.** Empirical, needs an account, and does not
-      change the design — the glossary already calls a remembered place the listing no longer holds
-      **gone**. It decides only how loudly the README warns. Answer by renaming a throwaway channel.
-- [ ] **Whether an image capture's caption should also become `alt_text`.** A caption and alt text
-      are different things — one is a note, the other is accessibility — but a caption is usually
-      descriptive enough to serve. Small, and decidable while building.
+Tested by hand, 2026-09-07: renaming a channel changes its slug. That is worse than staleness.
+`CONTEXT.md` allows a routing record's **pointer** to go stale — it is "best-effort" — but its
+**arguments** are "remembered rather than consumed, because a delivery that has not landed is
+attempted again from the record alone". An argument has to stay actionable, and a dead slug means a
+pending delivery can never land.
+
+Routing templates make it sharper. A template carries arguments and fires on a tag indefinitely, so
+one pinned to a slug rots quietly: the channel is retitled, and some days later a tagged capture
+fails to route.
+
+So the argument accepts **either form**, which costs nothing because are.na does too:
+
+- `candidates` answers **slugs**, so browsing reads as titles do and remembered places stay legible.
+- A person who wants a template that cannot rot pastes the **numeric ID**. The README says why they
+  might, and this is the recommended form for a template's argument specifically.
+- A `404` on delivery is `rejected`, and its detail names a rename as the likely cause and points at
+  the browse to re-pick.
+
+This is not a new class of problem — a vault path is mutable too, and a template pointing into a
+renamed folder breaks the same way. It is only louder here, which on balance is better: a renamed
+folder is silently recreated, where a renamed channel says so.
 
 ---
 
@@ -202,15 +219,18 @@ Settings are therefore just `account`.
       `config.toml` and never through settings.
 - [ ] `describe` does no I/O, as both other kinds refuse to: a destination must be routable while
       are.na is unreachable, which is what makes deferred delivery work.
-- [ ] One capability, `create`, with a `channel` argument holding the **slug** (v3 accepts "ID or
-      slug") and carrying the browse annotation.
+- [ ] One capability, `create`, with a `channel` argument holding **a slug or a numeric ID** — v3
+      accepts either — and carrying the browse annotation. The field's description says that an ID
+      survives a retitle and a slug does not, which is what a template's argument should prefer.
 - [ ] `accepts` derives from the keys of `arenaRenderers()`, so a payload type with no block form
       is refused by core before a decision is made rather than landing as noise.
 - [ ] `candidates`: one page of
       `GET /v3/users/{me}/contents?type=Channel&sort=updated_at_desc&per=100`, with `truncated` set
-      from `meta.has_more_pages`. One request. Drop a channel whose `can.add_to` is false; keep one
-      whose `can` is absent, since the field is nullable and a missing ability is not a denial.
-      Group channels are not browsable; the field still accepts any slug typed by hand.
+      from `meta.has_more_pages`. One request. Each entry's `label` is the title and its `value` is
+      the **slug**, so what a browse leaves in the field stays legible. Drop a channel whose
+      `can.add_to` is false; keep one whose `can` is absent, since the field is nullable and a
+      missing ability is not a denial. Group channels are not browsable; the field still accepts
+      anything typed by hand.
 - [ ] `preview`: converts without reaching the network, unlike WebDAV's, which must read the note it
       would append to.
 - [ ] `probe`: `GET /v3/me`, and nothing more — the response does not carry the token's scope, so a
@@ -229,8 +249,9 @@ Settings are therefore just `account`.
       which answers `{files: [{upload_url, key, content_type}], expires_in}`. PUT the bytes to
       `upload_url` with that exact `Content-Type` — streamed, never buffered; `Asset.bytes` supplies
       the length — then create the block with `value` set to the uploaded object's URL, derived from
-      `key`. Caption becomes the description; the title is left unset. URLs expire in an hour, so
-      presign and upload belong to the same attempt and a retry presigns again.
+      `key`. The caption becomes both the **description** and the **`alt_text`**; the title is left
+      unset. URLs expire in an hour, so presign and upload belong to the same attempt and a retry
+      presigns again.
 - [ ] Refuse a capture carrying more than one asset. A guard: `packages/client/src/capture/envelope.ts:36`
       builds `assets` as zero-or-one, so only a direct `/v1` caller can trip it.
 - [ ] Write provenance into **`BlockInput.metadata`** on create — the block's own key-value pairs,
