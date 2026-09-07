@@ -1,8 +1,20 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-05
+**Last updated**: 2026-09-07
 **Shipped**:
+
+- 2026-09-07 — **One tag files it where it goes.** Routing templates are a third band in the
+  composer's `where` list, above the destinations and reached by the same typed prefix match:
+  taking one draws what it resolved to and leaves it editable, a template being where a decision
+  starts rather than a form. A **Templates** section in settings holds them, each row asking its own
+  report as the page draws, a stranded one repointed by an ordinary edit. A tag that a template
+  declared is **marked as one**, naming the template, everywhere a tag is offered — and putting one
+  on an item gives the corner `routing · research` with a real `cancel` while the window is open,
+  then `routed · research` once it lands.
+  ([plan](../plans/routing-templates.md),
+  [ADR 34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md),
+  [37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md))
 
 - 2026-09-05 — **One way out of the queue.** `route`, `done` and `archive` were three controls of
   unclear rank; they are one, `process`, which opens the composer and never closes. What differed
@@ -206,8 +218,8 @@ fills in. It does not name a colour or a font; those come out of the design sess
 
 - Two surfaces: **the queue**, which carries capture as its first row, and **the feed**, plus
   **settings**, which is chrome's own page rather than one of the two.
-- **Settings**: the destinations a pool can reach, what each can do, and whether the daemon
-  answers.
+- **Settings**: the destinations a pool can reach, what each can do, the **routing templates** that
+  file to them, and whether the daemon answers.
 - **The row**: one design serving both the list and an item being processed, in a collapsed and an
   opened state.
 - **An item at an address**, and one of its **routing records** at an address under it: what an
@@ -419,6 +431,31 @@ thought was carried onward, which may have happened yesterday or by acting rathe
 the clipboard is shared state that nothing should overwrite unasked. It is absent where the browser
 gives no clipboard at all, on the same terms as [the row's `copy`](#actions). The commit sends the
 note, written or empty — the field being the only thing the pool is told beyond the fact itself.
+
+**Routing templates are a third band, above the destinations** *(added 2026-09-07)*. A template is
+a decision somebody already made — a place, a filename, a folder — and offering it above the
+destinations puts the shortest route to a finished decision first. It is reached exactly as
+everything else in the list is: the same typed prefix match, the same `⏎` on an only match. Three
+bands under one idiom, and no third way of taking a choice.
+
+**Taking one draws what it resolved to and leaves it editable.** The destination appears in the
+chrome and the expanded place on the line — `research/2026-09-07.md`, not
+`research/{{captured_at}}.md` — asked of the pool, which owns the expander
+([ADR 35](../adr/0035-a-templates-arguments-are-patterns-expanded-when-the-decision-is-made.md)).
+The line then behaves as it always does. **A template is where a decision starts, not a form that
+refuses to be corrected**: a person who took `research` and wants this one note in `reading/` types
+it, and what commits is the decision it became — the template where nothing was touched, the
+destination and arguments where something was. Which of the two went is not a thing the person
+chooses; it is read off whether they changed anything.
+
+**A template that cannot apply is drawn with its reason and not removed**, on the rule below. The
+reasons are a stranded template, a destination that cannot be used, and a capability no longer
+declared. **Never a pattern**: expansion is statically total, so a template that saved will expand
+against every item and there is no such reason to draw
+([core.md](core.md#routing-templates)).
+
+The chrome reads `process · research` — the template's name, where a destination would give its own
+— and the commit reads `route`, because it is a route either way.
 
 **An entry that cannot apply is drawn with its reason, not removed** — the `where` list's existing
 idiom for an unavailable destination, now doing one more job. `manual` says so on an item whose
@@ -777,6 +814,22 @@ it lands whatever becomes of the route beside it — a route that fails leaves t
 which is the honest outcome: the person said what the item was, and that was true independently of
 where it was going.
 
+**A trigger tag is marked as one, everywhere a tag is offered** *(added 2026-09-07)*. Tagging is no
+longer free of consequence: a tag a routing template declared **files the item** when it is applied
+([core.md](core.md#classification)), and a chooser that drew it like any other name is how somebody
+sends a note to a vault by pressing the wrong row. The mark **names the template** — `route/research
+→ research` — rather than only saying there is one, because `route/` is a namespace and a namespace
+is not a decision: a tag under it that no template claims does nothing, and marking it would be a
+warning about nothing. It is drawn in the composer's chooser, on the collapsed row's, on the tags an
+item already carries, and in the completion offered while typing. The mark is quiet, in muted ink
+and never the accent: this is a fact about the tag, not something wrong.
+
+**The mark is what the pool says, and it goes when the pool says so.** It is read from the templates
+the client holds, so a chooser opened offline marks what it last knew — and a trigger tag declared
+on another device since is drawn unmarked until the templates are read again. Drawing a tag as inert
+that turns out to file something is the wrong direction to be wrong in, and the honest fix is
+reading the list rather than guessing; nothing here pretends to know more than it read.
+
 Describing a destination is I/O that can hang on an unmounted drive, so **only the chosen one is
 ever described** — which is why a destination is settled before anything is asked of it, rather
 than a flattened destination×capability list being offered up front.
@@ -874,6 +927,35 @@ has gone, possibly minutes later. `retrying · Vault` over `not delivered yet ·
 three facts a person can act on; `deferred` was one word nobody could act on, which is what the
 brevity cost here *(amended 2026-09-03, after reading it in use)*.
 
+**A fired template is the corner's one notice about something that has not happened yet** *(added
+2026-09-07)*. Putting a trigger tag on an item reserves a delivery and waits a configured window
+before attempting it, precisely so there is something to call off
+([ADR 37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md)).
+So the corner reads **`routing · research`** while the window is open and carries **`cancel`**;
+when the record resolves it reads **`routed · research`** and carries only the way to dismiss it.
+Both name the **template**, not the destination, because the template's name is what the person
+pressed.
+
+**That is the whole of the window's visibility**: no countdown and no bar. A notice claiming a
+progress it is not measuring would be inventing one, and the only fact worth drawing is whether
+there is still something to cancel.
+
+It **stands** rather than lingering, and there is **one at a time**, the newer replacing the older —
+the rule `discard` already follows, and for the same reason: a tag files an item in one keystroke,
+so a corner stacking four of them while a queue is worked is not the quiet thing it is meant to be.
+The landing replaces the notice it resolves rather than sitting beside it, one decision reading as
+one notice from beginning to end.
+
+**Both come from the log**, not from the tagging ([ADR 32](../adr/0032-a-shell-learns-what-happened-by-reading-the-log.md)).
+A tag is an outbox operation that may drain minutes after it was made, or on a daemon nobody is
+watching, so the gesture is the wrong thing to hang this on — and the log is already how the shell
+learns what a deferred delivery did.
+
+**A tag that fired nothing says nothing**, and a tag whose template could not route is a **refusal**
+rather than a notice: nothing happened, the tag is not on the item, and a refusal is what the corner
+already holds for a person to act on. It reads as what it is — that tag files somewhere, and its
+template cannot — which is a thing to go and fix in settings.
+
 **Signing out leaves nothing standing.** The corner is emptied with the rest of what the door
 shuts on: a failure about a delivery nobody can now look up would outlive the session that raised
 it.
@@ -965,7 +1047,8 @@ countable: a **section** is muted ink at the widest tracking with a full-weight 
 **destination** is full ink at tighter tracking with a mark in the margin; a **field** is lower
 case, muted, in a column of its own. Nothing is bigger and nothing is bold.
 
-Four sections *(two when this was written, and the door brought the others)*. **Destinations** says
+Five sections *(two when this was written; the door brought two more and routing templates the
+fifth)*. **Destinations** says
 how many are offered and how many retired, then one line per destination: a mark for offered or
 retired, its name, its kind, and what it last answered. Opening one adds what it can do, the
 settings its kind asked for, its id, and the four things that can be done to it — check, edit,
@@ -991,6 +1074,51 @@ destination's account is one of the accounts the daemon declares, drawn as a lis
 nothing published stays a box, so a daemon declaring no accounts does not trap a person behind an
 empty one. A value the destination already holds that the daemon no longer declares is offered too,
 marked as such — opening the form must not quietly move a destination somewhere else.
+
+**Templates** *(added 2026-09-07)* sits under Destinations, on the same three levels and for the
+same reason it comes second: a template names a destination, so the thing it names is above it. One
+line per template with its name, the destination it files to, and what it last answered. Opening one
+adds the arguments, the folder mode, the trigger tag, **when it last fired**, and the ways to edit
+and delete it.
+
+**When it last fired is a derived field the pool computes beside the row**, on the terms an item's
+routing summary is already derived ([core.md](core.md#routing-templates)) — so the page asks nothing
+extra for it and a list of ten templates is still one read.
+
+**What a pattern reads as is not drawn.** Saying what `{{captured_at}}` comes out as needs an item
+to expand against, and there is no item on a settings page; inventing one would be a second expander
+on this side, which is the drift the one expander exists to prevent. The patterns are shown as
+written, which is what a template *is*.
+
+**The arguments are a form built from the same `argumentsSchema` the composer builds from**, with
+the patterns typed as text — a place field here holds a pattern, not a path, so the composer's typed
+line and its tree would be answering a question nobody asked. A pattern naming a field or a format
+nobody declared is refused when it is saved, and **the refusal is drawn where it belongs**: on the
+field that carries it, while the person is still looking at it.
+
+**Each row asks its own report as the page draws**, per row, exactly as a destination's is asked —
+so the first template whose destination has to go and look does not hold up a list already drawn
+from pool state. A settled answer is not asked again; one that could not be reached is asked when
+the pool comes back, that being the moment worth re-asking on.
+
+**A stranded template — one whose destination was deleted — leads with that**, and is deleted or
+**repointed**. Repointing is an ordinary edit of its destination field, followed by the report
+saying whether the capability and the arguments still fit where it now points; there is no special
+repair, because there is nothing to repair beyond the one field that is wrong.
+
+**The folder check reads the literal prefix of the path** — the part with no pattern in it, which is
+exactly the part that moves when somebody renames a folder — asked through `candidates` like any
+other look at a destination.
+
+**Unreachable is not an alarm.** A destination that cannot be asked says so quietly and draws no
+accent, the accent being for what a person has to act on and a sleeping vault being neither wrong
+nor theirs to fix. This is the `gone` mark removed from the composer on 2026-09-04, not made again.
+
+**Deleting a template asks nothing and refuses nothing**, unlike deleting a destination. A template
+names nothing that outlives it, and the records it made carry what they routed as and keep
+resolving without it — so there is no conflict for the pool to report and nothing for the asking to
+offer instead. Deleting the **destination** is where the warning lives, naming the templates it
+would strand.
 
 **Daemon** says where this shell is talking to, and carries the way to `/log` and the exit to the
 daemon's `/docs` — one of this shell's own routes and one the browser leaves for, marked apart. Its
@@ -1348,7 +1476,19 @@ the page a person actually reads. Three-character indents on successive paragrap
 - `manual` is offered once: an item whose routing summary names the person still draws the entry,
   with the reason it cannot be taken, on every surface that draws a row.
 - The composer is dismissable and every entry in `where` is reachable from the keyboard alone,
-  including the two the shell invents.
+  including the two the shell invents and the templates above them.
+- Taking a template fills the place line with what it expanded to, leaves it editable, and commits
+  as the template where nothing was touched and as a plain decision where something was.
+- A template whose destination was deleted is drawn in `where` with that as its reason, not removed.
+- A tag a template declared is drawn with the template's name beside it wherever tags are offered,
+  and a tag under `route/` that no template claims is drawn like any other.
+- Putting a trigger tag on an item leaves the corner reading `routing · <template>` with a working
+  `cancel`, and reading `routed · <template>` once the delivery lands — one such notice at a time,
+  standing until it is dismissed.
+- A trigger tag whose template cannot route reaches the person as a refusal, and the item is left
+  carrying neither the tag nor a pending record.
+- The Templates section draws from pool state at once, each row asking its own report; a template
+  whose destination is merely unreachable draws no accent.
 - Choosing a destination describes that destination and no other.
 - A feed row that has been routed says so and names where it went, and drawing a page of them costs
   one read; opening a queue row that has been nowhere costs none.

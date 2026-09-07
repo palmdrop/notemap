@@ -67,6 +67,25 @@
   The repeatability worry this line carried is answered rather than solved: a preview is
   **indicative**, so a non-deterministic converter is allowed and the shell says what a preview is.
 - [ ] Routing rules - core.md has carried "how rules are expressed, how fan-out to several destinations is presented, and whether a rule may ever be trusted to fire unattended" since 2026-08-02. Half answered on 2026-09-05 by [ADR 34](adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md) and the [routing-templates plan](plans/routing-templates.md): a **routing template** is what a rule would have had for a right-hand side, a **trigger tag** applies one, and the sentence about a rule never delivering on its own was rewritten deliberately rather than discovered later. Still open, and only reachable once conditions exist: the rule table itself, fan-out to several destinations from one gesture, and precedence between rules.
+  - Shipped 2026-09-07, and the half that is closed is closed in code as well as on paper: templates
+    are pool state, a `route/` tag applies one, a fired one waits out a configured window so the
+    corner's cancel is real, and a reservation a tag made that never delivered gives the tag back.
+    What the three open parts now cost is clearer for having built the rest. **Fan-out** is the
+    expensive one: one gesture reaching two destinations makes *cancel* a question about which of
+    them, and [ADR 37](adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md)
+    answers only the single-destination case. **Conditions** need a place to be written and a
+    vocabulary to be written in, neither of which exists. **Precedence** is only a question once two
+    things can match, so it follows conditions rather than standing beside them.
+- [ ] Whether a template may restrict who can fire it. A **source-supplied** trigger tag fires like
+  any other, deliberately ([ADR 34](adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md)):
+  an inbox deciding where its own captures go is the point. What it costs is that a system outside
+  notemap can cause a delivery. If that ever bites, the answer is a per-template restriction rather
+  than a different design — noted here so it is reached for rather than reinvented.
+- [ ] Whether the trigger window wants to be per template rather than per host. It is one number in
+  `config.toml` today, which is right while every template files to the same laptop; a template
+  whose destination is a mounted vault and one whose destination is a sleeping server want
+  different windows for the same reason they want different retries. Not worth splitting until
+  somebody has lived with one number and found it wrong in both directions.
 - [ ] Reconsider where revisions *appear*. Half-answered on 2026-08-24: a revision now carries its
   own capture time, so it sorts at the moment it was written and no longer ties with what it came
   from — which is what removed the chain columns from the feed key. Showing it beside its ancestor
@@ -79,6 +98,10 @@
   reach anything, so a mirror holding a stale or missing destination record has nothing that would
   notice. Whoever builds them builds this at the same time.
 - [ ] Consider capture templates: on capture time, I select a capture format which auto-tags and auto-routes (optionally) the finished capture when it is committed.
+  - Cheaper than it was, as of 2026-09-07: the auto-routing half is done. A capture that arrives
+    carrying a **trigger tag** fires its template, so a capture template that auto-tags gets the
+    routing for free and needs to decide nothing about delivery. What is left is the capture format
+    itself — what a person picks at capture time and what it fills in — which is a shell question.
 - [ ] Certain feed views allow me to view all revisions, all entries, open to see
 - [ ] Consider redis for jobs in the future. Move the jobs managed out of the store port, let it be its own. Could be a piece of the store db, could be external. (Feel like I reimplement a lot of tried and tested things here.
   - same for pool/work, all the jobs management. Is there existing tools we could use for this instead?

@@ -305,7 +305,10 @@ the item on its way out, the record may also name the **output**, so the pool ca
 sent and not only where. Beside the pointer it may carry a **URL**, where the destination can offer
 a link to the same place; neither kind that writes files ever does — a path on the daemon's host is
 nowhere a phone can follow, and a WebDAV address is the daemon's credential rather than a link
-anyone else holds.
+anyone else holds. Where the decision came from a **routing template**, the record names it, and
+says whether a **trigger tag** made it — a decision a person made with the item in front of them and
+one a tag made are the same delivery and not the same act, and only the second gives its tag back
+where nothing landed.
 _Avoid_: routing status, delivery flag
 
 **Routing template**:

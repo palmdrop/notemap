@@ -1,8 +1,18 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-09-04
+**Last updated**: 2026-09-07
 **Shipped**:
+
+- 2026-09-07 — **Routing templates are cached, and a tag may now apply one.** `TemplatesApi` reads
+  and edits them on the destinations' terms — a read cache with `all` and `held`, and the edits
+  outside the outbox for the same reason a destination's are. `RoutingApi.route` and `.preview`
+  take a template in place of a destination, a capability and arguments; `.resolve` answers what
+  one would route an item as. `tag` is unchanged on this side and does more on the other: a trigger
+  tag drained from the outbox applies its template when it arrives, and one whose template cannot
+  route comes back refused, which is a refusal the shell already knows how to hold.
+  ([plan](../plans/routing-templates.md),
+  [ADR 34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md))
 
 - 2026-09-04 — **Asking what would go, and reading what went.** `RoutingApi.preview` asks a
   destination what it would write before anything is committed, and `RoutingApi.output` reads what
@@ -449,6 +459,32 @@ and have nowhere to hang a subscription — naming a destination inside a line o
 with an answer rather than a thing to redraw. Both read one cache, so they cannot disagree, and
 neither reaches the pool.
 
+**Routing templates are cached on exactly those terms** (added 2026-09-07). They are pool state a
+person configured, small enough to hold whole, and a composer offers them beside the destinations —
+so `all` and `held` mean here what they mean there, and a client opened cold against an unreachable
+pool still offers every template it last read. Editing one is **not** an outbox operation, for the
+destination's reason unchanged: whether a pattern names a field this daemon declares, and whether
+a trigger tag is free, are questions only the pool can answer, so an offline save would validate
+against nothing and hand back an acceptance the pool may then refuse.
+
+**What a template resolves to is asked, never cached.** `resolve` answers the expanded arguments
+for one item, and the expansion is core's: a second implementation on this side would be a second
+pattern table drifting from the first
+([ADR 35](../adr/0035-a-templates-arguments-are-patterns-expanded-when-the-decision-is-made.md)).
+So a composer offline can offer a template and cannot draw the filename it would produce, which is
+the honest answer — the same shape `candidates` already takes. A template's **report** is asked
+per row and cached by nothing, on `describe()`'s terms: whether a vault still has the folder is
+somebody else's state.
+
+**A trigger tag is an ordinary tag to this client.** `tag` is unchanged — one outbox operation, the
+same optimistic application, the same drain — and what it does at the far end is the pool's. This
+is what makes an offline tag fire: the operation that drains is a tag, so the daemon applies the
+template as it arrives and nothing has to look afterwards for tags that ought to have routed. Two
+consequences fall out and are accepted. A tag made offline **applies optimistically and may be
+refused on drain**, where the template turns out to be stale, which is a refusal the outbox already
+holds for a person; and the reservation it makes is not in the cache until some surface reads that
+item again, on **arrival is not observed**'s own terms below.
+
 **What a field could hold is asked, never cached** (added 2026-08-31). `describe()`'s capabilities
 are read like any destination's, but a folder's contents, a note's existence, or the tags a vault
 already uses are somebody else's state, stale the moment somebody else writes a file — answering a
@@ -483,10 +519,11 @@ written by typing it. The list is read again once classification reaches the poo
 untag, since either changes what is in use — **once per drain rather than once per operation**, so a
 backlog of eight tags asks one question. The pool having just answered is what says it is reachable.
 
-**Both caches are read back on start** (2026-08-25). The store holds the tags and the destinations
-as it holds the items and the outbox, written whole as each list is answered, so a client opened
-cold against an unreachable pool completes from what it last read and can still name where things
-go ([the ports](#the-ports--the-seam-for-offline)).
+**The read caches are read back on start** (2026-08-25, extended 2026-09-07). The store holds the
+tags, the destinations and the routing templates as it holds the items and the outbox, written
+whole as each list is answered, so a client opened cold against an unreachable pool completes from
+what it last read, can still name where things go, and can still offer the templates that file
+things there ([the ports](#the-ports--the-seam-for-offline)).
 
 **The outbox is read back on start, and drains on its own.** A client reads its store into memory
 before anything is allowed to touch what was read — **hydration** — and everything that touches
@@ -758,6 +795,11 @@ moment it was asked in; the second is bytes a person went looking for, which not
 use. A record's `note` and media type *are* cached, being fields of a record the client already
 holds — what is not cached is the content behind them.
 
+**Nor is a template's resolution or its report.** Both are about a moment: what a pattern expands
+to is core's to say, and whether a vault still has the folder is the vault's. The templates
+themselves are held whole, as the destinations are, and are not capped — a person configures a
+handful.
+
 ### Reachability, and a pool that is not the one we cached
 
 **Reachability is the client's, not the transport's.** Every request the client makes is evidence —
@@ -997,6 +1039,12 @@ that logic out of the one place it is meant to live.
   accepts a tag that is on no list at all. A client opened cold with no pool completes from nothing,
   which is the unread store rather than this.
 - Eight tags drained together read the tags in use once.
+- A client opened cold against an unreachable pool offers every routing template it last read, and
+  can draw none of their expanded places — the resolution is asked, and asking fails.
+- Editing a template with the pool unreachable is refused rather than queued, as editing a
+  destination is.
+- A trigger tag added with the daemon down applies its template when the outbox drains, and one
+  whose template has gone stale comes back as a refused operation the person is shown.
 - An item routed from a surface says where it went on that surface's own row, without a further
   read.
 - A typed note, a voice memo and a shared link captured from one shell carry three different

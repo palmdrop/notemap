@@ -1,8 +1,16 @@
 # Spec: The mirror on disk
 
 **Status**: Draft
-**Last updated**: 2026-09-04
+**Last updated**: 2026-09-07
 **Shipped**:
+
+- 2026-09-07 — **The mirror carries routing templates, its third non-item unit.** A template is
+  something a person set up and would otherwise recreate by hand, which is the argument
+  destinations already won; and a routing record now names the template it came from, which is the
+  argument items already made. One `.json` per template under `pool-mirror/templates/`, beside the
+  destinations directory and on the same terms — no rendering, a write owed when one changes.
+  ([plan](../plans/routing-templates.md),
+  [ADR 34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md))
 
 - 2026-09-04 — **A mirrored routing record says what was sent, not only where.** A delivery may
   now record the content it produced, and the record carries its blob hash, its media type, a
@@ -139,7 +147,7 @@ derived, `revisedInto` included. This is the material-not-operational rule of 20
 to: what the user kept is mirrored, how notemap ran is not. A rebuilt pool therefore has no
 history and no rejection signal, and both losses are accepted.
 
-**Destinations are mirrored too, and are the mirror's one non-item unit** (added 2026-08-17,
+**Destinations are mirrored too, and were the mirror's first non-item unit** (added 2026-08-17,
 [ADR 20](../adr/0020-destinations-are-pool-state.md)). A destination is pool state rather than
 configuration, and a delivered routing record names one, so a mirror that carried only items would
 rebuild a pool whose records refer to destinations it cannot produce. The unit is the destination
@@ -151,6 +159,24 @@ It is the one place the material-not-operational rule needs stating rather than 
 destination is something the user set up and would otherwise recreate by hand, which puts it on the
 material side, while the delivery cadence that drives it stays in `config.toml` and is not
 mirrored.
+
+**Routing templates are the third unit** (added 2026-09-07,
+[ADR 34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md)), and are
+carried on exactly the destination's reasoning twice over. A template is something a person set up
+— a place, a filename pattern, a tag that applies it — and losing it means recreating it by hand,
+which is the material side of the 2026-08-03 rule. And a routing record may **name** one, so a
+mirror carrying only items and destinations would rebuild a pool whose records refer to templates
+it cannot produce, which is the destination's own argument unchanged.
+
+The unit is the template itself: id, name, destination, capability, the arguments **as patterns**,
+the folder mode, its trigger tag, when it was established and its timestamps. The patterns are
+mirrored **unexpanded**, because unexpanded is what a template is; what a decision expanded them to
+is on the record that decision wrote. How much of the pool a template made is derived from the
+records naming it and is not mirrored, on the rule that already keeps `revisedInto` out.
+
+A template that names a destination the pool no longer holds is mirrored as it stands. Stranding is
+an ordinary state a person repairs, not corruption, and a mirror that dropped the row would turn a
+repairable template into one nobody can find.
 
 **An output's bytes need no home of their own.** They are a blob like any other, so a mirrored
 record names a hash and `assets/` holds the content once however many records name it. A mirror
@@ -326,6 +352,7 @@ notemap/
   state/notemap.db                 <- authoritative, never synced
   pool-mirror/YYYY/MM/DD/          <- write-only: one .json + one .md per item
   pool-mirror/destinations/        <- one .json per destination, no rendering
+  pool-mirror/templates/           <- one .json per routing template, no rendering
   assets/<hash-prefix>/            <- blobs, single copy, content-addressed
 ```
 
@@ -347,6 +374,8 @@ beside it: the id is minted and immutable, so unlike an item it needs no path co
 things about it that cannot change, and its five fields are readable as JSON by a person who has
 lost notemap. The directory sits beside the years rather than under one, since a destination
 belongs to no day.
+
+A template's file is `pool-mirror/templates/<template-id>.json`, on every one of those terms.
 
 Ids are client-minted and may hold anything, so the id in the filename is a **one-way encoding**
 (stated 2026-08-11): anything but a lowercase safe name is replaced *and* given a digest of the
@@ -385,7 +414,13 @@ defends.
 
 It does not go through capture. Capture mints ids, enqueues mirror jobs and appends actions, all
 wrong when replaying material that already has ids and already has files on disk. Rebuild writes
-items directly, enqueues nothing and logs nothing.
+items directly, enqueues nothing and logs nothing. **Nor does it go through `tag`**, for the same
+reason and one more: tagging now applies a template, and a rebuild replaying an item that carries
+`route/research` must restore a tag, not file the note somewhere a second time.
+
+- **Order: destinations, then templates, then items.** A template names a destination and a routing
+  record names both, so each is restored before the thing that refers to it. Within the items there
+  is no order to keep — a revision carries its own capture time and refers to its original by id.
 
 - **Enrichment state is derived from material.** An `(item, enrichment)` pair with at least one
   mirrored artifact is `done`; everything else falls to normal per-source policy. Without this a
@@ -512,11 +547,17 @@ schema churn cheap — does not apply to that pool.
 
 - A pool rebuilt from its mirror and assets is equivalent to the original: same items, same
   order, same classification with the same attribution, same artifacts and corrections, same
-  routing records, same asset identities and filenames.
+  routing records, same destinations, same routing templates, same asset identities and filenames.
 - A pool round-trips through mirror records and back with no filesystem involved, over generated
   pools, as a property test.
 - Tagging, archiving, correcting an artifact and routing each leave the item's mirror files
   matching the pool once the queue drains.
+- Creating, editing or deleting a routing template leaves `pool-mirror/templates/` matching the
+  pool once the queue drains, with its arguments unexpanded.
+- A rebuilt pool holds its templates, and a record naming one still names it. A template whose
+  destination was deleted before the mirror was taken rebuilds stranded rather than being dropped.
+- A rebuild restores an item carrying a trigger tag as an item carrying that tag, and files
+  nothing.
 - A delivery still pending is absent from the item's mirror record, and appears in it once it
   lands. A pool rebuilt while a delivery was pending holds no record of it, so the item rebuilds
   unprocessed and returns to the queue.

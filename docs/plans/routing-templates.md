@@ -1,9 +1,9 @@
 # One tag files it where it goes
 
 **Date**: 2026-09-05
-**Status**: In progress <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/mirror.md`, `docs/specs/client.md`, `docs/specs/shell.md`
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-09-07
 
 ---
 
@@ -75,7 +75,7 @@ Depends on nothing.
 - [x] `todo.md`: the two "routing templates" lines are retitled to conversion, and the entry that
       wanted this feature points at this plan
 - [x] Verify: the ADRs are confirmed with the developer; `pnpm lint`
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 2 — A template is pool state
 
@@ -102,9 +102,10 @@ Depends on phase 1.
       `pool-mirror/templates/`, beside the destinations directory and on the same reasoning: a
       template is something a person set up and would otherwise recreate by hand. A write is owed
       when one changes
-- [ ] Rebuild restores templates before items, since a record names one — **nothing to build
+- [x] Rebuild restores templates before items, since a record names one — **nothing to build
       here**: rebuild does not exist (`mirror.md`), so this is a line phase 10 writes into the spec
-      beside the destination's, and the code owes it nothing today
+      beside the destination's, and the code owes it nothing today. Written there 2026-09-07:
+      destinations, then templates, then items
 - [x] Tests: the trigger tag rules refuse what they should, in core and again as the store's own
       unique index; a template round-trips through the mirror, as a property beside the
       destination's; deleting a destination a *record* names is still refused, and deleting one a
@@ -299,13 +300,13 @@ Depends on phase 8.
       does, over the wire; **a refused route refuses the tag and writes nothing**; the log says
       which template
 - [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 10 — The specs say so
 
 Depends on phase 9.
 
-- [ ] `core.md`: a **Routing templates** section; Classification gains what a trigger tag is, what
+- [x] `core.md`: a **Routing templates** section; Classification gains what a trigger tag is, what
       firing on the tagging means, that a trigger tag whose template cannot route **is refused
       rather than applied** — and is dropped rather than refused when a capture supplied it — and
       that a cancelled or abandoned tag-fired reservation takes the tag back; Routing gains the window a fired template waits out, the transaction the tag and the
@@ -315,23 +316,25 @@ Depends on phase 9.
       is marked half closed, with conditions, fan-out and precedence named as what is still open;
       the 2026-08-13 filename question notes that a template answers it for the person who
       configured one and that the general answer is still a title nobody has
-- [ ] `mirror.md`: the third non-item unit, its directory, and what a rebuild restores in what order
-- [ ] `http-v1.md`: the routes, the `route` body's two shapes, and what `/tag` now does — it
+- [x] `mirror.md`: the third non-item unit, its directory, and what a rebuild restores in what order
+- [x] `http-v1.md`: the routes, the `route` body's two shapes, and what `/tag` now does — it
       applies a template, and answers `422 trigger-refused` where the template cannot route, which
       `/untag` never does
-- [ ] Whether the refusal rule amended on 2026-09-07 wants an ADR of its own or a note appended to
+- [x] Whether the refusal rule amended on 2026-09-07 wants an ADR of its own or a note appended to
       [34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md) — it reverses
-      a line this plan stated, and the reasoning is worth keeping
-- [ ] `client.md`: what the cache holds and what it answers offline
-- [ ] `shell.md`: the `where` list's third band, the Templates settings section, the corner notice
+      a line this plan stated, and the reasoning is worth keeping. **A dated amendment on ADR 34**:
+      it extends that record's own rules about what a tag does rather than reversing one of them,
+      and the line it reverses was this plan's, so nothing is superseded
+- [x] `client.md`: what the cache holds and what it answers offline
+- [x] `shell.md`: the `where` list's third band, the Templates settings section, the corner notice
       for a fired template — `routing` with a cancel while the window is open, `routed` after, both
       read from the log — and trigger tags being marked in the chooser, naming their template
-- [ ] `CONTEXT.md`: **Routing record** gains the template it came from
-- [ ] `todo.md`: close what this plan closed, and leave what it did not — the rule table, fan-out,
+- [x] `CONTEXT.md`: **Routing record** gains the template it came from
+- [x] `todo.md`: close what this plan closed, and leave what it did not — the rule table, fan-out,
       capture templates, conversion
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, and **`pnpm test:stack`**,
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, and **`pnpm test:stack`**,
       which this earns several times over
-- [ ] `git commit`
+- [x] `git commit`
 
 ---
 

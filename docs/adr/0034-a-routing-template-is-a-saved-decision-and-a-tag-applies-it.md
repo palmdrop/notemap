@@ -2,7 +2,8 @@
 
 **Date**: 2026-09-05
 **Status**: Accepted — amends [ADR 17](0017-delivery-is-asynchronous-and-retried-on-evidence.md)'s
-neighbourhood in `core.md` and closes half of the routing-rule open question held since 2026-08-02
+neighbourhood in `core.md` and closes half of the routing-rule open question held since 2026-08-02.
+**Extended 2026-09-07** with what a tag does when its template cannot route (below)
 **Deciders**: palmdrop, with Claude
 
 ---
@@ -159,6 +160,42 @@ would be holding a private reference to a public row.
   item is allowed, and an item may go to several destinations; nothing here is a new case.
 - **Neutral** — the trigger tag stays on the item after firing. It reads as a record of why the
   item went where it went, and it is what a later filter is written against.
+
+---
+
+## Amendment, 2026-09-07 — a tag whose template cannot route is refused
+
+Built, and one case this record did not name turned out to need answering: what happens when the tag
+lands and the template cannot route. The `routing-templates` plan had written *the tag lands, the
+failure reaches the log, and the item stays in the queue*, on the argument that a tag chooser must
+not refuse input for reasons about a vault. That is now reversed, and the argument survives intact
+because the reversal is narrower than the line it replaces.
+
+**The distinction is between a template that is stale and a destination that is asleep.** A route
+refused for `unreachable` says nothing about the template — the vault is unmounted, the server is
+restarting — and that case does not refuse: the reservation is made and the delivery waits it out,
+which is what [ADR 17](0017-delivery-is-asynchronous-and-retried-on-evidence.md) built. Every other
+refusal is about the *template*: its destination was deleted or retired, its capability is no longer
+declared, its expanded arguments no longer satisfy the schema. So the reasons a tag can now be
+refused for are never reasons about a vault, which is what the original line was protecting.
+
+**And landing the tag would be worse than refusing it.** Tagging is idempotent, so a tag that filed
+nothing is **spent** the moment it lands: the person goes to settings, repoints the template, comes
+back, applies the tag again — and it is absorbed. The item can never be filed by that tag. Leaving
+it there also fills the queue with items wearing a tag that does nothing, which is the failure
+[ADR 37](0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md) removes
+for the cancelled and abandoned cases and would be reintroducing here.
+
+**A capture is the exception, and drops the tag rather than refusing.** A source-supplied trigger
+tag has nobody in the room to be told, and refusing would lose a whole capture over a tag —
+`core.md` already drops a tag that trims to nothing on exactly that reasoning. Dropping is the same
+call as refusing, made where a refusal has no reader: in both cases the tag does not land, because a
+tag that filed nothing is spent either way.
+
+**Cost, taken knowingly**: the tag chooser now has an input that can be refused, which no other tag
+is. The mitigation is the one this record already chose for the same problem — the namespace is
+reserved and the shell marks a trigger tag as one — so the tag that can be refused is exactly the
+tag drawn as having an effect.
 
 ---
 

@@ -1,8 +1,25 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-09-04
+**Last updated**: 2026-09-07
 **Shipped**:
+
+- 2026-09-07 — **One tag files it where it goes.** A **routing template** is a saved routing
+  decision — a destination, a capability, arguments held as patterns, how its folder is treated —
+  and a **trigger tag** under the reserved `route/` namespace applies it. Applying one *is* the
+  decision, which rewrites this document's *"a rule never delivers on its own"*. Core expands the
+  patterns when the decision is made, from a closed vocabulary, so a capture carries the UTC
+  offset it was made at and `{{captured_at}}` means the right day. A folder is `create`, `require`
+  or `establish`, checked by the adapter at delivery. A fired template **never attempts inline**:
+  the delivery is an ordinary job due a configured window later, so the cancel offered while it
+  waits is real against a mounted vault — and the tag and the reservation commit together, so
+  *tagged but not reserved* cannot exist. A reservation a tag made and that never delivered gives
+  that tag back.
+  ([plan](../plans/routing-templates.md),
+  [ADR 34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md),
+  [35](../adr/0035-a-templates-arguments-are-patterns-expanded-when-the-decision-is-made.md),
+  [36](../adr/0036-a-folder-is-created-required-or-established-once.md),
+  [37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md))
 
 - 2026-09-04 — **A delivery says what went, and a destination can be asked what would go.** A
   delivered outcome may carry the content it produced, its media type and a short prose note about
@@ -267,8 +284,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - **Feed and queue** — ordered, paginated reads of both surfaces.
 - **Enrichment** — the job model, suggestions and artifacts, accepting and rejecting, per-source
   auto-request policy. Ports defined; **no providers wired**.
-- **Routing** — the destination port, the append-only routing log, and a filesystem
-  destination including its append-to-an-existing-file form.
+- **Routing** — the destination port, the append-only routing log, a filesystem destination
+  including its append-to-an-existing-file form, and **routing templates**: a saved decision, the
+  expansion of its patterns, and the trigger tag that applies it.
 - **The mirror** — lossless write-only mirroring, and rebuild of a pool from mirror + assets.
   On-disk format: [mirror.md](mirror.md).
 - **The action log** — an append-only trace of every mutation, read newest first and paginated.
@@ -440,6 +458,33 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   given. A tag's name is the whole of the request, and `by` is not something the caller chooses over
   again — so the first agent there stands, and a person's tag is not silently reattributed to the
   provider whose suggestion arrives after it.
+- **A tag under `route/` may have an effect** (added 2026-09-07,
+  [ADR 34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md)). The
+  namespace is **reserved**: only a routing template may declare a trigger tag, and only under it.
+  A tag under `route/` that no template declares is an ordinary tag and does nothing — the
+  namespace marks where an effect *may* live, so nobody meets one by surprise, and it is not itself
+  a decision.
+- **Firing is on the tagging, not on the tag being present.** Adding the tag applies the template;
+  the tag then stays on the item, saying why it went where it went. Nothing scans for items wearing
+  one. So an absorbed re-tag fires nothing, a revision carrying its original's tags fires nothing,
+  and a tag drained from a client's outbox fires when it arrives, by the same path any tag takes.
+  **Untagging does not unroute**: the record exists, and it is cancelled where cancelling lives.
+- **A source-supplied tag fires too.** Attribution could tell a person's tag from a source's, and
+  deliberately is not used: a capture arriving from an inbox already tagged `route/research` and
+  filing itself is the point rather than an accident of it. What it costs is that a system outside
+  notemap can cause a delivery.
+- **A trigger tag whose template cannot route is refused, not applied** (added 2026-09-07). A route
+  refused for anything but being unable to *reach* the destination means a stale or misconfigured
+  template — one whose destination was deleted or retired, whose capability is no longer declared,
+  or whose expanded arguments no longer fit — and that is the person's to go and fix. Since tagging
+  is idempotent, a tag that filed nothing would be **spent** the moment it landed: re-applying it
+  after the repair would be absorbed, and the item could never be filed by it again. So nothing is
+  written at all, the tag included, and the refusal names the template and why. A destination that
+  merely could not be reached is not this case: the reservation is made and the delivery waits it
+  out, which is what the whole deferred model is for.
+- **A capture's trigger tag is dropped rather than the capture refused**, on the rule this section
+  already sets for a tag that trims to nothing: a whole capture is not lost over a tag, and there
+  is nobody there to be told. Landing it would be worse than dropping it, for the reason above.
 
 ### Archive and purge
 
@@ -784,7 +829,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   `maxAttempts` limits is the number of times a destination is handed one item's material, which for
   something that cannot be repeated safely is the number worth bounding — not how much of that
   happened to be done by a job. So the count a person reads on the abandoned surface is the count
-  that was made.
+  that was made. *Amended 2026-09-07 for one path*: a **template fired by its trigger tag** makes no
+  inline attempt, so its job's first attempt is the first, numbered from zero. Every other route —
+  including one made by taking a template by hand — is unchanged.
 - **Every failed attempt at a delivery appends the same kind of entry**, whether it was the inline
   one or a job's, numbered in one sequence. A person reading an item's history is reading one run of
   attempts on one destination; splitting it by which side of the queue it happened on would be
@@ -961,9 +1008,97 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   genuinely handles anything. It is a promise rather than a shrug: claiming it trades away the
   refusal core would otherwise make up front, so what would have been an immediate
   `payload-type-unsupported` becomes a delivery that is attempted and rejected.
-- Rules may propose a destination from an item's tags, but **a rule never delivers on its own**.
-  Delivery is always a decision. Deferring the *execution* of a decision a person has made does not
-  weaken this: no rule decided anything.
+- **Nothing delivers that a person did not ask for** (rewritten 2026-09-07,
+  [ADR 34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md)). This
+  replaces *"a rule never delivers on its own"*, which was written when the only thing that could
+  fire was a conditional rule nobody had specified. A routing template is not that: it holds a
+  decision a person made once, and applying it — by taking it in a composer, or by putting its
+  trigger tag on an item — **is** the decision being made again. What the old line was protecting
+  is intact, and is now said directly: nothing in core watches the pool and decides on its own
+  behalf, no condition is evaluated against an item, and every delivery traces to a gesture. A
+  conditional rule table remains unbuilt and would need its own decision.
+
+### Routing templates
+
+- **A routing template is a saved routing decision** (added 2026-09-07,
+  [ADR 34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md)), held as
+  **pool state** beside destinations: an id, a name a person can change, the destination, the
+  capability, the arguments **as patterns**, how its folder is treated, and optionally a trigger
+  tag. It is configuration rather than history, which is why there is no retire — a destination is
+  retired because records name it forever, and a template names nothing that outlives it.
+- **A template names a destination**, never `manual` and never `discard`. Both are decisions about
+  an item rather than places to file one, and neither needs saving.
+- **A trigger tag is unique across templates**, and must sit under `route/`. Both are refused with
+  their own reasons rather than silently ignored. It is **declared rather than derived** from the
+  name, so renaming a template disarms no tag already written on an item.
+- **A destination a template names stays deletable, and the delete warns**, naming the templates it
+  strands. A record naming a destination still refuses the delete: a record is history that would
+  otherwise name nothing, and a template is configuration a person can repoint. So everything that
+  reads a template tolerates a destination that is gone, and routing from a stranded one is refused
+  as an unknown destination, which needed no new refusal.
+- **The routing record names the template it came from**, optionally — a decision made by hand
+  names none — and says whether **the tagging made it**. Three things want it: `establish` has to
+  know whether it has ever landed; the log can say a template filed this rather than that somebody
+  took one; and only a *tag-fired* reservation gives its tag back.
+- **Arguments are patterns, and core expands them when the decision is made** (added 2026-09-07,
+  [ADR 35](../adr/0035-a-templates-arguments-are-patterns-expanded-when-the-decision-is-made.md)).
+  The template stores what was typed; the record stores what it came out as. So everything that
+  reads a record goes on working with no knowledge that templates exist, and a record is honest
+  about the place it actually asked for.
+- **The vocabulary is closed, and expansion is statically total.** The fields are the item's own —
+  its capture date, its id, its source — with named formats rather than a date language. An unknown
+  field or an unknown format **refuses the write** when the template is saved, while the person is
+  still looking at it, and every field in the table is present on every item, so there is no second
+  refusal at route time and a template that saved will always expand. Expansion applies to string
+  values only, at every depth of the arguments, and the result is validated against the
+  capability's arguments schema exactly as a hand-made set is.
+- **The line against [ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md)**:
+  the adapter resolves what only it can know — what is already there, at the moment of writing —
+  and core resolves what only the item knows. A date is the item's, not the vault's.
+- **A capture records the UTC offset it was made at**, optionally, and the date pattern is read in
+  it: a note captured at 22:32 in Stockholm is filed under that day and not the next. A capture
+  that carries none is read in a **fallback zone the host names**, an IANA zone on the terms this
+  document already sets for operational knobs — never a silent UTC, which would file a person's
+  evening in tomorrow.
+- **A folder is created, required, or established once** (added 2026-09-07,
+  [ADR 36](../adr/0036-a-folder-is-created-required-or-established-once.md)). A capability that
+  writes into a folder takes `create` or `require`; the check is the **adapter's**, at delivery,
+  because whether a folder is there is a fact only the thing holding the vault ever has. A missing
+  folder under `require` is **rejected**, which is abandoned on the first attempt and hands the item
+  back to the queue — so a research folder that was renamed stops the filing and says so, rather
+  than making a second one beside it.
+- **`establish` is the template's word alone**, and resolves at decision time: unestablished it asks
+  the adapter to create, established it asks the adapter to require. No adapter ever hears it, so
+  the arguments on a record are always the two-valued thing. The establishment is written in the
+  transaction that stores the **first delivered** record naming the template, and is **cleared when
+  the arguments are edited** — a different place has not been established. A first delivery that was
+  abandoned leaves it unestablished, correctly: nothing landed.
+- **A fired template waits, and never attempts inline** (added 2026-09-07,
+  [ADR 37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md)).
+  Tagging mints the reservation and enqueues an ordinary delivery job due a **configured window**
+  later. Nothing in the work model is new: a job with a future due time and no attempts behind it is
+  what a backed-off retry already is, so the wait is a row and a host that dies inside it loses
+  nothing. The window is host configuration, beside the retry policy and the sweep's grace. Its
+  whole purpose is that a shell can offer a real *cancel* — inline, against a mounted vault, the
+  note exists before the notice is on screen.
+- **A route made by hand keeps the inline attempt.** What is bought here is a window on the gesture
+  that has no review in it; paying for it everywhere would slow every reviewed decision to serve a
+  mistake that surface does not make.
+- **The tag and the reservation commit in one transaction.** There is no I/O to keep out of it,
+  because the attempt is a job by construction. So *tagged but not reserved* is a state that cannot
+  exist and nothing has to sweep for it — including for a tag that arrived from a client's outbox,
+  which is one call like any other.
+- **A tag-fired reservation removed without delivering takes its trigger tag with it**, whether it
+  was cancelled inside the window or abandoned after a failure. Two reasons: tagging is idempotent,
+  so an item that keeps the tag can never be filed by it again and the queue slowly fills with items
+  wearing a tag that does nothing; and the tag is on the item exactly when it filed it somewhere,
+  which is what makes it readable a year later. **Only a tag-fired one** — a template taken in a
+  composer is a decision a person made with the item in front of them, and the tag may be there for
+  their own reasons. A **delivered** record keeps its tag, and untagging still does not unroute.
+  The entry recording the removal names the record, so the tag does not read as having removed
+  itself.
+- **The pool derives how much of itself a template made** — how many records name it and when the
+  last one did — beside the template, on the terms an item's routing summary is already derived.
 
 ### The mirror
 
@@ -1294,6 +1429,14 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 
 - [ ] 2026-08-02 — The routing-rule table: how rules are expressed, how fan-out to several
       destinations is presented, and whether a rule may ever be trusted to fire unattended.
+      *Half closed 2026-09-07*: the last part is answered, and answered by not needing a rule. A
+      **routing template** holds the decision and a trigger tag applies it, so a saved decision
+      fires unattended because a person applied it — no condition is evaluated and nothing watches
+      the pool ([ADR 34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md)).
+      What is still open is the table itself: **conditions** — a rule that fires on what an item
+      *is* rather than on a gesture — **fan-out** to several destinations from one gesture, which
+      also reopens what *cancel* means when one of two has landed, and **precedence** between rules
+      that both match.
 - [ ] 2026-08-02 — Whether removing an accepted tag should suppress that suggestion permanently,
       or only until the next revision.
 - [ ] 2026-08-02 — Auto-archive: whether it is wanted at all, and after how long.
@@ -1318,7 +1461,11 @@ Recorded in full under [docs/adr/](../adr/). In brief:
       open-JSON payload and nothing in it is a title, so the filesystem destination derives from
       the first line of text and falls back to the item id. Serviceable for text, ugly for
       everything else. A title is plausibly an artifact — an enrichment could produce one — which
-      would answer this and several routing-template questions in `todo.md` at once.
+      would answer this and several conversion questions in `todo.md` at once.
+      *Noted 2026-09-07*: a **routing template** answers it for the person who configured one —
+      `research/{{captured_at}}.md` is a filename they chose, expanded per item — but that is an
+      answer somebody had to write down. The general case, for a capture nobody has configured a
+      template for, is still a title nobody has.
 - [ ] 2026-08-13 — Whether a capability may declare itself idempotent, and so opt into retrying a
       delivery whose outcome is unknown. ADR 17 abandons those deliberately, being conservative for
       adapters that can promise nothing. A content-addressed store or an API taking an idempotency
@@ -1429,5 +1576,26 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   same place.
 - A destination refuses a payload type it does not declare support for, rather than delivering
   an approximation, and refuses a capability it never declared at all.
+- A template saved with a pattern naming a field or a format nobody declared is refused when it is
+  saved, and one that saved expands against every item without a second refusal.
+- Two templates cannot claim the same trigger tag, and neither can claim one outside `route/`.
+- Deleting a destination a template names goes through and says which templates it stranded;
+  deleting one a routing record names is still refused.
+- A template applied to a capture made at 22:32 with an offset of two hours files it under that
+  day, and one made with no offset at all files it under the day the host's fallback zone was in.
+- Tagging an item with a trigger tag leaves it holding the tag and one pending reservation, or
+  holding neither: there is no state in which it carries the tag and nothing is coming.
+- Nothing is handed to the destination while the window is open, and the delivery becomes claimable
+  only once it has passed.
+- Cancelling inside the window removes the reservation, removes the trigger tag, and returns the
+  item to the queue; a first attempt that is abandoned does the same. A delivery that landed keeps
+  the tag.
+- The same template taken by hand in a composer leaves the item's own tags alone when its delivery
+  is cancelled.
+- A trigger tag whose template names a destination that was deleted or retired is refused, and the
+  item is left carrying neither the tag nor a record. The same tag on a capture is dropped and the
+  capture stands.
+- An `establish` template creates its folder on the first delivery that lands and requires it after;
+  editing its arguments makes it establish again.
 - A file that is still being written is not ingested until it is complete.
 - Core can be instantiated twice over two different pools in one process without interference.
