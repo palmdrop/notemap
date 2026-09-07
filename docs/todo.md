@@ -17,7 +17,12 @@
 
 - [x] "Checks" in the settings page against DAEMON and destinations should be done automatically. Also, destination checks only shows if the adapter is reachable, not the destination itself. Would be great with a way to check if the destination is correctly configured before trying to route to it.
 
-- [ ] Consider full POC: inbox via Memos app, routing to complex obsidian project. The "advertise
+- [ ] Consider full POC: inbox via Memos app, routing to complex obsidian project. The **inbox
+  half closed 2026-09-07**: `apps/relay-memos` reads a Memos server and captures every memo into
+  the pool over `/v1`, with its pictures, at its own capture time, carrying the tags it already
+  had ([plan](plans/memos-relay.md),
+  [ADR 39](adr/0039-a-relay-is-outside-notemap-and-reaches-v1-like-anything-else.md)). What is
+  left of this line is the obsidian end. The "advertise
   folders" half closed 2026-08-31: the destination port can be asked what an argument could hold
   ([ADR 26](adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md)), and the
   filesystem kind answers it for `create-file` and `append-to-file`. Still open: **custom tags that

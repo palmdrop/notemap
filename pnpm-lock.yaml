@@ -305,6 +305,31 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@24.13.3)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.5)(yaml@2.9.0))
 
+  apps/relay-memos:
+    dependencies:
+      '@notemap/relay':
+        specifier: workspace:*
+        version: link:../../packages/relay
+      smol-toml:
+        specifier: ^1.7.1
+        version: 1.7.1
+      uuid:
+        specifier: ^14.0.1
+        version: 14.0.1
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.13.3
+      esbuild:
+        specifier: ^0.28.0
+        version: 0.28.1
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@24.13.3)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.5)(yaml@2.9.0))
+
   apps/ui:
     dependencies:
       '@notemap/client':

@@ -1,0 +1,54 @@
+# notemap-relay-memos configuration.
+#
+# Copy to $XDG_CONFIG_HOME/notemap/relay-memos.toml (usually
+# ~/.config/notemap/relay-memos.toml), or pass --config <path>.
+#
+# A relay is a program outside notemap: it reads someone else's system and
+# captures what it finds over `/v1`, carrying an access token like anything else
+# that is not a browser. Nothing about it is in the daemon, and nothing here is
+# the daemon's config — which is why both tokens are named in this file and
+# neither is in that one.
+#
+# An unrecognised key is refused rather than ignored. This file has a dozen keys
+# and one job, so a misspelt one is a typo, not a key from a newer version.
+
+# The notemap daemon this relay feeds.
+[pool]
+url = "http://127.0.0.1:4747"
+
+# How the pool sees this relay. Every memo arrives under this source, which is
+# what `GET /v1/sources` counts and what the settings screen draws — the way a
+# relay that has quietly died is noticed. One per Memos server: a second server
+# is a second relay, with its own config file and its own source, and giving
+# them one name would merge two servers' memos under one identity.
+source = "memos"
+
+# The access token, minted with `notemap token mint --name relay-memos`. Read
+# from a file or from the environment — exactly one, and never an inline
+# `token`, which would put a secret in a file that is backed up and pasted into
+# issues. It is read at each poll, so rotating it is writing the file.
+#
+# It reaches the whole pool. There is no narrower grant yet.
+tokenFile = "~/.config/notemap/relay-memos/pool-token"
+# tokenEnv = "NOTEMAP_RELAY_MEMOS_POOL_TOKEN"
+
+# The Memos server this relay reads.
+#
+# Only the token's own user's memos are read, and only the ones that are not
+# archived. On a server with more than one person on it, listing everything
+# visible would pull a stranger's public memos into a private pool.
+[memos]
+url = "https://memos.example.com"
+
+# An access token from Memos' own settings, under the same rule as the pool's:
+# a file or the environment, exactly one, never inline.
+tokenFile = "~/.config/notemap/relay-memos/memos-token"
+# tokenEnv = "NOTEMAP_RELAY_MEMOS_TOKEN"
+
+# How often everything upstream is read again. A poll holds nothing and repeats
+# everything, so this is latency and nothing else: a shorter interval finds a
+# memo sooner, and costs one request per page plus one per changed memo.
+#
+# Polls never overlap — the next is due when the last one finished.
+[poll]
+interval = 300000 # milliseconds — five minutes

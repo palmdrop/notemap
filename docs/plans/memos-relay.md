@@ -1,9 +1,9 @@
 # Memos reaches the pool by itself
 
 **Date**: 2026-09-07
-**Status**: In progress <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`, `docs/standards.md`
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-09-07
 
 ---
 
@@ -176,35 +176,36 @@ stopping point — phases 4 and 5 are naturally landed together.
 
 Depends on phase 4. Depends on phase 3 only for being able to watch it work.
 
-- [ ] Reads Memos, maps each memo to a `note`, posts it through `packages/relay`. Source id is
+- [x] Reads Memos, maps each memo to a `note`, posts it through `packages/relay`. Source id is
       **one per relay instance** — `memos`, or `memos-<name>` if a second server ever appears.
       `sourceItemId` is the memo's uid; an edit claims `<uid>@<updateTime>`
-- [ ] A **full scan every poll**, holding nothing: post every memo, let the pool answer
+- [x] A **full scan every poll**, holding nothing: post every memo, let the pool answer
       `already-captured` for the ones it has. Nothing to lose, corrupt or migrate, and the relay's
       correctness is one sentence. A watermark on `updateTime` is a pure cache and can be added if
       and when the scan actually hurts
-- [ ] Capture time is the memo's own creation time, never the poll's — `capturedAt` is what puts a
+- [x] Capture time is the memo's own creation time, never the poll's — `capturedAt` is what puts a
       memo written three days ago at its true place in the feed
-- [ ] Memos' tags travel with the memo and are attributed to the source, which core does already:
+- [x] Memos' tags travel with the memo and are attributed to the source, which core does already:
       "importing from an already-classified system does not lose its classification"
-- [ ] Configuration is its own TOML file, in the daemon's annotated-reference style. Both secrets —
+- [x] Configuration is its own TOML file, in the daemon's annotated-reference style. Both secrets —
       the notemap access token and the Memos token — are **read from a file named in the config**,
       never inline, which is the rule `[[accounts]]` already follows and for the same reason
-- [ ] A memo deleted upstream is left alone: notemap never loses an item, and there is nothing to do
-- [ ] Failures go to the relay's log. Notemap has nowhere to put another program's errors, and after
+- [x] A memo deleted upstream is left alone: notemap never loses an item, and there is nothing to do
+- [x] Failures go to the relay's log. Notemap has nowhere to put another program's errors, and after
       phase 2 nothing in a payload can be refused anyway
-- [ ] Tests against a fake Memos, driving the full-stack harness end to end: a memo with prose,
+- [x] Tests against a fake Memos, driving the full-stack harness end to end: a memo with prose,
       a memo with only pictures, a memo with both, a memo edited between runs, a memo with tags
-- [ ] `README.md` — **suggest** the roadmap edit rather than making it; that file is written by hand.
+- [x] `README.md` — **suggest** the roadmap edit rather than making it; that file is written by hand.
       "External Inboxes" is what this is. `docs/todo.md`'s "full POC: inbox via Memos app" line is
       half-closed and says so
 - [x] ADR: **a relay is outside notemap and reaches `/v1` like anything else**, recording why intake
       is not symmetrical with destinations and what would move it in-process — an inbox needing
       pool-side configuration a person edits in the UI. *Landed with phase 4, whose package is what
       embodies the decision; `CONTEXT.md` gained **Relay** there too*
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack`. By hand:
-      point it at your Memos, watch the queue fill, edit a memo, watch it amend
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack`. *The
+      by-hand pass — point it at your Memos, watch the queue fill, edit a memo, watch it amend —
+      is yours: no session here has a Memos server to point it at*
+- [x] `git commit`
 
 ---
 

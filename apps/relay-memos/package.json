@@ -1,0 +1,29 @@
+{
+  "name": "@notemap/relay-memos",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "notemap-relay-memos": "./dist/main.js"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "node scripts/build.ts",
+    "start": "node scripts/build.ts && node dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@notemap/relay": "workspace:*",
+    "smol-toml": "^1.7.1",
+    "uuid": "^14.0.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "esbuild": "^0.28.0",
+    "vitest": "^4.1.10"
+  }
+}
