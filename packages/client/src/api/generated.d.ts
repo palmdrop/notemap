@@ -3605,6 +3605,7 @@ export interface components {
             modifiedAt: string;
             revisedInto: string[];
             routing?: components["schemas"]["RoutingSummary"];
+            assets?: components["schemas"]["Asset"][];
         };
         RoutingSummary: {
             records: number;
@@ -3617,6 +3618,13 @@ export interface components {
                 /** @enum {string} */
                 kind: "user";
             })[];
+        };
+        Asset: {
+            id: string;
+            filename: string;
+            mime: string;
+            blob: string;
+            bytes: number;
         };
         CaptureEnvelope: {
             id?: string;
@@ -4031,13 +4039,6 @@ export interface components {
             detail: {
                 [key: string]: unknown;
             };
-        };
-        Asset: {
-            id: string;
-            filename: string;
-            mime: string;
-            blob: string;
-            bytes: number;
         };
     };
     responses: never;

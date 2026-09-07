@@ -1,7 +1,7 @@
 # Memos reaches the pool by itself
 
 **Date**: 2026-09-07
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: In progress <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`, `docs/standards.md`
 **Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
 
@@ -54,25 +54,25 @@ what will tell us whether its seam is in the right place.
 Depends on nothing. Purely additive: every read that answers items carries more, and nothing
 reads it yet. Safe to land and stop.
 
-- [ ] Create branch `agent/memos-relay`
-- [ ] An `Item`'s payload carries `AssetRef = { slot, asset }` and nothing else, so a client cannot
+- [x] Create branch `agent/memos-relay`
+- [x] An `Item`'s payload carries `AssetRef = { slot, asset }` and nothing else, so a client cannot
       tell which of an item's attachments is a picture without a read per attachment. Every read
       that answers items grows a resolved asset list — the filename, media type and size the
       `Asset` row already holds — **derived at read time and never stored**, exactly as the routing
       summary is ([http-v1.md](../specs/http-v1.md#items)). The payload's own `assets` are
       untouched, so nothing about what the mirror writes changes
-- [ ] The shape follows the routing summary's rules: present on the item route, the feed, the
+- [x] The shape follows the routing summary's rules: present on the item route, the feed, the
       queue, the archive, a capture outcome and an edit outcome; **absent where the payload
       references none**, rather than present and empty
-- [ ] Core answers it from the same transaction that reads the item, so an asset swept between two
+- [x] Core answers it from the same transaction that reads the item, so an asset swept between two
       reads cannot make a row describe attachments that have gone
-- [ ] `client.md`: the cache keeps what an item answers, so this is more per cached item and the
+- [x] `client.md`: the cache keeps what an item answers, so this is more per cached item and the
       500-item history cap now covers slightly more. Say so where the cache's contents are described
-- [ ] Tests: an item with two attachments answers both with their media types; an item with none
+- [x] Tests: an item with two attachments answers both with their media types; an item with none
       omits the field; the feed answers it per row without a read per attachment
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, and `pnpm test:stack` —
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, and `pnpm test:stack` —
       the wire shape changes, which is what that suite is for
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 2 — One payload type
 

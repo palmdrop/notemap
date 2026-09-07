@@ -41,7 +41,7 @@ import type {
   AgentColumns,
   AssetRow,
   DestinationRow,
-  ItemAssetRow,
+  ItemAssetJoinRow,
   ItemRow,
   ItemRoutingRow,
   ItemTagRow,
@@ -120,7 +120,7 @@ export function toRoutingSummary(
 export function toItem(
   row: ItemRow,
   tagRows: readonly ItemTagRow[],
-  assetRows: readonly ItemAssetRow[],
+  assetRows: readonly ItemAssetJoinRow[],
   revisedInto: readonly string[],
   routing: RoutingSummary | undefined,
 ): Item {
@@ -128,6 +128,9 @@ export function toItem(
     slot: asset.slot,
     asset: asset.asset_id as AssetId,
   }));
+  const resolved: Asset[] = assetRows.map((asset) =>
+    toAsset({ ...asset, id: asset.asset_id }),
+  );
 
   return {
     id: row.id as ItemId,
@@ -165,6 +168,7 @@ export function toItem(
     modifiedAt: toTimestamp(row.modified_at),
     revisedInto: revisedInto as readonly ItemId[],
     ...(routing === undefined ? {} : { routing }),
+    ...(resolved.length === 0 ? {} : { assets: resolved }),
   };
 }
 
@@ -206,7 +210,7 @@ export function itemParams(
   ];
 }
 
-export function toAsset(row: AssetRow): Asset {
+export function toAsset(row: Omit<AssetRow, "stored_at">): Asset {
   return {
     id: row.id as AssetId,
     filename: row.filename,

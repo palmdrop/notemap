@@ -38,6 +38,13 @@ export type ItemAssetRow = {
   readonly asset_id: string;
 };
 
+/**
+ * An item's reference to an asset, joined to the asset it names. The foreign
+ * key makes the join total, so a reference can never resolve to nothing.
+ */
+export type ItemAssetJoinRow = ItemAssetRow &
+  Omit<AssetRow, "id" | "stored_at">;
+
 export type AssetRow = {
   readonly id: string;
   readonly filename: string;

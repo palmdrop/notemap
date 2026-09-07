@@ -385,6 +385,12 @@
           },
           "routing": {
             "$ref": "#/components/schemas/RoutingSummary"
+          },
+          "assets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Asset"
+            }
           }
         },
         "required": [
@@ -453,6 +459,34 @@
           "records",
           "pending",
           "to"
+        ]
+      },
+      "Asset": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "mime": {
+            "type": "string"
+          },
+          "blob": {
+            "type": "string"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "filename",
+          "mime",
+          "blob",
+          "bytes"
         ]
       },
       "CaptureEnvelope": {
@@ -1880,34 +1914,6 @@
           "by",
           "at",
           "detail"
-        ]
-      },
-      "Asset": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "filename": {
-            "type": "string"
-          },
-          "mime": {
-            "type": "string"
-          },
-          "blob": {
-            "type": "string"
-          },
-          "bytes": {
-            "type": "integer",
-            "minimum": 0
-          }
-        },
-        "required": [
-          "id",
-          "filename",
-          "mime",
-          "blob",
-          "bytes"
         ]
       }
     },

@@ -45,6 +45,17 @@ const routingSummary = z
   })
   .openapi("RoutingSummary");
 
+export const assetSchema = z
+  .object({
+    id: z.string(),
+    /** Exactly as uploaded: a filename is user data. */
+    filename: z.string(),
+    mime: z.string(),
+    blob: z.string(),
+    bytes: z.number().int().nonnegative(),
+  })
+  .openapi("Asset");
+
 export const itemSchema = z
   .object({
     id: z.string(),
@@ -63,19 +74,9 @@ export const itemSchema = z
     /** Empty rather than absent, so a reader asks for its length and nothing else. */
     revisedInto: z.array(z.string()),
     routing: routingSummary.optional(),
+    assets: z.array(assetSchema).optional(),
   })
   .openapi("Item");
-
-export const assetSchema = z
-  .object({
-    id: z.string(),
-    /** Exactly as uploaded: a filename is user data. */
-    filename: z.string(),
-    mime: z.string(),
-    blob: z.string(),
-    bytes: z.number().int().nonnegative(),
-  })
-  .openapi("Asset");
 
 export const captureOutcomeSchema = z
   .union([

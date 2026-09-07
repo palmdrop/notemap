@@ -458,6 +458,23 @@ archive, a capture outcome, an edit outcome:
 - A summary saying nothing and one saying `records: 0` are the same claim, so only the first is
   spelled — a cancelled last reservation takes the field away again.
 
+**An `Item` carries `assets` on the same terms** — every asset its payload references, resolved:
+
+```json
+{ "payload": { "assets": [ { "slot": "000", "asset": "0198f0c2-..." } ] },
+  "assets": [ { "id": "0198f0c2-...", "filename": "whiteboard.png",
+                "mime": "image/png", "blob": "sha256-...", "bytes": 8 } ] }
+```
+
+- **Derived at read time and never stored.** The payload's own `assets` are what was written and
+  are untouched; this is the `Asset` rows they name, read in the same transaction, so an asset
+  swept between two reads cannot make a row describe an attachment that has gone.
+- **Absent where the payload references none**, as `routing` is, rather than present and empty.
+- **In slot order**, which is the order a payload is stored in and the order a rendering draws in.
+- A flat list rather than pairs: the slot is in `payload.assets`, and a reader that wants both
+  joins on the id it already has. What it saves is a read per attachment to answer "is this one a
+  picture" — `mime` is the answer, and nothing derives that from the payload's type.
+
 ### The feed
 
 `GET /v1/feed`

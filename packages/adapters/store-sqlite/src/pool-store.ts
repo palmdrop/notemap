@@ -72,7 +72,7 @@ import type {
   ActionRow,
   AssetRow,
   DestinationRow,
-  ItemAssetRow,
+  ItemAssetJoinRow,
   ItemRoutingRow,
   ItemRow,
   ItemTagRow,
@@ -534,9 +534,12 @@ export function createSqlitePoolStore(
         )
         .all(...ids);
       const assetRows = source
-        .query<ItemAssetRow, Bindable[]>(
-          `SELECT item_id, slot, asset_id FROM item_assets
-           WHERE item_id IN (${slots}) ORDER BY slot`,
+        .query<ItemAssetJoinRow, Bindable[]>(
+          `SELECT reference.item_id, reference.slot, reference.asset_id,
+                  asset.filename, asset.mime, asset.blob, asset.bytes
+           FROM item_assets AS reference
+           JOIN assets AS asset ON asset.id = reference.asset_id
+           WHERE reference.item_id IN (${slots}) ORDER BY reference.slot`,
         )
         .all(...ids);
       const revisionRows = source

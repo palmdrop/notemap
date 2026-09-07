@@ -797,6 +797,10 @@ by anything owed to a person:
   settled here is that the answer is not "evict it under the reader".
 - The store follows the cache, so an eviction reaches it. Including one made while reading the
   store back, which is what stops it growing a session at a time.
+- **A cached item carries what it answers**, so an item with attachments now costs its resolved
+  `assets` as well — a filename, a media type, a blob name and a size per attachment. Bytes are
+  not in it; this is what the pool said the attachments are, which is what lets an offline surface
+  tell a picture from a recording without reaching for either.
 
 Nothing warms the cache. It fills from what surfaces actually read, so an offline working set is as
 large as the person's reading made it.

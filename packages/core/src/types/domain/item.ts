@@ -1,4 +1,5 @@
 import type { Agent } from "./agent";
+import type { Asset } from "./asset";
 import type {
   DestinationId,
   ItemId,
@@ -57,6 +58,11 @@ export type Item = ItemRecord & {
   readonly modifiedAt: Timestamp;
   readonly revisedInto: readonly ItemId[];
   readonly routing?: RoutingSummary;
+  /**
+   * Every asset the payload references, resolved, in slot order. Absent where
+   * it references none.
+   */
+  readonly assets?: readonly Asset[];
 };
 
 export type EditOutcome =

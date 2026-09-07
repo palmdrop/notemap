@@ -1,6 +1,7 @@
 import type {
   Action,
   Agent,
+  AssetId,
   BlobHash,
   CapabilityName,
   DestinationId,
@@ -515,6 +516,79 @@ describe("modifiedAt", () => {
     expect(Date.parse(second.modifiedAt)).toBeGreaterThan(
       Date.parse(first.modifiedAt),
     );
+  });
+});
+
+describe("what an item answers about its assets", () => {
+  it("resolves every attachment, in slot order", async () => {
+    const { pool: p } = pool();
+    await putAssets(
+      p,
+      asset({ id: "asset-1" as AssetId, filename: "mum.png", bytes: 40 }),
+      asset({
+        id: "asset-2" as AssetId,
+        filename: "notes.txt",
+        mime: "text/plain",
+        bytes: 7,
+      }),
+    );
+    const record = capture({
+      assets: [
+        { slot: "001", asset: "asset-2" },
+        { slot: "000", asset: "asset-1" },
+      ],
+    });
+
+    const stored = await appendCapture(p, record);
+
+    expect(stored.assets).toEqual([
+      {
+        id: "asset-1",
+        filename: "mum.png",
+        mime: "image/png",
+        blob: "blob-abc",
+        bytes: 40,
+      },
+      {
+        id: "asset-2",
+        filename: "notes.txt",
+        mime: "text/plain",
+        blob: "blob-abc",
+        bytes: 7,
+      },
+    ]);
+  });
+
+  it("omits the field where the payload references none", async () => {
+    const { pool: p } = pool();
+
+    const stored = await appendCapture(p, capture());
+
+    expect(Object.hasOwn(stored, "assets")).toBe(false);
+  });
+
+  it("answers it per row of the feed", async () => {
+    const { pool: p } = pool();
+    await putAssets(p, asset({ id: "asset-1" as AssetId }));
+    await appendCapture(
+      p,
+      capture({
+        id: "with",
+        createdAt: "2026-08-03T09:00:00.000Z",
+        assets: [{ slot: "000", asset: "asset-1" }],
+      }),
+    );
+    await appendCapture(
+      p,
+      capture({ id: "without", createdAt: "2026-07-31T09:00:00.000Z" }),
+    );
+
+    const { values } = await p.feed(ALL);
+
+    expect(values.map((item) => item.assets)).toEqual([
+      [asset({ id: "asset-1" as AssetId })],
+      undefined,
+    ]);
   });
 });
 
