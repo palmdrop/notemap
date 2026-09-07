@@ -26,25 +26,48 @@ worth the reasoning. The API reference this was designed against is
 
 ---
 
-## Open questions to resolve before phase 3
+## What the spec settled
 
-None of these block phases 1 and 2. All are answerable from `https://api.are.na/v3/openapi.json`,
-which the reference points at but does not inline.
+Resolved 2026-09-07 against [`are-na-openapi.json`](../research/are-na-openapi.json).
 
-- [ ] **Does `POST /v3/blocks` accept `description` (and `title`) at creation?** If it needs a
-      follow-up `PUT /v3/blocks/{id}`, that is a second write and a second window in which a
-      failure duplicates. If so, decide whether the description is worth it — dropping it and
-      saying so in the delivery's note is the cheaper answer.
-- [ ] **Does `GET /v3/me` expose the token's scope?** Decides whether a probe can catch a
-      read-scoped token, or whether that is documentation only.
-- [ ] **Does `GET /v3/users/{id}/contents` work on a free account?** It delegates to search
-      internally and search is Premium-only, but the reference marks Premium endpoints explicitly
-      (`/v3/search`, the batch routes) and does not mark this one. Confirm against a real free
-      token before building candidates on it.
-- [ ] **The block permalink format**, for the routing record's `url`.
-- [ ] **Whether a channel's slug survives a retitle.** Decides how often a remembered place goes
-      stale. Does not change the design either way — the glossary already calls such a place
-      **gone** — but it decides how prominently the README warns about it.
+- **`POST /v3/blocks` takes `title` and `description` at creation.** No follow-up `PUT`, so there
+  is no second write and no second window in which a failure duplicates. `BlockInput` is richer
+  than assumed: also `alt_text`, `original_source_url`, `original_source_title`, `cover_url`, and
+  **`metadata`** — custom key-value pairs set on the **block itself**, not only on the connection.
+  Provenance goes there. Keys are alphanumeric or underscore and at most 40 characters, values are
+  scalars with strings capped at 2000, and there is a limit of 50 keys and 32KB.
+- **A channel is named by ID *or slug*** in both `channels` and the legacy `channel_ids`
+  (`ConnectTo.id` is documented as "Channel ID or slug"). The slug decision holds.
+- **`GET /v3/me` does not expose the token's scope.** `Me` is `User` plus `counts` and `email`, and
+  `scope` appears nowhere but the `POST /v3/oauth/token` exchange response — which a pasted
+  personal access token never produces. So a probe **cannot** catch a read-only token, and the
+  fallback applies: say it in `config.example.toml` and the README, and let a `403` at delivery
+  name the likely cause.
+- **`/v3/users/{id}/contents` is not Premium-gated.** Exactly three paths in the spec mention
+  Premium — `/v3/blocks/batch`, `/v3/blocks/batch/{batch_id}` and `/v3/search` — and this is not
+  one of them. Candidates can be built on it. It returns full `Channel` objects rather than
+  embedded ones.
+- **A channel carries `can`, and `ChannelAbilities` includes `add_to`.** Better than the browse we
+  designed: candidates can drop channels the token cannot post to. `can` is documented as present
+  "only when channel is returned as a full resource", and this endpoint returns full ones — but it
+  is nullable, so filter where it is present and keep the channel where it is not.
+- **There is no idempotency key.** The only "idempotent" in the whole spec is about joining a
+  group. [ADR 39](../adr/0039-a-delivery-that-cannot-be-confirmed-may-duplicate.md) stands as
+  written.
+- **There is no web permalink in the spec.** `_links.self` is an API URL
+  (`https://api.are.na/v3/blocks/12345`), not something a person follows. The routing record's
+  `url` therefore has to be **composed by convention** as `https://www.are.na/block/<id>`, which is
+  are.na's long-standing public form but is not a documented contract. Noted rather than hidden: if
+  it is ever wrong, the record carries a broken link rather than none.
+
+### Still open
+
+- [ ] **Whether a channel's slug survives a retitle.** Empirical, needs an account, and does not
+      change the design — the glossary already calls a remembered place the listing no longer holds
+      **gone**. It decides only how loudly the README warns. Answer by renaming a throwaway channel.
+- [ ] **Whether an image capture's caption should also become `alt_text`.** A caption and alt text
+      are different things — one is a note, the other is accessibility — but a caption is usually
+      descriptive enough to serve. Small, and decidable while building.
 
 ---
 
@@ -185,12 +208,13 @@ Settings are therefore just `account`.
       is refused by core before a decision is made rather than landing as noise.
 - [ ] `candidates`: one page of
       `GET /v3/users/{me}/contents?type=Channel&sort=updated_at_desc&per=100`, with `truncated` set
-      from `meta.has_more_pages`. One request. Group channels are not browsable; the field still
-      accepts any slug typed by hand.
+      from `meta.has_more_pages`. One request. Drop a channel whose `can.add_to` is false; keep one
+      whose `can` is absent, since the field is nullable and a missing ability is not a denial.
+      Group channels are not browsable; the field still accepts any slug typed by hand.
 - [ ] `preview`: converts without reaching the network, unlike WebDAV's, which must read the note it
       would append to.
-- [ ] `probe`: `GET /v3/me`. Report `rejected` naming the scope where the response exposes a
-      read-only token; otherwise validity only.
+- [ ] `probe`: `GET /v3/me`, and nothing more — the response does not carry the token's scope, so a
+      read-only token passes. Documentation is the only guard, and a `403` at delivery names it.
 
 **Conversion**
 
@@ -201,19 +225,26 @@ Settings are therefore just `account`.
 - [ ] A text capture **beginning with a URL** sends `value` = the URL and the remaining prose as the
       description; are.na infers Link, Image or Embed from the value itself. Anything else sends
       `value` = the whole text and becomes a Text block.
-- [ ] An image capture presigns via `POST /v3/uploads/presign`, PUTs the bytes to the returned URL
-      with the matching `Content-Type` — streamed, never buffered; `Asset.bytes` supplies the length
-      — then posts with `value` set to the S3 URL. Caption becomes the description; the title is
-      left unset.
+- [ ] An image capture posts `{files: [{filename, content_type}]}` to `POST /v3/uploads/presign`,
+      which answers `{files: [{upload_url, key, content_type}], expires_in}`. PUT the bytes to
+      `upload_url` with that exact `Content-Type` — streamed, never buffered; `Asset.bytes` supplies
+      the length — then create the block with `value` set to the uploaded object's URL, derived from
+      `key`. Caption becomes the description; the title is left unset. URLs expire in an hour, so
+      presign and upload belong to the same attempt and a retry presigns again.
 - [ ] Refuse a capture carrying more than one asset. A guard: `packages/client/src/capture/envelope.ts:36`
       builds `assets` as zero-or-one, so only a direct `/v1` caller can trip it.
-- [ ] Write provenance into **connection metadata** via the `channels` form on create, best effort.
-      It is not queryable, so it is a record for a person and never a dedup mechanism.
+- [ ] Write provenance into **`BlockInput.metadata`** on create — the block's own key-value pairs,
+      not the connection's, so it survives the block being disconnected. Best effort, and shaped to
+      the limits: keys alphanumeric or underscore up to 40 characters, scalar values, strings under
+      2000, at most 50 keys. Tags flatten to one joined string. It is not queryable, so it is a
+      record for a person and never a dedup mechanism.
 
 **Outcome**
 
-- [ ] `pointer` is the block id; `url` is the block permalink. First kind to return one —
-      `followable()` and `Record.svelte:95` already handle it.
+- [ ] `pointer` is the block id; `url` is `https://www.are.na/block/<id>`, **composed by
+      convention** — the spec offers no web permalink, and `_links.self` is an API URL a person
+      cannot follow. First kind to return a `url` at all; `followable()` and `Record.svelte:95`
+      already handle it.
 - [ ] Output is the block's readable form as markdown; the note says what was dropped — tags,
       artifacts, and any metadata that did not fit.
 - [ ] Error mapping: `401` → `rejected` to a probe and `unreachable` to a delivery, following
