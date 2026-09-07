@@ -454,6 +454,16 @@ account and is never called one; an account is never notemap's, and belongs to a
 else's software is running.
 _Avoid_: profile, connection, endpoint, integration, remote
 
+**Relay**:
+A program *outside* notemap that reads someone else's system and captures what it finds into the
+pool over `/v1`, carrying an **access token** like anything else that is not a browser. Deliberately
+not an **adapter**: a destination is in-process because core owns the decision, the durable record,
+retry and leases, and intake owns none of those — the recovery strategy for a failed poll is to
+poll again. So a relay holds nothing. It re-reads everything each poll and lets the pool's own
+dedup make that harmless, which is why it needs no job, no lease and no outbox
+([ADR 35](docs/adr/0035-a-relay-is-outside-notemap-and-reaches-v1-like-anything-else.md)).
+_Avoid_: importer, connector, sync agent, ingester, adapter (for this)
+
 ### The door
 
 **Credential**:

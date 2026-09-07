@@ -148,29 +148,29 @@ run should be observable rather than debugged blind.
 Depends on phase 2 for the payload shape. Ends with a library and no caller, which is a weak
 stopping point — phases 4 and 5 are naturally landed together.
 
-- [ ] The dance, written once: capture under the upstream id; on `409 source-item-changed`, read
+- [x] The dance, written once: capture under the upstream id; on `409 source-item-changed`, read
       `existing` off the refusal and post the edit under a version identity. The edit route matches
       replay on `(source, sourceItemId)`, so **the second call is idempotent too** — an edited item
       costs two requests every poll forever and never a second revision
-- [ ] Attachments: upload is idempotent on all four of id, bytes, filename and media type, so an
+- [x] Attachments: upload is idempotent on all four of id, bytes, filename and media type, so an
       asset id must be **derived, not minted** — a fresh id each poll would change the payload and
       manufacture a revision every run. UUIDv5, namespace per relay, name is the attachment's own
       identifier upstream. `GET /v1/assets/{id}` is checked first so unchanged bytes are never
       re-sent
-- [ ] Hashing the bytes instead is wrong and the reason belongs in a comment nowhere else would
+- [x] Hashing the bytes instead is wrong and the reason belongs in a comment nowhere else would
       hold: two names over one content are two assets by CONTEXT.md's rule, and upload compares the
       filename, so the same picture arriving under two names would collide as `asset-id-conflict`
-- [ ] A relay is **not** a `@notemap/client`: a client holds an outbox and a cache, and a relay
+- [x] A relay is **not** a `@notemap/client`: a client holds an outbox and a cache, and a relay
       wants neither. Its material is still durable upstream, so an outbox would add durability to
       something that has it, plus a **refused** state needing a person. Plain requests against `/v1`
-- [ ] Slot names are zero-padded indices, so slot order — which is the order a renderer draws in —
+- [x] Slot names are zero-padded indices, so slot order — which is the order a renderer draws in —
       is the order the attachments arrived in upstream
-- [ ] Tests against a real daemon, using the `tests/full-stack` harness: a first run captures; a
+- [x] Tests against a real daemon, using the `tests/full-stack` harness: a first run captures; a
       second run captures nothing; an upstream edit amends while unprocessed and revises once
       processed; a re-run after an edit adds no second revision; an attachment is uploaded once
       across three runs
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`
+- [x] `git commit`
 
 ### Phase 5 — `apps/relay-memos`
 
@@ -198,9 +198,10 @@ Depends on phase 4. Depends on phase 3 only for being able to watch it work.
 - [ ] `README.md` — **suggest** the roadmap edit rather than making it; that file is written by hand.
       "External Inboxes" is what this is. `docs/todo.md`'s "full POC: inbox via Memos app" line is
       half-closed and says so
-- [ ] ADR: **a relay is outside notemap and reaches `/v1` like anything else**, recording why intake
+- [x] ADR: **a relay is outside notemap and reaches `/v1` like anything else**, recording why intake
       is not symmetrical with destinations and what would move it in-process — an inbox needing
-      pool-side configuration a person edits in the UI
+      pool-side configuration a person edits in the UI. *Landed with phase 4, whose package is what
+      embodies the decision; `CONTEXT.md` gained **Relay** there too*
 - [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack`. By hand:
       point it at your Memos, watch the queue fill, edit a memo, watch it amend
 - [ ] `git commit`

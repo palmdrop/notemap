@@ -9,6 +9,7 @@
   },
   "devDependencies": {
     "@notemap/client": "workspace:*",
+    "@notemap/relay": "workspace:*",
     "@notemap/seed": "workspace:*",
     "@types/node": "^24.10.1",
     "typescript": "^6.0.3",
