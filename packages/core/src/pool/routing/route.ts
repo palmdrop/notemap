@@ -192,6 +192,7 @@ function failed(
     detail: {
       record: record.id,
       ...destinationDetail(record),
+      ...templateDetail(record),
       attempt: 1,
       failure,
     },
@@ -275,7 +276,7 @@ export function cancelDelivery(
     const at = ports.clock.now();
     await tx.removeRoutingRecord(id);
     const gave = await releaseTriggerTag(ports, tx, record, at, "person");
-    await appendCancelled(ports, tx, record.item, id, at, gave);
+    await appendCancelled(ports, tx, record, at, gave);
 
     return ok<void, CancelRefusal>(undefined);
   });
@@ -284,17 +285,22 @@ export function cancelDelivery(
 function appendCancelled(
   ports: PoolPorts,
   tx: PoolTx,
-  item: ItemId,
-  record: RoutingRecordId,
+  record: RoutingRecord,
   at: Timestamp,
   /** The trigger tag that came off with it, where the reservation was a tag's. */
   gave: TagName | undefined,
 ): Promise<void> {
   return recordAction(ports, tx, {
     kind: "delivery-cancelled",
-    subject: item,
+    subject: record.item,
     by: { kind: "person" },
     at,
-    detail: { record, ...(gave === undefined ? {} : { tag: gave }) },
+    detail: {
+      record: record.id,
+      // Which template this called off, so a shell saying one is on its way
+      // knows this is the entry that ends it.
+      ...templateDetail(record),
+      ...(gave === undefined ? {} : { tag: gave }),
+    },
   });
 }

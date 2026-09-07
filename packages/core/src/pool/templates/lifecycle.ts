@@ -137,10 +137,14 @@ export function edit(
 
     // A changed place is a different place, and establishment does not carry to
     // it. Without this a deliberate reorganisation bricks the template, and the
-    // only way out is guessing that re-saving is what fixes it.
+    // only way out is guessing that re-saving is what fixes it. Repointing a
+    // stranded template is the same move made larger: what was established was
+    // established somewhere that is no longer where this files.
     const moved =
-      changes.arguments !== undefined &&
-      !sameJson(changes.arguments, held.arguments);
+      (changes.arguments !== undefined &&
+        !sameJson(changes.arguments, held.arguments)) ||
+      wanted.destination !== held.destination ||
+      wanted.capability !== held.capability;
     const { establishedAt: _established, ...unestablished } = tagged;
     const next: RoutingTemplateRecord = moved ? unestablished : tagged;
 

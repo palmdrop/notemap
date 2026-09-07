@@ -1,7 +1,8 @@
 <script lang="ts">
   import Labelled from "$components/primitives/composer/Labelled.svelte";
   import { client } from "$lib/client";
-  import { triggeredBy } from "$lib/templates";
+  import { sayItFired } from "$lib/firing";
+  import { offerable, triggeredBy } from "$lib/templates";
 
   /**
    * The same classification the collapsed row makes, offered where routing is
@@ -19,7 +20,7 @@
   } = $props();
 
   const inUse = client.tags.inUse;
-  const offered = $derived($inUse.map((use) => use.name));
+  const offered = $derived(offerable($inUse.map((use) => use.name)));
 
   let taken = $state<readonly string[]>([]);
   /** Dropped here and not yet read back, which is what the pool still says it carries. */
@@ -71,7 +72,13 @@
     }
     dropped = dropped.filter((each) => each !== name);
     taken = [...taken, name];
-    void client.tag(item, name);
+    void tagged(name);
+  }
+
+  /** A trigger tag files the item, so what it did is said as soon as it is known. */
+  async function tagged(name: string): Promise<void> {
+    await client.tag(item, name);
+    await sayItFired(item, name);
   }
 
   function add(event: Event): void {

@@ -13,6 +13,33 @@ import { fieldsOf } from "./schema-form";
  */
 export const OWN_ARGUMENTS: readonly string[] = ["folder"];
 
+/**
+ * Whether two argument sets say the same thing. Key order is not part of it:
+ * the form builds its object in the schema's order and the pool builds its in
+ * the template's, and a straight `JSON.stringify` comparison of the two would
+ * call a template untouched or touched depending on which. Getting that wrong
+ * is quiet — the route goes as a decision of the person's own, the record names
+ * no template, and an `establish` template never learns its folder is there.
+ */
+export function sameArguments(
+  one: Readonly<Record<string, unknown>>,
+  other: Readonly<Record<string, unknown>>,
+): boolean {
+  return JSON.stringify(canonical(one)) === JSON.stringify(canonical(other));
+}
+
+function canonical(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .sort(([one], [other]) => one.localeCompare(other))
+        .map(([name, held]) => [name, canonical(held)]),
+    );
+  }
+  return value;
+}
+
 /** One argument a delivery was given, under whatever name a reader can be offered. */
 export type Argument = {
   readonly name: string;

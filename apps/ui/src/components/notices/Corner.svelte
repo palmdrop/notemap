@@ -9,6 +9,7 @@
   import Notice from "$components/primitives/alarm/Notice.svelte";
   import { noticeOf } from "$lib/action-log";
   import { client } from "$lib/client";
+  import { cancelRouting } from "$lib/firing";
   import { nameOf } from "$lib/destinations";
   import { nameOf as templateOf } from "$lib/templates";
   import { aboutItem } from "$lib/excerpt";
@@ -31,17 +32,6 @@
     } catch {
       return undefined;
     }
-  }
-
-  /**
-   * Calling off a template the tag fired, inside the window it waits out. The
-   * pool takes the trigger tag off with the reservation, so the item comes back
-   * to the queue able to be filed by that tag again.
-   */
-  function cancel(record: string, item: string): void {
-    void client.routing.cancel(record, item).catch(() => {
-      notices.raise({ what: "could not cancel", standing: true });
-    });
   }
 
   /** The one standing mark that a catch-up was too long to read out. */
@@ -68,7 +58,7 @@
         nameOf,
         templateOf,
         about: itemHref,
-        cancel,
+        cancel: cancelRouting,
       });
       if (raised === undefined) continue;
 
@@ -113,6 +103,7 @@
         ? undefined
         : { label: notice.offer.label, take: () => notices.take(notice.id) }}
       standing={notice.standing === true}
+      alarm={notice.alarm}
       ondismiss={notice.standing === true
         ? () => notices.dismiss(notice.id)
         : undefined}

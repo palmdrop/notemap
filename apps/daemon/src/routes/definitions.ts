@@ -551,7 +551,7 @@ export const untagRoute = createRoute({
   path: "/v1/items/{id}/untag",
   summary: "Remove a tag from an item",
   description:
-    "Removes one tag. A tag the item does not carry is absorbed rather than refused, on the same terms as adding one it already has. Untagging does not unroute, and removing a trigger tag fires nothing.",
+    "Removes one tag. A tag the item does not carry is absorbed rather than refused, on the same terms as adding one it already has. Untagging does not unroute, and removing a trigger tag fires nothing.\n\nA **trigger tag that filed this item is refused** while what it filed still stands: `409 trigger-tag-held`, naming the template and the record. Putting such a tag back would file a second copy rather than undo the first, so the way back is to cancel the record — which removes the reservation and gives the tag with it.",
   request: {
     params: itemId,
     body: {
@@ -570,6 +570,11 @@ export const untagRoute = createRoute({
       BODY_STATUS,
     ),
     404: errorResponse("No item has that id.", 404, UNTAG_STATUS),
+    409: errorResponse(
+      "The tag filed this item, and what it filed still stands.",
+      409,
+      UNTAG_STATUS,
+    ),
     415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
     422: errorResponse("The tag was declined.", 422, UNTAG_STATUS),
   },

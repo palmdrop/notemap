@@ -783,6 +783,22 @@
               }
             ]
           },
+          "applied": {
+            "type": "object",
+            "properties": {
+              "template": {
+                "type": "string"
+              },
+              "firedByTag": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "template",
+              "firedByTag"
+            ],
+            "description": "The routing template this decision came from, and whether its trigger tag applied it. Absent for a decision made by hand."
+          },
           "state": {
             "type": "string",
             "enum": [
@@ -3412,7 +3428,7 @@
     "/v1/items/{id}/untag": {
       "post": {
         "summary": "Remove a tag from an item",
-        "description": "Removes one tag. A tag the item does not carry is absorbed rather than refused, on the same terms as adding one it already has. Untagging does not unroute, and removing a trigger tag fires nothing.",
+        "description": "Removes one tag. A tag the item does not carry is absorbed rather than refused, on the same terms as adding one it already has. Untagging does not unroute, and removing a trigger tag fires nothing.\n\nA **trigger tag that filed this item is refused** while what it filed still stands: `409 trigger-tag-held`, naming the template and the record. Putting such a tag back would file a second copy rather than undo the first, so the way back is to cancel the record — which removes the reservation and gives the tag with it.",
         "parameters": [
           {
             "schema": {
@@ -3491,6 +3507,37 @@
                           "enum": [
                             "no-such-item",
                             "item-purged"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The tag filed this item, and what it filed still stands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "trigger-tag-held"
                           ]
                         }
                       },

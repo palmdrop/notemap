@@ -249,6 +249,58 @@ describe("editing a template", () => {
     expect(edited.value.triggerTag).toBeUndefined();
   });
 
+  it("unestablishes a template repointed at another destination", async () => {
+    const other = "dst-other" as DestinationId;
+    const wired = ports({ destinations: [VAULT, other] });
+    const made = await create(wired, { ...draft, folder: "establish" });
+    if (made.kind !== "ok") throw new Error("not created");
+
+    wired.held.set(made.value.id, {
+      ...made.value,
+      establishedAt: "2026-09-06T09:00:00.000Z" as Timestamp,
+    });
+
+    const edited = await edit(wired, made.value.id, { destination: other });
+
+    expect(edited.kind).toBe("ok");
+    if (edited.kind !== "ok") return;
+    // What was established was established somewhere else, and requiring it
+    // where this now files would refuse every delivery.
+    expect(edited.value.establishedAt).toBeUndefined();
+  });
+
+  it("unestablishes a template pointed at another capability", async () => {
+    const wired = ports();
+    const made = await create(wired, { ...draft, folder: "establish" });
+    if (made.kind !== "ok") throw new Error("not created");
+
+    wired.held.set(made.value.id, {
+      ...made.value,
+      establishedAt: "2026-09-06T09:00:00.000Z" as Timestamp,
+    });
+
+    const edited = await edit(wired, made.value.id, {
+      capability: "append-to-file" as CapabilityName,
+    });
+
+    expect(edited.kind).toBe("ok");
+    if (edited.kind !== "ok") return;
+    expect(edited.value.establishedAt).toBeUndefined();
+  });
+
+  it("keeps its establishment where only the name changed", async () => {
+    const wired = ports();
+    const made = await create(wired, { ...draft, folder: "establish" });
+    if (made.kind !== "ok") throw new Error("not created");
+
+    const at = "2026-09-06T09:00:00.000Z" as Timestamp;
+    wired.held.set(made.value.id, { ...made.value, establishedAt: at });
+
+    const edited = await edit(wired, made.value.id, { name: "Links" });
+
+    expect(edited).toMatchObject({ kind: "ok", value: { establishedAt: at } });
+  });
+
   it("appends nothing where nothing changed", async () => {
     const wired = ports();
     const made = await create(wired, draft);

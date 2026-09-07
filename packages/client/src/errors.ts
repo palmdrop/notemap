@@ -147,6 +147,8 @@ const SAID: {
   "trigger-tag-taken": "another template already files items with that tag",
   "trigger-refused": (facts) =>
     `that tag files items somewhere, and its template cannot: ${String(facts["detail"])}. The tag was not applied — fix the template in settings, then tag it again`,
+  "trigger-tag-held":
+    "that tag filed this item, and what it filed is still there — cancel the routing to take the tag back",
   "unknown-pattern-field": (facts) =>
     `there is no "${String(facts["field"])}" to put in a place; captured_at, item and source are what there is`,
   "unknown-pattern-format": (facts) =>

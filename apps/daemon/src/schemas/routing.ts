@@ -49,6 +49,19 @@ export const routingRecordSchema = z
       }),
       z.object({ kind: z.literal("user"), note: z.string().optional() }),
     ]),
+    /**
+     * Where the decision came from a routing template, which the record names,
+     * and whether the trigger tag made it — a decision a person made with the
+     * item in front of them and one a tag made are the same delivery and not
+     * the same act. Absent where a person made the decision by hand.
+     */
+    applied: z
+      .object({ template: z.string(), firedByTag: z.boolean() })
+      .optional()
+      .openapi({
+        description:
+          "The routing template this decision came from, and whether its trigger tag applied it. Absent for a decision made by hand.",
+      }),
     /** A pending record is a delivery that has not landed; anything else has. */
     state: z.enum(["pending", "delivered"]),
     at: z.string(),

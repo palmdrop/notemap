@@ -32,3 +32,20 @@ export function nameOf(id: string): string {
 export function triggeredBy(tag: string): RoutingTemplate | undefined {
   return client.templates.held.find((one) => one.triggerTag === tag);
 }
+
+/**
+ * The tags a chooser offers, with every trigger tag among them. What is *in
+ * use* is what the pool has seen on an item, and a tag that has never filed
+ * anything has never been seen — so a template set up this morning could only
+ * be fired by typing its tag exactly right, which is the one time nobody knows
+ * it. A declared trigger tag is offerable the moment it is declared.
+ */
+export function offerable(inUse: readonly string[]): readonly string[] {
+  const declared = client.templates.held.flatMap((one) =>
+    one.triggerTag === undefined || inUse.includes(one.triggerTag)
+      ? []
+      : [one.triggerTag],
+  );
+
+  return [...declared, ...inUse];
+}

@@ -1753,6 +1753,40 @@ test("esc leaving the tag field leaves the decision where it was", async () => {
 });
 
 /**
+ * What is *in use* is what the pool has seen on an item, so a template set up
+ * this morning could only be fired by typing its tag exactly right — which is
+ * the one time nobody knows it.
+ */
+test("offers a trigger tag that has never filed anything yet", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "filesystem" })] });
+    }
+    if (route === "GET /v1/templates") {
+      return json(200, { values: [RESEARCH] });
+    }
+    if (route === "GET /v1/tags") {
+      return json(200, { values: [{ name: "seedling", items: 3 }] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE_OR_APPEND] });
+    }
+    if (route.endsWith("/candidates")) return json(200, answered([]));
+    return json(404, { error: { code: "unknown-route" } });
+  });
+  await client.tags.load();
+  await client.templates.load();
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+
+  await screen.findByRole("button", {
+    name: "route/research, routes to research",
+  });
+});
+
+/**
  * Tagging is no longer free of consequence, so the chooser says which of them
  * sends the item. The mark names the template rather than only saying there is
  * one: `route/` is a namespace, and a namespace is not a decision.

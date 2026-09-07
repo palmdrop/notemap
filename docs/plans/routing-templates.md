@@ -184,7 +184,7 @@ Depends on phase 5.
       arguments. One route, two bodies, because it is one decision either way
 - [x] `POST /v1/items/{id}/route/preview` takes the same body, so previewing a template costs
       nothing extra
-- [x] `POST /v1/items/{id}/route/resolve` answers what a template would route as — the destination,
+- [x] `GET /v1/items/{id}/route/resolve` answers what a template would route as — the destination,
       the capability and the expanded arguments — without reserving anything. This is what lets the
       composer draw the filename before the commit, and it is a different question from preview,
       which answers bytes

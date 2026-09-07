@@ -100,7 +100,17 @@ export interface ItemsApi {
     envelope: EditEnvelope,
     by: Agent,
   ): Promise<Result<EditOutcome, EditRefusal>>;
-  tag(id: ItemId, tag: TagName, by: Agent): Promise<Result<Item, TagRefusal>>;
+  /**
+   * The signal is the caller's, for the same reason a capture's is: a trigger
+   * tag asks the template's destination what it can do before anything is
+   * written, and that is the one thing here that reaches off this machine.
+   */
+  tag(
+    id: ItemId,
+    tag: TagName,
+    by: Agent,
+    signal?: AbortSignal,
+  ): Promise<Result<Item, TagRefusal>>;
   untag(id: ItemId, tag: TagName, by: Agent): Promise<Result<Item, TagRefusal>>;
   archive(id: ItemId, reason?: string): Promise<Result<Item, ArchiveRefusal>>;
   unarchive(id: ItemId): Promise<Result<Item, ArchiveRefusal>>;
@@ -366,8 +376,14 @@ export interface MaintenanceApi {
 export interface Pool {
   identity(): Promise<PoolIdentity>;
 
+  /**
+   * The signal is the caller's: a capture carrying a trigger tag asks the
+   * template's destination what it can do, which is the one thing here that
+   * reaches beyond this machine and the one thing that can hang.
+   */
   capture(
     envelope: CaptureEnvelope,
+    signal?: AbortSignal,
   ): Promise<Result<CaptureOutcome, CaptureRefusal>>;
 
   readonly items: ItemsApi;

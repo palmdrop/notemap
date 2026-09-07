@@ -485,6 +485,17 @@ refused on drain**, where the template turns out to be stale, which is a refusal
 holds for a person; and the reservation it makes is not in the cache until some surface reads that
 item again, on **arrival is not observed**'s own terms below.
 
+**`untag` is where a trigger tag is not ordinary** *(added 2026-09-07)*. A tag that filed the item
+cannot be removed while what it filed still stands, so `untag` may come back refused where no other
+tag's would ([http-v1.md](http-v1.md)) — applied optimistically here like any other, and reconciled
+by the refusal the outbox holds. The client neither knows nor guesses which tags those are: what an
+item's records say is the pool's, and a client refusing a gesture the pool might allow would be
+worse than the round trip.
+
+**A routing record says which template it came from**, in `applied`, and whether the trigger tag
+applied it. It is read like any other field of a record; it is what lets a shell offer a cancel for
+the one kind of decision nobody pressed a button for.
+
 **What a field could hold is asked, never cached** (added 2026-08-31). `describe()`'s capabilities
 are read like any destination's, but a folder's contents, a note's existence, or the tags a vault
 already uses are somebody else's state, stale the moment somebody else writes a file — answering a
@@ -1045,6 +1056,8 @@ that logic out of the one place it is meant to live.
   destination is.
 - A trigger tag added with the daemon down applies its template when the outbox drains, and one
   whose template has gone stale comes back as a refused operation the person is shown.
+- Removing a trigger tag whose routing still stands comes back refused in the same way, saying that
+  cancelling the routing is what takes the tag back.
 - An item routed from a surface says where it went on that surface's own row, without a further
   read.
 - A typed note, a voice memo and a shared link captured from one shell carry three different

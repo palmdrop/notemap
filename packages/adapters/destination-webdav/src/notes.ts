@@ -280,12 +280,6 @@ function render(wiring: Wiring, delivery: Delivery, note: Contained): Note {
 }
 
 /**
- * Nextcloud will not make a parent for a `PUT`, so each level is made in turn.
- * One that is already there answers `405`, which is the outcome asked for. The
- * root itself is never among them: a vault that is not there is reported as
- * unreachable, on the same terms as an unmounted drive, rather than conjured.
- */
-/**
  * The folder `require` asked for, where it is not there. Asked at the write
  * rather than at the decision, since a template routes against accounts that
  * are routinely asleep, and refused rather than made — a folder that moved with
@@ -319,6 +313,12 @@ export async function requireFolder(
   );
 }
 
+/**
+ * Nextcloud will not make a parent for a `PUT`, so each level is made in turn.
+ * One that is already there answers `405`, which is the outcome asked for. The
+ * root itself is never among them: a vault that is not there is reported as
+ * unreachable, on the same terms as an unmounted drive, rather than conjured.
+ */
 export async function makeCollections(
   dav: Dav,
   path: Contained,

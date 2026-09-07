@@ -670,6 +670,81 @@ describe("a reservation a trigger tag made, removed without delivering", () => {
  * capability says about itself, so a kind whose places are a fixed set — a
  * board's columns, a mailbox, a webhook — needs no change anywhere.
  */
+describe("a trigger tag that filed an item", () => {
+  async function filed() {
+    const opened = await pooled();
+    const template = succeeded(
+      await opened.pool.templates.create(draft({ triggerTag: RESEARCH })),
+    );
+    const item = captured(await opened.pool.capture(envelope()));
+    succeeded(await opened.pool.items.tag(item.id, RESEARCH, PERSON));
+    const [record] = await opened.pool.routing.recordsFor(item.id);
+    if (record === undefined) throw new Error("expected a reservation");
+    return { ...opened, template, item, record };
+  }
+
+  it("cannot be taken off while what it filed still stands", async () => {
+    const { pool, item, template, record } = await filed();
+
+    const refused = await pool.items.untag(item.id, RESEARCH, PERSON);
+
+    expect(refused).toMatchObject({
+      kind: "refused",
+      refusal: {
+        kind: "trigger-tag-held",
+        tag: RESEARCH,
+        template: template.id,
+        record: record.id,
+      },
+    });
+    expect(await tagsOn(pool, item.id)).toEqual([RESEARCH]);
+  });
+
+  it("cannot be taken off once the delivery has landed either", async () => {
+    const { pool, deliver, item, clock } = await filed();
+    clock.set(AFTER);
+    await deliver();
+
+    const refused = await pool.items.untag(item.id, RESEARCH, PERSON);
+
+    expect(refused).toMatchObject({
+      kind: "refused",
+      refusal: { kind: "trigger-tag-held" },
+    });
+    expect(await tagsOn(pool, item.id)).toEqual([RESEARCH]);
+  });
+
+  it("is live again once the routing is cancelled, which is the way back", async () => {
+    const { pool, item, record, clock } = await filed();
+    clock.set(INSIDE);
+
+    succeeded(await pool.routing.cancelDelivery(record.id));
+    expect(await tagsOn(pool, item.id)).toEqual([]);
+
+    // Nothing it filed stands, so the tag files again rather than being spent.
+    succeeded(await pool.items.tag(item.id, RESEARCH, PERSON));
+
+    expect(await pool.routing.recordsFor(item.id)).toHaveLength(1);
+  });
+
+  it("files nothing a second time where the record was made by hand", async () => {
+    const { pool, destination } = await pooled();
+    const template = succeeded(
+      await pool.templates.create(draft({ triggerTag: RESEARCH })),
+    );
+    const item = captured(await pool.capture(envelope()));
+    destination.answers({ kind: "unreachable", detail: "ECONNREFUSED" });
+    succeeded(await pool.templates.route(item.id, template.id));
+
+    // The tag lands as classification: the item is already filed there, and a
+    // second reservation would be a second copy.
+    succeeded(await pool.items.tag(item.id, RESEARCH, PERSON));
+
+    expect(await pool.routing.recordsFor(item.id)).toHaveLength(1);
+    expect(await tagsOn(pool, item.id)).toEqual([RESEARCH]);
+  });
+});
+
 describe("a destination that is not filesystem-shaped", () => {
   const COLUMN_SCHEMA = {
     type: "object",
@@ -772,6 +847,41 @@ describe("a destination that is not filesystem-shaped", () => {
     expect(await pool.templates.report(template.id)).toEqual({
       kind: "folder-missing",
       folder: "research/",
+    });
+  });
+
+  /**
+   * The walk used to name the missing folder by looking up the *first* segment
+   * with that label, which in a path saying `research` twice is the one that is
+   * there.
+   */
+  it("names the level that is missing, not the first one spelt the same", async () => {
+    const { pool, destination } = await pooled(NOTEBOOK_SCHEMA);
+    destination.answersCandidates((request) =>
+      request.scope === undefined
+        ? {
+            entries: [{ label: "research", scope: "research/" }],
+            truncated: false,
+          }
+        : request.scope === "research/"
+          ? {
+              entries: [{ label: "notes", scope: "research/notes/" }],
+              truncated: false,
+            }
+          : { entries: [], truncated: false },
+    );
+    const template = succeeded(
+      await pool.templates.create(
+        draft({
+          arguments: { notebook: "research/notes/research/{{captured_at}}.md" },
+          folder: "require",
+        }),
+      ),
+    );
+
+    expect(await pool.templates.report(template.id)).toEqual({
+      kind: "folder-missing",
+      folder: "research/notes/research/",
     });
   });
 

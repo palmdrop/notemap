@@ -1196,6 +1196,8 @@ export interface paths {
         /**
          * Remove a tag from an item
          * @description Removes one tag. A tag the item does not carry is absorbed rather than refused, on the same terms as adding one it already has. Untagging does not unroute, and removing a trigger tag fires nothing.
+         *
+         *     A **trigger tag that filed this item is refused** while what it filed still stands: `409 trigger-tag-held`, naming the template and the record. Putting such a tag back would file a second copy rather than undo the first, so the way back is to cancel the record — which removes the reservation and gives the tag with it.
          */
         post: {
             parameters: {
@@ -1249,6 +1251,23 @@ export interface paths {
                             error: {
                                 /** @enum {string} */
                                 code: "no-such-item" | "item-purged";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The tag filed this item, and what it filed still stands. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "trigger-tag-held";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -3688,6 +3707,11 @@ export interface components {
                 /** @enum {string} */
                 kind: "user";
                 note?: string;
+            };
+            /** @description The routing template this decision came from, and whether its trigger tag applied it. Absent for a decision made by hand. */
+            applied?: {
+                template: string;
+                firedByTag: boolean;
             };
             /** @enum {string} */
             state: "pending" | "delivered";

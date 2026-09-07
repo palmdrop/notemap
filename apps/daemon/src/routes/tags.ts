@@ -16,9 +16,11 @@ export function tagHandler(pool: Pool, half: "tag" | "untag") {
     const tag = body.value.tag as TagName;
     const by: Agent = { kind: "person" };
 
+    // Only the tagging half can reach a destination, and so only it is given
+    // the signal: untagging is store work and finishes.
     const result =
       half === "tag"
-        ? await pool.items.tag(id as ItemId, tag, by)
+        ? await pool.items.tag(id as ItemId, tag, by, context.req.raw.signal)
         : await pool.items.untag(id as ItemId, tag, by);
 
     return result.kind === "refused"

@@ -10,7 +10,9 @@
   starts rather than a form. A **Templates** section in settings holds them, each row asking its own
   report as the page draws, a stranded one repointed by an ordinary edit. A tag that a template
   declared is **marked as one**, naming the template, everywhere a tag is offered — and putting one
-  on an item gives the corner `routing · research` with a real `cancel` while the window is open,
+  on an item gives the corner `routing · research` with a real `cancel` while the window is open —
+  said by the shell that tagged as soon as it can name the record, the log being polled more slowly
+  than the window lasts, and drawn as news rather than as an alarm —
   then `routed · research` once it lands.
   ([plan](../plans/routing-templates.md),
   [ADR 34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md),
@@ -809,6 +811,13 @@ row's, and drawn whatever the pool is doing — a person discarding an item offl
 was on the way. The **collapsed row's chooser stays where it is** for the reason it was put there:
 tagging is worth doing while scanning, without opening anything.
 
+**A trigger tag that filed an item cannot be taken off** while what it filed still stands
+([core.md](core.md#classification)) *(added 2026-09-07)*. The pool is what refuses it, and the
+refusal reaches the corner the way every refused outbox operation does, saying what the way back is:
+cancelling the routing, which gives the tag with it. The chooser does not draw the tag as
+unremovable, because whether anything it filed still stands is a question about the item's records
+rather than about the tag, and this shell would have to go and ask per tag to answer it.
+
 The two drain apart. A tag taken in the composer is the same outbox operation the row makes, and
 it lands whatever becomes of the route beside it — a route that fails leaves the tags applied,
 which is the honest outcome: the person said what the item was, and that was true independently of
@@ -823,6 +832,12 @@ is not a decision: a tag under it that no template claims does nothing, and mark
 warning about nothing. It is drawn in the composer's chooser, on the collapsed row's, on the tags an
 item already carries, and in the completion offered while typing. The mark is quiet, in muted ink
 and never the accent: this is a fact about the tag, not something wrong.
+
+**A declared trigger tag is offered before it has ever filed anything** *(added 2026-09-07)*. The
+chooser completes from the tags **in use**, which is what the pool has seen on an item — and a
+template set up this morning has never been applied, so its tag would be missing from the one list
+that exists to save somebody typing it, on exactly the day nobody has typed it yet. So the tags a
+template declares are offered beside those in use, marked as what they are.
 
 **The mark is what the pool says, and it goes when the pool says so.** It is read from the templates
 the client holds, so a chooser opened offline marks what it last knew — and a trigger tag declared
@@ -943,13 +958,28 @@ there is still something to cancel.
 It **stands** rather than lingering, and there is **one at a time**, the newer replacing the older —
 the rule `discard` already follows, and for the same reason: a tag files an item in one keystroke,
 so a corner stacking four of them while a queue is worked is not the quiet thing it is meant to be.
-The landing replaces the notice it resolves rather than sitting beside it, one decision reading as
-one notice from beginning to end.
 
-**Both come from the log**, not from the tagging ([ADR 32](../adr/0032-a-shell-learns-what-happened-by-reading-the-log.md)).
-A tag is an outbox operation that may drain minutes after it was made, or on a daemon nobody is
-watching, so the gesture is the wrong thing to hang this on — and the log is already how the shell
-learns what a deferred delivery did.
+**Everything that ends the firing takes its place** *(added 2026-09-07)*: the landing, a delivery
+that failed, one given up on, and a cancellation. One decision reads as one notice from beginning
+to end, and the alternative is a corner contradicting itself — `routing · research` still saying
+the item is on its way, beside `given up`, offering a cancel that would now refuse.
+
+**It stands without being an alarm** *(added 2026-09-07)*. Standing and alarming are one thing
+almost everywhere in the corner, because what stands is usually what went wrong; this is the
+exception, and it may not be drawn in the accent. It is there because its cancel must not time out
+under somebody's hands, and nothing has gone wrong at all — a notice that shouts at somebody for
+filing an item where they said to file it is the shell disagreeing with them.
+
+**The log says it, and the shell says it first** *(amended 2026-09-07)*. Both notices are written
+from the log ([ADR 32](../adr/0032-a-shell-learns-what-happened-by-reading-the-log.md)), which is
+how a firing on another device, or one drained from an outbox on a daemon nobody is watching, still
+reaches the corner. But the log is polled on the reachability probe's own tempo, which is **longer
+than the window a fired template waits out** — so a corner that only ever waited for it would offer
+the cancel with most of the window already spent, and sometimes after it had closed. So the shell
+that did the tagging raises the same notice as soon as it can name the record, which it asks the
+pool for; the log's own entry arrives under the same name and adds nothing. This is the shell
+speaking about what it just did, which is what the corner is for; it is not the shell deciding
+what happened, and nothing here writes.
 
 **A tag that fired nothing says nothing**, and a tag whose template could not route is a **refusal**
 rather than a notice: nothing happened, the tag is not on the item, and a refusal is what the corner
@@ -1121,7 +1151,14 @@ sleeping account.
 **The folder mode is drawn only where the capability has folders.** A kind that files to a column
 declares no folder field, and offering `create · require · establish` there would be a control whose
 every setting the pool refuses. Nothing here knows which capabilities those are; it reads what the
-chosen one published.
+chosen one published. The three modes are **chosen**, each with a line saying what it means — a
+remark beside an option and the reason an option cannot be taken read alike and are not the same
+thing, and a control that explains itself with the second is a control nobody can use.
+
+**Editing draws the form alone** *(added 2026-09-07)*. What the template says and what it is being
+changed to are the same fields twice, and the settled copy is the one to go: a row reading `create`
+above an input reading `require` reads as the template having refused the edit. The row's own line
+stays, so it is clear which template is open.
 
 **Each row asks its own report as the page draws**, per row, exactly as a destination's is asked —
 so the first template whose destination has to go and look does not hold up a list already drawn
@@ -1521,6 +1558,8 @@ the page a person actually reads. Three-character indents on successive paragrap
 - A template form for a capability whose field the schema fixes offers those values to choose from
   and no box to mistype one in, while a field the schema leaves open stays typed.
 - A capability that declares no folder mode is offered none, and saving against it sends `create`.
+- A folder mode chosen in the form is what gets saved; opening a template to edit it draws the form
+  in place of what the template settles.
 - A template filing somewhere that is not a path draws its place from its arguments, with no field
   name the shell had to be taught.
 - A template form for a capability the destination can be asked about offers what came back and

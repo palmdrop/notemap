@@ -2,8 +2,23 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one and health are settled; the rest is stub
-**Last updated**: 2026-09-04
+**Last updated**: 2026-09-07
 **Shipped**:
+
+- 2026-09-07 — **Routing templates on the wire, and a tag that applies one.** `GET`, `POST`,
+  `PATCH` and `DELETE` over `/v1/templates`, with `GET /v1/templates/{id}/report` as the live read
+  a settings page asks per row. `POST /v1/items/{id}/route` and `/route/preview` take a **template**
+  in place of a destination, a capability and arguments — one route, two bodies, because it is one
+  decision either way — and `GET /v1/items/{id}/route/resolve` answers what a template would route
+  an item as while reserving nothing. `POST /v1/items/{id}/tag` may now apply a template, answering
+  `422 trigger-refused` where the template is stale, and `/untag` may now refuse one:
+  `409 trigger-tag-held`, where the tag filed the item and what it filed still stands. A routing
+  record says which template it came from and whether the tag applied it.
+  ([plan](../plans/routing-templates.md),
+  [ADR 34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md),
+  [35](../adr/0035-a-templates-arguments-are-patterns-expanded-when-the-decision-is-made.md),
+  [36](../adr/0036-a-folder-is-created-required-or-established-once.md),
+  [37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md))
 
 - 2026-09-04 — **What a delivery produced, and what one would produce.** A routing record now says
   whether it kept an output, what those bytes are and what the destination could not carry, with
@@ -606,8 +621,15 @@ Both answer `200 OK` with the `Item` as it now stands.
   same tag applied after the repair would be absorbed
   ([core.md](core.md#classification)). A destination that could not be *reached* is not this case
   and does not refuse: the reservation is made and the delivery waits.
-- **`/untag` can raise none of that.** Removing a tag fires nothing and unroutes nothing, so
-  `trigger-refused` is absent from its refusals rather than listed and unreachable.
+- **`/untag` raises none of that, and one thing tagging cannot.** Removing a tag fires nothing and
+  unroutes nothing, so `trigger-refused` is absent from its refusals rather than listed and
+  unreachable. But a **trigger tag that filed this item is refused while what it filed still
+  stands**: `409 trigger-tag-held`, naming the `template` and the `record`. The tag is one keystroke
+  away from every ordinary tag in the same chooser, and taking it off and putting it back would file
+  a **second copy** rather than undo the first, tagging being idempotent only about the tag.
+  Cancelling the record is the way back, and it gives the tag with it
+  ([core.md](core.md#classification)). A tag whose record was cancelled or abandoned is live again,
+  because there is then nothing it filed that stands.
 
 ### The tags in use
 
@@ -1068,7 +1090,16 @@ three fields:
 - **Because it is one decision either way.** A second route would be a second path to the same
   effect, with the same refusals and the same record, differing only in who wrote down the
   arguments. The record it answers is the same shape, carrying the **expanded** arguments and
-  naming the template it came from.
+  naming the template it came from — in `applied`, beside the template, whether the trigger tag
+  applied it:
+
+  ```json
+  "applied": { "template": "019a41b8-0e6e-7c31-9f3a-6b1f2d5c4a91", "firedByTag": true }
+  ```
+
+  Absent where a person made the decision by hand. A decision a person made with the item in front
+  of them and one a tag made are the same delivery and not the same act: only the second gives its
+  tag back where nothing landed, and only the second is what a shell draws a cancel for.
 - **Exactly one of the two shapes**, and a body carrying both is `400 malformed-envelope`: a
   request that says two things about where this item goes has not made a decision.
 - A template the pool does not hold is `404 unknown-template` — the template is what this shape of
@@ -1654,6 +1685,10 @@ remains the interop surface; `/docs` is a convenience over it.
   holding one pending record, with nothing yet handed to the destination.
 - The same call where the template cannot route is `422 trigger-refused`, and afterwards the item
   carries neither the tag nor a record. `POST /v1/items/{id}/untag` can never answer that code.
+- `POST /v1/items/{id}/untag` naming a trigger tag whose record still stands is
+  `409 trigger-tag-held`, and the item still carries the tag; the same call after the record is
+  cancelled succeeds. Tagging with a trigger tag whose template has already filed this item answers
+  `200` with the tag applied and leaves the item holding the one record it had.
 - `POST /v1/items/{id}/tag` answers the item carrying the tag, attributed to an anonymous person; a
   tag with a slash in it round-trips; a tag that trims to nothing is `422 tag-invalid`; and tagging
   or untagging for what the item already says answers `200` with the item unchanged rather than a

@@ -2,10 +2,12 @@ import { recordAction } from "../actions";
 import { checkFor } from "../routing/prepare";
 import { requestFor } from "./apply";
 import type { PoolConfig } from "#types/api/config";
-import type { PoolPorts, PoolTx } from "#types/api/ports";
+import type { PoolPorts, PoolReads, PoolTx } from "#types/api/ports";
 import type {
+  ItemId,
   JobId,
   RoutingRecordId,
+  RoutingTemplateId,
   TagName,
   Timestamp,
 } from "#types/domain/ids";
@@ -104,6 +106,25 @@ export async function fire(
       tag,
     },
   });
+}
+
+/**
+ * Whether a decision this template made already stands on this item. One
+ * predicate, two uses: a tag that arrives while one does files nothing, and the
+ * tag itself cannot be taken off while one does. Without it, off and on again
+ * is a second copy in somebody's vault for two keystrokes.
+ *
+ * A cancelled or abandoned reservation is removed, so it stops standing and the
+ * tag becomes live again — which is what makes the cancel a way back rather
+ * than a way to spend the tag.
+ */
+export async function alreadyApplied(
+  reads: PoolReads,
+  item: ItemId,
+  template: RoutingTemplateId,
+): Promise<RoutingRecord | undefined> {
+  const records = await reads.routingRecords(item);
+  return records.find((record) => record.applied?.template === template);
 }
 
 /**

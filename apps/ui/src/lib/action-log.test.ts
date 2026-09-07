@@ -78,6 +78,109 @@ test("a delivery given up on says the item is back in the queue", () => {
   expect(said?.standing).toBe(true);
 });
 
+const fired = {
+  record: "r1",
+  template: "t1",
+  name: "Research links",
+  destination: "vault",
+  capability: "create-file",
+  tag: "route/research",
+};
+
+test("a fired template stands without being drawn as an alarm", () => {
+  const said = noticeOf(anAction("template-fired", fired), {
+    ...reading,
+    templateOf: () => "Research links",
+    cancel: () => undefined,
+  });
+
+  expect(said?.what).toBe("routing · Research links");
+  expect(said?.standing).toBe(true);
+  // Nothing has gone wrong: it stands so its cancel does not time out.
+  expect(said?.alarm).toBe(false);
+  expect(said?.offer?.label).toBe("cancel");
+  // Said once, whether the shell got there first or the log did.
+  expect(said?.key).toBe("fired:r1");
+});
+
+test("a landing from a tag takes the place of the notice it resolves", () => {
+  const said = noticeOf(anAction("routed", { ...fired, firedByTag: true }), {
+    ...reading,
+    templateOf: () => "Research links",
+  });
+
+  expect(said?.what).toBe("routed · Research links");
+  expect(said?.only).toBe("fired");
+  expect(said?.alarm).toBe(false);
+});
+
+/**
+ * Two notices, one saying it is on its way and one saying it failed, is the
+ * corner contradicting itself — and the first offers a cancel that would refuse.
+ */
+test("a fired delivery that failed takes that notice's place too", () => {
+  const said = noticeOf(
+    anAction("delivery-failed", {
+      ...fired,
+      firedByTag: true,
+      attempt: 1,
+      failure: { code: "rejected", detail: "research/ is missing" },
+    }),
+    reading,
+  );
+
+  expect(said?.only).toBe("fired");
+  expect(said?.standing).toBe(true);
+});
+
+test("a fired delivery given up on takes it too", () => {
+  const said = noticeOf(
+    anAction("work-abandoned", {
+      work: "deliver",
+      record: "r1",
+      template: "t1",
+      firedByTag: true,
+      attempt: 5,
+      failure: { code: "rejected", detail: "research/ is missing" },
+    }),
+    reading,
+  );
+
+  expect(said?.only).toBe("fired");
+});
+
+test("a hand-made delivery that failed stands on its own", () => {
+  const said = noticeOf(
+    anAction("delivery-failed", {
+      record: "r1",
+      destination: "vault",
+      attempt: 1,
+      failure: { code: "unreachable", detail: "not mounted" },
+    }),
+    reading,
+  );
+
+  expect(said?.only).toBeUndefined();
+});
+
+test("a cancellation ends the firing it called off", () => {
+  const said = noticeOf(
+    anAction("delivery-cancelled", {
+      record: "r1",
+      template: "t1",
+      firedByTag: true,
+      tag: "route/research",
+    }),
+    reading,
+  );
+
+  expect(said?.what).toBe("routing cancelled");
+  expect(said?.why).toBe("route/research taken back");
+  expect(said?.only).toBe("fired");
+  // A confirmation rather than something to act on: it goes on its own.
+  expect(said?.standing).toBeUndefined();
+});
+
 test("everything else the log holds stays in the log", () => {
   expect(noticeOf(anAction("captured", {}), reading)).toBeUndefined();
   expect(noticeOf(anAction("tagged", {}), reading)).toBeUndefined();

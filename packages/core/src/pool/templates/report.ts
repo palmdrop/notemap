@@ -123,7 +123,7 @@ async function folderReport(
   if (segments.length === 0) return { kind: "fits" };
 
   let scope: string | undefined;
-  for (const segment of segments) {
+  for (const [at, segment] of segments.entries()) {
     const answer = await candidates(
       ports,
       template.destination,
@@ -135,8 +135,9 @@ async function folderReport(
       signal,
     );
 
-    // A kind that cannot be asked, one that could not say, or a destination
-    // that has gone since. None of them is *not there*.
+    // The destination has gone since the read above. A kind that cannot be
+    // asked and one that could not say are the two below, and neither of the
+    // three is *not there*.
     if (answer === undefined) return { kind: "stranded" };
     if (answer.kind === "unusable") {
       return { kind: "destination-unusable", detail: answer.detail };
@@ -148,9 +149,12 @@ async function folderReport(
 
     const found = answer.entries.find((entry) => entry.label === segment);
     if (found === undefined || found.scope === undefined) {
+      // Named by where the walk got to, not by which segment it was: a path
+      // that says `research` twice would otherwise report the first one, which
+      // is the one that is there.
       return {
         kind: "folder-missing",
-        folder: `${[...walked(segments, segment)].join("/")}/`,
+        folder: `${segments.slice(0, at + 1).join("/")}/`,
       };
     }
     scope = found.scope;
@@ -164,14 +168,4 @@ function literalFolders(place: string): readonly string[] {
   const literal = place.split("{{")[0] ?? "";
   const folders = literal.split("/").slice(0, -1);
   return folders.filter((segment) => segment !== "");
-}
-
-function* walked(
-  segments: readonly string[],
-  until: string,
-): Generator<string> {
-  for (const segment of segments) {
-    yield segment;
-    if (segment === until) return;
-  }
 }

@@ -36,9 +36,9 @@
   const NAMESPACE = "route/";
 
   const FOLDERS = [
-    { name: "create", why: "make it if missing" },
-    { name: "require", why: "refuse if missing" },
-    { name: "establish", why: "make once, require after" },
+    { name: "create", note: "make it if missing" },
+    { name: "require", note: "refuse if missing" },
+    { name: "establish", note: "make once, require after" },
   ] as const;
 
   // Where the form starts, not what it holds: nothing changes under a typist.
@@ -276,7 +276,7 @@
         {#each FOLDERS as one (one.name)}
           <Option
             label={one.name}
-            why={one.why}
+            note={one.note}
             chosen={folder === one.name}
             onchoose={() => (folder = one.name)}
           />

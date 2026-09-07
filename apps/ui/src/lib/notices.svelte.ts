@@ -23,6 +23,13 @@ export type Notice = {
   readonly about?: string;
   /** Held until a person clears it: anything they may have to act on. */
   readonly standing?: boolean;
+  /**
+   * Whether it is drawn as an alarm. A standing notice is one by default —
+   * standing is usually what a failure does — but the two are different facts:
+   * a fired template stands because its cancel may not vanish, and nothing has
+   * gone wrong.
+   */
+  readonly alarm?: boolean;
   /** Where to go and look. */
   readonly href?: string;
   readonly offer?: Offer;

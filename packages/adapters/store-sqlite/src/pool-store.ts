@@ -133,12 +133,19 @@ const TEMPLATE_COLUMNS = `
   established_at, created_at, modified_at
 `;
 
-/** The columns above, and what the pool made from the template beside them. */
+/**
+ * The columns above, and what this template's **tag** filed beside them.
+ * `fired_by_tag` is the filter rather than an afterthought: a template taken by
+ * hand in the composer was applied, not fired, and a row saying "last fired"
+ * about somebody's own decision says the wrong thing in the project's own words.
+ */
 const TEMPLATE_READ = `
   ${TEMPLATE_COLUMNS},
-  (SELECT COUNT(*) FROM routing_records r WHERE r.template_id = routing_templates.id)
+  (SELECT COUNT(*) FROM routing_records r
+     WHERE r.template_id = routing_templates.id AND r.fired_by_tag = 1)
     AS fired_records,
-  (SELECT MAX(at) FROM routing_records r WHERE r.template_id = routing_templates.id)
+  (SELECT MAX(at) FROM routing_records r
+     WHERE r.template_id = routing_templates.id AND r.fired_by_tag = 1)
     AS fired_last_at
 `;
 

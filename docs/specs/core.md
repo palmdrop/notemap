@@ -469,6 +469,17 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   one. So an absorbed re-tag fires nothing, a revision carrying its original's tags fires nothing,
   and a tag drained from a client's outbox fires when it arrives, by the same path any tag takes.
   **Untagging does not unroute**: the record exists, and it is cancelled where cancelling lives.
+- **A trigger tag that filed an item cannot be taken off while what it filed still stands** (added
+  2026-09-07). It sits among ordinary tags in the same chooser, one keystroke from being removed,
+  and putting it back would file a **second copy** rather than undo the first — firing being on the
+  tagging, and the tag having nothing to say about the record it already made. So the removal is
+  refused for as long as a record from that template is on the item, pending or delivered. The way
+  back from a decision is to **cancel** it, which removes the reservation and gives the tag with it;
+  once nothing it filed stands, the tag is live again and files as it did the first time.
+- **The same rule keeps a second firing off an item**: a tag arriving where that template already
+  has a record on the item lands as ordinary classification and fires nothing. A person may have
+  taken the template in the composer and tagged the item afterwards, which says why it went there
+  and is not a second decision.
 - **A source-supplied tag fires too.** Attribution could tell a person's tag from a source's, and
   deliberately is not used: a capture arriving from an inbox already tagged `route/research` and
   filing itself is the point rather than an accident of it. What it costs is that a system outside
@@ -1082,8 +1093,10 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   surface drawing where an item went leaves it out of the place, a condition about getting somewhere
   not being the somewhere. The establishment is written in the
   transaction that stores the **first delivered** record naming the template, and is **cleared when
-  the arguments are edited** — a different place has not been established. A first delivery that was
-  abandoned leaves it unestablished, correctly: nothing landed.
+  the template is pointed anywhere else** — its arguments, its destination or its capability. A
+  different place has not been established, and a **repointed** template is the largest version of
+  that move: what was established was established at the destination that is gone. A first delivery
+  that was abandoned leaves it unestablished, correctly: nothing landed.
 - **A fired template waits, and never attempts inline** (added 2026-09-07,
   [ADR 37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md)).
   Tagging mints the reservation and enqueues an ordinary delivery job due a **configured window**
@@ -1590,6 +1603,8 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 - A template saved with a pattern naming a field or a format nobody declared is refused when it is
   saved, and one that saved expands against every item without a second refusal.
 - Two templates cannot claim the same trigger tag, and neither can claim one outside `route/`.
+- Repointing an established template at another destination leaves it unestablished, so its next
+  delivery makes the folder rather than requiring one that was never there.
 - Deleting a destination a template names goes through and says which templates it stranded;
   deleting one a routing record names is still refused.
 - A template applied to a capture made at 22:32 with an offset of two hours files it under that
@@ -1598,6 +1613,9 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   holding neither: there is no state in which it carries the tag and nothing is coming.
 - Nothing is handed to the destination while the window is open, and the delivery becomes claimable
   only once it has passed.
+- Untagging a trigger tag whose record still stands is refused, and the item still carries it;
+  the same call after the record is cancelled succeeds. Tagging with a trigger tag whose template
+  already has a record on the item applies the tag and reserves nothing further.
 - Cancelling inside the window removes the reservation, removes the trigger tag, and returns the
   item to the queue; a first attempt that is abandoned does the same. A delivery that landed keeps
   the tag.

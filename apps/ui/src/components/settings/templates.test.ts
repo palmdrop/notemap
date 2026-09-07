@@ -298,7 +298,7 @@ test("a capability with no folders is offered no folder mode", async () => {
   await open(/Make a template/);
 
   await screen.findByRole("button", { name: "reading" });
-  expect(screen.queryByRole("button", { name: "establish" })).toBeNull();
+  expect(screen.queryByRole("button", { name: /^establish/ })).toBeNull();
   expect(screen.queryByText("folder")).toBeNull();
 });
 
@@ -327,6 +327,52 @@ test("saves what was chosen, and says create where there are no folders", async 
     arguments: { column: "reading", title: "{{captured_at}}" },
     folder: "create",
   });
+});
+
+/**
+ * The three modes were drawn with the prop that says an option cannot be taken,
+ * so every one of them was disabled and the mode was whatever it started as.
+ */
+test("the folder mode is chosen rather than only read", async () => {
+  serving([]);
+
+  render(Templates);
+  await open(/Make a template/);
+
+  await fireEvent.input(await screen.findByLabelText("name"), {
+    target: { value: "Research links" },
+  });
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "research" },
+  });
+  await open(/^establish/);
+  await open("Save");
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/templates");
+  });
+  expect(await sent()).toContainEqual({
+    name: "Research links",
+    destination: VAULT,
+    capability: "create-file",
+    arguments: { directory: "research" },
+    folder: "establish",
+  });
+});
+
+/** The same fields twice, one settled and one being changed, contradict each other. */
+test("editing draws the form alone, not the template beside it", async () => {
+  serving([aTemplate()]);
+
+  render(Templates);
+  await open(/research/);
+  expect(await screen.findByText("create-file")).toBeTruthy();
+
+  await open("Edit");
+
+  expect(screen.queryByText("create-file")).toBeNull();
+  expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
+  expect(await screen.findByLabelText("name")).toBeTruthy();
 });
 
 test("draws a board template's place without knowing what a place is", async () => {

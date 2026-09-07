@@ -13,6 +13,7 @@
     report,
     asking,
     opened,
+    editing,
     offline,
     onopen,
     oncheck,
@@ -26,6 +27,13 @@
     report?: RoutingTemplateReport;
     asking: boolean;
     opened: boolean;
+    /**
+     * The form is open below. What a template says and what it is being changed
+     * to are the same fields twice, and the settled copy is the one to go: a
+     * row reading `create` above an input reading `require` says the template
+     * refused the edit.
+     */
+    editing: boolean;
     offline: boolean;
     onopen: () => void;
     oncheck: () => void;
@@ -129,58 +137,60 @@
 
   {#if opened}
     <div class="mt-4 pl-[var(--spacing-mark)]">
-      <Fact name="tag" empty={one.triggerTag === undefined}>
-        {one.triggerTag ?? "none — taken in the composer"}
-      </Fact>
-      <Fact name="into" empty={stranded}>
-        {destination?.name ?? `${one.destination} · deleted`}
-      </Fact>
-      <Fact name="action">{one.capability}</Fact>
-      <Fact name="path">{place}</Fact>
-      <Fact name="folder">
-        {one.folder}{one.folder === "establish"
-          ? one.establishedAt === undefined
-            ? " · not established yet"
-            : ` · established ${one.establishedAt.slice(0, 10)}`
-          : ""}
-      </Fact>
-      <Fact name="fired" empty={one.fired.records === 0}>
-        {one.fired.records === 0
-          ? "nothing yet"
-          : `${String(one.fired.records)} items${
-              one.fired.lastAt === undefined
-                ? ""
-                : ` · last ${one.fired.lastAt.slice(0, 10)}`
-            }`}
-      </Fact>
+      {#if !editing}
+        <Fact name="tag" empty={one.triggerTag === undefined}>
+          {one.triggerTag ?? "none — taken in the composer"}
+        </Fact>
+        <Fact name="into" empty={stranded}>
+          {destination?.name ?? `${one.destination} · deleted`}
+        </Fact>
+        <Fact name="action">{one.capability}</Fact>
+        <Fact name="path">{place}</Fact>
+        <Fact name="folder">
+          {one.folder}{one.folder === "establish"
+            ? one.establishedAt === undefined
+              ? " · not established yet"
+              : ` · established ${one.establishedAt.slice(0, 10)}`
+            : ""}
+        </Fact>
+        <Fact name="fired" empty={one.fired.records === 0}>
+          {one.fired.records === 0
+            ? "nothing yet"
+            : `${String(one.fired.records)} items${
+                one.fired.lastAt === undefined
+                  ? ""
+                  : ` · last ${one.fired.lastAt.slice(0, 10)}`
+              }`}
+        </Fact>
 
-      {#if report?.kind === "folder-missing"}
-        <p class="mt-2 text-accent">
-          Next delivery refused, and the item returns to the queue.
-        </p>
-      {/if}
-
-      <div
-        class="mt-4 flex flex-wrap items-baseline gap-x-6 border-t border-t-ink/20 pt-3"
-      >
-        {#if !stranded}
-          <Action disabled={asking} onclick={oncheck}>
-            <span aria-hidden="true" class="text-ink-muted">↻</span>
-            {report === undefined ? "Check" : "Check again"}
-          </Action>
+        {#if report?.kind === "folder-missing"}
+          <p class="mt-2 text-accent">
+            Next delivery refused, and the item returns to the queue.
+          </p>
         {/if}
-        <Action disabled={offline} onclick={onedit}>
-          <span aria-hidden="true" class="text-ink-muted">✎</span>
-          {stranded ? "Repoint" : "Edit"}
-        </Action>
-        <span class="ml-auto max-narrow:ml-0">
-          <Action disabled={offline} onclick={ondelete}>
-            <span class="text-accent">
-              <span aria-hidden="true">×</span> Delete
-            </span>
+
+        <div
+          class="mt-4 flex flex-wrap items-baseline gap-x-6 border-t border-t-ink/20 pt-3"
+        >
+          {#if !stranded}
+            <Action disabled={asking} onclick={oncheck}>
+              <span aria-hidden="true" class="text-ink-muted">↻</span>
+              {report === undefined ? "Check" : "Check again"}
+            </Action>
+          {/if}
+          <Action disabled={offline} onclick={onedit}>
+            <span aria-hidden="true" class="text-ink-muted">✎</span>
+            {stranded ? "Repoint" : "Edit"}
           </Action>
-        </span>
-      </div>
+          <span class="ml-auto max-narrow:ml-0">
+            <Action disabled={offline} onclick={ondelete}>
+              <span class="text-accent">
+                <span aria-hidden="true">×</span> Delete
+              </span>
+            </Action>
+          </span>
+        </div>
+      {/if}
 
       {@render children?.()}
     </div>

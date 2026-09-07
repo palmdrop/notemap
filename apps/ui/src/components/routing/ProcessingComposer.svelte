@@ -44,6 +44,7 @@
     PREVIEW_NOT_TEXT,
     PREVIEW_UNREACHABLE,
   } from "$lib/said";
+  import { OWN_ARGUMENTS, sameArguments } from "$lib/arguments";
   import { fieldsOf, valuesFrom } from "$lib/schema-form";
 
   const CREATE_FILE = "create-file";
@@ -163,11 +164,19 @@
    * being made — the heading an append would use being nothing to a note that
    * does not exist yet. An absent forecast is not knowing, and not knowing keeps
    * the field.
+   *
+   * Notemap's own arguments are not among them. A folder mode is a template's
+   * promise about a place it files again and again; a decision made here is
+   * made with the item in front of you, and the line already draws which folders
+   * are not there yet. What a taken template resolved to still goes as it
+   * resolved — this leaves it out of the form, not out of the request.
    */
   const beside = $derived(
     forecast === "create"
       ? []
-      : fields.filter((one) => one.name !== LINE_FIELD),
+      : fields.filter(
+          (one) => one.name !== LINE_FIELD && !OWN_ARGUMENTS.includes(one.name),
+        ),
   );
 
   /**
@@ -310,7 +319,7 @@
       applied !== undefined &&
       resolved !== undefined &&
       capability === resolved.capability &&
-      JSON.stringify(wanted) === JSON.stringify(resolved.arguments);
+      sameArguments(wanted, resolved.arguments);
 
     if (untouched) return { template: (applied as RoutingTemplate).id };
 

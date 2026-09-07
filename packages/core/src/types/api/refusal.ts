@@ -68,6 +68,18 @@ export type TagRefusal =
       readonly tag: TagName;
       readonly template: RoutingTemplateId;
       readonly detail: string;
+    }
+  /**
+   * The tag filed this item and what it filed still stands, so it is not the
+   * person's to take off: putting it back would file a second copy rather than
+   * undo the first. Cancelling the record is the way back, and it gives the tag
+   * with it. Only `/untag` can raise this.
+   */
+  | {
+      readonly kind: "trigger-tag-held";
+      readonly tag: TagName;
+      readonly template: RoutingTemplateId;
+      readonly record: RoutingRecordId;
     };
 
 export type ArchiveRefusal =

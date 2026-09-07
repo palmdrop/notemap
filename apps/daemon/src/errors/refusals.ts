@@ -80,17 +80,21 @@ export const TAG_STATUS = {
   "item-purged": 404,
   "tag-invalid": 422,
   "trigger-refused": 422,
+  "trigger-tag-held": 409,
 } as const satisfies Record<TagRefusal["kind"], number>;
 
 /**
  * Untagging fires nothing, so `trigger-refused` cannot arise on that half and
- * is not offered as if it could. A tag that has already filed an item is
- * removed like any other: untagging does not unroute.
+ * is not offered as if it could. It raises the one thing tagging cannot:
+ * `trigger-tag-held`, `409`, where the tag filed the item and what it filed
+ * still stands. That is a conflict with the item's state rather than with what
+ * was sent, and cancelling the record is the way through it.
  */
 export const UNTAG_STATUS = {
   "no-such-item": 404,
   "item-purged": 404,
   "tag-invalid": 422,
+  "trigger-tag-held": 409,
 } as const;
 
 /**

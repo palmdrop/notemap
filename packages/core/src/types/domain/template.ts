@@ -34,7 +34,11 @@ export type RoutingTemplateRecord = {
   readonly createdAt: Timestamp;
 };
 
-/** How much of the pool this template made, derived from the records naming it. */
+/**
+ * What this template's trigger tag has filed — never what somebody applied by
+ * hand from the composer. *Firing* is what a tag does, and a count that mixed
+ * the two would make "last fired" a sentence about the wrong act.
+ */
 export type TemplateFirings = {
   readonly records: number;
   readonly lastAt?: Timestamp;

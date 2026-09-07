@@ -245,6 +245,9 @@ async function concluded(
       detail: {
         record: record.id,
         ...destinationDetail(record),
+        // A shell showing that a fired template is on its way has to be told
+        // when it stops being on its way, and this is where that is said.
+        ...templateDetail(record),
         attempt: ended.attempt,
         failure: ended.failure,
       },
@@ -267,7 +270,10 @@ async function concluded(
     ...(item === undefined ? {} : { subject: item }),
     by: { kind: "notemap" },
     at: ended.at,
-    detail: workDetail(job, ended),
+    detail: {
+      ...workDetail(job, ended),
+      ...(record === undefined ? {} : templateDetail(record)),
+    },
   });
 }
 

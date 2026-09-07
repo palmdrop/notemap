@@ -125,6 +125,7 @@
       report={reports[one.id]}
       asking={asking[one.id] === true}
       opened={opened === one.id}
+      editing={editing === one.id}
       offline={!pool.yes}
       onopen={() => {
         opened = opened === one.id ? undefined : one.id;

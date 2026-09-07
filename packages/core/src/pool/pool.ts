@@ -36,12 +36,13 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
   return {
     identity: () => store.identity(),
 
-    capture: (envelope) => capture(config, ports, envelope),
+    capture: (envelope, signal) => capture(config, ports, envelope, signal),
 
     items: {
       get: (id) => store.item(id),
       edit: (id, envelope, by) => edit(config, ports, id, envelope, by),
-      tag: (id, name, by) => tags.tag(config, ports, id, name, by),
+      tag: (id, name, by, signal) =>
+        tags.tag(config, ports, id, name, by, signal),
       untag: (id, name, by) => tags.untag(ports, id, name, by),
       archive: (id, reason) => archive.archive(ports, id, reason),
       unarchive: (id) => archive.unarchive(ports, id),

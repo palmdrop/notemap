@@ -24,6 +24,7 @@ export async function capture(
   config: PoolConfig,
   ports: PoolPorts,
   envelope: CaptureEnvelope,
+  signal?: AbortSignal,
 ): Promise<CaptureResult> {
   const invalid = validate(config, ports, envelope);
   if (invalid !== undefined) return refused(invalid);
@@ -33,7 +34,7 @@ export async function capture(
   // to become. A replay leaves it unused, which costs a number.
   const id = envelope.id ?? ports.ids.next<ItemId>();
   const proposed = recorded(ports, envelope, id);
-  const { firings, spent } = await fired(config, ports, proposed);
+  const { firings, spent } = await fired(config, ports, proposed, signal);
   const record = without(proposed, spent);
 
   return ports.store.transaction((tx) =>
@@ -48,6 +49,10 @@ export async function capture(
  * Worked out before the transaction, for the reason every firing is, and
  * committed with the item so *tagged but not reserved* cannot exist here either.
  *
+ * This is the one place a capture reaches the outside world — the destination is
+ * asked what it can do — so the caller's signal comes with it: a vault that has
+ * stopped answering may not hold the fastest path in the app open.
+ *
  * A trigger tag whose template cannot route is **dropped**, rather than the
  * capture being refused as an interactive tag is: a whole capture is not lost
  * over a tag, and there is nobody here to be told. Landing it would be worse
@@ -58,6 +63,7 @@ async function fired(
   config: PoolConfig,
   ports: PoolPorts,
   record: ItemRecord,
+  signal?: AbortSignal,
 ): Promise<{ firings: readonly Firing[]; spent: readonly TagName[] }> {
   const triggers = record.tags.filter((held) =>
     held.name.startsWith(TRIGGER_TAG_NAMESPACE),
@@ -79,7 +85,7 @@ async function fired(
     // Nothing claims it, so it is an ordinary tag that happens to be namespaced.
     if (template === undefined) continue;
 
-    const firing = await firingFor(config, ports, item, template);
+    const firing = await firingFor(config, ports, item, template, signal);
     if (firing.kind === "fires") {
       firings.push({ tag: held.name, template, record: firing.record });
     } else {

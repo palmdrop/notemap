@@ -84,6 +84,16 @@ export function keyFor(record: string): string {
 }
 
 /**
+ * One firing, said once. The shell raises this the moment it tags, because the
+ * window a fired template waits out is shorter than the log is polled and a
+ * cancel nobody can see yet is no cancel at all; the log's own entry then
+ * arrives under the same name and adds nothing.
+ */
+export function firedKey(record: string): string {
+  return `fired:${record}`;
+}
+
+/**
  * What a decision just made says about itself. A record the pool answered as
  * `pending` was attempted and did not go, so it reads as **retrying** — saying
  * it was routed would be the shell claiming the one thing only the delivery
