@@ -38,6 +38,7 @@ import {
   type Surface,
 } from "./state/state";
 import { createSessions } from "./session/session";
+import { createSources } from "./sources/sources";
 import { createTags } from "./tags/tags";
 import { createTokens } from "./tokens/tokens";
 import { loadMore, readAfterReturn } from "./surfaces/reads";
@@ -486,6 +487,8 @@ export function createClient(config: ClientConfig): Client {
           mimeOf(item, reference.asset)?.startsWith("image/"),
         )
         .map((reference) => bytesOf(reference.asset)),
+
+    sources: createSources(api),
 
     routing: createRouting({
       api,

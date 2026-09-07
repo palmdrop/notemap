@@ -54,6 +54,12 @@ export type AssetRow = {
   readonly stored_at: number;
 };
 
+export type SourceUseRow = {
+  readonly source_id: string;
+  readonly items: number;
+  readonly last_captured_at: number;
+};
+
 export type DestinationRow = {
   readonly id: string;
   readonly name: string;

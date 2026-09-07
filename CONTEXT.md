@@ -35,7 +35,9 @@ The channel a capture came in through — a shell's typed note, its picture, a w
 polled inbox. Finer than the app that sent it, because policy is what the distinction is for: one
 page may stamp two sources. Recorded on every item, along with that source's own id for what it
 sent, so re-reading a source cannot duplicate. A source needs no declaration to capture; declaring
-one only attaches policy.
+one only attaches policy. *Amended 2026-09-07*: the sources can be **enumerated** — every one the
+pool has an item from, with how much of it and when it last captured. Read from the items, since
+that is where a discovered source exists at all.
 _Avoid_: channel, origin, importer, client
 
 **Feed**:

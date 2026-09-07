@@ -530,6 +530,11 @@ written by typing it. The list is read again once classification reaches the poo
 untag, since either changes what is in use — **once per drain rather than once per operation**, so a
 backlog of eight tags asks one question. The pool having just answered is what says it is reachable.
 
+**The sources in use are not cached at all** *(2026-09-07)*. `sources.inUse()` is a plain read of
+`GET /v1/sources` every time, answering nothing when the pool is out of reach. It is the one read
+where a remembered answer would be worse than none: what a settings screen asks it for is whether
+a source has gone quiet, and a list from an hour ago cannot say.
+
 **The read caches are read back on start** (2026-08-25, extended 2026-09-07). The store holds the
 tags, the destinations and the routing templates as it holds the items and the outbox, written
 whole as each list is answered, so a client opened cold against an unreachable pool completes from

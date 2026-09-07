@@ -1083,8 +1083,8 @@ countable: a **section** is muted ink at the widest tracking with a full-weight 
 **destination** is full ink at tighter tracking with a mark in the margin; a **field** is lower
 case, muted, in a column of its own. Nothing is bigger and nothing is bold.
 
-Five sections *(two when this was written; the door brought two more and routing templates the
-fifth)*. **Destinations** says
+Six sections *(two when this was written; the door brought two more, then routing templates and
+sources)*. **Destinations** says
 how many are offered and how many retired, then one line per destination: a mark for offered or
 retired, its name, its kind, and what it last answered. Opening one adds what it can do, the
 settings its kind asked for, its id, and the four things that can be done to it — check, edit,
@@ -1191,6 +1191,13 @@ names nothing that outlives it, and the records it made carry what they routed a
 resolving without it — so there is no conflict for the pool to report and nothing for the asking to
 offer instead. Deleting the **destination** is where the warning lives, naming the templates it
 would strand.
+
+**Sources** *(added 2026-09-07)* says how many the pool has seen, then one line per source: its
+id, how many items it captured, and how long ago the last of them was — counted up while the page
+is open, as the daemon's own reading is. It is how a program feeding the pool from outside is seen
+to still be feeding it: a source whose figure keeps growing is one that has stopped. Read fresh
+each time the pool comes back into reach and held nowhere, since a remembered figure would say the
+opposite of what this section is for.
 
 **Daemon** says where this shell is talking to, and carries the way to `/log` and the exit to the
 daemon's `/docs` — one of this shell's own routes and one the browser leaves for, marked apart. Its

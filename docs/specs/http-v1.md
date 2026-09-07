@@ -677,6 +677,28 @@ person to remember it.
 - This route offers; it never limits. A tag no item carries is simply absent, and
   `POST /v1/items/{id}/tag` takes any tag that trims to something whether it is here or not.
 
+### The sources in use
+
+`GET /v1/sources` — every source an item in the pool came in through, with how much of it and
+when it last captured. It is how a **relay** left running is seen to still be running.
+
+```json
+{ "values": [ { "id": "memos", "items": 12,
+                "lastCapturedAt": "2026-09-07T11:59:00.000Z" } ] }
+```
+
+- **Most recently captured first.** Not paginated and not narrowed, on `GET /v1/tags`' own terms:
+  the set is small and a client holds the whole of it.
+- **Derived from the items, never from a list anyone keeps.** A source is "discovered rather than
+  created" ([core.md](core.md#intake-and-sync)), so there is no such thing as a declared source
+  that captured nothing, and a source whose every item has gone is not answered. Declaring one in
+  the daemon's config attaches policy; it does not put a row here.
+- **`lastCapturedAt` is a capture time, never an arrival time**, so a relay posting a backlog does
+  not put itself at the top for as long as the backlog reaches back.
+- **The last capture earns its place where `GET /v1/tags`' last-added does not.** That one is
+  omitted because nothing reads it; this one is the whole reason the route exists — a settings
+  screen draws how long ago each source last captured, which is how a dead relay is noticed.
+
 ### Editing an item
 
 `POST /v1/items/{id}/edit` — a change to what the capture says. The body is a capture envelope

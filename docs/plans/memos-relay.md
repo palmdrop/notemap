@@ -127,21 +127,21 @@ whole or not at all.
 Depends on nothing — it could land before either phase above. It is here because a relay's first
 run should be observable rather than debugged blind.
 
-- [ ] `GET /v1/sources` answers every **discovered** source with how many items it captured and when
+- [x] `GET /v1/sources` answers every **discovered** source with how many items it captured and when
       it last did. Unpaginated and unnarrowed, like `GET /v1/tags`, and most recent first
-- [ ] It needs no new glossary term. `Tags in use` exists because a tag vocabulary can be declared
+- [x] It needs no new glossary term. `Tags in use` exists because a tag vocabulary can be declared
       without being used; a source cannot — core.md says a source is "discovered rather than
       created" — so every source is in use and the route just answers the sources. **Source** gains
       an amendment saying they can be enumerated
-- [ ] `GET /v1/tags` omits when a tag was last added, on the rule that "a wire field no client
+- [x] `GET /v1/tags` omits when a tag was last added, on the rule that "a wire field no client
       consumes is one the next reader has to work out the meaning of". The last capture time earns
       its place here **only because the settings view that draws it lands in this same phase** —
       that view is the whole point, since it is how a dead relay is noticed
-- [ ] The settings view lists the sources with their counts and how long ago each last captured
-- [ ] Tests: a pool with two sources answers both with their counts; a source that captured and had
+- [x] The settings view lists the sources with their counts and how long ago each last captured
+- [x] Tests: a pool with two sources answers both with their counts; a source that captured and had
       every item purged still answers, or does not — decide it and assert it either way
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack`
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test:stack`
+- [x] `git commit`
 
 ### Phase 4 — `packages/relay`
 

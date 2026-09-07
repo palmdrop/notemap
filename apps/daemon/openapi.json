@@ -656,6 +656,40 @@
           "items"
         ]
       },
+      "SourcesInUse": {
+        "type": "object",
+        "properties": {
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceUse"
+            }
+          }
+        },
+        "required": [
+          "values"
+        ]
+      },
+      "SourceUse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "items": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "lastCapturedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "items",
+          "lastCapturedAt"
+        ]
+      },
       "EditOutcome": {
         "anyOf": [
           {
@@ -3636,6 +3670,24 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TagsInUse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sources": {
+      "get": {
+        "summary": "Read the sources the pool has captured from",
+        "description": "Every source an item in the pool came in through, most recently captured first, with how many items it captured and when the newest of them was captured. Not paginated and not narrowed. A source is discovered rather than declared, so this is derived from the items themselves and a source with no items left is not answered.",
+        "responses": {
+          "200": {
+            "description": "Every source the pool has an item from.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourcesInUse"
                 }
               }
             }

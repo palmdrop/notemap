@@ -1355,6 +1355,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the sources the pool has captured from
+         * @description Every source an item in the pool came in through, most recently captured first, with how many items it captured and when the newest of them was captured. Not paginated and not narrowed. A source is discovered rather than declared, so this is derived from the items themselves and a source with no items left is not answered.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Every source the pool has an item from. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SourcesInUse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/items/{id}/edit": {
         parameters: {
             query?: never;
@@ -3672,6 +3711,14 @@ export interface components {
         TagUse: {
             name: string;
             items: number;
+        };
+        SourcesInUse: {
+            values: components["schemas"]["SourceUse"][];
+        };
+        SourceUse: {
+            id: string;
+            items: number;
+            lastCapturedAt: string;
         };
         EditOutcome: {
             /** @enum {string} */

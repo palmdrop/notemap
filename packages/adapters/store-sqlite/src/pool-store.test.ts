@@ -13,6 +13,7 @@ import type {
   Position,
   RoutingRecord,
   RoutingRecordId,
+  SourceId,
   TagName,
   Timestamp,
 } from "@notemap/core";
@@ -1888,5 +1889,79 @@ describe("places a field has already held", () => {
     await putDestinations(p, destination());
 
     expect(await ask(p)).toEqual({ truncated: false, places: [] });
+  });
+});
+
+describe("the sources in use", () => {
+  it("counts what each captured, most recently captured first", async () => {
+    const { pool: p } = pool();
+    await appendCapture(
+      p,
+      capture({
+        id: "item-1",
+        source: SCRATCHPAD,
+        createdAt: "2026-08-03T09:00:00.000Z",
+      }),
+    );
+    await appendCapture(
+      p,
+      capture({
+        id: "item-2",
+        source: SCRATCHPAD,
+        createdAt: "2026-08-03T11:00:00.000Z",
+      }),
+    );
+    await appendCapture(
+      p,
+      capture({
+        id: "item-3",
+        source: "memos" as SourceId,
+        createdAt: "2026-08-03T10:00:00.000Z",
+      }),
+    );
+
+    expect(await p.sourcesInUse()).toEqual([
+      {
+        id: SCRATCHPAD,
+        items: 2,
+        lastCapturedAt: "2026-08-03T11:00:00.000Z",
+      },
+      { id: "memos", items: 1, lastCapturedAt: "2026-08-03T10:00:00.000Z" },
+    ]);
+  });
+
+  /**
+   * A source is discovered from the items it captured, so one whose items have
+   * all gone is not a source the pool has anything to say about.
+   */
+  it("answers nothing at all for a pool holding no items", async () => {
+    const { pool: p } = pool();
+
+    expect(await p.sourcesInUse()).toEqual([]);
+  });
+
+  it("orders by capture time, not by arrival", async () => {
+    const { pool: p } = pool();
+    await appendCapture(
+      p,
+      capture({
+        id: "item-1",
+        source: SCRATCHPAD,
+        createdAt: "2026-08-03T11:00:00.000Z",
+      }),
+    );
+    await appendCapture(
+      p,
+      capture({
+        id: "item-2",
+        source: "memos" as SourceId,
+        createdAt: "2026-07-31T09:00:00.000Z",
+      }),
+    );
+
+    expect((await p.sourcesInUse()).map((use) => use.id)).toEqual([
+      SCRATCHPAD,
+      "memos",
+    ]);
   });
 });

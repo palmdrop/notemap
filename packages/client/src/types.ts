@@ -25,6 +25,7 @@ import type {
   RoutingTemplateId,
   RoutingTemplateReport,
   CreateRoutingTemplateRequest,
+  SourceUse,
   TagUse,
   Token,
   UpdateDestinationRequest,
@@ -188,6 +189,15 @@ export interface TagsApi {
   load(): Promise<readonly TagUse[]>;
 }
 
+/**
+ * Not cached and not held: a settings screen reads this to notice a source that
+ * has stopped capturing, and the answer to *has it stopped* is about now.
+ */
+export interface SourcesApi {
+  /** Most recently captured first, whole and unnarrowed, as tags are. */
+  inUse(): Promise<readonly SourceUse[]>;
+}
+
 /** Where a read of the log continues from: the sort key of the last row it handed out. */
 export type ActionPosition = {
   readonly at: string;
@@ -346,6 +356,7 @@ export interface Client {
   readonly destinations: DestinationsApi;
   readonly templates: TemplatesApi;
   readonly tags: TagsApi;
+  readonly sources: SourcesApi;
   readonly actions: ActionsApi;
 
   /** Called on every mutation, and again to retry what is still pending. */

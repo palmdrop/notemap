@@ -83,6 +83,7 @@ export type UpdateRoutingTemplateRequest =
   components["schemas"]["UpdateRoutingTemplateRequest"];
 export type RoutingSummary = components["schemas"]["RoutingSummary"];
 export type TagUse = components["schemas"]["TagUse"];
+export type SourceUse = components["schemas"]["SourceUse"];
 
 /** Which pool this is: opaque, and stable for as long as the pool exists. */
 export type PoolIdentity = components["schemas"]["Health"]["pool"];

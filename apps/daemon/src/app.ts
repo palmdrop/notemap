@@ -60,6 +60,7 @@ import {
   routeItemRoute,
   routingRecordsRoute,
   tagRoute,
+  sourcesInUseRoute,
   tagsInUseRoute,
   unarchiveRoute,
   unretireDestinationRoute,
@@ -90,6 +91,7 @@ import { feedHandler } from "./routes/feed";
 import { healthHandler } from "./routes/health";
 import { itemHandler } from "./routes/items";
 import { itemViewHandler } from "./routes/queue";
+import { sourcesInUseHandler } from "./routes/sources";
 import { tagHandler, tagsInUseHandler } from "./routes/tags";
 import {
   cancelDeliveryHandler,
@@ -189,6 +191,7 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
   app.post(honoPath(tagRoute.path), tagHandler(pool, "tag"));
   app.post(honoPath(untagRoute.path), tagHandler(pool, "untag"));
   app.get(honoPath(tagsInUseRoute.path), tagsInUseHandler(pool));
+  app.get(honoPath(sourcesInUseRoute.path), sourcesInUseHandler(pool));
   app.post(honoPath(editRoute.path), editHandler(pool));
   app.post(honoPath(markProcessedRoute.path), markProcessedHandler(pool));
   app.get(honoPath(routingRecordsRoute.path), routingRecordsHandler(pool));
