@@ -1,8 +1,21 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-09-07
+**Last updated**: 2026-09-08
 **Shipped**:
+
+- 2026-09-08 — **A board is a destination, and a capability stops being file-shaped.** Capability
+  names lose the word *file* — `create`, `append`, `create-or-append` — so a vault's note and a
+  board's block are one capability rather than two, and `create` stops promising it refuses a name
+  already taken: that becomes each kind's own promise, as does whether a retry can duplicate. The
+  markdown kinds gain a **frontmatter** switch, a setting on the destination and an argument on one
+  capture, so a delivered file is no longer guaranteed to carry its own provenance. A third kind
+  ships, `arena`, whose destination *is* an account and whose channel is an argument, and it is the
+  first to answer a followable `url` on a routing record. What an account must carry becomes the
+  kind's own, checked against that kind's schema when the daemon starts.
+  ([plan](../plans/arena-destination.md),
+  [ADR 40](../adr/0040-a-destination-kind-declares-the-shape-of-its-own-account.md),
+  [ADR 41](../adr/0041-a-delivery-that-cannot-be-confirmed-may-duplicate.md))
 
 - 2026-09-07 — **One tag files it where it goes.** A **routing template** is a saved routing
   decision — a destination, a capability, arguments held as patterns, how its folder is treated —
@@ -837,13 +850,18 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   resolving them after, which is a different shape from the one
   [ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md) settled and would want a
   decision of its own.
-- **Retry is keyed on evidence, not on failure.** `unreachable` is proof that nothing was
-  delivered, so a retry cannot duplicate and the job is retried with backoff. `rejected` is proof
-  that the destination was reached and refused, so it is abandoned on the first attempt — the same
-  call enrichment makes for a failure reported as not worth retrying. A lease that expired with no
-  outcome reported is **no evidence at all**, and is abandoned rather than retried: a delivery is
-  not idempotent, the domain cannot tell a retry from a genuine second delivery, and the cost of
-  guessing wrong is a duplicate nobody can detect.
+- **Retry is keyed on evidence, not on failure** (narrowed 2026-09-08,
+  [ADR 41](../adr/0041-a-delivery-that-cannot-be-confirmed-may-duplicate.md)). `unreachable` means
+  the adapter **could not confirm** that anything was delivered, so the job is retried with backoff.
+  Whether a retry can duplicate is then **each kind's own promise**, made where it is enforced and
+  stated in that kind's README: both file kinds keep the strong one — a retry cannot duplicate,
+  by a digest in an asset's filename, by `EEXIST` and by `PUT If-None-Match: *` — and a kind whose
+  protocol offers no conditional create and no idempotency key says instead that it may, and names
+  the window. `rejected` is proof that the destination was reached and refused, so it is abandoned
+  on the first attempt — the same call enrichment makes for a failure reported as not worth
+  retrying. A lease that expired with no outcome reported is **no evidence at all**, and is
+  abandoned rather than retried: a delivery is not idempotent, the domain cannot tell a retry from a
+  genuine second delivery, and the cost of guessing wrong is a duplicate nobody can detect.
 - **Delivery retries are bounded**, unlike mirror work. Mirroring retries forever because giving up
   does not change the fact that material is unmirrored. Giving up on a delivery does change
   something: it hands the decision back, so the person can repair their configuration or route

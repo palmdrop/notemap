@@ -2,6 +2,7 @@ import type { JsonObject } from "@notemap/core";
 import { createAjvSchemaValidator } from "@notemap/schema-ajv";
 import { describe, expect, it } from "vitest";
 
+import { asWebdavCredential, WEBDAV_ACCOUNT } from "./credentials";
 import { createWebdavDestination } from "./destination";
 import { asWebdavSettings, webdavSettings } from "./settings";
 import { destinationRow, TEXT } from "./testing/fixture";
@@ -154,5 +155,60 @@ describe("describing a destination", () => {
     const row = { ...destinationRow({ root: "V" }), settings: { root: 4 } };
 
     await expect(adapter().describe(row)).rejects.toThrow(/readable/);
+  });
+});
+
+/** Checked when the daemon starts, which is the point of a kind declaring one. */
+describe("the account this kind needs", () => {
+  const account = (held: JsonObject) =>
+    validator.validate(WEBDAV_ACCOUNT, held);
+
+  const declared = {
+    kind: "webdav",
+    name: "nextcloud",
+    baseUrl: "https://cloud.example/dav",
+    username: "alice",
+    passwordEnv: "NC",
+  };
+
+  it("takes an address, a username and where the password is read from", () => {
+    expect(account(declared)).toEqual([]);
+  });
+
+  it("refuses an account with no address or no username", () => {
+    const { baseUrl: _address, ...noAddress } = declared;
+    const { username: _who, ...noUsername } = declared;
+
+    expect(account(noAddress)).not.toEqual([]);
+    expect(account(noUsername)).not.toEqual([]);
+  });
+
+  /**
+   * A statement about Basic auth over a URL, which is why it is here and not in
+   * the daemon's config reader: it means nothing to a kind that has no URL.
+   */
+  it("refuses a scheme an account of this kind is never reached over", () => {
+    expect(
+      account({ ...declared, baseUrl: "ftp://cloud.example/dav" }),
+    ).not.toEqual([]);
+  });
+
+  it("refuses a key it does not know, rather than ignoring it", () => {
+    expect(account({ ...declared, secretEnv: "NC" })).not.toEqual([]);
+  });
+
+  /** What a base URL may end in is this kind's business, so the slash goes here. */
+  it("drops a trailing slash when it reads the account back", () => {
+    expect(
+      asWebdavCredential({
+        ...declared,
+        baseUrl: "https://cloud.example/dav/",
+        secret: "an-app-password",
+      }),
+    ).toEqual({
+      baseUrl: "https://cloud.example/dav",
+      username: "alice",
+      password: "an-app-password",
+    });
   });
 });

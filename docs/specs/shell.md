@@ -1,8 +1,16 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-07
+**Last updated**: 2026-09-08
 **Shipped**:
+
+- 2026-09-08 — **A field the schema fixes is chosen wherever it appears.** The destination form and
+  the composer read a schema's `enum` the way the template form already did, so an enum setting or
+  argument is a row of options rather than a box typed from memory — which is also what stops
+  `folder` being typed from memory in the composer. Taking the option already taken gives it back,
+  absent being a value of its own for a field that means *inherit*. A record says what a delivery
+  did in bare verbs — `Created`, `Appended` — the destination being named on the line beside it.
+  ([plan](../plans/arena-destination.md))
 
 - 2026-09-07 — **One tag files it where it goes.** Routing templates are a third band in the
   composer's `where` list, above the destinations and reached by the same typed prefix match:

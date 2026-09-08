@@ -73,6 +73,7 @@ describe("GET /v1/destination-kinds", () => {
     expect(answered.values.map((each) => each.name)).toEqual([
       "filesystem",
       "webdav",
+      "arena",
     ]);
     expect(answered.values[0]?.settingsSchema).toMatchObject({
       required: ["root"],

@@ -1,9 +1,9 @@
 # An are.na destination
 
 **Date**: 2026-09-07
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/shell.md`, `docs/specs/security.md`
-**Closed**:
+**Closed**: 2026-09-08
 
 ---
 
@@ -194,67 +194,67 @@ Settings are therefore just `account`.
 
 ### Tasks
 
-- [ ] Create the branch for this phase.
+- [x] Create the branch for this phase.
 
 **Account and config**
 
-- [ ] Export an account schema from the package: `secretFile` or `secretEnv`, and nothing else. No
+- [x] Export an account schema from the package: `secretFile` or `secretEnv`, and nothing else. No
       base URL, no username ([ADR 40](../adr/0040-a-destination-kind-declares-the-shape-of-its-own-account.md)).
-- [ ] Export WebDAV's account schema from its package, moving the non-HTTP `baseUrl` refusal out of
+- [x] Export WebDAV's account schema from its package, moving the non-HTTP `baseUrl` refusal out of
       `readAccounts` and into it.
-- [ ] `readAccounts` keeps only the kind-agnostic checks: no inline secret, exactly one secret
+- [x] `readAccounts` keeps only the kind-agnostic checks: no inline secret, exactly one secret
       source, unique `kind`+`name`.
-- [ ] `apps/daemon/src/ports.ts` validates each account against its kind's schema at startup and
+- [x] `apps/daemon/src/ports.ts` validates each account against its kind's schema at startup and
       refuses to start on a failure.
-- [ ] The host resolves an account to the validated raw object plus its secret; each adapter reads
+- [x] The host resolves an account to the validated raw object plus its secret; each adapter reads
       that into its own credential type. Retire `ResolvedAccount`; keep one shared `secretOf`.
-- [ ] Document the account in `apps/daemon/config.example.toml`, saying plainly that the token must
+- [x] Document the account in `apps/daemon/config.example.toml`, saying plainly that the token must
       be minted with **`write`** scope — are.na defaults to `read`, and a read token 403s on every
       delivery.
 
 **The adapter**
 
-- [ ] Base URL `https://api.are.na`, paths under `/v3`, constant. Overridable only through
+- [x] Base URL `https://api.are.na`, paths under `/v3`, constant. Overridable only through
       host-wired construction config, so the test suite can point at a fake — never through
       `config.toml` and never through settings.
-- [ ] `describe` does no I/O, as both other kinds refuse to: a destination must be routable while
+- [x] `describe` does no I/O, as both other kinds refuse to: a destination must be routable while
       are.na is unreachable, which is what makes deferred delivery work.
-- [ ] One capability, `create`, with a `channel` argument holding **a slug or a numeric ID** — v3
+- [x] One capability, `create`, with a `channel` argument holding **a slug or a numeric ID** — v3
       accepts either — and carrying the browse annotation. The field's description says that an ID
       survives a retitle and a slug does not, which is what a template's argument should prefer.
-- [ ] `accepts` derives from the keys of `arenaRenderers()`, so a payload type with no block form
+- [x] `accepts` derives from the keys of `arenaRenderers()`, so a payload type with no block form
       is refused by core before a decision is made rather than landing as noise.
-- [ ] `candidates`: one page of
+- [x] `candidates`: one page of
       `GET /v3/users/{me}/contents?type=Channel&sort=updated_at_desc&per=100`, with `truncated` set
       from `meta.has_more_pages`. One request. Each entry's `label` is the title and its `value` is
       the **slug**, so what a browse leaves in the field stays legible. Drop a channel whose
       `can.add_to` is false; keep one whose `can` is absent, since the field is nullable and a
       missing ability is not a denial. Group channels are not browsable; the field still accepts
       anything typed by hand.
-- [ ] `preview`: converts without reaching the network, unlike WebDAV's, which must read the note it
+- [x] `preview`: converts without reaching the network, unlike WebDAV's, which must read the note it
       would append to.
-- [ ] `probe`: `GET /v3/me`, and nothing more — the response does not carry the token's scope, so a
+- [x] `probe`: `GET /v3/me`, and nothing more — the response does not carry the token's scope, so a
       read-only token passes. Documentation is the only guard, and a `403` at delivery names it.
 
 **Conversion**
 
-- [ ] Define `ArenaRenderer` in the package — `(delivery, at) => ArenaBlock`, a block being text,
+- [x] Define `ArenaRenderer` in the package — `(delivery, at) => ArenaBlock`, a block being text,
       link or image. The host wires `arenaRenderers()` beside the markdown ones, so dialect stays
       the daemon's. Capability name constants still come from `@notemap/output-markdown`; the
       `Renderer` type does not fit and is not reused.
-- [ ] A text capture **beginning with a URL** sends `value` = the URL and the remaining prose as the
+- [x] A text capture **beginning with a URL** sends `value` = the URL and the remaining prose as the
       description; are.na infers Link, Image or Embed from the value itself. Anything else sends
       `value` = the whole text and becomes a Text block.
-- [ ] An image capture posts `{files: [{filename, content_type}]}` to `POST /v3/uploads/presign`,
+- [x] An image capture posts `{files: [{filename, content_type}]}` to `POST /v3/uploads/presign`,
       which answers `{files: [{upload_url, key, content_type}], expires_in}`. PUT the bytes to
       `upload_url` with that exact `Content-Type` — streamed, never buffered; `Asset.bytes` supplies
       the length — then create the block with `value` set to the uploaded object's URL, derived from
       `key`. The caption becomes both the **description** and the **`alt_text`**; the title is left
       unset. URLs expire in an hour, so presign and upload belong to the same attempt and a retry
       presigns again.
-- [ ] Refuse a capture carrying more than one asset. A guard: `packages/client/src/capture/envelope.ts:36`
+- [x] Refuse a capture carrying more than one asset. A guard: `packages/client/src/capture/envelope.ts:36`
       builds `assets` as zero-or-one, so only a direct `/v1` caller can trip it.
-- [ ] Write provenance into **`BlockInput.metadata`** on create — the block's own key-value pairs,
+- [x] Write provenance into **`BlockInput.metadata`** on create — the block's own key-value pairs,
       not the connection's, so it survives the block being disconnected. Best effort, and shaped to
       the limits: keys alphanumeric or underscore up to 40 characters, scalar values, strings under
       2000, at most 50 keys. Tags flatten to one joined string. It is not queryable, so it is a
@@ -262,36 +262,36 @@ Settings are therefore just `account`.
 
 **Outcome**
 
-- [ ] `pointer` is the block id; `url` is `https://www.are.na/block/<id>`, **composed by
+- [x] `pointer` is the block id; `url` is `https://www.are.na/block/<id>`, **composed by
       convention** — the spec offers no web permalink, and `_links.self` is an API URL a person
       cannot follow. First kind to return a `url` at all; `followable()` and `Record.svelte:95`
       already handle it.
-- [ ] Output is the block's readable form as markdown; the note says what was dropped — tags,
+- [x] Output is the block's readable form as markdown; the note says what was dropped — tags,
       artifacts, and any metadata that did not fit.
-- [ ] Error mapping: `401` → `rejected` to a probe and `unreachable` to a delivery, following
+- [x] Error mapping: `401` → `rejected` to a probe and `unreachable` to a delivery, following
       WebDAV's asymmetry. `403`, `404` and `422` → `rejected`; an under-scoped token and an
       unwritable channel are both permanent, unlike a rotated password. `408`, `429` and `5xx` →
       `unreachable`. Never follow a redirect with the token attached.
-- [ ] README, on both file kinds' model: what a destination is, the one capability, what it will not
+- [x] README, on both file kinds' model: what a destination is, the one capability, what it will not
       do, and a refused-or-unreachable table.
-- [ ] **State the duplicate window plainly in the README**
+- [x] **State the duplicate window plainly in the README**
       ([ADR 41](../adr/0041-a-delivery-that-cannot-be-confirmed-may-duplicate.md)): this kind's
       `unreachable` does not promise that nothing landed, because are.na offers no conditional
       create and no idempotency key.
 
 **Wiring and docs**
 
-- [ ] Register the kind in `apps/daemon/src/ports.ts`.
-- [ ] `docs/specs/core.md`: rewrite the retry-is-keyed-on-evidence clause (~line 772) so the
+- [x] Register the kind in `apps/daemon/src/ports.ts`.
+- [x] `docs/specs/core.md`: rewrite the retry-is-keyed-on-evidence clause (~line 772) so the
       no-duplicate guarantee is a promise each kind makes rather than a property of `unreachable`.
-- [ ] `docs/specs/security.md`: widen the account section to cover uploading item bytes to an
+- [x] `docs/specs/security.md`: widen the account section to cover uploading item bytes to an
       address are.na names at runtime. No notemap credential is attached — the presigned URL is its
       own authorisation — so ADR 28's threat does not apply, but the file currently reads as though
       the daemon only ever talks to addresses in `config.toml`.
-- [ ] `CONTEXT.md`'s **Account** entry, to the text below.
-- [ ] Typecheck, tests, lint. `pnpm test:stack` — this crosses the config file, the host's wiring
+- [x] `CONTEXT.md`'s **Account** entry, to the text below.
+- [x] Typecheck, tests, lint. `pnpm test:stack` — this crosses the config file, the host's wiring
       and the HTTP surface.
-- [ ] Commit.
+- [x] Commit.
 
 ### `CONTEXT.md` — Account
 

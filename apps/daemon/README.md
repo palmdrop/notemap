@@ -80,12 +80,17 @@ everything else, HTML and SVG and PDF included, downloads. Every asset response 
 Items are routed **out** to destinations, which are **pool state** rather than configuration
 ([ADR 20](../../docs/adr/0020-destinations-are-pool-state.md)): they are added, renamed, retired
 and deleted from the UI or over `/v1/destinations`, with no restart. The daemon wires one adapter
-per **kind**, and one kind exists — a folder on disk
+per **kind**, and three exist: a folder on disk
 ([@notemap/destination-fs](../../packages/adapters/destination-fs/)), whose settings are a `root`
-and nothing else. What a folder takes is every payload type declared in the config, which the
-daemon hands the kind rather than asking a person to repeat — one folder taking less than another
-would be routing policy rather than something the folder cannot do. What stays in `config.toml` is
-the cadence deliveries are retried at:
+and nothing else; a folder on a WebDAV server
+([@notemap/destination-webdav](../../packages/adapters/destination-webdav/)), which names an
+account and a folder under it; and an are.na account
+([@notemap/destination-arena](../../packages/adapters/destination-arena/)), which names an account
+and nothing else, the channel being chosen per capture. What a folder takes is every payload type
+declared in the config, which the daemon hands the kind rather than asking a person to repeat — one
+folder taking less than another would be routing policy rather than something the folder cannot do.
+A board takes what it has a block form for, which is narrower and the dialect's own. What stays in
+`config.toml` is the cadence deliveries are retried at:
 
 ```toml
 [delivery]
@@ -100,6 +105,11 @@ batch = 4
 `append`, which takes `{ path, heading? }` and creates both the file and the heading when
 they are missing. The filename is derived from the first line of the payload when the target names
 none — weak, because the domain has no title.
+
+The last two are the kinds that hold an **account**, declared under `[[accounts]]` in
+`config.toml`. What an account of a given kind must carry is that kind's own, checked against the
+kind's schema when the daemon starts; a block that does not fit stops it there rather than at the
+first delivery.
 
 **The root must already exist**, and `~` in one means the home of whoever the daemon runs as. The
 daemon never creates one: a root that is not there is an
@@ -120,6 +130,11 @@ abandoned-work surface. A client must read `state` rather than reading a record 
 Two things are never retried, deliberately: a destination that was reached and *refused* — a
 traversal, a file already there — and a delivery whose lease expired with nothing reported, because
 nobody can say whether those bytes landed.
+
+Whether a retry that *is* made can duplicate is each kind's own promise, made where it is enforced
+and stated in that kind's README. Both file kinds keep the strong one, by `EEXIST` and by
+`PUT If-None-Match: *`. The are.na kind cannot: are.na offers no conditional create and no
+idempotency key, so its `unreachable` means *could not confirm* rather than *nothing landed*.
 
 Nothing a delivery names can escape `root`. Absolute paths, `..` and symlinks leaving the folder are
 resolved and refused, and an asset filename is flattened to one segment before it is used.

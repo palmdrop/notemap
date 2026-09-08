@@ -2,8 +2,16 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one and health are settled; the rest is stub
-**Last updated**: 2026-09-07
+**Last updated**: 2026-09-08
 **Shipped**:
+
+- 2026-09-08 — **The capability names on the wire lose the word *file*.** `create-file`,
+  `append-to-file` and `create-or-append-file` become `create`, `append` and `create-or-append`
+  everywhere `/v1` names one — a description, a routing decision, a template, a candidates query.
+  Routing templates were migrated; routing records keep the spelling they were written with, so a
+  record read back says what happened. `GET /v1/destination-kinds` answers a third kind, `arena`,
+  whose settings hold an account name and nothing else.
+  ([plan](../plans/arena-destination.md))
 
 - 2026-09-07 — **Routing templates on the wire, and a tag that applies one.** `GET`, `POST`,
   `PATCH` and `DELETE` over `/v1/templates`, with `GET /v1/templates/{id}/report` as the live read

@@ -178,3 +178,9 @@
   draws it verbatim behind the interface a renderer will sit in. A library choice, and the question
   it drags in with it: whether captured markdown is sanitised before rendering, since a capture can
   carry raw HTML and nothing between the field and the screen would stop it.
+- [ ] **A browse is navigated entirely by scrolling.** `CandidateBrowser` renders `{#each entries}`
+  whole, and its input sets the field's value rather than filtering the list, so two hundred are.na
+  channels or a vault folder of two hundred notes is a scroll and nothing else. Raised 2026-09-07
+  while designing the are.na destination, and it is the browse's own problem rather than any kind's:
+  every kind that can answer a long list meets it. Filtering the drawn list as the field is typed is
+  the obvious first move; capping it and saying so is the second.
