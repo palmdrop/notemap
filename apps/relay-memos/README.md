@@ -17,6 +17,37 @@ node apps/relay-memos/dist/main.js --config ~/.config/notemap/relay-memos.toml
 `--once` polls once and exits non-zero if anything went wrong, which is the
 shape cron wants. `--help` says the rest.
 
+## In Docker
+
+Its own image, because it is its own program. Nothing is published yet, so
+build it where it will run:
+
+```sh
+docker build -f Dockerfile.relay-memos -t notemap-relay-memos:local .
+```
+
+The image is the bundle and nothing else: no port, no volume, no healthcheck,
+and `/etc/notemap/relay-memos.toml` is where it looks for its config.
+`docker/compose/` carries a `relay-memos.toml` with the container's paths
+already in it, and both compose files carry the service commented out beside
+the daemon's.
+
+The one step that is not a mount is the token. It is minted in the *daemon's*
+container, and a relay is outside notemap, so nothing does this for you:
+
+```sh
+docker compose exec notemap notemap token mint --name relay-memos \
+  > notemap_relay_pool_token
+```
+
+Put the Memos token in `notemap_relay_memos_token` beside it, uncomment the
+service and the two secrets, and `docker compose up -d`. Both files are read at
+every poll, so rotating either one is writing the file — not a restart.
+
+Reach the daemon at `http://notemap:4747`, the service on the compose network.
+The port `compose.yaml` publishes is on the host's loopback, which is not the
+relay container's.
+
 ## What it does with a memo
 
 | Memos                    | notemap                                          |
