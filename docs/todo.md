@@ -2,12 +2,45 @@
 - [ ] fix minor UI issues
   - Immediately hiding a routed item from the queue is confusing, especially if it fails. There's no good way to see pending operations. 
 
+- [ ] new shell design with more clear fields and less clutter/noise
+    - simplify
+    - stronger grids
+    - easier configuration
+    - better hierarchy using bold text, small-caps, grids
+
+- [ ] batch processing, i.e selecting many captures and routing them all at once, or discarding
+- [ ] easier, keyboard driven processing
+  - processing, discarding, etc, with keyboard shortcuts
+- [ ] single-capture mode, seeing only one capture at once with easier access to processing options         
+
+- [ ] keyboard shortcuts 
+- [ ] command palette
+
+- [ ] fuzzy search in composer input field
+
+- [ ] are.na destination: 
+  - tabbing multiple times does not move composer cursor to next channel that matches the inputted text
+  - are.na templates resolve to channel ID, which is good, but frontend now shows ID instead of channel title. Frontend should show title while internally resolve to the ID. 
+
+- [ ] Inspecting routing records is hard to view. Too much info, not structured well. What I want: destination + what the destination points at, i.e a url, filesystem folder, etc. Filepath or other pointer. Content. Maybe more but not much.
+
+- [ ] not sure if configuration of payloadTypes in config.toml is needed. Will a user ever be able to edit that for their specific notemap run? It reads as unnecessary since it has to be configured a certain way.
+
+- [ ] cache problem sweep: 
+    - routed items do not disappear after template routing if user navigates away from queue and back again.
+    - log does not show new items without refresh
+
+- [ ] using a template from the composer does not add the routing tag.
+- [ ] adding a routing tag from within the composer is confusing. It correctly triggers routing, but then triggers routing in combination with the routing the user is already on the way to trigger.
+
 - [ ] add new UI views
     - routing view, showing all routed items. Can be implemented as a filter on the log view rather than a page of its own
+        - hide unnecessary items from log
+        - log entries should link to the capture. It needs to be easier to connect a log entry to the capture it actually pertains to.
 
 - [ ] Workflow publishes a docker image for each commit, not just each release. Might not be necessary? Investigate
 
-- [ ] Consider collapsing some UI actions: "Route", "Archive", "mark done" (maybe even "Copy") could all become "Process". Pressing process opens the routing composer, which would become a "Processing composer". Processing could be routing using a configured destination, but also be archiving or marking done, or copying manually (which would then result in an automatic "mark done")
+- [x] Consider collapsing some UI actions: "Route", "Archive", "mark done" (maybe even "Copy") could all become "Process". Pressing process opens the routing composer, which would become a "Processing composer". Processing could be routing using a configured destination, but also be archiving or marking done, or copying manually (which would then result in an automatic "mark done")
   - Designed 2026-09-05 and specified across [shell.md](specs/shell.md#one-way-out-of-the-queue)
     and `CONTEXT.md`; built by [one-way-to-process](plans/one-way-to-process.md). `copy` stayed
     out: it is not a way out of the queue, and copying is *offered* inside `manual` rather than
