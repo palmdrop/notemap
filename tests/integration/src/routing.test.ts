@@ -25,6 +25,7 @@ import {
   envelope,
   harness,
   itemRecord,
+  SECOND,
   upload,
   type Harness,
 } from "./fixture";
@@ -300,7 +301,7 @@ describe("what routing refuses before it attempts anything", () => {
       capabilities: [
         fakeCapability({
           name: "create-note",
-          accepts: ["note"],
+          accepts: [SECOND],
           argumentsSchema: PATH_SCHEMA,
         }),
       ],
@@ -311,7 +312,7 @@ describe("what routing refuses before it attempts anything", () => {
       refusal: {
         kind: "payload-type-unsupported",
         type: "text",
-        accepts: ["note"],
+        accepts: [SECOND],
       },
     });
   });
@@ -551,7 +552,7 @@ describe("cancelling a delivery", () => {
 
 describe("the assets a delivery carries", () => {
   const NOTE_WITH_RECORDING = {
-    type: "note",
+    type: SECOND,
     content: { body: "a thought" },
     metadata: {},
   };
@@ -562,7 +563,7 @@ describe("the assets a delivery carries", () => {
       capabilities: [
         fakeCapability({
           name: "create-note",
-          accepts: ["note"],
+          accepts: [SECOND],
           argumentsSchema: PATH_SCHEMA,
         }),
       ],
@@ -581,7 +582,7 @@ describe("the assets a delivery carries", () => {
         ...envelope({ id: "item-1" }),
         payload: {
           ...NOTE_WITH_RECORDING,
-          type: "note" as Item["payload"]["type"],
+          type: SECOND,
           assets: [
             { slot: "recording", asset: audio.id },
             { slot: "photo", asset: photo.id },
