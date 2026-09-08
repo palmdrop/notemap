@@ -16,9 +16,17 @@
 - [ ] command palette
 
 - [ ] stale and premature UI state
-  - Immediately hiding a routed item from the queue is confusing, especially if it fails. There's no good way to see pending operations.
-  - routed items do not disappear after template routing if user navigates away from queue and back again.
-  - log does not show new items without refresh
+  - ~~Immediately hiding a routed item from the queue is confusing~~ — closed 2026-09-08: the row is
+    **held** open where it stood until the reader looks away, and offers `process` again, which is
+    also the reach a second destination needed
+    ([plan](plans/held-row-and-a-fresh-queue.md)).
+  - ~~routed items do not disappear after template routing if user navigates away from queue and
+    back again~~ — closed 2026-09-08: arriving at the queue reads it again, and the action watcher
+    takes a row off it the moment something else processes the item.
+  - Still open: **no good way to see pending operations.** A held row says `retrying` while it is
+    looked at and the corner speaks when the delivery resolves, but nothing shows everything in
+    flight at once. Belongs with the routing-record and log readability items below.
+  - Still open: log does not show new items without refresh.
 
 - [ ] The markdown renderer is unchosen, so a text capture shows its asterisks.
   [standards.md](standards.md) says a text payload is CommonMark; the shell's `Prose` primitive
