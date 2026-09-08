@@ -77,6 +77,19 @@ export type CandidateEntry = {
   readonly value?: JsonValue;
   /** Absent where the destination has nothing further to offer past this entry. */
   readonly scope?: string;
+  /**
+   * The same thing under a name that survives being renamed, where the
+   * destination has two names for it — an are.na channel is `reading` today and
+   * `12345` for as long as it exists. Absent where `value` is already the
+   * lasting one, which is the ordinary case.
+   *
+   * What it is *for* is a decision that fires again: a routing template sits on
+   * a tag for months, and a `value` that rots takes the template with it. A
+   * decision made once prefers the readable form, so the two surfaces take
+   * different halves of the same entry and neither has to know which kind it is
+   * talking to.
+   */
+  readonly durable?: JsonValue;
 };
 
 export type CandidatesAnswer = {

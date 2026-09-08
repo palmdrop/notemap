@@ -24,11 +24,23 @@ on the settings page and then fails every delivery with a `403`, whose detail sa
 `create`, taking a `channel`. A block is always new: there is nothing here to append into, so there
 is nothing for `append` or `create-or-append` to mean.
 
-The channel is **a slug or a numeric ID**, because v3 takes either. Browsing answers slugs, so what
-a browse leaves in the field reads the way the channel's title does. A **slug does not survive a
-retitle** — renaming a channel changes it — so a routing template, which fires on a tag
-indefinitely and may sit for months, is better pinned to the numeric ID. A `404` at delivery says a
-rename is the likely cause and points back at the browse.
+The field is declared as one that holds **only something are.na already has** — a channel is
+joined, not made — which is why a routing template offers no `{{captured_at}}` beside it. Nothing
+refuses a value that was not browsed, though: the browse answers one page of the channels the
+token's own user made, so a group channel, a collaborator's, or the hundred-and-first are all
+missing from it and all deliver perfectly well.
+
+The channel is **a slug or a numeric ID**, because v3 takes either, and browsing answers both: the
+slug under the channel's title, and the ID beside it as the name that survives being renamed.
+
+Which one you end up with depends on where you are, and neither is a choice you have to make. In
+the **composer** a browse leaves the slug, so what the routing record reads back is legible. In the
+**template form** it leaves the ID — a **slug does not survive a retitle**, and a template fires on
+a tag indefinitely, so one pinned to a slug rots quietly: the channel is renamed and some days
+later a tagged capture stops routing. Typing works either way; a title typed resolves to whichever
+form the surface wants.
+
+A `404` at delivery says a rename is the likely cause and points back at the browse.
 
 ## What a capture becomes
 

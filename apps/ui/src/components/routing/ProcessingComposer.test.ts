@@ -1380,6 +1380,27 @@ test("resolves a title typed to the value it stands for, on commit", async () =>
   });
 });
 
+/**
+ * The gap that sent a half-typed title to are.na as a slug: `⇥` resolved it,
+ * committing without pressing `⇥` did not.
+ */
+test("resolves enough of a title that only one channel still matches", async () => {
+  const transport = servingBrowsable(() => answered(CHANNELS));
+  draw();
+  await choose(/Vault/);
+  const field = (await screen.findByLabelText("directory")) as HTMLInputElement;
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "Field" } });
+  await fireEvent.keyDown(field, { key: "Enter" });
+
+  await vi.waitFor(async () => {
+    expect((await routed(transport)).arguments).toEqual({
+      directory: "field-recordings",
+    });
+  });
+});
+
 test("resolves it on leaving the line too, so the pointer gets there as well", async () => {
   servingBrowsable(() => answered(CHANNELS));
   draw();

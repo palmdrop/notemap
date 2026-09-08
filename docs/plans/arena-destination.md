@@ -79,6 +79,9 @@ So the argument accepts **either form**, which costs nothing because are.na does
 - `candidates` answers **slugs**, so browsing reads as titles do and remembered places stay legible.
 - A person who wants a template that cannot rot pastes the **numeric ID**. The README says why they
   might, and this is the recommended form for a template's argument specifically.
+  *(Superseded 2026-09-08 by [ADR 42](../adr/0042-a-candidate-carries-both-its-readable-name-and-its-lasting-one.md):
+  the browse answers the ID beside the slug and the template form takes it, so a template is
+  rename-proof by default rather than by instruction.)*
 - A `404` on delivery is `rejected`, and its detail names a rename as the likely cause and points at
   the browse to re-pick.
 

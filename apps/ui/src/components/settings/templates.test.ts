@@ -415,6 +415,7 @@ const PUBLISH = {
         type: "string",
         title: "channel",
         "x-notemap-candidates": true,
+        "x-notemap-offered-only": true,
       },
     },
   },
@@ -467,6 +468,52 @@ test("taking one fills the field, and the field is still typed into", async () =
   // written are the same field: a template's value may hold a pattern.
   await fireEvent.input(field, { target: { value: "{{source}}" } });
   expect(field.value).toBe("{{source}}");
+});
+
+/**
+ * A template fires on a tag for months, and an are.na slug does not survive a
+ * retitle — so the browse hands this form the name that does.
+ */
+test("takes the form of a value that survives a rename", async () => {
+  servingChannels([{ label: "reading", value: "reading", durable: "12345" }]);
+
+  render(Templates);
+  await open(/Make a template/);
+  await fireEvent.mouseDown(await screen.findByText("reading"));
+
+  expect((await screen.findByLabelText("channel")) as HTMLInputElement).toEqual(
+    expect.objectContaining({ value: "12345" }),
+  );
+});
+
+/** Typed rather than taken, and it lands on the same lasting name. */
+test("resolves a title typed to the form that survives a rename", async () => {
+  servingChannels([{ label: "reading", value: "reading", durable: "12345" }]);
+
+  render(Templates);
+  await open(/Make a template/);
+  const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
+  // The answer has to be in before a title can be resolved against it.
+  await screen.findByText("reading");
+
+  await fireEvent.input(field, { target: { value: "reading" } });
+  await fireEvent.blur(field);
+
+  expect(field.value).toBe("12345");
+});
+
+/**
+ * A channel is joined, not made: a pattern expanded into the field would name a
+ * channel nobody has, so the vocabulary is not offered beside it.
+ */
+test("offers no patterns where every typed field may hold only what is offered", async () => {
+  servingChannels([{ label: "reading", value: "reading" }]);
+
+  render(Templates);
+  await open(/Make a template/);
+  await screen.findByLabelText("channel");
+
+  expect(screen.queryByText(/\{\{captured_at\}\}/)).toBeNull();
 });
 
 test("a destination that cannot be asked leaves the field typable", async () => {

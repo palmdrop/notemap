@@ -237,6 +237,11 @@
           The browser carries the field's own input, so a place that has to be
           picked from what is there and one that has to be written are the same
           field.
+
+          `durable`, because this is the decision that fires again: a template
+          sits on a tag for months, and a value that rots takes the template
+          with it. Where a destination offers no second name for a thing this
+          changes nothing.
         -->
         <div class="mt-0.5">
           <CandidateBrowser
@@ -245,6 +250,7 @@
             field={field.name}
             label={field.title ?? field.name}
             value={typed[field.name] ?? ""}
+            durable
             onchange={(value) => (typed[field.name] = value)}
           />
         </div>
@@ -262,8 +268,10 @@
   <!-- Said once, terse, rather than a paragraph per pattern: what each comes
        out as is the pool's answer, and the pool refuses one it does not know.
        Only where something can hold one: a form of nothing but chosen fields
-       has nowhere to put a pattern. -->
-  {#if typeable.some((field) => fixed(field) === undefined)}
+       has nowhere to put a pattern, and neither has one whose every typed field
+       may hold only what its destination already has — a pattern expanded into
+       an are.na channel names a channel nobody has. -->
+  {#if typeable.some((field) => fixed(field) === undefined && !field.offeredOnly)}
     <p class="mt-2 text-ink-muted">
       {"{{captured_at}} · {{captured_at:month}} · {{captured_at:week}} · {{item}} · {{source}}"}
     </p>

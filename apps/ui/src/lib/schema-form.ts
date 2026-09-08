@@ -11,6 +11,13 @@ export type Field = {
   readonly description?: string;
   /** Carries `x-notemap-candidates`: a destination can be asked what it could hold. */
   readonly askable: boolean;
+  /**
+   * Carries `x-notemap-offered-only`: the field may hold only something the
+   * destination already has. A channel is joined, a mailbox is subscribed to —
+   * where a vault's folder is made by the delivery that needs it. So a pattern
+   * expanded into one could only ever name something that is not there.
+   */
+  readonly offeredOnly: boolean;
   /** Offered as a list rather than typed. Annotation only: these constrain nothing. */
   readonly examples?: readonly string[];
   /**
@@ -53,6 +60,7 @@ export function fieldsOf(schema: Schema): readonly Field[] {
           ? { description: meta["description"] }
           : {}),
         askable: meta["x-notemap-candidates"] === true,
+        offeredOnly: meta["x-notemap-offered-only"] === true,
         ...(examples === undefined ? {} : { examples }),
       };
     },

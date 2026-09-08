@@ -36,6 +36,8 @@ export type ArenaServer = {
 export type ChannelRow = {
   readonly slug: string;
   readonly title: string;
+  /** The name that survives a retitle. Numbered from the position where none is given. */
+  readonly id?: number;
   /** Absent is a channel with no `can` at all, which is kept rather than dropped. */
   readonly addTo?: boolean;
 };
@@ -88,8 +90,8 @@ export async function startArenaServer(): Promise<ArenaServer> {
 
     if (request.method === "GET" && path === `/v3/users/${USER}/contents`) {
       return send(response, 200, {
-        data: channels.map((channel) => ({
-          id: 1,
+        data: channels.map((channel, index) => ({
+          id: channel.id ?? index + 1,
           type: "Channel",
           slug: channel.slug,
           title: channel.title,

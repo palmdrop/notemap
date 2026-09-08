@@ -274,10 +274,15 @@ describe("what it says it would write", () => {
 });
 
 describe("the channels it offers to browse", () => {
-  it("answers a slug per channel, under its title", async () => {
+  /**
+   * The slug is what a decision made once takes, and the numeric ID rides along
+   * as the entry's durable form — a slug does not survive a retitle, and a
+   * template fires on a tag for months.
+   */
+  it("answers a slug per channel under its title, and the ID beside it", async () => {
     server.holds([
-      { slug: "reading", title: "Reading" },
-      { slug: "shapes", title: "Shapes" },
+      { slug: "reading", title: "Reading", id: 12345 },
+      { slug: "shapes", title: "Shapes", id: 67890 },
     ]);
 
     const answer = await adapter().candidates?.(row(), {
@@ -288,10 +293,23 @@ describe("the channels it offers to browse", () => {
     expect(answer).toEqual({
       truncated: false,
       entries: [
-        { label: "Reading", value: "reading" },
-        { label: "Shapes", value: "shapes" },
+        { label: "Reading", value: "reading", durable: "12345" },
+        { label: "Shapes", value: "shapes", durable: "67890" },
       ],
     });
+  });
+
+  /** A channel is joined, not made, so a pattern expanded into the field names nothing. */
+  it("says the channel may hold only something it offered", async () => {
+    const described = await adapter().describe(row());
+    const properties = (
+      described.capabilities[0]?.argumentsSchema as Record<string, unknown>
+    )["properties"] as Record<string, Record<string, unknown>>;
+
+    expect(properties["channel"]).toHaveProperty(
+      "x-notemap-offered-only",
+      true,
+    );
   });
 
   it("drops a channel the token cannot post into, and keeps one that says nothing", async () => {

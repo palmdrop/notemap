@@ -114,8 +114,16 @@ describe("what a typed line means", () => {
     expect(resolved(CHANNELS, "  field recordings ")).toBe("field-recordings");
   });
 
-  /** Snapping on a prefix would take the field off a person mid-word. */
-  it("leaves a prefix of a title alone", () => {
+  /**
+   * Enough of a title that only one answer still matches, which is what `⇥`
+   * takes. Safe here and not on a keystroke: the line is done being typed.
+   */
+  it("resolves enough of a title that only one still matches", () => {
+    expect(resolved(CHANNELS, "Field")).toBe("field-recordings");
+    expect(resolved(CHANNELS, "reading-not")).toBe("reading-notes");
+  });
+
+  it("leaves a prefix that several still match alone", () => {
     expect(resolved(CHANNELS, "Read")).toBeUndefined();
   });
 

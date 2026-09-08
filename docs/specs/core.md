@@ -13,9 +13,12 @@
   ships, `arena`, whose destination *is* an account and whose channel is an argument, and it is the
   first to answer a followable `url` on a routing record. What an account must carry becomes the
   kind's own, checked against that kind's schema when the daemon starts.
+  A candidate may answer under **two names** — what a person reads and what survives a rename —
+  and a field may say it holds only something the destination already has.
   ([plan](../plans/arena-destination.md),
   [ADR 40](../adr/0040-a-destination-kind-declares-the-shape-of-its-own-account.md),
-  [ADR 41](../adr/0041-a-delivery-that-cannot-be-confirmed-may-duplicate.md))
+  [ADR 41](../adr/0041-a-delivery-that-cannot-be-confirmed-may-duplicate.md),
+  [ADR 42](../adr/0042-a-candidate-carries-both-its-readable-name-and-its-lasting-one.md))
 
 - 2026-09-07 — **One tag files it where it goes.** A **routing template** is a saved routing
   decision — a destination, a capability, arguments held as patterns, how its folder is treated —
@@ -991,7 +994,14 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   hold, somewhere to look for more, and no assumption that they are the same thing. Browsing for a
   note descends through folders and is never offered one as a note, which is what an entry with a
   scope and no value says. So a tree is walked by a caller that was never told it is a tree, and
-  `truncated` says where the destination held more than it answered. A
+  `truncated` says where the destination held more than it answered. An entry may also carry a
+  **`durable`** form of its value (added 2026-09-08,
+  [ADR 42](../adr/0042-a-candidate-carries-both-its-readable-name-and-its-lasting-one.md)) — the
+  same thing under a name that survives being renamed, where the destination has two for it. Absent
+  is the ordinary case and means the value is already the lasting one. Which of the two to take is
+  the **asking surface's** business rather than the destination's: a decision made once prefers the
+  readable name and reads it back on its record, and one that fires again for months prefers the
+  name that cannot rot. Core carries both and reads neither. A
   request carries none of the arguments filled in so far, because no field either kind declares
   today depends on another. Failures are `unreachable`, `unusable` and `not-offered`, on the same
   terms `describe()`'s own report already uses. `not-offered` is one answer however it was reached
@@ -1118,6 +1128,15 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   is nothing to check, and nothing about a path is inferred for it. Marking a field is the whole of
   what a new kind has to do to be folder-checked, and doing nothing is the whole of what it has to
   do not to be.
+- **A capability may say a field holds only something the destination already has** (added
+  2026-09-08, [ADR 42](../adr/0042-a-candidate-carries-both-its-readable-name-and-its-lasting-one.md)).
+  A vault's folder is *made* by the delivery that needs it; an are.na channel is joined, a mailbox
+  subscribed to. Both are askable and both take a string, so nothing can tell them apart by looking.
+  **Core never reads this one** — it is said for the surfaces, and the fact it carries is that a
+  value which has to name something already there cannot be expanded into: a routing template's
+  pattern vocabulary beside such a field is advice that can only ever fail. It says the field *may*
+  hold only what was offered, not that a caller must refuse anything else — a browse answers one
+  page of what a destination holds, so what it did not name is not thereby wrong.
 - **`establish` is the template's word alone**, and resolves at decision time: unestablished it asks
   the adapter to create, established it asks the adapter to require. No adapter ever hears it, so
   the arguments on a record are always the two-valued thing. The **argument it is carried in is

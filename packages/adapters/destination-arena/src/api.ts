@@ -24,6 +24,12 @@ export type CreatedBlock = {
 export type Channel = {
   readonly slug: string;
   readonly title: string;
+  /**
+   * The one name that survives a retitle. Read here because the listing already
+   * carries it — a browse that answered only slugs would make a template's
+   * rot-proof form something a person has to go and look up by hand.
+   */
+  readonly id: number;
 };
 
 export type ChannelPage = {
@@ -329,7 +335,10 @@ function channelsIn(body: unknown): readonly Channel[] {
       return [];
     }
 
-    return [{ slug, title: typeof title === "string" ? title : slug }];
+    const id = at(each, "id");
+    if (typeof id !== "number") return [];
+
+    return [{ slug, title: typeof title === "string" ? title : slug, id }];
   });
 }
 

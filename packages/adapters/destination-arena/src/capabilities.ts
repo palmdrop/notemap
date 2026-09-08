@@ -1,4 +1,4 @@
-import { ASKABLE_FIELD } from "@notemap/core";
+import { ASKABLE_FIELD, OFFERED_ONLY_FIELD } from "@notemap/core";
 import type { Capability, JsonObject, PayloadTypeName } from "@notemap/core";
 import { CREATE } from "@notemap/output-markdown";
 
@@ -27,8 +27,12 @@ export function arenaCapabilities(
             minLength: 1,
             title: "Channel",
             description:
-              "The channel, by slug or by numeric ID. A slug does not survive a retitle, so a template that has to keep working for months is better pinned to the ID.",
+              "The channel, by slug or by numeric ID. A slug does not survive a retitle, so a decision that fires again is pinned to the ID.",
             [ASKABLE_FIELD]: true,
+            // A channel is joined, not made: nothing a delivery does brings one
+            // into being, so a pattern expanded into this field could only ever
+            // name a channel that is not there.
+            [OFFERED_ONLY_FIELD]: true,
           },
         },
       },

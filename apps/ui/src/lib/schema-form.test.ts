@@ -26,8 +26,15 @@ describe("the fields a schema asks for", () => {
         title: "Path",
         description: "Where it goes.",
         askable: true,
+        offeredOnly: false,
       },
-      { name: "tags", required: false, kind: "list", askable: false },
+      {
+        name: "tags",
+        required: false,
+        kind: "list",
+        askable: false,
+        offeredOnly: false,
+      },
     ]);
   });
 
@@ -83,4 +90,20 @@ describe("what a person typed, as the value the schema asks for", () => {
       tags: "one, two",
     });
   });
+});
+
+/** A channel is joined, not made, so a pattern expanded into one names nothing. */
+test("reads a field that may hold only what its destination already has", () => {
+  const [only] = fieldsOf({
+    type: "object",
+    properties: {
+      channel: {
+        type: "string",
+        "x-notemap-candidates": true,
+        "x-notemap-offered-only": true,
+      },
+    },
+  });
+
+  expect(only).toMatchObject({ askable: true, offeredOnly: true });
 });

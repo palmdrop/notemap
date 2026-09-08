@@ -8,7 +8,7 @@
   import Action from "$components/primitives/controls/Action.svelte";
   import Walked from "$components/primitives/composer/Walked.svelte";
   import { client } from "$lib/client";
-  import { completed, narrowed, resolved } from "$lib/candidate-list";
+  import { completed, narrowed, resolved, takenAs } from "$lib/candidate-list";
   import { recall, remember } from "$lib/candidate-cache";
 
   /**
@@ -28,6 +28,7 @@
     field,
     label,
     value,
+    durable = false,
     onchange,
     onsubmit,
     onrelease,
@@ -38,6 +39,13 @@
     label: string;
     /** What the field already holds, which is also what narrows the list. */
     value: string;
+    /**
+     * Take the form of a value that survives a rename, where the destination
+     * offered one. For a decision that fires again — a routing template on a
+     * tag for months — rather than one made once, which prefers the readable
+     * form and reads it back on the record.
+     */
+    durable?: boolean;
     onchange: (value: string) => void;
     onsubmit?: () => void;
     /** Backspacing out of an empty line: a wrong destination is not a reason to close. */
@@ -169,7 +177,7 @@
    */
   function open(entry: CandidateEntry): void {
     if (entry.scope === undefined) {
-      if (entry.value !== undefined) onchange(String(entry.value));
+      if (entry.value !== undefined) onchange(takenAs(entry, durable));
       input?.focus();
       return;
     }
@@ -207,7 +215,7 @@
       // whatever is next: the line is what the composer is for, and leaving it
       // is `⇧⇥` or the pointer.
       event.preventDefault();
-      const finished = completed(entries, value);
+      const finished = completed(entries, value, durable);
       if (finished !== undefined) onchange(finished);
       return;
     }
@@ -251,7 +259,7 @@
    * still being written.
    */
   function settle(): void {
-    const meant = resolved(entries, value);
+    const meant = resolved(entries, value, durable);
     if (meant !== undefined) onchange(meant);
   }
 
@@ -319,7 +327,7 @@
         <Walked
           id={picked ? `candidate-${index}` : undefined}
           on={picked}
-          held={entry.value !== undefined && String(entry.value) === value}
+          held={entry.value !== undefined && takenAs(entry, durable) === value}
           dim={!picked}
           ontake={() => open(entry)}
         >

@@ -4,6 +4,17 @@
 **Last updated**: 2026-09-08
 **Shipped**:
 
+- 2026-09-08 — **A template browsed into a channel is rename-proof, and is offered no advice that
+  cannot work.** A candidate may answer under two names — the one a person reads and the one that
+  survives a rename — and the surface takes the half it needs: the composer the readable one, since
+  its decision lands now and its record is read back, and the **template form the lasting one**,
+  since a template fires on a tag for months and a name that rots takes the template with it. A
+  field may also say it holds only something the destination already has, and the template form
+  draws no pattern vocabulary beside one: a channel is joined rather than made, so `{{captured_at}}`
+  expanded into it could only ever name a channel nobody has.
+  ([plan](../plans/arena-destination.md),
+  [ADR 42](../adr/0042-a-candidate-carries-both-its-readable-name-and-its-lasting-one.md))
+
 - 2026-09-08 — **The browse becomes a line, and one capability stops being a question.** The
   schema-driven control is now the shape the typed line already had: one field, what the
   destination offers under it, **narrowed to what is typed**, `⇥` to finish a name and `↑↓⏎` to
@@ -672,12 +683,21 @@ delivered, and matching the label alone would empty the list the moment `⇥` re
 other. A person types the title they know and the field ends up holding the slug it will be sent
 with, which is also what shows them what they picked.
 
-**A title named exactly resolves to its value**, at the two moments the line is done being typed:
-committing from it, and leaving it. Never on a keystroke — "Reading" would become a channel while
-"Reading Notes" was still being written — and never on a prefix or an ambiguous title. Anything it
-does not recognise is **left exactly as written and still routes**: an answer is one page of what a
-destination holds, so not being in it is not being wrong. A numeric are.na channel ID and a vault
-folder that does not exist yet are the same case, and the composer refuses neither.
+**A title resolves to the value it names**, at the two moments the line is done being typed:
+committing from it, and leaving it. The whole of a title, or enough of one that a single answer is
+still matching — the same reach `⇥` has, and safe here for the reason it is not safe on a keystroke,
+there being no half-written word left to take out of somebody's mouth. Never on an ambiguous
+title. Anything it does not recognise is **left exactly as written and still routes**: an answer is
+one page of what a destination holds, so not being in it is not being wrong. A group channel, a
+numeric are.na channel ID and a vault folder that does not exist yet are the same case, and the
+composer refuses none of them.
+
+**Which of a candidate's two names is taken is the surface's own** *(2026-09-08)*. Where a
+destination answers a `durable` form beside the value, the composer takes the value and the
+**template form takes the durable one** — a decision made now wants a name that reads, and one
+that fires for months wants a name that cannot rot. Matching and completion consider every name an
+entry has, so a title, a slug and an ID all find the same channel and the row still marks as taken
+whichever form the field ended up holding.
 
 **A long answer is drawn as a handful**, eight of it, with the rest a press away and typing the way
 through it. An account of two hundred channels is a wall of names nobody reads; the field above it

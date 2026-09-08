@@ -3886,6 +3886,7 @@ export interface components {
             label: string;
             value?: unknown;
             scope?: string;
+            durable?: unknown;
         };
         DestinationProbe: {
             /** @enum {string} */

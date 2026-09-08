@@ -12,6 +12,7 @@ export {
   ANNOTATIONS,
   ASKABLE_FIELD,
   FOLDER_ARGUMENT,
+  OFFERED_ONLY_FIELD,
   PATH_FIELD,
   pathField,
 } from "./destinations/vocabulary";
