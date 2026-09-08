@@ -19,8 +19,8 @@ should go as its own pull request — the rename touches two kinds are.na has no
 the frontmatter switch is a feature in its own right.
 
 Design settled 2026-09-07 with the developer.
-[ADR 38](../adr/0038-a-destination-kind-declares-the-shape-of-its-own-account.md) and
-[ADR 39](../adr/0039-a-delivery-that-cannot-be-confirmed-may-duplicate.md) record the two decisions
+[ADR 40](../adr/0040-a-destination-kind-declares-the-shape-of-its-own-account.md) and
+[ADR 41](../adr/0041-a-delivery-that-cannot-be-confirmed-may-duplicate.md) record the two decisions
 worth the reasoning. The API reference this was designed against is
 [`docs/research/are-na-v3-api.md`](../research/are-na-v3-api.md).
 
@@ -54,7 +54,7 @@ Resolved 2026-09-07 against [`are-na-openapi.json`](../research/are-na-openapi.j
   "only when channel is returned as a full resource", and this endpoint returns full ones — but it
   is nullable, so filter where it is present and keep the channel where it is not.
 - **There is no idempotency key.** The only "idempotent" in the whole spec is about joining a
-  group. [ADR 39](../adr/0039-a-delivery-that-cannot-be-confirmed-may-duplicate.md) stands as
+  group. [ADR 41](../adr/0041-a-delivery-that-cannot-be-confirmed-may-duplicate.md) stands as
   written.
 - **There is no web permalink in the spec.** `_links.self` is an API URL
   (`https://api.are.na/v3/blocks/12345`), not something a person follows. The routing record's
@@ -199,7 +199,7 @@ Settings are therefore just `account`.
 **Account and config**
 
 - [ ] Export an account schema from the package: `secretFile` or `secretEnv`, and nothing else. No
-      base URL, no username ([ADR 38](../adr/0038-a-destination-kind-declares-the-shape-of-its-own-account.md)).
+      base URL, no username ([ADR 40](../adr/0040-a-destination-kind-declares-the-shape-of-its-own-account.md)).
 - [ ] Export WebDAV's account schema from its package, moving the non-HTTP `baseUrl` refusal out of
       `readAccounts` and into it.
 - [ ] `readAccounts` keeps only the kind-agnostic checks: no inline secret, exactly one secret
@@ -275,7 +275,7 @@ Settings are therefore just `account`.
 - [ ] README, on both file kinds' model: what a destination is, the one capability, what it will not
       do, and a refused-or-unreachable table.
 - [ ] **State the duplicate window plainly in the README**
-      ([ADR 39](../adr/0039-a-delivery-that-cannot-be-confirmed-may-duplicate.md)): this kind's
+      ([ADR 41](../adr/0041-a-delivery-that-cannot-be-confirmed-may-duplicate.md)): this kind's
       `unreachable` does not promise that nothing landed, because are.na offers no conditional
       create and no idempotency key.
 
@@ -307,7 +307,7 @@ secret for another — declared by its adapter and checked when the daemon start
 read from is the only part every kind shares. Never in a destination's settings, which are pool
 state: a destination names an account and a place within it, and has nowhere to put an address or a
 secret ([ADR 28](docs/adr/0028-a-remote-destination-names-a-credential-profile-not-a-url.md),
-[ADR 38](docs/adr/0038-a-destination-kind-declares-the-shape-of-its-own-account.md)).
+[ADR 40](docs/adr/0040-a-destination-kind-declares-the-shape-of-its-own-account.md)).
 
 The one word in this glossary that points outward. The daemon's own **credential** is not an
 account and is never called one, and neither is an **access token**, which notemap issues rather

@@ -1,4 +1,4 @@
-# 39. A delivery that cannot be confirmed may duplicate, and the kind says so
+# 41. A delivery that cannot be confirmed may duplicate, and the kind says so
 
 **Date**: 2026-09-07
 **Status**: Accepted — narrows [ADR 17](0017-delivery-is-asynchronous-and-retried-on-evidence.md)

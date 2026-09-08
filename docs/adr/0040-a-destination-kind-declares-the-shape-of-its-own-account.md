@@ -1,4 +1,4 @@
-# 38. A destination kind declares the shape of its own account
+# 40. A destination kind declares the shape of its own account
 
 **Date**: 2026-09-07
 **Status**: Accepted — narrows [ADR 28](0028-a-remote-destination-names-a-credential-profile-not-a-url.md)
