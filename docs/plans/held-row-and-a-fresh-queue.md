@@ -77,15 +77,18 @@ Depends on nothing, but reads as the other half of phase 1.
 
 Depends on nothing. Client change.
 
-- [ ] Entering the queue re-reads it from the first page, discarding the walked tail; the feed keeps
-      extending, as it does now
-- [ ] The asymmetry is stated where it lives: the feed accumulates and nothing leaves it, the queue
+- [x] Entering the queue re-reads it from the first page, discarding the walked tail; the feed keeps
+      extending, as it does now — `client.enter(surface)`, which both surfaces mount with
+- [x] The asymmetry is stated where it lives: the feed accumulates and nothing leaves it, the queue
       drains and its membership changes under the reader
-- [ ] `restorePlace` still restores the scroll mark, clamped to what the fresh read holds
-- [ ] `client.md`: the queue section says a surface entered is a surface read again, and why only
+- [x] A read that starts again draws what the surface already held until it answers, so a failed
+      one leaves the reader no worse off. `walk` did the opposite and `readAfterReturn` gains it too
+- [-] `restorePlace` clamped to what the fresh read holds _(dropped — `window.scrollTo` past the
+      document's height is clamped by the browser, so there was nothing to write)_
+- [x] `client.md`: the queue section says a surface entered is a surface read again, and why only
       this one
-- [ ] `pnpm -r --silent test`
-- [ ] `git commit`
+- [x] `pnpm -r --silent test`
+- [x] `git commit`
 
 ### Phase 4 — the watcher drops what the pool processed
 
@@ -113,10 +116,10 @@ Depends on phase 3 only in that both are about the same lie; either lands alone.
   watcher touch the queue, not the item. If a `retrying` held row is still saying `retrying` after
   the delivery lands, the fallback is for phase 4's application to re-read the item a `routed` action
   names when the cache holds it, which is one request on an event that is already rare.
-- **Whether the scroll mark survives a shorter queue.** `restorePlace` sets an offset that a
-  re-read may have made unreachable. If clamping reads badly — landing at the foot of a queue you
-  were in the middle of — the fallback is to drop the mark when the fresh read is shorter than the
-  offset, which puts you at the top of a queue that got smaller.
+- **Whether the scroll mark survives a shorter queue.** *Answered 2026-09-08*: `window.scrollTo`
+  past the document's height is clamped by the browser, so a shorter queue lands the reader at its
+  foot rather than nowhere. Left there. If landing at the foot of a queue you were in the middle of
+  reads badly, the fallback is still to drop the mark when the fresh read is shorter.
 - **Whether `revised` is the right kind to drop on.** Verified that `edit.ts:134` records the
   *source* item as the subject, which is the one that leaves the queue. If some other path records a
   revision's own id there, dropping on `revised` would take the wrong row, and the fallback is to

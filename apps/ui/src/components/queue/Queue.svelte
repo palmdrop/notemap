@@ -99,7 +99,7 @@
 
   onMount(() => {
     void (async () => {
-      await client.loadQueue(orderFor(SURFACE, page.url));
+      await client.enter(SURFACE, orderFor(SURFACE, page.url));
       await tick();
       restorePlace(SURFACE);
     })();

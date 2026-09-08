@@ -41,7 +41,7 @@ import { createSessions } from "./session/session";
 import { createSources } from "./sources/sources";
 import { createTags } from "./tags/tags";
 import { createTokens } from "./tokens/tokens";
-import { loadMore, readAfterReturn } from "./surfaces/reads";
+import { enter, loadMore, readAfterReturn } from "./surfaces/reads";
 import type { Client, ClientConfig, ListState } from "./types";
 
 function copied(file: File): Promise<File> {
@@ -390,6 +390,7 @@ export function createClient(config: ClientConfig): Client {
 
     loadFeed: (order) => after(() => loadMore(state, api, "feed", order)),
     loadQueue: (order) => after(() => loadMore(state, api, "queue", order)),
+    enter: (surface, order) => after(() => enter(state, api, surface, order)),
 
     item: (id) =>
       after(async () => {

@@ -348,6 +348,16 @@ processed — routed or archived — which the pool decides, not the scroll.
   client that appended to the end of its window would sort a returned or freshly captured item
   ahead of older work still to be read. It places by rank in whichever **order** the surface is
   being read, not in the default one.
+- **Arriving at the queue reads it again** *(added 2026-09-08)*. A surface a reader returns to is
+  not a surface that stopped changing while they were away: a trigger tag fires, another device
+  processes something, and the queue then holds rows the pool no longer names. So entering the
+  queue reads it from the first page and gives up the tail it had walked. **The feed does not**,
+  and the asymmetry is the domain's rather than a convenience: the feed accumulates and nothing
+  ever leaves it, so a long scroll there is worth more than a fresh page, where being right about
+  what is left is the queue's whole job. A surface nobody has read yet is read for the first time
+  either way. A read that fails changes nothing — what was walked is still drawn, with the failure
+  beside it — because a read that did not answer is not a reason to hold less than before it was
+  made.
 - **Which end a reader starts from is the reader's**, on the queue as on the feed
   ([CONTEXT.md](../../CONTEXT.md)). Each surface has a default — oldest first for the queue, which
   is why it is a queue, newest first for the feed — and a read may name another. Naming an order

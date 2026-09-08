@@ -45,7 +45,7 @@
 
   onMount(() => {
     void (async () => {
-      await client.loadFeed(orderFor(SURFACE, page.url));
+      await client.enter(SURFACE, orderFor(SURFACE, page.url));
       await tick();
       restorePlace(SURFACE);
     })();
