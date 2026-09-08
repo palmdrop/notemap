@@ -2,8 +2,16 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one and health are settled; the rest is stub
-**Last updated**: 2026-09-07
+**Last updated**: 2026-09-08
 **Shipped**:
+
+- 2026-09-08 — **The capability names on the wire lose the word *file*.** `create-file`,
+  `append-to-file` and `create-or-append-file` become `create`, `append` and `create-or-append`
+  everywhere `/v1` names one — a description, a routing decision, a template, a candidates query.
+  Routing templates were migrated; routing records keep the spelling they were written with, so a
+  record read back says what happened. `GET /v1/destination-kinds` answers a third kind, `arena`,
+  whose settings hold an account name and nothing else.
+  ([plan](../plans/arena-destination.md))
 
 - 2026-09-07 — **Routing templates on the wire, and a tag that applies one.** `GET`, `POST`,
   `PATCH` and `DELETE` over `/v1/templates`, with `GET /v1/templates/{id}/report` as the live read
@@ -834,7 +842,7 @@ probes nothing.
   "kind": "described",
   "capabilities": [
     {
-      "name": "create-file",
+      "name": "create",
       "accepts": ["text", "image"],
       "argumentsSchema": {
         "type": "object",
@@ -879,7 +887,7 @@ asked now. `capability`, `field` and an opaque `scope` are query parameters, `sc
 at the top:
 
 ```
-GET /v1/destinations/019a3f2c-.../candidates?capability=create-file&field=directory&scope=inbox
+GET /v1/destinations/019a3f2c-.../candidates?capability=create&field=directory&scope=inbox
 ```
 
 ```json
@@ -894,7 +902,7 @@ GET /v1/destinations/019a3f2c-.../candidates?capability=create-file&field=direct
 
 - **An entry carries a `value`, a `scope`, or both.** `value` is what the field would take and is
   absent where this entry is only somewhere to look further; `scope` is what to ask again with and
-  is absent where there is nothing past it. Browsing `append-to-file`'s `path` for a note lists a
+  is absent where there is nothing past it. Browsing `append`'s `path` for a note lists a
   folder with a scope and no value — somewhere to descend, never something to append to — and a
   note with a value and no scope. A client draws all three the same way: opening an entry descends
   where it can and takes the value otherwise.
@@ -988,7 +996,7 @@ terms: it answers at once, cannot fail, and asks no destination anything.
       "id": "019a41b8-0e6e-7c31-9f3a-6b1f2d5c4a91",
       "name": "Research links",
       "destination": "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
-      "capability": "create-or-append-file",
+      "capability": "create-or-append",
       "arguments": { "path": "research/{{captured_at}}.md" },
       "folder": "establish",
       "triggerTag": "route/research",
@@ -1014,7 +1022,7 @@ terms: it answers at once, cannot fail, and asks no destination anything.
 {
   "name": "Research links",
   "destination": "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
-  "capability": "create-or-append-file",
+  "capability": "create-or-append",
   "arguments": { "path": "research/{{captured_at}}.md" },
   "folder": "establish",
   "triggerTag": "route/research"
@@ -1080,7 +1088,7 @@ now.
 ```json
 {
   "destination": "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
-  "capability": "create-file",
+  "capability": "create",
   "arguments": { "directory": "inbox", "filename": "a-thought.md" }
 }
 ```
@@ -1094,7 +1102,7 @@ now.
   "target": {
     "kind": "destination",
     "destination": "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
-    "capability": "create-file",
+    "capability": "create",
     "arguments": { "directory": "inbox", "filename": "a-thought.md" }
   },
   "state": "delivered",
@@ -1177,7 +1185,7 @@ three fields:
 ```json
 {
   "destination": "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
-  "capability": "create-or-append-file",
+  "capability": "create-or-append",
   "arguments": { "path": "research/2026-09-07.md" }
 }
 ```

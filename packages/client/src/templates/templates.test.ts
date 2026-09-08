@@ -19,7 +19,7 @@ function aTemplate(overrides: Partial<RoutingTemplate> = {}): RoutingTemplate {
     id: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
     name: "Research links",
     destination: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a78",
-    capability: "create-or-append-file",
+    capability: "create-or-append",
     arguments: { path: "research/{{captured_at}}.md" },
     folder: "create",
     triggerTag: "route/research",
@@ -85,7 +85,7 @@ describe("reading templates", () => {
     const { client, transport } = clientOver(() =>
       json(200, {
         destination: aTemplate().destination,
-        capability: "create-or-append-file",
+        capability: "create-or-append",
         arguments: { path: "research/2026-09-05.md" },
       }),
     );

@@ -255,7 +255,7 @@ describe("asking what a field could hold", () => {
     );
 
     const answer = await client.destinations.candidates(aDestination().id, {
-      capability: "create-file",
+      capability: "create",
       field: "directory",
       scope: "notes",
     });
@@ -271,7 +271,7 @@ describe("asking what a field could hold", () => {
       `GET /v1/destinations/${aDestination().id}/candidates`,
     );
     const query = new URL(request?.url ?? "").searchParams;
-    expect(query.get("capability")).toBe("create-file");
+    expect(query.get("capability")).toBe("create");
     expect(query.get("field")).toBe("directory");
     expect(query.get("scope")).toBe("notes");
   });
@@ -281,7 +281,7 @@ describe("asking what a field could hold", () => {
 
     expect(
       await client.destinations.candidates(aDestination().id, {
-        capability: "create-file",
+        capability: "create",
         field: "directory",
       }),
     ).toEqual({ kind: "not-offered" });
@@ -290,14 +290,14 @@ describe("asking what a field could hold", () => {
   it("says in a sentence why the route refused the field itself", async () => {
     const { client } = clientOver(() =>
       refusal(422, "field-not-askable", {
-        capability: "create-file",
+        capability: "create",
         field: "filename",
       }),
     );
 
     const refused = await client.destinations
       .candidates(aDestination().id, {
-        capability: "create-file",
+        capability: "create",
         field: "filename",
       })
       .catch((error: unknown) => error);
@@ -317,7 +317,7 @@ describe("asking what a field could hold", () => {
     const client = createClient({ transport, store });
 
     await client.destinations.candidates(aDestination().id, {
-      capability: "create-file",
+      capability: "create",
       field: "directory",
     });
 
@@ -341,7 +341,7 @@ describe("places a field has already held", () => {
     );
 
     const answer = await client.destinations.remembered(aDestination().id, {
-      capability: "create-or-append-file",
+      capability: "create-or-append",
       field: "path",
     });
 
@@ -358,7 +358,7 @@ describe("places a field has already held", () => {
       `GET /v1/destinations/${aDestination().id}/remembered`,
     );
     const query = new URL(request?.url ?? "").searchParams;
-    expect(query.get("capability")).toBe("create-or-append-file");
+    expect(query.get("capability")).toBe("create-or-append");
     expect(query.get("field")).toBe("path");
   });
 
@@ -371,7 +371,7 @@ describe("places a field has already held", () => {
     expect(
       (
         await client.destinations.remembered(aDestination().id, {
-          capability: "create-or-append-file",
+          capability: "create-or-append",
           field: "path",
         })
       ).truncated,
@@ -386,7 +386,7 @@ describe("places a field has already held", () => {
     const client = createClient({ transport, store });
 
     await client.destinations.remembered(aDestination().id, {
-      capability: "create-or-append-file",
+      capability: "create-or-append",
       field: "path",
     });
 

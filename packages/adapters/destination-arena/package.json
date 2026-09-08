@@ -1,0 +1,23 @@
+{
+  "name": "@notemap/destination-arena",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@notemap/core": "workspace:*",
+    "@notemap/output-markdown": "workspace:*"
+  },
+  "devDependencies": {
+    "@notemap/schema-ajv": "workspace:*",
+    "@types/node": "^24.10.1",
+    "vitest": "^4.1.10"
+  }
+}

@@ -94,11 +94,20 @@ don't require model changes.
   - `wasRevisionOf` — a revision → the capture it supersedes. Edits are **appends, not
     mutations**: a new item carrying the original `created` plus an `updated` timestamp,
     linked back to its predecessor ([exploration/vision/pool-and-routing.md](exploration/vision/pool-and-routing.md#edits-are-revisions-not-mutations)).
-- **Routed-artifact frontmatter vocabulary** — every item that leaves notemap carries, in
-  YAML frontmatter, [Dublin Core](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/)
-  terms (`title`, `creator`, `date`, `source`) plus `source_id`, `captured_at`,
-  `capture_source`, `derived_from`. That is what lets an item that has *left* the hub still
-  be traced back, re-enriched, or re-routed.
+- **Routed-artifact provenance vocabulary** — where an item that leaves notemap carries its
+  provenance, it carries it in these words:
+  [Dublin Core](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/) terms
+  (`title`, `creator`, `date`, `source`) plus `source_id`, `captured_at`, `capture_source`,
+  `derived_from`. One vocabulary wherever it lands — YAML frontmatter above a note, key-value
+  metadata on a board's block — so an item routed to two places says where it came from one way.
+  That is what lets an item that has *left* the hub be traced back, re-enriched, or re-routed.
+
+  **Whether it carries any is the destination's**, narrowed 2026-09-08 with the markdown kinds'
+  `frontmatter` switch and the arrival of a kind that writes no frontmatter at all. Absent means
+  none, so a destination that never said writes the prose alone and the file is not traceable by
+  itself. What is traceable regardless is the pool: the routing record says what went where, and
+  the item it came from never leaves. A destination that writes provenance and invents its own
+  words for it is the thing this bullet forbids; one that writes none is a choice it is allowed.
 
 ---
 

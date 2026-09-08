@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/svelte";
+import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
 import { expect, test, vi } from "vitest";
 
 import { json, routeOf } from "@notemap/client/testing";
@@ -85,7 +85,7 @@ function draw(value = "", said: unknown = undefined) {
   const { rerender } = render(PathLine, {
     props: {
       destination: VAULT,
-      capability: "create-or-append-file",
+      capability: "create-or-append",
       field: "path",
       label: "where",
       value,
@@ -625,4 +625,21 @@ test("a kind that offers nothing draws the same plain typed path", async () => {
       .getByRole("listbox", { name: "places" })
       .querySelectorAll('[role="option"]'),
   ).toHaveLength(0);
+});
+
+/**
+ * A level per segment is a request per segment, asked again on every keystroke
+ * that changes the path. What was true a moment ago fills that wait.
+ */
+test("draws the tree it was told last time while it asks again", async () => {
+  servingTree();
+  draw();
+  await screen.findByText("projects/");
+  cleanup();
+
+  // Second time round nothing ever answers, and the tree is drawn anyway.
+  serving(() => new Promise<never>(() => {}) as never);
+  draw();
+
+  expect(await screen.findByText("projects/")).toBeDefined();
 });

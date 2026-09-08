@@ -3,6 +3,12 @@ import type {
   JsonObject,
   JsonSchema,
 } from "@notemap/core";
+import {
+  FRONTMATTER,
+  FRONTMATTER_SETTING,
+  frontmatterSettingOf,
+  type FrontmatterMode,
+} from "@notemap/output-markdown";
 
 export const FILESYSTEM = "filesystem" as DestinationKindName;
 
@@ -16,12 +22,15 @@ export const FILESYSTEM_SETTINGS: JsonSchema = {
   additionalProperties: false,
   properties: {
     root: { type: "string", minLength: 1 },
+    [FRONTMATTER]: FRONTMATTER_SETTING,
   },
 };
 
 export type FilesystemSettings = {
   /** The directory the destination *is*. */
   readonly root: string;
+  /** Absent is `none`, and a capability's own argument overrides it. */
+  readonly frontmatter?: FrontmatterMode;
 };
 
 /** Read rather than cast: a schema that passed once is not a type, and a row holds JSON. */
@@ -32,5 +41,10 @@ export function asFilesystemSettings(
 
   if (typeof root !== "string" || root === "") return undefined;
 
-  return { root };
+  const frontmatter = frontmatterSettingOf(settings);
+  if (settings[FRONTMATTER] !== undefined && frontmatter === undefined) {
+    return undefined;
+  }
+
+  return { root, ...(frontmatter === undefined ? {} : { frontmatter }) };
 }

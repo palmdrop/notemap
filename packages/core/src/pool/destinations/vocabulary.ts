@@ -22,13 +22,29 @@ export const PATH_FIELD = "x-notemap-path";
 export const ASKABLE_FIELD = "x-notemap-candidates";
 
 /**
+ * The field that may hold only something the destination already has: an
+ * are.na channel, a board's column, a mailbox. It is the opposite of a vault's
+ * folder, which a delivery makes where it is not there yet, and the difference
+ * is not one anything can infer — both are askable, and both take a string.
+ *
+ * Core never reads it. It is said for the surfaces: a value that has to name
+ * something already there cannot be **expanded into**, so a form offering a
+ * pattern beside one is offering advice that can only ever fail.
+ */
+export const OFFERED_ONLY_FIELD = "x-notemap-offered-only";
+
+/**
  * Every vendor annotation notemap declares. A validator has to be told about
  * them or reject the schemas carrying them, and a list here is what stops that
  * being a second place to remember: one more annotation is one more line, and
  * a keyword nobody declared still fails loudly, which is what catches a typo in
  * a hand-written `config.toml` payload type.
  */
-export const ANNOTATIONS = [ASKABLE_FIELD, PATH_FIELD] as const;
+export const ANNOTATIONS = [
+  ASKABLE_FIELD,
+  OFFERED_ONLY_FIELD,
+  PATH_FIELD,
+] as const;
 
 /**
  * The argument field holding a hierarchical path, where the capability declares

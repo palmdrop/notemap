@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 
-import { Rejected } from "@notemap/core";
+import { Rejected, Unusable } from "@notemap/core";
 import type {
   DeliveredOutput,
   DeliveryOutcome,
@@ -145,7 +145,11 @@ describe("creating a note", () => {
     await adapter(server).deliver(
       destinationRow({ root: "V" }),
       delivery({
-        arguments: { directory: "", filename: "note.md" },
+        arguments: {
+          directory: "",
+          filename: "note.md",
+          frontmatter: "full",
+        },
         tags: ["project/fiction-a"],
       }),
     );
@@ -260,7 +264,7 @@ describe("creating a note", () => {
    * A missing `directory` is the root now, so only a wrong type is left for the
    * reader to catch — an extra key is the schema's business at core's boundary.
    */
-  it("refuses arguments that are not a create-file argument set", async () => {
+  it("refuses arguments that are not a create argument set", async () => {
     const server = await vault();
 
     expect(
@@ -272,11 +276,48 @@ describe("creating a note", () => {
   });
 });
 
+describe("how much provenance goes above a note", () => {
+  const wrote = async (
+    frontmatter: string | undefined,
+    args: Record<string, string> = {},
+  ) => {
+    const server = await vault();
+    server.makeCollection("V");
+    await adapter(server).deliver(
+      destinationRow({
+        root: "V",
+        ...(frontmatter === undefined ? {} : { frontmatter }),
+      }),
+      delivery({
+        arguments: { directory: "", filename: "note.md", ...args },
+      }),
+    );
+    return server.files()["V/note.md"] ?? "";
+  };
+
+  it("writes none where the destination never said", async () => {
+    expect(await wrote(undefined)).not.toContain("id: 'item-1'");
+  });
+
+  it("writes the block where the destination asked for one", async () => {
+    expect(await wrote("full")).toContain("id: 'item-1'");
+  });
+
+  it("lets one capture override the destination, either way", async () => {
+    expect(await wrote("none", { frontmatter: "full" })).toContain(
+      "id: 'item-1'",
+    );
+    expect(await wrote("full", { frontmatter: "none" })).not.toContain(
+      "id: 'item-1'",
+    );
+  });
+});
+
 describe("appending to a note", () => {
   const append = (server: DavServer, args: Record<string, string>) =>
     adapter(server).deliver(
       destinationRow({ root: "V" }),
-      delivery({ capability: "append-to-file", arguments: args }),
+      delivery({ capability: "append", arguments: args }),
     );
 
   it("inserts under the heading and keeps what was already there", async () => {
@@ -311,6 +352,7 @@ describe("appending to a note", () => {
     const outcome = await append(server, {
       path: "a/b/daily.md",
       heading: "Notes",
+      frontmatter: "full",
     });
 
     expect(outcome).toMatchObject({ pointer: "a/b/daily.md" });
@@ -375,7 +417,7 @@ describe("appending to a note", () => {
     const outcome = await adapter(server).deliver(
       destinationRow({ root: "V" }),
       delivery({
-        capability: "append-to-file",
+        capability: "append",
         arguments: { path: "daily.md" },
       }),
     );
@@ -398,7 +440,7 @@ describe("appending to a note", () => {
     });
   });
 
-  it("refuses arguments that are not an append-to-file argument set", async () => {
+  it("refuses arguments that are not an append argument set", async () => {
     const server = await vault();
 
     expect(await append(server, { note: "daily.md" })).toMatchObject({
@@ -411,14 +453,17 @@ describe("creating or appending, decided here", () => {
   const send = (server: DavServer, args: Record<string, string>) =>
     adapter(server).deliver(
       destinationRow({ root: "V" }),
-      delivery({ capability: "create-or-append-file", arguments: args }),
+      delivery({ capability: "create-or-append", arguments: args }),
     );
 
   it("creates the note when it is not there", async () => {
     const server = await vault();
     server.makeCollection("V");
 
-    const outcome = await send(server, { path: "notes/decisions.md" });
+    const outcome = await send(server, {
+      path: "notes/decisions.md",
+      frontmatter: "full",
+    });
 
     expect(outcome).toMatchObject({ pointer: "notes/decisions.md" });
     expect(server.files()["V/notes/decisions.md"] ?? "").toContain(
@@ -458,7 +503,7 @@ describe("creating or appending, decided here", () => {
     const outcome = await adapter(server).deliver(
       destinationRow({ root: "V" }),
       delivery({
-        capability: "create-or-append-file",
+        capability: "create-or-append",
         arguments: { path: "drafts/" },
         content: { text: "# A thought\nand more of it" },
       }),
@@ -666,7 +711,7 @@ describe("assets", () => {
       destinationRow({ root: "V" }),
       delivery({
         type: IMAGE,
-        capability: "append-to-file",
+        capability: "append",
         arguments: { path: "daily.md" },
         assets: [deliveredAsset("one", "photo.png", bytes("PNG"), ONE)],
       }),
@@ -691,7 +736,7 @@ describe("assets", () => {
       destinationRow({ root: "V" }),
       delivery({
         type: IMAGE,
-        capability: "append-to-file",
+        capability: "append",
         arguments: { path: "daily.md" },
         assets: [photo],
       }),
@@ -773,14 +818,18 @@ describe("probing a webdav destination", () => {
     ).rejects.toThrow(/Nowhere is not there/);
   });
 
-  it("rejects an account nothing declares, rather than calling it unreachable", async () => {
+  /**
+   * Still not `unreachable` — a retry is not what gets there — but not a
+   * refusal either: nothing was reached, so nothing refused anything.
+   */
+  it("calls an account nothing declares unusable, being neither reached nor refused", async () => {
     const server = await vault();
 
     await expect(
       adapter(server).probe?.(
         destinationRow({ account: "not-declared", root: "" }),
       ),
-    ).rejects.toThrow(Rejected);
+    ).rejects.toThrow(Unusable);
   });
 
   it("rejects credentials the server would not take", async () => {
@@ -877,7 +926,7 @@ describe("what it says it wrote", () => {
     const outcome = await adapter(server).deliver(
       destinationRow({ root: "V" }),
       delivery({
-        capability: "append-to-file",
+        capability: "append",
         arguments: { path: "daily.md" },
       }),
     );
@@ -895,7 +944,7 @@ describe("what it says it wrote", () => {
     const outcome = await adapter(server).deliver(
       destinationRow({ root: "V" }),
       delivery({
-        capability: "append-to-file",
+        capability: "append",
         arguments: { path: "daily.md" },
       }),
     );
@@ -913,7 +962,11 @@ describe("what it says it would write", () => {
     const server = await vault();
     server.makeCollection("V");
     const each = delivery({
-      arguments: { directory: "", filename: "note.md" },
+      arguments: {
+        directory: "",
+        filename: "note.md",
+        frontmatter: "full",
+      },
       tags: ["project/fiction-a"],
     });
 
@@ -938,7 +991,7 @@ describe("what it says it would write", () => {
     const server = await vault();
     server.put("V/daily.md", "# Monday\n\nyesterday\n");
     const each = delivery({
-      capability: "append-to-file",
+      capability: "append",
       arguments: { path: "daily.md" },
     });
 
@@ -965,8 +1018,8 @@ describe("what it says it would write", () => {
       await preview(
         server,
         delivery({
-          capability: "append-to-file",
-          arguments: { path: "daily.md" },
+          capability: "append",
+          arguments: { path: "daily.md", frontmatter: "full" },
         }),
       ),
     );

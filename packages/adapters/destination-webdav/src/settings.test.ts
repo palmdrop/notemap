@@ -2,6 +2,7 @@ import type { JsonObject } from "@notemap/core";
 import { createAjvSchemaValidator } from "@notemap/schema-ajv";
 import { describe, expect, it } from "vitest";
 
+import { asWebdavCredential, WEBDAV_ACCOUNT } from "./credentials";
 import { createWebdavDestination } from "./destination";
 import { asWebdavSettings, webdavSettings } from "./settings";
 import { destinationRow, TEXT } from "./testing/fixture";
@@ -21,7 +22,7 @@ describe("the settings a person fills in", () => {
     expect(check({ account: "nextcloud", root: "Notes/Vault" })).toEqual([]);
   });
 
-  /** Blank is a value here, and the shape `create-file`'s own folder field has. */
+  /** Blank is a value here, and the shape `create`'s own folder field has. */
   it("takes a blank folder, which is the account's own", () => {
     expect(check({ account: "nextcloud", root: "" })).toEqual([]);
     expect(asWebdavSettings({ account: "nextcloud", root: "" })).toEqual({
@@ -42,6 +43,16 @@ describe("the settings a person fills in", () => {
 
     expect(
       check({ account: "nextcloud", root: "", password: "hunter2" }),
+    ).not.toEqual([]);
+  });
+
+  it("takes a frontmatter mode, and never requires one", () => {
+    expect(
+      check({ account: "nextcloud", root: "", frontmatter: "full" }),
+    ).toEqual([]);
+    expect(check({ account: "nextcloud", root: "" })).toEqual([]);
+    expect(
+      check({ account: "nextcloud", root: "", frontmatter: "some" }),
     ).not.toEqual([]);
   });
 
@@ -91,6 +102,12 @@ describe("the settings a person fills in", () => {
     expect(asWebdavSettings({ account: "nextcloud", root: 4 })).toBeUndefined();
     expect(asWebdavSettings({ account: "nextcloud" })).toBeUndefined();
     expect(asWebdavSettings({ root: "Notes" })).toBeUndefined();
+    expect(
+      asWebdavSettings({ account: "nextcloud", root: "", frontmatter: "some" }),
+    ).toBeUndefined();
+    expect(
+      asWebdavSettings({ account: "nextcloud", root: "", frontmatter: "full" }),
+    ).toEqual({ account: "nextcloud", root: "", frontmatter: "full" });
   });
 });
 
@@ -99,9 +116,9 @@ describe("describing a destination", () => {
     const described = await adapter().describe(destinationRow({ root: "V" }));
 
     expect(described.capabilities.map((each) => each.name)).toEqual([
-      "create-or-append-file",
-      "create-file",
-      "append-to-file",
+      "create-or-append",
+      "create",
+      "append",
     ]);
   });
 
@@ -119,7 +136,7 @@ describe("describing a destination", () => {
   it("says which of its fields can be browsed, and which cannot", async () => {
     const described = await adapter().describe(destinationRow({ root: "V" }));
     const line = described.capabilities.find(
-      (each) => each.name === "create-or-append-file",
+      (each) => each.name === "create-or-append",
     );
     const properties = (line?.argumentsSchema as Record<string, unknown>)[
       "properties"
@@ -138,5 +155,60 @@ describe("describing a destination", () => {
     const row = { ...destinationRow({ root: "V" }), settings: { root: 4 } };
 
     await expect(adapter().describe(row)).rejects.toThrow(/readable/);
+  });
+});
+
+/** Checked when the daemon starts, which is the point of a kind declaring one. */
+describe("the account this kind needs", () => {
+  const account = (held: JsonObject) =>
+    validator.validate(WEBDAV_ACCOUNT, held);
+
+  const declared = {
+    kind: "webdav",
+    name: "nextcloud",
+    baseUrl: "https://cloud.example/dav",
+    username: "alice",
+    passwordEnv: "NC",
+  };
+
+  it("takes an address, a username and where the password is read from", () => {
+    expect(account(declared)).toEqual([]);
+  });
+
+  it("refuses an account with no address or no username", () => {
+    const { baseUrl: _address, ...noAddress } = declared;
+    const { username: _who, ...noUsername } = declared;
+
+    expect(account(noAddress)).not.toEqual([]);
+    expect(account(noUsername)).not.toEqual([]);
+  });
+
+  /**
+   * A statement about Basic auth over a URL, which is why it is here and not in
+   * the daemon's config reader: it means nothing to a kind that has no URL.
+   */
+  it("refuses a scheme an account of this kind is never reached over", () => {
+    expect(
+      account({ ...declared, baseUrl: "ftp://cloud.example/dav" }),
+    ).not.toEqual([]);
+  });
+
+  it("refuses a key it does not know, rather than ignoring it", () => {
+    expect(account({ ...declared, secretEnv: "NC" })).not.toEqual([]);
+  });
+
+  /** What a base URL may end in is this kind's business, so the slash goes here. */
+  it("drops a trailing slash when it reads the account back", () => {
+    expect(
+      asWebdavCredential({
+        ...declared,
+        baseUrl: "https://cloud.example/dav/",
+        secret: "an-app-password",
+      }),
+    ).toEqual({
+      baseUrl: "https://cloud.example/dav",
+      username: "alice",
+      password: "an-app-password",
+    });
   });
 });

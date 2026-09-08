@@ -3,6 +3,12 @@ import type {
   JsonObject,
   JsonSchema,
 } from "@notemap/core";
+import {
+  FRONTMATTER,
+  FRONTMATTER_SETTING,
+  frontmatterSettingOf,
+  type FrontmatterMode,
+} from "@notemap/output-markdown";
 
 export const WEBDAV = "webdav" as DestinationKindName;
 
@@ -35,6 +41,7 @@ export function webdavSettings(accounts: readonly string[]): JsonSchema {
         description:
           "The folder this destination is, under the account's own. Left blank, the destination is the account's folder itself.",
       },
+      [FRONTMATTER]: FRONTMATTER_SETTING,
     },
   };
 }
@@ -44,6 +51,8 @@ export type WebdavSettings = {
   readonly account: string;
   /** The collection the destination *is*, relative to the account's. Empty is the account's own. */
   readonly root: string;
+  /** Absent is `none`, and a capability's own argument overrides it. */
+  readonly frontmatter?: FrontmatterMode;
 };
 
 /** Read rather than cast: a schema that passed once is not a type, and a row holds JSON. */
@@ -56,5 +65,14 @@ export function asWebdavSettings(
   if (typeof account !== "string" || account === "") return undefined;
   if (typeof root !== "string") return undefined;
 
-  return { account, root };
+  const frontmatter = frontmatterSettingOf(settings);
+  if (settings[FRONTMATTER] !== undefined && frontmatter === undefined) {
+    return undefined;
+  }
+
+  return {
+    account,
+    root,
+    ...(frontmatter === undefined ? {} : { frontmatter }),
+  };
 }

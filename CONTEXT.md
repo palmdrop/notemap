@@ -261,13 +261,15 @@ and it reaches back for nothing.
 _Avoid_: plugin, connector, integration
 
 **Capability**:
-One thing an adapter can do — create a note, append into an existing file, post to a board
-column. Names itself, says which payload types it accepts, and carries a schema for the
-**arguments** a delivery must supply: where it goes, and anything else that shapes it, such as a
-template or a format. It may also **annotate** a field — that this one can be browsed, that this
-one is a `/`-separated path — which is how anything that needs to know more than the shape asks the
-capability rather than knowing it by name. Core matches and refuses; it holds no list of its own, so
-a new kind of destination needs no change in core.
+One thing an adapter can do — **create** something that was not there, **append** into something
+that was, or decide between the two at delivery. Named in words no kind owns, so a vault's note and
+a board's block are one capability rather than two; whether `create` refuses a name already taken is
+the kind's own promise and not the capability's. Says which payload types it accepts, and carries a
+schema for the **arguments** a delivery must supply: where it goes, and anything else that shapes
+it, such as a template or a format. It may also **annotate** a field — that this one can be browsed,
+that this one is a `/`-separated path — which is how anything that needs to know more than the shape
+asks the capability rather than knowing it by name. Core matches and refuses; it holds no list of
+its own, so a new kind of destination needs no change in core.
 _Avoid_: verb, action, method, operation
 
 **Route**:
@@ -443,15 +445,19 @@ _Avoid_: failed, error, rejected (reserved for suggestions)
 
 **Account**:
 A login the daemon holds on **another** system, so that a destination can deliver to it — a
-Nextcloud, and whatever comes after. Declared in the daemon's config under `[[accounts]]`, one per
-kind and name, carrying the base URL, the username and where the secret is read from, and resolved
-as one thing when a delivery needs it. Never in a destination's settings, which are pool state:
-a destination names an account and a folder under it, and has nowhere to put a URL or a password
-([ADR 28](docs/adr/0028-a-remote-destination-names-a-credential-profile-not-a-url.md)).
+Nextcloud, an are.na, and whatever comes after. Declared in the daemon's config under
+`[[accounts]]`, one per kind and name, and resolved as one thing when a delivery needs it. What an
+account of a given kind must carry is that kind's own — an address and a username for one, a bare
+secret for another — declared by its adapter and checked when the daemon starts. Where the secret is
+read from is the only part every kind shares. Never in a destination's settings, which are pool
+state: a destination names an account and a place within it, and has nowhere to put an address or a
+secret ([ADR 28](docs/adr/0028-a-remote-destination-names-a-credential-profile-not-a-url.md),
+[ADR 40](docs/adr/0040-a-destination-kind-declares-the-shape-of-its-own-account.md)).
 
 The one word in this glossary that points outward. The daemon's own **credential** is not an
-account and is never called one; an account is never notemap's, and belongs to a server somebody
-else's software is running.
+account and is never called one, and neither is an **access token**, which notemap issues rather
+than holds; an account is never notemap's, and belongs to a server somebody else's software is
+running.
 _Avoid_: profile, connection, endpoint, integration, remote
 
 **Relay**:

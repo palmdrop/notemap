@@ -12,20 +12,23 @@ import {
 } from "@notemap/core";
 
 import {
-  APPEND_TO_FILE,
+  APPEND,
   asAppendToFileArguments,
   asCreateFileArguments,
   asCreateOrAppendFileArguments,
   capabilitiesFor,
+  fileOf,
   folderModeOf,
-  CREATE_FILE,
-  CREATE_OR_APPEND_FILE,
+  frontmatterModeOf,
+  CREATE,
+  CREATE_OR_APPEND,
   deriveFilename,
   insertUnder,
   markdownOutput,
   placeOf,
   renderNote,
   RenderingFailed,
+  type FrontmatterMode,
   type Renderers,
 } from "@notemap/output-markdown";
 
@@ -38,6 +41,7 @@ import {
   asFilesystemSettings,
   FILESYSTEM,
   FILESYSTEM_SETTINGS,
+  type FilesystemSettings,
 } from "./settings";
 
 /** What the host wires: neither a renderer nor the payload types that exist is a person's setting. */
@@ -118,7 +122,7 @@ export function createFilesystemDestination(
 
       try {
         const composed = await compose(
-          { realRoot: reached, renderers },
+          wiringFor(reached, renderers, settings),
           delivery,
         );
 
@@ -158,7 +162,7 @@ export function createFilesystemDestination(
 
       try {
         const composed = await compose(
-          { realRoot: reached, renderers },
+          wiringFor(reached, renderers, settings),
           delivery,
         );
         return markdownOutput(composed.written);
@@ -238,7 +242,23 @@ async function reachRoot(root: string): Promise<string | Unreachable> {
 type Wiring = {
   readonly realRoot: string;
   readonly renderers: Renderers;
+  /** The destination's own, which a delivery's own argument overrides. */
+  readonly frontmatter?: FrontmatterMode;
 };
+
+function wiringFor(
+  realRoot: string,
+  renderers: Renderers,
+  settings: FilesystemSettings,
+): Wiring {
+  return {
+    realRoot,
+    renderers,
+    ...(settings.frontmatter === undefined
+      ? {}
+      : { frontmatter: settings.frontmatter }),
+  };
+}
 
 /**
  * What a delivery would put in the vault, worked out without putting any of it
@@ -254,11 +274,11 @@ type Composition = {
 
 function compose(wiring: Wiring, delivery: Delivery): Promise<Composition> {
   switch (delivery.capability) {
-    case CREATE_FILE:
+    case CREATE:
       return composeCreate(wiring, delivery);
-    case APPEND_TO_FILE:
+    case APPEND:
       return composeAppend(wiring, delivery);
-    case CREATE_OR_APPEND_FILE:
+    case CREATE_OR_APPEND:
       return composeCreateOrAppend(wiring, delivery);
     default:
       throw new Refused(`no capability named ${delivery.capability}`);
@@ -314,7 +334,7 @@ function composeCreate(
 ): Promise<Composition> {
   const args = asCreateFileArguments(delivery.arguments);
   if (args === undefined) {
-    throw new Refused("that is not a create-file argument set");
+    throw new Refused("that is not a create argument set");
   }
 
   const filename = args.filename ?? deriveFilename(delivery);
@@ -327,7 +347,7 @@ function composeAppend(
 ): Promise<Composition> {
   const args = asAppendToFileArguments(delivery.arguments);
   if (args === undefined) {
-    throw new Refused("that is not an append-to-file argument set");
+    throw new Refused("that is not an append argument set");
   }
 
   return append(wiring, delivery, args.path, args.heading);
@@ -346,7 +366,7 @@ function composeCreateOrAppend(
 ): Promise<Composition> {
   const args = asCreateOrAppendFileArguments(delivery.arguments);
   if (args === undefined) {
-    throw new Refused("that is not a create-or-append-file argument set");
+    throw new Refused("that is not a create-or-append argument set");
   }
 
   const place = placeOf(args.path);
@@ -371,7 +391,7 @@ async function create(
   }
 
   const rendered = render(wiring, delivery, note);
-  const file = `${rendered.frontmatter}\n${rendered.body}`;
+  const file = fileOf(rendered.frontmatter, rendered.body);
 
   return { note, written: file, file, fresh: true };
 }
@@ -387,7 +407,10 @@ async function append(
 
   const existing = await readIfPresent(note.absolute);
   if (existing === undefined) {
-    const file = `${rendered.frontmatter}\n${insertUnder("", rendered.body, heading)}`;
+    const file = fileOf(
+      rendered.frontmatter,
+      insertUnder("", rendered.body, heading),
+    );
     return { note, written: file, file, fresh: true };
   }
 
@@ -400,10 +423,12 @@ async function append(
 }
 
 function render(wiring: Wiring, delivery: Delivery, note: Contained) {
-  return renderNote(wiring.renderers, delivery, {
-    directory: within(note),
-    assets: assetNames(delivery.assets),
-  });
+  return renderNote(
+    wiring.renderers,
+    delivery,
+    { directory: within(note), assets: assetNames(delivery.assets) },
+    frontmatterModeOf(delivery.arguments, wiring.frontmatter),
+  );
 }
 
 /**

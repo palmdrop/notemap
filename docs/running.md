@@ -279,15 +279,18 @@ it unusable. Leave the database in `state/`.
 
 Routing an item at it uses one of two capabilities:
 
-- **`create-file`** — writes a new file under `directory` (empty names the root itself). Give it a
+- **`create`** — writes a new file under `directory` (empty names the root itself). Give it a
   `filename` or let one be derived from the capture. It never overwrites: a name already taken is
   refused, and the decision comes back to you. An *asset* whose name is taken becomes `name-1.png`
   rather than being refused, since nobody chose that name.
-- **`append-to-file`** — appends onto an existing note at `path`, under `heading` if you name one,
+- **`append`** — appends onto an existing note at `path`, under `heading` if you name one,
   at the end of the file if you do not.
 
-A delivered `text` capture is a markdown file: frontmatter carrying the item id, the source, the
-capture time and the tags, then the capture's own markdown, unaltered.
+A delivered `text` capture is a markdown file: the capture's own markdown, unaltered, under
+frontmatter carrying the item id, the source, the capture time and the tags — **where you asked for
+it**. `frontmatter` is a setting on the destination, `full` or `none`, and the same word is an
+argument on one capture that overrides it. Unset means none, so a destination that never said it
+wants provenance writes the prose alone.
 
 ```markdown
 ---
@@ -374,6 +377,51 @@ a write that landed between the read and the write, which is a thing that can ha
 cannot on a local disk. An account that is unreachable, a password that will not read, or a
 profile that is not declared all leave the delivery pending and retried, on the same terms as an
 unmounted drive.
+
+### arena
+
+An [are.na](https://www.are.na) account. A capture leaves as a **block**, connected to the channel
+you named.
+
+The account is a name and a token, and nothing else — are.na has no username, and its address is a
+constant of the service:
+
+```toml
+[[accounts]]
+kind = "arena"
+name = "mine"
+secretFile = "/run/secrets/notemap_arena_token"
+```
+
+**Mint the token with `write` scope.** are.na hands out `read` by default, and nothing notemap can
+ask tells the two apart: `GET /v3/me` does not carry a token's scope. So a read-only token passes
+the check on the settings page — the destination reports *reached* — and then fails every delivery
+with a `403` whose detail says this is the likely reason. If you see that pair, this is it.
+
+A destination of this kind **is the account**: create one with `account = "mine"` and nothing else.
+The channel is chosen per capture, browsed from the composer, and remembered like any other place.
+
+Browsing answers **slugs**, which read the way a channel's title does. The field also takes a
+**numeric ID**, and that is worth pasting into a routing template: renaming a channel changes its
+slug, and a template fires on a tag for months. A `404` at delivery says a rename is the likely
+cause and points you back at the browse.
+
+What a capture becomes:
+
+- prose beginning with a URL on a line of its own → a **link** block, with the rest as its caption;
+- anything else → a **text** block;
+- a capture with a picture → an **image** block, its caption used as both the description and the
+  alt text. The bytes go up through a presigned URL and never through notemap's own address.
+
+A block carries neither your tags nor artifacts. What fits goes into the block's own metadata — the
+item id, the source, the capture time, and the tags as one string — which is a record for a person
+and not something are.na lets anything search.
+
+**This kind may duplicate on a retry, and the others do not.** are.na offers no conditional create
+and no idempotency key, so a create whose answer never arrived is indistinguishable from one that
+never left; notemap retries, and the block may already be there. A duplicate sits visibly in the
+channel and you can delete it — the alternative is throwing away a decision that probably landed.
+Both file kinds do promise a retry cannot duplicate, and say by what mechanism.
 
 ## Cutting a release
 

@@ -1,5 +1,7 @@
 import type { CandidateEntry, RememberedPlace } from "@notemap/client";
 
+import { commonPrefix } from "$lib/candidate-list";
+
 /**
  * A typed path, split where the line reads it. Everything before the last slash
  * is settled and names a scope to ask about; what follows it is being typed and
@@ -218,23 +220,6 @@ export function completionOf(
 
   const shared = commonPrefix(hits.map((entry) => entry.label));
   return shared.length > typing.length ? shared : undefined;
-}
-
-function commonPrefix(labels: readonly string[]): string {
-  const [first = "", ...rest] = labels;
-
-  let length = first.length;
-  for (const label of rest) {
-    while (
-      length > 0 &&
-      label.slice(0, length).toLowerCase() !==
-        first.slice(0, length).toLowerCase()
-    ) {
-      length -= 1;
-    }
-  }
-
-  return first.slice(0, length);
 }
 
 /**

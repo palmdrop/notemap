@@ -388,11 +388,17 @@ function deciding(held: () => unknown, records: readonly unknown[] = []) {
 async function decide() {
   await open();
   await fireEvent.click(await screen.findByRole("button", { name: /Vault/ }));
-  await fireEvent.click(await screen.findByRole("button", { name: /append/ }));
 
   // Two of them: the surface's action, and the composer's commit over it.
-  const commit = screen.getAllByRole("button", { name: "route" }).at(-1);
-  await fireEvent.click(commit as HTMLElement);
+  const commit = screen
+    .getAllByRole("button", { name: "route" })
+    .at(-1) as HTMLButtonElement;
+  // Disabled for the tick between the description landing and its one
+  // capability being settled, so this waits rather than clicking into nothing.
+  await vi.waitFor(() => {
+    expect(commit.disabled).toBe(false);
+  });
+  await fireEvent.click(commit);
 }
 
 test("routes from here without saying so, and remembers that decision too", async () => {

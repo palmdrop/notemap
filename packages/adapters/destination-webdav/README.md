@@ -34,12 +34,16 @@ password crosses the network in the clear, and then used: the host says it, and 
 
 ## The two capabilities
 
-`create-file` and `append-to-file`, the filesystem kind's own names with the same argument shapes,
+`create` and `append`, the filesystem kind's own names with the same argument shapes,
 from the same definition. Two kinds doing one thing under different words would make every rule and
 every composer choice kind-specific for no gain.
 
 Neither field offers **candidates**: enumerating what is already in the vault is a slice of its own,
 and a field that claimed otherwise would draw a browse button for an answer this kind refuses.
+
+Whether a note carries provenance is the `frontmatter` setting — `full` or `none`, unset meaning
+none — which each capability takes as an argument of the same name to override for one delivery,
+exactly as the filesystem kind does.
 
 ## What it will not do
 
@@ -52,7 +56,9 @@ and a field that claimed otherwise would draw a browse button for an answer this
 - **Nothing is overwritten.** A create is `PUT` with `If-None-Match: *`, which is the request that
   means *only if it is not there*, so a name that is taken is refused rather than replaced and two
   creates racing leave one note and one refusal. Asking first and then writing would have lost one
-  silently.
+  silently. That is this kind's promise and not `create`'s: the capability says a new thing rather
+  than an addition to one, and a kind whose protocol offers no conditional create cannot promise
+  more.
 - **No append loses a concurrent write.** The note is read, its `ETag` kept, and written back with
   `If-Match`. A `412` means somebody wrote in between, so it re-reads and tries again, four times,
   and then reports contention as unreachable rather than throwing a routing decision away over
@@ -81,6 +87,11 @@ The distinction decides whether a delivery is retried, so it is not about severi
 | The note is already there | `rejected` | It will be there next time too |
 | The arguments are not the shape the capability declared | `rejected` | Likewise |
 | A renderer threw | `rejected` | It will throw identically |
+
+A **check** is asked by somebody waiting, so it answers two of those differently: a refused
+credential is `rejected` there, a password having possibly just been rotated being the delivery's
+reason to retry and not a person's reason to be told nothing. And an account nobody declared is
+**`unusable`** — nothing was reached, so nothing refused anything, and no retry gets there.
 
 A rejected credential is on the retrying side although a wrong password does not fix itself. It is
 the filesystem kind's asymmetry: wrongly retrying is bounded by `maxAttempts` and ends up in front

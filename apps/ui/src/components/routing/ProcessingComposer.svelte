@@ -47,9 +47,9 @@
   import { OWN_ARGUMENTS, sameArguments } from "$lib/arguments";
   import { fieldsOf, valuesFrom } from "$lib/schema-form";
 
-  const CREATE_FILE = "create-file";
+  const CREATE = "create";
   /** What the typed line drives: the capability that decides at delivery. */
-  const CREATE_OR_APPEND_FILE = "create-or-append-file";
+  const CREATE_OR_APPEND = "create-or-append";
   /** The one field the typed line drives, and the only one `⇧⏎` has to re-read. */
   const LINE_FIELD = "path";
 
@@ -136,28 +136,57 @@
    * Where the line is what draws the place, *what will happen* is not a step:
    * it is read off the line and said in one word, and `⇧⏎` is the way to the
    * one capability that overrides it. A kind that draws the schema-driven
-   * browser still chooses, because its capabilities are its own and nothing
-   * here can pick among them.
+   * browser is asked, where it has more than one to be asked about.
    */
   const settles = $derived(
     destinationKind !== undefined &&
       browserFor(destinationKind) !== CandidateBrowser &&
-      capabilities.some((one) => one.name === CREATE_OR_APPEND_FILE),
+      capabilities.some((one) => one.name === CREATE_OR_APPEND),
   );
 
+  /**
+   * A kind that can do one thing is not offering a choice, so it is not asked
+   * to be made: are.na declares `create` and nothing else, and a step whose
+   * every path is the same step is one press spent saying yes.
+   */
+  const only = $derived(
+    capabilities.length === 1 ? capabilities[0]?.name : undefined,
+  );
+
+  /**
+   * What the composer settles when nothing else has: the line's own capability
+   * where the line is drawn, and the only one there is otherwise.
+   *
+   * **Only when nothing else has.** A template carries a capability, and it is
+   * applied in the same step the description lands in — so this runs after it
+   * and must not overwrite it. Left unguarded, a template saved as `create` on
+   * a vault became `create-or-append` here, and the commit then read as a
+   * decision of the person's own rather than as the template: the record did
+   * not name it, and an `establish` template never learnt its folder was there.
+   */
+  const implied = $derived(settles ? CREATE_OR_APPEND : only);
+
   $effect(() => {
-    if (settles) capability = CREATE_OR_APPEND_FILE;
+    if (implied !== undefined && capability === undefined) capability = implied;
   });
+
+  /** Nothing to pick among is nothing to draw: the line and the fields are the whole decision. */
+  const chooses = $derived(capabilities.length > 1 && implied === undefined);
 
   const ready = $derived(chosen !== undefined && capability !== undefined);
 
   /** Whether there is a step to go back to, which is what `esc` does first. */
   const settled = $derived(chosen !== undefined || hand !== undefined);
 
-  /** The line and what is consulted beside it, which is what earns two columns. */
-  const split = $derived(chosen !== undefined && settles);
-
   const line = $derived(fields.find((one) => one.name === LINE_FIELD));
+
+  /**
+   * The line and what is consulted beside it, which is what earns two columns —
+   * so it takes the line actually being drawn. A template that named `create`
+   * on a vault settles a capability the line cannot draw, and a second column
+   * consulting a line that is not there would be an empty half of a modal.
+   */
+  const split = $derived(chosen !== undefined && settles && line !== undefined);
 
   /**
    * A field beside the line goes only where the composer **knows** a new note is
@@ -337,7 +366,7 @@
   } {
     const place = placeOf(args[LINE_FIELD] ?? "");
     return {
-      capability: CREATE_FILE,
+      capability: CREATE,
       arguments: { directory: place.directory, filename: beside },
     };
   }
@@ -478,15 +507,18 @@
     try {
       const answer = await client.templates.resolve(item.id, one.id);
       resolved = answer;
-      await choose(answer.destination);
-      // `choose` clears the arguments, so what it resolved to is set after it.
-      capability = answer.capability;
-      args = Object.fromEntries(
-        Object.entries(answer.arguments).map(([key, value]) => [
-          key,
-          typeof value === "string" ? value : String(value),
-        ]),
-      );
+      // Handed to `choose` rather than set after it: a kind with one capability
+      // has it picked as soon as the description lands, and a field drawn in
+      // the gap before these arrive binds its own empty value back over them.
+      await choose(answer.destination, {
+        capability: answer.capability,
+        arguments: Object.fromEntries(
+          Object.entries(answer.arguments).map(([key, value]) => [
+            key,
+            typeof value === "string" ? value : String(value),
+          ]),
+        ),
+      });
     } catch (error) {
       refusing = { ...refusing, [one.id]: saidBy(error) };
       applied = undefined;
@@ -494,8 +526,18 @@
     }
   }
 
-  /** I/O that may hang on an unmounted drive, so it happens for the chosen one alone. */
-  async function choose(id: string) {
+  /**
+   * I/O that may hang on an unmounted drive, so it happens for the chosen one
+   * alone. `from` is where a template starts the decision, applied in the same
+   * step the description lands in rather than after it.
+   */
+  async function choose(
+    id: string,
+    from?: {
+      readonly capability: string;
+      readonly arguments: Record<string, string>;
+    },
+  ) {
     if (id === DISCARD) {
       discard();
       return;
@@ -518,6 +560,10 @@
       const report = await client.destinations.describe(id);
       if (report.kind === "described") {
         described = report;
+        if (from !== undefined) {
+          capability = from.capability;
+          args = from.arguments;
+        }
         return;
       }
 
@@ -533,8 +579,9 @@
 
   /**
    * `beside` is `⇧⏎`: the person meant a new note rather than an addition to
-   * the one that is there, and `create-file` is the capability that promises
-   * exactly that — it refuses a name that is taken rather than writing into it.
+   * the one that is there, so it asks for `create`. Both file kinds refuse a
+   * name that is taken rather than writing into it; the capability itself no
+   * longer promises that, and a kind that cannot would clobber here.
    */
   async function send(beside?: string) {
     if (chosen === undefined || capability === undefined) return;
@@ -568,6 +615,22 @@
       onsubmit={(beside) => void send(beside)}
       onrelease={release}
     />
+  {:else if field.options !== undefined}
+    <!-- Chosen rather than typed: these values *are* the field, and taking the
+         one already taken clears it, since absent is a value here too. -->
+    <div>
+      {#each field.options as one (one)}
+        <Option
+          label={one}
+          chosen={args[field.name] === one}
+          onchoose={() =>
+            (args = {
+              ...args,
+              [field.name]: args[field.name] === one ? "" : one,
+            })}
+        />
+      {/each}
+    </div>
   {:else}
     <!-- A typed field is a ground and never a rule: the only rule in the modal
          is the chrome's. -->
@@ -688,7 +751,7 @@
           </Group>
         {/if}
 
-        {#if capabilities.length > 0 && !settles}
+        {#if chooses}
           <Group name="do">
             {#each capabilities as one (one.name)}
               <Option

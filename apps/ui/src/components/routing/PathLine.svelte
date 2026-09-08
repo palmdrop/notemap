@@ -7,6 +7,8 @@
   } from "@notemap/client";
 
   import StateWord from "$components/primitives/marks/StateWord.svelte";
+  import Walked from "$components/primitives/composer/Walked.svelte";
+  import { recall, remember } from "$lib/candidate-cache";
   import { client } from "$lib/client";
   import { forecastOf, type Said } from "$lib/forecast";
   import {
@@ -181,6 +183,14 @@
     const scopes = scopesAlong(path);
     const mine = (asking += 1);
 
+    // Drawn while they are asked for again, and only where nothing is drawn
+    // yet: replacing a tree that is already up with a shorter remembered one
+    // would make it flicker under the caret on every keystroke.
+    if (levels.length === 0) {
+      const kept = heldAlong(scopes);
+      if (kept.length > 0) levels = kept;
+    }
+
     clearTimeout(timer);
     timer = setTimeout(() => {
       void (async () => {
@@ -195,14 +205,18 @@
   });
 
   async function askAbout(scope: string): Promise<Level> {
+    const asked = {
+      destination,
+      capability,
+      field,
+      ...(scope === "" ? {} : { scope }),
+    };
+
     try {
-      const answer = await client.destinations.candidates(destination, {
-        capability,
-        field,
-        ...(scope === "" ? {} : { scope }),
-      });
+      const answer = await client.destinations.candidates(destination, asked);
 
       if (answer.kind === "answered") {
+        remember(asked, answer);
         return { scope, entries: answer.entries, truncated: answer.truncated };
       }
       return { scope, ...refused(answer) };
@@ -213,6 +227,28 @@
         why: saidBy(error),
       };
     }
+  }
+
+  /**
+   * What each level along the path was last told, so a line opened a second
+   * time draws its tree at once. A level per segment is a request per segment,
+   * and this control asks them all again on every keystroke that changes the
+   * path — the debounce spends 120ms of that wait, and this fills the rest of
+   * it with what was true a moment ago.
+   */
+  function heldAlong(scopes: readonly string[]): readonly Level[] {
+    return scopes.flatMap((scope) => {
+      const kept = recall({
+        destination,
+        capability,
+        field,
+        ...(scope === "" ? {} : { scope }),
+      });
+
+      return kept === undefined
+        ? []
+        : [{ scope, entries: kept.entries, truncated: kept.truncated }];
+    });
   }
 
   /**
@@ -303,7 +339,7 @@
     if (event.key === "Enter") {
       event.preventDefault();
       // Nothing is taken, so there is nothing to make a new one beside: what
-      // `create-or-append-file` will do is already make it.
+      // `create-or-append` will do is already make it.
       if (event.shiftKey) {
         onsubmit?.(forecast?.beside);
         return;
@@ -426,25 +462,17 @@
         moved &&
         choices[at]?.kind === "entry" &&
         here[at - remembered.length] === row}
-      <div
+      <Walked
         id={picked ? `path-line-place-${at}` : undefined}
-        role="option"
-        tabindex="-1"
-        aria-selected={picked}
-        aria-disabled={row.made === true ? "true" : undefined}
-        style="padding-left: {row.depth * 1.1}rem"
-        class="cursor-default {row.made === true
-          ? 'text-accent'
-          : row.onPath || picked
-            ? 'text-ink'
-            : 'text-ink-muted'} {picked ? 'inverted' : ''}"
-        onmousedown={(event) => {
-          event.preventDefault();
-          if (row.made !== true) take(row.entry);
-        }}
+        on={picked}
+        held={row.made === true}
+        dim={!(row.onPath || picked)}
+        disabled={row.made === true}
+        indent={row.depth}
+        ontake={() => take(row.entry)}
       >
         {row.made === true ? `+ ${textOf(row.entry)}` : textOf(row.entry)}
-      </div>
+      </Walked>
     {/each}
   </div>
 

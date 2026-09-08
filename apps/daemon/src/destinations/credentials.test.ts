@@ -5,7 +5,10 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { createAjvSchemaValidator } from "@notemap/schema-ajv";
+
 import { parseConfig } from "../config/load";
+import { refuseUnusableAccounts } from "../ports";
 import { accountsFor } from "./credentials";
 
 const directories: string[] = [];
@@ -43,9 +46,9 @@ describe("resolving an account", () => {
     );
 
     await expect(resolve("nextcloud")).resolves.toEqual({
-      baseUrl: ACCOUNT.baseUrl,
-      username: "alice",
-      password: "an-app-password",
+      ...ACCOUNT,
+      passwordFile: path,
+      secret: "an-app-password",
     });
   });
 
@@ -59,7 +62,7 @@ describe("resolving an account", () => {
     );
 
     await expect(resolve("nextcloud")).resolves.toMatchObject({
-      password: "  spaced  ",
+      secret: "  spaced  ",
     });
   });
 
@@ -69,7 +72,7 @@ describe("resolving an account", () => {
     });
 
     await expect(resolve("nextcloud")).resolves.toMatchObject({
-      password: "from-the-environment",
+      secret: "from-the-environment",
     });
   });
 
@@ -83,12 +86,12 @@ describe("resolving an account", () => {
     );
 
     await expect(resolve("nextcloud")).resolves.toMatchObject({
-      password: "first",
+      secret: "first",
     });
 
     await writeFile(path, "second\n");
     await expect(resolve("nextcloud")).resolves.toMatchObject({
-      password: "second",
+      secret: "second",
     });
   });
 });
@@ -121,7 +124,7 @@ describe("a credential that will not resolve", () => {
     await expect(resolve("nextcloud")).rejects.toThrow(/empty/);
 
     const unset = accountsFor(WEBDAV, [{ ...ACCOUNT, passwordEnv: "NC" }], {});
-    await expect(unset("nextcloud")).rejects.toThrow(/no password/);
+    await expect(unset("nextcloud")).rejects.toThrow(/no secret/);
   });
 });
 
@@ -136,12 +139,13 @@ baseUrl = "https://cloud.example/remote.php/dav/files/alice/"
 username = "alice"
 passwordFile = "/run/secrets/nextcloud"`);
 
+    // Carried as it was written: what a base URL may end in is the webdav
+    // kind's business, and this file no longer knows an address from a name.
     expect(config.accounts).toEqual([
       {
         kind: "webdav",
         name: "nextcloud",
-        // The trailing slash goes, so a segment is always appended the same way.
-        baseUrl: "https://cloud.example/remote.php/dav/files/alice",
+        baseUrl: "https://cloud.example/remote.php/dav/files/alice/",
         username: "alice",
         passwordFile: "/run/secrets/nextcloud",
       },
@@ -158,16 +162,18 @@ password = "hunter2"`),
     ).toThrow(/passwordFile or passwordEnv/);
   });
 
-  it("refuses an account that names neither, and one that names both", () => {
+  it("refuses an account that names no secret source, and one that names two", () => {
     const body = `
 name = "nextcloud"
 baseUrl = "https://cloud.example/dav"
 username = "alice"`;
 
-    expect(() => declare(body)).toThrow(/exactly one/);
+    expect(() => declare(body)).toThrow(
+      /exactly one key ending in File or Env/,
+    );
     expect(() =>
       declare(`${body}\npasswordFile = "/a"\npasswordEnv = "B"`),
-    ).toThrow(/exactly one/);
+    ).toThrow(/exactly one key ending in File or Env/);
   });
 
   it("refuses two accounts of one kind under one name, since a destination names one", () => {
@@ -198,7 +204,7 @@ baseUrl = "http://cloud.example/dav"
 username = "alice"
 passwordEnv = "A"`);
 
-    expect(config.accounts[0]?.baseUrl).toBe("http://cloud.example/dav");
+    expect(config.accounts[0]?.["baseUrl"]).toBe("http://cloud.example/dav");
   });
 
   /** Two kinds may each have a `main`; a destination of one never means the other's. */
@@ -220,18 +226,77 @@ baseUrl = "https://cloud.example/dav"
 username = "alice"
 passwordFile = "~/.config/notemap/nextcloud"`);
 
-    expect(config.accounts[0]?.passwordFile).toBe(
+    expect(config.accounts[0]?.["passwordFile"]).toBe(
       join(homedir(), ".config/notemap/nextcloud"),
     );
   });
 
-  it("refuses a scheme an account is never reached over", () => {
-    expect(() =>
-      declare(`
+  /**
+   * Loaded here and refused by the kind: a scheme is a statement about Basic
+   * auth over a URL, and means nothing to a kind that has no URL at all.
+   */
+  it("loads an account whose scheme its kind will refuse", () => {
+    const { config } = declare(`
 name = "nextcloud"
 baseUrl = "ftp://cloud.example/dav"
 username = "alice"
-passwordEnv = "A"`),
-    ).toThrow(/http or https/);
+passwordEnv = "A"`);
+
+    expect(config.accounts[0]?.["baseUrl"]).toBe("ftp://cloud.example/dav");
+    expect(() =>
+      refuseUnusableAccounts(config.accounts, createAjvSchemaValidator()),
+    ).toThrow(/webdav account/);
+  });
+});
+
+/**
+ * Each kind says what its accounts must carry, and the daemon asks when it
+ * starts rather than at the first delivery hours later.
+ */
+describe("checking an account against its kind", () => {
+  const check = (body: string) =>
+    refuseUnusableAccounts(
+      parseConfig(body, "config.toml").config.accounts,
+      createAjvSchemaValidator(),
+    );
+
+  it("takes a webdav account carrying an address and a username", () => {
+    expect(() =>
+      check(
+        `[[accounts]]\nkind = "webdav"\nname = "nextcloud"\nbaseUrl = "https://cloud.example/dav"\nusername = "alice"\npasswordEnv = "A"\n`,
+      ),
+    ).not.toThrow();
+  });
+
+  /** None of webdav's three fields fits are.na, and two of them are required. */
+  it("takes an arena account carrying nothing but a secret", () => {
+    expect(() =>
+      check(
+        `[[accounts]]\nkind = "arena"\nname = "mine"\nsecretEnv = "ARENA"\n`,
+      ),
+    ).not.toThrow();
+  });
+
+  it("refuses an arena account carrying a webdav account's fields", () => {
+    expect(() =>
+      check(
+        `[[accounts]]\nkind = "arena"\nname = "mine"\nsecretEnv = "ARENA"\nusername = "alice"\n`,
+      ),
+    ).toThrow(/arena account mine/);
+  });
+
+  it("refuses a webdav account carrying no username", () => {
+    expect(() =>
+      check(
+        `[[accounts]]\nkind = "webdav"\nname = "nextcloud"\nbaseUrl = "https://cloud.example/dav"\npasswordEnv = "A"\n`,
+      ),
+    ).toThrow(/webdav account nextcloud/);
+  });
+
+  /** An account naming one is a typo; starting would leave a destination that can never deliver. */
+  it("refuses an account of a kind nothing speaks", () => {
+    expect(() =>
+      check(`[[accounts]]\nkind = "s3"\nname = "main"\nsecretEnv = "A"\n`),
+    ).toThrow(/nothing speaks/);
   });
 });

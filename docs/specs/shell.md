@@ -1,8 +1,40 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-07
+**Last updated**: 2026-09-08
 **Shipped**:
+
+- 2026-09-08 — **A template browsed into a channel is rename-proof, and is offered no advice that
+  cannot work.** A candidate may answer under two names — the one a person reads and the one that
+  survives a rename — and the surface takes the half it needs: the composer the readable one, since
+  its decision lands now and its record is read back, and the **template form the lasting one**,
+  since a template fires on a tag for months and a name that rots takes the template with it. A
+  field may also say it holds only something the destination already has, and the template form
+  draws no pattern vocabulary beside one: a channel is joined rather than made, so `{{captured_at}}`
+  expanded into it could only ever name a channel nobody has.
+  ([plan](../plans/arena-destination.md),
+  [ADR 42](../adr/0042-a-candidate-carries-both-its-readable-name-and-its-lasting-one.md))
+
+- 2026-09-08 — **The browse becomes a line, and one capability stops being a question.** The
+  schema-driven control is now the shape the typed line already had: one field, what the
+  destination offers under it, **narrowed to what is typed**, `⇥` to finish a name and `↑↓⏎` to
+  take one — so an account of two hundred are.na channels is typed at rather than scrolled
+  through. It completes to the **value** and matches on the label as well, because the two need not
+  be the same string: a channel is read by its title and filed under its slug. Descent stays, being
+  the one thing the line has no use for. A long answer draws as a handful with the rest a press
+  away, what a destination last said is drawn while it says it again, and a title named exactly
+  resolves to the value it stands for — while anything unrecognised is left as written and still
+  routes, an answer being one page of what a destination holds. And a destination declaring **one**
+  capability has it settled rather than asked: `do` is drawn only where there is something to pick
+  among. ([plan](../plans/arena-destination.md))
+
+- 2026-09-08 — **A field the schema fixes is chosen wherever it appears.** The destination form and
+  the composer read a schema's `enum` the way the template form already did, so an enum setting or
+  argument is a row of options rather than a box typed from memory — which is also what stops
+  `folder` being typed from memory in the composer. Taking the option already taken gives it back,
+  absent being a value of its own for a field that means *inherit*. A record says what a delivery
+  did in bare verbs — `Created`, `Appended` — the destination being named on the line beside it.
+  ([plan](../plans/arena-destination.md))
 
 - 2026-09-07 — **One tag files it where it goes.** Routing templates are a third band in the
   composer's `where` list, above the destinations and reached by the same typed prefix match:
@@ -404,6 +436,12 @@ The composer is stepped, not flat: **where** (destinations, with an unavailable 
 rather than disappearing), then the arguments the capability's schema asks for. A settled step
 stays visible with its choice marked, so the decision reads back as it is built.
 
+**An argument the schema fixes is chosen here too** *(2026-09-08)*, on the same terms as the
+template form and the settings page: a value from an enumeration is offered as the options it is,
+and anything else is a box. Taking the option already taken **gives it back**, an absent argument
+being a value of its own — for a field whose absence means *inherit what the destination says*,
+there has to be a way back to it.
+
 #### The composer is for processing
 
 *(2026-09-05.)* The `where` step answers *what became of this item*, and a configured destination is
@@ -501,8 +539,9 @@ or settled after it** on the right — what was used before, what sits beside th
 the commit that ends it. Untaken there is one column — the destination line, the `where` list, the
 commit — because there is nothing to consult yet: the split is a consequence of the decision rather
 than a frame waiting for it, and once the chrome carries the destination the list it was taken from
-is what `⌫` at the head of an empty line gives back. A kind that draws the schema-driven browser
-keeps its one column and keeps that list, having no line to back out of.
+is what `⌫` at the head of an empty line gives back — and the schema-driven browser gives it back
+the same way, being a line as well. What that kind keeps is its one column: there is no hierarchy
+beside it to consult.
 
 **The composer takes a measure of its own** — `--spacing-composer` — and **the modal grows when it
 gains its second column**, which is the one moment it is allowed to change size: a decision was
@@ -626,11 +665,62 @@ necessary, and that is the moment to add it.
 
 **Which control a field draws is a lookup keyed by destination kind**, and it decides on the kind
 alone: what a field means is the kind's business, and a capability one kind shares with another
-does not make their contents the same shape. A kind that cannot enumerate what it holds draws neither line nor
-tree and keeps the schema-driven browser — the entries at the current scope as marked options,
-`back` to the scope before it, `use <label>` to take the scope stood in, `clear` at the top — the
-same `Group`/`Option` idiom `where` already uses, with free entry beside it, and `do` still a step,
-its capabilities being its own and nothing here able to pick among them.
+does not make their contents the same shape. That it is keyed on the *name* is the weak part — a
+third filesystem-like kind needs a shell edit to get the tree — and `docs/todo.md` carries the
+shape this should take instead, which is the schema saying it. A kind with no hierarchy in it draws no tree, and
+keeps the schema-driven browser — but **that browser is a line too** *(amended 2026-09-08)*: one
+field with what the destination offers under it, **narrowed to what is typed**, `⇥` completing,
+`↑↓` walking and `⏎` taking the one walked to or committing where the walk has not moved. The same
+gestures the typed line has, without the segments: there is one value rather than a path, so the
+whole field is the filter. What it keeps that the line has no use for is **descent** — `back` to
+the scope before, `use <label>` to take the scope stood in, `clear` at the top — since an entry may
+be somewhere to look rather than something to hold, and this is the only control that can go there.
+
+Matching is by **prefix over both the label and the value**, and `⇥` completes to the **value**.
+The two need not be the same string — an are.na channel is browsed by its title and filed under
+its slug — so completing to the label would leave the field holding something that cannot be
+delivered, and matching the label alone would empty the list the moment `⇥` resolved one to the
+other. A person types the title they know and the field ends up holding the slug it will be sent
+with, which is also what shows them what they picked.
+
+**A title resolves to the value it names**, at the two moments the line is done being typed:
+committing from it, and leaving it. The whole of a title, or enough of one that a single answer is
+still matching — the same reach `⇥` has, and safe here for the reason it is not safe on a keystroke,
+there being no half-written word left to take out of somebody's mouth. Never on an ambiguous
+title. Anything it does not recognise is **left exactly as written and still routes**: an answer is
+one page of what a destination holds, so not being in it is not being wrong. A group channel, a
+numeric are.na channel ID and a vault folder that does not exist yet are the same case, and the
+composer refuses none of them.
+
+**Which of a candidate's two names is taken is the surface's own** *(2026-09-08)*. Where a
+destination answers a `durable` form beside the value, the composer takes the value and the
+**template form takes the durable one** — a decision made now wants a name that reads, and one
+that fires for months wants a name that cannot rot. Matching and completion consider every name an
+entry has, so a title, a slug and an ID all find the same channel and the row still marks as taken
+whichever form the field ended up holding.
+
+**A long answer is drawn as a handful**, eight of it, with the rest a press away and typing the way
+through it. An account of two hundred channels is a wall of names nobody reads; the field above it
+is the control, and the list is a sample of what is there rather than the whole of it. What the
+walk reaches is what is drawn — a row the eye cannot see is nowhere to go. The destination having
+held back more than it answered is its own limit and said separately.
+
+**What a destination last answered is drawn while it answers again.** Kept for the life of the
+page and never instead of asking, so a list is stale only for as long as the round trip it fills —
+which is what the second visit to a composer spends staring at `loading…` otherwise. A browse that
+fails with something held says so and keeps drawing it, the field being typed either way.
+
+**A capability nothing can be chosen among is not a step** *(2026-09-08)*. Where a destination
+declares exactly one, it is settled the moment the description lands and `do` is not drawn: a step
+whose every path is the same step is one press spent saying yes. Two or more and it is asked, its
+capabilities being its own and nothing here able to pick among them. This is the same reasoning the
+typed line already settled `create-or-append` by, arrived at from the other side.
+
+Both settle **only where nothing else has**. A template carries a capability and applies it in the
+step the description lands in, so a template saved as `create` on a vault keeps `create` and draws
+that capability's form rather than the line. Overwriting it made the commit read as a decision of
+the person's own: the record did not name the template, and an `establish` template never learnt
+its folder was there.
 
 **A preview is asked for, never volunteered** (added 2026-09-04). `preview` sits beside `route` and
 runs once the arguments are settled, because the conversion may reach the destination or a model —
@@ -668,7 +758,7 @@ summary is what a row is for; what the line gains is the way into the record it 
 
 **On a row, a record reads as its destination and the place it landed** *(2026-09-04)* — the
 pointer the destination handed back, or failing that the place the decision named. The capability
-went with it, `create-file` being the adapter's vocabulary rather than a person's, and so did
+went with it, `create` being the adapter's vocabulary rather than a person's, and so did
 `delivered`, which is what a record not saying otherwise already means. Those are the two words the
 place needed. **A state is said only where it is not that**, muted and after the place, since a
 record the pool has recorded and not carried out claims no landing. A decision made by hand reads
@@ -1112,11 +1202,17 @@ act on. A destination whose kind cannot be probed says nothing at all and looks 
 before probing existed. What could not be *described* still wins over both, an unusable destination
 being a bigger fact than an unreachable one.
 
-**A settings field the kind published values for is chosen, not typed** *(2026-09-02)*. A webdav
-destination's account is one of the accounts the daemon declares, drawn as a list; a field with
-nothing published stays a box, so a daemon declaring no accounts does not trap a person behind an
-empty one. A value the destination already holds that the daemon no longer declares is offered too,
-marked as such — opening the form must not quietly move a destination somewhere else.
+**A settings field the kind published values for is chosen, not typed** *(2026-09-02, widened
+2026-09-08)*. A webdav destination's account is one of the accounts the daemon declares, drawn as a
+list; so is a field the schema **fixes** to an enumeration, which the template form already drew
+that way and this brings here. The two are told apart by the schema and never by name — suggested
+values and allowed ones read the same, and what differs is only whether typing something else
+would be refused. A field with nothing published stays a box, so a daemon declaring no accounts
+does not trap a person behind an empty one. A value the destination already holds that the daemon
+no longer declares is offered too, marked as such — opening the form must not quietly move a
+destination somewhere else. **Blank leads the list where nothing is held**, because for an
+optional field absent is a value of its own: it is what a destination that never said has, and
+what a person has to be able to go back to.
 
 **Templates** *(added 2026-09-07)* sits under Destinations, on the same three levels and for the
 same reason it comes second: a template names a destination, so the thing it names is above it. One

@@ -35,7 +35,7 @@ import {
 
 const ALL: Page = { limit: 50 };
 const VAULT = "vault" as DestinationId;
-const CREATE = "create-file" as CapabilityName;
+const CREATE = "create" as CapabilityName;
 
 const open: Array<() => Promise<void> | void> = [];
 
@@ -73,7 +73,7 @@ async function pooled(root: string): Promise<Harness> {
   await opened.putDestination({
     id: VAULT,
     kind: "filesystem",
-    settings: { root },
+    settings: { root, frontmatter: "full" },
   });
   return opened;
 }

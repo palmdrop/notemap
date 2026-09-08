@@ -23,7 +23,7 @@ describe("the two answers a typed place is completed from", () => {
     await writeFile(join(running.world.up, "notes", "by-hand.md"), "a note\n");
 
     const offered = await client.destinations.candidates(vault.up, {
-      capability: "create-or-append-file",
+      capability: "create-or-append",
       field: "path",
     });
     expect(offered).toMatchObject({ kind: "answered" });
@@ -34,7 +34,7 @@ describe("the two answers a typed place is completed from", () => {
     ).toContain("notes");
 
     const inside = await client.destinations.candidates(vault.up, {
-      capability: "create-or-append-file",
+      capability: "create-or-append",
       field: "path",
       scope: "notes",
     });
@@ -46,7 +46,7 @@ describe("the two answers a typed place is completed from", () => {
     // Nothing has been routed with this capability, so the pool remembers none.
     expect(
       await client.destinations.remembered(vault.up, {
-        capability: "create-or-append-file",
+        capability: "create-or-append",
         field: "path",
       }),
     ).toEqual({ truncated: false, places: [] });
@@ -58,12 +58,12 @@ describe("the two answers a typed place is completed from", () => {
     await client.drain();
     await client.routing.route(carried.id, {
       destination: vault.up,
-      capability: "create-or-append-file",
+      capability: "create-or-append",
       arguments: { path: "notes/by-hand.md" },
     });
 
     const remembered = await client.destinations.remembered(vault.up, {
-      capability: "create-or-append-file",
+      capability: "create-or-append",
       field: "path",
     });
     expect(remembered.places.map((each) => [each.value, each.uses])).toEqual([
@@ -87,7 +87,7 @@ describe("the two answers a typed place is completed from", () => {
       await client.drain();
       await client.routing.route(carried.id, {
         destination: vault.up,
-        capability: "create-or-append-file",
+        capability: "create-or-append",
         arguments: { path: "journal/monday.md" },
       });
       await until(`${said} to land`, async () =>
@@ -115,12 +115,12 @@ describe("the two answers a typed place is completed from", () => {
     await client.drain();
     await client.routing.route(carried.id, {
       destination: vault.down,
-      capability: "create-or-append-file",
+      capability: "create-or-append",
       arguments: { path: "inbox/a-thought.md" },
     });
 
     const asked = await client.destinations.candidates(vault.down, {
-      capability: "create-or-append-file",
+      capability: "create-or-append",
       field: "path",
     });
     expect(asked.kind).not.toBe("answered");
@@ -128,7 +128,7 @@ describe("the two answers a typed place is completed from", () => {
     expect(
       (
         await client.destinations.remembered(vault.down, {
-          capability: "create-or-append-file",
+          capability: "create-or-append",
           field: "path",
         })
       ).places.map((each) => each.value),

@@ -36,6 +36,9 @@ const BEFORE_ONE_KEY = 13;
 /** The version at which a capture was still typed `text` or `image`. */
 const BEFORE_ONE_PAYLOAD_TYPE = 20;
 
+/** The version at which a capability was still named after a file. */
+const BEFORE_GENERIC_CAPABILITIES = 21;
+
 const directories: string[] = [];
 const opened: SqlitePoolStore[] = [];
 
@@ -331,6 +334,8 @@ describe("moving destinations into the pool", () => {
 
     const records = await pool.routingRecords("item-1" as ItemId);
     expect(records.map((each) => each.target)).toEqual([
+      // Delivered before the rename, so it keeps the spelling it was written
+      // with: the record says what happened.
       {
         kind: "destination",
         destination: "vault",
@@ -338,10 +343,12 @@ describe("moving destinations into the pool", () => {
         // Written before the column existed, and read as `{}` ever since.
         arguments: {},
       },
+      // Still owed when the rename landed, so it was respelled — left alone it
+      // would name a capability nothing declares and be abandoned unattempted.
       {
         kind: "destination",
         destination: "vault",
-        capability: "create-file",
+        capability: "create",
         arguments: {},
       },
       { kind: "user", note: "pasted it" },
@@ -529,6 +536,116 @@ describe("collapsing the payload types into one", () => {
         subject_id: "item-shot",
         enrichment: null,
       },
+    ]);
+  });
+});
+
+/** A pool whose templates were saved under the file-shaped capability names. */
+function savedAtPreviousVersion(): string {
+  const directory = mkdtempSync(join(tmpdir(), "notemap-migration-"));
+  directories.push(directory);
+  const file = join(directory, "pool.db");
+
+  const raw = new DatabaseSync(file);
+  for (const migration of MIGRATIONS.slice(0, BEFORE_GENERIC_CAPABILITIES)) {
+    raw.exec(migration);
+  }
+  raw.exec(`PRAGMA user_version = ${BEFORE_GENERIC_CAPABILITIES}`);
+
+  const insert = raw.prepare(
+    `INSERT INTO routing_templates
+       (id, name, destination_id, capability, arguments, folder, trigger_tag,
+        established_at, created_at, modified_at)
+     VALUES (?, ?, 'vault', ?, '{}', 'create', NULL, NULL, ?, ?)`,
+  );
+
+  insert.run("t-create", "drafts", "create-file", ENQUEUED, ENQUEUED);
+  insert.run("t-append", "log", "append-to-file", ENQUEUED, ENQUEUED);
+  insert.run("t-either", "inbox", "create-or-append-file", ENQUEUED, ENQUEUED);
+  // Saved by a kind that never had the file-shaped names, and left alone.
+  insert.run("t-block", "board", "create", ENQUEUED, ENQUEUED);
+
+  // A record names both, and the references are real at this version.
+  raw
+    .prepare(
+      `INSERT INTO destinations (id, name, kind, settings, created_at, modified_at)
+       VALUES ('vault', 'Vault', 'filesystem', '{}', ?, ?)`,
+    )
+    .run(ENQUEUED, ENQUEUED);
+
+  const item = raw.prepare(
+    `INSERT INTO items (id, source_id, source_item_id, payload_type,
+       payload_content, payload_metadata, created_at, modified_at)
+     VALUES (?, 'web-manual', ?, 'note', '{}', '{}', ?, ?)`,
+  );
+
+  const record = raw.prepare(
+    `INSERT INTO routing_records
+       (id, item_id, target_kind, destination, capability, arguments, state, at)
+     VALUES (?, ?, 'destination', 'vault', ?, '{}', ?, ?)`,
+  );
+
+  for (const [id, capability, state] of [
+    ["r-owed", "create-file", "pending"],
+    ["r-owed-append", "append-to-file", "pending"],
+    ["r-done", "create-file", "delivered"],
+  ] as const) {
+    item.run(id, `src-${id}`, ENQUEUED, ENQUEUED);
+    record.run(id, id, capability, state, ENQUEUED);
+  }
+
+  raw.close();
+  return file;
+}
+
+function recordCapabilities(file: string) {
+  const raw = new DatabaseSync(file, { readOnly: true });
+  try {
+    return raw
+      .prepare("SELECT id, capability, state FROM routing_records ORDER BY id")
+      .all();
+  } finally {
+    raw.close();
+  }
+}
+
+function templateCapabilities(file: string) {
+  const raw = new DatabaseSync(file, { readOnly: true });
+  try {
+    return raw
+      .prepare("SELECT id, capability FROM routing_templates ORDER BY id")
+      .all();
+  } finally {
+    raw.close();
+  }
+}
+
+describe("capability names that stopped being file-shaped", () => {
+  it("respells every template, which is live and fires on a tag", () => {
+    const file = savedAtPreviousVersion();
+    migrated(file);
+
+    expect(templateCapabilities(file)).toEqual([
+      { id: "t-append", capability: "append" },
+      { id: "t-block", capability: "create" },
+      { id: "t-create", capability: "create" },
+      { id: "t-either", capability: "create-or-append" },
+    ]);
+  });
+
+  /**
+   * A pending record is work still owed, not history: left file-shaped, the
+   * adapter refuses a capability nothing declares, which is abandoned on the
+   * first attempt rather than retried.
+   */
+  it("respells a record still owed, and leaves one that already delivered", () => {
+    const file = savedAtPreviousVersion();
+    migrated(file);
+
+    expect(recordCapabilities(file)).toEqual([
+      { id: "r-done", capability: "create-file", state: "delivered" },
+      { id: "r-owed", capability: "create", state: "pending" },
+      { id: "r-owed-append", capability: "append", state: "pending" },
     ]);
   });
 });

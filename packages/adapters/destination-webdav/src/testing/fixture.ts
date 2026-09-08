@@ -31,12 +31,19 @@ export function at(value: string): Timestamp {
 export function destinationRow(settings: {
   account?: string;
   root: string;
+  frontmatter?: string;
 }): Destination {
   return {
     id: VAULT,
     name: "Vault",
     kind: WEBDAV,
-    settings: { account: settings.account ?? ACCOUNT, root: settings.root },
+    settings: {
+      account: settings.account ?? ACCOUNT,
+      root: settings.root,
+      ...(settings.frontmatter === undefined
+        ? {}
+        : { frontmatter: settings.frontmatter }),
+    },
     createdAt: at("2026-09-01T09:00:00.000Z"),
     modifiedAt: at("2026-09-01T09:00:00.000Z"),
   };
@@ -108,7 +115,7 @@ export function delivery(overrides: DeliveryOverrides = {}): Delivery {
   return {
     item: (overrides.item ?? "item-1") as ItemId,
     destination: VAULT,
-    capability: (overrides.capability ?? "create-file") as CapabilityName,
+    capability: (overrides.capability ?? "create") as CapabilityName,
     arguments: overrides.arguments ?? { directory: "inbox" },
     source: SCRATCHPAD,
     payload: {

@@ -1,15 +1,18 @@
 import type { Delivery } from "@notemap/core";
 import {
-  APPEND_TO_FILE,
+  APPEND,
   asAppendToFileArguments,
   asCreateFileArguments,
   asCreateOrAppendFileArguments,
-  CREATE_FILE,
+  CREATE,
   deriveFilename,
+  fileOf,
   folderModeOf,
+  frontmatterModeOf,
   insertUnder,
   placeOf,
   renderNote,
+  type FrontmatterMode,
   type Note,
   type Renderers,
 } from "@notemap/output-markdown";
@@ -28,6 +31,8 @@ export type Wiring = {
   readonly dav: Dav;
   readonly root: string;
   readonly renderers: Renderers;
+  /** The destination's own, which a delivery's own argument overrides. */
+  readonly frontmatter?: FrontmatterMode;
 };
 
 /** What this delivery put there: for an append into a note that was there, what was inserted. */
@@ -53,7 +58,7 @@ export function createNote(
 function createTarget(delivery: Delivery): string {
   const args = asCreateFileArguments(delivery.arguments);
   if (args === undefined) {
-    throw new Refused("that is not a create-file argument set");
+    throw new Refused("that is not a create argument set");
   }
 
   const filename = args.filename ?? deriveFilename(delivery);
@@ -82,7 +87,7 @@ function createOrAppendTarget(delivery: Delivery): {
 } {
   const args = asCreateOrAppendFileArguments(delivery.arguments);
   if (args === undefined) {
-    throw new Refused("that is not a create-or-append-file argument set");
+    throw new Refused("that is not a create-or-append argument set");
   }
 
   const place = placeOf(args.path);
@@ -110,10 +115,12 @@ async function create(
   await makeCollections(wiring.dav, wanted, signal);
 
   const assets = await placeAssets(wiring.dav, wanted, delivery.assets, signal);
-  const rendered = renderNote(wiring.renderers, delivery, {
-    directory: collectionOfPointer(wanted),
-    assets,
-  });
+  const rendered = renderNote(
+    wiring.renderers,
+    delivery,
+    { directory: collectionOfPointer(wanted), assets },
+    frontmatterModeOf(delivery.arguments, wiring.frontmatter),
+  );
   const note = whole(rendered);
 
   const written = await wiring.dav.create(wanted.encoded, note, signal);
@@ -152,7 +159,7 @@ function appendTarget(delivery: Delivery): {
 } {
   const args = asAppendToFileArguments(delivery.arguments);
   if (args === undefined) {
-    throw new Refused("that is not an append-to-file argument set");
+    throw new Refused("that is not an append argument set");
   }
 
   return {
@@ -186,10 +193,12 @@ async function append(
       assets = await placeAssets(wiring.dav, note, delivery.assets, signal);
     }
 
-    const rendered = renderNote(wiring.renderers, delivery, {
-      directory: collectionOfPointer(note),
-      assets,
-    });
+    const rendered = renderNote(
+      wiring.renderers,
+      delivery,
+      { directory: collectionOfPointer(note), assets },
+      frontmatterModeOf(delivery.arguments, wiring.frontmatter),
+    );
 
     if (existing === undefined) {
       const fresh = wholeUnder(rendered, heading);
@@ -235,11 +244,11 @@ async function append(
 }
 
 function whole(rendered: Note): string {
-  return `${rendered.frontmatter}\n${rendered.body}`;
+  return fileOf(rendered.frontmatter, rendered.body);
 }
 
 function wholeUnder(rendered: Note, heading?: string): string {
-  return `${rendered.frontmatter}\n${insertUnder("", rendered.body, heading)}`;
+  return fileOf(rendered.frontmatter, insertUnder("", rendered.body, heading));
 }
 
 /**
@@ -253,13 +262,13 @@ export async function previewNote(
   delivery: Delivery,
   signal?: AbortSignal,
 ): Promise<string> {
-  if (delivery.capability === CREATE_FILE) {
+  if (delivery.capability === CREATE) {
     const note = locate(wiring.root, createTarget(delivery));
     return whole(render(wiring, delivery, note));
   }
 
   const wanted =
-    delivery.capability === APPEND_TO_FILE
+    delivery.capability === APPEND
       ? appendTarget(delivery)
       : createOrAppendTarget(delivery);
 
@@ -273,10 +282,15 @@ export async function previewNote(
 }
 
 function render(wiring: Wiring, delivery: Delivery, note: Contained): Note {
-  return renderNote(wiring.renderers, delivery, {
-    directory: collectionOfPointer(note),
-    assets: assetNames(delivery.assets),
-  });
+  return renderNote(
+    wiring.renderers,
+    delivery,
+    {
+      directory: collectionOfPointer(note),
+      assets: assetNames(delivery.assets),
+    },
+    frontmatterModeOf(delivery.arguments, wiring.frontmatter),
+  );
 }
 
 /**

@@ -15,7 +15,7 @@ function aRecord(overrides: Partial<RoutingRecord> = {}): RoutingRecord {
     target: {
       kind: "destination",
       destination: "vault",
-      capability: "create-file",
+      capability: "create",
       arguments: {},
     },
     ...overrides,
@@ -42,7 +42,7 @@ test("a landing with no pointer falls back to the place the decision named", () 
       target: {
         kind: "destination",
         destination: "vault",
-        capability: "create-or-append-file",
+        capability: "create-or-append",
         arguments: { path: "notes/inbox/picker.md", heading: "" },
       },
     }),
@@ -117,7 +117,7 @@ test("a pending record's place leaves notemap's own arguments out of it", () => 
       target: {
         kind: "destination",
         destination: "vault",
-        capability: "create-or-append-file",
+        capability: "create-or-append",
         arguments: { path: "research/2026-09-07.md", folder: "require" },
       },
     }),

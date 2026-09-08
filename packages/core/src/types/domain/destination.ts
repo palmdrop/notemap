@@ -67,9 +67,9 @@ export type CandidatesRequest = {
 /**
  * One thing the field could hold, or one place to look for more, or both.
  * Both are optional because they are independent: a vault's folder is
- * somewhere an `append-to-file` browser descends and never something that
- * field may hold, and a note is the reverse. An entry with neither is
- * nothing, and no caller is obliged to draw one.
+ * somewhere an `append` browser descends and never something that field may
+ * hold, and a note is the reverse. An entry with neither is nothing, and no
+ * caller is obliged to draw one.
  */
 export type CandidateEntry = {
   readonly label: string;
@@ -77,6 +77,19 @@ export type CandidateEntry = {
   readonly value?: JsonValue;
   /** Absent where the destination has nothing further to offer past this entry. */
   readonly scope?: string;
+  /**
+   * The same thing under a name that survives being renamed, where the
+   * destination has two names for it — an are.na channel is `reading` today and
+   * `12345` for as long as it exists. Absent where `value` is already the
+   * lasting one, which is the ordinary case.
+   *
+   * What it is *for* is a decision that fires again: a routing template sits on
+   * a tag for months, and a `value` that rots takes the template with it. A
+   * decision made once prefers the readable form, so the two surfaces take
+   * different halves of the same entry and neither has to know which kind it is
+   * talking to.
+   */
+  readonly durable?: JsonValue;
 };
 
 export type CandidatesAnswer = {

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/svelte";
+import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
 
 import {
@@ -36,8 +36,8 @@ function clipboard(): { writeText: ReturnType<typeof vi.fn> } {
 const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
 const BOARD = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a78";
 
-const CREATE_FILE = {
-  name: "create-file",
+const CREATE = {
+  name: "create",
   accepts: ["text"],
   argumentsSchema: {
     type: "object",
@@ -49,8 +49,8 @@ const CREATE_FILE = {
   },
 };
 
-const CREATE_FILE_ASKABLE = {
-  name: "create-file",
+const CREATE_ASKABLE = {
+  name: "create",
   accepts: ["text"],
   argumentsSchema: {
     type: "object",
@@ -62,11 +62,24 @@ const CREATE_FILE_ASKABLE = {
   },
 };
 
+const CREATE_WITH_ENUM = {
+  name: "create",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    required: ["directory"],
+    properties: {
+      directory: { type: "string" },
+      frontmatter: { type: "string", enum: ["full", "none"] },
+    },
+  },
+};
+
 const APPEND = { name: "append", accepts: ["text"] };
 
 /** As the adapter declares it, titles and sentences and all. */
 const CREATE_OR_APPEND = {
-  name: "create-or-append-file",
+  name: "create-or-append",
   accepts: ["text"],
   argumentsSchema: {
     type: "object",
@@ -102,7 +115,7 @@ function serving(
   held: readonly Record<string, unknown>[],
   description: Record<string, unknown> = {
     kind: "described",
-    capabilities: [CREATE_FILE],
+    capabilities: [CREATE],
   },
   preview: Record<string, unknown> = {
     kind: "previewed",
@@ -152,7 +165,7 @@ function serving(
 }
 
 /**
- * A destination whose `create-file` capability's `directory` can be browsed.
+ * A destination whose `create` capability's `directory` can be browsed.
  * The kind is one nothing registers a control for, so this draws the
  * schema-driven browser; the kinds that hold a filesystem draw the typed line
  * and are exercised in `PathLine.test.ts`.
@@ -169,7 +182,7 @@ function servingBrowsable(
     if (route.endsWith("/description")) {
       return json(200, {
         kind: "described",
-        capabilities: [CREATE_FILE_ASKABLE],
+        capabilities: [CREATE_ASKABLE],
       });
     }
     if (route.endsWith("/candidates")) {
@@ -210,11 +223,37 @@ function draw(item = aCapture()) {
 const choose = async (name: string | RegExp) =>
   fireEvent.click(await screen.findByRole("button", { name }));
 
+/**
+ * A row in a browse, taken the way the typed line's tree is taken: `mousedown`
+ * on the text, the rows being options rather than buttons so that `↑↓` can walk
+ * them without moving focus off the line.
+ */
+const entry = async (text: string) =>
+  fireEvent.mouseDown(await screen.findByText(text));
+
+/** That the destination was taken and described: its one capability's fields are drawn. */
+const described = async () => screen.findByLabelText("directory");
+
+/**
+ * `route`, once there is a decision to send. A kind declaring one capability
+ * has it settled a tick after its description lands, so the commit is briefly
+ * disabled where nothing is clicked in between.
+ */
+const commit = async () => {
+  const button = (await screen.findByRole("button", {
+    name: "route",
+  })) as HTMLButtonElement;
+  await vi.waitFor(() => {
+    expect(button.disabled).toBe(false);
+  });
+  return fireEvent.click(button);
+};
+
 const RESEARCH = {
   id: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a80",
   name: "research",
   destination: VAULT,
-  capability: "create-file",
+  capability: "create",
   arguments: { directory: "research/{{captured_at}}" },
   folder: "create",
   triggerTag: "route/research",
@@ -225,7 +264,7 @@ function servingTemplates(
   templates: readonly Record<string, unknown>[] = [RESEARCH],
   resolved: Record<string, unknown> = {
     destination: VAULT,
-    capability: "create-file",
+    capability: "create",
     arguments: { directory: "research/2026-09-04" },
   },
 ) {
@@ -239,7 +278,7 @@ function servingTemplates(
       return json(200, resolved);
     }
     if (route.endsWith("/description")) {
-      return json(200, { kind: "described", capabilities: [CREATE_FILE] });
+      return json(200, { kind: "described", capabilities: [CREATE] });
     }
     if (route === "POST /v1/items/one/route") {
       return json(200, {
@@ -269,13 +308,74 @@ test("takes a template, draws what it resolved to, and leaves it editable", asyn
   expect(directory.value).toBe("reading/2026");
 });
 
+/**
+ * The line settles `create-or-append` for a kind that draws it — but a template
+ * has already settled one, and overwriting it made the commit read as a
+ * decision of the person's own: the record would not name the template, and an
+ * `establish` template would never learn its folder was there.
+ */
+test("keeps the capability a template resolved to, over the one the line settles", async () => {
+  const transport = pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route === "GET /v1/templates") return json(200, { values: [RESEARCH] });
+    if (route === "GET /v1/items/one/route/resolve") {
+      return json(200, {
+        destination: VAULT,
+        capability: "create",
+        arguments: { directory: "research/2026-09-04" },
+      });
+    }
+    if (route.endsWith("/description")) {
+      // Declares the line's capability too, which is what used to win.
+      return json(200, {
+        kind: "described",
+        capabilities: [CREATE_OR_APPEND, CREATE],
+      });
+    }
+    if (route === "POST /v1/items/one/route") {
+      return json(200, {
+        id: "r",
+        item: "one",
+        state: "delivered",
+        target: {},
+      });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  draw();
+  await choose("research");
+
+  // `create`'s form, not the line: the template said what it meant.
+  const directory = (await screen.findByLabelText(
+    "directory",
+  )) as HTMLInputElement;
+  expect(directory.value).toBe("research/2026-09-04");
+  expect(screen.queryByRole("combobox", { name: "place" })).toBeNull();
+
+  await commit();
+
+  // Untouched, so it commits *as* the template — which is what makes the
+  // record name it, and an `establish` template learn its folder is there.
+  await vi.waitFor(async () => {
+    const sentBody = await sentTo(transport)
+      .find((each) => routeOf(each) === "POST /v1/items/one/route")
+      ?.clone()
+      .json();
+    expect(sentBody).toEqual({ template: RESEARCH.id });
+  });
+});
+
 test("commits an untouched template as the template, so the record names it", async () => {
   servingTemplates();
 
   draw();
   await choose("research");
   await screen.findByLabelText("directory");
-  await choose("route");
+  await commit();
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/route");
@@ -291,14 +391,14 @@ test("commits a corrected one as the decision it became", async () => {
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "reading/2026" },
   });
-  await choose("route");
+  await commit();
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/route");
   });
   expect(await sent()).toContainEqual({
     destination: VAULT,
-    capability: "create-file",
+    capability: "create",
     arguments: { directory: "reading/2026" },
   });
 });
@@ -321,7 +421,7 @@ test("describes the destination that was chosen and no other", async () => {
   expect(asked().filter((each) => each.endsWith("/description"))).toEqual([]);
 
   await choose(/Vault/);
-  await screen.findByRole("button", { name: /create-file/ });
+  await screen.findByLabelText("directory");
 
   expect(asked().filter((each) => each.endsWith("/description"))).toEqual([
     `GET /v1/destinations/${VAULT}/description`,
@@ -333,12 +433,11 @@ test("composes a decision one step at a time and sends it", async () => {
 
   const closed = draw();
   await choose(/Vault/);
-  await choose(/create-file/);
 
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
-  await choose("route");
+  await commit();
 
   await vi.waitFor(() => {
     expect(closed).toHaveBeenCalled();
@@ -346,15 +445,17 @@ test("composes a decision one step at a time and sends it", async () => {
   expect(asked()).toContain("POST /v1/items/one/route");
 });
 
-test("a capability that asks for nothing is two choices away from routed", async () => {
+/** One capability that asks for nothing: taking the destination is the whole decision. */
+test("a capability that asks for nothing is one choice away from routed", async () => {
   serving([aDestination()], { kind: "described", capabilities: [APPEND] });
 
   draw();
   await choose(/Vault/);
-  await choose(/append/);
 
   const commit = screen.getByRole("button", { name: "route" });
-  expect((commit as HTMLButtonElement).disabled).toBe(false);
+  await vi.waitFor(() => {
+    expect((commit as HTMLButtonElement).disabled).toBe(false);
+  });
 
   await fireEvent.click(commit);
   await vi.waitFor(() => {
@@ -442,9 +543,8 @@ test("browses a field that can be asked about, and takes the scope stood in", as
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
 
-  await choose("inbox");
+  await entry("inbox/");
   await choose(/use inbox/);
 
   expect((screen.getByLabelText("directory") as HTMLInputElement).value).toBe(
@@ -460,7 +560,6 @@ test("a refusal to browse is not an alarm, and typing still works beside it", as
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
 
   await screen.findByText(/the vault is not mounted/);
   expect(screen.queryByRole("alert")).toBeNull();
@@ -482,12 +581,11 @@ test("a typed value that was never listed still routes", async () => {
 
   const closed = draw();
   await choose(/Vault/);
-  await choose(/create-file/);
 
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "brand-new-folder" },
   });
-  await choose("route");
+  await commit();
 
   await vi.waitFor(() => {
     expect(closed).toHaveBeenCalled();
@@ -511,10 +609,14 @@ test("an unregistered kind gets the schema-driven control", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
 
-  expect(await screen.findByRole("button", { name: "inbox" })).toBeDefined();
-  expect(screen.queryByRole("combobox")).toBeNull();
+  // Both controls are a combobox now, so what tells them apart is the list:
+  // the line draws a hierarchy it calls `places`, this draws the field's own.
+  expect(
+    await screen.findByRole("listbox", { name: "directory candidates" }),
+  ).toBeDefined();
+  expect(screen.queryByRole("listbox", { name: "places" })).toBeNull();
+  expect(await screen.findByText("inbox")).toBeDefined();
 });
 
 /** The seam decides on the kind alone, and a filesystem-shaped one draws the line. */
@@ -530,10 +632,11 @@ test("a kind that holds a filesystem gets the typed line instead", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
 
-  expect(await screen.findByRole("combobox")).toBeDefined();
-  expect(screen.queryByRole("button", { name: "inbox" })).toBeNull();
+  expect(await screen.findByRole("listbox", { name: "places" })).toBeDefined();
+  expect(
+    screen.queryByRole("listbox", { name: "directory candidates" }),
+  ).toBeNull();
 });
 
 const answered = (entries: readonly Record<string, unknown>[]) => ({
@@ -551,10 +654,9 @@ test("walks through an entry that is only somewhere to look, and takes the one p
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
 
-  await choose("projects");
-  await screen.findByRole("button", { name: "fiction.md" });
+  await entry("projects/");
+  await screen.findByText("fiction.md");
 
   // A scope the field may not hold is not offered as something to take.
   expect(screen.queryByRole("button", { name: /^use / })).toBeNull();
@@ -562,7 +664,7 @@ test("walks through an entry that is only somewhere to look, and takes the one p
     "",
   );
 
-  await choose("fiction.md");
+  await entry("fiction.md");
   expect((screen.getByLabelText("directory") as HTMLInputElement).value).toBe(
     "projects/fiction.md",
   );
@@ -577,12 +679,11 @@ test("empties a field browsed to and then left, from the top and only there", as
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
-  await screen.findByRole("button", { name: "inbox" });
+  await screen.findByText("inbox/");
 
   expect(screen.queryByRole("button", { name: "clear" })).toBeNull();
 
-  await choose("inbox");
+  await entry("inbox/");
   await choose(/use inbox/);
   await choose("back");
   await choose("clear");
@@ -602,11 +703,8 @@ test("draws two entries that share a label", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
 
-  expect(await screen.findAllByRole("button", { name: "notes" })).toHaveLength(
-    2,
-  );
+  expect(await screen.findAllByText("notes/")).toHaveLength(2);
 });
 
 test("drops an answer for a scope it has already left", async () => {
@@ -623,7 +721,7 @@ test("drops an answer for a scope it has already left", async () => {
     if (route.endsWith("/description")) {
       return json(200, {
         kind: "described",
-        capabilities: [CREATE_FILE_ASKABLE],
+        capabilities: [CREATE_ASKABLE],
       });
     }
     if (route.endsWith("/candidates")) {
@@ -641,19 +739,18 @@ test("drops an answer for a scope it has already left", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
 
   // Descend into an answer that hangs, then leave before it lands.
-  await choose("inbox");
+  await entry("inbox/");
   await choose("back");
-  await screen.findByRole("button", { name: "inbox" });
+  await screen.findByText("inbox/");
 
   release();
   await held;
   await new Promise((resolve) => setTimeout(resolve, 0));
 
-  expect(screen.queryByRole("button", { name: "buried" })).toBeNull();
-  expect(screen.getByRole("button", { name: "inbox" })).toBeDefined();
+  expect(screen.queryByText("buried")).toBeNull();
+  expect(screen.getByText("inbox/")).toBeDefined();
 });
 
 /** A filesystem vault holding one note, so the line has something to forecast against. */
@@ -734,18 +831,18 @@ test("stores what the person meant, not the word that was drawn", async () => {
   const line = await screen.findByRole("combobox");
   await fireEvent.input(line, { target: { value: "decisions.md" } });
   await screen.findByText("append");
-  await choose("route");
+  await commit();
 
   await vi.waitFor(async () => {
     expect(await routed(transport)).toMatchObject({
-      capability: "create-or-append-file",
+      capability: "create-or-append",
       arguments: { path: "decisions.md" },
     });
   });
 });
 
 /** The one capability that promises never to write into somebody's note. */
-test("shift-enter stores create-file under the free name it offered", async () => {
+test("shift-enter stores create under the free name it offered", async () => {
   const transport = servingVault([
     { label: "decisions.md", value: "notes/decisions.md" },
   ]);
@@ -760,11 +857,50 @@ test("shift-enter stores create-file under the free name it offered", async () =
 
   await vi.waitFor(async () => {
     expect(await routed(transport)).toMatchObject({
-      capability: "create-file",
+      capability: "create",
       arguments: { directory: "", filename: "decisions-1.md" },
     });
   });
 });
+
+/** Typed from memory before this: the values are the field, so they are offered. */
+test("chooses an argument the schema fixes rather than typing it", async () => {
+  const transport = await pickingFrontmatter(["full"]);
+
+  await vi.waitFor(async () => {
+    expect((await routed(transport)).arguments).toEqual({
+      directory: "inbox",
+      frontmatter: "full",
+    });
+  });
+});
+
+/** Absent is a value here — it inherits — so there has to be a way back to it. */
+test("gives an argument back where the one taken is taken again", async () => {
+  const transport = await pickingFrontmatter(["full", "full"]);
+
+  await vi.waitFor(async () => {
+    expect((await routed(transport)).arguments).toEqual({ directory: "inbox" });
+  });
+});
+
+async function pickingFrontmatter(taken: readonly string[]) {
+  const transport = serving([aDestination()], {
+    kind: "described",
+    capabilities: [CREATE_WITH_ENUM],
+  });
+
+  draw();
+  await choose(/Vault/);
+
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "inbox" },
+  });
+  for (const one of taken) await choose(one);
+  await commit();
+
+  return transport;
+}
 
 test("a blank leaf submits a path that ends in a slash", async () => {
   const transport = servingVault([]);
@@ -778,7 +914,7 @@ test("a blank leaf submits a path that ends in a slash", async () => {
   expect(await screen.findAllByText(/Picker needs a trail\.md/)).toHaveLength(
     1,
   );
-  await choose("route");
+  await commit();
 
   await vi.waitFor(async () => {
     expect((await routed(transport)).arguments).toEqual({ path: "drafts/" });
@@ -818,7 +954,7 @@ test("a tag taken in the composer stays applied when the route fails", async () 
     expect(asked()).toContain("POST /v1/items/one/tag");
   });
 
-  await choose("route");
+  await commit();
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/route");
   });
@@ -843,7 +979,7 @@ test("takes a destination by typing enough of its name", async () => {
   await fireEvent.input(typing(), { target: { value: "vau" } });
   await fireEvent.keyDown(typing(), { key: "Enter" });
 
-  await screen.findByRole("button", { name: /create-file/ });
+  await described();
   expect(asked()).toContain(`GET /v1/destinations/${VAULT}/description`);
 });
 
@@ -874,7 +1010,7 @@ test("completes a name with a space in it", async () => {
   await fireEvent.input(typing(), { target: { value: "obsidian v" } });
   await fireEvent.keyDown(typing(), { key: "Tab" });
 
-  await screen.findByRole("button", { name: /create-file/ });
+  await described();
 });
 
 test("the destination leaves the line and reads in the chrome", async () => {
@@ -882,7 +1018,7 @@ test("the destination leaves the line and reads in the chrome", async () => {
 
   draw();
   await choose(/Vault/);
-  await screen.findByRole("button", { name: /create-file/ });
+  await described();
 
   expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe(
     "process · Vault",
@@ -925,7 +1061,7 @@ test("an unusable destination is not takeable by typing either", async () => {
   await fireEvent.input(typing(), { target: { value: "vau" } });
   await fireEvent.keyDown(typing(), { key: "Enter" });
 
-  expect(screen.queryByRole("button", { name: /create-file/ })).toBeNull();
+  expect(screen.queryByLabelText("directory")).toBeNull();
   expect(screen.getByRole("button", { name: /Vault/ })).toBeDefined();
 });
 
@@ -935,9 +1071,7 @@ test("the list still works, typing being an accelerator and not a replacement", 
   draw();
   await choose(/Vault/);
 
-  expect(
-    await screen.findByRole("button", { name: /create-file/ }),
-  ).toBeDefined();
+  expect(await screen.findByLabelText("directory")).toBeDefined();
 });
 
 /**
@@ -986,7 +1120,7 @@ test("an unreachable destination is still routable", async () => {
   });
 
   expect(await routed(transport)).toMatchObject({
-    capability: "create-or-append-file",
+    capability: "create-or-append",
     arguments: { path: "notes/decisions.md" },
   });
 });
@@ -1001,10 +1135,8 @@ test("a kind with no filesystem in it draws neither line nor tree", async () => 
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
 
-  expect(await screen.findByRole("button", { name: "inbox" })).toBeDefined();
-  expect(screen.queryByRole("combobox", { name: "directory" })).toBeNull();
+  expect(await screen.findByText("inbox/")).toBeDefined();
   expect(screen.queryByRole("listbox", { name: "places" })).toBeNull();
 });
 
@@ -1016,13 +1148,11 @@ test("the kind that draws the line settles what to do, with no do step", async (
   await choose(/Vault/);
 
   expect(await screen.findByRole("combobox", { name: "place" })).toBeDefined();
-  expect(
-    screen.queryByRole("button", { name: "create-or-append-file" }),
-  ).toBeNull();
+  expect(screen.queryByRole("button", { name: "create-or-append" })).toBeNull();
 });
 
-/** Its capabilities are its own, and nothing here can pick among them. */
-test("a kind that draws the browser still chooses what to do", async () => {
+/** One thing it can do is not a choice, so it is not one anybody is asked to make. */
+test("a kind that can do one thing settles it, with no do step", async () => {
   servingBrowsable(() => ({
     kind: "answered",
     entries: [{ label: "inbox", value: "inbox" }],
@@ -1032,9 +1162,309 @@ test("a kind that draws the browser still chooses what to do", async () => {
   draw();
   await choose(/Vault/);
 
-  expect(
-    await screen.findByRole("button", { name: "create-file" }),
-  ).toBeDefined();
+  expect(await screen.findByLabelText("directory")).toBeDefined();
+  expect(screen.queryByRole("button", { name: "create" })).toBeNull();
+});
+
+/**
+ * The browse behaves the way the typed line does, which is the whole point of
+ * it: one field, the answer under it, narrowed as it is typed into, `⇥` to
+ * finish a name and `↑↓⏎` to take one. What differs is that there are no
+ * segments — the whole field is the filter.
+ */
+const CHANNELS = [
+  { label: "Reading", value: "reading" },
+  { label: "Reading Notes", value: "reading-notes" },
+  { label: "Field Recordings", value: "field-recordings" },
+];
+
+async function browsingChannels() {
+  servingBrowsable(() => answered(CHANNELS));
+  draw();
+  await choose(/Vault/);
+  return (await screen.findByLabelText("directory")) as HTMLInputElement;
+}
+
+test("draws what the destination offers under the field", async () => {
+  await browsingChannels();
+
+  expect(await screen.findByText("Reading")).toBeDefined();
+  expect(screen.getByText("Field Recordings")).toBeDefined();
+});
+
+test("narrows what is drawn to what is typed", async () => {
+  const field = await browsingChannels();
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "read" } });
+
+  expect(screen.getByText("Reading")).toBeDefined();
+  expect(screen.getByText("Reading Notes")).toBeDefined();
+  expect(screen.queryByText("Field Recordings")).toBeNull();
+});
+
+/** A title is what a person types; a slug is what the field is sent with. */
+test("completes a title typed to the value the field holds", async () => {
+  const field = await browsingChannels();
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "Field" } });
+  await fireEvent.keyDown(field, { key: "Tab" });
+
+  expect(field.value).toBe("field-recordings");
+  // Still matched, so the one it resolved to stays under the field.
+  expect(screen.getByText("Field Recordings")).toBeDefined();
+});
+
+/** As far as the two slugs agree, in the spelling the field will be sent with. */
+test("completes only as far as several agree", async () => {
+  const field = await browsingChannels();
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "Readi" } });
+  await fireEvent.keyDown(field, { key: "Tab" });
+
+  expect(field.value).toBe("reading");
+});
+
+test("walks the narrowed list and takes the one it landed on", async () => {
+  const field = await browsingChannels();
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "read" } });
+  await fireEvent.keyDown(field, { key: "ArrowDown" });
+  await fireEvent.keyDown(field, { key: "ArrowDown" });
+  await fireEvent.keyDown(field, { key: "Enter" });
+
+  expect(field.value).toBe("reading-notes");
+});
+
+/** Left alone, `⏎` means route: walking is what makes it mean *take this one*. */
+test("commits where the walk has not moved", async () => {
+  const transport = servingBrowsable(() => answered(CHANNELS));
+  draw();
+  await choose(/Vault/);
+
+  const field = (await screen.findByLabelText("directory")) as HTMLInputElement;
+  await fireEvent.input(field, { target: { value: "reading" } });
+  await fireEvent.keyDown(field, { key: "Enter" });
+
+  await vi.waitFor(() => {
+    expect(sentTo(transport).map(routeOf)).toContain(
+      "POST /v1/items/one/route",
+    );
+  });
+});
+
+/**
+ * An account of two hundred channels is a wall of names nobody reads, so the
+ * list starts as a sample and the field above is the way through it.
+ */
+test("draws a handful of a long answer, and the rest when asked", async () => {
+  const many = Array.from({ length: 20 }, (_, index) => ({
+    label: `channel ${index}`,
+    value: `channel-${index}`,
+  }));
+  servingBrowsable(() => answered(many));
+  draw();
+  await choose(/Vault/);
+
+  await screen.findByText("channel 0");
+  expect(screen.getByText("channel 7")).toBeDefined();
+  expect(screen.queryByText("channel 8")).toBeNull();
+
+  await choose("12 more");
+
+  expect(await screen.findByText("channel 19")).toBeDefined();
+});
+
+test("narrowing gets there without asking for the rest", async () => {
+  const many = Array.from({ length: 20 }, (_, index) => ({
+    label: `channel ${index}`,
+    value: `channel-${index}`,
+  }));
+  servingBrowsable(() => answered(many));
+  draw();
+  await choose(/Vault/);
+  const field = (await screen.findByLabelText("directory")) as HTMLInputElement;
+  await screen.findByText("channel 0");
+
+  await fireEvent.input(field, { target: { value: "channel 19" } });
+
+  expect(await screen.findByText("channel 19")).toBeDefined();
+  expect(screen.queryByRole("button", { name: /more/ })).toBeNull();
+});
+
+/** The walk reaches what is drawn and no further: a row the eye cannot see is nowhere to go. */
+test("walks only what is drawn", async () => {
+  const many = Array.from({ length: 20 }, (_, index) => ({
+    label: `channel ${index}`,
+    value: `channel-${index}`,
+  }));
+  servingBrowsable(() => answered(many));
+  draw();
+  await choose(/Vault/);
+  const field = (await screen.findByLabelText("directory")) as HTMLInputElement;
+  await screen.findByText("channel 0");
+
+  await fireEvent.keyDown(field, { key: "ArrowUp" });
+  await fireEvent.keyDown(field, { key: "Enter" });
+
+  expect(field.value).toBe("channel-7");
+});
+
+/**
+ * The ask still goes out; what the cache buys is that the wait is filled with
+ * the answer from last time rather than with `loading…`.
+ */
+test("draws what it was told last time while it asks again", async () => {
+  let held = (): void => {};
+  const waiting = new Promise<void>((resolve) => {
+    held = resolve;
+  });
+  let asks = 0;
+
+  pool(async (request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "kanban" })] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE_ASKABLE] });
+    }
+    if (route.endsWith("/candidates")) {
+      asks += 1;
+      if (asks > 1) await waiting;
+      return json(200, answered([{ label: "inbox", value: "inbox" }]));
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  const first = draw();
+  await choose(/Vault/);
+  await screen.findByText("inbox");
+  cleanup();
+  void first;
+
+  // Second time round the answer never arrives, and the list is drawn anyway.
+  draw();
+  await choose(/Vault/);
+
+  expect(await screen.findByText("inbox")).toBeDefined();
+  expect(screen.queryByText("loading…")).toBeNull();
+  held();
+});
+
+/**
+ * A person reads titles and types one; the field is sent with the slug. Only at
+ * the moment the line is done being typed — never on a keystroke.
+ */
+test("resolves a title typed to the value it stands for, on commit", async () => {
+  const transport = servingBrowsable(() => answered(CHANNELS));
+  draw();
+  await choose(/Vault/);
+  const field = (await screen.findByLabelText("directory")) as HTMLInputElement;
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "Reading Notes" } });
+  // Still what was typed: resolving here would take the field off a person
+  // still writing.
+  expect(field.value).toBe("Reading Notes");
+
+  await fireEvent.keyDown(field, { key: "Enter" });
+
+  await vi.waitFor(async () => {
+    expect((await routed(transport)).arguments).toEqual({
+      directory: "reading-notes",
+    });
+  });
+});
+
+/**
+ * The gap that sent a half-typed title to are.na as a slug: `⇥` resolved it,
+ * committing without pressing `⇥` did not.
+ */
+test("resolves enough of a title that only one channel still matches", async () => {
+  const transport = servingBrowsable(() => answered(CHANNELS));
+  draw();
+  await choose(/Vault/);
+  const field = (await screen.findByLabelText("directory")) as HTMLInputElement;
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "Field" } });
+  await fireEvent.keyDown(field, { key: "Enter" });
+
+  await vi.waitFor(async () => {
+    expect((await routed(transport)).arguments).toEqual({
+      directory: "field-recordings",
+    });
+  });
+});
+
+test("resolves it on leaving the line too, so the pointer gets there as well", async () => {
+  servingBrowsable(() => answered(CHANNELS));
+  draw();
+  await choose(/Vault/);
+  const field = (await screen.findByLabelText("directory")) as HTMLInputElement;
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "field recordings" } });
+  await fireEvent.blur(field);
+
+  expect(field.value).toBe("field-recordings");
+});
+
+/** An answer is one page of what a destination holds, so not being in it is not being wrong. */
+test("leaves something it does not recognise exactly as written, and still routes", async () => {
+  const transport = servingBrowsable(() => answered(CHANNELS));
+  draw();
+  await choose(/Vault/);
+  const field = (await screen.findByLabelText("directory")) as HTMLInputElement;
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "12345" } });
+  await fireEvent.keyDown(field, { key: "Enter" });
+
+  await vi.waitFor(async () => {
+    expect((await routed(transport)).arguments).toEqual({ directory: "12345" });
+  });
+});
+
+test("says so where nothing typed matches, rather than drawing nothing", async () => {
+  const field = await browsingChannels();
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "zzz" } });
+
+  expect(await screen.findByText("nothing here matches")).toBeDefined();
+});
+
+/** Backspacing out of an empty field gives the destination back, as the line does. */
+test("gives the destination back from an empty field", async () => {
+  const field = await browsingChannels();
+
+  await fireEvent.keyDown(field, { key: "Backspace" });
+
+  expect(await screen.findByRole("button", { name: /Vault/ })).toBeDefined();
+});
+
+/** More than one and it is asked, its capabilities being its own to pick among. */
+test("a kind that draws the browser chooses among two", async () => {
+  serving([aDestination({ kind: "kanban" })], {
+    kind: "described",
+    capabilities: [CREATE, APPEND],
+  });
+
+  draw();
+  await choose(/Vault/);
+
+  expect(await screen.findByRole("button", { name: "create" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "append" })).toBeDefined();
+  // Nothing is picked for you, so no field is drawn until one is.
+  expect(screen.queryByLabelText("directory")).toBeNull();
+
+  await choose("create");
+  expect(await screen.findByLabelText("directory")).toBeDefined();
 });
 
 /** A composer you type into has to be one the caret is already in. */
@@ -1137,8 +1567,7 @@ test("hands the record it got back to whoever opened it", async () => {
   });
 
   await choose(/Vault/);
-  await choose(/append/);
-  await choose("route");
+  await commit();
 
   await vi.waitFor(() => {
     expect(routed).toHaveBeenCalled();
@@ -1167,8 +1596,7 @@ test("a refusal stays at the control, and the corner is left alone", async () =>
 
   const closed = draw();
   await choose(/Vault/);
-  await choose(/append/);
-  await choose("route");
+  await commit();
 
   await screen.findByText(/that destination needs different arguments/);
   expect(closed).not.toHaveBeenCalled();
@@ -1180,7 +1608,6 @@ test("shows what would be written only when it is asked for", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
@@ -1201,7 +1628,6 @@ test("drops what was shown when the decision under it changes", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
   const directory = await screen.findByLabelText("directory");
   await fireEvent.input(directory, { target: { value: "inbox" } });
   await choose("preview");
@@ -1222,7 +1648,7 @@ test("drops a preview that resolves after the decision moved on", async () => {
       return json(200, { values: [aDestination()] });
     }
     if (route.endsWith("/description")) {
-      return json(200, { kind: "described", capabilities: [CREATE_FILE] });
+      return json(200, { kind: "described", capabilities: [CREATE] });
     }
     if (route === "POST /v1/items/one/route/preview") {
       return new Promise<Response>((resolve) => (release = resolve));
@@ -1232,7 +1658,6 @@ test("drops a preview that resolves after the decision moved on", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
   const directory = await screen.findByLabelText("directory");
   await fireEvent.input(directory, { target: { value: "inbox" } });
   await choose("preview");
@@ -1267,7 +1692,6 @@ test("says what a preview would write that it cannot show", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
@@ -1284,7 +1708,7 @@ test("clears a failed preview's message when the next one succeeds", async () =>
       return json(200, { values: [aDestination()] });
     }
     if (route.endsWith("/description")) {
-      return json(200, { kind: "described", capabilities: [CREATE_FILE] });
+      return json(200, { kind: "described", capabilities: [CREATE] });
     }
     if (route === "POST /v1/items/one/route/preview") {
       if (fail) {
@@ -1307,7 +1731,6 @@ test("clears a failed preview's message when the next one succeeds", async () =>
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
@@ -1329,7 +1752,6 @@ test("draws a kind that offers no preview as such, and still routes", async () =
 
   const closed = draw();
   await choose(/Vault/);
-  await choose(/create-file/);
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
@@ -1337,7 +1759,7 @@ test("draws a kind that offers no preview as such, and still routes", async () =
 
   expect(await screen.findByText(NO_PREVIEW_OFFERED)).toBeDefined();
 
-  await choose("route");
+  await commit();
   await vi.waitFor(() => {
     expect(closed).toHaveBeenCalled();
   });
@@ -1351,7 +1773,6 @@ test("says a destination that could not be reached, and routing is still availab
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
@@ -1702,7 +2123,7 @@ test("esc gives the destination back before it closes the composer", async () =>
   const closed = draw();
 
   await choose(/Vault/);
-  await screen.findByRole("button", { name: /create-file/ });
+  await described();
 
   await fireEvent.keyDown(window, { key: "Escape" });
 

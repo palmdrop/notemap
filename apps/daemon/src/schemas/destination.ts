@@ -47,6 +47,12 @@ export const candidateEntrySchema = z
     value: z.unknown().optional(),
     /** Absent where the destination has nothing further to offer past this entry. */
     scope: z.string().optional(),
+    /**
+     * The same thing under a name that survives being renamed, where the
+     * destination has two for it. Absent where `value` is already the lasting
+     * one, which is the ordinary case.
+     */
+    durable: z.unknown().optional(),
   })
   .openapi("CandidateEntry");
 

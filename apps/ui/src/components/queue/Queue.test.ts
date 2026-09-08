@@ -698,8 +698,15 @@ test("a routing says where it went, and which capture it was", async () => {
 
   await process();
   await fireEvent.click(await screen.findByRole("button", { name: /Vault/ }));
-  await fireEvent.click(await screen.findByRole("button", { name: /append/ }));
-  await fireEvent.click(screen.getByRole("button", { name: "route" }));
+  // Disabled for the tick between the description landing and its one
+  // capability being settled, so this waits rather than clicking into nothing.
+  const commit = screen.getByRole("button", {
+    name: "route",
+  }) as HTMLButtonElement;
+  await vi.waitFor(() => {
+    expect(commit.disabled).toBe(false);
+  });
+  await fireEvent.click(commit);
 
   await vi.waitFor(() => {
     expect(notices.shown).toHaveLength(1);
@@ -765,8 +772,15 @@ test("a routing the pool has not carried out says it is retrying", async () => {
 
   await process();
   await fireEvent.click(await screen.findByRole("button", { name: /Vault/ }));
-  await fireEvent.click(await screen.findByRole("button", { name: /append/ }));
-  await fireEvent.click(screen.getByRole("button", { name: "route" }));
+  // Disabled for the tick between the description landing and its one
+  // capability being settled, so this waits rather than clicking into nothing.
+  const commit = screen.getByRole("button", {
+    name: "route",
+  }) as HTMLButtonElement;
+  await vi.waitFor(() => {
+    expect(commit.disabled).toBe(false);
+  });
+  await fireEvent.click(commit);
 
   await vi.waitFor(() => {
     expect(notices.shown[0]?.what).toBe("retrying · Vault");
@@ -835,8 +849,15 @@ test("a routed row is watched out from where it stood", async () => {
   await open(1);
   await process();
   await fireEvent.click(await screen.findByRole("button", { name: /Vault/ }));
-  await fireEvent.click(await screen.findByRole("button", { name: /append/ }));
-  await fireEvent.click(screen.getByRole("button", { name: "route" }));
+  // Disabled for the tick between the description landing and its one
+  // capability being settled, so this waits rather than clicking into nothing.
+  const commit = screen.getByRole("button", {
+    name: "route",
+  }) as HTMLButtonElement;
+  await vi.waitFor(() => {
+    expect(commit.disabled).toBe(false);
+  });
+  await fireEvent.click(commit);
 
   const word = await screen.findByText("routed");
 

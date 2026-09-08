@@ -6,7 +6,7 @@ assets beside the note under the names they were uploaded with.
 
 ## The two capabilities
 
-`create-file` targets `{ directory, filename? }`.
+`create` targets `{ directory, filename? }`.
 
 `directory` is required and may be empty, which names the root itself. `filename` is optional
 because a person filing one item often wants to name the note and a person clearing a queue does
@@ -19,7 +19,7 @@ A filename that is given is used as written, resolved under `directory`. Nothing
 a name with no extension gets no `.md`, because guessing at somebody's file naming is the kind of
 help nobody asked for.
 
-`append-to-file` targets `{ path, heading? }`.
+`append` targets `{ path, heading? }`.
 
 The fragment lands at the end of the named heading's section, or at the end of the file when no
 heading is named. **A heading that is not there is written**, and so is the file: the motivating
@@ -29,16 +29,24 @@ An appended fragment carries **no frontmatter** — it is going into somebody el
 its own. A file this adapter creates because it was missing gets the frontmatter, since the whole
 file is then ours.
 
+Whether there is any is the `frontmatter` setting — `full` or `none`, unset meaning none — which
+each capability takes as an argument of the same name to override for one delivery. A note written
+without it carries no id and no `derived_from`, so nothing traces it back but the routing record.
+
 ## What it will not do
 
 - **Nothing escapes the root.** A target is resolved and compared against the root's real path,
   rather than inspected for `..`; and the deepest part of the path that exists is read back through
   the filesystem, so a symlink pointing out is caught as well. An absolute target, any arrangement
   of `..`, and a link out of the vault are all refused.
-- **Nothing is overwritten.** A note whose name is taken is refused. An asset whose name is taken —
-  by another asset in the same delivery, or by a file the vault already had — is written under
-  `name-1`, `name-2`, and so on, keeping the extension. A file is created with `link` rather than
-  `rename` precisely because `link` refuses an existing name where `rename` replaces it silently.
+- **Nothing is overwritten.** A note whose name is taken is refused — the kernel answers `EEXIST`
+  rather than this adapter looking first, so two creates racing leave one note and one refusal.
+  That is this kind's promise and not `create`'s: the capability says a new thing rather than an
+  addition to one, and a kind whose protocol offers no conditional create cannot promise more. An
+  asset whose name is taken — by another asset in the same delivery, or by a file the vault already
+  had — is written under `name-1`, `name-2`, and so on, keeping the extension. A file is created
+  with `link` rather than `rename` precisely because `link` refuses an existing name where `rename`
+  replaces it silently.
 - **A partial file is never visible.** Everything is written to a temporary file in the target's own
   directory, synced, and then linked or renamed into place.
 - **A symlink is never replaced.** Appending resolves the target first, so a note that is a link

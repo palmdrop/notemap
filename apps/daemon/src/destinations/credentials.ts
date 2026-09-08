@@ -3,17 +3,14 @@ import { readFile } from "node:fs/promises";
 import type { Account } from "../config/load";
 
 /**
- * An account resolved whole, as an adapter is handed it. Reading config and
- * secrets is the host's, and this is the whole of what it does with them: no
- * kind is named here, and nothing is decided about the address.
+ * An account as its kind's schema saw it, with the secret read. What the
+ * adapter does with it is its own: reading config and secrets is the host's,
+ * and this is the whole of what it does with them — no kind is named here, and
+ * nothing is decided about the address.
  */
-export type ResolvedAccount = {
-  readonly baseUrl: string;
-  readonly username: string;
-  readonly password: string;
-};
+export type HeldAccount = Account & { readonly secret: string };
 
-export type AccountResolver = (name: string) => Promise<ResolvedAccount>;
+export type AccountResolver = (name: string) => Promise<HeldAccount>;
 
 /**
  * The accounts of one kind, by name. The secret is read when a delivery asks
@@ -32,59 +29,61 @@ export function accountsFor(
       .map((account) => [account.name, account]),
   );
 
-  return async (name: string): Promise<ResolvedAccount> => {
+  return async (name: string): Promise<HeldAccount> => {
     const account = byName.get(name);
     if (account === undefined) {
       throw new Error(`no ${kind} account named ${name} is configured`);
     }
 
-    return {
-      baseUrl: account.baseUrl,
-      username: account.username,
-      password: await secretOf(account, env),
-    };
+    return { ...account, secret: await secretOf(account, env) };
   };
 }
 
-async function secretOf(
+/**
+ * Wherever the account said, in whichever word its kind uses for a secret. The
+ * suffix is what this reads: config refused an account that names neither, and
+ * one that names both.
+ */
+export async function secretOf(
   account: Account,
-  env: NodeJS.ProcessEnv,
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<string> {
-  if (account.passwordEnv !== undefined) {
-    const value = env[account.passwordEnv];
+  const at = `the ${account.kind} account ${account.name}`;
+  const [key, held] = sourceOf(account, at);
+
+  if (key.endsWith("Env")) {
+    const value = env[held];
     if (value === undefined || value === "") {
-      throw new Error(
-        `${account.passwordEnv} holds no password for the ${account.kind} account ${account.name}`,
-      );
+      throw new Error(`${held} holds no secret for ${at}`);
     }
     return value;
   }
 
-  const path = account.passwordFile;
-  if (path === undefined) {
-    // Unreachable: the config refuses an account naming neither.
-    throw new Error(
-      `the ${account.kind} account ${account.name} says where no password is read from`,
-    );
-  }
-
   let contents: string;
   try {
-    contents = await readFile(path, "utf8");
+    contents = await readFile(held, "utf8");
   } catch (cause) {
     throw new Error(
-      `the password for the ${account.kind} account ${account.name} could not be read from ${path}: ${why(cause)}`,
+      `the secret for ${at} could not be read from ${held}: ${why(cause)}`,
       { cause },
     );
   }
 
-  const password = withoutFinalNewline(contents);
-  if (password === "") {
-    throw new Error(
-      `${path} is empty, so the ${account.kind} account ${account.name} has no password`,
-    );
+  const secret = withoutFinalNewline(contents);
+  if (secret === "") {
+    throw new Error(`${held} is empty, so ${at} has no secret`);
   }
-  return password;
+  return secret;
+}
+
+function sourceOf(account: Account, at: string): [string, string] {
+  for (const [key, value] of Object.entries(account)) {
+    if (!key.endsWith("File") && !key.endsWith("Env")) continue;
+    if (typeof value === "string") return [key, value];
+  }
+
+  // Unreachable: the config refuses an account naming no source.
+  throw new Error(`${at} says where no secret is read from`);
 }
 
 /**

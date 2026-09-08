@@ -3,13 +3,14 @@
  * are the wire's and are what a rule is written against, so one this shell has
  * never heard of is said by its name rather than not said at all.
  *
- * `create-or-append-file` names both acts because it is both until the adapter
- * reaches the vault, and nothing it reports back says which it turned out to be.
+ * `create-or-append` names both acts because it is both until the adapter
+ * reaches the destination, and nothing it reports back says which it turned out
+ * to be.
  */
 const DID: Record<string, string> = {
-  "create-file": "Created a note",
-  "append-to-file": "Appended to a note",
-  "create-or-append-file": "Created or appended to a note",
+  create: "Created",
+  append: "Appended",
+  "create-or-append": "Created or appended",
 };
 
 export function didWhat(capability: string): string {

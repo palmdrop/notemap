@@ -8,6 +8,7 @@ import { z } from "zod";
 import type {
   Duration,
   EnrichmentName,
+  JsonObject,
   JsonSchema,
   PayloadTypeName,
   PoolConfig,
@@ -47,26 +48,18 @@ export type SweepConfig = {
 };
 
 /**
- * One account a credential-holding destination kind may be pointed at: which
- * kind speaks to it, the collection it is rooted in, who is reaching it, and
- * where the secret is read from. The base URL travels with the secret rather
- * than being a destination's field, so nothing created over `/v1` can aim the
- * daemon somewhere else with the credential attached.
- *
- * Not named after any one kind: the daemon reads accounts and secrets, and
- * which kind an account is for is a string it passes on rather than a branch it
- * takes.
+ * One account a credential-holding destination kind may be pointed at, as its
+ * block was written. What an account of a given kind must carry beyond a kind
+ * and a name is that kind's own, declared by its adapter and checked against
+ * that schema when the daemon starts; nothing here knows an address from a
+ * username. An address travels with the secret rather than being a
+ * destination's field, so nothing created over `/v1` can aim the daemon
+ * somewhere else with the credential attached.
  */
-export type Account = {
+export type Account = JsonObject & {
   /** The destination kind that speaks to it, which is how an adapter finds its own. */
   readonly kind: string;
   readonly name: string;
-  /** The collection the account is rooted at, without a trailing slash. */
-  readonly baseUrl: string;
-  readonly username: string;
-  /** Exactly one of these two. The secret is read when a delivery needs it. */
-  readonly passwordFile?: string;
-  readonly passwordEnv?: string;
 };
 
 export type DaemonConfig = {
@@ -155,19 +148,14 @@ const fileSchema = z.object({
       batch: z.number().int().positive().optional(),
     })
     .optional(),
+  // Everything past `kind` and `name` is the kind's, so nothing is stripped
+  // here: a key this file dropped would be a key the kind's own schema never
+  // sees, and the daemon would start with a credential nobody checked.
   accounts: z
     .array(
-      z.object({
+      z.looseObject({
         kind: z.string().min(1),
         name: z.string().min(1),
-        baseUrl: z.string().url(),
-        username: z.string().min(1),
-        passwordFile: z.string().min(1).optional(),
-        passwordEnv: z.string().min(1).optional(),
-        // Known so it can be refused by name rather than dropped as an
-        // unrecognised key, which would start a daemon with no credential and
-        // a warning nobody reads.
-        password: z.string().optional(),
       }),
     )
     .default([]),
@@ -360,19 +348,20 @@ function readAccounts(
   return accounts.map((account) => {
     const at = `${from}: the ${account.kind} account ${account.name}`;
 
-    if (account.password !== undefined) {
+    const inline = INLINE_SECRETS.filter((key) => account[key] !== undefined);
+    if (inline.length > 0) {
       throw new Error(
-        `${at} sets password inline, which puts a secret in a file that is backed up and pasted into issues. Use passwordFile or passwordEnv.`,
+        `${at} sets ${inline[0]} inline, which puts a secret in a file that is backed up and pasted into issues. Use ${inline[0]}File or ${inline[0]}Env.`,
       );
     }
-    if (
-      (account.passwordFile === undefined) ===
-      (account.passwordEnv === undefined)
-    ) {
+
+    const sources = Object.keys(account).filter(isSecretSource);
+    if (sources.length !== 1) {
       throw new Error(
-        `${at} must set exactly one of passwordFile and passwordEnv`,
+        `${at} must say where its secret is read from, in exactly one key ending in File or Env`,
       );
     }
+
     if (seen.has(`${account.kind}\u0000${account.name}`)) {
       throw new Error(
         `${at} is declared twice, and a destination of that kind names one by name`,
@@ -380,30 +369,50 @@ function readAccounts(
     }
     seen.add(`${account.kind}\u0000${account.name}`);
 
-    const url = new URL(account.baseUrl);
-    if (url.protocol !== "https:" && url.protocol !== "http:") {
+    const source = sources[0] as string;
+    const held = account[source];
+    if (typeof held !== "string" || held === "") {
       throw new Error(
-        `${at} is reached over ${url.protocol}, and an account is reached over http or https`,
+        `${at} sets ${source} to something that is not a path or a variable name`,
       );
     }
 
     return {
-      kind: account.kind,
-      name: account.name,
-      baseUrl: account.baseUrl.replace(/\/+$/, ""),
-      username: account.username,
+      ...account,
       // `~` and a relative path mean here what they mean for every other path
       // in this file: a secret named `~/.config/…` is the one in a home
       // directory, not a directory called `~` beside the daemon.
-      ...(account.passwordFile === undefined
-        ? {}
-        : { passwordFile: resolve(expandHome(account.passwordFile)) }),
-      ...(account.passwordEnv === undefined
-        ? {}
-        : { passwordEnv: account.passwordEnv }),
-    };
+      [source]: source.endsWith(FILE) ? resolve(expandHome(held)) : held,
+    } as Account;
   });
 }
+
+/**
+ * A key naming where a secret is read from, whatever the kind calls the secret
+ * — `passwordFile` for a login, `secretEnv` for a bearer token. The suffix is
+ * the whole of the convention: which word precedes it is the kind's, and this
+ * file has no business knowing it.
+ */
+const FILE = "File";
+const ENV = "Env";
+
+/** A stem is required either side of the suffix, so the bare words are not sources. */
+export function isSecretSource(key: string): boolean {
+  if (key.endsWith(FILE)) return key.length > FILE.length;
+  return key.endsWith(ENV) && key.length > ENV.length;
+}
+
+/**
+ * The stems, spelt bare. Known so one can be refused by name rather than
+ * carried along as a key some kind's schema will reject in different words —
+ * the point is to say *why* it is wrong, not only that it is.
+ */
+const INLINE_SECRETS: readonly string[] = [
+  "password",
+  "secret",
+  "token",
+  "apiKey",
+];
 
 /**
  * Refused here rather than at the first capture that needs it: a zone nobody

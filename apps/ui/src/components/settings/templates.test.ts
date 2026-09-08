@@ -12,8 +12,8 @@ vi.mock("$lib/client", () => import("$testing/pool"));
 const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
 const RESEARCH = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a80";
 
-const CREATE_FILE = {
-  name: "create-file",
+const CREATE = {
+  name: "create",
   accepts: ["text"],
   argumentsSchema: {
     type: "object",
@@ -41,7 +41,7 @@ function aTemplate(overrides: Record<string, unknown> = {}) {
     id: RESEARCH,
     name: "research",
     destination: VAULT,
-    capability: "create-file",
+    capability: "create",
     arguments: { directory: "research/{{captured_at}}" },
     folder: "create",
     triggerTag: "route/research",
@@ -65,7 +65,7 @@ function serving(
     }
     if (route.endsWith("/report")) return json(200, report);
     if (route.endsWith("/description")) {
-      return json(200, { kind: "described", capabilities: [CREATE_FILE] });
+      return json(200, { kind: "described", capabilities: [CREATE] });
     }
     if (route === "POST /v1/templates") return json(201, aTemplate());
     if (route === `DELETE /v1/templates/${RESEARCH}`) {
@@ -80,6 +80,10 @@ function serving(
 
 const open = async (name: string | RegExp) =>
   fireEvent.click(await screen.findByRole("button", { name }));
+
+/** What a fact says, read off its own label: two facts may hold one word. */
+const said = async (fact: string) =>
+  (await screen.findByText(fact)).nextElementSibling?.textContent?.trim();
 
 test("draws each template with its tag, its place and what it last answered", async () => {
   serving([aTemplate()]);
@@ -149,7 +153,9 @@ test("opening one says what it does, into what, and how much it has", async () =
   render(Templates);
   await open(/research/);
 
-  expect(await screen.findByText("create-file")).toBeTruthy();
+  // By the fact it sits under: `create` is the capability here and a folder
+  // mode two rows down, and a bare text query cannot tell them apart.
+  expect(await said("action")).toBe("create");
   expect(screen.getByText(/4 items/)).toBeTruthy();
 });
 
@@ -176,7 +182,7 @@ test("makes one from the form, and the arguments are typed as patterns", async (
   expect(await sent()).toContainEqual({
     name: "Research links",
     destination: VAULT,
-    capability: "create-file",
+    capability: "create",
     arguments: { directory: "research/{{captured_at}}" },
     folder: "create",
     triggerTag: "route/research",
@@ -191,7 +197,7 @@ test("says what the pool refused about a pattern, where it was typed", async () 
     }
     if (route === "GET /v1/templates") return json(200, { values: [] });
     if (route.endsWith("/description")) {
-      return json(200, { kind: "described", capabilities: [CREATE_FILE] });
+      return json(200, { kind: "described", capabilities: [CREATE] });
     }
     if (route === "POST /v1/templates") {
       return json(422, {
@@ -354,7 +360,7 @@ test("the folder mode is chosen rather than only read", async () => {
   expect(await sent()).toContainEqual({
     name: "Research links",
     destination: VAULT,
-    capability: "create-file",
+    capability: "create",
     arguments: { directory: "research" },
     folder: "establish",
   });
@@ -366,11 +372,13 @@ test("editing draws the form alone, not the template beside it", async () => {
 
   render(Templates);
   await open(/research/);
-  expect(await screen.findByText("create-file")).toBeTruthy();
+  expect(await said("action")).toBe("create");
 
   await open("Edit");
 
-  expect(screen.queryByText("create-file")).toBeNull();
+  // A fact the form has no counterpart for; `action` and `folder` are both
+  // words the form uses too.
+  expect(screen.queryByText("fired")).toBeNull();
   expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
   expect(await screen.findByLabelText("name")).toBeTruthy();
 });
@@ -407,6 +415,7 @@ const PUBLISH = {
         type: "string",
         title: "channel",
         "x-notemap-candidates": true,
+        "x-notemap-offered-only": true,
       },
     },
   },
@@ -439,8 +448,10 @@ test("asks the destination what a browsable field could hold, and offers it", as
   render(Templates);
   await open(/Make a template/);
 
-  await screen.findByRole("button", { name: "reading" });
-  expect(screen.getByRole("button", { name: "field recordings" })).toBeTruthy();
+  // Rows rather than buttons now, as the typed line's are, so `↑↓` can walk
+  // them without moving focus off the field.
+  await screen.findByText("reading");
+  expect(screen.getByText("field recordings")).toBeTruthy();
 });
 
 test("taking one fills the field, and the field is still typed into", async () => {
@@ -448,7 +459,7 @@ test("taking one fills the field, and the field is still typed into", async () =
 
   render(Templates);
   await open(/Make a template/);
-  await open("reading");
+  await fireEvent.mouseDown(await screen.findByText("reading"));
 
   const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
   expect(field.value).toBe("reading");
@@ -457,6 +468,52 @@ test("taking one fills the field, and the field is still typed into", async () =
   // written are the same field: a template's value may hold a pattern.
   await fireEvent.input(field, { target: { value: "{{source}}" } });
   expect(field.value).toBe("{{source}}");
+});
+
+/**
+ * A template fires on a tag for months, and an are.na slug does not survive a
+ * retitle — so the browse hands this form the name that does.
+ */
+test("takes the form of a value that survives a rename", async () => {
+  servingChannels([{ label: "reading", value: "reading", durable: "12345" }]);
+
+  render(Templates);
+  await open(/Make a template/);
+  await fireEvent.mouseDown(await screen.findByText("reading"));
+
+  expect((await screen.findByLabelText("channel")) as HTMLInputElement).toEqual(
+    expect.objectContaining({ value: "12345" }),
+  );
+});
+
+/** Typed rather than taken, and it lands on the same lasting name. */
+test("resolves a title typed to the form that survives a rename", async () => {
+  servingChannels([{ label: "reading", value: "reading", durable: "12345" }]);
+
+  render(Templates);
+  await open(/Make a template/);
+  const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
+  // The answer has to be in before a title can be resolved against it.
+  await screen.findByText("reading");
+
+  await fireEvent.input(field, { target: { value: "reading" } });
+  await fireEvent.blur(field);
+
+  expect(field.value).toBe("12345");
+});
+
+/**
+ * A channel is joined, not made: a pattern expanded into the field would name a
+ * channel nobody has, so the vocabulary is not offered beside it.
+ */
+test("offers no patterns where every typed field may hold only what is offered", async () => {
+  servingChannels([{ label: "reading", value: "reading" }]);
+
+  render(Templates);
+  await open(/Make a template/);
+  await screen.findByLabelText("channel");
+
+  expect(screen.queryByText(/\{\{captured_at\}\}/)).toBeNull();
 });
 
 test("a destination that cannot be asked leaves the field typable", async () => {

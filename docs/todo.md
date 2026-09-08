@@ -25,7 +25,7 @@
   left of this line is the obsidian end. The "advertise
   folders" half closed 2026-08-31: the destination port can be asked what an argument could hold
   ([ADR 26](adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md)), and the
-  filesystem kind answers it for `create-file` and `append-to-file`. Still open: **custom tags that
+  filesystem kind answers it for `create` and `append`. Still open: **custom tags that
   exist for auto-routing** — the port can now answer this too, since a vault's tags are just another
   field's candidates, but no kind implements it, obsidian tags being read from the notes themselves
   rather than declared anywhere a filesystem adapter can see.
@@ -57,7 +57,7 @@
 - [ ] Conversion - changing or formatting an item on routing, for example, making an item a piece of a TODO list. Called conversion rather than a routing template since 2026-09-05: a **routing template** is now a saved routing decision, and the two were sharing a word.
   - AI conversions, where a local model formats an entry that may or may not be properly formatted
   - Shape settled in [ADR 19](adr/0019-a-destination-converts-and-the-delivery-records-what-went.md): the destination converts a copy, the work happens inside the delivery, and the bytes that landed come back to be stored on the routing record. Open: whether a conversion is configured in the delivery's arguments or in destination config, and whether one is itself a thing a person edits.
-- [ ] A name that is taken - a capability that creates a file refuses a name that already exists, which is right and is not the whole answer. A template filing daily notes as `{{captured_at}}.md` collides on the second capture of the day: nothing is written, nothing is filed, and the item comes back to the queue. Raised 2026-09-07 from using the routing templates slice. Two answers, and they are not exclusive: `create-or-append-file` is what a daily note wants and the template that collided was pointed at the wrong capability, which the settings page could say; and a **collision policy** on the file capabilities — refuse, or append a number — which is an argument the adapters would declare and core would never interpret. The second wants its own slice and probably an ADR: it adds a word to an adapter's argument vocabulary, and it is useful to a decision made by hand as much as to a template.
+- [ ] A name that is taken - a capability that creates a file refuses a name that already exists, which is right and is not the whole answer. A template filing daily notes as `{{captured_at}}.md` collides on the second capture of the day: nothing is written, nothing is filed, and the item comes back to the queue. Raised 2026-09-07 from using the routing templates slice. Two answers, and they are not exclusive: `create-or-append` is what a daily note wants and the template that collided was pointed at the wrong capability, which the settings page could say; and a **collision policy** on the file capabilities — refuse, or append a number — which is an argument the adapters would declare and core would never interpret. The second wants its own slice and probably an ADR: it adds a word to an adapter's argument vocabulary, and it is useful to a decision made by hand as much as to a template.
 - [ ] Routing edits - being able to freely edit an item as it is routed. Settled: **amend, then route**, two operations that already exist - a frontend can make it one smooth gesture with no new architecture. Rewriting the capture _because of where it is going_ is a dead end, and ADR 19 records why so it does not get proposed again. Open no longer, as of 2026-08-24: the amendment stands, because it was an amendment of an
   unprocessed item and the routing that sealed it never landed. Cancelling the reservation removes
   it, so the item is unprocessed again and editable in place again — unless something was revised
@@ -178,3 +178,23 @@
   draws it verbatim behind the interface a renderer will sit in. A library choice, and the question
   it drags in with it: whether captured markdown is sanitised before rendering, since a capture can
   carry raw HTML and nothing between the field and the screen would stop it.
+- [x] **A browse is navigated entirely by scrolling.** Raised 2026-09-07 while designing the are.na
+  destination, and closed 2026-09-08: `CandidateBrowser` now narrows what it draws to what the field
+  holds, completes on `⇥` to the value rather than the label, and walks with `↑↓⏎` — the shape the
+  typed line already had, without the hierarchy. Capping a long answer and saying so is still the
+  destination's `truncated`, which this draws. Still open past that: an answer with no useful prefix
+  is a scroll, so **substring** matching rather than prefix is the next move if one turns up.
+- [ ] **The shell picks a browse control by destination kind name.**
+  `apps/ui/src/lib/candidate-browsers.ts` maps `filesystem` and `webdav` to the typed line and
+  everything else to the flat one, so a third filesystem-like kind needs a UI edit to get the tree —
+  which is the shell knowing about particular destinations, the thing the adapter seam exists to
+  prevent. Raised 2026-09-08 while making the flat browse typeable.
+
+  Inferring it from the answer does not work: the line has to know **before the first answer** that
+  values are `/`-separated, because the level-per-segment asks, the forecast and the `+ folder` for
+  what is not there yet all read the path apart. That is a property of the field, not of what came
+  back. So the fix is to let the schema say it — `x-notemap-candidates` carrying a shape
+  (`"path"` | `"flat"`) rather than `true`, adapter-declared and core-uninterpreted, exactly as
+  every other annotation is. It changes an annotation that has already shipped and that
+  `docs/specs/shell.md` and [ADR 26](adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md)
+  both describe, so it wants an ADR and a migration of the three kinds that declare it.

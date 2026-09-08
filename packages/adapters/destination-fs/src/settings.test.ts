@@ -28,6 +28,14 @@ describe("the settings a filesystem destination publishes", () => {
     expect(issues({ root: "" })).toEqual(["/root minLength"]);
   });
 
+  it("accepts a frontmatter mode, and never requires one", () => {
+    expect(issues({ root: "~/notes", frontmatter: "full" })).toEqual([]);
+    expect(issues({ root: "~/notes", frontmatter: "none" })).toEqual([]);
+    expect(issues({ root: "~/notes", frontmatter: "some" })).toEqual([
+      "/frontmatter enum",
+    ]);
+  });
+
   it("refuses a key it does not know, rather than ignoring it", () => {
     expect(issues({ root: "~/notes", depth: 2 })).toEqual([
       "/depth additionalProperties",
@@ -50,10 +58,22 @@ describe("reading settings back off a row", () => {
     });
   });
 
+  it("reads a frontmatter mode where one is set, and nothing where none is", () => {
+    expect(
+      asFilesystemSettings({ root: "~/notes", frontmatter: "full" }),
+    ).toEqual({ root: "~/notes", frontmatter: "full" });
+    expect(asFilesystemSettings({ root: "~/notes" })).not.toHaveProperty(
+      "frontmatter",
+    );
+  });
+
   it("refuses everything the schema refuses", () => {
     expect(asFilesystemSettings({})).toBeUndefined();
     expect(asFilesystemSettings({ root: "" })).toBeUndefined();
     expect(asFilesystemSettings({ root: 3 })).toBeUndefined();
+    expect(
+      asFilesystemSettings({ root: "~/notes", frontmatter: "some" }),
+    ).toBeUndefined();
   });
 });
 

@@ -47,7 +47,7 @@ async function create(
   return send(host.app, "/v1/templates", {
     name: overrides.name ?? "Research links",
     destination,
-    capability: overrides.capability ?? "create-or-append-file",
+    capability: overrides.capability ?? "create-or-append",
     arguments: overrides.arguments ?? { path: "research/{{captured_at}}.md" },
     ...(overrides.folder === undefined ? {} : { folder: overrides.folder }),
     ...(overrides.triggerTag === undefined
@@ -85,7 +85,7 @@ describe("the templates a pool holds", () => {
     expect(made).toMatchObject({
       name: "Research links",
       destination,
-      capability: "create-or-append-file",
+      capability: "create-or-append",
       arguments: { path: "research/{{captured_at}}.md" },
       folder: "create",
     });
@@ -243,7 +243,7 @@ describe("routing an item from a template", () => {
     expect(response.status).toBe(200);
     expect(await body(response)).toMatchObject({
       destination,
-      capability: "create-or-append-file",
+      capability: "create-or-append",
       arguments: { path: "research/2026-08-08.md" },
     });
   });
@@ -291,7 +291,7 @@ describe("routing an item from a template", () => {
 
     const response = await send(host.app, `/v1/items/${String(item)}/route`, {
       destination,
-      capability: "create-file",
+      capability: "create",
       arguments: { directory: "inbox", filename: "a-thought.md" },
     });
 

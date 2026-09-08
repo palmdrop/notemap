@@ -377,7 +377,7 @@ test("reads a row's records only once it is opened", async () => {
             target: {
               kind: "destination",
               destination: "vault-1",
-              capability: "create-file",
+              capability: "create",
               arguments: {},
             },
             state: "delivered",

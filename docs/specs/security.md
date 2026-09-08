@@ -1,8 +1,20 @@
 # Spec: What is undefended
 
 **Status**: Draft
-**Last updated**: 2026-09-01
+**Last updated**: 2026-09-08
 **Shipped**:
+
+- 2026-09-08 — **An account's shape becomes its kind's, and the daemon writes to one address it was
+  not configured with.** Each adapter publishes an account schema and the daemon validates every
+  `[[accounts]]` block against its kind's at startup, refusing to run on one that fails; what stays
+  in the config reader holds for every kind — no inline secret, exactly one source for it, no two
+  under one kind and name. Nothing about the property changes: no secret reaches core, the pool, the
+  mirror or an API answer. The are.na kind streams an asset to a **presigned URL the service names
+  at runtime**, which is the first write to an address that is not in `config.toml`; no notemap
+  credential is attached to it, the address comes from an authenticated answer rather than from
+  anything `/v1` accepts, and a redirect from it is not followed.
+  ([plan](../plans/arena-destination.md),
+  [ADR 40](../adr/0040-a-destination-kind-declares-the-shape-of-its-own-account.md))
 
 - 2026-09-01 — **The first destination kind that holds a credential, and it holds neither the
   credential nor the address.** The rule written ahead of it is satisfied by taking both out of
@@ -317,10 +329,29 @@ VLAN, a tunnel and a mesh interface all look like the open internet from here �
 operator's call, made in a file only they can write, and the daemon's job is that nobody makes it
 unknowingly.
 
-What is still fatal is the file being wrong rather than an account being exposed: an inline
-`password`, two profiles under one name, a scheme this does not speak. And the warning is a warning
-about the *transport*; nothing about it relaxes the rule above, which is that the secret and the
-address are the host's and never a destination's.
+What is still fatal is the file being wrong rather than an account being exposed: an inline secret,
+two profiles under one name, an account that does not fit the shape its kind declares. And the
+warning is a warning about the *transport*; nothing about it relaxes the rule above, which is that
+the secret and the address are the host's and never a destination's.
+
+**What an account of a given kind must carry is that kind's own** (narrowed 2026-09-08,
+[ADR 40](../adr/0040-a-destination-kind-declares-the-shape-of-its-own-account.md)). The three
+fields above are Basic authentication's shape, and are.na has none of them: a bearer token, no
+username, and an address that is a constant of the service. So each adapter publishes an account
+schema, the daemon validates every block against its kind's at startup and refuses to run on one
+that fails, and the checks left in the config reader are the ones that hold for every kind — no
+inline secret, exactly one source for it, no two accounts under one kind and name. Nothing about
+the property changes: neither core nor the pool ever holds a secret, and an account schema is not
+published over `/v1`.
+
+**A destination may send an item's bytes to an address the service names at runtime**
+(added 2026-09-08). The are.na kind asks for a presigned upload URL and streams the asset to it,
+which is the first time the daemon writes to an address that is not in `config.toml`. It is not the
+threat ADR 28 closed: the address comes from an authenticated answer rather than from anything
+`/v1` accepts, **no notemap credential is attached to it** — a presigned URL is its own
+authorisation — and no answer from it is trusted for anything but whether the write succeeded. What
+travels is material a person decided to route there, which is the point of routing it. A redirect
+from such an address is not followed either.
 
 ### No CORS headers, which is load-bearing
 

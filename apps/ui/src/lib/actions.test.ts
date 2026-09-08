@@ -5,9 +5,9 @@ import { agentOf, failed, flattened, isCode, shortened } from "./actions";
 describe("flattening a detail", () => {
   it("writes strings unquoted and everything else as it reads", () => {
     expect(
-      flattened({ capability: "create-file", attempt: 5, giveUp: true }),
+      flattened({ capability: "create", attempt: 5, giveUp: true }),
     ).toEqual([
-      { key: "capability", value: "create-file" },
+      { key: "capability", value: "create" },
       { key: "attempt", value: "5" },
       { key: "giveUp", value: "true" },
     ]);

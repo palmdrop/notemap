@@ -580,7 +580,7 @@ describe("deleting a destination", () => {
           id: "tpl-research" as RoutingTemplateId,
           name: "Research links",
           destination: "vault" as DestinationId,
-          capability: "create-file" as CapabilityName,
+          capability: "create" as CapabilityName,
           arguments: {},
           folder: "create",
           createdAt: "2026-09-05T08:00:00.000Z" as Timestamp,

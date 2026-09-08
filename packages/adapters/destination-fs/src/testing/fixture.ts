@@ -29,12 +29,20 @@ export function at(value: string): Timestamp {
 }
 
 /** A destination row of this kind, which is what every call is handed. */
-export function destinationRow(settings: { root: string }): Destination {
+export function destinationRow(settings: {
+  root: string;
+  frontmatter?: string;
+}): Destination {
   return {
     id: VAULT,
     name: "Vault",
     kind: "filesystem" as DestinationKindName,
-    settings: { root: settings.root },
+    settings: {
+      root: settings.root,
+      ...(settings.frontmatter === undefined
+        ? {}
+        : { frontmatter: settings.frontmatter }),
+    },
     createdAt: at("2026-08-11T09:00:00.000Z"),
     modifiedAt: at("2026-08-11T09:00:00.000Z"),
   };
@@ -97,7 +105,7 @@ export function delivery(overrides: DeliveryOverrides = {}): Delivery {
   return {
     item: "item-1" as ItemId,
     destination: VAULT,
-    capability: (overrides.capability ?? "create-file") as CapabilityName,
+    capability: (overrides.capability ?? "create") as CapabilityName,
     arguments: overrides.arguments ?? { directory: "inbox" },
     source: SCRATCHPAD,
     payload: {

@@ -1,13 +1,14 @@
 import {
-  APPEND_TO_FILE,
+  APPEND,
   capabilitiesFor,
-  CREATE_FILE,
-  CREATE_OR_APPEND_FILE,
+  CREATE,
+  CREATE_OR_APPEND,
   markdownOutput,
   type Renderers,
 } from "@notemap/output-markdown";
 import {
   Rejected,
+  Unusable,
   type Delivery,
   type DeliveryOutcome,
   type Destination,
@@ -28,7 +29,28 @@ import {
   type Wiring,
 } from "./notes";
 import { contain } from "./paths";
-import { asWebdavSettings, WEBDAV, webdavSettings } from "./settings";
+import {
+  asWebdavSettings,
+  WEBDAV,
+  webdavSettings,
+  type WebdavSettings,
+} from "./settings";
+
+/** The destination's own frontmatter setting travels with the wiring; a delivery's argument beats it. */
+function wiringFor(
+  dav: Dav,
+  renderers: Renderers,
+  settings: WebdavSettings,
+): Wiring {
+  return {
+    dav,
+    root: settings.root,
+    renderers,
+    ...(settings.frontmatter === undefined
+      ? {}
+      : { frontmatter: settings.frontmatter }),
+  };
+}
 
 /** What the host wires: neither a renderer nor a credential is a person's setting. */
 export type WebdavDestinationConfig = {
@@ -88,7 +110,7 @@ export function createWebdavDestination(
 
       try {
         const landed = await carryOut(
-          { dav, root: settings.root, renderers },
+          wiringFor(dav, renderers, settings),
           delivery,
           signal,
         );
@@ -115,7 +137,7 @@ export function createWebdavDestination(
       try {
         return markdownOutput(
           await previewNote(
-            { dav, root: settings.root, renderers },
+            wiringFor(dav, renderers, settings),
             delivery,
             signal,
           ),
@@ -144,11 +166,15 @@ export function createWebdavDestination(
       const settings = asWebdavSettings(destination.settings);
       if (settings === undefined) throw unreadable(destination);
 
+      // `Unusable`, not `Rejected`: nothing was reached, so nothing refused
+      // anything. An account nobody declared is a destination that cannot be
+      // made sense of at all — a config edit away, and not a retry away, which
+      // is the one thing `unreachable` would promise.
       let dav: Dav;
       try {
         dav = createDav(await config.credentials(settings.account));
       } catch (cause) {
-        throw new Rejected(why(cause), { cause });
+        throw new Unusable(why(cause), { cause });
       }
 
       const root = contain(settings.root, "");
@@ -202,11 +228,11 @@ function carryOut(
   signal?: AbortSignal,
 ): Promise<Landed> {
   switch (delivery.capability) {
-    case CREATE_FILE:
+    case CREATE:
       return createNote(wiring, delivery, signal);
-    case APPEND_TO_FILE:
+    case APPEND:
       return appendToNote(wiring, delivery, signal);
-    case CREATE_OR_APPEND_FILE:
+    case CREATE_OR_APPEND:
       return createOrAppendToNote(wiring, delivery, signal);
     default:
       return Promise.reject(

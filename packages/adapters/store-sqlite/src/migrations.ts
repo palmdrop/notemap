@@ -789,6 +789,41 @@ export const MIGRATIONS: readonly string[] = [
         AND owed.abandoned_at IS NULL
     );
   `,
+
+  `
+  -- Capability names stopped being file-shaped, so that a vault's note and a
+  -- board's block are one capability rather than two.
+  --
+  -- A template is live: it fires on a tag indefinitely, and one naming a
+  -- capability nothing declares is broken rather than merely historical.
+  UPDATE routing_templates
+  SET capability = CASE capability
+        WHEN 'create-file'           THEN 'create'
+        WHEN 'append-to-file'        THEN 'append'
+        WHEN 'create-or-append-file' THEN 'create-or-append'
+      END
+  WHERE capability IN ('create-file', 'append-to-file', 'create-or-append-file');
+  `,
+
+  `
+  -- A record that has delivered says what happened, and keeps the spelling it
+  -- was written with; the mirror says the same, and there is no verify to
+  -- reconcile a divergence.
+  --
+  -- A pending one is not history, it is work still owed. Left alone, the
+  -- adapter refuses a capability nothing declares, which is \`rejected\` —
+  -- abandoned on the first attempt rather than retried — so the decision is
+  -- thrown away silently. The arguments are unchanged by the rename, so the
+  -- record stays deliverable exactly as it was reserved.
+  UPDATE routing_records
+  SET capability = CASE capability
+        WHEN 'create-file'           THEN 'create'
+        WHEN 'append-to-file'        THEN 'append'
+        WHEN 'create-or-append-file' THEN 'create-or-append'
+      END
+  WHERE state = 'pending'
+    AND capability IN ('create-file', 'append-to-file', 'create-or-append-file');
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

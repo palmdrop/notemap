@@ -21,7 +21,7 @@ import type { Job } from "#types/domain/work";
 import { create, edit, list, remove } from "./lifecycle";
 
 const VAULT = "dst-vault" as DestinationId;
-const CREATE_FILE = "create-file" as CapabilityName;
+const CREATE = "create" as CapabilityName;
 
 type Wiring = {
   readonly destinations?: readonly DestinationId[];
@@ -112,7 +112,7 @@ function ports(wiring: Wiring = {}): Wired {
 const draft = {
   name: "Research links",
   destination: VAULT,
-  capability: CREATE_FILE,
+  capability: CREATE,
   arguments: { path: "research/{{captured_at}}.md" },
 };
 
@@ -280,7 +280,7 @@ describe("editing a template", () => {
     });
 
     const edited = await edit(wired, made.value.id, {
-      capability: "append-to-file" as CapabilityName,
+      capability: "append" as CapabilityName,
     });
 
     expect(edited.kind).toBe("ok");

@@ -3,11 +3,20 @@ import { dirname } from "node:path";
 import { v7 as uuidv7 } from "uuid";
 
 import { createFilesystemBlobStore } from "@notemap/blob-fs";
+import {
+  ARENA,
+  ARENA_ACCOUNT,
+  arenaRenderers,
+  asArenaCredential,
+  createArenaDestination,
+} from "@notemap/destination-arena";
 import { createFilesystemDestination } from "@notemap/destination-fs";
 import {
+  asWebdavCredential,
   createWebdavDestination,
   transportWarnings,
   WEBDAV,
+  WEBDAV_ACCOUNT,
 } from "@notemap/destination-webdav";
 import { createFilesystemMirrorWriter } from "@notemap/mirror-fs";
 import { createAjvSchemaValidator } from "@notemap/schema-ajv";
@@ -24,10 +33,12 @@ import {
   type PayloadTypeName,
   type Pool,
   type PoolConfig,
+  type JsonSchema,
   type PoolPorts,
   type Timestamp,
 } from "@notemap/core";
 
+import { isSecretSource } from "./config/load";
 import { accountsFor } from "./destinations/credentials";
 import { destinationRenderers } from "./destinations/renderers";
 import { renderersFor } from "./mirror/renderers";
@@ -100,7 +111,14 @@ export function openPool(options: OpenPoolConfig): OpenPool {
 
   const renderers = destinationRenderers();
   const accounts = options.accounts ?? [];
+  const schemas = createAjvSchemaValidator();
+  refuseUnusableAccounts(accounts, schemas);
+
   const webdavAccounts = accounts.filter((account) => account.kind === WEBDAV);
+  const arenaAccounts = accounts.filter((account) => account.kind === ARENA);
+
+  const webdavCredentials = accountsFor(WEBDAV, accounts);
+  const arenaCredentials = accountsFor(ARENA, accounts);
 
   const destinations = destinationRegistry([
     createFilesystemDestination({
@@ -111,8 +129,15 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     createWebdavDestination({
       renderers,
       accepts: everyPayloadType,
-      credentials: accountsFor(WEBDAV, accounts),
+      credentials: (name) => webdavCredentials(name).then(asWebdavCredential),
       accounts: webdavAccounts.map((account) => account.name),
+    }),
+    createArenaDestination({
+      // Not `everyPayloadType`: what has a block form is the kind's own to
+      // say, and core refuses the rest before a decision is made.
+      renderers: arenaRenderers(),
+      credentials: (name) => arenaCredentials(name).then(asArenaCredential),
+      accounts: arenaAccounts.map((account) => account.name),
     }),
   ]);
 
@@ -136,7 +161,7 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     work: store,
     clock: systemClock,
     ids: uuidV7Ids,
-    schemas: createAjvSchemaValidator(),
+    schemas,
     blobs,
     ...(mirrorWriter === undefined ? {} : { mirrorWriter }),
     destinations,
@@ -148,7 +173,13 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     blobs,
     ...(mirrorWriter === undefined ? {} : { mirrorWriter }),
     destinations,
-    warnings: transportWarnings(webdavAccounts),
+    // What an account is reached over is the adapter's to judge; the host asks.
+    warnings: transportWarnings(
+      webdavAccounts.map((account) => ({
+        name: account.name,
+        baseUrl: String(account["baseUrl"]),
+      })),
+    ),
   };
 }
 
@@ -171,3 +202,66 @@ export const openAuth = (config: OpenAuthConfig, { clock }: OpenAuthPorts) => {
 
   return auth;
 };
+
+/**
+ * What an account of a given kind must carry is that kind's own, and this is
+ * where the daemon asks. At startup rather than at the first delivery: a
+ * malformed account otherwise fails hours later, on a runner's timer, where
+ * nobody is looking.
+ *
+ * A kind nothing registers is refused too. An account naming one is a typo, and
+ * starting anyway would leave a destination that can never deliver.
+ */
+const ACCOUNT_SCHEMAS: Readonly<Record<string, JsonSchema>> = {
+  [WEBDAV]: WEBDAV_ACCOUNT,
+  [ARENA]: ARENA_ACCOUNT,
+};
+
+/**
+ * That a kind's schema and the config reader agree on where a secret is read
+ * from. The reader recognises a source by its suffix alone and enforces *one of
+ * them* there; a kind spelling its own `credentialsPath` would satisfy this
+ * schema and then die at load against a convention the schema never mentioned.
+ * Checked here, at startup, so the mismatch is caught where it is made.
+ */
+function refuseKindWithNoSecretSource(kind: string, schema: JsonSchema): void {
+  const properties = schema["properties"];
+  const named =
+    properties !== null && typeof properties === "object"
+      ? Object.keys(properties as Record<string, unknown>)
+      : [];
+
+  if (!named.some(isSecretSource)) {
+    throw new Error(
+      `the ${kind} kind declares an account with no key ending in File or Env, which is how the config reader finds a secret — name one, or that kind's accounts can never be read`,
+    );
+  }
+}
+
+export function refuseUnusableAccounts(
+  accounts: readonly Account[],
+  schemas: PoolPorts["schemas"],
+): void {
+  for (const [kind, schema] of Object.entries(ACCOUNT_SCHEMAS)) {
+    refuseKindWithNoSecretSource(kind, schema);
+  }
+
+  for (const account of accounts) {
+    const at = `the ${account.kind} account ${account.name}`;
+    const schema = ACCOUNT_SCHEMAS[account.kind];
+
+    if (schema === undefined) {
+      throw new Error(
+        `${at} names a kind nothing speaks — the kinds that hold an account are ${Object.keys(ACCOUNT_SCHEMAS).join(" and ")}`,
+      );
+    }
+
+    const issues = schemas.validate(schema, account);
+    if (issues.length > 0) {
+      const said = issues
+        .map((issue) => `${issue.path || "(root)"} ${issue.keyword}`)
+        .join("; ");
+      throw new Error(`${at} is not a ${account.kind} account: ${said}`);
+    }
+  }
+}

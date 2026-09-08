@@ -1,8 +1,24 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-09-07
+**Last updated**: 2026-09-08
 **Shipped**:
+
+- 2026-09-08 — **A board is a destination, and a capability stops being file-shaped.** Capability
+  names lose the word *file* — `create`, `append`, `create-or-append` — so a vault's note and a
+  board's block are one capability rather than two, and `create` stops promising it refuses a name
+  already taken: that becomes each kind's own promise, as does whether a retry can duplicate. The
+  markdown kinds gain a **frontmatter** switch, a setting on the destination and an argument on one
+  capture, so a delivered file is no longer guaranteed to carry its own provenance. A third kind
+  ships, `arena`, whose destination *is* an account and whose channel is an argument, and it is the
+  first to answer a followable `url` on a routing record. What an account must carry becomes the
+  kind's own, checked against that kind's schema when the daemon starts.
+  A candidate may answer under **two names** — what a person reads and what survives a rename —
+  and a field may say it holds only something the destination already has.
+  ([plan](../plans/arena-destination.md),
+  [ADR 40](../adr/0040-a-destination-kind-declares-the-shape-of-its-own-account.md),
+  [ADR 41](../adr/0041-a-delivery-that-cannot-be-confirmed-may-duplicate.md),
+  [ADR 42](../adr/0042-a-candidate-carries-both-its-readable-name-and-its-lasting-one.md))
 
 - 2026-09-07 — **One tag files it where it goes.** A **routing template** is a saved routing
   decision — a destination, a capability, arguments held as patterns, how its folder is treated —
@@ -219,7 +235,7 @@
   ([plan](../plans/delivery-machinery.md),
   [ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md))
 - 2026-08-14 — **Items leave, and land in a folder.** The first destination adapter ships:
-  `@notemap/destination-fs` declares `create-file` and `append-to-file` over a configured root,
+  `@notemap/destination-fs` declares `create` and `append` over a configured root,
   renders a delivery as CommonMark under provenance frontmatter, and writes every asset beside the
   note under the name it was uploaded with — closing the copy-or-reference question for this
   destination in favour of a copy. The daemon wires destinations from configuration, and a delivery
@@ -837,13 +853,18 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   resolving them after, which is a different shape from the one
   [ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md) settled and would want a
   decision of its own.
-- **Retry is keyed on evidence, not on failure.** `unreachable` is proof that nothing was
-  delivered, so a retry cannot duplicate and the job is retried with backoff. `rejected` is proof
-  that the destination was reached and refused, so it is abandoned on the first attempt — the same
-  call enrichment makes for a failure reported as not worth retrying. A lease that expired with no
-  outcome reported is **no evidence at all**, and is abandoned rather than retried: a delivery is
-  not idempotent, the domain cannot tell a retry from a genuine second delivery, and the cost of
-  guessing wrong is a duplicate nobody can detect.
+- **Retry is keyed on evidence, not on failure** (narrowed 2026-09-08,
+  [ADR 41](../adr/0041-a-delivery-that-cannot-be-confirmed-may-duplicate.md)). `unreachable` means
+  the adapter **could not confirm** that anything was delivered, so the job is retried with backoff.
+  Whether a retry can duplicate is then **each kind's own promise**, made where it is enforced and
+  stated in that kind's README: both file kinds keep the strong one — a retry cannot duplicate,
+  by a digest in an asset's filename, by `EEXIST` and by `PUT If-None-Match: *` — and a kind whose
+  protocol offers no conditional create and no idempotency key says instead that it may, and names
+  the window. `rejected` is proof that the destination was reached and refused, so it is abandoned
+  on the first attempt — the same call enrichment makes for a failure reported as not worth
+  retrying. A lease that expired with no outcome reported is **no evidence at all**, and is
+  abandoned rather than retried: a delivery is not idempotent, the domain cannot tell a retry from a
+  genuine second delivery, and the cost of guessing wrong is a duplicate nobody can detect.
 - **Delivery retries are bounded**, unlike mirror work. Mirroring retries forever because giving up
   does not change the fact that material is unmirrored. Giving up on a delivery does change
   something: it hands the decision back, so the person can repair their configuration or route
@@ -942,8 +963,8 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   converter is not deterministic the two will differ — a fact about the destination rather than a
   fault. Committing the preview's bytes with the decision was rejected: it would put bytes in a
   reservation that is a pure decision, and it cannot be honest for a capability whose right output
-  depends on the destination at the moment of writing, which `append-to-file` and
-  `create-or-append-file` both are. A dry-run flag on `deliver` was rejected for one sentence: it
+  depends on the destination at the moment of writing, which `append` and
+  `create-or-append` both are. A dry-run flag on `deliver` was rejected for one sentence: it
   puts one boolean between showing a person something and writing into their vault, which core
   cannot verify and an adapter can get wrong once.
 - **That the two agree is the adapter's discipline**, not a guarantee the port makes. `deliver` and
@@ -973,7 +994,14 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   hold, somewhere to look for more, and no assumption that they are the same thing. Browsing for a
   note descends through folders and is never offered one as a note, which is what an entry with a
   scope and no value says. So a tree is walked by a caller that was never told it is a tree, and
-  `truncated` says where the destination held more than it answered. A
+  `truncated` says where the destination held more than it answered. An entry may also carry a
+  **`durable`** form of its value (added 2026-09-08,
+  [ADR 42](../adr/0042-a-candidate-carries-both-its-readable-name-and-its-lasting-one.md)) — the
+  same thing under a name that survives being renamed, where the destination has two for it. Absent
+  is the ordinary case and means the value is already the lasting one. Which of the two to take is
+  the **asking surface's** business rather than the destination's: a decision made once prefers the
+  readable name and reads it back on its record, and one that fires again for months prefers the
+  name that cannot rot. Core carries both and reads neither. A
   request carries none of the arguments filled in so far, because no field either kind declares
   today depends on another. Failures are `unreachable`, `unusable` and `not-offered`, on the same
   terms `describe()`'s own report already uses. `not-offered` is one answer however it was reached
@@ -1022,11 +1050,13 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   refuses a capability that was not declared, exactly as before. What the decision settles is a
   rule about **how a capability should be named** — after the outcome a person wants, not after
   the mechanism that will achieve it — and it is why the kinds that write files offer a capability
-  that decides at delivery beside two that are stated up front. `create-file` promises *never add
-  to a note*, which an outcome-shaped capability cannot. `append-to-file` promises a *named path*:
-  nothing is derived from the item, so a rule files into exactly the note it names. Neither
-  promises the note is already there — both kinds write one that is not, which is what a daily
-  note whose sections appear as things are filed into them needs.
+  that decides at delivery beside two that are stated up front. `append` promises a *named place*:
+  nothing is derived from the item, so a rule files into exactly the note it names. `create`
+  promises a new thing rather than an addition to one — but **not** that a name already taken is
+  refused, which is each kind's own promise and stated in its README. Both file kinds make it, by
+  `EEXIST` and by `PUT If-None-Match: *`; a kind whose protocol offers no conditional create cannot.
+  Neither capability promises the place is already there — both file kinds write one that is not,
+  which is what a daily note whose sections appear as things are filed into them needs.
 - **A capability's accepted payload types may be a wildcard**, for a destination whose fallback
   genuinely handles anything. It is a promise rather than a shrug: claiming it trades away the
   refusal core would otherwise make up front, so what would have been an immediate
@@ -1098,6 +1128,15 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   is nothing to check, and nothing about a path is inferred for it. Marking a field is the whole of
   what a new kind has to do to be folder-checked, and doing nothing is the whole of what it has to
   do not to be.
+- **A capability may say a field holds only something the destination already has** (added
+  2026-09-08, [ADR 42](../adr/0042-a-candidate-carries-both-its-readable-name-and-its-lasting-one.md)).
+  A vault's folder is *made* by the delivery that needs it; an are.na channel is joined, a mailbox
+  subscribed to. Both are askable and both take a string, so nothing can tell them apart by looking.
+  **Core never reads this one** — it is said for the surfaces, and the fact it carries is that a
+  value which has to name something already there cannot be expanded into: a routing template's
+  pattern vocabulary beside such a field is advice that can only ever fail. It says the field *may*
+  hold only what was offered, not that a caller must refuse anything else — a browse answers one
+  page of what a destination holds, so what it did not name is not thereby wrong.
 - **`establish` is the template's word alone**, and resolves at decision time: unestablished it asks
   the adapter to create, established it asks the adapter to require. No adapter ever hears it, so
   the arguments on a record are always the two-valued thing. The **argument it is carried in is
@@ -1374,8 +1413,14 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   authenticates and core does not, gaining no user, no credential and no notion that a request has
   an author ([ADR 27](../adr/0027-the-daemon-authenticates-and-core-does-not.md)).
 - Everything that leaves the pool carries identity and provenance, per
-  [standards.md](../standards.md). Local-only is the default for every provider; anything that
-  sends content off-box is opt-in and named on the item.
+  [standards.md](../standards.md) — **where the destination writes it, and in that document's own
+  words wherever it does** (narrowed 2026-09-08). A
+  markdown kind can be told to write no frontmatter, as a setting on the destination and as an
+  argument on one capture, and a note written that way carries no id, no capture time and no
+  `derived_from`. The pool still holds all of it, and the routing record still says where the note
+  went; what is given up is the file being traceable on its own. Absent means none, so a
+  destination that never said writes none. Local-only is the default for every provider; anything
+  that sends content off-box is opt-in and named on the item.
 
 ---
 
