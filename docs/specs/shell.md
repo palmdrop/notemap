@@ -1148,7 +1148,11 @@ could ever explain, and it is why this exists.
 **A notice leads to where the whole of it can be read**: the item it happened to, or the log plain
 where the work was about no item. The item surface is the better address for the question a notice
 raises — what happened to this capture — because it draws the record itself rather than the log's
-line about it *(amended 2026-09-04, once there was an item to lead to)*.
+line about it *(amended 2026-09-04, once there was an item to lead to)*. **However it was raised**
+*(amended 2026-09-08)*: a decision the shell reports from the gesture that made it leads to the item
+just as one read out of the log does. It is a statement and stays one — it says where to go and
+never puts a row back on a surface, a held row being the shell's own answer to looking away too
+soon.
 
 **A catch-up is bounded, and a long one is not read out at all.** A shell that has been away a
 moment is told each thing that happened. One that has been away long enough for the read not to

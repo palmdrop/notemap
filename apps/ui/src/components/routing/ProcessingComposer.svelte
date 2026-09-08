@@ -23,6 +23,7 @@
   import { placeOf } from "@notemap/output-markdown/naming";
 
   import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
+  import { itemHref } from "$components/item/href";
   import Output from "$components/routing/Output.svelte";
   import PathLine from "$components/routing/PathLine.svelte";
   import { browserFor } from "$lib/candidate-browsers";
@@ -438,6 +439,7 @@
     notices.raise({
       what: "discarded",
       about,
+      href: itemHref(id),
       standing: true,
       only: DISCARD,
       offer: {

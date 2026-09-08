@@ -66,12 +66,12 @@ Depends on nothing. Shell only; the client already answers everything this needs
 
 Depends on nothing, but reads as the other half of phase 1.
 
-- [ ] A notice about a decision carries `href` to the item's own surface, which `Notice` already
+- [x] A notice about a decision carries `href` to the item's own surface, which `Notice` already
       draws and `noticeOf` already sets for log-borne ones — `saidOf` is the gap
-- [ ] It stays a statement: no offer, nothing that puts a row back in the queue
-- [ ] `shell.md`: the corner's section says a notice about an item is a way to it
-- [ ] `pnpm -r --silent test`
-- [ ] `git commit`
+- [x] It stays a statement: no offer, nothing that puts a row back in the queue
+- [x] `shell.md`: the corner's section says a notice about an item is a way to it
+- [x] `pnpm -r --silent test`
+- [x] `git commit`
 
 ### Phase 3 — arriving at the queue reads it again
 

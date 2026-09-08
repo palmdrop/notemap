@@ -550,6 +550,9 @@ test("discarding says so, and offers the row back", async () => {
   const said = notices.shown.at(-1);
   expect(said?.standing).toBe(true);
   expect(said?.offer?.label).toBe("undo");
+  // The row it was made on is one look away from being gone, and the corner
+  // is then the only way back to the capture it was about.
+  expect(said?.href).toBe("/items/one");
 });
 
 test("one discard's offer stands at a time, however many rows go", async () => {
@@ -755,6 +758,7 @@ test("a routing says where it went, and which capture it was", async () => {
   const said = notices.shown[0];
   expect(said?.what).toBe("routed · Vault");
   expect(said?.why).toBe("notes/inbox/picker.md");
+  expect(said?.href).toBe("/items/one");
   expect(said?.about).toContain("the picker needs a trail");
   expect(said?.about).toMatch(/\d\d-\d\d \d\d:\d\d/);
 

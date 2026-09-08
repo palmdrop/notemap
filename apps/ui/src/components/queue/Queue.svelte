@@ -12,6 +12,7 @@
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
   import Register from "$components/primitives/register/Register.svelte";
+  import { itemHref } from "$components/item/href";
   import { client } from "$lib/client";
   import { nameOf } from "$lib/destinations";
   import { aboutItem } from "$lib/excerpt";
@@ -134,7 +135,12 @@
   }
 
   function went(item: Item, record: RoutingRecord) {
-    notices.raise(saidOf(record, nameOf, aboutItem(item)));
+    notices.raise(
+      saidOf(record, nameOf, {
+        about: aboutItem(item),
+        href: itemHref(item.id),
+      }),
+    );
     keep(item);
   }
 </script>
