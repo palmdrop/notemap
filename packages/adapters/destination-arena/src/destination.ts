@@ -129,6 +129,9 @@ export function createArenaDestination(
       const settings = asArenaSettings(destination.settings);
       if (settings === undefined) throw unreadable(destination);
 
+      // A person asking now is owed the answer that it will not fix itself: an
+      // account nobody declared is a config edit away, and a retry is not what
+      // gets there. The WebDAV kind reads it the same way.
       let arena: Arena;
       try {
         arena = await reach(settings.account);
@@ -266,14 +269,16 @@ function outputOf(
   value: string,
   delivery: Delivery,
 ): DeliveredOutput {
+  // An empty value is left out rather than drawn as a blank line: a preview of
+  // an image has none, the bytes not having been uploaded to show one.
   const lines = [
-    value,
-    ...(block.description === undefined ? [] : ["", block.description]),
+    ...(value === "" ? [] : [value]),
+    ...(block.description === undefined ? [] : [block.description]),
   ];
   const note = droppedBy(delivery);
 
   return {
-    ...markdownOutput(`${lines.join("\n")}\n`),
+    ...markdownOutput(`${lines.join("\n\n")}\n`),
     ...(note === undefined ? {} : { note }),
   };
 }

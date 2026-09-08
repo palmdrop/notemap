@@ -1,3 +1,4 @@
+import { fixedFrontmatter } from "@notemap/output-markdown";
 import { describe, expect, it } from "vitest";
 
 import { arenaRenderers, droppedBy, provenanceOf, renderNote } from "./blocks";
@@ -69,20 +70,31 @@ describe("a capture carrying an asset", () => {
 });
 
 describe("what the block remembers about where it came from", () => {
+  /** The words a note's frontmatter uses, so one item says it one way wherever it lands. */
   it("carries the item, the source and the capture time", () => {
     expect(provenanceOf(delivery())).toMatchObject({
-      notemap_item: "item-1",
-      notemap_source: "scratchpad",
-      notemap_captured_at: "2026-09-08T14:23:05.000Z",
-      notemap_derived_from: "urn:commons:item:item-1",
+      id: "item-1",
+      capture_source: "scratchpad",
+      captured_at: "2026-09-08T14:23:05.000Z",
+      derived_from: "urn:commons:item:item-1",
     });
+  });
+
+  it("says it in the same words a note's frontmatter does", () => {
+    const written = Object.keys(
+      provenanceOf(delivery({ tags: ["one"] })) ?? {},
+    );
+
+    expect(written).toEqual(
+      [...fixedFrontmatter(delivery({ tags: ["one"] }))].map(([key]) => key),
+    );
   });
 
   /** One key: a capture may carry more tags than the whole object is allowed keys. */
   it("flattens the tags into one joined string", () => {
     expect(
       provenanceOf(delivery({ tags: ["kind/quote", "project/fiction-a"] })),
-    ).toMatchObject({ notemap_tags: "kind/quote, project/fiction-a" });
+    ).toMatchObject({ tags: "kind/quote, project/fiction-a" });
   });
 
   it("writes keys are.na will take, and no more than it will take", () => {

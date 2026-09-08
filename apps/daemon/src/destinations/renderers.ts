@@ -3,10 +3,6 @@ import {
   type Renderer,
   type Renderers,
 } from "@notemap/output-markdown";
-import {
-  arenaRenderers,
-  type ArenaRenderers,
-} from "@notemap/destination-arena";
 import type { PayloadTypeName } from "@notemap/core";
 
 /**
@@ -50,13 +46,4 @@ const renderNote: Renderer = (delivery, at) => {
 
 export function destinationRenderers(): Renderers {
   return { ["note" as PayloadTypeName]: renderNote };
-}
-
-/**
- * The same dialect question for a board rather than a vault, and it stays here
- * for the same reason: what a delivery *becomes* is the daemon's, not the
- * adapter's. `@notemap/destination-arena` supplies the one that exists.
- */
-export function arenaBlocks(): ArenaRenderers {
-  return arenaRenderers();
 }

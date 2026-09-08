@@ -35,6 +35,19 @@ function declared(destination: Destination) {
   };
 }
 
+/**
+ * How long a call that reaches the outside world is given. The delivery runner
+ * bounds its own attempts; these three are asked by a person waiting on an
+ * answer, and without a deadline an address that swallows packets holds the
+ * request open for however long the runtime's own defaults happen to be.
+ *
+ * Generous rather than snappy: a vault on a slow mount is not a failure, and
+ * what this is really for is the case that would never answer at all.
+ */
+const REACH_DEADLINE_MS = 20_000;
+
+const reaching = (): AbortSignal => AbortSignal.timeout(REACH_DEADLINE_MS);
+
 /** A read of pool state: it answers at once, cannot fail, and probes nothing. */
 export function destinationsHandler(pool: Pool) {
   return async (): Promise<Response> =>
@@ -45,11 +58,11 @@ export function destinationKindsHandler(pool: Pool) {
   return (): Response => json({ values: pool.destinations.kinds() }, 200);
 }
 
-/** The one call that reaches the outside world, and so the one that can hang. */
+/** Reaches the destination, so it is one of the three that can hang. */
 export function destinationDescriptionHandler(pool: Pool) {
   return async (context: Context): Promise<Response> => {
     const id = (context.req.param("id") ?? "") as DestinationId;
-    const report = await pool.destinations.describe(id);
+    const report = await pool.destinations.describe(id, reaching());
 
     return report === undefined
       ? json(errorBody({ kind: "unknown-destination", destination: id }), 404)
@@ -60,7 +73,7 @@ export function destinationDescriptionHandler(pool: Pool) {
 export function destinationProbeHandler(pool: Pool) {
   return async (context: Context): Promise<Response> => {
     const id = (context.req.param("id") ?? "") as DestinationId;
-    const report = await pool.destinations.probe(id);
+    const report = await pool.destinations.probe(id, reaching());
 
     return report === undefined
       ? json(errorBody({ kind: "unknown-destination", destination: id }), 404)
@@ -103,7 +116,7 @@ export function destinationCandidatesHandler(pool: Pool) {
     const field = context.req.query("field") ?? "";
     const scope = context.req.query("scope");
 
-    const description = await pool.destinations.describe(id);
+    const description = await pool.destinations.describe(id, reaching());
     if (description === undefined) {
       return json(
         errorBody({ kind: "unknown-destination", destination: id }),
@@ -132,7 +145,7 @@ export function destinationCandidatesHandler(pool: Pool) {
       field,
       ...(scope === undefined ? {} : { scope }),
     };
-    const report = await pool.destinations.candidates(id, request);
+    const report = await pool.destinations.candidates(id, request, reaching());
 
     return report === undefined
       ? json(errorBody({ kind: "unknown-destination", destination: id }), 404)

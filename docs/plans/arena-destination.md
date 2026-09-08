@@ -112,17 +112,21 @@ than part of what the capability means. Are.na cannot make it.
 - [x] Migrate routing **templates**: one `UPDATE` over `capability` in the templates table. A
       template is live — it fires on a tag — so one naming a capability nothing declares is broken
       rather than merely historical.
-- [x] Do **not** migrate routing records. Old records keep the old spelling in the pool and in the
-      mirror, which stay in agreement; there is no verify or repair to reconcile a divergence
-      (`docs/specs/mirror.md:66`). Remembered places keyed on the old names go dark, which is
-      accepted.
+- [x] Do **not** migrate routing records that have **delivered**. They keep the old spelling in the
+      pool and in the mirror, which stay in agreement; there is no verify or repair to reconcile a
+      divergence (`docs/specs/mirror.md:66`). Remembered places keyed on the old names go dark,
+      which is accepted. A record still **pending** is a different case — see below.
 - [x] Update `docs/specs/core.md` (including line ~211 and the `create-file` promise at ~1013),
       `docs/specs/http-v1.md` (the examples at ~781, ~826, ~841, ~1027, ~1041) and
       `docs/specs/shell.md:658`.
 - [x] Update `CONTEXT.md`'s **Capability** entry to the text below.
 - [x] Note in both file kinds' READMEs that `create` refuses a name already taken **on that kind**,
       and by what mechanism.
-- [ ] Drain any pending deliveries before this lands: one naming an undeclared capability dies.
+- [x] Migrate routing **records that are still pending** in the same statement's spirit: a record
+      that has delivered keeps the spelling it was written with, and one still owed is respelled.
+      Left alone it names a capability nothing declares, which is `rejected` — abandoned on the
+      first attempt rather than retried — so the decision is thrown away silently. Chosen over
+      draining by hand, which is an operator step nothing enforces.
 - [x] Typecheck, tests, lint. `pnpm test:stack` — this crosses the HTTP surface.
 - [x] Commit.
 

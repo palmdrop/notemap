@@ -181,6 +181,11 @@ batch = 4           # deliveries claimed per pass
 # name = "mine"
 # secretFile = "~/.config/notemap/are-na-token"
 #
+# The same account, taking its secret from the environment instead. Exactly one
+# of the two, so this is an alternative to the block above and not a companion —
+# both of them uncommented is one account declared twice, which is refused on
+# startup.
+#
 # [[accounts]]
 # kind = "arena"
 # name = "mine"

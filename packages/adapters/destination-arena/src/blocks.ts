@@ -1,4 +1,5 @@
 import type { Delivery } from "@notemap/core";
+import { fixedFrontmatter } from "@notemap/output-markdown";
 
 /**
  * What a delivery becomes on a board. Not markdown, and not
@@ -89,33 +90,24 @@ const KEY_LIMIT = 50;
  * it survives the block being moved out of the channel it landed in. Best
  * effort and never a dedup mechanism: are.na does not make it queryable, and
  * nothing here reads it back.
+ *
+ * The vocabulary is the one a note's frontmatter carries, taken from it rather
+ * than spelt again: one item routed to a vault and to a channel says where it
+ * came from in one set of words. What are.na will not take is dropped — a list
+ * becomes one joined string, since a capture may carry more tags than the whole
+ * object is allowed keys.
  */
 export function provenanceOf(
   delivery: Delivery,
 ): Record<string, string> | undefined {
   const written: Record<string, string> = {};
 
-  const wanted: readonly (readonly [string, string])[] = [
-    ["notemap_item", delivery.item],
-    ["notemap_source", delivery.source],
-    ["notemap_captured_at", delivery.createdAt],
-    ["notemap_derived_from", `urn:commons:item:${delivery.item}`],
-    ...(delivery.contentUpdatedAt === undefined
-      ? []
-      : ([["notemap_updated_at", delivery.contentUpdatedAt]] as const)),
-    // One key rather than one per tag: a capture may carry more tags than the
-    // whole metadata object is allowed keys.
-    ...(delivery.tags.length === 0
-      ? []
-      : ([
-          ["notemap_tags", delivery.tags.map((tag) => tag.name).join(", ")],
-        ] as const)),
-  ];
-
-  for (const [key, value] of wanted) {
+  for (const [key, value] of fixedFrontmatter(delivery)) {
     if (Object.keys(written).length >= KEY_LIMIT) break;
-    if (!KEY.test(key) || value.length > VALUE_LIMIT) continue;
-    written[key] = value;
+
+    const flat = Array.isArray(value) ? value.join(", ") : String(value);
+    if (!KEY.test(key) || flat.length > VALUE_LIMIT) continue;
+    written[key] = flat;
   }
 
   return Object.keys(written).length === 0 ? undefined : written;

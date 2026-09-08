@@ -6,6 +6,7 @@ import { createFilesystemBlobStore } from "@notemap/blob-fs";
 import {
   ARENA,
   ARENA_ACCOUNT,
+  arenaRenderers,
   asArenaCredential,
   createArenaDestination,
 } from "@notemap/destination-arena";
@@ -37,8 +38,9 @@ import {
   type Timestamp,
 } from "@notemap/core";
 
+import { isSecretSource } from "./config/load";
 import { accountsFor } from "./destinations/credentials";
-import { arenaBlocks, destinationRenderers } from "./destinations/renderers";
+import { destinationRenderers } from "./destinations/renderers";
 import { renderersFor } from "./mirror/renderers";
 import { createAuth } from "./auth";
 import { createSqliteAuthStore } from "./auth/store";
@@ -131,9 +133,9 @@ export function openPool(options: OpenPoolConfig): OpenPool {
       accounts: webdavAccounts.map((account) => account.name),
     }),
     createArenaDestination({
-      // Not `everyPayloadType`: what has a block form is the dialect's to say,
-      // and core refuses the rest before a decision is made.
-      renderers: arenaBlocks(),
+      // Not `everyPayloadType`: what has a block form is the kind's own to
+      // say, and core refuses the rest before a decision is made.
+      renderers: arenaRenderers(),
       credentials: (name) => arenaCredentials(name).then(asArenaCredential),
       accounts: arenaAccounts.map((account) => account.name),
     }),
@@ -215,10 +217,35 @@ const ACCOUNT_SCHEMAS: Readonly<Record<string, JsonSchema>> = {
   [ARENA]: ARENA_ACCOUNT,
 };
 
+/**
+ * That a kind's schema and the config reader agree on where a secret is read
+ * from. The reader recognises a source by its suffix alone and enforces *one of
+ * them* there; a kind spelling its own `credentialsPath` would satisfy this
+ * schema and then die at load against a convention the schema never mentioned.
+ * Checked here, at startup, so the mismatch is caught where it is made.
+ */
+function refuseKindWithNoSecretSource(kind: string, schema: JsonSchema): void {
+  const properties = schema["properties"];
+  const named =
+    properties !== null && typeof properties === "object"
+      ? Object.keys(properties as Record<string, unknown>)
+      : [];
+
+  if (!named.some(isSecretSource)) {
+    throw new Error(
+      `the ${kind} kind declares an account with no key ending in File or Env, which is how the config reader finds a secret — name one, or that kind's accounts can never be read`,
+    );
+  }
+}
+
 export function refuseUnusableAccounts(
   accounts: readonly Account[],
   schemas: PoolPorts["schemas"],
 ): void {
+  for (const [kind, schema] of Object.entries(ACCOUNT_SCHEMAS)) {
+    refuseKindWithNoSecretSource(kind, schema);
+  }
+
   for (const account of accounts) {
     const at = `the ${account.kind} account ${account.name}`;
     const schema = ACCOUNT_SCHEMAS[account.kind];

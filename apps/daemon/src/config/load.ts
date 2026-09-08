@@ -396,12 +396,10 @@ function readAccounts(
 const FILE = "File";
 const ENV = "Env";
 
-function isSecretSource(key: string): boolean {
-  return (
-    (key.endsWith(FILE) || key.endsWith(ENV)) &&
-    key.length > FILE.length &&
-    key.length > ENV.length
-  );
+/** A stem is required either side of the suffix, so the bare words are not sources. */
+export function isSecretSource(key: string): boolean {
+  if (key.endsWith(FILE)) return key.length > FILE.length;
+  return key.endsWith(ENV) && key.length > ENV.length;
 }
 
 /**

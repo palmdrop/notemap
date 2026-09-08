@@ -131,8 +131,10 @@ describe("creating a block", () => {
 
     expect(server.blocks()[0]).toMatchObject({
       metadata: expect.objectContaining({
-        notemap_item: "item-1",
-        notemap_tags: "kind/quote",
+        id: "item-1",
+        capture_source: "scratchpad",
+        derived_from: "urn:commons:item:item-1",
+        tags: "kind/quote",
       }),
     });
   });
@@ -255,6 +257,19 @@ describe("what it says it would write", () => {
       adapter().preview?.(row(), delivery({ arguments: {} })),
     ).rejects.toBeInstanceOf(Rejected);
   });
+
+  /** The value is the one thing a preview cannot know, so it draws the caption alone. */
+  it("shows an image's caption without a blank line where its value would be", async () => {
+    const shown = await adapter().preview?.(
+      row(),
+      delivery({
+        content: { text: "a photo of the sea" },
+        assets: [deliveredAsset("one", "sea.png", bytes("PNG"))],
+      }),
+    );
+
+    expect(await textOf(shown)).toBe("a photo of the sea\n");
+  });
 });
 
 describe("the channels it offers to browse", () => {
@@ -331,6 +346,10 @@ describe("asking whether it is really there", () => {
     await expect(adapter().probe?.(row())).rejects.toBeInstanceOf(Rejected);
   });
 
+  /**
+   * A config edit away, and a retry is not what gets there — so a person asking
+   * now is told it will not fix itself, exactly as the WebDAV kind tells them.
+   */
   it("rejects a destination naming an account nobody declared", async () => {
     await expect(
       adapter().probe?.(destinationRow({ account: "elsewhere" })),
@@ -387,6 +406,22 @@ describe("what a failure means", () => {
         "unreachable",
       );
     }
+  });
+
+  /**
+   * The token is attached to the address the adapter chose and to no other, so
+   * a redirect is reported rather than chased: following one would carry it to
+   * wherever the answer named.
+   */
+  it("refuses a redirect rather than following it with the token", async () => {
+    server.answerOnce("/v3/blocks", 302, {});
+    const outcome = await adapter().deliver(row(), delivery());
+
+    expect(outcome).toMatchObject({
+      kind: "unreachable",
+      detail: expect.stringContaining("token is never carried"),
+    });
+    expect(server.blocks()).toEqual([]);
   });
 
   it("keeps the decision where the account could not be resolved", async () => {
