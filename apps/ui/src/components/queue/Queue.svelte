@@ -7,7 +7,6 @@
 
   import CaptureRow from "$components/capture/CaptureRow.svelte";
   import Drained from "$components/queue/Drained.svelte";
-  import Lingering from "$components/queue/Lingering.svelte";
   import Row from "$components/item/Row.svelte";
   import ProcessingComposer from "$components/routing/ProcessingComposer.svelte";
   import More from "$components/primitives/register/More.svelte";
@@ -16,7 +15,6 @@
   import { client } from "$lib/client";
   import { nameOf } from "$lib/destinations";
   import { aboutItem } from "$lib/excerpt";
-  import { lingering } from "$lib/lingering.svelte";
   import { notices } from "$lib/notices.svelte";
   import { orderFor } from "$lib/order";
   import { pending } from "$lib/pending.svelte";
@@ -36,12 +34,18 @@
   let opened = $state<string | undefined>(undefined);
 
   /**
-   * The item itself, and the row it stood above, rather than an id and a lookup:
-   * routing takes the item out of the queue before it answers, so both would be
-   * gone by the time the decision they produced could be reported.
+   * The item the composer is for. Routing takes it out of the queue before the
+   * pool answers, so the item is held rather than looked up.
    */
-  let routing = $state<{ item: Item; before?: string } | undefined>(undefined);
-  const subject = $derived(routing?.item);
+  let routing = $state<Item | undefined>(undefined);
+
+  /**
+   * The row that has just been processed, kept in the register for as long as
+   * it is the open one. A decision is worth looking at after it is made — and
+   * looking at it is what routing the same capture somewhere else starts from.
+   */
+  let holding = $state<string | undefined>(undefined);
+  let held = $state<Item | undefined>(undefined);
 
   const refused = $derived(refusalIn($queue));
 
@@ -49,42 +53,48 @@
     !$queue.loading &&
       !$queue.fromCache &&
       $queue.failure === undefined &&
-      $queue.items.length === 0,
+      $queue.items.length === 0 &&
+      held === undefined,
   );
 
-  /**
-   * What the queue holds, with the rows that have just left still standing
-   * where they stood. A departure nobody saw reads as an item that vanished,
-   * which is the one thing routing must never look like.
-   */
-  type Row = { item: Item; word?: string };
+  // The client's own copy, so the row follows what the cache learns about it —
+  // a second routing, or a decision taken back, without a read of its own.
+  $effect(() => {
+    const id = holding;
+    if (id === undefined) {
+      held = undefined;
+      return;
+    }
 
-  const rows = $derived.by<Row[]>(() => {
-    const live = $queue.items;
-    const going = lingering
-      .going()
-      .filter((held) => !live.some((item) => item.id === held.item.id));
-
-    if (going.length === 0) return live.map((item) => ({ item }));
-
-    const standing = live.flatMap((item) => [
-      ...going
-        .filter((held) => held.before === item.id)
-        .map((held) => ({ item: held.item, word: held.word })),
-      { item },
-    ]);
-
-    const orphaned = going.filter(
-      (held) =>
-        held.before === undefined ||
-        !live.some((item) => item.id === held.before),
-    );
-
-    return [
-      ...standing,
-      ...orphaned.map((held) => ({ item: held.item, word: held.word })),
-    ];
+    const watching = client.held(id).subscribe((item) => {
+      held = item;
+    });
+    return () => watching.unsubscribe();
   });
+
+  /**
+   * What the register draws: the queue, with a held row back at its own rank.
+   * By rank rather than by the neighbour it had, because the key is capture
+   * time and a row that returns anywhere else is a row that moved.
+   */
+  const rows = $derived.by<Item[]>(() => {
+    const live = $queue.items;
+    const kept = held;
+    if (kept === undefined || live.some((item) => item.id === kept.id))
+      return live;
+
+    const at = live.findIndex((item) => behind(item, kept));
+    return at === -1
+      ? [...live, kept]
+      : [...live.slice(0, at), kept, ...live.slice(at)];
+  });
+
+  /** Whether one row sorts after another, in the order the surface is read in. */
+  function behind(item: Item, than: Item): boolean {
+    const one = `${item.createdAt},${item.id}`;
+    const other = `${than.createdAt},${than.id}`;
+    return $queue.order === "newest-first" ? one < other : one > other;
+  }
 
   onMount(() => {
     void (async () => {
@@ -99,33 +109,43 @@
     return keepPlace(SURFACE);
   });
 
+  /** Opening any other row releases a held one: the register holds at most one. */
   function show(id: string) {
     opened = opened === id ? undefined : id;
+    if (opened !== holding) holding = undefined;
   }
 
-  /** Where the row stands now, read while it is still standing there. */
-  function process(item: Item, before?: string) {
-    routing = { item, ...(before === undefined ? {} : { before }) };
+  function close() {
+    opened = undefined;
+    holding = undefined;
+  }
+
+  function process(item: Item) {
+    routing = item;
   }
 
   /**
-   * The composer sits over the register, so what is said about a decision and
-   * where the row stood are both the queue's to know.
+   * The composer sits over the register, so what is said about a decision is
+   * the queue's to know. The row it was made about stays open wearing it.
    */
-  function went(going: { item: Item; before?: string }, record: RoutingRecord) {
-    notices.raise(saidOf(record, nameOf, aboutItem(going.item)));
+  function keep(item: Item) {
+    holding = item.id;
+    opened = item.id;
+  }
 
-    // A mark by hand is born delivered, having nothing to reach, so the state
-    // says nothing about it: the word is the one the record already reads as.
-    const word =
-      record.target.kind !== "destination"
-        ? "manual"
-        : record.state === "delivered"
-          ? "routed"
-          : "retrying";
-    lingering.after(going.item, word, going.before);
+  function went(item: Item, record: RoutingRecord) {
+    notices.raise(saidOf(record, nameOf, aboutItem(item)));
+    keep(item);
   }
 </script>
+
+<svelte:window
+  onkeydown={(event) => {
+    // The composer is a modal and answers this itself while it is up.
+    if (event.key !== "Escape" || routing !== undefined) return;
+    if (opened !== undefined) close();
+  }}
+/>
 
 <Register furled={rail.furled} onfurl={() => rail.toggle()}>
   <CaptureRow />
@@ -138,20 +158,16 @@
     <Drained />
   {/if}
 
-  {#each rows as row, at (row.item.id)}
-    {#if row.word !== undefined}
-      <Lingering item={row.item} word={row.word} furled={rail.furled} />
-    {:else}
-      <Row
-        item={row.item}
-        opened={opened === row.item.id}
-        offline={!pool.yes}
-        furled={rail.furled}
-        pending={undrained.has(row.item.id)}
-        onopen={() => show(row.item.id)}
-        onprocess={() => process(row.item, rows[at + 1]?.item.id)}
-      />
-    {/if}
+  {#each rows as row (row.id)}
+    <Row
+      item={row}
+      opened={opened === row.id}
+      offline={!pool.yes}
+      furled={rail.furled}
+      pending={undrained.has(row.id)}
+      onopen={() => show(row.id)}
+      onprocess={() => process(row)}
+    />
   {/each}
 
   {#if $queue.more}
@@ -163,17 +179,12 @@
   {/if}
 </Register>
 
-{#if subject !== undefined}
+{#if routing !== undefined}
+  {@const subject = routing}
   <ProcessingComposer
     item={subject}
-    onrouted={(record) => {
-      if (routing !== undefined) went(routing, record);
-    }}
-    ondiscarded={() => {
-      if (routing !== undefined) {
-        lingering.after(routing.item, "discarded", routing.before);
-      }
-    }}
+    onrouted={(record) => went(subject, record)}
+    ondiscarded={() => keep(subject)}
     onclose={() => (routing = undefined)}
   />
 {/if}

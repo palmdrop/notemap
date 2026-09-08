@@ -44,21 +44,23 @@ carrying what it needs for `became()` and `Routing` to draw where it went.
 
 Depends on nothing. Shell only; the client already answers everything this needs.
 
-- [ ] Create branch `agent/held-row-and-a-fresh-queue`
-- [ ] Processing leaves the row **open**, drawn by `Row` rather than swapped for another component:
+- [x] Create branch `agent/held-row-and-a-fresh-queue`
+- [x] Processing leaves the row **open**, drawn by `Row` rather than swapped for another component:
       the state word, the routing summary, the records it reads on open, and the full action line
-- [ ] A held row is released by collapsing it, opening another row, or `esc` — so there is at most
+- [x] A held row is released by collapsing it, opening another row, or `esc` — so there is at most
       one on screen, and a drain session evicts each as the next is reached for
-- [ ] The held item is read from the client's cache, which `processed()` has already updated, so the
+- [x] The held item is read from the client's cache, which `processed()` has already updated, so the
       row says `routed` or `retrying` from the summary rather than from the gesture that made it
-- [ ] `Lingering.svelte`, `lingering.svelte.ts` and the `HOLDS` timer are deleted, with the
+- [x] `Lingering.svelte`, `lingering.svelte.ts` and the `HOLDS` timer are deleted, with the
       reduced-motion branch that existed for the beat
-- [ ] `Queue.svelte`'s `rows` derivation, the `before` tracking and the orphan handling go with them;
+- [x] `Queue.svelte`'s `rows` derivation, the `before` tracking and the orphan handling go with them;
       `routing` state keeps the item and drops where the row stood
-- [ ] `shell.md`: the "row is watched out rather than vanishing" paragraph is replaced by what a held
+- [x] `shell.md`: the "row is watched out rather than vanishing" paragraph is replaced by what a held
       row is, what releases it, and that routing a second time is reaching for `process` again
-- [ ] `pnpm -r --silent test`
-- [ ] `git commit`
+- [x] `became()` tells `routed`, `retrying`, `manual` and `discarded` apart, on the feed as well —
+      the held row made the row's own word have to be honest, and `archived` was off-glossary
+- [x] `pnpm -r --silent test`
+- [x] `git commit`
 
 ### Phase 2 — the notice is a way back
 

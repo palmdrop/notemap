@@ -48,7 +48,7 @@ test("draws what the pool holds", async () => {
   expect(await screen.findByText("two")).toBeDefined();
 });
 
-test("says an archived row is archived, and offers the way back", async () => {
+test("says an archived row is discarded, and offers the way back", async () => {
   pool(
     held(
       anItem("gone", { archived: { archivedAt: "2026-08-17T07:15:00.000Z" } }),
@@ -57,7 +57,7 @@ test("says an archived row is archived, and offers the way back", async () => {
 
   render(Feed);
 
-  expect(await screen.findByText("archived")).toBeDefined();
+  expect(await screen.findByText("discarded")).toBeDefined();
   await open();
 
   await fireEvent.click(screen.getByRole("button", { name: "unarchive" }));
@@ -75,7 +75,7 @@ test("keeps tags editable on a finished row", async () => {
   );
 
   render(Feed);
-  await screen.findByText("archived");
+  await screen.findByText("discarded");
 
   await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
   const field = screen.getByLabelText("Add a tag");
@@ -179,7 +179,9 @@ test("says where a routed row went, without asking for its records", async () =>
   await client.destinations.load();
   render(Feed);
 
-  expect(await screen.findByText("routed")).toBeDefined();
+  // One of the two records has not been carried out, and the word says the
+  // whole row rather than the half of it that landed.
+  expect(await screen.findByText("retrying")).toBeDefined();
   expect(await screen.findByText("Fiction, manual · 1 pending")).toBeDefined();
   expect(asked()).not.toContain("GET /v1/items/sent/routing");
 });
@@ -223,7 +225,7 @@ test("reads from the end the reader last chose, not the one the feed defaults to
   expect(new URL(read!.url).searchParams.get("order")).toBe("oldest-first");
 });
 
-test("says an archived row is archived and still pending", async () => {
+test("says an archived row is discarded and still pending", async () => {
   const transport = pool(
     held(
       anItem("gone", { archived: { archivedAt: "2026-08-17T07:15:00.000Z" } }),
@@ -231,7 +233,7 @@ test("says an archived row is archived and still pending", async () => {
   );
 
   render(Feed);
-  await screen.findByText("archived");
+  await screen.findByText("discarded");
   transport.unreachable(true);
 
   await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
@@ -240,7 +242,7 @@ test("says an archived row is archived and still pending", async () => {
   await fireEvent.submit(field.closest("form") as HTMLFormElement);
 
   expect(await screen.findByText("pending")).toBeDefined();
-  expect(screen.getByText("archived")).toBeDefined();
+  expect(screen.getByText("discarded")).toBeDefined();
 });
 
 test("says nothing in the register about a feed the pool has not answered for", async () => {
@@ -324,7 +326,7 @@ test("keeps the row's marks when the rail furls, and draws each of them once", a
   );
 
   render(Feed);
-  await screen.findByText("archived");
+  await screen.findByText("discarded");
   transport.unreachable(true);
 
   await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
@@ -335,7 +337,7 @@ test("keeps the row's marks when the rail furls, and draws each of them once", a
 
   rail.toggle();
   await vi.waitFor(() => {
-    expect(screen.getAllByText("archived")).toHaveLength(1);
+    expect(screen.getAllByText("discarded")).toHaveLength(1);
   });
   expect(screen.getAllByText("pending")).toHaveLength(1);
 });
