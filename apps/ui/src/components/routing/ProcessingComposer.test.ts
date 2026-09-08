@@ -223,6 +223,32 @@ function draw(item = aCapture()) {
 const choose = async (name: string | RegExp) =>
   fireEvent.click(await screen.findByRole("button", { name }));
 
+/**
+ * A row in a browse, taken the way the typed line's tree is taken: `mousedown`
+ * on the text, the rows being options rather than buttons so that `↑↓` can walk
+ * them without moving focus off the line.
+ */
+const entry = async (text: string) =>
+  fireEvent.mouseDown(await screen.findByText(text));
+
+/** That the destination was taken and described: its one capability's fields are drawn. */
+const described = async () => screen.findByLabelText("directory");
+
+/**
+ * `route`, once there is a decision to send. A kind declaring one capability
+ * has it settled a tick after its description lands, so the commit is briefly
+ * disabled where nothing is clicked in between.
+ */
+const commit = async () => {
+  const button = (await screen.findByRole("button", {
+    name: "route",
+  })) as HTMLButtonElement;
+  await vi.waitFor(() => {
+    expect(button.disabled).toBe(false);
+  });
+  return fireEvent.click(button);
+};
+
 const RESEARCH = {
   id: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a80",
   name: "research",
@@ -288,7 +314,7 @@ test("commits an untouched template as the template, so the record names it", as
   draw();
   await choose("research");
   await screen.findByLabelText("directory");
-  await choose("route");
+  await commit();
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/route");
@@ -304,7 +330,7 @@ test("commits a corrected one as the decision it became", async () => {
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "reading/2026" },
   });
-  await choose("route");
+  await commit();
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/route");
@@ -334,7 +360,7 @@ test("describes the destination that was chosen and no other", async () => {
   expect(asked().filter((each) => each.endsWith("/description"))).toEqual([]);
 
   await choose(/Vault/);
-  await screen.findByRole("button", { name: /create/ });
+  await screen.findByLabelText("directory");
 
   expect(asked().filter((each) => each.endsWith("/description"))).toEqual([
     `GET /v1/destinations/${VAULT}/description`,
@@ -346,12 +372,11 @@ test("composes a decision one step at a time and sends it", async () => {
 
   const closed = draw();
   await choose(/Vault/);
-  await choose(/create/);
 
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
-  await choose("route");
+  await commit();
 
   await vi.waitFor(() => {
     expect(closed).toHaveBeenCalled();
@@ -359,15 +384,17 @@ test("composes a decision one step at a time and sends it", async () => {
   expect(asked()).toContain("POST /v1/items/one/route");
 });
 
-test("a capability that asks for nothing is two choices away from routed", async () => {
+/** One capability that asks for nothing: taking the destination is the whole decision. */
+test("a capability that asks for nothing is one choice away from routed", async () => {
   serving([aDestination()], { kind: "described", capabilities: [APPEND] });
 
   draw();
   await choose(/Vault/);
-  await choose(/append/);
 
   const commit = screen.getByRole("button", { name: "route" });
-  expect((commit as HTMLButtonElement).disabled).toBe(false);
+  await vi.waitFor(() => {
+    expect((commit as HTMLButtonElement).disabled).toBe(false);
+  });
 
   await fireEvent.click(commit);
   await vi.waitFor(() => {
@@ -455,9 +482,8 @@ test("browses a field that can be asked about, and takes the scope stood in", as
 
   draw();
   await choose(/Vault/);
-  await choose(/create/);
 
-  await choose("inbox");
+  await entry("inbox/");
   await choose(/use inbox/);
 
   expect((screen.getByLabelText("directory") as HTMLInputElement).value).toBe(
@@ -473,7 +499,6 @@ test("a refusal to browse is not an alarm, and typing still works beside it", as
 
   draw();
   await choose(/Vault/);
-  await choose(/create/);
 
   await screen.findByText(/the vault is not mounted/);
   expect(screen.queryByRole("alert")).toBeNull();
@@ -495,12 +520,11 @@ test("a typed value that was never listed still routes", async () => {
 
   const closed = draw();
   await choose(/Vault/);
-  await choose(/create/);
 
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "brand-new-folder" },
   });
-  await choose("route");
+  await commit();
 
   await vi.waitFor(() => {
     expect(closed).toHaveBeenCalled();
@@ -524,10 +548,14 @@ test("an unregistered kind gets the schema-driven control", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create/);
 
-  expect(await screen.findByRole("button", { name: "inbox" })).toBeDefined();
-  expect(screen.queryByRole("combobox")).toBeNull();
+  // Both controls are a combobox now, so what tells them apart is the list:
+  // the line draws a hierarchy it calls `places`, this draws the field's own.
+  expect(
+    await screen.findByRole("listbox", { name: "directory candidates" }),
+  ).toBeDefined();
+  expect(screen.queryByRole("listbox", { name: "places" })).toBeNull();
+  expect(await screen.findByText("inbox")).toBeDefined();
 });
 
 /** The seam decides on the kind alone, and a filesystem-shaped one draws the line. */
@@ -543,10 +571,11 @@ test("a kind that holds a filesystem gets the typed line instead", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create/);
 
-  expect(await screen.findByRole("combobox")).toBeDefined();
-  expect(screen.queryByRole("button", { name: "inbox" })).toBeNull();
+  expect(await screen.findByRole("listbox", { name: "places" })).toBeDefined();
+  expect(
+    screen.queryByRole("listbox", { name: "directory candidates" }),
+  ).toBeNull();
 });
 
 const answered = (entries: readonly Record<string, unknown>[]) => ({
@@ -564,10 +593,9 @@ test("walks through an entry that is only somewhere to look, and takes the one p
 
   draw();
   await choose(/Vault/);
-  await choose(/create/);
 
-  await choose("projects");
-  await screen.findByRole("button", { name: "fiction.md" });
+  await entry("projects/");
+  await screen.findByText("fiction.md");
 
   // A scope the field may not hold is not offered as something to take.
   expect(screen.queryByRole("button", { name: /^use / })).toBeNull();
@@ -575,7 +603,7 @@ test("walks through an entry that is only somewhere to look, and takes the one p
     "",
   );
 
-  await choose("fiction.md");
+  await entry("fiction.md");
   expect((screen.getByLabelText("directory") as HTMLInputElement).value).toBe(
     "projects/fiction.md",
   );
@@ -590,12 +618,11 @@ test("empties a field browsed to and then left, from the top and only there", as
 
   draw();
   await choose(/Vault/);
-  await choose(/create/);
-  await screen.findByRole("button", { name: "inbox" });
+  await screen.findByText("inbox/");
 
   expect(screen.queryByRole("button", { name: "clear" })).toBeNull();
 
-  await choose("inbox");
+  await entry("inbox/");
   await choose(/use inbox/);
   await choose("back");
   await choose("clear");
@@ -615,11 +642,8 @@ test("draws two entries that share a label", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create/);
 
-  expect(await screen.findAllByRole("button", { name: "notes" })).toHaveLength(
-    2,
-  );
+  expect(await screen.findAllByText("notes/")).toHaveLength(2);
 });
 
 test("drops an answer for a scope it has already left", async () => {
@@ -654,19 +678,18 @@ test("drops an answer for a scope it has already left", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create/);
 
   // Descend into an answer that hangs, then leave before it lands.
-  await choose("inbox");
+  await entry("inbox/");
   await choose("back");
-  await screen.findByRole("button", { name: "inbox" });
+  await screen.findByText("inbox/");
 
   release();
   await held;
   await new Promise((resolve) => setTimeout(resolve, 0));
 
-  expect(screen.queryByRole("button", { name: "buried" })).toBeNull();
-  expect(screen.getByRole("button", { name: "inbox" })).toBeDefined();
+  expect(screen.queryByText("buried")).toBeNull();
+  expect(screen.getByText("inbox/")).toBeDefined();
 });
 
 /** A filesystem vault holding one note, so the line has something to forecast against. */
@@ -747,7 +770,7 @@ test("stores what the person meant, not the word that was drawn", async () => {
   const line = await screen.findByRole("combobox");
   await fireEvent.input(line, { target: { value: "decisions.md" } });
   await screen.findByText("append");
-  await choose("route");
+  await commit();
 
   await vi.waitFor(async () => {
     expect(await routed(transport)).toMatchObject({
@@ -808,13 +831,12 @@ async function pickingFrontmatter(taken: readonly string[]) {
 
   draw();
   await choose(/Vault/);
-  await choose(/create/);
 
-  await fireEvent.input(screen.getByLabelText("directory"), {
+  await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
   for (const one of taken) await choose(one);
-  await choose("route");
+  await commit();
 
   return transport;
 }
@@ -831,7 +853,7 @@ test("a blank leaf submits a path that ends in a slash", async () => {
   expect(await screen.findAllByText(/Picker needs a trail\.md/)).toHaveLength(
     1,
   );
-  await choose("route");
+  await commit();
 
   await vi.waitFor(async () => {
     expect((await routed(transport)).arguments).toEqual({ path: "drafts/" });
@@ -871,7 +893,7 @@ test("a tag taken in the composer stays applied when the route fails", async () 
     expect(asked()).toContain("POST /v1/items/one/tag");
   });
 
-  await choose("route");
+  await commit();
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/route");
   });
@@ -896,7 +918,7 @@ test("takes a destination by typing enough of its name", async () => {
   await fireEvent.input(typing(), { target: { value: "vau" } });
   await fireEvent.keyDown(typing(), { key: "Enter" });
 
-  await screen.findByRole("button", { name: /create/ });
+  await described();
   expect(asked()).toContain(`GET /v1/destinations/${VAULT}/description`);
 });
 
@@ -927,7 +949,7 @@ test("completes a name with a space in it", async () => {
   await fireEvent.input(typing(), { target: { value: "obsidian v" } });
   await fireEvent.keyDown(typing(), { key: "Tab" });
 
-  await screen.findByRole("button", { name: /create/ });
+  await described();
 });
 
 test("the destination leaves the line and reads in the chrome", async () => {
@@ -935,7 +957,7 @@ test("the destination leaves the line and reads in the chrome", async () => {
 
   draw();
   await choose(/Vault/);
-  await screen.findByRole("button", { name: /create/ });
+  await described();
 
   expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe(
     "process · Vault",
@@ -978,7 +1000,7 @@ test("an unusable destination is not takeable by typing either", async () => {
   await fireEvent.input(typing(), { target: { value: "vau" } });
   await fireEvent.keyDown(typing(), { key: "Enter" });
 
-  expect(screen.queryByRole("button", { name: /create/ })).toBeNull();
+  expect(screen.queryByLabelText("directory")).toBeNull();
   expect(screen.getByRole("button", { name: /Vault/ })).toBeDefined();
 });
 
@@ -988,7 +1010,7 @@ test("the list still works, typing being an accelerator and not a replacement", 
   draw();
   await choose(/Vault/);
 
-  expect(await screen.findByRole("button", { name: /create/ })).toBeDefined();
+  expect(await screen.findByLabelText("directory")).toBeDefined();
 });
 
 /**
@@ -1052,10 +1074,8 @@ test("a kind with no filesystem in it draws neither line nor tree", async () => 
 
   draw();
   await choose(/Vault/);
-  await choose(/create/);
 
-  expect(await screen.findByRole("button", { name: "inbox" })).toBeDefined();
-  expect(screen.queryByRole("combobox", { name: "directory" })).toBeNull();
+  expect(await screen.findByText("inbox/")).toBeDefined();
   expect(screen.queryByRole("listbox", { name: "places" })).toBeNull();
 });
 
@@ -1070,8 +1090,8 @@ test("the kind that draws the line settles what to do, with no do step", async (
   expect(screen.queryByRole("button", { name: "create-or-append" })).toBeNull();
 });
 
-/** Its capabilities are its own, and nothing here can pick among them. */
-test("a kind that draws the browser still chooses what to do", async () => {
+/** One thing it can do is not a choice, so it is not one anybody is asked to make. */
+test("a kind that can do one thing settles it, with no do step", async () => {
   servingBrowsable(() => ({
     kind: "answered",
     entries: [{ label: "inbox", value: "inbox" }],
@@ -1081,7 +1101,135 @@ test("a kind that draws the browser still chooses what to do", async () => {
   draw();
   await choose(/Vault/);
 
+  expect(await screen.findByLabelText("directory")).toBeDefined();
+  expect(screen.queryByRole("button", { name: "create" })).toBeNull();
+});
+
+/**
+ * The browse behaves the way the typed line does, which is the whole point of
+ * it: one field, the answer under it, narrowed as it is typed into, `⇥` to
+ * finish a name and `↑↓⏎` to take one. What differs is that there are no
+ * segments — the whole field is the filter.
+ */
+const CHANNELS = [
+  { label: "Reading", value: "reading" },
+  { label: "Reading Notes", value: "reading-notes" },
+  { label: "Field Recordings", value: "field-recordings" },
+];
+
+async function browsingChannels() {
+  servingBrowsable(() => answered(CHANNELS));
+  draw();
+  await choose(/Vault/);
+  return (await screen.findByLabelText("directory")) as HTMLInputElement;
+}
+
+test("draws what the destination offers under the field", async () => {
+  await browsingChannels();
+
+  expect(await screen.findByText("Reading")).toBeDefined();
+  expect(screen.getByText("Field Recordings")).toBeDefined();
+});
+
+test("narrows what is drawn to what is typed", async () => {
+  const field = await browsingChannels();
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "read" } });
+
+  expect(screen.getByText("Reading")).toBeDefined();
+  expect(screen.getByText("Reading Notes")).toBeDefined();
+  expect(screen.queryByText("Field Recordings")).toBeNull();
+});
+
+/** A title is what a person types; a slug is what the field is sent with. */
+test("completes a title typed to the value the field holds", async () => {
+  const field = await browsingChannels();
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "Field" } });
+  await fireEvent.keyDown(field, { key: "Tab" });
+
+  expect(field.value).toBe("field-recordings");
+  // Still matched, so the one it resolved to stays under the field.
+  expect(screen.getByText("Field Recordings")).toBeDefined();
+});
+
+/** As far as the two slugs agree, in the spelling the field will be sent with. */
+test("completes only as far as several agree", async () => {
+  const field = await browsingChannels();
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "Readi" } });
+  await fireEvent.keyDown(field, { key: "Tab" });
+
+  expect(field.value).toBe("reading");
+});
+
+test("walks the narrowed list and takes the one it landed on", async () => {
+  const field = await browsingChannels();
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "read" } });
+  await fireEvent.keyDown(field, { key: "ArrowDown" });
+  await fireEvent.keyDown(field, { key: "ArrowDown" });
+  await fireEvent.keyDown(field, { key: "Enter" });
+
+  expect(field.value).toBe("reading-notes");
+});
+
+/** Left alone, `⏎` means route: walking is what makes it mean *take this one*. */
+test("commits where the walk has not moved", async () => {
+  const transport = servingBrowsable(() => answered(CHANNELS));
+  draw();
+  await choose(/Vault/);
+
+  const field = (await screen.findByLabelText("directory")) as HTMLInputElement;
+  await fireEvent.input(field, { target: { value: "reading" } });
+  await fireEvent.keyDown(field, { key: "Enter" });
+
+  await vi.waitFor(() => {
+    expect(sentTo(transport).map(routeOf)).toContain(
+      "POST /v1/items/one/route",
+    );
+  });
+});
+
+test("says so where nothing typed matches, rather than drawing nothing", async () => {
+  const field = await browsingChannels();
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "zzz" } });
+
+  expect(await screen.findByText("nothing here matches")).toBeDefined();
+});
+
+/** Backspacing out of an empty field gives the destination back, as the line does. */
+test("gives the destination back from an empty field", async () => {
+  const field = await browsingChannels();
+
+  await fireEvent.keyDown(field, { key: "Backspace" });
+
+  expect(await screen.findByRole("button", { name: /Vault/ })).toBeDefined();
+});
+
+/** More than one and it is asked, its capabilities being its own to pick among. */
+test("a kind that draws the browser chooses among two", async () => {
+  serving([aDestination({ kind: "kanban" })], {
+    kind: "described",
+    capabilities: [CREATE, APPEND],
+  });
+
+  draw();
+  await choose(/Vault/);
+
   expect(await screen.findByRole("button", { name: "create" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "append" })).toBeDefined();
+  // Nothing is picked for you, so no field is drawn until one is.
+  expect(screen.queryByLabelText("directory")).toBeNull();
+
+  await choose("create");
+  expect(await screen.findByLabelText("directory")).toBeDefined();
 });
 
 /** A composer you type into has to be one the caret is already in. */
@@ -1184,8 +1332,7 @@ test("hands the record it got back to whoever opened it", async () => {
   });
 
   await choose(/Vault/);
-  await choose(/append/);
-  await choose("route");
+  await commit();
 
   await vi.waitFor(() => {
     expect(routed).toHaveBeenCalled();
@@ -1214,8 +1361,7 @@ test("a refusal stays at the control, and the corner is left alone", async () =>
 
   const closed = draw();
   await choose(/Vault/);
-  await choose(/append/);
-  await choose("route");
+  await commit();
 
   await screen.findByText(/that destination needs different arguments/);
   expect(closed).not.toHaveBeenCalled();
@@ -1227,7 +1373,6 @@ test("shows what would be written only when it is asked for", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create/);
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
@@ -1248,7 +1393,6 @@ test("drops what was shown when the decision under it changes", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create/);
   const directory = await screen.findByLabelText("directory");
   await fireEvent.input(directory, { target: { value: "inbox" } });
   await choose("preview");
@@ -1279,7 +1423,6 @@ test("drops a preview that resolves after the decision moved on", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create/);
   const directory = await screen.findByLabelText("directory");
   await fireEvent.input(directory, { target: { value: "inbox" } });
   await choose("preview");
@@ -1314,7 +1457,6 @@ test("says what a preview would write that it cannot show", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create/);
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
@@ -1354,7 +1496,6 @@ test("clears a failed preview's message when the next one succeeds", async () =>
 
   draw();
   await choose(/Vault/);
-  await choose(/create/);
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
@@ -1376,7 +1517,6 @@ test("draws a kind that offers no preview as such, and still routes", async () =
 
   const closed = draw();
   await choose(/Vault/);
-  await choose(/create/);
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
@@ -1384,7 +1524,7 @@ test("draws a kind that offers no preview as such, and still routes", async () =
 
   expect(await screen.findByText(NO_PREVIEW_OFFERED)).toBeDefined();
 
-  await choose("route");
+  await commit();
   await vi.waitFor(() => {
     expect(closed).toHaveBeenCalled();
   });
@@ -1398,7 +1538,6 @@ test("says a destination that could not be reached, and routing is still availab
 
   draw();
   await choose(/Vault/);
-  await choose(/create/);
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
@@ -1749,7 +1888,7 @@ test("esc gives the destination back before it closes the composer", async () =>
   const closed = draw();
 
   await choose(/Vault/);
-  await screen.findByRole("button", { name: /create/ });
+  await described();
 
   await fireEvent.keyDown(window, { key: "Escape" });
 

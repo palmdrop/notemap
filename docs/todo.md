@@ -178,9 +178,9 @@
   draws it verbatim behind the interface a renderer will sit in. A library choice, and the question
   it drags in with it: whether captured markdown is sanitised before rendering, since a capture can
   carry raw HTML and nothing between the field and the screen would stop it.
-- [ ] **A browse is navigated entirely by scrolling.** `CandidateBrowser` renders `{#each entries}`
-  whole, and its input sets the field's value rather than filtering the list, so two hundred are.na
-  channels or a vault folder of two hundred notes is a scroll and nothing else. Raised 2026-09-07
-  while designing the are.na destination, and it is the browse's own problem rather than any kind's:
-  every kind that can answer a long list meets it. Filtering the drawn list as the field is typed is
-  the obvious first move; capping it and saying so is the second.
+- [x] **A browse is navigated entirely by scrolling.** Raised 2026-09-07 while designing the are.na
+  destination, and closed 2026-09-08: `CandidateBrowser` now narrows what it draws to what the field
+  holds, completes on `⇥` to the value rather than the label, and walks with `↑↓⏎` — the shape the
+  typed line already had, without the hierarchy. Capping a long answer and saying so is still the
+  destination's `truncated`, which this draws. Still open past that: an answer with no useful prefix
+  is a scroll, so **substring** matching rather than prefix is the next move if one turns up.

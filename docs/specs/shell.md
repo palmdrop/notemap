@@ -4,6 +4,16 @@
 **Last updated**: 2026-09-08
 **Shipped**:
 
+- 2026-09-08 — **The browse becomes a line, and one capability stops being a question.** The
+  schema-driven control is now the shape the typed line already had: one field, what the
+  destination offers under it, **narrowed to what is typed**, `⇥` to finish a name and `↑↓⏎` to
+  take one — so an account of two hundred are.na channels is typed at rather than scrolled
+  through. It completes to the **value** and matches on the label as well, because the two need not
+  be the same string: a channel is read by its title and filed under its slug. Descent stays, being
+  the one thing the line has no use for. And a destination declaring **one** capability has it
+  settled rather than asked: `do` is drawn only where there is something to pick among.
+  ([plan](../plans/arena-destination.md))
+
 - 2026-09-08 — **A field the schema fixes is chosen wherever it appears.** The destination form and
   the composer read a schema's `enum` the way the template form already did, so an enum setting or
   argument is a row of options rather than a box typed from memory — which is also what stops
@@ -515,8 +525,9 @@ or settled after it** on the right — what was used before, what sits beside th
 the commit that ends it. Untaken there is one column — the destination line, the `where` list, the
 commit — because there is nothing to consult yet: the split is a consequence of the decision rather
 than a frame waiting for it, and once the chrome carries the destination the list it was taken from
-is what `⌫` at the head of an empty line gives back. A kind that draws the schema-driven browser
-keeps its one column and keeps that list, having no line to back out of.
+is what `⌫` at the head of an empty line gives back — and the schema-driven browser gives it back
+the same way, being a line as well. What that kind keeps is its one column: there is no hierarchy
+beside it to consult.
 
 **The composer takes a measure of its own** — `--spacing-composer` — and **the modal grows when it
 gains its second column**, which is the one moment it is allowed to change size: a decision was
@@ -640,11 +651,27 @@ necessary, and that is the moment to add it.
 
 **Which control a field draws is a lookup keyed by destination kind**, and it decides on the kind
 alone: what a field means is the kind's business, and a capability one kind shares with another
-does not make their contents the same shape. A kind that cannot enumerate what it holds draws neither line nor
-tree and keeps the schema-driven browser — the entries at the current scope as marked options,
-`back` to the scope before it, `use <label>` to take the scope stood in, `clear` at the top — the
-same `Group`/`Option` idiom `where` already uses, with free entry beside it, and `do` still a step,
-its capabilities being its own and nothing here able to pick among them.
+does not make their contents the same shape. A kind with no hierarchy in it draws no tree, and
+keeps the schema-driven browser — but **that browser is a line too** *(amended 2026-09-08)*: one
+field with what the destination offers under it, **narrowed to what is typed**, `⇥` completing,
+`↑↓` walking and `⏎` taking the one walked to or committing where the walk has not moved. The same
+gestures the typed line has, without the segments: there is one value rather than a path, so the
+whole field is the filter. What it keeps that the line has no use for is **descent** — `back` to
+the scope before, `use <label>` to take the scope stood in, `clear` at the top — since an entry may
+be somewhere to look rather than something to hold, and this is the only control that can go there.
+
+Matching is by **prefix over both the label and the value**, and `⇥` completes to the **value**.
+The two need not be the same string — an are.na channel is browsed by its title and filed under
+its slug — so completing to the label would leave the field holding something that cannot be
+delivered, and matching the label alone would empty the list the moment `⇥` resolved one to the
+other. A person types the title they know and the field ends up holding the slug it will be sent
+with, which is also what shows them what they picked.
+
+**A capability nothing can be chosen among is not a step** *(2026-09-08)*. Where a destination
+declares exactly one, it is settled the moment the description lands and `do` is not drawn: a step
+whose every path is the same step is one press spent saying yes. Two or more and it is asked, its
+capabilities being its own and nothing here able to pick among them. This is the same reasoning the
+typed line already settled `create-or-append` by, arrived at from the other side.
 
 **A preview is asked for, never volunteered** (added 2026-09-04). `preview` sits beside `route` and
 runs once the arguments are settled, because the conversion may reach the destination or a model —

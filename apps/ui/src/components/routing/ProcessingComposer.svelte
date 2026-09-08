@@ -136,8 +136,7 @@
    * Where the line is what draws the place, *what will happen* is not a step:
    * it is read off the line and said in one word, and `⇧⏎` is the way to the
    * one capability that overrides it. A kind that draws the schema-driven
-   * browser still chooses, because its capabilities are its own and nothing
-   * here can pick among them.
+   * browser is asked, where it has more than one to be asked about.
    */
   const settles = $derived(
     destinationKind !== undefined &&
@@ -148,6 +147,26 @@
   $effect(() => {
     if (settles) capability = CREATE_OR_APPEND;
   });
+
+  /**
+   * A kind that can do one thing is not offering a choice, so it is not asked
+   * to be made: are.na declares `create` and nothing else, and a step whose
+   * every path is the same step is one press spent saying yes.
+   *
+   * Guarded on the capability being unset, unlike `settles` above, so a
+   * template that resolved to one is not overwritten by the effect that runs
+   * after `describe` answers.
+   */
+  const only = $derived(
+    capabilities.length === 1 ? capabilities[0]?.name : undefined,
+  );
+
+  $effect(() => {
+    if (only !== undefined && capability === undefined) capability = only;
+  });
+
+  /** Nothing to pick among is nothing to draw: the line and the fields are the whole decision. */
+  const chooses = $derived(capabilities.length > 1 && !settles);
 
   const ready = $derived(chosen !== undefined && capability !== undefined);
 
@@ -478,15 +497,18 @@
     try {
       const answer = await client.templates.resolve(item.id, one.id);
       resolved = answer;
-      await choose(answer.destination);
-      // `choose` clears the arguments, so what it resolved to is set after it.
-      capability = answer.capability;
-      args = Object.fromEntries(
-        Object.entries(answer.arguments).map(([key, value]) => [
-          key,
-          typeof value === "string" ? value : String(value),
-        ]),
-      );
+      // Handed to `choose` rather than set after it: a kind with one capability
+      // has it picked as soon as the description lands, and a field drawn in
+      // the gap before these arrive binds its own empty value back over them.
+      await choose(answer.destination, {
+        capability: answer.capability,
+        arguments: Object.fromEntries(
+          Object.entries(answer.arguments).map(([key, value]) => [
+            key,
+            typeof value === "string" ? value : String(value),
+          ]),
+        ),
+      });
     } catch (error) {
       refusing = { ...refusing, [one.id]: saidBy(error) };
       applied = undefined;
@@ -494,8 +516,18 @@
     }
   }
 
-  /** I/O that may hang on an unmounted drive, so it happens for the chosen one alone. */
-  async function choose(id: string) {
+  /**
+   * I/O that may hang on an unmounted drive, so it happens for the chosen one
+   * alone. `from` is where a template starts the decision, applied in the same
+   * step the description lands in rather than after it.
+   */
+  async function choose(
+    id: string,
+    from?: {
+      readonly capability: string;
+      readonly arguments: Record<string, string>;
+    },
+  ) {
     if (id === DISCARD) {
       discard();
       return;
@@ -518,6 +550,10 @@
       const report = await client.destinations.describe(id);
       if (report.kind === "described") {
         described = report;
+        if (from !== undefined) {
+          capability = from.capability;
+          args = from.arguments;
+        }
         return;
       }
 
@@ -705,7 +741,7 @@
           </Group>
         {/if}
 
-        {#if capabilities.length > 0 && !settles}
+        {#if chooses}
           <Group name="do">
             {#each capabilities as one (one.name)}
               <Option

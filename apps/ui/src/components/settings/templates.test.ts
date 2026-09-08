@@ -447,8 +447,10 @@ test("asks the destination what a browsable field could hold, and offers it", as
   render(Templates);
   await open(/Make a template/);
 
-  await screen.findByRole("button", { name: "reading" });
-  expect(screen.getByRole("button", { name: "field recordings" })).toBeTruthy();
+  // Rows rather than buttons now, as the typed line's are, so `↑↓` can walk
+  // them without moving focus off the field.
+  await screen.findByText("reading");
+  expect(screen.getByText("field recordings")).toBeTruthy();
 });
 
 test("taking one fills the field, and the field is still typed into", async () => {
@@ -456,7 +458,7 @@ test("taking one fills the field, and the field is still typed into", async () =
 
   render(Templates);
   await open(/Make a template/);
-  await open("reading");
+  await fireEvent.mouseDown(await screen.findByText("reading"));
 
   const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
   expect(field.value).toBe("reading");
