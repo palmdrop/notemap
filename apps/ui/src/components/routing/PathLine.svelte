@@ -303,7 +303,7 @@
     if (event.key === "Enter") {
       event.preventDefault();
       // Nothing is taken, so there is nothing to make a new one beside: what
-      // `create-or-append-file` will do is already make it.
+      // `create-or-append` will do is already make it.
       if (event.shiftKey) {
         onsubmit?.(forecast?.beside);
         return;

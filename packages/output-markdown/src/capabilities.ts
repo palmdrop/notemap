@@ -7,9 +7,9 @@ import type {
   PayloadTypeName,
 } from "@notemap/core";
 
-export const CREATE_FILE = "create-file" as CapabilityName;
-export const APPEND_TO_FILE = "append-to-file" as CapabilityName;
-export const CREATE_OR_APPEND_FILE = "create-or-append-file" as CapabilityName;
+export const CREATE = "create" as CapabilityName;
+export const APPEND = "append" as CapabilityName;
+export const CREATE_OR_APPEND = "create-or-append" as CapabilityName;
 
 export type CapabilitiesOptions = {
   readonly accepts: readonly PayloadTypeName[];
@@ -134,17 +134,17 @@ export function capabilitiesFor({
 }: CapabilitiesOptions): readonly Capability[] {
   return [
     {
-      name: CREATE_OR_APPEND_FILE,
+      name: CREATE_OR_APPEND,
       accepts,
       argumentsSchema: createOrAppendFileArguments(browsable),
     },
     {
-      name: CREATE_FILE,
+      name: CREATE,
       accepts,
       argumentsSchema: createFileArguments(browsable),
     },
     {
-      name: APPEND_TO_FILE,
+      name: APPEND,
       accepts,
       argumentsSchema: appendToFileArguments(browsable),
     },

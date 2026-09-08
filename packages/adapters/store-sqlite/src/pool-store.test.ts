@@ -1657,7 +1657,7 @@ describe("reservations", () => {
     const second = reserved(record, {
       id: "routing-2",
       at: "2026-08-03T10:30:00.000Z",
-      capability: "append-to-file",
+      capability: "append",
     });
 
     await p.transaction(async (tx) => {

@@ -36,8 +36,8 @@ function clipboard(): { writeText: ReturnType<typeof vi.fn> } {
 const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
 const BOARD = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a78";
 
-const CREATE_FILE = {
-  name: "create-file",
+const CREATE = {
+  name: "create",
   accepts: ["text"],
   argumentsSchema: {
     type: "object",
@@ -49,8 +49,8 @@ const CREATE_FILE = {
   },
 };
 
-const CREATE_FILE_ASKABLE = {
-  name: "create-file",
+const CREATE_ASKABLE = {
+  name: "create",
   accepts: ["text"],
   argumentsSchema: {
     type: "object",
@@ -66,7 +66,7 @@ const APPEND = { name: "append", accepts: ["text"] };
 
 /** As the adapter declares it, titles and sentences and all. */
 const CREATE_OR_APPEND = {
-  name: "create-or-append-file",
+  name: "create-or-append",
   accepts: ["text"],
   argumentsSchema: {
     type: "object",
@@ -102,7 +102,7 @@ function serving(
   held: readonly Record<string, unknown>[],
   description: Record<string, unknown> = {
     kind: "described",
-    capabilities: [CREATE_FILE],
+    capabilities: [CREATE],
   },
   preview: Record<string, unknown> = {
     kind: "previewed",
@@ -152,7 +152,7 @@ function serving(
 }
 
 /**
- * A destination whose `create-file` capability's `directory` can be browsed.
+ * A destination whose `create` capability's `directory` can be browsed.
  * The kind is one nothing registers a control for, so this draws the
  * schema-driven browser; the kinds that hold a filesystem draw the typed line
  * and are exercised in `PathLine.test.ts`.
@@ -169,7 +169,7 @@ function servingBrowsable(
     if (route.endsWith("/description")) {
       return json(200, {
         kind: "described",
-        capabilities: [CREATE_FILE_ASKABLE],
+        capabilities: [CREATE_ASKABLE],
       });
     }
     if (route.endsWith("/candidates")) {
@@ -214,7 +214,7 @@ const RESEARCH = {
   id: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a80",
   name: "research",
   destination: VAULT,
-  capability: "create-file",
+  capability: "create",
   arguments: { directory: "research/{{captured_at}}" },
   folder: "create",
   triggerTag: "route/research",
@@ -225,7 +225,7 @@ function servingTemplates(
   templates: readonly Record<string, unknown>[] = [RESEARCH],
   resolved: Record<string, unknown> = {
     destination: VAULT,
-    capability: "create-file",
+    capability: "create",
     arguments: { directory: "research/2026-09-04" },
   },
 ) {
@@ -239,7 +239,7 @@ function servingTemplates(
       return json(200, resolved);
     }
     if (route.endsWith("/description")) {
-      return json(200, { kind: "described", capabilities: [CREATE_FILE] });
+      return json(200, { kind: "described", capabilities: [CREATE] });
     }
     if (route === "POST /v1/items/one/route") {
       return json(200, {
@@ -298,7 +298,7 @@ test("commits a corrected one as the decision it became", async () => {
   });
   expect(await sent()).toContainEqual({
     destination: VAULT,
-    capability: "create-file",
+    capability: "create",
     arguments: { directory: "reading/2026" },
   });
 });
@@ -321,7 +321,7 @@ test("describes the destination that was chosen and no other", async () => {
   expect(asked().filter((each) => each.endsWith("/description"))).toEqual([]);
 
   await choose(/Vault/);
-  await screen.findByRole("button", { name: /create-file/ });
+  await screen.findByRole("button", { name: /create/ });
 
   expect(asked().filter((each) => each.endsWith("/description"))).toEqual([
     `GET /v1/destinations/${VAULT}/description`,
@@ -333,7 +333,7 @@ test("composes a decision one step at a time and sends it", async () => {
 
   const closed = draw();
   await choose(/Vault/);
-  await choose(/create-file/);
+  await choose(/create/);
 
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
@@ -442,7 +442,7 @@ test("browses a field that can be asked about, and takes the scope stood in", as
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
+  await choose(/create/);
 
   await choose("inbox");
   await choose(/use inbox/);
@@ -460,7 +460,7 @@ test("a refusal to browse is not an alarm, and typing still works beside it", as
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
+  await choose(/create/);
 
   await screen.findByText(/the vault is not mounted/);
   expect(screen.queryByRole("alert")).toBeNull();
@@ -482,7 +482,7 @@ test("a typed value that was never listed still routes", async () => {
 
   const closed = draw();
   await choose(/Vault/);
-  await choose(/create-file/);
+  await choose(/create/);
 
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "brand-new-folder" },
@@ -511,7 +511,7 @@ test("an unregistered kind gets the schema-driven control", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
+  await choose(/create/);
 
   expect(await screen.findByRole("button", { name: "inbox" })).toBeDefined();
   expect(screen.queryByRole("combobox")).toBeNull();
@@ -530,7 +530,7 @@ test("a kind that holds a filesystem gets the typed line instead", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
+  await choose(/create/);
 
   expect(await screen.findByRole("combobox")).toBeDefined();
   expect(screen.queryByRole("button", { name: "inbox" })).toBeNull();
@@ -551,7 +551,7 @@ test("walks through an entry that is only somewhere to look, and takes the one p
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
+  await choose(/create/);
 
   await choose("projects");
   await screen.findByRole("button", { name: "fiction.md" });
@@ -577,7 +577,7 @@ test("empties a field browsed to and then left, from the top and only there", as
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
+  await choose(/create/);
   await screen.findByRole("button", { name: "inbox" });
 
   expect(screen.queryByRole("button", { name: "clear" })).toBeNull();
@@ -602,7 +602,7 @@ test("draws two entries that share a label", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
+  await choose(/create/);
 
   expect(await screen.findAllByRole("button", { name: "notes" })).toHaveLength(
     2,
@@ -623,7 +623,7 @@ test("drops an answer for a scope it has already left", async () => {
     if (route.endsWith("/description")) {
       return json(200, {
         kind: "described",
-        capabilities: [CREATE_FILE_ASKABLE],
+        capabilities: [CREATE_ASKABLE],
       });
     }
     if (route.endsWith("/candidates")) {
@@ -641,7 +641,7 @@ test("drops an answer for a scope it has already left", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
+  await choose(/create/);
 
   // Descend into an answer that hangs, then leave before it lands.
   await choose("inbox");
@@ -738,14 +738,14 @@ test("stores what the person meant, not the word that was drawn", async () => {
 
   await vi.waitFor(async () => {
     expect(await routed(transport)).toMatchObject({
-      capability: "create-or-append-file",
+      capability: "create-or-append",
       arguments: { path: "decisions.md" },
     });
   });
 });
 
 /** The one capability that promises never to write into somebody's note. */
-test("shift-enter stores create-file under the free name it offered", async () => {
+test("shift-enter stores create under the free name it offered", async () => {
   const transport = servingVault([
     { label: "decisions.md", value: "notes/decisions.md" },
   ]);
@@ -760,7 +760,7 @@ test("shift-enter stores create-file under the free name it offered", async () =
 
   await vi.waitFor(async () => {
     expect(await routed(transport)).toMatchObject({
-      capability: "create-file",
+      capability: "create",
       arguments: { directory: "", filename: "decisions-1.md" },
     });
   });
@@ -843,7 +843,7 @@ test("takes a destination by typing enough of its name", async () => {
   await fireEvent.input(typing(), { target: { value: "vau" } });
   await fireEvent.keyDown(typing(), { key: "Enter" });
 
-  await screen.findByRole("button", { name: /create-file/ });
+  await screen.findByRole("button", { name: /create/ });
   expect(asked()).toContain(`GET /v1/destinations/${VAULT}/description`);
 });
 
@@ -874,7 +874,7 @@ test("completes a name with a space in it", async () => {
   await fireEvent.input(typing(), { target: { value: "obsidian v" } });
   await fireEvent.keyDown(typing(), { key: "Tab" });
 
-  await screen.findByRole("button", { name: /create-file/ });
+  await screen.findByRole("button", { name: /create/ });
 });
 
 test("the destination leaves the line and reads in the chrome", async () => {
@@ -882,7 +882,7 @@ test("the destination leaves the line and reads in the chrome", async () => {
 
   draw();
   await choose(/Vault/);
-  await screen.findByRole("button", { name: /create-file/ });
+  await screen.findByRole("button", { name: /create/ });
 
   expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe(
     "process · Vault",
@@ -925,7 +925,7 @@ test("an unusable destination is not takeable by typing either", async () => {
   await fireEvent.input(typing(), { target: { value: "vau" } });
   await fireEvent.keyDown(typing(), { key: "Enter" });
 
-  expect(screen.queryByRole("button", { name: /create-file/ })).toBeNull();
+  expect(screen.queryByRole("button", { name: /create/ })).toBeNull();
   expect(screen.getByRole("button", { name: /Vault/ })).toBeDefined();
 });
 
@@ -935,9 +935,7 @@ test("the list still works, typing being an accelerator and not a replacement", 
   draw();
   await choose(/Vault/);
 
-  expect(
-    await screen.findByRole("button", { name: /create-file/ }),
-  ).toBeDefined();
+  expect(await screen.findByRole("button", { name: /create/ })).toBeDefined();
 });
 
 /**
@@ -986,7 +984,7 @@ test("an unreachable destination is still routable", async () => {
   });
 
   expect(await routed(transport)).toMatchObject({
-    capability: "create-or-append-file",
+    capability: "create-or-append",
     arguments: { path: "notes/decisions.md" },
   });
 });
@@ -1001,7 +999,7 @@ test("a kind with no filesystem in it draws neither line nor tree", async () => 
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
+  await choose(/create/);
 
   expect(await screen.findByRole("button", { name: "inbox" })).toBeDefined();
   expect(screen.queryByRole("combobox", { name: "directory" })).toBeNull();
@@ -1016,9 +1014,7 @@ test("the kind that draws the line settles what to do, with no do step", async (
   await choose(/Vault/);
 
   expect(await screen.findByRole("combobox", { name: "place" })).toBeDefined();
-  expect(
-    screen.queryByRole("button", { name: "create-or-append-file" }),
-  ).toBeNull();
+  expect(screen.queryByRole("button", { name: "create-or-append" })).toBeNull();
 });
 
 /** Its capabilities are its own, and nothing here can pick among them. */
@@ -1032,9 +1028,7 @@ test("a kind that draws the browser still chooses what to do", async () => {
   draw();
   await choose(/Vault/);
 
-  expect(
-    await screen.findByRole("button", { name: "create-file" }),
-  ).toBeDefined();
+  expect(await screen.findByRole("button", { name: "create" })).toBeDefined();
 });
 
 /** A composer you type into has to be one the caret is already in. */
@@ -1180,7 +1174,7 @@ test("shows what would be written only when it is asked for", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
+  await choose(/create/);
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
@@ -1201,7 +1195,7 @@ test("drops what was shown when the decision under it changes", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
+  await choose(/create/);
   const directory = await screen.findByLabelText("directory");
   await fireEvent.input(directory, { target: { value: "inbox" } });
   await choose("preview");
@@ -1222,7 +1216,7 @@ test("drops a preview that resolves after the decision moved on", async () => {
       return json(200, { values: [aDestination()] });
     }
     if (route.endsWith("/description")) {
-      return json(200, { kind: "described", capabilities: [CREATE_FILE] });
+      return json(200, { kind: "described", capabilities: [CREATE] });
     }
     if (route === "POST /v1/items/one/route/preview") {
       return new Promise<Response>((resolve) => (release = resolve));
@@ -1232,7 +1226,7 @@ test("drops a preview that resolves after the decision moved on", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
+  await choose(/create/);
   const directory = await screen.findByLabelText("directory");
   await fireEvent.input(directory, { target: { value: "inbox" } });
   await choose("preview");
@@ -1267,7 +1261,7 @@ test("says what a preview would write that it cannot show", async () => {
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
+  await choose(/create/);
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
@@ -1284,7 +1278,7 @@ test("clears a failed preview's message when the next one succeeds", async () =>
       return json(200, { values: [aDestination()] });
     }
     if (route.endsWith("/description")) {
-      return json(200, { kind: "described", capabilities: [CREATE_FILE] });
+      return json(200, { kind: "described", capabilities: [CREATE] });
     }
     if (route === "POST /v1/items/one/route/preview") {
       if (fail) {
@@ -1307,7 +1301,7 @@ test("clears a failed preview's message when the next one succeeds", async () =>
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
+  await choose(/create/);
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
@@ -1329,7 +1323,7 @@ test("draws a kind that offers no preview as such, and still routes", async () =
 
   const closed = draw();
   await choose(/Vault/);
-  await choose(/create-file/);
+  await choose(/create/);
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
@@ -1351,7 +1345,7 @@ test("says a destination that could not be reached, and routing is still availab
 
   draw();
   await choose(/Vault/);
-  await choose(/create-file/);
+  await choose(/create/);
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
@@ -1702,7 +1696,7 @@ test("esc gives the destination back before it closes the composer", async () =>
   const closed = draw();
 
   await choose(/Vault/);
-  await screen.findByRole("button", { name: /create-file/ });
+  await screen.findByRole("button", { name: /create/ });
 
   await fireEvent.keyDown(window, { key: "Escape" });
 

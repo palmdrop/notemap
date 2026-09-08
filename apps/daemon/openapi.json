@@ -1708,7 +1708,7 @@
                 "type": "string",
                 "minLength": 1,
                 "description": "One the destination declared. Anything else is refused.",
-                "example": "create-file"
+                "example": "create"
               },
               "arguments": {
                 "type": "object",
@@ -4327,7 +4327,7 @@
               "type": "string",
               "minLength": 1,
               "description": "One the destination declared. Anything else is refused.",
-              "example": "create-file"
+              "example": "create"
             },
             "required": true,
             "description": "One the destination declared. Anything else is refused.",
@@ -4512,7 +4512,7 @@
               "type": "string",
               "minLength": 1,
               "description": "Which capability's records to read. One nothing was ever routed with answers no places.",
-              "example": "create-or-append-file"
+              "example": "create-or-append"
             },
             "required": true,
             "description": "Which capability's records to read. One nothing was ever routed with answers no places.",

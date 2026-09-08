@@ -47,9 +47,9 @@
   import { OWN_ARGUMENTS, sameArguments } from "$lib/arguments";
   import { fieldsOf, valuesFrom } from "$lib/schema-form";
 
-  const CREATE_FILE = "create-file";
+  const CREATE = "create";
   /** What the typed line drives: the capability that decides at delivery. */
-  const CREATE_OR_APPEND_FILE = "create-or-append-file";
+  const CREATE_OR_APPEND = "create-or-append";
   /** The one field the typed line drives, and the only one `⇧⏎` has to re-read. */
   const LINE_FIELD = "path";
 
@@ -142,11 +142,11 @@
   const settles = $derived(
     destinationKind !== undefined &&
       browserFor(destinationKind) !== CandidateBrowser &&
-      capabilities.some((one) => one.name === CREATE_OR_APPEND_FILE),
+      capabilities.some((one) => one.name === CREATE_OR_APPEND),
   );
 
   $effect(() => {
-    if (settles) capability = CREATE_OR_APPEND_FILE;
+    if (settles) capability = CREATE_OR_APPEND;
   });
 
   const ready = $derived(chosen !== undefined && capability !== undefined);
@@ -337,7 +337,7 @@
   } {
     const place = placeOf(args[LINE_FIELD] ?? "");
     return {
-      capability: CREATE_FILE,
+      capability: CREATE,
       arguments: { directory: place.directory, filename: beside },
     };
   }
@@ -533,8 +533,9 @@
 
   /**
    * `beside` is `⇧⏎`: the person meant a new note rather than an addition to
-   * the one that is there, and `create-file` is the capability that promises
-   * exactly that — it refuses a name that is taken rather than writing into it.
+   * the one that is there, so it asks for `create`. Both file kinds refuse a
+   * name that is taken rather than writing into it; the capability itself no
+   * longer promises that, and a kind that cannot would clobber here.
    */
   async function send(beside?: string) {
     if (chosen === undefined || capability === undefined) return;

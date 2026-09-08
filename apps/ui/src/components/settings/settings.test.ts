@@ -64,7 +64,7 @@ function serving(
 const described = () =>
   json(200, {
     kind: "described",
-    capabilities: [{ name: "create-file", accepts: [], argumentsSchema: {} }],
+    capabilities: [{ name: "create", accepts: [], argumentsSchema: {} }],
   });
 
 /** Processing a destination happens on the row, which opens on its own name. */
@@ -109,16 +109,14 @@ test("says what a destination can do without anyone asking it to", async () => {
     [`GET /v1/destinations/${VAULT}/description`]: () =>
       json(200, {
         kind: "described",
-        capabilities: [
-          { name: "create-file", accepts: [], argumentsSchema: {} },
-        ],
+        capabilities: [{ name: "create", accepts: [], argumentsSchema: {} }],
       }),
   });
 
   render(Destinations);
   await open("Vault");
 
-  await screen.findByText("create-file");
+  await screen.findByText("create");
 });
 
 test("says a destination is not really there, though it describes itself fine", async () => {
@@ -153,9 +151,7 @@ test("leaves one that cannot describe itself saying so, and the rest listed", as
     "GET /v1/destinations/b/description": () =>
       json(200, {
         kind: "described",
-        capabilities: [
-          { name: "create-file", accepts: [], argumentsSchema: {} },
-        ],
+        capabilities: [{ name: "create", accepts: [], argumentsSchema: {} }],
       }),
   });
 
@@ -230,7 +226,7 @@ test("says a row is being asked while its probe is still out", async () => {
   await open("Vault");
 
   // Describing has landed; only the probe is still out.
-  await screen.findByText("create-file");
+  await screen.findByText("create");
   expect(screen.queryByText("unasked")).toBeNull();
   await screen.findByText("asking now");
 
@@ -257,9 +253,7 @@ test("asks one destination what it can do, on request", async () => {
     [`GET /v1/destinations/${VAULT}/description`]: () =>
       json(200, {
         kind: "described",
-        capabilities: [
-          { name: "create-file", accepts: [], argumentsSchema: {} },
-        ],
+        capabilities: [{ name: "create", accepts: [], argumentsSchema: {} }],
       }),
   });
 
@@ -267,7 +261,7 @@ test("asks one destination what it can do, on request", async () => {
   await open("Vault");
   await press("Check");
 
-  await screen.findByText("create-file");
+  await screen.findByText("create");
   expect(asked()).toContain(`GET /v1/destinations/${VAULT}/description`);
 });
 

@@ -12,8 +12,8 @@ vi.mock("$lib/client", () => import("$testing/pool"));
 const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
 const RESEARCH = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a80";
 
-const CREATE_FILE = {
-  name: "create-file",
+const CREATE = {
+  name: "create",
   accepts: ["text"],
   argumentsSchema: {
     type: "object",
@@ -41,7 +41,7 @@ function aTemplate(overrides: Record<string, unknown> = {}) {
     id: RESEARCH,
     name: "research",
     destination: VAULT,
-    capability: "create-file",
+    capability: "create",
     arguments: { directory: "research/{{captured_at}}" },
     folder: "create",
     triggerTag: "route/research",
@@ -65,7 +65,7 @@ function serving(
     }
     if (route.endsWith("/report")) return json(200, report);
     if (route.endsWith("/description")) {
-      return json(200, { kind: "described", capabilities: [CREATE_FILE] });
+      return json(200, { kind: "described", capabilities: [CREATE] });
     }
     if (route === "POST /v1/templates") return json(201, aTemplate());
     if (route === `DELETE /v1/templates/${RESEARCH}`) {
@@ -149,7 +149,7 @@ test("opening one says what it does, into what, and how much it has", async () =
   render(Templates);
   await open(/research/);
 
-  expect(await screen.findByText("create-file")).toBeTruthy();
+  expect(await screen.findByText("create")).toBeTruthy();
   expect(screen.getByText(/4 items/)).toBeTruthy();
 });
 
@@ -176,7 +176,7 @@ test("makes one from the form, and the arguments are typed as patterns", async (
   expect(await sent()).toContainEqual({
     name: "Research links",
     destination: VAULT,
-    capability: "create-file",
+    capability: "create",
     arguments: { directory: "research/{{captured_at}}" },
     folder: "create",
     triggerTag: "route/research",
@@ -191,7 +191,7 @@ test("says what the pool refused about a pattern, where it was typed", async () 
     }
     if (route === "GET /v1/templates") return json(200, { values: [] });
     if (route.endsWith("/description")) {
-      return json(200, { kind: "described", capabilities: [CREATE_FILE] });
+      return json(200, { kind: "described", capabilities: [CREATE] });
     }
     if (route === "POST /v1/templates") {
       return json(422, {
@@ -354,7 +354,7 @@ test("the folder mode is chosen rather than only read", async () => {
   expect(await sent()).toContainEqual({
     name: "Research links",
     destination: VAULT,
-    capability: "create-file",
+    capability: "create",
     arguments: { directory: "research" },
     folder: "establish",
   });
@@ -366,11 +366,11 @@ test("editing draws the form alone, not the template beside it", async () => {
 
   render(Templates);
   await open(/research/);
-  expect(await screen.findByText("create-file")).toBeTruthy();
+  expect(await screen.findByText("create")).toBeTruthy();
 
   await open("Edit");
 
-  expect(screen.queryByText("create-file")).toBeNull();
+  expect(screen.queryByText("create")).toBeNull();
   expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
   expect(await screen.findByLabelText("name")).toBeTruthy();
 });

@@ -22,7 +22,7 @@ describe("what a delivery produced, and what one would", () => {
 
     const request = {
       destination: vault.up,
-      capability: "create-file",
+      capability: "create",
       arguments: { directory: "inbox", filename: "a-thought.md" },
     };
 
@@ -56,7 +56,7 @@ describe("what a delivery produced, and what one would", () => {
 
     const request = {
       destination: vault.down,
-      capability: "create-file",
+      capability: "create",
       arguments: { directory: "inbox", filename: "later.md" },
     };
 

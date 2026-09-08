@@ -12,14 +12,14 @@ import {
 } from "@notemap/core";
 
 import {
-  APPEND_TO_FILE,
+  APPEND,
   asAppendToFileArguments,
   asCreateFileArguments,
   asCreateOrAppendFileArguments,
   capabilitiesFor,
   folderModeOf,
-  CREATE_FILE,
-  CREATE_OR_APPEND_FILE,
+  CREATE,
+  CREATE_OR_APPEND,
   deriveFilename,
   insertUnder,
   markdownOutput,
@@ -254,11 +254,11 @@ type Composition = {
 
 function compose(wiring: Wiring, delivery: Delivery): Promise<Composition> {
   switch (delivery.capability) {
-    case CREATE_FILE:
+    case CREATE:
       return composeCreate(wiring, delivery);
-    case APPEND_TO_FILE:
+    case APPEND:
       return composeAppend(wiring, delivery);
-    case CREATE_OR_APPEND_FILE:
+    case CREATE_OR_APPEND:
       return composeCreateOrAppend(wiring, delivery);
     default:
       throw new Refused(`no capability named ${delivery.capability}`);
@@ -314,7 +314,7 @@ function composeCreate(
 ): Promise<Composition> {
   const args = asCreateFileArguments(delivery.arguments);
   if (args === undefined) {
-    throw new Refused("that is not a create-file argument set");
+    throw new Refused("that is not a create argument set");
   }
 
   const filename = args.filename ?? deriveFilename(delivery);
@@ -327,7 +327,7 @@ function composeAppend(
 ): Promise<Composition> {
   const args = asAppendToFileArguments(delivery.arguments);
   if (args === undefined) {
-    throw new Refused("that is not an append-to-file argument set");
+    throw new Refused("that is not an append argument set");
   }
 
   return append(wiring, delivery, args.path, args.heading);
@@ -346,7 +346,7 @@ function composeCreateOrAppend(
 ): Promise<Composition> {
   const args = asCreateOrAppendFileArguments(delivery.arguments);
   if (args === undefined) {
-    throw new Refused("that is not a create-or-append-file argument set");
+    throw new Refused("that is not a create-or-append argument set");
   }
 
   const place = placeOf(args.path);

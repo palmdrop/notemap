@@ -58,7 +58,7 @@ async function route(
 ): Promise<Response> {
   return send(host.app, `/v1/items/${item}/route`, {
     destination: host.vault.id,
-    capability: "create-file",
+    capability: "create",
     arguments: args,
   });
 }
@@ -294,7 +294,7 @@ describe("POST /v1/items/{id}/route", () => {
 
     const response = await send(host.app, `/v1/items/${item}/route`, {
       destination: "elsewhere",
-      capability: "create-file",
+      capability: "create",
       arguments: { directory: "" },
     });
 
@@ -332,7 +332,7 @@ describe("POST /v1/items/{id}/route", () => {
 
     const response = await send(host.app, `/v1/items/${item}/route`, {
       destination: host.vault.id,
-      capability: "create-file",
+      capability: "create",
       arguments: {},
       when: "now",
     });
@@ -504,7 +504,7 @@ describe("POST /v1/items/{id}/route/preview", () => {
   ): Promise<Response> {
     return send(host.app, `/v1/items/${item}/route/preview`, {
       destination: host.vault.id,
-      capability: "create-file",
+      capability: "create",
       arguments: args,
     });
   }

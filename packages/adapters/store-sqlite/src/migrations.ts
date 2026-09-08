@@ -789,6 +789,23 @@ export const MIGRATIONS: readonly string[] = [
         AND owed.abandoned_at IS NULL
     );
   `,
+
+  `
+  -- Capability names stopped being file-shaped, so that a vault's note and a
+  -- board's block are one capability rather than two.
+  --
+  -- A template is live: it fires on a tag indefinitely, and one naming a
+  -- capability nothing declares is broken rather than merely historical.
+  -- Routing records are deliberately left alone — they say what happened, the
+  -- mirror says the same, and there is no verify to reconcile a divergence.
+  UPDATE routing_templates
+  SET capability = CASE capability
+        WHEN 'create-file'           THEN 'create'
+        WHEN 'append-to-file'        THEN 'append'
+        WHEN 'create-or-append-file' THEN 'create-or-append'
+      END
+  WHERE capability IN ('create-file', 'append-to-file', 'create-or-append-file');
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

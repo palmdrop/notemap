@@ -1,8 +1,8 @@
 import {
-  APPEND_TO_FILE,
+  APPEND,
   capabilitiesFor,
-  CREATE_FILE,
-  CREATE_OR_APPEND_FILE,
+  CREATE,
+  CREATE_OR_APPEND,
   markdownOutput,
   type Renderers,
 } from "@notemap/output-markdown";
@@ -202,11 +202,11 @@ function carryOut(
   signal?: AbortSignal,
 ): Promise<Landed> {
   switch (delivery.capability) {
-    case CREATE_FILE:
+    case CREATE:
       return createNote(wiring, delivery, signal);
-    case APPEND_TO_FILE:
+    case APPEND:
       return appendToNote(wiring, delivery, signal);
-    case CREATE_OR_APPEND_FILE:
+    case CREATE_OR_APPEND:
       return createOrAppendToNote(wiring, delivery, signal);
     default:
       return Promise.reject(

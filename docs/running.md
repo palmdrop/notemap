@@ -279,11 +279,11 @@ it unusable. Leave the database in `state/`.
 
 Routing an item at it uses one of two capabilities:
 
-- **`create-file`** — writes a new file under `directory` (empty names the root itself). Give it a
+- **`create`** — writes a new file under `directory` (empty names the root itself). Give it a
   `filename` or let one be derived from the capture. It never overwrites: a name already taken is
   refused, and the decision comes back to you. An *asset* whose name is taken becomes `name-1.png`
   rather than being refused, since nobody chose that name.
-- **`append-to-file`** — appends onto an existing note at `path`, under `heading` if you name one,
+- **`append`** — appends onto an existing note at `path`, under `heading` if you name one,
   at the end of the file if you do not.
 
 A delivered `text` capture is a markdown file: frontmatter carrying the item id, the source, the

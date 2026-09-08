@@ -69,7 +69,7 @@ test("flattens a detail into pairs rather than stringifying it", async () => {
       anAction("one", {
         kind: "routed",
         detail: {
-          capability: "create-or-append-file",
+          capability: "create-or-append",
           arguments: { path: "projects/notemap/notes/decisions.md" },
         },
       }),

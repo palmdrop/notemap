@@ -4012,7 +4012,7 @@ export interface components {
             destination: string;
             /**
              * @description One the destination declared. Anything else is refused.
-             * @example create-file
+             * @example create
              */
             capability: string;
             /**

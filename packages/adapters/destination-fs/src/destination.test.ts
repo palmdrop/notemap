@@ -21,8 +21,8 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { createFilesystemDestination } from "./destination";
 import {
-  APPEND_TO_FILE,
-  CREATE_OR_APPEND_FILE,
+  APPEND,
+  CREATE_OR_APPEND,
   linkTo,
   type Renderer,
 } from "@notemap/output-markdown";
@@ -143,9 +143,9 @@ describe("what it says it can do", () => {
     const described = await destination.describe();
 
     expect(described.capabilities.map((each) => each.name)).toEqual([
-      "create-or-append-file",
-      "create-file",
-      "append-to-file",
+      "create-or-append",
+      "create",
+      "append",
     ]);
     expect(described.capabilities[0]?.accepts).toEqual([TEXT, "image"]);
     expect(described.capabilities[2]?.argumentsSchema).toMatchObject({
@@ -153,7 +153,7 @@ describe("what it says it can do", () => {
     });
   });
 
-  it("asks nothing of create-or-append-file but offers candidates for its path", async () => {
+  it("asks nothing of create-or-append but offers candidates for its path", async () => {
     const { destination } = await vault();
     const described = await destination.describe();
     const schema = described.capabilities[0]?.argumentsSchema as JsonObject;
@@ -169,7 +169,7 @@ describe("what it says it can do", () => {
   });
 
   /** The schema used to demand a folder the adapter has always read as the root. */
-  it("no longer requires create-file's directory", async () => {
+  it("no longer requires create's directory", async () => {
     const { destination } = await vault();
     const described = await destination.describe();
 
@@ -292,7 +292,7 @@ describe("what it says it wrote", () => {
 
     const outcome = await destination.deliver(
       delivery({
-        capability: APPEND_TO_FILE,
+        capability: APPEND,
         arguments: { path: "log.md" },
         content: { text: "a thought" },
       }),
@@ -306,7 +306,7 @@ describe("what it says it wrote", () => {
     const { path, destination } = await vault({ text: renderText });
 
     const outcome = await destination.deliver(
-      delivery({ capability: APPEND_TO_FILE, arguments: { path: "log.md" } }),
+      delivery({ capability: APPEND, arguments: { path: "log.md" } }),
     );
 
     const written = await readFile(join(path, "log.md"), "utf8");
@@ -320,7 +320,7 @@ describe("what it says it wrote", () => {
 
     const outcome = await destination.deliver(
       delivery({
-        capability: CREATE_OR_APPEND_FILE,
+        capability: CREATE_OR_APPEND,
         arguments: { path: "log.md" },
       }),
     );
@@ -384,13 +384,13 @@ describe("a folder a delivery requires", () => {
 
     const appended = await destination.deliver(
       delivery({
-        capability: APPEND_TO_FILE,
+        capability: APPEND,
         arguments: { path: "journal/2026-09.md", folder: "require" },
       }),
     );
     const either = await destination.deliver(
       delivery({
-        capability: CREATE_OR_APPEND_FILE,
+        capability: CREATE_OR_APPEND,
         arguments: { path: "journal/2026-09.md", folder: "require" },
       }),
     );
@@ -440,7 +440,7 @@ describe("nothing escapes the root", () => {
 
     expect(
       await destination.deliver(
-        delivery({ capability: "append-to-file", arguments: { path: "." } }),
+        delivery({ capability: "append", arguments: { path: "." } }),
       ),
     ).toMatchObject({ kind: "rejected" });
   });
@@ -452,7 +452,7 @@ describe("appending to a file", () => {
 
     const outcome = await destination.deliver(
       delivery({
-        capability: "append-to-file",
+        capability: "append",
         arguments: { path: "daily/2026-08-11.md", heading: "Notes" },
       }),
     );
@@ -486,7 +486,7 @@ describe("appending to a file", () => {
 
     await destination.deliver(
       delivery({
-        capability: "append-to-file",
+        capability: "append",
         arguments: { path: "daily.md", heading: "Notes" },
       }),
     );
@@ -517,7 +517,7 @@ describe("appending to a file", () => {
 
     await destination.deliver(
       delivery({
-        capability: "append-to-file",
+        capability: "append",
         arguments: { path: "daily.md" },
       }),
     );
@@ -535,7 +535,7 @@ describe("appending to a file", () => {
 
     await destination.deliver(
       delivery({
-        capability: "append-to-file",
+        capability: "append",
         arguments: { path: "daily.md" },
       }),
     );
@@ -551,7 +551,7 @@ describe("appending to a file", () => {
 
     await destination.deliver(
       delivery({
-        capability: "append-to-file",
+        capability: "append",
         arguments: { path: "daily.md", heading: "Captured" },
       }),
     );
@@ -564,7 +564,7 @@ describe("appending to a file", () => {
 
 describe("creating or appending, decided here", () => {
   const asked = (args: Record<string, string>) =>
-    delivery({ capability: "create-or-append-file", arguments: args });
+    delivery({ capability: "create-or-append", arguments: args });
 
   it("creates the note when it is not there", async () => {
     const { path, destination } = await vault({ text: renderText });
@@ -604,7 +604,7 @@ describe("creating or appending, decided here", () => {
 
     const outcome = await destination.deliver(
       delivery({
-        capability: "create-or-append-file",
+        capability: "create-or-append",
         arguments: { path: "drafts/" },
         content: { text: "Read: Borges — Ficciones\nand then the rest" },
       }),
@@ -630,7 +630,7 @@ describe("creating or appending, decided here", () => {
     expect(
       await destination.deliver(
         delivery({
-          capability: "create-or-append-file",
+          capability: "create-or-append",
           arguments: { path: "" },
           content: { count: 4 },
         }),
@@ -1116,7 +1116,7 @@ describe("what it says it would write", () => {
     const { path, destination } = await vault({ text: renderText });
     await writeFile(join(path, "log.md"), "# Log\n\nyesterday\n");
     const each = delivery({
-      capability: APPEND_TO_FILE,
+      capability: APPEND,
       arguments: { path: "log.md" },
     });
 
@@ -1136,7 +1136,7 @@ describe("what it says it would write", () => {
 
     const shown = await textOf(
       await destination.preview(
-        delivery({ capability: APPEND_TO_FILE, arguments: { path: "log.md" } }),
+        delivery({ capability: APPEND, arguments: { path: "log.md" } }),
       ),
     );
 

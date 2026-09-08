@@ -67,9 +67,9 @@ export type CandidatesRequest = {
 /**
  * One thing the field could hold, or one place to look for more, or both.
  * Both are optional because they are independent: a vault's folder is
- * somewhere an `append-to-file` browser descends and never something that
- * field may hold, and a note is the reverse. An entry with neither is
- * nothing, and no caller is obliged to draw one.
+ * somewhere an `append` browser descends and never something that field may
+ * hold, and a note is the reverse. An entry with neither is nothing, and no
+ * caller is obliged to draw one.
  */
 export type CandidateEntry = {
   readonly label: string;

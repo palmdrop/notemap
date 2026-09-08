@@ -57,7 +57,7 @@ describe("the whole path with the door shut", () => {
 
     await client.routing.route(captured.id, {
       destination: vault.up,
-      capability: "create-file",
+      capability: "create",
       arguments: { directory: "inbox", filename: "a-thought.md" },
     });
 
@@ -93,7 +93,7 @@ describe("a client carrying an access token", () => {
 
     await client.routing.route(captured.id, {
       destination: vault.up,
-      capability: "create-file",
+      capability: "create",
       arguments: { directory: "inbox", filename: "from-a-script.md" },
     });
 

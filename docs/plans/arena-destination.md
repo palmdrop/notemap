@@ -1,7 +1,7 @@
 # An are.na destination
 
 **Date**: 2026-09-07
-**Status**: Todo
+**Status**: In progress
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/shell.md`, `docs/specs/security.md`
 **Closed**:
 
@@ -99,32 +99,32 @@ The cost is that **`create` stops promising it will refuse a name already taken*
 still do — `EEXIST`, and `PUT If-None-Match: *` — but that becomes a promise each kind makes rather
 than part of what the capability means. Are.na cannot make it.
 
-- [ ] Create the branch for this phase.
-- [ ] Rename the three constants in `packages/output-markdown/src/capabilities.ts` and their values.
-- [ ] Update every reference across `destination-fs`, `destination-webdav`, `output-markdown` and
+- [x] Create the branch for this phase.
+- [x] Rename the three constants in `packages/output-markdown/src/capabilities.ts` and their values.
+- [x] Update every reference across `destination-fs`, `destination-webdav`, `output-markdown` and
       their tests.
-- [ ] `apps/ui/src/lib/capability.ts`: `DID` becomes bare verbs — `Created`, `Appended`,
+- [x] `apps/ui/src/lib/capability.ts`: `DID` becomes bare verbs — `Created`, `Appended`,
       `Created or appended`. The destination is already named on the next line of `Record.svelte`,
       so the noun was redundant. Unknown names still fall through to themselves.
-- [ ] `apps/ui/src/components/routing/ProcessingComposer.svelte:47`: rename the hardcoded
+- [x] `apps/ui/src/components/routing/ProcessingComposer.svelte:47`: rename the hardcoded
       `CREATE_FILE` used by the `⇧⏎` gesture, and narrow the comment at line ~429 — the no-clobber
       promise it relies on is now the file kinds', not the capability's.
-- [ ] Migrate routing **templates**: one `UPDATE` over `capability` in the templates table. A
+- [x] Migrate routing **templates**: one `UPDATE` over `capability` in the templates table. A
       template is live — it fires on a tag — so one naming a capability nothing declares is broken
       rather than merely historical.
-- [ ] Do **not** migrate routing records. Old records keep the old spelling in the pool and in the
+- [x] Do **not** migrate routing records. Old records keep the old spelling in the pool and in the
       mirror, which stay in agreement; there is no verify or repair to reconcile a divergence
       (`docs/specs/mirror.md:66`). Remembered places keyed on the old names go dark, which is
       accepted.
-- [ ] Update `docs/specs/core.md` (including line ~211 and the `create-file` promise at ~1013),
+- [x] Update `docs/specs/core.md` (including line ~211 and the `create-file` promise at ~1013),
       `docs/specs/http-v1.md` (the examples at ~781, ~826, ~841, ~1027, ~1041) and
       `docs/specs/shell.md:658`.
-- [ ] Update `CONTEXT.md`'s **Capability** entry to the text below.
-- [ ] Note in both file kinds' READMEs that `create` refuses a name already taken **on that kind**,
+- [x] Update `CONTEXT.md`'s **Capability** entry to the text below.
+- [x] Note in both file kinds' READMEs that `create` refuses a name already taken **on that kind**,
       and by what mechanism.
 - [ ] Drain any pending deliveries before this lands: one naming an undeclared capability dies.
-- [ ] Typecheck, tests, lint. `pnpm test:stack` — this crosses the HTTP surface.
-- [ ] Commit.
+- [x] Typecheck, tests, lint. `pnpm test:stack` — this crosses the HTTP surface.
+- [x] Commit.
 
 ### `CONTEXT.md` — Capability
 

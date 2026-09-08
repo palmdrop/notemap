@@ -124,7 +124,7 @@
 
   /**
    * Emptying the field, not choosing the top: what an empty value means is
-   * the schema's business — for `create-file` it is the vault's own root.
+   * the schema's business — for `create` it is the vault's own root.
    * Offered only at the top, since `back` is what leaves a scope.
    */
   function clear(): void {

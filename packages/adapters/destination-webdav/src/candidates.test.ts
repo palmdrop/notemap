@@ -38,12 +38,12 @@ async function vault(root = "V") {
 }
 
 const LINE: CandidatesRequest = {
-  capability: "create-or-append-file" as CapabilityName,
+  capability: "create-or-append" as CapabilityName,
   field: "path",
 };
 
 const DIRECTORY: CandidatesRequest = {
-  capability: "create-file" as CapabilityName,
+  capability: "create" as CapabilityName,
   field: "directory",
 };
 
@@ -108,7 +108,7 @@ describe("what a webdav vault offers the typed line", () => {
     expect((await candidates({ ...LINE, scope: "nope" })).entries).toEqual([]);
   });
 
-  it("offers create-file's directory the collections alone", async () => {
+  it("offers create's directory the collections alone", async () => {
     const { server, candidates } = await vault();
     server.makeCollection("V/projects");
     server.put("V/decisions.md", "a note");

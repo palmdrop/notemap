@@ -85,7 +85,7 @@ function draw(value = "", said: unknown = undefined) {
   const { rerender } = render(PathLine, {
     props: {
       destination: VAULT,
-      capability: "create-or-append-file",
+      capability: "create-or-append",
       field: "path",
       label: "where",
       value,

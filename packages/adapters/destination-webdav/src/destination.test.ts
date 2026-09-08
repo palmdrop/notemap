@@ -260,7 +260,7 @@ describe("creating a note", () => {
    * A missing `directory` is the root now, so only a wrong type is left for the
    * reader to catch — an extra key is the schema's business at core's boundary.
    */
-  it("refuses arguments that are not a create-file argument set", async () => {
+  it("refuses arguments that are not a create argument set", async () => {
     const server = await vault();
 
     expect(
@@ -276,7 +276,7 @@ describe("appending to a note", () => {
   const append = (server: DavServer, args: Record<string, string>) =>
     adapter(server).deliver(
       destinationRow({ root: "V" }),
-      delivery({ capability: "append-to-file", arguments: args }),
+      delivery({ capability: "append", arguments: args }),
     );
 
   it("inserts under the heading and keeps what was already there", async () => {
@@ -375,7 +375,7 @@ describe("appending to a note", () => {
     const outcome = await adapter(server).deliver(
       destinationRow({ root: "V" }),
       delivery({
-        capability: "append-to-file",
+        capability: "append",
         arguments: { path: "daily.md" },
       }),
     );
@@ -398,7 +398,7 @@ describe("appending to a note", () => {
     });
   });
 
-  it("refuses arguments that are not an append-to-file argument set", async () => {
+  it("refuses arguments that are not an append argument set", async () => {
     const server = await vault();
 
     expect(await append(server, { note: "daily.md" })).toMatchObject({
@@ -411,7 +411,7 @@ describe("creating or appending, decided here", () => {
   const send = (server: DavServer, args: Record<string, string>) =>
     adapter(server).deliver(
       destinationRow({ root: "V" }),
-      delivery({ capability: "create-or-append-file", arguments: args }),
+      delivery({ capability: "create-or-append", arguments: args }),
     );
 
   it("creates the note when it is not there", async () => {
@@ -458,7 +458,7 @@ describe("creating or appending, decided here", () => {
     const outcome = await adapter(server).deliver(
       destinationRow({ root: "V" }),
       delivery({
-        capability: "create-or-append-file",
+        capability: "create-or-append",
         arguments: { path: "drafts/" },
         content: { text: "# A thought\nand more of it" },
       }),
@@ -666,7 +666,7 @@ describe("assets", () => {
       destinationRow({ root: "V" }),
       delivery({
         type: IMAGE,
-        capability: "append-to-file",
+        capability: "append",
         arguments: { path: "daily.md" },
         assets: [deliveredAsset("one", "photo.png", bytes("PNG"), ONE)],
       }),
@@ -691,7 +691,7 @@ describe("assets", () => {
       destinationRow({ root: "V" }),
       delivery({
         type: IMAGE,
-        capability: "append-to-file",
+        capability: "append",
         arguments: { path: "daily.md" },
         assets: [photo],
       }),
@@ -877,7 +877,7 @@ describe("what it says it wrote", () => {
     const outcome = await adapter(server).deliver(
       destinationRow({ root: "V" }),
       delivery({
-        capability: "append-to-file",
+        capability: "append",
         arguments: { path: "daily.md" },
       }),
     );
@@ -895,7 +895,7 @@ describe("what it says it wrote", () => {
     const outcome = await adapter(server).deliver(
       destinationRow({ root: "V" }),
       delivery({
-        capability: "append-to-file",
+        capability: "append",
         arguments: { path: "daily.md" },
       }),
     );
@@ -938,7 +938,7 @@ describe("what it says it would write", () => {
     const server = await vault();
     server.put("V/daily.md", "# Monday\n\nyesterday\n");
     const each = delivery({
-      capability: "append-to-file",
+      capability: "append",
       arguments: { path: "daily.md" },
     });
 
@@ -965,7 +965,7 @@ describe("what it says it would write", () => {
       await preview(
         server,
         delivery({
-          capability: "append-to-file",
+          capability: "append",
           arguments: { path: "daily.md" },
         }),
       ),

@@ -1,10 +1,10 @@
 import type { Delivery } from "@notemap/core";
 import {
-  APPEND_TO_FILE,
+  APPEND,
   asAppendToFileArguments,
   asCreateFileArguments,
   asCreateOrAppendFileArguments,
-  CREATE_FILE,
+  CREATE,
   deriveFilename,
   folderModeOf,
   insertUnder,
@@ -53,7 +53,7 @@ export function createNote(
 function createTarget(delivery: Delivery): string {
   const args = asCreateFileArguments(delivery.arguments);
   if (args === undefined) {
-    throw new Refused("that is not a create-file argument set");
+    throw new Refused("that is not a create argument set");
   }
 
   const filename = args.filename ?? deriveFilename(delivery);
@@ -82,7 +82,7 @@ function createOrAppendTarget(delivery: Delivery): {
 } {
   const args = asCreateOrAppendFileArguments(delivery.arguments);
   if (args === undefined) {
-    throw new Refused("that is not a create-or-append-file argument set");
+    throw new Refused("that is not a create-or-append argument set");
   }
 
   const place = placeOf(args.path);
@@ -152,7 +152,7 @@ function appendTarget(delivery: Delivery): {
 } {
   const args = asAppendToFileArguments(delivery.arguments);
   if (args === undefined) {
-    throw new Refused("that is not an append-to-file argument set");
+    throw new Refused("that is not an append argument set");
   }
 
   return {
@@ -253,13 +253,13 @@ export async function previewNote(
   delivery: Delivery,
   signal?: AbortSignal,
 ): Promise<string> {
-  if (delivery.capability === CREATE_FILE) {
+  if (delivery.capability === CREATE) {
     const note = locate(wiring.root, createTarget(delivery));
     return whole(render(wiring, delivery, note));
   }
 
   const wanted =
-    delivery.capability === APPEND_TO_FILE
+    delivery.capability === APPEND
       ? appendTarget(delivery)
       : createOrAppendTarget(delivery);
 

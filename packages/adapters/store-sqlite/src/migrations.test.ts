@@ -36,6 +36,9 @@ const BEFORE_ONE_KEY = 13;
 /** The version at which a capture was still typed `text` or `image`. */
 const BEFORE_ONE_PAYLOAD_TYPE = 20;
 
+/** The version at which a capability was still named after a file. */
+const BEFORE_GENERIC_CAPABILITIES = 21;
+
 const directories: string[] = [];
 const opened: SqlitePoolStore[] = [];
 
@@ -331,6 +334,8 @@ describe("moving destinations into the pool", () => {
 
     const records = await pool.routingRecords("item-1" as ItemId);
     expect(records.map((each) => each.target)).toEqual([
+      // The rename left records alone, so one written before it keeps the
+      // spelling it was written with.
       {
         kind: "destination",
         destination: "vault",
@@ -529,6 +534,60 @@ describe("collapsing the payload types into one", () => {
         subject_id: "item-shot",
         enrichment: null,
       },
+    ]);
+  });
+});
+
+/** A pool whose templates were saved under the file-shaped capability names. */
+function savedAtPreviousVersion(): string {
+  const directory = mkdtempSync(join(tmpdir(), "notemap-migration-"));
+  directories.push(directory);
+  const file = join(directory, "pool.db");
+
+  const raw = new DatabaseSync(file);
+  for (const migration of MIGRATIONS.slice(0, BEFORE_GENERIC_CAPABILITIES)) {
+    raw.exec(migration);
+  }
+  raw.exec(`PRAGMA user_version = ${BEFORE_GENERIC_CAPABILITIES}`);
+
+  const insert = raw.prepare(
+    `INSERT INTO routing_templates
+       (id, name, destination_id, capability, arguments, folder, trigger_tag,
+        established_at, created_at, modified_at)
+     VALUES (?, ?, 'vault', ?, '{}', 'create', NULL, NULL, ?, ?)`,
+  );
+
+  insert.run("t-create", "drafts", "create-file", ENQUEUED, ENQUEUED);
+  insert.run("t-append", "log", "append-to-file", ENQUEUED, ENQUEUED);
+  insert.run("t-either", "inbox", "create-or-append-file", ENQUEUED, ENQUEUED);
+  // Saved by a kind that never had the file-shaped names, and left alone.
+  insert.run("t-block", "board", "create", ENQUEUED, ENQUEUED);
+
+  raw.close();
+  return file;
+}
+
+function templateCapabilities(file: string) {
+  const raw = new DatabaseSync(file, { readOnly: true });
+  try {
+    return raw
+      .prepare("SELECT id, capability FROM routing_templates ORDER BY id")
+      .all();
+  } finally {
+    raw.close();
+  }
+}
+
+describe("capability names that stopped being file-shaped", () => {
+  it("respells every template, which is live and fires on a tag", () => {
+    const file = savedAtPreviousVersion();
+    migrated(file);
+
+    expect(templateCapabilities(file)).toEqual([
+      { id: "t-append", capability: "append" },
+      { id: "t-block", capability: "create" },
+      { id: "t-create", capability: "create" },
+      { id: "t-either", capability: "create-or-append" },
     ]);
   });
 });

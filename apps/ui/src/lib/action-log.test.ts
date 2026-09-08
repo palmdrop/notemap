@@ -25,7 +25,7 @@ test("a landing says where it went", () => {
     anAction("routed", {
       record: "r1",
       destination: "vault",
-      capability: "append-to-file",
+      capability: "append",
       pointer: "notes/daily.md",
     }),
     reading,
@@ -83,7 +83,7 @@ const fired = {
   template: "t1",
   name: "Research links",
   destination: "vault",
-  capability: "create-file",
+  capability: "create",
   tag: "route/research",
 };
 

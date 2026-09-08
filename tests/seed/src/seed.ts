@@ -187,7 +187,7 @@ async function routeEach(
   items: readonly string[],
   options: SeedOptions,
 ): Promise<readonly { item: string; destination: string }[]> {
-  const capability = options.capability ?? "create-file";
+  const capability = options.capability ?? "create";
   const { values } = await http.get<Destinations>("/v1/destinations");
   const sent: { item: string; destination: string }[] = [];
 

@@ -96,8 +96,8 @@ batch = 4
 
 `GET /v1/destinations` lists what the pool holds and probes nothing;
 `GET /v1/destinations/{id}/description` asks one what it can do. Two capabilities per folder:
-`create-file`, which takes `{ directory, filename? }` and refuses rather than overwriting, and
-`append-to-file`, which takes `{ path, heading? }` and creates both the file and the heading when
+`create`, which takes `{ directory, filename? }` and refuses rather than overwriting, and
+`append`, which takes `{ path, heading? }` and creates both the file and the heading when
 they are missing. The filename is derived from the first line of the payload when the target names
 none — weak, because the domain has no title.
 

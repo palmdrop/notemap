@@ -92,7 +92,7 @@ export const routeRequestSchema = z
       }),
       capability: z.string().min(1).openapi({
         description: "One the destination declared. Anything else is refused.",
-        example: "create-file",
+        example: "create",
       }),
       arguments: jsonObject.openapi({
         description:

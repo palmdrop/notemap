@@ -35,7 +35,7 @@ function delivery(
   return {
     item: "item-1" as ItemId,
     destination: "vault" as DestinationId,
-    capability: "create-file" as CapabilityName,
+    capability: "create" as CapabilityName,
     arguments: {},
     source: "web-manual" as SourceId,
     payload: {

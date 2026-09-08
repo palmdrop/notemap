@@ -43,17 +43,17 @@ async function vault(): Promise<{
 }
 
 const DIRECTORY: CandidatesRequest = {
-  capability: "create-file" as CapabilityName,
+  capability: "create" as CapabilityName,
   field: "directory",
 };
 
 const PATH: CandidatesRequest = {
-  capability: "append-to-file" as CapabilityName,
+  capability: "append" as CapabilityName,
   field: "path",
 };
 
 const LINE: CandidatesRequest = {
-  capability: "create-or-append-file" as CapabilityName,
+  capability: "create-or-append" as CapabilityName,
   field: "path",
 };
 
@@ -71,7 +71,7 @@ describe("what the typed line's path offers", () => {
     ]);
   });
 
-  it("descends a scope the way append-to-file's path does", async () => {
+  it("descends a scope the way append's path does", async () => {
     const { path, candidates } = await vault();
     await mkdir(join(path, "projects", "notemap"), { recursive: true });
     await writeFile(join(path, "projects", "a.md"), "a note");
@@ -93,7 +93,7 @@ describe("what the typed line's path offers", () => {
   });
 });
 
-describe("what create-file's directory offers", () => {
+describe("what create's directory offers", () => {
   it("lists folders at the root, and nothing else", async () => {
     const { path, candidates } = await vault();
     await mkdir(join(path, "inbox"));
@@ -168,7 +168,7 @@ describe("what create-file's directory offers", () => {
   });
 });
 
-describe("what append-to-file's path offers", () => {
+describe("what append's path offers", () => {
   it("offers notes to take and folders only to walk through", async () => {
     const { path, candidates } = await vault();
     await writeFile(join(path, "daily.md"), "");
@@ -309,7 +309,7 @@ describe("a field this kind does not offer candidates for", () => {
 
     await expect(
       candidates({
-        capability: "create-file" as CapabilityName,
+        capability: "create" as CapabilityName,
         field: "filename",
       }),
     ).rejects.toThrow(NotOffered);

@@ -108,7 +108,7 @@ export function delivery(overrides: DeliveryOverrides = {}): Delivery {
   return {
     item: (overrides.item ?? "item-1") as ItemId,
     destination: VAULT,
-    capability: (overrides.capability ?? "create-file") as CapabilityName,
+    capability: (overrides.capability ?? "create") as CapabilityName,
     arguments: overrides.arguments ?? { directory: "inbox" },
     source: SCRATCHPAD,
     payload: {

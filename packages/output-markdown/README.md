@@ -36,7 +36,7 @@ decides where it goes.
 
 ## The two capabilities
 
-`create-file` takes `{ directory, filename? }` and `append-to-file` takes `{ path, heading? }`.
+`create` takes `{ directory, filename? }` and `append` takes `{ path, heading? }`.
 They live here rather than in either adapter because two kinds doing the same thing under different
 words would make every rule and every composer choice kind-specific for no gain — and two copies of
 one schema are two things to keep in step.

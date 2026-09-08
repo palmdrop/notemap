@@ -1,4 +1,4 @@
-/** Where a `create-or-append-file` path lands: a folder, and a name in it. */
+/** Where a `create-or-append` path lands: a folder, and a name in it. */
 export type Place = {
   readonly directory: string;
   /** Absent where the path named a folder alone, and the name is to be derived. */

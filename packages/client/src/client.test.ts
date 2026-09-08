@@ -336,7 +336,7 @@ describe("the queue", () => {
     await client.loadQueue();
     await client.routing.route("one", {
       destination: "vault",
-      capability: "create-file",
+      capability: "create",
       arguments: {},
     });
 
@@ -534,7 +534,7 @@ describe("routing", () => {
     await expect(
       client.routing.preview("one", {
         destination: "vault",
-        capability: "create-file",
+        capability: "create",
         arguments: { directory: "inbox" },
       }),
     ).resolves.toMatchObject({ kind: "previewed" });
@@ -552,7 +552,7 @@ describe("routing", () => {
     await expect(
       client.routing.preview("one", {
         destination: "vault",
-        capability: "create-file",
+        capability: "create",
         arguments: {},
       }),
     ).rejects.toBeInstanceOf(Unreachable);
@@ -584,7 +584,7 @@ describe("routing", () => {
     await expect(
       client.routing.route("one", {
         destination: "nowhere",
-        capability: "create-file",
+        capability: "create",
         arguments: {},
       }),
     ).rejects.toBeInstanceOf(Refused);

@@ -718,7 +718,7 @@ const candidatesQuery = z.object({
     .openapi({
       param: { name: "capability", in: "query" },
       description: "One the destination declared. Anything else is refused.",
-      example: "create-file",
+      example: "create",
     }),
   field: z
     .string()
@@ -787,7 +787,7 @@ const rememberedQuery = z.object({
       param: { name: "capability", in: "query" },
       description:
         "Which capability's records to read. One nothing was ever routed with answers no places.",
-      example: "create-or-append-file",
+      example: "create-or-append",
     }),
   field: z
     .string()

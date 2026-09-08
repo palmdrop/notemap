@@ -668,7 +668,7 @@ summary is what a row is for; what the line gains is the way into the record it 
 
 **On a row, a record reads as its destination and the place it landed** *(2026-09-04)* — the
 pointer the destination handed back, or failing that the place the decision named. The capability
-went with it, `create-file` being the adapter's vocabulary rather than a person's, and so did
+went with it, `create` being the adapter's vocabulary rather than a person's, and so did
 `delivered`, which is what a record not saying otherwise already means. Those are the two words the
 place needed. **A state is said only where it is not that**, muted and after the place, since a
 record the pool has recorded and not carried out claims no landing. A decision made by hand reads

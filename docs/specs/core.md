@@ -219,7 +219,7 @@
   ([plan](../plans/delivery-machinery.md),
   [ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md))
 - 2026-08-14 — **Items leave, and land in a folder.** The first destination adapter ships:
-  `@notemap/destination-fs` declares `create-file` and `append-to-file` over a configured root,
+  `@notemap/destination-fs` declares `create` and `append` over a configured root,
   renders a delivery as CommonMark under provenance frontmatter, and writes every asset beside the
   note under the name it was uploaded with — closing the copy-or-reference question for this
   destination in favour of a copy. The daemon wires destinations from configuration, and a delivery
@@ -942,8 +942,8 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   converter is not deterministic the two will differ — a fact about the destination rather than a
   fault. Committing the preview's bytes with the decision was rejected: it would put bytes in a
   reservation that is a pure decision, and it cannot be honest for a capability whose right output
-  depends on the destination at the moment of writing, which `append-to-file` and
-  `create-or-append-file` both are. A dry-run flag on `deliver` was rejected for one sentence: it
+  depends on the destination at the moment of writing, which `append` and
+  `create-or-append` both are. A dry-run flag on `deliver` was rejected for one sentence: it
   puts one boolean between showing a person something and writing into their vault, which core
   cannot verify and an adapter can get wrong once.
 - **That the two agree is the adapter's discipline**, not a guarantee the port makes. `deliver` and
@@ -1022,11 +1022,13 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   refuses a capability that was not declared, exactly as before. What the decision settles is a
   rule about **how a capability should be named** — after the outcome a person wants, not after
   the mechanism that will achieve it — and it is why the kinds that write files offer a capability
-  that decides at delivery beside two that are stated up front. `create-file` promises *never add
-  to a note*, which an outcome-shaped capability cannot. `append-to-file` promises a *named path*:
-  nothing is derived from the item, so a rule files into exactly the note it names. Neither
-  promises the note is already there — both kinds write one that is not, which is what a daily
-  note whose sections appear as things are filed into them needs.
+  that decides at delivery beside two that are stated up front. `append` promises a *named place*:
+  nothing is derived from the item, so a rule files into exactly the note it names. `create`
+  promises a new thing rather than an addition to one — but **not** that a name already taken is
+  refused, which is each kind's own promise and stated in its README. Both file kinds make it, by
+  `EEXIST` and by `PUT If-None-Match: *`; a kind whose protocol offers no conditional create cannot.
+  Neither capability promises the place is already there — both file kinds write one that is not,
+  which is what a daily note whose sections appear as things are filed into them needs.
 - **A capability's accepted payload types may be a wildcard**, for a destination whose fallback
   genuinely handles anything. It is a promise rather than a shrug: claiming it trades away the
   refusal core would otherwise make up front, so what would have been an immediate

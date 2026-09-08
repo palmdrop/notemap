@@ -213,7 +213,7 @@ describe("PATCH /v1/destinations/{id}", () => {
 
     const first = await send(host.app, `/v1/items/${item}/route`, {
       destination: vault.id,
-      capability: "create-file",
+      capability: "create",
       arguments: { directory: "inbox", filename: "a.md" },
     });
     expect(((await body(first)) as { state: string }).state).toBe("pending");
@@ -277,9 +277,9 @@ describe("GET /v1/destinations/{id}/description", () => {
     };
     expect(described.kind).toBe("described");
     expect(described.capabilities.map((each) => each.name)).toEqual([
-      "create-or-append-file",
-      "create-file",
-      "append-to-file",
+      "create-or-append",
+      "create",
+      "append",
     ]);
     // That the schema reaches the wire intact, annotation and all: the composer
     // reads `x-notemap-candidates` off exactly this to know what it may ask about.
@@ -364,7 +364,7 @@ describe("GET /v1/destinations/{id}/candidates", () => {
     const vault = await created(host);
 
     const response = await ask(host, vault.id, {
-      capability: "create-file",
+      capability: "create",
       field: "directory",
     });
 
@@ -396,7 +396,7 @@ describe("GET /v1/destinations/{id}/candidates", () => {
     const vault = await created(host);
 
     const response = await ask(host, vault.id, {
-      capability: "create-file",
+      capability: "create",
       field: "filename",
     });
 
@@ -404,7 +404,7 @@ describe("GET /v1/destinations/{id}/candidates", () => {
     expect(await body(response)).toMatchObject({
       error: {
         code: "field-not-askable",
-        capability: "create-file",
+        capability: "create",
         field: "filename",
       },
     });
@@ -415,7 +415,7 @@ describe("GET /v1/destinations/{id}/candidates", () => {
     const vault = await created(host);
 
     const response = await ask(host, vault.id, {
-      capability: "create-file",
+      capability: "create",
       field: "directory",
     });
 
@@ -425,14 +425,14 @@ describe("GET /v1/destinations/{id}/candidates", () => {
     expect(answered.detail).toContain(host.vaultRoot);
   });
 
-  it("offers a folder to walk through, and a note to take, for append-to-file", async () => {
+  it("offers a folder to walk through, and a note to take, for append", async () => {
     const host = serving("ready");
     mkdirSync(join(host.vaultRoot, "projects"));
     writeFileSync(join(host.vaultRoot, "daily.md"), "");
     const vault = await created(host);
 
     const response = await ask(host, vault.id, {
-      capability: "append-to-file",
+      capability: "append",
       field: "path",
     });
 
@@ -452,7 +452,7 @@ describe("GET /v1/destinations/{id}/candidates", () => {
     const vault = await created(host, { settings: { root: host.assetRoot } });
 
     const response = await ask(host, vault.id, {
-      capability: "create-file",
+      capability: "create",
       field: "directory",
     });
 
@@ -466,7 +466,7 @@ describe("GET /v1/destinations/{id}/candidates", () => {
     const host = serving();
 
     const response = await ask(host, "nobody", {
-      capability: "create-file",
+      capability: "create",
       field: "directory",
     });
 
@@ -489,7 +489,7 @@ describe("retiring and offering again", () => {
 
     const refused = await send(host.app, `/v1/items/${item}/route`, {
       destination: vault.id,
-      capability: "create-file",
+      capability: "create",
       arguments: { directory: "inbox" },
     });
     expect(refused.status).toBe(409);
@@ -513,7 +513,7 @@ describe("retiring and offering again", () => {
 
     const routed = await send(host.app, `/v1/items/${item}/route`, {
       destination: vault.id,
-      capability: "create-file",
+      capability: "create",
       arguments: { directory: "inbox" },
     });
     expect(routed.status).toBe(200);
@@ -575,7 +575,7 @@ describe("DELETE /v1/destinations/{id}", () => {
     const [item] = await captureMany(host.app, 1);
     await send(host.app, `/v1/items/${item}/route`, {
       destination: vault.id,
-      capability: "create-file",
+      capability: "create",
       arguments: { directory: "inbox" },
     });
 
@@ -624,7 +624,7 @@ describe("GET /v1/destinations/{id}/remembered", () => {
         `/v1/items/${String(items[index])}/route`,
         {
           destination,
-          capability: "create-or-append-file",
+          capability: "create-or-append",
           arguments: { path },
         },
       );
@@ -639,7 +639,7 @@ describe("GET /v1/destinations/{id}/remembered", () => {
     const vault = await created(host);
 
     const response = await ask(host, vault.id, {
-      capability: "create-or-append-file",
+      capability: "create-or-append",
       field: "path",
     });
 
@@ -659,7 +659,7 @@ describe("GET /v1/destinations/{id}/remembered", () => {
 
     const answered = (await body(
       await ask(host, vault.id, {
-        capability: "create-or-append-file",
+        capability: "create-or-append",
         field: "path",
       }),
     )) as { places: { value: string; uses: number }[] };
@@ -688,7 +688,7 @@ describe("GET /v1/destinations/{id}/remembered", () => {
     const host = serving();
 
     const response = await ask(host, "nobody", {
-      capability: "create-or-append-file",
+      capability: "create-or-append",
       field: "path",
     });
 

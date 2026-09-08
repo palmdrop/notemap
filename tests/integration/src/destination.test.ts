@@ -35,7 +35,7 @@ import {
 
 const ALL: Page = { limit: 50 };
 const VAULT = "vault" as DestinationId;
-const CREATE = "create-file" as CapabilityName;
+const CREATE = "create" as CapabilityName;
 
 const open: Array<() => Promise<void> | void> = [];
 

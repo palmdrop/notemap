@@ -168,9 +168,9 @@ test("reads a decision the person carried out themselves", async () => {
 
 /** The name the wire carries, and what a person should read instead of it. */
 test.each([
-  ["create-file", "Created a note"],
-  ["append-to-file", "Appended to a note"],
-  ["create-or-append-file", "Created or appended to a note"],
+  ["create", "Created"],
+  ["append", "Appended"],
+  ["create-or-append", "Created or appended"],
 ])("says what %s did", async (capability, said) => {
   pool(answering([{ ...RECORD, target: { ...RECORD.target, capability } }]));
   await client.destinations.load();

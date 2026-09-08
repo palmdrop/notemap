@@ -203,7 +203,7 @@ export function template(
     id: (overrides.id ?? "tpl-research") as RoutingTemplateId,
     name: overrides.name ?? "Research links",
     destination: (overrides.destination ?? VAULT) as DestinationId,
-    capability: (overrides.capability ?? "create-file") as CapabilityName,
+    capability: (overrides.capability ?? "create") as CapabilityName,
     arguments: overrides.arguments ?? { path: "research/{{captured_at}}.md" },
     folder: overrides.folder ?? "create",
     ...(overrides.triggerTag === undefined

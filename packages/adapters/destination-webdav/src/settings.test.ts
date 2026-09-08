@@ -21,7 +21,7 @@ describe("the settings a person fills in", () => {
     expect(check({ account: "nextcloud", root: "Notes/Vault" })).toEqual([]);
   });
 
-  /** Blank is a value here, and the shape `create-file`'s own folder field has. */
+  /** Blank is a value here, and the shape `create`'s own folder field has. */
   it("takes a blank folder, which is the account's own", () => {
     expect(check({ account: "nextcloud", root: "" })).toEqual([]);
     expect(asWebdavSettings({ account: "nextcloud", root: "" })).toEqual({
@@ -99,9 +99,9 @@ describe("describing a destination", () => {
     const described = await adapter().describe(destinationRow({ root: "V" }));
 
     expect(described.capabilities.map((each) => each.name)).toEqual([
-      "create-or-append-file",
-      "create-file",
-      "append-to-file",
+      "create-or-append",
+      "create",
+      "append",
     ]);
   });
 
@@ -119,7 +119,7 @@ describe("describing a destination", () => {
   it("says which of its fields can be browsed, and which cannot", async () => {
     const described = await adapter().describe(destinationRow({ root: "V" }));
     const line = described.capabilities.find(
-      (each) => each.name === "create-or-append-file",
+      (each) => each.name === "create-or-append",
     );
     const properties = (line?.argumentsSchema as Record<string, unknown>)[
       "properties"
