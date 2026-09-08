@@ -1,9 +1,9 @@
 # The held row, and a queue that stays true
 
 **Date**: 2026-09-08
-**Status**: Todo
+**Status**: Done
 **Spec**: `docs/specs/shell.md`, `docs/specs/client.md`
-**Closed**:
+**Closed**: 2026-09-08
 
 ---
 
@@ -94,36 +94,35 @@ Depends on nothing. Client change.
 
 Depends on phase 3 only in that both are about the same lie; either lands alone.
 
-- [ ] The action watcher's report is applied to the held surfaces before it is emitted, so one poll
+- [x] The action watcher's report is applied to the held surfaces before it is emitted, so one poll
       serves both the corner and the queue and the watcher stays lazy — a client nobody watches still
       asks the pool nothing
-- [ ] An action naming an item the queue holds and meaning it is processed — `routed`, `archived`,
+- [x] An action naming an item the queue holds and meaning it is processed — `routed`, `archived`,
       `revised`, `purged` — drops it from the queue page
-- [ ] Nothing is added back: `work-abandoned` returns an item to the queue, but an action carries no
+- [x] Nothing is added back: `work-abandoned` returns an item to the queue, but an action carries no
       item body, and `withdrawn()` is the path that already places a returned one. Left as it is
-- [ ] `client.md`: the action log section says the watcher maintains the surfaces as well as
+- [x] `client.md`: the action log section says the watcher maintains the surfaces as well as
       reporting, and the queue section says what removes a row without a read
-- [ ] `pnpm -r --silent test`
-- [ ] `git commit`
+- [x] `pnpm -r --silent test`
+- [x] `git commit`
 
 ---
 
 ## Unknowns
 
-- **Whether a held row updates as its delivery resolves.** It draws from the cached item, which
-  `processed()` writes once; `state.ts:348` already names this — "a record that answered pending and
-  landed later still reads as pending until some surface reads the item again". Phase 4 makes the
-  watcher touch the queue, not the item. If a `retrying` held row is still saying `retrying` after
-  the delivery lands, the fallback is for phase 4's application to re-read the item a `routed` action
-  names when the cache holds it, which is one request on an event that is already rare.
+- **Whether a held row updates as its delivery resolves.** *Open, and narrower than it was.* The
+  row follows the client's cached copy live, so a second routing or an undo reaches it. What it
+  still does not follow is a `pending` record landing later: `processed()` writes the summary once,
+  and phase 4's catch-up touches the queue rather than the item. So a held row that says `retrying`
+  goes on saying it until something reads the item again. The corner does say the landing, from the
+  same watcher. The fallback stands: have the catch-up re-read an item a `routed` action names when
+  the cache holds it.
 - **Whether the scroll mark survives a shorter queue.** *Answered 2026-09-08*: `window.scrollTo`
   past the document's height is clamped by the browser, so a shorter queue lands the reader at its
   foot rather than nowhere. Left there. If landing at the foot of a queue you were in the middle of
   reads badly, the fallback is still to drop the mark when the fresh read is shorter.
-- **Whether `revised` is the right kind to drop on.** Verified that `edit.ts:134` records the
-  *source* item as the subject, which is the one that leaves the queue. If some other path records a
-  revision's own id there, dropping on `revised` would take the wrong row, and the fallback is to
-  narrow phase 4 to `routed`, `archived` and `purged`.
+- **Whether `revised` is the right kind to drop on.** *Answered 2026-09-08*: `edit.ts:134` records
+  the *source* item as the subject, which is the one that leaves the queue. Dropped on.
 
 ---
 
@@ -137,8 +136,9 @@ the row is drawn. **Opening another row releases the held one** is the release r
 `esc` alone would miss. And **the queue re-read drops a row the pool no longer names**, which wants
 a second page answered differently from the first — a test of the client rather than of the shell.
 
-`pnpm test:stack` is not needed: nothing here crosses the HTTP surface, the host's wiring or the
-config file. Phases 3 and 4 change how the client reads a route it already reads.
+`pnpm test:stack` was run anyway and passed, phases 3 and 4 having changed how the client reads two
+routes it already read. Nothing here touches the HTTP surface, the host's wiring or the config
+file.
 
 ---
 

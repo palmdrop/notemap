@@ -22,6 +22,7 @@ import { persist } from "./state/persist";
 import { retained } from "./state/retention";
 import {
   cached,
+  caughtUp,
   drawnFrom,
   emptyState,
   forget,
@@ -154,7 +155,15 @@ export function createClient(config: ClientConfig): Client {
 
   noticeLapsed = sessions.lapsed;
 
-  const actions = createActions({ api });
+  // What the pool did behind the surfaces, applied to them. The queue is the
+  // one that can be wrong: an item routed by a trigger tag, or processed on
+  // another device, is a row nothing else here would take.
+  const actions = createActions({
+    api,
+    applied: (since) => {
+      state.update((current) => caughtUp(current, since));
+    },
+  });
 
   // The watcher keeps its own tempo, and only the gates are the client's to
   // hold: it asks nothing while nobody is reading and nothing while the pool

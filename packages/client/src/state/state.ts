@@ -1,4 +1,5 @@
 import type {
+  Action,
   AssetId,
   Destination,
   DestinationId,
@@ -368,6 +369,44 @@ export function processed(
     }),
     queue: withIds(state.queue, without(state.queue.ids, id)),
   };
+}
+
+/**
+ * The kinds that say an item is processed, which is the whole of what takes a
+ * row off the queue.
+ */
+const PROCESSING: ReadonlySet<string> = new Set([
+  "routed",
+  "archived",
+  "revised",
+  "purged",
+]);
+
+/**
+ * What the pool did while nobody was asking it, applied to the surfaces. Only
+ * the queue can be wrong about this: the feed keeps everything and an item
+ * processed elsewhere leaves the queue with nothing here to notice, until a
+ * read says so.
+ *
+ * Nothing is put back. Giving up on a delivery returns an item to the queue,
+ * and an action carries no item to place there — `withdrawn` is the path that
+ * has one.
+ */
+export function caughtUp(
+  state: ClientState,
+  actions: readonly Action[],
+): ClientState {
+  const gone = new Set(
+    actions
+      .filter((action) => PROCESSING.has(action.kind))
+      .map((action) => action.subject)
+      .filter((id): id is ItemId => id !== undefined),
+  );
+
+  const kept = state.queue.ids.filter((id) => !gone.has(id));
+  if (kept.length === state.queue.ids.length) return state;
+
+  return { ...state, queue: withIds(state.queue, kept) };
 }
 
 /**

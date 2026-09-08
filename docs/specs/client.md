@@ -1,8 +1,16 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-09-07
+**Last updated**: 2026-09-08
 **Shipped**:
+
+- 2026-09-08 — **The queue stops holding what the pool has already processed.** `enter(surface)`
+  is what a shell mounts a surface with: the queue is read again from the first page, the feed keeps
+  the tail it walked. Between arrivals the action watcher does the rest — an action saying an item
+  was routed, archived, revised or purged takes that row off the queue before any shell is told —
+  so a queue emptied by a trigger tag or from another device empties under the reader. The watcher
+  stays lazy, and a read that starts again now draws what the surface already held until it answers.
+  ([plan](../plans/held-row-and-a-fresh-queue.md))
 
 - 2026-09-07 — **Routing templates are cached, and a tag may now apply one.** `TemplatesApi` reads
   and edits them on the destinations' terms — a read cache with `all` and `held`, and the edits
@@ -348,6 +356,10 @@ processed — routed or archived — which the pool decides, not the scroll.
   client that appended to the end of its window would sort a returned or freshly captured item
   ahead of older work still to be read. It places by rank in whichever **order** the surface is
   being read, not in the default one.
+- **A row also leaves without a read** *(added 2026-09-08)*. The action log the client watches on
+  its own tempo is where it learns that something processed an item it holds — a trigger tag, or
+  another device — and the row goes then ([the action log](#the-action-log)). Arriving is what
+  covers the stretch a paused watcher missed, rather than the only thing that keeps the queue true.
 - **Arriving at the queue reads it again** *(added 2026-09-08)*. A surface a reader returns to is
   not a surface that stopped changing while they were away: a trigger tag fires, another device
   processes something, and the queue then holds rows the pool no longer names. So entering the
@@ -405,6 +417,14 @@ from its first read.
   a page to read out.
 - **A read that fails says nothing.** Silence is not an event; reachability is what a person reads.
 - **It is lazy.** A client nobody asks to watch never asks the pool anything on its own.
+- **It maintains the surfaces as well as reporting them** *(added 2026-09-08)*. An action that
+  says an item was processed — routed, archived, revised, purged — takes that row off the queue
+  before anything is told about it, so one read serves the corner and the surface both and a queue
+  emptied from another device empties under the reader. It stays lazy: this happens on the watcher's
+  own reports, and a client nobody watches has no watcher to make one.
+- **Nothing is put back this way.** Giving up on a delivery returns an item to the queue, and an
+  action names an id rather than carrying the item there would be to place. That is
+  `withdrawn`'s path, which has one.
 
 ### The outbox
 

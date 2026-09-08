@@ -57,6 +57,11 @@
   up while the page is open. It is how a relay left running is seen to still be running.
   ([plan](../plans/memos-relay.md))
 
+- 2026-09-08 — **The queue stops lying about what is left.** Arriving at it reads it again, and
+  the action log the shell already watches takes a row off it the moment something else processes
+  the item — a trigger tag, or another device. The feed is unchanged, nothing ever leaving it.
+  ([plan](../plans/held-row-and-a-fresh-queue.md))
+
 - 2026-09-08 — **The row is held, not watched out.** Processing leaves the row open at its own rank,
   drawn as any processed row is and offering `process` again, so a second destination is one more
   gesture rather than a hunt through the feed. It goes when the reader closes it, opens another row
