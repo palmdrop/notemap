@@ -45,6 +45,16 @@ describe("the settings a person fills in", () => {
     ).not.toEqual([]);
   });
 
+  it("takes a frontmatter mode, and never requires one", () => {
+    expect(
+      check({ account: "nextcloud", root: "", frontmatter: "full" }),
+    ).toEqual([]);
+    expect(check({ account: "nextcloud", root: "" })).toEqual([]);
+    expect(
+      check({ account: "nextcloud", root: "", frontmatter: "some" }),
+    ).not.toEqual([]);
+  });
+
   it("refuses settings with no account", () => {
     expect(check({ root: "Notes" })).not.toEqual([]);
     expect(check({ account: "", root: "Notes" })).not.toEqual([]);
@@ -91,6 +101,12 @@ describe("the settings a person fills in", () => {
     expect(asWebdavSettings({ account: "nextcloud", root: 4 })).toBeUndefined();
     expect(asWebdavSettings({ account: "nextcloud" })).toBeUndefined();
     expect(asWebdavSettings({ root: "Notes" })).toBeUndefined();
+    expect(
+      asWebdavSettings({ account: "nextcloud", root: "", frontmatter: "some" }),
+    ).toBeUndefined();
+    expect(
+      asWebdavSettings({ account: "nextcloud", root: "", frontmatter: "full" }),
+    ).toEqual({ account: "nextcloud", root: "", frontmatter: "full" });
   });
 });
 

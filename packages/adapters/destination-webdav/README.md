@@ -41,6 +41,10 @@ every composer choice kind-specific for no gain.
 Neither field offers **candidates**: enumerating what is already in the vault is a slice of its own,
 and a field that claimed otherwise would draw a browse button for an answer this kind refuses.
 
+Whether a note carries provenance is the `frontmatter` setting — `full` or `none`, unset meaning
+none — which each capability takes as an argument of the same name to override for one delivery,
+exactly as the filesystem kind does.
+
 ## What it will not do
 
 - **Nothing escapes the root.** A target is resolved against it and anything that leaves is refused.

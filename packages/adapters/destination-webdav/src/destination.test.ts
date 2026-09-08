@@ -145,7 +145,11 @@ describe("creating a note", () => {
     await adapter(server).deliver(
       destinationRow({ root: "V" }),
       delivery({
-        arguments: { directory: "", filename: "note.md" },
+        arguments: {
+          directory: "",
+          filename: "note.md",
+          frontmatter: "full",
+        },
         tags: ["project/fiction-a"],
       }),
     );
@@ -272,6 +276,43 @@ describe("creating a note", () => {
   });
 });
 
+describe("how much provenance goes above a note", () => {
+  const wrote = async (
+    frontmatter: string | undefined,
+    args: Record<string, string> = {},
+  ) => {
+    const server = await vault();
+    server.makeCollection("V");
+    await adapter(server).deliver(
+      destinationRow({
+        root: "V",
+        ...(frontmatter === undefined ? {} : { frontmatter }),
+      }),
+      delivery({
+        arguments: { directory: "", filename: "note.md", ...args },
+      }),
+    );
+    return server.files()["V/note.md"] ?? "";
+  };
+
+  it("writes none where the destination never said", async () => {
+    expect(await wrote(undefined)).not.toContain("id: 'item-1'");
+  });
+
+  it("writes the block where the destination asked for one", async () => {
+    expect(await wrote("full")).toContain("id: 'item-1'");
+  });
+
+  it("lets one capture override the destination, either way", async () => {
+    expect(await wrote("none", { frontmatter: "full" })).toContain(
+      "id: 'item-1'",
+    );
+    expect(await wrote("full", { frontmatter: "none" })).not.toContain(
+      "id: 'item-1'",
+    );
+  });
+});
+
 describe("appending to a note", () => {
   const append = (server: DavServer, args: Record<string, string>) =>
     adapter(server).deliver(
@@ -311,6 +352,7 @@ describe("appending to a note", () => {
     const outcome = await append(server, {
       path: "a/b/daily.md",
       heading: "Notes",
+      frontmatter: "full",
     });
 
     expect(outcome).toMatchObject({ pointer: "a/b/daily.md" });
@@ -418,7 +460,10 @@ describe("creating or appending, decided here", () => {
     const server = await vault();
     server.makeCollection("V");
 
-    const outcome = await send(server, { path: "notes/decisions.md" });
+    const outcome = await send(server, {
+      path: "notes/decisions.md",
+      frontmatter: "full",
+    });
 
     expect(outcome).toMatchObject({ pointer: "notes/decisions.md" });
     expect(server.files()["V/notes/decisions.md"] ?? "").toContain(
@@ -913,7 +958,11 @@ describe("what it says it would write", () => {
     const server = await vault();
     server.makeCollection("V");
     const each = delivery({
-      arguments: { directory: "", filename: "note.md" },
+      arguments: {
+        directory: "",
+        filename: "note.md",
+        frontmatter: "full",
+      },
       tags: ["project/fiction-a"],
     });
 
@@ -966,7 +1015,7 @@ describe("what it says it would write", () => {
         server,
         delivery({
           capability: "append",
-          arguments: { path: "daily.md" },
+          arguments: { path: "daily.md", frontmatter: "full" },
         }),
       ),
     );

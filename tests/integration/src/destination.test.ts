@@ -73,7 +73,7 @@ async function pooled(root: string): Promise<Harness> {
   await opened.putDestination({
     id: VAULT,
     kind: "filesystem",
-    settings: { root },
+    settings: { root, frontmatter: "full" },
   });
   return opened;
 }

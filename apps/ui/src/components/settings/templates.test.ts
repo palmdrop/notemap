@@ -81,6 +81,10 @@ function serving(
 const open = async (name: string | RegExp) =>
   fireEvent.click(await screen.findByRole("button", { name }));
 
+/** What a fact says, read off its own label: two facts may hold one word. */
+const said = async (fact: string) =>
+  (await screen.findByText(fact)).nextElementSibling?.textContent?.trim();
+
 test("draws each template with its tag, its place and what it last answered", async () => {
   serving([aTemplate()]);
 
@@ -149,7 +153,9 @@ test("opening one says what it does, into what, and how much it has", async () =
   render(Templates);
   await open(/research/);
 
-  expect(await screen.findByText("create")).toBeTruthy();
+  // By the fact it sits under: `create` is the capability here and a folder
+  // mode two rows down, and a bare text query cannot tell them apart.
+  expect(await said("action")).toBe("create");
   expect(screen.getByText(/4 items/)).toBeTruthy();
 });
 
@@ -366,11 +372,13 @@ test("editing draws the form alone, not the template beside it", async () => {
 
   render(Templates);
   await open(/research/);
-  expect(await screen.findByText("create")).toBeTruthy();
+  expect(await said("action")).toBe("create");
 
   await open("Edit");
 
-  expect(screen.queryByText("create")).toBeNull();
+  // A fact the form has no counterpart for; `action` and `folder` are both
+  // words the form uses too.
+  expect(screen.queryByText("fired")).toBeNull();
   expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
   expect(await screen.findByLabelText("name")).toBeTruthy();
 });

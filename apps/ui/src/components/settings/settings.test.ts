@@ -375,6 +375,46 @@ test("offers the accounts the daemon declares, rather than a box to type one int
   expect(screen.getByLabelText("root").tagName).toBe("INPUT");
 });
 
+test("chooses a setting the schema fixes, rather than typing it from memory", async () => {
+  serving([], {
+    "GET /v1/destination-kinds": () =>
+      json(200, {
+        values: [
+          {
+            name: "filesystem",
+            settingsSchema: {
+              type: "object",
+              required: ["root"],
+              properties: {
+                root: { type: "string" },
+                frontmatter: {
+                  type: "string",
+                  enum: ["full", "none"],
+                  default: "none",
+                },
+              },
+            },
+          },
+        ],
+      }),
+  });
+
+  render(Destinations);
+  await press("Add a destination");
+
+  const frontmatter = (await screen.findByLabelText(
+    "frontmatter",
+  )) as HTMLSelectElement;
+
+  expect(frontmatter.tagName).toBe("SELECT");
+  // Blank leads, because an unset one is what a destination that never said has.
+  expect([...frontmatter.options].map((one) => one.value)).toEqual([
+    "",
+    "full",
+    "none",
+  ]);
+});
+
 test("keeps an account the daemon no longer declares, and says it does not", async () => {
   serving(
     [

@@ -286,8 +286,11 @@ Routing an item at it uses one of two capabilities:
 - **`append`** — appends onto an existing note at `path`, under `heading` if you name one,
   at the end of the file if you do not.
 
-A delivered `text` capture is a markdown file: frontmatter carrying the item id, the source, the
-capture time and the tags, then the capture's own markdown, unaltered.
+A delivered `text` capture is a markdown file: the capture's own markdown, unaltered, under
+frontmatter carrying the item id, the source, the capture time and the tags — **where you asked for
+it**. `frontmatter` is a setting on the destination, `full` or `none`, and the same word is an
+argument on one capture that overrides it. Unset means none, so a destination that never said it
+wants provenance writes the prose alone.
 
 ```markdown
 ---

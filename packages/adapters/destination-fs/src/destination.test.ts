@@ -105,9 +105,13 @@ function bind(
   accepts: readonly PayloadTypeName[],
   renderers: Record<string, Renderer>,
   reserved: readonly string[] = [],
+  frontmatter?: string,
 ): Bound {
   const kind = createFilesystemDestination({ renderers, accepts, reserved });
-  const row = destinationRow({ root: path });
+  const row = destinationRow({
+    root: path,
+    ...(frontmatter && { frontmatter }),
+  });
 
   return {
     describe: () => kind.describe(row),
@@ -119,14 +123,24 @@ function bind(
   };
 }
 
-async function vault(renderers: Record<string, Renderer> = {}): Promise<Vault> {
+/** `frontmatter` is the destination's own setting; absent is what a vault that never set one gets. */
+async function vault(
+  renderers: Record<string, Renderer> = {},
+  frontmatter?: string,
+): Promise<Vault> {
   const made = root();
   cleanups.push(made.cleanup);
   await mkdir(made.path, { recursive: true });
 
   return {
     path: made.path,
-    destination: bind(made.path, [TEXT, "image" as PayloadTypeName], renderers),
+    destination: bind(
+      made.path,
+      [TEXT, "image" as PayloadTypeName],
+      renderers,
+      [],
+      frontmatter,
+    ),
   };
 }
 
@@ -179,9 +193,49 @@ describe("what it says it can do", () => {
   });
 });
 
+describe("how much provenance goes above a note", () => {
+  const wrote = async (
+    setting: string | undefined,
+    args: Record<string, string> = {},
+  ) => {
+    const { path, destination } = await vault({ text: renderText }, setting);
+    await destination.deliver(
+      delivery({
+        arguments: { directory: "", filename: "a.md", ...args },
+      }),
+    );
+    return readFile(join(path, "a.md"), "utf8");
+  };
+
+  it("writes none where the destination never said", async () => {
+    expect(await wrote(undefined)).toBe("a thought\n");
+  });
+
+  it("writes the block where the destination asked for one", async () => {
+    expect(await wrote("full")).toContain("id: 'item-1'");
+  });
+
+  it("lets one capture override the destination, either way", async () => {
+    expect(await wrote("none", { frontmatter: "full" })).toContain(
+      "id: 'item-1'",
+    );
+    expect(await wrote("full", { frontmatter: "none" })).toBe("a thought\n");
+  });
+
+  /** The stored output is what was written, so a note without the block stores without it. */
+  it("says it wrote what it wrote", async () => {
+    const { destination } = await vault({ text: renderText });
+    const outcome = await destination.deliver(
+      delivery({ arguments: { directory: "", filename: "b.md" } }),
+    );
+
+    expect((await outputOf(outcome)).text).toBe("a thought\n");
+  });
+});
+
 describe("creating a file", () => {
   it("lands the note with its frontmatter and its body", async () => {
-    const { path, destination } = await vault({ text: renderText });
+    const { path, destination } = await vault({ text: renderText }, "full");
 
     const outcome = await destination.deliver(
       delivery({
@@ -303,7 +357,7 @@ describe("what it says it wrote", () => {
   });
 
   it("answers the whole note where the append brought one into being", async () => {
-    const { path, destination } = await vault({ text: renderText });
+    const { path, destination } = await vault({ text: renderText }, "full");
 
     const outcome = await destination.deliver(
       delivery({ capability: APPEND, arguments: { path: "log.md" } }),
@@ -448,7 +502,7 @@ describe("nothing escapes the root", () => {
 
 describe("appending to a file", () => {
   it("creates the file when it is missing, frontmatter and all", async () => {
-    const { path, destination } = await vault({ text: renderText });
+    const { path, destination } = await vault({ text: renderText }, "full");
 
     const outcome = await destination.deliver(
       delivery({
@@ -567,7 +621,7 @@ describe("creating or appending, decided here", () => {
     delivery({ capability: "create-or-append", arguments: args });
 
   it("creates the note when it is not there", async () => {
-    const { path, destination } = await vault({ text: renderText });
+    const { path, destination } = await vault({ text: renderText }, "full");
 
     const outcome = await destination.deliver(
       asked({ path: "notes/decisions.md" }),
@@ -1091,7 +1145,7 @@ describe("probing a filesystem destination", () => {
 
 describe("what it says it would write", () => {
   it("answers the note a create would land, and writes nothing at all", async () => {
-    const { path, destination } = await vault({ text: renderText });
+    const { path, destination } = await vault({ text: renderText }, "full");
     const each = delivery({
       arguments: { directory: "inbox", filename: "a-thought.md" },
       tags: ["kind/quote"],
@@ -1132,7 +1186,7 @@ describe("what it says it would write", () => {
   });
 
   it("shows the whole note where the append would bring one into being", async () => {
-    const { path, destination } = await vault({ text: renderText });
+    const { path, destination } = await vault({ text: renderText }, "full");
 
     const shown = await textOf(
       await destination.preview(

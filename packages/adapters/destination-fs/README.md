@@ -29,6 +29,10 @@ An appended fragment carries **no frontmatter** — it is going into somebody el
 its own. A file this adapter creates because it was missing gets the frontmatter, since the whole
 file is then ours.
 
+Whether there is any is the `frontmatter` setting — `full` or `none`, unset meaning none — which
+each capability takes as an argument of the same name to override for one delivery. A note written
+without it carries no id and no `derived_from`, so nothing traces it back but the routing record.
+
 ## What it will not do
 
 - **Nothing escapes the root.** A target is resolved and compared against the root's real path,

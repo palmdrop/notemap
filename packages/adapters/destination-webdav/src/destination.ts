@@ -28,7 +28,28 @@ import {
   type Wiring,
 } from "./notes";
 import { contain } from "./paths";
-import { asWebdavSettings, WEBDAV, webdavSettings } from "./settings";
+import {
+  asWebdavSettings,
+  WEBDAV,
+  webdavSettings,
+  type WebdavSettings,
+} from "./settings";
+
+/** The destination's own frontmatter setting travels with the wiring; a delivery's argument beats it. */
+function wiringFor(
+  dav: Dav,
+  renderers: Renderers,
+  settings: WebdavSettings,
+): Wiring {
+  return {
+    dav,
+    root: settings.root,
+    renderers,
+    ...(settings.frontmatter === undefined
+      ? {}
+      : { frontmatter: settings.frontmatter }),
+  };
+}
 
 /** What the host wires: neither a renderer nor a credential is a person's setting. */
 export type WebdavDestinationConfig = {
@@ -88,7 +109,7 @@ export function createWebdavDestination(
 
       try {
         const landed = await carryOut(
-          { dav, root: settings.root, renderers },
+          wiringFor(dav, renderers, settings),
           delivery,
           signal,
         );
@@ -115,7 +136,7 @@ export function createWebdavDestination(
       try {
         return markdownOutput(
           await previewNote(
-            { dav, root: settings.root, renderers },
+            wiringFor(dav, renderers, settings),
             delivery,
             signal,
           ),

@@ -36,7 +36,9 @@ decides where it goes.
 
 ## The two capabilities
 
-`create` takes `{ directory, filename? }` and `append` takes `{ path, heading? }`.
+`create` takes `{ directory, filename? }` and `append` takes `{ path, heading? }`. All three also
+take `frontmatter` — `full` or `none` — which overrides the destination's own setting for one
+delivery; absent inherits it, and an absent setting is `none`.
 They live here rather than in either adapter because two kinds doing the same thing under different
 words would make every rule and every composer choice kind-specific for no gain — and two copies of
 one schema are two things to keep in step.

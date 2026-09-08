@@ -1,7 +1,7 @@
 import type { Delivery, DeliveredOutput } from "@notemap/core";
 
 import { FIXED_KEYS, fixedFrontmatter, toYaml } from "./frontmatter";
-import type { FrontmatterValue } from "./frontmatter";
+import type { FrontmatterMode, FrontmatterValue } from "./frontmatter";
 import {
   renderAsJson,
   type Renderers,
@@ -13,7 +13,7 @@ import {
 export class RenderingFailed extends Error {}
 
 export type Note = {
-  /** The YAML block, ending in a newline. */
+  /** The YAML block, ending in a newline. Empty where none was asked for. */
   readonly frontmatter: string;
   /** CommonMark, and on its own what an append carries. */
   readonly body: string;
@@ -41,13 +41,18 @@ async function* once(written: Uint8Array): AsyncGenerator<Uint8Array> {
  * One delivery as a note, wherever the note is going. A renderer may add
  * frontmatter of its own and may not shadow a fixed key, which is what keeps a
  * destination's dialect from rewriting the provenance a note is traced by.
+ *
+ * `none` drops the block whole, the renderer's own keys with it: what is off is
+ * the frontmatter rather than notemap's half of it.
  */
 export function renderNote(
   renderers: Renderers,
   delivery: Delivery,
   at: RenderingContext,
+  mode: FrontmatterMode,
 ): Note {
   const rendered = renderOrRefuse(renderers, delivery, at);
+  if (mode === "none") return { frontmatter: "", body: rendered.body };
 
   const entries = new Map<string, FrontmatterValue>(fixedFrontmatter(delivery));
   for (const [key, value] of rendered.frontmatter ?? []) {
@@ -55,6 +60,11 @@ export function renderNote(
   }
 
   return { frontmatter: toYaml(entries), body: rendered.body };
+}
+
+/** A whole file: the block, a blank line, then the prose — or the prose alone. */
+export function fileOf(frontmatter: string, body: string): string {
+  return frontmatter === "" ? body : `${frontmatter}\n${body}`;
 }
 
 function renderOrRefuse(

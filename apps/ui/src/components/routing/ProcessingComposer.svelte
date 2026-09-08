@@ -569,6 +569,22 @@
       onsubmit={(beside) => void send(beside)}
       onrelease={release}
     />
+  {:else if field.options !== undefined}
+    <!-- Chosen rather than typed: these values *are* the field, and taking the
+         one already taken clears it, since absent is a value here too. -->
+    <div>
+      {#each field.options as one (one)}
+        <Option
+          label={one}
+          chosen={args[field.name] === one}
+          onchoose={() =>
+            (args = {
+              ...args,
+              [field.name]: args[field.name] === one ? "" : one,
+            })}
+        />
+      {/each}
+    </div>
   {:else}
     <!-- A typed field is a ground and never a rule: the only rule in the modal
          is the chrome's. -->

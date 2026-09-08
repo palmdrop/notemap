@@ -72,11 +72,19 @@
 
   type Option = { readonly value: string; readonly label: string };
 
+  /**
+   * The values the schema allows, or failing that the ones it suggests. Both
+   * are drawn the same way; what differs is only whether typing something else
+   * would be refused, which the pool answers either way.
+   */
+  const listed = (field: Field): readonly string[] | undefined =>
+    field.options ?? field.examples;
+
   // A value the daemon no longer declares is carried rather than dropped:
   // otherwise opening the form rewrites the setting to whichever name sorts
   // first, silently, and moves the destination somewhere nobody chose.
   function offered(field: Field): readonly Option[] {
-    const published = (field.examples ?? []).map((value) => ({
+    const published = (listed(field) ?? []).map((value) => ({
       value,
       label: value,
     }));
@@ -165,7 +173,7 @@
       {#if field.description !== undefined}
         <p class="text-ink-muted">{field.description}</p>
       {/if}
-      {#if field.examples !== undefined}
+      {#if listed(field) !== undefined}
         <select
           bind:value={typed[field.name]}
           aria-label={field.name}

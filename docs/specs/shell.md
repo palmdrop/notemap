@@ -404,6 +404,12 @@ The composer is stepped, not flat: **where** (destinations, with an unavailable 
 rather than disappearing), then the arguments the capability's schema asks for. A settled step
 stays visible with its choice marked, so the decision reads back as it is built.
 
+**An argument the schema fixes is chosen here too** *(2026-09-08)*, on the same terms as the
+template form and the settings page: a value from an enumeration is offered as the options it is,
+and anything else is a box. Taking the option already taken **gives it back**, an absent argument
+being a value of its own — for a field whose absence means *inherit what the destination says*,
+there has to be a way back to it.
+
 #### The composer is for processing
 
 *(2026-09-05.)* The `where` step answers *what became of this item*, and a configured destination is
@@ -1112,11 +1118,17 @@ act on. A destination whose kind cannot be probed says nothing at all and looks 
 before probing existed. What could not be *described* still wins over both, an unusable destination
 being a bigger fact than an unreachable one.
 
-**A settings field the kind published values for is chosen, not typed** *(2026-09-02)*. A webdav
-destination's account is one of the accounts the daemon declares, drawn as a list; a field with
-nothing published stays a box, so a daemon declaring no accounts does not trap a person behind an
-empty one. A value the destination already holds that the daemon no longer declares is offered too,
-marked as such — opening the form must not quietly move a destination somewhere else.
+**A settings field the kind published values for is chosen, not typed** *(2026-09-02, widened
+2026-09-08)*. A webdav destination's account is one of the accounts the daemon declares, drawn as a
+list; so is a field the schema **fixes** to an enumeration, which the template form already drew
+that way and this brings here. The two are told apart by the schema and never by name — suggested
+values and allowed ones read the same, and what differs is only whether typing something else
+would be refused. A field with nothing published stays a box, so a daemon declaring no accounts
+does not trap a person behind an empty one. A value the destination already holds that the daemon
+no longer declares is offered too, marked as such — opening the form must not quietly move a
+destination somewhere else. **Blank leads the list where nothing is held**, because for an
+optional field absent is a value of its own: it is what a destination that never said has, and
+what a person has to be able to go back to.
 
 **Templates** *(added 2026-09-07)* sits under Destinations, on the same three levels and for the
 same reason it comes second: a template names a destination, so the thing it names is above it. One

@@ -1376,8 +1376,13 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   authenticates and core does not, gaining no user, no credential and no notion that a request has
   an author ([ADR 27](../adr/0027-the-daemon-authenticates-and-core-does-not.md)).
 - Everything that leaves the pool carries identity and provenance, per
-  [standards.md](../standards.md). Local-only is the default for every provider; anything that
-  sends content off-box is opt-in and named on the item.
+  [standards.md](../standards.md) — **where the destination writes it** (narrowed 2026-09-08). A
+  markdown kind can be told to write no frontmatter, as a setting on the destination and as an
+  argument on one capture, and a note written that way carries no id, no capture time and no
+  `derived_from`. The pool still holds all of it, and the routing record still says where the note
+  went; what is given up is the file being traceable on its own. Absent means none, so a
+  destination that never said writes none. Local-only is the default for every provider; anything
+  that sends content off-box is opt-in and named on the item.
 
 ---
 

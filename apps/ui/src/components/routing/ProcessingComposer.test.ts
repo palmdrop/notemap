@@ -62,6 +62,19 @@ const CREATE_ASKABLE = {
   },
 };
 
+const CREATE_WITH_ENUM = {
+  name: "create",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    required: ["directory"],
+    properties: {
+      directory: { type: "string" },
+      frontmatter: { type: "string", enum: ["full", "none"] },
+    },
+  },
+};
+
 const APPEND = { name: "append", accepts: ["text"] };
 
 /** As the adapter declares it, titles and sentences and all. */
@@ -765,6 +778,46 @@ test("shift-enter stores create under the free name it offered", async () => {
     });
   });
 });
+
+/** Typed from memory before this: the values are the field, so they are offered. */
+test("chooses an argument the schema fixes rather than typing it", async () => {
+  const transport = await pickingFrontmatter(["full"]);
+
+  await vi.waitFor(async () => {
+    expect((await routed(transport)).arguments).toEqual({
+      directory: "inbox",
+      frontmatter: "full",
+    });
+  });
+});
+
+/** Absent is a value here — it inherits — so there has to be a way back to it. */
+test("gives an argument back where the one taken is taken again", async () => {
+  const transport = await pickingFrontmatter(["full", "full"]);
+
+  await vi.waitFor(async () => {
+    expect((await routed(transport)).arguments).toEqual({ directory: "inbox" });
+  });
+});
+
+async function pickingFrontmatter(taken: readonly string[]) {
+  const transport = serving([aDestination()], {
+    kind: "described",
+    capabilities: [CREATE_WITH_ENUM],
+  });
+
+  draw();
+  await choose(/Vault/);
+  await choose(/create/);
+
+  await fireEvent.input(screen.getByLabelText("directory"), {
+    target: { value: "inbox" },
+  });
+  for (const one of taken) await choose(one);
+  await choose("route");
+
+  return transport;
+}
 
 test("a blank leaf submits a path that ends in a slash", async () => {
   const transport = servingVault([]);

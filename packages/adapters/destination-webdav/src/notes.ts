@@ -6,10 +6,13 @@ import {
   asCreateOrAppendFileArguments,
   CREATE,
   deriveFilename,
+  fileOf,
   folderModeOf,
+  frontmatterModeOf,
   insertUnder,
   placeOf,
   renderNote,
+  type FrontmatterMode,
   type Note,
   type Renderers,
 } from "@notemap/output-markdown";
@@ -28,6 +31,8 @@ export type Wiring = {
   readonly dav: Dav;
   readonly root: string;
   readonly renderers: Renderers;
+  /** The destination's own, which a delivery's own argument overrides. */
+  readonly frontmatter?: FrontmatterMode;
 };
 
 /** What this delivery put there: for an append into a note that was there, what was inserted. */
@@ -110,10 +115,12 @@ async function create(
   await makeCollections(wiring.dav, wanted, signal);
 
   const assets = await placeAssets(wiring.dav, wanted, delivery.assets, signal);
-  const rendered = renderNote(wiring.renderers, delivery, {
-    directory: collectionOfPointer(wanted),
-    assets,
-  });
+  const rendered = renderNote(
+    wiring.renderers,
+    delivery,
+    { directory: collectionOfPointer(wanted), assets },
+    frontmatterModeOf(delivery.arguments, wiring.frontmatter),
+  );
   const note = whole(rendered);
 
   const written = await wiring.dav.create(wanted.encoded, note, signal);
@@ -186,10 +193,12 @@ async function append(
       assets = await placeAssets(wiring.dav, note, delivery.assets, signal);
     }
 
-    const rendered = renderNote(wiring.renderers, delivery, {
-      directory: collectionOfPointer(note),
-      assets,
-    });
+    const rendered = renderNote(
+      wiring.renderers,
+      delivery,
+      { directory: collectionOfPointer(note), assets },
+      frontmatterModeOf(delivery.arguments, wiring.frontmatter),
+    );
 
     if (existing === undefined) {
       const fresh = wholeUnder(rendered, heading);
@@ -235,11 +244,11 @@ async function append(
 }
 
 function whole(rendered: Note): string {
-  return `${rendered.frontmatter}\n${rendered.body}`;
+  return fileOf(rendered.frontmatter, rendered.body);
 }
 
 function wholeUnder(rendered: Note, heading?: string): string {
-  return `${rendered.frontmatter}\n${insertUnder("", rendered.body, heading)}`;
+  return fileOf(rendered.frontmatter, insertUnder("", rendered.body, heading));
 }
 
 /**
@@ -273,10 +282,15 @@ export async function previewNote(
 }
 
 function render(wiring: Wiring, delivery: Delivery, note: Contained): Note {
-  return renderNote(wiring.renderers, delivery, {
-    directory: collectionOfPointer(note),
-    assets: assetNames(delivery.assets),
-  });
+  return renderNote(
+    wiring.renderers,
+    delivery,
+    {
+      directory: collectionOfPointer(note),
+      assets: assetNames(delivery.assets),
+    },
+    frontmatterModeOf(delivery.arguments, wiring.frontmatter),
+  );
 }
 
 /**

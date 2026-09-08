@@ -160,25 +160,25 @@ The setting must never be `required` — settings are re-validated on every `des
 destination failing its kind's schema is reported **unusable**, which would break every destination
 that already exists.
 
-- [ ] Create the branch for this phase.
-- [ ] Wire `Field.options` into `apps/ui/src/components/settings/DestinationForm.svelte` and
+- [x] Create the branch for this phase.
+- [x] Wire `Field.options` into `apps/ui/src/components/settings/DestinationForm.svelte` and
       `apps/ui/src/components/routing/ProcessingComposer.svelte`. Only `TemplateForm.svelte:87`
       reads it today, so an enum argument is a bare text input everywhere else — which is also why
       `folder` is currently typed from memory in the composer. This fixes both.
-- [ ] Add the `frontmatter` enum to `FILESYSTEM_SETTINGS` and `webdavSettings`, and to their
+- [x] Add the `frontmatter` enum to `FILESYSTEM_SETTINGS` and `webdavSettings`, and to their
       readers (`asFilesystemSettings`, `asWebdavSettings`). Both schemas are
       `additionalProperties: false`.
-- [ ] Add the `frontmatter` enum argument to the three file capabilities in
+- [x] Add the `frontmatter` enum argument to the three file capabilities in
       `output-markdown/src/capabilities.ts`, absent meaning inherit.
-- [ ] `renderNote` takes whether to emit frontmatter; both kinds resolve argument over setting over
+- [x] `renderNote` takes whether to emit frontmatter; both kinds resolve argument over setting over
       off, and pass it.
-- [ ] The delivery's stored output is what was written, so a note without frontmatter stores
+- [x] The delivery's stored output is what was written, so a note without frontmatter stores
       without it. No change needed — confirm with a test.
-- [ ] Update `docs/specs/core.md` and `docs/specs/shell.md`. The rule that a renderer may not shadow
+- [x] Update `docs/specs/core.md` and `docs/specs/shell.md`. The rule that a renderer may not shadow
       a fixed key still holds; what changes is that the whole block can be off, so provenance is no
       longer guaranteed to be in the file.
-- [ ] Typecheck, tests, lint.
-- [ ] Commit.
+- [x] Typecheck, tests, lint.
+- [x] Commit.
 
 ---
 

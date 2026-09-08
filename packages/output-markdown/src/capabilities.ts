@@ -7,6 +7,8 @@ import type {
   PayloadTypeName,
 } from "@notemap/core";
 
+import { FRONTMATTER, FRONTMATTER_MODE } from "./frontmatter";
+
 export const CREATE = "create" as CapabilityName;
 export const APPEND = "append" as CapabilityName;
 export const CREATE_OR_APPEND = "create-or-append" as CapabilityName;
@@ -65,6 +67,7 @@ function createFileArguments(browsable: boolean): JsonSchema {
           "The note's filename. Left blank, one is derived from the item.",
       },
       [FOLDER_ARGUMENT]: FOLDER_MODE,
+      [FRONTMATTER]: FRONTMATTER_MODE,
     },
   };
 }
@@ -93,6 +96,7 @@ function appendToFileArguments(browsable: boolean): JsonSchema {
           "The heading to append under. Left blank, the item is appended at the end of the note.",
       },
       [FOLDER_ARGUMENT]: FOLDER_MODE,
+      [FRONTMATTER]: FRONTMATTER_MODE,
     },
   };
 }
@@ -124,6 +128,7 @@ function createOrAppendFileArguments(browsable: boolean): JsonSchema {
           "The heading to append under, where the note is already there. Left blank, the item is appended at the end of it.",
       },
       [FOLDER_ARGUMENT]: FOLDER_MODE,
+      [FRONTMATTER]: FRONTMATTER_MODE,
     },
   };
 }

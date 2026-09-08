@@ -17,7 +17,9 @@ import {
   asCreateFileArguments,
   asCreateOrAppendFileArguments,
   capabilitiesFor,
+  fileOf,
   folderModeOf,
+  frontmatterModeOf,
   CREATE,
   CREATE_OR_APPEND,
   deriveFilename,
@@ -26,6 +28,7 @@ import {
   placeOf,
   renderNote,
   RenderingFailed,
+  type FrontmatterMode,
   type Renderers,
 } from "@notemap/output-markdown";
 
@@ -38,6 +41,7 @@ import {
   asFilesystemSettings,
   FILESYSTEM,
   FILESYSTEM_SETTINGS,
+  type FilesystemSettings,
 } from "./settings";
 
 /** What the host wires: neither a renderer nor the payload types that exist is a person's setting. */
@@ -118,7 +122,7 @@ export function createFilesystemDestination(
 
       try {
         const composed = await compose(
-          { realRoot: reached, renderers },
+          wiringFor(reached, renderers, settings),
           delivery,
         );
 
@@ -158,7 +162,7 @@ export function createFilesystemDestination(
 
       try {
         const composed = await compose(
-          { realRoot: reached, renderers },
+          wiringFor(reached, renderers, settings),
           delivery,
         );
         return markdownOutput(composed.written);
@@ -238,7 +242,23 @@ async function reachRoot(root: string): Promise<string | Unreachable> {
 type Wiring = {
   readonly realRoot: string;
   readonly renderers: Renderers;
+  /** The destination's own, which a delivery's own argument overrides. */
+  readonly frontmatter?: FrontmatterMode;
 };
+
+function wiringFor(
+  realRoot: string,
+  renderers: Renderers,
+  settings: FilesystemSettings,
+): Wiring {
+  return {
+    realRoot,
+    renderers,
+    ...(settings.frontmatter === undefined
+      ? {}
+      : { frontmatter: settings.frontmatter }),
+  };
+}
 
 /**
  * What a delivery would put in the vault, worked out without putting any of it
@@ -371,7 +391,7 @@ async function create(
   }
 
   const rendered = render(wiring, delivery, note);
-  const file = `${rendered.frontmatter}\n${rendered.body}`;
+  const file = fileOf(rendered.frontmatter, rendered.body);
 
   return { note, written: file, file, fresh: true };
 }
@@ -387,7 +407,10 @@ async function append(
 
   const existing = await readIfPresent(note.absolute);
   if (existing === undefined) {
-    const file = `${rendered.frontmatter}\n${insertUnder("", rendered.body, heading)}`;
+    const file = fileOf(
+      rendered.frontmatter,
+      insertUnder("", rendered.body, heading),
+    );
     return { note, written: file, file, fresh: true };
   }
 
@@ -400,10 +423,12 @@ async function append(
 }
 
 function render(wiring: Wiring, delivery: Delivery, note: Contained) {
-  return renderNote(wiring.renderers, delivery, {
-    directory: within(note),
-    assets: assetNames(delivery.assets),
-  });
+  return renderNote(
+    wiring.renderers,
+    delivery,
+    { directory: within(note), assets: assetNames(delivery.assets) },
+    frontmatterModeOf(delivery.arguments, wiring.frontmatter),
+  );
 }
 
 /**
