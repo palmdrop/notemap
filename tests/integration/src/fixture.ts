@@ -46,7 +46,13 @@ export const SCRATCHPAD = "scratchpad" as SourceId;
 export const WATCHED_FOLDER = "watched-folder" as SourceId;
 
 export const TEXT = "text" as PayloadTypeName;
-export const NOTE = "note" as PayloadTypeName;
+
+/**
+ * A payload type this pool holds and the shipped config does not, whose content
+ * is a schema of its own. Core keeps no list, so what it does with a type it was
+ * never told about is exactly what these tests are for.
+ */
+export const SECOND = "second" as PayloadTypeName;
 
 export function at(value: string): Timestamp {
   return value as Timestamp;
@@ -71,7 +77,7 @@ export const CONFIG: PoolConfig = {
       },
     },
     {
-      name: NOTE,
+      name: SECOND,
       contentSchema: {
         type: "object",
         required: ["body"],

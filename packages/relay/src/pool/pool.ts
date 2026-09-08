@@ -49,6 +49,37 @@ export class PoolRefused extends Error {
   }
 }
 
+/**
+ * The pool never answered at all. Its own class rather than a status of zero,
+ * because a caller scanning an upstream has to tell the far end being gone from
+ * this one item being wrong — the first is every item's failure and the second
+ * is one item's.
+ */
+export class PoolUnreachable extends Error {
+  readonly route: string;
+
+  constructor(route: string, cause: unknown) {
+    super(`${route} could not be reached`, { cause });
+    this.name = "PoolUnreachable";
+    this.route = route;
+  }
+}
+
+/**
+ * Whether what failed was the pool rather than the item that happened to be in
+ * hand: it was never reached, it refused the token, or it broke. A scan that
+ * carries on past one of these writes the same line once per item and lands
+ * nothing, so a caller reads this and stops.
+ */
+export function notThisItem(cause: unknown): boolean {
+  if (cause instanceof PoolUnreachable) return true;
+
+  return (
+    cause instanceof PoolRefused &&
+    (cause.status === 401 || cause.status === 403 || cause.status >= 500)
+  );
+}
+
 type ErrorBody = { readonly error?: { readonly code?: string } };
 
 /**
@@ -67,13 +98,20 @@ export function poolAt(target: PoolTarget) {
     init: RequestInit,
     accepted: readonly number[],
   ): Promise<Response> {
-    const response = await send(`${base}${route}`, {
-      ...init,
-      headers: {
-        ...init.headers,
-        authorization: `Bearer ${target.token}`,
-      },
-    });
+    let response: Response;
+    try {
+      response = await send(`${base}${route}`, {
+        ...init,
+        headers: {
+          ...init.headers,
+          authorization: `Bearer ${target.token}`,
+        },
+      });
+    } catch (cause) {
+      // An abort is the caller stopping, and stays itself.
+      if ((cause as Error | undefined)?.name === "AbortError") throw cause;
+      throw new PoolUnreachable(route, cause);
+    }
 
     if (!accepted.includes(response.status)) {
       throw new PoolRefused(response.status, await codeOf(response), route);

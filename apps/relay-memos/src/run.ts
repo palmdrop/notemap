@@ -1,4 +1,4 @@
-import type { Relay } from "@notemap/relay";
+import { notThisItem, type Relay } from "@notemap/relay";
 
 import { relayedFrom } from "./memos/relayed";
 import type { Memos } from "./memos/read";
@@ -28,7 +28,9 @@ export type Tally = {
  *
  * A memo that could not be relayed is logged and the scan carries on. The
  * recovery strategy is the next poll, and a memo the pool never took is a memo
- * still upstream to be read again.
+ * still upstream to be read again. A failure that was the *pool's* ends the
+ * scan instead: every memo after it would fail the same way, and a thousand
+ * copies of one line is not a thousand things to know.
  */
 export async function relayEverything(
   from: Memos,
@@ -62,6 +64,7 @@ export async function relayEverything(
       else if (landed.kind === "amended") tally.amended += 1;
       else tally.revised += 1;
     } catch (cause) {
+      if (notThisItem(cause)) throw cause;
       tally.failed += 1;
       log.fault(`${memo.name} could not be relayed`, cause);
     }

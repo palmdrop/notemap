@@ -1,8 +1,16 @@
 # Spec: The mirror on disk
 
 **Status**: Draft
-**Last updated**: 2026-09-07
+**Last updated**: 2026-09-08
 **Shipped**:
+
+- 2026-09-07 — **One renderer, and an attachment drawn by its media type.** The payload types
+  collapsed into `note` ([ADR 38](../adr/0038-text-and-image-collapse-into-one-payload-type.md)),
+  so the two renderers this spec described became one: attachments in slot order above the prose,
+  each embedded where its media type is an image and linked where it is not — a recording beside a
+  note is no longer written as a picture that will not draw. The migration that rewrote existing
+  `image` payloads enqueues the mirror write each one owes, so the copy is not left describing
+  items that no longer exist that way. ([plan](../plans/memos-relay.md))
 
 - 2026-09-07 — **The mirror carries routing templates, its third non-item unit.** A template is
   something a person set up and would otherwise recreate by hand, which is the argument

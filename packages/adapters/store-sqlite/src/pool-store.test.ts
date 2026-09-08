@@ -1940,6 +1940,19 @@ describe("the sources in use", () => {
     expect(await p.sourcesInUse()).toEqual([]);
   });
 
+  it("stops answering for a source whose every item was purged", async () => {
+    const { pool: p, raw } = pool();
+    await appendCapture(p, capture({ id: "item-1", source: SCRATCHPAD }));
+    await appendCapture(
+      p,
+      capture({ id: "item-2", source: "memos" as SourceId }),
+    );
+
+    raw.prepare("DELETE FROM items WHERE source_id = ?").run("memos");
+
+    expect((await p.sourcesInUse()).map((use) => use.id)).toEqual([SCRATCHPAD]);
+  });
+
   it("orders by capture time, not by arrival", async () => {
     const { pool: p } = pool();
     await appendCapture(

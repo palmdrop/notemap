@@ -26,7 +26,7 @@ import {
   envelope,
   filesUnder,
   harness,
-  NOTE,
+  SECOND,
   storedRecords,
   TEXT,
   upload,
@@ -47,7 +47,7 @@ const renderers: Renderers = {
   [TEXT]: (delivery) => ({
     body: `${String(delivery.payload.content["text"] ?? "")}\n`,
   }),
-  [NOTE]: (delivery, where) => ({
+  [SECOND]: (delivery, where) => ({
     body: `${[
       ...[...where.assets.values()].map((name) => `![${name}](${name})`),
       String(delivery.payload.content["body"] ?? ""),
@@ -63,7 +63,7 @@ function vault(): { readonly root: string } {
 }
 
 const FILESYSTEM = destinationRegistry([
-  createFilesystemDestination({ renderers, accepts: [TEXT, NOTE] }),
+  createFilesystemDestination({ renderers, accepts: [TEXT, SECOND] }),
 ]);
 
 /** A pool holding one destination that is a real folder on disk, mirroring for real as well. */
@@ -129,7 +129,7 @@ describe("a capture leaving for a folder on disk", () => {
       sourceItemId: "src-image",
       capturedAt: at("2026-08-06T09:01:00.000Z"),
       payload: {
-        type: NOTE,
+        type: SECOND,
         content: { body: "what it looked like" },
         metadata: {},
         assets: [{ slot: "recording", asset: picture.id }],
@@ -198,7 +198,7 @@ describe("a capture leaving for a folder on disk", () => {
       sourceItemId: "src-image",
       capturedAt: at("2026-08-06T09:01:00.000Z"),
       payload: {
-        type: NOTE,
+        type: SECOND,
         content: { body: "what it looked like" },
         metadata: {},
         assets: [{ slot: "recording", asset: picture.id }],
@@ -280,7 +280,7 @@ describe("a root that overlaps notemap's own state", () => {
     const guarded = destinationRegistry([
       createFilesystemDestination({
         renderers,
-        accepts: [TEXT, NOTE],
+        accepts: [TEXT, SECOND],
         reserved: [root],
       }),
     ]);

@@ -64,6 +64,7 @@ export function memosAt(target: MemosTarget) {
     async *mine(signal?: AbortSignal): AsyncGenerator<Memo> {
       const creator = await whoami(signal);
       const filter = `creator == "${creator}"`;
+      const spent = new Set<string>();
       let token = "";
 
       for (;;) {
@@ -78,10 +79,13 @@ export function memosAt(target: MemosTarget) {
 
         yield* page.memos ?? [];
 
-        // An empty page ends the scan whatever the token says: a server that
-        // answered the same token forever would otherwise be read forever.
+        // A page that ended nothing ends the scan anyway: a server answering an
+        // empty page under a token, or the same token twice, would otherwise be
+        // read forever.
         token = page.nextPageToken ?? "";
         if (token === "" || (page.memos ?? []).length === 0) return;
+        if (spent.has(token)) return;
+        spent.add(token);
       }
     },
 

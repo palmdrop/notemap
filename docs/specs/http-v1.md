@@ -483,7 +483,12 @@ archive, a capture outcome, an edit outcome:
   are untouched; this is the `Asset` rows they name, read in the same transaction, so an asset
   swept between two reads cannot make a row describe an attachment that has gone.
 - **Absent where the payload references none**, as `routing` is, rather than present and empty.
-- **In slot order**, which is the order a payload is stored in and the order a rendering draws in.
+- **In slot order**, which is the order a rendering draws in. Slots sort as strings, and the
+  payload's own array order is not kept — the store reads an item's references back ordered by
+  slot. So **a capture attaching more than one file names its slots as zero-padded indices**,
+  `000`, `001`, `002`, which is the one naming under which sorting as strings and counting agree.
+  `010` before `9` is what a producer numbering them plainly would get, and nothing checks it.
+  A capture attaching one file names its slot whatever it likes; there is nothing to order.
 - A flat list rather than pairs: the slot is in `payload.assets`, and a reader that wants both
   joins on the id it already has. What it saves is a read per attachment to answer "is this one a
   picture" — `mime` is the answer, and nothing derives that from the payload's type.

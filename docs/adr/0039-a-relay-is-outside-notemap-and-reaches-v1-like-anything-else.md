@@ -78,7 +78,20 @@ Consequences worth stating:
   two names would collide as `asset-id-conflict`.
 - **An edited item costs two requests a poll, forever, and never a second revision.** The capture
   is refused because the identity is held by an item saying something else; the edit goes under a
-  version identity of its own, which the edit route then matches on replay.
+  version identity of its own, which the edit route then matches on replay. *A second upstream
+  edit is another matter*: the relay only ever edits the item holding the plain identity, so each
+  change upstream makes its own independent revision, and an item edited three times after it was
+  delivered leaves three in the queue. That is what CONTEXT.md's **Revision** already says happens
+  to an item revised more than once; it is worth knowing that a relay reaches it by polling.
+- **A relay carries classification at capture and never again.** Capture compares payloads and
+  deliberately not tags, so that an item classified since does not read as a conflicting
+  resubmission of itself; the edit envelope carries no tags either. A relay therefore cannot keep
+  an upstream's tags in step, and nothing here tries to. Reconciling two systems' classification is
+  a decision of its own, and this is not it.
+- **A failure that was the pool's ends the scan.** A relay carrying on past an unreachable pool, a
+  refused token or a `5xx` writes one identical line per item and lands nothing, so
+  `notThisItem` in `packages/relay` names the failures that are about the far end rather than
+  about the item in hand.
 - **A relay's failures are the relay's.** Notemap has nowhere to put another program's errors, and
   a relay that could not reach the pool has nothing to report to it by definition.
 - **Authorization is not addressed.** A relay's token reaches the whole pool, which is the gap

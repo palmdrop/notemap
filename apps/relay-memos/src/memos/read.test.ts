@@ -96,6 +96,25 @@ describe("reading a Memos server", () => {
     expect(await all(memos.mine())).toEqual([]);
   });
 
+  it("stops on a token it has already spent, however full the page is", async () => {
+    const fetch = ((input: string | URL) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/api/v1/auth/me")
+        return Promise.resolve(Response.json(ME));
+      return Promise.resolve(
+        Response.json({ memos: [memo("one")], nextPageToken: "again" }),
+      );
+    }) as typeof globalThis.fetch;
+
+    const memos = memosAt({ url: "https://m.example.com", token: "t", fetch });
+
+    // Read twice — the first page, then the one that token names — and no more.
+    expect((await all(memos.mine())).map((each) => each.name)).toEqual([
+      "memos/one",
+      "memos/one",
+    ]);
+  });
+
   it("says what was refused and where", async () => {
     const server = serving({});
 

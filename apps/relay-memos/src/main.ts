@@ -31,8 +31,13 @@ const log: Log = {
   },
 };
 
+/** The chain, not the top of it: what `fetch` could not do is under two wrappers. */
 function message(cause: unknown): string {
-  return cause instanceof Error ? cause.message : String(cause);
+  if (!(cause instanceof Error)) return String(cause);
+
+  return cause.cause === undefined
+    ? cause.message
+    : `${cause.message}: ${message(cause.cause)}`;
 }
 
 /**

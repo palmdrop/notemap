@@ -19,20 +19,34 @@ shape cron wants. `--help` says the rest.
 
 ## What it does with a memo
 
-| Memos                    | notemap                                     |
-| ------------------------ | ------------------------------------------- |
-| `memos/{uid}`            | `sourceItemId`                              |
-| `createTime`             | `capturedAt` — never the time the poll ran  |
-| `updateTime`             | the identity an edit is captured under      |
-| `content`                | `note` prose, verbatim, `#tags` and all     |
-| `tags`                   | tags, attributed to the source              |
-| `attachments`            | assets, in order, under derived ids         |
+| Memos                    | notemap                                          |
+| ------------------------ | ------------------------------------------------ |
+| `memos/{uid}`            | `sourceItemId`                                   |
+| `createTime`             | `capturedAt` — never the time the poll ran       |
+| `updateTime`             | the identity an edit is captured under           |
+| `content`                | `note` prose, verbatim, `#tags` and all          |
+| `tags`                   | tags, attributed to the source, **at capture**   |
+| `attachments`            | assets, in order, under derived ids              |
 
 A memo with neither prose nor an attachment is not captured: core would take
 it, and a relay guards its own input.
 
 A memo deleted upstream is left alone. Notemap never loses an item, and there
 is nothing to do.
+
+**Tags travel once.** A capture whose payload is unchanged is `already-captured`
+whatever its tags say — the pool drops tags from that comparison so that an item
+classified in notemap since does not read as a conflicting resubmission of
+itself. So a memo re-tagged upstream keeps the tags it arrived with, and so does
+an item amended or revised from one. Classify in notemap or in Memos; the two do
+not reconcile.
+
+**An edit to a *processed* memo lands at the time of the poll.** A revision is
+an ordinary capture carrying a link, and mints its own capture time of now
+([core.md](../../docs/specs/core.md#editing)) — there is nowhere to put the
+memo's. Only the first capture of a memo sits where it was written. Each
+further edit makes another revision, independent of the last, so a memo edited
+three times after it was delivered leaves three items in the queue.
 
 ## What it holds
 

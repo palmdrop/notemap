@@ -5,7 +5,7 @@ import {
   CONFIG,
   envelope,
   harness,
-  NOTE,
+  SECOND,
   SCRATCHPAD,
   TEXT,
   WATCHED_FOLDER,
@@ -365,7 +365,7 @@ describe("a capture core will not accept", () => {
     const slotless = {
       ...envelope(),
       payload: {
-        type: NOTE,
+        type: SECOND,
         content: { body: "spoken" },
         metadata: {},
         assets: [],

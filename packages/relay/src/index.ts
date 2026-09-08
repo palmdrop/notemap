@@ -1,5 +1,5 @@
 export { createRelay } from "./relay";
-export { PoolRefused } from "#pool/pool";
+export { notThisItem, PoolRefused, PoolUnreachable } from "#pool/pool";
 export type {
   Attachment,
   Bytes,
