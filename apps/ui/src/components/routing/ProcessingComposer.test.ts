@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/svelte";
+import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
 
 import {
@@ -1192,6 +1192,159 @@ test("commits where the walk has not moved", async () => {
     expect(sentTo(transport).map(routeOf)).toContain(
       "POST /v1/items/one/route",
     );
+  });
+});
+
+/**
+ * An account of two hundred channels is a wall of names nobody reads, so the
+ * list starts as a sample and the field above is the way through it.
+ */
+test("draws a handful of a long answer, and the rest when asked", async () => {
+  const many = Array.from({ length: 20 }, (_, index) => ({
+    label: `channel ${index}`,
+    value: `channel-${index}`,
+  }));
+  servingBrowsable(() => answered(many));
+  draw();
+  await choose(/Vault/);
+
+  await screen.findByText("channel 0");
+  expect(screen.getByText("channel 7")).toBeDefined();
+  expect(screen.queryByText("channel 8")).toBeNull();
+
+  await choose("12 more");
+
+  expect(await screen.findByText("channel 19")).toBeDefined();
+});
+
+test("narrowing gets there without asking for the rest", async () => {
+  const many = Array.from({ length: 20 }, (_, index) => ({
+    label: `channel ${index}`,
+    value: `channel-${index}`,
+  }));
+  servingBrowsable(() => answered(many));
+  draw();
+  await choose(/Vault/);
+  const field = (await screen.findByLabelText("directory")) as HTMLInputElement;
+  await screen.findByText("channel 0");
+
+  await fireEvent.input(field, { target: { value: "channel 19" } });
+
+  expect(await screen.findByText("channel 19")).toBeDefined();
+  expect(screen.queryByRole("button", { name: /more/ })).toBeNull();
+});
+
+/** The walk reaches what is drawn and no further: a row the eye cannot see is nowhere to go. */
+test("walks only what is drawn", async () => {
+  const many = Array.from({ length: 20 }, (_, index) => ({
+    label: `channel ${index}`,
+    value: `channel-${index}`,
+  }));
+  servingBrowsable(() => answered(many));
+  draw();
+  await choose(/Vault/);
+  const field = (await screen.findByLabelText("directory")) as HTMLInputElement;
+  await screen.findByText("channel 0");
+
+  await fireEvent.keyDown(field, { key: "ArrowUp" });
+  await fireEvent.keyDown(field, { key: "Enter" });
+
+  expect(field.value).toBe("channel-7");
+});
+
+/**
+ * The ask still goes out; what the cache buys is that the wait is filled with
+ * the answer from last time rather than with `loading…`.
+ */
+test("draws what it was told last time while it asks again", async () => {
+  let held = (): void => {};
+  const waiting = new Promise<void>((resolve) => {
+    held = resolve;
+  });
+  let asks = 0;
+
+  pool(async (request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "kanban" })] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE_ASKABLE] });
+    }
+    if (route.endsWith("/candidates")) {
+      asks += 1;
+      if (asks > 1) await waiting;
+      return json(200, answered([{ label: "inbox", value: "inbox" }]));
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  const first = draw();
+  await choose(/Vault/);
+  await screen.findByText("inbox");
+  cleanup();
+  void first;
+
+  // Second time round the answer never arrives, and the list is drawn anyway.
+  draw();
+  await choose(/Vault/);
+
+  expect(await screen.findByText("inbox")).toBeDefined();
+  expect(screen.queryByText("loading…")).toBeNull();
+  held();
+});
+
+/**
+ * A person reads titles and types one; the field is sent with the slug. Only at
+ * the moment the line is done being typed — never on a keystroke.
+ */
+test("resolves a title typed to the value it stands for, on commit", async () => {
+  const transport = servingBrowsable(() => answered(CHANNELS));
+  draw();
+  await choose(/Vault/);
+  const field = (await screen.findByLabelText("directory")) as HTMLInputElement;
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "Reading Notes" } });
+  // Still what was typed: resolving here would take the field off a person
+  // still writing.
+  expect(field.value).toBe("Reading Notes");
+
+  await fireEvent.keyDown(field, { key: "Enter" });
+
+  await vi.waitFor(async () => {
+    expect((await routed(transport)).arguments).toEqual({
+      directory: "reading-notes",
+    });
+  });
+});
+
+test("resolves it on leaving the line too, so the pointer gets there as well", async () => {
+  servingBrowsable(() => answered(CHANNELS));
+  draw();
+  await choose(/Vault/);
+  const field = (await screen.findByLabelText("directory")) as HTMLInputElement;
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "field recordings" } });
+  await fireEvent.blur(field);
+
+  expect(field.value).toBe("field-recordings");
+});
+
+/** An answer is one page of what a destination holds, so not being in it is not being wrong. */
+test("leaves something it does not recognise exactly as written, and still routes", async () => {
+  const transport = servingBrowsable(() => answered(CHANNELS));
+  draw();
+  await choose(/Vault/);
+  const field = (await screen.findByLabelText("directory")) as HTMLInputElement;
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "12345" } });
+  await fireEvent.keyDown(field, { key: "Enter" });
+
+  await vi.waitFor(async () => {
+    expect((await routed(transport)).arguments).toEqual({ directory: "12345" });
   });
 });
 

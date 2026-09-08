@@ -6,8 +6,10 @@
   } from "@notemap/client";
 
   import Action from "$components/primitives/controls/Action.svelte";
+  import Walked from "$components/primitives/composer/Walked.svelte";
   import { client } from "$lib/client";
-  import { completed, narrowed } from "$lib/candidate-list";
+  import { completed, narrowed, resolved } from "$lib/candidate-list";
+  import { recall, remember } from "$lib/candidate-cache";
 
   /**
    * The schema-driven control: one line holding the field, with what the
@@ -59,12 +61,30 @@
   /** Where `↑↓` stands, and whether it has been used since the list last changed. */
   let at = $state(0);
   let moved = $state(false);
+  /** Whether the whole answer has been asked for, past the handful drawn by default. */
+  let expanded = $state(false);
+
+  /**
+   * How many of an answer are drawn before one is asked for. An account of two
+   * hundred are.na channels is a wall of names nobody reads, and the field
+   * above is the way through it — so the list starts as a sample of what is
+   * there and typing is what narrows it. Beyond the handful, `more` asks.
+   */
+  const HANDFUL = 8;
 
   const scope = $derived(history.at(-1)?.scope);
   const here = $derived(history.at(-1));
 
-  /** What is drawn, and what the keyboard walks: one list, narrowed by the line. */
-  const shown = $derived(narrowed(entries, value));
+  /** Everything that matches what is typed, which is not all of what is drawn. */
+  const matching = $derived(narrowed(entries, value));
+
+  /**
+   * What is drawn, and what the keyboard walks — the two being one list, since
+   * a keyboard reaching a row the eye cannot see is a walk into nothing.
+   */
+  const shown = $derived(expanded ? matching : matching.slice(0, HANDFUL));
+
+  const rest = $derived(matching.length - shown.length);
 
   // The place is what a composer with a destination in its chrome is for, so
   // the caret is here rather than waiting to be clicked into.
@@ -72,10 +92,11 @@
 
   $effect(() => {
     // Whatever the caret was on stops meaning anything once the list beneath it
-    // has changed.
-    void shown;
+    // has changed — and a handful of a *different* set is a handful again.
+    void matching;
     at = 0;
     moved = false;
+    expanded = false;
   });
 
   // Every answer but the newest is dropped: descending and coming straight
@@ -84,23 +105,42 @@
   let asking = 0;
 
   $effect(() => {
-    const at_ = scope;
+    const asked = {
+      destination,
+      capability,
+      field,
+      ...(scope === undefined ? {} : { scope }),
+    };
     const mine = (asking += 1);
-    loading = true;
+
+    // What it answered last time, drawn while it answers again. The ask still
+    // goes out, so this is only ever stale for as long as the round trip —
+    // which is exactly the wait it exists to fill.
+    const kept = recall(asked);
+    if (kept === undefined) {
+      loading = true;
+    } else {
+      entries = kept.entries;
+      truncated = kept.truncated;
+      loading = false;
+    }
     refusal = undefined;
 
     void (async () => {
       try {
-        const answer = await client.destinations.candidates(destination, {
-          capability,
-          field,
-          ...(at_ === undefined ? {} : { scope: at_ }),
-        });
-        if (mine === asking) applied(answer);
+        const answer = await client.destinations.candidates(destination, asked);
+        if (mine !== asking) return;
+        if (answer.kind === "answered") remember(asked, answer);
+        applied(answer);
       } catch (error) {
         if (mine !== asking) return;
-        entries = [];
-        truncated = false;
+        // What was held is kept rather than blanked: a browse that failed is
+        // not evidence the last answer was wrong, and the field is typed
+        // either way.
+        if (kept === undefined) {
+          entries = [];
+          truncated = false;
+        }
         refusal = saidBy(error);
       } finally {
         if (mine === asking) loading = false;
@@ -191,7 +231,10 @@
       // `↑↓` having moved is what makes `⏎` mean *take this one*; left alone it
       // means *route*, which is the ordinary way through the line.
       if (moved && picked !== undefined) open(picked);
-      else onsubmit?.();
+      else {
+        settle();
+        onsubmit?.();
+      }
       return;
     }
 
@@ -199,6 +242,17 @@
       event.preventDefault();
       onrelease?.();
     }
+  }
+
+  /**
+   * A title typed becomes the value it names, at the two moments the line is
+   * done being typed — committing from it, and leaving it. Never on a
+   * keystroke: "Reading" would become a channel while "Reading Notes" was
+   * still being written.
+   */
+  function settle(): void {
+    const meant = resolved(entries, value);
+    if (meant !== undefined) onchange(meant);
   }
 
   const active = $derived(
@@ -214,6 +268,7 @@
       bind:this={input}
       {value}
       oninput={(event) => onchange(event.currentTarget.value)}
+      onblur={settle}
       {onkeydown}
       spellcheck="false"
       autocapitalize="off"
@@ -250,37 +305,40 @@
     class="mt-2.5 min-h-[var(--spacing-tree)]"
   >
     {#if loading}
-      <p class="text-ink-muted">asking…</p>
-    {:else if refusal !== undefined}
+      <p class="text-ink-muted">loading…</p>
+    {:else if refusal !== undefined && entries.length === 0}
       <p class="text-ink-muted">{refusal}</p>
     {:else}
+      {#if refusal !== undefined}
+        <!-- Held from the last ask, and the ask that just failed said so.
+             Drawn rather than dropped: the field is typed either way. -->
+        <p class="text-ink-muted">{refusal} · showing what it said before</p>
+      {/if}
       {#each shown as entry, index (entry.scope ?? String(entry.value))}
         {@const picked = moved && at === index}
-        <div
+        <Walked
           id={picked ? `candidate-${index}` : undefined}
-          role="option"
-          tabindex="-1"
-          aria-selected={picked}
-          class="cursor-default {entry.value !== undefined &&
-          String(entry.value) === value
-            ? 'text-accent'
-            : picked
-              ? 'text-ink'
-              : 'text-ink-muted'} {picked ? 'inverted' : ''}"
-          onmousedown={(event) => {
-            event.preventDefault();
-            open(entry);
-          }}
+          on={picked}
+          held={entry.value !== undefined && String(entry.value) === value}
+          dim={!picked}
+          ontake={() => open(entry)}
         >
           {entry.scope !== undefined ? `${entry.label}/` : entry.label}
-        </div>
+        </Walked>
       {/each}
 
+      {#if rest > 0}
+        <!-- The handful is a sample, not the answer: typing narrows it, and
+             this asks for the whole of what was already fetched. -->
+        <Action onclick={() => (expanded = true)}>{rest} more</Action>
+      {/if}
       {#if shown.length === 0 && entries.length > 0}
         <p class="text-ink-muted">nothing here matches</p>
       {/if}
-      {#if truncated}
-        <p class="text-ink-muted">more than this shows</p>
+      {#if truncated && expanded}
+        <!-- The destination held more than it answered, which is its own
+             limit rather than this one. -->
+        <p class="text-ink-muted">and more than it answered</p>
       {/if}
     {/if}
   </div>

@@ -10,9 +10,12 @@
   take one — so an account of two hundred are.na channels is typed at rather than scrolled
   through. It completes to the **value** and matches on the label as well, because the two need not
   be the same string: a channel is read by its title and filed under its slug. Descent stays, being
-  the one thing the line has no use for. And a destination declaring **one** capability has it
-  settled rather than asked: `do` is drawn only where there is something to pick among.
-  ([plan](../plans/arena-destination.md))
+  the one thing the line has no use for. A long answer draws as a handful with the rest a press
+  away, what a destination last said is drawn while it says it again, and a title named exactly
+  resolves to the value it stands for — while anything unrecognised is left as written and still
+  routes, an answer being one page of what a destination holds. And a destination declaring **one**
+  capability has it settled rather than asked: `do` is drawn only where there is something to pick
+  among. ([plan](../plans/arena-destination.md))
 
 - 2026-09-08 — **A field the schema fixes is chosen wherever it appears.** The destination form and
   the composer read a schema's `enum` the way the template form already did, so an enum setting or
@@ -666,6 +669,24 @@ its slug — so completing to the label would leave the field holding something 
 delivered, and matching the label alone would empty the list the moment `⇥` resolved one to the
 other. A person types the title they know and the field ends up holding the slug it will be sent
 with, which is also what shows them what they picked.
+
+**A title named exactly resolves to its value**, at the two moments the line is done being typed:
+committing from it, and leaving it. Never on a keystroke — "Reading" would become a channel while
+"Reading Notes" was still being written — and never on a prefix or an ambiguous title. Anything it
+does not recognise is **left exactly as written and still routes**: an answer is one page of what a
+destination holds, so not being in it is not being wrong. A numeric are.na channel ID and a vault
+folder that does not exist yet are the same case, and the composer refuses neither.
+
+**A long answer is drawn as a handful**, eight of it, with the rest a press away and typing the way
+through it. An account of two hundred channels is a wall of names nobody reads; the field above it
+is the control, and the list is a sample of what is there rather than the whole of it. What the
+walk reaches is what is drawn — a row the eye cannot see is nowhere to go. The destination having
+held back more than it answered is its own limit and said separately.
+
+**What a destination last answered is drawn while it answers again.** Kept for the life of the
+page and never instead of asking, so a list is stale only for as long as the round trip it fills —
+which is what the second visit to a composer spends staring at `loading…` otherwise. A browse that
+fails with something held says so and keeps drawing it, the field being typed either way.
 
 **A capability nothing can be chosen among is not a step** *(2026-09-08)*. Where a destination
 declares exactly one, it is settled the moment the description lands and `do` is not drawn: a step

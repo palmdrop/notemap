@@ -81,3 +81,35 @@ export function commonPrefix(values: readonly string[]): string {
 
   return first.slice(0, length);
 }
+
+/**
+ * What a typed line *means*, where it names one of the answers exactly. A
+ * person reads a list of titles and types one; the field is sent with the
+ * value, and the two need not be the same string.
+ *
+ * Exact and unambiguous or nothing: resolving a **prefix** would snap
+ * "Reading" to a channel the moment it matched, with "Reading Notes" still
+ * being typed, and two entries under one title name nothing in particular.
+ * Anything unresolved is left exactly as it was written — an answer is one
+ * page of what a destination holds, so not being in it is not being wrong.
+ */
+export function resolved(
+  entries: readonly CandidateEntry[],
+  typing: string,
+): string | undefined {
+  const wanted = typing.trim().toLowerCase();
+  if (wanted === "") return undefined;
+
+  // Already what the field holds: nothing to resolve, whatever the labels say.
+  if (entries.some((entry) => takenAs(entry).toLowerCase() === wanted)) {
+    return undefined;
+  }
+
+  const named = entries.filter(
+    (entry) => entry.label.trim().toLowerCase() === wanted,
+  );
+  if (named.length !== 1) return undefined;
+
+  const only = takenAs(named[0] as CandidateEntry);
+  return only === typing ? undefined : only;
+}

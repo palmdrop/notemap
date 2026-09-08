@@ -1,7 +1,13 @@
 import type { CandidateEntry } from "@notemap/client";
 import { describe, expect, it } from "vitest";
 
-import { commonPrefix, completed, narrowed, takenAs } from "./candidate-list";
+import {
+  commonPrefix,
+  completed,
+  narrowed,
+  resolved,
+  takenAs,
+} from "./candidate-list";
 
 /** As an are.na channel is answered: read by its title, filed under its slug. */
 const channel = (label: string, value: string): CandidateEntry => ({
@@ -96,5 +102,36 @@ describe("the longest head a set agrees on", () => {
 
   it("is empty where they agree on nothing", () => {
     expect(commonPrefix(["a", "b"])).toBe("");
+  });
+});
+
+describe("what a typed line means", () => {
+  it("resolves a title named exactly to the value it stands for", () => {
+    expect(resolved(CHANNELS, "Reading Notes")).toBe("reading-notes");
+  });
+
+  it("ignores case and surrounding space", () => {
+    expect(resolved(CHANNELS, "  field recordings ")).toBe("field-recordings");
+  });
+
+  /** Snapping on a prefix would take the field off a person mid-word. */
+  it("leaves a prefix of a title alone", () => {
+    expect(resolved(CHANNELS, "Read")).toBeUndefined();
+  });
+
+  it("leaves a value the field already holds alone", () => {
+    expect(resolved(CHANNELS, "reading")).toBeUndefined();
+  });
+
+  /** One page of an answer, so not being in it is not being wrong. */
+  it("leaves anything it does not recognise exactly as written", () => {
+    expect(resolved(CHANNELS, "12345")).toBeUndefined();
+    expect(resolved(CHANNELS, "a-channel-not-listed")).toBeUndefined();
+  });
+
+  it("resolves nothing where two entries share the title", () => {
+    const twins = [channel("Notes", "a-notes"), channel("Notes", "b-notes")];
+
+    expect(resolved(twins, "Notes")).toBeUndefined();
   });
 });

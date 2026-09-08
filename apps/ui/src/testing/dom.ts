@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, vi } from "vitest";
 import { cleanup } from "@testing-library/svelte";
+import { forgetEverything } from "$lib/candidate-cache";
 
 /**
  * jsdom lays nothing out, so it implements neither scrolling nor a scroll
@@ -100,6 +101,9 @@ beforeEach(() => {
   looking(true);
   sessionStorage.clear();
   localStorage.clear();
+  // Held for the life of a page, which in a suite is the life of the run: one
+  // case's channels would otherwise be drawn under the next one's destination.
+  forgetEverything();
   delete document.documentElement.dataset["theme"];
 });
 

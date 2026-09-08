@@ -7,6 +7,7 @@
   } from "@notemap/client";
 
   import StateWord from "$components/primitives/marks/StateWord.svelte";
+  import Walked from "$components/primitives/composer/Walked.svelte";
   import { client } from "$lib/client";
   import { forecastOf, type Said } from "$lib/forecast";
   import {
@@ -426,25 +427,17 @@
         moved &&
         choices[at]?.kind === "entry" &&
         here[at - remembered.length] === row}
-      <div
+      <Walked
         id={picked ? `path-line-place-${at}` : undefined}
-        role="option"
-        tabindex="-1"
-        aria-selected={picked}
-        aria-disabled={row.made === true ? "true" : undefined}
-        style="padding-left: {row.depth * 1.1}rem"
-        class="cursor-default {row.made === true
-          ? 'text-accent'
-          : row.onPath || picked
-            ? 'text-ink'
-            : 'text-ink-muted'} {picked ? 'inverted' : ''}"
-        onmousedown={(event) => {
-          event.preventDefault();
-          if (row.made !== true) take(row.entry);
-        }}
+        on={picked}
+        held={row.made === true}
+        dim={!(row.onPath || picked)}
+        disabled={row.made === true}
+        indent={row.depth}
+        ontake={() => take(row.entry)}
       >
         {row.made === true ? `+ ${textOf(row.entry)}` : textOf(row.entry)}
-      </div>
+      </Walked>
     {/each}
   </div>
 
