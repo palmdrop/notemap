@@ -1,0 +1,43 @@
+# notemap-relay-memos, as the compose files run it.
+#
+# The annotated reference is `apps/relay-memos/config.example.toml`; this is the
+# same file with the container's paths in it. Mounted read-only at
+# /etc/notemap/relay-memos.toml, which is where the image's own entrypoint
+# looks.
+#
+# Nothing here is the daemon's config. A relay is a program outside notemap, so
+# both of its credentials live with it rather than with the pool it feeds.
+
+# The daemon, on the compose network. Never `127.0.0.1`: the port `compose.yaml`
+# publishes is on the host's loopback, which is not this container's.
+[pool]
+url = "http://notemap:4747"
+
+# How the pool sees this relay. Every memo arrives under this source, which is
+# what `GET /v1/sources` counts and what the settings screen draws — the way a
+# relay that has quietly died is noticed. One per Memos server.
+source = "memos"
+
+# Minted in the daemon's container and carried in as a compose secret:
+#
+#   docker compose exec notemap notemap token mint --name relay-memos \
+#     > notemap_relay_pool_token
+#
+# Read at each poll, so rotating it is writing the file and restarting nothing.
+# It reaches the whole pool; there is no narrower grant yet.
+tokenFile = "/run/secrets/notemap_relay_pool_token"
+
+# The Memos server this relay reads. Reachable from this container, which is
+# not the same as reachable from your desktop — a Memos on the same host is
+# `http://memos:5230` if it is on this network, and its LAN address if not.
+[memos]
+url = "https://memos.example.com"
+
+# An access token from Memos' own settings, under the same rule as the pool's:
+# a file, never inline.
+tokenFile = "/run/secrets/notemap_relay_memos_token"
+
+# How often everything upstream is read again. A poll holds nothing and repeats
+# everything, so this is latency and nothing else. Polls never overlap.
+[poll]
+interval = 300000 # milliseconds — five minutes

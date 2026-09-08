@@ -819,36 +819,59 @@ describe("an asset", () => {
     const item = {
       ...anItem("one"),
       payload: {
-        type: "image",
+        type: "note",
         content: {},
         metadata: {},
-        assets: [{ slot: "image", asset: "an asset/1" }],
+        assets: [{ slot: "000", asset: "an asset/1" }],
       },
+      assets: [
+        {
+          id: "an asset/1",
+          filename: "photo.png",
+          mime: "image/png",
+          blob: "sha256-abc",
+          bytes: 3,
+        },
+      ],
     };
 
     expect(client.images(item)).toEqual([transport.assetUrl("an asset/1")]);
     expect(client.assetContent("an asset/1")).toContain("an%20asset%2F1");
   });
 
-  it("reads what an item says, whichever slot holds it", () => {
+  it("is drawn as a picture by its media type, never by the payload's type", () => {
+    const { client } = clientOver(() => json(200, {}));
+    const attached = (mime: string) => ({
+      ...anItem("one"),
+      payload: {
+        type: "note",
+        content: {},
+        metadata: {},
+        assets: [{ slot: "000", asset: "a1" }],
+      },
+      assets: [
+        {
+          id: "a1",
+          filename: "interview.opus",
+          mime,
+          blob: "sha256-abc",
+          bytes: 3,
+        },
+      ],
+    });
+
+    expect(client.images(attached("image/png"))).toHaveLength(1);
+    expect(client.images(attached("audio/opus"))).toEqual([]);
+  });
+
+  it("reads what an item says, and nothing where it said nothing", () => {
     const { client } = clientOver(() => json(200, {}));
 
     expect(client.says(anItem("one"))).toBe("one");
     expect(
       client.says({
         ...anItem("two"),
-        payload: {
-          type: "image",
-          content: { caption: "a caption" },
-          metadata: {},
-          assets: [],
-        },
-      }),
-    ).toBe("a caption");
-    expect(
-      client.says({
-        ...anItem("three"),
-        payload: { type: "voice", content: {}, metadata: {}, assets: [] },
+        payload: { type: "note", content: {}, metadata: {}, assets: [] },
       }),
     ).toBe("");
   });

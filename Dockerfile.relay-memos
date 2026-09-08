@@ -1,0 +1,50 @@
+# syntax=docker/dockerfile:1
+#
+# The memos relay, which is not the daemon and shares nothing with it at
+# runtime: it holds a token and reaches `/v1` over a socket like any other
+# program that is not a browser. Its own image for the same reason it is its own
+# program.
+#
+# Not published anywhere yet. Build it where the compose file will run it:
+#
+#   docker build -f Dockerfile.relay-memos -t notemap-relay-memos:local .
+
+FROM node:24-alpine AS build
+
+WORKDIR /src
+
+RUN corepack enable
+
+# The lockfile is what populates the store, and the root manifest comes with it
+# only so that corepack reads the pnpm version from `packageManager`.
+COPY pnpm-lock.yaml package.json ./
+RUN pnpm fetch
+
+COPY . .
+
+RUN pnpm install --offline --frozen-lockfile
+
+RUN pnpm --filter @notemap/relay-memos build
+
+
+FROM node:24-alpine
+
+ENV NODE_ENV=production
+
+# Where the image's own entrypoint looks, `--config <path>` overriding it. A
+# relay run directly reads `~/.config/notemap/relay-memos.toml` instead.
+ENV NOTEMAP_RELAY_MEMOS_CONFIG=/etc/notemap/relay-memos.toml
+
+# One bundled file: `packages: "bundle"` puts `@notemap/relay` inside it, so
+# there is no `node_modules` at runtime and nothing else to bring over.
+COPY --from=build /src/apps/relay-memos/dist/main.js /app/main.js
+
+USER node
+
+# No port, no volume and no healthcheck. It serves nothing and holds nothing —
+# every poll re-reads everything upstream, and the pool's own dedup is what
+# makes that harmless.
+#
+# Exec form, so node is PID 1 and `SIGTERM` reaches it as itself: the timer
+# wakes on it, the scan in flight stops, and the poll after it never starts.
+ENTRYPOINT ["node", "/app/main.js"]

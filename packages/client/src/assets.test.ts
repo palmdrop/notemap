@@ -11,6 +11,7 @@ import {
   refusal,
   type Handler,
 } from "./testing/transport";
+import type { Item } from "#api/types";
 import type { Client } from "./types";
 
 const clock = stoppedClock();
@@ -61,11 +62,29 @@ function aPool() {
       });
     }
 
-    const body = (await request.json()) as { id: string };
+    const body = (await request.json()) as {
+      id: string;
+      payload: Item["payload"];
+    };
     captures.push(body.id);
+    // The payload back as it was sent, with the assets it names resolved: what
+    // an attachment is, is the pool's answer and not the envelope's.
     return json(201, {
       kind: "captured",
-      item: anItem(body.id),
+      item: anItem(body.id, {
+        payload: body.payload,
+        ...(body.payload.assets.length === 0
+          ? {}
+          : {
+              assets: body.payload.assets.map((reference) => ({
+                id: reference.asset,
+                filename: "a photo.png",
+                mime: "image/png",
+                blob: "sha-256:whatever",
+                bytes: 3,
+              })),
+            }),
+      }),
       matchedOn: "id",
     });
   };
@@ -74,15 +93,23 @@ function aPool() {
 }
 
 function aPicture(asset: string) {
-  return {
-    ...anItem("one"),
+  return anItem("one", {
     payload: {
-      type: "image",
+      type: "note",
       content: {},
       metadata: {},
       assets: [{ slot: "image", asset }],
     },
-  };
+    assets: [
+      {
+        id: asset,
+        filename: "a photo.png",
+        mime: "image/png",
+        blob: "sha-256:whatever",
+        bytes: 3,
+      },
+    ],
+  });
 }
 
 beforeEach(() => {
@@ -132,7 +159,11 @@ describe("a picture captured with the pool out of reach", () => {
     transport.unreachable(false);
     await client.drain();
 
-    expect(client.images(item)).toEqual([transport.assetUrl(asset)]);
+    // The pool's own answer, which is what says the attachment is a picture
+    // once the bytes this client held have gone.
+    const landed = read(client.held(item.id));
+    if (landed === undefined) throw new Error("the item went");
+    expect(client.images(landed)).toEqual([transport.assetUrl(asset)]);
     expect(await store.readBlob(asset)).toBeUndefined();
   });
 

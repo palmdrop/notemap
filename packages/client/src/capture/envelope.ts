@@ -1,9 +1,8 @@
 import type { CaptureEnvelope, Item } from "#api/types";
 import type { CaptureInput } from "../types";
 
-const TEXT = "text";
-const IMAGE = "image";
-/** The slot `image` captures declare required, per the example config. */
+const NOTE = "note";
+/** The one slot a shell capture fills: it attaches at most one file. */
 const SLOT = "image";
 
 /**
@@ -22,14 +21,7 @@ export function envelopeFor(
   utcOffset?: number,
 ): CaptureEnvelope {
   const asset = input.asset;
-
-  const body =
-    asset === undefined
-      ? { type: TEXT, content: { text: input.text } }
-      : {
-          type: IMAGE,
-          content: input.text.trim() === "" ? {} : { caption: input.text },
-        };
+  const said = input.text.trim() === "" ? {} : { text: input.text };
 
   return {
     id,
@@ -38,7 +30,8 @@ export function envelopeFor(
     capturedAt: at,
     ...(utcOffset === undefined ? {} : { utcOffset }),
     payload: {
-      ...body,
+      type: NOTE,
+      content: said,
       metadata: {},
       assets: asset === undefined ? [] : [{ slot: SLOT, asset }],
     },

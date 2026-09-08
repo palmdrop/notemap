@@ -1,8 +1,16 @@
 # Spec: The mirror on disk
 
 **Status**: Draft
-**Last updated**: 2026-09-07
+**Last updated**: 2026-09-08
 **Shipped**:
+
+- 2026-09-07 — **One renderer, and an attachment drawn by its media type.** The payload types
+  collapsed into `note` ([ADR 38](../adr/0038-text-and-image-collapse-into-one-payload-type.md)),
+  so the two renderers this spec described became one: attachments in slot order above the prose,
+  each embedded where its media type is an image and linked where it is not — a recording beside a
+  note is no longer written as a picture that will not draw. The migration that rewrote existing
+  `image` payloads enqueues the mirror write each one owes, so the copy is not left describing
+  items that no longer exist that way. ([plan](../plans/memos-relay.md))
 
 - 2026-09-07 — **The mirror carries routing templates, its third non-item unit.** A template is
   something a person set up and would otherwise recreate by hand, which is the argument
@@ -57,8 +65,8 @@
   store (`@notemap/blob-fs`) writes content-addressed blobs under `assets/<2-char shard>/<sha-256>`,
   and the daemon wires it. A record can no longer fail to be made: references resolve against rows
   in the same pool, so `asset-missing` left the non-retryable list. A renderer is now told which
-  directory it is writing into and may be handed the blob driver's `pathFor`, which is how the
-  `image` type emits a markdown image pointing at the blob itself rather than at a copy.
+  directory it is writing into and may be handed the blob driver's `pathFor`, which is how a
+  rendering emits a markdown image pointing at the blob itself rather than at a copy.
   ([plan](../plans/asset-upload-and-images.md))
 - 2026-08-12 — **Frontmatter strings are single-quoted.** The YAML library is now `js-yaml`,
   which ships ESM: `yaml` is CommonJS on node, and the `require("process")` inside it survived

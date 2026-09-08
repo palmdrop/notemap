@@ -74,6 +74,7 @@ import {
   routingRecordSchema,
   routingRecordsSchema,
 } from "../schemas/routing";
+import { sourcesInUseSchema } from "../schemas/sources";
 import { tagRequestSchema, tagsInUseSchema } from "../schemas/tags";
 import type { StatusMap } from "../errors/refusals";
 
@@ -413,6 +414,20 @@ export const tagsInUseRoute = createRoute({
     200: {
       description: "Every tag the pool carries.",
       content: { [JSON_MEDIA_TYPE]: { schema: tagsInUseSchema } },
+    },
+  },
+});
+
+export const sourcesInUseRoute = createRoute({
+  method: "get",
+  path: "/v1/sources",
+  summary: "Read the sources the pool has captured from",
+  description:
+    "Every source an item in the pool came in through, most recently captured first, with how many items it captured and when the newest of them was captured. Not paginated and not narrowed. A source is discovered rather than declared, so this is derived from the items themselves and a source with no items left is not answered.",
+  responses: {
+    200: {
+      description: "Every source the pool has an item from.",
+      content: { [JSON_MEDIA_TYPE]: { schema: sourcesInUseSchema } },
     },
   },
 });
@@ -1346,6 +1361,7 @@ export const ROUTES = [
   tagRoute,
   untagRoute,
   tagsInUseRoute,
+  sourcesInUseRoute,
   editRoute,
   markProcessedRoute,
   routingRecordsRoute,

@@ -6,40 +6,44 @@ import {
 import type { PayloadTypeName } from "@notemap/core";
 
 /**
- * The prose of a `text` capture, as itself. Deliberately lossy — it drops the
- * metadata and the artifacts — because a vault wants the note, not a dump.
- */
-const renderText: Renderer = (delivery) => {
-  const text = delivery.payload.content["text"];
-  if (typeof text !== "string") {
-    throw new Error("a text capture with no text");
-  }
-  return { body: `${text}\n` };
-};
-
-/**
- * Embeds the copies that landed beside the note rather than pointing back into
+ * A note as itself: its attachments in slot order, then its prose. Deliberately
+ * lossy — it drops the metadata and the artifacts — because a vault wants the
+ * note. Slot order is the order they were attached in, and the order a person
+ * expects to see them.
+ *
+ * Embeds the copies that landed beside it rather than pointing back into
  * notemap: a reference into the blob layout breaks the moment notemap moves,
  * and a vault has to keep working without it.
  */
-const renderImage: Renderer = (delivery, at) => {
-  const images = delivery.payload.assets
-    .map((reference) => at.assets.get(reference.slot))
-    .filter((name): name is string => name !== undefined)
-    .map((name) => `![${name}](${linkTo(name)})`);
+const renderNote: Renderer = (delivery, at) => {
+  const mimes = new Map(
+    delivery.assets.map((delivered) => [delivered.slot, delivered.asset.mime]),
+  );
 
-  const caption = delivery.payload.content["caption"];
+  const attachments = [...delivery.payload.assets]
+    .sort((left, right) => (left.slot < right.slot ? -1 : 1))
+    .map((reference) => ({
+      name: at.assets.get(reference.slot),
+      mime: mimes.get(reference.slot) ?? "",
+    }))
+    .filter(
+      (landed): landed is { name: string; mime: string } =>
+        landed.name !== undefined,
+    )
+    .map(
+      (landed) =>
+        `${landed.mime.startsWith("image/") ? "!" : ""}[${landed.name}](${linkTo(landed.name)})`,
+    );
+
+  const text = delivery.payload.content["text"];
   const lines =
-    typeof caption === "string" && caption !== ""
-      ? [...images, "", caption]
-      : images;
+    typeof text === "string" && text !== ""
+      ? [...attachments, ...(attachments.length > 0 ? [""] : []), text]
+      : attachments;
 
   return { body: `${lines.join("\n")}\n` };
 };
 
 export function destinationRenderers(): Renderers {
-  return {
-    ["text" as PayloadTypeName]: renderText,
-    ["image" as PayloadTypeName]: renderImage,
-  };
+  return { ["note" as PayloadTypeName]: renderNote };
 }

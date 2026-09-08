@@ -33,6 +33,9 @@ const BEFORE_TARGET_REMEMBERED = 9;
 /** The version at which the feed still sorted on a denormalised revision chain. */
 const BEFORE_ONE_KEY = 13;
 
+/** The version at which a capture was still typed `text` or `image`. */
+const BEFORE_ONE_PAYLOAD_TYPE = 20;
+
 const directories: string[] = [];
 const opened: SqlitePoolStore[] = [];
 
@@ -436,5 +439,96 @@ describe("collapsing the surfaces onto one key", () => {
     ]);
 
     expect(() => migrated(file)).toThrow(/UNIQUE|constraint/i);
+  });
+});
+
+/** A pool holding one capture of each of the two types that collapse. */
+function typedAtPreviousVersion(): string {
+  const directory = mkdtempSync(join(tmpdir(), "notemap-migration-"));
+  directories.push(directory);
+  const file = join(directory, "pool.db");
+
+  const raw = new DatabaseSync(file);
+  for (const migration of MIGRATIONS.slice(0, BEFORE_ONE_PAYLOAD_TYPE)) {
+    raw.exec(migration);
+  }
+  raw.exec(`PRAGMA user_version = ${BEFORE_ONE_PAYLOAD_TYPE}`);
+
+  const insert = raw.prepare(
+    `INSERT INTO items (id, source_id, source_item_id, payload_type,
+       payload_content, payload_metadata, created_at, modified_at)
+     VALUES (?, 'web-manual', ?, ?, ?, '{}', ?, ?)`,
+  );
+
+  insert.run(
+    "item-said",
+    "src-said",
+    "text",
+    JSON.stringify({ text: "a thought" }),
+    ENQUEUED,
+    ENQUEUED,
+  );
+  insert.run(
+    "item-shot",
+    "src-shot",
+    "image",
+    JSON.stringify({ caption: "mum, 1994" }),
+    ENQUEUED,
+    ENQUEUED,
+  );
+  insert.run("item-bare", "src-bare", "image", "{}", ENQUEUED, ENQUEUED);
+
+  raw.close();
+  return file;
+}
+
+describe("collapsing the payload types into one", () => {
+  it("types every capture `note` and moves a caption to where prose lives", async () => {
+    const pool = migrated(typedAtPreviousVersion());
+
+    const said = await pool.item("item-said" as ItemId);
+    const shot = await pool.item("item-shot" as ItemId);
+    const bare = await pool.item("item-bare" as ItemId);
+
+    expect(said?.payload).toMatchObject({
+      type: "note",
+      content: { text: "a thought" },
+    });
+    expect(shot?.payload).toMatchObject({
+      type: "note",
+      content: { text: "mum, 1994" },
+    });
+    expect(bare?.payload.type).toBe("note");
+    // A capture that said nothing keeps no key at all.
+    expect(bare?.payload.content).toEqual({});
+  });
+
+  it("leaves a mirror write owed for every capture it rewrote", () => {
+    const file = typedAtPreviousVersion();
+    migrated(file);
+
+    expect(jobRows(file)).toEqual([
+      {
+        id: "mirror-note-item-bare",
+        kind: "mirror",
+        subject_kind: "item",
+        subject_id: "item-bare",
+        enrichment: null,
+      },
+      {
+        id: "mirror-note-item-said",
+        kind: "mirror",
+        subject_kind: "item",
+        subject_id: "item-said",
+        enrichment: null,
+      },
+      {
+        id: "mirror-note-item-shot",
+        kind: "mirror",
+        subject_kind: "item",
+        subject_id: "item-shot",
+        enrichment: null,
+      },
+    ]);
   });
 });

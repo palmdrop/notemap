@@ -1,6 +1,7 @@
 import type {
   Action,
   Agent,
+  AssetId,
   BlobHash,
   CapabilityName,
   DestinationId,
@@ -12,6 +13,7 @@ import type {
   Position,
   RoutingRecord,
   RoutingRecordId,
+  SourceId,
   TagName,
   Timestamp,
 } from "@notemap/core";
@@ -515,6 +517,79 @@ describe("modifiedAt", () => {
     expect(Date.parse(second.modifiedAt)).toBeGreaterThan(
       Date.parse(first.modifiedAt),
     );
+  });
+});
+
+describe("what an item answers about its assets", () => {
+  it("resolves every attachment, in slot order", async () => {
+    const { pool: p } = pool();
+    await putAssets(
+      p,
+      asset({ id: "asset-1" as AssetId, filename: "mum.png", bytes: 40 }),
+      asset({
+        id: "asset-2" as AssetId,
+        filename: "notes.txt",
+        mime: "text/plain",
+        bytes: 7,
+      }),
+    );
+    const record = capture({
+      assets: [
+        { slot: "001", asset: "asset-2" },
+        { slot: "000", asset: "asset-1" },
+      ],
+    });
+
+    const stored = await appendCapture(p, record);
+
+    expect(stored.assets).toEqual([
+      {
+        id: "asset-1",
+        filename: "mum.png",
+        mime: "image/png",
+        blob: "blob-abc",
+        bytes: 40,
+      },
+      {
+        id: "asset-2",
+        filename: "notes.txt",
+        mime: "text/plain",
+        blob: "blob-abc",
+        bytes: 7,
+      },
+    ]);
+  });
+
+  it("omits the field where the payload references none", async () => {
+    const { pool: p } = pool();
+
+    const stored = await appendCapture(p, capture());
+
+    expect(Object.hasOwn(stored, "assets")).toBe(false);
+  });
+
+  it("answers it per row of the feed", async () => {
+    const { pool: p } = pool();
+    await putAssets(p, asset({ id: "asset-1" as AssetId }));
+    await appendCapture(
+      p,
+      capture({
+        id: "with",
+        createdAt: "2026-08-03T09:00:00.000Z",
+        assets: [{ slot: "000", asset: "asset-1" }],
+      }),
+    );
+    await appendCapture(
+      p,
+      capture({ id: "without", createdAt: "2026-07-31T09:00:00.000Z" }),
+    );
+
+    const { values } = await p.feed(ALL);
+
+    expect(values.map((item) => item.assets)).toEqual([
+      [asset({ id: "asset-1" as AssetId })],
+      undefined,
+    ]);
   });
 });
 
@@ -1814,5 +1889,92 @@ describe("places a field has already held", () => {
     await putDestinations(p, destination());
 
     expect(await ask(p)).toEqual({ truncated: false, places: [] });
+  });
+});
+
+describe("the sources in use", () => {
+  it("counts what each captured, most recently captured first", async () => {
+    const { pool: p } = pool();
+    await appendCapture(
+      p,
+      capture({
+        id: "item-1",
+        source: SCRATCHPAD,
+        createdAt: "2026-08-03T09:00:00.000Z",
+      }),
+    );
+    await appendCapture(
+      p,
+      capture({
+        id: "item-2",
+        source: SCRATCHPAD,
+        createdAt: "2026-08-03T11:00:00.000Z",
+      }),
+    );
+    await appendCapture(
+      p,
+      capture({
+        id: "item-3",
+        source: "memos" as SourceId,
+        createdAt: "2026-08-03T10:00:00.000Z",
+      }),
+    );
+
+    expect(await p.sourcesInUse()).toEqual([
+      {
+        id: SCRATCHPAD,
+        items: 2,
+        lastCapturedAt: "2026-08-03T11:00:00.000Z",
+      },
+      { id: "memos", items: 1, lastCapturedAt: "2026-08-03T10:00:00.000Z" },
+    ]);
+  });
+
+  /**
+   * A source is discovered from the items it captured, so one whose items have
+   * all gone is not a source the pool has anything to say about.
+   */
+  it("answers nothing at all for a pool holding no items", async () => {
+    const { pool: p } = pool();
+
+    expect(await p.sourcesInUse()).toEqual([]);
+  });
+
+  it("stops answering for a source whose every item was purged", async () => {
+    const { pool: p, raw } = pool();
+    await appendCapture(p, capture({ id: "item-1", source: SCRATCHPAD }));
+    await appendCapture(
+      p,
+      capture({ id: "item-2", source: "memos" as SourceId }),
+    );
+
+    raw.prepare("DELETE FROM items WHERE source_id = ?").run("memos");
+
+    expect((await p.sourcesInUse()).map((use) => use.id)).toEqual([SCRATCHPAD]);
+  });
+
+  it("orders by capture time, not by arrival", async () => {
+    const { pool: p } = pool();
+    await appendCapture(
+      p,
+      capture({
+        id: "item-1",
+        source: SCRATCHPAD,
+        createdAt: "2026-08-03T11:00:00.000Z",
+      }),
+    );
+    await appendCapture(
+      p,
+      capture({
+        id: "item-2",
+        source: "memos" as SourceId,
+        createdAt: "2026-07-31T09:00:00.000Z",
+      }),
+    );
+
+    expect((await p.sourcesInUse()).map((use) => use.id)).toEqual([
+      SCRATCHPAD,
+      "memos",
+    ]);
   });
 });

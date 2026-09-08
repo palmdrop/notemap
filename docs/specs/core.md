@@ -21,6 +21,17 @@
   [36](../adr/0036-a-folder-is-created-required-or-established-once.md),
   [37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md))
 
+- 2026-09-07 — **One payload type, an item that answers its assets, and the sources enumerated.**
+  `text` and `image` collapse into **`note`** — optional prose, any number of attachments — because
+  a type derived from what a capture happens to hold cannot survive an edit, which may not change
+  it ([ADR 38](../adr/0038-text-and-image-collapse-into-one-payload-type.md)). `requiredSlots` and
+  the `missing-asset-slot` refusal go with it, `image` having been their only user. Every read that
+  answers an `Item` now carries its payload's assets resolved, from the same transaction, so
+  nothing has to read an attachment to find out what it is. And the sources can be enumerated:
+  every one the pool has an item from, with how much of it and when it last captured, derived from
+  the items rather than from a list anyone keeps.
+  ([plan](../plans/memos-relay.md))
+
 - 2026-09-04 — **A delivery says what went, and a destination can be asked what would go.** A
   delivered outcome may carry the content it produced, its media type and a short prose note about
   what it could not carry; core stores the content as a blob and the routing record names it, so
@@ -281,6 +292,7 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 
 - **The pool** — captures, revisions, head amendment, tags, archive, purge and tombstones.
 - **Payload types** — open-ended `(type, content, metadata)`, including payloads with media.
+  There is one, `note`: optional prose and any number of attachments.
 - **Feed and queue** — ordered, paginated reads of both surfaces.
 - **Enrichment** — the job model, suggestions and artifacts, accepting and rejecting, per-source
   auto-request policy. Ports defined; **no providers wired**.
@@ -382,9 +394,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   offline caller cannot always know.
 - **An edit is refused what a capture's payload is refused for**, less the one refusal it cannot
   raise. Editing may change an attached file as readily as the text, so content that fails its
-  schema, a required slot left empty and a reference to an asset the pool does not hold are
-  refused exactly as at capture. A payload type the host does not know is not among them, since a
-  type differing from the item's own is already refused as `payload-type-changed`.
+  schema and a reference to an asset the pool does not hold are refused exactly as at capture. A
+  payload type the host does not know is not among them, since a type differing from the item's
+  own is already refused as `payload-type-changed`.
 - **The pool decides which outcome an edit gets, and the caller reads it off the answer.** A
   caller can usually predict it now, everything the seal derives from riding on the item it
   already holds, but another client may have routed that item since. Deciding server-side is what

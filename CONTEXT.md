@@ -35,7 +35,9 @@ The channel a capture came in through — a shell's typed note, its picture, a w
 polled inbox. Finer than the app that sent it, because policy is what the distinction is for: one
 page may stamp two sources. Recorded on every item, along with that source's own id for what it
 sent, so re-reading a source cannot duplicate. A source needs no declaration to capture; declaring
-one only attaches policy.
+one only attaches policy. *Amended 2026-09-07*: the sources can be **enumerated** — every one the
+pool has an item from, with how much of it and when it last captured. Read from the items, since
+that is where a discovered source exists at all.
 _Avoid_: channel, origin, importer, client
 
 **Feed**:
@@ -147,9 +149,17 @@ item still carrying its tags, and the revision that copied them is another one.
 _Avoid_: tag list, taxonomy, vocabulary, autocomplete
 
 **Payload type**:
-What a capture mechanically *is* — text, voice, link, annotation, table. Determined by what
-arrived, never a judgement. Adapters declare which payload types each of their capabilities
-accepts.
+What a capture mechanically *is*. Determined by what arrived, never a judgement. Adapters declare
+which payload types each of their capabilities accepts. There is one, **note**: prose with any
+number of attachments, either half of which may be missing.
+
+A second type exists **only when `content` needs a different schema**. `link` qualifies, carrying
+a `{ url }` nothing else validates; `table` qualifies. **Voice does not**: a recording's audio is
+an **asset** and its transcript an **artifact**, so a `voice` type would be `note`'s schema under
+another name and nothing could tell the two apart by looking. What a capture is *about* is its
+**source** and its **tags**; what an attachment is, is its media type.
+
+`note` names a payload's shape. It is still the wrong word for an item, as **Item** says.
 _Avoid_: type, kind, format
 
 **Enrichment**:
@@ -443,6 +453,17 @@ The one word in this glossary that points outward. The daemon's own **credential
 account and is never called one; an account is never notemap's, and belongs to a server somebody
 else's software is running.
 _Avoid_: profile, connection, endpoint, integration, remote
+
+**Relay**:
+A program *outside* notemap that reads someone else's system and captures what it finds into the
+pool over `/v1`, carrying an **access token** like anything else that is not a browser. Deliberately
+not an **adapter**: a destination is in-process because core owns the decision, the durable record,
+retry and leases, and intake owns none of those — the recovery strategy for a failed poll is to
+poll again. So a relay holds nothing. It re-reads everything each poll and lets the pool's own
+dedup make that harmless, which is why it needs no job, no lease and no outbox
+([ADR 39](docs/adr/0039-a-relay-is-outside-notemap-and-reaches-v1-like-anything-else.md)). There is
+one: `apps/relay-memos`, which reads a Memos server.
+_Avoid_: importer, connector, sync agent, ingester, adapter (for this)
 
 ### The door
 

@@ -5,7 +5,7 @@ import {
   CONFIG,
   envelope,
   harness,
-  NOTE,
+  SECOND,
   SCRATCHPAD,
   TEXT,
   WATCHED_FOLDER,
@@ -360,21 +360,21 @@ describe("a capture core will not accept", () => {
     });
   });
 
-  it("names the asset slot its payload type requires", async () => {
+  it("takes a capture that attaches nothing: no payload type demands a slot", async () => {
     const { pool: p } = pool();
     const slotless = {
       ...envelope(),
       payload: {
-        type: NOTE,
+        type: SECOND,
         content: { body: "spoken" },
         metadata: {},
         assets: [],
       },
     };
 
-    await expect(p.capture(slotless)).resolves.toEqual({
-      kind: "refused",
-      refusal: { kind: "missing-asset-slot", slot: "recording" },
+    await expect(p.capture(slotless)).resolves.toMatchObject({
+      kind: "ok",
+      value: { kind: "captured" },
     });
   });
 

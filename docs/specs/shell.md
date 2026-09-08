@@ -18,6 +18,13 @@
   [ADR 34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md),
   [37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md))
 
+- 2026-09-07 — **Every capture is a `note`, and settings says where things come from.** The shell
+  still stamps two sources — `web-manual` and `web-image` — but there is one payload type, so what
+  it draws as a picture is decided by each attachment's media type. Settings grows a fifth section:
+  every source the pool has seen, what it captured and how long ago the last of them was, counted
+  up while the page is open. It is how a relay left running is seen to still be running.
+  ([plan](../plans/memos-relay.md))
+
 - 2026-09-05 — **One way out of the queue.** `route`, `done` and `archive` were three controls of
   unclear rank; they are one, `process`, which opens the composer and never closes. What differed
   between them is the composer's first step, where a band below a rule holds the two answers no
@@ -231,7 +238,7 @@ fills in. It does not name a colour or a font; those come out of the design sess
   operation goes.
 - The **token roles** — colour, type, spacing, named by role — that every component is written
   against, and the rule that no component names a colour directly.
-- Rendering a text payload as CommonMark, and drawing a payload type this shell does not know.
+- Rendering a note as CommonMark, and drawing a payload type this shell does not know.
 
 ### Out of scope
 
@@ -302,6 +309,12 @@ means *and do it*.
 **An attached picture is drawn before it is committed**, beside its name and with a way to drop it.
 The bytes go up with the capture and cannot be taken back once they have, so the one moment to look
 at what was picked is before the button, not afterwards in the feed.
+
+**Every capture is a `note`** *(amended 2026-09-07)* — prose, an attachment, or both — because
+there is one payload type. What the shell still varies is the **source**: `web-manual` for a typed
+note and `web-image` for one with a picture, which is what a source is for and is where policy
+about the two can differ. The shell draws an attachment as a picture by its **media type**, never
+by the payload's, so a note carrying a recording is not drawn as a broken image.
 
 ### The row
 
@@ -786,8 +799,8 @@ secure context: HTTPS, or `localhost`. **Where that is missing the action is not
 daemon from a phone — the browser hands over no clipboard at all, and a control that can only fail
 is worse than an absent one. There is still no fallback, and building one is still a later change;
 what changed is that the shell stops offering what it cannot do. **Nor is it drawn where there is
-nothing to take**: a picture captured without a caption says nothing, and copying it would put an
-empty string on the clipboard and then claim in the corner to have taken something.
+nothing to take**: a note captured with a picture and no prose says nothing, and copying it would
+put an empty string on the clipboard and then claim in the corner to have taken something.
 
 ### Tagging
 
@@ -1077,8 +1090,8 @@ countable: a **section** is muted ink at the widest tracking with a full-weight 
 **destination** is full ink at tighter tracking with a mark in the margin; a **field** is lower
 case, muted, in a column of its own. Nothing is bigger and nothing is bold.
 
-Five sections *(two when this was written; the door brought two more and routing templates the
-fifth)*. **Destinations** says
+Six sections *(two when this was written; the door brought two more, then routing templates and
+sources)*. **Destinations** says
 how many are offered and how many retired, then one line per destination: a mark for offered or
 retired, its name, its kind, and what it last answered. Opening one adds what it can do, the
 settings its kind asked for, its id, and the four things that can be done to it — check, edit,
@@ -1186,6 +1199,13 @@ resolving without it — so there is no conflict for the pool to report and noth
 offer instead. Deleting the **destination** is where the warning lives, naming the templates it
 would strand.
 
+**Sources** *(added 2026-09-07)* says how many the pool has seen, then one line per source: its
+id, how many items it captured, and how long ago the last of them was — counted up while the page
+is open, as the daemon's own reading is. It is how a program feeding the pool from outside is seen
+to still be feeding it: a source whose figure keeps growing is one that has stopped. Read fresh
+each time the pool comes back into reach and held nowhere, since a remembered figure would say the
+opposite of what this section is for.
+
 **Daemon** says where this shell is talking to, and carries the way to `/log` and the exit to the
 daemon's `/docs` — one of this shell's own routes and one the browser leaves for, marked apart. Its
 first row is the one fact on the page that is about *now* rather than about configuration: whether
@@ -1253,9 +1273,9 @@ routes, and one the browser leaves for.
 
 ### Content
 
-A **text** payload renders as CommonMark, collapsed and opened — that is what
-[standards.md](../standards.md#payload-types) says a text payload is, and the shell currently shows
-its asterisks.
+A **note** renders as CommonMark, collapsed and opened — that is what
+[standards.md](../standards.md#payload-types) says a note is, and the shell currently shows its
+asterisks. Its attachments are drawn above it, in slot order, each by its own media type.
 
 A payload type this shell cannot draw **says so by name** and stays taggable, archivable and
 routable, since none of those need to understand the content. An item never becomes an invisible

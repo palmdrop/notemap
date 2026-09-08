@@ -103,7 +103,7 @@ describe("classification over the wire", () => {
       source: "web",
       sourceItemId: "edit-1",
       payload: {
-        type: "text",
+        type: "note",
         content: { text: "a second thought" },
         metadata: {},
         assets: [],

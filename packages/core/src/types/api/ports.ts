@@ -51,6 +51,7 @@ import type {
   RememberedRequest,
   RoutingRecord,
 } from "../domain/routing";
+import type { SourceUse } from "../domain/source";
 import type { Suggestion } from "../domain/suggestion";
 import type { Delta, Tombstone } from "../domain/sync";
 import type {
@@ -256,6 +257,9 @@ export interface PoolReads {
 
   /** Ordered most used first, then by name, so a completion list needs no sort. */
   tagsInUse(): Promise<readonly TagUse[]>;
+
+  /** Every source the pool has an item from, most recently captured first. */
+  sourcesInUse(): Promise<readonly SourceUse[]>;
 
   suggestions(item: ItemId): Promise<readonly Suggestion[]>;
   suggestion(id: SuggestionId): Promise<Suggestion | undefined>;

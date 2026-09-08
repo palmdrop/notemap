@@ -3,8 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const TEXT = "text";
-export const IMAGE = "image";
+export const NOTE = "note";
 export const MANUAL = "web-manual";
 export const IMAGE_SOURCE = "web-image";
 
@@ -136,13 +135,7 @@ id = "${IMAGE_SOURCE}"
 autoRequest = []
 
 [[payloadTypes]]
-name = "${TEXT}"
-requiredSlots = []
-contentSchema = { type = "object", required = ["text"], additionalProperties = false, properties = { text = { type = "string", minLength = 1 } } }
-
-[[payloadTypes]]
-name = "${IMAGE}"
-requiredSlots = ["image"]
-contentSchema = { type = "object", additionalProperties = false, properties = { caption = { type = "string" } } }
+name = "${NOTE}"
+contentSchema = { type = "object", additionalProperties = false, properties = { text = { type = "string" } } }
 `;
 }

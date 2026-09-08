@@ -64,22 +64,11 @@ describe("the example config", () => {
     ]);
     expect(config.poolConfig.payloadTypes).toEqual([
       {
-        name: "text",
-        requiredSlots: [],
-        contentSchema: {
-          type: "object",
-          required: ["text"],
-          additionalProperties: false,
-          properties: { text: { type: "string", minLength: 1 } },
-        },
-      },
-      {
-        name: "image",
-        requiredSlots: ["image"],
+        name: "note",
         contentSchema: {
           type: "object",
           additionalProperties: false,
-          properties: { caption: { type: "string" } },
+          properties: { text: { type: "string" } },
         },
       },
     ]);
@@ -111,8 +100,7 @@ describe("the container config", () => {
       "web-image",
     ]);
     expect(config.poolConfig.payloadTypes.map((type) => type.name)).toEqual([
-      "text",
-      "image",
+      "note",
     ]);
   });
 
@@ -164,15 +152,17 @@ describe("what a config may leave out", () => {
     });
   });
 
-  it("takes a payload type with no requiredSlots as one with none", () => {
+  it("takes a payload type as its name and its schema, and nothing else", () => {
     const config = parse(`
       [[payloadTypes]]
-      name = "text"
+      name = "note"
       [payloadTypes.contentSchema]
       type = "object"
     `);
 
-    expect(config.poolConfig.payloadTypes[0]?.requiredSlots).toEqual([]);
+    expect(config.poolConfig.payloadTypes).toEqual([
+      { name: "note", contentSchema: { type: "object" } },
+    ]);
   });
 });
 

@@ -12,5 +12,4 @@ export type Payload = {
 export type PayloadTypeDescriptor = {
   readonly name: PayloadTypeName;
   readonly contentSchema: JsonSchema;
-  readonly requiredSlots: readonly string[];
 };

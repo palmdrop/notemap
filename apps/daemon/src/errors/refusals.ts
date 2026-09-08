@@ -26,7 +26,6 @@ export const CAPTURE_STATUS = {
   "source-item-changed": 409,
   "unknown-payload-type": 422,
   "payload-invalid": 422,
-  "missing-asset-slot": 422,
   "unknown-asset": 422,
 } as const satisfies Record<CaptureRefusal["kind"], number>;
 
@@ -108,7 +107,6 @@ export const EDIT_STATUS = {
   "source-item-changed": 409,
   "payload-invalid": 422,
   "payload-type-changed": 422,
-  "missing-asset-slot": 422,
   "unknown-asset": 422,
 } as const satisfies Record<EditRefusal["kind"], number>;
 

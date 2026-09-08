@@ -46,12 +46,19 @@ export type ClientState = {
   /** What completion offers, most used first, as the pool last counted it. */
   readonly tags: readonly TagUse[];
   /**
-   * Where the bytes the store still holds are, per asset. Remembered rather
-   * than asked for, so what an item's pictures are stays a question with an
-   * answer rather than a promise.
+   * What the store still holds, per asset. Remembered rather than asked for, so
+   * what an item's pictures are stays a question with an answer rather than a
+   * promise — and it is the only thing that knows, for a capture the pool has
+   * not answered yet.
    */
-  readonly blobUrls: ReadonlyMap<AssetId, string>;
+  readonly held: ReadonlyMap<AssetId, HeldBlob>;
   readonly pool?: PoolIdentity;
+};
+
+/** A shell that cannot make a URL for its own bytes still knows what they are. */
+export type HeldBlob = {
+  readonly mime: string;
+  readonly url?: string;
 };
 
 export function emptyPage(order: Order): ListPage {
@@ -67,20 +74,20 @@ export function emptyState(): ClientState {
     destinations: [],
     templates: [],
     tags: [],
-    blobUrls: new Map(),
+    held: new Map(),
   };
 }
 
-export function withBlobUrl(
+export function withHeld(
   state: ClientState,
   asset: AssetId,
-  url: string | undefined,
+  blob: HeldBlob | undefined,
 ): ClientState {
-  const blobUrls = new Map(state.blobUrls);
-  if (url === undefined) blobUrls.delete(asset);
-  else blobUrls.set(asset, url);
+  const held = new Map(state.held);
+  if (blob === undefined) held.delete(asset);
+  else held.set(asset, blob);
 
-  return { ...state, blobUrls };
+  return { ...state, held };
 }
 
 export function rebuilt(state: ClientState, pool: PoolIdentity): ClientState {

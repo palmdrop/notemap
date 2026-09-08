@@ -575,7 +575,7 @@ describe("POST /v1/items/{id}/route/preview", () => {
     const written = await send(host.app, "/v1/captures", {
       ...envelope({ id: item }),
       payload: {
-        type: "text",
+        type: "note",
         content: { text: "é".repeat(700_000) },
         metadata: {},
         assets: [],

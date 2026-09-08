@@ -20,6 +20,16 @@ editing, destinations, routing to one and health are settled; the rest is stub
   [36](../adr/0036-a-folder-is-created-required-or-established-once.md),
   [37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md))
 
+- 2026-09-07 — **An `Item` answers its assets, `GET /v1/sources` answers the sources, and there is
+  one payload type.** An item carries `assets` wherever one is answered — the `Asset` rows its
+  payload references, resolved at read time and absent where it references none, on the routing
+  summary's own terms. `GET /v1/sources` lists every source an item came in through with its count
+  and its last capture, unpaginated as `GET /v1/tags` is, which is how a program feeding the pool
+  from outside is seen to still be feeding it. `missing-asset-slot` left the error table with the
+  payload types that collapsed into `note`.
+  ([plan](../plans/memos-relay.md),
+  [ADR 38](../adr/0038-text-and-image-collapse-into-one-payload-type.md))
+
 - 2026-09-04 — **What a delivery produced, and what one would produce.** A routing record now says
   whether it kept an output, what those bytes are and what the destination could not carry, with
   `GET /v1/routing/{record}/output` answering the bytes themselves under the inert headers an
@@ -271,6 +281,9 @@ Settled (2026-09-07): `GET`, `POST`, `PATCH` and `DELETE` over `/v1/templates`,
 capability and arguments. `POST /v1/items/{id}/tag` may now apply a template, and may refuse
 because of one.
 
+Settled (2026-09-07): `GET /v1/sources`, and `assets` on the `Item` — the payload's references
+resolved, carried by every read that answers items.
+
 Still stub, and unwritten below: suggestions and their decisions, artifacts and corrections, purge
 and tombstones, range requests over asset content, the wire form of sync delta reads, and
 authentication. Nothing here forecloses them; they get the same treatment when their slice is
@@ -457,6 +470,28 @@ archive, a capture outcome, an edit outcome:
   what a row can say about arrival; `GET /v1/items/{id}/routing` is what says which record.
 - A summary saying nothing and one saying `records: 0` are the same claim, so only the first is
   spelled — a cancelled last reservation takes the field away again.
+
+**An `Item` carries `assets` on the same terms** — every asset its payload references, resolved:
+
+```json
+{ "payload": { "assets": [ { "slot": "000", "asset": "0198f0c2-..." } ] },
+  "assets": [ { "id": "0198f0c2-...", "filename": "whiteboard.png",
+                "mime": "image/png", "blob": "sha256-...", "bytes": 8 } ] }
+```
+
+- **Derived at read time and never stored.** The payload's own `assets` are what was written and
+  are untouched; this is the `Asset` rows they name, read in the same transaction, so an asset
+  swept between two reads cannot make a row describe an attachment that has gone.
+- **Absent where the payload references none**, as `routing` is, rather than present and empty.
+- **In slot order**, which is the order a rendering draws in. Slots sort as strings, and the
+  payload's own array order is not kept — the store reads an item's references back ordered by
+  slot. So **a capture attaching more than one file names its slots as zero-padded indices**,
+  `000`, `001`, `002`, which is the one naming under which sorting as strings and counting agree.
+  `010` before `9` is what a producer numbering them plainly would get, and nothing checks it.
+  A capture attaching one file names its slot whatever it likes; there is nothing to order.
+- A flat list rather than pairs: the slot is in `payload.assets`, and a reader that wants both
+  joins on the id it already has. What it saves is a read per attachment to answer "is this one a
+  picture" — `mime` is the answer, and nothing derives that from the payload's type.
 
 ### The feed
 
@@ -660,6 +695,28 @@ person to remember it.
 - This route offers; it never limits. A tag no item carries is simply absent, and
   `POST /v1/items/{id}/tag` takes any tag that trims to something whether it is here or not.
 
+### The sources in use
+
+`GET /v1/sources` — every source an item in the pool came in through, with how much of it and
+when it last captured. It is how a **relay** left running is seen to still be running.
+
+```json
+{ "values": [ { "id": "memos", "items": 12,
+                "lastCapturedAt": "2026-09-07T11:59:00.000Z" } ] }
+```
+
+- **Most recently captured first.** Not paginated and not narrowed, on `GET /v1/tags`' own terms:
+  the set is small and a client holds the whole of it.
+- **Derived from the items, never from a list anyone keeps.** A source is "discovered rather than
+  created" ([core.md](core.md#intake-and-sync)), so there is no such thing as a declared source
+  that captured nothing, and a source whose every item has gone is not answered. Declaring one in
+  the daemon's config attaches policy; it does not put a row here.
+- **`lastCapturedAt` is a capture time, never an arrival time**, so a relay posting a backlog does
+  not put itself at the top for as long as the backlog reaches back.
+- **The last capture earns its place where `GET /v1/tags`' last-added does not.** That one is
+  omitted because nothing reads it; this one is the whole reason the route exists — a settings
+  screen draws how long ago each source last captured, which is how a dead relay is noticed.
+
 ### Editing an item
 
 `POST /v1/items/{id}/edit` — a change to what the capture says. The body is a capture envelope
@@ -713,9 +770,8 @@ person to remember it.
   rather than answering `409 item-superseded`, which is gone. Being revised is one of the three
   things that process an item, and a processed item is revised rather than refused.
 - **An edit is refused what a capture's payload is refused for**, less one: a `content` that fails
-  its type's schema is `422 payload-invalid`, a required slot left empty is
-  `422 missing-asset-slot`, and a reference to an asset the pool does not hold is
-  `422 unknown-asset`. There is no `unknown-payload-type`, because a `type` that is not the item's
+  its type's schema is `422 payload-invalid`, and a reference to an asset the pool does not hold
+  is `422 unknown-asset`. There is no `unknown-payload-type`, because a `type` that is not the item's
   own is `422 payload-type-changed` first, carrying the type it was captured as.
 - An id no item has is `404 no-such-item`.
 - The body is required: a bare `POST` is `400 malformed-envelope` rather than an empty payload.
@@ -1460,7 +1516,6 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `unknown-payload-type` | `type` | core |
 | `422` | `payload-invalid` | `issues` | core |
 | `422` | `payload-type-changed` | `from` | core |
-| `422` | `missing-asset-slot` | `slot` | core |
 | `422` | `unknown-asset` | `asset` | core |
 | `422` | `unknown-destination` | `destination` | core (routing an item) |
 | `422` | `unknown-destination-kind` | `destinationKind` | core |

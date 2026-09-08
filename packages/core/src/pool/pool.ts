@@ -57,6 +57,8 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
 
     tags: { inUse: () => store.tagsInUse() },
 
+    sources: { inUse: () => store.sourcesInUse() },
+
     suggestions: {
       pendingFor: notImplemented("suggestions.pendingFor"),
       accept: notImplemented("suggestions.accept"),

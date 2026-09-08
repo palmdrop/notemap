@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { daemons, IMAGE_SOURCE } from "./harness/index.ts";
+import { daemons, IMAGE_SOURCE, MANUAL } from "./harness/index.ts";
 
 const daemon = daemons();
 
@@ -30,6 +30,31 @@ describe("bytes the client attached to a capture", () => {
     // The item the pool holds names the asset, so the two halves agree.
     const { item } = await client.item(captured.id);
     expect(item?.payload.assets).toEqual([{ slot: "image", asset }]);
+
+    // And answers what it is, so nothing reads an attachment to find out.
+    expect(item?.assets).toEqual([
+      {
+        id: asset,
+        filename: "whiteboard.png",
+        mime: "image/png",
+        blob: expect.any(String),
+        bytes: BYTES.length,
+      },
+    ]);
+  });
+
+  it("are absent from an item that has none", async () => {
+    const running = await daemon();
+    const client = running.client;
+
+    const captured = await client.capture({
+      channel: MANUAL,
+      text: "no pictures here",
+    });
+    await client.drain();
+
+    const { item } = await client.item(captured.id);
+    expect(item?.assets).toBeUndefined();
   });
 });
 

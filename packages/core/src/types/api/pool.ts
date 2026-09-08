@@ -58,6 +58,7 @@ import type {
   RememberedRequest,
   RoutingRecord,
 } from "../domain/routing";
+import type { SourceUse } from "../domain/source";
 import type { Suggestion } from "../domain/suggestion";
 import type { Delta, Tombstone } from "../domain/sync";
 import type {
@@ -127,6 +128,15 @@ export interface ViewsApi {
 export interface TagsApi {
   /** Whole and unnarrowed: a caller completing a tag holds the set and filters it. */
   inUse(): Promise<readonly TagUse[]>;
+}
+
+export interface SourcesApi {
+  /**
+   * Every source the pool has seen, most recently captured first. Whole and
+   * unnarrowed, as tags are: a source is discovered rather than created, so
+   * there is nothing to list beside what the items say.
+   */
+  inUse(): Promise<readonly SourceUse[]>;
 }
 
 export interface SuggestionsApi {
@@ -389,6 +399,7 @@ export interface Pool {
   readonly items: ItemsApi;
   readonly views: ViewsApi;
   readonly tags: TagsApi;
+  readonly sources: SourcesApi;
   readonly suggestions: SuggestionsApi;
   readonly enrichment: EnrichmentApi;
   readonly destinations: DestinationsApi;

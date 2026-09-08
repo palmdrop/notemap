@@ -41,6 +41,7 @@ import type {
   ReadOrder,
   Slice,
   SourceId,
+  SourceUse,
   Tag,
   TagName,
   TagUse,
@@ -72,13 +73,14 @@ import type {
   ActionRow,
   AssetRow,
   DestinationRow,
-  ItemAssetRow,
+  ItemAssetJoinRow,
   ItemRoutingRow,
   ItemRow,
   ItemTagRow,
   PoolMetaRow,
   RoutingRecordRow,
   RoutingTemplateRow,
+  SourceUseRow,
   TagUseRow,
 } from "./rows";
 import {
@@ -451,6 +453,16 @@ export function createSqlitePoolStore(
       GROUP BY name
       ORDER BY items DESC, name ASC
     `);
+    /**
+     * By capture time rather than by arrival: a relay posting a backlog would
+     * otherwise put itself at the top for as long as the backlog reaches back.
+     */
+    const sourcesInUse = source.query<SourceUseRow, []>(`
+      SELECT source_id, COUNT(*) AS items, MAX(created_at) AS last_captured_at
+      FROM items
+      GROUP BY source_id
+      ORDER BY last_captured_at DESC, source_id ASC
+    `);
     const routingFor = source.query<RoutingRecordRow, [string]>(
       `SELECT ${ROUTING_COLUMNS} FROM routing_records
        WHERE item_id = ? ORDER BY at, id`,
@@ -534,9 +546,12 @@ export function createSqlitePoolStore(
         )
         .all(...ids);
       const assetRows = source
-        .query<ItemAssetRow, Bindable[]>(
-          `SELECT item_id, slot, asset_id FROM item_assets
-           WHERE item_id IN (${slots}) ORDER BY slot`,
+        .query<ItemAssetJoinRow, Bindable[]>(
+          `SELECT reference.item_id, reference.slot, reference.asset_id,
+                  asset.filename, asset.mime, asset.blob, asset.bytes
+           FROM item_assets AS reference
+           JOIN assets AS asset ON asset.id = reference.asset_id
+           WHERE reference.item_id IN (${slots}) ORDER BY reference.slot`,
         )
         .all(...ids);
       const revisionRows = source
@@ -658,6 +673,13 @@ export function createSqlitePoolStore(
         tagsInUse.all().map((row) => ({
           name: row.name as TagName,
           items: row.items,
+        })),
+
+      sourcesInUse: async (): Promise<readonly SourceUse[]> =>
+        sourcesInUse.all().map((row) => ({
+          id: row.source_id as SourceId,
+          items: row.items,
+          lastCapturedAt: toTimestamp(row.last_captured_at),
         })),
 
       routingRecords: async (item: ItemId): Promise<readonly RoutingRecord[]> =>
@@ -840,6 +862,7 @@ export function createSqlitePoolStore(
       item: guard(uncommitted.item),
       artifacts: guard(uncommitted.artifacts),
       tagsInUse: guard(uncommitted.tagsInUse),
+      sourcesInUse: guard(uncommitted.sourcesInUse),
       routingRecords: guard(uncommitted.routingRecords),
       routingRecord: guard(uncommitted.routingRecord),
       remembered: guard(uncommitted.remembered),

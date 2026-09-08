@@ -67,6 +67,48 @@ services:
 
     stop_grace_period: 30s
 
+  # A relay reads someone else's system and captures what it finds over `/v1`,
+  # carrying a token like anything else that is not a browser. Its own program
+  # and its own container: nothing about it is in the daemon, which is why its
+  # Memos credential never reaches the daemon's config.
+  #
+  # No image is published yet. Build it from the repo:
+  #
+  #   docker build -f Dockerfile.relay-memos -t notemap-relay-memos:local .
+  #
+  # Then mint the token it carries, put it beside this file, and uncomment the
+  # service, the two secrets below and the `relay-memos.toml` that comes with
+  # this directory:
+  #
+  #   docker compose exec notemap notemap token mint --name relay-memos \
+  #     > notemap_relay_pool_token
+  #
+  # relay-memos:
+  #   image: notemap-relay-memos:local
+  #   restart: unless-stopped
+  #
+  #   # The same network the daemon is on, reached at `http://notemap:4747`.
+  #   # It goes nowhere near the proxy: it is nothing anyone browses to, and it
+  #   # is talking to `/v1` rather than being talked to.
+  #   networks: [proxy]
+  #
+  #   depends_on:
+  #     notemap:
+  #       condition: service_healthy
+  #
+  #   volumes:
+  #     - ./relay-memos.toml:/etc/notemap/relay-memos.toml:ro
+  #
+  #   # Both tokens are read from files, never inline, and read again at every
+  #   # poll — so rotating either one is writing the file and never a restart.
+  #   secrets:
+  #     - notemap_relay_pool_token
+  #     - notemap_relay_memos_token
+  #
+  #   # It holds nothing and owes nothing, so there is no work to finish: what
+  #   # a stopped scan leaves undone, the next poll does.
+  #   stop_grace_period: 10s
+
 volumes:
   state:
 
@@ -75,6 +117,10 @@ volumes:
 #     file: ./notemap_password
 #   notemap_webdav_nextcloud:
 #     file: ./notemap_webdav_nextcloud
+#   notemap_relay_pool_token:
+#     file: ./notemap_relay_pool_token
+#   notemap_relay_memos_token:
+#     file: ./notemap_relay_memos_token
 
 networks:
   # Already there, and not created by compose. Everything else on it reaches

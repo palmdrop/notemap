@@ -14,6 +14,14 @@
   ([plan](../plans/routing-templates.md),
   [ADR 34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md))
 
+- 2026-09-07 — **The client stops guessing what an attachment is.** A cached item carries the
+  resolved assets the pool answers, so a picture is told from a recording by its media type rather
+  than by the payload's type — which no longer distinguishes them, there being one. The client
+  remembers the media type of bytes it holds for a capture that has not drained, so an attachment
+  is drawn before it lands as well as after. `sources.inUse()` reads `GET /v1/sources` and caches
+  nothing: what it is asked for is whether a source has gone quiet.
+  ([plan](../plans/memos-relay.md))
+
 - 2026-09-04 — **Asking what would go, and reading what went.** `RoutingApi.preview` asks a
   destination what it would write before anything is committed, and `RoutingApi.output` reads what
   a delivery actually produced. Neither is an outbox operation, for the reason routing is not one —
@@ -530,6 +538,11 @@ written by typing it. The list is read again once classification reaches the poo
 untag, since either changes what is in use — **once per drain rather than once per operation**, so a
 backlog of eight tags asks one question. The pool having just answered is what says it is reachable.
 
+**The sources in use are not cached at all** *(2026-09-07)*. `sources.inUse()` is a plain read of
+`GET /v1/sources` every time, answering nothing when the pool is out of reach. It is the one read
+where a remembered answer would be worse than none: what a settings screen asks it for is whether
+a source has gone quiet, and a list from an hour ago cannot say.
+
 **The read caches are read back on start** (2026-08-25, extended 2026-09-07). The store holds the
 tags, the destinations and the routing templates as it holds the items and the outbox, written
 whole as each list is answered, so a client opened cold against an unreachable pool completes from
@@ -797,6 +810,10 @@ by anything owed to a person:
   settled here is that the answer is not "evict it under the reader".
 - The store follows the cache, so an eviction reaches it. Including one made while reading the
   store back, which is what stops it growing a session at a time.
+- **A cached item carries what it answers**, so an item with attachments now costs its resolved
+  `assets` as well — a filename, a media type, a blob name and a size per attachment. Bytes are
+  not in it; this is what the pool said the attachments are, which is what lets an offline surface
+  tell a picture from a recording without reaching for either.
 
 Nothing warms the cache. It fills from what surfaces actually read, so an offline working set is as
 large as the person's reading made it.

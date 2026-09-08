@@ -4,37 +4,33 @@ import type { Renderer, Renderers } from "@notemap/mirror-fs";
 import type { Asset, BlobHash, PayloadTypeName } from "@notemap/core";
 
 /**
- * The prose of a `text` capture, as itself. Deliberately lossy — it drops the
- * metadata and the artifacts the record beside it carries — because nothing
- * ever parses this file and a person reading it wants the note, not a dump.
- */
-const renderText: Renderer = (record) => {
-  const text = record.item.payload.content["text"];
-  return { body: `${typeof text === "string" ? text : ""}\n` };
-};
-
-/**
+ * A note as itself: its attachments in slot order, then its prose. Deliberately
+ * lossy — it drops the metadata and the artifacts the record beside it carries
+ * — because nothing ever parses this file and a person reading it wants the
+ * note.
+ *
  * Points at the blob itself rather than a copy: `assets/` is shared and the
  * mirror writes no bytes of its own. The alt text is the filename because a
  * blob file has no extension and is named for a machine.
  */
-function renderImage(pathFor: (blob: BlobHash) => string): Renderer {
+function renderNote(pathFor: (blob: BlobHash) => string): Renderer {
   return (record, at) => {
     const byId = new Map(record.assets.map((asset) => [asset.id, asset]));
 
-    const images = record.item.payload.assets
+    const attachments = [...record.item.payload.assets]
+      .sort((left, right) => (left.slot < right.slot ? -1 : 1))
       .map((ref) => byId.get(ref.asset))
       .filter((asset): asset is Asset => asset !== undefined)
-      .map(
-        (asset) =>
-          `![${asset.filename}](${link(at.directory, pathFor(asset.blob))})`,
-      );
+      .map((asset) => {
+        const target = link(at.directory, pathFor(asset.blob));
+        return `${asset.mime.startsWith("image/") ? "!" : ""}[${asset.filename}](${target})`;
+      });
 
-    const caption = record.item.payload.content["caption"];
+    const text = record.item.payload.content["text"];
     const lines =
-      typeof caption === "string" && caption !== ""
-        ? [...images, "", caption]
-        : images;
+      typeof text === "string" && text !== ""
+        ? [...attachments, ...(attachments.length > 0 ? [""] : []), text]
+        : attachments;
 
     return { body: `${lines.join("\n")}\n` };
   };
@@ -46,8 +42,5 @@ function link(directory: string, target: string): string {
 }
 
 export function renderersFor(pathFor: (blob: BlobHash) => string): Renderers {
-  return {
-    ["text" as PayloadTypeName]: renderText,
-    ["image" as PayloadTypeName]: renderImage(pathFor),
-  };
+  return { ["note" as PayloadTypeName]: renderNote(pathFor) };
 }

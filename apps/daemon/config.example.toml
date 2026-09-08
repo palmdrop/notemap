@@ -170,29 +170,16 @@ autoRequest = []
 id = "web-image"
 autoRequest = []
 
+# Prose with any number of attachments, either half of which may be missing.
+# What an attachment *is* — a picture, a recording, a page snapshot — is its own
+# media type, recorded when its bytes went up; nothing about it is the payload
+# type's business. Bytes go up in their own request first, whatever they are.
 [[payloadTypes]]
-name = "text"
-requiredSlots = []
+name = "note"
 
 [payloadTypes.contentSchema]
 type = "object"
-required = ["text"]
 additionalProperties = false
 
 [payloadTypes.contentSchema.properties.text]
-type = "string"
-minLength = 1
-
-# The first type with a required slot: a capture of this type that names no
-# asset in `image` is refused, and the bytes go up in their own request first.
-# The caption is optional, and the whole of the content.
-[[payloadTypes]]
-name = "image"
-requiredSlots = ["image"]
-
-[payloadTypes.contentSchema]
-type = "object"
-additionalProperties = false
-
-[payloadTypes.contentSchema.properties.caption]
 type = "string"
