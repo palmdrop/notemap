@@ -1,5 +1,6 @@
 import {
   Rejected,
+  Unusable,
   type Delivery,
   type DeliveredOutput,
   type DeliveryOutcome,
@@ -129,14 +130,15 @@ export function createArenaDestination(
       const settings = asArenaSettings(destination.settings);
       if (settings === undefined) throw unreadable(destination);
 
-      // A person asking now is owed the answer that it will not fix itself: an
-      // account nobody declared is a config edit away, and a retry is not what
-      // gets there. The WebDAV kind reads it the same way.
+      // `Unusable`, not `Rejected`: nothing was reached, so nothing refused
+      // anything. An account nobody declared is a destination that cannot be
+      // made sense of at all — a config edit away, and not a retry away, which
+      // is the one thing `unreachable` would promise.
       let arena: Arena;
       try {
         arena = await reach(settings.account);
       } catch (cause) {
-        throw new Rejected(why(cause), { cause });
+        throw new Unusable(why(cause), { cause });
       }
 
       try {

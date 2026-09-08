@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 
-import { Rejected } from "@notemap/core";
+import { Rejected, Unusable } from "@notemap/core";
 import type {
   DeliveredOutput,
   DeliveryOutcome,
@@ -818,14 +818,18 @@ describe("probing a webdav destination", () => {
     ).rejects.toThrow(/Nowhere is not there/);
   });
 
-  it("rejects an account nothing declares, rather than calling it unreachable", async () => {
+  /**
+   * Still not `unreachable` — a retry is not what gets there — but not a
+   * refusal either: nothing was reached, so nothing refused anything.
+   */
+  it("calls an account nothing declares unusable, being neither reached nor refused", async () => {
     const server = await vault();
 
     await expect(
       adapter(server).probe?.(
         destinationRow({ account: "not-declared", root: "" }),
       ),
-    ).rejects.toThrow(Rejected);
+    ).rejects.toThrow(Unusable);
   });
 
   it("rejects credentials the server would not take", async () => {

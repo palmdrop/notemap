@@ -88,6 +88,11 @@ The distinction decides whether a delivery is retried, so it is not about severi
 | The arguments are not the shape the capability declared | `rejected` | Likewise |
 | A renderer threw | `rejected` | It will throw identically |
 
+A **check** is asked by somebody waiting, so it answers two of those differently: a refused
+credential is `rejected` there, a password having possibly just been rotated being the delivery's
+reason to retry and not a person's reason to be told nothing. And an account nobody declared is
+**`unusable`** — nothing was reached, so nothing refused anything, and no retry gets there.
+
 A rejected credential is on the retrying side although a wrong password does not fix itself. It is
 the filesystem kind's asymmetry: wrongly retrying is bounded by `maxAttempts` and ends up in front
 of a person, which is where it was going anyway, while wrongly abandoning throws away a decision

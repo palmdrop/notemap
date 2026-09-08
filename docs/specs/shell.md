@@ -654,7 +654,9 @@ necessary, and that is the moment to add it.
 
 **Which control a field draws is a lookup keyed by destination kind**, and it decides on the kind
 alone: what a field means is the kind's business, and a capability one kind shares with another
-does not make their contents the same shape. A kind with no hierarchy in it draws no tree, and
+does not make their contents the same shape. That it is keyed on the *name* is the weak part — a
+third filesystem-like kind needs a shell edit to get the tree — and `docs/todo.md` carries the
+shape this should take instead, which is the schema saying it. A kind with no hierarchy in it draws no tree, and
 keeps the schema-driven browser — but **that browser is a line too** *(amended 2026-09-08)*: one
 field with what the destination offers under it, **narrowed to what is typed**, `⇥` completing,
 `↑↓` walking and `⏎` taking the one walked to or committing where the walk has not moved. The same
@@ -693,6 +695,12 @@ declares exactly one, it is settled the moment the description lands and `do` is
 whose every path is the same step is one press spent saying yes. Two or more and it is asked, its
 capabilities being its own and nothing here able to pick among them. This is the same reasoning the
 typed line already settled `create-or-append` by, arrived at from the other side.
+
+Both settle **only where nothing else has**. A template carries a capability and applies it in the
+step the description lands in, so a template saved as `create` on a vault keeps `create` and draws
+that capability's form rather than the line. Overwriting it made the commit read as a decision of
+the person's own: the record did not name the template, and an `establish` template never learnt
+its folder was there.
 
 **A preview is asked for, never volunteered** (added 2026-09-04). `preview` sits beside `route` and
 runs once the arguments are settled, because the conversion may reach the destination or a model —

@@ -287,10 +287,12 @@ Addressed 2026-09-08, in the same pass as the composer work the developer asked 
    owed the answer that a config file will not fix itself. So both kinds keep `Rejected`, and the
    arena table's row is corrected to `unreachable` to a delivery, `rejected` to a check.
 
-   Left open deliberately: core defines `Rejected` as *"what an adapter throws where it was reached
-   and answered no"*, and an undeclared account was not reached. `unusable` — *"could not be asked
-   at all"* — fits it better than either, and `probe.ts` already catches an adapter throwing it.
-   Worth a decision; not one to make inside a review's cleanup.
+   **Settled 2026-09-08.** `unusable` it is, on both kinds. Core defines `Rejected` as *"what an
+   adapter throws where it was reached and answered no"*, and an undeclared account was not
+   reached; `Unusable`'s own doc says it is *"what an adapter throws where it rather than core is
+   the one that knows the destination cannot be made sense of"*, which is exactly this. Delivery is
+   untouched and still reports `unreachable` — a config edit plus a restart is a thing that
+   happens, and ADR 17's reasoning holds. Both READMEs say so.
 
 8. **Fixed.** `destination.test.ts` answers `/v3/blocks` with a `302` and asserts `unreachable`,
    the detail naming the token, and that no block was created.
@@ -320,12 +322,14 @@ Addressed 2026-09-08, in the same pass as the composer work the developer asked 
   handing `choose` the template's capability and arguments so they land in the same step as the
   description. Caught by an existing test rather than by inspection.
 
-- **Not fixed, and worth its own look.** The `settles` effect sets `capability = CREATE_OR_APPEND`
-  unconditionally whenever a path kind declares it, so a template resolving to `create` or `append`
-  on a filesystem destination is silently rewritten — and then `requestFor` sees the capability
-  differ from what the template resolved to and commits as a bare decision rather than as the
-  template. Pre-existing, out of this change's scope, and it wants a decision about what taking a
-  template into a line-drawing kind should mean.
+- **Fixed 2026-09-08.** The `settles` effect set `capability = CREATE_OR_APPEND` unconditionally
+  whenever a path kind declared it, so a template resolving to `create` or `append` on a filesystem
+  destination was silently rewritten — and `requestFor` then saw the capability differ from what
+  the template resolved to and committed as a bare decision rather than as the template, so the
+  record did not name it and an `establish` template never learnt its folder was there. Both
+  settlings are now guarded the same way: the composer settles a capability only where nothing else
+  has. `split` takes the line actually being drawn with it, since a `create` template on a vault
+  settles a capability the line cannot draw. Covered by a test that fails against the old effect.
 
 - **`probe`, `describe` and `candidates` reached the network with no deadline.** All three now get
   `AbortSignal.timeout(20_000)` from their route handlers; only the delivery runner bounded its own

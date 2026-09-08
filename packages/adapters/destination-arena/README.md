@@ -77,7 +77,7 @@ carries a broken link rather than none.
 
 | What happened | Reported as |
 |---|---|
-| The account is not declared, or its secret cannot be read | `unreachable` to a delivery, `rejected` to a check |
+| The account is not declared, or its secret cannot be read | `unreachable` to a delivery, `unusable` to a check |
 | `401` — the token was refused | `unreachable` to a delivery, `rejected` to a check |
 | `403` — most often a token with `read` scope, or a channel you cannot add to | `rejected` |
 | `404` — the channel is gone, most often renamed | `rejected` |
@@ -90,4 +90,5 @@ carries a broken link rather than none.
 Two rows are asymmetric, both for the same reason and both the WebDAV kind's: a delivery is right to
 retry a refused token, one having possibly just been rotated, and right to retry an account it could
 not resolve, a config file being a thing that gets fixed. A person asking *now* is owed the answer
-that it is wrong rather than a `retrying` that will not come good on its own.
+that it will not come good on its own. An account nobody declared is **`unusable` rather than
+`rejected`** there, which is the honest word: nothing was reached, so nothing refused anything.

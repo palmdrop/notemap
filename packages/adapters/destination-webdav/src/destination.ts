@@ -8,6 +8,7 @@ import {
 } from "@notemap/output-markdown";
 import {
   Rejected,
+  Unusable,
   type Delivery,
   type DeliveryOutcome,
   type Destination,
@@ -165,11 +166,15 @@ export function createWebdavDestination(
       const settings = asWebdavSettings(destination.settings);
       if (settings === undefined) throw unreadable(destination);
 
+      // `Unusable`, not `Rejected`: nothing was reached, so nothing refused
+      // anything. An account nobody declared is a destination that cannot be
+      // made sense of at all — a config edit away, and not a retry away, which
+      // is the one thing `unreachable` would promise.
       let dav: Dav;
       try {
         dav = createDav(await config.credentials(settings.account));
       } catch (cause) {
-        throw new Rejected(why(cause), { cause });
+        throw new Unusable(why(cause), { cause });
       }
 
       const root = contain(settings.root, "");

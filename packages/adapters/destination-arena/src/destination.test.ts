@@ -1,6 +1,7 @@
 import {
   NotOffered,
   Rejected,
+  Unusable,
   type CapabilityName,
   type DeliveredOutput,
   type DeliveryOutcome,
@@ -347,13 +348,13 @@ describe("asking whether it is really there", () => {
   });
 
   /**
-   * A config edit away, and a retry is not what gets there — so a person asking
-   * now is told it will not fix itself, exactly as the WebDAV kind tells them.
+   * Not `unreachable` — a retry is not what gets there — and not a refusal
+   * either: nothing was reached, so nothing refused anything.
    */
-  it("rejects a destination naming an account nobody declared", async () => {
+  it("calls an account nobody declared unusable, as the WebDAV kind does", async () => {
     await expect(
       adapter().probe?.(destinationRow({ account: "elsewhere" })),
-    ).rejects.toBeInstanceOf(Rejected);
+    ).rejects.toBeInstanceOf(Unusable);
   });
 });
 

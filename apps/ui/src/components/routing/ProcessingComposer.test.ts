@@ -308,6 +308,67 @@ test("takes a template, draws what it resolved to, and leaves it editable", asyn
   expect(directory.value).toBe("reading/2026");
 });
 
+/**
+ * The line settles `create-or-append` for a kind that draws it — but a template
+ * has already settled one, and overwriting it made the commit read as a
+ * decision of the person's own: the record would not name the template, and an
+ * `establish` template would never learn its folder was there.
+ */
+test("keeps the capability a template resolved to, over the one the line settles", async () => {
+  const transport = pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route === "GET /v1/templates") return json(200, { values: [RESEARCH] });
+    if (route === "GET /v1/items/one/route/resolve") {
+      return json(200, {
+        destination: VAULT,
+        capability: "create",
+        arguments: { directory: "research/2026-09-04" },
+      });
+    }
+    if (route.endsWith("/description")) {
+      // Declares the line's capability too, which is what used to win.
+      return json(200, {
+        kind: "described",
+        capabilities: [CREATE_OR_APPEND, CREATE],
+      });
+    }
+    if (route === "POST /v1/items/one/route") {
+      return json(200, {
+        id: "r",
+        item: "one",
+        state: "delivered",
+        target: {},
+      });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  draw();
+  await choose("research");
+
+  // `create`'s form, not the line: the template said what it meant.
+  const directory = (await screen.findByLabelText(
+    "directory",
+  )) as HTMLInputElement;
+  expect(directory.value).toBe("research/2026-09-04");
+  expect(screen.queryByRole("combobox", { name: "place" })).toBeNull();
+
+  await commit();
+
+  // Untouched, so it commits *as* the template — which is what makes the
+  // record name it, and an `establish` template learn its folder is there.
+  await vi.waitFor(async () => {
+    const sentBody = await sentTo(transport)
+      .find((each) => routeOf(each) === "POST /v1/items/one/route")
+      ?.clone()
+      .json();
+    expect(sentBody).toEqual({ template: RESEARCH.id });
+  });
+});
+
 test("commits an untouched template as the template, so the record names it", async () => {
   servingTemplates();
 

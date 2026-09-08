@@ -144,39 +144,49 @@
       capabilities.some((one) => one.name === CREATE_OR_APPEND),
   );
 
-  $effect(() => {
-    if (settles) capability = CREATE_OR_APPEND;
-  });
-
   /**
    * A kind that can do one thing is not offering a choice, so it is not asked
    * to be made: are.na declares `create` and nothing else, and a step whose
    * every path is the same step is one press spent saying yes.
-   *
-   * Guarded on the capability being unset, unlike `settles` above, so a
-   * template that resolved to one is not overwritten by the effect that runs
-   * after `describe` answers.
    */
   const only = $derived(
     capabilities.length === 1 ? capabilities[0]?.name : undefined,
   );
 
+  /**
+   * What the composer settles when nothing else has: the line's own capability
+   * where the line is drawn, and the only one there is otherwise.
+   *
+   * **Only when nothing else has.** A template carries a capability, and it is
+   * applied in the same step the description lands in — so this runs after it
+   * and must not overwrite it. Left unguarded, a template saved as `create` on
+   * a vault became `create-or-append` here, and the commit then read as a
+   * decision of the person's own rather than as the template: the record did
+   * not name it, and an `establish` template never learnt its folder was there.
+   */
+  const implied = $derived(settles ? CREATE_OR_APPEND : only);
+
   $effect(() => {
-    if (only !== undefined && capability === undefined) capability = only;
+    if (implied !== undefined && capability === undefined) capability = implied;
   });
 
   /** Nothing to pick among is nothing to draw: the line and the fields are the whole decision. */
-  const chooses = $derived(capabilities.length > 1 && !settles);
+  const chooses = $derived(capabilities.length > 1 && implied === undefined);
 
   const ready = $derived(chosen !== undefined && capability !== undefined);
 
   /** Whether there is a step to go back to, which is what `esc` does first. */
   const settled = $derived(chosen !== undefined || hand !== undefined);
 
-  /** The line and what is consulted beside it, which is what earns two columns. */
-  const split = $derived(chosen !== undefined && settles);
-
   const line = $derived(fields.find((one) => one.name === LINE_FIELD));
+
+  /**
+   * The line and what is consulted beside it, which is what earns two columns —
+   * so it takes the line actually being drawn. A template that named `create`
+   * on a vault settles a capability the line cannot draw, and a second column
+   * consulting a line that is not there would be an empty half of a modal.
+   */
+  const split = $derived(chosen !== undefined && settles && line !== undefined);
 
   /**
    * A field beside the line goes only where the composer **knows** a new note is

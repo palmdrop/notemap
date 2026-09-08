@@ -184,3 +184,17 @@
   typed line already had, without the hierarchy. Capping a long answer and saying so is still the
   destination's `truncated`, which this draws. Still open past that: an answer with no useful prefix
   is a scroll, so **substring** matching rather than prefix is the next move if one turns up.
+- [ ] **The shell picks a browse control by destination kind name.**
+  `apps/ui/src/lib/candidate-browsers.ts` maps `filesystem` and `webdav` to the typed line and
+  everything else to the flat one, so a third filesystem-like kind needs a UI edit to get the tree —
+  which is the shell knowing about particular destinations, the thing the adapter seam exists to
+  prevent. Raised 2026-09-08 while making the flat browse typeable.
+
+  Inferring it from the answer does not work: the line has to know **before the first answer** that
+  values are `/`-separated, because the level-per-segment asks, the forecast and the `+ folder` for
+  what is not there yet all read the path apart. That is a property of the field, not of what came
+  back. So the fix is to let the schema say it — `x-notemap-candidates` carrying a shape
+  (`"path"` | `"flat"`) rather than `true`, adapter-declared and core-uninterpreted, exactly as
+  every other annotation is. It changes an annotation that has already shipped and that
+  `docs/specs/shell.md` and [ADR 26](adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md)
+  both describe, so it wants an ADR and a migration of the three kinds that declare it.
