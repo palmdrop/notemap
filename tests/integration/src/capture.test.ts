@@ -294,7 +294,7 @@ describe("resubmitting under an identity that already exists", () => {
   });
 });
 
-describe("a source core has never been told about", () => {
+describe("a source nothing has captured under before", () => {
   it("captures like any other, and is attributed to itself", async () => {
     const { pool: p } = pool();
 
@@ -308,7 +308,7 @@ describe("a source core has never been told about", () => {
     });
   });
 
-  it("carries no policy, which is the whole of what declaring one buys", async () => {
+  it("attributes the tags it supplies to itself, like any other", async () => {
     const { pool: p } = pool();
 
     const item = captured(
@@ -320,10 +320,6 @@ describe("a source core has never been told about", () => {
       ),
     );
 
-    // The only policy a source carries today is `autoRequest`, and there are no
-    // enrichments configured for it to name, so what is asserted here is that
-    // an undeclared source is not a lesser capture: its tags are attributed to
-    // it exactly as a declared source's are.
     expect(item.tags).toEqual([
       expect.objectContaining({ by: { kind: "source", source: "nowhere" } }),
     ]);

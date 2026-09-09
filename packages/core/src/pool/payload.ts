@@ -5,11 +5,10 @@ import type { AssetId, PayloadTypeName } from "#types/domain/ids";
 import type { Payload, PayloadTypeDescriptor } from "#types/domain/payload";
 
 /**
- * What a capture may be, for a host that has no reason to say anything else.
- * Named here rather than left to whoever writes a config file: a second type
- * needs a renderer, a composer that can produce it and an `accepts` list that
- * knows it, so a name a file could add on its own would deliver as fenced JSON
- * and draw as nothing.
+ * What a capture may be, for a host that has no reason to say anything else. A
+ * second type needs a renderer, a composer that can produce it and an `accepts`
+ * list that knows it, so one named anywhere but in code would deliver as fenced
+ * JSON and draw as nothing.
  */
 export const PAYLOAD_TYPES: readonly PayloadTypeDescriptor[] = [
   {

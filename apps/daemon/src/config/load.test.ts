@@ -133,7 +133,6 @@ describe("what a config may leave out", () => {
     });
   });
 
-  /** What a capture may be is core's, so an empty file still gets it. */
   it("takes the payload types from core rather than from the file", () => {
     expect(parse("").poolConfig.payloadTypes).toBe(PAYLOAD_TYPES);
     expect(PAYLOAD_TYPES.map((type) => type.name)).toEqual(["note"]);
@@ -207,8 +206,7 @@ describe("a key this daemon does not know", () => {
     ]);
   });
 
-  /** The blocks that stopped meaning anything, named whole rather than key by key. */
-  it("ignores a block this file no longer holds", () => {
+  it("names a whole block it does not hold, rather than each key in one", () => {
     expect(ignored(`[[sources]]\nid = "web"\nautoRequest = []`)).toEqual([
       "sources",
     ]);

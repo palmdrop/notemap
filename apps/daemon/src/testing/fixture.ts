@@ -31,7 +31,6 @@ import { openPool, systemClock } from "../ports";
 export const WEB = "web" as SourceId;
 export const NOTE = "note" as PayloadTypeName;
 
-/** The config as core takes it, which is what the daemon hands it. */
 export const CONFIG: PoolConfig = {
   payloadTypes: PAYLOAD_TYPES,
   retry: {

@@ -84,7 +84,6 @@ export type DeliveryConfig = {
   readonly batch: number;
 };
 
-/** Keys are core's own names. Absent lists mean empty. */
 const fileSchema = z.object({
   daemon: z
     .object({

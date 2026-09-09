@@ -5,11 +5,6 @@
 # `~/.config/notemap/config.toml` instead. The annotated version of every key is
 # `apps/daemon/config.example.toml`; this file is the deployed one and says only
 # what the container changes.
-#
-# **This file is what an install is, not what a person does with it.** A
-# destination is created in settings and lives in the pool, so it survives a
-# rebuild of the image; a source is discovered by capturing under it. A key the
-# daemon does not know is ignored with a warning naming it.
 
 [daemon]
 pool = "/var/lib/notemap/state/notemap.db"

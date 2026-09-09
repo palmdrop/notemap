@@ -5,18 +5,12 @@
 # `docker/compose/config.toml`, with the paths under the volume and a bind
 # address to match; this one stays the annotated reference.
 #
-# Keys are core's own names, so `docs/specs/core.md` reads as documentation for
-# this file.
-#
 # **This file is what an install is, not what a person does with it.** Paths,
 # addresses, cadences, limits and the accounts that carry a password: the things
 # settled once when notemap is put on a machine. Anything someone changes while
 # using notemap is pool state instead — a destination is created in settings and
 # survives a reinstall, and a source is discovered by capturing under it rather
-# than declared anywhere. Nothing in here needs a restart to be worth writing.
-#
-# A key the daemon does not know is ignored with a warning naming it, whether it
-# is a typo or a block that used to mean something.
+# than declared anywhere.
 
 [daemon]
 pool = "~/.local/share/notemap/state/notemap.db"
