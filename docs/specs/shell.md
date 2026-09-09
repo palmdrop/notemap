@@ -57,6 +57,18 @@
   up while the page is open. It is how a relay left running is seen to still be running.
   ([plan](../plans/memos-relay.md))
 
+- 2026-09-08 — **The queue stops lying about what is left.** Arriving at it reads it again, and
+  the action log the shell already watches takes a row off it the moment something else processes
+  the item — a trigger tag, or another device. The feed is unchanged, nothing ever leaving it.
+  ([plan](../plans/held-row-and-a-fresh-queue.md))
+
+- 2026-09-08 — **The row is held, not watched out.** Processing leaves the row open at its own rank,
+  drawn as any processed row is and offering `process` again, so a second destination is one more
+  gesture rather than a hunt through the feed. It goes when the reader closes it, opens another row
+  or presses `esc`; the one-beat linger and its timer are gone. A row's word now tells `routed`,
+  `retrying`, `manual` and `discarded` apart on the feed as well as on the queue.
+  ([plan](../plans/held-row-and-a-fresh-queue.md))
+
 - 2026-09-05 — **One way out of the queue.** `route`, `done` and `archive` were three controls of
   unclear rank; they are one, `process`, which opens the composer and never closes. What differed
   between them is the composer's first step, where a band below a rule holds the two answers no
@@ -384,13 +396,13 @@ place while a person is there.
 
 **One row serves both surfaces** *(2026-09-04)*. The queue's and the feed's differed in what they
 offered and never in what they were, so there is one of them, and what a surface hands it is what
-differs: the queue offers a place to depart from, since a row that leaves it has to be watched out,
-and the feed offers none, keeping every row it holds. Both offer a composer. **The feed's row opens
+differs: the queue holds a row it has just processed until the reader looks away, and the feed
+offers none, keeping every row it holds anyway. Both offer a composer. **The feed's row opens
 in place**, with the facts the queue's has and one more.
 
 **In the feed, a row says what became of it.** The feed is the pool read completely, so routed and
 archived items are in it. The state is an inverted word in the left column, under the time —
-`routed`, `archived` — and a routed row carries a `routing` line naming the places it went and
+`routed`, `discarded` — and a routed row carries a `routing` line naming the places it went and
 what has not landed yet, which is what the item's routing summary holds
 ([core.md](core.md#routing)). The time belongs to a record, so it is the opened row's, not the
 feed's: naming it per row would be a read per row. That is the one fact a feed row carries that a
@@ -1093,15 +1105,30 @@ template cannot — which is a thing to go and fix in settings.
 shuts on: a failure about a delivery nobody can now look up would outlive the session that raised
 it.
 
-**The row is watched out rather than vanishing.** A row that has been processed holds its place for
-one beat wearing the word for what became of it, then goes — `routed` where a destination has it,
+**The row is held rather than vanishing** *(rewritten 2026-09-08)*. Processing leaves the row
+**open**, back at its own rank in the register, wearing the word for what became of it and keeping
+everything an open row has — the routing line naming where it went, and the actions, `process`
+among them. **A held row is a row.** It is the same component the feed draws a processed item with,
+reading the client's own copy, so a second routing or a decision taken back reaches it without a
+read of its own.
+
+**It is held for as long as it is the open one**, and released by closing it, opening another row,
+or `esc`. So there is at most one on the register and a drain session evicts each as the next is
+reached for — which is the same rule as *one row open at a time* and not a second one. There is no
+timer: a beat was long enough to see a departure and never long enough to act in.
+
+**What it is for is the second destination.** An item may be processed more than once, and the row
+that has just been processed is where the person is already looking, so routing the same capture
+somewhere else is reaching for `process` again rather than finding the item in the feed.
+
+**The word is what the record reads as and not what its state says**, which is the rule the
+departing word already carried and now belongs to every row: `routed` where a destination has it,
 `retrying` where the pool recorded a decision it has not carried out, `manual` where the person
-carried it onward, `discarded` where it was noise *(amended 2026-09-05)*. **The word is what the
-record reads as and not what its state says**: a mark by hand is born delivered, having nothing to
-reach, so a word chosen off the state alone would name a carrier there never was. It is the
-shell drawing what it has just done and nothing about what the pool holds, so it takes no handler:
-it cannot be opened and its actions are gone with it. A reader who has asked for less movement is
-shown none — the row goes at once rather than lingering more briefly.
+carried it onward, `discarded` where it was noise. A mark by hand is born delivered, having nothing
+to reach, so a word chosen off the state alone would name a carrier there never was. **The feed says
+the same four** *(2026-09-08)*, having said `routed` for all three of them and `archived` for the
+fourth — `discard` being the word this shell spends on hiding a capture
+([CONTEXT.md](../../CONTEXT.md)).
 
 ### What happened while nobody was asking
 
@@ -1126,7 +1153,11 @@ could ever explain, and it is why this exists.
 **A notice leads to where the whole of it can be read**: the item it happened to, or the log plain
 where the work was about no item. The item surface is the better address for the question a notice
 raises — what happened to this capture — because it draws the record itself rather than the log's
-line about it *(amended 2026-09-04, once there was an item to lead to)*.
+line about it *(amended 2026-09-04, once there was an item to lead to)*. **However it was raised**
+*(amended 2026-09-08)*: a decision the shell reports from the gesture that made it leads to the item
+just as one read out of the log does. It is a statement and stays one — it says where to go and
+never puts a row back on a surface, a held row being the shell's own answer to looking away too
+soon.
 
 **A catch-up is bounded, and a long one is not read out at all.** A shell that has been away a
 moment is told each thing that happened. One that has been away long enough for the read not to
@@ -1506,6 +1537,18 @@ the page a person actually reads. Three-character indents on successive paragrap
 
 ## Prior decisions
 
+- **A held row is released by selection, not by a clock.** *2026-09-08.* A processed row used to
+  hold its place for 1200ms, which is the length of a departure and no use for a decision: routing
+  the same capture to a second place meant finding it again in the feed. Tying the hold to the row
+  being open makes it exactly as long as somebody is looking, and costs nothing, the register
+  already holding one open row at a time.
+  Rejected: **a longer timer**, which is arbitrary against both jobs and reads as a row that will
+  not leave; and **holding every processed row until the surface is left**, which draws a session's
+  whole trail on a surface whose job is to reach zero, and would keep the drained queue from ever
+  saying so. Also rejected, and further back: a **mode or filter** on the queue that includes
+  processed items, which would make it something other than the pool read as the unprocessed ones
+  ([core.md](core.md#the-queue)). At most one held row is transient shell state and no read claims
+  it. What the queue cannot answer — *what did I process today* — is the log's question.
 - **One way out of the queue.** *2026-09-05.* `route`, `done` and `archive` were three controls of
   unclear rank, drawn as siblings, which asked a person to know the shell's vocabulary before they
   could act on an intent that is single: *this is finished with, and here is what became of it*.

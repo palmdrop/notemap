@@ -39,6 +39,12 @@ export type Gates = {
 export function watching(
   read: () => Promise<ActionsPage>,
   gates: Gates = { watched: true, answering: true },
+  /**
+   * What the pool did, before anybody is told it. Here rather than on the
+   * observable, so it runs once however many shells are listening — and not at
+   * all while nobody is, the watcher being built by the first `watch()`.
+   */
+  applied?: (actions: readonly Action[]) => void,
 ): Watching {
   const every = gates.every ?? STEADY;
 
@@ -94,7 +100,10 @@ export function watching(
       const said = mark === undefined ? undefined : since(page);
       mark = positionOf(newest);
 
-      if (said !== undefined && said.actions.length > 0) reported.next(said);
+      if (said !== undefined && said.actions.length > 0) {
+        applied?.(said.actions);
+        reported.next(said);
+      }
     } catch {
       // A pool that did not answer says nothing rather than something wrong.
       // The next tick asks again, and reachability is what a person reads.

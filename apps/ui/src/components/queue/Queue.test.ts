@@ -5,7 +5,6 @@ import { tick } from "svelte";
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool } from "$testing/pool";
-import { lingering } from "$lib/lingering.svelte";
 import { notices } from "$lib/notices.svelte";
 import { NO_MORE_OFFLINE } from "$lib/said";
 import { briefly } from "$lib/stamp";
@@ -26,7 +25,6 @@ vi.mock("$app/navigation", () => ({
 afterEach(() => {
   if (rail.furled) rail.toggle();
   notices.clear();
-  lingering.clear();
   went.to = [];
 });
 
@@ -66,7 +64,7 @@ function scrolledTo(at: number) {
   return fireEvent.scroll(window);
 }
 
-test("puts the view back where the person left it, without asking the pool", async () => {
+test("puts the view back where the person left it, and reads the queue again", async () => {
   pool(queued("one"));
 
   render(Queue);
@@ -79,7 +77,9 @@ test("puts the view back where the person left it, without asking the pool", asy
   await vi.waitFor(() => {
     expect(window.scrollTo).toHaveBeenCalledWith({ top: 240 });
   });
-  expect(asked()).toEqual(["GET /v1/queue"]);
+  // The place is the shell's own and costs nothing. The rows are not: what the
+  // queue holds changes while the reader is elsewhere, so arriving is a read.
+  expect(asked()).toEqual(["GET /v1/queue", "GET /v1/queue"]);
 });
 
 test("discards with the pool unreachable, and says what it cannot queue", async () => {
@@ -106,8 +106,9 @@ test("discards with the pool unreachable, and says what it cannot queue", async 
 
   await fireEvent.click(screen.getByRole("button", { name: /^discard/ }));
 
-  // The pool never answered it, and the item left the queue all the same.
-  await screen.findByText("nothing waiting");
+  // The pool never answered it, and the decision was made all the same: the
+  // row is held wearing it rather than waiting on a delivery nobody attempted.
+  await screen.findByText("discarded");
   expect(asked()).toContain("POST /v1/items/one/archive");
 });
 
@@ -323,11 +324,13 @@ test("does not draw a refused operation as pending", async () => {
   await discard();
 
   // The pool put the row back, and the operation it refused is still held.
+  // The mark is drawn while the operation is in flight, so this waits for the
+  // refusal rather than reading the row in the window before it lands.
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/archive");
     expect(screen.queryByText("nothing waiting")).toBeNull();
+    expect(screen.queryByText("pending")).toBeNull();
   });
-  expect(screen.queryByText("pending")).toBeNull();
 });
 
 test("says nothing in the register about a queue the pool has not answered for", async () => {
@@ -529,7 +532,7 @@ test("a row that leaves the queue says where it went", async () => {
 
   // A mark by hand is born delivered, having nothing to reach, so `routed` is
   // what the state alone would say and it names a carrier there never was.
-  expect(await screen.findByText("manual")).toBeDefined();
+  expect(await screen.findAllByText("manual")).not.toHaveLength(0);
   expect(screen.queryByText("routed")).toBeNull();
 });
 
@@ -549,6 +552,9 @@ test("discarding says so, and offers the row back", async () => {
   const said = notices.shown.at(-1);
   expect(said?.standing).toBe(true);
   expect(said?.offer?.label).toBe("undo");
+  // The row it was made on is one look away from being gone, and the corner
+  // is then the only way back to the capture it was about.
+  expect(said?.href).toBe("/items/one");
 });
 
 test("one discard's offer stands at a time, however many rows go", async () => {
@@ -592,7 +598,7 @@ test("tagging says nothing in the corner", async () => {
   expect(notices.shown).toHaveLength(0);
 });
 
-test("a row that has gone is watched out, wearing what became of it", async () => {
+test("a row that has gone is held, wearing what became of it", async () => {
   let queued = [anItem("one"), anItem("two")];
   pool((request) => {
     const route = routeOf(request);
@@ -617,8 +623,12 @@ test("a row that has gone is watched out, wearing what became of it", async () =
   expect(screen.getByText("one")).toBeDefined();
 });
 
-/** It is a row being watched out, not one to use: the pool no longer has it as work. */
-test("a departing row cannot be opened or acted on", async () => {
+/**
+ * The reach a second destination needs. An item may be processed more than
+ * once, and the row that has just been processed is where the person is
+ * already looking.
+ */
+test("a held row still offers process, and takes a second decision", async () => {
   pool(queued("one"));
 
   render(Queue);
@@ -626,10 +636,45 @@ test("a departing row cannot be opened or acted on", async () => {
   await open(0);
   await discard();
 
+  await screen.findByText("discarded");
+  expect(screen.getByRole("button", { name: "process" })).toBeDefined();
+
+  await process();
+  expect(screen.getByRole("dialog")).toBeDefined();
+});
+
+/** At most one is held, so the register does not accumulate a session's trail. */
+test("opening another row releases the held one", async () => {
+  pool(queued("one", "two"));
+
+  render(Queue);
+  await screen.findByText("one");
+  await open(0);
+  await discard();
+
+  await screen.findByText("discarded");
+
+  await open(0);
   await vi.waitFor(() => {
-    expect(screen.queryByRole("button", { name: "process" })).toBeNull();
+    expect(screen.queryByText("one")).toBeNull();
   });
-  expect(screen.getByText("one")).toBeDefined();
+  expect(screen.getByText("two")).toBeDefined();
+});
+
+test("esc releases a held row", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+  await open(0);
+  await discard();
+
+  await screen.findByText("discarded");
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await vi.waitFor(() => {
+    expect(screen.queryByText("one")).toBeNull();
+  });
 });
 
 /**
@@ -715,6 +760,7 @@ test("a routing says where it went, and which capture it was", async () => {
   const said = notices.shown[0];
   expect(said?.what).toBe("routed · Vault");
   expect(said?.why).toBe("notes/inbox/picker.md");
+  expect(said?.href).toBe("/items/one");
   expect(said?.about).toContain("the picker needs a trail");
   expect(said?.about).toMatch(/\d\d-\d\d \d\d:\d\d/);
 
@@ -789,19 +835,22 @@ test("a routing the pool has not carried out says it is retrying", async () => {
 });
 
 /**
- * Where it stood, not where the list starts. The item is out of the queue
- * before `route()` answers, so the neighbour is read while the row still has
- * one — a routed row rising to the top of the register is a row that vanished
- * and something else appearing, which is what the linger exists to prevent.
+ * Where it stood, not where the list starts. A held row goes back at its own
+ * rank, the key being capture time — one that rose to the top of the register
+ * would read as a row that vanished and something else appearing.
  */
-test("a routed row is watched out from where it stood", async () => {
+test("a routed row is held where it stood", async () => {
   const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
 
   pool((request) => {
     const route = routeOf(request);
     if (route === "GET /v1/queue") {
+      // Distinct capture times, because that is the key the register places
+      // a held row by and three rows sharing one say nothing about order.
       return json(200, {
-        values: ["one", "two", "three"].map((id) => anItem(id)),
+        values: ["one", "two", "three"].map((id, at) =>
+          anItem(id, { createdAt: `2026-08-17T10:0${String(at)}:00.000Z` }),
+        ),
       });
     }
     if (route === "GET /v1/destinations") {

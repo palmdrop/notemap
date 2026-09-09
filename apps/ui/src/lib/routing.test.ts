@@ -23,15 +23,15 @@ function aRecord(overrides: Partial<RoutingRecord> = {}): RoutingRecord {
 }
 
 test("a delivered record says where it landed, and which capture it was", () => {
-  const said = saidOf(
-    aRecord({ pointer: "notes/inbox/picker.md" }),
-    nameOf,
-    "09-03 14:32 · the picker needs a trail",
-  );
+  const said = saidOf(aRecord({ pointer: "notes/inbox/picker.md" }), nameOf, {
+    about: "09-03 14:32 · the picker needs a trail",
+    href: "/items/one",
+  });
 
   expect(said.what).toBe("routed · Vault");
   expect(said.why).toBe("notes/inbox/picker.md");
   expect(said.about).toBe("09-03 14:32 · the picker needs a trail");
+  expect(said.href).toBe("/items/one");
   expect(said.key).toBe("record:r1");
 });
 

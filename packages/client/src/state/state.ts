@@ -1,4 +1,5 @@
 import type {
+  Action,
   AssetId,
   Destination,
   DestinationId,
@@ -266,6 +267,47 @@ export function intoPage(
     : [...page.ids.slice(0, at), id, ...page.ids.slice(at)];
 }
 
+/**
+ * A surface read again from its start, joined to the tail that was already
+ * walked. The fresh page answers for its own window and for nothing past it, so
+ * a row inside that window the pool no longer names has left, and one below it
+ * is the tail's — kept, since a first page says nothing about a fifth.
+ *
+ * The position is the walked one, not the fresh head's: the surface still
+ * reaches as far as it did, and walking it again would spend four reads
+ * arriving back where the reader already was.
+ */
+export function rejoined(
+  fresh: ListPage,
+  held: ListPage,
+  items: ReadonlyMap<ItemId, Item>,
+): ListPage {
+  const edge = fresh.ids.at(-1);
+  const far = edge === undefined ? undefined : items.get(edge);
+
+  const tail =
+    far === undefined
+      ? []
+      : held.ids.filter((id) => {
+          if (fresh.ids.includes(id)) return false;
+          const item = items.get(id);
+          return (
+            item !== undefined && behind(fresh.order, rank(item), rank(far))
+          );
+        });
+
+  // Exhausted, the fresh read saw the whole surface and there is no tail to be
+  // right about.
+  if (fresh.exhausted || tail.length === 0) return fresh;
+
+  return {
+    ...fresh,
+    ids: [...fresh.ids, ...tail],
+    exhausted: held.exhausted,
+    ...(held.after === undefined ? {} : { after: held.after }),
+  };
+}
+
 export function withIds(page: ListPage, ids: readonly ItemId[]): ListPage {
   return { ...page, ids };
 }
@@ -368,6 +410,44 @@ export function processed(
     }),
     queue: withIds(state.queue, without(state.queue.ids, id)),
   };
+}
+
+/**
+ * The kinds that say an item is processed, which is the whole of what takes a
+ * row off the queue.
+ */
+const PROCESSING: ReadonlySet<string> = new Set([
+  "routed",
+  "archived",
+  "revised",
+  "purged",
+]);
+
+/**
+ * What the pool did while nobody was asking it, applied to the surfaces. Only
+ * the queue can be wrong about this: the feed keeps everything and an item
+ * processed elsewhere leaves the queue with nothing here to notice, until a
+ * read says so.
+ *
+ * Nothing is put back. Giving up on a delivery returns an item to the queue,
+ * and an action carries no item to place there — `withdrawn` is the path that
+ * has one.
+ */
+export function caughtUp(
+  state: ClientState,
+  actions: readonly Action[],
+): ClientState {
+  const gone = new Set(
+    actions
+      .filter((action) => PROCESSING.has(action.kind))
+      .map((action) => action.subject)
+      .filter((id): id is ItemId => id !== undefined),
+  );
+
+  const kept = state.queue.ids.filter((id) => !gone.has(id));
+  if (kept.length === state.queue.ids.length) return state;
+
+  return { ...state, queue: withIds(state.queue, kept) };
 }
 
 /**

@@ -6,6 +6,7 @@ import {
   cached,
   emptyPage,
   fromCache,
+  rejoined,
   unpositioned,
   type ClientState,
   type ListPage,
@@ -59,22 +60,57 @@ function extended(page: ListPage, slice: ItemSlice): ListPage {
   };
 }
 
+/**
+ * What the surface holds while a read is in flight. A read that starts again
+ * from nothing goes on drawing what was already there, so one that fails leaves
+ * the reader no worse off than before it was made.
+ *
+ * A turn is the exception, and the only one: the rows drawn and the position
+ * they were read at are the other order's, and keeping them would leave a
+ * surface that failed to turn claiming an order its cursor is not in.
+ */
+function whileReading(page: ListPage, held: ListPage): ListPage {
+  return loading(page.order === held.order ? held : page);
+}
+
+/**
+ * The page a read answered for, less whatever left the surface while it was in
+ * flight — a decision the person made, or an action the watcher applied. Those
+ * stay gone: a read that started before they left does not carry them back.
+ */
+function stillHeld(page: ListPage, held: ListPage): ListPage {
+  const kept = page.ids.filter((id) => held.ids.includes(id));
+  return kept.length === page.ids.length ? page : { ...page, ids: kept };
+}
+
 /** Reads one page into the surface, from whichever page it was told to start at. */
 async function walk(
   state: Writable<ClientState>,
   api: Api,
   surface: Surface,
   page: ListPage,
+  /** Whether the answer is a fresh head to join to the tail already walked. */
+  rejoining = false,
 ): Promise<void> {
-  state.update((current) => ({ ...current, [surface]: loading(page) }));
+  state.update((current) => ({
+    ...current,
+    [surface]: whileReading(page, current[surface]),
+  }));
 
   try {
     const slice = await read(api, surface, page);
-    state.update((current) => ({
-      ...current,
-      items: cached(current, slice.values),
-      [surface]: extended(current[surface], slice),
-    }));
+    state.update((current) => {
+      const items = cached(current, slice.values);
+      const landed = extended(stillHeld(page, current[surface]), slice);
+
+      return {
+        ...current,
+        items,
+        [surface]: rejoining
+          ? rejoined(landed, current[surface], items)
+          : landed,
+      };
+    });
   } catch (error) {
     state.update((current) => ({
       ...current,
@@ -125,6 +161,36 @@ export async function loadMore(
   if (page.exhausted) return;
 
   await walk(state, api, surface, page);
+}
+
+/**
+ * Reads a surface from the start because somebody has just arrived at it.
+ *
+ * Only the queue does this. The feed accumulates and nothing ever leaves it, so
+ * a fresh first page there answers a question nobody asked; the queue's
+ * membership changes under the reader — a trigger tag fires, another device
+ * processes something — and being right about what is left is its whole job.
+ * A surface nobody has read yet is read for the first time either way.
+ *
+ * The walked tail is kept, not given up. Opening a capture unmounts the
+ * register, so arriving is what coming back from one capture looks like, and a
+ * reader four pages into a drain session may not be charged those four pages
+ * for having looked at a row.
+ */
+export async function enter(
+  state: Writable<ClientState>,
+  api: Api,
+  surface: Surface,
+  order?: Order,
+): Promise<void> {
+  const held = state.get()[surface];
+  if (held.loading) return;
+
+  const wanted = order ?? held.order;
+  if (surface !== "queue" || unpositioned(held))
+    return loadMore(state, api, surface, order);
+
+  await walk(state, api, surface, emptyPage(wanted), true);
 }
 
 /** A failure the pool never made is over the moment the pool answers again. */

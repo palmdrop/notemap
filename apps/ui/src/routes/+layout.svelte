@@ -15,7 +15,6 @@
   import Sheet from "$components/primitives/frame/Sheet.svelte";
   import Waiting from "$components/primitives/frame/Waiting.svelte";
   import { client } from "$lib/client";
-  import { lingering } from "$lib/lingering.svelte";
   import { notices } from "$lib/notices.svelte";
   import { reachable, watched } from "$lib/reachable.svelte";
   import { session } from "$lib/session.svelte";
@@ -55,7 +54,6 @@
   $effect(() => {
     if (!shut) return;
     notices.clear();
-    lingering.clear();
   });
 </script>
 

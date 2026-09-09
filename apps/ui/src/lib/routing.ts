@@ -97,14 +97,18 @@ export function firedKey(record: string): string {
  * What a decision just made says about itself. A record the pool answered as
  * `pending` was attempted and did not go, so it reads as **retrying** — saying
  * it was routed would be the shell claiming the one thing only the delivery
- * can establish.
+ * can establish. It carries the way to the capture it was about: the row it
+ * was made on may be gone by the time somebody reads this.
  */
 export function saidOf(
   record: RoutingRecord,
   nameOf: (destination: string) => string,
-  about?: string,
+  which: { readonly about?: string; readonly href?: string } = {},
 ): Raised {
-  const where = about === undefined ? {} : { about };
+  const where = {
+    ...(which.about === undefined ? {} : { about: which.about }),
+    ...(which.href === undefined ? {} : { href: which.href }),
+  };
 
   if (record.target.kind !== "destination") {
     return { what: "marked processed", ...where, key: keyFor(record.id) };

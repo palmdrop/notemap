@@ -1,8 +1,23 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-09-07
+**Last updated**: 2026-09-08
 **Shipped**:
+
+- 2026-09-09 — **A queue arrived at corrects its head without losing its tail.** The fresh first
+  page answers for its own window and the walked tail below it stays, at the position it was walked
+  to — opening a capture is leaving the register, so a reader deep in a drain session arrives afresh
+  every time they look at a row. A **turn** that cannot be read now gives up the rows and the
+  position it was leaving, rather than claiming an order its cursor is not in.
+  ([review](../reviews/held-row-and-a-fresh-queue-2026-09-08.md))
+
+- 2026-09-08 — **The queue stops holding what the pool has already processed.** `enter(surface)`
+  is what a shell mounts a surface with: the queue is read again from the first page, the feed keeps
+  the tail it walked. Between arrivals the action watcher does the rest — an action saying an item
+  was routed, archived, revised or purged takes that row off the queue before any shell is told —
+  so a queue emptied by a trigger tag or from another device empties under the reader. The watcher
+  stays lazy, and a read that starts again now draws what the surface already held until it answers.
+  ([plan](../plans/held-row-and-a-fresh-queue.md))
 
 - 2026-09-07 — **Routing templates are cached, and a tag may now apply one.** `TemplatesApi` reads
   and edits them on the destinations' terms — a read cache with `all` and `held`, and the edits
@@ -348,6 +363,29 @@ processed — routed or archived — which the pool decides, not the scroll.
   client that appended to the end of its window would sort a returned or freshly captured item
   ahead of older work still to be read. It places by rank in whichever **order** the surface is
   being read, not in the default one.
+- **A row also leaves without a read** *(added 2026-09-08)*. The action log the client watches on
+  its own tempo is where it learns that something processed an item it holds — a trigger tag, or
+  another device — and the row goes then ([the action log](#the-action-log)). Arriving is what
+  covers the stretch a paused watcher missed, rather than the only thing that keeps the queue true.
+- **Arriving at the queue reads it again** *(added 2026-09-08, amended 2026-09-09)*. A surface a
+  reader returns to is not a surface that stopped changing while they were away: a trigger tag
+  fires, another device processes something, and the queue then holds rows the pool no longer names.
+  So entering the queue reads it from the first page. **The feed does not**, and the asymmetry is
+  the domain's rather than a convenience: the feed accumulates and nothing ever leaves it, so a
+  fresh first page there answers a question nobody asked, where being right about what is left is
+  the queue's whole job. A surface nobody has read yet is read for the first time either way.
+- **The fresh page corrects the head, and the walked tail is kept** *(amended 2026-09-09)*. A first
+  page answers for its own window and for nothing past it, so a row inside that window the pool no
+  longer names has left, and one below it stays: nothing was read that says otherwise. The position
+  is the walked one, not the fresh head's — the surface still reaches where it did. This is what
+  makes arriving cheap enough to happen as often as it does: **opening a capture is leaving the
+  register**, so a reader four pages into a drain session arrives afresh every time they look at a
+  row, and may not be charged those four pages for it.
+- **A read that fails changes nothing** — what was walked is still drawn, with the failure beside
+  it, because a read that did not answer is not a reason to hold less than before it was made. A
+  **turn** is the one exception: the rows drawn and the position they were read at belong to the
+  order being left, so a turn that fails gives them up rather than claiming an order its position
+  is not in.
 - **Which end a reader starts from is the reader's**, on the queue as on the feed
   ([CONTEXT.md](../../CONTEXT.md)). Each surface has a default — oldest first for the queue, which
   is why it is a queue, newest first for the feed — and a read may name another. Naming an order
@@ -395,6 +433,14 @@ from its first read.
   a page to read out.
 - **A read that fails says nothing.** Silence is not an event; reachability is what a person reads.
 - **It is lazy.** A client nobody asks to watch never asks the pool anything on its own.
+- **It maintains the surfaces as well as reporting them** *(added 2026-09-08)*. An action that
+  says an item was processed — routed, archived, revised, purged — takes that row off the queue
+  before anything is told about it, so one read serves the corner and the surface both and a queue
+  emptied from another device empties under the reader. It stays lazy: this happens on the watcher's
+  own reports, and a client nobody watches has no watcher to make one.
+- **Nothing is put back this way.** Giving up on a delivery returns an item to the queue, and an
+  action names an id rather than carrying the item there would be to place. That is
+  `withdrawn`'s path, which has one.
 
 ### The outbox
 

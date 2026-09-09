@@ -10,7 +10,7 @@
 ## Goal
 
 The composer reads as one decision and stops moving while it is typed; a row is one band with
-one aligned set of actions; and every finding in [misc-findings](../misc-findings.md) marked as
+one aligned set of actions; and every finding in `misc-findings.md` (since folded into `todo.md`) marked as
 carried is either built or dropped with a reason.
 
 Drawn in the Claude Design project across turns 4–12. The pages that settle it are

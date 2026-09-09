@@ -34,6 +34,7 @@ import type {
 import type { Observable } from "rxjs";
 
 import type { SessionState } from "./session/session";
+import type { Surface } from "./state/state";
 
 import type { ActionsSince } from "./actions/watching";
 import type { OperationId, PendingOperation } from "./outbox/operations";
@@ -311,6 +312,13 @@ export interface Client {
    */
   loadFeed(order?: Order): Promise<void>;
   loadQueue(order?: Order): Promise<void>;
+  /**
+   * Somebody has arrived at a surface. The queue is read again from the start,
+   * its membership having changed under a reader who was elsewhere; the feed
+   * keeps what it walked, nothing ever leaving it. A surface nobody has read is
+   * read for the first time either way.
+   */
+  enter(surface: Surface, order?: Order): Promise<void>;
   /**
    * One item, whether or not a surface has ever drawn it, so an address the
    * cache has never held is still somewhere a person can go. A pool that does
