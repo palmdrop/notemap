@@ -140,9 +140,11 @@ export type RoutingTarget =
 export type RoutingRecordState = "pending" | "delivered";
 
 /**
- * Where a decision came from a routing template, and whether the tag applied it
- * — a template taken in the composer is a person's own act, and only a
- * tag-fired one gives its tag back when the reservation is removed.
+ * Where a decision came from a routing template, and whether the tag applied it.
+ * The log wants the difference — a template filed this, against somebody took
+ * one — and `establish` wants to know whether it has ever landed. Giving the
+ * tag back no longer reads it: a reservation any template made takes that
+ * template's tag with it.
  */
 export type AppliedTemplate = {
   readonly template: RoutingTemplateId;

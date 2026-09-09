@@ -2,9 +2,9 @@ import { fireEvent, render, screen } from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
 
 import type { Action } from "@notemap/client";
-import { json, refusal, routeOf } from "@notemap/client/testing";
+import { anItem, json, refusal, routeOf } from "@notemap/client/testing";
 
-import { asked, pool } from "$testing/pool";
+import { asked, client, pool } from "$testing/pool";
 import { log } from "$lib/log.svelte";
 import { LOG_LEDE, NOTHING_LOGGED } from "$lib/said";
 import Log from "./Log.svelte";
@@ -88,6 +88,26 @@ test("flattens a detail into pairs rather than stringifying it", async () => {
   expect(screen.getByText("projects/notemap/notes/decisions.md")).toBeDefined();
 });
 
+const SUBJECT = "0198f0c2-9d3a-7b21-8e4f-112233445e6f";
+
+/** What the shell holds of the capture, which is what a subject is drawn from. */
+function saying(words: string) {
+  return (request: Request) =>
+    routeOf(request) === `GET /v1/items/${SUBJECT}`
+      ? json(
+          200,
+          anItem(SUBJECT, {
+            payload: {
+              type: "text",
+              content: { text: words },
+              metadata: {},
+              assets: [],
+            },
+          }),
+        )
+      : held([anAction("one")])(request);
+}
+
 /** An id is what the pool says; the capture is what a person came to find. */
 test("links a subject to the capture it is about", async () => {
   pool(held([anAction("one")]));
@@ -95,10 +115,48 @@ test("links a subject to the capture it is about", async () => {
   reading();
 
   const link = await screen.findByRole("link", { name: "0198f0c2…5e6f" });
-  expect(link).toHaveProperty(
-    "pathname",
-    "/items/0198f0c2-9d3a-7b21-8e4f-112233445e6f",
-  );
+  expect(link).toHaveProperty("pathname", `/items/${SUBJECT}`);
+});
+
+/**
+ * An entry naming an id is one nobody can connect to anything they wrote. The
+ * capture's own first words go in its place wherever the shell already holds
+ * them — which is the whole of what this change was for.
+ */
+test("says the capture's own first words where the shell holds them", async () => {
+  pool(saying("the picker needs a trail"));
+  await client.item(SUBJECT);
+
+  render(Log);
+  reading();
+
+  const link = await screen.findByRole("link", {
+    name: "the picker needs a trail",
+  });
+  expect(link).toHaveProperty("pathname", `/items/${SUBJECT}`);
+});
+
+/** Nothing is read for it: a hundred rows are a hundred lookups and no requests. */
+test("asks the pool for nothing to say what an entry is about", async () => {
+  pool(held([anAction("one")]));
+  render(Log);
+  reading();
+  await screen.findByText("captured");
+
+  expect(asked()).not.toContain(`GET /v1/items/${SUBJECT}`);
+});
+
+/** The same words where a person has committed to one item, not the id again. */
+test("says what the narrowed log is narrowed to in the capture's own words", async () => {
+  pool(saying("the picker needs a trail"));
+  await client.item(SUBJECT);
+
+  render(Log);
+  reading(SUBJECT);
+
+  expect(
+    (await screen.findByText(LOG_LEDE, { exact: false })).textContent,
+  ).toContain("the picker needs a trail");
 });
 
 test("keeps the log narrowed to that subject a word away", async () => {
@@ -320,6 +378,77 @@ test("waits for the walk where the log is read oldest-first", async () => {
   await screen.findByText("captured");
 
   log.arrived(arriving(anAction("two")));
+
+  expect(log.rows.map((action) => action.id)).toEqual(["one"]);
+});
+
+/**
+ * The wiring the rest of these reach past: the shell's own watcher is what
+ * puts news at the head, and `more` is what says the reading is stale.
+ */
+test("takes what the watcher reads at its head", async () => {
+  vi.useFakeTimers();
+  let logged = [anAction("one", { kind: "captured" })];
+  pool((request) =>
+    routeOf(request) === "GET /v1/actions"
+      ? json(200, { values: logged })
+      : json(200, { values: [] }),
+  );
+
+  render(Log);
+  reading();
+  await vi.advanceTimersByTimeAsync(100);
+  expect(log.rows.map((action) => action.id)).toEqual(["one"]);
+
+  logged = [anAction("two", { kind: "routed" }), ...logged];
+  await vi.advanceTimersByTimeAsync(10_000);
+
+  expect(log.rows.map((action) => action.id)).toEqual(["two", "one"]);
+  vi.useRealTimers();
+});
+
+/**
+ * More happened than one read answers, so what arrived is not what is missing.
+ * The page is read again rather than grown from a head that is not the head.
+ */
+test("reads again from the top where more happened than a page holds", async () => {
+  vi.useFakeTimers();
+  let logged = [anAction("one")];
+  // A page that always says there is another, so the only thing that changes
+  // between the two reads is whether the mark is still on it.
+  pool((request) =>
+    routeOf(request) === "GET /v1/actions"
+      ? json(200, { values: logged, next: `/v1/actions?after=${AT}%2Cx` })
+      : json(200, { values: [] }),
+  );
+
+  render(Log);
+  reading();
+  await vi.advanceTimersByTimeAsync(100);
+
+  // The mark's own entry gone from the page: the watcher reads that as more
+  // happening than it can hand over.
+  logged = [anAction("three"), anAction("two")];
+  await vi.advanceTimersByTimeAsync(10_000);
+
+  await vi.waitFor(() => {
+    expect(log.rows.map((action) => action.id)).toEqual(["three", "two"]);
+  });
+  vi.useRealTimers();
+});
+
+/**
+ * Oldest-first the walk starts at the oldest entry and grows towards the news,
+ * so nothing it holds went stale — and ten walked pages are not somebody's to
+ * throw away for a burst at the far end.
+ */
+test("keeps an oldest-first walk where more happened than a page holds", async () => {
+  pool(held([anAction("one")]));
+  render(Log);
+  log.reading("oldest-first", undefined);
+  await screen.findByText("captured");
+
+  log.raced();
 
   expect(log.rows.map((action) => action.id)).toEqual(["one"]);
 });

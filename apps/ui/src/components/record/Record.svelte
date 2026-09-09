@@ -20,6 +20,7 @@
   import { followable } from "$lib/link";
   import {
     NO_OUTPUT_KEPT,
+    NO_POINTER_BY_HAND,
     NO_POINTER_KEPT,
     NO_RECORDS_OFFLINE,
     NO_SUCH_RECORD,
@@ -179,7 +180,11 @@
       <div class="font-mono text-ink-muted">where it landed</div>
       <div class="mt-2 font-mono break-words">
         {#if record.pointer === undefined}
-          <span class="text-ink-muted">{NO_POINTER_KEPT}</span>
+          <span class="text-ink-muted"
+            >{target.kind === "user"
+              ? NO_POINTER_BY_HAND
+              : NO_POINTER_KEPT}</span
+          >
         {:else if link === undefined}
           {record.pointer}
         {:else}

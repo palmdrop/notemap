@@ -1308,6 +1308,7 @@ test("a kind that can do one thing settles it, with no do step", async () => {
 const CHANNELS = [
   { label: "Reading", value: "reading" },
   { label: "Reading Notes", value: "reading-notes" },
+  { label: "Reading Room", value: "reading-room" },
   { label: "Field Recordings", value: "field-recordings" },
 ];
 
@@ -1376,8 +1377,13 @@ test("walks what still matches on a second ⇥", async () => {
   await fireEvent.keyDown(field, { key: "Tab" });
   expect(field.value).toBe("reading-notes");
 
-  // Round again: two matched what was typed, and neither is more the answer
-  // than the other.
+  // Every one of them, not the first two over and over: completing again here
+  // would put the shared prefix back and the third would be out of reach.
+  await fireEvent.keyDown(field, { key: "Tab" });
+  expect(field.value).toBe("reading-room");
+
+  // Round again: three matched what was typed, and none is more the answer
+  // than the others.
   await fireEvent.keyDown(field, { key: "Tab" });
   expect(field.value).toBe("reading");
 });

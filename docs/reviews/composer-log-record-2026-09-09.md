@@ -1,7 +1,7 @@
 # Review: Composer papercuts, the log's head, and the record's order
 
 **Date**: 2026-09-09
-**Status**: Open
+**Status**: Resolved
 **Scope**: PR #53 — `apps/ui/src/components/{log,record,routing,queue}`, `apps/ui/src/lib/{log.svelte.ts,schema-form.ts,said.ts}`, `docs/specs/shell.md`, `docs/todo.md`
 **Spec**: `docs/specs/shell.md`
 
@@ -170,4 +170,37 @@ or this is a deliberate exception worth naming.
 
 ## Resolution
 
-<!-- Add once findings are addressed, and flip **Status** above. -->
+1. **Fixed.** `CandidateBrowser.svelte` completes on the first press alone — once `stem` is set the
+   key walks. `CHANNELS` gained a third `read*` entry, and the walk test now asserts all three and
+   the wrap. Confirmed it fails against the old code.
+2. **Fixed.** `log.raced()` carries the `newest-first` guard `arrived` already had, and
+   `Log.svelte` calls it instead of `turn`. The watcher wiring is tested rather than reached past.
+3. **Fixed, and the decision reversed.** The guard in `releaseTriggerTag` no longer reads
+   `firedByTag`: a reservation any template made takes that template's trigger tag with it.
+
+   The first attempt at this was wrong and the integration suite caught it — I had claimed the
+   person's-own-tag case was unreachable, and `templates.test.ts` held it: an item captured wearing
+   `route/research` before any template claimed the name, then routed from the composer. On the
+   developer's call that case is not one to protect — nothing routes retroactively, so a tag
+   predating its template means nothing until a decision gives it one, and that decision is what
+   the cancel calls off. That test now asserts the tag comes off.
+
+   This reverses a decision [ADR 37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md)
+   took, so it is recorded there as a superseding note beside the paragraph rather than as an edit
+   over it. `core.md`, `http-v1.md` and `shell.md` amended in the same change.
+4. **Won't fix — not a defect.** The premise was wrong: `client.tag` enqueues on the outbox and
+   returns, so the `.catch` never sees a pool refusal in the first place. A refused tag is drawn in
+   the corner by `Refusals.svelte`, like every other refused operation, and a notice from the
+   composer would say it twice. The comment now says whose job it is.
+5. **Fixed.** `log.test.ts` seeds the item cache and asserts the capture's own first words, that
+   nothing is read to get them, and the narrowed heading.
+6. **Fixed.** Two tests drive the real watcher on fake timers — news at the head, and `more`
+   reading again from the top — plus the oldest-first guard from finding 2.
+7. **Fixed.** `presetOf` and `typedFrom` share one `typedValue`, so a scalar default reads as the
+   same string a value arriving would. `null`, `{}` and `[]` stay absent, which is tested.
+8. **Fixed.** `Id.svelte` became `Says.svelte` and does the lookup itself, so the narrowed log's
+   heading and the rows say the same thing and there is one rule rather than two.
+9. **Fixed.** `NO_POINTER_BY_HAND` for a `user` target — done by hand, so there is nowhere to go
+   and look, rather than a destination declining to name one.
+10. **Won't fix.** The developer's call: keep the branch and the PR as they are, and leave
+    `AGENTS.md` alone.

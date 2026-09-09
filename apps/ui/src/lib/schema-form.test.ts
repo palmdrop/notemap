@@ -126,6 +126,24 @@ describe("what a field starts at", () => {
     expect(tags?.preset).toBe("one, two");
   });
 
+  /** The other direction stringifies these, and one form reads two ways is two forms. */
+  test("reads a scalar default the way a value arriving would be read", () => {
+    const [count, whether] = fieldsOf({
+      type: "object",
+      properties: {
+        count: { type: "integer", default: 30 },
+        whether: { type: "boolean", default: false },
+      },
+    });
+
+    expect(count?.preset).toBe("30");
+    expect(whether?.preset).toBe("false");
+    expect(typedFrom({ count: 30, whether: false })).toEqual({
+      count: "30",
+      whether: "false",
+    });
+  });
+
   test("says nothing of a field that starts nowhere", () => {
     const [only] = fieldsOf({
       type: "object",
@@ -133,6 +151,22 @@ describe("what a field starts at", () => {
     });
 
     expect(only?.preset).toBeUndefined();
+  });
+
+  /** `null` is a field saying it starts at nothing, which is where it starts anyway. */
+  test("says nothing of a default that is null or a shape this form cannot draw", () => {
+    const [nothing, shape, empty] = fieldsOf({
+      type: "object",
+      properties: {
+        nothing: { type: "string", default: null },
+        shape: { type: "object", default: { a: 1 } },
+        empty: { type: "array", items: { type: "string" }, default: [] },
+      },
+    });
+
+    expect(nothing?.preset).toBeUndefined();
+    expect(shape?.preset).toBeUndefined();
+    expect(empty?.preset).toBeUndefined();
   });
 
   test("offers the fields that start somewhere, as an input's own values", () => {

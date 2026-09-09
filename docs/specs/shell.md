@@ -4,6 +4,14 @@
 **Last updated**: 2026-09-09
 **Shipped**:
 
+- 2026-09-09 — **The `⇥` walk reaches every answer, the log keeps an oldest-first walk, and a
+  subject says the capture's own words wherever a surface has only its id.** The walk completed
+  again on every press, so past the second answer it put the shared prefix back and the third was
+  unreachable; completion is the first press alone now. A burst larger than one read reset the page
+  whichever way it was being read, where the rule it was written for is newest-first only. The
+  narrowed log's own heading says what the rows say. A field's `default` reads the way a value
+  arriving from the other direction reads, scalars included.
+
 - 2026-09-09 — **A note that is there is not drawn as one to be made.** The typed line drew the
   note under the folder it lands in with a `+` whether or not it was there, so appending to a note
   showed the note and a `+` copy of it beneath — a promise of a second file, which is `⇧⏎`'s job
@@ -544,7 +552,11 @@ composer routes and then tags. The order is the whole of it — the pool absorbs
 where that template has already decided the item, so the tag classifies and files nothing. A
 template that declares no trigger tag has none to apply, and a decision the person **corrected** is
 their own: it commits as a destination and arguments, and their tags are not the composer's to
-write.
+write. **Cancelled, the tag comes back off**, as it does for a route a tag fired: the tag is this
+record's own act whichever way round the two happened, and one left on an item nothing was done to
+says it went somewhere it did not
+([ADR 37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md),
+superseded in part).
 
 **A trigger tag taken in the composer's own tag row closes it** *(added 2026-09-09)*. The row offers
 the same classification the collapsed row does, and a tag a template declared files the item — so
@@ -868,7 +880,8 @@ was made, the arguments it was given, and the pointer to where it landed. The **
 only where it is not `delivered` *(amended 2026-09-04)*, on the same reasoning as the row's line. Marking
 processed is routing whose destination is the person, so it reads as one, with its note beneath the
 place — and nothing at all where there is no note, a heading over `none` being a row spent saying
-that somebody left a field empty.
+that somebody left a field empty. The place says **done by hand** there rather than that a
+destination named nowhere to look: nothing was asked of anything, so nothing declined to answer.
 
 **Where it landed leads, and the decision is a press away** *(amended 2026-09-09; the arguments led
 and the pointer sat under them)*. Reading a record is almost always asking *where did this go, and
@@ -1451,8 +1464,10 @@ the way to the item comes first and the **capture's own first words** are drawn 
 wherever this shell already holds it — never read for: what the cache has, or the shortened id it
 has instead. The narrowed log stays one word away, `only this`, since tracing one item's history is
 the second thing somebody wants there and not the first. The destination on a `routed` row stays an
-id: the action recorded one, and resolving it to a name is a second read and a cache. The order and
-the filter both live on the URL, so a reload and a shared link come back to the same reading.
+id: the action recorded one, and resolving it to a name is a second read and a cache. **The
+narrowed log says the same words above itself**, where a person has already committed to one item
+and the id is least use of all. The order and the filter both live on the URL, so a reload and a
+shared link come back to the same reading.
 
 **What has happened since goes to the head of the page** *(added 2026-09-09)*. The shell already
 reads the action log on its own tempo for the corner to speak from, and the log was the one surface
@@ -1461,7 +1476,9 @@ seeing anything new meant reloading. It listens now, and what arrives is put abo
 **Newest-first only** — read oldest-first the walk starts at the oldest entry and what just happened
 belongs past the end of a walk nobody has finished, where the walk itself will bring it. More
 happening between two asks than a page holds is not a head to add: the whole reading is stale, and
-it is read again from the top.
+it is read again from the top — **on the same rule, and so newest-first only too**. Oldest-first
+nothing went stale, the walk growing towards the news rather than away from it, and ten walked
+pages are not the shell's to throw away for a burst at the far end.
 
 **The rail takes a measure of its own**, narrower than the register's — it holds a stamp and one
 short word where the register's holds a row's whole account — and `2026-09-02` fits on one line at

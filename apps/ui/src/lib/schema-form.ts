@@ -76,19 +76,18 @@ export function fieldsOf(schema: Schema): readonly Field[] {
 }
 
 /**
- * A schema's `default`, as the string an input holds. A list joins the way
- * `typedFrom` joins one, so the two directions agree; anything else a schema
- * may default to is not a shape this form draws, and is left to the field.
+ * A schema's `default`, as the string an input holds — the same reading
+ * `typedFrom` gives a value that arrives from the other direction, so a field
+ * starting at `30` and a template holding `30` draw the one string. `null` is
+ * not a value a field starts at, and an object is not a shape this form draws.
  */
 function presetOf(meta: Record<string, unknown>): string | undefined {
   const held = meta["default"];
-  if (typeof held === "string") return held;
-  if (!Array.isArray(held)) return undefined;
-
-  const strings = held.filter(
-    (each): each is string => typeof each === "string",
-  );
-  return strings.length === 0 ? undefined : strings.join(", ");
+  if (held === undefined || held === null) return undefined;
+  if (Array.isArray(held)) {
+    return held.length === 0 ? undefined : typedValue(held);
+  }
+  return typeof held === "object" ? undefined : typedValue(held);
 }
 
 /** The fields that start at something, as an input's own values. */
@@ -160,9 +159,14 @@ export function typedFrom(
   return Object.fromEntries(
     Object.entries(values ?? {}).map(([key, value]) => [
       key,
-      Array.isArray(value)
-        ? value.map((each) => String(each)).join(", ")
-        : String(value),
+      typedValue(value),
     ]),
   );
+}
+
+/** One value as an input holds it, a list joined the way the form reads one back. */
+function typedValue(value: unknown): string {
+  return Array.isArray(value)
+    ? value.map((each) => String(each)).join(", ")
+    : String(value);
 }

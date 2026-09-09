@@ -155,6 +155,21 @@ export const log = {
   },
 
   /**
+   * More happened than one read answers, so what arrived is not what is
+   * missing and the page is read again from the top.
+   *
+   * **Newest-first only, on the same rule.** Oldest-first the walk starts at
+   * the oldest entry and grows towards the news, so nothing it holds went
+   * stale — and throwing away ten walked pages to put somebody back at the
+   * oldest entry is the reading this rule exists to protect.
+   */
+  raced(): void {
+    if (!answered || order !== "newest-first") return;
+
+    restart(order, item);
+  },
+
+  /**
    * Asks again where the last read left nothing. The client re-reads the feed
    * and the queue when the pool comes back into reach; this surface holds no
    * cache for it to keep, so it has to ask for itself or stay blank.

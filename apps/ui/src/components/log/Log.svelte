@@ -12,7 +12,7 @@
   import { LOG_LEDE, NOTHING_LOGGED } from "$lib/said";
 
   import { logHref } from "./href";
-  import Id from "./Id.svelte";
+  import Says from "./Says.svelte";
   import LogRow from "./LogRow.svelte";
 
   const pool = reachable();
@@ -30,7 +30,7 @@
       // More happened than a page holds, so what arrived is not what is
       // missing: the whole reading is stale and asking again is the only
       // honest answer.
-      if (since.more) log.turn(log.order);
+      if (since.more) log.raced();
       else log.arrived(since.actions);
     });
 
@@ -41,7 +41,7 @@
 <p class="mt-8 font-mono text-ink-muted">
   {LOG_LEDE}
   {#if log.item !== undefined}
-    Only what is about <Id id={log.item} /> —
+    Only what is about <Says id={log.item} /> —
     <a href={logHref(log.order)} class="text-ink">show everything</a>
   {/if}
 </p>

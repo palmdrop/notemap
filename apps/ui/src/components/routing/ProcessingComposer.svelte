@@ -625,6 +625,7 @@
     const tag = template?.triggerTag;
     if (tag === undefined || tags.includes(tag)) return;
 
+    // Refused, it is the outbox's to report, as every other tag's refusal is.
     void client.tag(item.id, tag).catch(() => undefined);
   }
 

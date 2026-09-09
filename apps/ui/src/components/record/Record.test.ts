@@ -4,7 +4,12 @@ import { expect, test, vi } from "vitest";
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool } from "$testing/pool";
-import { NO_OUTPUT_KEPT, NO_POINTER_KEPT, NO_RECORDS_OFFLINE } from "$lib/said";
+import {
+  NO_OUTPUT_KEPT,
+  NO_POINTER_BY_HAND,
+  NO_POINTER_KEPT,
+  NO_RECORDS_OFFLINE,
+} from "$lib/said";
 import { dayOf } from "$lib/stamp";
 import Record from "./Record.svelte";
 
@@ -190,7 +195,9 @@ test("reads a decision the person carried out themselves", async () => {
 
   expect(await screen.findByText("the user")).toBeDefined();
   expect(screen.getByText("pasted into the fiction-a vault")).toBeDefined();
-  expect(screen.getByText(NO_POINTER_KEPT)).toBeDefined();
+  // Nothing was asked of anything, so nothing declined to name a place.
+  expect(screen.getByText(NO_POINTER_BY_HAND)).toBeDefined();
+  expect(screen.queryByText(NO_POINTER_KEPT)).toBeNull();
 });
 
 /** The name the wire carries, and what a person should read instead of it. */

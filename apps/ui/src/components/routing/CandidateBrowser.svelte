@@ -224,20 +224,25 @@
       // than handing focus to whatever is next: the line is what the composer
       // is for, and leaving it is `⇧⇥` or the pointer.
       event.preventDefault();
-      const typed = stem ?? value;
 
-      const finished = completed(entries, typed, durable);
-      if (finished !== undefined && finished !== value) {
-        stem = typed;
-        onchange(finished);
-        return;
+      // Completion is the first press and only the first. Once the walk has
+      // started, the field holds an answer rather than a name being typed, and
+      // completing what was typed again would put the shared prefix back and
+      // walk the same two answers forever.
+      if (stem === undefined) {
+        const finished = completed(entries, value, durable);
+        if (finished !== undefined) {
+          stem = value;
+          onchange(finished);
+          return;
+        }
       }
 
       // Completed as far as they agree, and there is still more than one: the
       // key walks them from here. A name shares its first letters with four
       // others far more often than it is the only one, and pressing `⇥` again
       // is what a person does about it.
-      walk(typed);
+      walk(stem ?? value);
       return;
     }
 

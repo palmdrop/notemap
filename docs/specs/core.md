@@ -1101,8 +1101,10 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   as an unknown destination, which needed no new refusal.
 - **The routing record names the template it came from**, optionally — a decision made by hand
   names none — and says whether **the tagging made it**. Three things want it: `establish` has to
-  know whether it has ever landed; the log can say a template filed this rather than that somebody
-  took one; and only a *tag-fired* reservation gives its tag back.
+  know whether it has ever landed, and the log can say a template filed this rather than that
+  somebody took one. It is **no longer what decides whether the tag comes back** *(amended
+  2026-09-09)*: a reservation any template made takes that template's trigger tag with it, the
+  composer having since become a place the tag is written from too.
 - **Arguments are patterns, and core expands them when the decision is made** (added 2026-09-07,
   [ADR 35](../adr/0035-a-templates-arguments-are-patterns-expanded-when-the-decision-is-made.md)).
   The template stores what was typed; the record stores what it came out as. So everything that
@@ -1688,8 +1690,9 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 - Cancelling inside the window removes the reservation, removes the trigger tag, and returns the
   item to the queue; a first attempt that is abandoned does the same. A delivery that landed keeps
   the tag.
-- The same template taken by hand in a composer leaves the item's own tags alone when its delivery
-  is cancelled.
+- The same template taken by hand in a composer takes its trigger tag off the item when its
+  delivery is cancelled, as a tag-fired one does — including where the item wore that tag before
+  the template existed, which fires nothing and means nothing until a decision gives it a meaning.
 - A trigger tag whose template names a destination that was deleted or retired is refused, and the
   item is left carrying neither the tag nor a record. The same tag on a capture is dropped and the
   capture stands.

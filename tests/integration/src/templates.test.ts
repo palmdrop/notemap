@@ -641,12 +641,17 @@ describe("a reservation a trigger tag made, removed without delivering", () => {
     ]);
   });
 
-  it("leaves the tag where a person took the template in the composer", async () => {
+  /**
+   * The tag says why an item went where it went, so a route that never landed
+   * takes it back however the template was reached. A tag the item wore before
+   * the template existed is not an exception: nothing routes retroactively, so
+   * it meant nothing until this decision gave it its meaning — and the decision
+   * is what is being called off.
+   */
+  it("takes the tag with it where a person took the template in the composer", async () => {
     const { pool, destination } = await pooled();
     destination.answers({ kind: "unreachable", detail: "ECONNREFUSED" });
 
-    // Carried before any template claimed the name, so nothing fired: the tag
-    // is the person's own classification and the route is their own decision.
     const item = captured(
       await pool.capture(envelope({ tags: ["route/research"] })),
     );
@@ -658,7 +663,7 @@ describe("a reservation a trigger tag made, removed without delivering", () => {
     expect(record.applied?.firedByTag).toBe(false);
     succeeded(await pool.routing.cancelDelivery(record.id));
 
-    expect(await tagsOn(pool, item.id)).toEqual([RESEARCH]);
+    expect(await tagsOn(pool, item.id)).toEqual([]);
     expect(await pool.routing.recordsFor(item.id)).toEqual([]);
     expect(await queued(pool)).toEqual([item.id]);
   });
