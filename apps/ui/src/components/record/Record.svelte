@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { DestinationDescription } from "@notemap/client";
 
+  import Action from "$components/primitives/controls/Action.svelte";
   import Output from "$components/routing/Output.svelte";
   import { itemHref } from "$components/item/href";
   import Body from "$components/primitives/register/Body.svelte";
@@ -19,6 +20,8 @@
   import { followable } from "$lib/link";
   import {
     NO_OUTPUT_KEPT,
+    NO_POINTER_BY_HAND,
+    NO_POINTER_KEPT,
     NO_RECORDS_OFFLINE,
     NO_SUCH_RECORD,
     OUTPUT_UNREADABLE,
@@ -94,6 +97,9 @@
 
   const link = $derived(followable(record?.url));
 
+  /** The arguments, which are a second reading of a record rather than the first. */
+  let opened = $state(false);
+
   let output = $state<string | undefined>(undefined);
   let reading = $state(false);
   let unreadable = $state("");
@@ -167,40 +173,29 @@
     </Rail>
 
     <Body first>
-      {#if target.kind === "destination"}
-        <div class="font-mono text-ink-muted">arguments</div>
-        {#if given.length === 0}
-          <div class="mt-2 font-mono text-ink-muted">none</div>
-        {:else}
-          <Facts>
-            {#each given as argument (argument.name)}
-              <Fact name={argument.name} empty={argument.said === ""}>
-                {argument.said === "" ? "blank" : argument.said}
-              </Fact>
-            {/each}
-          </Facts>
-        {/if}
-      {:else}
-        <div class="font-mono text-ink-muted">note</div>
-        {#if target.note === undefined}
-          <div class="mt-2 font-mono text-ink-muted">none</div>
-        {:else}
-          <div class="mt-2 break-words">{target.note}</div>
-        {/if}
-      {/if}
-
-      <div class="mt-6 font-mono text-ink-muted">pointer</div>
-      <!-- A link only where the destination offered one: the shell never
-           guesses whether a string is a URL. -->
+      <!-- Where to go and look, first: it is what somebody reading a record
+           came for, and the only line here that leaves notemap. A link only
+           where the destination offered one — the shell never guesses whether
+           a string is a URL. -->
+      <div class="font-mono text-ink-muted">where it landed</div>
       <div class="mt-2 font-mono break-words">
         {#if record.pointer === undefined}
-          <span class="text-ink-muted">not recorded</span>
+          <span class="text-ink-muted"
+            >{target.kind === "user"
+              ? NO_POINTER_BY_HAND
+              : NO_POINTER_KEPT}</span
+          >
         {:else if link === undefined}
           {record.pointer}
         {:else}
           <a href={link} rel="noreferrer">{record.pointer}</a>
         {/if}
       </div>
+
+      {#if target.kind === "user" && target.note !== undefined}
+        <div class="mt-6 font-mono text-ink-muted">note</div>
+        <div class="mt-2 break-words">{target.note}</div>
+      {/if}
 
       <div class="mt-6">
         <Output
@@ -212,6 +207,30 @@
           busy={reading}
         />
       </div>
+
+      <!-- The decision, rather than its effect: a field name and a pattern
+           expanded belong to whoever is working out why it went there, which
+           is not what most readings of a record are for. -->
+      {#if target.kind === "destination"}
+        <div class="mt-6">
+          <Action onclick={() => (opened = !opened)}>
+            {opened ? "hide the decision" : "the decision"}
+          </Action>
+        </div>
+        {#if opened}
+          {#if given.length === 0}
+            <div class="mt-2 font-mono text-ink-muted">no arguments</div>
+          {:else}
+            <Facts>
+              {#each given as argument (argument.name)}
+                <Fact name={argument.name} empty={argument.said === ""}>
+                  {argument.said === "" ? "blank" : argument.said}
+                </Fact>
+              {/each}
+            </Facts>
+          {/if}
+        {/if}
+      {/if}
     </Body>
   {:else}
     <Rail first>

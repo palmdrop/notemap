@@ -19,7 +19,9 @@
   - No good way to see pending operations. A held row says `retrying` while it is
     looked at and the corner speaks when the delivery resolves, but nothing shows everything in
     flight at once. Belongs with the routing-record and log readability items below.
-  - Log does not show new items without refresh.
+  - ~~Log does not show new items without refresh~~ — closed 2026-09-09: the log listens to the
+    watcher the corner already speaks from, and what has happened since goes to the head of the
+    page. Newest-first only; read the other way the walk is what brings it.
 
 - [ ] The markdown renderer is unchosen, so a text capture shows its asterisks.
   [standards.md](standards.md) says a text payload is CommonMark; the shell's `Prose` primitive
@@ -39,12 +41,21 @@
 
 ## Composer and capture
 
-- [ ] fuzzy search in composer input field
-- [ ] using a template from the composer does not add the routing tag.
-- [ ] adding a routing tag from within the composer is confusing. It correctly triggers routing, but then triggers routing in combination with the routing the user is already on the way to trigger.
-- [ ] A schema field's **default** is not drawn. Titles, descriptions and dynamic candidates landed
-  2026-08-31; a `default` an adapter declares is still ignored by the composer, which starts every
-  field empty. Split off the routing-arguments line above rather than left ticked inside it.
+- [ ] fuzzy search in composer input field. Narrowed 2026-09-09: `⇥` now walks what still matches
+  once completion has nothing left to add, so a name shared with four others is reached by pressing
+  the key again. Still prefix-only — a channel found by a word in the middle of its title is what
+  is left of this.
+- [x] ~~using a template from the composer does not add the routing tag~~ — closed 2026-09-09: an
+  untouched template routes and then applies its trigger tag, which the pool absorbs as
+  classification because that template's record already stands. A **corrected** one is the person's
+  own decision and takes no tag.
+- [x] ~~adding a routing tag from within the composer is confusing~~ — closed 2026-09-09: a trigger
+  tag taken in the composer's own tag row closes the composer, the tag being the whole decision.
+- [x] ~~the typed line drew a `+ filename` under a note it was about to append to~~ — closed
+  2026-09-09: a `+` is for what the delivery will make, so appending draws none and the note's own
+  row wears the accent as the row the line names.
+- [x] ~~A schema field's **default** is not drawn~~ — closed 2026-09-09, as a suggestion the person
+  types over and never written into a template's own arguments.
 - [ ] Tag picking is still free entry beside a datalist rather than the shell's own
   chooser, which the order control now uses.
 - [ ] Editing does not allow attaching anything. It is the edit surface rather than the
@@ -63,13 +74,20 @@
 
 ## Seeing what happened — log, routing records, revisions
 
-- [ ] Inspecting routing records is hard to view. Too much info, not structured well. What I want: destination + what the destination points at, i.e a url, filesystem folder, etc. Filepath or other pointer. Content. Maybe more but not much.
+- [x] ~~Inspecting routing records is hard to view~~ — closed 2026-09-09: the record leads with
+  where it landed and what was sent, which is what most readings of one are for, and the arguments
+  are behind `the decision` for the reading that is working out why it went there.
 - [ ] add new UI views
     - routing view, showing all routed items. Maybe rather a human-readable action log with a
       "routing" filter than a page of its own — the user needs a way to inspect the effects of
       their actions.
-        - hide unnecessary items from log
-        - log entries should link to the capture. It needs to be easier to connect a log entry to the capture it actually pertains to.
+        - hide unnecessary items from log. **Wants the pool's help**: `GET /v1/actions` filters by
+          item and nothing else, so a shell-side filter would page over rows it then throws away and
+          the count under the register would stop meaning anything. A `kind` filter on the query is
+          the honest version, and it crosses core, `http-v1` and the client.
+        - ~~log entries should link to the capture~~ — closed 2026-09-09: the subject is a way to the
+          item, drawn as the capture's own first words where the shell holds them, with the narrowed
+          log a word away.
 - [ ] Certain feed views allow me to view all revisions, all entries, open to see
 - [ ] **Nothing in the shell can ask for a revision.** Editing is offered on the queue, which holds
   unprocessed items only, and the feed offers no edit at all — so the revision path is reachable
@@ -143,8 +161,14 @@
 ## Destinations and adapters
 
 - [ ] are.na destination:
-  - tabbing multiple times does not move composer cursor to next channel that matches the inputted text
-  - are.na templates resolve to channel ID, which is good, but frontend now shows ID instead of channel title. Frontend should show title while internally resolve to the ID.
+  - ~~tabbing multiple times does not move composer cursor to next channel that matches the inputted
+    text~~ — closed 2026-09-09: the second press walks what still matches what was typed.
+  - are.na templates resolve to channel ID, which is good, but frontend now shows ID instead of
+    channel title. Frontend should show title while internally resolve to the ID. Narrower than it
+    reads: **inside the composer the list under the field already draws the title**, since the value
+    is what narrows it. What is left is everywhere nothing has asked the destination for candidates
+    — the settings template list, the routing record — where a title costs an ask on draw or a label
+    stored beside the value.
 - [ ] **The shell picks a browse control by destination kind name.**
   `apps/ui/src/lib/candidate-browsers.ts` maps `filesystem` and `webdav` to the typed line and
   everything else to the flat one, so a third filesystem-like kind needs a UI edit to get the tree —

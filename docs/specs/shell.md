@@ -1,8 +1,32 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-08
+**Last updated**: 2026-09-09
 **Shipped**:
+
+- 2026-09-09 — **The `⇥` walk reaches every answer, the log keeps an oldest-first walk, and a
+  subject says the capture's own words wherever a surface has only its id.** The walk completed
+  again on every press, so past the second answer it put the shared prefix back and the third was
+  unreachable; completion is the first press alone now. A burst larger than one read reset the page
+  whichever way it was being read, where the rule it was written for is newest-first only. The
+  narrowed log's own heading says what the rows say. A field's `default` reads the way a value
+  arriving from the other direction reads, scalars included.
+
+- 2026-09-09 — **A note that is there is not drawn as one to be made.** The typed line drew the
+  note under the folder it lands in with a `+` whether or not it was there, so appending to a note
+  showed the note and a `+` copy of it beneath — a promise of a second file, which is `⇧⏎`'s job
+  and not what committing would do. The `+` is now the tail that is genuinely missing; the note's
+  own row wears the accent instead, as the row the line names.
+
+- 2026-09-09 — **A template applied is a template tagged, and a field starts where its destination
+  says.** However a template is reached, the item ends up carrying its trigger tag: taking one from
+  the `where` list routes and then applies the tag, which the pool absorbs as classification rather
+  than firing a second copy, so the tag says why the item went where it went whichever way it was
+  filed. The other direction closes: a **trigger tag taken in the composer's own tag row files the
+  item**, so the composer closes on it rather than leaving a second decision half-made beside a
+  route already on its way. A field's `default` is drawn — a suggestion the person types over, never
+  written into a template's own arguments — and `⇥` in the schema-driven browse **walks what still
+  matches** once there is nothing left to complete.
 
 - 2026-09-08 — **A template browsed into a channel is rename-proof, and is offered no advice that
   cannot work.** A candidate may answer under two names — the one a person reads and the one that
@@ -454,6 +478,14 @@ and anything else is a box. Taking the option already taken **gives it back**, a
 being a value of its own — for a field whose absence means *inherit what the destination says*,
 there has to be a way back to it.
 
+**An argument the schema starts somewhere starts there** *(added 2026-09-09)*. A `default` an
+adapter declares is drawn into the field, where an empty box used to be — a destination that knows
+where most notes go should not make somebody type it every time. It is a **suggestion and not a
+value**: typed over it is gone, emptied it stays empty, and a field left alone is still absent from
+the request unless the schema requires it. It is not written into a decision a **template** started:
+what a template saved is the decision, and a default filling a field it deliberately left empty
+would commit as a correction of it and cost the record the template's name.
+
 #### The composer is for processing
 
 *(2026-09-05.)* The `where` step answers *what became of this item*, and a configured destination is
@@ -512,6 +544,27 @@ refuses to be corrected**: a person who took `research` and wants this one note 
 it, and what commits is the decision it became — the template where nothing was touched, the
 destination and arguments where something was. Which of the two went is not a thing the person
 chooses; it is read off whether they changed anything.
+
+**A template applied here carries its trigger tag onto the item** *(added 2026-09-09)*. The tag is
+what says why an item went where it went, and it read differently depending on which of two ways the
+same template was reached: fired by a tag it was there, taken in the composer it was not. So the
+composer routes and then tags. The order is the whole of it — the pool absorbs a trigger arriving
+where that template has already decided the item, so the tag classifies and files nothing. A
+template that declares no trigger tag has none to apply, and a decision the person **corrected** is
+their own: it commits as a destination and arguments, and their tags are not the composer's to
+write. **Cancelled, the tag comes back off**, as it does for a route a tag fired: the tag is this
+record's own act whichever way round the two happened, and one left on an item nothing was done to
+says it went somewhere it did not
+([ADR 37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md),
+superseded in part).
+
+**A trigger tag taken in the composer's own tag row closes it** *(added 2026-09-09)*. The row offers
+the same classification the collapsed row does, and a tag a template declared files the item — so
+pressing one while a destination is half-chosen used to leave two decisions in flight and route the
+item twice. It is one gesture and it is enough: the composer closes, the row stays open wearing what
+happened, and the corner's `routing · research` carries the cancel as it does for a tag applied
+anywhere else. Said on the press rather than on the pool's answer: whoever is holding a half-made
+decision has to be told before they can press it into a second copy.
 
 **A template that cannot apply is drawn with its reason and not removed**, on the rule below. The
 reasons are a stranded template, a destination that cannot be used, and a capability no longer
@@ -618,7 +671,13 @@ itself under those. Where they will be, rather than named off to one side. The w
 where there is something to read it off: a level that has not answered is no evidence either way,
 and nothing under a folder that is not there can be looked up at all. **The name a derived leaf
 would get is not said beside the word** *(amended 2026-09-04)*: the tree draws it where the note
-lands, which is where the eye already is, and saying it twice made the state word a sentence. It is **drawn and never stored**: what is stored says *put this here*, and
+lands, which is where the eye already is, and saying it twice made the state word a sentence.
+**Nothing is drawn with a `+` where it is already there** *(amended 2026-09-09; the note was drawn
+with one either way)*. A `+` says the delivery will make this, so a row for the note under the note
+it is going into promises a second file beside it — which is what `⇧⏎` is for and the opposite of
+what committing would do. Appending, the note's own row is the one the tree already holds, and it
+takes the accent as **the row the line names**: the same mark every walked list uses for the row
+whose value the field holds, and takeable as it always was. It is **drawn and never stored**: what is stored says *put this here*, and
 the adapter decides again at delivery, when the answer is true
 ([ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md)). Because the word is
 read rather than chosen, **`do` is not a step here**: the capability is settled, and the one escape
@@ -694,6 +753,15 @@ its slug — so completing to the label would leave the field holding something 
 delivered, and matching the label alone would empty the list the moment `⇥` resolved one to the
 other. A person types the title they know and the field ends up holding the slug it will be sent
 with, which is also what shows them what they picked.
+
+**Pressed again, `⇥` walks what still matches** *(added 2026-09-09)*. Completion stops where the
+answers stop agreeing, which for a list of channels is usually after a word or two — and a name that
+shares its first letters with four others is the ordinary case rather than the awkward one. So the
+second press takes the first answer still matching, the third the next, and the last wraps to the
+first. The walk is against **what was typed**, held aside for as long as it lasts: the field is
+where the walk puts its answers, so matching against the field would be matching against its own
+last answer and find one thing. Typing again ends the walk and the field is the filter once more.
+`↑↓` still walk the list drawn beneath, and neither key learns the other's job.
 
 **A title resolves to the value it names**, at the two moments the line is done being typed:
 committing from it, and leaving it. The whole of a title, or enough of one that a single answer is
@@ -810,8 +878,18 @@ the three conditions are for.
 **A record is drawn in full**: what the delivery did, the destination by name, when the decision
 was made, the arguments it was given, and the pointer to where it landed. The **state** is there
 only where it is not `delivered` *(amended 2026-09-04)*, on the same reasoning as the row's line. Marking
-processed is routing whose destination is the person, so it reads as one, with its note where the
-arguments would be, and `none` where there is no note.
+processed is routing whose destination is the person, so it reads as one, with its note beneath the
+place — and nothing at all where there is no note, a heading over `none` being a row spent saying
+that somebody left a field empty. The place says **done by hand** there rather than that a
+destination named nowhere to look: nothing was asked of anything, so nothing declined to answer.
+
+**Where it landed leads, and the decision is a press away** *(amended 2026-09-09; the arguments led
+and the pointer sat under them)*. Reading a record is almost always asking *where did this go, and
+what went* — a place to open and the bytes that were sent — so those two are the page and the
+arguments are behind `the decision`. Nothing is hidden that was not there before: a field name and a
+pattern expanded belong to somebody working out **why** it went there, which is a second reading of
+a record rather than the first. The arguments still draw against the capability's own schema when
+they are opened, and marking processed offers nothing to open, having made no argument set.
 
 **What it did is said, not the capability that did it.** A capability name is what a destination
 advertises and what a rule is written against ([CONTEXT.md](../../CONTEXT.md)), and a person
@@ -1380,10 +1458,27 @@ joined, nested objects flattened. `ActionKind` has twenty-seven members and will
 renderer per kind is that many places to drift from a shape nobody updates — and a kind nobody has
 written yet reads correctly for free.
 
-**A subject is shortened to its head and tail and links to the log narrowed to it.** The
-destination on a `routed` row stays an id: the action recorded one, and resolving it to a name is a
-second read and a cache. The order and the filter both live on the URL, so a reload and a shared
-link come back to the same reading.
+**A subject leads to the capture it is about** *(amended 2026-09-09; it led to the log narrowed to
+that subject)*. An entry naming an id is an entry a person cannot connect to anything they wrote, so
+the way to the item comes first and the **capture's own first words** are drawn in place of the id
+wherever this shell already holds it — never read for: what the cache has, or the shortened id it
+has instead. The narrowed log stays one word away, `only this`, since tracing one item's history is
+the second thing somebody wants there and not the first. The destination on a `routed` row stays an
+id: the action recorded one, and resolving it to a name is a second read and a cache. **The
+narrowed log says the same words above itself**, where a person has already committed to one item
+and the id is least use of all. The order and the filter both live on the URL, so a reload and a
+shared link come back to the same reading.
+
+**What has happened since goes to the head of the page** *(added 2026-09-09)*. The shell already
+reads the action log on its own tempo for the corner to speak from, and the log was the one surface
+that did not listen to it: a page read on arriving stayed the photograph it was taken as, and
+seeing anything new meant reloading. It listens now, and what arrives is put above what is drawn.
+**Newest-first only** — read oldest-first the walk starts at the oldest entry and what just happened
+belongs past the end of a walk nobody has finished, where the walk itself will bring it. More
+happening between two asks than a page holds is not a head to add: the whole reading is stale, and
+it is read again from the top — **on the same rule, and so newest-first only too**. Oldest-first
+nothing went stale, the walk growing towards the news rather than away from it, and ten walked
+pages are not the shell's to throw away for a burst at the far end.
 
 **The rail takes a measure of its own**, narrower than the register's — it holds a stamp and one
 short word where the register's holds a row's whole account — and `2026-09-02` fits on one line at

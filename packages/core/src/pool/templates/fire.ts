@@ -128,10 +128,14 @@ export async function alreadyApplied(
 }
 
 /**
- * A reservation a trigger tag made, removed without delivering, takes that tag
- * with it: tagging is idempotent, so an item that keeps the tag can never be
- * filed by it again. Only a tag-fired one — a template taken in the composer is
- * a person's own act, and their classification is not the cancel's to touch.
+ * A reservation a **template** made, removed without delivering, takes that
+ * template's trigger tag with it: tagging is idempotent, so an item that keeps
+ * the tag can never be filed by it again, and a tag left on an item nothing was
+ * done to says it went somewhere it did not.
+ *
+ * Whichever way round the two happened — the tag fired the record, or the
+ * composer applied the template and wrote the tag after it. The tag and the
+ * record are one act either way, and undoing half of it strands the other.
  *
  * The entry names the record, so the tag does not read as having removed itself.
  */
@@ -142,7 +146,7 @@ export async function releaseTriggerTag(
   at: Timestamp,
   by: "person" | "notemap",
 ): Promise<TagName | undefined> {
-  if (record.applied?.firedByTag !== true) return undefined;
+  if (record.applied === undefined) return undefined;
 
   const template = await tx.routingTemplate(record.applied.template);
   // Edited to drop its tag, or deleted outright, inside the window: there is no

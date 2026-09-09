@@ -1,17 +1,18 @@
 <script lang="ts">
-  import { untrack } from "svelte";
+  import { onMount, untrack } from "svelte";
 
   import Body from "$components/primitives/register/Body.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
+  import { client } from "$lib/client";
   import { log } from "$lib/log.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { LOG_LEDE, NOTHING_LOGGED } from "$lib/said";
 
   import { logHref } from "./href";
-  import Id from "./Id.svelte";
+  import Says from "./Says.svelte";
   import LogRow from "./LogRow.svelte";
 
   const pool = reachable();
@@ -20,12 +21,27 @@
   $effect(() => {
     if (pool.yes) untrack(() => log.again());
   });
+
+  // The watcher is already asking on the shell's own tempo for the corner to
+  // speak from. A log that did not listen to it was the one surface where
+  // reading meant reloading.
+  onMount(() => {
+    const held = client.actions.watch().subscribe((since) => {
+      // More happened than a page holds, so what arrived is not what is
+      // missing: the whole reading is stale and asking again is the only
+      // honest answer.
+      if (since.more) log.raced();
+      else log.arrived(since.actions);
+    });
+
+    return () => held.unsubscribe();
+  });
 </script>
 
 <p class="mt-8 font-mono text-ink-muted">
   {LOG_LEDE}
   {#if log.item !== undefined}
-    Only what is about <Id id={log.item} /> —
+    Only what is about <Says id={log.item} /> —
     <a href={logHref(log.order)} class="text-ink">show everything</a>
   {/if}
 </p>

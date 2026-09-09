@@ -16,6 +16,7 @@
     continuationOf,
     continuing,
     ghostFor,
+    landedOn,
     levelAt,
     marked,
     parsePath,
@@ -135,15 +136,19 @@
    * is rather than named off beside the word. Only where there is a forecast:
    * with nothing answered there is nothing to say is missing.
    */
-  const drawn = $derived(
-    rowsOf(
+  const drawn = $derived.by(() => {
+    if (forecast === undefined) return rowsOf(levels, path);
+
+    // Appending, the note's file is one the tree is already drawing, so the
+    // pending tail is the folders alone and that row is marked instead.
+    const appending = forecast.word === "append";
+    const rows = rowsOf(
       levels,
       path,
-      forecast === undefined
-        ? []
-        : pending(path, forecast.making, forecast.leaf),
-    ),
-  );
+      pending(path, forecast.making, appending ? undefined : forecast.leaf),
+    );
+    return appending ? landedOn(rows, path, forecast.leaf) : rows;
+  });
 
   /** In the order they are drawn, so `↑↓` moves down the tree as the eye does. */
   const here = $derived(reachable(drawn));
@@ -465,7 +470,7 @@
       <Walked
         id={picked ? `path-line-place-${at}` : undefined}
         on={picked}
-        held={row.made === true}
+        held={row.made === true || row.held === true}
         dim={!(row.onPath || picked)}
         disabled={row.made === true}
         indent={row.depth}

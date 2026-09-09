@@ -43,4 +43,15 @@ export const PREVIEW_NOT_TEXT =
 
 export const NO_OUTPUT_KEPT = "This delivery kept no copy of what it sent.";
 
+/** A destination that handed nothing back to point at. Not a failure: some cannot. */
+export const NO_POINTER_KEPT =
+  "This destination named no place to go and look.";
+
+/**
+ * The same absence, where the destination was the person: nothing was asked of
+ * anything, so nothing declined to answer.
+ */
+export const NO_POINTER_BY_HAND =
+  "Done by hand, so there is nowhere here to go and look.";
+
 export const OUTPUT_UNREADABLE = "What was sent could not be read.";

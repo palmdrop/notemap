@@ -7,9 +7,8 @@
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import { agentOf, failed, flattened } from "$lib/actions";
 
+  import About from "./About.svelte";
   import Detail from "./Detail.svelte";
-  import { logHref } from "./href";
-  import Id from "./Id.svelte";
 
   let {
     action,
@@ -31,9 +30,7 @@
     <StateWord word={action.kind} inline failed={bad} />
 
     {#if action.subject !== undefined}
-      <div class="mt-2 text-ink-muted">
-        about <Id id={action.subject} href={logHref(order, action.subject)} />
-      </div>
+      <About id={action.subject} {order} />
     {/if}
 
     {#if pairs.length > 0}

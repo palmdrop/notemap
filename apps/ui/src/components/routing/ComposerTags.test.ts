@@ -8,22 +8,44 @@ import ComposerTags from "./ComposerTags.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
+const RESEARCH = {
+  id: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a80",
+  name: "research",
+  destination: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
+  capability: "create",
+  arguments: { directory: "research" },
+  folder: "create",
+  triggerTag: "route/research",
+};
+
 /** The layout is what fills `inUse` in the running shell, so a test does it too. */
-async function serving(inUse: readonly string[]) {
+async function serving(
+  inUse: readonly string[],
+  templates: readonly Record<string, unknown>[] = [],
+) {
   const transport = pool((request) => {
     const route = routeOf(request);
     if (route === "GET /v1/tags") {
       return json(200, { values: inUse.map((name) => ({ name, items: 1 })) });
     }
+    if (route === "GET /v1/templates") return json(200, { values: templates });
+    if (route === "GET /v1/items/one/routing") return json(200, { values: [] });
     return json(200, {});
   });
 
   await client.tags.load();
+  await client.templates.load();
   return transport;
 }
 
-function draw(names: readonly string[] = []) {
-  render(ComposerTags, { props: { item: "one", names } });
+function draw(names: readonly string[] = [], onfired?: () => void) {
+  render(ComposerTags, {
+    props: {
+      item: "one",
+      names,
+      ...(onfired === undefined ? {} : { onfired }),
+    },
+  });
 }
 
 const word = (name: string) => screen.getByRole("button", { name });
@@ -117,4 +139,34 @@ test("stops saying a tag is applied the moment it is dropped", async () => {
 
   await fireEvent.click(word("seedling"));
   expect(word("seedling").getAttribute("aria-pressed")).toBe("false");
+});
+
+/**
+ * A trigger tag files the item the moment it is taken, so whoever is holding a
+ * half-made decision beside this row is told before they can press it into a
+ * second copy.
+ */
+test("says a trigger tag taken here filed the item", async () => {
+  await serving(["route/research"], [RESEARCH]);
+  const fired = vi.fn();
+  draw([], fired);
+
+  await fireEvent.click(
+    await screen.findByRole("button", { name: /research/ }),
+  );
+
+  expect(fired).toHaveBeenCalled();
+});
+
+test("says nothing of an ordinary tag, which files nothing", async () => {
+  await serving(["reading"], [RESEARCH]);
+  const fired = vi.fn();
+  draw([], fired);
+
+  await fireEvent.click(await screen.findByRole("button", { name: "reading" }));
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/tag");
+  });
+  expect(fired).not.toHaveBeenCalled();
 });

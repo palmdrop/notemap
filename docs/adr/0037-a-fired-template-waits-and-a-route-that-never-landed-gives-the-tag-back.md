@@ -3,7 +3,8 @@
 **Date**: 2026-09-05
 **Status**: Accepted — amends [ADR 17](0017-delivery-is-asynchronous-and-retried-on-evidence.md)'s
 inline first attempt for one path, and extends
-[ADR 34](0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md)
+[ADR 34](0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md).
+One decision below is superseded 2026-09-09, marked where it stands
 **Deciders**: palmdrop, with Claude
 
 ---
@@ -94,6 +95,16 @@ composer is a decision a person made with the line in front of them, and the ite
 trigger tag for their own reasons — cancelling that route must leave their classification alone.
 The record already names its template ([ADR 34](0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md));
 it also says whether the tagging made it, which is one more thing the log wants anyway.
+
+> **Superseded 2026-09-09: any template's route untags, not only a tag-fired one.** What this
+> paragraph weighed was a person's own classification against a mechanical need, and the composer
+> has since taken the other side of it: applying a template there now writes the template's trigger
+> tag onto the item, so the item ends up carrying the tag whichever way the template was reached.
+> That makes the tag the record's own act in both directions, and the case this paragraph protected
+> — an item already wearing the tag when the template is taken by hand — is one nothing routes on:
+> a tag that predates its template fires nothing and means nothing until a decision gives it a
+> meaning, which is the decision the cancel is calling off. `firedByTag` stays on the record; the
+> log and `establish` still want it. It is no longer what decides whether the tag comes back.
 
 What does not change: a **delivered** record keeps its tag, and **untagging still does not unroute**.
 The rule is one-directional, and it is about a reservation that never became a record.

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { untrack } from "svelte";
+
   import {
     saidBy,
     type Capability,
@@ -46,7 +48,7 @@
     PREVIEW_UNREACHABLE,
   } from "$lib/said";
   import { OWN_ARGUMENTS, sameArguments } from "$lib/arguments";
-  import { fieldsOf, valuesFrom } from "$lib/schema-form";
+  import { fieldsOf, presetsFrom, valuesFrom } from "$lib/schema-form";
 
   const CREATE = "create";
   /** What the typed line drives: the capability that decides at delivery. */
@@ -58,6 +60,7 @@
     item,
     onrouted,
     ondiscarded,
+    onfired,
     onclose,
   }: {
     item: Item;
@@ -72,6 +75,12 @@
      * a routed one does.
      */
     ondiscarded?: () => void;
+    /**
+     * A tag taken here filed the item, so the decision this composer was for is
+     * made and it closes on it. There is no record to hand over: what the tag
+     * fired is said by the corner, which is where the window's cancel lives.
+     */
+    onfired?: () => void;
     onclose: () => void;
   } = $props();
 
@@ -169,6 +178,25 @@
 
   $effect(() => {
     if (implied !== undefined && capability === undefined) capability = implied;
+  });
+
+  /**
+   * A field a destination says starts somewhere starts there. Only where a
+   * template has not already filled the form: what a template saved *is* the
+   * decision, and a default written into a field it deliberately left empty
+   * would commit as a correction of it.
+   *
+   * What is held wins over what is offered, so this seeds a field once and
+   * never argues with the person typing in it — including where they emptied
+   * it, the field then holding `""` rather than nothing.
+   */
+  $effect(() => {
+    if (applied !== undefined) return;
+
+    const wanted = presetsFrom(fields);
+    const held = untrack(() => args);
+    const seeded = { ...wanted, ...held };
+    if (Object.keys(seeded).length !== Object.keys(held).length) args = seeded;
   });
 
   /** Nothing to pick among is nothing to draw: the line and the fields are the whole decision. */
@@ -580,6 +608,28 @@
   }
 
   /**
+   * The trigger tag of the template a decision committed as, put on the item
+   * the moment it is routed — so an item filed by a template carries the same
+   * classification whichever way the template was reached, and the tag says
+   * what it says everywhere a tag is read.
+   *
+   * The record is what keeps this from filing a second copy: the pool absorbs a
+   * trigger arriving where that template has already decided this item. So it
+   * goes **after** the route, and only where the record names the template — a
+   * decision the person corrected is their own and takes no tag.
+   */
+  function classify(record: RoutingRecord): void {
+    const template = $templates.find(
+      (one) => one.id === record.applied?.template,
+    );
+    const tag = template?.triggerTag;
+    if (tag === undefined || tags.includes(tag)) return;
+
+    // Refused, it is the outbox's to report, as every other tag's refusal is.
+    void client.tag(item.id, tag).catch(() => undefined);
+  }
+
+  /**
    * `beside` is `⇧⏎`: the person meant a new note rather than an addition to
    * the one that is there, so it asks for `create`. Both file kinds refuse a
    * name that is taken rather than writing into it; the capability itself no
@@ -592,6 +642,7 @@
     said = "routing…";
     try {
       const record = await client.routing.route(item.id, requestFor(beside));
+      classify(record);
       onrouted?.(record);
       onclose();
     } catch (error) {
@@ -797,7 +848,14 @@
       {/if}
 
       {#if chosen !== undefined || hand !== undefined}
-        <ComposerTags item={item.id} names={tags} />
+        <ComposerTags
+          item={item.id}
+          names={tags}
+          onfired={() => {
+            onfired?.();
+            onclose();
+          }}
+        />
       {/if}
 
       <!-- Offered and never automatic: taking `manual` says the thought was

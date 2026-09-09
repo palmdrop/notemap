@@ -1162,8 +1162,9 @@ three fields:
   ```
 
   Absent where a person made the decision by hand. A decision a person made with the item in front
-  of them and one a tag made are the same delivery and not the same act: only the second gives its
-  tag back where nothing landed, and only the second is what a shell draws a cancel for.
+  of them and one a tag made are the same delivery and not the same act: only the second is what a
+  shell draws a cancel for. **Both give the tag back where nothing landed** *(amended 2026-09-09)* —
+  the composer applies a template's trigger tag too, so the tag is the record's own act either way.
 - **Exactly one of the two shapes**, and a body carrying both is `400 malformed-envelope`: a
   request that says two things about where this item goes has not made a decision.
 - A template the pool does not hold is `404 unknown-template` — the template is what this shape of
