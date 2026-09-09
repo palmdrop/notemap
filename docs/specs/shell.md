@@ -4,6 +4,15 @@
 **Last updated**: 2026-09-09
 **Shipped**:
 
+- 2026-09-09 — **A channel reads as its title everywhere a decision is drawn.** The template form's
+  line, the settings template list, a routing record and a row's routing line all say `Reading`
+  where they said `12345`. Names are **remembered** in the browser so a list draws them without a
+  round trip each and says them while the account is asleep — a cache and not a record, possibly
+  months out of date, and a stale title says which channel where an id says nothing. Typing a
+  **slug** now resolves to the lasting form for a channel outside the answered page too, a slug
+  being the name that is in a channel's own URL.
+  ([ADR 44](../adr/0044-naming-a-value-is-a-second-question-a-destination-answers.md))
+
 - 2026-09-09 — **A lasting name is read back as the name a person knows, however many channels the
   account has.** Where a field may hold only what the destination already has, the line reads the
   entry's label while the field keeps the value — so a template browsed into an are.na channel says
@@ -788,12 +797,32 @@ that fires for months wants a name that cannot rot. Matching and completion cons
 entry has, so a title, a slug and an ID all find the same channel and the row still marks as taken
 whichever form the field ended up holding.
 
+**Every surface that draws a decision draws the name** *(2026-09-09)*. A template's line is where
+one is chosen; a template list, a routing record and a row's routing line are where one is read
+back, and those three ask no destination anything — they draw pool state, and are read while a
+destination is asleep as often as not. So what any of them learns about a value is **remembered in
+the browser**, keyed by destination, capability, field and value, and every one of them reads it.
+
+It is a cache and never a record. Nothing in the pool carries it, it may be months out of date, and
+losing it costs an ask. That is the trade taken on purpose: where a decision is being *authored* the
+name is asked for now, because a form is where a mistake gets saved; where one is being *read back*
+a stale title still says which channel, and an id says nothing at all. What fills it is, in order:
+what is remembered, then one browse — a page names most of an account in a single request — then an
+ask per value for whatever is left.
+
 **A name the page did not carry is asked for** *(2026-09-09)*. Reading a value back off the
 browse's own answer works exactly as far as that answer reaches, and it is one page — are.na's is
 one on purpose. So where nothing on the page answers for what the field holds, the destination is
 asked what that value is called, through `/named`. Only then: a channel the browse already listed
 costs no request at all. What comes back with no name is left exactly as it stands, which is what a
 place typed by hand looks like and is the same thing the surface did before anyone asked.
+
+**A slug settles to the lasting form, wherever the channel is** *(2026-09-09)*. Typing a title or a
+slug for a channel the page carries has always landed on the form the surface keeps. For one it does
+not carry, that used to leave only the numeric id working — which is the one name of the three that
+is not written down anywhere a person can reach. Settling now asks, so a slug pasted out of a
+channel's URL becomes the id that survives a rename. What nothing answers for still stands exactly
+as typed.
 
 **A field that holds only what was offered is typed in names** *(2026-09-09)*. Where the schema
 says `x-notemap-offered-only`, the line reads the entry's label and the field keeps the value

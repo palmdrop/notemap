@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, vi } from "vitest";
 import { cleanup } from "@testing-library/svelte";
 import { forgetEverything } from "$lib/candidate-cache";
+import { forgetEveryName } from "$lib/names.svelte";
 
 /**
  * jsdom lays nothing out, so it implements neither scrolling nor a scroll
@@ -103,7 +104,10 @@ beforeEach(() => {
   localStorage.clear();
   // Held for the life of a page, which in a suite is the life of the run: one
   // case's channels would otherwise be drawn under the next one's destination.
+  // Both caches, since clearing the store behind one does not empty the map
+  // this process already read out of it.
   forgetEverything();
+  forgetEveryName();
   delete document.documentElement.dataset["theme"];
 });
 

@@ -13,6 +13,8 @@
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
   import { argumentsOf } from "$lib/arguments";
+  import { nameFor } from "$lib/names.svelte";
+  import { resolve } from "$lib/naming";
   import { didWhat } from "$lib/capability";
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
@@ -79,9 +81,35 @@
       : undefined,
   );
 
+  /** A record is read to find out where something went, so the id is the wrong answer. */
+  $effect(() => {
+    if (target === undefined || target.kind !== "destination") return;
+    const asking = target;
+    void resolve(
+      asking.destination,
+      Object.keys(asking.arguments).map((field) => ({
+        capability: asking.capability,
+        field,
+        value: String(asking.arguments[field] ?? ""),
+      })),
+    );
+  });
+
   const given = $derived(
     target !== undefined && target.kind === "destination"
-      ? argumentsOf(target.arguments, capability?.argumentsSchema)
+      ? argumentsOf(
+          target.arguments,
+          capability?.argumentsSchema,
+          (field, value) =>
+            target.kind === "destination"
+              ? nameFor({
+                  destination: target.destination,
+                  capability: target.capability,
+                  field,
+                  value,
+                })
+              : undefined,
+        )
       : [],
   );
 

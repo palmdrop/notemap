@@ -205,6 +205,62 @@ function routed(records: readonly unknown[]) {
   };
 }
 
+/**
+ * A row is the shortest reading of where a capture went, so it is the last
+ * place an id nobody can read belongs. Asked once and kept.
+ */
+test("names the channel a row's routing line went to", async () => {
+  const CHANNEL_RECORD = {
+    ...RECORD,
+    target: {
+      kind: "destination",
+      destination: "vault",
+      capability: "publish",
+      arguments: { channel: "12345" },
+    },
+  };
+
+  pool((request) => {
+    const route = routeOf(request);
+    if (route.endsWith("/description")) {
+      return json(200, {
+        kind: "described",
+        capabilities: [
+          {
+            name: "publish",
+            accepts: ["text"],
+            argumentsSchema: {
+              type: "object",
+              properties: {
+                channel: {
+                  type: "string",
+                  "x-notemap-candidates": true,
+                  "x-notemap-offered-only": true,
+                },
+              },
+            },
+          },
+        ],
+      });
+    }
+    if (route.endsWith("/candidates")) {
+      return json(200, {
+        kind: "answered",
+        entries: [{ label: "Reading", value: "reading", durable: "12345" }],
+        truncated: false,
+      });
+    }
+    return routed([CHANNEL_RECORD])(request);
+  });
+
+  render(Item, { id: "routed" });
+
+  await vi.waitFor(() =>
+    expect(screen.getByRole("link", { name: /Reading/ })).toBeTruthy(),
+  );
+  expect(screen.queryByText(/12345/)).toBeNull();
+});
+
 test("gives every record it draws the way into it", async () => {
   pool(routed([RECORD]));
 

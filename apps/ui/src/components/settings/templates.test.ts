@@ -623,6 +623,54 @@ test("leaves a handle nothing answers for exactly as it was saved", async () => 
 });
 
 /**
+ * A slug is the name a person can actually get hold of — it is in the channel's
+ * own URL, where the numeric id is not. For a channel outside the answered page
+ * the browse cannot resolve one, so the destination is asked, and the field
+ * takes the form that survives a rename.
+ */
+test("resolves a slug typed for a channel the browse never listed", async () => {
+  const GROUP = {
+    label: "Group notes",
+    value: "group-notes",
+    durable: "99999",
+  };
+  servingChannels([READING], [], [GROUP]);
+
+  render(Templates);
+  await open(/Make a template/);
+  const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "group-notes" } });
+  await fireEvent.blur(field);
+  await vi.waitFor(() => expect(field.value).toBe("Group notes"));
+
+  await fireEvent.input(await screen.findByLabelText("name"), {
+    target: { value: "Group" },
+  });
+  await open("Save");
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/templates");
+  });
+  expect(await sent()).toContainEqual(
+    expect.objectContaining({ arguments: { channel: "99999" } }),
+  );
+});
+
+/** The list draws pool state and asks nothing, so it learned this by browsing. */
+test("draws a saved template's channel by name in the list", async () => {
+  servingChannels(
+    [READING],
+    [aTemplate({ capability: "publish", arguments: { channel: "12345" } })],
+  );
+
+  render(Templates);
+  await vi.waitFor(() => expect(screen.getByText("Reading")).toBeTruthy());
+  expect(screen.queryByText("12345")).toBeNull();
+});
+
+/**
  * `⇥` completes to the one name, and pressing it again walks the rest —
  * the field taking each lasting form while the line goes on reading titles.
  */

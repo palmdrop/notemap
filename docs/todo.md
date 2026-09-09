@@ -170,10 +170,10 @@
     the title while the field keeps the number, off the browse's own page where that carries it and
     off `GET /v1/destinations/{id}/named` where it does not
     ([ADR 44](adr/0044-naming-a-value-is-a-second-question-a-destination-answers.md)).
-    Still open for **the settings template list and the routing record**, which draw a saved
-    argument without asking any destination anything. Both are now one ask away rather than
-    blocked — what they need is a place to put it, since a list of twenty templates asking twenty
-    times on draw is not obviously the right shape.
+    Closed for the template list, the routing record and a row's routing line too, the same day:
+    names are remembered in the browser and every surface reads them, filled from one browse where
+    a page carries them and an ask per value where it does not. A slug typed for a channel outside
+    that page resolves as well, which is what makes an unlisted channel reachable by hand.
 - [ ] **The shell picks a browse control by destination kind name.**
   `apps/ui/src/lib/candidate-browsers.ts` maps `filesystem` and `webdav` to the typed line and
   everything else to the flat one, so a third filesystem-like kind needs a UI edit to get the tree —

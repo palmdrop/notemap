@@ -39,8 +39,10 @@ at the time of writing no way to ask it.
   the value being named is the one a cap is most likely to have dropped.
 - **The shell must not learn about kinds.** It cannot know that an are.na channel has a
   `/v3/channels/{id}` and a vault path has nothing of the sort.
-- **A stale name is worse than none.** Whatever answers has to be asked now. A label kept beside
-  the value would rot on a retitle, which is the exact failure `durable` exists to avoid.
+- **A stale name beats no name, and neither beats a fresh one.** Where a decision is being
+  *authored*, the name has to be asked for now — a form is where a mistake gets saved. Where one is
+  merely being *read back*, a name months out of date still says which channel, and an id says
+  nothing at all. The two are different jobs and were conflated in the first draft of this.
 - **Core must stay uninterested.** It carries the question and sorts the failures; it does not read
   what came back.
 
@@ -78,13 +80,19 @@ capability must be declared and the field must carry `x-notemap-candidates`.
 ### Consequences
 
 - **Good** — the name a template shows no longer depends on how many channels an account has.
-- **Good** — the template list and the routing record now have something to call. Neither is done
-  here; both are one ask away rather than blocked.
-- **Good** — nothing is stored, so nothing rots. The answer is as fresh as the moment it was asked.
+- **Good** — the template list, the routing record and a row's routing line all draw the name,
+  through one shell-side resolver: it reads what is remembered, fills gaps from a single browse
+  where a page carries them, and asks per value only for what is left over.
+- **Good** — nothing is stored **in the pool**, so no record and no template carries a name that
+  can go stale against what it means.
 - **Bad** — a fourth method on the destination port, and every adapter has to decide whether it has
   one. Mitigated: it is optional, and absent is a correct answer rather than a gap.
 - **Bad** — a form opening on an off-page value costs one extra round trip to a slow destination.
   It happens once per field and only where the page came up empty.
+- **Neutral** — the shell **remembers** what it was told, in `localStorage` beside the order and
+  the theme. That is a cache and not a record: presentation, possibly months out of date, and
+  losing it costs an ask. It is what lets a list of twenty templates draw names without twenty
+  round trips, and say them at all while the account is asleep.
 - **Neutral** — `not-offered` and "nothing by that name" are different answers with the same effect
   on the surface: the value stands as written. They are kept apart anyway, because the first is
   about the kind and the second about the account.
@@ -109,6 +117,14 @@ capability must be declared and the field must carry `x-notemap-candidates`.
 - **Bad** — it rots. A retitled channel draws its old name for as long as nobody re-opens the form,
   which is the failure `durable` was introduced to prevent, reintroduced one layer up.
 
+*Half-taken, later the same day.* Rejecting it outright was wrong for the surfaces that ask
+nothing. A template list and a routing record draw pool state, and one that says `12345` until a
+round trip completes — or forever, where the account is asleep — is the thing this ADR exists to
+stop. So the label **is** remembered, in the shell and never in the pool: `localStorage`, on the
+terms the order and the theme are kept. What survives of the objection is that core stays out of
+it. The rot is accepted rather than answered, because a remembered name only has to say *which
+channel*, and the form that authors a decision still asks fresh.
+
 ### Leave it, and say so on the surface
 
 - **Good** — cheapest, and honest as far as it goes.
@@ -122,6 +138,12 @@ capability must be declared and the field must carry `x-notemap-candidates`.
 Raised reviewing [reading a lasting name back](../reviews/lasting-name-read-back-2026-09-09.md),
 as finding 1. The one page are.na answers is `packages/adapters/destination-arena/src/candidates.ts`;
 the guidance it defers to is are.na's own.
+
+Extended the same day, from using it: the form was fixed and every surface that *reads a decision
+back* still drew the id, which is most of where a person meets one. Hence the remembered names
+above, and hence the slug: typing one for a channel outside the answered page now resolves to the
+lasting form, where before only the numeric id did — and a slug is the name somebody can actually
+get hold of, being in the channel's own URL.
 
 Revisit if a third kind wants naming for something that is not a rename-proof handle — the shape
 assumes one value maps to at most one entry, which a tag or a label set would break.

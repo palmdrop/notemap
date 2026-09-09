@@ -149,6 +149,15 @@ either mode. See finding #5.
    The browser asks only where its own page had nothing to say, so a channel the browse already
    listed costs no request.
    ([ADR 44](../adr/0044-naming-a-value-is-a-second-question-a-destination-answers.md))
+
+   **Extended after hand testing.** Fixing the form left every surface that *reads a decision back*
+   still drawing the id — the settings template list, a routing record, a row's routing line — which
+   is most of where a person meets one. Those three ask no destination anything, so what any surface
+   learns about a value is now remembered in the browser and all of them read it, filled from one
+   browse where a page carries it and an ask per value where it does not. Hand testing also found
+   that only the **numeric id** resolved for a channel outside the answered page, which is the one
+   name of the three nobody can get hold of; settling now asks, so a slug out of a channel's URL
+   lands on the lasting form.
 2. **Won't fix — the finding was wrong.** `offered-only` is declared as advice for surfaces and
    core never reads it, so using it to decide how a field is drawn is the annotation working as
    specified. Moved to Non-issues so it is not re-raised.

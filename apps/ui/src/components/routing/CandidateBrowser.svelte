@@ -17,6 +17,7 @@
     type Form,
   } from "$lib/candidate-list";
   import { recall, remember } from "$lib/candidate-cache";
+  import { learn } from "$lib/names.svelte";
 
   /**
    * The schema-driven control: one line holding the field, with what the
@@ -104,6 +105,8 @@
   let named = $state<
     { readonly value: string; readonly label: string } | undefined
   >(undefined);
+  /** What has already been asked about, so settling and reading never ask twice. */
+  let askedFor = $state<string | undefined>(undefined);
   /** Whether the whole answer has been asked for, past the handful drawn by default. */
   let expanded = $state(false);
 
@@ -234,38 +237,56 @@
    * what is about to be written.
    */
   $effect(() => {
-    if (!unnamed) return;
+    if (unnamed && askedFor !== value) void askName(value);
+  });
 
-    const wanted = value;
-    const asked = {
-      destination,
-      capability,
-      field,
-      value: wanted,
-    };
+  /**
+   * What the destination makes of a value its own page did not carry. It
+   * answers the two cases the page cannot: a template pinned to a channel past
+   * the end of one, and a **slug typed by hand** for a channel that is not in
+   * the account's own listing at all — which resolves to the lasting form here
+   * rather than staying a name that rots.
+   *
+   * Nothing by that name is an answer too, and the value stands as written.
+   */
+  async function askName(wanted: string): Promise<void> {
+    askedFor = wanted;
     const mine = (namingAsk += 1);
 
-    void (async () => {
-      try {
-        const answer = await client.destinations.named(destination, asked);
-        if (mine !== namingAsk) return;
-        named =
-          answer.kind === "answered" && answer.entry !== undefined
-            ? { value: wanted, label: answer.entry.label }
-            : undefined;
-      } catch {
-        // A name that could not be asked for is a name nobody has: the field
-        // reads as it stands, which is what it did before anyone asked.
-        if (mine === namingAsk) named = undefined;
+    try {
+      const answer = await client.destinations.named(destination, {
+        capability,
+        field,
+        value: wanted,
+      });
+      if (mine !== namingAsk) return;
+
+      if (answer.kind !== "answered" || answer.entry === undefined) {
+        named = undefined;
+        return;
       }
-    })();
-  });
+
+      const kept = takenAs(answer.entry, keeps);
+      learn(
+        { destination, capability, field, value: kept },
+        answer.entry.label,
+      );
+      named = { value: kept, label: answer.entry.label };
+      askedFor = kept;
+      if (kept !== wanted) onchange(kept);
+    } catch {
+      // A name that could not be asked for is a name nobody has: the field
+      // reads as it stands, which is what it did before anyone asked.
+      if (mine === namingAsk) named = undefined;
+    }
+  }
 
   function applied(answer: DestinationCandidates): void {
     if (answer.kind === "answered") {
       entries = answer.entries;
       truncated = answer.truncated;
       refusal = undefined;
+      remembered(answer.entries);
       return;
     }
 
@@ -273,6 +294,24 @@
     truncated = false;
     refusal =
       answer.kind === "not-offered" ? "cannot be browsed here" : answer.detail;
+  }
+
+  /**
+   * Every name this answer carries, kept for the surfaces that ask nothing —
+   * a template list, a routing record. Browsing once is what teaches them.
+   */
+  function remembered(answered: readonly CandidateEntry[]): void {
+    for (const entry of answered) {
+      for (const form of ["value", "durable"] as const) {
+        const held = entry[form];
+        if (held !== undefined) {
+          learn(
+            { destination, capability, field, value: String(held) },
+            entry.label,
+          );
+        }
+      }
+    }
   }
 
   /**
@@ -420,9 +459,11 @@
       return;
     }
 
-    // Nothing the answer knows: taken as written, since an answer is one page
-    // of what a destination holds and a channel it did not mention delivers
-    // perfectly well.
+    // Taken as written where the page knows nothing of it — an answer is one
+    // page of what a destination holds, and a channel it did not mention
+    // delivers perfectly well. The ask that follows is what turns a **slug**
+    // typed for a channel outside the page into the form that survives a
+    // rename, and it happens through the effect above rather than here.
     const written = line;
     took(resolved(entries, written, keeps) ?? written);
   }
