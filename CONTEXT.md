@@ -34,10 +34,11 @@ _Avoid_: original, raw note
 The channel a capture came in through — a shell's typed note, its picture, a watched folder, a
 polled inbox. Finer than the app that sent it, because policy is what the distinction is for: one
 page may stamp two sources. Recorded on every item, along with that source's own id for what it
-sent, so re-reading a source cannot duplicate. A source needs no declaration to capture; declaring
-one only attaches policy. *Amended 2026-09-07*: the sources can be **enumerated** — every one the
-pool has an item from, with how much of it and when it last captured. Read from the items, since
-that is where a discovered source exists at all.
+sent, so re-reading a source cannot duplicate. A source is **discovered**, never declared: the
+sources that exist are every one the pool has an item from, with how much of it and when it last
+captured, read from the items themselves (*amended 2026-09-07*). *Amended 2026-09-09*: the
+configuration block that could have carried policy for one is gone, nothing having read it, so a
+source carries none until enrichment gives it some.
 _Avoid_: channel, origin, importer, client
 
 **Feed**:
@@ -151,7 +152,8 @@ _Avoid_: tag list, taxonomy, vocabulary, autocomplete
 **Payload type**:
 What a capture mechanically *is*. Determined by what arrived, never a judgement. Adapters declare
 which payload types each of their capabilities accepts. There is one, **note**: prose with any
-number of attachments, either half of which may be missing.
+number of attachments, either half of which may be missing. Which types exist is core's, not a
+deployment's — a host is handed the list rather than writing one.
 
 A second type exists **only when `content` needs a different schema**. `link` qualifies, carrying
 a `{ url }` nothing else validates; `table` qualifies. **Voice does not**: a recording's audio is

@@ -33,7 +33,7 @@ export async function capture(
   // capture arrives with has to expand `{{item}}` against the item it is about
   // to become. A replay leaves it unused, which costs a number.
   const id = envelope.id ?? ports.ids.next<ItemId>();
-  const proposed = recorded(ports, envelope, id);
+  const proposed = recorded(envelope, id);
   const { firings, spent } = await fired(config, ports, proposed, signal);
   const record = without(proposed, spent);
 
@@ -112,11 +112,7 @@ type Firing = {
 };
 
 /** What the envelope says the item is, before the pool has agreed to hold it. */
-function recorded(
-  ports: PoolPorts,
-  envelope: CaptureEnvelope,
-  id: ItemId,
-): ItemRecord {
+function recorded(envelope: CaptureEnvelope, id: ItemId): ItemRecord {
   const by: Agent = { kind: "source", source: envelope.source };
 
   return {
@@ -144,9 +140,9 @@ function validate(
   ports: PoolPorts,
   envelope: CaptureEnvelope,
 ): CaptureRefusal | undefined {
-  // `config.sources` is a policy registry, not a guest list: a source absent
-  // from it captures normally, with no policy attached. `unknown-asset` needs
-  // the pool, so it is decided inside the transaction.
+  // A source is never checked: any id captures, and which sources exist is
+  // read back off the items themselves. `unknown-asset` needs the pool, so it
+  // is decided inside the transaction.
   return checkPayload(config, ports, envelope.payload);
 }
 

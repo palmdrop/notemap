@@ -1,9 +1,4 @@
-import type { EnrichmentName, SourceId, Timestamp } from "./ids";
-
-export type SourceDescriptor = {
-  readonly id: SourceId;
-  readonly autoRequest: readonly EnrichmentName[];
-};
+import type { SourceId, Timestamp } from "./ids";
 
 /**
  * A source the pool has seen, and how much of it. Discovered rather than

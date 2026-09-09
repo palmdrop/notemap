@@ -28,3 +28,7 @@ export { NotOffered } from "./destinations/candidates";
 
 // And this from `probe()`. Every other throw from probing reads as unreachable.
 export { Rejected } from "./destinations/probe";
+
+// What a capture may be. A host puts this on the pool config it builds, since
+// a second type is a code change everywhere one is read.
+export { PAYLOAD_TYPES } from "./payload";

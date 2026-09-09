@@ -3,7 +3,9 @@
 **Date**: 2026-08-17
 **Status**: Accepted — replaces `PoolPorts.destinations` and the `[[destinations]]` block in
 [core.md](../specs/core.md#routing) and [http-v1.md](../specs/http-v1.md); narrowed for
-credential-holding kinds by [ADR 28](0028-a-remote-destination-names-a-credential-profile-not-a-url.md)
+credential-holding kinds by [ADR 28](0028-a-remote-destination-names-a-credential-profile-not-a-url.md);
+its reasoning extended to the domain blocks in `config.toml` by
+[ADR 43](0043-config-holds-what-an-install-is.md)
 **Deciders**: palmdrop, with Claude
 
 ---

@@ -24,7 +24,6 @@ export {
   DOWN,
   IMAGE_SOURCE,
   MANUAL,
-  NOTE,
   UP,
   type Told,
   type World,

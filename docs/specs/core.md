@@ -1,8 +1,16 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-09-08
+**Last updated**: 2026-09-09
 **Shipped**:
+
+- 2026-09-09 — **Configuration holds what an install is.** The `[[payloadTypes]]`, `[[sources]]`
+  and `[[enrichments]]` blocks leave `config.toml`. The payload types become a constant core
+  exports and a host hands back, since a second one is a code change everywhere else; the source
+  registry and the enrichment list are removed unread, nothing having ever consulted either.
+  `PoolConfig` loses `sources` and `enrichments` with them, and a leftover block is ignored with
+  the warning any unknown key gets.
+  ([ADR 43](../adr/0043-config-holds-what-an-install-is.md))
 
 - 2026-09-08 — **A board is a destination, and a capability stops being file-shaped.** Capability
   names lose the word *file* — `create`, `append`, `create-or-append` — so a vault's note and a
@@ -741,9 +749,11 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   somebody's.
 - Backoff timing and the attempt limit are **configuration data core is given**, not policy core
   invents, consistent with core taking configuration as data but never sourcing it.
-- Whether an enrichment runs automatically or must be requested is policy configured **per intake
+- Whether an enrichment runs automatically or must be requested is policy attached **per intake
   source** — a recording from a voice-memo source may transcribe automatically while an
-  arbitrary uploaded file requires an explicit request.
+  arbitrary uploaded file requires an explicit request. Where that policy is written is open: the
+  configuration block that held it was removed unread
+  ([ADR 43](../adr/0043-config-holds-what-an-install-is.md)), and pool state is where it lands.
 - Enrichment may be re-run at any time and is never destructive: a new artifact appears beside
   the old one, attributed to its own producer.
 - An item is fully processable while enrichment is pending, unavailable or failed. Capture never
@@ -1286,20 +1296,19 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   payload, the source, the source's own identifier, the capture time, and any tags the source
   already knows about. **Source-supplied tags are attributed to that source** (decided
   2026-08-04), so importing from an already-classified system does not lose its classification.
-- **A source needs no declaration** (decided 2026-08-08). Any source id is accepted at capture.
-  Declaring a source in configuration attaches **policy** to it — today only whether its
-  captures auto-request an enrichment — and nothing else; an undeclared source captures
-  normally and carries empty policy. Registration gated nothing an open client could not
-  spell, and refusing a capture for a paperwork reason is the wrong trade for a tool whose
-  first job is that capture always works. The accepted cost: a typo'd source id mints a
-  parallel identity rather than being caught, which shows up in attribution.
-- **Source policy stays in configuration for now** (noted 2026-08-17). Destinations became pool
-  state ([ADR 20](../adr/0020-destinations-are-pool-state.md)) and sources did not follow, because
-  the whole of source policy is `autoRequest` and nothing reads it until enrichment exists. When it
-  does, policy moves on the same pattern — with one difference that matters: a source is
-  **discovered** rather than created, since capturing under an id is what brings one into
-  existence, so the surface lists the sources that have captured and attaches policy to them. There
-  is no create.
+- **A source is discovered, never declared** (decided 2026-08-08, tightened 2026-09-09). Any
+  source id is accepted at capture, and capturing under one is the whole of what brings it into
+  existence: the sources that exist are read back off the items themselves. Registration gated
+  nothing an open client could not spell, and refusing a capture for a paperwork reason is the
+  wrong trade for a tool whose first job is that capture always works. The accepted cost: a
+  typo'd source id mints a parallel identity rather than being caught, which shows up in
+  attribution.
+- **A source carries no policy yet, and the policy it will carry is the pool's**
+  ([ADR 43](../adr/0043-config-holds-what-an-install-is.md)). The registry that once declared
+  one lived in configuration and held `autoRequest`, which nothing read, so it went with the
+  other blocks a file could not usefully change. When enrichment exists, per-source policy lands
+  as pool state on the destinations' pattern — with the difference that matters: there is no
+  create, because a surface attaching policy lists what has already captured.
 - **Every capture is identified twice: by its own id, and by its source's id for it**
   (decided 2026-08-04). Both are unique, and they answer different questions. The capture id
   makes replay harmless for a client that captured while unreachable. The source identity makes
@@ -1347,9 +1356,12 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - **Core takes configuration as data but never sources it.** The host reads config and secrets;
   core evaluates rules. *Clarified 2026-08-17*: a **destination is not configuration** and never
   was, really — it is state a person creates, a record refers to and a rebuild restores, so it is
-  the pool's ([ADR 20](../adr/0020-destinations-are-pool-state.md)). What the host still reads and
-  hands over is policy about how the pool runs: payload types, sources, enrichments, retry and
-  sweep.
+  the pool's ([ADR 20](../adr/0020-destinations-are-pool-state.md)). *Narrowed 2026-09-09*: what
+  the host reads is what an **install** is — paths, addresses, cadences, limits, and the accounts
+  that carry a password ([ADR 43](../adr/0043-config-holds-what-an-install-is.md)). What it still
+  hands core beyond those is the retry policy, the sweep's grace, the trigger window, the capture
+  zone, and the **payload types**, which are core's own constant rather than anything a file
+  decides.
 - **Core is a primitive API** (decided 2026-08-03). It exposes operations and the facts needed
   to decide on them; it does not impose interface policy. Confirmation prompts, warnings,
   batching and processing rituals belong to the host or client.

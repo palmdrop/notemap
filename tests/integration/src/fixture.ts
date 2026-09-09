@@ -48,9 +48,9 @@ export const WATCHED_FOLDER = "watched-folder" as SourceId;
 export const TEXT = "text" as PayloadTypeName;
 
 /**
- * A payload type this pool holds and the shipped config does not, whose content
- * is a schema of its own. Core keeps no list, so what it does with a type it was
- * never told about is exactly what these tests are for.
+ * A payload type this pool holds and core's own list does not, whose content is
+ * a schema of its own. The list is the host's to hand over, so what a pool does
+ * with a type it was never told about is exactly what these tests are for.
  */
 export const SECOND = "second" as PayloadTypeName;
 
@@ -63,10 +63,6 @@ export function tag(name: string): TagName {
 }
 
 export const CONFIG: PoolConfig = {
-  sources: [
-    { id: SCRATCHPAD, autoRequest: [] },
-    { id: WATCHED_FOLDER, autoRequest: [] },
-  ],
   payloadTypes: [
     {
       name: TEXT,
@@ -85,7 +81,6 @@ export const CONFIG: PoolConfig = {
       },
     },
   ],
-  enrichments: [],
   retry: {
     maxAttempts: 5,
     initialBackoff: 1000 as Duration,

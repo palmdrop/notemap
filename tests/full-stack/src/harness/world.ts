@@ -3,7 +3,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const NOTE = "note";
 export const MANUAL = "web-manual";
 export const IMAGE_SOURCE = "web-image";
 
@@ -125,17 +124,5 @@ interval = 3600000
 pollInterval = ${POLL}
 leaseFor = 300000
 batch = 4
-
-[[sources]]
-id = "${MANUAL}"
-autoRequest = []
-
-[[sources]]
-id = "${IMAGE_SOURCE}"
-autoRequest = []
-
-[[payloadTypes]]
-name = "${NOTE}"
-contentSchema = { type = "object", additionalProperties = false, properties = { text = { type = "string" } } }
 `;
 }

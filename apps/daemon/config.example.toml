@@ -5,13 +5,12 @@
 # `docker/compose/config.toml`, with the paths under the volume and a bind
 # address to match; this one stays the annotated reference.
 #
-# Keys are core's own names, so `docs/specs/core.md` reads as documentation for
-# this file. Absent lists mean empty.
-#
-# **Destinations are not in here.** A vault is created in settings and lives in
-# the pool, so it survives a reinstall and is edited without a restart. A
-# leftover `[[destinations]]` block is ignored with a warning on startup rather
-# than refused.
+# **This file is what an install is, not what a person does with it.** Paths,
+# addresses, cadences, limits and the accounts that carry a password: the things
+# settled once when notemap is put on a machine. Anything someone changes while
+# using notemap is pool state instead — a destination is created in settings and
+# survives a reinstall, and a source is discovered by capturing under it rather
+# than declared anywhere.
 
 [daemon]
 pool = "~/.local/share/notemap/state/notemap.db"
@@ -190,30 +189,3 @@ batch = 4           # deliveries claimed per pass
 # kind = "arena"
 # name = "mine"
 # secretEnv = "NOTEMAP_ARENA_TOKEN"
-
-# A source needs no declaration to capture; declaring one attaches policy.
-#
-# A source is the capture *channel*, not the shell: the web app stamps a typed
-# note and a picture differently, so that policy can differ between them even
-# though one page sent both.
-[[sources]]
-id = "web-manual"
-autoRequest = []
-
-[[sources]]
-id = "web-image"
-autoRequest = []
-
-# Prose with any number of attachments, either half of which may be missing.
-# What an attachment *is* — a picture, a recording, a page snapshot — is its own
-# media type, recorded when its bytes went up; nothing about it is the payload
-# type's business. Bytes go up in their own request first, whatever they are.
-[[payloadTypes]]
-name = "note"
-
-[payloadTypes.contentSchema]
-type = "object"
-additionalProperties = false
-
-[payloadTypes.contentSchema.properties.text]
-type = "string"
