@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { fieldsOf, typedFrom, valuesFrom } from "./schema-form";
+import { fieldsOf, presetsFrom, typedFrom, valuesFrom } from "./schema-form";
 
 const SCHEMA = {
   type: "object",
@@ -106,4 +106,44 @@ test("reads a field that may hold only what its destination already has", () => 
   });
 
   expect(only).toMatchObject({ askable: true, offeredOnly: true });
+});
+
+describe("what a field starts at", () => {
+  test("reads a default as the string an input holds", () => {
+    const [directory, tags] = fieldsOf({
+      type: "object",
+      properties: {
+        directory: { type: "string", default: "inbox" },
+        tags: {
+          type: "array",
+          items: { type: "string" },
+          default: ["one", "two"],
+        },
+      },
+    });
+
+    expect(directory?.preset).toBe("inbox");
+    expect(tags?.preset).toBe("one, two");
+  });
+
+  test("says nothing of a field that starts nowhere", () => {
+    const [only] = fieldsOf({
+      type: "object",
+      properties: { directory: { type: "string" } },
+    });
+
+    expect(only?.preset).toBeUndefined();
+  });
+
+  test("offers the fields that start somewhere, as an input's own values", () => {
+    const fields = fieldsOf({
+      type: "object",
+      properties: {
+        directory: { type: "string", default: "inbox" },
+        filename: { type: "string" },
+      },
+    });
+
+    expect(presetsFrom(fields)).toEqual({ directory: "inbox" });
+  });
 });

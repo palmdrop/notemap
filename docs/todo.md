@@ -39,12 +39,18 @@
 
 ## Composer and capture
 
-- [ ] fuzzy search in composer input field
-- [ ] using a template from the composer does not add the routing tag.
-- [ ] adding a routing tag from within the composer is confusing. It correctly triggers routing, but then triggers routing in combination with the routing the user is already on the way to trigger.
-- [ ] A schema field's **default** is not drawn. Titles, descriptions and dynamic candidates landed
-  2026-08-31; a `default` an adapter declares is still ignored by the composer, which starts every
-  field empty. Split off the routing-arguments line above rather than left ticked inside it.
+- [ ] fuzzy search in composer input field. Narrowed 2026-09-09: `⇥` now walks what still matches
+  once completion has nothing left to add, so a name shared with four others is reached by pressing
+  the key again. Still prefix-only — a channel found by a word in the middle of its title is what
+  is left of this.
+- [x] ~~using a template from the composer does not add the routing tag~~ — closed 2026-09-09: an
+  untouched template routes and then applies its trigger tag, which the pool absorbs as
+  classification because that template's record already stands. A **corrected** one is the person's
+  own decision and takes no tag.
+- [x] ~~adding a routing tag from within the composer is confusing~~ — closed 2026-09-09: a trigger
+  tag taken in the composer's own tag row closes the composer, the tag being the whole decision.
+- [x] ~~A schema field's **default** is not drawn~~ — closed 2026-09-09, as a suggestion the person
+  types over and never written into a template's own arguments.
 - [ ] Tag picking is still free entry beside a datalist rather than the shell's own
   chooser, which the order control now uses.
 - [ ] Editing does not allow attaching anything. It is the edit surface rather than the
@@ -127,8 +133,14 @@
 ## Destinations and adapters
 
 - [ ] are.na destination:
-  - tabbing multiple times does not move composer cursor to next channel that matches the inputted text
-  - are.na templates resolve to channel ID, which is good, but frontend now shows ID instead of channel title. Frontend should show title while internally resolve to the ID.
+  - ~~tabbing multiple times does not move composer cursor to next channel that matches the inputted
+    text~~ — closed 2026-09-09: the second press walks what still matches what was typed.
+  - are.na templates resolve to channel ID, which is good, but frontend now shows ID instead of
+    channel title. Frontend should show title while internally resolve to the ID. Narrower than it
+    reads: **inside the composer the list under the field already draws the title**, since the value
+    is what narrows it. What is left is everywhere nothing has asked the destination for candidates
+    — the settings template list, the routing record — where a title costs an ask on draw or a label
+    stored beside the value.
 - [ ] **The shell picks a browse control by destination kind name.**
   `apps/ui/src/lib/candidate-browsers.ts` maps `filesystem` and `webdav` to the typed line and
   everything else to the flat one, so a third filesystem-like kind needs a UI edit to get the tree —

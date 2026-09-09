@@ -75,6 +75,19 @@ const CREATE_WITH_ENUM = {
   },
 };
 
+const CREATE_WITH_DEFAULT = {
+  name: "create",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    required: ["directory"],
+    properties: {
+      directory: { type: "string", default: "inbox" },
+      filename: { type: "string" },
+    },
+  },
+};
+
 const APPEND = { name: "append", accepts: ["text"] };
 
 /** As the adapter declares it, titles and sentences and all. */
@@ -401,6 +414,92 @@ test("commits a corrected one as the decision it became", async () => {
     capability: "create",
     arguments: { directory: "reading/2026" },
   });
+});
+
+/**
+ * However a template was reached, the item ends up carrying its tag: the
+ * classification is the same, and the record the route just made is what stops
+ * the tag filing a second copy.
+ */
+test("puts a template's trigger tag on the item it routed", async () => {
+  const transport = pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route === "GET /v1/templates") return json(200, { values: [RESEARCH] });
+    if (route === "GET /v1/items/one/route/resolve") {
+      return json(200, {
+        destination: VAULT,
+        capability: "create",
+        arguments: { directory: "research/2026-09-04" },
+      });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE] });
+    }
+    if (route === "POST /v1/items/one/route") {
+      return json(200, {
+        id: "r",
+        item: "one",
+        at: WHEN,
+        state: "delivered",
+        target: {},
+        applied: { template: RESEARCH.id, firedByTag: false },
+      });
+    }
+    if (route === "POST /v1/items/one/tag") return json(200, aCapture());
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  draw();
+  await choose("research");
+  await screen.findByLabelText("directory");
+  await commit();
+
+  await vi.waitFor(() => {
+    expect(sentTo(transport).map(routeOf)).toContain("POST /v1/items/one/tag");
+  });
+  expect(await sent()).toContainEqual({ tag: RESEARCH.triggerTag });
+});
+
+/** Corrected, the decision is the person's own, and their tags are their own too. */
+test("leaves a corrected template's tag off the item", async () => {
+  const transport = servingTemplates();
+
+  draw();
+  await choose("research");
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "reading/2026" },
+  });
+  await commit();
+
+  await vi.waitFor(() => {
+    expect(sentTo(transport).map(routeOf)).toContain(
+      "POST /v1/items/one/route",
+    );
+  });
+  expect(sentTo(transport).map(routeOf)).not.toContain(
+    "POST /v1/items/one/tag",
+  );
+});
+
+/**
+ * The tag files it, so the decision this composer was for is made: leaving it
+ * open is offering to route an item that is already on its way somewhere.
+ */
+test("closes on a trigger tag taken in its own row", async () => {
+  servingTemplates();
+
+  const closed = draw();
+  await choose(/Vault/);
+  await described();
+
+  await fireEvent.click(
+    await screen.findByRole("button", { name: /routes to research/ }),
+  );
+
+  expect(closed).toHaveBeenCalled();
 });
 
 test("draws a stranded template with its reason rather than removing it", async () => {
@@ -1225,6 +1324,44 @@ test("completes only as far as several agree", async () => {
   await fireEvent.keyDown(field, { key: "Tab" });
 
   expect(field.value).toBe("reading");
+});
+
+/**
+ * `⇥` on a prefix several answers share leaves what they agree on and no more,
+ * so the next press is what walks them: pressing it four times is what a person
+ * does about a name that shares its first letters with four others.
+ */
+test("walks what still matches on a second ⇥", async () => {
+  const field = await browsingChannels();
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "read" } });
+  await fireEvent.keyDown(field, { key: "Tab" });
+  expect(field.value).toBe("reading");
+
+  await fireEvent.keyDown(field, { key: "Tab" });
+  expect(field.value).toBe("reading-notes");
+
+  // Round again: two matched what was typed, and neither is more the answer
+  // than the other.
+  await fireEvent.keyDown(field, { key: "Tab" });
+  expect(field.value).toBe("reading");
+});
+
+/** The walk is against what was typed; the field is where its answers are put. */
+test("keeps walking after typing again", async () => {
+  const field = await browsingChannels();
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "read" } });
+  await fireEvent.keyDown(field, { key: "Tab" });
+  await fireEvent.keyDown(field, { key: "Tab" });
+  expect(field.value).toBe("reading-notes");
+
+  await fireEvent.input(field, { target: { value: "field" } });
+  await fireEvent.keyDown(field, { key: "Tab" });
+
+  expect(field.value).toBe("field-recordings");
 });
 
 test("walks the narrowed list and takes the one it landed on", async () => {
@@ -2246,4 +2383,111 @@ test("marks a trigger tag in the chooser with the template it applies", async ()
   });
   // An ordinary tag is left as it was: only a tag with an effect is marked.
   expect(screen.getByRole("button", { name: "seedling" })).toBeTruthy();
+});
+
+/** A destination that says where a field starts is answered: it starts there. */
+test("draws a field's default and sends it", async () => {
+  const transport = serving([aDestination()], {
+    kind: "described",
+    capabilities: [CREATE_WITH_DEFAULT],
+  });
+
+  draw();
+  await choose(/Vault/);
+
+  const directory = (await screen.findByLabelText(
+    "directory",
+  )) as HTMLInputElement;
+  await vi.waitFor(() => {
+    expect(directory.value).toBe("inbox");
+  });
+
+  await commit();
+
+  await vi.waitFor(() => {
+    expect(sentTo(transport).map(routeOf)).toContain(
+      "POST /v1/items/one/route",
+    );
+  });
+  expect(await sent()).toContainEqual({
+    destination: VAULT,
+    capability: "create",
+    arguments: { directory: "inbox" },
+  });
+});
+
+/** Typed over is typed over, including emptied: a default is where a field starts. */
+test("keeps what is typed over a default", async () => {
+  serving([aDestination()], {
+    kind: "described",
+    capabilities: [CREATE_WITH_DEFAULT],
+  });
+
+  draw();
+  await choose(/Vault/);
+
+  const directory = (await screen.findByLabelText(
+    "directory",
+  )) as HTMLInputElement;
+  await vi.waitFor(() => {
+    expect(directory.value).toBe("inbox");
+  });
+
+  await fireEvent.input(directory, { target: { value: "" } });
+
+  expect(directory.value).toBe("");
+});
+
+/**
+ * A template's arguments *are* the decision it saved. A default written into a
+ * field it left empty would commit as a correction of it, and the record would
+ * stop naming the template.
+ */
+test("leaves a template's own arguments alone", async () => {
+  const transport = pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route === "GET /v1/templates") return json(200, { values: [RESEARCH] });
+    if (route === "GET /v1/items/one/route/resolve") {
+      return json(200, {
+        destination: VAULT,
+        capability: "create",
+        arguments: { directory: "research/2026-09-04" },
+      });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, {
+        kind: "described",
+        capabilities: [CREATE_WITH_DEFAULT],
+      });
+    }
+    if (route === "POST /v1/items/one/route") {
+      return json(200, {
+        id: "r",
+        item: "one",
+        state: "delivered",
+        target: {},
+      });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  draw();
+  await choose("research");
+
+  const directory = (await screen.findByLabelText(
+    "directory",
+  )) as HTMLInputElement;
+  expect(directory.value).toBe("research/2026-09-04");
+
+  await commit();
+
+  await vi.waitFor(() => {
+    expect(sentTo(transport).map(routeOf)).toContain(
+      "POST /v1/items/one/route",
+    );
+  });
+  expect(await sent()).toContainEqual({ template: RESEARCH.id });
 });

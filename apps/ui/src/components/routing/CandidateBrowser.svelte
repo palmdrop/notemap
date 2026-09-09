@@ -69,6 +69,13 @@
   /** Where `↑↓` stands, and whether it has been used since the list last changed. */
   let at = $state(0);
   let moved = $state(false);
+  /**
+   * What was typed by hand, held for as long as `⇥` is walking what matches it.
+   * The walk writes each answer into the field, so a second press matching
+   * against the field would be matching against its own last answer and find
+   * one thing: the channel it just put there.
+   */
+  let stem = $state<string | undefined>(undefined);
   /** Whether the whole answer has been asked for, past the handful drawn by default. */
   let expanded = $state(false);
 
@@ -181,6 +188,7 @@
       input?.focus();
       return;
     }
+    stem = undefined;
     history = [
       ...history,
       {
@@ -193,6 +201,7 @@
   }
 
   function back(): void {
+    stem = undefined;
     history = history.slice(0, -1);
   }
 
@@ -211,12 +220,24 @@
 
   function onkeydown(event: KeyboardEvent): void {
     if (event.key === "Tab" && !event.shiftKey) {
-      // With nothing to complete it does nothing, rather than handing focus to
-      // whatever is next: the line is what the composer is for, and leaving it
-      // is `⇧⇥` or the pointer.
+      // With nothing to complete and nothing matching it does nothing, rather
+      // than handing focus to whatever is next: the line is what the composer
+      // is for, and leaving it is `⇧⇥` or the pointer.
       event.preventDefault();
-      const finished = completed(entries, value, durable);
-      if (finished !== undefined) onchange(finished);
+      const typed = stem ?? value;
+
+      const finished = completed(entries, typed, durable);
+      if (finished !== undefined && finished !== value) {
+        stem = typed;
+        onchange(finished);
+        return;
+      }
+
+      // Completed as far as they agree, and there is still more than one: the
+      // key walks them from here. A name shares its first letters with four
+      // others far more often than it is the only one, and pressing `⇥` again
+      // is what a person does about it.
+      walk(typed);
       return;
     }
 
@@ -253,6 +274,26 @@
   }
 
   /**
+   * The next thing still matching what was typed, in the order the destination
+   * answered them, wrapping at the end. It takes the value rather than only
+   * lighting a row: the field is the value here, so a walk that left it alone
+   * would be a walk to nowhere.
+   */
+  function walk(typed: string): void {
+    const hits = narrowed(entries, typed).filter(
+      (entry) => entry.value !== undefined,
+    );
+    if (hits.length === 0) return;
+
+    const here = hits.findIndex((entry) => takenAs(entry, durable) === value);
+    const next = hits[(here + 1) % hits.length];
+    if (next === undefined) return;
+
+    stem = typed;
+    onchange(takenAs(next, durable));
+  }
+
+  /**
    * A title typed becomes the value it names, at the two moments the line is
    * done being typed — committing from it, and leaving it. Never on a
    * keystroke: "Reading" would become a channel while "Reading Notes" was
@@ -275,7 +316,11 @@
     <input
       bind:this={input}
       {value}
-      oninput={(event) => onchange(event.currentTarget.value)}
+      oninput={(event) => {
+        // Typed over: the walk is over too, and the field is the filter again.
+        stem = undefined;
+        onchange(event.currentTarget.value);
+      }}
       onblur={settle}
       {onkeydown}
       spellcheck="false"

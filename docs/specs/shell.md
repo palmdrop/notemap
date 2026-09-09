@@ -1,8 +1,18 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-08
+**Last updated**: 2026-09-09
 **Shipped**:
+
+- 2026-09-09 — **A template applied is a template tagged, and a field starts where its destination
+  says.** However a template is reached, the item ends up carrying its trigger tag: taking one from
+  the `where` list routes and then applies the tag, which the pool absorbs as classification rather
+  than firing a second copy, so the tag says why the item went where it went whichever way it was
+  filed. The other direction closes: a **trigger tag taken in the composer's own tag row files the
+  item**, so the composer closes on it rather than leaving a second decision half-made beside a
+  route already on its way. A field's `default` is drawn — a suggestion the person types over, never
+  written into a template's own arguments — and `⇥` in the schema-driven browse **walks what still
+  matches** once there is nothing left to complete.
 
 - 2026-09-08 — **A template browsed into a channel is rename-proof, and is offered no advice that
   cannot work.** A candidate may answer under two names — the one a person reads and the one that
@@ -454,6 +464,14 @@ and anything else is a box. Taking the option already taken **gives it back**, a
 being a value of its own — for a field whose absence means *inherit what the destination says*,
 there has to be a way back to it.
 
+**An argument the schema starts somewhere starts there** *(added 2026-09-09)*. A `default` an
+adapter declares is drawn into the field, where an empty box used to be — a destination that knows
+where most notes go should not make somebody type it every time. It is a **suggestion and not a
+value**: typed over it is gone, emptied it stays empty, and a field left alone is still absent from
+the request unless the schema requires it. It is not written into a decision a **template** started:
+what a template saved is the decision, and a default filling a field it deliberately left empty
+would commit as a correction of it and cost the record the template's name.
+
 #### The composer is for processing
 
 *(2026-09-05.)* The `where` step answers *what became of this item*, and a configured destination is
@@ -512,6 +530,23 @@ refuses to be corrected**: a person who took `research` and wants this one note 
 it, and what commits is the decision it became — the template where nothing was touched, the
 destination and arguments where something was. Which of the two went is not a thing the person
 chooses; it is read off whether they changed anything.
+
+**A template applied here carries its trigger tag onto the item** *(added 2026-09-09)*. The tag is
+what says why an item went where it went, and it read differently depending on which of two ways the
+same template was reached: fired by a tag it was there, taken in the composer it was not. So the
+composer routes and then tags. The order is the whole of it — the pool absorbs a trigger arriving
+where that template has already decided the item, so the tag classifies and files nothing. A
+template that declares no trigger tag has none to apply, and a decision the person **corrected** is
+their own: it commits as a destination and arguments, and their tags are not the composer's to
+write.
+
+**A trigger tag taken in the composer's own tag row closes it** *(added 2026-09-09)*. The row offers
+the same classification the collapsed row does, and a tag a template declared files the item — so
+pressing one while a destination is half-chosen used to leave two decisions in flight and route the
+item twice. It is one gesture and it is enough: the composer closes, the row stays open wearing what
+happened, and the corner's `routing · research` carries the cancel as it does for a tag applied
+anywhere else. Said on the press rather than on the pool's answer: whoever is holding a half-made
+decision has to be told before they can press it into a second copy.
 
 **A template that cannot apply is drawn with its reason and not removed**, on the rule below. The
 reasons are a stranded template, a destination that cannot be used, and a capability no longer
@@ -694,6 +729,15 @@ its slug — so completing to the label would leave the field holding something 
 delivered, and matching the label alone would empty the list the moment `⇥` resolved one to the
 other. A person types the title they know and the field ends up holding the slug it will be sent
 with, which is also what shows them what they picked.
+
+**Pressed again, `⇥` walks what still matches** *(added 2026-09-09)*. Completion stops where the
+answers stop agreeing, which for a list of channels is usually after a word or two — and a name that
+shares its first letters with four others is the ordinary case rather than the awkward one. So the
+second press takes the first answer still matching, the third the next, and the last wraps to the
+first. The walk is against **what was typed**, held aside for as long as it lasts: the field is
+where the walk puts its answers, so matching against the field would be matching against its own
+last answer and find one thing. Typing again ends the walk and the field is the filter once more.
+`↑↓` still walk the list drawn beneath, and neither key learns the other's job.
 
 **A title resolves to the value it names**, at the two moments the line is done being typed:
 committing from it, and leaving it. The whole of a title, or enough of one that a single answer is

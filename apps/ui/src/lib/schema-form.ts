@@ -21,6 +21,12 @@ export type Field = {
   /** Offered as a list rather than typed. Annotation only: these constrain nothing. */
   readonly examples?: readonly string[];
   /**
+   * What the destination says the field starts at, in the form an input holds.
+   * A suggestion the person may write over, never a value the request carries
+   * on its own: an untouched field is still absent unless it is required.
+   */
+  readonly preset?: string;
+  /**
    * The values the schema actually allows. Unlike `examples` these **are** the
    * field: a destination whose places are a fixed set — a board's columns, a
    * mailbox — says so here, and typing one from memory is not something to ask
@@ -50,6 +56,7 @@ export function fieldsOf(schema: Schema): readonly Field[] {
       const meta = propertyOf(property);
       const examples = examplesOf(meta);
       const options = stringsAt(meta, "enum");
+      const preset = presetOf(meta);
       return {
         name,
         required: required.includes(name),
@@ -59,11 +66,37 @@ export function fieldsOf(schema: Schema): readonly Field[] {
         ...(typeof meta["description"] === "string"
           ? { description: meta["description"] }
           : {}),
+        ...(preset === undefined ? {} : { preset }),
         askable: meta["x-notemap-candidates"] === true,
         offeredOnly: meta["x-notemap-offered-only"] === true,
         ...(examples === undefined ? {} : { examples }),
       };
     },
+  );
+}
+
+/**
+ * A schema's `default`, as the string an input holds. A list joins the way
+ * `typedFrom` joins one, so the two directions agree; anything else a schema
+ * may default to is not a shape this form draws, and is left to the field.
+ */
+function presetOf(meta: Record<string, unknown>): string | undefined {
+  const held = meta["default"];
+  if (typeof held === "string") return held;
+  if (!Array.isArray(held)) return undefined;
+
+  const strings = held.filter(
+    (each): each is string => typeof each === "string",
+  );
+  return strings.length === 0 ? undefined : strings.join(", ");
+}
+
+/** The fields that start at something, as an input's own values. */
+export function presetsFrom(fields: readonly Field[]): Record<string, string> {
+  return Object.fromEntries(
+    fields.flatMap((field) =>
+      field.preset === undefined ? [] : [[field.name, field.preset]],
+    ),
   );
 }
 

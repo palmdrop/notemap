@@ -13,10 +13,18 @@
   let {
     item,
     names,
+    onfired,
   }: {
     item: string;
     /** What the item already carries, so the pool's own list draws as taken or not. */
     names: readonly string[];
+    /**
+     * A trigger tag was applied here, which files the item. Said as soon as the
+     * tag is taken rather than when the pool answers: whoever is holding a
+     * half-made decision beside this has to be told the item is spoken for
+     * before they can press it into a second copy.
+     */
+    onfired?: () => void;
   } = $props();
 
   const inUse = client.tags.inUse;
@@ -73,6 +81,7 @@
     dropped = dropped.filter((each) => each !== name);
     taken = [...taken, name];
     void tagged(name);
+    if (fires(name) !== undefined) onfired?.();
   }
 
   /** A trigger tag files the item, so what it did is said as soon as it is known. */

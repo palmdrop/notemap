@@ -203,6 +203,7 @@
     item={subject}
     onrouted={(record) => went(subject, record)}
     ondiscarded={() => keep(subject)}
+    onfired={() => keep(subject)}
     onclose={() => (routing = undefined)}
   />
 {/if}
