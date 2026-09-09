@@ -162,11 +162,13 @@ test("costs the queue neither its order nor its place", async () => {
     expect(window.scrollTo).toHaveBeenCalledWith({ top: 240 });
   });
   expect(read(client.queue).order).toBe("newest-first");
+  // Arriving reads the queue again, membership being the one thing a visit
+  // elsewhere can cost it — and reads it from the end the reader chose.
   expect(
     transport.sent
       .filter((request) => routeOf(request) === "GET /v1/queue")
       .map((request) => new URL(request.url).searchParams.get("order")),
-  ).toEqual(["newest-first"]);
+  ).toEqual(["newest-first", "newest-first"]);
 });
 
 const ROUTED = {

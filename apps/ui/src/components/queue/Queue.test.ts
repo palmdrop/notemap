@@ -64,7 +64,7 @@ function scrolledTo(at: number) {
   return fireEvent.scroll(window);
 }
 
-test("puts the view back where the person left it, without asking the pool", async () => {
+test("puts the view back where the person left it, and reads the queue again", async () => {
   pool(queued("one"));
 
   render(Queue);
@@ -77,7 +77,9 @@ test("puts the view back where the person left it, without asking the pool", asy
   await vi.waitFor(() => {
     expect(window.scrollTo).toHaveBeenCalledWith({ top: 240 });
   });
-  expect(asked()).toEqual(["GET /v1/queue"]);
+  // The place is the shell's own and costs nothing. The rows are not: what the
+  // queue holds changes while the reader is elsewhere, so arriving is a read.
+  expect(asked()).toEqual(["GET /v1/queue", "GET /v1/queue"]);
 });
 
 test("discards with the pool unreachable, and says what it cannot queue", async () => {
