@@ -129,7 +129,8 @@ The full-stack suite is deliberately outside all of that. `pnpm -r test` skips i
 `test` script, and `pnpm test:stack` runs it: a daemon spawned per test, on a real port, driven by
 a real client. Run it after a change that crosses the layers — the HTTP surface, the host's wiring,
 the client's transport, the config file — or when asked, and leave it alone otherwise. CI runs it
-on every push, which is what keeps it honest without anyone paying for it locally.
+on every pull request and on every push to `main`, which is what keeps it honest without anyone
+paying for it locally.
 
 Run the tests as `pnpm -r --silent test`. It prints nothing — not even the failures — and says
 what happened through its exit code alone, which is all a green run has to say and is worth the
