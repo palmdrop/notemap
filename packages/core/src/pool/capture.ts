@@ -33,7 +33,7 @@ export async function capture(
   // capture arrives with has to expand `{{item}}` against the item it is about
   // to become. A replay leaves it unused, which costs a number.
   const id = envelope.id ?? ports.ids.next<ItemId>();
-  const proposed = recorded(ports, envelope, id);
+  const proposed = recorded(envelope, id);
   const { firings, spent } = await fired(config, ports, proposed, signal);
   const record = without(proposed, spent);
 
@@ -112,11 +112,7 @@ type Firing = {
 };
 
 /** What the envelope says the item is, before the pool has agreed to hold it. */
-function recorded(
-  ports: PoolPorts,
-  envelope: CaptureEnvelope,
-  id: ItemId,
-): ItemRecord {
+function recorded(envelope: CaptureEnvelope, id: ItemId): ItemRecord {
   const by: Agent = { kind: "source", source: envelope.source };
 
   return {
