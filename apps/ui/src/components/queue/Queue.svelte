@@ -3,7 +3,7 @@
 
   import { page } from "$app/state";
 
-  import type { Item, RoutingRecord } from "@notemap/client";
+  import { rank, type Item, type RoutingRecord } from "@notemap/client";
 
   import CaptureRow from "$components/capture/CaptureRow.svelte";
   import Drained from "$components/queue/Drained.svelte";
@@ -78,7 +78,7 @@
    * By rank rather than by the neighbour it had, because the key is capture
    * time and a row that returns anywhere else is a row that moved.
    */
-  const rows = $derived.by<Item[]>(() => {
+  const rows = $derived.by<readonly Item[]>(() => {
     const live = $queue.items;
     const kept = held;
     if (kept === undefined || live.some((item) => item.id === kept.id))
@@ -92,9 +92,9 @@
 
   /** Whether one row sorts after another, in the order the surface is read in. */
   function behind(item: Item, than: Item): boolean {
-    const one = `${item.createdAt},${item.id}`;
-    const other = `${than.createdAt},${than.id}`;
-    return $queue.order === "newest-first" ? one < other : one > other;
+    return $queue.order === "newest-first"
+      ? rank(item) < rank(than)
+      : rank(item) > rank(than);
   }
 
   onMount(() => {
@@ -143,13 +143,25 @@
     );
     keep(item);
   }
+
+  /** Whether the key was pressed in something a person is writing in. */
+  function writing(target: EventTarget | null): boolean {
+    return (
+      target instanceof HTMLElement &&
+      (target.isContentEditable ||
+        ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+    );
+  }
 </script>
 
 <svelte:window
   onkeydown={(event) => {
-    // The composer is a modal and answers this itself while it is up.
+    // The composer is a modal and answers this itself while it is up, and a
+    // field answers for its own entry: closing the row under a half-written tag
+    // would take the entry with it.
     if (event.key !== "Escape" || routing !== undefined) return;
-    if (opened !== undefined) close();
+    if (writing(event.target) || opened === undefined) return;
+    close();
   }}
 />
 
