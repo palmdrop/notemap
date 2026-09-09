@@ -1,7 +1,7 @@
 # 43. `config.toml` holds what an install is
 
 **Date**: 2026-09-09
-**Status**: Accepted — narrows [ADR 20](0020-destinations-are-pool-state.md)
+**Status**: Accepted — extends [ADR 20](0020-destinations-are-pool-state.md)
 **Deciders**: palmdrop, with Claude
 
 ---
