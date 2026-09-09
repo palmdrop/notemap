@@ -51,6 +51,9 @@
   own decision and takes no tag.
 - [x] ~~adding a routing tag from within the composer is confusing~~ — closed 2026-09-09: a trigger
   tag taken in the composer's own tag row closes the composer, the tag being the whole decision.
+- [x] ~~the typed line drew a `+ filename` under a note it was about to append to~~ — closed
+  2026-09-09: a `+` is for what the delivery will make, so appending draws none and the note's own
+  row wears the accent as the row the line names.
 - [x] ~~A schema field's **default** is not drawn~~ — closed 2026-09-09, as a suggestion the person
   types over and never written into a template's own arguments.
 - [ ] Tag picking is still free entry beside a datalist rather than the shell's own

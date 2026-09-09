@@ -95,6 +95,8 @@ export type Row = {
   readonly onPath: boolean;
   /** Not there yet: typed, and about to be made by the delivery. Never takeable. */
   readonly made?: boolean;
+  /** What the line names, and it is already there: the note is going into this one. */
+  readonly held?: boolean;
 };
 
 /**
@@ -169,12 +171,17 @@ export function levelAt(
 export function pending(
   path: TypedPath,
   making: readonly string[],
-  leaf: string,
+  /**
+   * Absent where the note lands on a file that is already there. The tree is
+   * drawing that file, and a `+` beside it would promise a second one.
+   */
+  leaf?: string,
 ): readonly Row[] {
   const from = path.complete.length - making.length;
   const settled = path.complete.slice(0, from);
+  const labels = leaf === undefined ? making : [...making, leaf];
 
-  return [...making, leaf].map((label, at) => {
+  return labels.map((label, at) => {
     const folder = at < making.length;
     // The scope it would have, so it reads as a folder and indents like one.
     const scope = [...settled, ...making.slice(0, at + 1)].join("/");
@@ -186,6 +193,28 @@ export function pending(
       made: true,
     };
   });
+}
+
+/**
+ * Marks the file the line landed on, where what it named is already there.
+ * Appending draws no `+`: the row is the note's own, and `Walked` reads `held`
+ * as the row whose value the field holds, which is what this one is.
+ */
+export function landedOn(
+  rows: readonly Row[],
+  path: TypedPath,
+  leaf: string,
+): readonly Row[] {
+  const depth = filtered(path);
+
+  return rows.map((row) =>
+    row.made === true ||
+    row.depth !== depth ||
+    isFolder(row.entry) ||
+    row.entry.label !== leaf
+      ? row
+      : { ...row, held: true },
+  );
 }
 
 /**

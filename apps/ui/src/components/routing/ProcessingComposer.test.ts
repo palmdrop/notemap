@@ -940,6 +940,40 @@ test("stores what the person meant, not the word that was drawn", async () => {
   });
 });
 
+/**
+ * A `+` says the delivery will make this, and appending makes nothing: drawn
+ * under the note it is going into, it reads as a second note beside it.
+ */
+test("draws no + where the line lands on a note that is there", async () => {
+  servingVault([{ label: "decisions.md", value: "decisions.md" }]);
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+
+  const line = await screen.findByRole("combobox");
+  await fireEvent.input(line, { target: { value: "decisions.md" } });
+  await screen.findByText("append");
+
+  expect(screen.queryByText("+ decisions.md")).toBeNull();
+  // The note's own row instead, marked as the one the line holds.
+  const row = screen.getByRole("option", { name: "decisions.md" });
+  expect(row.className).toContain("text-accent");
+  expect(row.getAttribute("aria-disabled")).toBeNull();
+});
+
+test("still draws a + for a note that is not there", async () => {
+  servingVault([{ label: "decisions.md", value: "decisions.md" }]);
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+
+  const line = await screen.findByRole("combobox");
+  await fireEvent.input(line, { target: { value: "thoughts.md" } });
+  await screen.findByText("create");
+
+  expect(screen.getByText("+ thoughts.md")).toBeDefined();
+});
+
 /** The one capability that promises never to write into somebody's note. */
 test("shift-enter stores create under the free name it offered", async () => {
   const transport = servingVault([

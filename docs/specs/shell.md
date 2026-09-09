@@ -4,6 +4,12 @@
 **Last updated**: 2026-09-09
 **Shipped**:
 
+- 2026-09-09 — **A note that is there is not drawn as one to be made.** The typed line drew the
+  note under the folder it lands in with a `+` whether or not it was there, so appending to a note
+  showed the note and a `+` copy of it beneath — a promise of a second file, which is `⇧⏎`'s job
+  and not what committing would do. The `+` is now the tail that is genuinely missing; the note's
+  own row wears the accent instead, as the row the line names.
+
 - 2026-09-09 — **A template applied is a template tagged, and a field starts where its destination
   says.** However a template is reached, the item ends up carrying its trigger tag: taking one from
   the `where` list routes and then applies the tag, which the pool absorbs as classification rather
@@ -653,7 +659,13 @@ itself under those. Where they will be, rather than named off to one side. The w
 where there is something to read it off: a level that has not answered is no evidence either way,
 and nothing under a folder that is not there can be looked up at all. **The name a derived leaf
 would get is not said beside the word** *(amended 2026-09-04)*: the tree draws it where the note
-lands, which is where the eye already is, and saying it twice made the state word a sentence. It is **drawn and never stored**: what is stored says *put this here*, and
+lands, which is where the eye already is, and saying it twice made the state word a sentence.
+**Nothing is drawn with a `+` where it is already there** *(amended 2026-09-09; the note was drawn
+with one either way)*. A `+` says the delivery will make this, so a row for the note under the note
+it is going into promises a second file beside it — which is what `⇧⏎` is for and the opposite of
+what committing would do. Appending, the note's own row is the one the tree already holds, and it
+takes the accent as **the row the line names**: the same mark every walked list uses for the row
+whose value the field holds, and takeable as it always was. It is **drawn and never stored**: what is stored says *put this here*, and
 the adapter decides again at delivery, when the answer is true
 ([ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md)). Because the word is
 read rather than chosen, **`do` is not a step here**: the capability is settled, and the one escape

@@ -8,6 +8,7 @@ import {
   marked,
   ranked,
   matching,
+  landedOn,
   levelAt,
   parsePath,
   pathOf,
@@ -442,6 +443,52 @@ describe("the path that is not there yet", () => {
     const path = parsePath("projects/notemap/");
 
     expect(rowsOf(VAULT, path)).toEqual(rowsOf(VAULT, path, []));
+  });
+
+  /**
+   * Appending, the file is one the tree is already drawing. A `+` beneath it
+   * says a second one is about to be made, which is the opposite of what
+   * committing would do.
+   */
+  test("draws no note where the one it lands on is already there", () => {
+    const path = parsePath("projects/notemap/readme.md");
+
+    expect(pending(path, [])).toEqual([]);
+    expect(
+      rowsOf(VAULT, path, pending(path, [])).map((row) => [
+        textOf(row.entry),
+        row.made,
+      ]),
+    ).toEqual([
+      ["projects/", undefined],
+      ["notemap/", undefined],
+      ["readme.md", undefined],
+      ["reading/", undefined],
+    ]);
+  });
+
+  test("marks the file it lands on as the one the line holds", () => {
+    const path = parsePath("projects/notemap/readme.md");
+    const rows = landedOn(rowsOf(VAULT, path), path, "readme.md");
+
+    expect(
+      rows.filter((row) => row.held === true).map((row) => row.entry.label),
+    ).toEqual(["readme.md"]);
+    // Still takeable: it is the destination's own entry, not a promise.
+    expect(reachable(rows).map((row) => row.entry.label)).toContain(
+      "readme.md",
+    );
+  });
+
+  /** A folder sharing the name is not where a note lands. */
+  test("marks nothing where the name at that depth is a folder", () => {
+    const path = parsePath("projects/notemap/notes");
+
+    expect(
+      landedOn(rowsOf(VAULT, path), path, "notes").some(
+        (row) => row.held === true,
+      ),
+    ).toBe(false);
   });
 });
 
