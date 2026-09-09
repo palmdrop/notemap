@@ -5,6 +5,7 @@ import { join } from "node:path";
 
 import type { Hono } from "hono";
 
+import { PAYLOAD_TYPES } from "@notemap/core";
 import type {
   AssetId,
   BlobStore,
@@ -30,20 +31,9 @@ import { openPool, systemClock } from "../ports";
 export const WEB = "web" as SourceId;
 export const NOTE = "note" as PayloadTypeName;
 
-/** The example config, as core takes it. */
+/** The config as core takes it, which is what the daemon hands it. */
 export const CONFIG: PoolConfig = {
-  sources: [{ id: WEB, autoRequest: [] }],
-  payloadTypes: [
-    {
-      name: NOTE,
-      contentSchema: {
-        type: "object",
-        additionalProperties: false,
-        properties: { text: { type: "string" } },
-      },
-    },
-  ],
-  enrichments: [],
+  payloadTypes: PAYLOAD_TYPES,
   retry: {
     maxAttempts: 5,
     initialBackoff: 1000 as Duration,

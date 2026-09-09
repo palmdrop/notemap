@@ -5,15 +5,8 @@ import { isAbsolute, join, resolve } from "node:path";
 import { parse as parseToml } from "smol-toml";
 import { z } from "zod";
 
-import type {
-  Duration,
-  EnrichmentName,
-  JsonObject,
-  JsonSchema,
-  PayloadTypeName,
-  PoolConfig,
-  SourceId,
-} from "@notemap/core";
+import { PAYLOAD_TYPES } from "@notemap/core";
+import type { Duration, JsonObject, PoolConfig } from "@notemap/core";
 
 import {
   DEFAULT_DELIVERY,
@@ -91,8 +84,6 @@ export type DeliveryConfig = {
   readonly batch: number;
 };
 
-const jsonSchema = z.record(z.string(), z.unknown());
-
 /** Keys are core's own names. Absent lists mean empty. */
 const fileSchema = z.object({
   daemon: z
@@ -156,30 +147,6 @@ const fileSchema = z.object({
       z.looseObject({
         kind: z.string().min(1),
         name: z.string().min(1),
-      }),
-    )
-    .default([]),
-  sources: z
-    .array(
-      z.object({
-        id: z.string().min(1),
-        autoRequest: z.array(z.string()).default([]),
-      }),
-    )
-    .default([]),
-  payloadTypes: z
-    .array(
-      z.object({
-        name: z.string().min(1),
-        contentSchema: jsonSchema,
-      }),
-    )
-    .default([]),
-  enrichments: z
-    .array(
-      z.object({
-        name: z.string().min(1),
-        appliesTo: z.array(z.string()).default([]),
       }),
     )
     .default([]),
@@ -481,18 +448,7 @@ export function parseConfig(source: string, from: string): LoadedConfig {
     },
     accounts: readAccounts(file.accounts, from),
     poolConfig: {
-      sources: file.sources.map((source) => ({
-        id: source.id as SourceId,
-        autoRequest: source.autoRequest as EnrichmentName[],
-      })),
-      payloadTypes: file.payloadTypes.map((type) => ({
-        name: type.name as PayloadTypeName,
-        contentSchema: type.contentSchema as JsonSchema,
-      })),
-      enrichments: file.enrichments.map((enrichment) => ({
-        name: enrichment.name as EnrichmentName,
-        appliesTo: enrichment.appliesTo,
-      })),
+      payloadTypes: PAYLOAD_TYPES,
       retry: {
         maxAttempts: retry.maxAttempts,
         initialBackoff: retry.initialBackoff as Duration,

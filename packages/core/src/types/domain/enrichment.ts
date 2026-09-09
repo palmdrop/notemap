@@ -46,9 +46,3 @@ export type Artifact = {
 };
 
 export type ArtifactDraft = Omit<Artifact, "id" | "by" | "createdAt">;
-
-/** Deliberately partial: what an enrichment needs, and how needs resolve, is unsettled. */
-export type EnrichmentDescriptor = {
-  readonly name: EnrichmentName;
-  readonly appliesTo: readonly string[];
-};

@@ -6,11 +6,7 @@ import type { PoolIdentity } from "#types/domain/ids";
 
 import { createPool } from "./pool";
 
-const CONFIG = {
-  sources: [],
-  payloadTypes: [],
-  enrichments: [],
-} as unknown as PoolConfig;
+const CONFIG = { payloadTypes: [] } as unknown as PoolConfig;
 
 describe("which pool this is", () => {
   it("is answered off the store, so a host never reaches past the pool for it", async () => {

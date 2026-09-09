@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { PAYLOAD_TYPES } from "@notemap/core";
+
 import {
   cookieOptionsFor,
   reachedElsewhere,
@@ -58,20 +60,7 @@ describe("the example config", () => {
       batch: 4,
     });
     expect(config.poolConfig.sweep).toEqual({ grace: 86_400_000 });
-    expect(config.poolConfig.sources).toEqual([
-      { id: "web-manual", autoRequest: [] },
-      { id: "web-image", autoRequest: [] },
-    ]);
-    expect(config.poolConfig.payloadTypes).toEqual([
-      {
-        name: "note",
-        contentSchema: {
-          type: "object",
-          additionalProperties: false,
-          properties: { text: { type: "string" } },
-        },
-      },
-    ]);
+    expect(config.poolConfig.payloadTypes).toBe(PAYLOAD_TYPES);
   });
 });
 
@@ -95,13 +84,7 @@ describe("the container config", () => {
       leaseForMs: 300_000,
       batch: 4,
     });
-    expect(config.poolConfig.sources.map((source) => source.id)).toEqual([
-      "web-manual",
-      "web-image",
-    ]);
-    expect(config.poolConfig.payloadTypes.map((type) => type.name)).toEqual([
-      "note",
-    ]);
+    expect(config.poolConfig.payloadTypes).toBe(PAYLOAD_TYPES);
   });
 
   /**
@@ -145,24 +128,15 @@ describe("what a config may leave out", () => {
     // Assets are not optional, so their absence is a default rather than an off switch.
     expect(config.assets.root).toBe(defaultAssetRoot());
     expect(config.poolConfig).toMatchObject({
-      sources: [],
-      payloadTypes: [],
-      enrichments: [],
+      payloadTypes: PAYLOAD_TYPES,
       retry: { maxAttempts: 5 },
     });
   });
 
-  it("takes a payload type as its name and its schema, and nothing else", () => {
-    const config = parse(`
-      [[payloadTypes]]
-      name = "note"
-      [payloadTypes.contentSchema]
-      type = "object"
-    `);
-
-    expect(config.poolConfig.payloadTypes).toEqual([
-      { name: "note", contentSchema: { type: "object" } },
-    ]);
+  /** What a capture may be is core's, so an empty file still gets it. */
+  it("takes the payload types from core rather than from the file", () => {
+    expect(parse("").poolConfig.payloadTypes).toBe(PAYLOAD_TYPES);
+    expect(PAYLOAD_TYPES.map((type) => type.name)).toEqual(["note"]);
   });
 });
 
@@ -213,10 +187,17 @@ describe("a key this daemon does not know", () => {
     ]);
   });
 
-  it("names one inside a list, by the entry it was in", () => {
-    expect(ignored(`[[sources]]\nid = "web"\nautoTag = ["a"]`)).toEqual([
-      "sources.0.autoTag",
-    ]);
+  /**
+   * Nothing inside an account is this file's to know: what a kind needs beyond
+   * a kind and a name is checked against that kind's schema, which never sees a
+   * key stripped here.
+   */
+  it("keeps what it does not know inside an account, which is all of it", () => {
+    expect(
+      ignored(
+        `[[accounts]]\nkind = "webdav"\nname = "n"\nbaseUrl = "http://x"\nusername = "u"\npasswordEnv = "P"`,
+      ),
+    ).toEqual([]);
   });
 
   it("names every one of them, rather than stopping at the first", () => {
@@ -226,22 +207,17 @@ describe("a key this daemon does not know", () => {
     ]);
   });
 
-  /** A schema is open JSON, so nothing in one is a key this daemon could know. */
-  it("leaves a payload type's content schema alone", () => {
-    const source = `
-      [[payloadTypes]]
-      name = "text"
-      [payloadTypes.contentSchema]
-      type = "object"
-      [payloadTypes.contentSchema.properties.text]
-      type = "string"
-    `;
-
-    expect(ignored(source)).toEqual([]);
-    expect(parse(source).poolConfig.payloadTypes[0]?.contentSchema).toEqual({
-      type: "object",
-      properties: { text: { type: "string" } },
-    });
+  /** The blocks that stopped meaning anything, named whole rather than key by key. */
+  it("ignores a block this file no longer holds", () => {
+    expect(ignored(`[[sources]]\nid = "web"\nautoRequest = []`)).toEqual([
+      "sources",
+    ]);
+    expect(ignored(`[[payloadTypes]]\nname = "note"`)).toEqual([
+      "payloadTypes",
+    ]);
+    expect(ignored(`[[enrichments]]\nname = "transcribe"`)).toEqual([
+      "enrichments",
+    ]);
   });
 
   it("says nothing about a file it understood entirely", () => {
@@ -265,12 +241,6 @@ describe("a config the daemon will not run on", () => {
 
   it("refuses a port that is not one", () => {
     expect(() => parse(`[daemon]\nport = 70000`)).toThrow(/port/);
-  });
-
-  it("refuses a payload type with no schema", () => {
-    expect(() => parse(`[[payloadTypes]]\nname = "text"`)).toThrow(
-      /contentSchema/,
-    );
   });
 });
 

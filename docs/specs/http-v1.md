@@ -1650,7 +1650,10 @@ remains the interop surface; `/docs` is a convenience over it.
   [ADR 20](../adr/0020-destinations-are-pool-state.md)). A machine write flattens it — parse and
   re-emit returns the values and drops every comment, which is what the format was chosen for. What
   a person edits from the UI is pool state, and what stays in the file is how the daemon runs:
-  paths, ports, mirror, sweep, delivery cadence, payload types, sources and enrichments.
+  paths, ports, mirror, sweep, delivery cadence and the accounts that carry a password.
+  *Narrowed 2026-09-09*: the payload types, the source registry and the enrichment list left the
+  file, the first because it is core's own and the other two unread
+  ([ADR 43](../adr/0043-config-holds-what-an-install-is.md)).
 - **An unrecognised key warns; a value that cannot be honoured refuses** (decided 2026-08-17).
   Unknown keys and tables are named in a startup warning and ignored, so an upgrade or a downgrade
   never leaves the daemon unable to start over a block it does not know. A key it does know, with a

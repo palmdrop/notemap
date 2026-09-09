@@ -144,9 +144,9 @@ function validate(
   ports: PoolPorts,
   envelope: CaptureEnvelope,
 ): CaptureRefusal | undefined {
-  // `config.sources` is a policy registry, not a guest list: a source absent
-  // from it captures normally, with no policy attached. `unknown-asset` needs
-  // the pool, so it is decided inside the transaction.
+  // A source is never checked: any id captures, and which sources exist is
+  // read back off the items themselves. `unknown-asset` needs the pool, so it
+  // is decided inside the transaction.
   return checkPayload(config, ports, envelope.payload);
 }
 
