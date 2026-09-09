@@ -68,6 +68,12 @@ jobs:
   image:
     runs-on: ubuntu-latest
 
+    # `release.yml` builds the image on `main` and on a `v*` tag, and pushes what
+    # it built. The condition is that trigger, negated: this covers everywhere
+    # else — a pull request, a branch — so a Dockerfile that does not build costs
+    # a re-run rather than a version.
+    if: github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/v')
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -75,9 +81,6 @@ jobs:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Nothing else here builds it, and the release workflow only runs once a
-      # tag is already on origin — where a Dockerfile that does not build costs
-      # a version rather than a re-run.
       - name: Build the image
         uses: docker/build-push-action@v6
         with:
