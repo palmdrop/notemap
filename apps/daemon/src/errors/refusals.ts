@@ -211,9 +211,10 @@ export const PARAMETER_STATUS = {
 export const SUBJECT_STATUS = { "no-such-item": 404 } as const;
 
 /**
- * The route's own check on `GET /v1/destinations/{id}/candidates`, on the same
- * terms `capability-undeclared` is refused when routing an item: the request
- * was understood and declined before the destination was asked anything.
+ * The routes' own check on `GET /v1/destinations/{id}/candidates` and on
+ * `/named`, on the same terms `capability-undeclared` is refused when routing
+ * an item: the request was understood and declined before the destination was
+ * asked anything.
  */
 export const CANDIDATES_REQUEST_STATUS = {
   "capability-undeclared": 422,

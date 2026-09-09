@@ -134,6 +134,7 @@ const noDestinations: Destinations = {
   describe: () => absent("destination kind"),
   deliver: () => absent("destination kind"),
   candidates: () => absent("destination kind"),
+  naming: () => absent("destination kind"),
   preview: () => absent("destination kind"),
   probe: () => absent("destination kind"),
 };

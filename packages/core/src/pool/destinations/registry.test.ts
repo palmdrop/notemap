@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { fakeDestinationRow } from "#testing/destination";
 import type { DestinationKindAdapter } from "#types/api/ports";
-import type { CandidatesAnswer } from "#types/domain/destination";
+import type { CandidatesAnswer, NamingAnswer } from "#types/domain/destination";
 import type { CapabilityName, DestinationKindName } from "#types/domain/ids";
 
 import { NotOffered } from "./candidates";
@@ -15,8 +15,12 @@ const answer: CandidatesAnswer = {
   truncated: false,
 };
 
+const named: NamingAnswer = {
+  entry: { label: "Reading", value: "reading", durable: "12345" },
+};
+
 function adapter(
-  offering: { candidates?: boolean; probe?: boolean } = {},
+  offering: { candidates?: boolean; naming?: boolean; probe?: boolean } = {},
 ): DestinationKindAdapter {
   return {
     name: FILESYSTEM,
@@ -25,6 +29,9 @@ function adapter(
     deliver: () => Promise.resolve({ kind: "delivered" }),
     ...(offering.candidates === true
       ? { candidates: () => Promise.resolve(answer) }
+      : {}),
+    ...(offering.naming === true
+      ? { naming: () => Promise.resolve(named) }
       : {}),
     ...(offering.probe === true ? { probe: () => Promise.resolve() } : {}),
   };
@@ -51,6 +58,35 @@ describe("the registry's candidates dispatch", () => {
       destinations.candidates(vault, {
         capability: "create-note" as CapabilityName,
         field: "directory",
+      }),
+    ).rejects.toThrow(NotOffered);
+  });
+});
+
+describe("the registry's naming dispatch", () => {
+  it("forwards to the adapter's own naming where it has one", async () => {
+    const destinations = destinationRegistry([adapter({ naming: true })]);
+    const vault = fakeDestinationRow({ kind: FILESYSTEM });
+
+    await expect(
+      destinations.naming(vault, {
+        capability: "create-note" as CapabilityName,
+        field: "channel",
+        value: "12345",
+      }),
+    ).resolves.toEqual(named);
+  });
+
+  /** A kind whose values are their own names has none, which is the right answer. */
+  it("rejects with NotOffered where the registered adapter has none", async () => {
+    const destinations = destinationRegistry([adapter()]);
+    const vault = fakeDestinationRow({ kind: FILESYSTEM });
+
+    await expect(
+      destinations.naming(vault, {
+        capability: "create-note" as CapabilityName,
+        field: "channel",
+        value: "12345",
       }),
     ).rejects.toThrow(NotOffered);
   });

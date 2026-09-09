@@ -165,13 +165,15 @@
 - [ ] are.na destination:
   - ~~tabbing multiple times does not move composer cursor to next channel that matches the inputted
     text~~ — closed 2026-09-09: the second press walks what still matches what was typed.
-  - are.na templates resolve to channel ID, which is good, but frontend now shows ID instead of
-    channel title. Frontend should show title while internally resolve to the ID. Narrowed twice:
-    **inside the composer the list under the field already draws the title**, since the value is
-    what narrows it, and as of 2026-09-09 the **template form's own line reads the title** while the
-    field keeps the number. What is left is the two surfaces that ask the destination nothing — the
-    settings template list and the routing record — where a title costs an ask on draw or a label
-    stored beside the value.
+  - ~~are.na templates resolve to channel ID, but the frontend shows the ID instead of the channel
+    title~~ — closed 2026-09-09 for the surface it was raised about: the template form's line reads
+    the title while the field keeps the number, off the browse's own page where that carries it and
+    off `GET /v1/destinations/{id}/named` where it does not
+    ([ADR 44](adr/0044-naming-a-value-is-a-second-question-a-destination-answers.md)).
+    Still open for **the settings template list and the routing record**, which draw a saved
+    argument without asking any destination anything. Both are now one ask away rather than
+    blocked — what they need is a place to put it, since a list of twenty templates asking twenty
+    times on draw is not obviously the right shape.
 - [ ] **The shell picks a browse control by destination kind name.**
   `apps/ui/src/lib/candidate-browsers.ts` maps `filesystem` and `webdav` to the typed line and
   everything else to the flat one, so a third filesystem-like kind needs a UI edit to get the tree —

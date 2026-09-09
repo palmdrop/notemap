@@ -34,6 +34,7 @@ import {
 import {
   createDestinationRequestSchema,
   destinationCandidatesSchema,
+  destinationNamedSchema,
   destinationRememberedSchema,
   destinationDescriptionSchema,
   destinationKindsSchema,
@@ -763,6 +764,54 @@ export const destinationCandidatesRoute = createRoute({
   },
 });
 
+const namedQuery = z.object({
+  capability: z
+    .string()
+    .min(1)
+    .openapi({
+      param: { name: "capability", in: "query" },
+      description: "One the destination declared. Anything else is refused.",
+      example: "create",
+    }),
+  field: z
+    .string()
+    .min(1)
+    .openapi({
+      param: { name: "field", in: "query" },
+      description:
+        "A property of that capability's `argumentsSchema` carrying `x-notemap-candidates`. Anything else is refused.",
+      example: "channel",
+    }),
+  value: z.string().openapi({
+    param: { name: "value", in: "query" },
+    description:
+      "What the field holds, in whichever of an entry's forms it ended up holding — a destination that answers for one answers for both. Empty names nothing.",
+    example: "12345",
+  }),
+});
+
+export const destinationNamedRoute = createRoute({
+  method: "get",
+  path: "/v1/destinations/{id}/named",
+  summary: "Ask one destination what a value its field holds is called",
+  description:
+    "`/candidates` asks what a field could hold and answers a page; this asks what one thing it holds is called and answers one entry. Separate because a page is capped and may be truncated, and a value a surface is already holding is exactly the one a truncated page may never mention — a routing template pinned to an are.na channel outside the first page has no name in the browse, and this is the only way to read one back. The same checks `/candidates` makes, made here for the same reason. An `answered` carrying no `entry` is a true answer: the destination has nothing by that name, which is what a place typed by hand looks like.",
+  request: { params: destinationId, query: namedQuery },
+  responses: {
+    200: {
+      description:
+        "What it answered: the entry, nothing by that name, a refusal the destination itself gave, or a kind that does not offer this.",
+      content: { [JSON_MEDIA_TYPE]: { schema: destinationNamedSchema } },
+    },
+    404: errorResponse("No destination has that id.", 404, DESTINATION_STATUS),
+    422: errorResponse(
+      "The capability was not declared, or the field is not one that can be asked about.",
+      422,
+      CANDIDATES_REQUEST_STATUS,
+    ),
+  },
+});
+
 export const destinationProbeRoute = createRoute({
   method: "get",
   path: "/v1/destinations/{id}/probe",
@@ -1370,6 +1419,7 @@ export const ROUTES = [
   destinationKindsRoute,
   destinationDescriptionRoute,
   destinationCandidatesRoute,
+  destinationNamedRoute,
   destinationProbeRoute,
   destinationRememberedRoute,
   updateDestinationRoute,

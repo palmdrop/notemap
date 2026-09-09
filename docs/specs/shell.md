@@ -4,10 +4,14 @@
 **Last updated**: 2026-09-09
 **Shipped**:
 
-- 2026-09-09 — **A lasting name is read back as the name a person knows.** Where a field may hold
-  only what the destination already has, the line reads the entry's label while the field keeps the
-  value — so a template browsed into an are.na channel says `Reading` rather than `12345`, which is
-  what taking the lasting form cost when it landed.
+- 2026-09-09 — **A lasting name is read back as the name a person knows, however many channels the
+  account has.** Where a field may hold only what the destination already has, the line reads the
+  entry's label while the field keeps the value — so a template browsed into an are.na channel says
+  `Reading` rather than `12345`, which is what taking the lasting form cost when it landed. The
+  browse's own page answers it where it can, and where it cannot the destination is **asked what
+  that one value is called** — a page is capped, and the channel a template is pinned to is as
+  likely to be outside it as in it.
+  ([ADR 44](../adr/0044-naming-a-value-is-a-second-question-a-destination-answers.md))
 
 - 2026-09-09 — **The `⇥` walk reaches every answer, the log keeps an oldest-first walk, and a
   subject says the capture's own words wherever a surface has only its id.** The walk completed
@@ -784,6 +788,13 @@ that fires for months wants a name that cannot rot. Matching and completion cons
 entry has, so a title, a slug and an ID all find the same channel and the row still marks as taken
 whichever form the field ended up holding.
 
+**A name the page did not carry is asked for** *(2026-09-09)*. Reading a value back off the
+browse's own answer works exactly as far as that answer reaches, and it is one page — are.na's is
+one on purpose. So where nothing on the page answers for what the field holds, the destination is
+asked what that value is called, through `/named`. Only then: a channel the browse already listed
+costs no request at all. What comes back with no name is left exactly as it stands, which is what a
+place typed by hand looks like and is the same thing the surface did before anyone asked.
+
 **A field that holds only what was offered is typed in names** *(2026-09-09)*. Where the schema
 says `x-notemap-offered-only`, the line reads the entry's label and the field keeps the value
 underneath it — the one case the two come apart, and it is the case where the value is an id
@@ -791,6 +802,13 @@ nobody picked and nobody can read. What is typed narrows the list as it always d
 same two moments a title does; anything no entry answers for is kept exactly as written, a numeric
 ID typed by hand included. Everywhere else the line **is** the value, which is what makes a path a
 path.
+
+**What narrows the list is what was typed, never what is read** *(2026-09-09)*. The two are one
+string most of the time and the difference only shows where they come apart: `⇥` walking writes an
+answer into the field while the typed stem goes on filtering, and a line reading a name has had
+nothing typed into it at all. Narrowing by what is read would leave the list holding the one thing
+already held — and the keyboard would walk a list the eye cannot see, which is the one thing the
+drawn list and the walked list being one list exists to prevent.
 
 **A long answer is drawn as a handful**, eight of it, with the rest a press away and typing the way
 through it. An account of two hundred channels is a wall of names nobody reads; the field above it

@@ -424,6 +424,8 @@ const PUBLISH = {
 function servingChannels(
   entries: readonly Record<string, unknown>[],
   templates: readonly Record<string, unknown>[] = [],
+  /** What the destination names for a value its own page never listed. */
+  offPage: readonly Record<string, unknown>[] = [],
 ) {
   return pool((request) => {
     const route = routeOf(request);
@@ -431,8 +433,18 @@ function servingChannels(
       return json(200, { values: [aDestination({ kind: "arena" })] });
     }
     if (route === "GET /v1/templates") return json(200, { values: templates });
+    if (route.endsWith("/named")) {
+      const held = new URL(request.url).searchParams.get("value");
+      const found = [...entries, ...offPage].find(
+        (each) => each["durable"] === held || each["value"] === held,
+      );
+      return json(200, {
+        kind: "answered",
+        ...(found === undefined ? {} : { entry: found }),
+      });
+    }
     if (route.endsWith("/candidates")) {
-      return json(200, { kind: "answered", entries, truncated: false });
+      return json(200, { kind: "answered", entries, truncated: true });
     }
     if (route.endsWith("/description")) {
       return json(200, { kind: "described", capabilities: [PUBLISH] });
@@ -547,6 +559,105 @@ test("reads a saved id back as the name the destination knows it by", async () =
 
   const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
   await vi.waitFor(() => expect(field.value).toBe("Reading"));
+});
+
+const GROUP = { label: "Group notes", value: "group-notes", durable: "99999" };
+
+/**
+ * A browse answers one page — are.na's does, on purpose — so an account with
+ * more channels than that has the held one outside it. Reading the page alone
+ * would put the ID back on the form for exactly the accounts big enough to
+ * have wanted it gone.
+ */
+test("asks what a channel outside the answered page is called", async () => {
+  servingChannels(
+    [READING],
+    [aTemplate({ capability: "publish", arguments: { channel: "99999" } })],
+    [GROUP],
+  );
+
+  render(Templates);
+  await open(/research/);
+  await open("Edit");
+
+  const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
+  await vi.waitFor(() => expect(field.value).toBe("Group notes"));
+
+  expect(asked()).toContain(`GET /v1/destinations/${VAULT}/named`);
+});
+
+/** The page already answers for it, so nothing is asked a second time. */
+test("asks nothing where the answered page already names it", async () => {
+  servingChannels(
+    [READING],
+    [aTemplate({ capability: "publish", arguments: { channel: "12345" } })],
+  );
+
+  render(Templates);
+  await open(/research/);
+  await open("Edit");
+
+  const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
+  await vi.waitFor(() => expect(field.value).toBe("Reading"));
+
+  expect(asked()).not.toContain(`GET /v1/destinations/${VAULT}/named`);
+});
+
+/**
+ * Nothing names it on the page or off it, so it stands as written — which is
+ * what a channel typed by hand looks like, and it delivers perfectly well.
+ */
+test("leaves a handle nothing answers for exactly as it was saved", async () => {
+  servingChannels(
+    [READING],
+    [aTemplate({ capability: "publish", arguments: { channel: "67890" } })],
+  );
+
+  render(Templates);
+  await open(/research/);
+  await open("Edit");
+
+  const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
+  await screen.findByText("Reading");
+  expect(field.value).toBe("67890");
+});
+
+/**
+ * `⇥` completes to the one name, and pressing it again walks the rest —
+ * the field taking each lasting form while the line goes on reading titles.
+ */
+test("walks the channels a typed name still matches, in names", async () => {
+  const RE_READ = { label: "Rereading", value: "rereading", durable: "22222" };
+  servingChannels([READING, RE_READ]);
+
+  render(Templates);
+  await open(/Make a template/);
+  const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
+  await screen.findByText("Rereading");
+
+  await fireEvent.input(field, { target: { value: "Re" } });
+  // Both agree as far as `Re`, so the first press has nothing to add and the
+  // walk starts here.
+  await fireEvent.keyDown(field, { key: "Tab" });
+  expect(field.value).toBe("Reading");
+
+  await fireEvent.keyDown(field, { key: "Tab" });
+  expect(field.value).toBe("Rereading");
+
+  // Both are still drawn: the eye and the keyboard walk the one list.
+  expect(screen.getByText("Reading")).toBeTruthy();
+
+  await fireEvent.input(await screen.findByLabelText("name"), {
+    target: { value: "Reading list" },
+  });
+  await open("Save");
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/templates");
+  });
+  expect(await sent()).toContainEqual(
+    expect.objectContaining({ arguments: { channel: "22222" } }),
+  );
 });
 
 /** An answer is one page of what a destination holds, and a group channel is not in it. */

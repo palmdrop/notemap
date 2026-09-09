@@ -103,6 +103,27 @@ export async function startArenaServer(): Promise<ArenaServer> {
       });
     }
 
+    // One channel by either name it answers to, which is how a value already
+    // in a field is read back: the ID a template holds, or the slug.
+    if (request.method === "GET" && path.startsWith("/v3/channels/")) {
+      const handle = decodeURIComponent(path.slice("/v3/channels/".length));
+      const found = channels.find(
+        (channel, index) =>
+          channel.slug === handle || String(channel.id ?? index + 1) === handle,
+      );
+      if (found === undefined) {
+        return send(response, 404, { error: { message: "no such channel" } });
+      }
+
+      return send(response, 200, {
+        id: found.id ?? channels.indexOf(found) + 1,
+        type: "Channel",
+        slug: found.slug,
+        title: found.title,
+        ...(found.addTo === undefined ? {} : { can: { add_to: found.addTo } }),
+      });
+    }
+
     if (request.method === "POST" && path === "/v3/uploads/presign") {
       return read(request, (body) => {
         const files = (

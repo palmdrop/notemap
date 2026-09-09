@@ -1,9 +1,9 @@
 # Review: A lasting name read back as the name it stands for
 
 **Date**: 2026-09-09
-**Status**: Open
+**Status**: Resolved
 **Scope**: `apps/ui/src/lib/candidate-list.ts`, `apps/ui/src/components/routing/CandidateBrowser.svelte`, `apps/ui/src/components/settings/TemplateForm.svelte`
-**Spec**: `docs/specs/shell.md`, `docs/adr/0042-a-candidate-carries-both-its-readable-name-and-its-lasting-one.md`
+**Spec**: `docs/specs/shell.md`, `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/adr/0042-a-candidate-carries-both-its-readable-name-and-its-lasting-one.md`, `docs/adr/0044-naming-a-value-is-a-second-question-a-destination-answers.md`
 
 ---
 
@@ -53,21 +53,12 @@ the template list and the routing record, and this is the third caller for it.
 
 ## Design
 
-### 2. `offered-only` is now doing two jobs
+### 2. Withdrawn — see Non-issues
 
-`apps/ui/src/components/settings/TemplateForm.svelte:259` — `naming={field.offeredOnly}` reuses a
-flag that says *what a field may hold* to decide *how a field is drawn*. The spec now states the
-coupling, so it is a decision rather than an accident, but the two are not the same question: a
-field can be offered-only and still hold something a person can read, and it now gets a line
-showing a label over a value for no gain.
-
-The sharper half is that `settle` in naming mode keeps whatever was typed
-(`CandidateBrowser.svelte:357` — `took(resolved(...) ?? written)`), so an offered-only field
-accepts a value the destination never offered. That is right, and the spec argues for it, but it
-means `x-notemap-offered-only` is advice on every path the shell takes and a constraint on none.
-ADR 42 already flags "a second kind wants `offered-only` for refusal rather than for advice" as the
-thing to revisit; this widens the gap rather than narrowing it, which is worth saying out loud
-before a third caller reads the flag as a promise.
+This was filed as "`offered-only` is now doing two jobs". It was wrong, and the reason is one file
+away: `packages/core/src/pool/destinations/vocabulary.ts:34` says the annotation is *"said for the
+surfaces"* and that core never reads it. Deciding how a field is drawn is the flag working as
+declared, not a second job. Kept numbered so the findings below stay referenceable.
 
 ### 3. `stem` and `draft` are two answers to nearly one question
 
@@ -115,6 +106,14 @@ line. The merge was made during this rebase, so the gap is this branch's to clos
 - **`takenAs(entry, "label")` inside `readAs` would be an identity** — `readAs` is only ever called
   with `keeps`, which is never `"label"`. Dead but cheap, and the alternative is a narrower type
   for one caller.
+- **`naming={field.offeredOnly}` decides how a field is drawn from a flag about what it may hold**
+  — intended, and the annotation says so: `x-notemap-offered-only` exists *for the surfaces* and
+  core never reads it (`packages/core/src/pool/destinations/vocabulary.ts:34`). It is also the
+  right signal, being precisely "this value names something already there", which is what makes it
+  a handle rather than a name. Filed as finding 2 and withdrawn.
+- **An offered-only field still accepts a value the destination never offered** — deliberate, on
+  ADR 42's own terms: the browse answers one page, so a value outside it is not evidence of
+  anything. `offered-only` withholds advice; it does not refuse input.
 
 ---
 
@@ -138,4 +137,30 @@ either mode. See finding #5.
 
 ## Resolution
 
-<!-- Add once findings are addressed, and flip **Status** above. -->
+1. **Fixed**, and not in the shell — the shell could not fix it. `/candidates` answers a capped
+   page and has no way to ask about one value, and the pool's other place-answering route carries
+   no label and reads routing records, so a template saved and never fired has nothing in it.
+   Added a second question to the destination port:
+   `GET /v1/destinations/{id}/named?capability&field&value`, answering the one entry that value
+   names on `/candidates`' own failure kinds and after its own two checks, through `naming` on the
+   `Destinations` port and an optional `naming` on a kind adapter. The are.na adapter answers it
+   from `GET /v3/channels/{handle}`, which takes an id or a slug; the filesystem and webdav kinds
+   have none, and `not-offered` is the right answer for a kind whose places are their own names.
+   The browser asks only where its own page had nothing to say, so a channel the browse already
+   listed costs no request.
+   ([ADR 44](../adr/0044-naming-a-value-is-a-second-question-a-destination-answers.md))
+2. **Won't fix — the finding was wrong.** `offered-only` is declared as advice for surfaces and
+   core never reads it, so using it to decide how a field is drawn is the annotation working as
+   specified. Moved to Non-issues so it is not re-raised.
+3. **Fixed.** `draft` and `stem` become `line` and `filter`, named for what each is — text the
+   field does not hold yet, and what the list is narrowed by once the line stopped being it. The
+   thing that made them two ideas rather than one was that the drawn list followed the line while
+   `⇥` walked the typed stem; `filtering` now decides both, so the eye and the keyboard walk one
+   list again — which is what the file already claimed and did not do. It also fixes a case nobody
+   had filed: a naming line reading a name narrowed the list to the one entry it already held, and
+   an off-page value narrowed it to nothing at all.
+4. **Fixed.** `settle` returns early where the line is reading rather than writing, so a blur
+   nobody typed into writes nothing.
+5. **Fixed.** `walks the channels a typed name still matches, in names` drives `⇥` twice on a
+   naming line and asserts the durable form that reached the wire, plus that both rows are still
+   drawn. New tests also cover the off-page ask, the no-ask case, and a handle nothing answers for.

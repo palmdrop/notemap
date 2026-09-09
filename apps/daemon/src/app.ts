@@ -30,6 +30,7 @@ import {
   createDestinationRoute,
   deleteDestinationRoute,
   destinationCandidatesRoute,
+  destinationNamedRoute,
   destinationRememberedRoute,
   destinationDescriptionRoute,
   destinationKindsRoute,
@@ -71,6 +72,7 @@ import {
   createDestinationHandler,
   deleteDestinationHandler,
   destinationCandidatesHandler,
+  destinationNamedHandler,
   destinationRememberedHandler,
   destinationDescriptionHandler,
   destinationKindsHandler,
@@ -215,6 +217,7 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
     honoPath(destinationCandidatesRoute.path),
     destinationCandidatesHandler(pool),
   );
+  app.get(honoPath(destinationNamedRoute.path), destinationNamedHandler(pool));
   app.get(honoPath(destinationProbeRoute.path), destinationProbeHandler(pool));
 
   app.get(

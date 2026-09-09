@@ -27,6 +27,8 @@ import type {
   DestinationDescriptor,
   DestinationKind,
   DestinationRecord,
+  NamingAnswer,
+  NamingRequest,
 } from "../domain/destination";
 import type {
   ArchiveState,
@@ -185,6 +187,12 @@ export interface Destinations {
     signal?: AbortSignal,
   ): Promise<CandidatesAnswer>;
   /** Rejects with `NotOffered` where the adapter registered for the kind has none. */
+  naming(
+    destination: Destination,
+    request: NamingRequest,
+    signal?: AbortSignal,
+  ): Promise<NamingAnswer>;
+  /** Rejects with `NotOffered` where the adapter registered for the kind has none. */
   preview(
     destination: Destination,
     delivery: Delivery,
@@ -214,6 +222,16 @@ export interface DestinationKindAdapter extends DestinationKind {
     request: CandidatesRequest,
     signal?: AbortSignal,
   ): Promise<CandidatesAnswer>;
+  /**
+   * What one value this field holds is called. Absent is not-offered, and is
+   * the right answer for a kind whose values are their own names: a path says
+   * what it is, and a second name for one would be something to hide it behind.
+   */
+  naming?(
+    destination: Destination,
+    request: NamingRequest,
+    signal?: AbortSignal,
+  ): Promise<NamingAnswer>;
   /**
    * What `deliver` would produce, writing nothing. That the two agree is this
    * adapter's discipline rather than something the port can enforce.

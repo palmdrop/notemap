@@ -1975,6 +1975,88 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/destinations/{id}/named": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ask one destination what a value its field holds is called
+         * @description `/candidates` asks what a field could hold and answers a page; this asks what one thing it holds is called and answers one entry. Separate because a page is capped and may be truncated, and a value a surface is already holding is exactly the one a truncated page may never mention — a routing template pinned to an are.na channel outside the first page has no name in the browse, and this is the only way to read one back. The same checks `/candidates` makes, made here for the same reason. An `answered` carrying no `entry` is a true answer: the destination has nothing by that name, which is what a place typed by hand looks like.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description One the destination declared. Anything else is refused. */
+                    capability: string;
+                    /** @description A property of that capability's `argumentsSchema` carrying `x-notemap-candidates`. Anything else is refused. */
+                    field: string;
+                    /** @description What the field holds, in whichever of an entry's forms it ended up holding — a destination that answers for one answers for both. Empty names nothing. */
+                    value: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What it answered: the entry, nothing by that name, a refusal the destination itself gave, or a kind that does not offer this. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DestinationNamed"];
+                    };
+                };
+                /** @description No destination has that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unknown-destination";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The capability was not declared, or the field is not one that can be asked about. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "capability-undeclared" | "field-not-askable";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/destinations/{id}/probe": {
         parameters: {
             query?: never;
@@ -3887,6 +3969,22 @@ export interface components {
             value?: unknown;
             scope?: string;
             durable?: unknown;
+        };
+        DestinationNamed: {
+            /** @enum {string} */
+            kind: "answered";
+            entry?: components["schemas"]["CandidateEntry"];
+        } | {
+            /** @enum {string} */
+            kind: "unreachable";
+            detail: string;
+        } | {
+            /** @enum {string} */
+            kind: "unusable";
+            detail: string;
+        } | {
+            /** @enum {string} */
+            kind: "not-offered";
         };
         DestinationProbe: {
             /** @enum {string} */

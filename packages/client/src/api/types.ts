@@ -58,6 +58,9 @@ export type DestinationProbe = components["schemas"]["DestinationProbe"];
 export type CandidateEntry = components["schemas"]["CandidateEntry"];
 export type CandidatesRequest =
   paths["/v1/destinations/{id}/candidates"]["get"]["parameters"]["query"];
+export type DestinationNamed = components["schemas"]["DestinationNamed"];
+export type NamingRequest =
+  paths["/v1/destinations/{id}/named"]["get"]["parameters"]["query"];
 export type DestinationRemembered =
   components["schemas"]["DestinationRemembered"];
 export type RememberedPlace = components["schemas"]["RememberedPlace"];

@@ -7,8 +7,10 @@ import type {
   DestinationDescription,
   DestinationId,
   DestinationKind,
+  DestinationNamed,
   DestinationProbe,
   DestinationRemembered,
+  NamingRequest,
   RememberedRequest,
   UpdateDestinationRequest,
 } from "#api/types";
@@ -72,6 +74,18 @@ export function createDestinations(deps: DestinationsDeps): DestinationsApi {
     ): Promise<DestinationCandidates> {
       return answered(
         api.GET("/v1/destinations/{id}/candidates", {
+          params: { path: { id }, query: request },
+        }),
+      );
+    },
+
+    /** The other direction of `candidates`: one value, and what it is called. */
+    named(
+      id: DestinationId,
+      request: NamingRequest,
+    ): Promise<DestinationNamed> {
+      return answered(
+        api.GET("/v1/destinations/{id}/named", {
           params: { path: { id }, query: request },
         }),
       );

@@ -72,6 +72,38 @@ describe("the two answers a typed place is completed from", () => {
   });
 
   /**
+   * The third answer about a place, and the one a template needs: what a value
+   * a field already holds is called. A vault has no second name for a path —
+   * a path is its own name — so the whole crossing is proved by it saying so:
+   * the schema check the route makes, the port, the registry, and the client's
+   * own transport all ran to produce this.
+   */
+  it("says a kind whose places are their own names has no other name for one", async () => {
+    const running = await daemon();
+    const client = running.client;
+    const vault = await vaults(running);
+
+    await mkdir(join(running.world.up, "notes"), { recursive: true });
+
+    expect(
+      await client.destinations.named(vault.up, {
+        capability: "create-or-append",
+        field: "path",
+        value: "notes",
+      }),
+    ).toEqual({ kind: "not-offered" });
+
+    // The same checks `/candidates` makes, made before anything is asked.
+    await expect(
+      client.destinations.named(vault.up, {
+        capability: "create-or-append",
+        field: "filename",
+        value: "notes",
+      }),
+    ).rejects.toMatchObject({ code: "field-not-askable" });
+  });
+
+  /**
    * The whole reason the capability exists: the record says *put this here* and
    * the adapter decides against the vault as it finds it, so the same argument
    * set creates once and appends after.

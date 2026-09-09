@@ -79,6 +79,31 @@ export const destinationCandidatesSchema = z
   ])
   .openapi("DestinationCandidates");
 
+export const destinationNamedSchema = z
+  .union([
+    z.object({
+      kind: z.literal("answered"),
+      /**
+       * Absent where the destination has nothing by that name, which is an
+       * answer and not a failure: a place typed by hand is not one it offered.
+       */
+      entry: candidateEntrySchema.optional(),
+    }),
+    z.object({
+      kind: z.literal("unreachable"),
+      /** It went and asked and could not say. */
+      detail: z.string(),
+    }),
+    z.object({
+      kind: z.literal("unusable"),
+      /** No adapter speaks its kind, or its settings no longer satisfy that kind. */
+      detail: z.string(),
+    }),
+    /** The kind has no second name for anything it holds — a path is its own name. */
+    z.object({ kind: z.literal("not-offered") }),
+  ])
+  .openapi("DestinationNamed");
+
 export const destinationProbeSchema = z
   .union([
     z.object({ kind: z.literal("ready") }),

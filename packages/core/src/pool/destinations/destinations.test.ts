@@ -34,6 +34,7 @@ import { Unusable } from "./usability";
 import { deliveryFor } from "../routing/delivery";
 
 import { candidates as candidatesFor, NotOffered } from "./candidates";
+import { naming as namingFor } from "./naming";
 import { create, edit, remove, retire, unretire } from "./lifecycle";
 import { probe as probeOne, Rejected } from "./probe";
 import { describe as describeOne, list } from "./reports";
@@ -443,6 +444,95 @@ describe("what a destination answers about its candidates", () => {
   it("answers nothing at all for an id no destination has", async () => {
     expect(
       await candidatesFor(ports(), "ghost" as DestinationId, request),
+    ).toBeUndefined();
+  });
+});
+
+describe("what a destination calls a value one of its fields holds", () => {
+  const request = {
+    capability: "create-note" as CapabilityName,
+    field: "channel",
+    value: "12345",
+  };
+
+  it("is answered with the entry the destination named", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
+    const wired = ports({ destinations: [vault] });
+    wired.adapters.answersNaming({
+      entry: { label: "Reading", value: "reading", durable: "12345" },
+    });
+
+    expect(await namingFor(wired, vault.id, request)).toEqual({
+      kind: "answered",
+      entry: { label: "Reading", value: "reading", durable: "12345" },
+    });
+  });
+
+  /**
+   * A destination with nothing by that name answers, and answers empty. It is
+   * a fact rather than a failure — a place typed by hand is not one it offered
+   * — and refusing would make a value it delivers to look broken.
+   */
+  it("is answered and empty where nothing there has that name", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
+    const wired = ports({ destinations: [vault] });
+    wired.adapters.answersNaming({});
+
+    expect(await namingFor(wired, vault.id, request)).toEqual({
+      kind: "answered",
+    });
+  });
+
+  it("is unusable before it is ever asked, on the same terms as describing it", async () => {
+    const stale = fakeDestinationRow({ id: "old", kind: "kanban" });
+    const wired = ports({ destinations: [stale] });
+
+    expect(await namingFor(wired, stale.id, request)).toEqual({
+      kind: "unusable",
+      detail: "nothing here speaks the kanban kind",
+    });
+  });
+
+  it("is unreachable where the adapter went and asked and could not say", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
+    const wired = ports({ destinations: [vault] });
+    wired.adapters.cannotAnswerNaming("are.na answered 500");
+
+    expect(await namingFor(wired, vault.id, request)).toEqual({
+      kind: "unreachable",
+      detail: "are.na answered 500",
+    });
+  });
+
+  it("is unusable where the adapter itself says so, distinct from unreachable", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
+    const wired = ports({ destinations: [vault] });
+    wired.adapters.cannotAnswerNaming(
+      new Unusable("/vault overlaps notemap's own state"),
+    );
+
+    expect(await namingFor(wired, vault.id, request)).toEqual({
+      kind: "unusable",
+      detail: "/vault overlaps notemap's own state",
+    });
+  });
+
+  /** A path is its own name, so a kind with no second name for anything says so. */
+  it("is not-offered where the kind names nothing it holds", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
+    const wired = ports({ destinations: [vault] });
+    wired.adapters.cannotAnswerNaming(
+      new NotOffered("the filesystem kind names nothing it holds"),
+    );
+
+    expect(await namingFor(wired, vault.id, request)).toEqual({
+      kind: "not-offered",
+    });
+  });
+
+  it("answers nothing at all for an id no destination has", async () => {
+    expect(
+      await namingFor(ports(), "ghost" as DestinationId, request),
     ).toBeUndefined();
   });
 });

@@ -79,11 +79,13 @@
 
   let history = $state<Crumb[]>([]);
   /**
-   * What is being typed, where that is not the value. Absent means the line
-   * reads what the field holds, which is every keystroke of the ordinary mode
-   * and the settled state of the other.
+   * The two ways the line and the field come apart, and they are not the same
+   * way: `line` is text the field does not hold yet, `filter` is what the list
+   * is narrowed by once the line stopped being it. Both absent is the settled
+   * state — the line reads the field and the field is the filter.
    */
-  let draft = $state<string | undefined>(undefined);
+  let line = $state<string | undefined>(undefined);
+  let filter = $state<string | undefined>(undefined);
   let entries = $state<readonly CandidateEntry[]>([]);
   let truncated = $state(false);
   let loading = $state(false);
@@ -94,12 +96,14 @@
   let at = $state(0);
   let moved = $state(false);
   /**
-   * What was typed by hand, held for as long as `⇥` is walking what matches it.
-   * The walk writes each answer into the field, so a second press matching
-   * against the field would be matching against its own last answer and find
-   * one thing: the channel it just put there.
+   * The name the destination gave for a value its own answer never mentioned.
+   * A browse is one page on purpose — are.na's is — so a template pinned to a
+   * channel outside it has no name in the list, and asking is the only way to
+   * read one back.
    */
-  let stem = $state<string | undefined>(undefined);
+  let named = $state<
+    { readonly value: string; readonly label: string } | undefined
+  >(undefined);
   /** Whether the whole answer has been asked for, past the handful drawn by default. */
   let expanded = $state(false);
 
@@ -118,13 +122,36 @@
   const keeps = $derived<Form>(durable ? "durable" : "value");
   const typing = $derived<Form>(naming ? "label" : keeps);
 
-  /** What the line reads, which is the value itself unless names are typed. */
-  const text = $derived(
-    draft ?? (naming ? readAs(entries, value, keeps) : value),
+  /** What the page calls what the field holds, where it holds it at all. */
+  const onPage = $derived(naming ? readAs(entries, value, keeps) : value);
+
+  /**
+   * Nothing on the page answers for it, so its name is a question rather than
+   * an absence: a value typed by hand has none, and one past the end of a
+   * capped answer has one nobody here has been told.
+   */
+  const unnamed = $derived(
+    naming && value !== "" && !loading && onPage === value,
   );
 
-  /** Everything that matches what is typed, which is not all of what is drawn. */
-  const matching = $derived(narrowed(entries, text));
+  /** What the line reads: the page's name for it, the asked-for one, or the value. */
+  const read = $derived(
+    onPage !== value ? onPage : named?.value === value ? named.label : value,
+  );
+
+  const text = $derived(line ?? read);
+
+  /**
+   * What narrows the list, which is what was **typed** and not what is read.
+   * The two are the same string until they are not: `⇥` walking writes an
+   * answer into the field and the typed stem goes on filtering, or the line is
+   * reading a name and nothing has been typed at all — narrowing by either
+   * would leave the list holding the one thing already held.
+   */
+  const filtering = $derived(filter ?? line ?? (naming ? "" : text));
+
+  /** Everything that matches, which is not all of what is drawn. */
+  const matching = $derived(narrowed(entries, filtering));
 
   /**
    * What is drawn, and what the keyboard walks — the two being one list, since
@@ -196,6 +223,44 @@
     })();
   });
 
+  // Every answer but the newest is dropped, on the browse's own terms.
+  let namingAsk = 0;
+
+  /**
+   * Asked only where the page had nothing to say, so the ordinary channel —
+   * one the browse already listed — costs no request at all. Left as it stands
+   * where the destination has nothing by that name either: a place typed by
+   * hand is not one it offered, and drawing something else over it would hide
+   * what is about to be written.
+   */
+  $effect(() => {
+    if (!unnamed) return;
+
+    const wanted = value;
+    const asked = {
+      destination,
+      capability,
+      field,
+      value: wanted,
+    };
+    const mine = (namingAsk += 1);
+
+    void (async () => {
+      try {
+        const answer = await client.destinations.named(destination, asked);
+        if (mine !== namingAsk) return;
+        named =
+          answer.kind === "answered" && answer.entry !== undefined
+            ? { value: wanted, label: answer.entry.label }
+            : undefined;
+      } catch {
+        // A name that could not be asked for is a name nobody has: the field
+        // reads as it stands, which is what it did before anyone asked.
+        if (mine === namingAsk) named = undefined;
+      }
+    })();
+  });
+
   function applied(answer: DestinationCandidates): void {
     if (answer.kind === "answered") {
       entries = answer.entries;
@@ -221,7 +286,7 @@
       input?.focus();
       return;
     }
-    stem = undefined;
+    filter = undefined;
     history = [
       ...history,
       {
@@ -234,7 +299,7 @@
   }
 
   function back(): void {
-    stem = undefined;
+    filter = undefined;
     history = history.slice(0, -1);
   }
 
@@ -244,7 +309,7 @@
 
   /** Settled from the list rather than typed, so the line goes back to reading the field. */
   function took(next: string): void {
-    draft = undefined;
+    line = undefined;
     onchange(next);
   }
 
@@ -268,10 +333,10 @@
       // started, the field holds an answer rather than a name being typed, and
       // completing what was typed again would put the shared prefix back and
       // walk the same two answers forever.
-      if (stem === undefined) {
+      if (filter === undefined) {
         const finished = completed(entries, text, typing);
         if (finished !== undefined) {
-          stem = text;
+          filter = text;
           typedIn(finished);
           return;
         }
@@ -281,7 +346,7 @@
       // key walks them from here. A name shares its first letters with four
       // others far more often than it is the only one, and pressing `⇥` again
       // is what a person does about it.
-      walk(stem ?? text);
+      walk(filter ?? text);
       return;
     }
 
@@ -333,7 +398,7 @@
     const next = hits[(here + 1) % hits.length];
     if (next === undefined) return;
 
-    stem = typed;
+    filter = typed;
     took(takenAs(next, keeps));
   }
 
@@ -344,7 +409,12 @@
    * still being written.
    */
   function settle(): void {
-    if (draft === undefined) {
+    if (line === undefined) {
+      // The line is reading the field rather than writing it, so there is
+      // nothing here to resolve — and resolving a name back to the value it
+      // already stands for would re-point the field on a blur nobody typed in.
+      if (naming) return;
+
       const meant = resolved(entries, text, keeps);
       if (meant !== undefined) onchange(meant);
       return;
@@ -353,7 +423,7 @@
     // Nothing the answer knows: taken as written, since an answer is one page
     // of what a destination holds and a channel it did not mention delivers
     // perfectly well.
-    const written = draft;
+    const written = line;
     took(resolved(entries, written, keeps) ?? written);
   }
 
@@ -363,7 +433,7 @@
    * until the line is done being typed.
    */
   function typedIn(next: string): void {
-    if (naming) draft = next;
+    if (naming) line = next;
     else onchange(next);
   }
 
@@ -380,8 +450,8 @@
       bind:this={input}
       value={text}
       oninput={(event) => {
-        // Typed over: the walk is over too, and the field is the filter again.
-        stem = undefined;
+        // Typed over: the walk is over too, and the line is the filter again.
+        filter = undefined;
         typedIn(event.currentTarget.value);
       }}
       onblur={settle}
