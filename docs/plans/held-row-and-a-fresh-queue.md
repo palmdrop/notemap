@@ -4,6 +4,7 @@
 **Status**: Done
 **Spec**: `docs/specs/shell.md`, `docs/specs/client.md`
 **Closed**: 2026-09-08
+**Reviewed**: `docs/reviews/held-row-and-a-fresh-queue-2026-09-08.md` — findings addressed 2026-09-09
 
 ---
 
@@ -77,8 +78,12 @@ Depends on nothing, but reads as the other half of phase 1.
 
 Depends on nothing. Client change.
 
-- [x] Entering the queue re-reads it from the first page, discarding the walked tail; the feed keeps
-      extending, as it does now — `client.enter(surface)`, which both surfaces mount with
+- [x] Entering the queue re-reads it from the first page; the feed keeps extending, as it does now
+      — `client.enter(surface)`, which both surfaces mount with
+- [x] *(amended 2026-09-09, reviewing)* The fresh page corrects the head and the **walked tail is
+      kept**, at the position it was walked to. Opening a capture unmounts the register, so arriving
+      is what coming back from one capture looks like, and discarding the tail charged a reader four
+      pages for having looked at a row
 - [x] The asymmetry is stated where it lives: the feed accumulates and nothing leaves it, the queue
       drains and its membership changes under the reader
 - [x] A read that starts again draws what the surface already held until it answers, so a failed
@@ -119,8 +124,9 @@ Depends on phase 3 only in that both are about the same lie; either lands alone.
   the cache holds it.
 - **Whether the scroll mark survives a shorter queue.** *Answered 2026-09-08*: `window.scrollTo`
   past the document's height is clamped by the browser, so a shorter queue lands the reader at its
-  foot rather than nowhere. Left there. If landing at the foot of a queue you were in the middle of
-  reads badly, the fallback is still to drop the mark when the fresh read is shorter.
+  foot rather than nowhere. *Closed 2026-09-09*: the queue is no longer shorter for having been
+  arrived at — the fresh page corrects the head and the walked tail stays — so the clamp was the
+  quiet part of a real loss rather than the whole question.
 - **Whether `revised` is the right kind to drop on.** *Answered 2026-09-08*: `edit.ts:134` records
   the *source* item as the subject, which is the one that leaves the queue. Dropped on.
 

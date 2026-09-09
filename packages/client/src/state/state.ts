@@ -267,6 +267,47 @@ export function intoPage(
     : [...page.ids.slice(0, at), id, ...page.ids.slice(at)];
 }
 
+/**
+ * A surface read again from its start, joined to the tail that was already
+ * walked. The fresh page answers for its own window and for nothing past it, so
+ * a row inside that window the pool no longer names has left, and one below it
+ * is the tail's — kept, since a first page says nothing about a fifth.
+ *
+ * The position is the walked one, not the fresh head's: the surface still
+ * reaches as far as it did, and walking it again would spend four reads
+ * arriving back where the reader already was.
+ */
+export function rejoined(
+  fresh: ListPage,
+  held: ListPage,
+  items: ReadonlyMap<ItemId, Item>,
+): ListPage {
+  const edge = fresh.ids.at(-1);
+  const far = edge === undefined ? undefined : items.get(edge);
+
+  const tail =
+    far === undefined
+      ? []
+      : held.ids.filter((id) => {
+          if (fresh.ids.includes(id)) return false;
+          const item = items.get(id);
+          return (
+            item !== undefined && behind(fresh.order, rank(item), rank(far))
+          );
+        });
+
+  // Exhausted, the fresh read saw the whole surface and there is no tail to be
+  // right about.
+  if (fresh.exhausted || tail.length === 0) return fresh;
+
+  return {
+    ...fresh,
+    ids: [...fresh.ids, ...tail],
+    exhausted: held.exhausted,
+    ...(held.after === undefined ? {} : { after: held.after }),
+  };
+}
+
 export function withIds(page: ListPage, ids: readonly ItemId[]): ListPage {
   return { ...page, ids };
 }
