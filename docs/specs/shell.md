@@ -4,6 +4,11 @@
 **Last updated**: 2026-09-09
 **Shipped**:
 
+- 2026-09-09 — **A lasting name is read back as the name a person knows.** Where a field may hold
+  only what the destination already has, the line reads the entry's label while the field keeps the
+  value — so a template browsed into an are.na channel says `Reading` rather than `12345`, which is
+  what taking the lasting form cost when it landed.
+
 - 2026-09-09 — **The `⇥` walk reaches every answer, the log keeps an oldest-first walk, and a
   subject says the capture's own words wherever a surface has only its id.** The walk completed
   again on every press, so past the second answer it put the shared prefix back and the third was
@@ -779,6 +784,14 @@ that fires for months wants a name that cannot rot. Matching and completion cons
 entry has, so a title, a slug and an ID all find the same channel and the row still marks as taken
 whichever form the field ended up holding.
 
+**A field that holds only what was offered is typed in names** *(2026-09-09)*. Where the schema
+says `x-notemap-offered-only`, the line reads the entry's label and the field keeps the value
+underneath it — the one case the two come apart, and it is the case where the value is an id
+nobody picked and nobody can read. What is typed narrows the list as it always did, and settles the
+same two moments a title does; anything no entry answers for is kept exactly as written, a numeric
+ID typed by hand included. Everywhere else the line **is** the value, which is what makes a path a
+path.
+
 **A long answer is drawn as a handful**, eight of it, with the rest a press away and typing the way
 through it. An account of two hundred channels is a wall of names nobody reads; the field above it
 is the control, and the list is a sample of what is there rather than the whole of it. What the
@@ -1355,6 +1368,13 @@ anything else is a box. This is what makes a destination whose places are a **fi
 board's columns, a mailbox, a webhook — usable without the shell being taught about it, and it
 follows from what a pattern is: a pattern is in no enumeration, so a fixed field never holds one and
 an open field is exactly the one that might.
+
+**A lasting name is read back as the name it stands for** *(2026-09-09)*. The form takes the
+`durable` form of a candidate, which for an are.na channel is a number — so the field reads the
+label the destination answers under it while holding that number, and a template saved months ago
+says which channel it files to rather than only that it files somewhere. Only where the field says
+it holds nothing but what was offered: a path is its own name, and drawing something else over one
+would hide what is about to be written.
 
 **A field the destination can be asked about is browsed here too.** Where the places are neither a
 path nor a fixed set — a list only the account can answer, picked from rather than created — the

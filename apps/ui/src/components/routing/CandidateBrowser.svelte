@@ -8,7 +8,14 @@
   import Action from "$components/primitives/controls/Action.svelte";
   import Walked from "$components/primitives/composer/Walked.svelte";
   import { client } from "$lib/client";
-  import { completed, narrowed, resolved, takenAs } from "$lib/candidate-list";
+  import {
+    completed,
+    narrowed,
+    readAs,
+    resolved,
+    takenAs,
+    type Form,
+  } from "$lib/candidate-list";
   import { recall, remember } from "$lib/candidate-cache";
 
   /**
@@ -16,6 +23,9 @@
    * destination offers drawn beneath it and narrowed as it is typed into. The
    * line is the value — there is no second control holding the same string, and
    * a place the destination has never heard of is typed rather than browsed to.
+   * Under `naming` the line reads the name and the field keeps the value, which
+   * is the one case the two come apart: an id nobody can read is not a line
+   * anybody can type.
    *
    * The same shape the typed line has, without the hierarchy: `⇥` completes,
    * `↑↓` walks, `⏎` takes the one walked to or commits. What it keeps that the
@@ -29,6 +39,7 @@
     label,
     value,
     durable = false,
+    naming = false,
     onchange,
     onsubmit,
     onrelease,
@@ -46,6 +57,13 @@
      * form and reads it back on the record.
      */
     durable?: boolean;
+    /**
+     * Type in names rather than in values: the line reads `Reading` while the
+     * field keeps `12345`. For a field that may hold only what the destination
+     * offered, where nothing is made here and the value is a handle a person
+     * did not choose and cannot read.
+     */
+    naming?: boolean;
     onchange: (value: string) => void;
     onsubmit?: () => void;
     /** Backspacing out of an empty line: a wrong destination is not a reason to close. */
@@ -60,6 +78,12 @@
   };
 
   let history = $state<Crumb[]>([]);
+  /**
+   * What is being typed, where that is not the value. Absent means the line
+   * reads what the field holds, which is every keystroke of the ordinary mode
+   * and the settled state of the other.
+   */
+  let draft = $state<string | undefined>(undefined);
   let entries = $state<readonly CandidateEntry[]>([]);
   let truncated = $state(false);
   let loading = $state(false);
@@ -90,8 +114,17 @@
   const scope = $derived(history.at(-1)?.scope);
   const here = $derived(history.at(-1));
 
+  /** The form the field keeps, and the form the line is typed in. */
+  const keeps = $derived<Form>(durable ? "durable" : "value");
+  const typing = $derived<Form>(naming ? "label" : keeps);
+
+  /** What the line reads, which is the value itself unless names are typed. */
+  const text = $derived(
+    draft ?? (naming ? readAs(entries, value, keeps) : value),
+  );
+
   /** Everything that matches what is typed, which is not all of what is drawn. */
-  const matching = $derived(narrowed(entries, value));
+  const matching = $derived(narrowed(entries, text));
 
   /**
    * What is drawn, and what the keyboard walks — the two being one list, since
@@ -184,7 +217,7 @@
    */
   function open(entry: CandidateEntry): void {
     if (entry.scope === undefined) {
-      if (entry.value !== undefined) onchange(takenAs(entry, durable));
+      if (entry.value !== undefined) took(takenAs(entry, keeps));
       input?.focus();
       return;
     }
@@ -206,7 +239,13 @@
   }
 
   function take(): void {
-    if (here?.value !== undefined) onchange(here.value);
+    if (here?.value !== undefined) took(here.value);
+  }
+
+  /** Settled from the list rather than typed, so the line goes back to reading the field. */
+  function took(next: string): void {
+    draft = undefined;
+    onchange(next);
   }
 
   /**
@@ -215,7 +254,7 @@
    * Offered only at the top, since `back` is what leaves a scope.
    */
   function clear(): void {
-    onchange("");
+    took("");
   }
 
   function onkeydown(event: KeyboardEvent): void {
@@ -230,10 +269,10 @@
       // completing what was typed again would put the shared prefix back and
       // walk the same two answers forever.
       if (stem === undefined) {
-        const finished = completed(entries, value, durable);
+        const finished = completed(entries, text, typing);
         if (finished !== undefined) {
-          stem = value;
-          onchange(finished);
+          stem = text;
+          typedIn(finished);
           return;
         }
       }
@@ -242,7 +281,7 @@
       // key walks them from here. A name shares its first letters with four
       // others far more often than it is the only one, and pressing `⇥` again
       // is what a person does about it.
-      walk(stem ?? value);
+      walk(stem ?? text);
       return;
     }
 
@@ -272,7 +311,7 @@
       return;
     }
 
-    if (event.key === "Backspace" && value === "") {
+    if (event.key === "Backspace" && text === "") {
       event.preventDefault();
       onrelease?.();
     }
@@ -290,12 +329,12 @@
     );
     if (hits.length === 0) return;
 
-    const here = hits.findIndex((entry) => takenAs(entry, durable) === value);
+    const here = hits.findIndex((entry) => takenAs(entry, keeps) === value);
     const next = hits[(here + 1) % hits.length];
     if (next === undefined) return;
 
     stem = typed;
-    onchange(takenAs(next, durable));
+    took(takenAs(next, keeps));
   }
 
   /**
@@ -305,8 +344,27 @@
    * still being written.
    */
   function settle(): void {
-    const meant = resolved(entries, value, durable);
-    if (meant !== undefined) onchange(meant);
+    if (draft === undefined) {
+      const meant = resolved(entries, text, keeps);
+      if (meant !== undefined) onchange(meant);
+      return;
+    }
+
+    // Nothing the answer knows: taken as written, since an answer is one page
+    // of what a destination holds and a channel it did not mention delivers
+    // perfectly well.
+    const written = draft;
+    took(resolved(entries, written, keeps) ?? written);
+  }
+
+  /**
+   * A keystroke. It is the value where the line holds one, and only a way to
+   * find an entry where it holds a name — there the field keeps what it had
+   * until the line is done being typed.
+   */
+  function typedIn(next: string): void {
+    if (naming) draft = next;
+    else onchange(next);
   }
 
   const active = $derived(
@@ -320,11 +378,11 @@
   <div class="px-2 py-0.5 field">
     <input
       bind:this={input}
-      {value}
+      value={text}
       oninput={(event) => {
         // Typed over: the walk is over too, and the field is the filter again.
         stem = undefined;
-        onchange(event.currentTarget.value);
+        typedIn(event.currentTarget.value);
       }}
       onblur={settle}
       {onkeydown}
@@ -348,7 +406,7 @@
         <Action onclick={take}>use {here.label}</Action>
       {/if}
     </div>
-  {:else if value !== ""}
+  {:else if text !== ""}
     <div class="mt-2.5 flex items-baseline gap-3">
       <Action onclick={clear}>clear</Action>
     </div>
@@ -377,7 +435,7 @@
         <Walked
           id={picked ? `candidate-${index}` : undefined}
           on={picked}
-          held={entry.value !== undefined && takenAs(entry, durable) === value}
+          held={entry.value !== undefined && takenAs(entry, keeps) === value}
           dim={!picked}
           ontake={() => open(entry)}
         >

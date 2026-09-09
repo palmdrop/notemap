@@ -72,6 +72,23 @@
 
 ## Templates
 
+- [ ] Add a way to append text, or insert {{templates}} INSIDE the output of a capture. Requires capture output.
+- [ ] add way of picking a separate location for note and assets when using templates
+- [ ] A name that is taken - a capability that creates a file refuses a name that already exists, which is right and is not the whole answer. A template filing daily notes as `{{captured_at}}.md` collides on the second capture of the day: nothing is written, nothing is filed, and the item comes back to the queue. Raised 2026-09-07 from using the routing templates slice. Two answers, and they are not exclusive: `create-or-append` is what a daily note wants and the template that collided was pointed at the wrong capability, which the settings page could say; and a **collision policy** on the file capabilities — refuse, or append a number — which is an argument the adapters would declare and core would never interpret. The second wants its own slice and probably an ADR: it adds a word to an adapter's argument vocabulary, and it is useful to a decision made by hand as much as to a template.
+  - Not a missing pattern: `{{captured_at:datetime}}` and `{{captured_at:time}}` already tell two
+    captures on one day apart ([ADR 35](adr/0035-a-templates-arguments-are-patterns-expanded-when-the-decision-is-made.md)).
+    What is open is what a template that *wants* one name per day does when it reaches the second.
+- [ ] Whether a template may restrict who can fire it. A **source-supplied** trigger tag fires like
+  any other, deliberately ([ADR 34](adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md)):
+  an inbox deciding where its own captures go is the point. What it costs is that a system outside
+  notemap can cause a delivery. If that ever bites, the answer is a per-template restriction rather
+  than a different design — noted here so it is reached for rather than reinvented.
+- [ ] Whether the trigger window wants to be per template rather than per host. It is one number in
+  `config.toml` today, which is right while every template files to the same laptop; a template
+  whose destination is a mounted vault and one whose destination is a sleeping server want
+  different windows for the same reason they want different retries. Not worth splitting until
+  somebody has lived with one number and found it wrong in both directions.
+
 ## Seeing what happened — log, routing records, revisions
 
 - [x] ~~Inspecting routing records is hard to view~~ — closed 2026-09-09: the record leads with
@@ -106,17 +123,8 @@
 ## Configuration
 
 - [ ] Destination configuration is way too clunky, not sensible to configure in BOTH config.toml and in the UI.
-- [ ] Whether the trigger window wants to be per template rather than per host. It is one number in
-  `config.toml` today, which is right while every template files to the same laptop; a template
-  whose destination is a mounted vault and one whose destination is a sleeping server want
-  different windows for the same reason they want different retries. Not worth splitting until
-  somebody has lived with one number and found it wrong in both directions.
 
 ## Routing — templates, rules, conversion
-
-- [ ] Add time as an option using the {{created_at}} templates, if a template wants a filename based on the date, two captures on the same day would collide
-- [ ] Add a way to append text, or insert {{templates}} INSIDE the output of a capture. Requires capture output.
-- [ ] add way of picking a separate location for note and assets when using templates
 
 - [ ] Routing edits - being able to freely edit an item as it is routed. Settled: **amend, then route**, two operations that already exist - a frontend can make it one smooth gesture with no new architecture. Rewriting the capture _because of where it is going_ is a dead end, and ADR 19 records why so it does not get proposed again. Open no longer, as of 2026-08-24: the amendment stands, because it was an amendment of an
   unprocessed item and the routing that sealed it never landed. Cancelling the reservation removes
@@ -148,12 +156,6 @@
     answers only the single-destination case. **Conditions** need a place to be written and a
     vocabulary to be written in, neither of which exists. **Precedence** is only a question once two
     things can match, so it follows conditions rather than standing beside them.
-- [ ] Whether a template may restrict who can fire it. A **source-supplied** trigger tag fires like
-  any other, deliberately ([ADR 34](adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md)):
-  an inbox deciding where its own captures go is the point. What it costs is that a system outside
-  notemap can cause a delivery. If that ever bites, the answer is a per-template restriction rather
-  than a different design — noted here so it is reached for rather than reinvented.
-- [ ] A name that is taken - a capability that creates a file refuses a name that already exists, which is right and is not the whole answer. A template filing daily notes as `{{captured_at}}.md` collides on the second capture of the day: nothing is written, nothing is filed, and the item comes back to the queue. Raised 2026-09-07 from using the routing templates slice. Two answers, and they are not exclusive: `create-or-append` is what a daily note wants and the template that collided was pointed at the wrong capability, which the settings page could say; and a **collision policy** on the file capabilities — refuse, or append a number — which is an argument the adapters would declare and core would never interpret. The second wants its own slice and probably an ADR: it adds a word to an adapter's argument vocabulary, and it is useful to a decision made by hand as much as to a template.
 
 ## Output
 - [ ] add option to render tags as markdown `#tag` entries at the end of the file instead of frontmatter items 
@@ -164,10 +166,11 @@
   - ~~tabbing multiple times does not move composer cursor to next channel that matches the inputted
     text~~ — closed 2026-09-09: the second press walks what still matches what was typed.
   - are.na templates resolve to channel ID, which is good, but frontend now shows ID instead of
-    channel title. Frontend should show title while internally resolve to the ID. Narrower than it
-    reads: **inside the composer the list under the field already draws the title**, since the value
-    is what narrows it. What is left is everywhere nothing has asked the destination for candidates
-    — the settings template list, the routing record — where a title costs an ask on draw or a label
+    channel title. Frontend should show title while internally resolve to the ID. Narrowed twice:
+    **inside the composer the list under the field already draws the title**, since the value is
+    what narrows it, and as of 2026-09-09 the **template form's own line reads the title** while the
+    field keeps the number. What is left is the two surfaces that ask the destination nothing — the
+    settings template list and the routing record — where a title costs an ask on draw or a label
     stored beside the value.
 - [ ] **The shell picks a browse control by destination kind name.**
   `apps/ui/src/lib/candidate-browsers.ts` maps `filesystem` and `webdav` to the typed line and

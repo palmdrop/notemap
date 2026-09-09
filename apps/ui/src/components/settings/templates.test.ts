@@ -421,13 +421,16 @@ const PUBLISH = {
   },
 };
 
-function servingChannels(entries: readonly Record<string, unknown>[]) {
+function servingChannels(
+  entries: readonly Record<string, unknown>[],
+  templates: readonly Record<string, unknown>[] = [],
+) {
   return pool((request) => {
     const route = routeOf(request);
     if (route === "GET /v1/destinations") {
       return json(200, { values: [aDestination({ kind: "arena" })] });
     }
-    if (route === "GET /v1/templates") return json(200, { values: [] });
+    if (route === "GET /v1/templates") return json(200, { values: templates });
     if (route.endsWith("/candidates")) {
       return json(200, { kind: "answered", entries, truncated: false });
     }
@@ -470,36 +473,95 @@ test("taking one fills the field, and the field is still typed into", async () =
   expect(field.value).toBe("{{source}}");
 });
 
+const READING = { label: "Reading", value: "reading", durable: "12345" };
+
 /**
  * A template fires on a tag for months, and an are.na slug does not survive a
- * retitle — so the browse hands this form the name that does.
+ * retitle — so the browse hands this form the name that does, and the line goes
+ * on reading the name the person picked.
  */
 test("takes the form of a value that survives a rename", async () => {
-  servingChannels([{ label: "reading", value: "reading", durable: "12345" }]);
+  servingChannels([READING]);
 
   render(Templates);
   await open(/Make a template/);
-  await fireEvent.mouseDown(await screen.findByText("reading"));
+  await fireEvent.mouseDown(await screen.findByText("Reading"));
 
   expect((await screen.findByLabelText("channel")) as HTMLInputElement).toEqual(
-    expect.objectContaining({ value: "12345" }),
+    expect.objectContaining({ value: "Reading" }),
+  );
+
+  await fireEvent.input(await screen.findByLabelText("name"), {
+    target: { value: "Reading list" },
+  });
+  await open("Save");
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/templates");
+  });
+  expect(await sent()).toContainEqual(
+    expect.objectContaining({ arguments: { channel: "12345" } }),
   );
 });
 
 /** Typed rather than taken, and it lands on the same lasting name. */
 test("resolves a title typed to the form that survives a rename", async () => {
-  servingChannels([{ label: "reading", value: "reading", durable: "12345" }]);
+  servingChannels([READING]);
 
   render(Templates);
   await open(/Make a template/);
   const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
   // The answer has to be in before a title can be resolved against it.
-  await screen.findByText("reading");
+  await screen.findByText("Reading");
 
-  await fireEvent.input(field, { target: { value: "reading" } });
+  await fireEvent.input(field, { target: { value: "Read" } });
+  await fireEvent.blur(field);
+  expect(field.value).toBe("Reading");
+
+  await fireEvent.input(await screen.findByLabelText("name"), {
+    target: { value: "Reading list" },
+  });
+  await open("Save");
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/templates");
+  });
+  expect(await sent()).toContainEqual(
+    expect.objectContaining({ arguments: { channel: "12345" } }),
+  );
+});
+
+/**
+ * What the ID cost before it was read back: a template saved months ago drew
+ * `12345`, and nothing on the form said which channel that was.
+ */
+test("reads a saved id back as the name the destination knows it by", async () => {
+  servingChannels(
+    [READING],
+    [aTemplate({ capability: "publish", arguments: { channel: "12345" } })],
+  );
+
+  render(Templates);
+  await open(/research/);
+  await open("Edit");
+
+  const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
+  await vi.waitFor(() => expect(field.value).toBe("Reading"));
+});
+
+/** An answer is one page of what a destination holds, and a group channel is not in it. */
+test("keeps a channel the browse never mentioned exactly as it was typed", async () => {
+  servingChannels([READING]);
+
+  render(Templates);
+  await open(/Make a template/);
+  const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "67890" } });
   await fireEvent.blur(field);
 
-  expect(field.value).toBe("12345");
+  expect(field.value).toBe("67890");
 });
 
 /**
