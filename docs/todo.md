@@ -16,17 +16,10 @@
 - [ ] command palette
 
 - [ ] stale and premature UI state
-  - ~~Immediately hiding a routed item from the queue is confusing~~ — closed 2026-09-08: the row is
-    **held** open where it stood until the reader looks away, and offers `process` again, which is
-    also the reach a second destination needed
-    ([plan](plans/held-row-and-a-fresh-queue.md)).
-  - ~~routed items do not disappear after template routing if user navigates away from queue and
-    back again~~ — closed 2026-09-08: arriving at the queue reads it again, and the action watcher
-    takes a row off it the moment something else processes the item.
-  - Still open: **no good way to see pending operations.** A held row says `retrying` while it is
+  - No good way to see pending operations. A held row says `retrying` while it is
     looked at and the corner speaks when the delivery resolves, but nothing shows everything in
     flight at once. Belongs with the routing-record and log readability items below.
-  - Still open: log does not show new items without refresh.
+  - Log does not show new items without refresh.
 
 - [ ] The markdown renderer is unchosen, so a text capture shows its asterisks.
   [standards.md](standards.md) says a text payload is CommonMark; the shell's `Prose` primitive
@@ -88,7 +81,12 @@
 
 ## Configuration
 
-- [ ] not sure if configuration of payloadTypes in config.toml is needed. Will a user ever be able to edit that for their specific notemap run? It reads as unnecessary since it has to be configured a certain way.
+- [x] ~~not sure if configuration of payloadTypes in config.toml is needed~~ — closed 2026-09-09.
+  It was not, and neither were `[[sources]]` or `[[enrichments]]`: the first had one correct value
+  the client hardcodes anyway, and the other two had no readers at all. All three left the file,
+  the payload types becoming a constant core hands a host
+  ([ADR 43](adr/0043-config-holds-what-an-install-is.md)). What the file holds now is what an
+  install is — paths, addresses, cadences, limits, accounts.
 - [ ] Destination configuration is way too clunky, not sensible to configure in BOTH config.toml and in the UI.
 - [ ] Whether the trigger window wants to be per template rather than per host. It is one number in
   `config.toml` today, which is right while every template files to the same laptop; a template
