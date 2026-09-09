@@ -55,6 +55,12 @@
     routing for free and needs to decide nothing about delivery. What is left is the capture format
     itself — what a person picks at capture time and what it fills in — which is a shell question.
 
+- [ ] picking folders in composer is strange and clunky, sometimes you have to click with mouse 
+  - it is not clear how to go back or use the current folder
+  - tabbing down the hierarchy has no effect on input field until you press "use <path>"
+
+## Templates
+
 ## Seeing what happened — log, routing records, revisions
 
 - [ ] Inspecting routing records is hard to view. Too much info, not structured well. What I want: destination + what the destination points at, i.e a url, filesystem folder, etc. Filepath or other pointer. Content. Maybe more but not much.
@@ -90,6 +96,19 @@
 
 ## Routing — templates, rules, conversion
 
+- [ ] Add time as an option using the {{created_at}} templates, if a template wants a filename based on the date, two captures on the same day would collide
+- [ ] Add a way to append text, or insert {{templates}} INSIDE the output of a capture. Requires capture output.
+- [ ] add way of picking a separate location for note and assets when using templates
+
+- [ ] Routing edits - being able to freely edit an item as it is routed. Settled: **amend, then route**, two operations that already exist - a frontend can make it one smooth gesture with no new architecture. Rewriting the capture _because of where it is going_ is a dead end, and ADR 19 records why so it does not get proposed again. Open no longer, as of 2026-08-24: the amendment stands, because it was an amendment of an
+  unprocessed item and the routing that sealed it never landed. Cancelling the reservation removes
+  it, so the item is unprocessed again and editable in place again — unless something was revised
+  from it meanwhile, which seals it for good, since rewriting it would leave that revision's trace
+  naming content which never produced it
+  ([ADR 21](adr/0021-an-item-is-editable-until-it-is-processed.md)).
+  - NOTE: when opening, re-evaluate ADRs, amend-then-route might be a bad option, multiple routing to different locations might want different formats for the same capture. Amending for each route would be confusing, and captures become static when they have been routed.
+  - NOTE: Another option would be to "clone" the capture (which is the amending behavior when it is been routed) and use that as routing. No new machinery. But consider together with "output" formats.
+
 - [ ] Conversion - changing or formatting an item on routing, for example, making an item a piece of a TODO list. Called conversion rather than a routing template since 2026-09-05: a **routing template** is now a saved routing decision, and the two were sharing a word.
   - AI conversions, where a local model formats an entry that may or may not be properly formatted
   - Shape settled in [ADR 19](adr/0019-a-destination-converts-and-the-delivery-records-what-went.md): the destination converts a copy, the work happens inside the delivery, and the bytes that landed come back to be stored on the routing record. Open: whether a conversion is configured in the delivery's arguments or in destination config, and whether one is itself a thing a person edits.
@@ -101,12 +120,6 @@
   output from `preview`, and a conversion that loses something says so in a note nobody parses.
   The repeatability worry this line carried is answered rather than solved: a preview is
   **indicative**, so a non-deterministic converter is allowed and the shell says what a preview is.
-- [ ] Routing edits - being able to freely edit an item as it is routed. Settled: **amend, then route**, two operations that already exist - a frontend can make it one smooth gesture with no new architecture. Rewriting the capture _because of where it is going_ is a dead end, and ADR 19 records why so it does not get proposed again. Open no longer, as of 2026-08-24: the amendment stands, because it was an amendment of an
-  unprocessed item and the routing that sealed it never landed. Cancelling the reservation removes
-  it, so the item is unprocessed again and editable in place again — unless something was revised
-  from it meanwhile, which seals it for good, since rewriting it would leave that revision's trace
-  naming content which never produced it
-  ([ADR 21](adr/0021-an-item-is-editable-until-it-is-processed.md)).
 - [ ] Routing rules - core.md has carried "how rules are expressed, how fan-out to several destinations is presented, and whether a rule may ever be trusted to fire unattended" since 2026-08-02. Half answered on 2026-09-05 by [ADR 34](adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md) and the [routing-templates plan](plans/routing-templates.md): a **routing template** is what a rule would have had for a right-hand side, a **trigger tag** applies one, and the sentence about a rule never delivering on its own was rewritten deliberately rather than discovered later. Still open, and only reachable once conditions exist: the rule table itself, fan-out to several destinations from one gesture, and precedence between rules.
   - Shipped 2026-09-07, and the half that is closed is closed in code as well as on paper: templates
     are pool state, a `route/` tag applies one, a fired one waits out a configured window so the
@@ -123,6 +136,9 @@
   notemap can cause a delivery. If that ever bites, the answer is a per-template restriction rather
   than a different design — noted here so it is reached for rather than reinvented.
 - [ ] A name that is taken - a capability that creates a file refuses a name that already exists, which is right and is not the whole answer. A template filing daily notes as `{{captured_at}}.md` collides on the second capture of the day: nothing is written, nothing is filed, and the item comes back to the queue. Raised 2026-09-07 from using the routing templates slice. Two answers, and they are not exclusive: `create-or-append` is what a daily note wants and the template that collided was pointed at the wrong capability, which the settings page could say; and a **collision policy** on the file capabilities — refuse, or append a number — which is an argument the adapters would declare and core would never interpret. The second wants its own slice and probably an ADR: it adds a word to an adapter's argument vocabulary, and it is useful to a decision made by hand as much as to a template.
+
+## Output
+- [ ] add option to render tags as markdown `#tag` entries at the end of the file instead of frontmatter items 
 
 ## Destinations and adapters
 
@@ -159,6 +175,10 @@
   exist for auto-routing** — the port can now answer this too, since a vault's tags are just another
   field's candidates, but no kind implements it, obsidian tags being read from the notes themselves
   rather than declared anywhere a filesystem adapter can see.
+
+## Inboxes
+
+- [ ] raycast extension for notemap to quickly jot down a note!
 
 ## Pool, store and correctness
 
