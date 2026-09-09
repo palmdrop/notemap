@@ -81,12 +81,6 @@
 
 ## Configuration
 
-- [x] ~~not sure if configuration of payloadTypes in config.toml is needed~~ — closed 2026-09-09.
-  It was not, and neither were `[[sources]]` or `[[enrichments]]`: the first had one correct value
-  the client hardcodes anyway, and the other two had no readers at all. All three left the file,
-  the payload types becoming a constant core hands a host
-  ([ADR 43](adr/0043-config-holds-what-an-install-is.md)). What the file holds now is what an
-  install is — paths, addresses, cadences, limits, accounts.
 - [ ] Destination configuration is way too clunky, not sensible to configure in BOTH config.toml and in the UI.
 - [ ] Whether the trigger window wants to be per template rather than per host. It is one number in
   `config.toml` today, which is right while every template files to the same laptop; a template
@@ -193,7 +187,3 @@
 - [ ] Consider redis for jobs in the future. Move the jobs managed out of the store port, let it be its own. Could be a piece of the store db, could be external. (Feel like I reimplement a lot of tried and tested things here.
   - same for pool/work, all the jobs management. Is there existing tools we could use for this instead?
 - [ ] Allow a user to have multiple pools? Use case: I route some captures to another pool, where I do more granular routing.
-
-## Ops
-
-- [ ] Workflow publishes a docker image for each commit, not just each release. Might not be necessary? Investigate
