@@ -4,7 +4,7 @@ import { expect, test, vi } from "vitest";
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool } from "$testing/pool";
-import { NO_OUTPUT_KEPT, NO_RECORDS_OFFLINE } from "$lib/said";
+import { NO_OUTPUT_KEPT, NO_POINTER_KEPT, NO_RECORDS_OFFLINE } from "$lib/said";
 import { dayOf } from "$lib/stamp";
 import Record from "./Record.svelte";
 
@@ -103,14 +103,38 @@ test("draws a record in full, against the capability's own schema", async () => 
   // A record that is not saying otherwise was delivered, so it does not say it.
   expect(screen.queryByText("delivered")).toBeNull();
 
+  // Text, never a link: nothing here guesses whether a string is a URL.
+  const pointer = screen.getByText("drafts/note.md");
+  expect(pointer.closest("a")).toBeNull();
+
+  // The decision is a second reading, and it is a press away.
+  expect(screen.queryByText("Directory")).toBeNull();
+  await fireEvent.click(screen.getByRole("button", { name: "the decision" }));
+
   // The titles the destination gives its fields, not the keys behind them.
   expect(await screen.findByText("Directory")).toBeDefined();
   expect(screen.getByText("drafts")).toBeDefined();
   expect(screen.getByText("Filename")).toBeDefined();
+});
 
-  // Text, never a link: nothing here guesses whether a string is a URL.
-  const pointer = screen.getByText("drafts/note.md");
-  expect(pointer.closest("a")).toBeNull();
+/** Where it landed is what somebody opening a record came for, so it leads. */
+test("leads with where it landed", async () => {
+  pool(answering());
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  expect(await screen.findByText("where it landed")).toBeDefined();
+  expect(screen.queryByText("arguments")).toBeNull();
+});
+
+test("says a destination that named no place to go and look", async () => {
+  pool(answering([{ ...RECORD, pointer: undefined }]));
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  expect(await screen.findByText(NO_POINTER_KEPT)).toBeDefined();
 });
 
 test("draws the arguments by their own keys when the destination cannot be described", async () => {
@@ -119,11 +143,14 @@ test("draws the arguments by their own keys when the destination cannot be descr
 
   render(Record, { item: "one", record: "rec" });
 
+  // The fallback is honest, not a failure: everything else still draws.
+  expect(await screen.findByText("drafts/note.md")).toBeDefined();
+
+  await fireEvent.click(screen.getByRole("button", { name: "the decision" }));
+
   expect(await screen.findByText("directory")).toBeDefined();
   expect(screen.getByText("filename")).toBeDefined();
   expect(screen.queryByText("Directory")).toBeNull();
-  // The fallback is honest, not a failure: everything else still draws.
-  expect(screen.getByText("drafts/note.md")).toBeDefined();
 });
 
 test("says a record this item does not have", async () => {
@@ -163,7 +190,7 @@ test("reads a decision the person carried out themselves", async () => {
 
   expect(await screen.findByText("the user")).toBeDefined();
   expect(screen.getByText("pasted into the fiction-a vault")).toBeDefined();
-  expect(screen.getByText("not recorded")).toBeDefined();
+  expect(screen.getByText(NO_POINTER_KEPT)).toBeDefined();
 });
 
 /** The name the wire carries, and what a person should read instead of it. */
@@ -224,9 +251,11 @@ test("says a decision the person carried out with nothing written down", async (
   render(Record, { item: "one", record: "rec" });
 
   expect(await screen.findByText("Marked done by hand")).toBeDefined();
-  // The heading stands with `none` beneath it, as an empty argument set does.
-  expect(screen.getByText("note")).toBeDefined();
-  expect(screen.getByText("none")).toBeDefined();
+  // Nothing was written down, so there is no note to head: a heading over
+  // `none` is a row spent saying that a person left a field empty.
+  expect(screen.queryByText("note")).toBeNull();
+  // Nor is there a decision to open: marking processed is not an argument set.
+  expect(screen.queryByRole("button", { name: "the decision" })).toBeNull();
 });
 
 test("says a delivery that kept no copy of what it sent", async () => {

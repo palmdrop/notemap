@@ -854,8 +854,17 @@ the three conditions are for.
 **A record is drawn in full**: what the delivery did, the destination by name, when the decision
 was made, the arguments it was given, and the pointer to where it landed. The **state** is there
 only where it is not `delivered` *(amended 2026-09-04)*, on the same reasoning as the row's line. Marking
-processed is routing whose destination is the person, so it reads as one, with its note where the
-arguments would be, and `none` where there is no note.
+processed is routing whose destination is the person, so it reads as one, with its note beneath the
+place — and nothing at all where there is no note, a heading over `none` being a row spent saying
+that somebody left a field empty.
+
+**Where it landed leads, and the decision is a press away** *(amended 2026-09-09; the arguments led
+and the pointer sat under them)*. Reading a record is almost always asking *where did this go, and
+what went* — a place to open and the bytes that were sent — so those two are the page and the
+arguments are behind `the decision`. Nothing is hidden that was not there before: a field name and a
+pattern expanded belong to somebody working out **why** it went there, which is a second reading of
+a record rather than the first. The arguments still draw against the capability's own schema when
+they are opened, and marking processed offers nothing to open, having made no argument set.
 
 **What it did is said, not the capability that did it.** A capability name is what a destination
 advertises and what a rule is written against ([CONTEXT.md](../../CONTEXT.md)), and a person
@@ -1424,10 +1433,23 @@ joined, nested objects flattened. `ActionKind` has twenty-seven members and will
 renderer per kind is that many places to drift from a shape nobody updates — and a kind nobody has
 written yet reads correctly for free.
 
-**A subject is shortened to its head and tail and links to the log narrowed to it.** The
-destination on a `routed` row stays an id: the action recorded one, and resolving it to a name is a
-second read and a cache. The order and the filter both live on the URL, so a reload and a shared
-link come back to the same reading.
+**A subject leads to the capture it is about** *(amended 2026-09-09; it led to the log narrowed to
+that subject)*. An entry naming an id is an entry a person cannot connect to anything they wrote, so
+the way to the item comes first and the **capture's own first words** are drawn in place of the id
+wherever this shell already holds it — never read for: what the cache has, or the shortened id it
+has instead. The narrowed log stays one word away, `only this`, since tracing one item's history is
+the second thing somebody wants there and not the first. The destination on a `routed` row stays an
+id: the action recorded one, and resolving it to a name is a second read and a cache. The order and
+the filter both live on the URL, so a reload and a shared link come back to the same reading.
+
+**What has happened since goes to the head of the page** *(added 2026-09-09)*. The shell already
+reads the action log on its own tempo for the corner to speak from, and the log was the one surface
+that did not listen to it: a page read on arriving stayed the photograph it was taken as, and
+seeing anything new meant reloading. It listens now, and what arrives is put above what is drawn.
+**Newest-first only** — read oldest-first the walk starts at the oldest entry and what just happened
+belongs past the end of a walk nobody has finished, where the walk itself will bring it. More
+happening between two asks than a page holds is not a head to add: the whole reading is stale, and
+it is read again from the top.
 
 **The rail takes a measure of its own**, narrower than the register's — it holds a stamp and one
 short word where the register's holds a row's whole account — and `2026-09-02` fits on one line at

@@ -44,6 +44,15 @@ function joined(
   return [...held, ...arriving.filter((action) => !seen.has(action.id))];
 }
 
+/** The same, at the head: what has happened since the page was read. */
+function ahead(
+  held: readonly Action[],
+  arriving: readonly Action[],
+): readonly Action[] {
+  const seen = new Set(held.map((action) => action.id));
+  return [...arriving.filter((action) => !seen.has(action.id)), ...held];
+}
+
 async function walk(from: ActionPosition | undefined): Promise<void> {
   const mine = walking;
   loading = true;
@@ -121,6 +130,28 @@ export const log = {
     const same = wanted === order && subject === item;
     if (same && (answered || loading)) return;
     restart(wanted, subject);
+  },
+
+  /**
+   * What the pool has done since, put at the head of what is drawn. The watcher
+   * asks on its own tempo for the corner to speak from, and this is the same
+   * news read as a page — so a log left open stops being a photograph of the
+   * moment it was opened.
+   *
+   * **Newest-first only.** Read the other way the page starts at the oldest
+   * entry and what just happened belongs past the end of a walk nobody has
+   * finished; putting it under page one would place it beside entries from
+   * months before it. Read the other way round, the walk is what brings it.
+   */
+  arrived(actions: readonly Action[]): void {
+    if (!answered || order !== "newest-first") return;
+
+    const wanted = actions.filter(
+      (action) => item === undefined || action.subject === item,
+    );
+    if (wanted.length === 0) return;
+
+    rows = ahead(rows, [...wanted].reverse());
   },
 
   /**

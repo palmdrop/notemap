@@ -19,7 +19,9 @@
   - No good way to see pending operations. A held row says `retrying` while it is
     looked at and the corner speaks when the delivery resolves, but nothing shows everything in
     flight at once. Belongs with the routing-record and log readability items below.
-  - Log does not show new items without refresh.
+  - ~~Log does not show new items without refresh~~ — closed 2026-09-09: the log listens to the
+    watcher the corner already speaks from, and what has happened since goes to the head of the
+    page. Newest-first only; read the other way the walk is what brings it.
 
 - [ ] The markdown renderer is unchosen, so a text capture shows its asterisks.
   [standards.md](standards.md) says a text payload is CommonMark; the shell's `Prose` primitive
@@ -63,13 +65,20 @@
 
 ## Seeing what happened — log, routing records, revisions
 
-- [ ] Inspecting routing records is hard to view. Too much info, not structured well. What I want: destination + what the destination points at, i.e a url, filesystem folder, etc. Filepath or other pointer. Content. Maybe more but not much.
+- [x] ~~Inspecting routing records is hard to view~~ — closed 2026-09-09: the record leads with
+  where it landed and what was sent, which is what most readings of one are for, and the arguments
+  are behind `the decision` for the reading that is working out why it went there.
 - [ ] add new UI views
     - routing view, showing all routed items. Maybe rather a human-readable action log with a
       "routing" filter than a page of its own — the user needs a way to inspect the effects of
       their actions.
-        - hide unnecessary items from log
-        - log entries should link to the capture. It needs to be easier to connect a log entry to the capture it actually pertains to.
+        - hide unnecessary items from log. **Wants the pool's help**: `GET /v1/actions` filters by
+          item and nothing else, so a shell-side filter would page over rows it then throws away and
+          the count under the register would stop meaning anything. A `kind` filter on the query is
+          the honest version, and it crosses core, `http-v1` and the client.
+        - ~~log entries should link to the capture~~ — closed 2026-09-09: the subject is a way to the
+          item, drawn as the capture's own first words where the shell holds them, with the narrowed
+          log a word away.
 - [ ] Certain feed views allow me to view all revisions, all entries, open to see
 - [ ] **Nothing in the shell can ask for a revision.** Editing is offered on the queue, which holds
   unprocessed items only, and the feed offers no edit at all — so the revision path is reachable
