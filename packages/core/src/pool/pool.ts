@@ -98,22 +98,15 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
       report: (id, signal) => templates.report(ports, id, signal),
       resolve: (item, id) => templates.resolve(config, ports, item, id),
       route: (item, id, options) =>
-        templates.routeFrom(
-          config,
-          ports,
-          item,
-          id,
-          options?.firedByTag ?? false,
-          options?.signal,
-        ),
+        templates.routeFrom(config, ports, item, id, options),
     },
 
     routing: {
       route: (item, delivery, signal) =>
-        routing.route(ports, item, delivery, signal),
+        routing.route(config, ports, item, delivery, signal),
       deliveryFor: (record) => routing.deliveryFor(ports, record),
       preview: (item, delivery, signal) =>
-        routing.preview(ports, item, delivery, signal),
+        routing.preview(config, ports, item, delivery, signal),
       cancelDelivery: (record) => routing.cancelDelivery(ports, record),
       markProcessed: (item, note) => routing.markProcessed(ports, item, note),
       recordsFor: (item) => routing.recordsFor(ports, item),

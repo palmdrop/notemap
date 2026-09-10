@@ -119,6 +119,8 @@ export type RoutingRecordRow = {
   readonly note: string | null;
   /** JSON, and only for a destination: what the capability was pointed at. */
   readonly arguments: string | null;
+  /** JSON, and only for a destination: the rewrite the decision was made with, where it carried one. */
+  readonly content: string | null;
   readonly state: "pending" | "delivered";
   readonly at: number;
   readonly pointer: string | null;
@@ -226,6 +228,7 @@ export const TABLE_COLUMNS = {
     "id",
     "item_id",
     "target_kind",
+    "content",
     "destination",
     "capability",
     "note",

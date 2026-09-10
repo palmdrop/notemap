@@ -361,6 +361,28 @@ describe("routing from a template", () => {
     });
   });
 
+  /** A template says where an item goes and never what it says, so the rewrite rides beside it. */
+  it("carries a rewrite the decision was made with, and still names the template", async () => {
+    const opened = await pooled();
+    const { pool } = opened;
+    const template = succeeded(await pool.templates.create(draft()));
+    const item = captured(await pool.capture(envelope()));
+
+    const record = succeeded(
+      await pool.templates.route(item.id, template.id, {
+        content: { text: "a thought, tidied" },
+      }),
+    );
+
+    expect(record.target).toMatchObject({
+      content: { text: "a thought, tidied" },
+    });
+    expect(record.applied?.template).toBe(template.id);
+    expect(opened.destination.received[0]?.delivery.payload.content).toEqual({
+      text: "a thought, tidied",
+    });
+  });
+
   it("says a tag applied it where the tag did", async () => {
     const { pool } = await pooled();
     const template = succeeded(

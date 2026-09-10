@@ -286,19 +286,35 @@ about the item is handed to the adapter, which reaches back for nothing. A deliv
 until it lands, and then either delivered or abandoned; a person may cancel one that is still
 pending. Reshaping the item into the destination's dialect happens here, inside the delivery, and
 never to the capture — so one item reaches several destinations in several forms and none of them
-is the item.
+is the item. A delivery may also carry **its own words** in place of the capture's, a **rewrite**,
+which is the person's half of the same arrangement.
 _Avoid_: push, transfer, upload
+
+**Rewrite**:
+The words one delivery carries in place of the capture's, supplied by a person when the decision is
+made and held on the **routing record** — so one capture reaches two destinations in two wordings
+and each record says which it sent. Checked against the item's payload type exactly as a capture is,
+and carried by the reservation, so a delivery attempted hours later replays the words it was decided
+with. It rewrites the **delivery** and never the capture: rewriting the capture is what **editing**
+is, permanent and for every later route, and it is what routing must never do. The words are the
+input to a **conversion**, not a replacement for one — the destination still shapes them — and the
+capture's assets are untouched by one.
+_Avoid_: amendment, revision, edit, conversion. Each is a different act already glossed here:
+amendment and revision are what an edit makes of the capture, and a conversion is the destination's.
 
 **Conversion**:
 A destination reshaping a copy of an item on its way out — into a list entry, a front-matter block,
 a dialect of markdown that is not the item's. It happens inside the **delivery**, never to the
-capture, and what it produced is kept as the **output**. Distinct from a **routing template**, which
-says where an item goes and never what shape it arrives in.
+capture, and what it produced is kept as the **output**. Reshapes the **rewrite** where the delivery
+carries one, and the capture's own words otherwise: what is converted is what was sent, and the
+destination owns the shape either way. Distinct from a **routing template**, which says where an
+item goes and never what shape it arrives in.
 _Avoid_: template, transform, formatting. Template names the saved routing decision below.
 
 **Output**:
 The content a delivery produced — what the destination actually wrote, in the destination's own
-dialect rather than the item's. Optional, because a destination posting to an API may have nothing
+dialect rather than the item's, and made from the **rewrite** where the delivery carried one.
+Optional, because a destination posting to an API may have nothing
 meaningful to keep, and named by the **routing record** rather than by the item, since two
 destinations produce two outputs from one item. Carries a media type and may carry a **note**: free
 prose about what could not be carried, which nothing parses. A destination may also be asked for
@@ -313,7 +329,8 @@ One delivery, and the whole of what notemap remembers about it: destination, cap
 arguments the capability was given, the time the decision was made, and a best-effort pointer to
 where the item landed. A stale pointer
 is acceptable. The arguments are remembered rather than consumed, because a delivery that has not
-landed is attempted again from the record alone. A record begins as a
+landed is attempted again from the record alone, and a **rewrite** is remembered on the same terms
+where the decision carried one. A record begins as a
 **reservation** the moment the decision is made and joins the append-only log when its delivery
 lands; a reservation whose delivery is abandoned or cancelled is removed, since nothing happened to
 record. So a record that is not pending means bytes reached somewhere. Where a destination reshaped

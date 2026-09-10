@@ -2,8 +2,15 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one and health are settled; the rest is stub
-**Last updated**: 2026-09-09
+**Last updated**: 2026-09-10
 **Shipped**:
+
+- 2026-09-10 — **`/route` and `/route/preview` take the words a delivery carries.** Both bodies
+  gained an optional `content` beside the arguments, on the destination shape and the template
+  shape alike; content that fails the item's payload type is `422 content-invalid` with issues, and
+  a record carries in its `target` the words it was decided with.
+  ([routing-edits](../plans/routing-edits.md),
+  [ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md))
 
 - 2026-09-09 — **A destination can be asked what one value it holds is called.**
   `GET /v1/destinations/{id}/named?capability&field&value` answers the entry that value names, or
@@ -1187,12 +1194,48 @@ now.
   `payload-invalid` uses. None of them touches the destination.
 - An id no item has is `404 no-such-item`.
 
+**A delivery may carry its own content** (added 2026-09-10,
+[ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md)). The body takes an optional
+`content` beside the arguments, and the destination is handed those words in place of the item's:
+
+```json
+{
+  "destination": "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
+  "capability": "create",
+  "arguments": { "directory": "inbox", "filename": "a-thought.md" },
+  "content": { "text": "a thought, tidied" }
+}
+```
+
+- **The item is not changed.** Rewriting the capture is what `PUT /v1/items/{id}` does; this
+  rewrites one delivery and nothing else, so the same item may be routed twice in two wordings and
+  each record says which it sent. The record carries the words in its `target`, beside the
+  arguments and remembered for the same reason: a delivery that has not landed is attempted again
+  from the record alone.
+- **Beside the arguments, never inside them.** Arguments are the capability's and the adapter reads
+  them; `content` is the item's own payload content, checked against the item's payload type's
+  `contentSchema` — the identical check a capture gets. Content that fails it is
+  `422 content-invalid`, carrying `issues` in the shape `arguments-invalid` uses. Nothing is
+  attempted and nothing is written.
+- An item whose payload type this daemon has no descriptor for is `422 unknown-payload-type`. It is
+  raised on this route only where `content` is supplied, since nothing else here reads that schema.
+- **Absent means the item's own words**, which is what every request that does not carry one says
+  and what every record written before this existed says. There is no flag; the presence is the
+  fact.
+- **The assets are the capture's either way.** `content` replaces the payload's content and nothing
+  else, so a rewrite cannot drop a picture.
+- **The destination still converts.** The words are the input to whatever the kind does with them —
+  a list marker, front matter, a `#tag` foot — rather than a replacement for it.
+
 **One route, two bodies** (added 2026-09-07). The same route accepts a **template** in place of the
 three fields:
 
 ```json
 { "template": "019a41b8-0e6e-7c31-9f3a-6b1f2d5c4a91" }
 ```
+
+A template body takes `content` too. A template says where an item goes and never what it says, so
+the words are the request's rather than the template's, and a decision made from one may carry both.
 
 - **Because it is one decision either way.** A second route would be a second path to the same
   effect, with the same refusals and the same record, differing only in who wrote down the
@@ -1272,10 +1315,15 @@ committed. It takes exactly the body `/route` takes.
   `200`. A delivery the destination would refuse, one that could not be reached, and a kind that
   does not offer previewing at all are answers rather than failures: none of them stops the
   decision being made, only the seeing of it.
+- **It takes `content` too** (added 2026-09-10), on `/route`'s own terms: the destination is asked
+  what it would write from the supplied words rather than the item's, so rewriting and previewing
+  are one loop. Nothing extra was needed for it — the two share one preparation — and a preview of
+  words that have since changed is worthless, so a client that keeps one clears it when they do.
 - **Refused for the reasons `/route` is refused** — `422 unknown-destination`,
   `422 capability-undeclared`, `422 payload-type-unsupported`, `422 arguments-invalid`,
-  `409 destination-retired`, `409 destination-unusable`, `404 no-such-item` — because a preview
-  that answered where a route would refuse would be describing a decision nobody can make.
+  `422 content-invalid`, `409 destination-retired`, `409 destination-unusable`, `404 no-such-item`
+  — because a preview that answered where a route would refuse would be describing a decision
+  nobody can make.
 - Nothing is cached: a shell asks when a person asks, and the answer describes a moment.
 
 ### Reading what a delivery produced
@@ -1345,7 +1393,9 @@ committed. It takes exactly the body `/route` takes.
   ([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)). Marking an item
   processed is delivered by construction; a record routed to a destination may be either, and the
   field is the same field. A `destination` target additionally carries the `arguments` the delivery
-  named there, because a delivery that has not landed is attempted again from the record alone.
+  named there, because a delivery that has not landed is attempted again from the record alone, and
+  the `content` it was decided with where the delivery carried words of its own. Absent `content`
+  means the item's own words.
 - A record that is pending disappears rather than changing state if its delivery is abandoned or
   cancelled, and the item returns to the queue. So a record this route answers at all either has
   delivered or is still going to be tried.
@@ -1577,6 +1627,7 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `field-not-askable` | `capability`, `field` | daemon |
 | `422` | `payload-type-unsupported` | `type`, `accepts` | core |
 | `422` | `arguments-invalid` | `issues` | core |
+| `422` | `content-invalid` | `issues` | core |
 | `422` | `rejected-by-destination` | `detail` | core |
 | `422` | `delivery-outcome-unknown` | `detail` | core |
 | `422` | `not-a-session` | `presented` | daemon |

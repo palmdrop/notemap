@@ -2,7 +2,12 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
 import type { Asset } from "#types/domain/asset";
-import type { ItemId, Timestamp } from "#types/domain/ids";
+import type {
+  CapabilityName,
+  DestinationId,
+  ItemId,
+  Timestamp,
+} from "#types/domain/ids";
 import type { Item } from "#types/domain/item";
 import type { RoutingRecord } from "#types/domain/routing";
 
@@ -239,6 +244,28 @@ describe("what the record leaves out", () => {
     const record = projectMirrorRecord(anItem(), [], [], [delivered, pending]);
 
     expect(record.routing).toEqual([delivered]);
+  });
+
+  /** The words a delivery was decided with are as much the record as the place it named. */
+  it("carries the rewrite a record was decided with", () => {
+    const rewritten: RoutingRecord = {
+      id: "routing-1" as RoutingRecord["id"],
+      item: "item-1" as ItemId,
+      target: {
+        kind: "destination",
+        destination: "vault" as DestinationId,
+        capability: "create-note" as CapabilityName,
+        arguments: { path: "inbox/a.md" },
+        content: { text: "a thought, tidied" },
+      },
+      state: "delivered",
+      at: at("2026-08-11T09:00:00.000Z"),
+    };
+
+    const record = projectMirrorRecord(anItem(), [], [], [rewritten]);
+
+    expect(record.routing).toEqual([rewritten]);
+    expect(parseMirrorRecord(serialiseMirrorRecord(record))).toEqual(record);
   });
 
   it("carries modifiedAt, which verify compares and rebuild ignores", () => {

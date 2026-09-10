@@ -2,6 +2,7 @@ import { route } from "../routing/route";
 import { refused } from "#utils/result";
 import type { PoolConfig } from "#types/api/config";
 import type { PoolPorts } from "#types/api/ports";
+import type { TemplateRouting } from "#types/api/pool";
 import type { TemplateRoutingRefusal } from "#types/api/refusal";
 import type { ItemId, RoutingTemplateId } from "#types/domain/ids";
 import type { Item } from "#types/domain/item";
@@ -46,8 +47,7 @@ export async function routeFrom(
   ports: PoolPorts,
   item: ItemId,
   id: RoutingTemplateId,
-  firedByTag: boolean,
-  signal?: AbortSignal,
+  options: TemplateRouting = {},
 ): Promise<Result<RoutingRecord, TemplateRoutingRefusal>> {
   const [held, template] = await Promise.all([
     ports.store.item(item),
@@ -66,10 +66,19 @@ export async function routeFrom(
     });
   }
 
-  return route(ports, item, requestFor(config, held, template), signal, {
-    template: template.id,
-    firedByTag,
-  });
+  const request = requestFor(config, held, template);
+  // Not the template's — a template says where an item goes and never what it
+  // says — so it rides beside the expansion rather than being part of it.
+  const { content } = options;
+
+  return route(
+    config,
+    ports,
+    item,
+    content === undefined ? request : { ...request, content },
+    options.signal,
+    { template: template.id, firedByTag: options.firedByTag ?? false },
+  );
 }
 
 /** The expansion a decision from this template makes, however it was reached. */

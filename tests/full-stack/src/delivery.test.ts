@@ -1,4 +1,5 @@
-import { readdir } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -49,6 +50,44 @@ describe("a delivery, on the daemon's own timer", () => {
     expect(records.map((record) => record.id)).toEqual([owed.id]);
     expect(records[0]?.state).toBe("pending");
     expect(await delivered(running.world.down)).toBeUndefined();
+  });
+
+  /**
+   * The words go over the real transport, through the real body schema, and
+   * come out of a real markdown renderer. Nothing below this layer can say
+   * whether `content` survived every one of them.
+   */
+  it("writes the words the decision carried, and leaves the capture alone", async () => {
+    const running = await daemon();
+    const client = running.client;
+    const vault = await vaults(running);
+
+    const captured = await client.capture({
+      channel: MANUAL,
+      text: "a thought",
+    });
+    await client.drain();
+
+    const record = await client.routing.route(captured.id, {
+      destination: vault.up,
+      capability: "create",
+      arguments: { directory: "inbox", filename: "a-thought.md" },
+      content: { text: "a thought, tidied" },
+    });
+
+    const landed = await until("the vault to hold the delivery", () =>
+      delivered(running.world.up),
+    );
+
+    expect(await readFile(join(running.world.up, landed), "utf8")).toContain(
+      "a thought, tidied",
+    );
+    expect(record.target).toMatchObject({
+      content: { text: "a thought, tidied" },
+    });
+    expect((await client.item(captured.id)).item?.payload.content).toEqual({
+      text: "a thought",
+    });
   });
 
   /**

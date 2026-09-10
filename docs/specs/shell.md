@@ -1,8 +1,17 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-09
+**Last updated**: 2026-09-10
 **Shipped**:
+
+- 2026-09-10 — **The composer can rewrite the words one delivery carries, and a record says which
+  words went.** A `words` row in the right column, directly above `would write`, drawing the
+  capture; `rewrite` opens it for typing and `keep the capture's` puts it back. The words survive a
+  change of destination, never survive the composer, clear the preview when they change, and carry
+  nothing where nobody changed them. A record that carried its own words draws them above what was
+  sent. `rewrite` is one delivery where the row's `edit` is the item.
+  ([routing-edits](../plans/routing-edits.md),
+  [ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md))
 
 - 2026-09-09 — **A channel reads as its title everywhere a decision is drawn.** The template form's
   line, the settings template list, a routing record and a row's routing line all say `Reading`
@@ -862,6 +871,36 @@ that capability's form rather than the line. Overwriting it made the commit read
 the person's own: the record did not name the template, and an `establish` template never learnt
 its folder was there.
 
+**The words a delivery carries sit above `would write`** *(added 2026-09-10,
+[ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md))*. A `words` row in the right column,
+directly above the preview, so what is being sent reads above what it becomes and rewriting and
+previewing are one loop. It draws the capture, and `rewrite` opens those words for typing. A
+`Labelled` rather than a `Group`: the right column is terse rows beside the decision, and the
+decision is the line in the left one.
+
+**`rewrite` is not `edit`, and the two words are the whole defence.** The row's `edit` rewrites the
+capture in place, permanently, for the feed and every later route
+([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)). `rewrite` is this delivery
+and nothing else: the item still says what it said, and the routing record holds the words that
+went. Two controls an aisle apart both called `edit` is how somebody permanently rewrites a capture
+meaning to fix one delivery.
+
+It is drawn only where a **real destination** is taken. `manual` and `discard` deliver nothing, so
+there is nothing to rewrite.
+
+**`keep the capture's` is the way back, and words nobody changed carry nothing.** Opening the field
+is not a decision — a person who opens it, reads what is there and types nothing has rewritten
+nothing, so a request whose words still say what the capture says carries no `content` at all. The
+presence of content on a record is the claim that somebody rewrote it, and it is a claim this
+composer only makes where it is true.
+
+**The words survive a change of destination, where the arguments are cleared.** A place in one
+vault means nothing in another; words are not about the destination at all, and clearing them would
+make somebody re-type a typo fix for picking a different board. **Each route starts from the
+capture**, though: a rewrite belongs to one delivery and is never sticky, and wanting the fix
+everywhere is wanting `edit`. An empty rewrite is whatever the payload's own schema allows — a
+capture carrying assets and no text is already legitimate, so no rule is invented here.
+
 **A preview is asked for, never volunteered** (added 2026-09-04). `preview` sits beside `route` and
 runs once the arguments are settled, because the conversion may reach the destination or a model —
 the same reasoning that describes only the destination a person chose. What comes back says what it
@@ -871,15 +910,18 @@ delivery converts again when it runs
 where the two differ that is a fact about the destination rather than a fault.
 
 Changing any part of the decision **drops what was shown** rather than leaving it under the line: a
-preview belongs to the arguments it was asked with, and a stale one reads as a promise about the
-new ones. A kind that offers no preview, and a destination that could not be reached to give one,
-are muted lines saying so — the same idiom the typed line uses for a vault it cannot list, and
-neither ever blocks `route`. A delivery the destination says it would refuse is drawn as that, and where a kind can
-say so it is the case a preview is worth most in — the refusal arriving before the decision rather
-than after it. **Not every kind can.** A refusal a delivery only discovers by attempting the write
-is one its preview cannot forecast without a request the delivery itself never makes; the webdav
-kind's conditional `PUT` is exactly that, so it shows the note and the delivery that follows is
-what refuses. A preview is indicative about refusals as it is about bytes.
+preview belongs to the arguments it was asked with, and a stale one reads as a promise about the new
+ones. **The words are part of the decision** for this, so a keystroke in them clears the preview too
+— a preview of words that have since changed is indistinguishable from a good one, which is the
+exact failure ADR 33 names. A kind that offers no preview, and a destination that could not be
+reached to give one, are muted lines saying so — the same idiom the typed line uses for a vault it
+cannot list, and neither ever blocks `route`. A delivery the destination says it would refuse is
+drawn as that, and where a kind can say so it is the case a preview is worth most in — the refusal
+arriving before the decision rather than after it. **Not every kind can.** A refusal a delivery only
+discovers by attempting the write is one its preview cannot forecast without a request the delivery
+itself never makes; the webdav kind's conditional `PUT` is exactly that, so it shows the note and
+the delivery that follows is what refuses. A preview is indicative about refusals as it is about
+bytes.
 
 The composer is still shaped for one thing it does not have: a slot above `where` for a decision
 that arrived **pre-filled with an attribution**, which is the one shape a routing rule, a capture
@@ -979,6 +1021,15 @@ along — but **opening a record is the asking**: whoever came to this address c
 sent, and a press between them and it is a step that answers nothing. So the fetch runs on arrival
 and nothing waits on a button. What that costs is one request per record opened, which is the
 narrowest place to pay it: nothing prefetches, and a record nobody opens is never read.
+
+**The words a delivery carried are drawn above what was sent** *(added 2026-09-10,
+[ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md))*, and only where it carried its own:
+a record whose delivery said what the item says draws no such block, on the record's own terms —
+absent content means the capture's. Where it is there, a line under it says the delivery carried
+those words rather than the item's and that the item was not changed. The item's link on the rail
+still says what the item says **now**, which is the point of drawing both: what went is the
+question a record is opened with, and a capture edited since would otherwise be the only answer on
+the page.
 
 A read that fails says why and offers to go again, and **is not retried on its own** — a blob that
 is gone stays gone, and a surface that kept asking would be a loop nobody asked for. A record whose

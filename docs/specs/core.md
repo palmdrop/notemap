@@ -1,8 +1,16 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-09-09
+**Last updated**: 2026-09-10
 **Shipped**:
+
+- 2026-09-10 — **A delivery may carry its own content, and the reservation holds it.** A routing
+  request may supply the words one delivery carries in place of the capture's; core checks them
+  against the item's payload type exactly as it checks a capture, substitutes them into the payload
+  it hands the adapter, and the routing record keeps them beside the arguments, so a deferred
+  delivery replays the words it was decided with. The item is untouched, so one capture reaches two
+  destinations in two wordings. ([routing-edits](../plans/routing-edits.md),
+  [ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md))
 
 - 2026-09-09 — **A destination can be asked what one value it holds is called.**
   `destinations.naming` joins `candidates` on the pool API and on the `Destinations` port, optional
@@ -939,6 +947,39 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   entry — happen inside the delivery, where the dialect already lives. Amending the capture into
   the destination's shape first is not an option: one item may go to three destinations in three
   dialects, so the last to route would win and the original would be gone.
+- **A delivery may carry its own content, and the reservation holds it** (added 2026-09-10,
+  [ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md)). A routing request may supply the
+  words this one delivery carries in place of the capture's. Core checks them against the item's
+  payload type's own `contentSchema` — the identical check a capture gets, refused as
+  `content-invalid` with issues — and substitutes them into the payload it hands the adapter. The
+  item is untouched, so one capture reaches two destinations in two wordings and neither overwrites
+  the other. Absent content means the item's own words, which is what every record written before
+  this existed says; there is no flag, and the presence is the fact.
+- **A rewrite is refused where an edit is forgiven, and the difference is the schema.** An item
+  whose payload type the running config no longer names is refused as `unknown-payload-type` — but
+  only where a request carries content, since nothing else on this path reads that schema. Editing
+  such an item is deliberately allowed through unchecked, because an edit keeps the type the pool
+  already holds and there is nothing to check it against. A rewrite cannot have that: the whole of
+  what it promises is the identical check a capture gets, so where that check cannot run, the
+  delivery is refused rather than carrying words nobody validated. Routing the item without words
+  of its own goes on working.
+- **The words are the person's, and the shape is still the destination's.** Supplied content is the
+  *input* to a conversion rather than a replacement for one: a list marker, front matter and a tag
+  foot apply to it exactly as they would have applied to the capture's words. Only the payload's
+  content is replaced — `assets` and `metadata` are the capture's — so a rewrite cannot silently
+  drop a picture.
+- **The routing record carries it, beside the arguments and for the same reason.** A deferred
+  delivery is attempted from the record alone, so a reservation that could not say what words it
+  was decided with would replay the capture's on every retry. This narrows the line
+  [ADR 33](../adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md) drew
+  rather than reversing it: what a reservation may not carry is a **destination's** converted
+  output, which is produced before the destination is reached, goes stale, and cannot be honest for
+  a capability that resolves itself at write time. A person's words are a decision rather than a
+  conversion and are as true in six hours as when they were typed.
+- **Amending the capture and cloning it were both refused.** Amendment is
+  [ADR 19](../adr/0019-a-destination-converts-and-the-delivery-records-what-went.md)'s own dead
+  end, reached again from the editing side: one amended form cannot serve two destinations, so the
+  last route would win. A clone makes an item nobody asked for and puts a twin in the queue.
 - **Conversion needs no state of its own.** A delivery mid-conversion is a pending reservation, the
   job holds its lease, and a slow one extends it. A host that dies mid-conversion lands on the
   unknown-outcome rule and is abandoned rather than retried, exactly as any other delivery is.
@@ -996,8 +1037,11 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   `preview` share one conversion because the kind is written that way; nothing in core can enforce
   it, and a kind whose preview drifts from its delivery is a bug in that kind.
 - **A preview is refused for the reasons a route is refused** — an unknown destination, an
-  undeclared capability, a payload type not accepted, arguments that fail the schema — because one
-  that answered where a route would refuse would be describing a decision nobody can make.
+  undeclared capability, a payload type not accepted, arguments that fail the schema, content that
+  fails the payload type's — because one that answered where a route would refuse would be
+  describing a decision nobody can make. It takes the content a delivery takes and needed nothing
+  of its own for it: the two share one preparation, so previewing a rewrite works the moment
+  routing one does.
   `unreachable`, `rejected` and `not-offered` are **reported** rather than refused: none of them
   stops the decision being made, only the seeing of it. Optional on the adapter, with the port
   turning an absent method into `not-offered`, on `candidates`' terms.

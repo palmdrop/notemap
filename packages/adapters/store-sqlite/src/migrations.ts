@@ -824,6 +824,19 @@ export const MIGRATIONS: readonly string[] = [
   WHERE state = 'pending'
     AND capability IN ('create-file', 'append-to-file', 'create-or-append-file');
   `,
+
+  `
+  -- The words one delivery carries in place of the capture's, supplied when the
+  -- decision was made. Remembered on \`arguments\`' own terms: a reservation is
+  -- attempted again from the record alone, so a rewrite that was consumed by the
+  -- one inline attempt would come back as the capture on every retry.
+  --
+  -- Only a destination target has one. A \`user\` target is a person saying where
+  -- they carried something themselves, and nothing was converted for it.
+  ALTER TABLE routing_records
+    ADD COLUMN content TEXT
+    CHECK (content IS NULL OR target_kind = 'destination');
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

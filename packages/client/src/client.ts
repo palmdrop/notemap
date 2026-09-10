@@ -6,7 +6,7 @@ import { createApi, answered } from "./api/http";
 import type { AssetId, Item, ItemId, PoolIdentity } from "./api/types";
 import { releasedBy } from "./assets/assets";
 import { envelopeFor, optimisticItem } from "./capture/envelope";
-import { rewritten, saidIn } from "./capture/says";
+import { saidAs, saidIn } from "./capture/says";
 import { PoolChanged, Refused, saidBy, Unreachable } from "./errors";
 import { derived, writable, type Writable } from "./observable/observable";
 import { createDestinations } from "./destinations/destinations";
@@ -459,7 +459,7 @@ export function createClient(config: ClientConfig): Client {
       }),
 
     /** What an edit starts from: the payload as it stands, with new words in it. */
-    saying: (item, said) => rewritten(item.payload, said),
+    saying: (item, said) => saidAs(item.payload, said),
 
     // A fresh id per call, not per file: nothing here replays an attachment, so
     // two calls over one file are two assets, as two uploads have always been.

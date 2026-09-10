@@ -274,3 +274,40 @@ describe("when a delivery reads the bytes", () => {
     );
   });
 });
+
+describe("when the delivery carries its own words", () => {
+  it("hands the adapter those words in place of the capture's", async () => {
+    const wired = ports({ assets: [], artifacts: [] });
+
+    const delivery = await projectDelivery(wired, item(), {
+      ...REQUEST,
+      content: { body: "a thought, tidied" },
+    });
+
+    expect(delivery.payload.content).toEqual({ body: "a thought, tidied" });
+  });
+
+  /** A rewrite is words. Losing a picture to one would be a silent deletion. */
+  it("leaves the assets and the metadata as the capture has them", async () => {
+    const wired = ports({ assets: [asset("a")], artifacts: [] });
+    const stored = item([{ slot: "photo", asset: "a" }]);
+
+    const delivery = await projectDelivery(wired, stored, {
+      ...REQUEST,
+      content: { body: "a thought, tidied" },
+    });
+
+    expect(delivery.payload.assets).toEqual(stored.payload.assets);
+    expect(delivery.payload.metadata).toEqual(stored.payload.metadata);
+    expect(delivery.payload.type).toEqual(stored.payload.type);
+    expect(delivery.assets.map((each) => each.asset.id)).toEqual(["a"]);
+  });
+
+  it("hands over the capture's own words where the request carries none", async () => {
+    const wired = ports({ assets: [], artifacts: [] });
+
+    const delivery = await projectDelivery(wired, item(), REQUEST);
+
+    expect(delivery.payload.content).toEqual({ body: "a thought" });
+  });
+});

@@ -1,5 +1,7 @@
+import { checkPayload } from "../payload";
 import { Unusable, usability } from "../destinations/usability";
 import { ok, refused } from "#utils/result";
+import type { PoolConfig } from "#types/api/config";
 import type { PoolPorts } from "#types/api/ports";
 import type { PreparationRefusal } from "#types/api/refusal";
 import type {
@@ -28,6 +30,7 @@ export type Unprepared =
  * still looking at the item. Nothing here reserves, mints or appends.
  */
 export async function prepare(
+  config: PoolConfig,
   ports: PoolPorts,
   item: ItemId,
   request: DeliveryRequest,
@@ -36,19 +39,20 @@ export async function prepare(
   const stored = await ports.store.item(item);
   if (stored === undefined) return refused({ kind: "no-such-item", item });
 
-  return prepareFor(ports, stored, request, signal);
+  return prepareFor(config, ports, stored, request, signal);
 }
 
 /**
  * Check and project, against an item the caller is already holding.
  */
 export async function prepareFor(
+  config: PoolConfig,
   ports: PoolPorts,
   stored: Item,
   request: DeliveryRequest,
   signal?: AbortSignal,
 ): Promise<Result<Prepared, Unprepared>> {
-  const checked = await checkFor(ports, stored, request, signal);
+  const checked = await checkFor(config, ports, stored, request, signal);
   if (checked.kind === "refused") return checked;
 
   return ok({
@@ -66,11 +70,15 @@ export async function prepareFor(
  * use for a delivery, and building one reads the item's assets for nothing.
  */
 export async function checkFor(
+  config: PoolConfig,
   ports: PoolPorts,
   stored: Item,
   request: DeliveryRequest,
   signal?: AbortSignal,
 ): Promise<Result<Destination, Unprepared>> {
+  const rewritten = checkRewrite(config, ports, stored, request);
+  if (rewritten !== undefined) return refused(rewritten);
+
   const destination = await ports.store.destination(request.destination);
   if (destination === undefined) {
     return refused({
@@ -122,6 +130,32 @@ export async function checkFor(
   if (issues.length > 0) return refused({ kind: "arguments-invalid", issues });
 
   return ok(destination);
+}
+
+/**
+ * The identical check a capture gets, against the item's own payload type: the
+ * words a delivery carries are the same kind of thing the capture holds, and
+ * one the pool would have refused on the way in is not made acceptable by
+ * arriving on the way out. Absent content is not a refusal and never was one.
+ */
+function checkRewrite(
+  config: PoolConfig,
+  ports: PoolPorts,
+  stored: Item,
+  request: DeliveryRequest,
+): Unprepared | undefined {
+  if (request.content === undefined) return undefined;
+
+  const refusal = checkPayload(config, ports, {
+    ...stored.payload,
+    content: request.content,
+  });
+
+  return refusal === undefined
+    ? undefined
+    : refusal.kind === "payload-invalid"
+      ? { kind: "content-invalid", issues: refusal.issues }
+      : refusal;
 }
 
 async function describeOrRefuse(

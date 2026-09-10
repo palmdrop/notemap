@@ -204,6 +204,17 @@ export type PreparationRefusal =
       readonly kind: "arguments-invalid";
       readonly issues: readonly SchemaIssue[];
     }
+  /** The words this delivery was asked to carry, against the item's own payload type. */
+  | {
+      readonly kind: "content-invalid";
+      readonly issues: readonly SchemaIssue[];
+    }
+  /**
+   * Only ever a rewrite: nothing else here reads the payload type's schema, and
+   * an item holding a type the running config has no descriptor for is a pool
+   * that changed under itself rather than a request that was wrong.
+   */
+  | { readonly kind: "unknown-payload-type"; readonly type: PayloadTypeName }
   | {
       readonly kind: "destination-retired";
       readonly destination: DestinationId;
