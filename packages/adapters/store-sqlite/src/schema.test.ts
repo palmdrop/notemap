@@ -174,6 +174,30 @@ describe("the row types and the migrations agree", () => {
       expect(() =>
         record.run("g", "user", null, null, "where it went", null),
       ).not.toThrow();
+
+      const rewritten = opened.raw.prepare(
+        `INSERT INTO routing_records
+           (id, item_id, target_kind, destination, capability, note, arguments,
+            content, state, at)
+         VALUES (?, 'item', ?, ?, ?, ?, ?, ?, 'delivered', 1)`,
+      );
+      const words = JSON.stringify({ text: "a thought, tidied" });
+
+      // Args are (id, target_kind, destination, capability, note, arguments, content).
+      expect(() =>
+        rewritten.run("h", "user", null, null, "where it went", null, words),
+      ).toThrow(/constraint/i);
+      expect(() =>
+        rewritten.run(
+          "i",
+          "destination",
+          "vault",
+          "create",
+          null,
+          targeted,
+          words,
+        ),
+      ).not.toThrow();
     } finally {
       await opened.cleanup();
     }
