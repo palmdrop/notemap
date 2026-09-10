@@ -955,6 +955,14 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   item is untouched, so one capture reaches two destinations in two wordings and neither overwrites
   the other. Absent content means the item's own words, which is what every record written before
   this existed says; there is no flag, and the presence is the fact.
+- **A rewrite is refused where an edit is forgiven, and the difference is the schema.** An item
+  whose payload type the running config no longer names is refused as `unknown-payload-type` — but
+  only where a request carries content, since nothing else on this path reads that schema. Editing
+  such an item is deliberately allowed through unchecked, because an edit keeps the type the pool
+  already holds and there is nothing to check it against. A rewrite cannot have that: the whole of
+  what it promises is the identical check a capture gets, so where that check cannot run, the
+  delivery is refused rather than carrying words nobody validated. Routing the item without words
+  of its own goes on working.
 - **The words are the person's, and the shape is still the destination's.** Supplied content is the
   *input* to a conversion rather than a replacement for one: a list marker, front matter and a tag
   foot apply to it exactly as they would have applied to the capture's words. Only the payload's

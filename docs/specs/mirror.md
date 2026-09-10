@@ -6,7 +6,8 @@
 
 - 2026-09-10 — **A mirrored routing record says what words went.** Where a delivery carried its
   own content, the record's destination target holds it beside the arguments, so a rebuilt pool
-  answers which of two wordings reached which destination.
+  answers which of two wordings reached which destination. Nothing new in the file's shape: it is
+  one more field of a target that was already opaque JSON.
   ([routing-edits](../plans/routing-edits.md),
   [ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md))
 
@@ -25,14 +26,6 @@
   destinations directory and on the same terms — no rendering, a write owed when one changes.
   ([plan](../plans/routing-templates.md),
   [ADR 34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md))
-
-- 2026-09-10 — **A mirrored routing record says what words went, as well as what came back.** A
-  delivery may carry its own content, and the record's destination target holds it beside the
-  arguments — so a rebuilt pool can still answer which of two wordings reached which destination,
-  and a reservation restored from a mirror is attempted with the words it was decided with. Nothing
-  new in the file's shape: it is one more field of a target that was already opaque JSON.
-  ([plan](../plans/routing-edits.md),
-  [ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md))
 
 - 2026-09-04 — **A mirrored routing record says what was sent, not only where.** A delivery may
   now record the content it produced, and the record carries its blob hash, its media type, a
