@@ -627,11 +627,6 @@ describe("the assets a delivery carries", () => {
   });
 });
 
-/**
- * A routing record's destination is a real reference now, so the check the
- * schema makes is worth making from outside it: nothing a route writes may name
- * a row that is not there.
- */
 describe("a delivery carrying words of its own", () => {
   it("hands over the supplied words and leaves the item saying what it said", async () => {
     const opened = await pooled();
@@ -753,6 +748,11 @@ describe("a delivery carrying words of its own", () => {
   });
 });
 
+/**
+ * A routing record's destination is a real reference now, so the check the
+ * schema makes is worth making from outside it: nothing a route writes may name
+ * a row that is not there.
+ */
 describe("what a route leaves in the database", () => {
   it("leaves every reference resolving", async () => {
     const opened = await pooled();
