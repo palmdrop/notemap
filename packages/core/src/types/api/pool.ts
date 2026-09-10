@@ -281,14 +281,17 @@ export interface TemplatesApi {
   route(
     item: ItemId,
     id: RoutingTemplateId,
-    options?: {
-      readonly firedByTag?: boolean;
-      readonly signal?: AbortSignal;
-      /** The words this one delivery carries. A template holds none of its own. */
-      readonly content?: JsonObject;
-    },
+    options?: TemplateRouting,
   ): Promise<Result<RoutingRecord, TemplateRoutingRefusal>>;
 }
+
+/** What a decision from a template carries that the template itself does not. */
+export type TemplateRouting = {
+  readonly firedByTag?: boolean;
+  readonly signal?: AbortSignal;
+  /** The words this one delivery carries. A template holds none of its own. */
+  readonly content?: JsonObject;
+};
 
 export interface RoutingApi {
   /** The record it answers may be pending: read the state rather than reading a record as arrival. */
