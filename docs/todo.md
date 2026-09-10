@@ -59,7 +59,9 @@
 - [ ] Tag picking is still free entry beside a datalist rather than the shell's own
   chooser, which the order control now uses.
 - [ ] Editing does not allow attaching anything. It is the edit surface rather than the
-  row, and wants designing on its own.
+  row, and wants designing on its own. The composer's `rewrite` did not reach it (2026-09-10):
+  that carries words for one delivery and touches neither the capture nor its assets, so editing
+  still attaches nothing.
 - [ ] Consider capture templates: on capture time, I select a capture format which auto-tags and auto-routes (optionally) the finished capture when it is committed.
   - Cheaper than it was, as of 2026-09-07: the auto-routing half is done. A capture that arrives
     carrying a **trigger tag** fires its template, so a capture template that auto-tags gets the
@@ -111,7 +113,9 @@
   only when another device processes an item between the draw and the send. Either the feed row
   grows an edit, or rewriting a processed note is deliberately not a thing this shell does and
   shell.md should keep saying so. Raised reviewing
-  [editable-until-processed](plans/editable-until-processed.md).
+  [editable-until-processed](plans/editable-until-processed.md). The composer's `rewrite` did not
+  reach it (2026-09-10): it changes what one delivery says and never what the item says, so it
+  makes no revision and nothing in the shell can still ask for one.
 - [ ] Reconsider where revisions *appear*. Half-answered on 2026-08-24: a revision now carries its
   own capture time, so it sorts at the moment it was written and no longer ties with what it came
   from — which is what removed the chain columns from the feed key. Showing it beside its ancestor
@@ -126,18 +130,21 @@
 
 ## Routing — templates, rules, conversion
 
-- [ ] Routing edits - being able to freely edit an item as it is routed. Settled: **amend, then route**, two operations that already exist - a frontend can make it one smooth gesture with no new architecture. Rewriting the capture _because of where it is going_ is a dead end, and ADR 19 records why so it does not get proposed again. Open no longer, as of 2026-08-24: the amendment stands, because it was an amendment of an
-  unprocessed item and the routing that sealed it never landed. Cancelling the reservation removes
-  it, so the item is unprocessed again and editable in place again — unless something was revised
-  from it meanwhile, which seals it for good, since rewriting it would leave that revision's trace
-  naming content which never produced it
-  ([ADR 21](adr/0021-an-item-is-editable-until-it-is-processed.md)).
-  - NOTE: when opening, re-evaluate ADRs, amend-then-route might be a bad option, multiple routing to different locations might want different formats for the same capture. Amending for each route would be confusing, and captures become static when they have been routed.
-  - NOTE: Another option would be to "clone" the capture (which is the amending behavior when it is been routed) and use that as routing. No new machinery. But consider together with "output" formats.
+- [x] ~~Routing edits — being able to freely edit an item as it is routed. Settled: **amend, then
+  route**~~ — closed 2026-09-10, and **not** as it was settled. Amend-then-route was the wrong
+  mechanism and this entry's own `NOTE` said why: an item routed to two places in two wordings has
+  no single amended form, so the last route would win and the capture would end up a function of
+  its delivery history. What replaced it: **a delivery carries its own content**. The request takes
+  the words beside its arguments, core checks them against the item's payload type exactly as it
+  checks a capture, and the routing record holds the ones it sent. The capture is untouched, and
+  the composer's `rewrite` is one delivery where the row's `edit` is the item. The clone the second
+  `NOTE` proposed is dropped: it makes an item nobody asked for and puts a twin in the queue
+  ([routing-edits](plans/routing-edits.md),
+  [ADR 45](adr/0045-a-delivery-may-carry-its-own-content.md)).
 
 - [ ] Conversion - changing or formatting an item on routing, for example, making an item a piece of a TODO list. Called conversion rather than a routing template since 2026-09-05: a **routing template** is now a saved routing decision, and the two were sharing a word.
   - AI conversions, where a local model formats an entry that may or may not be properly formatted
-  - Shape settled in [ADR 19](adr/0019-a-destination-converts-and-the-delivery-records-what-went.md): the destination converts a copy, the work happens inside the delivery, and the bytes that landed come back to be stored on the routing record. Open: whether a conversion is configured in the delivery's arguments or in destination config, and whether one is itself a thing a person edits.
+  - Shape settled in [ADR 19](adr/0019-a-destination-converts-and-the-delivery-records-what-went.md): the destination converts a copy, the work happens inside the delivery, and the bytes that landed come back to be stored on the routing record. Narrowed 2026-09-10: the **hand-made** half is answered — a person's words are a first-class `content` field of the request, beside the arguments rather than inside them, because a path and a person's prose are not the same kind of thing and only one of them is a destination's to interpret ([ADR 45](adr/0045-a-delivery-may-carry-its-own-content.md)). Still open: where an **automatic** conversion is configured — a template, a destination, a model in the loop — and whether one is itself a thing a person edits.
 - [ ] Routing auto-processing - routing a note to a specific destination converts it to a specified format. A todo list, a prose paragraph, a markdown image link, whatever. The format could be a templating language, or natural language, with an LLM in the loop, or a mix. ADR 19 answers _where the work happens_, and the **preview** half is now closed: the destination port has `preview`, the composer asks for one on demand, and a delivery records the output it produced so what went is readable after the fact
   ([delivery-output-and-preview](plans/delivery-output-and-preview.md),
   [ADR 33](adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md)). What is

@@ -1,8 +1,14 @@
 # Spec: The mirror on disk
 
 **Status**: Draft
-**Last updated**: 2026-09-08
+**Last updated**: 2026-09-10
 **Shipped**:
+
+- 2026-09-10 — **A mirrored routing record says what words went.** Where a delivery carried its
+  own content, the record's destination target holds it beside the arguments, so a rebuilt pool
+  answers which of two wordings reached which destination.
+  ([routing-edits](../plans/routing-edits.md),
+  [ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md))
 
 - 2026-09-07 — **One renderer, and an attachment drawn by its media type.** The payload types
   collapsed into `note` ([ADR 38](../adr/0038-text-and-image-collapse-into-one-payload-type.md)),
@@ -19,6 +25,14 @@
   destinations directory and on the same terms — no rendering, a write owed when one changes.
   ([plan](../plans/routing-templates.md),
   [ADR 34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md))
+
+- 2026-09-10 — **A mirrored routing record says what words went, as well as what came back.** A
+  delivery may carry its own content, and the record's destination target holds it beside the
+  arguments — so a rebuilt pool can still answer which of two wordings reached which destination,
+  and a reservation restored from a mirror is attempted with the words it was decided with. Nothing
+  new in the file's shape: it is one more field of a target that was already opaque JSON.
+  ([plan](../plans/routing-edits.md),
+  [ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md))
 
 - 2026-09-04 — **A mirrored routing record says what was sent, not only where.** A delivery may
   now record the content it produced, and the record carries its blob hash, its media type, a
@@ -146,7 +160,11 @@ restore that item. It carries
   [ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)) — each with the
   **output** its delivery reported, where it reported one: the blob hash, the media type and the
   prose note about what could not be carried, beside the pointer and the URL (added 2026-09-04,
-  [ADR 33](../adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md));
+  [ADR 33](../adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md)), and
+  the **content** it was decided with, where the delivery carried words of its own rather than the
+  capture's (added 2026-09-10,
+  [ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md)) — a record whose words were the
+  item's carries none, and reads exactly as every record written before this existed;
 - the item's `modified_at`, recorded for verification only and never restored.
 
 It does not carry suggestions, decided or pending; enrichment states; jobs, leases or the action

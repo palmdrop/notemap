@@ -1,8 +1,15 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-09
+**Last updated**: 2026-09-10
 **Shipped**:
+
+- 2026-09-10 — **The composer can rewrite the words one delivery carries.** A `words` row in the
+  right column, directly above `would write`, drawing the capture; `rewrite` opens it for typing.
+  The words survive a change of destination, never survive the composer, and clear the preview when
+  they change. `rewrite` is one delivery where the row's `edit` is the item.
+  ([routing-edits](../plans/routing-edits.md),
+  [ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md))
 
 - 2026-09-09 — **A channel reads as its title everywhere a decision is drawn.** The template form's
   line, the settings template list, a routing record and a row's routing line all say `Reading`

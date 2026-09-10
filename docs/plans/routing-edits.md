@@ -1,9 +1,9 @@
 # Routing edits
 
 **Date**: 2026-09-10
-**Status**: Todo
-**Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/shell.md`
-**Closed**:
+**Status**: Done
+**Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/shell.md`, `docs/specs/mirror.md`
+**Closed**: `todo.md` routing edits (rewritten, not ticked) and its clone note; the hand-made half of `todo.md`'s conversion entry
 
 ---
 
@@ -171,20 +171,20 @@ Depends on phase 3.
 
 Depends on phases 1–4.
 
-- [ ] `core.md` — the routing section gains a delivery carrying its own content, beside what it
+- [x] `core.md` — the routing section gains a delivery carrying its own content, beside what it
       already says about a destination converting a copy. The two are different halves of the same
       sentence and should read as such
-- [ ] `mirror.md` — where it describes what a routing record carries, if the round-trip in phase 2
+- [x] `mirror.md` — where it describes what a routing record carries, if the round-trip in phase 2
       turned out to need saying
-- [ ] `todo.md:129` — **rewritten, not ticked.** Its settled line says *amend, then route*, which is
+- [x] `todo.md:129` — **rewritten, not ticked.** Its settled line says *amend, then route*, which is
       the wrong mechanism, and its `NOTE` says why in the same entry. Close it naming what replaced
       it, and drop the clone note at `:136`
-- [ ] `todo.md:140` — narrowed rather than closed: the hand-made half is answered, the automatic
+- [x] `todo.md:140` — narrowed rather than closed: the hand-made half is answered, the automatic
       half is not
-- [ ] `todo.md:62` and `:109` stay open, and each says that the composer's `rewrite` did not reach
+- [x] `todo.md:62` and `:109` stay open, and each says that the composer's `rewrite` did not reach
       it: editing still attaches nothing, and nothing in the shell can still ask for a revision
-- [ ] Verify: `pnpm typecheck`, `pnpm -r --silent test`, `pnpm lint`
-- [ ] `git commit`
+- [x] Verify: `pnpm typecheck`, `pnpm -r --silent test`, `pnpm lint`
+- [x] `git commit`
 
 ---
 

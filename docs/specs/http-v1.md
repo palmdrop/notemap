@@ -2,8 +2,15 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one and health are settled; the rest is stub
-**Last updated**: 2026-09-09
+**Last updated**: 2026-09-10
 **Shipped**:
+
+- 2026-09-10 — **`/route` and `/route/preview` take the words a delivery carries.** Both bodies
+  gained an optional `content` beside the arguments, on the destination shape and the template
+  shape alike; content that fails the item's payload type is `422 content-invalid` with issues, and
+  a record carries in its `target` the words it was decided with.
+  ([routing-edits](../plans/routing-edits.md),
+  [ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md))
 
 - 2026-09-09 — **A destination can be asked what one value it holds is called.**
   `GET /v1/destinations/{id}/named?capability&field&value` answers the entry that value names, or
