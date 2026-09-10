@@ -12,9 +12,11 @@ import {
   insertUnder,
   placeOf,
   renderNote,
+  tagsModeOf,
   type FrontmatterMode,
   type Note,
   type Renderers,
+  type TagsMode,
 } from "@notemap/output-markdown";
 
 import { assetNames, placeAssets } from "./assets";
@@ -33,12 +35,16 @@ export type Wiring = {
   readonly renderers: Renderers;
   /** The destination's own, which a delivery's own argument overrides. */
   readonly frontmatter?: FrontmatterMode;
+  /** The same, for where a note carries its tags. */
+  readonly tags?: TagsMode;
 };
 
 /** What this delivery put there: for an append into a note that was there, what was inserted. */
 export type Landed = {
   readonly pointer: string;
   readonly written: string;
+  /** What the rendering could not carry, where it could not carry everything. */
+  readonly dropped?: string;
 };
 
 /**
@@ -115,12 +121,7 @@ async function create(
   await makeCollections(wiring.dav, wanted, signal);
 
   const assets = await placeAssets(wiring.dav, wanted, delivery.assets, signal);
-  const rendered = renderNote(
-    wiring.renderers,
-    delivery,
-    { directory: collectionOfPointer(wanted), assets },
-    frontmatterModeOf(delivery.arguments, wiring.frontmatter),
-  );
+  const rendered = renderInto(wiring, delivery, wanted, assets);
   const note = whole(rendered);
 
   const written = await wiring.dav.create(wanted.encoded, note, signal);
@@ -128,7 +129,7 @@ async function create(
     throw new Refused(`${wanted.relative} is already there`);
   }
 
-  return { pointer: wanted.relative, written: note };
+  return { pointer: wanted.relative, written: note, ...said(rendered) };
 }
 
 /** How many times a note is re-read and written again before contention is somebody else's problem. */
@@ -193,19 +194,14 @@ async function append(
       assets = await placeAssets(wiring.dav, note, delivery.assets, signal);
     }
 
-    const rendered = renderNote(
-      wiring.renderers,
-      delivery,
-      { directory: collectionOfPointer(note), assets },
-      frontmatterModeOf(delivery.arguments, wiring.frontmatter),
-    );
+    const rendered = renderInto(wiring, delivery, note, assets);
 
     if (existing === undefined) {
       const fresh = wholeUnder(rendered, heading);
       const created = await wiring.dav.create(note.encoded, fresh, signal);
       // Somebody made it between the read and the write, so it is an append now.
       if (created === "written") {
-        return { pointer: note.relative, written: fresh };
+        return { pointer: note.relative, written: fresh, ...said(rendered) };
       }
       continue;
     }
@@ -232,7 +228,11 @@ async function append(
       signal,
     );
     if (written === "written") {
-      return { pointer: note.relative, written: rendered.body };
+      return {
+        pointer: note.relative,
+        written: rendered.body,
+        ...said(rendered),
+      };
     }
   }
 
@@ -261,10 +261,14 @@ export async function previewNote(
   wiring: Wiring,
   delivery: Delivery,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<Previewed> {
   if (delivery.capability === CREATE) {
-    const note = locate(wiring.root, createTarget(delivery));
-    return whole(render(wiring, delivery, note));
+    const rendered = render(
+      wiring,
+      delivery,
+      locate(wiring.root, createTarget(delivery)),
+    );
+    return { text: whole(rendered), ...said(rendered) };
   }
 
   const wanted =
@@ -276,21 +280,45 @@ export async function previewNote(
   const rendered = render(wiring, delivery, note);
   const existing = await wiring.dav.get(note.encoded, signal);
 
-  return existing === undefined
-    ? wholeUnder(rendered, wanted.heading)
-    : rendered.body;
+  return {
+    text:
+      existing === undefined
+        ? wholeUnder(rendered, wanted.heading)
+        : rendered.body,
+    ...said(rendered),
+  };
 }
 
+/** What a preview is, once a note may have something to confess as well as show. */
+export type Previewed = {
+  readonly text: string;
+  readonly dropped?: string;
+};
+
 function render(wiring: Wiring, delivery: Delivery, note: Contained): Note {
+  return renderInto(wiring, delivery, note, assetNames(delivery.assets));
+}
+
+function renderInto(
+  wiring: Wiring,
+  delivery: Delivery,
+  note: Contained,
+  assets: ReadonlyMap<string, string>,
+): Note {
   return renderNote(
     wiring.renderers,
     delivery,
+    { directory: collectionOfPointer(note), assets },
     {
-      directory: collectionOfPointer(note),
-      assets: assetNames(delivery.assets),
+      frontmatter: frontmatterModeOf(delivery.arguments, wiring.frontmatter),
+      tags: tagsModeOf(delivery.arguments, wiring.tags),
     },
-    frontmatterModeOf(delivery.arguments, wiring.frontmatter),
   );
+}
+
+/** Absent rather than `undefined`, so a note that lost nothing has no field for it. */
+function said(rendered: Note): { dropped?: string } {
+  return rendered.dropped === undefined ? {} : { dropped: rendered.dropped };
 }
 
 /**

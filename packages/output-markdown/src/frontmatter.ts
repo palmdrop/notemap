@@ -28,7 +28,10 @@ const PROVENANCE = {
   origin: "derived_from",
 } as const;
 
-/** A renderer may add its own keys, but never shadow one of these. */
+/** The one fixed key a note may carry in its body instead, as `#tag`. */
+export const TAGS_KEY: string = KEYS.tags;
+
+/** A renderer may add its own keys, but never shadow one of these — whichever of them this note writes. */
 export const FIXED_KEYS: readonly string[] = [
   ...Object.values<string | null>(KEYS).filter((key) => key !== null),
   ...Object.values(PROVENANCE),

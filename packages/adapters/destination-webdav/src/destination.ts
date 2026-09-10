@@ -36,7 +36,7 @@ import {
   type WebdavSettings,
 } from "./settings";
 
-/** The destination's own frontmatter setting travels with the wiring; a delivery's argument beats it. */
+/** The destination's own frontmatter and tags settings travel with the wiring; a delivery's arguments beat them. */
 function wiringFor(
   dav: Dav,
   renderers: Renderers,
@@ -49,6 +49,7 @@ function wiringFor(
     ...(settings.frontmatter === undefined
       ? {}
       : { frontmatter: settings.frontmatter }),
+    ...(settings.tags === undefined ? {} : { tags: settings.tags }),
   };
 }
 
@@ -118,7 +119,7 @@ export function createWebdavDestination(
         return {
           kind: "delivered",
           pointer: landed.pointer,
-          output: markdownOutput(landed.written),
+          output: markdownOutput(landed.written, landed.dropped),
         };
       } catch (cause) {
         return failure(cause);
@@ -135,13 +136,12 @@ export function createWebdavDestination(
       const dav = createDav(await config.credentials(settings.account));
 
       try {
-        return markdownOutput(
-          await previewNote(
-            wiringFor(dav, renderers, settings),
-            delivery,
-            signal,
-          ),
+        const previewed = await previewNote(
+          wiringFor(dav, renderers, settings),
+          delivery,
+          signal,
         );
+        return markdownOutput(previewed.text, previewed.dropped);
       } catch (cause) {
         const failed = failure(cause);
         if (failed.kind === "rejected") throw new Rejected(failed.detail);

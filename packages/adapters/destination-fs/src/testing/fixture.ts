@@ -32,6 +32,7 @@ export function at(value: string): Timestamp {
 export function destinationRow(settings: {
   root: string;
   frontmatter?: string;
+  tags?: string;
 }): Destination {
   return {
     id: VAULT,
@@ -42,6 +43,7 @@ export function destinationRow(settings: {
       ...(settings.frontmatter === undefined
         ? {}
         : { frontmatter: settings.frontmatter }),
+      ...(settings.tags === undefined ? {} : { tags: settings.tags }),
     },
     createdAt: at("2026-08-11T09:00:00.000Z"),
     modifiedAt: at("2026-08-11T09:00:00.000Z"),
