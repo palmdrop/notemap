@@ -91,26 +91,29 @@ whole of it rests on one distinction an existing ADR appears to forbid.
 
 Depends on phase 1.
 
-- [ ] `DeliveryRequest` gains `content?: JsonObject`
-- [ ] `checkFor` validates it against the payload type's `contentSchema`, refusing
+- [x] `DeliveryRequest` gains `content?: JsonObject`
+- [x] `checkFor` validates it against the payload type's `contentSchema`, refusing
       `content-invalid` with `issues` — the sibling of `arguments-invalid`, whose shape a shell
       already knows how to draw. Absent content is not a refusal and never was one
-- [ ] `PoolConfig` reaches the routing path. It does not today: `route`, `preview`, `prepare`,
+- [x] `PoolConfig` reaches the routing path. It does not today: `route`, `preview`, `prepare`,
       `prepareFor` and `checkFor` all take `ports` alone, and `checkPayload` needs the config that
       holds `payloadTypes`. `pool.ts` has it at every call site, and `templates/fire.ts` is the
       fourth caller
-- [ ] `projectDelivery` substitutes the content into the payload it projects. `payload.assets` sits
+- [x] `projectDelivery` substitutes the content into the payload it projects. `payload.assets` sits
       outside `content` and is untouched, so a rewrite cannot silently drop a picture
-- [ ] The destination target on `RoutingRecord` carries the content, so a deferred delivery replays
+- [x] The destination target on `RoutingRecord` carries the content, so a deferred delivery replays
       the words the decision was made with. Absent means *use the item's*, which is a record written
       before this existed and every record nobody rewrote — no flag, the presence is the fact
-- [ ] The store needs no migration: a record's `target` is already one opaque JSON column
-      (`migrations.ts:469`)
-- [ ] Verify: `pnpm --filter @notemap/core test` — a route with content delivers those words and
+- [x] ~~The store needs no migration: a record's `target` is already one opaque JSON column
+      (`migrations.ts:469`)~~ — **wrong, and it took one.** That column holds the *arguments*
+      alone; `destination` and `capability` are columns of their own and the row is read back
+      field by field. `routing_records` gains a `content` column, checked to be a destination
+      target's only
+- [x] Verify: `pnpm --filter @notemap/core test` — a route with content delivers those words and
       leaves the item saying what it said; two routes with two contents leave two records; invalid
       content refuses before anything is written. And a mirror round-trip test: a record with
       content written and read back is the same record
-- [ ] `git commit`
+- [x] `git commit`
 
 ### 3. The wire and the client
 

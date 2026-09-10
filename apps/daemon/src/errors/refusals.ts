@@ -130,6 +130,8 @@ export const DELIVERY_STATUS = {
   "capability-undeclared": 422,
   "payload-type-unsupported": 422,
   "arguments-invalid": 422,
+  "content-invalid": 422,
+  "unknown-payload-type": 422,
   "rejected-by-destination": 422,
   "delivery-outcome-unknown": 422,
   unreachable: 422,

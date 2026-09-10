@@ -2,6 +2,7 @@ import { NotOffered } from "../destinations/candidates";
 import { Rejected } from "../destinations/probe";
 import { Unusable } from "../destinations/usability";
 import { ok, refused } from "#utils/result";
+import type { PoolConfig } from "#types/api/config";
 import type { PoolPorts } from "#types/api/ports";
 import type { PreviewRefusal } from "#types/api/refusal";
 import type { ItemId } from "#types/domain/ids";
@@ -16,12 +17,13 @@ import { prepare } from "./prepare";
  * nobody can make.
  */
 export async function preview(
+  config: PoolConfig,
   ports: PoolPorts,
   item: ItemId,
   request: DeliveryRequest,
   signal?: AbortSignal,
 ): Promise<Result<PreviewReport, PreviewRefusal>> {
-  const prepared = await prepare(ports, item, request, signal);
+  const prepared = await prepare(config, ports, item, request, signal);
   if (prepared.kind === "refused") {
     return prepared.refusal.kind === "unreachable"
       ? ok({ kind: "unreachable", detail: prepared.refusal.detail })

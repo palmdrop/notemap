@@ -133,6 +133,7 @@ const SAID: {
   "source-item-changed":
     "something else in the pool was captured under that id, saying something different",
   "arguments-invalid": "that destination needs different arguments",
+  "content-invalid": "those words are not something this kind of item can hold",
   "too-many-attempts": (facts) =>
     `too many sign-ins have been tried; wait ${String(facts["retryAfter"])} seconds and try again`,
   unauthenticated: "you are signed out; sign in to reach this pool",

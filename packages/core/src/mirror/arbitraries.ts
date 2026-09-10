@@ -194,6 +194,7 @@ export const routingRecord = (): fc.Arbitrary<RoutingRecord> =>
             destination: branded<never>(),
             capability: branded<never>(),
             arguments: jsonObject(),
+            content: jsonObject(),
           },
           { requiredKeys: ["kind", "destination", "capability", "arguments"] },
         ),

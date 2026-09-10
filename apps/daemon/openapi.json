@@ -5941,6 +5941,8 @@
                             "capability-undeclared",
                             "payload-type-unsupported",
                             "arguments-invalid",
+                            "content-invalid",
+                            "unknown-payload-type",
                             "rejected-by-destination",
                             "delivery-outcome-unknown",
                             "unreachable"
@@ -6143,6 +6145,8 @@
                             "capability-undeclared",
                             "payload-type-unsupported",
                             "arguments-invalid",
+                            "content-invalid",
+                            "unknown-payload-type",
                             "rejected-by-destination",
                             "delivery-outcome-unknown",
                             "unreachable"

@@ -3,6 +3,7 @@ import type { PoolPorts } from "#types/api/ports";
 import type { Asset } from "#types/domain/asset";
 import type { RoutingRecordId } from "#types/domain/ids";
 import type { Item } from "#types/domain/item";
+import type { Payload } from "#types/domain/payload";
 import type {
   AttemptableDelivery,
   DeliveredAsset,
@@ -112,6 +113,9 @@ export async function deliveryFor(
     destination: record.target.destination,
     capability: record.target.capability,
     arguments: record.target.arguments,
+    ...(record.target.content === undefined
+      ? {}
+      : { content: record.target.content }),
   });
 
   return { kind: "ready", destination, delivery };
@@ -156,7 +160,7 @@ export async function projectDelivery(
     capability: request.capability,
     arguments: request.arguments,
     source: item.source,
-    payload: item.payload,
+    payload: rewritten(item.payload, request.content),
     tags: item.tags,
     createdAt: item.createdAt,
     ...(item.contentUpdatedAt === undefined
@@ -165,6 +169,14 @@ export async function projectDelivery(
     artifacts,
     assets,
   };
+}
+
+/**
+ * The words go in and nothing else moves: `assets` and `metadata` are the
+ * capture's, so a rewrite cannot silently drop a picture.
+ */
+function rewritten(payload: Payload, content: JsonObject | undefined): Payload {
+  return content === undefined ? payload : { ...payload, content };
 }
 
 async function openAsset(

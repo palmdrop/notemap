@@ -66,10 +66,17 @@ export async function routeFrom(
     });
   }
 
-  return route(ports, item, requestFor(config, held, template), signal, {
-    template: template.id,
-    firedByTag,
-  });
+  return route(
+    config,
+    ports,
+    item,
+    requestFor(config, held, template),
+    signal,
+    {
+      template: template.id,
+      firedByTag,
+    },
+  );
 }
 
 /** The expansion a decision from this template makes, however it was reached. */

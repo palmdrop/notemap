@@ -19,6 +19,14 @@ export type DeliveryRequest = {
   readonly destination: DestinationId;
   readonly capability: CapabilityName;
   readonly arguments: JsonObject;
+  /**
+   * The words this one delivery carries in place of the capture's. Beside the
+   * arguments rather than inside them: the arguments are the capability's and
+   * the adapter reads them, where this is the item's own payload content and
+   * nothing but the payload type's schema has anything to say about it. Absent
+   * means the capture's.
+   */
+  readonly content?: JsonObject;
 };
 
 /** Opening is lazy, so a capability that wants no bytes reads none and a long recording is never buffered. */
@@ -133,6 +141,12 @@ export type RoutingTarget =
        * because a pending delivery is attempted again from the record alone.
        */
       readonly arguments: JsonObject;
+      /**
+       * The rewrite the decision was made with, remembered on the same terms as
+       * the arguments and for the same reason. Absent means the capture's words,
+       * which is what every record written before rewriting existed says.
+       */
+      readonly content?: JsonObject;
     }
   | { readonly kind: "user"; readonly note?: string };
 

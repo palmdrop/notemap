@@ -45,7 +45,7 @@ export async function firingFor(
   signal?: AbortSignal,
 ): Promise<Firing> {
   const request = requestFor(config, item, template);
-  const checked = await checkFor(ports, item, request, signal);
+  const checked = await checkFor(config, ports, item, request, signal);
 
   if (checked.kind === "refused" && checked.refusal.kind !== "unreachable") {
     return { kind: "refused", detail: said(checked.refusal) };

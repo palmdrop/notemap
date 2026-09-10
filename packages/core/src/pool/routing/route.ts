@@ -1,6 +1,7 @@
 import { recordAction } from "../actions";
 import { enqueueMirrorWrite } from "../mirror";
 import { ok, refused } from "#utils/result";
+import type { PoolConfig } from "#types/api/config";
 import type { PoolPorts, PoolTx } from "#types/api/ports";
 import type { CancelRefusal, DeliveryRefusal } from "#types/api/refusal";
 import type { FailureDetail } from "#types/domain/enrichment";
@@ -36,6 +37,7 @@ type Routed = Result<RoutingRecord, DeliveryRefusal>;
  * checked first, and the adapter is then called outside any transaction.
  */
 export async function route(
+  config: PoolConfig,
   ports: PoolPorts,
   item: ItemId,
   request: DeliveryRequest,
@@ -43,7 +45,7 @@ export async function route(
   /** Where the decision came from a template, which the record carries. */
   applied?: AppliedTemplate,
 ): Promise<Routed> {
-  const prepared = await prepare(ports, item, request, signal);
+  const prepared = await prepare(config, ports, item, request, signal);
   // A record minted here would carry arguments nobody validated.
   if (prepared.kind === "refused") return refused(prepared.refusal);
 
@@ -56,6 +58,9 @@ export async function route(
       destination: request.destination,
       capability: request.capability,
       arguments: request.arguments,
+      // Held so a deferred delivery replays the words the decision was made
+      // with, on the arguments' own terms.
+      ...(request.content === undefined ? {} : { content: request.content }),
     },
     state: "pending",
     at: ports.clock.now(),

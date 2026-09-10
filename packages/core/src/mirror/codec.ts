@@ -300,6 +300,12 @@ function readTarget(value: unknown, at: string): RoutingTarget {
           `${at}.capability`,
         ) as CapabilityName,
         arguments: object(row["arguments"], `${at}.arguments`) as JsonObject,
+        ...present(
+          "content",
+          row,
+          at,
+          (raw, where) => object(raw, where) as JsonObject,
+        ),
       };
     case "user":
       return { kind: "user", ...present("note", row, at, text) };

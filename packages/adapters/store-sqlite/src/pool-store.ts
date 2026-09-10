@@ -119,8 +119,8 @@ const DESTINATION_COLUMNS = `
 `;
 
 const ROUTING_COLUMNS = `
-  id, item_id, target_kind, destination, capability, note, arguments, state,
-  at, pointer, url, output_blob, output_mime, output_note, template_id,
+  id, item_id, target_kind, destination, capability, note, arguments, content,
+  state, at, pointer, url, output_blob, output_mime, output_note, template_id,
   fired_by_tag
 `;
 
@@ -366,7 +366,7 @@ export function createSqlitePoolStore(
     ReturnType<typeof routingRecordParams>
   >(`
     INSERT INTO routing_records (${ROUTING_COLUMNS})
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const deliverRouting = write.query<
     never,

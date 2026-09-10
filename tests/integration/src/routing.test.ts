@@ -632,6 +632,127 @@ describe("the assets a delivery carries", () => {
  * schema makes is worth making from outside it: nothing a route writes may name
  * a row that is not there.
  */
+describe("a delivery carrying words of its own", () => {
+  it("hands over the supplied words and leaves the item saying what it said", async () => {
+    const opened = await pooled();
+    const { pool } = opened;
+    const item = await capture(pool);
+
+    succeeded(
+      await pool.routing.route(item, {
+        ...request(),
+        content: { text: "a thought, tidied" },
+      }),
+    );
+
+    const [handed] = opened.destination.received;
+    expect(handed?.delivery.payload).toMatchObject({
+      type: "text",
+      content: { text: "a thought, tidied" },
+    });
+    expect((await pool.items.get(item))?.payload.content).toEqual({
+      text: "a thought",
+    });
+  });
+
+  /** The whole point: one capture, two destinations, two wordings, neither overwriting the other. */
+  it("leaves two records holding two different rewrites", async () => {
+    const opened = await pooled();
+    const { pool } = opened;
+    const item = await capture(pool);
+
+    await pool.routing.route(item, {
+      ...request("inbox/one.md"),
+      content: { text: "for the log" },
+    });
+    await pool.routing.route(item, {
+      ...request("inbox/two.md"),
+      content: { text: "for the project" },
+    });
+
+    const records = await pool.routing.recordsFor(item);
+    expect(
+      records.map((record) =>
+        record.target.kind === "destination"
+          ? record.target.content
+          : undefined,
+      ),
+    ).toEqual([{ text: "for the log" }, { text: "for the project" }]);
+    expect(
+      opened.destination.received.map((each) => each.delivery.payload.content),
+    ).toEqual([{ text: "for the log" }, { text: "for the project" }]);
+  });
+
+  it("carries the capture's own words where the request supplies none", async () => {
+    const opened = await pooled();
+    const { pool } = opened;
+    const item = await capture(pool);
+
+    const record = succeeded(await pool.routing.route(item, request()));
+
+    expect(record.target).not.toHaveProperty("content");
+    expect(opened.destination.received[0]?.delivery.payload.content).toEqual({
+      text: "a thought",
+    });
+  });
+
+  /** The reservation holds the words, which is the whole of what a retry has to go on. */
+  it("replays the rewrite when the delivery is carried out later", async () => {
+    const opened = await pooled({ answer: UNREACHABLE });
+    const { pool } = opened;
+    const item = await capture(pool);
+
+    succeeded(
+      await pool.routing.route(item, {
+        ...request(),
+        content: { text: "a thought, tidied" },
+      }),
+    );
+    opened.destination.answers(DELIVERED);
+
+    expect(await deliverWith(opened, opened.destination)()).toBe(1);
+    expect(
+      opened.destination.received.at(-1)?.delivery.payload.content,
+    ).toEqual({ text: "a thought, tidied" });
+  });
+
+  it("refuses words the payload type will not have, before anything is written", async () => {
+    const opened = await pooled();
+    const { pool } = opened;
+    const item = await capture(pool);
+
+    const refusal = await pool.routing.route(item, {
+      ...request(),
+      content: { text: 42 },
+    });
+
+    expect(refusal).toMatchObject({ refusal: { kind: "content-invalid" } });
+    expect(
+      refusal.kind === "refused" && refusal.refusal.kind === "content-invalid"
+        ? refusal.refusal.issues.length
+        : 0,
+    ).toBeGreaterThan(0);
+    expect(opened.destination.received).toEqual([]);
+    expect(await pool.routing.recordsFor(item)).toEqual([]);
+    expect(ids((await pool.views.queue(ALL)).values)).toEqual([item]);
+  });
+
+  it("refuses a preview of words the payload type will not have", async () => {
+    const opened = await pooledWith({
+      preview: () => Promise.resolve({ note: "nothing was asked" }),
+    });
+
+    const item = await capture(opened.pool);
+
+    expect(
+      await opened.pool.routing.preview(item, {
+        ...request(),
+        content: { text: 42 },
+      }),
+    ).toMatchObject({ refusal: { kind: "content-invalid" } });
+  });
+});
+
 describe("what a route leaves in the database", () => {
   it("leaves every reference resolving", async () => {
     const opened = await pooled();

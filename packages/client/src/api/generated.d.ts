@@ -3036,7 +3036,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "arguments-invalid" | "rejected-by-destination" | "delivery-outcome-unknown" | "unreachable";
+                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "arguments-invalid" | "content-invalid" | "unknown-payload-type" | "rejected-by-destination" | "delivery-outcome-unknown" | "unreachable";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -3170,7 +3170,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "arguments-invalid" | "rejected-by-destination" | "delivery-outcome-unknown" | "unreachable";
+                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "arguments-invalid" | "content-invalid" | "unknown-payload-type" | "rejected-by-destination" | "delivery-outcome-unknown" | "unreachable";
                             } & {
                                 [key: string]: unknown;
                             };
