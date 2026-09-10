@@ -1,3 +1,4 @@
+import type { Namer } from "./routing";
 import { fieldsOf } from "./schema-form";
 
 /**
@@ -63,18 +64,24 @@ function written(value: unknown): string {
 export function argumentsOf(
   values: Record<string, unknown>,
   schema: Record<string, unknown> | undefined,
+  called?: Namer,
 ): readonly Argument[] {
   const fields = fieldsOf(schema);
+  const said = (field: string, value: unknown): string => {
+    const plain = written(value);
+    return called?.(field, plain) ?? plain;
+  };
+
   const named = fields
     .filter((field) => field.name in values)
     .map((field) => ({
       name: field.title ?? field.name,
-      said: written(values[field.name]),
+      said: said(field.name, values[field.name]),
     }));
 
   const rest = Object.entries(values)
     .filter(([key]) => !fields.some((field) => field.name === key))
-    .map(([key, value]) => ({ name: key, said: written(value) }));
+    .map(([key, value]) => ({ name: key, said: said(key, value) }));
 
   return [...named, ...rest];
 }

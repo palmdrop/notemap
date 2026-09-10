@@ -4,6 +4,15 @@
 **Last updated**: 2026-09-09
 **Shipped**:
 
+- 2026-09-09 — **A destination can be asked what one value it holds is called.**
+  `destinations.naming` joins `candidates` on the pool API and on the `Destinations` port, optional
+  on a kind adapter: it names a capability, a field and the value the field holds, and answers the
+  one entry that value names — or nothing, where the destination has nothing by that name, which is
+  an answer rather than a failure. Separate from `candidates` because a browse is capped and this
+  is not: the value a surface already holds is exactly the one a truncated page may never mention.
+  Failures are `candidates`' own, and a kind whose values are their own names has no `naming` at
+  all. ([ADR 44](../adr/0044-naming-a-value-is-a-second-question-a-destination-answers.md))
+
 - 2026-09-09 — **Configuration holds what an install is.** The `[[payloadTypes]]`, `[[sources]]`
   and `[[enrichments]]` blocks leave `config.toml`. The payload types become a constant core
   exports and a host hands back, since a second one is a code change everywhere else; the source
@@ -986,6 +995,18 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   `unreachable`, `rejected` and `not-offered` are **reported** rather than refused: none of them
   stops the decision being made, only the seeing of it. Optional on the adapter, with the port
   turning an absent method into `not-offered`, on `candidates`' terms.
+- **What one value a field holds is called is a second question, not the same one**
+  (added 2026-09-09, [ADR 44](../adr/0044-naming-a-value-is-a-second-question-a-destination-answers.md)).
+  `candidates` asks what a field could hold and answers a capped page; **`naming`** asks what one
+  thing it holds is called and answers one entry. They are not one method with an argument: a page
+  may be truncated and a lookup may not, a page is slow and a lookup is cheap, and a caller that
+  wants only a name would otherwise pay for a page it discards. The value is whichever form the
+  field ended up holding — a decision made once keeps `value`, a template keeps `durable`, and a
+  destination that answers for one answers for both. An entry the destination has nothing to say
+  about comes back **answered and empty**, since a place typed by hand is not one it offered and
+  refusing would make a value it delivers to look broken. Optional on the adapter, with the port
+  turning an absent method into `not-offered` — which is the right answer for a kind whose values
+  are their own names, a path being one.
 - **A destination is asked what it can do, and may need to go and look** (added 2026-08-17).
   Describing a destination is asynchronous: a vault whose templates are files, a board whose
   columns come from an API, or another pool cannot answer from a constant fixed at wiring time. A

@@ -5,6 +5,7 @@ import {
   commonPrefix,
   completed,
   narrowed,
+  readAs,
   resolved,
   takenAs,
 } from "./candidate-list";
@@ -31,6 +32,34 @@ describe("what taking an entry leaves in the field", () => {
   /** Somewhere to look and nothing to hold: its label is all a completion has. */
   it("falls back to the label where there is nothing to take", () => {
     expect(takenAs({ label: "projects", scope: "projects" })).toBe("projects");
+  });
+});
+
+/** Two names for one channel: the slug it is filed under, and the id a retitle leaves alone. */
+const PINNED = { label: "Reading", value: "reading", durable: "12345" };
+
+describe("which of an entry's names a surface takes", () => {
+  it("takes the lasting one where the decision fires again", () => {
+    expect(takenAs(PINNED, "durable")).toBe("12345");
+  });
+
+  it("falls back to the value where a thing has one name", () => {
+    expect(takenAs(channel("Reading", "reading"), "durable")).toBe("reading");
+  });
+
+  it("takes the label where the surface types in names", () => {
+    expect(takenAs(PINNED, "label")).toBe("Reading");
+  });
+});
+
+describe("the name a person reads for what a field holds", () => {
+  it("is the label of the entry that value names", () => {
+    expect(readAs([PINNED], "12345", "durable")).toBe("Reading");
+  });
+
+  /** An answer is one page of what a destination holds; a group channel is not in it. */
+  it("is what is there where no entry answers for it", () => {
+    expect(readAs([PINNED], "67890", "durable")).toBe("67890");
   });
 });
 

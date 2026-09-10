@@ -7,6 +7,8 @@
 
   import { recordHref } from "$components/item/href";
   import { client } from "$lib/client";
+  import { nameFor } from "$lib/names.svelte";
+  import { resolve } from "$lib/naming";
   import { whereItWent, wentTo } from "$lib/routing";
 
   /** The records say more than the summary, and only a surface that read them has them. */
@@ -31,11 +33,40 @@
       $destinations.find((one) => one.id === id)?.name ?? "a destination",
   );
 
+  /**
+   * What each record's arguments are called, asked once and kept: a row drawing
+   * `12345` says nothing about where the capture went. Only the records, since
+   * a summary carries no arguments to name.
+   */
+  $effect(() => {
+    for (const record of records) {
+      if (record.target.kind !== "destination") continue;
+      const target = record.target;
+      void resolve(
+        target.destination,
+        Object.keys(target.arguments).map((field) => ({
+          capability: target.capability,
+          field,
+          value: String(target.arguments[field] ?? ""),
+        })),
+      );
+    }
+  });
+
   /** One line per record, which is what a summary is: the whole of it is read elsewhere. */
   const lines = $derived(
     records.length > 0
       ? records.map((record) => ({
-          ...wentTo(record, nameOf),
+          ...wentTo(record, nameOf, (field, value) =>
+            record.target.kind === "destination"
+              ? nameFor({
+                  destination: record.target.destination,
+                  capability: record.target.capability,
+                  field,
+                  value,
+                })
+              : undefined,
+          ),
           href: recordHref(record.item, record.id),
           // Only a decision the person made by hand is theirs to take back:
           // a delivery is the pool's, and cancelling one it has carried out

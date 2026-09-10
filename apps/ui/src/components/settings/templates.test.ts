@@ -421,15 +421,30 @@ const PUBLISH = {
   },
 };
 
-function servingChannels(entries: readonly Record<string, unknown>[]) {
+function servingChannels(
+  entries: readonly Record<string, unknown>[],
+  templates: readonly Record<string, unknown>[] = [],
+  /** What the destination names for a value its own page never listed. */
+  offPage: readonly Record<string, unknown>[] = [],
+) {
   return pool((request) => {
     const route = routeOf(request);
     if (route === "GET /v1/destinations") {
       return json(200, { values: [aDestination({ kind: "arena" })] });
     }
-    if (route === "GET /v1/templates") return json(200, { values: [] });
+    if (route === "GET /v1/templates") return json(200, { values: templates });
+    if (route.endsWith("/named")) {
+      const held = new URL(request.url).searchParams.get("value");
+      const found = [...entries, ...offPage].find(
+        (each) => each["durable"] === held || each["value"] === held,
+      );
+      return json(200, {
+        kind: "answered",
+        ...(found === undefined ? {} : { entry: found }),
+      });
+    }
     if (route.endsWith("/candidates")) {
-      return json(200, { kind: "answered", entries, truncated: false });
+      return json(200, { kind: "answered", entries, truncated: true });
     }
     if (route.endsWith("/description")) {
       return json(200, { kind: "described", capabilities: [PUBLISH] });
@@ -470,36 +485,242 @@ test("taking one fills the field, and the field is still typed into", async () =
   expect(field.value).toBe("{{source}}");
 });
 
+const READING = { label: "Reading", value: "reading", durable: "12345" };
+
 /**
  * A template fires on a tag for months, and an are.na slug does not survive a
- * retitle — so the browse hands this form the name that does.
+ * retitle — so the browse hands this form the name that does, and the line goes
+ * on reading the name the person picked.
  */
 test("takes the form of a value that survives a rename", async () => {
-  servingChannels([{ label: "reading", value: "reading", durable: "12345" }]);
+  servingChannels([READING]);
 
   render(Templates);
   await open(/Make a template/);
-  await fireEvent.mouseDown(await screen.findByText("reading"));
+  await fireEvent.mouseDown(await screen.findByText("Reading"));
 
   expect((await screen.findByLabelText("channel")) as HTMLInputElement).toEqual(
-    expect.objectContaining({ value: "12345" }),
+    expect.objectContaining({ value: "Reading" }),
+  );
+
+  await fireEvent.input(await screen.findByLabelText("name"), {
+    target: { value: "Reading list" },
+  });
+  await open("Save");
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/templates");
+  });
+  expect(await sent()).toContainEqual(
+    expect.objectContaining({ arguments: { channel: "12345" } }),
   );
 });
 
 /** Typed rather than taken, and it lands on the same lasting name. */
 test("resolves a title typed to the form that survives a rename", async () => {
-  servingChannels([{ label: "reading", value: "reading", durable: "12345" }]);
+  servingChannels([READING]);
 
   render(Templates);
   await open(/Make a template/);
   const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
   // The answer has to be in before a title can be resolved against it.
-  await screen.findByText("reading");
+  await screen.findByText("Reading");
 
-  await fireEvent.input(field, { target: { value: "reading" } });
+  await fireEvent.input(field, { target: { value: "Read" } });
+  await fireEvent.blur(field);
+  expect(field.value).toBe("Reading");
+
+  await fireEvent.input(await screen.findByLabelText("name"), {
+    target: { value: "Reading list" },
+  });
+  await open("Save");
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/templates");
+  });
+  expect(await sent()).toContainEqual(
+    expect.objectContaining({ arguments: { channel: "12345" } }),
+  );
+});
+
+/**
+ * What the ID cost before it was read back: a template saved months ago drew
+ * `12345`, and nothing on the form said which channel that was.
+ */
+test("reads a saved id back as the name the destination knows it by", async () => {
+  servingChannels(
+    [READING],
+    [aTemplate({ capability: "publish", arguments: { channel: "12345" } })],
+  );
+
+  render(Templates);
+  await open(/research/);
+  await open("Edit");
+
+  const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
+  await vi.waitFor(() => expect(field.value).toBe("Reading"));
+});
+
+const GROUP = { label: "Group notes", value: "group-notes", durable: "99999" };
+
+/**
+ * A browse answers one page — are.na's does, on purpose — so an account with
+ * more channels than that has the held one outside it. Reading the page alone
+ * would put the ID back on the form for exactly the accounts big enough to
+ * have wanted it gone.
+ */
+test("asks what a channel outside the answered page is called", async () => {
+  servingChannels(
+    [READING],
+    [aTemplate({ capability: "publish", arguments: { channel: "99999" } })],
+    [GROUP],
+  );
+
+  render(Templates);
+  await open(/research/);
+  await open("Edit");
+
+  const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
+  await vi.waitFor(() => expect(field.value).toBe("Group notes"));
+
+  expect(asked()).toContain(`GET /v1/destinations/${VAULT}/named`);
+});
+
+/** The page already answers for it, so nothing is asked a second time. */
+test("asks nothing where the answered page already names it", async () => {
+  servingChannels(
+    [READING],
+    [aTemplate({ capability: "publish", arguments: { channel: "12345" } })],
+  );
+
+  render(Templates);
+  await open(/research/);
+  await open("Edit");
+
+  const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
+  await vi.waitFor(() => expect(field.value).toBe("Reading"));
+
+  expect(asked()).not.toContain(`GET /v1/destinations/${VAULT}/named`);
+});
+
+/**
+ * Nothing names it on the page or off it, so it stands as written — which is
+ * what a channel typed by hand looks like, and it delivers perfectly well.
+ */
+test("leaves a handle nothing answers for exactly as it was saved", async () => {
+  servingChannels(
+    [READING],
+    [aTemplate({ capability: "publish", arguments: { channel: "67890" } })],
+  );
+
+  render(Templates);
+  await open(/research/);
+  await open("Edit");
+
+  const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
+  await screen.findByText("Reading");
+  expect(field.value).toBe("67890");
+});
+
+/**
+ * A slug is the name a person can actually get hold of — it is in the channel's
+ * own URL, where the numeric id is not. For a channel outside the answered page
+ * the browse cannot resolve one, so the destination is asked, and the field
+ * takes the form that survives a rename.
+ */
+test("resolves a slug typed for a channel the browse never listed", async () => {
+  const GROUP = {
+    label: "Group notes",
+    value: "group-notes",
+    durable: "99999",
+  };
+  servingChannels([READING], [], [GROUP]);
+
+  render(Templates);
+  await open(/Make a template/);
+  const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "group-notes" } });
+  await fireEvent.blur(field);
+  await vi.waitFor(() => expect(field.value).toBe("Group notes"));
+
+  await fireEvent.input(await screen.findByLabelText("name"), {
+    target: { value: "Group" },
+  });
+  await open("Save");
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/templates");
+  });
+  expect(await sent()).toContainEqual(
+    expect.objectContaining({ arguments: { channel: "99999" } }),
+  );
+});
+
+/** The list draws pool state and asks nothing, so it learned this by browsing. */
+test("draws a saved template's channel by name in the list", async () => {
+  servingChannels(
+    [READING],
+    [aTemplate({ capability: "publish", arguments: { channel: "12345" } })],
+  );
+
+  render(Templates);
+  await vi.waitFor(() => expect(screen.getByText("Reading")).toBeTruthy());
+  expect(screen.queryByText("12345")).toBeNull();
+});
+
+/**
+ * `⇥` completes to the one name, and pressing it again walks the rest —
+ * the field taking each lasting form while the line goes on reading titles.
+ */
+test("walks the channels a typed name still matches, in names", async () => {
+  const RE_READ = { label: "Rereading", value: "rereading", durable: "22222" };
+  servingChannels([READING, RE_READ]);
+
+  render(Templates);
+  await open(/Make a template/);
+  const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
+  await screen.findByText("Rereading");
+
+  await fireEvent.input(field, { target: { value: "Re" } });
+  // Both agree as far as `Re`, so the first press has nothing to add and the
+  // walk starts here.
+  await fireEvent.keyDown(field, { key: "Tab" });
+  expect(field.value).toBe("Reading");
+
+  await fireEvent.keyDown(field, { key: "Tab" });
+  expect(field.value).toBe("Rereading");
+
+  // Both are still drawn: the eye and the keyboard walk the one list.
+  expect(screen.getByText("Reading")).toBeTruthy();
+
+  await fireEvent.input(await screen.findByLabelText("name"), {
+    target: { value: "Reading list" },
+  });
+  await open("Save");
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/templates");
+  });
+  expect(await sent()).toContainEqual(
+    expect.objectContaining({ arguments: { channel: "22222" } }),
+  );
+});
+
+/** An answer is one page of what a destination holds, and a group channel is not in it. */
+test("keeps a channel the browse never mentioned exactly as it was typed", async () => {
+  servingChannels([READING]);
+
+  render(Templates);
+  await open(/Make a template/);
+  const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "67890" } });
   await fireEvent.blur(field);
 
-  expect(field.value).toBe("12345");
+  expect(field.value).toBe("67890");
 });
 
 /**

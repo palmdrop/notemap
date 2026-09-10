@@ -1233,6 +1233,77 @@
           "label"
         ]
       },
+      "DestinationNamed": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "answered"
+                ]
+              },
+              "entry": {
+                "$ref": "#/components/schemas/CandidateEntry"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "unreachable"
+                ]
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "detail"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "unusable"
+                ]
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "detail"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "not-offered"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        ]
+      },
       "DestinationProbe": {
         "anyOf": [
           {
@@ -4366,6 +4437,132 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DestinationCandidates"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No destination has that id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unknown-destination"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The capability was not declared, or the field is not one that can be asked about.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "capability-undeclared",
+                            "field-not-askable"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/destinations/{id}/named": {
+      "get": {
+        "summary": "Ask one destination what a value its field holds is called",
+        "description": "`/candidates` asks what a field could hold and answers a page; this asks what one thing it holds is called and answers one entry. Separate because a page is capped and may be truncated, and a value a surface is already holding is exactly the one a truncated page may never mention — a routing template pinned to an are.na channel outside the first page has no name in the browse, and this is the only way to read one back. The same checks `/candidates` makes, made here for the same reason. An `answered` carrying no `entry` is a true answer: the destination has nothing by that name, which is what a place typed by hand looks like.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "One the destination declared. Anything else is refused.",
+              "example": "create"
+            },
+            "required": true,
+            "description": "One the destination declared. Anything else is refused.",
+            "name": "capability",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "A property of that capability's `argumentsSchema` carrying `x-notemap-candidates`. Anything else is refused.",
+              "example": "channel"
+            },
+            "required": true,
+            "description": "A property of that capability's `argumentsSchema` carrying `x-notemap-candidates`. Anything else is refused.",
+            "name": "field",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "What the field holds, in whichever of an entry's forms it ended up holding — a destination that answers for one answers for both. Empty names nothing.",
+              "example": "12345"
+            },
+            "required": true,
+            "description": "What the field holds, in whichever of an entry's forms it ended up holding — a destination that answers for one answers for both. Empty names nothing.",
+            "name": "value",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What it answered: the entry, nothing by that name, a refusal the destination itself gave, or a kind that does not offer this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DestinationNamed"
                 }
               }
             }

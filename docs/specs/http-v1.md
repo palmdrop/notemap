@@ -2,8 +2,16 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one and health are settled; the rest is stub
-**Last updated**: 2026-09-08
+**Last updated**: 2026-09-09
 **Shipped**:
+
+- 2026-09-09 — **A destination can be asked what one value it holds is called.**
+  `GET /v1/destinations/{id}/named?capability&field&value` answers the entry that value names, or
+  answers with no entry where it has nothing by that name. It sits beside `/candidates` rather than
+  inside it: a browse is capped, and the value a surface is already holding is exactly the one a
+  truncated page may never mention. Same two checks, same failure kinds, same `404`. A kind whose
+  places are their own names — a vault's paths — answers `not-offered`.
+  ([ADR 44](../adr/0044-naming-a-value-is-a-second-question-a-destination-answers.md))
 
 - 2026-09-08 — **The capability names on the wire lose the word *file*.** `create-file`,
   `append-to-file` and `create-or-append-file` become `create`, `append` and `create-or-append`
@@ -925,6 +933,41 @@ GET /v1/destinations/019a3f2c-.../candidates?capability=create&field=directory&s
   not do this at all, whether the adapter said so or was never asked to implement it. None of the
   three is an error status — a destination that is merely asleep is not a broken request.
 - An id no destination has is `404 unknown-destination`.
+
+`GET /v1/destinations/{id}/named` — what one value that field holds is called, asked now.
+`capability`, `field` and `value` are query parameters:
+
+```
+GET /v1/destinations/019a3f2c-.../named?capability=create&field=channel&value=12345
+```
+
+```json
+{
+  "kind": "answered",
+  "entry": { "label": "Reading", "value": "reading", "durable": "12345" }
+}
+```
+
+- **The other direction of `/candidates`, and its own route rather than a parameter on it.** That
+  one asks what a field could hold and answers a capped page; this asks what one thing it holds is
+  called and answers one entry. Fusing them would put two answers in one response shape and two
+  jobs in one adapter method, and would make every caller that wants only a name pay for a page it
+  discards — the settings template list and a routing record both want exactly that.
+- **`value` is whichever form the field ended up holding.** A decision made once keeps an entry's
+  `value`, a routing template keeps its `durable`
+  ([ADR 42](../adr/0042-a-candidate-carries-both-its-readable-name-and-its-lasting-one.md)), and a
+  destination that answers for one answers for both. An empty `value` names nothing and reaches no
+  destination.
+- **`answered` with no `entry` is an answer, not a failure.** The destination has nothing by that
+  name, which is what a place typed by hand looks like — and a browse answers one page, so a
+  channel outside it is not evidence of anything. Whatever holds the value keeps it as written.
+- **`not-offered` is the right answer for a kind whose values are their own names.** A vault's
+  places are paths and a path says what it is; a second name drawn over one would hide what is
+  about to be written.
+- **The same two checks `/candidates` makes**, before the destination is asked anything: the
+  capability must be one `/description` declared, and the field must carry
+  `x-notemap-candidates`. `422 capability-undeclared` and `422 field-not-askable`, and an id no
+  destination has is `404 unknown-destination`.
 
 `GET /v1/destinations/{id}/probe` — whether that one is really there, asked now.
 

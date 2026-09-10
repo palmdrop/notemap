@@ -4,6 +4,24 @@
 **Last updated**: 2026-09-09
 **Shipped**:
 
+- 2026-09-09 — **A channel reads as its title everywhere a decision is drawn.** The template form's
+  line, the settings template list, a routing record and a row's routing line all say `Reading`
+  where they said `12345`. Names are **remembered** in the browser so a list draws them without a
+  round trip each and says them while the account is asleep — a cache and not a record, possibly
+  months out of date, and a stale title says which channel where an id says nothing. Typing a
+  **slug** now resolves to the lasting form for a channel outside the answered page too, a slug
+  being the name that is in a channel's own URL.
+  ([ADR 44](../adr/0044-naming-a-value-is-a-second-question-a-destination-answers.md))
+
+- 2026-09-09 — **A lasting name is read back as the name a person knows, however many channels the
+  account has.** Where a field may hold only what the destination already has, the line reads the
+  entry's label while the field keeps the value — so a template browsed into an are.na channel says
+  `Reading` rather than `12345`, which is what taking the lasting form cost when it landed. The
+  browse's own page answers it where it can, and where it cannot the destination is **asked what
+  that one value is called** — a page is capped, and the channel a template is pinned to is as
+  likely to be outside it as in it.
+  ([ADR 44](../adr/0044-naming-a-value-is-a-second-question-a-destination-answers.md))
+
 - 2026-09-09 — **The `⇥` walk reaches every answer, the log keeps an oldest-first walk, and a
   subject says the capture's own words wherever a surface has only its id.** The walk completed
   again on every press, so past the second answer it put the shared prefix back and the third was
@@ -779,6 +797,48 @@ that fires for months wants a name that cannot rot. Matching and completion cons
 entry has, so a title, a slug and an ID all find the same channel and the row still marks as taken
 whichever form the field ended up holding.
 
+**Every surface that draws a decision draws the name** *(2026-09-09)*. A template's line is where
+one is chosen; a template list, a routing record and a row's routing line are where one is read
+back, and those three ask no destination anything — they draw pool state, and are read while a
+destination is asleep as often as not. So what any of them learns about a value is **remembered in
+the browser**, keyed by destination, capability, field and value, and every one of them reads it.
+
+It is a cache and never a record. Nothing in the pool carries it, it may be months out of date, and
+losing it costs an ask. That is the trade taken on purpose: where a decision is being *authored* the
+name is asked for now, because a form is where a mistake gets saved; where one is being *read back*
+a stale title still says which channel, and an id says nothing at all. What fills it is, in order:
+what is remembered, then one browse — a page names most of an account in a single request — then an
+ask per value for whatever is left.
+
+**A name the page did not carry is asked for** *(2026-09-09)*. Reading a value back off the
+browse's own answer works exactly as far as that answer reaches, and it is one page — are.na's is
+one on purpose. So where nothing on the page answers for what the field holds, the destination is
+asked what that value is called, through `/named`. Only then: a channel the browse already listed
+costs no request at all. What comes back with no name is left exactly as it stands, which is what a
+place typed by hand looks like and is the same thing the surface did before anyone asked.
+
+**A slug settles to the lasting form, wherever the channel is** *(2026-09-09)*. Typing a title or a
+slug for a channel the page carries has always landed on the form the surface keeps. For one it does
+not carry, that used to leave only the numeric id working — which is the one name of the three that
+is not written down anywhere a person can reach. Settling now asks, so a slug pasted out of a
+channel's URL becomes the id that survives a rename. What nothing answers for still stands exactly
+as typed.
+
+**A field that holds only what was offered is typed in names** *(2026-09-09)*. Where the schema
+says `x-notemap-offered-only`, the line reads the entry's label and the field keeps the value
+underneath it — the one case the two come apart, and it is the case where the value is an id
+nobody picked and nobody can read. What is typed narrows the list as it always did, and settles the
+same two moments a title does; anything no entry answers for is kept exactly as written, a numeric
+ID typed by hand included. Everywhere else the line **is** the value, which is what makes a path a
+path.
+
+**What narrows the list is what was typed, never what is read** *(2026-09-09)*. The two are one
+string most of the time and the difference only shows where they come apart: `⇥` walking writes an
+answer into the field while the typed stem goes on filtering, and a line reading a name has had
+nothing typed into it at all. Narrowing by what is read would leave the list holding the one thing
+already held — and the keyboard would walk a list the eye cannot see, which is the one thing the
+drawn list and the walked list being one list exists to prevent.
+
 **A long answer is drawn as a handful**, eight of it, with the rest a press away and typing the way
 through it. An account of two hundred channels is a wall of names nobody reads; the field above it
 is the control, and the list is a sample of what is there rather than the whole of it. What the
@@ -1355,6 +1415,13 @@ anything else is a box. This is what makes a destination whose places are a **fi
 board's columns, a mailbox, a webhook — usable without the shell being taught about it, and it
 follows from what a pattern is: a pattern is in no enumeration, so a fixed field never holds one and
 an open field is exactly the one that might.
+
+**A lasting name is read back as the name it stands for** *(2026-09-09)*. The form takes the
+`durable` form of a candidate, which for an are.na channel is a number — so the field reads the
+label the destination answers under it while holding that number, and a template saved months ago
+says which channel it files to rather than only that it files somewhere. Only where the field says
+it holds nothing but what was offered: a path is its own name, and drawing something else over one
+would hide what is about to be written.
 
 **A field the destination can be asked about is browsed here too.** Where the places are neither a
 path nor a fixed set — a list only the account can answer, picked from rather than created — the

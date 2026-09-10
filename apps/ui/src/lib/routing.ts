@@ -13,6 +13,7 @@ import type { Raised } from "./notices.svelte";
 export function wentTo(
   record: RoutingRecord,
   nameOf: (destination: string) => string,
+  called?: Namer,
 ): { readonly said: string; readonly aside?: string } {
   if (record.target.kind !== "destination") {
     const note = record.target.note;
@@ -20,7 +21,7 @@ export function wentTo(
   }
 
   const name = nameOf(record.target.destination);
-  const place = placeIn(record);
+  const place = placeIn(record, called);
 
   return {
     said: place === undefined ? name : `${name} · ${place}`,
@@ -53,26 +54,38 @@ export function whereItWent(
  */
 export function placeNamed(
   args: Readonly<Record<string, unknown>>,
+  called?: Namer,
 ): string | undefined {
   const said = Object.entries(args)
     .filter(([name]) => !OWN_ARGUMENTS.includes(name))
-    .map(([, value]) => value)
-    .filter((value): value is string => typeof value === "string")
-    .filter((value) => value !== "");
+    .filter(
+      (entry): entry is [string, string] =>
+        typeof entry[1] === "string" && entry[1] !== "",
+    )
+    .map(([name, value]) => called?.(name, value) ?? value);
 
   return said.length === 0 ? undefined : said.join(" · ");
 }
+
+/**
+ * What a value is called, where anything knows. A field whose value is a handle
+ * nobody wrote — an are.na channel id — reads as the name it stands for, and
+ * everything else reads as itself. Passed in rather than looked up here: this
+ * module is what a row says about a record, and knowing where names come from
+ * is somebody else's business.
+ */
+export type Namer = (field: string, value: string) => string | undefined;
 
 /**
  * Where a delivery put a copy, in the words a person could go and look with:
  * the pointer the destination handed back, or failing that the place the
  * decision named.
  */
-function placeIn(record: RoutingRecord): string | undefined {
+function placeIn(record: RoutingRecord, called?: Namer): string | undefined {
   if (record.pointer !== undefined) return record.pointer;
   if (record.target.kind !== "destination") return undefined;
 
-  return placeNamed(record.target.arguments);
+  return placeNamed(record.target.arguments, called);
 }
 
 /**

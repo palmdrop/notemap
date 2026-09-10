@@ -80,6 +80,65 @@ function answering(
   };
 }
 
+const ARENA_RECORD = {
+  ...RECORD,
+  target: {
+    kind: "destination",
+    destination: "vault",
+    capability: "publish",
+    arguments: { channel: "12345" },
+  },
+  pointer: undefined,
+};
+
+const PUBLISHES = {
+  kind: "described",
+  capabilities: [
+    {
+      name: "publish",
+      accepts: ["text"],
+      argumentsSchema: {
+        type: "object",
+        properties: {
+          channel: {
+            type: "string",
+            title: "Channel",
+            "x-notemap-candidates": true,
+            "x-notemap-offered-only": true,
+          },
+        },
+      },
+    },
+  ],
+};
+
+/**
+ * A record is opened to find out where something went, and `12345` does not
+ * answer that. Nothing here browsed anything, so the name was asked for.
+ */
+test("says which channel a delivery went to, not the id it holds", async () => {
+  pool((request) => {
+    if (routeOf(request).endsWith("/named")) {
+      return json(200, {
+        kind: "answered",
+        entry: { label: "Reading", value: "reading", durable: "12345" },
+      });
+    }
+    if (routeOf(request).endsWith("/candidates")) {
+      return json(200, { kind: "answered", entries: [], truncated: true });
+    }
+    return answering([ARENA_RECORD], PUBLISHES)(request);
+  });
+
+  render(Record, { props: { item: "one", record: "rec" } });
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "the decision" }),
+  );
+
+  await vi.waitFor(() => expect(screen.getByText("Reading")).toBeTruthy());
+  expect(screen.queryByText("12345")).toBeNull();
+});
+
 const WITH_OUTPUT = {
   ...RECORD,
   url: "https://vault.example/drafts/note.md",

@@ -16,7 +16,7 @@ import {
   asArenaArguments,
   type ArenaArguments,
 } from "./capabilities";
-import { arenaCandidates } from "./candidates";
+import { arenaCandidates, arenaNaming } from "./candidates";
 import type { CredentialResolver } from "./credentials";
 import { Refused, TokenRefused, Unreachable } from "./errors";
 import {
@@ -120,6 +120,7 @@ export function createArenaDestination(
     },
 
     candidates: arenaCandidates(reach),
+    naming: arenaNaming(reach),
 
     /**
      * `GET /v3/me`, and nothing more. The answer does not carry the token's

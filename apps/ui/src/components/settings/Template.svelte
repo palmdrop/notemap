@@ -5,6 +5,8 @@
   import Fact from "$components/settings/Fact.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import { pickable } from "$lib/pick";
+  import { nameFor } from "$lib/names.svelte";
+  import { resolve } from "$lib/naming";
   import { placeOf } from "$lib/templates";
 
   let {
@@ -84,7 +86,34 @@
     }
   });
 
-  const place = $derived(placeOf(one));
+  /**
+   * Asked once per row, and only for what is not remembered already: this page
+   * draws pool state and a channel id says nothing a person can read. What
+   * comes back is kept, so the second visit draws names before anything is
+   * asked and a pool nobody can reach still says which channel.
+   */
+  $effect(() => {
+    const asking = one;
+    void resolve(
+      asking.destination,
+      Object.keys(asking.arguments).map((field) => ({
+        capability: asking.capability,
+        field,
+        value: String(asking.arguments[field] ?? ""),
+      })),
+    );
+  });
+
+  const place = $derived(
+    placeOf(one, (field, value) =>
+      nameFor({
+        destination: one.destination,
+        capability: one.capability,
+        field,
+        value,
+      }),
+    ),
+  );
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->

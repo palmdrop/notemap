@@ -10,11 +10,13 @@ import type {
   DestinationProbe,
   DestinationId,
   DestinationKind,
+  DestinationNamed,
   DestinationRemembered,
   Item,
   ItemId,
   MintTokenRequest,
   MintedToken,
+  NamingRequest,
   Payload,
   RememberedRequest,
   ResolvedRoutingTemplate,
@@ -157,6 +159,14 @@ export interface DestinationsApi {
     id: DestinationId,
     request: CandidatesRequest,
   ): Promise<DestinationCandidates>;
+  /**
+   * What one value that field holds is called. The other direction of
+   * `candidates`, and asked separately because a browse is a capped sample:
+   * the value a surface is already holding is exactly the one a truncated
+   * answer may never mention. Asked now and kept by nothing, on the same
+   * terms — a title is somebody else's state and changes without notice.
+   */
+  named(id: DestinationId, request: NamingRequest): Promise<DestinationNamed>;
   /**
    * The same question, answered from the pool rather than the destination:
    * what this field has already held here. Nothing goes and looks, so it

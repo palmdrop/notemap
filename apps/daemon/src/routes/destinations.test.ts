@@ -447,6 +447,86 @@ describe("GET /v1/destinations/{id}/candidates", () => {
       ],
     });
   });
+});
+
+describe("GET /v1/destinations/{id}/named", () => {
+  async function ask(
+    host: Daemon,
+    destination: string,
+    query: Record<string, string>,
+  ): Promise<Response> {
+    const search = new URLSearchParams(query).toString();
+    return host.app.request(`/v1/destinations/${destination}/named?${search}`);
+  }
+
+  /**
+   * A vault's places are paths, and a path is its own name. Drawing a second
+   * one over it would hide what is about to be written, so the kind has none.
+   */
+  it("is not-offered by a kind whose values are their own names", async () => {
+    const host = serving("ready");
+    const vault = await created(host);
+
+    const response = await ask(host, vault.id, {
+      capability: "create",
+      field: "directory",
+      value: "inbox",
+    });
+
+    expect(response.status).toBe(200);
+    expect(await body(response)).toEqual({ kind: "not-offered" });
+  });
+
+  it("refuses a capability the destination never declared, before asking it anything", async () => {
+    const host = serving("ready");
+    const vault = await created(host);
+
+    const response = await ask(host, vault.id, {
+      capability: "delete-file",
+      field: "directory",
+      value: "inbox",
+    });
+
+    expect(response.status).toBe(422);
+    expect(await body(response)).toMatchObject({
+      error: { code: "capability-undeclared", capability: "delete-file" },
+    });
+  });
+
+  it("refuses a field that does not carry x-notemap-candidates", async () => {
+    const host = serving("ready");
+    const vault = await created(host);
+
+    const response = await ask(host, vault.id, {
+      capability: "create",
+      field: "filename",
+      value: "note.md",
+    });
+
+    expect(response.status).toBe(422);
+    expect(await body(response)).toMatchObject({
+      error: {
+        code: "field-not-askable",
+        capability: "create",
+        field: "filename",
+      },
+    });
+  });
+
+  it("is 404 for an id no destination has", async () => {
+    const host = serving("ready");
+
+    const response = await ask(host, "nobody", {
+      capability: "create",
+      field: "directory",
+      value: "inbox",
+    });
+
+    expect(response.status).toBe(404);
+    expect(await body(response)).toMatchObject({
+      error: { code: "unknown-destination" },
+    });
+  });
 
   it("is unusable where the root overlaps notemap's own state", async () => {
     const host = serving();

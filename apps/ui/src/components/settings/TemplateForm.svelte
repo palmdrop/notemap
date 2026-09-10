@@ -242,6 +242,11 @@
           sits on a tag for months, and a value that rots takes the template
           with it. Where a destination offers no second name for a thing this
           changes nothing.
+
+          And read by name where the field may hold only what was offered,
+          which is where that lasting form is an id: the person picked a
+          channel, not a number, and the form is the only thing that can say
+          which one it was.
         -->
         <div class="mt-0.5">
           <CandidateBrowser
@@ -251,6 +256,7 @@
             label={field.title ?? field.name}
             value={typed[field.name] ?? ""}
             durable
+            naming={field.offeredOnly}
             onchange={(value) => (typed[field.name] = value)}
           />
         </div>

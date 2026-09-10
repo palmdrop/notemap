@@ -38,6 +38,15 @@ export function destinationRegistry(
       }
       return adapter.candidates(destination, request, signal);
     },
+    naming: (destination, request, signal) => {
+      const adapter = reach(destination);
+      if (adapter.naming === undefined) {
+        return Promise.reject(
+          new NotOffered(`the ${adapter.name} kind names nothing it holds`),
+        );
+      }
+      return adapter.naming(destination, request, signal);
+    },
     preview: (destination, delivery, signal) => {
       const adapter = reach(destination);
       if (adapter.preview === undefined) {

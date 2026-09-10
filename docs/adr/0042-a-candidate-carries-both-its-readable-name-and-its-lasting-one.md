@@ -130,7 +130,13 @@ Written while making the are.na destination's composer usable
 ([plan](../plans/arena-destination.md)). The retitle behaviour was verified by hand on 2026-09-07:
 renaming a channel changes its slug.
 
-Revisit if a template's field showing `12345` proves worse than the rot it prevents — the shape to
-try is drawing the entry's label beside the field rather than storing it. Revisit also if a second
-kind wants `offered-only` for refusal rather than for advice, which is a different promise and
-would need the answer to be complete before it could be kept.
+**Answered 2026-09-09.** The field showing `12345` did grate, and the fix took neither of the
+shapes considered here: the line **reads** the entry's label while the field holds the durable
+value, keyed on `offered-only` — which is what makes it safe, a field that may hold only what was
+offered being one whose value is a handle rather than a name. Nothing about this decision changes;
+`durable` is still what is stored and still what fires months later. A value the browse never
+mentioned is still kept exactly as written, since the answer is one page of what a destination
+holds.
+
+Revisit if a second kind wants `offered-only` for refusal rather than for advice, which is a
+different promise and would need the answer to be complete before it could be kept.

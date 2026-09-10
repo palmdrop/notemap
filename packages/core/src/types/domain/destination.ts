@@ -99,6 +99,40 @@ export type CandidatesAnswer = {
 };
 
 /**
+ * What a destination is asked when a surface already holds a value and needs
+ * the name a person knows it by. `candidates` asks what a field could hold and
+ * answers a page; this asks what one thing it holds is called and answers one
+ * entry — a different question, because a page may be truncated and a name may
+ * not, and because an account with more channels than a page is exactly where
+ * the two come apart.
+ *
+ * `value` is the field's own string, in whichever of an entry's forms it ended
+ * up holding: a decision made once keeps `value`, a template keeps `durable`,
+ * and a destination that answers for one answers for both.
+ */
+export type NamingRequest = {
+  readonly capability: CapabilityName;
+  readonly field: string;
+  readonly value: string;
+};
+
+/**
+ * The entry that value names, where the destination has one. Absent is a true
+ * answer rather than a failure: an answer is one page of what a destination
+ * holds, and a place typed by hand names nothing in it.
+ */
+export type NamingAnswer = {
+  readonly entry?: CandidateEntry;
+};
+
+/** `candidates`' failures, for the same reasons and sorted the same way. */
+export type NamingReport =
+  | ({ readonly kind: "answered" } & NamingAnswer)
+  | { readonly kind: "unreachable"; readonly detail: string }
+  | { readonly kind: "unusable"; readonly detail: string }
+  | { readonly kind: "not-offered" };
+
+/**
  * `unreachable` went and asked and could not say; `unusable` could not be
  * asked at all, on the same terms as `DestinationReport`; `not-offered` is a
  * kind that does not do this, which is the same answer whether the adapter

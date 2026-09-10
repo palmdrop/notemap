@@ -3,6 +3,8 @@ import {
   type CandidatesAnswer,
   type CandidatesRequest,
   type Destination,
+  type NamingAnswer,
+  type NamingRequest,
 } from "@notemap/core";
 import { CREATE } from "@notemap/output-markdown";
 
@@ -56,6 +58,45 @@ export function arenaCandidates(reach: Reach) {
         durable: String(channel.id),
       })),
       truncated: page.more,
+    };
+  };
+}
+
+/**
+ * What one channel handle is called, asked by either name it answers to. The
+ * browse answers one page on purpose — are.na's own guidance asks callers not
+ * to enumerate an account — so a template pinned to a channel outside that page
+ * has no name in it, and this is the only way to read one back.
+ */
+export function arenaNaming(reach: Reach) {
+  return async (
+    destination: Destination,
+    request: NamingRequest,
+    signal?: AbortSignal,
+  ): Promise<NamingAnswer> => {
+    if (request.capability !== CREATE || request.field !== CHANNEL_FIELD) {
+      throw new NotOffered(
+        `${request.capability} has no candidates for its ${request.field} field`,
+      );
+    }
+
+    const settings = asArenaSettings(destination.settings);
+    if (settings === undefined) {
+      throw new Error(`${destination.name} has no readable arena settings`);
+    }
+
+    if (request.value === "") return {};
+
+    const arena = await reach(settings.account);
+    const channel = await arena.channel(request.value, signal);
+    if (channel === undefined) return {};
+
+    return {
+      entry: {
+        label: channel.title,
+        value: channel.slug,
+        durable: String(channel.id),
+      },
     };
   };
 }

@@ -6,6 +6,8 @@ import type {
   Capability,
   Destination,
   DestinationKind,
+  NamingAnswer,
+  NamingRequest,
 } from "#types/domain/destination";
 import type {
   CapabilityName,
@@ -47,6 +49,9 @@ export type ScriptedCandidates = (
   request: CandidatesRequest,
 ) => CandidatesAnswer;
 
+/** The same, for the ask that names one value rather than listing many. */
+export type ScriptedNaming = (request: NamingRequest) => NamingAnswer;
+
 export type FakeDestinations = Destinations & {
   /** Oldest first, and live: it grows as more is handed over. */
   readonly received: readonly Received[];
@@ -68,6 +73,13 @@ export type FakeDestinations = Destinations & {
   answersCandidates(next: CandidatesAnswer | ScriptedCandidates): void;
   /** What `candidates` throws with, on the same terms as `cannotDescribe`. */
   cannotAnswerCandidates(detail: string | Error | undefined): void;
+  /**
+   * What `naming` answers. A kind with nothing to say answers an empty one,
+   * which is what a value the destination never offered looks like.
+   */
+  answersNaming(next: NamingAnswer | ScriptedNaming): void;
+  /** What `naming` throws with, on the same terms as `cannotDescribe`. */
+  cannotAnswerNaming(detail: string | Error | undefined): void;
   /** What `probe` throws with. Undefined is a destination that is there. */
   cannotBeProbed(detail: string | Error | undefined): void;
   /** What `preview` answers. Undefined is a kind that does not offer one. */
@@ -85,6 +97,7 @@ export type FakeDestinationsOptions = {
   readonly reads?: boolean;
   readonly answer?: ScriptedAnswer;
   readonly candidatesAnswer?: CandidatesAnswer;
+  readonly namingAnswer?: NamingAnswer;
   /** Absent is a kind with no `preview` at all, which the registry reports as not-offered. */
   readonly previewAnswer?: DeliveredOutput;
 };
@@ -165,6 +178,8 @@ export function fakeDestinations(
       truncated: false,
     };
   let cannotAnswer: string | Error | undefined;
+  let namingAnswer: NamingAnswer | ScriptedNaming = options.namingAnswer ?? {};
+  let cannotName: string | Error | undefined;
   let cannotProbe: string | Error | undefined;
   let previewAnswer: DeliveredOutput | undefined = options.previewAnswer;
   let cannotShow: string | Error | undefined;
@@ -234,6 +249,17 @@ export function fakeDestinations(
               : new Error(cannotAnswer),
           ),
 
+    naming: (_destination, request) =>
+      cannotName === undefined
+        ? Promise.resolve(
+            typeof namingAnswer === "function"
+              ? namingAnswer(request)
+              : namingAnswer,
+          )
+        : Promise.reject(
+            cannotName instanceof Error ? cannotName : new Error(cannotName),
+          ),
+
     preview: (_destination, delivery) => {
       previewed.push(delivery);
       if (cannotShow !== undefined) {
@@ -270,6 +296,12 @@ export function fakeDestinations(
     },
     cannotAnswerCandidates: (detail) => {
       cannotAnswer = detail;
+    },
+    answersNaming: (next) => {
+      namingAnswer = next;
+    },
+    cannotAnswerNaming: (detail) => {
+      cannotName = detail;
     },
     cannotBeProbed: (detail) => {
       cannotProbe = detail;

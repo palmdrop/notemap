@@ -352,6 +352,75 @@ describe("the channels it offers to browse", () => {
   });
 });
 
+describe("what it calls a channel a field already holds", () => {
+  /**
+   * The whole point of asking: a browse answers one page, so a template pinned
+   * to a channel outside it has no name in the list and only this can read one
+   * back.
+   */
+  it("names a channel the browse never listed, by the ID a template holds", async () => {
+    server.holds([{ slug: "reading", title: "Reading", id: 12345 }], true);
+
+    const answer = await adapter().naming?.(row(), {
+      capability: "create" as CapabilityName,
+      field: "channel",
+      value: "12345",
+    });
+
+    expect(answer).toEqual({
+      entry: { label: "Reading", value: "reading", durable: "12345" },
+    });
+  });
+
+  /** Either name it answers to, because which one a field holds is the surface's business. */
+  it("names it by its slug too", async () => {
+    server.holds([{ slug: "reading", title: "Reading", id: 12345 }]);
+
+    const answer = await adapter().naming?.(row(), {
+      capability: "create" as CapabilityName,
+      field: "channel",
+      value: "reading",
+    });
+
+    expect(answer?.entry?.label).toBe("Reading");
+  });
+
+  /** A handle nobody has is an answer and not a failure: a value typed by hand has no name. */
+  it("answers nothing for a channel are.na does not have", async () => {
+    server.holds([{ slug: "reading", title: "Reading", id: 12345 }]);
+
+    const answer = await adapter().naming?.(row(), {
+      capability: "create" as CapabilityName,
+      field: "channel",
+      value: "67890",
+    });
+
+    expect(answer).toEqual({});
+  });
+
+  /** Nothing is asked of are.na for a field that holds nothing. */
+  it("asks nothing where the field is empty", async () => {
+    const answer = await adapter().naming?.(row(), {
+      capability: "create" as CapabilityName,
+      field: "channel",
+      value: "",
+    });
+
+    expect(answer).toEqual({});
+    expect(server.requests()).toEqual([]);
+  });
+
+  it("names nothing for a field it does not browse", async () => {
+    await expect(
+      adapter().naming?.(row(), {
+        capability: "create" as CapabilityName,
+        field: "title",
+        value: "anything",
+      }),
+    ).rejects.toBeInstanceOf(NotOffered);
+  });
+});
+
 describe("asking whether it is really there", () => {
   it("asks who the token is, and nothing more", async () => {
     await adapter().probe?.(row());

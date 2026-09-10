@@ -7,19 +7,40 @@ import type { CandidateEntry } from "@notemap/client";
  */
 
 /**
- * What taking this entry leaves in the field. An entry that is only somewhere
- * to look has no value, and its label is the most a completion can offer —
- * enough to narrow the list to it and descend.
- *
- * `durable` asks for the form that survives a rename, where the destination
- * offered one: a decision that fires again — a routing template, sitting on a
- * tag for months — takes that, and a decision made once takes the readable
- * form. Which of the two is wanted is the surface's business, not the
- * destination's, so both travel and the caller picks.
+ * Which of an entry's names a surface is working in. `value` is what the field
+ * ordinarily holds; `durable` is the form that survives a rename, which a
+ * decision that fires again — a routing template, sitting on a tag for months —
+ * wants instead; `label` is the one a person reads. Which is wanted is the
+ * surface's business, not the destination's, so every name travels and the
+ * caller picks.
  */
-export function takenAs(entry: CandidateEntry, durable = false): string {
-  const wanted = durable ? (entry.durable ?? entry.value) : entry.value;
+export type Form = "value" | "durable" | "label";
+
+/**
+ * What taking this entry leaves. An entry that is only somewhere to look has no
+ * value, and its label is the most a completion can offer — enough to narrow
+ * the list to it and descend.
+ */
+export function takenAs(entry: CandidateEntry, form: Form = "value"): string {
+  if (form === "label") return entry.label;
+
+  const wanted =
+    form === "durable" ? (entry.durable ?? entry.value) : entry.value;
   return wanted === undefined ? entry.label : String(wanted);
+}
+
+/**
+ * The other direction: the name a person reads for what the field already
+ * holds. Anything no entry answers for is read as it stands — a value typed
+ * rather than browsed to, or an answer that has not arrived yet.
+ */
+export function readAs(
+  entries: readonly CandidateEntry[],
+  held: string,
+  form: Form = "value",
+): string {
+  const named = entries.find((entry) => takenAs(entry, form) === held);
+  return named?.label ?? held;
 }
 
 /** Every string that names this entry, so a field holding any of them is matched. */
@@ -51,9 +72,10 @@ export function narrowed(
 }
 
 /**
- * What `⇥` leaves. One match completes to **the value**, which is the point of
- * the key here: typing a channel's title and pressing it leaves the slug the
- * field will actually be sent with, rather than the title it was found by.
+ * What `⇥` leaves, in whichever form the surface is typing in. One match
+ * completes outright, which is the point of the key here: typing a channel's
+ * title and pressing it leaves the slug the field will actually be sent with,
+ * where the slug is what is being typed.
  *
  * Several complete only as far as they agree, and only where what they agree on
  * continues what was typed — a shared prefix that does not would replace a
@@ -62,17 +84,17 @@ export function narrowed(
 export function completed(
   entries: readonly CandidateEntry[],
   typing: string,
-  durable = false,
+  form: Form = "value",
 ): string | undefined {
   const hits = narrowed(entries, typing);
   if (hits.length === 0) return undefined;
 
   if (hits.length === 1) {
-    const only = takenAs(hits[0] as CandidateEntry, durable);
+    const only = takenAs(hits[0] as CandidateEntry, form);
     return only === typing ? undefined : only;
   }
 
-  const shared = commonPrefix(hits.map((entry) => takenAs(entry, durable)));
+  const shared = commonPrefix(hits.map((entry) => takenAs(entry, form)));
   return shared.length > typing.length &&
     shared.toLowerCase().startsWith(typing.toLowerCase())
     ? shared
@@ -114,16 +136,14 @@ export function commonPrefix(values: readonly string[]): string {
 export function resolved(
   entries: readonly CandidateEntry[],
   typing: string,
-  durable = false,
+  form: Form = "value",
 ): string | undefined {
   const wanted = typing.trim().toLowerCase();
   if (wanted === "") return undefined;
 
   // Already the form this surface wants: nothing to resolve, whatever else
   // names the same entry.
-  if (
-    entries.some((entry) => takenAs(entry, durable).toLowerCase() === wanted)
-  ) {
+  if (entries.some((entry) => takenAs(entry, form).toLowerCase() === wanted)) {
     return undefined;
   }
 
@@ -133,7 +153,7 @@ export function resolved(
   const only = named.length === 1 ? named[0] : soleMatch(entries, typing);
   if (only === undefined) return undefined;
 
-  const taken = takenAs(only, durable);
+  const taken = takenAs(only, form);
   return taken === typing ? undefined : taken;
 }
 

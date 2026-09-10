@@ -22,6 +22,8 @@ import type {
   DestinationKind,
   DestinationProbe,
   DestinationReport,
+  NamingReport,
+  NamingRequest,
 } from "../domain/destination";
 import type {
   RoutingTemplate,
@@ -176,6 +178,18 @@ export interface DestinationsApi {
     request: CandidatesRequest,
     signal?: AbortSignal,
   ): Promise<CandidatesReport | undefined>;
+  /**
+   * What one value that field holds is called, asked of the destination. The
+   * other direction of `candidates`, and a separate ask because it is a
+   * separate question: a browse is a capped sample and may be truncated, and
+   * the value a surface is holding is exactly the one a sample may not carry.
+   * Absent means no destination has that id.
+   */
+  naming(
+    id: DestinationId,
+    request: NamingRequest,
+    signal?: AbortSignal,
+  ): Promise<NamingReport | undefined>;
   /**
    * The same question `candidates` asks, answered from the pool's own routing
    * records: what this field has already held here, how often, and when last.

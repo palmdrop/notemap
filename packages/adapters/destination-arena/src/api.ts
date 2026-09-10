@@ -52,6 +52,12 @@ export type Arena = {
    * requests rather than one.
    */
   channels(user: number, signal?: AbortSignal): Promise<ChannelPage>;
+  /**
+   * One channel by either of the two names it answers to, the numeric ID or
+   * the slug. `undefined` where are.na has no such channel, which is a fact
+   * rather than a failure — a handle typed by hand names nothing.
+   */
+  channel(handle: string, signal?: AbortSignal): Promise<Channel | undefined>;
   presign(
     filename: string,
     contentType: string,
@@ -102,8 +108,14 @@ export function createArena(config: ArenaConfig): Arena {
       body?: string;
       headers?: Record<string, string>;
       signal?: AbortSignal | undefined;
+      /**
+       * A status to answer with rather than throw on. For the one caller that
+       * reads `404` as an answer: asking what a handle names is not a delivery,
+       * and a handle that names nothing is what it went to find out.
+       */
+      absent?: number;
     } = {},
-  ): Promise<Response> => {
+  ): Promise<Response | undefined> => {
     const url = `${baseUrl}${path}`;
     let response: Response;
 
@@ -134,10 +146,23 @@ export function createArena(config: ArenaConfig): Arena {
     }
 
     if (!response.ok) {
+      if (response.status === init.absent) {
+        void response.body?.cancel();
+        return undefined;
+      }
       const detail = await said(response);
       throw failure(response.status, `${method} ${path}`, detail);
     }
 
+    return response;
+  };
+
+  /** `send` for every caller that has no status it reads as an answer. */
+  const asked = async (...args: Parameters<typeof send>): Promise<Response> => {
+    const response = await send(...args);
+    if (response === undefined) {
+      throw new Unreachable(`are.na answered nothing to ${args[0]} ${args[1]}`);
+    }
     return response;
   };
 
@@ -153,7 +178,7 @@ export function createArena(config: ArenaConfig): Arena {
 
   return {
     me: async (signal) => {
-      const body = await json(await send("GET", "/v3/me", { signal }));
+      const body = await json(await asked("GET", "/v3/me", { signal }));
       const id = at(body, "id");
       if (typeof id !== "number") {
         throw new Unreachable("are.na answered no id for this token");
@@ -163,7 +188,7 @@ export function createArena(config: ArenaConfig): Arena {
 
     channels: async (user, signal) => {
       const body = await json(
-        await send(
+        await asked(
           "GET",
           `/v3/users/${user}/contents?type=Channel&sort=updated_at_desc&per=${PER_PAGE}`,
           { signal },
@@ -176,9 +201,20 @@ export function createArena(config: ArenaConfig): Arena {
       };
     },
 
+    channel: async (handle, signal) => {
+      const response = await send(
+        "GET",
+        `/v3/channels/${encodeURIComponent(handle)}`,
+        { signal, absent: NOT_FOUND },
+      );
+      return response === undefined
+        ? undefined
+        : channelOf(await json(response));
+    },
+
     presign: async (filename, contentType, signal) => {
       const body = await json(
-        await send("POST", "/v3/uploads/presign", {
+        await asked("POST", "/v3/uploads/presign", {
           body: JSON.stringify({
             files: [{ filename, content_type: contentType }],
           }),
@@ -241,7 +277,7 @@ export function createArena(config: ArenaConfig): Arena {
 
     createBlock: async (channel, block, signal) => {
       const body = await json(
-        await send("POST", "/v3/blocks", {
+        await asked("POST", "/v3/blocks", {
           body: JSON.stringify({ ...block, channel_ids: [channel] }),
           headers: { "content-type": "application/json" },
           signal,
@@ -326,20 +362,26 @@ function channelsIn(body: unknown): readonly Channel[] {
   if (!Array.isArray(data)) return [];
 
   return data.flatMap((each) => {
-    const slug = at(each, "slug");
-    const title = at(each, "title");
-    if (typeof slug !== "string" || slug === "") return [];
-
-    const can = at(each, "can");
-    if (can !== null && can !== undefined && at(can, "add_to") === false) {
-      return [];
-    }
-
-    const id = at(each, "id");
-    if (typeof id !== "number") return [];
-
-    return [{ slug, title: typeof title === "string" ? title : slug, id }];
+    const channel = channelOf(each);
+    return channel === undefined ? [] : [channel];
   });
+}
+
+/** One channel as this adapter reads one, from a listing or from its own resource. */
+function channelOf(body: unknown): Channel | undefined {
+  const slug = at(body, "slug");
+  const title = at(body, "title");
+  if (typeof slug !== "string" || slug === "") return undefined;
+
+  const can = at(body, "can");
+  if (can !== null && can !== undefined && at(can, "add_to") === false) {
+    return undefined;
+  }
+
+  const id = at(body, "id");
+  if (typeof id !== "number") return undefined;
+
+  return { slug, title: typeof title === "string" ? title : slug, id };
 }
 
 function why(cause: unknown): string {
