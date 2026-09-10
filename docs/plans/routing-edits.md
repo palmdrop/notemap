@@ -119,16 +119,24 @@ Depends on phase 1.
 
 Depends on phase 2.
 
-- [ ] The route and the preview request bodies accept `content`. Preview takes what a delivery takes
+- [x] The route and the preview request bodies accept `content`. Preview takes what a delivery takes
       and needs no argument of its own for this — `prepare` is shared, so previewing a rewrite works
       the moment routing does
-- [ ] `http-v1.md` says so, and says that `content-invalid` is a refusal with issues
-- [ ] The client passes it through on `route` and `preview`. Neither is an outbox operation and
-      neither becomes one: a delivery is a decision that has to reach the pool to mean anything
-- [ ] Verify: `pnpm --filter @notemap/integration-tests test` — a rewrite over `/v1` lands the
-      supplied words at a real destination, and a preview of one answers them converted. This is the
-      layer where the mechanism is provable without a shell in the room
-- [ ] `git commit`
+- [x] `http-v1.md` says so, and says that `content-invalid` is a refusal with issues
+- [x] The client passes it through on `route` and `preview`. Neither is an outbox operation and
+      neither becomes one: a delivery is a decision that has to reach the pool to mean anything.
+      Nothing to write: the body is the generated `RouteRequest`, so regenerating carried it
+- [x] **Not in the plan, and it needed deciding**: the **template** body takes `content` too, and
+      `templates.route` gains it beside `firedByTag`. A template says where an item goes and never
+      what it says, so the words are the request's rather than the template's — without this, a
+      rewrite on an untouched template would have had to commit as a plain destination request and
+      the record would have stopped naming the template
+- [x] Verify: a rewrite over `/v1` lands the supplied words at a real destination, and a preview of
+      one answers them converted. The `/v1` layer is `@notemap/daemon`'s route tests rather than
+      `@notemap/integration-tests`, which drives core directly — so the route tests carry the
+      wire's half, the integration tests carry a template-made rewrite, and `pnpm test:stack`
+      carries the whole transport
+- [x] `git commit`
 
 ### 4. The composer
 

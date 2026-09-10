@@ -46,6 +46,8 @@ export const routingRecordSchema = z
         capability: z.string(),
         /** What the capability was pointed at, in its own terms. */
         arguments: jsonObject,
+        /** The words this delivery carried, where they were not the capture's. */
+        content: jsonObject.optional(),
       }),
       z.object({ kind: z.literal("user"), note: z.string().optional() }),
     ]),
@@ -78,6 +80,18 @@ export const routingRecordsSchema = z
   .openapi("RoutingRecords");
 
 /**
+ * The words one delivery carries in place of the capture's. On both forms: a
+ * template says where an item goes and never what it says, so a rewrite is the
+ * request's rather than the template's, and a decision made from one may carry
+ * both.
+ */
+const routeContent = jsonObject.optional().openapi({
+  description:
+    "What this delivery says, in place of the item's own payload content. Must satisfy the item's payload type's `contentSchema`. Absent means the item's own words; the item is never changed either way.",
+  example: { text: "a thought, tidied" },
+});
+
+/**
  * One route, two bodies, because it is one decision either way: a destination
  * with its capability and arguments, or a template that already holds all
  * three. A template's arguments are expanded when the decision is made, so the
@@ -99,12 +113,14 @@ export const routeRequestSchema = z
           "What the capability is pointed at, in its own terms. Must satisfy the capability's `argumentsSchema`.",
         example: { directory: "inbox", filename: "a-thought.md" },
       }),
+      content: routeContent,
     }),
     z.strictObject({
       template: z.string().min(1).openapi({
         description: "One of the ids `GET /v1/templates` reports.",
         example: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
       }),
+      content: routeContent,
     }),
   ])
   .openapi("RouteRequest");

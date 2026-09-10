@@ -341,6 +341,71 @@ describe("POST /v1/items/{id}/route", () => {
   });
 });
 
+describe("a route carrying words of its own", () => {
+  const TIDIED = { text: "a thought, tidied" };
+
+  async function rewrite(
+    host: Vaulted,
+    item: string,
+    content: unknown,
+    path = "/route",
+  ): Promise<Response> {
+    return send(host.app, `/v1/items/${item}${path}`, {
+      destination: host.vault.id,
+      capability: "create",
+      arguments: { directory: "inbox", filename: "a-thought.md" },
+      content,
+    });
+  }
+
+  it("writes the words it carried, and leaves the capture saying what it said", async () => {
+    const host = await vaulted("ready");
+    const item = await only(host);
+
+    const record = (await body(await rewrite(host, item, TIDIED))) as Record_;
+
+    expect(record.target).toMatchObject({ content: TIDIED });
+    const written = await readFile(
+      join(host.vaultRoot, record.pointer ?? ""),
+      "utf8",
+    );
+    expect(written).toContain("a thought, tidied");
+
+    const held = (await body(await host.app.request(`/v1/items/${item}`))) as {
+      payload: { content: { text: string } };
+    };
+    expect(held.payload.content.text).toBe("a thought");
+  });
+
+  it("refuses words the item's payload type will not have, and writes nothing", async () => {
+    const host = await vaulted("ready");
+    const item = await only(host);
+
+    const response = await rewrite(host, item, { text: 42 });
+
+    expect(response.status).toBe(422);
+    const refusal = (await body(response)) as {
+      error: { code: string; issues: unknown[] };
+    };
+    expect(refusal.error.code).toBe("content-invalid");
+    expect(refusal.error.issues.length).toBeGreaterThan(0);
+    expect(await queued(host)).toEqual([item]);
+  });
+
+  it("previews the words it would carry rather than the capture's", async () => {
+    const host = await vaulted("ready");
+    const item = await only(host);
+
+    const shown = (await body(
+      await rewrite(host, item, TIDIED, "/route/preview"),
+    )) as { kind: string; content?: { text?: string } };
+
+    expect(shown.kind).toBe("previewed");
+    expect(shown.content?.text).toContain("a thought, tidied");
+    expect(shown.content?.text).not.toContain("a thought\n");
+  });
+});
+
 describe("POST /v1/routing/{record}/cancel", () => {
   async function pending(): Promise<{
     host: Vaulted;

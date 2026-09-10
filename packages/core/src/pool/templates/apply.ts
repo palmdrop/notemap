@@ -48,6 +48,12 @@ export async function routeFrom(
   id: RoutingTemplateId,
   firedByTag: boolean,
   signal?: AbortSignal,
+  /**
+   * The words this one delivery carries. Not the template's — a template says
+   * where an item goes and never what it says — so it rides beside the
+   * expansion rather than being part of it.
+   */
+  content?: JsonObject,
 ): Promise<Result<RoutingRecord, TemplateRoutingRefusal>> {
   const [held, template] = await Promise.all([
     ports.store.item(item),
@@ -66,16 +72,15 @@ export async function routeFrom(
     });
   }
 
+  const request = requestFor(config, held, template);
+
   return route(
     config,
     ports,
     item,
-    requestFor(config, held, template),
+    content === undefined ? request : { ...request, content },
     signal,
-    {
-      template: template.id,
-      firedByTag,
-    },
+    { template: template.id, firedByTag },
   );
 }
 

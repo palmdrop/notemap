@@ -3840,6 +3840,9 @@ export interface components {
                 arguments: {
                     [key: string]: unknown;
                 };
+                content?: {
+                    [key: string]: unknown;
+                };
             } | {
                 /** @enum {string} */
                 kind: "user";
@@ -4124,12 +4127,30 @@ export interface components {
             arguments: {
                 [key: string]: unknown;
             };
+            /**
+             * @description What this delivery says, in place of the item's own payload content. Must satisfy the item's payload type's `contentSchema`. Absent means the item's own words; the item is never changed either way.
+             * @example {
+             *       "text": "a thought, tidied"
+             *     }
+             */
+            content?: {
+                [key: string]: unknown;
+            };
         } | {
             /**
              * @description One of the ids `GET /v1/templates` reports.
              * @example 019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77
              */
             template: string;
+            /**
+             * @description What this delivery says, in place of the item's own payload content. Must satisfy the item's payload type's `contentSchema`. Absent means the item's own words; the item is never changed either way.
+             * @example {
+             *       "text": "a thought, tidied"
+             *     }
+             */
+            content?: {
+                [key: string]: unknown;
+            };
         };
         RoutingPreview: {
             /** @enum {string} */

@@ -84,10 +84,13 @@ export function routeHandler(pool: Pool) {
 
     const id = context.req.param("id") ?? "";
 
+    const content = body.value.content as JsonObject | undefined;
+
     if ("template" in body.value) {
       const applied = await pool.templates.route(
         id as ItemId,
         body.value.template as RoutingTemplateId,
+        content === undefined ? undefined : { content },
       );
 
       return applied.kind === "refused"
@@ -102,6 +105,7 @@ export function routeHandler(pool: Pool) {
       destination: body.value.destination as DestinationId,
       capability: body.value.capability as CapabilityName,
       arguments: body.value.arguments as JsonObject,
+      ...(content === undefined ? {} : { content }),
     });
 
     return result.kind === "refused"
@@ -118,9 +122,11 @@ export function previewHandler(pool: Pool) {
 
     const id = context.req.param("id") ?? "";
 
+    const content = body.value.content as JsonObject | undefined;
+
     // A template is resolved first and previewed as what it resolved to:
     // previewing one costs nothing the composer does not already ask for.
-    const request =
+    const resolved =
       "template" in body.value
         ? await pool.templates.resolve(
             id as ItemId,
@@ -131,6 +137,11 @@ export function previewHandler(pool: Pool) {
             capability: body.value.capability as CapabilityName,
             arguments: body.value.arguments as JsonObject,
           };
+
+    const request =
+      resolved === undefined || content === undefined
+        ? resolved
+        : { ...resolved, content };
 
     if (request === undefined) {
       return json(

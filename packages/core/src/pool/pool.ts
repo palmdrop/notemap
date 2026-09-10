@@ -105,6 +105,7 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
           id,
           options?.firedByTag ?? false,
           options?.signal,
+          options?.content,
         ),
     },
 

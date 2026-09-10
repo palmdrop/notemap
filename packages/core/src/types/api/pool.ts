@@ -281,7 +281,12 @@ export interface TemplatesApi {
   route(
     item: ItemId,
     id: RoutingTemplateId,
-    options?: { readonly firedByTag?: boolean; readonly signal?: AbortSignal },
+    options?: {
+      readonly firedByTag?: boolean;
+      readonly signal?: AbortSignal;
+      /** The words this one delivery carries. A template holds none of its own. */
+      readonly content?: JsonObject;
+    },
   ): Promise<Result<RoutingRecord, TemplateRoutingRefusal>>;
 }
 
