@@ -2,6 +2,7 @@
   import { untrack } from "svelte";
 
   import {
+    saidAs,
     saidBy,
     type Capability,
     type DestinationDescription,
@@ -94,6 +95,8 @@
   const subject = $derived(client.says(item) || item.payload.type);
   /** The item's own payload, from which the name of an unnamed note is derived. */
   const content = $derived(item.payload.content);
+  /** What the capture says, which is what a rewrite starts from and what it replaces. */
+  const captured = $derived(client.says(item));
   /** What the item already carries, so the composer's own row draws them as taken. */
   const tags = $derived((item.tags ?? []).map((tag) => tag.name));
 
@@ -127,6 +130,21 @@
 
   let shown = $state<RoutingPreview | undefined>(undefined);
   let showing = $state(false);
+
+  /**
+   * The words this one delivery carries, where a person took them from the
+   * capture's. `undefined` is the ordinary case and means the item's own — the
+   * presence is the fact, as it is on the record.
+   */
+  let words = $state<string | undefined>(undefined);
+  let typing = $state<HTMLTextAreaElement | undefined>(undefined);
+
+  /** A boolean rather than `words` itself, so a keystroke does not take the caret back. */
+  const rewriting = $derived(words !== undefined);
+
+  $effect(() => {
+    if (rewriting) typing?.focus();
+  });
 
   const capabilities = $derived<readonly Capability[]>(
     described?.kind === "described" ? described.capabilities : [],
@@ -266,7 +284,9 @@
   }
 
   /** Serialised because a keystroke changes a field of `args` rather than `args`. */
-  const decision = $derived(JSON.stringify({ chosen, capability, args }));
+  const decision = $derived(
+    JSON.stringify({ chosen, capability, args, words }),
+  );
 
   // What was shown was shown for the decision as it then stood, so changing any
   // part of it drops the answer rather than leaving a stale one under the line.
@@ -290,6 +310,7 @@
         destination: chosen,
         capability,
         arguments: valuesFrom(fields, args),
+        ...carried(),
       });
       if (asked === decision) shown = answer;
     } catch (error) {
@@ -379,14 +400,37 @@
       capability === resolved.capability &&
       sameArguments(wanted, resolved.arguments);
 
-    if (untouched) return { template: (applied as RoutingTemplate).id };
+    if (untouched) {
+      return { template: (applied as RoutingTemplate).id, ...carried() };
+    }
 
     return {
       destination: chosen as string,
       ...(beside === undefined
         ? { capability: capability as string, arguments: wanted }
         : freshFile(beside)),
+      ...carried(),
     };
+  }
+
+  /**
+   * What this delivery says, where it is not what the item says. The payload's
+   * own shape decides where the words go, so the composer knows no more about a
+   * payload type than the row that draws one does — and the assets stay the
+   * capture's, since only the content is replaced.
+   */
+  function carried(): { content?: Record<string, unknown> } {
+    return words === undefined
+      ? {}
+      : { content: saidAs(item.payload, words).content };
+  }
+
+  /**
+   * Opens the capture's words for typing. They are not sticky: this composer is
+   * one delivery, and wanting the fix everywhere is wanting `edit`.
+   */
+  function rewrite(): void {
+    words = captured;
   }
 
   function freshFile(beside: string): {
@@ -868,6 +912,28 @@
             {copied ? "copied" : "copy text"}
           </Action>
         </div>
+      {/if}
+
+      <!-- What is being sent, above what it becomes: rewriting and previewing
+           are one loop. Drawn only where a real destination is taken — `manual`
+           and `discard` deliver nothing, so there is nothing to rewrite. -->
+      {#if chosen !== undefined}
+        <Labelled name="words">
+          {#if words === undefined}
+            <span class="min-w-0 break-words whitespace-pre-wrap"
+              >{captured}</span
+            >
+            <Action onclick={rewrite}>rewrite</Action>
+          {:else}
+            <textarea
+              bind:this={typing}
+              bind:value={words}
+              rows="4"
+              aria-label="words"
+              class="w-full resize-y px-2 py-0.5 font-mono outline-none field"
+            ></textarea>
+          {/if}
+        </Labelled>
       {/if}
 
       {#if shown !== undefined}

@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
 
 import {
@@ -2530,4 +2536,178 @@ test("leaves a template's own arguments alone", async () => {
     );
   });
   expect(await sent()).toContainEqual({ template: RESEARCH.id });
+});
+
+/** The label and what it holds, since the modal's own chrome says the capture too. */
+async function wordsRow(): Promise<HTMLElement> {
+  const label = await screen.findByText("words");
+  const row = label.parentElement;
+  if (row === null) throw new Error("expected the words row");
+  return row;
+}
+
+test("the words draw the capture", async () => {
+  serving([aDestination()]);
+
+  draw();
+  expect(screen.queryByText("words")).toBeNull();
+
+  await choose("Vault");
+  await described();
+
+  expect(within(await wordsRow()).getByText("a note")).toBeTruthy();
+});
+
+test("manual draws no words to rewrite", async () => {
+  serving([aDestination()]);
+
+  draw();
+  await choose("manual");
+  await screen.findByLabelText("where it went");
+
+  expect(screen.queryByText("words")).toBeNull();
+});
+
+test("rewrite opens the capture's words, and routing sends what was typed", async () => {
+  serving([aDestination()]);
+
+  draw();
+  await choose("Vault");
+  await described();
+  await choose("rewrite");
+
+  const field = (await screen.findByLabelText("words")) as HTMLTextAreaElement;
+  expect(field.value).toBe("a note");
+
+  await fireEvent.input(field, { target: { value: "a note, tidied" } });
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "inbox" },
+  });
+  await commit();
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+  expect(await sent()).toContainEqual({
+    destination: VAULT,
+    capability: "create",
+    arguments: { directory: "inbox" },
+    content: { text: "a note, tidied" },
+  });
+});
+
+/** A place in one vault means nothing in another; words are not about the destination at all. */
+test("changing destination keeps the words and clears the arguments", async () => {
+  serving([aDestination(), aDestination({ id: BOARD, name: "Board" })]);
+
+  draw();
+  await choose("Vault");
+  await described();
+  await choose("rewrite");
+  await fireEvent.input(await screen.findByLabelText("words"), {
+    target: { value: "a note, tidied" },
+  });
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "inbox" },
+  });
+
+  await choose("Board");
+  await described();
+
+  expect(
+    ((await screen.findByLabelText("words")) as HTMLTextAreaElement).value,
+  ).toBe("a note, tidied");
+  expect(
+    ((await screen.findByLabelText("directory")) as HTMLInputElement).value,
+  ).toBe("");
+});
+
+/** A rewrite belongs to one delivery: wanting the fix everywhere is wanting `edit`. */
+test("a second composer on the same item starts from the capture again", async () => {
+  serving([aDestination()]);
+
+  draw();
+  await choose("Vault");
+  await described();
+  await choose("rewrite");
+  await fireEvent.input(await screen.findByLabelText("words"), {
+    target: { value: "a note, tidied" },
+  });
+
+  cleanup();
+  draw();
+  await choose("Vault");
+  await described();
+
+  expect(screen.queryByLabelText("words")).toBeNull();
+  expect(within(await wordsRow()).getByText("a note")).toBeTruthy();
+});
+
+/** A preview of words that have since changed is indistinguishable from a good one. */
+test("the preview clears on a keystroke in the words", async () => {
+  serving([aDestination()]);
+
+  draw();
+  await choose("Vault");
+  await described();
+  await choose("preview");
+  await screen.findByText(PREVIEW_IS_INDICATIVE);
+
+  await choose("rewrite");
+  await fireEvent.input(await screen.findByLabelText("words"), {
+    target: { value: "a note, tidied" },
+  });
+
+  await vi.waitFor(() => {
+    expect(screen.queryByText(PREVIEW_IS_INDICATIVE)).toBeNull();
+  });
+});
+
+test("previews the words it would carry rather than the capture's", async () => {
+  const transport = serving([aDestination()]);
+
+  draw();
+  await choose("Vault");
+  await described();
+  await choose("rewrite");
+  await fireEvent.input(await screen.findByLabelText("words"), {
+    target: { value: "a note, tidied" },
+  });
+  await choose("preview");
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route/preview");
+  });
+  const asking = await sentTo(transport)
+    .find((request) => routeOf(request) === "POST /v1/items/one/route/preview")
+    ?.clone()
+    .json();
+  expect(asking).toMatchObject({ content: { text: "a note, tidied" } });
+});
+
+/** No rule invented here: a capture carrying assets and no text is already legitimate. */
+test("an empty rewrite sends the words the payload schema allows", async () => {
+  serving([aDestination()]);
+
+  draw();
+  await choose("Vault");
+  await described();
+  await choose("rewrite");
+  await fireEvent.input(await screen.findByLabelText("words"), {
+    target: { value: "" },
+  });
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "inbox" },
+  });
+  await commit();
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+  expect(await sent()).toContainEqual({
+    destination: VAULT,
+    capability: "create",
+    arguments: { directory: "inbox" },
+    content: {},
+  });
 });

@@ -142,30 +142,30 @@ Depends on phase 2.
 
 Depends on phase 3.
 
-- [ ] A `words` block in the composer's **right** column, directly above `would write`, so
+- [x] A `words` block in the composer's **right** column, directly above `would write`, so
       rewriting and previewing are one loop: what is being sent above what it becomes. It is a
       `Labelled` rather than a `Group` — the right column is terse rows beside the decision, which
       is what the left column's line is
-- [ ] `rewrite` opens the words for typing. Drawn only where a real destination is taken: `manual`
+- [x] `rewrite` opens the words for typing. Drawn only where a real destination is taken: `manual`
       and `discard` deliver nothing, and have nothing to rewrite
-- [ ] The words survive a change of destination, where the arguments are cleared. A place in one
+- [x] The words survive a change of destination, where the arguments are cleared. A place in one
       vault means nothing in another; words are not about the destination at all, and clearing them
       would make somebody re-type a typo fix for picking a different board
-- [ ] Each route starts from the capture. A rewrite belongs to one delivery and is never sticky —
+- [x] Each route starts from the capture. A rewrite belongs to one delivery and is never sticky —
       wanting the fix everywhere is wanting `edit`, and that division is what keeps the two words
       meaning different things
-- [ ] The preview is **cleared** when the words change, never left standing. A preview of words that
+- [x] The preview is **cleared** when the words change, never left standing. A preview of words that
       have since changed is indistinguishable from a good one, which is the exact failure ADR 33
       names
-- [ ] An empty rewrite is whatever the payload schema allows. No rule is invented here: a capture
+- [x] An empty rewrite is whatever the payload schema allows. No rule is invented here: a capture
       carrying assets and no text is already legitimate
-- [ ] `shell.md` — the composer's section gains the words and `rewrite`, and says plainly that the
+- [x] `shell.md` — the composer's section gains the words and `rewrite`, and says plainly that the
       row's `edit` is the other thing
-- [ ] Verify: `pnpm --filter @notemap/ui test` — the words draw the capture; `rewrite` and typing
+- [x] Verify: `pnpm --filter @notemap/ui test` — the words draw the capture; `rewrite` and typing
       then routing sends the typed words; changing destination keeps them and clears the arguments;
       a second composer on the same item starts from the capture again; the preview clears on a
       keystroke; `manual` draws no words
-- [ ] `git commit`
+- [x] `git commit`
 
 ### 5. The specs, and what this closes
 

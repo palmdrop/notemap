@@ -1,4 +1,6 @@
 export * from "./api/types";
+/** Where an item's words live, for a surface that has to write some without editing the item. */
+export { saidAs, saidIn } from "./capture/says";
 export * from "./client";
 export * from "./errors";
 export type { SessionState, Signed } from "./session/session";

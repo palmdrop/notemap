@@ -862,6 +862,30 @@ that capability's form rather than the line. Overwriting it made the commit read
 the person's own: the record did not name the template, and an `establish` template never learnt
 its folder was there.
 
+**The words a delivery carries sit above `would write`** *(added 2026-09-10,
+[ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md))*. A `words` row in the right column,
+directly above the preview, so what is being sent reads above what it becomes and rewriting and
+previewing are one loop. It draws the capture, and `rewrite` opens those words for typing. A
+`Labelled` rather than a `Group`: the right column is terse rows beside the decision, and the
+decision is the line in the left one.
+
+**`rewrite` is not `edit`, and the two words are the whole defence.** The row's `edit` rewrites the
+capture in place, permanently, for the feed and every later route
+([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)). `rewrite` is this delivery
+and nothing else: the item still says what it said, and the routing record holds the words that
+went. Two controls an aisle apart both called `edit` is how somebody permanently rewrites a capture
+meaning to fix one delivery.
+
+It is drawn only where a **real destination** is taken. `manual` and `discard` deliver nothing, so
+there is nothing to rewrite.
+
+**The words survive a change of destination, where the arguments are cleared.** A place in one
+vault means nothing in another; words are not about the destination at all, and clearing them would
+make somebody re-type a typo fix for picking a different board. **Each route starts from the
+capture**, though: a rewrite belongs to one delivery and is never sticky, and wanting the fix
+everywhere is wanting `edit`. An empty rewrite is whatever the payload's own schema allows — a
+capture carrying assets and no text is already legitimate, so no rule is invented here.
+
 **A preview is asked for, never volunteered** (added 2026-09-04). `preview` sits beside `route` and
 runs once the arguments are settled, because the conversion may reach the destination or a model —
 the same reasoning that describes only the destination a person chose. What comes back says what it
@@ -872,7 +896,9 @@ where the two differ that is a fact about the destination rather than a fault.
 
 Changing any part of the decision **drops what was shown** rather than leaving it under the line: a
 preview belongs to the arguments it was asked with, and a stale one reads as a promise about the
-new ones. A kind that offers no preview, and a destination that could not be reached to give one,
+new ones. **The words are part of the decision** for this, so a keystroke in them clears the
+preview too — a preview of words that have since changed is indistinguishable from a good one,
+which is the exact failure ADR 33 names. A kind that offers no preview, and a destination that could not be reached to give one,
 are muted lines saying so — the same idiom the typed line uses for a vault it cannot list, and
 neither ever blocks `route`. A delivery the destination says it would refuse is drawn as that, and where a kind can
 say so it is the case a preview is worth most in — the refusal arriving before the decision rather
