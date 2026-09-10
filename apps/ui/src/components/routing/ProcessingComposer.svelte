@@ -133,8 +133,9 @@
 
   /**
    * The words this one delivery carries, where a person took them from the
-   * capture's. `undefined` is the ordinary case and means the item's own — the
-   * presence is the fact, as it is on the record.
+   * capture's. `undefined` is the ordinary case and means the item's own, and
+   * so does anything equal to what the capture says: what reaches the record is
+   * `carried()`'s answer rather than this.
    */
   let words = $state<string | undefined>(undefined);
   let typing = $state<HTMLTextAreaElement | undefined>(undefined);
@@ -414,13 +415,14 @@
   }
 
   /**
-   * What this delivery says, where it is not what the item says. The payload's
-   * own shape decides where the words go, so the composer knows no more about a
-   * payload type than the row that draws one does — and the assets stay the
-   * capture's, since only the content is replaced.
+   * What this delivery says, where it is not what the item says. Words nobody
+   * changed carry nothing: the presence of `content` on the record is the fact
+   * that a person rewrote it, so opening the field and typing nothing must not
+   * leave a record claiming a rewrite that never happened. Only the payload's
+   * content is replaced, so the assets stay the capture's.
    */
   function carried(): { content?: Record<string, unknown> } {
-    return words === undefined
+    return words === undefined || words === captured
       ? {}
       : { content: saidAs(item.payload, words).content };
   }
@@ -431,6 +433,11 @@
    */
   function rewrite(): void {
     words = captured;
+  }
+
+  /** The way back: this delivery carries the capture's words after all. */
+  function keep(): void {
+    words = undefined;
   }
 
   function freshFile(beside: string): {
@@ -932,6 +939,7 @@
               aria-label="words"
               class="w-full resize-y px-2 py-0.5 font-mono outline-none field"
             ></textarea>
+            <Action onclick={keep}>keep the capture's</Action>
           {/if}
         </Labelled>
       {/if}

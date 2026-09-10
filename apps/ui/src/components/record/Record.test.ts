@@ -9,6 +9,7 @@ import {
   NO_POINTER_BY_HAND,
   NO_POINTER_KEPT,
   NO_RECORDS_OFFLINE,
+  WORDS_WERE_ITS_OWN,
 } from "$lib/said";
 import { dayOf } from "$lib/stamp";
 import Record from "./Record.svelte";
@@ -322,6 +323,35 @@ test("says a decision the person carried out with nothing written down", async (
   expect(screen.queryByText("note")).toBeNull();
   // Nor is there a decision to open: marking processed is not an argument set.
   expect(screen.queryByRole("button", { name: "the decision" })).toBeNull();
+});
+
+/** What went is the question a record is opened with, and the item no longer answers it. */
+test("draws the words a delivery carried in place of the item's", async () => {
+  pool(
+    answering([
+      {
+        ...RECORD,
+        target: { ...RECORD.target, content: { text: "a note, tidied" } },
+      },
+    ]),
+  );
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  expect(await screen.findByText("a note, tidied")).toBeDefined();
+  expect(screen.getByText(WORDS_WERE_ITS_OWN)).toBeDefined();
+});
+
+test("says nothing about words where the delivery carried the item's", async () => {
+  pool(answering());
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  await screen.findByText("Fiction vault");
+  expect(screen.queryByText("words")).toBeNull();
+  expect(screen.queryByText(WORDS_WERE_ITS_OWN)).toBeNull();
 });
 
 test("says a delivery that kept no copy of what it sent", async () => {

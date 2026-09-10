@@ -43,6 +43,10 @@ export const PREVIEW_NOT_TEXT =
 
 export const NO_OUTPUT_KEPT = "This delivery kept no copy of what it sent.";
 
+/** Drawn under the words themselves, where a record carries its own. */
+export const WORDS_WERE_ITS_OWN =
+  "This delivery carried these words rather than the item's. The item was not changed.";
+
 /** A destination that handed nothing back to point at. Not a failure: some cannot. */
 export const NO_POINTER_KEPT =
   "This destination named no place to go and look.";

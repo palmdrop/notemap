@@ -2711,3 +2711,59 @@ test("an empty rewrite sends the words the payload schema allows", async () => {
     content: {},
   });
 });
+
+/** The presence of `content` on the record is the claim that somebody rewrote it. */
+test("opening the words and typing nothing carries nothing", async () => {
+  serving([aDestination()]);
+
+  draw();
+  await choose("Vault");
+  await described();
+  await choose("rewrite");
+  await screen.findByLabelText("words");
+
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "inbox" },
+  });
+  await commit();
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+  expect(await sent()).toContainEqual({
+    destination: VAULT,
+    capability: "create",
+    arguments: { directory: "inbox" },
+  });
+});
+
+test("keeping the capture's words draws them again and carries nothing", async () => {
+  serving([aDestination()]);
+
+  draw();
+  await choose("Vault");
+  await described();
+  await choose("rewrite");
+  await fireEvent.input(await screen.findByLabelText("words"), {
+    target: { value: "a note, tidied" },
+  });
+
+  await choose("keep the capture's");
+
+  expect(screen.queryByLabelText("words")).toBeNull();
+  expect(within(await wordsRow()).getByText("a note")).toBeTruthy();
+
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "inbox" },
+  });
+  await commit();
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+  expect(await sent()).toContainEqual({
+    destination: VAULT,
+    capability: "create",
+    arguments: { directory: "inbox" },
+  });
+});

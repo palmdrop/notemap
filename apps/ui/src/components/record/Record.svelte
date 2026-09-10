@@ -28,8 +28,9 @@
     NO_SUCH_RECORD,
     OUTPUT_UNREADABLE,
     THIS_ITEM,
+    WORDS_WERE_ITS_OWN,
   } from "$lib/said";
-  import { saidBy } from "@notemap/client";
+  import { saidBy, saidOf } from "@notemap/client";
 
   let { item: id, record: wanted }: { item: string; record: string } = $props();
 
@@ -122,6 +123,17 @@
   );
 
   const said = $derived(item === undefined ? "" : client.says(item));
+
+  /**
+   * The words this delivery carried, where they were not the capture's. What
+   * the item says is a link on the rail and says what it says now; this is what
+   * went, which is the question a record is opened with.
+   */
+  const carried = $derived(
+    target?.kind === "destination" && target.content !== undefined
+      ? saidOf(target.content)
+      : undefined,
+  );
 
   const link = $derived(followable(record?.url));
 
@@ -223,6 +235,12 @@
       {#if target.kind === "user" && target.note !== undefined}
         <div class="mt-6 font-mono text-ink-muted">note</div>
         <div class="mt-2 break-words">{target.note}</div>
+      {/if}
+
+      {#if carried !== undefined}
+        <div class="mt-6 font-mono text-ink-muted">words</div>
+        <div class="mt-2 break-words whitespace-pre-wrap">{carried}</div>
+        <div class="mt-2 font-mono text-ink-muted">{WORDS_WERE_ITS_OWN}</div>
       {/if}
 
       <div class="mt-6">
