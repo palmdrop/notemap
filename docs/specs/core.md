@@ -961,6 +961,12 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   content is handed over as a **lazy opener**, the shape a delivered asset already uses, so a large
   output is never buffered in order to be hashed. Core stores it as a **blob**, the store being
   content-addressed already, and the record names the hash, the media type and the note.
+- **A kind confesses what its own rendering left behind** (added 2026-09-10). The markdown kinds
+  drop an item's artifacts always, and its tags wherever nothing was asked to carry them, and both
+  now reach the output's note — a lossy delivery that says nothing is indistinguishable from a
+  faithful one, which is the whole reason the note exists. What each dialect lost is the dialect's
+  to say: the renderer names its own losses and the note assembly names the tags, because neither
+  knows the other's half.
 - **The note is free text nothing parses**, on the same footing as the `detail` that rides on
   `unreachable` and `rejected`. A machine-readable list of what was dropped is a vocabulary both
   core and every shell would have to learn, and would be wrong the first time a destination lost
@@ -1454,7 +1460,11 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   argument on one capture, and a note written that way carries no id, no capture time and no
   `derived_from`. The pool still holds all of it, and the routing record still says where the note
   went; what is given up is the file being traceable on its own. Absent means none, so a
-  destination that never said writes none. Local-only is the default for every provider; anything
+  destination that never said writes none. **Tags are a second switch beside it** (added
+  2026-09-10), on the same terms: among the frontmatter, as `#tag` at the foot of the note, or
+  nowhere. They are not provenance — `standards.md`'s vocabulary does not name them — so where they
+  go is a question about a vault's own conventions rather than about traceability, and a note
+  carrying them in its body carries none of them in a block it is also writing. Local-only is the default for every provider; anything
   that sends content off-box is opt-in and named on the item.
 
 ---

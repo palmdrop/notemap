@@ -7,6 +7,11 @@ export type Rendering = {
   readonly body: string;
   /** Extra keys, which may not shadow the fixed ones. */
   readonly frontmatter?: ReadonlyMap<string, FrontmatterValue>;
+  /**
+   * What this dialect left behind, each as the noun phrase a confession joins —
+   * `its artifacts`. Said by the renderer because only it knows what it wrote.
+   */
+  readonly dropped?: readonly string[];
 };
 
 /**
@@ -56,6 +61,7 @@ export const renderAsJson: Renderer = (delivery, at) => {
 
   return {
     body: [...lines, ...(links.length > 0 ? [...links, ""] : [])].join("\n"),
+    ...(delivery.artifacts.length > 0 ? { dropped: ["its artifacts"] } : {}),
   };
 };
 

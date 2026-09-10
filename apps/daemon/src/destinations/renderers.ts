@@ -7,9 +7,9 @@ import type { PayloadTypeName } from "@notemap/core";
 
 /**
  * A note as itself: its attachments in slot order, then its prose. Deliberately
- * lossy — it drops the metadata and the artifacts — because a vault wants the
- * note. Slot order is the order they were attached in, and the order a person
- * expects to see them.
+ * lossy — it drops the metadata and the artifacts, and says so where there were
+ * artifacts to drop — because a vault wants the note. Slot order is the order
+ * they were attached in, and the order a person expects to see them.
  *
  * Embeds the copies that landed beside it rather than pointing back into
  * notemap: a reference into the blob layout breaks the moment notemap moves,
@@ -41,7 +41,10 @@ const renderNote: Renderer = (delivery, at) => {
       ? [...attachments, ...(attachments.length > 0 ? [""] : []), text]
       : attachments;
 
-  return { body: `${lines.join("\n")}\n` };
+  return {
+    body: `${lines.join("\n")}\n`,
+    ...(delivery.artifacts.length > 0 ? { dropped: ["its artifacts"] } : {}),
+  };
 };
 
 export function destinationRenderers(): Renderers {

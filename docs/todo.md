@@ -158,7 +158,18 @@
     things can match, so it follows conditions rather than standing beside them.
 
 ## Output
-- [ ] add option to render tags as markdown `#tag` entries at the end of the file instead of frontmatter items 
+
+- [x] ~~add option to render tags as markdown `#tag` entries at the end of the file instead of
+  frontmatter items~~ — closed 2026-09-10: a **tags** switch beside the frontmatter one, a setting
+  on the markdown destinations and an argument on one capture, reading `frontmatter`, `hashtags` or
+  `none`. A tag holding a space is left out rather than rewritten, nothing ending a hashtag but a
+  space. Absent is `frontmatter`, so nothing a vault already writes changes.
+- [x] ~~The markdown kinds confessed nothing~~ — closed 2026-09-10, found opening the item above:
+  `frontmatter` defaults to `none`, so every filesystem and WebDAV delivery in the default
+  configuration dropped the item's tags and its artifacts and said nothing about either — which
+  [ADR 33](adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md) is
+  precisely about, and which the are.na kind had been doing correctly all along. The renderer names
+  its own losses and the note assembly names the tags, and both reach the output's note.
 
 ## Destinations and adapters
 

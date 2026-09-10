@@ -28,8 +28,10 @@ import {
   placeOf,
   renderNote,
   RenderingFailed,
+  tagsModeOf,
   type FrontmatterMode,
   type Renderers,
+  type TagsMode,
 } from "@notemap/output-markdown";
 
 import { assetNames, placeAssets } from "./assets";
@@ -136,7 +138,7 @@ export function createFilesystemDestination(
         return {
           kind: "delivered",
           pointer: composed.note.relative,
-          output: markdownOutput(composed.written),
+          output: markdownOutput(composed.written, composed.dropped),
         };
       } catch (cause) {
         return failure(cause);
@@ -165,7 +167,7 @@ export function createFilesystemDestination(
           wiringFor(reached, renderers, settings),
           delivery,
         );
-        return markdownOutput(composed.written);
+        return markdownOutput(composed.written, composed.dropped);
       } catch (cause) {
         const failed = failure(cause);
         if (failed.kind === "rejected") throw new Rejected(failed.detail);
@@ -244,6 +246,8 @@ type Wiring = {
   readonly renderers: Renderers;
   /** The destination's own, which a delivery's own argument overrides. */
   readonly frontmatter?: FrontmatterMode;
+  /** The same, for where a note carries its tags. */
+  readonly tags?: TagsMode;
 };
 
 function wiringFor(
@@ -257,6 +261,7 @@ function wiringFor(
     ...(settings.frontmatter === undefined
       ? {}
       : { frontmatter: settings.frontmatter }),
+    ...(settings.tags === undefined ? {} : { tags: settings.tags }),
   };
 }
 
@@ -270,6 +275,8 @@ type Composition = {
   readonly written: string;
   readonly file: string;
   readonly fresh: boolean;
+  /** What the rendering could not carry, where it could not carry everything. */
+  readonly dropped?: string;
 };
 
 function compose(wiring: Wiring, delivery: Delivery): Promise<Composition> {
@@ -393,7 +400,7 @@ async function create(
   const rendered = render(wiring, delivery, note);
   const file = fileOf(rendered.frontmatter, rendered.body);
 
-  return { note, written: file, file, fresh: true };
+  return { note, written: file, file, fresh: true, ...said(rendered.dropped) };
 }
 
 async function append(
@@ -411,7 +418,13 @@ async function append(
       rendered.frontmatter,
       insertUnder("", rendered.body, heading),
     );
-    return { note, written: file, file, fresh: true };
+    return {
+      note,
+      written: file,
+      file,
+      fresh: true,
+      ...said(rendered.dropped),
+    };
   }
 
   return {
@@ -419,6 +432,7 @@ async function append(
     written: rendered.body,
     file: insertUnder(existing, rendered.body, heading),
     fresh: false,
+    ...said(rendered.dropped),
   };
 }
 
@@ -427,8 +441,16 @@ function render(wiring: Wiring, delivery: Delivery, note: Contained) {
     wiring.renderers,
     delivery,
     { directory: within(note), assets: assetNames(delivery.assets) },
-    frontmatterModeOf(delivery.arguments, wiring.frontmatter),
+    {
+      frontmatter: frontmatterModeOf(delivery.arguments, wiring.frontmatter),
+      tags: tagsModeOf(delivery.arguments, wiring.tags),
+    },
   );
+}
+
+/** Absent rather than `undefined`, so a composition that lost nothing has no field for it. */
+function said(dropped: string | undefined): { dropped?: string } {
+  return dropped === undefined ? {} : { dropped };
 }
 
 /**

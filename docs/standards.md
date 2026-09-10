@@ -102,6 +102,10 @@ don't require model changes.
   metadata on a board's block — so an item routed to two places says where it came from one way.
   That is what lets an item that has *left* the hub be traced back, re-enriched, or re-routed.
 
+  **Tags are not in this vocabulary**, and are not provenance: where a note carries them —
+  frontmatter, `#tag` at its foot, or nowhere — is a vault's own convention, switched per
+  destination and per capture beside the frontmatter (2026-09-10).
+
   **Whether it carries any is the destination's**, narrowed 2026-09-08 with the markdown kinds'
   `frontmatter` switch and the arrival of a kind that writes no frontmatter at all. Absent means
   none, so a destination that never said writes the prose alone and the file is not traceable by

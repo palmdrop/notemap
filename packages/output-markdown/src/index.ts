@@ -6,3 +6,4 @@ export * from "./note";
 export * from "./place";
 export * from "./renderers";
 export { insertUnder } from "./sections";
+export * from "./tags";

@@ -8,6 +8,7 @@ import type {
 } from "@notemap/core";
 
 import { FRONTMATTER, FRONTMATTER_MODE } from "./frontmatter";
+import { TAGS, TAGS_MODE } from "./tags";
 
 export const CREATE = "create" as CapabilityName;
 export const APPEND = "append" as CapabilityName;
@@ -68,6 +69,7 @@ function createFileArguments(browsable: boolean): JsonSchema {
       },
       [FOLDER_ARGUMENT]: FOLDER_MODE,
       [FRONTMATTER]: FRONTMATTER_MODE,
+      [TAGS]: TAGS_MODE,
     },
   };
 }
@@ -97,6 +99,7 @@ function appendToFileArguments(browsable: boolean): JsonSchema {
       },
       [FOLDER_ARGUMENT]: FOLDER_MODE,
       [FRONTMATTER]: FRONTMATTER_MODE,
+      [TAGS]: TAGS_MODE,
     },
   };
 }
@@ -129,6 +132,7 @@ function createOrAppendFileArguments(browsable: boolean): JsonSchema {
       },
       [FOLDER_ARGUMENT]: FOLDER_MODE,
       [FRONTMATTER]: FRONTMATTER_MODE,
+      [TAGS]: TAGS_MODE,
     },
   };
 }
