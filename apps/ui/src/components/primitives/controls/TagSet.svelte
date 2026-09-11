@@ -1,14 +1,21 @@
 <script lang="ts">
+  import type { CandidateEntry } from "@notemap/client";
+
+  import Walked from "$components/primitives/composer/Walked.svelte";
+  import { completed, narrowed } from "$lib/candidate-list";
+
   /**
-   * A chooser over known names with free entry. Every name is a word that
-   * toggles: pressed where the item carries it, muted where the pool offers it.
-   * What is applied stays drawn whatever is typed — it is the item's own state,
-   * not a suggestion, and hiding it would make a tag look dropped.
+   * A chooser over known names with free entry. What the item carries is a row
+   * of pressed words, each taken off by pressing it. `+` opens a line with the
+   * pool's offer beneath it, narrowed as the line is typed into: `⇥` completes
+   * what was typed and walks the offer once there is nothing left to complete,
+   * `↑↓` walk it, `⏎` takes the one walked to or what was typed, and `esc` or
+   * leaving the line puts it away and takes nothing — a name half-typed is not
+   * a decision.
    */
   let {
     names,
     offered = [],
-    folded = false,
     fires,
     onadd,
     onremove,
@@ -16,11 +23,6 @@
     names: readonly string[];
     /** What the pool already carries, most used first. Completion, never a limit. */
     offered?: readonly string[];
-    /**
-     * Draw the offer only while a name is being added. A row scanned in a feed
-     * has no room for every tag in use; the composer has.
-     */
-    folded?: boolean;
     /**
      * The template this tag applies, where it applies one. A tag that files the
      * item somewhere is not an ordinary one, and offering it unmarked is how
@@ -31,54 +33,104 @@
     onremove: (name: string) => void;
   } = $props();
 
+  const id = $props.id();
+
   let adding = $state(false);
   let draft = $state("");
+  /** Where `↑↓` stands, and whether it has been used since the offer last changed. */
+  let at = $state(0);
+  let moved = $state(false);
 
-  const wanted = $derived(draft.trim().toLowerCase());
+  const entries = $derived<readonly CandidateEntry[]>(
+    offered
+      .filter((name) => !names.includes(name))
+      .map((name) => ({ label: name, value: name })),
+  );
 
-  const shown = $derived([
-    ...names,
-    ...offered.filter(
-      (name) =>
-        !names.includes(name) &&
-        (adding || !folded) &&
-        name.toLowerCase().startsWith(wanted),
-    ),
-  ]);
+  const shown = $derived(narrowed(entries, draft));
 
-  function toggle(name: string): void {
-    if (names.includes(name)) onremove(name);
-    else onadd(name);
-  }
+  $effect(() => {
+    // Whatever the walk was on stops meaning anything once the offer beneath
+    // it has changed.
+    void shown;
+    at = 0;
+    moved = false;
+  });
 
-  function add(event: Event): void {
-    event.preventDefault();
-    const name = draft.trim();
-    draft = "";
-    adding = false;
+  const active = $derived(
+    moved && shown[at] !== undefined ? `${id}-tag-${at}` : undefined,
+  );
+
+  function take(name: string): void {
+    close();
     if (name !== "" && !names.includes(name)) onadd(name);
   }
 
-  function put(event: KeyboardEvent): void {
-    if (event.key !== "Escape") return;
-    // Putting this away is what the key did here, so nothing above it — a
-    // composer stepping back, a row closing — also acts on the one press.
-    event.stopPropagation();
-    draft = "";
+  function close(): void {
     adding = false;
+    draft = "";
+  }
+
+  function walk(step: 1 | -1): void {
+    if (shown.length === 0) return;
+    at = moved
+      ? (at + step + shown.length) % shown.length
+      : step === 1
+        ? 0
+        : shown.length - 1;
+    moved = true;
+  }
+
+  function onkeydown(event: KeyboardEvent): void {
+    if (event.key === "Tab" && !event.shiftKey) {
+      // The line is what the control is for, so the key never leaves it.
+      event.preventDefault();
+
+      // Completion is for a line still being typed. Once the walk has
+      // started the line is a filter, and completing it again would put the
+      // shared prefix back and walk the same two names forever.
+      if (!moved) {
+        const finished = completed(entries, draft, "label");
+        if (finished !== undefined) {
+          draft = finished;
+          return;
+        }
+      }
+      walk(1);
+      return;
+    }
+
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      walk(event.key === "ArrowDown" ? 1 : -1);
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const picked = shown[at];
+      if (moved && picked !== undefined) take(picked.label);
+      else take(draft.trim());
+      return;
+    }
+
+    if (event.key === "Escape") {
+      // Putting this away is what the key did here, so nothing above it — a
+      // composer stepping back, a row closing — also acts on the one press.
+      event.stopPropagation();
+      close();
+    }
   }
 </script>
 
-{#each shown as name (name)}
+{#each names as name (name)}
   {@const fired = fires?.(name)}
   <button
     type="button"
-    aria-pressed={names.includes(name)}
-    onclick={() => toggle(name)}
+    aria-pressed="true"
+    onclick={() => onremove(name)}
     aria-label={fired === undefined ? undefined : `${name}, routes to ${fired}`}
-    class="font-mono hover:text-accent {names.includes(name)
-      ? 'text-ink'
-      : 'text-ink-muted'}"
+    class="font-mono hover:text-accent"
   >
     {name}{#if fired !== undefined}<span class="text-ink-muted"
         >&nbsp;→&nbsp;{fired}</span
@@ -87,17 +139,52 @@
 {/each}
 
 {#if adding}
-  <form onsubmit={add}>
+  <div>
     <!-- svelte-ignore a11y_autofocus -->
     <input
       bind:value={draft}
       autofocus
-      onblur={add}
-      onkeydown={put}
+      onblur={close}
+      {onkeydown}
+      spellcheck="false"
+      autocapitalize="off"
+      autocomplete="off"
       aria-label="Add a tag"
-      class="w-24 px-2 py-0.5 font-mono outline-none field"
+      role="combobox"
+      aria-autocomplete="list"
+      aria-expanded={shown.length > 0}
+      aria-controls="{id}-tags"
+      aria-activedescendant={active}
+      class="w-32 px-2 py-0.5 font-mono outline-none field"
     />
-  </form>
+    {#if shown.length > 0}
+      <!-- In flow rather than floated: the composer scrolls inside a modal,
+           and a panel floated past its edge is a panel scrolled out of reach.
+           Rows taken on `mousedown` with the default prevented, so taking one
+           never blurs the line out from under the click. -->
+      <div
+        id="{id}-tags"
+        role="listbox"
+        aria-label="Tags in use"
+        class="mt-1 max-h-64 w-max min-w-36 overflow-y-auto border border-ink bg-paper px-2.5 py-1 font-mono"
+      >
+        {#each shown as entry, index (entry.label)}
+          {@const on = moved && at === index}
+          {@const fired = fires?.(entry.label)}
+          <Walked
+            id={on ? `${id}-tag-${index}` : undefined}
+            {on}
+            dim={!on}
+            ontake={() => take(entry.label)}
+          >
+            {entry.label}{#if fired !== undefined}<span class="text-ink-muted"
+                >&nbsp;→&nbsp;{fired}</span
+              >{/if}
+          </Walked>
+        {/each}
+      </div>
+    {/if}
+  </div>
 {:else}
   <button
     type="button"

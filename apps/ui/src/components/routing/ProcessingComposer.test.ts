@@ -501,11 +501,49 @@ test("closes on a trigger tag taken in its own row", async () => {
   await choose(/Vault/);
   await described();
 
-  await fireEvent.click(
-    await screen.findByRole("button", { name: /routes to research/ }),
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  await fireEvent.mouseDown(
+    await screen.findByRole("option", { name: /route\/research/ }),
   );
 
   expect(closed).toHaveBeenCalled();
+});
+
+/**
+ * The row draws the client's held copy rather than the item the composer
+ * opened on, so a tag taken here is drawn taken at once — and taken off again
+ * by pressing it.
+ */
+test("draws a tag taken in its own row as taken, at once", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/items/one") return json(200, aCapture());
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route === "POST /v1/items/one/tag") return json(200, aCapture());
+    return json(200, { values: [] });
+  });
+  await client.item("one");
+
+  draw();
+  await choose(/^manual/);
+  await screen.findByText("tags");
+
+  const line = await (async () => {
+    await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+    return screen.getByRole("combobox", { name: "Add a tag" });
+  })();
+  await fireEvent.input(line, { target: { value: "seedling" } });
+  await fireEvent.keyDown(line, { key: "Enter" });
+
+  const word = await screen.findByRole("button", { name: "seedling" });
+  expect(word.getAttribute("aria-pressed")).toBe("true");
+
+  await fireEvent.click(word);
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("button", { name: "seedling" })).toBeNull();
+  });
 });
 
 test("draws a stranded template with its reason rather than removing it", async () => {
@@ -1077,18 +1115,30 @@ test("a tag taken in the composer stays applied when the route fails", async () 
       return json(200, { kind: "described", capabilities: [CREATE_OR_APPEND] });
     }
     if (route.endsWith("/candidates")) return json(200, answered([]));
-    if (route === "POST /v1/items/one/tag") return json(200, {});
+    if (route === "GET /v1/items/one") return json(200, aCapture());
+    if (route === "POST /v1/items/one/tag") {
+      return json(
+        200,
+        aCapture({ tags: [{ name: "seedling", addedAt: WHEN }] }),
+      );
+    }
     if (route === "POST /v1/items/one/route") {
       return json(503, { error: { code: "unreachable" } });
     }
     return json(404, { error: { code: "unknown-route" } });
   });
   await client.tags.load();
+  // The row draws the client's held copy, so the item is held before it opens.
+  await client.item("one");
 
   const closed = drawAbout({ text: "a thought" });
   await choose(/Vault/);
+  await screen.findByRole("combobox", { name: "place" });
 
-  await choose("seedling");
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  await fireEvent.mouseDown(
+    await screen.findByRole("option", { name: "seedling" }),
+  );
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/tag");
   });
@@ -2384,10 +2434,10 @@ test("offers a trigger tag that has never filed anything yet", async () => {
 
   drawAbout({ text: "a thought" });
   await choose(/Vault/);
+  await screen.findByRole("combobox", { name: "place" });
 
-  await screen.findByRole("button", {
-    name: "route/research, routes to research",
-  });
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  await screen.findByRole("option", { name: /route\/research.*research/ });
 });
 
 /**
@@ -2423,12 +2473,12 @@ test("marks a trigger tag in the chooser with the template it applies", async ()
 
   drawAbout({ text: "a thought" });
   await choose(/Vault/);
+  await screen.findByRole("combobox", { name: "place" });
 
-  await screen.findByRole("button", {
-    name: "route/research, routes to research",
-  });
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  await screen.findByRole("option", { name: /route\/research.*research/ });
   // An ordinary tag is left as it was: only a tag with an effect is marked.
-  expect(screen.getByRole("button", { name: "seedling" })).toBeTruthy();
+  expect(screen.getByRole("option", { name: "seedling" })).toBeTruthy();
 });
 
 /** A destination that says where a field starts is answered: it starts there. */

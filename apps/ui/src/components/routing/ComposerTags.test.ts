@@ -50,34 +50,39 @@ function draw(names: readonly string[] = [], onfired?: () => void) {
 
 const word = (name: string) => screen.getByRole("button", { name });
 
-test("offers the pool's tags in use as words beside what is applied", async () => {
+const opened = async () => {
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  return screen.getByRole("combobox", { name: "Add a tag" });
+};
+
+test("draws what is applied as pressed words, and offers the rest beneath the line", async () => {
   await serving(["reading", "seedling"]);
   draw(["seedling"]);
 
-  await vi.waitFor(() => expect(word("reading")).toBeDefined());
-
   expect(word("seedling").getAttribute("aria-pressed")).toBe("true");
-  expect(word("reading").getAttribute("aria-pressed")).toBe("false");
+  expect(screen.queryByRole("button", { name: "reading" })).toBeNull();
+
+  await opened();
+  expect(screen.getByRole("option", { name: "reading" })).toBeDefined();
+  expect(screen.queryByRole("option", { name: "seedling" })).toBeNull();
 });
 
 test("a tag taken here reaches the pool", async () => {
   await serving(["reading"]);
   draw();
 
-  await vi.waitFor(() => expect(word("reading")).toBeDefined());
-  await fireEvent.click(word("reading"));
+  await opened();
+  await fireEvent.mouseDown(screen.getByRole("option", { name: "reading" }));
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/tag");
   });
-  expect(word("reading").getAttribute("aria-pressed")).toBe("true");
 });
 
 test("a tag taken back is removed", async () => {
   await serving(["reading"]);
   draw(["reading"]);
 
-  await vi.waitFor(() => expect(word("reading")).toBeDefined());
   await fireEvent.click(word("reading"));
 
   await vi.waitFor(() => {
@@ -89,56 +94,13 @@ test("takes a tag the pool has never seen", async () => {
   await serving([]);
   draw();
 
-  await fireEvent.click(screen.getByLabelText("Add a tag"));
-  const input = screen.getByLabelText("Add a tag") as HTMLInputElement;
-  await fireEvent.input(input, { target: { value: "brand-new" } });
-  await fireEvent.blur(input);
+  const line = await opened();
+  await fireEvent.input(line, { target: { value: "brand-new" } });
+  await fireEvent.keyDown(line, { key: "Enter" });
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/tag");
   });
-});
-
-test("narrows what is offered as a name is typed", async () => {
-  await serving(["reading", "recipe", "seedling"]);
-  draw();
-
-  await vi.waitFor(() => expect(word("reading")).toBeDefined());
-  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
-  await fireEvent.input(screen.getByRole("textbox", { name: "Add a tag" }), {
-    target: { value: "re" },
-  });
-
-  expect(word("reading")).toBeDefined();
-  expect(word("recipe")).toBeDefined();
-  expect(screen.queryByRole("button", { name: "seedling" })).toBeNull();
-});
-
-/** A tag the item carries is its state, not a suggestion: hiding it reads as dropped. */
-test("keeps what is applied visible however the filter narrows", async () => {
-  await serving(["reading", "seedling"]);
-  draw(["seedling"]);
-
-  await vi.waitFor(() => expect(word("reading")).toBeDefined());
-  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
-  await fireEvent.input(screen.getByRole("textbox", { name: "Add a tag" }), {
-    target: { value: "re" },
-  });
-
-  expect(word("seedling").getAttribute("aria-pressed")).toBe("true");
-});
-
-/** Taking one is answered at once, so dropping one has to be too. */
-test("stops saying a tag is applied the moment it is dropped", async () => {
-  await serving(["seedling"]);
-  draw(["seedling"]);
-
-  await vi.waitFor(() =>
-    expect(word("seedling").getAttribute("aria-pressed")).toBe("true"),
-  );
-
-  await fireEvent.click(word("seedling"));
-  expect(word("seedling").getAttribute("aria-pressed")).toBe("false");
 });
 
 /**
@@ -151,8 +113,9 @@ test("says a trigger tag taken here filed the item", async () => {
   const fired = vi.fn();
   draw([], fired);
 
-  await fireEvent.click(
-    await screen.findByRole("button", { name: /research/ }),
+  await opened();
+  await fireEvent.mouseDown(
+    screen.getByRole("option", { name: /route\/research/ }),
   );
 
   expect(fired).toHaveBeenCalled();
@@ -163,7 +126,8 @@ test("says nothing of an ordinary tag, which files nothing", async () => {
   const fired = vi.fn();
   draw([], fired);
 
-  await fireEvent.click(await screen.findByRole("button", { name: "reading" }));
+  await opened();
+  await fireEvent.mouseDown(screen.getByRole("option", { name: "reading" }));
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/tag");

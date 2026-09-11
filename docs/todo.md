@@ -57,8 +57,8 @@
 - [x] ~~A schema field's **default** is not drawn~~ — closed 2026-09-09, as a suggestion the person
   types over and never written into a template's own arguments.
 - [x] ~~Tag picking is still free entry beside a datalist rather than the shell's own
-  chooser, which the order control now uses~~ — closed 2026-09-11: the row draws the composer's
-  chooser, one `TagSet` under both, folded on the row so a feed does not carry every tag in use.
+  chooser, which the order control now uses~~ — closed 2026-09-11: one `TagSet` under the row and
+  the composer, the offer in a panel beneath a line that `⇥` completes and walks.
 - [ ] Editing does not allow attaching anything. It is the edit surface rather than the
   row, and wants designing on its own. The composer's `rewrite` did not reach it (2026-09-10):
   that carries words for one delivery and touches neither the capture nor its assets, so editing

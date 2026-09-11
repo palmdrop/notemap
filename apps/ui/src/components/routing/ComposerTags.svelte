@@ -17,7 +17,7 @@
     onfired,
   }: {
     item: string;
-    /** What the item already carries, so the pool's own list draws as taken or not. */
+    /** What the item carries, read live: a tag taken here is drawn taken at once. */
     names: readonly string[];
     /**
      * A trigger tag was applied here, which files the item. Said as soon as the
@@ -31,31 +31,13 @@
   const inUse = client.tags.inUse;
   const offered = $derived(offerable($inUse.map((use) => use.name)));
 
-  let taken = $state<readonly string[]>([]);
-  /** Dropped here and not yet read back, which is what the pool still says it carries. */
-  let dropped = $state<readonly string[]>([]);
-
-  // What the pool says, plus and minus what has been decided here since.
-  const applied = $derived([
-    ...names.filter((name) => !dropped.includes(name)),
-    ...taken.filter((name) => !names.includes(name)),
-  ]);
-
   function fires(name: string): string | undefined {
     return triggeredBy(name)?.name;
   }
 
   function add(name: string): void {
-    dropped = dropped.filter((each) => each !== name);
-    taken = [...taken, name];
     void tagged(name);
     if (fires(name) !== undefined) onfired?.();
-  }
-
-  function remove(name: string): void {
-    taken = taken.filter((each) => each !== name);
-    dropped = [...dropped, name];
-    void client.untag(item, name);
   }
 
   /** A trigger tag files the item, so what it did is said as soon as it is known. */
@@ -66,5 +48,11 @@
 </script>
 
 <Labelled name="tags">
-  <TagSet names={applied} {offered} {fires} onadd={add} onremove={remove} />
+  <TagSet
+    {names}
+    {offered}
+    {fires}
+    onadd={add}
+    onremove={(name) => void client.untag(item, name)}
+  />
 </Labelled>

@@ -118,93 +118,174 @@ test("draws its panel as a named group rather than a listbox", async () => {
   expect(control.getAttribute("aria-controls")).toBe(panel.id);
 });
 
-test("a tag is added by name, trimmed, and an empty one is not added at all", async () => {
+function tagSet(
+  props: Partial<{
+    names: readonly string[];
+    offered: readonly string[];
+    fires: (name: string) => string | undefined;
+  }> = {},
+) {
   const added = vi.fn();
-  render(TagSet, { names: [], onadd: added, onremove: vi.fn() });
+  const removed = vi.fn();
+  render(TagSet, {
+    names: [],
+    offered: [],
+    ...props,
+    onadd: added,
+    onremove: removed,
+  });
+  return { added, removed };
+}
 
-  const open = async () =>
-    fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+const opened = async () => {
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  return screen.getByRole("combobox", { name: "Add a tag" });
+};
 
-  await open();
-  const field = screen.getByLabelText("Add a tag");
-  await fireEvent.input(field, { target: { value: "  design  " } });
-  await fireEvent.submit(field.closest("form") as HTMLFormElement);
+const typed = (line: HTMLElement, value: string) =>
+  fireEvent.input(line, { target: { value } });
+
+const pressed = (line: HTMLElement, key: string) =>
+  fireEvent.keyDown(line, { key });
+
+const options = () =>
+  screen.queryAllByRole("option").map((one) => one.textContent?.trim());
+
+test("a tag typed is taken on enter, trimmed, and an empty line takes nothing", async () => {
+  const { added } = tagSet();
+
+  let line = await opened();
+  await typed(line, "  design  ");
+  await pressed(line, "Enter");
   expect(added).toHaveBeenCalledWith("design");
 
-  await open();
-  await fireEvent.submit(
-    screen.getByLabelText("Add a tag").closest("form") as HTMLFormElement,
-  );
+  line = await opened();
+  await pressed(line, "Enter");
   expect(added).toHaveBeenCalledTimes(1);
 });
 
-test("offers what is in use as words beside what the item carries", async () => {
-  const added = vi.fn();
-  render(TagSet, {
-    names: ["kind/quote"],
-    offered: ["kind/quote", "project/fiction-a"],
-    onadd: added,
-    onremove: vi.fn(),
-  });
-
-  const carried = screen.getByRole("button", { name: "kind/quote" });
-  const offered = screen.getByRole("button", { name: "project/fiction-a" });
-  expect(carried.getAttribute("aria-pressed")).toBe("true");
-  expect(offered.getAttribute("aria-pressed")).toBe("false");
-
-  await fireEvent.click(offered);
-  expect(added).toHaveBeenCalledWith("project/fiction-a");
-});
-
-test("folded, the offer is drawn only while a name is being added, narrowed as it is typed", async () => {
-  render(TagSet, {
+test("the offer is drawn beneath the line, minus what the item carries, narrowed as it is typed", async () => {
+  tagSet({
     names: ["seedling"],
     offered: ["reading", "recipe", "seedling"],
-    folded: true,
-    onadd: vi.fn(),
-    onremove: vi.fn(),
   });
 
-  expect(screen.queryByRole("button", { name: "reading" })).toBeNull();
+  expect(screen.queryByRole("listbox")).toBeNull();
 
-  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
-  expect(screen.getByRole("button", { name: "reading" })).toBeDefined();
+  const line = await opened();
+  expect(options()).toEqual(["reading", "recipe"]);
 
-  await fireEvent.input(screen.getByLabelText("Add a tag"), {
-    target: { value: "re" },
-  });
-  expect(screen.getByRole("button", { name: "recipe" })).toBeDefined();
-  expect(screen.queryByRole("button", { name: "seedling" })).not.toBeNull();
+  await typed(line, "rec");
+  expect(options()).toEqual(["recipe"]);
+});
+
+test("an offered tag is taken by pressing its row, and the line never blurs first", async () => {
+  const { added } = tagSet({ offered: ["reading"] });
+
+  await opened();
+  const row = screen.getByRole("option", { name: "reading" });
+  // `fireEvent` answers whether the default went through, and here it must not.
+  expect(await fireEvent.mouseDown(row)).toBe(false);
+
+  expect(added).toHaveBeenCalledWith("reading");
+  expect(screen.queryByRole("combobox")).toBeNull();
+});
+
+test("tab completes what is typed, then walks what still matches", async () => {
+  const { added } = tagSet({ offered: ["reading", "reasoning", "seedling"] });
+
+  const line = (await opened()) as HTMLInputElement;
+  await typed(line, "r");
+
+  await pressed(line, "Tab");
+  expect(line.value).toBe("rea");
+  expect(line.getAttribute("aria-activedescendant")).toBeNull();
+
+  await pressed(line, "Tab");
+  expect(line.value).toBe("rea");
   expect(
     screen
-      .getByRole("button", { name: "seedling" })
-      .getAttribute("aria-pressed"),
+      .getByRole("option", { name: "reading" })
+      .getAttribute("aria-selected"),
   ).toBe("true");
+
+  await pressed(line, "Tab");
+  expect(
+    screen
+      .getByRole("option", { name: "reasoning" })
+      .getAttribute("aria-selected"),
+  ).toBe("true");
+
+  await pressed(line, "Enter");
+  expect(added).toHaveBeenCalledWith("reasoning");
+});
+
+test("tab with nothing typed walks the offer from the top", async () => {
+  const { added } = tagSet({ offered: ["reading", "seedling"] });
+
+  const line = await opened();
+  await pressed(line, "Tab");
+  await pressed(line, "Enter");
+
+  expect(added).toHaveBeenCalledWith("reading");
+});
+
+test("the arrows walk the offer both ways, wrapping", async () => {
+  const { added } = tagSet({ offered: ["reading", "seedling"] });
+
+  const line = await opened();
+  await pressed(line, "ArrowUp");
+  expect(
+    screen
+      .getByRole("option", { name: "seedling" })
+      .getAttribute("aria-selected"),
+  ).toBe("true");
+
+  await pressed(line, "ArrowDown");
+  await pressed(line, "Enter");
+  expect(added).toHaveBeenCalledWith("reading");
+});
+
+test("escape and leaving the line put it away and take nothing", async () => {
+  const { added } = tagSet({ offered: ["reading"] });
+
+  let line = await opened();
+  await typed(line, "rea");
+  await pressed(line, "Escape");
+  expect(screen.queryByRole("combobox")).toBeNull();
+
+  line = await opened();
+  await typed(line, "rea");
+  await fireEvent.blur(line);
+  expect(screen.queryByRole("combobox")).toBeNull();
+
+  expect(added).not.toHaveBeenCalled();
 });
 
 test("a tag the item carries is removed by pressing its word", async () => {
-  const removed = vi.fn();
-  render(TagSet, {
-    names: ["design", "notemap"],
-    onadd: vi.fn(),
-    onremove: removed,
-  });
+  const { removed } = tagSet({ names: ["design", "notemap"] });
 
-  await fireEvent.click(screen.getByRole("button", { name: "notemap" }));
+  const word = screen.getByRole("button", { name: "notemap" });
+  expect(word.getAttribute("aria-pressed")).toBe("true");
+
+  await fireEvent.click(word);
   expect(removed).toHaveBeenCalledWith("notemap");
 });
 
-test("a trigger tag is marked with the template it applies", () => {
-  render(TagSet, {
-    names: [],
-    offered: ["route/research"],
-    fires: (name) => (name === "route/research" ? "research" : undefined),
-    onadd: vi.fn(),
-    onremove: vi.fn(),
+test("a trigger tag is marked with the template it applies, carried or offered", async () => {
+  tagSet({
+    names: ["route/research"],
+    offered: ["route/reading"],
+    fires: (name) => (name.startsWith("route/") ? name.slice(6) : undefined),
   });
 
   expect(
     screen.getByRole("button", { name: "route/research, routes to research" }),
+  ).toBeDefined();
+
+  await opened();
+  expect(
+    screen.getByRole("option", { name: /route\/reading.*reading/ }),
   ).toBeDefined();
 });
 

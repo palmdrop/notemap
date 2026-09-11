@@ -5,11 +5,14 @@
 **Shipped**:
 
 - 2026-09-11 — **One tag chooser, on the row and in the composer.** The row's field beside a
-  browser datalist is gone; both places draw the composer's chooser, every name a word that toggles
-  — pressed where the item carries it, muted where the pool offers it — and `+` opening a field
-  that narrows the offer as it is typed and takes a name that is on no list. The row draws the
-  offer **folded**, only while a name is being added: a feed scanned has no room for every tag in
-  use, and the composer has.
+  browser datalist and the composer's row of every tag in use are both gone; both places draw one
+  chooser. What the item carries is a row of pressed words, each taken off by pressing it; `+`
+  opens a line with the pool's offer in a **panel beneath it**, drawn in flow, narrowed as the line is typed into.
+  `⇥` completes what was typed and walks the offer once there is nothing left to complete, `↑↓`
+  walk it, `⏎` takes the one walked to or what was typed, and `esc` or leaving the line puts it
+  away and takes nothing. The composer's row reads the client's held copy of the item rather than
+  the item it opened on, so a tag taken there draws taken at once without the row keeping its own
+  account.
 
 - 2026-09-10 — **The composer can rewrite the words one delivery carries, and a record says which
   words went.** A `words` row in the right column, directly above `would write`, drawing the
@@ -1112,13 +1115,17 @@ person types. They are an offer and never a limit: a name that is on no list is 
 it, and the chooser stays useful once the pool goes out of reach, which is the whole reason tagging
 sits on the collapsed row.
 
-**The chooser is one control, wherever it is drawn** *(added 2026-09-11)*. Every name is a word
-that toggles: pressed where the item carries it, muted where the pool offers it, and a trigger tag
-marked with the template it applies. What the item carries is drawn whatever is typed — it is the
-item's state and not a suggestion, and hiding it would read as dropped. `+` opens a field that
-narrows the offer by prefix as it is typed; `⏎` or leaving the field takes what was typed, `esc`
-puts it away and takes nothing. The row draws the offer **folded** — only while a name is being
-added — because a feed scanned has no room for every tag in use; the composer draws it always.
+**The chooser is one control, wherever it is drawn** *(added 2026-09-11)*. What the item carries
+is a row of pressed words, a trigger tag marked with the template it applies, each taken off by
+pressing it. `+` opens a line with the pool's offer in a panel beneath it — the tags in use minus
+what the item carries — narrowed by prefix as the line is typed into. `⇥` completes what was
+typed as far as the offer agrees, and once there is nothing left to complete walks the offer from
+the top; `↑↓` walk it both ways; `⏎` takes the one walked to, or what was typed where nothing has
+been walked to, and a name on no list is taken that way. `esc` or leaving the line puts it away
+and takes nothing: a name half-typed is not a decision, and a panel row is taken without the line
+ever losing focus. The composer's row reads the client's held copy of the item, which is where a
+tag taken through the outbox lands first, so it draws taken at once and drops the account of
+taken-and-dropped it used to keep beside the item it opened on.
 
 **Tagging is offered in two places, and they are not redundant** (added 2026-09-02). The composer
 offers the same chooser beside the place being routed to, because classifying and filing are one
