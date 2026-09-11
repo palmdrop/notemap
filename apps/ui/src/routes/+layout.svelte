@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
 
@@ -53,7 +53,7 @@
   // delivery nobody can now look up would outlive the session that raised it.
   $effect(() => {
     if (!shut) return;
-    notices.clear();
+    untrack(() => notices.clear());
   });
 </script>
 
