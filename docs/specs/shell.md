@@ -1,8 +1,15 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-10
+**Last updated**: 2026-09-11
 **Shipped**:
+
+- 2026-09-11 — **One tag chooser, on the row and in the composer.** The row's field beside a
+  browser datalist is gone; both places draw the composer's chooser, every name a word that toggles
+  — pressed where the item carries it, muted where the pool offers it — and `+` opening a field
+  that narrows the offer as it is typed and takes a name that is on no list. The row draws the
+  offer **folded**, only while a name is being added: a feed scanned has no room for every tag in
+  use, and the composer has.
 
 - 2026-09-10 — **The composer can rewrite the words one delivery carries, and a record says which
   words went.** A `words` row in the right column, directly above `would write`, drawing the
@@ -1104,6 +1111,14 @@ whenever classification drains ([client.md](client.md#the-outbox)), and filtered
 person types. They are an offer and never a limit: a name that is on no list is written by typing
 it, and the chooser stays useful once the pool goes out of reach, which is the whole reason tagging
 sits on the collapsed row.
+
+**The chooser is one control, wherever it is drawn** *(added 2026-09-11)*. Every name is a word
+that toggles: pressed where the item carries it, muted where the pool offers it, and a trigger tag
+marked with the template it applies. What the item carries is drawn whatever is typed — it is the
+item's state and not a suggestion, and hiding it would read as dropped. `+` opens a field that
+narrows the offer by prefix as it is typed; `⏎` or leaving the field takes what was typed, `esc`
+puts it away and takes nothing. The row draws the offer **folded** — only while a name is being
+added — because a feed scanned has no room for every tag in use; the composer draws it always.
 
 **Tagging is offered in two places, and they are not redundant** (added 2026-09-02). The composer
 offers the same chooser beside the place being routed to, because classifying and filing are one

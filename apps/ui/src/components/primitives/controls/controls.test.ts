@@ -138,24 +138,51 @@ test("a tag is added by name, trimmed, and an empty one is not added at all", as
   expect(added).toHaveBeenCalledTimes(1);
 });
 
-test("the field completes from what is in use, minus what the item carries", async () => {
+test("offers what is in use as words beside what the item carries", async () => {
+  const added = vi.fn();
   render(TagSet, {
     names: ["kind/quote"],
     offered: ["kind/quote", "project/fiction-a"],
+    onadd: added,
+    onremove: vi.fn(),
+  });
+
+  const carried = screen.getByRole("button", { name: "kind/quote" });
+  const offered = screen.getByRole("button", { name: "project/fiction-a" });
+  expect(carried.getAttribute("aria-pressed")).toBe("true");
+  expect(offered.getAttribute("aria-pressed")).toBe("false");
+
+  await fireEvent.click(offered);
+  expect(added).toHaveBeenCalledWith("project/fiction-a");
+});
+
+test("folded, the offer is drawn only while a name is being added, narrowed as it is typed", async () => {
+  render(TagSet, {
+    names: ["seedling"],
+    offered: ["reading", "recipe", "seedling"],
+    folded: true,
     onadd: vi.fn(),
     onremove: vi.fn(),
   });
 
-  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  expect(screen.queryByRole("button", { name: "reading" })).toBeNull();
 
-  const field = screen.getByLabelText("Add a tag") as HTMLInputElement;
-  const list = document.getElementById(field.getAttribute("list") ?? "");
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  expect(screen.getByRole("button", { name: "reading" })).toBeDefined();
+
+  await fireEvent.input(screen.getByLabelText("Add a tag"), {
+    target: { value: "re" },
+  });
+  expect(screen.getByRole("button", { name: "recipe" })).toBeDefined();
+  expect(screen.queryByRole("button", { name: "seedling" })).not.toBeNull();
   expect(
-    [...(list?.children ?? [])].map((one) => one.getAttribute("value")),
-  ).toEqual(["project/fiction-a"]);
+    screen
+      .getByRole("button", { name: "seedling" })
+      .getAttribute("aria-pressed"),
+  ).toBe("true");
 });
 
-test("a tag is removed by name", async () => {
+test("a tag the item carries is removed by pressing its word", async () => {
   const removed = vi.fn();
   render(TagSet, {
     names: ["design", "notemap"],
@@ -163,8 +190,22 @@ test("a tag is removed by name", async () => {
     onremove: removed,
   });
 
-  await fireEvent.click(screen.getByRole("button", { name: "Remove notemap" }));
+  await fireEvent.click(screen.getByRole("button", { name: "notemap" }));
   expect(removed).toHaveBeenCalledWith("notemap");
+});
+
+test("a trigger tag is marked with the template it applies", () => {
+  render(TagSet, {
+    names: [],
+    offered: ["route/research"],
+    fires: (name) => (name === "route/research" ? "research" : undefined),
+    onadd: vi.fn(),
+    onremove: vi.fn(),
+  });
+
+  expect(
+    screen.getByRole("button", { name: "route/research, routes to research" }),
+  ).toBeDefined();
 });
 
 /** Referenced so a rename cannot leave the fixture pointing at nothing. */

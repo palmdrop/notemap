@@ -20,10 +20,13 @@
   }
 </script>
 
-<TagSet
-  {names}
-  {offered}
-  fires={(name) => triggeredBy(name)?.name}
-  onadd={(name) => void tagged(item.id, name)}
-  onremove={(name) => void client.untag(item.id, name)}
-/>
+<div class="mt-2 flex min-w-0 flex-wrap items-baseline gap-x-4 font-mono">
+  <TagSet
+    {names}
+    {offered}
+    folded
+    fires={(name) => triggeredBy(name)?.name}
+    onadd={(name) => void tagged(item.id, name)}
+    onremove={(name) => void client.untag(item.id, name)}
+  />
+</div>

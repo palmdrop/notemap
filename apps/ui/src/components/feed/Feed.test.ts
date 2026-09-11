@@ -118,7 +118,7 @@ test("offers a tag added on one row in the field on another", async () => {
   await fireEvent.click(
     screen.getAllByRole("button", { name: "Add a tag" })[0]!,
   );
-  const field = screen.getByRole("combobox", { name: "Add a tag" });
+  const field = screen.getByRole("textbox", { name: "Add a tag" });
   await fireEvent.input(field, { target: { value: "reading" } });
   await fireEvent.submit(field.closest("form") as HTMLFormElement);
 
@@ -131,13 +131,8 @@ test("offers a tag added on one row in the field on another", async () => {
   );
 
   await vi.waitFor(() => {
-    const opened = screen.getByRole("combobox", {
-      name: "Add a tag",
-    }) as HTMLInputElement;
-    const list = document.getElementById(opened.getAttribute("list") ?? "");
-    expect(
-      [...(list?.children ?? [])].map((one) => one.getAttribute("value")),
-    ).toEqual(["reading"]);
+    const word = screen.getByRole("button", { name: "reading" });
+    expect(word.getAttribute("aria-pressed")).toBe("false");
   });
 });
 
