@@ -44,11 +44,13 @@
   aria-selected={on}
   aria-disabled={disabled ? "true" : undefined}
   style={indent === 0 ? undefined : `padding-left: ${indent * 1.1}rem`}
-  class="cursor-default {held
-    ? 'text-accent'
-    : dim
-      ? 'text-ink-muted'
-      : 'text-ink'} {on ? 'inverted' : ''}"
+  class="cursor-default {on
+    ? 'inverted'
+    : held
+      ? 'text-accent'
+      : dim
+        ? 'text-ink-muted'
+        : 'text-ink'}"
   onmousedown={(event) => {
     event.preventDefault();
     if (!disabled) ontake();

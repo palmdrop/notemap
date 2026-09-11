@@ -80,7 +80,7 @@ test("keeps tags editable on a finished row", async () => {
   await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
   const field = screen.getByLabelText("Add a tag");
   await fireEvent.input(field, { target: { value: "reading" } });
-  await fireEvent.submit(field.closest("form") as HTMLFormElement);
+  await fireEvent.keyDown(field, { key: "Enter" });
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/gone/tag");
@@ -120,7 +120,7 @@ test("offers a tag added on one row in the field on another", async () => {
   );
   const field = screen.getByRole("combobox", { name: "Add a tag" });
   await fireEvent.input(field, { target: { value: "reading" } });
-  await fireEvent.submit(field.closest("form") as HTMLFormElement);
+  await fireEvent.keyDown(field, { key: "Enter" });
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/tag");
@@ -131,13 +131,7 @@ test("offers a tag added on one row in the field on another", async () => {
   );
 
   await vi.waitFor(() => {
-    const opened = screen.getByRole("combobox", {
-      name: "Add a tag",
-    }) as HTMLInputElement;
-    const list = document.getElementById(opened.getAttribute("list") ?? "");
-    expect(
-      [...(list?.children ?? [])].map((one) => one.getAttribute("value")),
-    ).toEqual(["reading"]);
+    expect(screen.getByRole("option", { name: "reading" })).toBeDefined();
   });
 });
 
@@ -239,7 +233,7 @@ test("says an archived row is discarded and still pending", async () => {
   await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
   const field = screen.getByLabelText("Add a tag");
   await fireEvent.input(field, { target: { value: "reading" } });
-  await fireEvent.submit(field.closest("form") as HTMLFormElement);
+  await fireEvent.keyDown(field, { key: "Enter" });
 
   expect(await screen.findByText("pending")).toBeDefined();
   expect(screen.getByText("discarded")).toBeDefined();
@@ -332,7 +326,7 @@ test("keeps the row's marks when the rail furls, and draws each of them once", a
   await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
   const field = screen.getByLabelText("Add a tag");
   await fireEvent.input(field, { target: { value: "reading" } });
-  await fireEvent.submit(field.closest("form") as HTMLFormElement);
+  await fireEvent.keyDown(field, { key: "Enter" });
   await screen.findByText("pending");
 
   rail.toggle();

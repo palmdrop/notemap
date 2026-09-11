@@ -590,7 +590,7 @@ test("tagging says nothing in the corner", async () => {
   await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
   const field = screen.getByLabelText("Add a tag");
   await fireEvent.input(field, { target: { value: "research" } });
-  await fireEvent.submit(field.closest("form") as HTMLFormElement);
+  await fireEvent.keyDown(field, { key: "Enter" });
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/tag");

@@ -97,8 +97,13 @@
   const content = $derived(item.payload.content);
   /** What the capture says, which is what a rewrite starts from and what it replaces. */
   const captured = $derived(client.says(item));
-  /** What the item already carries, so the composer's own row draws them as taken. */
-  const tags = $derived((item.tags ?? []).map((tag) => tag.name));
+  /**
+   * What the item carries, read from the client's held copy rather than the
+   * item this opened on: a tag taken in the row below lands on the held copy
+   * first, and the row draws it taken the moment it does.
+   */
+  const held = $derived(client.held(item.id));
+  const tags = $derived((($held ?? item).tags ?? []).map((tag) => tag.name));
 
   /** Taken by hand: `manual`, which has a step, or `discard`, which acts. */
   let hand = $state<typeof MANUAL | undefined>(undefined);
