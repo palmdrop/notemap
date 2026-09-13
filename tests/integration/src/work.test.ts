@@ -265,7 +265,7 @@ describe("a non-retryable failure", () => {
 
 describe("the action log", () => {
   async function kindsFor(p: Harness["pool"], item: ItemId) {
-    const logged = await p.actions.forItem(item, ALL);
+    const logged = await p.actions.read({ item }, ALL);
     return logged.values.map((action) => ({
       kind: action.kind,
       by: action.by,

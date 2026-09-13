@@ -790,6 +790,10 @@ export function createSqlitePoolStore(
             clauses.push("subject = ?");
             params.push(query.item);
           }
+          if (query.kinds !== undefined && query.kinds.length > 0) {
+            clauses.push(`kind IN (${placeholders(query.kinds.length)})`);
+            params.push(...query.kinds);
+          }
           if (after !== undefined) {
             const keyset = keysetClause("at", after, way.comparison);
             clauses.push(keyset.sql);

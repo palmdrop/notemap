@@ -433,6 +433,36 @@ describe("GET /v1/actions", () => {
     expect(slice.values.map((entry) => entry.subject)).toEqual([ids[1]]);
   });
 
+  it("narrows to the kinds named, and carries the filter in next", async () => {
+    const app = serving();
+    const ids = await captureMany(app, 2);
+    for (const id of ids) {
+      await app.request(`/v1/items/${id}/tag`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tag: "kind/quote" }),
+      });
+    }
+
+    const slice: LogPage = await body(
+      await app.request("/v1/actions?kind=tagged,untagged&limit=1"),
+    );
+
+    expect(slice.values.map((entry) => entry.kind)).toEqual(["tagged"]);
+    expect(slice.next ?? "").toContain("kind=tagged%2Cuntagged");
+  });
+
+  it("refuses a kind the log never writes", async () => {
+    const app = serving();
+
+    const response = await app.request("/v1/actions?kind=captured,shouted");
+
+    expect(response.status).toBe(422);
+    expect(await body(response)).toMatchObject({
+      error: { code: "bad-kind", value: "shouted" },
+    });
+  });
+
   it("answers an empty page for a subject no item has, never a 404", async () => {
     const app = serving();
     await captureMany(app, 1);

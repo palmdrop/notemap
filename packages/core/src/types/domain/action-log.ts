@@ -2,38 +2,41 @@ import type { JsonObject } from "../json";
 import type { Agent } from "./agent";
 import type { ActionId, ItemId, Timestamp } from "./ids";
 
-export type ActionKind =
-  | "captured"
-  | "amended"
-  | "revised"
-  | "tagged"
-  | "untagged"
-  | "suggestion-added"
-  | "suggestion-accepted"
-  | "suggestion-rejected"
-  | "artifact-added"
-  | "artifact-corrected"
-  | "archived"
-  | "unarchived"
-  | "routed"
-  | "delivery-failed"
-  | "delivery-cancelled"
-  | "destination-created"
-  | "destination-renamed"
-  | "destination-reconfigured"
-  | "destination-retired"
-  | "destination-unretired"
-  | "destination-deleted"
-  | "template-created"
-  | "template-edited"
-  | "template-deleted"
-  | "template-fired"
-  | "enrichment-requested"
-  | "work-failed"
-  | "work-abandoned"
-  | "assets-released"
-  | "purged"
-  | "actions-cleared";
+export const ACTION_KINDS = [
+  "captured",
+  "amended",
+  "revised",
+  "tagged",
+  "untagged",
+  "suggestion-added",
+  "suggestion-accepted",
+  "suggestion-rejected",
+  "artifact-added",
+  "artifact-corrected",
+  "archived",
+  "unarchived",
+  "routed",
+  "delivery-failed",
+  "delivery-cancelled",
+  "destination-created",
+  "destination-renamed",
+  "destination-reconfigured",
+  "destination-retired",
+  "destination-unretired",
+  "destination-deleted",
+  "template-created",
+  "template-edited",
+  "template-deleted",
+  "template-fired",
+  "enrichment-requested",
+  "work-failed",
+  "work-abandoned",
+  "assets-released",
+  "purged",
+  "actions-cleared",
+] as const;
+
+export type ActionKind = (typeof ACTION_KINDS)[number];
 
 export type Action = {
   readonly id: ActionId;
@@ -47,4 +50,6 @@ export type Action = {
 
 export type ActionQuery = {
   readonly item?: ItemId;
+  /** Any of these kinds; absent or empty reads them all. */
+  readonly kinds?: readonly ActionKind[];
 };

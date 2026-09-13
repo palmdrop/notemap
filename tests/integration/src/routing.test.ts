@@ -179,10 +179,13 @@ describe("routing to a destination that is up", () => {
 
     const record = succeeded(await pool.routing.route(item, request()));
 
-    const logged = await pool.actions.forItem(item, {
-      limit: 50,
-      order: "newest-first",
-    });
+    const logged = await pool.actions.read(
+      { item },
+      {
+        limit: 50,
+        order: "newest-first",
+      },
+    );
     expect(logged.values[0]).toMatchObject({
       kind: "routed",
       by: { kind: "person" },
@@ -218,10 +221,13 @@ describe("routing to a destination that refuses", () => {
 
     await pool.routing.route(item, request());
 
-    const logged = await pool.actions.forItem(item, {
-      limit: 50,
-      order: "newest-first",
-    });
+    const logged = await pool.actions.read(
+      { item },
+      {
+        limit: 50,
+        order: "newest-first",
+      },
+    );
     expect(logged.values[0]).toMatchObject({
       kind: "delivery-failed",
       detail: {
@@ -396,10 +402,13 @@ describe("an item purged while its delivery was in flight", () => {
     const outcome = await opened.pool.routing.route(item, request());
 
     expect(outcome).toMatchObject({ refusal: { kind: "item-purged", item } });
-    const logged = await opened.pool.actions.forItem(item, {
-      limit: 50,
-      order: "newest-first",
-    });
+    const logged = await opened.pool.actions.read(
+      { item },
+      {
+        limit: 50,
+        order: "newest-first",
+      },
+    );
     expect(logged.values[0]).toMatchObject({
       kind: "routed",
       detail: { pointer: "vault/inbox/a-thought.md" },
@@ -434,10 +443,13 @@ describe("an inline attempt that never answers", () => {
     // Aborted while waiting, rather than before: the other way a host bounds it.
     await opened.pool.routing.route(item, request(), AbortSignal.timeout(5));
 
-    const logged = await opened.pool.actions.forItem(item, {
-      limit: 50,
-      order: "newest-first",
-    });
+    const logged = await opened.pool.actions.read(
+      { item },
+      {
+        limit: 50,
+        order: "newest-first",
+      },
+    );
     expect(logged.values[0]).toMatchObject({
       kind: "delivery-failed",
       detail: {
@@ -509,10 +521,13 @@ describe("cancelling a delivery", () => {
 
     await pool.routing.cancelDelivery(record.id);
 
-    const logged = await pool.actions.forItem(item, {
-      limit: 50,
-      order: "newest-first",
-    });
+    const logged = await pool.actions.read(
+      { item },
+      {
+        limit: 50,
+        order: "newest-first",
+      },
+    );
     expect(logged.values[0]).toMatchObject({
       kind: "delivery-cancelled",
       by: { kind: "person" },

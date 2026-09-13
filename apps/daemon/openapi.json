@@ -1948,7 +1948,40 @@
         "type": "object",
         "properties": {
           "kind": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "captured",
+              "amended",
+              "revised",
+              "tagged",
+              "untagged",
+              "suggestion-added",
+              "suggestion-accepted",
+              "suggestion-rejected",
+              "artifact-added",
+              "artifact-corrected",
+              "archived",
+              "unarchived",
+              "routed",
+              "delivery-failed",
+              "delivery-cancelled",
+              "destination-created",
+              "destination-renamed",
+              "destination-reconfigured",
+              "destination-retired",
+              "destination-unretired",
+              "destination-deleted",
+              "template-created",
+              "template-edited",
+              "template-deleted",
+              "template-fired",
+              "enrichment-requested",
+              "work-failed",
+              "work-abandoned",
+              "assets-released",
+              "purged",
+              "actions-cleared"
+            ]
           },
           "id": {
             "type": "string"
@@ -2808,7 +2841,8 @@
                             "limit-too-large",
                             "bad-limit",
                             "bad-order",
-                            "bad-position"
+                            "bad-position",
+                            "bad-kind"
                           ]
                         }
                       },
@@ -2895,7 +2929,8 @@
                             "limit-too-large",
                             "bad-limit",
                             "bad-order",
-                            "bad-position"
+                            "bad-position",
+                            "bad-kind"
                           ]
                         }
                       },
@@ -2982,7 +3017,8 @@
                             "limit-too-large",
                             "bad-limit",
                             "bad-order",
-                            "bad-position"
+                            "bad-position",
+                            "bad-kind"
                           ]
                         }
                       },
@@ -6400,6 +6436,17 @@
             "description": "Narrows the read to one subject. Never validated: an id no item has answers an empty page, since the log outlives what it describes.",
             "name": "item",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Narrows the read to entries of these kinds, comma-separated. One that is not a kind is refused with `422 bad-kind`.",
+              "example": "routed,delivery-failed"
+            },
+            "required": false,
+            "description": "Narrows the read to entries of these kinds, comma-separated. One that is not a kind is refused with `422 bad-kind`.",
+            "name": "kind",
+            "in": "query"
           }
         ],
         "responses": {
@@ -6429,7 +6476,8 @@
                             "limit-too-large",
                             "bad-limit",
                             "bad-order",
-                            "bad-position"
+                            "bad-position",
+                            "bad-kind"
                           ]
                         }
                       },

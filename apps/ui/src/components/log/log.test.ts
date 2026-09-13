@@ -4,7 +4,7 @@ import { afterEach, expect, test, vi } from "vitest";
 import type { Action } from "@notemap/client";
 import { anItem, json, refusal, routeOf } from "@notemap/client/testing";
 
-import { asked, client, pool } from "$testing/pool";
+import { asked, client, pool, sentUrls } from "$testing/pool";
 import { log } from "$lib/log.svelte";
 import { LOG_LEDE, NOTHING_LOGGED } from "$lib/said";
 import Log from "./Log.svelte";
@@ -364,6 +364,43 @@ test("leaves out what is not about the item it is narrowed to", async () => {
   log.arrived(arriving(anAction("two", { subject: "another" })));
 
   expect(log.rows.map((action) => action.id)).toEqual(["one"]);
+});
+
+test("narrows to a view's kinds, asking the pool rather than sifting the page", async () => {
+  pool(held([anAction("one", { kind: "routed" })]));
+  render(Log);
+  log.reading("newest-first", undefined, ["routed", "template-fired"]);
+  await screen.findByText("routed");
+
+  const read = asked().find((route) => route === "GET /v1/actions");
+  expect(read).toBeDefined();
+  expect(sentUrls().at(-1)).toContain("kind=routed%2Ctemplate-fired");
+
+  log.arrived(arriving(anAction("two", { kind: "tagged" })));
+  expect(log.rows.map((action) => action.id)).toEqual(["one"]);
+});
+
+test("offers the views as links and says which one is being read", async () => {
+  pool(held([anAction("one", { kind: "routed" })]));
+  render(Log);
+  log.reading("newest-first", undefined, [
+    "routed",
+    "template-fired",
+    "delivery-failed",
+    "delivery-cancelled",
+  ]);
+  await screen.findByText("routed");
+
+  const narrow = screen.getByRole("navigation", { name: "Narrow the log to" });
+  expect(narrow.textContent).toContain("routing");
+  expect(screen.queryByRole("link", { name: "routing" })).toBeNull();
+  expect(screen.getByRole("link", { name: "everything" })).toHaveProperty(
+    "search",
+    "?order=newest-first",
+  );
+  expect(
+    screen.getByRole("link", { name: "captures" }).getAttribute("href"),
+  ).toContain("kind=captured");
 });
 
 /**

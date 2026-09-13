@@ -111,7 +111,7 @@ describe("asking what a destination would write", () => {
       item,
     ]);
     expect(
-      (await pool.actions.forItem(item, { limit: 50 })).values.map(
+      (await pool.actions.read({ item }, { limit: 50 })).values.map(
         (one) => one.kind,
       ),
     ).toEqual(["captured"]);

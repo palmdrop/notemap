@@ -151,7 +151,7 @@ describe("capturing", () => {
     const item = captured(
       await p.capture(envelope({ capturedAt: "2026-08-03T08:00:00.000Z" })),
     );
-    const { values } = await p.actions.forItem(item.id, ALL);
+    const { values } = await p.actions.read({ item: item.id }, ALL);
 
     expect(values).toHaveLength(1);
     expect(values[0]).toMatchObject({
@@ -220,7 +220,7 @@ describe("submitting the same capture twice", () => {
     await p.capture(replayed);
 
     await expect(
-      p.actions.forItem("client-1" as ItemId, ALL),
+      p.actions.read({ item: "client-1" as ItemId }, ALL),
     ).resolves.toMatchObject({ values: [{ kind: "captured" }] });
   });
 
@@ -289,7 +289,7 @@ describe("resubmitting under an identity that already exists", () => {
     expect(values).toHaveLength(1);
     expect(values[0]?.payload.content).toEqual({ text: "a thought" });
     await expect(
-      p.actions.forItem("client-1" as ItemId, ALL),
+      p.actions.read({ item: "client-1" as ItemId }, ALL),
     ).resolves.toMatchObject({ values: [{ kind: "captured" }] });
   });
 });
@@ -383,7 +383,7 @@ describe("a capture core will not accept", () => {
     });
 
     await expect(p.views.feed(ALL)).resolves.toEqual({ values: [] });
-    await expect(p.actions.all(ALL)).resolves.toEqual({ values: [] });
+    await expect(p.actions.read({}, ALL)).resolves.toEqual({ values: [] });
   });
 });
 
@@ -491,7 +491,7 @@ describe("reading the log", () => {
     const { pool: p, clock } = pool();
     const ids = await three(p, clock);
 
-    const { values } = await p.actions.all(ALL);
+    const { values } = await p.actions.read({}, ALL);
 
     expect(values.map((action) => action.subject)).toEqual([...ids].reverse());
   });
@@ -500,23 +500,26 @@ describe("reading the log", () => {
     const { pool: p, clock } = pool();
     const ids = await three(p, clock);
 
-    const first = await p.actions.all({ limit: 2 });
+    const first = await p.actions.read({}, { limit: 2 });
     expect(first.values.map((action) => action.subject)).toEqual([
       ids[2],
       ids[1],
     ]);
     if (first.next === undefined) throw new Error("expected another page");
 
-    const second = await p.actions.all({ limit: 2, after: first.next });
+    const second = await p.actions.read({}, { limit: 2, after: first.next });
     expect(second.values.map((action) => action.subject)).toEqual([ids[0]]);
     expect(second.next).toBeUndefined();
 
     // The same position, read the other way: what the first page already saw.
-    const back = await p.actions.all({
-      limit: 2,
-      after: first.next,
-      order: "oldest-first",
-    });
+    const back = await p.actions.read(
+      {},
+      {
+        limit: 2,
+        after: first.next,
+        order: "oldest-first",
+      },
+    );
     expect(back.values.map((action) => action.subject)).toEqual([ids[2]]);
   });
 
@@ -524,7 +527,7 @@ describe("reading the log", () => {
     const { pool: p } = pool();
 
     await expect(
-      p.actions.forItem("never-existed" as ItemId, ALL),
+      p.actions.read({ item: "never-existed" as ItemId }, ALL),
     ).resolves.toEqual({ values: [] });
   });
 });

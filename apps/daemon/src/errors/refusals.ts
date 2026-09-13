@@ -208,6 +208,7 @@ export const PARAMETER_STATUS = {
   "bad-limit": 422,
   "bad-order": 422,
   "bad-position": 422,
+  "bad-kind": 422,
 } as const;
 
 export const SUBJECT_STATUS = { "no-such-item": 404 } as const;

@@ -2,6 +2,7 @@ import {
   Unreachable,
   saidBy,
   type Action,
+  type ActionKind,
   type ActionPosition,
   type ItemId,
   type Order,
@@ -16,6 +17,7 @@ import { client } from "./client";
  */
 let order = $state<Order>("newest-first");
 let item = $state<ItemId | undefined>(undefined);
+let kinds = $state<readonly ActionKind[] | undefined>(undefined);
 let rows = $state<readonly Action[]>([]);
 let after = $state<ActionPosition | undefined>(undefined);
 let more = $state(false);
@@ -62,6 +64,7 @@ async function walk(from: ActionPosition | undefined): Promise<void> {
     const page = await client.actions.read({
       order,
       ...(item === undefined ? {} : { item }),
+      ...(kinds === undefined ? {} : { kinds }),
       ...(from === undefined ? {} : { after: from }),
     });
     if (mine !== walking) return;
@@ -81,12 +84,25 @@ async function walk(from: ActionPosition | undefined): Promise<void> {
   }
 }
 
+function sameKinds(
+  a: readonly ActionKind[] | undefined,
+  b: readonly ActionKind[] | undefined,
+): boolean {
+  if (a === undefined || b === undefined) return a === b;
+  return a.length === b.length && a.every((kind) => b.includes(kind));
+}
+
 /** Walks from the start: a position belongs to the order and the filter that made it. */
-function restart(wanted: Order, subject: ItemId | undefined): void {
+function restart(
+  wanted: Order,
+  subject: ItemId | undefined,
+  narrowed: readonly ActionKind[] | undefined,
+): void {
   walking += 1;
   asked = true;
   order = wanted;
   item = subject;
+  kinds = narrowed;
   rows = [];
   after = undefined;
   more = false;
@@ -100,6 +116,9 @@ export const log = {
   },
   get item() {
     return item;
+  },
+  get kinds() {
+    return kinds;
   },
   get rows() {
     return rows;
@@ -126,10 +145,15 @@ export const log = {
    * is kept — coming back to a surface is not a reason to throw away a long
    * walk — but a read that failed is not a page, so re-entering asks again.
    */
-  reading(wanted: Order, subject: ItemId | undefined): void {
-    const same = wanted === order && subject === item;
+  reading(
+    wanted: Order,
+    subject: ItemId | undefined,
+    narrowed?: readonly ActionKind[],
+  ): void {
+    const same =
+      wanted === order && subject === item && sameKinds(narrowed, kinds);
     if (same && (answered || loading)) return;
-    restart(wanted, subject);
+    restart(wanted, subject, narrowed);
   },
 
   /**
@@ -147,7 +171,9 @@ export const log = {
     if (!answered || order !== "newest-first") return;
 
     const wanted = actions.filter(
-      (action) => item === undefined || action.subject === item,
+      (action) =>
+        (item === undefined || action.subject === item) &&
+        (kinds === undefined || kinds.includes(action.kind)),
     );
     if (wanted.length === 0) return;
 
@@ -166,7 +192,7 @@ export const log = {
   raced(): void {
     if (!answered || order !== "newest-first") return;
 
-    restart(order, item);
+    restart(order, item, kinds);
   },
 
   /**
@@ -175,7 +201,7 @@ export const log = {
    * cache for it to keep, so it has to ask for itself or stay blank.
    */
   again(): void {
-    if (asked && !answered && !loading) restart(order, item);
+    if (asked && !answered && !loading) restart(order, item, kinds);
   },
 
   /**
@@ -184,7 +210,7 @@ export const log = {
    * assigning `page.url`, so nothing here can be driven by reading it back.
    */
   turn(wanted: Order): void {
-    restart(wanted, item);
+    restart(wanted, item, kinds);
   },
 
   next(): void {
@@ -201,6 +227,7 @@ export const log = {
     loading = false;
     order = "newest-first";
     item = undefined;
+    kinds = undefined;
     rows = [];
     after = undefined;
     more = false;

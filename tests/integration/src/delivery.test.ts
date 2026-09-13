@@ -128,10 +128,13 @@ describe("a destination that comes back", () => {
     minutesLater(opened, 1);
     await opened.deliver();
 
-    const logged = await opened.pool.actions.forItem(opened.item, {
-      limit: 50,
-      order: "oldest-first",
-    });
+    const logged = await opened.pool.actions.read(
+      { item: opened.item },
+      {
+        limit: 50,
+        order: "oldest-first",
+      },
+    );
     expect(logged.values.map((action) => action.kind)).toEqual([
       "captured",
       "delivery-failed",
@@ -192,10 +195,13 @@ describe("a destination that never comes back", () => {
       await opened.deliver();
     }
 
-    const logged = await opened.pool.actions.forItem(opened.item, {
-      limit: 50,
-      order: "oldest-first",
-    });
+    const logged = await opened.pool.actions.read(
+      { item: opened.item },
+      {
+        limit: 50,
+        order: "oldest-first",
+      },
+    );
     const attempts = logged.values.filter(
       (action) => action.kind === "delivery-failed",
     );
@@ -215,10 +221,13 @@ describe("a destination that never comes back", () => {
       await opened.deliver();
     }
 
-    const logged = await opened.pool.actions.forItem(opened.item, {
-      limit: 50,
-      order: "newest-first",
-    });
+    const logged = await opened.pool.actions.read(
+      { item: opened.item },
+      {
+        limit: 50,
+        order: "newest-first",
+      },
+    );
     expect(
       logged.values.find((action) => action.kind === "work-abandoned"),
     ).toMatchObject({

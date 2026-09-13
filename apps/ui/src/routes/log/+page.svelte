@@ -4,6 +4,7 @@
   import { page } from "$app/state";
 
   import Log from "$components/log/Log.svelte";
+  import { kindsIn } from "$components/log/views";
   import { log } from "$lib/log.svelte";
   import { orderFor } from "$lib/order";
 
@@ -17,6 +18,7 @@
       log.reading(
         orderFor("log", url),
         url.searchParams.get("item") ?? undefined,
+        kindsIn(url),
       ),
     );
   });

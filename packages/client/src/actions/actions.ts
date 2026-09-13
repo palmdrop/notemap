@@ -65,12 +65,15 @@ export function createActions(deps: ActionsDeps): Actions {
   }
 
   async function read(request: ActionsRequest): Promise<ActionsPage> {
-    const { after, item, order } = request;
+    const { after, item, kinds, order } = request;
     const query = {
       order,
       limit: String(PAGE),
       ...(after === undefined ? {} : { after: formatted(after) }),
       ...(item === undefined ? {} : { item }),
+      ...(kinds === undefined || kinds.length === 0
+        ? {}
+        : { kind: kinds.join(",") }),
     };
 
     const slice = await answered(

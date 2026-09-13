@@ -1,9 +1,11 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-09-08
+**Last updated**: 2026-09-13
 **Shipped**:
 
+- 2026-09-13 — **An actions read takes `kinds`.** Passed through to the pool's `kind`, so a
+  narrowed log pages over what it shows and nothing else.
 - 2026-09-09 — **A queue arrived at corrects its head without losing its tail.** The fresh first
   page answers for its own window and the walked tail below it stays, at the position it was walked
   to — opening a capture is leaving the register, so a reader deep in a drain session arrives afresh
@@ -397,7 +399,7 @@ processed — routed or archived — which the pool decides, not the scroll.
 
 **Everything the pool has done is read, and none of it is held.** A client reads
 `GET /v1/actions` a page at a time, taking an **order** and, where a reader has narrowed it, one
-subject. It is not one of the surfaces: there is no held page, no projection to subscribe to and
+subject and any set of kinds. It is not one of the surfaces: there is no held page, no projection to subscribe to and
 no reconnect that reads it again. What has been walked belongs to whoever is looking at it, and
 goes when they do.
 

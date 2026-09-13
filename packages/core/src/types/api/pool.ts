@@ -1,6 +1,6 @@
 import type { JsonObject } from "../json";
 import type { Page, PageRequest, Result, Slice } from "../result";
-import type { Action } from "../domain/action-log";
+import type { Action, ActionQuery } from "../domain/action-log";
 import type { Agent } from "../domain/agent";
 import type {
   Asset,
@@ -368,8 +368,7 @@ export interface WorkApi {
 }
 
 export interface ActionsApi {
-  forItem(item: ItemId, page: PageRequest): Promise<Slice<Action>>;
-  all(page: PageRequest): Promise<Slice<Action>>;
+  read(query: ActionQuery, page: PageRequest): Promise<Slice<Action>>;
   clear(item?: ItemId): Promise<Result<void, ActionLogRefusal>>;
 }
 

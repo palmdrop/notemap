@@ -152,10 +152,13 @@ describe("archiving", () => {
     opened.clock.set("2026-08-06T10:00:00.000Z");
     await p.items.unarchive(first);
 
-    const logged = await p.actions.forItem(first, {
-      limit: 50,
-      order: "oldest-first",
-    });
+    const logged = await p.actions.read(
+      { item: first },
+      {
+        limit: 50,
+        order: "oldest-first",
+      },
+    );
     expect(logged.values.map((action) => action.kind)).toEqual([
       "captured",
       "archived",
@@ -248,10 +251,13 @@ describe("marking an item processed", () => {
 
     const record = succeeded(await p.routing.markProcessed(first));
 
-    const logged = await p.actions.forItem(first, {
-      limit: 50,
-      order: "newest-first",
-    });
+    const logged = await p.actions.read(
+      { item: first },
+      {
+        limit: 50,
+        order: "newest-first",
+      },
+    );
     expect(logged.values[0]).toMatchObject({
       kind: "routed",
       by: { kind: "person" },

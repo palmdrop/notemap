@@ -103,10 +103,9 @@
     - routing view, showing all routed items. Maybe rather a human-readable action log with a
       "routing" filter than a page of its own — the user needs a way to inspect the effects of
       their actions.
-        - hide unnecessary items from log. **Wants the pool's help**: `GET /v1/actions` filters by
-          item and nothing else, so a shell-side filter would page over rows it then throws away and
-          the count under the register would stop meaning anything. A `kind` filter on the query is
-          the honest version, and it crosses core, `http-v1` and the client.
+        - ~~hide unnecessary items from log~~ — closed 2026-09-13: `GET /v1/actions` takes `kind`,
+          comma-separated and refused when it names nothing the log writes, the client's read
+          carries `kinds`, and the log is narrowed to one of five views on the URL.
         - ~~log entries should link to the capture~~ — closed 2026-09-09: the subject is a way to the
           item, drawn as the capture's own first words where the shell holds them, with the narrowed
           log a word away.
