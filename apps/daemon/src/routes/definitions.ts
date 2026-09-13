@@ -141,6 +141,15 @@ const actionsQuery = pageQuery.extend({
         "Narrows the read to one subject. Never validated: an id no item has answers an empty page, since the log outlives what it describes.",
       example: "0198f0c2-0000-7000-8000-000000000000",
     }),
+  kind: z
+    .string()
+    .optional()
+    .openapi({
+      param: { name: "kind", in: "query" },
+      description:
+        "Narrows the read to entries of these kinds, comma-separated. One that is not a kind is refused with `422 bad-kind`.",
+      example: "routed,delivery-failed",
+    }),
 });
 
 export const healthRoute = createRoute({

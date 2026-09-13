@@ -643,7 +643,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position";
+                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "bad-kind";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -706,7 +706,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position";
+                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "bad-kind";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -769,7 +769,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position";
+                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "bad-kind";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -3340,6 +3340,8 @@ export interface paths {
                     after?: string;
                     /** @description Narrows the read to one subject. Never validated: an id no item has answers an empty page, since the log outlives what it describes. */
                     item?: string;
+                    /** @description Narrows the read to entries of these kinds, comma-separated. One that is not a kind is refused with `422 bad-kind`. */
+                    kind?: string;
                 };
                 header?: never;
                 path?: never;
@@ -3366,7 +3368,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position";
+                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "bad-kind";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -4182,7 +4184,8 @@ export interface components {
             next?: string;
         };
         Action: {
-            kind: string;
+            /** @enum {string} */
+            kind: "captured" | "amended" | "revised" | "tagged" | "untagged" | "suggestion-added" | "suggestion-accepted" | "suggestion-rejected" | "artifact-added" | "artifact-corrected" | "archived" | "unarchived" | "routed" | "delivery-failed" | "delivery-cancelled" | "destination-created" | "destination-renamed" | "destination-reconfigured" | "destination-retired" | "destination-unretired" | "destination-deleted" | "template-created" | "template-edited" | "template-deleted" | "template-fired" | "enrichment-requested" | "work-failed" | "work-abandoned" | "assets-released" | "purged" | "actions-cleared";
             id: string;
             subject?: string;
             by: {

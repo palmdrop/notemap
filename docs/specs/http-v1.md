@@ -2,9 +2,12 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one and health are settled; the rest is stub
-**Last updated**: 2026-09-10
+**Last updated**: 2026-09-13
 **Shipped**:
 
+- 2026-09-13 — **The action log narrows by kind.** `GET /v1/actions` takes `kind`, comma-separated,
+  refused as `422 bad-kind` where a word names nothing the log writes, and `next` carries it. An
+  `Action`'s `kind` is now the closed list in the schema rather than a bare string.
 - 2026-09-10 — **`/route` and `/route/preview` take the words a delivery carries.** Both bodies
   gained an optional `content` beside the arguments, on the destination shape and the template
   shape alike; content that fails the item's payload type is `422 content-invalid` with issues, and
@@ -1523,9 +1526,15 @@ sandbox already covers.
 | `limit` | `50` | 1–500 |
 | `after` | *(absent)* | The position to continue from |
 | `item` | *(absent)* | Narrows the read to one subject |
+| `kind` | *(absent)* | Narrows the read to entries of these kinds, comma-separated |
 
 - `order`, `limit` and `after` mean what they mean on the feed and are refused in the same ways.
   A position is `<at>,<id>`, or a bare instant as a coarse entry point.
+- **`kind` is validated.** The kinds are a closed list the pool writes, so a word that is not one
+  is a mistake rather than a filter, and is `422 bad-kind` carrying the ones that are. Several
+  kinds are `kind=routed,delivery-failed`, and an entry of any of them answers. Narrowing here
+  rather than in the client keeps the page and its `next` honest: a shell that filtered after the
+  read would page over rows it then threw away.
 - **`item` is neither validated nor refused.** Any string is a legal filter, and one that names
   nothing answers an empty page. The log outlives the material it describes
   ([core.md](core.md#the-action-log)), so a purged item's entries are a normal thing to ask for
@@ -1606,6 +1615,7 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `bad-limit` | `limit` | daemon |
 | `422` | `bad-order` | `order`, `allowed` | daemon |
 | `422` | `bad-position` | `after` | daemon |
+| `422` | `bad-kind` | `value`, `allowed` | daemon |
 | `422` | `missing-filename` | — | daemon |
 | `422` | `bad-digest` | `digest` | daemon |
 | `422` | `digest-mismatch` | `expected`, `actual` | daemon |

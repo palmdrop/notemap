@@ -132,9 +132,8 @@ export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
     mirror: { recordFor: (subject) => mirror.recordFor(ports, subject) },
 
     actions: {
-      forItem: (item, page) =>
-        store.actions({ item }, ordered(page, "newest-first")),
-      all: (page) => store.actions({}, ordered(page, "newest-first")),
+      read: (query, page) =>
+        store.actions(query, ordered(page, "newest-first")),
       clear: notImplemented("actions.clear"),
     },
 

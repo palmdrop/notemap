@@ -206,7 +206,7 @@ describe("capturing against an asset", () => {
       refusal: { kind: "unknown-asset", asset: "asset-nobody-minted" },
     });
     expect((await p.views.feed({ limit: 10 })).values).toEqual([]);
-    expect((await p.actions.all(ALL)).values).toEqual([]);
+    expect((await p.actions.read({}, ALL)).values).toEqual([]);
   });
 });
 
@@ -274,7 +274,7 @@ describe("the sweep", () => {
     pastTheGrace(started);
     await started.pool.maintenance.sweepUnreferencedAssets();
 
-    const logged = (await started.pool.actions.all(ALL)).values.filter(
+    const logged = (await started.pool.actions.read({}, ALL)).values.filter(
       (action) => action.kind === "assets-released",
     );
     expect(logged).toHaveLength(1);
@@ -288,7 +288,7 @@ describe("the sweep", () => {
     pastTheGrace(started);
     await started.pool.maintenance.sweepUnreferencedAssets();
 
-    expect((await started.pool.actions.all(ALL)).values).toEqual([]);
+    expect((await started.pool.actions.read({}, ALL)).values).toEqual([]);
   });
 });
 

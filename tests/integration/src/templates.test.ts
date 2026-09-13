@@ -77,7 +77,7 @@ const tagsOn = async (pool: Pool, item: ItemId): Promise<readonly string[]> =>
   ((await pool.items.get(item))?.tags ?? []).map((held) => held.name);
 
 const logFor = async (pool: Pool, item: ItemId): Promise<readonly Action[]> =>
-  (await pool.actions.forItem(item, ALL)).values;
+  (await pool.actions.read({ item }, ALL)).values;
 
 function succeeded<T>(
   result: { kind: "ok"; value: T } | { kind: "refused"; refusal: unknown },

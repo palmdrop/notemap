@@ -126,7 +126,7 @@ describe("tagging", () => {
     // Nothing changed, so nothing is owed and nothing is logged.
     expect(await takeMirrorWork(p)).toEqual([]);
     expect(
-      (await p.actions.forItem(item.id, ALL)).values.filter(
+      (await p.actions.read({ item: item.id }, ALL)).values.filter(
         (action) => action.kind === "tagged",
       ),
     ).toHaveLength(1);
@@ -145,7 +145,7 @@ describe("tagging", () => {
     const again = succeeded(await p.items.untag(item.id, KIND_QUOTE, PERSON));
     expect(names(again)).toEqual([]);
     expect(
-      (await p.actions.forItem(item.id, ALL)).values.filter(
+      (await p.actions.read({ item: item.id }, ALL)).values.filter(
         (action) => action.kind === "untagged",
       ),
     ).toHaveLength(1);
@@ -249,7 +249,7 @@ describe("tagging", () => {
       provider: "tagger" as never,
     });
 
-    const logged = await p.actions.forItem(item.id, ALL);
+    const logged = await p.actions.read({ item: item.id }, ALL);
     expect(
       logged.values.find((action) => action.kind === "untagged"),
     ).toMatchObject({ by: { kind: "provider", provider: "tagger" } });
@@ -269,10 +269,13 @@ describe("tagging", () => {
     await p.items.untag(item.id, KIND_QUOTE, PERSON);
     expect(await takeMirrorWork(p)).toEqual([item.id]);
 
-    const logged = await p.actions.forItem(item.id, {
-      limit: 50,
-      order: "oldest-first",
-    });
+    const logged = await p.actions.read(
+      { item: item.id },
+      {
+        limit: 50,
+        order: "oldest-first",
+      },
+    );
     expect(logged.values.map((action) => action.kind)).toEqual([
       "captured",
       "tagged",

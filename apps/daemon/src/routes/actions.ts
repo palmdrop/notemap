@@ -1,6 +1,11 @@
 import type { Context } from "hono";
 
-import type { ItemId, Pool } from "@notemap/core";
+import {
+  ACTION_KINDS,
+  type ActionKind,
+  type ItemId,
+  type Pool,
+} from "@notemap/core";
 
 import { pageUrl } from "../utils/positions";
 import { readPageQuery } from "../utils/query";
@@ -16,15 +21,31 @@ export function actionsHandler(pool: Pool) {
     // item has is a filter that matches nothing rather than a mistake.
     const item = url.searchParams.get("item") ?? undefined;
 
+    const rawKind = url.searchParams.get("kind");
+    const kinds = rawKind === null ? [] : rawKind.split(",");
+    const unknown = kinds.find(
+      (kind) => !(ACTION_KINDS as readonly string[]).includes(kind),
+    );
+    if (unknown !== undefined) {
+      return refuse({
+        kind: "bad-kind",
+        value: unknown,
+        allowed: ACTION_KINDS,
+      });
+    }
+
     const page = {
       order: query.order,
       limit: query.limit,
       ...(query.after === undefined ? {} : { after: query.after }),
     };
-    const slice =
-      item === undefined
-        ? await pool.actions.all(page)
-        : await pool.actions.forItem(item as ItemId, page);
+    const slice = await pool.actions.read(
+      {
+        ...(item === undefined ? {} : { item: item as ItemId }),
+        ...(kinds.length === 0 ? {} : { kinds: kinds as ActionKind[] }),
+      },
+      page,
+    );
 
     return json(
       {
@@ -38,6 +59,7 @@ export function actionsHandler(pool: Pool) {
                   order: query.order,
                   limit: String(query.limit),
                   ...(item === undefined ? {} : { item }),
+                  ...(rawKind === null ? {} : { kind: rawKind }),
                 },
                 slice.next,
               ),

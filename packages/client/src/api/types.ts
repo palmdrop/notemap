@@ -25,6 +25,7 @@ export type Payload = Item["payload"];
 export type Tag = NonNullable<Item["tags"]>[number];
 
 export type Action = components["schemas"]["Action"];
+export type ActionKind = Action["kind"];
 /** Who did it. `notemap` is work core drives on nobody's behalf. */
 export type Agent = Action["by"];
 

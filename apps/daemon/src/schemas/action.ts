@@ -1,6 +1,8 @@
 import "@hono/zod-openapi";
 import { z } from "zod";
 
+import { ACTION_KINDS } from "@notemap/core";
+
 import { jsonObject } from "./json";
 
 /** Wider than a tag's agent: only the log records work notemap drives on nobody's behalf. */
@@ -13,8 +15,7 @@ const agent = z.union([
 
 export const actionSchema = z
   .object({
-    // Not an enum: `ActionKind` is the list, and a copy here is one to disagree with it.
-    kind: z.string(),
+    kind: z.enum(ACTION_KINDS),
     id: z.string(),
     subject: z.string().optional(),
     by: agent,

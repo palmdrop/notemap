@@ -1,9 +1,12 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-09-10
+**Last updated**: 2026-09-13
 **Shipped**:
 
+- 2026-09-13 — **The action log is read through one query.** `actions.read` takes a subject, a set
+  of kinds, or both, where `forItem` and `all` stood; `ACTION_KINDS` is the list a host validates
+  against.
 - 2026-09-10 — **A delivery may carry its own content, and the reservation holds it.** A routing
   request may supply the words one delivery carries in place of the capture's; core checks them
   against the item's payload type exactly as it checks a capture, substitutes them into the payload
@@ -1349,7 +1352,7 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   routed — and an entry beside it would record one event twice. A mirror write is the only success
   with no product, and the file it wrote is its trace.
 - The log is read **newest first by default**, ordered and paginated by position
-  ([ADR 14](../adr/0014-pagination-by-domain-position.md)), and may be narrowed to one subject.
+  ([ADR 14](../adr/0014-pagination-by-domain-position.md)), and may be narrowed to one subject, to a set of kinds, or both.
   Which end a reader starts from is the reader's, as it is for the feed.
 - **A subject the pool does not hold answers an empty page, not a refusal.** The log outlives the
   material it describes, so a purged item's entries are exactly what someone asks for, and reads

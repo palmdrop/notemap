@@ -525,7 +525,7 @@ describe("what an edit leaves behind", () => {
     await p.items.edit(item.id, edit("edited"), PERSON);
 
     expect(await takeMirrorWork(p)).toEqual([item.id]);
-    const logged = await p.actions.forItem(item.id, OLDEST);
+    const logged = await p.actions.read({ item: item.id }, OLDEST);
     expect(logged.values.map((action) => action.kind)).toEqual([
       "captured",
       "amended",
@@ -547,7 +547,7 @@ describe("what an edit leaves behind", () => {
     // client reading deltas has to learn about.
     expect(await takeMirrorWork(p)).toEqual([item.id, revised.id].sort());
 
-    const logged = await p.actions.forItem(item.id, OLDEST);
+    const logged = await p.actions.read({ item: item.id }, OLDEST);
     expect(logged.values.map((action) => action.kind)).toEqual([
       "captured",
       "routed",

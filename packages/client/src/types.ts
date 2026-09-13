@@ -1,6 +1,7 @@
 import type {
   Action,
   ActionId,
+  ActionKind,
   AssetId,
   CandidatesRequest,
   CreateDestinationRequest,
@@ -220,6 +221,8 @@ export type ActionsRequest = {
   readonly order: Order;
   /** Narrows the read to one subject. Never validated: the log outlives the material. */
   readonly item?: ItemId;
+  /** Narrows the read to entries of any of these kinds. */
+  readonly kinds?: readonly ActionKind[];
   readonly after?: ActionPosition;
 };
 
