@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { search } from "$lib/matching";
   import type { Takeable } from "$lib/processing";
 
   /**
@@ -41,12 +42,9 @@
   );
 
   const matching = $derived(
-    takeable.filter((one) =>
-      one.name.toLowerCase().startsWith(typed.trim().toLowerCase()),
-    ),
+    search(takeable, typed.trim(), (one) => [one.name]),
   );
 
-  /** One match is a name; several are a prefix, and taking one of them would be a guess. */
   const only = $derived(
     typed.trim() !== "" && matching.length === 1 ? matching[0] : undefined,
   );

@@ -85,8 +85,15 @@ describe("narrowing a list as it is typed into", () => {
     expect(narrowed(CHANNELS, "")).toHaveLength(3);
   });
 
-  it("is a prefix and not a search", () => {
-    expect(narrowed(CHANNELS, "cordings")).toEqual([]);
+  it("finds a title by a word in the middle of it, after what begins with it", () => {
+    expect(narrowed(CHANNELS, "notes").map((each) => each.label)).toEqual([
+      "Reading Notes",
+    ]);
+    expect(narrowed(CHANNELS, "ing").map((each) => each.label)).toEqual([
+      "Reading",
+      "Reading Notes",
+      "Field Recordings",
+    ]);
   });
 });
 
@@ -98,6 +105,15 @@ describe("what completing leaves", () => {
 
   it("goes as far as several agree, and no further", () => {
     expect(completed(CHANNELS, "readi")).toBe("reading");
+  });
+
+  it("completes from what begins with the line, not from what holds it", () => {
+    expect(narrowed(CHANNELS, "re")).toHaveLength(3);
+    expect(completed(CHANNELS, "re")).toBe("reading");
+  });
+
+  it("completes a lone middle match outright", () => {
+    expect(completed(CHANNELS, "cordings")).toBe("field-recordings");
   });
 
   it("does nothing where they agree on no more than was typed", () => {
@@ -154,6 +170,12 @@ describe("what a typed line means", () => {
 
   it("leaves a prefix that several still match alone", () => {
     expect(resolved(CHANNELS, "Read")).toBeUndefined();
+  });
+
+  /** A slug for a channel the page did not list can fall inside a title it did. */
+  it("leaves a line that only the middle of a title holds alone", () => {
+    expect(narrowed(CHANNELS, "notes")).toHaveLength(1);
+    expect(resolved(CHANNELS, "notes")).toBeUndefined();
   });
 
   it("leaves a value the field already holds alone", () => {

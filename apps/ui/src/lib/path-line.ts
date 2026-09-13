@@ -1,6 +1,7 @@
 import type { CandidateEntry, RememberedPlace } from "@notemap/client";
 
 import { commonPrefix } from "$lib/candidate-list";
+import { heads, search } from "$lib/matching";
 
 /**
  * A typed path, split where the line reads it. Everything before the last slash
@@ -76,15 +77,11 @@ export function pathOf(entry: CandidateEntry): string {
   return String(entry.value);
 }
 
-/** Case-insensitively, and by prefix rather than substring: this completes a name being typed. */
 export function matching(
   entries: readonly CandidateEntry[],
   typing: string,
 ): readonly CandidateEntry[] {
-  const wanted = typing.toLowerCase();
-  return entries.filter((entry) =>
-    entry.label.toLowerCase().startsWith(wanted),
-  );
+  return search(entries, typing, (entry) => [entry.label]);
 }
 
 /** One line of the drawn hierarchy. */
@@ -247,8 +244,13 @@ export function completionOf(
     return only === typing ? undefined : only;
   }
 
-  const shared = commonPrefix(hits.map((entry) => entry.label));
-  return shared.length > typing.length ? shared : undefined;
+  const shared = commonPrefix(
+    heads(hits, typing, (entry) => [entry.label]).map((entry) => entry.label),
+  );
+  return shared.length > typing.length &&
+    shared.toLowerCase().startsWith(typing.toLowerCase())
+    ? shared
+    : undefined;
 }
 
 /**
@@ -364,13 +366,10 @@ export function continuationOf(
   )?.value;
 }
 
-/** Remembered places the whole typed line is still a prefix of. */
+/** Remembered places the typed line finds, best first within each band. */
 export function continuing<T extends RememberedPlace>(
   value: string,
   places: readonly T[],
 ): readonly T[] {
-  const wanted = value.toLowerCase();
-  return ranked(places).filter((place) =>
-    place.value.toLowerCase().startsWith(wanted),
-  );
+  return search(ranked(places), value, (place) => [place.value]);
 }

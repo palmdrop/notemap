@@ -91,8 +91,10 @@ describe("filtering a scope", () => {
     expect(matching(entries, "")).toHaveLength(3);
   });
 
-  test("matches by prefix rather than anywhere in the name", () => {
-    expect(matching(entries, "ject")).toEqual([]);
+  test("finds a name by what falls in the middle of it", () => {
+    expect(matching(entries, "ject").map((each) => each.label)).toEqual([
+      "projects",
+    ]);
   });
 });
 
@@ -126,6 +128,25 @@ describe("completing a segment", () => {
     expect(
       completionOf([folder("ab", "ab"), folder("ac", "ac")], "a"),
     ).toBeUndefined();
+  });
+
+  test("leaves a shared head that does not continue what was typed", () => {
+    expect(
+      completionOf(
+        [folder("daily-a", "daily-a"), folder("daily-b", "daily-b")],
+        "ily",
+      ),
+    ).toBeUndefined();
+  });
+
+  test("completes from what begins with the segment, not from what holds it", () => {
+    const level = [
+      folder("notes", "notes"),
+      folder("notes-2026", "notes-2026"),
+      folder("footnotes", "footnotes"),
+    ];
+    expect(matching(level, "not")).toHaveLength(3);
+    expect(completionOf(level, "not")).toBe("notes");
   });
 });
 
@@ -568,7 +589,7 @@ describe("places used before", () => {
     ).toBe(false);
   });
 
-  test("continues only the places the whole line is a prefix of", () => {
+  test("continues only the places the line finds", () => {
     const places = marked(
       [
         place("projects/notemap/notes/", 41, "2026-09-01T10:00:00.000Z"),
@@ -580,6 +601,23 @@ describe("places used before", () => {
     expect(continuing("pro", places).map((each) => each.value)).toEqual([
       "projects/notemap/notes/",
     ]);
+  });
+
+  test("finds a place by a segment in the middle of it, after what begins with the line", () => {
+    const places = marked(
+      [
+        place("projects/notemap/notes/", 41, "2026-09-01T10:00:00.000Z"),
+        place("notes/", 6, "2026-09-01T10:00:00.000Z"),
+      ],
+      [],
+    );
+
+    expect(continuing("notes", places).map((each) => each.value)).toEqual([
+      "notes/",
+      "projects/notemap/notes/",
+    ]);
+    expect(ghostFor("notes", places)).toBe("/");
+    expect(ghostFor("temap", places)).toBeUndefined();
   });
 
   test("offers the best continuation as the text still to come", () => {

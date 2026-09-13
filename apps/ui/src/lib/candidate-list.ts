@@ -1,5 +1,7 @@
 import type { CandidateEntry } from "@notemap/client";
 
+import { heads, search } from "$lib/matching";
+
 /**
  * A flat answer, narrowed and completed as it is typed into. The hierarchical
  * one is `path-line`'s: there a level is filtered by the segment being typed,
@@ -53,22 +55,16 @@ function namesOf(entry: CandidateEntry): readonly string[] {
 }
 
 /**
- * By prefix and case-insensitively, over **both** the label a person reads and
- * the value the field holds. Both, because the two need not be the same string:
- * an are.na channel is browsed by its title and filed under its slug, so
- * matching the label alone would empty the list the moment `⇥` resolved one to
- * the other.
+ * Over **both** the label a person reads and the value the field holds. Both,
+ * because the two need not be the same string: an are.na channel is browsed by
+ * its title and filed under its slug, so matching the label alone would empty
+ * the list the moment `⇥` resolved one to the other.
  */
 export function narrowed(
   entries: readonly CandidateEntry[],
   typing: string,
 ): readonly CandidateEntry[] {
-  const wanted = typing.trim().toLowerCase();
-  if (wanted === "") return entries;
-
-  return entries.filter((entry) =>
-    namesOf(entry).some((name) => name.toLowerCase().startsWith(wanted)),
-  );
+  return search(entries, typing.trim(), namesOf);
 }
 
 /**
@@ -94,7 +90,9 @@ export function completed(
     return only === typing ? undefined : only;
   }
 
-  const shared = commonPrefix(hits.map((entry) => takenAs(entry, form)));
+  const shared = commonPrefix(
+    heads(hits, typing.trim(), namesOf).map((entry) => takenAs(entry, form)),
+  );
   return shared.length > typing.length &&
     shared.toLowerCase().startsWith(typing.toLowerCase())
     ? shared
@@ -124,11 +122,12 @@ export function commonPrefix(values: readonly string[]): string {
  * person reads a list of titles and types one; the field is sent with the
  * value, and the two need not be the same string.
  *
- * Two ways in, and both are unambiguous: the whole of a title, or enough of one
- * that only a single answer still matches. The second is what `⇥` does, and it
- * is safe **here** for the reason it is not safe on a keystroke — this runs
- * when the line is done being typed, so there is no half-written word left to
- * take out of somebody's mouth.
+ * Two ways in, and both are unambiguous: the whole of a title, or the head of
+ * one that no other title begins with. The second is what `⇥` does, and it is
+ * safe **here** for the reason it is not safe on a keystroke — this runs when
+ * the line is done being typed, so there is no half-written word left to take
+ * out of somebody's mouth. A title that merely holds the line in its middle
+ * never resolves: that line may be a slug for a channel the page did not list.
  *
  * Anything unresolved is left exactly as written: an answer is one page of what
  * a destination holds, and a group channel or a numeric ID is not in it.
@@ -157,11 +156,11 @@ export function resolved(
   return taken === typing ? undefined : taken;
 }
 
-/** The one answer still matching what was typed, where exactly one is. */
+/** The one answer that begins with what was typed, where exactly one does. */
 function soleMatch(
   entries: readonly CandidateEntry[],
   typing: string,
 ): CandidateEntry | undefined {
-  const hits = narrowed(entries, typing);
+  const hits = heads(entries, typing.trim(), namesOf);
   return hits.length === 1 ? hits[0] : undefined;
 }

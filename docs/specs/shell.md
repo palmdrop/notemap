@@ -1,8 +1,14 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-11
+**Last updated**: 2026-09-13
 **Shipped**:
+
+- 2026-09-13 — **A name is found by a word in the middle of it.** Every line that narrows a list —
+  the flat browse, the place line's segments, the tag chooser, the destination line, the places
+  used before — matches by the head of a name first and anywhere in it second, where it matched
+  the head alone. `⇥` and a committed line still go by the head matches alone. One rule in one
+  place, so the next algorithm is one change.
 
 - 2026-09-11 — **One tag chooser, on the row and in the composer.** The row's field beside a
   browser datalist and the composer's row of every tag in use are both gone; both places draw one
@@ -98,7 +104,7 @@
   ([plan](../plans/arena-destination.md))
 
 - 2026-09-07 — **One tag files it where it goes.** Routing templates are a third band in the
-  composer's `where` list, above the destinations and reached by the same typed prefix match:
+  composer's `where` list, above the destinations and reached by the same typed match:
   taking one draws what it resolved to and leaves it editable, a template being where a decision
   starts rather than a form. A **Templates** section in settings holds them, each row asking its own
   report as the page draws, a stranded one repointed by an ordinary edit. A tag that a template
@@ -536,7 +542,7 @@ only the commonest answer. Two more sit in a **second band of the same list, bel
   is what says so without a label claiming the two have something in common.
 
 Neither is in `GET /v1/destinations`; both are entries the shell invents. **The typed line reaches
-them like anything else** — the same prefix match, the same `⏎` on an only match, the same refusal
+them like anything else** — the same typed match, the same `⏎` on an only match, the same refusal
 to guess between several — because a second way of taking a choice, for two of the choices, is a
 second idiom to learn for no gain.
 
@@ -569,7 +575,7 @@ note, written or empty — the field being the only thing the pool is told beyon
 **Routing templates are a third band, above the destinations** *(added 2026-09-07)*. A template is
 a decision somebody already made — a place, a filename, a folder — and offering it above the
 destinations puts the shortest route to a finished decision first. It is reached exactly as
-everything else in the list is: the same typed prefix match, the same `⏎` on an only match. Three
+everything else in the list is: the same typed match, the same `⏎` on an only match. Three
 bands under one idiom, and no third way of taking a choice.
 
 **Taking one draws what it resolved to and leaves it editable.** The destination appears in the
@@ -667,7 +673,7 @@ there moves. This is a different thing from the modal growing when it gains its 
 which is a decision having been made rather than a line being typed.
 
 **A destination is taken by typing its name as well as by pointing at it** (added 2026-09-02).
-Typing narrows the list and the only match is taken by `⏎` or `⇥`; an ambiguous prefix takes
+Typing narrows the list and the only match is taken by `⏎` or `⇥`; an ambiguous line takes
 nothing and says how many matched, because taking one of several would be a guess. Taken, the
 destination **leaves the line and reads in the modal's own chrome**, so what is typed after it is
 nothing but the place — which is why a name holding a space or a slash needs no escaping and no
@@ -733,8 +739,8 @@ records already hold; the pool answers the facts and the shell ranks, which keep
 about most-used against most-recent a change here alone. The best of them is offered as a **greyed
 continuation** after the caret, matched case-sensitively — the ghost is drawn as the text still to
 come, so a match that only holds when case is ignored would draw a path over the one taking it
-would write. The list beneath is not case-sensitive, `↑↓` reaching a place there replacing the line
-outright. **`⇥` and `→` are different keys and stay different**: one completes a segment from what
+would write. The list beneath narrows by the one rule every line narrows by — a place is found by a
+segment in the middle of it — since `↑↓` reaching a place there replaces the line outright. **`⇥` and `→` are different keys and stay different**: one completes a segment from what
 the destination offered, the other takes the whole remembered continuation. A single key meaning either depending on invisible state is the failure mode being
 avoided.
 
@@ -784,7 +790,20 @@ whole field is the filter. What it keeps that the line has no use for is **desce
 the scope before, `use <label>` to take the scope stood in, `clear` at the top — since an entry may
 be somewhere to look rather than something to hold, and this is the only control that can go there.
 
-Matching is by **prefix over both the label and the value**, and `⇥` completes to the **value**.
+**Matching is one rule, wherever a line narrows a list** *(amended 2026-09-13)*. Case is ignored,
+and a name is found by its head first and by anything in it second: what is typed at the start of
+a name lists ahead of what falls in the middle of one, so completing a name still finds it at the
+top, and a channel is found by a word in its title. The tag chooser, the place line's segments,
+the destination line and the places used before narrow by the same rule, so there is one thing to
+learn and one place it changes. Before this it was the head alone, everywhere.
+
+**`⇥` completes from the head matches alone.** A name that holds the line in its middle has a head
+the person never typed, so it cannot continue what they wrote; several head matches complete as
+far as they agree, and a lone match of either kind completes outright. Committing a line resolves
+it the same way: the whole of a title, or the head of one that no other begins with — never a title
+that merely holds the line, since what was typed may be a slug for a channel the page did not list.
+
+Matching is over **both the label and the value**, and `⇥` completes to the **value**.
 The two need not be the same string — an are.na channel is browsed by its title and filed under
 its slug — so completing to the label would leave the field holding something that cannot be
 delivered, and matching the label alone would empty the list the moment `⇥` resolved one to the
@@ -1118,7 +1137,8 @@ sits on the collapsed row.
 **The chooser is one control, wherever it is drawn** *(added 2026-09-11)*. What the item carries
 is a row of pressed words, a trigger tag marked with the template it applies, each taken off by
 pressing it. `+` opens a line with the pool's offer in a panel beneath it — the tags in use minus
-what the item carries — narrowed by prefix as the line is typed into. `⇥` completes what was
+what the item carries — narrowed as the line is typed into, by the one rule every line narrows by.
+`⇥` completes what was
 typed as far as the offer agrees, and once there is nothing left to complete walks the offer from
 the top; `↑↓` walk it both ways; `⏎` takes the one walked to, or what was typed where nothing has
 been walked to, and a name on no list is taken that way. `esc` or leaving the line puts it away

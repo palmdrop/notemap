@@ -41,10 +41,12 @@
 
 ## Composer and capture
 
-- [ ] fuzzy search in composer input field. Narrowed 2026-09-09: `⇥` now walks what still matches
-  once completion has nothing left to add, so a name shared with four others is reached by pressing
-  the key again. Still prefix-only — a channel found by a word in the middle of its title is what
-  is left of this.
+- [x] ~~fuzzy search in composer input field~~. Narrowed 2026-09-09: `⇥` now walks what still
+  matches once completion has nothing left to add, so a name shared with four others is reached by
+  pressing the key again. Closed 2026-09-13: a name is found by anything in it, head matches
+  first, and the rule sits in one module every narrowing line reads — the flat browse, the place
+  line's segments, the tag chooser, the destination line, the places used before — so a smarter
+  algorithm is one change.
 - [x] ~~using a template from the composer does not add the routing tag~~ — closed 2026-09-09: an
   untouched template routes and then applies its trigger tag, which the pool absorbs as
   classification because that template's record already stands. A **corrected** one is the person's
