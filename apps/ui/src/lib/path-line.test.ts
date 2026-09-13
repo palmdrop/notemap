@@ -138,6 +138,16 @@ describe("completing a segment", () => {
       ),
     ).toBeUndefined();
   });
+
+  test("completes from what begins with the segment, not from what holds it", () => {
+    const level = [
+      folder("notes", "notes"),
+      folder("notes-2026", "notes-2026"),
+      folder("footnotes", "footnotes"),
+    ];
+    expect(matching(level, "not")).toHaveLength(3);
+    expect(completionOf(level, "not")).toBe("notes");
+  });
 });
 
 describe("popping a segment", () => {
@@ -579,7 +589,7 @@ describe("places used before", () => {
     ).toBe(false);
   });
 
-  test("continues only the places the whole line is a prefix of", () => {
+  test("continues only the places the line finds", () => {
     const places = marked(
       [
         place("projects/notemap/notes/", 41, "2026-09-01T10:00:00.000Z"),
@@ -591,6 +601,23 @@ describe("places used before", () => {
     expect(continuing("pro", places).map((each) => each.value)).toEqual([
       "projects/notemap/notes/",
     ]);
+  });
+
+  test("finds a place by a segment in the middle of it, after what begins with the line", () => {
+    const places = marked(
+      [
+        place("projects/notemap/notes/", 41, "2026-09-01T10:00:00.000Z"),
+        place("notes/", 6, "2026-09-01T10:00:00.000Z"),
+      ],
+      [],
+    );
+
+    expect(continuing("notes", places).map((each) => each.value)).toEqual([
+      "notes/",
+      "projects/notemap/notes/",
+    ]);
+    expect(ghostFor("notes", places)).toBe("/");
+    expect(ghostFor("temap", places)).toBeUndefined();
   });
 
   test("offers the best continuation as the text still to come", () => {

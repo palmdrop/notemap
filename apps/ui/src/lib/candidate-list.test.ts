@@ -107,6 +107,15 @@ describe("what completing leaves", () => {
     expect(completed(CHANNELS, "readi")).toBe("reading");
   });
 
+  it("completes from what begins with the line, not from what holds it", () => {
+    expect(narrowed(CHANNELS, "re")).toHaveLength(3);
+    expect(completed(CHANNELS, "re")).toBe("reading");
+  });
+
+  it("completes a lone middle match outright", () => {
+    expect(completed(CHANNELS, "cordings")).toBe("field-recordings");
+  });
+
   it("does nothing where they agree on no more than was typed", () => {
     expect(completed(CHANNELS, "reading")).toBeUndefined();
   });
@@ -161,6 +170,12 @@ describe("what a typed line means", () => {
 
   it("leaves a prefix that several still match alone", () => {
     expect(resolved(CHANNELS, "Read")).toBeUndefined();
+  });
+
+  /** A slug for a channel the page did not list can fall inside a title it did. */
+  it("leaves a line that only the middle of a title holds alone", () => {
+    expect(narrowed(CHANNELS, "notes")).toHaveLength(1);
+    expect(resolved(CHANNELS, "notes")).toBeUndefined();
   });
 
   it("leaves a value the field already holds alone", () => {

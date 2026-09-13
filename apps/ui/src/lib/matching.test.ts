@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { match, search } from "./matching";
+import { heads, match, search } from "./matching";
 
 describe("how a name answers what is typed", () => {
   it("is at the head where the name begins with it, whatever the case", () => {
@@ -46,5 +46,18 @@ describe("searching a list", () => {
 
   it("drops what matches under no name", () => {
     expect(search(names, "zzz", each)).toEqual([]);
+  });
+});
+
+describe("what begins with the line", () => {
+  const names = ["Reading", "Field recordings", "Read later", "Proofreading"];
+  const each = (name: string) => [name];
+
+  it("keeps the head matches alone, in the order given", () => {
+    expect(heads(names, "read", each)).toEqual(["Reading", "Read later"]);
+  });
+
+  it("is empty where every match is in the middle", () => {
+    expect(heads(names, "cord", each)).toEqual([]);
   });
 });

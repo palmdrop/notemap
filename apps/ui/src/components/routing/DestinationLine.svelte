@@ -45,7 +45,6 @@
     search(takeable, typed.trim(), (one) => [one.name]),
   );
 
-  /** One match is a name; several are a guess, and taking one of them would be that. */
   const only = $derived(
     typed.trim() !== "" && matching.length === 1 ? matching[0] : undefined,
   );

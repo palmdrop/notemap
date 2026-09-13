@@ -5,9 +5,10 @@
 **Shipped**:
 
 - 2026-09-13 — **A name is found by a word in the middle of it.** Every line that narrows a list —
-  the flat browse, the place line's segments, the tag chooser, the destination line — matches by
-  the head of a name first and anywhere in it second, where it matched the head alone. One rule in
-  one place, so the next algorithm is one change.
+  the flat browse, the place line's segments, the tag chooser, the destination line, the places
+  used before — matches by the head of a name first and anywhere in it second, where it matched
+  the head alone. `⇥` and a committed line still go by the head matches alone. One rule in one
+  place, so the next algorithm is one change.
 
 - 2026-09-11 — **One tag chooser, on the row and in the composer.** The row's field beside a
   browser datalist and the composer's row of every tag in use are both gone; both places draw one
@@ -738,8 +739,8 @@ records already hold; the pool answers the facts and the shell ranks, which keep
 about most-used against most-recent a change here alone. The best of them is offered as a **greyed
 continuation** after the caret, matched case-sensitively — the ghost is drawn as the text still to
 come, so a match that only holds when case is ignored would draw a path over the one taking it
-would write. The list beneath is not case-sensitive, `↑↓` reaching a place there replacing the line
-outright. **`⇥` and `→` are different keys and stay different**: one completes a segment from what
+would write. The list beneath narrows by the one rule every line narrows by — a place is found by a
+segment in the middle of it — since `↑↓` reaching a place there replaces the line outright. **`⇥` and `→` are different keys and stay different**: one completes a segment from what
 the destination offered, the other takes the whole remembered continuation. A single key meaning either depending on invisible state is the failure mode being
 avoided.
 
@@ -792,9 +793,15 @@ be somewhere to look rather than something to hold, and this is the only control
 **Matching is one rule, wherever a line narrows a list** *(amended 2026-09-13)*. Case is ignored,
 and a name is found by its head first and by anything in it second: what is typed at the start of
 a name lists ahead of what falls in the middle of one, so completing a name still finds it at the
-top, and a channel is found by a word in its title. The tag chooser, the place line's segments and
-the destination line narrow by the same rule, so there is one thing to learn and one place it
-changes. Before this it was the head alone, everywhere.
+top, and a channel is found by a word in its title. The tag chooser, the place line's segments,
+the destination line and the places used before narrow by the same rule, so there is one thing to
+learn and one place it changes. Before this it was the head alone, everywhere.
+
+**`⇥` completes from the head matches alone.** A name that holds the line in its middle has a head
+the person never typed, so it cannot continue what they wrote; several head matches complete as
+far as they agree, and a lone match of either kind completes outright. Committing a line resolves
+it the same way: the whole of a title, or the head of one that no other begins with — never a title
+that merely holds the line, since what was typed may be a slug for a channel the page did not list.
 
 Matching is over **both the label and the value**, and `⇥` completes to the **value**.
 The two need not be the same string — an are.na channel is browsed by its title and filed under

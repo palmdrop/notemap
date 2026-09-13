@@ -1,16 +1,5 @@
-/**
- * What it means for a typed line to find a name, decided once: a tag, a
- * channel, a folder and a destination are narrowed the same way, and the way
- * changes here alone.
- *
- * Case is ignored. A name is matched at its head first and anywhere in it
- * second — the head being what somebody completing a name expects to see at
- * the top, and the middle being how a channel is found by a word in its title.
- */
-
 export type Match = "prefix" | "within";
 
-/** How this name answers what is being typed, or that it does not. */
 export function match(name: string, typing: string): Match | undefined {
   const wanted = typing.toLowerCase();
   const held = name.toLowerCase();
@@ -18,10 +7,7 @@ export function match(name: string, typing: string): Match | undefined {
   return held.includes(wanted) ? "within" : undefined;
 }
 
-/**
- * Everything that matches under any of its names, head matches ahead of the
- * rest and otherwise in the order given. Nothing typed narrows nothing.
- */
+/** Every match, those at the head of a name ahead of the rest and otherwise in the order given. */
 export function search<T>(
   items: readonly T[],
   typing: string,
@@ -38,4 +24,18 @@ export function search<T>(
   }
 
   return [...atHead, ...within];
+}
+
+/**
+ * Only what begins with the line, which is what a completion can continue: a
+ * name holding it in the middle has a head the person never typed.
+ */
+export function heads<T>(
+  items: readonly T[],
+  typing: string,
+  namesOf: (item: T) => readonly string[],
+): readonly T[] {
+  return items.filter((item) =>
+    namesOf(item).some((name) => match(name, typing) === "prefix"),
+  );
 }

@@ -18,7 +18,7 @@
     ontake,
   }: {
     places: readonly RememberedPlace[];
-    /** What is typed, which the line is still a prefix of. */
+    /** What is typed, which narrows the places. */
     value: string;
     /**
      * Which of `places` — not of what is drawn — `↑↓` has landed on, the line
