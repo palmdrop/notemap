@@ -4,6 +4,9 @@
 **Last updated**: 2026-09-13
 **Shipped**:
 
+- 2026-09-13 — **The log is narrowed to a view.** Five words under the lede — `everything`,
+  `routing`, `captures`, `classification`, `pool` — each a fixed set of kinds the pool is asked for,
+  carried on the URL as `kind=`.
 - 2026-09-13 — **A name is found by a word in the middle of it.** Every line that narrows a list —
   the flat browse, the place line's segments, the tag chooser, the destination line, the places
   used before — matches by the head of a name first and anywhere in it second, where it matched
@@ -1628,6 +1631,16 @@ id: the action recorded one, and resolving it to a name is a second read and a c
 narrowed log says the same words above itself**, where a person has already committed to one item
 and the id is least use of all. The order and the filter both live on the URL, so a reload and a
 shared link come back to the same reading.
+
+**The log is narrowed to a view** *(added 2026-09-13)*: `everything`, `routing`, `captures`,
+`classification`, `pool`, drawn as one line of words under the lede, the one being read in ink and
+the rest as links. A view is a fixed set of the pool's own kinds and the URL carries the kinds
+rather than the name — `?kind=routed,template-fired` — so a link somebody writes by hand reads the
+same way as one of these, and a set that is not exactly a view lights none of them. The pool does
+the narrowing: a page holds what it shows and its count means what it says, where a shell sifting
+the page after the read would page over rows it then threw away. What arrives at the head is held
+to the same kinds. A view composes with a subject, and `show everything` on a narrowed subject keeps
+the view.
 
 **What has happened since goes to the head of the page** *(added 2026-09-09)*. The shell already
 reads the action log on its own tempo for the corner to speak from, and the log was the one surface

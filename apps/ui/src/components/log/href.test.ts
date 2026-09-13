@@ -15,3 +15,9 @@ test("widens again without losing the order", () => {
 test("escapes a subject that is not a bare id", () => {
   expect(logHref("newest-first", "a b&c")).toContain("item=a+b%26c");
 });
+
+test("carries the kinds it is narrowed to, in the pool's own words", () => {
+  expect(logHref("newest-first", undefined, ["routed", "template-fired"])).toBe(
+    "/log?kind=routed%2Ctemplate-fired&order=newest-first",
+  );
+});

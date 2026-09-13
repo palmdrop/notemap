@@ -14,6 +14,7 @@
   import { logHref } from "./href";
   import Says from "./Says.svelte";
   import LogRow from "./LogRow.svelte";
+  import Views from "./Views.svelte";
 
   const pool = reachable();
 
@@ -42,9 +43,13 @@
   {LOG_LEDE}
   {#if log.item !== undefined}
     Only what is about <Says id={log.item} /> —
-    <a href={logHref(log.order)} class="text-ink">show everything</a>
+    <a href={logHref(log.order, undefined, log.kinds)} class="text-ink"
+      >show everything</a
+    >
   {/if}
 </p>
+
+<Views />
 
 <div class="mt-6">
   <Register brief>

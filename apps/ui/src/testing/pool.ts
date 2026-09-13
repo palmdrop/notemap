@@ -43,6 +43,11 @@ export function asked(): string[] {
   return sentTo(transport).map(routeOf);
 }
 
+/** The URLs it asked, for the assertions that are about the query. */
+export function sentUrls(): string[] {
+  return sentTo(transport).map((request) => request.url);
+}
+
 /** The JSON bodies it sent, for the assertions that are about what was said. */
 export async function sent(): Promise<unknown[]> {
   return Promise.all(
