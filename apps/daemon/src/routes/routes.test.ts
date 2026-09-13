@@ -458,11 +458,8 @@ describe("GET /v1/actions", () => {
     const response = await app.request("/v1/actions?kind=captured,shouted");
 
     expect(response.status).toBe(422);
-    expect(
-      (await body<{ error: { code: string; value: string } }>(response)).error,
-    ).toMatchObject({
-      code: "bad-kind",
-      value: "shouted",
+    expect(await body(response)).toMatchObject({
+      error: { code: "bad-kind", value: "shouted" },
     });
   });
 

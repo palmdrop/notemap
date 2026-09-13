@@ -6,11 +6,23 @@ export type View = {
 };
 
 /**
+ * Every kind is in a view: the union of the sets must be the whole of
+ * `ActionKind`, so a kind the pool grows fails here rather than falling out of
+ * every reading but `everything`.
+ */
+type Covering<T extends readonly View[]> =
+  ActionKind extends T[number]["kinds"][number] ? T : never;
+
+function covering<const T extends readonly View[]>(views: Covering<T>): T {
+  return views;
+}
+
+/**
  * The readings a log is narrowed to. Each is a set of the pool's own kinds, and
  * the URL carries the kinds rather than the name, so a link somebody wrote by
  * hand reads the same way as one of these.
  */
-export const VIEWS: readonly View[] = [
+export const VIEWS: readonly View[] = covering([
   {
     name: "routing",
     kinds: [
@@ -62,7 +74,7 @@ export const VIEWS: readonly View[] = [
       "actions-cleared",
     ],
   },
-];
+]);
 
 export const KIND_PARAM = "kind";
 

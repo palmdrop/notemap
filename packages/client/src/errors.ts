@@ -89,6 +89,7 @@ const SAID: {
     `that file is larger than this daemon accepts (${String(facts["max"])} bytes)`,
   "bad-digest": "the upload's checksum is not readable",
   "bad-limit": "the app asked for a page size this daemon will not serve",
+  "bad-kind": "the app asked for a kind of entry this daemon does not write",
   "bad-order": "the app asked for an order this daemon does not have",
   "bad-position": "the app lost its place in the list; reload",
   "blob-missing": "the stored file is gone from this daemon's disk",
