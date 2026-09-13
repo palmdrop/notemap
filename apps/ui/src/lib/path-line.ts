@@ -1,6 +1,7 @@
 import type { CandidateEntry, RememberedPlace } from "@notemap/client";
 
 import { commonPrefix } from "$lib/candidate-list";
+import { search } from "$lib/matching";
 
 /**
  * A typed path, split where the line reads it. Everything before the last slash
@@ -76,15 +77,11 @@ export function pathOf(entry: CandidateEntry): string {
   return String(entry.value);
 }
 
-/** Case-insensitively, and by prefix rather than substring: this completes a name being typed. */
 export function matching(
   entries: readonly CandidateEntry[],
   typing: string,
 ): readonly CandidateEntry[] {
-  const wanted = typing.toLowerCase();
-  return entries.filter((entry) =>
-    entry.label.toLowerCase().startsWith(wanted),
-  );
+  return search(entries, typing, (entry) => [entry.label]);
 }
 
 /** One line of the drawn hierarchy. */
@@ -248,7 +245,10 @@ export function completionOf(
   }
 
   const shared = commonPrefix(hits.map((entry) => entry.label));
-  return shared.length > typing.length ? shared : undefined;
+  return shared.length > typing.length &&
+    shared.toLowerCase().startsWith(typing.toLowerCase())
+    ? shared
+    : undefined;
 }
 
 /**

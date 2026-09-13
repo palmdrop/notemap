@@ -91,8 +91,10 @@ describe("filtering a scope", () => {
     expect(matching(entries, "")).toHaveLength(3);
   });
 
-  test("matches by prefix rather than anywhere in the name", () => {
-    expect(matching(entries, "ject")).toEqual([]);
+  test("finds a name by what falls in the middle of it", () => {
+    expect(matching(entries, "ject").map((each) => each.label)).toEqual([
+      "projects",
+    ]);
   });
 });
 
@@ -125,6 +127,15 @@ describe("completing a segment", () => {
   test("adds nothing where the matches share no more than what is typed", () => {
     expect(
       completionOf([folder("ab", "ab"), folder("ac", "ac")], "a"),
+    ).toBeUndefined();
+  });
+
+  test("leaves a shared head that does not continue what was typed", () => {
+    expect(
+      completionOf(
+        [folder("daily-a", "daily-a"), folder("daily-b", "daily-b")],
+        "ily",
+      ),
     ).toBeUndefined();
   });
 });

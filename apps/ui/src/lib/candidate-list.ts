@@ -1,5 +1,7 @@
 import type { CandidateEntry } from "@notemap/client";
 
+import { search } from "$lib/matching";
+
 /**
  * A flat answer, narrowed and completed as it is typed into. The hierarchical
  * one is `path-line`'s: there a level is filtered by the segment being typed,
@@ -53,22 +55,16 @@ function namesOf(entry: CandidateEntry): readonly string[] {
 }
 
 /**
- * By prefix and case-insensitively, over **both** the label a person reads and
- * the value the field holds. Both, because the two need not be the same string:
- * an are.na channel is browsed by its title and filed under its slug, so
- * matching the label alone would empty the list the moment `⇥` resolved one to
- * the other.
+ * Over **both** the label a person reads and the value the field holds. Both,
+ * because the two need not be the same string: an are.na channel is browsed by
+ * its title and filed under its slug, so matching the label alone would empty
+ * the list the moment `⇥` resolved one to the other.
  */
 export function narrowed(
   entries: readonly CandidateEntry[],
   typing: string,
 ): readonly CandidateEntry[] {
-  const wanted = typing.trim().toLowerCase();
-  if (wanted === "") return entries;
-
-  return entries.filter((entry) =>
-    namesOf(entry).some((name) => name.toLowerCase().startsWith(wanted)),
-  );
+  return search(entries, typing.trim(), namesOf);
 }
 
 /**
