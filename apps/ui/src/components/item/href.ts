@@ -5,6 +5,11 @@ export function itemHref(id: string): string {
   return resolve("/items/[id]", { id });
 }
 
+/** Where one item is processed: the deep tier, reached from the row. */
+export function processHref(id: string): string {
+  return resolve("/items/[id]/process", { id });
+}
+
 /** A record is an item's detail, and its address says so. */
 export function recordHref(item: string, record: string): string {
   return resolve("/items/[id]/records/[recordId]", {

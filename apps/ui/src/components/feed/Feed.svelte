@@ -1,15 +1,12 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
 
-  import { replaceState } from "$app/navigation";
+  import { goto, replaceState } from "$app/navigation";
   import { page } from "$app/state";
-
-  import type { Item } from "@notemap/client";
 
   import Row from "$components/item/Row.svelte";
   import Order from "$components/order/Order.svelte";
   import Index from "$components/queue/Index.svelte";
-  import ProcessingComposer from "$components/routing/ProcessingComposer.svelte";
   import Body from "$components/primitives/register/Body.svelte";
   import Head from "$components/primitives/register/Head.svelte";
   import More from "$components/primitives/register/More.svelte";
@@ -18,13 +15,12 @@
   import Register from "$components/primitives/register/Register.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
   import ViewToggle from "$components/view/ViewToggle.svelte";
+  import { processHref } from "$components/item/href";
   import { client } from "$lib/client";
-  import { notices } from "$lib/notices.svelte";
   import { orderFor } from "$lib/order";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { refusalIn } from "$lib/refusal";
-  import { keyFor } from "$lib/routing";
   import { keepPlace, restorePlace } from "$lib/scroll-mark";
   import { NOTHING_CAPTURED } from "$lib/said";
   import { remember, viewFor, withView, type View } from "$lib/view";
@@ -37,7 +33,6 @@
 
   /** One row is selected at a time, as on the queue: it is the same row. */
   let selected = $state<string | undefined>(undefined);
-  let routing = $state<Item | undefined>(undefined);
   let view = $state<View>(viewFor(SURFACE, page.url));
 
   const refused = $derived(refusalIn($feed));
@@ -84,9 +79,7 @@
     items={$feed.items}
     {selected}
     onselect={select}
-    onprocess={(id) => {
-      routing = $feed.items.find((item) => item.id === id);
-    }}
+    onprocess={(id) => void goto(processHref(id))}
   />
 
   {#if $feed.more}
@@ -117,7 +110,7 @@
         offline={!pool.yes}
         pending={undrained.has(item.id)}
         onselect={() => select(item.id)}
-        onprocess={() => (routing = item)}
+        onprocess={() => void goto(processHref(item.id))}
       />
     {/each}
 
@@ -129,16 +122,4 @@
       />
     {/if}
   </Register>
-{/if}
-
-<!-- The feed keeps every row it holds, so a decision made here is drawn on the
-     row a moment later rather than reported to somebody looking at it. The
-     record is remembered so the log does not report it back as news. -->
-{#if routing !== undefined}
-  {@const subject = routing}
-  <ProcessingComposer
-    item={subject}
-    onrouted={(record) => notices.mark(keyFor(record.id))}
-    onclose={() => (routing = undefined)}
-  />
 {/if}

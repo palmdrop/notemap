@@ -6,7 +6,6 @@
   import Payload from "$components/item/Payload.svelte";
   import Routing from "$components/item/Routing.svelte";
   import Tags from "$components/item/Tags.svelte";
-  import ProcessingComposer from "$components/routing/ProcessingComposer.svelte";
   import Body from "$components/primitives/register/Body.svelte";
   import Fact from "$components/primitives/register/Fact.svelte";
   import Facts from "$components/primitives/register/Facts.svelte";
@@ -17,13 +16,14 @@
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
+  import { goto } from "$app/navigation";
+
+  import { processHref } from "$components/item/href";
   import { client } from "$lib/client";
   import { became } from "$lib/lineage";
-  import { notices } from "$lib/notices.svelte";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { recordsOf } from "$lib/records.svelte";
-  import { keyFor } from "$lib/routing";
   import { NO_ITEM_OFFLINE, NO_RECORDS_OFFLINE, NO_SUCH_ITEM } from "$lib/said";
   import { briefly } from "$lib/stamp";
 
@@ -34,7 +34,6 @@
 
   let read = $state<ItemState | undefined>(undefined);
   let editing = $state(false);
-  let routing = $state(false);
 
   // The read settles what is drawn and what it was drawn from; the item itself
   // is then the client's held copy, so an archive made here marks it at once.
@@ -120,7 +119,7 @@
         <Actions
           {item}
           offline={!pool.yes}
-          onprocess={() => (routing = true)}
+          onprocess={() => void goto(processHref(id))}
           onedit={() => (editing = !editing)}
         />
       </div>
@@ -142,14 +141,3 @@
     </Body>
   {/if}
 </Register>
-
-<!-- Nothing said in the corner: the decision is drawn on this very surface a
-     moment later. The record is remembered so that the log, read on its own
-     tempo, does not report it back as news. -->
-{#if routing && item !== undefined}
-  <ProcessingComposer
-    {item}
-    onrouted={(record) => notices.mark(keyFor(record.id))}
-    onclose={() => (routing = false)}
-  />
-{/if}

@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { untrack } from "svelte";
+  import { onMount, untrack } from "svelte";
+
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
+  import { page } from "$app/state";
 
   import {
     saidAs,
@@ -13,27 +17,24 @@
     type RoutingRecord,
     type RoutingTemplate,
   } from "@notemap/client";
-
-  import ComposerTags from "$components/routing/ComposerTags.svelte";
-  import DestinationLine from "$components/routing/DestinationLine.svelte";
-  import UsedBefore from "$components/routing/UsedBefore.svelte";
-  import Action from "$components/primitives/controls/Action.svelte";
-  import Commit from "$components/primitives/composer/Commit.svelte";
-  import Group from "$components/primitives/composer/Group.svelte";
-  import Labelled from "$components/primitives/composer/Labelled.svelte";
-  import Modal from "$components/primitives/composer/Modal.svelte";
-  import Option from "$components/primitives/composer/Option.svelte";
   import { placeOf } from "@notemap/output-markdown/naming";
 
   import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
-  import { itemHref } from "$components/item/href";
-  import Output from "$components/routing/Output.svelte";
+  import ComposerTags from "$components/routing/ComposerTags.svelte";
+  import DestinationLine from "$components/routing/DestinationLine.svelte";
   import PathLine from "$components/routing/PathLine.svelte";
+  import Option from "$components/primitives/composer/Option.svelte";
+  import Action from "$components/primitives/controls/Action.svelte";
+  import Stamp from "$components/primitives/marks/Stamp.svelte";
+  import { itemHref, processHref } from "$components/item/href";
+  import { OWN_ARGUMENTS, sameArguments } from "$lib/arguments";
   import { browserFor } from "$lib/candidate-browsers";
   import { client } from "$lib/client";
-  import { copyable } from "$lib/clipboard";
+  import { nameOf } from "$lib/destinations";
   import { aboutItem } from "$lib/excerpt";
+  import { search } from "$lib/matching";
   import { notices } from "$lib/notices.svelte";
+  import { orderFor } from "$lib/order";
   import {
     DISCARD,
     HAND,
@@ -41,15 +42,17 @@
     refusalFor,
     type ByHand,
   } from "$lib/processing";
+  import { discard, manual } from "$lib/quick";
   import { reachable } from "$lib/reachable.svelte";
-  import {
-    NO_PREVIEW_OFFERED,
-    PREVIEW_IS_INDICATIVE,
-    PREVIEW_NOT_TEXT,
-    PREVIEW_UNREACHABLE,
-  } from "$lib/said";
-  import { OWN_ARGUMENTS, sameArguments } from "$lib/arguments";
+  import { saidOf } from "$lib/routing";
   import { fieldsOf, presetsFrom, valuesFrom } from "$lib/schema-form";
+  import { placeOf as patternOf } from "$lib/templates";
+  import { whenOf } from "$lib/when";
+
+  import Band from "./Band.svelte";
+  import Entry from "./Entry.svelte";
+  import Preview from "./Preview.svelte";
+  import Section from "./Section.svelte";
 
   const CREATE = "create";
   /** What the typed line drives: the capability that decides at delivery. */
@@ -57,61 +60,32 @@
   /** The one field the typed line drives, and the only one `⇧⏎` has to re-read. */
   const LINE_FIELD = "path";
 
-  let {
-    item,
-    onrouted,
-    ondiscarded,
-    onfired,
-    onclose,
-  }: {
-    item: Item;
-    /**
-     * The decision reached the pool. What is said about it, and where the row
-     * stood, belong to the surface rather than to a modal over it.
-     */
-    onrouted?: (record: RoutingRecord) => void;
-    /**
-     * Discarding is the one decision the composer takes without a commit, so
-     * the surface is told separately: an archived item leaves the queue the way
-     * a routed one does.
-     */
-    ondiscarded?: () => void;
-    /**
-     * A tag taken here filed the item, so the decision this composer was for is
-     * made and it closes on it. There is no record to hand over: what the tag
-     * fired is said by the corner, which is where the window's cancel lives.
-     */
-    onfired?: () => void;
-    onclose: () => void;
-  } = $props();
+  /** A keystroke in the decision waits this long before the preview is asked for again. */
+  const SETTLING = 400;
+
+  let { item }: { item: Item } = $props();
 
   const destinations = client.destinations.all;
   const templates = client.templates.all;
+  const queue = client.queue;
   const pool = reachable();
 
   const offline = $derived(!pool.yes);
 
-  /** What the row said, since the row itself is now behind the veil. */
-  const subject = $derived(client.says(item) || item.payload.type);
   /** The item's own payload, from which the name of an unnamed note is derived. */
   const content = $derived(item.payload.content);
-  /** What the capture says, which is what a rewrite starts from and what it replaces. */
+  /** What the capture says, which is what editing starts from and what it replaces. */
   const captured = $derived(client.says(item));
+  const pictures = $derived(client.images(item));
   /**
    * What the item carries, read from the client's held copy rather than the
-   * item this opened on: a tag taken in the row below lands on the held copy
-   * first, and the row draws it taken the moment it does.
+   * item this opened on: a tag taken here lands on the held copy first, and
+   * the row draws it taken the moment it does.
    */
   const held = $derived(client.held(item.id));
   const tags = $derived((($held ?? item).tags ?? []).map((tag) => tag.name));
 
-  /** Taken by hand: `manual`, which has a step, or `discard`, which acts. */
-  let hand = $state<typeof MANUAL | undefined>(undefined);
-  /** What `manual` is told beyond the fact itself. */
-  let went = $state("");
-  let copied = $state(false);
-
-  /** The template a decision started from, which the chrome names and the commit may carry. */
+  /** The template a decision started from, which the commit may carry. */
   let applied = $state<RoutingTemplate | undefined>(undefined);
   /** What it resolved to, so an untouched decision commits as the template rather than as a copy of it. */
   let resolved = $state<ResolvedRoutingTemplate | undefined>(undefined);
@@ -122,11 +96,11 @@
   let args = $state<Record<string, string>>({});
   let said = $state("");
   let busy = $state(false);
+  /** What the destination line holds, which narrows the bands under it. */
+  let typed = $state("");
 
-  /** Places routed to before, consulted in the column beside the line. */
+  /** Places routed to before, for the line's greyed continuation and the count beside the name. */
   let places = $state<readonly RememberedPlace[]>([]);
-  /** Which of them the line's own `↑↓` walk has landed on. */
-  let picked = $state<number | undefined>(undefined);
   /** What committing the line now would do, which decides what else is asked. */
   let forecast = $state<"create" | "append" | undefined>(undefined);
 
@@ -135,6 +109,7 @@
 
   let shown = $state<RoutingPreview | undefined>(undefined);
   let showing = $state(false);
+  let previewFailed = $state("");
 
   /**
    * The words this one delivery carries, where a person took them from the
@@ -143,14 +118,15 @@
    * `carried()`'s answer rather than this.
    */
   let words = $state<string | undefined>(undefined);
+  let editing = $state(false);
   let typing = $state<HTMLTextAreaElement | undefined>(undefined);
 
-  /** A boolean rather than `words` itself, so a keystroke does not take the caret back. */
-  const rewriting = $derived(words !== undefined);
-
   $effect(() => {
-    if (rewriting) typing?.focus();
+    if (editing) typing?.focus();
   });
+
+  /** Which sections are open. The first always is; the rest open on a press or when the flow reaches them. */
+  let opened = $state({ place: false, tags: false, preview: false });
 
   const capabilities = $derived<readonly Capability[]>(
     described?.kind === "described" ? described.capabilities : [],
@@ -188,15 +164,12 @@
   );
 
   /**
-   * What the composer settles when nothing else has: the line's own capability
+   * What the surface settles when nothing else has: the line's own capability
    * where the line is drawn, and the only one there is otherwise.
    *
    * **Only when nothing else has.** A template carries a capability, and it is
    * applied in the same step the description lands in — so this runs after it
-   * and must not overwrite it. Left unguarded, a template saved as `create` on
-   * a vault became `create-or-append` here, and the commit then read as a
-   * decision of the person's own rather than as the template: the record did
-   * not name it, and an `establish` template never learnt its folder was there.
+   * and must not overwrite it.
    */
   const implied = $derived(settles ? CREATE_OR_APPEND : only);
 
@@ -228,21 +201,13 @@
 
   const ready = $derived(chosen !== undefined && capability !== undefined);
 
-  /** Whether there is a step to go back to, which is what `esc` does first. */
-  const settled = $derived(chosen !== undefined || hand !== undefined);
-
   const line = $derived(fields.find((one) => one.name === LINE_FIELD));
 
-  /**
-   * The line and what is consulted beside it, which is what earns two columns —
-   * so it takes the line actually being drawn. A template that named `create`
-   * on a vault settles a capability the line cannot draw, and a second column
-   * consulting a line that is not there would be an empty half of a modal.
-   */
-  const split = $derived(chosen !== undefined && settles && line !== undefined);
+  /** Whether the typed line draws the place, which needs the destination to hold a filesystem. */
+  const lined = $derived(chosen !== undefined && settles && line !== undefined);
 
   /**
-   * A field beside the line goes only where the composer **knows** a new note is
+   * A field beside the line goes only where the surface **knows** a new note is
    * being made — the heading an append would use being nothing to a note that
    * does not exist yet. An absent forecast is not knowing, and not knowing keeps
    * the field.
@@ -261,25 +226,17 @@
         ),
   );
 
-  /**
-   * Taken, the choice leaves the line and reads here instead. The door says
-   * `process` until there is a decision, and the true verb once there is one.
-   */
-  const chrome = $derived.by(() => {
-    if (hand !== undefined) return `process · ${hand}`;
-    if (applied !== undefined) return `process · ${applied.name}`;
-    if (chosen === undefined) return "process";
-    const name = $destinations.find((one) => one.id === chosen)?.name ?? "";
-    return `process · ${name}`;
-  });
+  /** Whether every argument the capability requires has a value: what a preview waits for. */
+  const settledArguments = $derived(
+    fields
+      .filter((one) => one.required)
+      .every((one) => (args[one.name] ?? "").trim() !== ""),
+  );
 
-  /** A wrong choice is not a reason to close the composer. */
+  /** A wrong choice is not a reason to leave the surface. */
   function release(): void {
-    hand = undefined;
     applied = undefined;
     resolved = undefined;
-    went = "";
-    copied = false;
     chosen = undefined;
     described = undefined;
     capability = undefined;
@@ -287,6 +244,8 @@
     said = "";
     places = [];
     forecast = undefined;
+    shown = undefined;
+    previewFailed = "";
   }
 
   /** Serialised because a keystroke changes a field of `args` rather than `args`. */
@@ -294,14 +253,19 @@
     JSON.stringify({ chosen, capability, args, words }),
   );
 
-  // What was shown was shown for the decision as it then stood, so changing any
-  // part of it drops the answer rather than leaving a stale one under the line.
+  /**
+   * Asked for as soon as the destination and its required arguments are
+   * settled, and again whenever they or the words change, once the typing has
+   * settled. What was shown stays up while the next answer is in flight.
+   */
   $effect(() => {
     void decision;
-    shown = undefined;
+    if (!ready || !settledArguments) return;
+
+    const timer = setTimeout(() => void show(), SETTLING);
+    return () => clearTimeout(timer);
   });
 
-  /** On demand and never on a keystroke: the conversion may be a model call. */
   async function show() {
     if (chosen === undefined || capability === undefined) return;
 
@@ -310,7 +274,6 @@
     // arguments it knows nothing about.
     const asked = decision;
     showing = true;
-    said = "";
     try {
       const answer = await client.routing.preview(item.id, {
         destination: chosen,
@@ -318,45 +281,38 @@
         arguments: valuesFrom(fields, args),
         ...carried(),
       });
-      if (asked === decision) shown = answer;
+      if (asked === decision) {
+        shown = answer;
+        previewFailed = "";
+        opened.preview = true;
+      }
     } catch (error) {
-      if (asked === decision) said = saidBy(error);
+      if (asked === decision) {
+        previewFailed = saidBy(error);
+        opened.preview = true;
+      }
     } finally {
       showing = false;
     }
   }
 
-  const nothingShown = $derived.by(() => {
-    switch (shown?.kind) {
-      case "not-offered":
-        return NO_PREVIEW_OFFERED;
-      case "unreachable":
-        return `${PREVIEW_UNREACHABLE} ${shown.detail}`;
-      case "rejected":
-        return `This would be refused: ${shown.detail}`;
-      case "previewed":
-        return shown.content !== undefined && shown.content.text === undefined
-          ? `${PREVIEW_NOT_TEXT} ${shown.content.mediaType}`
-          : "";
-      default:
-        return "";
-    }
-  });
-
   // Which destinations exist is not stable for the life of a connection, so
-  // opening the composer reads them again rather than trusting what it holds.
-  $effect(() => {
-    void (async () => {
-      try {
-        await client.destinations.load();
-      } catch (error) {
-        said = saidBy(error);
-      }
-    })();
+  // arriving reads them again rather than trusting what is held. The queue is
+  // what `next` walks, and a deep link arrives without one.
+  onMount(() => {
+    void client.destinations.load().catch((error: unknown) => {
+      said = saidBy(error);
+    });
 
     // Separately, and quietly: a pool that cannot answer for templates is a
-    // band that stays empty, not a composer that cannot route to a destination.
+    // band that stays empty, not a surface that cannot route to a destination.
     void client.templates.load().catch(() => undefined);
+
+    if (!$queue.items.some((one) => one.id === item.id)) {
+      void client
+        .enter("queue", orderFor("queue", page.url))
+        .catch(() => undefined);
+    }
   });
 
   // The pool answers these, so they are asked once the destination is settled
@@ -389,6 +345,22 @@
     return () => {
       live = false;
     };
+  });
+
+  /** Read once on arrival: a count that re-dated itself as you typed would be noise. */
+  const now = Date.now();
+
+  /** What the chosen destination has been routed to before, said beside its name. */
+  const usedBefore = $derived.by(() => {
+    if (places.length === 0) return undefined;
+    const routed = places.reduce((sum, place) => sum + place.uses, 0);
+    const last = places
+      .map((place) => place.lastAt)
+      .sort()
+      .at(-1);
+    return last === undefined
+      ? `${routed} routed`
+      : `${routed} routed · last ${whenOf(last, now)}`;
   });
 
   /**
@@ -433,16 +405,23 @@
   }
 
   /**
-   * Opens the capture's words for typing. They are not sticky: this composer is
-   * one delivery, and wanting the fix everywhere is wanting `edit`.
+   * Opens the capture's words for typing. They are this delivery's alone: the
+   * item is never changed, and wanting the fix everywhere is wanting `edit` on
+   * the row.
    */
-  function rewrite(): void {
-    words = captured;
+  function edit(): void {
+    words ??= captured;
+    editing = true;
+  }
+
+  function done(): void {
+    editing = false;
   }
 
   /** The way back: this delivery carries the capture's words after all. */
   function keep(): void {
     words = undefined;
+    editing = false;
   }
 
   function freshFile(beside: string): {
@@ -464,7 +443,7 @@
 
   /**
    * Why each entry cannot be taken, templates, destinations and the two by hand
-   * alike. The line reads it to refuse a name, and the options draw it beside
+   * alike. The line reads it to refuse a name, and the bands draw it beside
    * one. Never a pattern: expansion is statically total, so a template that
    * saved applies to any item.
    */
@@ -497,79 +476,22 @@
     return refusing[one.id];
   }
 
-  /** The note takes the caret the way the place line does when a place is taken. */
-  let note = $state<HTMLInputElement | undefined>(undefined);
+  /** The three bands, narrowed together by what the line holds. */
+  const byName = <T extends { readonly name: string }>(list: readonly T[]) =>
+    search(list, typed, (one) => [one.name]);
 
-  $effect(() => {
-    if (hand === MANUAL) note?.focus();
+  const templatesShown = $derived(byName($templates));
+  const destinationsShown = $derived(byName($destinations));
+  const handShown = $derived(byName(HAND));
+
+  /** The one entry the line has narrowed to, which `⏎` takes and the bands draw bold. */
+  const hit = $derived.by(() => {
+    if (typed === "") return undefined;
+    const all = [...templatesShown, ...destinationsShown, ...handShown].filter(
+      (one) => unusable[one.id] === undefined,
+    );
+    return all.length === 1 ? all[0]?.id : undefined;
   });
-
-  /**
-   * `discard` acts when it is taken and nothing else in the list does. It needs
-   * no arguments and no second step, and making the queue's commonest gesture
-   * wait for a commit would spend three where the row used to spend one. What
-   * pays for the inconsistency is the offer in the corner.
-   */
-  function discard() {
-    // Read and done with before control is handed away: closing unmounts this
-    // component, and a prop read after that is nobody's.
-    const id = item.id;
-    const about = aboutItem(item);
-
-    void client.archive(id).catch((error: unknown) => {
-      notices.raise({ what: saidBy(error), about, standing: true });
-    });
-
-    notices.raise({
-      what: "discarded",
-      about,
-      href: itemHref(id),
-      standing: true,
-      only: DISCARD,
-      offer: {
-        label: "undo",
-        take: () => {
-          void client.unarchive(id).catch(() => {
-            notices.raise({ what: "could not undo", about, standing: true });
-          });
-        },
-      },
-    });
-
-    ondiscarded?.();
-    onclose();
-  }
-
-  /** Routing whose destination is the person, with what they wrote about it. */
-  async function mark() {
-    if (busy) return;
-
-    const note = went.trim();
-    busy = true;
-    said = "marking…";
-    try {
-      const record = await client.routing.markProcessed(
-        item.id,
-        note === "" ? undefined : note,
-      );
-      onrouted?.(record);
-      onclose();
-    } catch (error) {
-      said = saidBy(error);
-    } finally {
-      busy = false;
-    }
-  }
-
-  /** The one control here whose result is nowhere on the screen, so it says so. */
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(client.says(item));
-      copied = true;
-    } catch (error) {
-      said = saidBy(error);
-    }
-  }
 
   /** The typed line knows only names and ids; which band one came from is read here. */
   async function taken(id: string) {
@@ -625,12 +547,14 @@
     },
   ) {
     if (id === DISCARD) {
-      discard();
+      discard(item);
+      advance();
       return;
     }
 
     if (id === MANUAL) {
-      hand = MANUAL;
+      await manual(item);
+      advance();
       return;
     }
 
@@ -641,6 +565,7 @@
     said = "";
     places = [];
     forecast = undefined;
+    opened.place = true;
 
     try {
       const report = await client.destinations.describe(id);
@@ -692,20 +617,97 @@
    * longer promises that, and a kind that cannot would clobber here.
    */
   async function send(beside?: string) {
-    if (chosen === undefined || capability === undefined) return;
+    if (chosen === undefined || capability === undefined || busy) return;
 
     busy = true;
     said = "routing…";
     try {
       const record = await client.routing.route(item.id, requestFor(beside));
       classify(record);
-      onrouted?.(record);
-      onclose();
+      notices.raise(
+        saidOf(record, nameOf, {
+          about: aboutItem(item),
+          href: itemHref(item.id),
+        }),
+      );
+      advance();
     } catch (error) {
       said = saidBy(error);
     } finally {
       busy = false;
     }
+  }
+
+  /** The queue in its current order, which is what the surface walks. */
+  const around = $derived.by(() => {
+    const rows = $queue.items;
+    const at = rows.findIndex((one) => one.id === item.id);
+    return {
+      previous: at > 0 ? rows[at - 1] : undefined,
+      next: at === -1 ? rows.find((one) => one.id !== item.id) : rows[at + 1],
+    };
+  });
+
+  /**
+   * After a decision the surface moves on to the next unprocessed item, and
+   * returns to the queue when there is none. That is what a queue worked from
+   * one end is.
+   */
+  function advance(): void {
+    const next = around.next;
+    void goto(next === undefined ? resolve("/") : processHref(next.id));
+  }
+
+  /** Back to the queue with this item still selected. */
+  function back(): void {
+    void goto(`${resolve("/")}?selected=${encodeURIComponent(item.id)}`);
+  }
+
+  function walk(to: Item | undefined): void {
+    if (to !== undefined) void goto(processHref(to.id));
+  }
+
+  /** Whether the key was pressed in something a person is writing in. */
+  function writing(target: EventTarget | null): target is HTMLElement {
+    return (
+      target instanceof HTMLElement &&
+      (target.isContentEditable ||
+        ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+    );
+  }
+
+  function onkeydown(event: KeyboardEvent) {
+    if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault();
+      if (ready) void send();
+      return;
+    }
+
+    if (writing(event.target)) {
+      // The first press leaves the field; the next one leaves the surface.
+      if (event.key === "Escape") event.target.blur();
+      return;
+    }
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+
+    switch (event.key) {
+      case "Escape":
+        if (editing) done();
+        else back();
+        break;
+      case "e":
+        edit();
+        break;
+      case "[":
+        walk(around.previous);
+        break;
+      case "]":
+        walk(around.next);
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
   }
 </script>
 
@@ -741,8 +743,6 @@
       {/each}
     </div>
   {:else}
-    <!-- A typed field is a ground and never a rule: the only rule in the modal
-         is the chrome's. -->
     <input
       bind:value={args[field.name]}
       placeholder={field.required ? "required" : "optional"}
@@ -752,29 +752,173 @@
   {/if}
 {/snippet}
 
-<Modal
-  title={chrome}
-  {subject}
-  wide={split}
-  onback={settled ? release : undefined}
-  {onclose}
->
-  <!-- Above `where` is where a decision that arrived pre-filled with an
-       attribution goes. Nothing produces that shape yet. -->
-
-  <!-- Taken, the decision splits the composer: the line, the word it reads off
-       and the tree on the left, everything consulted or settled after it on the
-       right, ending in the commit. Untaken there is nothing to consult, so
-       there is one column — the split is a consequence of the decision rather
-       than a frame waiting for it. Below the register's own narrow breakpoint
-       the two stack in reading order. -->
+{#snippet labelled(name: string, field: (typeof fields)[number])}
   <div
-    class={split
-      ? "mt-5 narrow:grid narrow:grid-cols-[1fr_17rem] narrow:items-start narrow:gap-x-gutter"
-      : ""}
+    class="mt-3 grid grid-cols-[9rem_1fr] items-baseline max-narrow:grid-cols-1"
   >
-    <div>
-      {#if split && line !== undefined && chosen !== undefined && capability !== undefined}
+    <span class="tracking-caps uppercase">{name}</span>
+    <div class="min-w-0">{@render control(field)}</div>
+  </div>
+{/snippet}
+
+<svelte:window {onkeydown} />
+
+<!-- The bar, then a frame whose head and foot are fixed and whose middle
+     scrolls: two columns from `wide` up, stacked below. -->
+<div
+  class="mx-auto flex min-h-0 w-full max-w-read flex-1 flex-col wide:grid wide:max-w-measure wide:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] wide:grid-rows-[1fr_auto]"
+>
+  <div
+    class="flex max-h-[40%] flex-none flex-col border-b border-ink pt-5 pb-4 max-narrow:max-h-[34%] max-narrow:pt-3.5 max-narrow:pb-3 wide:row-span-2 wide:max-h-none wide:border-r wide:border-b-0 wide:pr-8 wide:pb-5"
+  >
+    <div class="mb-2 flex justify-between gap-x-[2ch]">
+      <div class="flex flex-wrap items-baseline gap-x-[2ch]">
+        <Stamp at={item.createdAt} inline />
+        <span class="flex flex-wrap gap-x-[1ch]">
+          {#each tags as tag (tag)}
+            <span>{tag}</span>
+          {/each}
+        </span>
+      </div>
+      {#if !editing}
+        <button
+          type="button"
+          onclick={edit}
+          title="edit the words this delivery carries"
+          class="hover:underline">edit</button
+        >
+      {/if}
+    </div>
+
+    {#each pictures as picture (picture)}
+      <img
+        src={picture}
+        alt=""
+        class="mb-2 block max-h-64 max-w-full flex-none object-contain object-left"
+      />
+    {/each}
+
+    {#if editing}
+      <textarea
+        bind:this={typing}
+        bind:value={words}
+        aria-label="words"
+        class="min-h-0 w-full flex-1 resize-none border border-ink bg-transparent px-3 py-2.5 outline-none"
+      ></textarea>
+      <div class="mt-2 flex justify-between">
+        <button type="button" onclick={keep} class="hover:underline">
+          keep the capture's
+        </button>
+        <button
+          type="button"
+          onclick={done}
+          class="font-semibold hover:underline"
+        >
+          done
+        </button>
+      </div>
+    {:else}
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="min-h-0 max-w-prose overflow-auto break-words whitespace-pre-wrap"
+        ondblclick={edit}
+      >
+        {words ?? captured}
+      </div>
+    {/if}
+  </div>
+
+  <div class="min-h-0 min-w-0 flex-1 overflow-auto wide:pt-2 wide:pl-8">
+    <Section name="destination" open ontoggle={() => undefined}>
+      {#if chosen === undefined}
+        <DestinationLine
+          destinations={[...$templates, ...$destinations, ...HAND]}
+          {unusable}
+          ontake={(id) => void taken(id)}
+          ontyped={(text) => (typed = text)}
+        />
+
+        <div id="destination-bands">
+          {#if templatesShown.length > 0}
+            <Band name="templates">
+              {#each templatesShown as one (one.id)}
+                <Entry
+                  label={one.name}
+                  aside={patternOf(one)}
+                  why={unusable[one.id]}
+                  hit={hit === one.id}
+                  onchoose={() => void take(one)}
+                />
+              {/each}
+            </Band>
+          {/if}
+
+          {#if destinationsShown.length > 0}
+            <Band name="destinations">
+              {#each destinationsShown as one (one.id)}
+                <Entry
+                  label={one.name}
+                  why={unusable[one.id]}
+                  hit={hit === one.id}
+                  onchoose={() => void choose(one.id)}
+                />
+              {/each}
+            </Band>
+          {/if}
+
+          <!-- What the shell invents: `manual` is a destination the pool records
+             and never lists, `discard` is not a destination at all. -->
+          {#if handShown.length > 0}
+            <Band name="otherwise">
+              {#each handShown as one (one.id)}
+                <Entry
+                  label={one.name}
+                  aside={one.id === MANUAL ? "processed by hand" : undefined}
+                  alarm={one.id === DISCARD}
+                  why={unusable[one.id]}
+                  hit={hit === one.id}
+                  onchoose={() => void choose(one.id)}
+                />
+              {/each}
+            </Band>
+          {/if}
+        </div>
+      {:else}
+        <div class="flex items-baseline justify-between gap-x-[2ch]">
+          <span class="flex min-w-0 flex-wrap items-baseline gap-x-[2ch]">
+            <span class="font-semibold">
+              {applied?.name ?? nameOf(chosen)}
+            </span>
+            {#if usedBefore !== undefined}
+              <span>{usedBefore}</span>
+            {/if}
+          </span>
+          <button type="button" onclick={release} class="hover:underline">
+            change
+          </button>
+        </div>
+
+        {#if chooses}
+          {#each capabilities as one (one.name)}
+            <Option
+              label={one.name}
+              chosen={capability === one.name}
+              onchoose={() => {
+                capability = one.name;
+                args = {};
+              }}
+            />
+          {/each}
+        {/if}
+      {/if}
+    </Section>
+
+    <Section
+      name="place"
+      open={opened.place}
+      ontoggle={() => (opened.place = !opened.place)}
+    >
+      {#if lined && line !== undefined && chosen !== undefined && capability !== undefined}
         <PathLine
           destination={chosen}
           {capability}
@@ -787,208 +931,79 @@
           onsubmit={(beside) => void send(beside)}
           onrelease={release}
           onforecast={(word) => (forecast = word)}
-          onwalk={(at) => (picked = at)}
         />
-      {:else}
-        <Group name="where">
-          {#if chosen === undefined && hand === undefined}
-            <DestinationLine
-              destinations={[...$templates, ...$destinations, ...HAND]}
-              {unusable}
-              ontake={(id) => void taken(id)}
-            />
-          {/if}
 
-          <!-- A band of its own, above the destinations: a template is a whole
-               decision where a destination is the start of one. -->
-          {#if $templates.length > 0}
-            <div class="mb-1.5 border-b border-ink pb-1.5">
-              {#each $templates as one (one.id)}
-                <Option
-                  label={one.name}
-                  chosen={applied?.id === one.id}
-                  why={unusable[one.id]}
-                  onchoose={() => void take(one)}
-                />
-              {/each}
-            </div>
-          {/if}
-
-          {#each $destinations as one (one.id)}
-            <Option
-              label={one.name}
-              chosen={chosen === one.id}
-              why={unusable[one.id]}
-              onchoose={() => void choose(one.id)}
-            />
-          {/each}
-
-          <!-- The band below the rule is what the shell invents: `manual` is a
-               destination the pool records and never lists, `discard` is not a
-               destination at all. A label claiming the two have something in
-               common would be saying more than is true. -->
-          <div class="mt-1.5 border-t border-ink pt-1.5">
-            {#each HAND as one (one.id)}
-              <Option
-                label={one.name}
-                chosen={hand === one.id}
-                why={unusable[one.id]}
-                onchoose={() => void choose(one.id)}
-              />
-            {/each}
-          </div>
-        </Group>
-
-        {#if hand === MANUAL}
-          <Group name="where it went">
-            <input
-              bind:this={note}
-              bind:value={went}
-              onkeydown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  void mark();
-                } else if (event.key === "Backspace" && went === "") {
-                  event.preventDefault();
-                  release();
-                }
-              }}
-              placeholder="optional"
-              aria-label="where it went"
-              class="w-full border-b border-ink px-2 py-0.5 outline-none"
-            />
-          </Group>
-        {/if}
-
-        {#if chooses}
-          <Group name="do">
-            {#each capabilities as one (one.name)}
-              <Option
-                label={one.name}
-                chosen={capability === one.name}
-                onchoose={() => {
-                  capability = one.name;
-                  args = {};
-                }}
-              />
-            {/each}
-          </Group>
-        {/if}
-
+        {#each beside as field (field.name)}
+          {@render labelled(field.title ?? field.name, field)}
+        {/each}
+      {:else if chosen !== undefined}
         <!-- A field's own `description` is a sentence written for a schema and
              is not drawn here: what a field means is its label and its control. -->
-        {#each fields as field (field.name)}
-          <Group name={field.title ?? field.name}
-            >{@render control(field)}</Group
-          >
-        {/each}
-      {/if}
-    </div>
-
-    <div class={split ? "*:first:mt-0" : ""}>
-      {#if split}
-        <UsedBefore
-          {places}
-          value={args[LINE_FIELD] ?? ""}
-          chosen={picked}
-          ontake={(taken) => (args = { ...args, [LINE_FIELD]: taken })}
-        />
-
-        <!-- Where the line draws the place, nothing here is a step: the line is
-             the decision and what sits beside it is a terse row, as `tags` is. -->
-        {#each beside as field (field.name)}
-          <Labelled name={field.title ?? field.name}>
+        {#each fields as field, at (field.name)}
+          {#if at === 0}
             {@render control(field)}
-          </Labelled>
-        {/each}
-      {/if}
-
-      {#if chosen !== undefined || hand !== undefined}
-        <ComposerTags
-          item={item.id}
-          names={tags}
-          onfired={() => {
-            onfired?.();
-            onclose();
-          }}
-        />
-      {/if}
-
-      <!-- Offered and never automatic: taking `manual` says the thought was
-           carried onward, which may have happened by acting rather than
-           pasting, and the clipboard is not this composer's to overwrite
-           unasked. -->
-      {#if hand === MANUAL && copyable() && client.says(item) !== ""}
-        <div class="mt-6">
-          <Action onclick={() => void copy()}>
-            {copied ? "copied" : "copy text"}
-          </Action>
-        </div>
-      {/if}
-
-      <!-- What is being sent, above what it becomes: rewriting and previewing
-           are one loop. Drawn only where a real destination is taken — `manual`
-           and `discard` deliver nothing, so there is nothing to rewrite. -->
-      {#if chosen !== undefined}
-        <Labelled name="words">
-          {#if words === undefined}
-            <span class="min-w-0 break-words whitespace-pre-wrap"
-              >{captured}</span
-            >
-            <Action onclick={rewrite}>rewrite</Action>
           {:else}
-            <textarea
-              bind:this={typing}
-              bind:value={words}
-              rows="4"
-              aria-label="words"
-              class="w-full resize-y border-b border-ink px-2 py-0.5 outline-none"
-            ></textarea>
-            <Action onclick={keep}>keep the capture's</Action>
+            {@render labelled(field.title ?? field.name, field)}
           {/if}
-        </Labelled>
+        {/each}
+      {:else}
+        <span class="text-inert">after a destination</span>
       {/if}
+    </Section>
 
+    <Section
+      name="tags"
+      open={opened.tags || tags.length > 0}
+      ontoggle={() => (opened.tags = !opened.tags)}
+    >
+      <ComposerTags item={item.id} names={tags} onfired={advance} />
+    </Section>
+
+    <Section
+      name="preview"
+      open={opened.preview || shown !== undefined}
+      ontoggle={() => (opened.preview = !opened.preview)}
+    >
       {#if shown !== undefined}
-        <div class="mt-6">
-          <Output
-            heading="would write"
-            note={shown.kind === "previewed" ? shown.note : undefined}
-            text={shown.kind === "previewed" ? shown.content?.text : undefined}
-            truncated={shown.kind === "previewed" &&
-              shown.content?.truncated === true}
-            said={nothingShown}
-          />
-          {#if shown.kind === "previewed"}
-            <div class="mt-2">
-              {PREVIEW_IS_INDICATIVE}
-            </div>
-          {/if}
-        </div>
+        <Preview {shown} />
+      {:else if previewFailed !== ""}
+        <span role="status" class="text-alarm">{previewFailed}</span>
+      {:else}
+        <span class="text-inert">
+          {showing ? "asking…" : "once the place is settled"}
+        </span>
       {/if}
+    </Section>
 
-      <Commit>
-        <!-- One door, and the true verb at the moment there is one to say. -->
-        {#if hand === MANUAL}
-          <Action primary disabled={busy} onclick={() => void mark()}>
-            done
-          </Action>
-        {:else}
-          <Action primary disabled={!ready || busy} onclick={() => void send()}>
-            route
-          </Action>
-          <Action
-            disabled={!ready || busy || showing}
-            onclick={() => void show()}
-          >
-            {showing ? "asking…" : "preview"}
-          </Action>
-        {/if}
-        <Action onclick={onclose}>cancel</Action>
-        {#if said !== ""}
-          <span role="status">{said}</span>
-        {/if}
-      </Commit>
-    </div>
+    {#if said !== ""}
+      <div role="status" class="mt-3 {busy ? '' : 'text-alarm'}">{said}</div>
+    {/if}
   </div>
-</Modal>
+
+  <div
+    class="flex h-12 flex-none items-center justify-between border-t border-ink wide:ml-8"
+  >
+    <div class="flex gap-x-6 max-narrow:gap-x-4">
+      <Action
+        disabled={around.previous === undefined}
+        onclick={() => walk(around.previous)}
+      >
+        ← previous
+      </Action>
+      <Action
+        disabled={around.next === undefined}
+        onclick={() => walk(around.next)}
+      >
+        next →
+      </Action>
+    </div>
+    <button
+      type="button"
+      disabled={!ready || busy}
+      onclick={() => void send()}
+      class="inverted h-8 px-5 font-semibold disabled:bg-transparent disabled:text-inert"
+    >
+      route
+    </button>
+  </div>
+</div>

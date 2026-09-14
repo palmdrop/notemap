@@ -1,7 +1,7 @@
 # The shell, redrawn
 
 **Date**: 2026-09-14
-**Status**: In progress — the design phase is done; phases 2–4 are the first implementation
+**Status**: In progress — phases 2–4, the first version, shipped 2026-09-14; phases 5–7 are drawn next
 **Spec**: `docs/specs/shell.md`
 **Closed**:
 
@@ -217,11 +217,11 @@ redesigned here beyond what the shared row forces.
 One PR. `process.html` is the drawing; `process-1440.png`, `process-1000.png`,
 `process-editing-1000.png`, `process-390.png` the shots. This deletes the modal composer.
 
-- [ ] **The route.** `routes/items/[id]/process/+page.svelte` and `+page.ts` (load the item as
+- [x] **The route.** `routes/items/[id]/process/+page.svelte` and `+page.ts` (load the item as
       `items/[id]/+page.ts` does). The page renders `components/process/Process.svelte` with the
       item. Reached from the row's `process`, from a double click, from the feed's `process`, and
       from the item page.
-- [ ] **Lift the logic out of the modal.** `routing/ProcessingComposer.svelte` holds the state
+- [x] **Lift the logic out of the modal.** `routing/ProcessingComposer.svelte` holds the state
       machine — destination line, template resolve, path line, candidate browser, schema fields,
       tags, words, preview, route, discard, manual with a note — and it all survives. Move it
       into `process/Process.svelte` with the sub-components it already uses (`DestinationLine`,
@@ -230,19 +230,19 @@ One PR. `process.html` is the drawing; `process-1440.png`, `process-1000.png`,
       and whatever of `Commit`, `Group`, `Labelled`, `Option` has no other caller afterwards.
       `Queue.svelte` and `Feed.svelte` lose the `routing` state and the `<ProcessingComposer>`;
       `onprocess` becomes a `goto`.
-- [ ] **Layout.** From `process.html`: the bar, then a frame. Below `wide` the frame is a
+- [x] **Layout.** From `process.html`: the bar, then a frame. Below `wide` the frame is a
       column at `max-w-read`: head (`border-b`, `max-h-[40%]`, its own scroll), middle
       (`flex-1 overflow-auto`), foot (`border-t h-12`). From `wide` up the frame is a grid
       `[minmax(0,2fr)_minmax(0,3fr)]` at `max-w-measure`: the head fills the left column top to
       bottom with a `border-r`, the middle and the foot stack in the right column. Only the middle
       ever scrolls; the head and foot are always visible.
-- [ ] **Head.** Stamp and tags on one line with `edit` at the right; under it the capture
+- [x] **Head.** Stamp and tags on one line with `edit` at the right; under it the capture
       (`max-w-prose`). `edit`, a double click on the words, or `e` opens editing: the words
       become a `textarea` in a `border border-ink p-[10px_12px]` box, `max-w-none`, with
       `keep the capture's` and a bold `done` under it; `edit` is hidden meanwhile. The edited
       words are the delivery's `content` exactly as the modal's `rewrite`/`words` were — the item
       is never changed. A picture capture draws the picture above the words.
-- [ ] **Middle.** Sections as `grid-cols-[9rem_1fr] border-b py-3`, the label
+- [x] **Middle.** Sections as `grid-cols-[9rem_1fr] border-b py-3`, the label
       `uppercase tracking-caps font-semibold`; below `narrow` the label stacks above the content.
       In order:
       **destination** — one field (the existing `DestinationLine`) whose typed text narrows three
@@ -261,29 +261,29 @@ One PR. `process.html` is the drawing; `process-1440.png`, `process-1000.png`,
       `out of reach`, neither in alarm. The label is `preview` and nothing says who writes.
       Sections after the first are drawn collapsed — label only, the content on a press or when
       the flow reaches them — **except** when they already hold something.
-- [ ] **Foot.** `← previous` and `next →` on the left walk the queue in its current order
+- [x] **Foot.** `← previous` and `next →` on the left walk the queue in its current order
       without deciding anything; a bold inverted `route` on the right (`bg-ink text-ground
       px-5 h-8`). `route` is enabled exactly when the modal's was. Taking `manual` or `discard`
       from the `otherwise` band acts at once, as on the row.
-- [ ] **After a decision** — route, manual, discard, or a template tag — the corner says what
+- [x] **After a decision** — route, manual, discard, or a template tag — the corner says what
       happened as it does today and the surface **advances to the next unprocessed item** in the
       queue's order; when there is none it returns to the queue. `esc` returns to the queue with
       the item still selected (`?selected=<id>` on the queue's URL, read once on arrival). The
       queue's own `keep`/`held` logic goes with the modal: a processed item is seen on the feed.
-- [ ] **Keyboard on the surface.** `e` edit, `esc` (not editing) back, `⌘/ctrl+enter` route,
+- [x] **Keyboard on the surface.** `e` edit, `esc` (not editing) back, `⌘/ctrl+enter` route,
       `[`/`]` previous/next. None fire while `writing()` except `⌘/ctrl+enter`.
-- [ ] **Tests.** `Process.test.ts` replacing `ProcessingComposer.test.ts`: the three bands
+- [x] **Tests.** `Process.test.ts` replacing `ProcessingComposer.test.ts`: the three bands
       narrow together; a template taken draws its resolution; preview requested on settle and
       re-requested on change, not before; editing state and `keep the capture's`; route advances
       to the next item and returns to the queue when none; `esc` returns selected; the two
       layouts by width (assert the classes, not the pixels).
-- [ ] **Full stack.** `pnpm test:stack` — a new route and the composer's transport moved; run it.
-- [ ] **Spec.** Rewrite `The composer is for processing`, `The place is one line you type` where
+- [x] **Full stack.** `pnpm test:stack` — a new route and the composer's transport moved; run it.
+- [x] **Spec.** Rewrite `The composer is for processing`, `The place is one line you type` where
       it speaks of the modal, `One way out of the queue`, and the `/items/{id}` paragraph of
       `An item has an address` to name `/process`. Retire the composer's `Prior decisions` that
       no longer hold with a dated note rather than deletion. `Shipped:` entry. Delete
       `docs/design/composer.html`, `composer.css`, `queue.html` (the old one), `shell.css`.
-- [ ] Typecheck, tests, lint; `git commit`.
+- [x] Typecheck, tests, lint; `git commit`. _(2026-09-14)_
 
 ### Phase 5 — item, records and the log
 

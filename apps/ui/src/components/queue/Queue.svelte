@@ -1,37 +1,35 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
 
-  import { replaceState } from "$app/navigation";
+  import { goto, replaceState } from "$app/navigation";
   import { page } from "$app/state";
 
-  import { rank, type Item, type RoutingRecord } from "@notemap/client";
+  import type { Item } from "@notemap/client";
 
   import Capture from "$components/capture/Capture.svelte";
   import Drained from "$components/queue/Drained.svelte";
   import Index from "$components/queue/Index.svelte";
   import Row from "$components/item/Row.svelte";
   import Order from "$components/order/Order.svelte";
-  import ProcessingComposer from "$components/routing/ProcessingComposer.svelte";
   import Head from "$components/primitives/register/Head.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import ViewToggle from "$components/view/ViewToggle.svelte";
-  import { itemHref } from "$components/item/href";
+  import { processHref } from "$components/item/href";
   import { client } from "$lib/client";
-  import { nameOf } from "$lib/destinations";
-  import { aboutItem } from "$lib/excerpt";
-  import { notices } from "$lib/notices.svelte";
   import { orderFor } from "$lib/order";
   import { pending } from "$lib/pending.svelte";
   import { discard, manual } from "$lib/quick";
   import { reachable } from "$lib/reachable.svelte";
   import { keepPlace, restorePlace } from "$lib/scroll-mark";
   import { refusalIn } from "$lib/refusal";
-  import { saidOf } from "$lib/routing";
   import { remember, viewFor, withView, type View } from "$lib/view";
 
   const SURFACE = "queue";
+
+  /** On the queue's address, once, on the way back from processing. */
+  const SELECTED = "selected";
 
   const queue = client.queue;
   const pool = reachable();
@@ -42,21 +40,6 @@
 
   let view = $state<View>(viewFor(SURFACE, page.url));
 
-  /**
-   * The item the composer is for. Routing takes it out of the queue before the
-   * pool answers, so the item is held rather than looked up.
-   */
-  let routing = $state<Item | undefined>(undefined);
-
-  /**
-   * The row that has just been processed, kept in the register for as long as
-   * it is the selected one. A decision is worth looking at after it is made —
-   * and looking at it is what routing the same capture somewhere else starts
-   * from.
-   */
-  let holding = $state<string | undefined>(undefined);
-  let held = $state<Item | undefined>(undefined);
-
   /** Each row as drawn, so a key can reach into the one that is selected. */
   let drawn = $state<Record<string, Row | undefined>>({});
 
@@ -66,54 +49,27 @@
     !$queue.loading &&
       !$queue.fromCache &&
       $queue.failure === undefined &&
-      $queue.items.length === 0 &&
-      held === undefined,
+      $queue.items.length === 0,
   );
 
-  // The client's own copy, so the row follows what the cache learns about it —
-  // a second routing, or a decision taken back, without a read of its own.
-  $effect(() => {
-    const id = holding;
-    if (id === undefined) {
-      held = undefined;
-      return;
-    }
-
-    const watching = client.held(id).subscribe((item) => {
-      held = item;
-    });
-    return () => watching.unsubscribe();
-  });
-
-  /**
-   * What the register draws: the queue, with a held row back at its own rank.
-   * By rank rather than by the neighbour it had, because the key is capture
-   * time and a row that returns anywhere else is a row that moved.
-   */
-  const rows = $derived.by<readonly Item[]>(() => {
-    const live = $queue.items;
-    const kept = held;
-    if (kept === undefined || live.some((item) => item.id === kept.id))
-      return live;
-
-    const at = live.findIndex((item) => behind(item, kept));
-    return at === -1
-      ? [...live, kept]
-      : [...live.slice(0, at), kept, ...live.slice(at)];
-  });
-
-  /** Whether one row sorts after another, in the order the surface is read in. */
-  function behind(item: Item, than: Item): boolean {
-    return $queue.order === "newest-first"
-      ? rank(item) < rank(than)
-      : rank(item) > rank(than);
-  }
+  const rows = $derived($queue.items);
 
   onMount(() => {
+    // Back from the process surface with the row it was about still selected.
+    // Read once: the address is put back so a reload does not reselect it.
+    const arrived = page.url.searchParams.get(SELECTED);
+    if (arrived !== null) {
+      selected = arrived;
+      const plain = new URL(page.url);
+      plain.searchParams.delete(SELECTED);
+      replaceState(plain, {});
+    }
+
     void (async () => {
       await client.enter(SURFACE, orderFor(SURFACE, page.url));
       await tick();
-      restorePlace(SURFACE);
+      if (arrived === null) restorePlace(SURFACE);
+      else drawn[arrived]?.reveal();
     })();
 
     // Scrolling past an item is a skip, and a skip changes nothing: this is
@@ -122,38 +78,17 @@
     return keepPlace(SURFACE);
   });
 
-  /** Selecting any other row releases a held one: the register holds at most one. */
   function select(id: string) {
     selected = selected === id ? undefined : id;
-    if (selected !== holding) holding = undefined;
   }
 
   function deselect() {
     selected = undefined;
-    holding = undefined;
   }
 
+  /** The deep tier: a surface of its own, which comes back here when it is done. */
   function process(item: Item) {
-    routing = item;
-  }
-
-  /**
-   * What is said about a decision is the queue's to know. The row it was made
-   * about stays selected wearing it.
-   */
-  function keep(item: Item) {
-    holding = item.id;
-    selected = item.id;
-  }
-
-  function went(item: Item, record: RoutingRecord) {
-    notices.raise(
-      saidOf(record, nameOf, {
-        about: aboutItem(item),
-        href: itemHref(item.id),
-      }),
-    );
-    keep(item);
+    void goto(processHref(item.id));
   }
 
   function read(wanted: View) {
@@ -186,15 +121,13 @@
     const row = rows[next];
     if (row === undefined) return;
     selected = row.id;
-    if (selected !== holding) holding = undefined;
     void tick().then(() => drawn[row.id]?.reveal());
   }
 
   function onkeydown(event: KeyboardEvent) {
-    // The composer is a modal and answers this itself while it is up, and a
-    // field answers for its own entry: acting on the row under a half-written
-    // tag would take the entry with it.
-    if (routing !== undefined || writing(event.target)) return;
+    // A field answers for its own entry: acting on the row under a
+    // half-written tag would take the entry with it.
+    if (writing(event.target)) return;
     if (event.altKey || event.ctrlKey || event.metaKey) return;
 
     switch (event.key) {
@@ -215,16 +148,10 @@
         if (current !== undefined) process(current);
         break;
       case "d":
-        if (current !== undefined) {
-          discard(current);
-          keep(current);
-        }
+        if (current !== undefined) discard(current);
         break;
       case "m":
-        if (current !== undefined) {
-          const item = current;
-          void manual(item).then(() => keep(item));
-        }
+        if (current !== undefined) void manual(current);
         break;
       case "+":
         if (current !== undefined) drawn[current.id]?.tag();
@@ -285,7 +212,6 @@
         pending={undrained.has(row.id)}
         onselect={() => select(row.id)}
         onprocess={() => process(row)}
-        ondecided={() => keep(row)}
       />
     {/each}
 
@@ -297,15 +223,4 @@
       />
     {/if}
   </Register>
-{/if}
-
-{#if routing !== undefined}
-  {@const subject = routing}
-  <ProcessingComposer
-    item={subject}
-    onrouted={(record) => went(subject, record)}
-    ondiscarded={() => keep(subject)}
-    onfired={() => keep(subject)}
-    onclose={() => (routing = undefined)}
-  />
 {/if}

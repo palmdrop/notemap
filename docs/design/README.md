@@ -10,7 +10,7 @@ What the shell is supposed to look like. Since 2026-09-14 that is being redrawn
 | `redrawn/` | **Current, and what is built against.** The settled drawings as plain HTML and CSS — `queue.html` (with `#index`), `process.html` (with `#editing`), `tokens.css` — and `shots/` of each at 1440, 1000 and 390. Open them in a browser; resize; read the CSS. The face is loaded from Google Fonts here only because a mockup has no daemon to serve it. |
 | `issues-2026-09-11.md` | The findings the redesign answers. |
 | `shots/` | **The app as it is**, every surface at 1440 and 390, taken 2026-09-14 from a scratch daemon seeded for the purpose. This is what is being moved away from. |
-| `shell.css`, `queue.html`, `feed.html`, `composer.*`, `log.*` | **The old direction.** Wrong from 2026-09-14; each is deleted in the PR that lands its replacement. Kept until then so a page still being worked in the old register has its reference. |
+| `feed.html`, `log.*` | **The old direction.** Wrong from 2026-09-14; each is deleted in the PR that lands its replacement. The queue, the composer and the old `shell.css` went with phases 2–4, so `feed.html` now opens unstyled; it is kept for its markup until phase 5. |
 
 Design is drawn in a Claude Design project and lands here — as static HTML and CSS that need no
 build, no network and no account, with shots — in the PR that implements the page. **If this

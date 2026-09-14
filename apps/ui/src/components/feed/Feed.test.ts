@@ -397,7 +397,7 @@ test("goes to process on a double click, and leaves the row selected", async () 
   await fireEvent.click(body, { detail: 2 });
   await fireEvent.dblClick(body);
 
-  expect(await screen.findByRole("dialog")).toBeDefined();
+  expect(went.to).toEqual(["/items/one/process"]);
   // The second click of a double is not a toggle: select, nothing, go.
   expect(stamps(true)).toHaveLength(1);
 });

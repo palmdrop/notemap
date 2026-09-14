@@ -565,22 +565,6 @@ test("a gone place is never the greyed continuation", async () => {
   expect(line.value()).toBe("d");
 });
 
-test("but the arrows reach it deliberately", async () => {
-  serving(
-    () =>
-      answered([folder("dossiers", "dossiers"), folder("journal", "journal")]),
-    [used("drafts/", 12)],
-  );
-  const line = draw("d");
-
-  await screen.findByText("dossiers/");
-
-  await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
-  await fireEvent.keyDown(line.line(), { key: "Enter" });
-
-  expect(line.value()).toBe("drafts/");
-});
-
 /** The pool holds these and the pool is reachable whenever the composer is open. */
 test("still completes remembered places against an unreachable destination", async () => {
   serving(

@@ -24,14 +24,18 @@ vi.mock("$app/navigation", () => ({
   replaceState: (url: string | URL) => replaced.urls.push(String(url)),
 }));
 
+const at = vi.hoisted(() => ({ path: "/" }));
 vi.mock("$app/state", () => ({
-  page: { url: new URL("http://localhost/"), route: { id: "/" } },
+  get page() {
+    return { url: new URL(`http://localhost${at.path}`), route: { id: "/" } };
+  },
 }));
 
 afterEach(() => {
   notices.clear();
   went.to = [];
   replaced.urls = [];
+  at.path = "/";
   localStorage.clear();
 });
 
@@ -53,16 +57,6 @@ function stamps(expanded: boolean) {
     expanded,
     name: /^\d{4}-\d{2}-\d{2}/,
   });
-}
-
-/**
- * The composer, over a row that is already open. It is a modal and the row is
- * behind it, so a test that moves on before it opens acts on whichever of the
- * two happens to be there.
- */
-async function process() {
-  await fireEvent.click(screen.getByRole("button", { name: "process" }));
-  await screen.findByRole("dialog");
 }
 
 /** Discarding is the quick tier: it acts from the row, at once. */
@@ -117,10 +111,11 @@ test("discards with the pool unreachable, and says what it cannot queue", async 
 
   await discard();
 
-  // The pool never answered it, and the decision was made all the same: the
-  // row is held wearing it rather than waiting on a delivery nobody attempted.
-  await screen.findByText("discarded");
-  expect(asked()).toContain("POST /v1/items/one/archive");
+  // The pool never answered it, and the decision was made all the same.
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/archive");
+  });
+  expect(notices.shown.at(-1)?.what).toBe("discarded");
 });
 
 test("opens one row at a time, in place", async () => {
@@ -491,11 +486,7 @@ test("a row that leaves the queue says where it went", async () => {
       "marked manual",
     );
   });
-
-  // A mark by hand is born delivered, having nothing to reach, so `routed` is
-  // what the state alone would say and it names a carrier there never was.
-  expect(await screen.findAllByText("manual")).not.toHaveLength(0);
-  expect(screen.queryByText("routed")).toBeNull();
+  expect(notices.shown.at(-1)?.offer?.label).toBe("undo");
 });
 
 /** Archiving makes no record, so the corner is the only place its undo can sit. */
@@ -560,7 +551,8 @@ test("tagging says nothing in the corner", async () => {
   expect(notices.shown).toHaveLength(0);
 });
 
-test("a row that has gone is held, wearing what became of it", async () => {
+/** A processed item is seen on the feed; the corner holds the way back. */
+test("a discarded row leaves the queue at once", async () => {
   let queued = [anItem("one"), anItem("two")];
   pool((request) => {
     const route = routeOf(request);
@@ -578,306 +570,11 @@ test("a row that has gone is held, wearing what became of it", async () => {
 
   await discard();
 
-  // Gone from the queue and still on the register, saying what became of it.
-  await vi.waitFor(() => {
-    expect(screen.getByText("discarded")).toBeDefined();
-  });
-  expect(screen.getByText("one")).toBeDefined();
-});
-
-/**
- * The reach a second destination needs. An item may be processed more than
- * once, and the row that has just been processed is where the person is
- * already looking.
- */
-test("a held row still offers process, and takes a second decision", async () => {
-  pool(queued("one"));
-
-  render(Queue);
-  await screen.findByText("one");
-  await open(0);
-  await discard();
-
-  await screen.findByText("discarded");
-  expect(screen.getByRole("button", { name: "process" })).toBeDefined();
-
-  await process();
-  expect(screen.getByRole("dialog")).toBeDefined();
-});
-
-/** At most one is held, so the register does not accumulate a session's trail. */
-test("opening another row releases the held one", async () => {
-  pool(queued("one", "two"));
-
-  render(Queue);
-  await screen.findByText("one");
-  await open(0);
-  await discard();
-
-  await screen.findByText("discarded");
-
-  await open(0);
   await vi.waitFor(() => {
     expect(screen.queryByText("one")).toBeNull();
   });
   expect(screen.getByText("two")).toBeDefined();
-});
-
-test("esc releases a held row", async () => {
-  pool(queued("one"));
-
-  render(Queue);
-  await screen.findByText("one");
-  await open(0);
-  await discard();
-
-  await screen.findByText("discarded");
-
-  await fireEvent.keyDown(window, { key: "Escape" });
-  await vi.waitFor(() => {
-    expect(screen.queryByText("one")).toBeNull();
-  });
-});
-
-/**
- * The place and the path say where a copy went; only the excerpt says which
- * capture went, and the row it names has left the register by then.
- */
-test("a routing says where it went, and which capture it was", async () => {
-  const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
-
-  pool((request) => {
-    const route = routeOf(request);
-    if (route === "GET /v1/queue") {
-      return json(200, {
-        values: [
-          anItem("one", {
-            payload: {
-              type: "text",
-              content: { text: "the picker needs a trail" },
-              metadata: {},
-              assets: [],
-            },
-          }),
-        ],
-      });
-    }
-    if (route === "GET /v1/destinations") {
-      return json(200, {
-        values: [
-          {
-            id: VAULT,
-            name: "Vault",
-            kind: "filesystem",
-            settings: {},
-            retired: false,
-          },
-        ],
-      });
-    }
-    if (route.endsWith("/description")) {
-      return json(200, {
-        kind: "described",
-        capabilities: [{ name: "append", accepts: ["text"] }],
-      });
-    }
-    if (route === "POST /v1/items/one/route") {
-      return json(200, {
-        id: "r",
-        item: "one",
-        at: "2026-09-03T10:00:00.000Z",
-        state: "delivered",
-        pointer: "notes/inbox/picker.md",
-        target: {
-          kind: "destination",
-          destination: VAULT,
-          capability: "append",
-          arguments: {},
-        },
-      });
-    }
-    return json(200, { values: [] });
-  });
-
-  render(Queue);
-  await screen.findByText("the picker needs a trail");
-  await open(0);
-
-  await process();
-  await fireEvent.click(await screen.findByRole("button", { name: /Vault/ }));
-  // Disabled for the tick between the description landing and its one
-  // capability being settled, so this waits rather than clicking into nothing.
-  const commit = screen.getByRole("button", {
-    name: "route",
-  }) as HTMLButtonElement;
-  await vi.waitFor(() => {
-    expect(commit.disabled).toBe(false);
-  });
-  await fireEvent.click(commit);
-
-  await vi.waitFor(() => {
-    expect(notices.shown).toHaveLength(1);
-  });
-
-  const said = notices.shown[0];
-  expect(said?.what).toBe("routed · Vault");
-  expect(said?.why).toBe("notes/inbox/picker.md");
-  expect(said?.href).toBe("/items/one");
-  expect(said?.about).toContain("the picker needs a trail");
-  expect(said?.about).toMatch(/\d\d-\d\d \d\d:\d\d/);
-
-  // And the row is watched out of the register rather than vanishing under it.
-  expect(screen.getByText("routed")).toBeDefined();
-});
-
-/** Recorded and not delivered: it was tried, and it will be tried again. */
-test("a routing the pool has not carried out says it is retrying", async () => {
-  const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
-
-  pool((request) => {
-    const route = routeOf(request);
-    if (route === "GET /v1/queue")
-      return json(200, { values: [anItem("one")] });
-    if (route === "GET /v1/destinations") {
-      return json(200, {
-        values: [
-          {
-            id: VAULT,
-            name: "Vault",
-            kind: "filesystem",
-            settings: {},
-            retired: false,
-          },
-        ],
-      });
-    }
-    if (route.endsWith("/description")) {
-      return json(200, {
-        kind: "described",
-        capabilities: [{ name: "append", accepts: ["text"] }],
-      });
-    }
-    if (route === "POST /v1/items/one/route") {
-      return json(200, {
-        id: "r",
-        item: "one",
-        at: "2026-09-03T10:00:00.000Z",
-        state: "pending",
-        target: {
-          kind: "destination",
-          destination: VAULT,
-          capability: "append",
-          arguments: { path: "notes/daily.md" },
-        },
-      });
-    }
-    return json(200, { values: [] });
-  });
-
-  render(Queue);
-  await screen.findByText("one");
-  await open(0);
-
-  await process();
-  await fireEvent.click(await screen.findByRole("button", { name: /Vault/ }));
-  // Disabled for the tick between the description landing and its one
-  // capability being settled, so this waits rather than clicking into nothing.
-  const commit = screen.getByRole("button", {
-    name: "route",
-  }) as HTMLButtonElement;
-  await vi.waitFor(() => {
-    expect(commit.disabled).toBe(false);
-  });
-  await fireEvent.click(commit);
-
-  await vi.waitFor(() => {
-    expect(notices.shown[0]?.what).toBe("retrying · Vault");
-  });
-  expect(notices.shown[0]?.why).toBe("not delivered yet · notes/daily.md");
-});
-
-/**
- * Where it stood, not where the list starts. A held row goes back at its own
- * rank, the key being capture time — one that rose to the top of the register
- * would read as a row that vanished and something else appearing.
- */
-test("a routed row is held where it stood", async () => {
-  const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
-
-  pool((request) => {
-    const route = routeOf(request);
-    if (route === "GET /v1/queue") {
-      // Distinct capture times, because that is the key the register places
-      // a held row by and three rows sharing one say nothing about order.
-      return json(200, {
-        values: ["one", "two", "three"].map((id, at) =>
-          anItem(id, { createdAt: `2026-08-17T10:0${String(at)}:00.000Z` }),
-        ),
-      });
-    }
-    if (route === "GET /v1/destinations") {
-      return json(200, {
-        values: [
-          {
-            id: VAULT,
-            name: "Vault",
-            kind: "filesystem",
-            settings: {},
-            retired: false,
-          },
-        ],
-      });
-    }
-    if (route.endsWith("/description")) {
-      return json(200, {
-        kind: "described",
-        capabilities: [{ name: "append", accepts: ["text"] }],
-      });
-    }
-    if (route === "POST /v1/items/two/route") {
-      return json(200, {
-        id: "r",
-        item: "two",
-        at: "2026-09-03T10:00:00.000Z",
-        state: "delivered",
-        pointer: "notes/inbox/two.md",
-        target: {
-          kind: "destination",
-          destination: VAULT,
-          capability: "append",
-          arguments: {},
-        },
-      });
-    }
-    return json(200, { values: [] });
-  });
-
-  render(Queue);
-  await screen.findByText("two");
-
-  // The middle row, so a departure from the foot and from the head both read
-  // as wrong.
-  await open(1);
-  await process();
-  await fireEvent.click(await screen.findByRole("button", { name: /Vault/ }));
-  // Disabled for the tick between the description landing and its one
-  // capability being settled, so this waits rather than clicking into nothing.
-  const commit = screen.getByRole("button", {
-    name: "route",
-  }) as HTMLButtonElement;
-  await vi.waitFor(() => {
-    expect(commit.disabled).toBe(false);
-  });
-  await fireEvent.click(commit);
-
-  const word = await screen.findByText("routed");
-
-  // DOCUMENT_POSITION_FOLLOWING is 4, PRECEDING is 2.
-  const after = screen.getByText("one").compareDocumentPosition(word) & 4;
-  const before = screen.getByText("three").compareDocumentPosition(word) & 2;
-
-  expect(after).toBeTruthy();
-  expect(before).toBeTruthy();
+  expect(notices.shown.at(-1)?.offer?.label).toBe("undo");
 });
 
 test("goes to process on a double click, and leaves the row selected", async () => {
@@ -890,7 +587,7 @@ test("goes to process on a double click, and leaves the row selected", async () 
   await fireEvent.click(body, { detail: 2 });
   await fireEvent.dblClick(body);
 
-  expect(await screen.findByRole("dialog")).toBeDefined();
+  expect(went.to).toEqual(["/items/one/process"]);
   // The second click of a double is not a toggle: select, nothing, go.
   expect(stamps(true)).toHaveLength(1);
 });
@@ -956,10 +653,25 @@ test("enter selects, and enter on a selected row opens process", async () => {
 
   await fireEvent.keyDown(window, { key: "Enter" });
   expect(stamps(true)).toHaveLength(1);
-  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(went.to).toEqual([]);
 
   await fireEvent.keyDown(window, { key: "Enter" });
-  expect(await screen.findByRole("dialog")).toBeDefined();
+  expect(went.to).toEqual(["/items/one/process"]);
+});
+
+/** Back from the process surface, the row it was about is still the one selected. */
+test("arrives with the row named on its address selected, and takes the name off again", async () => {
+  pool(queued("one", "two"));
+  at.path = "/?selected=two";
+
+  render(Queue);
+  await screen.findByText("two");
+
+  await vi.waitFor(() => {
+    expect(stamps(true)).toHaveLength(1);
+  });
+  expect(screen.getAllByRole("button", { name: "discard" })).toHaveLength(1);
+  expect(replaced.urls).toEqual(["http://localhost/"]);
 });
 
 /** The index is one line per item, for scanning; the timeline is for reading. */

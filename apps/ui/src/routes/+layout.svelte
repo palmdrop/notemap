@@ -47,6 +47,9 @@
   // loss would otherwise be silent.
   const shut = $derived(who.shut);
 
+  /** The one surface that is a frame rather than a page. */
+  const fills = $derived(page.route.id === "/items/[id]/process");
+
   // Signing out is the pool's work leaving with it. A standing failure about a
   // delivery nobody can now look up would outlive the session that raised it.
   $effect(() => {
@@ -55,8 +58,8 @@
   });
 </script>
 
-<Sheet>
-  <Column>
+<Sheet {fills}>
+  <Column {fills}>
     <Bar>
       {#if shut}
         <span>notemap</span>

@@ -13,6 +13,12 @@ import Item from "./Item.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
+/** Leaving the surface needs a router, and there is none outside the app. */
+const went = vi.hoisted(() => ({ to: [] as string[] }));
+vi.mock("$app/navigation", () => ({
+  goto: (url: string) => void went.to.push(url),
+}));
+
 /** Both act when taken, from the item's own actions: no second step and no commit. */
 async function manual() {
   await fireEvent.click(screen.getByRole("button", { name: "manual" }));
@@ -24,6 +30,7 @@ async function discard() {
 
 afterEach(() => {
   notices.clear();
+  went.to = [];
 });
 
 /** The words a capture holds, kept apart from the id it is reached by. */
@@ -426,74 +433,17 @@ function deciding(held: () => unknown, records: readonly unknown[] = []) {
   };
 }
 
-/** Through the composer, as a person makes one. */
-async function decide() {
-  await fireEvent.click(screen.getByRole("button", { name: "process" }));
-  await screen.findByRole("dialog");
-  await fireEvent.click(await screen.findByRole("button", { name: /Vault/ }));
-
-  // Two of them: the surface's action, and the composer's commit over it.
-  const commit = screen
-    .getAllByRole("button", { name: "route" })
-    .at(-1) as HTMLButtonElement;
-  // Disabled for the tick between the description landing and its one
-  // capability being settled, so this waits rather than clicking into nothing.
-  await vi.waitFor(() => {
-    expect(commit.disabled).toBe(false);
-  });
-  await fireEvent.click(commit);
-}
-
-test("routes from here without saying so, and remembers that decision too", async () => {
+test("process goes to the surface for it", async () => {
   pool(deciding(() => saying("one", "still here")));
 
   render(Item, { id: "one" });
   await screen.findByText("still here");
 
-  await decide();
+  await fireEvent.click(screen.getByRole("button", { name: "process" }));
 
-  await vi.waitFor(() => {
-    expect(notices.said("record:r")).toBe(true);
-  });
-
-  // The record is drawn where the reader already is, so the corner has nothing
-  // to add — now or when the log is read back. The composer has closed, so the
-  // destination named on the surface is the summary's and not the modal's.
-  expect(notices.shown).toHaveLength(0);
-  expect(screen.getAllByRole("button", { name: "process" })).toHaveLength(1);
-  expect(screen.getByText(/Vault/)).toBeDefined();
+  expect(went.to).toEqual(["/items/one/process"]);
 });
 
-/**
- * Which is what lets this surface stay quiet: the records are the pool's and
- * nothing caches them, so a decision made here is only drawn if it is read back.
- */
-test("reads the records again after a decision made on this surface", async () => {
-  pool(
-    deciding(
-      () => anItem("one", ROUTED),
-      [{ ...RECORD, id: "rec-one", item: "one" }],
-    ),
-  );
-
-  render(Item, { id: "one" });
-  await screen.findByRole("link", { name: /drafts/ });
-
-  const read = () =>
-    asked().filter((route) => route === "GET /v1/items/one/routing").length;
-  const before = read();
-
-  await decide();
-
-  await vi.waitFor(() => {
-    expect(read()).toBe(before + 1);
-  });
-});
-
-/**
- * `routing.cancel` is what makes marking done a decision rather than a fact
- * about the past, and it is the other half of not offering `done` twice.
- */
 test("takes back a decision the person made by hand, and reads the records again", async () => {
   let cancelled = false;
   pool((request: Request) => {

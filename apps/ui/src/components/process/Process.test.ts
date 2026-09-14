@@ -1,10 +1,4 @@
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  within,
-} from "@testing-library/svelte";
+import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
 
 import {
@@ -17,28 +11,56 @@ import {
 import { online } from "$testing/dom";
 import { asked, client, pool, sent } from "$testing/pool";
 import { notices } from "$lib/notices.svelte";
-import { NO_PREVIEW_OFFERED, PREVIEW_IS_INDICATIVE } from "$lib/said";
-import ProcessingComposer from "./ProcessingComposer.svelte";
+import { NO_PREVIEW_OFFERED } from "$lib/said";
+import Process from "./Process.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
+
+/** Leaving the surface needs a router, and there is none outside the app. */
+const went = vi.hoisted(() => ({ to: [] as string[] }));
+vi.mock("$app/navigation", () => ({
+  goto: (url: string) => void went.to.push(url),
+}));
+vi.mock("$app/paths", () => ({
+  resolve: (path: string, params?: Record<string, string>) =>
+    params === undefined
+      ? path
+      : Object.entries(params).reduce(
+          (made, [key, value]) => made.replace(`[${key}]`, value),
+          path,
+        ),
+}));
+vi.mock("$app/state", () => ({
+  page: {
+    url: new URL("http://localhost/items/one/process"),
+    route: { id: "/items/[id]/process" },
+  },
+}));
 
 afterEach(() => {
   notices.clear();
   online(true);
-  Reflect.deleteProperty(navigator, "clipboard");
+  went.to = [];
 });
+
+/** Where the surface went when it was done: the queue, or the next item. */
+const left = () => went.to.at(-1);
+
+/**
+ * The tag section is drawn collapsed until it holds something or is pressed,
+ * so the `+` is behind its label on an item with no tags.
+ */
+async function addingTag() {
+  const section = screen.getByRole("button", { name: "tags" });
+  if (section.getAttribute("aria-expanded") !== "true") {
+    await fireEvent.click(section);
+  }
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  return screen.getByRole("combobox", { name: "Add a tag" });
+}
 
 const WHEN = "2026-09-04T10:00:00.000Z";
 
-/** What the browser hands a secure context, which jsdom has none of. */
-function clipboard(): { writeText: ReturnType<typeof vi.fn> } {
-  const held = { writeText: vi.fn(() => Promise.resolve()) };
-  Object.defineProperty(navigator, "clipboard", {
-    configurable: true,
-    value: held,
-  });
-  return held;
-}
 const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
 const BOARD = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a78";
 
@@ -234,9 +256,7 @@ function aCapture(overrides: Record<string, unknown> = {}) {
 }
 
 function draw(item = aCapture()) {
-  const closed = vi.fn();
-  render(ProcessingComposer, { props: { item, onclose: closed } });
-  return closed;
+  return render(Process, { props: { item } });
 }
 
 const choose = async (name: string | RegExp) =>
@@ -321,7 +341,9 @@ test("takes a template, draws what it resolved to, and leaves it editable", asyn
     "directory",
   )) as HTMLInputElement;
   expect(directory.value).toBe("research/2026-09-04");
-  expect(screen.getByLabelText("process · research")).toBeTruthy();
+  expect(
+    screen.getByText("research", { selector: ".font-semibold" }),
+  ).toBeTruthy();
 
   await fireEvent.input(directory, { target: { value: "reading/2026" } });
   expect(directory.value).toBe("reading/2026");
@@ -491,22 +513,22 @@ test("leaves a corrected template's tag off the item", async () => {
 });
 
 /**
- * The tag files it, so the decision this composer was for is made: leaving it
- * open is offering to route an item that is already on its way somewhere.
+ * The tag files it, so the decision this surface was for is made: staying is
+ * offering to route an item that is already on its way somewhere.
  */
-test("closes on a trigger tag taken in its own row", async () => {
+test("advances on a trigger tag taken in its own row", async () => {
   servingTemplates();
 
-  const closed = draw();
+  draw();
   await choose(/Vault/);
   await described();
 
-  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  await addingTag();
   await fireEvent.mouseDown(
     await screen.findByRole("option", { name: /route\/research/ }),
   );
 
-  expect(closed).toHaveBeenCalled();
+  expect(left()).toBe("/");
 });
 
 /**
@@ -527,13 +549,9 @@ test("draws a tag taken in its own row as taken, at once", async () => {
   await client.item("one");
 
   draw();
-  await choose(/^manual/);
   await screen.findByText("tags");
 
-  const line = await (async () => {
-    await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
-    return screen.getByRole("combobox", { name: "Add a tag" });
-  })();
+  const line = await addingTag();
   await fireEvent.input(line, { target: { value: "seedling" } });
   await fireEvent.keyDown(line, { key: "Enter" });
 
@@ -574,7 +592,7 @@ test("describes the destination that was chosen and no other", async () => {
 test("composes a decision one step at a time and sends it", async () => {
   serving([aDestination()]);
 
-  const closed = draw();
+  draw();
   await choose(/Vault/);
 
   await fireEvent.input(await screen.findByLabelText("directory"), {
@@ -583,7 +601,7 @@ test("composes a decision one step at a time and sends it", async () => {
   await commit();
 
   await vi.waitFor(() => {
-    expect(closed).toHaveBeenCalled();
+    expect(left()).toBe("/");
   });
   expect(asked()).toContain("POST /v1/items/one/route");
 });
@@ -643,25 +661,7 @@ test("a retired destination stays in the list and is not offered for new routing
   ).toBe(false);
 });
 
-/** Over the register, so the ways out of it are the modal's own. */
-test("is dismissed by the veil, the cross, or Escape", async () => {
-  serving([aDestination()]);
-
-  const closed = draw();
-  const dialog = await screen.findByRole("dialog");
-
-  await fireEvent.click(screen.getByRole("button", { name: "Close" }));
-  expect(closed).toHaveBeenCalledTimes(1);
-
-  await fireEvent.keyDown(window, { key: "Escape" });
-  expect(closed).toHaveBeenCalledTimes(2);
-
-  // The veil, which is what is under the dialog rather than in it.
-  await fireEvent.click(dialog.parentElement as HTMLElement);
-  expect(closed).toHaveBeenCalledTimes(3);
-});
-
-test("says which capture it is about, the row being behind it", async () => {
+test("draws the capture in the head", async () => {
   serving([aDestination()]);
 
   draw();
@@ -722,7 +722,7 @@ test("a typed value that was never listed still routes", async () => {
     truncated: false,
   }));
 
-  const closed = draw();
+  draw();
   await choose(/Vault/);
 
   await fireEvent.input(await screen.findByLabelText("directory"), {
@@ -731,7 +731,7 @@ test("a typed value that was never listed still routes", async () => {
   await commit();
 
   await vi.waitFor(() => {
-    expect(closed).toHaveBeenCalled();
+    expect(left()).toBe("/");
   });
 
   const routed = sentTo(transport).find(
@@ -926,7 +926,10 @@ function servingVault(entries: readonly Record<string, unknown>[]) {
 }
 
 /** A destination whose route answers whatever the delivery did. */
-function routing(record: Record<string, unknown>) {
+function routing(
+  record: Record<string, unknown>,
+  queued: readonly Record<string, unknown>[] = [],
+) {
   return pool((request) => {
     const route = routeOf(request);
     if (route === "GET /v1/destinations") {
@@ -936,21 +939,19 @@ function routing(record: Record<string, unknown>) {
       return json(200, { kind: "described", capabilities: [APPEND] });
     }
     if (route === "POST /v1/items/one/route") return json(200, record);
+    if (route === "GET /v1/queue") return json(200, { values: queued });
     return json(404, { error: { code: "unknown-route" } });
   });
 }
 
 function drawAbout(content: Record<string, unknown>) {
-  const closed = vi.fn();
-  render(ProcessingComposer, {
+  render(Process, {
     props: {
       item: aCapture({
         payload: { type: "text", content, metadata: {}, assets: [] },
       }),
-      onclose: closed,
     },
   });
-  return closed;
 }
 
 const routed = async (transport: ReturnType<typeof pool>) => {
@@ -1131,11 +1132,11 @@ test("a tag taken in the composer stays applied when the route fails", async () 
   // The row draws the client's held copy, so the item is held before it opens.
   await client.item("one");
 
-  const closed = drawAbout({ text: "a thought" });
+  drawAbout({ text: "a thought" });
   await choose(/Vault/);
   await screen.findByRole("combobox", { name: "place" });
 
-  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  await addingTag();
   await fireEvent.mouseDown(
     await screen.findByRole("option", { name: "seedling" }),
   );
@@ -1148,7 +1149,7 @@ test("a tag taken in the composer stays applied when the route fails", async () 
     expect(asked()).toContain("POST /v1/items/one/route");
   });
 
-  expect(closed).not.toHaveBeenCalled();
+  expect(left()).toBeUndefined();
   expect(
     screen
       .getByRole("button", { name: "seedling" })
@@ -1185,7 +1186,11 @@ test("an ambiguous prefix takes nothing", async () => {
   await fireEvent.input(typing(), { target: { value: "vault" } });
   await fireEvent.keyDown(typing(), { key: "Enter" });
 
-  expect(screen.getByText("2 match")).toBeDefined();
+  // Both still drawn, neither bold: nothing was narrowed to.
+  expect(
+    screen.getByRole("button", { name: "Vault one" }).className,
+  ).not.toContain("font-semibold");
+  expect(screen.getByRole("button", { name: "Vault two" })).toBeDefined();
   expect(asked()).not.toContain(`GET /v1/destinations/${VAULT}/description`);
 });
 
@@ -1202,19 +1207,25 @@ test("completes a name with a space in it", async () => {
   await described();
 });
 
-test("the destination leaves the line and reads in the chrome", async () => {
+test("the destination leaves the line and reads settled in its section", async () => {
   serving([aDestination()]);
 
   draw();
   await choose(/Vault/);
   await described();
 
-  expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe(
-    "process · Vault",
-  );
+  expect(
+    screen.getByText("Vault", { selector: ".font-semibold" }),
+  ).toBeDefined();
   expect(
     screen.queryByRole("combobox", { name: "what became of it" }),
   ).toBeNull();
+
+  // The way back, since `esc` leaves the surface rather than the decision.
+  await fireEvent.click(screen.getByRole("button", { name: "change" }));
+  expect(
+    screen.getByRole("combobox", { name: "what became of it" }),
+  ).toBeDefined();
 });
 
 test("backspacing out of an empty line gives the destination back", async () => {
@@ -1227,13 +1238,11 @@ test("backspacing out of an empty line gives the destination back", async () => 
   await fireEvent.keyDown(line, { key: "Backspace" });
 
   await vi.waitFor(() => {
-    expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe(
-      "process",
-    );
+    expect(
+      screen.getByRole("combobox", { name: "what became of it" }),
+    ).toBeDefined();
   });
-  expect(
-    screen.getByRole("combobox", { name: "what became of it" }),
-  ).toBeDefined();
+  expect(screen.queryByRole("button", { name: "change" })).toBeNull();
 });
 
 /** Present and unavailable is not the same as unreachable, and it stays visible. */
@@ -1292,7 +1301,7 @@ test("an unreachable destination is still routable", async () => {
     return json(404, { error: { code: "unknown-route" } });
   });
 
-  const closed = drawAbout({ text: "a thought" });
+  drawAbout({ text: "a thought" });
   await choose(/Vault/);
 
   const line = await screen.findByRole("combobox", { name: "place" });
@@ -1305,7 +1314,7 @@ test("an unreachable destination is still routable", async () => {
 
   await fireEvent.click(commit);
   await vi.waitFor(() => {
-    expect(closed).toHaveBeenCalled();
+    expect(left()).toBe("/");
   });
 
   expect(await routed(transport)).toMatchObject({
@@ -1744,15 +1753,23 @@ test("does not say the destination list twice before one is typed", async () => 
   expect(screen.getAllByText("Vault")).toHaveLength(1);
 });
 
-test("says it once narrowed, and once in the list, when typing narrows", async () => {
+test("narrows the bands to what is typed, and draws the one hit bold", async () => {
   servingVault([]);
   drawAbout({ text: "a note" });
 
   await screen.findByRole("button", { name: "Vault" });
+  expect(screen.getByRole("button", { name: "manual" })).toBeDefined();
+
   const line = screen.getByRole("combobox", { name: "what became of it" });
   await fireEvent.input(line, { target: { value: "Va" } });
 
-  expect(screen.getAllByText("Vault")).toHaveLength(2);
+  expect(screen.getAllByText("Vault")).toHaveLength(1);
+  expect(screen.getByRole("button", { name: "Vault" }).className).toContain(
+    "font-semibold",
+  );
+  // The other bands narrow with it, to nothing.
+  expect(screen.queryByRole("button", { name: "manual" })).toBeNull();
+  expect(screen.queryByText("otherwise")).toBeNull();
 });
 
 /** A sentence out of a schema is not the composer's voice. */
@@ -1783,7 +1800,7 @@ const aTarget = {
 };
 
 /** The record goes up; what is said about it belongs to the surface below. */
-test("hands the record it got back to whoever opened it", async () => {
+test("says in the corner where it went, and returns to the queue when nothing is left", async () => {
   routing({
     id: "r",
     item: "one",
@@ -1793,23 +1810,48 @@ test("hands the record it got back to whoever opened it", async () => {
     target: aTarget,
   });
 
-  const routed = vi.fn();
-  const closed = vi.fn();
-  render(ProcessingComposer, {
-    props: { item: aCapture(), onrouted: routed, onclose: closed },
-  });
-
+  draw();
   await choose(/Vault/);
   await commit();
 
   await vi.waitFor(() => {
-    expect(routed).toHaveBeenCalled();
+    expect(left()).toBe("/");
   });
-  expect(routed.mock.calls[0]?.[0]).toMatchObject({
-    state: "delivered",
-    pointer: "notes/inbox/picker.md",
+  const said = notices.shown.at(-1);
+  expect(said?.what).toBe("routed · Vault");
+  expect(said?.why).toBe("notes/inbox/picker.md");
+  expect(said?.href).toBe("/items/one");
+  expect(said?.key).toBe("record:r");
+});
+
+/** The next unprocessed item in the queue's order, which is what a queue worked from one end is. */
+test("advances to the next item in the queue after a decision, and esc returns selected", async () => {
+  routing(
+    {
+      id: "r",
+      item: "one",
+      at: "2026-09-03T10:00:00.000Z",
+      state: "delivered",
+      target: aTarget,
+    },
+    [anItem("one"), anItem("two")],
+  );
+  await client.enter("queue");
+
+  draw();
+  await fireEvent.keyDown(window, { key: "Escape" });
+  expect(left()).toBe("/?selected=one");
+
+  await fireEvent.keyDown(window, { key: "]" });
+  expect(left()).toBe("/items/two/process");
+  await fireEvent.keyDown(window, { key: "[" });
+  expect(left()).toBe("/items/two/process");
+
+  await choose(/Vault/);
+  await commit();
+  await vi.waitFor(() => {
+    expect(left()).toBe("/items/two/process");
   });
-  expect(notices.shown).toHaveLength(0);
 });
 
 test("a refusal stays at the control, and the corner is left alone", async () => {
@@ -1827,54 +1869,36 @@ test("a refusal stays at the control, and the corner is left alone", async () =>
     return json(404, { error: { code: "unknown-route" } });
   });
 
-  const closed = draw();
+  draw();
   await choose(/Vault/);
   await commit();
 
   await screen.findByText(/that destination needs different arguments/);
-  expect(closed).not.toHaveBeenCalled();
+  expect(left()).toBeUndefined();
   expect(notices.shown).toHaveLength(0);
 });
 
-test("shows what would be written only when it is asked for", async () => {
-  serving([aDestination()]);
-
-  draw();
-  await choose(/Vault/);
-  await fireEvent.input(await screen.findByLabelText("directory"), {
-    target: { value: "inbox" },
-  });
-
-  // A conversion may be a model call, so nothing asks on a keystroke.
-  expect(asked()).not.toContain("POST /v1/items/one/route/preview");
-
-  await choose("preview");
-
-  expect(await screen.findByText(/# a thought/)).toBeDefined();
-  expect(asked()).toContain("POST /v1/items/one/route/preview");
-  // What it is, said where it is drawn.
-  expect(screen.getByText(PREVIEW_IS_INDICATIVE)).toBeDefined();
-});
-
-test("drops what was shown when the decision under it changes", async () => {
+test("asks for the preview once the place is settled, and not before", async () => {
   serving([aDestination()]);
 
   draw();
   await choose(/Vault/);
   const directory = await screen.findByLabelText("directory");
+
+  // A required argument is still empty: there is nothing to preview yet.
+  await new Promise((done) => setTimeout(done, 500));
+  expect(asked()).not.toContain("POST /v1/items/one/route/preview");
+
   await fireEvent.input(directory, { target: { value: "inbox" } });
-  await choose("preview");
-  await screen.findByText(/# a thought/);
 
-  await fireEvent.input(directory, { target: { value: "drafts" } });
-
-  await vi.waitFor(() => {
-    expect(screen.queryByText(/# a thought/)).toBeNull();
-  });
+  expect(await screen.findByText(/# a thought/)).toBeDefined();
+  expect(asked()).toContain("POST /v1/items/one/route/preview");
+  // The label is `preview`, and nothing says who writes.
+  expect(screen.queryByText(/would write/)).toBeNull();
 });
 
-test("drops a preview that resolves after the decision moved on", async () => {
-  let release: ((value: Response) => void) | undefined;
+test("asks again when the decision under it changes, keeping the last answer meanwhile", async () => {
+  let answered = 0;
   pool((request) => {
     const route = routeOf(request);
     if (route === "GET /v1/destinations") {
@@ -1884,7 +1908,15 @@ test("drops a preview that resolves after the decision moved on", async () => {
       return json(200, { kind: "described", capabilities: [CREATE] });
     }
     if (route === "POST /v1/items/one/route/preview") {
-      return new Promise<Response>((resolve) => (release = resolve));
+      answered += 1;
+      return json(200, {
+        kind: "previewed",
+        content: {
+          mediaType: "text/markdown",
+          text: `# for ${answered === 1 ? "inbox" : "drafts"}\n`,
+          truncated: false,
+        },
+      });
     }
     return json(404, { error: { code: "unknown-route" } });
   });
@@ -1893,11 +1925,43 @@ test("drops a preview that resolves after the decision moved on", async () => {
   await choose(/Vault/);
   const directory = await screen.findByLabelText("directory");
   await fireEvent.input(directory, { target: { value: "inbox" } });
-  await choose("preview");
+  await screen.findByText(/# for inbox/);
+
+  await fireEvent.input(directory, { target: { value: "drafts" } });
+  // Still up while the next one is on its way.
+  expect(screen.getByText(/# for inbox/)).toBeDefined();
+
+  expect(await screen.findByText(/# for drafts/)).toBeDefined();
+  expect(answered).toBe(2);
+});
+
+test("drops a preview that resolves after the decision moved on", async () => {
+  const releases: ((value: Response) => void)[] = [];
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE] });
+    }
+    if (route === "POST /v1/items/one/route/preview") {
+      return new Promise<Response>((resolve) => releases.push(resolve));
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  draw();
+  await choose(/Vault/);
+  const directory = await screen.findByLabelText("directory");
+  await fireEvent.input(directory, { target: { value: "inbox" } });
+  await vi.waitFor(() => {
+    expect(releases).toHaveLength(1);
+  });
 
   // The person types on while the request is out.
   await fireEvent.input(directory, { target: { value: "drafts" } });
-  release?.(
+  releases[0]?.(
     json(200, {
       kind: "previewed",
       content: {
@@ -1909,10 +1973,7 @@ test("drops a preview that resolves after the decision moved on", async () => {
   );
 
   await vi.waitFor(() => {
-    expect(
-      (screen.getByRole("button", { name: "preview" }) as HTMLButtonElement)
-        .disabled,
-    ).toBe(false);
+    expect(releases).toHaveLength(2);
   });
   expect(screen.queryByText(/# for inbox/)).toBeNull();
 });
@@ -1928,7 +1989,6 @@ test("says what a preview would write that it cannot show", async () => {
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
-  await choose("preview");
 
   expect(await screen.findByText(/application\/pdf/)).toBeDefined();
 });
@@ -1964,15 +2024,13 @@ test("clears a failed preview's message when the next one succeeds", async () =>
 
   draw();
   await choose(/Vault/);
-  await fireEvent.input(await screen.findByLabelText("directory"), {
-    target: { value: "inbox" },
-  });
-  await choose("preview");
+  const directory = await screen.findByLabelText("directory");
+  await fireEvent.input(directory, { target: { value: "inbox" } });
   expect(
     await screen.findByText(/that destination needs different arguments/),
   ).toBeDefined();
 
-  await choose("preview");
+  await fireEvent.input(directory, { target: { value: "drafts" } });
 
   expect(await screen.findByText(/# a thought/)).toBeDefined();
   expect(
@@ -1983,18 +2041,17 @@ test("clears a failed preview's message when the next one succeeds", async () =>
 test("draws a kind that offers no preview as such, and still routes", async () => {
   serving([aDestination()], undefined, { kind: "not-offered" });
 
-  const closed = draw();
+  draw();
   await choose(/Vault/);
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
-  await choose("preview");
 
   expect(await screen.findByText(NO_PREVIEW_OFFERED)).toBeDefined();
 
   await commit();
   await vi.waitFor(() => {
-    expect(closed).toHaveBeenCalled();
+    expect(left()).toBe("/");
   });
 });
 
@@ -2009,32 +2066,31 @@ test("says a destination that could not be reached, and routing is still availab
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
-  await choose("preview");
 
-  expect(await screen.findByText(/the vault is asleep/)).toBeDefined();
+  // In plain ink: the destination being asleep is ordinary, not a failure.
+  const said = await screen.findByText("out of reach");
+  expect(said.className).not.toContain("text-alarm");
   expect(
     (screen.getByRole("button", { name: "route" }) as HTMLButtonElement)
       .disabled,
   ).toBe(false);
 });
 
-/**
- * The split is a consequence of the decision, not a frame waiting for it: there
- * is nothing to consult before a destination is taken.
- */
-test("has one column until a destination is taken, and two after", async () => {
-  servingVault([{ label: "drafts", scope: "drafts" }]);
+/** The two layouts, by width: asserted as the classes that make them. */
+test("stacks below the wide breakpoint and takes two columns from it", async () => {
+  serving([aDestination()]);
 
-  drawAbout({ text: "a thought" });
+  const { container } = draw();
+  const frame = container.firstElementChild as HTMLElement;
 
-  const modal = await screen.findByRole("dialog");
-  expect(modal.className).toContain("max-w-[30rem]");
-  expect(screen.queryByRole("button", { name: "seedling" })).toBeNull();
-
-  await choose(/Vault/);
-  await screen.findByRole("combobox", { name: "place" });
-
-  expect(modal.className).toContain("max-w-[48rem]");
+  expect(frame.className).toContain("flex-col");
+  expect(frame.className).toContain(
+    "wide:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]",
+  );
+  const head = frame.firstElementChild as HTMLElement;
+  expect(head.className).toContain("border-b");
+  expect(head.className).toContain("wide:border-r");
+  expect(head.className).toContain("wide:row-span-2");
 });
 
 /**
@@ -2112,11 +2168,11 @@ test("offers manual and discard below the destinations", async () => {
 
 test("taking discard archives the item, closes, and offers it back", async () => {
   const transport = serving([aDestination()]);
-  const closed = draw();
+  draw();
 
   await choose(/^discard/);
 
-  expect(closed).toHaveBeenCalled();
+  expect(left()).toBe("/");
   await vi.waitFor(() => {
     expect(sentTo(transport).map(routeOf)).toContain(
       "POST /v1/items/one/archive",
@@ -2181,7 +2237,8 @@ test("a destination that shares a prefix with one of the two takes nothing", asy
   await fireEvent.input(line, { target: { value: "disc" } });
   await fireEvent.keyDown(line, { key: "Enter" });
 
-  expect(screen.getByText("2 match")).toBeDefined();
+  expect(screen.getByRole("button", { name: "discography" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "discard" })).toBeDefined();
   expect(sentTo(transport).map(routeOf)).not.toContain(
     "POST /v1/items/one/archive",
   );
@@ -2206,105 +2263,23 @@ test("an entry that cannot apply stays in the list and says why", async () => {
 });
 
 /** The row's `done` field, moved to where the decision is made. */
-test("manual asks where it went and marks processed", async () => {
+/** The `otherwise` band acts at once, as the row does: no note, no second step. */
+test("manual marks processed at once, says so with an undo, and advances", async () => {
   const transport = serving([aDestination()]);
-  const closed = draw();
+  draw();
 
   await choose(/^manual/);
-  await fireEvent.input(await screen.findByLabelText("where it went"), {
-    target: { value: "pasted into the fiction vault" },
-  });
-  await choose("done");
 
   await vi.waitFor(() => {
-    expect(closed).toHaveBeenCalled();
+    expect(left()).toBe("/");
   });
-
   const marked = sentTo(transport).find(
     (request) => routeOf(request) === "POST /v1/items/one/mark-processed",
   );
-  expect(await marked?.json()).toEqual({
-    note: "pasted into the fiction vault",
-  });
-});
-
-test("an empty field tells the pool nothing beyond the fact", async () => {
-  const transport = serving([aDestination()]);
-  draw();
-
-  await choose(/^manual/);
-  await fireEvent.keyDown(await screen.findByLabelText("where it went"), {
-    key: "Enter",
-  });
-
-  const marked = await vi.waitFor(() => {
-    const held = sentTo(transport).find(
-      (request) => routeOf(request) === "POST /v1/items/one/mark-processed",
-    );
-    expect(held).toBeDefined();
-    return held;
-  });
   expect(await marked?.json()).toEqual({});
-});
-
-/** The one typed thing in this step, and a refusal must not take it away. */
-test("keeps what was written when the pool refuses the marking", async () => {
-  pool((request) => {
-    const route = routeOf(request);
-    if (route === "GET /v1/destinations") {
-      return json(200, { values: [aDestination()] });
-    }
-    if (route === "POST /v1/items/one/mark-processed") {
-      return json(409, { error: { code: "conflict", message: "no" } });
-    }
-    return json(404, { error: { code: "unknown-route" } });
-  });
-  const closed = draw();
-
-  await choose(/^manual/);
-  const note = await screen.findByLabelText("where it went");
-  await fireEvent.input(note, { target: { value: "the fiction vault" } });
-  await choose("done");
-
-  await screen.findByRole("status");
-  expect((note as HTMLInputElement).value).toBe("the fiction vault");
-  expect(closed).not.toHaveBeenCalled();
-});
-
-test("the note takes the caret, and backspacing out of it gives the list back", async () => {
-  serving([aDestination()]);
-  draw();
-
-  await choose(/^manual/);
-  const note = await screen.findByLabelText("where it went");
-  expect(document.activeElement).toBe(note);
-
-  await fireEvent.keyDown(note, { key: "Backspace" });
-
-  await screen.findByRole("combobox", { name: "what became of it" });
-  expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe("process");
-});
-
-test("manual offers to copy the text and never takes it unasked", async () => {
-  const held = clipboard();
-  serving([aDestination()]);
-  draw();
-
-  await choose(/^manual/);
-  expect(held.writeText).not.toHaveBeenCalled();
-
-  await choose("copy text");
-  expect(held.writeText).toHaveBeenCalledWith("a note");
-  await screen.findByRole("button", { name: "copied" });
-});
-
-test("nothing offers to copy where the browser has no clipboard", async () => {
-  serving([aDestination()]);
-  draw();
-
-  await choose(/^manual/);
-  await screen.findByLabelText("where it went");
-  expect(screen.queryByRole("button", { name: "copy text" })).toBeNull();
+  expect(screen.queryByLabelText("where it went")).toBeNull();
+  expect(notices.shown.at(-1)?.what).toBe("marked manual");
+  expect(notices.shown.at(-1)?.offer?.label).toBe("undo");
 });
 
 /**
@@ -2315,7 +2290,7 @@ test("with the pool out of reach the composer opens and discards", async () => {
   const transport = serving([aDestination()]);
   online(false);
 
-  const closed = draw();
+  draw();
 
   const vault = await screen.findByRole("button", { name: /Vault/ });
   const manual = await screen.findByRole("button", { name: /^manual/ });
@@ -2327,7 +2302,7 @@ test("with the pool out of reach the composer opens and discards", async () => {
   expect((discard as HTMLButtonElement).disabled).toBe(false);
 
   await choose(/^discard/);
-  expect(closed).toHaveBeenCalled();
+  expect(left()).toBe("/");
 
   online(true);
   await vi.waitFor(() => {
@@ -2337,71 +2312,52 @@ test("with the pool out of reach the composer opens and discards", async () => {
   });
 });
 
-test("the composer's tags are offered whatever the pool is doing", async () => {
+test("the surface's tags are offered whatever the pool is doing", async () => {
   serving([aDestination()]);
   online(false);
   draw();
 
-  await choose(/^manual/);
-  await screen.findByText("tags");
+  await addingTag();
 });
 
 /**
- * A decision made inside is undone a step at a time. Only a composer with
- * nothing settled is put away by `esc`, which is what the cross and the veil do
- * whatever is settled.
+ * `esc` leaves the surface with the row still selected, and the decision is
+ * stepped back by `change` rather than by it. From a field, the first press
+ * leaves the field.
  */
-test("esc gives the destination back before it closes the composer", async () => {
+test("esc returns to the queue with the item selected, once the caret is out of a field", async () => {
   serving([aDestination()]);
-  const closed = draw();
+  draw();
 
   await choose(/Vault/);
   await described();
 
-  await fireEvent.keyDown(window, { key: "Escape" });
+  const directory = screen.getByLabelText("directory");
+  directory.focus();
+  await fireEvent.keyDown(directory, { key: "Escape" });
+  expect(left()).toBeUndefined();
+  expect(document.activeElement).not.toBe(directory);
 
-  await screen.findByRole("combobox", { name: "what became of it" });
-  expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe("process");
-  expect(closed).not.toHaveBeenCalled();
-
   await fireEvent.keyDown(window, { key: "Escape" });
-  expect(closed).toHaveBeenCalled();
+  expect(left()).toBe("/?selected=one");
 });
 
-test("esc gives the list back from manual too", async () => {
-  serving([aDestination()]);
-  const closed = draw();
-
-  await choose(/^manual/);
-  await screen.findByLabelText("where it went");
-
-  await fireEvent.keyDown(window, { key: "Escape" });
-
-  await screen.findByRole("combobox", { name: "what became of it" });
-  expect(screen.queryByLabelText("where it went")).toBeNull();
-  expect(closed).not.toHaveBeenCalled();
-});
-
-/** One press does one thing: putting a field away is not stepping back a decision. */
-test("esc leaving the tag field leaves the decision where it was", async () => {
+/** One press does one thing: putting a field away is not leaving the surface. */
+test("esc leaving the tag field leaves the surface where it was", async () => {
   serving([aDestination()]);
   draw();
 
-  await choose(/^manual/);
-  await fireEvent.click(
-    await screen.findByRole("button", { name: "Add a tag" }),
-  );
-  await fireEvent.input(screen.getByLabelText("Add a tag"), {
-    target: { value: "resea" },
-  });
+  await choose(/Vault/);
+  await described();
+  const line = await addingTag();
+  await fireEvent.input(line, { target: { value: "resea" } });
 
-  await fireEvent.keyDown(screen.getByLabelText("Add a tag"), {
-    key: "Escape",
-  });
+  await fireEvent.keyDown(line, { key: "Escape" });
 
-  expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe(
-    "process · manual",
-  );
+  expect(left()).toBeUndefined();
+  expect(
+    screen.getByText("Vault", { selector: ".font-semibold" }),
+  ).toBeDefined();
   // And what was half-typed is dropped rather than applied by the blur.
   expect(asked()).not.toContain("POST /v1/items/one/tag");
 });
@@ -2436,7 +2392,7 @@ test("offers a trigger tag that has never filed anything yet", async () => {
   await choose(/Vault/);
   await screen.findByRole("combobox", { name: "place" });
 
-  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  await addingTag();
   await screen.findByRole("option", { name: /route\/research.*research/ });
 });
 
@@ -2475,7 +2431,7 @@ test("marks a trigger tag in the chooser with the template it applies", async ()
   await choose(/Vault/);
   await screen.findByRole("combobox", { name: "place" });
 
-  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  await addingTag();
   await screen.findByRole("option", { name: /route\/research.*research/ });
   // An ordinary tag is left as it was: only a tag with an effect is marked.
   expect(screen.getByRole("option", { name: "seedling" })).toBeTruthy();
@@ -2589,47 +2545,41 @@ test("leaves a template's own arguments alone", async () => {
 });
 
 /** The label and what it holds, since the modal's own chrome says the capture too. */
-async function wordsRow(): Promise<HTMLElement> {
-  const label = await screen.findByText("words");
-  const row = label.parentElement;
-  if (row === null) throw new Error("expected the words row");
-  return row;
-}
+/** The head draws the words this delivery carries; `edit` opens them in place. */
+const head = () => screen.getByText(/a note/, { selector: "div" });
 
-test("the words draw the capture", async () => {
+test("the head draws the capture, read-only until edit", async () => {
   serving([aDestination()]);
 
   draw();
-  expect(screen.queryByText("words")).toBeNull();
 
-  await choose("Vault");
-  await described();
-
-  expect(within(await wordsRow()).getByText("a note")).toBeTruthy();
+  expect(head()).toBeTruthy();
+  expect(screen.queryByLabelText("words")).toBeNull();
+  expect(screen.getByRole("button", { name: "edit" })).toBeDefined();
 });
 
-test("manual draws no words to rewrite", async () => {
+test("edit opens the capture's words in a box, and routing sends what was typed", async () => {
   serving([aDestination()]);
 
   draw();
-  await choose("manual");
-  await screen.findByLabelText("where it went");
-
-  expect(screen.queryByText("words")).toBeNull();
-});
-
-test("rewrite opens the capture's words, and routing sends what was typed", async () => {
-  serving([aDestination()]);
-
-  draw();
-  await choose("Vault");
-  await described();
-  await choose("rewrite");
+  await choose("edit");
 
   const field = (await screen.findByLabelText("words")) as HTMLTextAreaElement;
   expect(field.value).toBe("a note");
+  expect(field.className).toContain("border");
+  // Hidden meanwhile: the two words under the box are the way out.
+  expect(screen.queryByRole("button", { name: "edit" })).toBeNull();
+  expect(
+    screen.getByRole("button", { name: "keep the capture's" }),
+  ).toBeDefined();
 
   await fireEvent.input(field, { target: { value: "a note, tidied" } });
+  await choose("done");
+  expect(screen.queryByLabelText("words")).toBeNull();
+  expect(screen.getByText("a note, tidied")).toBeDefined();
+
+  await choose("Vault");
+  await described();
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
@@ -2646,21 +2596,36 @@ test("rewrite opens the capture's words, and routing sends what was typed", asyn
   });
 });
 
+test("e and a double click on the words open editing too", async () => {
+  serving([aDestination()]);
+
+  draw();
+  await fireEvent.keyDown(window, { key: "e" });
+  expect(await screen.findByLabelText("words")).toBeDefined();
+
+  await choose("done");
+  expect(screen.queryByLabelText("words")).toBeNull();
+
+  await fireEvent.dblClick(head());
+  expect(await screen.findByLabelText("words")).toBeDefined();
+});
+
 /** A place in one vault means nothing in another; words are not about the destination at all. */
 test("changing destination keeps the words and clears the arguments", async () => {
   serving([aDestination(), aDestination({ id: BOARD, name: "Board" })]);
 
   draw();
-  await choose("Vault");
-  await described();
-  await choose("rewrite");
+  await choose("edit");
   await fireEvent.input(await screen.findByLabelText("words"), {
     target: { value: "a note, tidied" },
   });
+  await choose("Vault");
+  await described();
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
 
+  await choose("change");
   await choose("Board");
   await described();
 
@@ -2672,66 +2637,31 @@ test("changing destination keeps the words and clears the arguments", async () =
   ).toBe("");
 });
 
-/** A rewrite belongs to one delivery: wanting the fix everywhere is wanting `edit`. */
-test("a second composer on the same item starts from the capture again", async () => {
-  serving([aDestination()]);
-
-  draw();
-  await choose("Vault");
-  await described();
-  await choose("rewrite");
-  await fireEvent.input(await screen.findByLabelText("words"), {
-    target: { value: "a note, tidied" },
-  });
-
-  cleanup();
-  draw();
-  await choose("Vault");
-  await described();
-
-  expect(screen.queryByLabelText("words")).toBeNull();
-  expect(within(await wordsRow()).getByText("a note")).toBeTruthy();
-});
-
 /** A preview of words that have since changed is indistinguishable from a good one. */
-test("the preview clears on a keystroke in the words", async () => {
-  serving([aDestination()]);
+test("the preview is asked for again when the words change, with the words it would carry", async () => {
+  const transport = serving([aDestination()], {
+    kind: "described",
+    capabilities: [APPEND],
+  });
 
   draw();
   await choose("Vault");
-  await described();
-  await choose("preview");
-  await screen.findByText(PREVIEW_IS_INDICATIVE);
+  await screen.findByText(/# a thought/);
+  const previews = () =>
+    sentTo(transport).filter(
+      (request) => routeOf(request) === "POST /v1/items/one/route/preview",
+    );
+  expect(previews()).toHaveLength(1);
 
-  await choose("rewrite");
+  await choose("edit");
   await fireEvent.input(await screen.findByLabelText("words"), {
     target: { value: "a note, tidied" },
   });
 
   await vi.waitFor(() => {
-    expect(screen.queryByText(PREVIEW_IS_INDICATIVE)).toBeNull();
+    expect(previews()).toHaveLength(2);
   });
-});
-
-test("previews the words it would carry rather than the capture's", async () => {
-  const transport = serving([aDestination()]);
-
-  draw();
-  await choose("Vault");
-  await described();
-  await choose("rewrite");
-  await fireEvent.input(await screen.findByLabelText("words"), {
-    target: { value: "a note, tidied" },
-  });
-  await choose("preview");
-
-  await vi.waitFor(() => {
-    expect(asked()).toContain("POST /v1/items/one/route/preview");
-  });
-  const asking = await sentTo(transport)
-    .find((request) => routeOf(request) === "POST /v1/items/one/route/preview")
-    ?.clone()
-    .json();
+  const asking = await previews().at(-1)?.clone().json();
   expect(asking).toMatchObject({ content: { text: "a note, tidied" } });
 });
 
@@ -2740,12 +2670,12 @@ test("an empty rewrite sends the words the payload schema allows", async () => {
   serving([aDestination()]);
 
   draw();
-  await choose("Vault");
-  await described();
-  await choose("rewrite");
+  await choose("edit");
   await fireEvent.input(await screen.findByLabelText("words"), {
     target: { value: "" },
   });
+  await choose("Vault");
+  await described();
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
@@ -2767,11 +2697,12 @@ test("opening the words and typing nothing carries nothing", async () => {
   serving([aDestination()]);
 
   draw();
+  await choose("edit");
+  await screen.findByLabelText("words");
+  await choose("done");
+
   await choose("Vault");
   await described();
-  await choose("rewrite");
-  await screen.findByLabelText("words");
-
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
@@ -2791,9 +2722,7 @@ test("keeping the capture's words draws them again and carries nothing", async (
   serving([aDestination()]);
 
   draw();
-  await choose("Vault");
-  await described();
-  await choose("rewrite");
+  await choose("edit");
   await fireEvent.input(await screen.findByLabelText("words"), {
     target: { value: "a note, tidied" },
   });
@@ -2801,8 +2730,10 @@ test("keeping the capture's words draws them again and carries nothing", async (
   await choose("keep the capture's");
 
   expect(screen.queryByLabelText("words")).toBeNull();
-  expect(within(await wordsRow()).getByText("a note")).toBeTruthy();
+  expect(head()).toBeTruthy();
 
+  await choose("Vault");
+  await described();
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
