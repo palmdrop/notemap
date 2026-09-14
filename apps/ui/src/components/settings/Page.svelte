@@ -4,7 +4,7 @@
   let { lede, children }: { lede: string; children: Snippet } = $props();
 </script>
 
-<div class="max-w-[var(--spacing-read)] pt-10 font-mono">
-  <p class="m-0 text-ink-muted">{lede}</p>
+<div class="max-w-read pt-10">
+  <p class="m-0">{lede}</p>
   {@render children()}
 </div>

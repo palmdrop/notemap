@@ -270,12 +270,10 @@ test("spends the accent on a failure and on the code beside it, and on nothing e
     },
   });
 
-  expect(screen.getByText("delivery-failed").className).toContain(
-    "inverted-accent",
-  );
-  expect(screen.getByText("unreachable").className).toContain("text-accent");
+  expect(screen.getByText("delivery-failed").className).toContain("text-alarm");
+  expect(screen.getByText("unreachable").className).toContain("text-alarm");
   expect(screen.getByText("/vaults/obsidian: ENOENT").className).not.toContain(
-    "text-accent",
+    "text-alarm",
   );
 });
 
@@ -292,8 +290,7 @@ test("leaves a destruction as a fact rather than a warning", () => {
   });
 
   const word = screen.getByText("purged");
-  expect(word.className).toContain("inverted");
-  expect(word.className).not.toContain("inverted-accent");
+  expect(word.className).not.toContain("text-alarm");
 });
 
 test("says a refusal where the count goes, and says neither before a read", () => {
@@ -320,7 +317,7 @@ test("puts a refusal in the chrome, in accent, instead of the count", async () =
   reading();
 
   const said = await screen.findByRole("status");
-  expect(said.className).toContain("text-accent");
+  expect(said.className).toContain("text-alarm");
   expect(said.textContent).toBe("the app lost its place in the list; reload");
   expect(screen.queryByText(/shown/)).toBeNull();
 });

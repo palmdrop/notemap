@@ -41,7 +41,7 @@ test("keeps its controls readable on a filled panel", async () => {
   notices.raise({ what: "given up", href: "/log", standing: true });
 
   const panel = await screen.findByRole("alert");
-  expect(panel.className).toContain("filled");
+  expect(panel.className).toContain("border-alarm");
 });
 
 test("a notice about something leads to where it can be read", async () => {

@@ -483,10 +483,8 @@
   );
 </script>
 
-<div class="font-mono">
-  <!-- A typed field is a ground and never a rule, so the only rule in the
-       modal is the chrome's. -->
-  <div class="px-2 py-0.5 field">
+<div>
+  <div class="border-b border-ink px-2 py-0.5">
     <input
       bind:this={input}
       value={text}
@@ -529,17 +527,17 @@
     id="candidate-entries"
     role="listbox"
     aria-label="{label} candidates"
-    class="mt-2.5 min-h-[var(--spacing-tree)]"
+    class="mt-2.5 min-h-[12.5rem]"
   >
     {#if loading}
-      <p class="text-ink-muted">loading…</p>
+      <p>loading…</p>
     {:else if refusal !== undefined && entries.length === 0}
-      <p class="text-ink-muted">{refusal}</p>
+      <p>{refusal}</p>
     {:else}
       {#if refusal !== undefined}
         <!-- Held from the last ask, and the ask that just failed said so.
              Drawn rather than dropped: the field is typed either way. -->
-        <p class="text-ink-muted">{refusal} · showing what it said before</p>
+        <p>{refusal} · showing what it said before</p>
       {/if}
       {#each shown as entry, index (entry.scope ?? String(entry.value))}
         {@const picked = moved && at === index}
@@ -547,7 +545,6 @@
           id={picked ? `candidate-${index}` : undefined}
           on={picked}
           held={entry.value !== undefined && takenAs(entry, keeps) === value}
-          dim={!picked}
           ontake={() => open(entry)}
         >
           {entry.scope !== undefined ? `${entry.label}/` : entry.label}
@@ -560,12 +557,12 @@
         <Action onclick={() => (expanded = true)}>{rest} more</Action>
       {/if}
       {#if shown.length === 0 && entries.length > 0}
-        <p class="text-ink-muted">nothing here matches</p>
+        <p>nothing here matches</p>
       {/if}
       {#if truncated && expanded}
         <!-- The destination held more than it answered, which is its own
              limit rather than this one. -->
-        <p class="text-ink-muted">and more than it answered</p>
+        <p>and more than it answered</p>
       {/if}
     {/if}
   </div>

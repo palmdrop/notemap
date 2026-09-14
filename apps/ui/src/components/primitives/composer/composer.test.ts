@@ -37,23 +37,19 @@ test("an available option reports the choice", async () => {
   expect(chose).toHaveBeenCalledTimes(1);
 });
 
-/**
- * `inverted` sets the ink to paper, and every text colour utility is emitted
- * after it — so a row that is walked onto wears the mark alone, or it draws
- * ink on ink.
- */
-test("a row walked onto is inverted and carries no other colour", () => {
-  render(WalkedFixture, { on: true, dim: true, ontake: vi.fn() });
+/** Weight is the mark, and there is no colour for a row to wear beside it. */
+test("a row walked onto is bold and carries no colour", () => {
+  render(WalkedFixture, { on: true, ontake: vi.fn() });
 
   const row = screen.getByRole("option", { name: "a row" });
-  expect(row.classList.contains("inverted")).toBe(true);
+  expect(row.classList.contains("font-semibold")).toBe(true);
   expect([...row.classList].some((one) => one.startsWith("text-"))).toBe(false);
 });
 
-test("a row not walked onto is dim, held, or plain, in that precedence", () => {
-  render(WalkedFixture, { held: true, dim: true, ontake: vi.fn() });
+test("a row not walked onto is held, or plain", () => {
+  render(WalkedFixture, { held: true, ontake: vi.fn() });
 
   const row = screen.getByRole("option", { name: "a row" });
-  expect(row.classList.contains("text-accent")).toBe(true);
-  expect(row.classList.contains("inverted")).toBe(false);
+  expect(row.classList.contains("underline")).toBe(true);
+  expect(row.classList.contains("font-semibold")).toBe(false);
 });

@@ -25,12 +25,10 @@
 <div
   onclick={onpick === undefined ? undefined : pickable(onpick)}
   ondblclick={onreach === undefined ? undefined : doubled(onreach)}
-  class="col-start-2 min-w-0 border-t border-t-ink/20
+  class="col-start-2 min-w-0 border-t border-t-ink
     {first ? 'border-t-0 pt-3.5 pb-6' : 'py-6'}
-    {onpick === undefined ? '' : 'cursor-pointer'}
-    {lit
-    ? '-mr-3.5 bg-ink/5 pr-3.5 [--field-ground:var(--color-paper)] group-data-furled:-ml-3.5 group-data-furled:border-l-2 group-data-furled:border-l-accent group-data-furled:pl-3'
-    : ''}"
+    {onpick === undefined ? '' : 'cursor-pointer'}"
+  data-lit={lit ? "" : undefined}
 >
   {@render children?.()}
 </div>

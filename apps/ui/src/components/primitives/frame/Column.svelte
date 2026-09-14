@@ -4,6 +4,6 @@
   let { children }: { children: Snippet } = $props();
 </script>
 
-<div class="mx-auto max-w-[var(--spacing-measure)]">
+<div class="mx-auto max-w-measure">
   {@render children()}
 </div>

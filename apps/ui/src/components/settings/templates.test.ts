@@ -125,14 +125,13 @@ test("a template whose destination is gone leads with that and offers repointing
   expect(await screen.findByRole("button", { name: /Repoint/ })).toBeTruthy();
 });
 
-test("a destination that cannot be asked draws no accent", async () => {
+test("a destination that cannot be asked draws no alarm", async () => {
   serving([aTemplate()], { kind: "unreachable", detail: "ECONNREFUSED" });
 
   render(Templates);
 
   const said = await screen.findByText("not reachable");
-  expect(said.className).toContain("text-ink-muted");
-  expect(said.className).not.toContain("text-accent");
+  expect(said.className).not.toContain("text-alarm");
 });
 
 test("a missing folder is drawn as a thing to act on, and named", async () => {
@@ -144,7 +143,7 @@ test("a missing folder is drawn as a thing to act on, and named", async () => {
   render(Templates);
 
   const said = await screen.findByText(/research\/ missing/);
-  expect(said.className).toContain("text-accent");
+  expect(said.className).toContain("text-alarm");
 });
 
 test("opening one says what it does, into what, and how much it has", async () => {

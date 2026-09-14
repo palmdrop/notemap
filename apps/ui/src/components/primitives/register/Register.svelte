@@ -3,19 +3,13 @@
 
   import Furl from "./Furl.svelte";
 
-  /**
-   * Without `onfurl` the rail cannot be folded away, which settings wants.
-   * A `brief` rail holds a stamp and one short word rather than a row's whole
-   * account, and takes a measure of its own.
-   */
+  /** Without `onfurl` the rail cannot be folded away, which settings wants. */
   let {
     furled = false,
-    brief = false,
     onfurl,
     children,
   }: {
     furled?: boolean;
-    brief?: boolean;
     onfurl?: () => void;
     children: Snippet;
   } = $props();
@@ -29,9 +23,7 @@
   data-furled={furled && onfurl !== undefined ? "" : undefined}
   class="group grid {furled && onfurl !== undefined
     ? 'grid-cols-[0_1fr] gap-x-0'
-    : brief
-      ? 'grid-cols-[var(--spacing-log-rail)_1fr] gap-x-gap'
-      : 'grid-cols-[var(--spacing-rail)_1fr] gap-x-gap'}"
+    : 'grid-cols-[var(--spacing-rail)_1fr] gap-x-gutter max-narrow:grid-cols-[var(--spacing-rail-narrow)_1fr]'}"
 >
   {@render children()}
 </div>

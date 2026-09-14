@@ -1001,7 +1001,7 @@ test("draws no + where the line lands on a note that is there", async () => {
   expect(screen.queryByText("+ decisions.md")).toBeNull();
   // The note's own row instead, marked as the one the line holds.
   const row = screen.getByRole("option", { name: "decisions.md" });
-  expect(row.className).toContain("text-accent");
+  expect(row.className).toContain("underline");
   expect(row.getAttribute("aria-disabled")).toBeNull();
 });
 
@@ -2028,13 +2028,13 @@ test("has one column until a destination is taken, and two after", async () => {
   drawAbout({ text: "a thought" });
 
   const modal = await screen.findByRole("dialog");
-  expect(modal.className).toContain("--spacing-modal");
+  expect(modal.className).toContain("max-w-[30rem]");
   expect(screen.queryByRole("button", { name: "seedling" })).toBeNull();
 
   await choose(/Vault/);
   await screen.findByRole("combobox", { name: "place" });
 
-  expect(modal.className).toContain("--spacing-composer");
+  expect(modal.className).toContain("max-w-[48rem]");
 });
 
 /**

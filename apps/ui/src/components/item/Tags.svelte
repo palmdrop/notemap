@@ -20,7 +20,7 @@
   }
 </script>
 
-<div class="mt-2 flex min-w-0 flex-wrap items-baseline gap-x-4 font-mono">
+<div class="mt-2 flex min-w-0 flex-wrap items-baseline gap-x-4">
   <TagSet
     {names}
     {offered}

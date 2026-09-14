@@ -51,7 +51,7 @@
 </script>
 
 <Section name="sources" aside={tally}>
-  <p class="mt-4 text-ink-muted">
+  <p class="mt-4">
     Every channel an item in this pool came in through, most recent first. A
     source is discovered rather than declared, so this is what the items say and
     not a list anyone keeps.
@@ -62,6 +62,6 @@
   {/each}
 
   {#if said !== ""}
-    <p class="mt-4 text-accent">{said}</p>
+    <p class="mt-4 text-alarm">{said}</p>
   {/if}
 </Section>

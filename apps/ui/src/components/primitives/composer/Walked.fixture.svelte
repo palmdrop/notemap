@@ -4,14 +4,12 @@
   let {
     on = false,
     held = false,
-    dim = false,
     ontake,
   }: {
     on?: boolean;
     held?: boolean;
-    dim?: boolean;
     ontake: () => void;
   } = $props();
 </script>
 
-<Walked {on} {held} {dim} {ontake}>a row</Walked>
+<Walked {on} {held} {ontake}>a row</Walked>

@@ -7,8 +7,7 @@
   import Register from "$components/primitives/register/Register.svelte";
   import { client } from "$lib/client";
 
-  const FIELD =
-    "w-full border-b border-ink bg-transparent font-mono focus:outline-none";
+  const FIELD = "w-full border-b border-ink bg-transparent focus:outline-none";
 
   let name = $state("admin");
   let password = $state("");
@@ -66,7 +65,7 @@
       {sending ? "signing in" : "sign in"}
     </Action>
     {#if refused !== undefined}
-      <span role="alert" class="font-mono text-accent">{refused}</span>
+      <span role="alert" class="text-alarm">{refused}</span>
     {/if}
   </div>
 </form>

@@ -6,8 +6,10 @@
   import type { Item } from "@notemap/client";
 
   import Row from "$components/item/Row.svelte";
+  import Order from "$components/order/Order.svelte";
   import ProcessingComposer from "$components/routing/ProcessingComposer.svelte";
   import Body from "$components/primitives/register/Body.svelte";
+  import Head from "$components/primitives/register/Head.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
@@ -53,6 +55,10 @@
     return keepPlace(SURFACE);
   });
 </script>
+
+<Head>
+  <span class="ml-auto"><Order /></span>
+</Head>
 
 <Register furled={rail.furled} onfurl={() => rail.toggle()}>
   {#if refused !== undefined}

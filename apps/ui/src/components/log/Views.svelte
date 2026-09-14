@@ -7,18 +7,18 @@
   const current = $derived(viewOf(log.kinds));
 </script>
 
-<nav class="mt-2 font-mono text-ink-muted" aria-label="Narrow the log to">
+<nav class="mt-2" aria-label="Narrow the log to">
   {#if log.kinds === undefined}
-    <span class="text-ink">everything</span>
+    <span class="font-semibold">everything</span>
   {:else}
-    <a href={logHref(log.order, log.item)} class="text-ink-muted">everything</a>
+    <a href={logHref(log.order, log.item)}>everything</a>
   {/if}
   {#each VIEWS as view (view.name)}
     <span aria-hidden="true"> · </span>
     {#if current?.name === view.name}
-      <span class="text-ink">{view.name}</span>
+      <span class="font-semibold">{view.name}</span>
     {:else}
-      <a href={logHref(log.order, log.item, view.kinds)} class="text-ink-muted">
+      <a href={logHref(log.order, log.item, view.kinds)}>
         {view.name}
       </a>
     {/if}

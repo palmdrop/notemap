@@ -1,5 +1,5 @@
 <script lang="ts">
-  /** `failed` is the accent, which only what went wrong may spend. */
+  /** `failed` is the alarm, which only what went wrong may spend. */
   let {
     word,
     inline = false,
@@ -8,7 +8,7 @@
 </script>
 
 <span
-  class="w-max max-w-full font-mono break-words {failed
-    ? 'inverted-accent'
-    : 'inverted'} {inline ? 'inline-block' : 'mt-2 block'}">{word}</span
+  class="w-max max-w-full break-words {failed ? 'text-alarm' : ''} {inline
+    ? 'inline-block'
+    : 'mt-2 block'}">{word}</span
 >

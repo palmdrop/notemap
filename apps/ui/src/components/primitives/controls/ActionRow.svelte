@@ -4,6 +4,6 @@
   let { children }: { children: Snippet } = $props();
 </script>
 
-<div class="mt-5 flex min-w-0 flex-wrap items-baseline gap-x-6 font-mono">
+<div class="mt-5 flex min-w-0 flex-wrap items-baseline gap-x-6">
   {@render children()}
 </div>

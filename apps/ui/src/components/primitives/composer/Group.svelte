@@ -6,6 +6,6 @@
 </script>
 
 <div class="mt-6">
-  <div class="text-ink-muted">{name}</div>
+  <div class="tracking-caps uppercase">{name}</div>
   <div class="mt-1.5">{@render children()}</div>
 </div>

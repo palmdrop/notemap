@@ -17,5 +17,5 @@
 
 <Rail {first}>{surface}</Rail>
 <Body {first}>
-  <div role="status" class="font-mono text-accent">{refused}</div>
+  <div role="status" class="text-alarm">{refused}</div>
 </Body>

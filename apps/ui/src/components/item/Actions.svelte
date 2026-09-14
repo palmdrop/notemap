@@ -59,38 +59,35 @@
 <ActionLine>
   <!-- One door out of the queue, and never disabled: what a decision needs of
        the pool is the composer's to say, and discarding needs nothing. -->
-  <Action cell primary onclick={onprocess}>process</Action>
+  <Action primary onclick={onprocess}>process</Action>
 
   {#if archived}
     <!-- Not processing: this puts the item back rather than sending it away,
          and a door that means both means neither. Unarchiving leaves the row in
          front of the reader, so it says nothing of what it did — only what it
          could not do. -->
-    <Action cell onclick={unarchive}>unarchive</Action>
+    <Action onclick={unarchive}>unarchive</Action>
   {/if}
-
-  <!-- The rest is working with the item rather than deciding about it, which
-       the muted ink says now that there is no second line to say it. -->
 
   <!-- Offered only where the browser has a clipboard to give: without a
        secure context there is nothing to fall back to. -->
   {#if copyable() && holds !== ""}
-    <Action cell quiet onclick={() => void copy()}>copy</Action>
+    <Action onclick={() => void copy()}>copy</Action>
   {/if}
 
   <!-- A processed item is not this row's to rewrite: editing it would
        append a revision, which the queue is not where to do. -->
   {#if mayEdit}
-    <Action cell quiet onclick={onedit}>edit</Action>
+    <Action onclick={onedit}>edit</Action>
   {/if}
 
   <!-- Somewhere to go rather than something to do, and last, so the gesture
        that opens a row in place is never the one that leaves it. -->
   {#if address !== undefined}
-    <Action cell quiet href={address}>open</Action>
+    <Action href={address}>open</Action>
   {/if}
 </ActionLine>
 
 {#if said !== ""}
-  <div role="status" class="mt-3 font-mono text-ink-muted">{said}</div>
+  <div role="status" class="mt-3">{said}</div>
 {/if}

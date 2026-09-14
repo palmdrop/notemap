@@ -10,7 +10,7 @@
 </script>
 
 <div class="mt-4 grid grid-cols-[3.6rem_1fr] items-baseline gap-x-4">
-  <span class="text-ink-muted">{name}</span>
+  <span class="tracking-caps uppercase">{name}</span>
   <div class="flex min-w-0 flex-wrap items-baseline gap-x-6">
     {@render children()}
   </div>

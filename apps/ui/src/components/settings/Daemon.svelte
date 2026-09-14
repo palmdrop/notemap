@@ -85,23 +85,23 @@
     why={reading.why}
     tone={reading.tone}
   >
-    <span class="ml-6 max-narrow:ml-[var(--spacing-mark)]">
+    <span class="ml-6 max-narrow:ml-7">
       <Action disabled={asking} onclick={knock}>
-        <span aria-hidden="true" class="text-ink-muted">↻</span> Check again
+        <span aria-hidden="true">↻</span> Check again
       </Action>
     </span>
   </Row>
 
-  <a href={resolve("/log")} class="block hover:text-accent">
+  <a href={resolve("/log")} class="block hover:underline">
     <Row mark="→" what="log" why="every change this pool has made, in order" />
   </a>
 
   <!-- The daemon serves this one, not this app: let the browser leave. -->
-  <a href="/docs" data-sveltekit-reload class="block hover:text-accent">
+  <a href="/docs" data-sveltekit-reload class="block hover:underline">
     <Row mark="↗" what="api" why="the reference the daemon serves for itself" />
   </a>
 
-  <p class="mt-4 text-ink-muted">
+  <p class="mt-4">
     The api reference is the daemon's own page, in its own markup.
   </p>
 </Section>

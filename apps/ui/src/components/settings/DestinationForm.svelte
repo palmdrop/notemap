@@ -135,30 +135,30 @@
 
 <form
   onsubmit={submit}
-  class="mt-6 grid gap-3 border-l-2 border-l-ink bg-ink/[0.03] py-4 pr-5 pl-5 font-mono"
+  class="mt-6 grid gap-3 border-l-2 border-l-ink py-4 pr-5 pl-5"
 >
-  <div class="tracking-[0.3em] text-ink-muted uppercase">
+  <div class="tracking-caps uppercase">
     {editing === undefined ? "a new destination" : "editing"}
   </div>
 
   <label class="mt-2 block">
-    <span class="text-ink-muted">name</span>
+    <span class="tracking-caps uppercase">name</span>
     <input
       bind:value={name}
       aria-label="Name"
       required
-      class="mt-0.5 block w-full border-b border-ink bg-transparent py-0.5 font-mono"
+      class="mt-0.5 block w-full border-b border-ink bg-transparent py-0.5"
     />
   </label>
 
   {#if editing === undefined}
     <label class="block">
-      <span class="text-ink-muted">kind</span>
+      <span class="tracking-caps uppercase">kind</span>
       <select
         bind:value={chosen}
         onchange={() => (typed = {})}
         aria-label="Kind"
-        class="mt-0.5 block w-full cursor-pointer appearance-none border-b border-ink bg-transparent py-0.5 font-mono"
+        class="mt-0.5 block w-full cursor-pointer appearance-none border-b border-ink bg-transparent py-0.5"
       >
         {#each kinds as one (one.name)}
           <option value={one.name}>{one.name}</option>
@@ -169,7 +169,7 @@
     <!-- Changing it would make one destination two, and a record cannot tell
          which it meant. -->
     <div>
-      <span class="text-ink-muted">kind</span>
+      <span class="tracking-caps uppercase">kind</span>
       {editing.kind}
     </div>
   {/if}
@@ -177,18 +177,18 @@
   <!-- The kind's own names, so the label read is the label an error will name. -->
   {#each fields as field (field.name)}
     <label class="block">
-      <span class="text-ink-muted">
+      <span class="tracking-caps uppercase">
         {field.name}{field.required ? "" : " (optional)"}
       </span>
       {#if field.description !== undefined}
-        <p class="text-ink-muted">{field.description}</p>
+        <p>{field.description}</p>
       {/if}
       {#if listed(field) !== undefined}
         <select
           bind:value={typed[field.name]}
           aria-label={field.name}
           required={field.required}
-          class="mt-0.5 block w-full cursor-pointer appearance-none border-b border-ink bg-transparent py-0.5 font-mono"
+          class="mt-0.5 block w-full cursor-pointer appearance-none border-b border-ink bg-transparent py-0.5"
         >
           {#each offered(field) as one (one.value)}
             <option value={one.value}>{one.label}</option>
@@ -198,14 +198,14 @@
         <input
           bind:value={typed[field.name]}
           aria-label={field.name}
-          class="mt-0.5 block w-full border-b border-ink bg-transparent py-0.5 font-mono"
+          class="mt-0.5 block w-full border-b border-ink bg-transparent py-0.5"
         />
       {/if}
     </label>
   {/each}
 
   {#if unfamiliarRoot}
-    <p role="status" class="text-ink-muted">
+    <p role="status">
       notemap has not used <span class="text-ink">{typedRoot}</span> before — check
       it names the right place.
     </p>
@@ -223,7 +223,7 @@
     </span>
     <Action onclick={done}>Cancel</Action>
     {#if said !== ""}
-      <span role="status" class="text-accent">{said}</span>
+      <span role="status" class="text-alarm">{said}</span>
     {/if}
   </div>
 </form>

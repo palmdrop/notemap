@@ -24,10 +24,5 @@ function wentHow(routing: NonNullable<Item["routing"]>): string {
   return routing.pending > 0 ? "retrying" : "routed";
 }
 
-/** Finished: its prose is muted, so live captures stand out while scrolling. */
-export function finished(item: Item): boolean {
-  return item.archived !== undefined || item.revisedInto.length > 0;
-}
-
 /** The queue's own rule, which the row answers without a second read. */
 export const editable = unprocessed;

@@ -747,7 +747,7 @@
       bind:value={args[field.name]}
       placeholder={field.required ? "required" : "optional"}
       aria-label={title}
-      class="w-full px-2 py-0.5 font-mono outline-none field placeholder:text-ink-muted"
+      class="w-full border-b border-ink px-2 py-0.5 outline-none"
     />
   {/if}
 {/snippet}
@@ -770,7 +770,7 @@
        the two stack in reading order. -->
   <div
     class={split
-      ? "mt-5 narrow:grid narrow:grid-cols-[1fr_var(--spacing-consult)] narrow:items-start narrow:gap-x-gap"
+      ? "mt-5 narrow:grid narrow:grid-cols-[1fr_17rem] narrow:items-start narrow:gap-x-gutter"
       : ""}
   >
     <div>
@@ -855,7 +855,7 @@
               }}
               placeholder="optional"
               aria-label="where it went"
-              class="w-full px-2 py-0.5 font-mono outline-none field placeholder:text-ink-muted"
+              class="w-full border-b border-ink px-2 py-0.5 outline-none"
             />
           </Group>
         {/if}
@@ -942,7 +942,7 @@
               bind:value={words}
               rows="4"
               aria-label="words"
-              class="w-full resize-y px-2 py-0.5 font-mono outline-none field"
+              class="w-full resize-y border-b border-ink px-2 py-0.5 outline-none"
             ></textarea>
             <Action onclick={keep}>keep the capture's</Action>
           {/if}
@@ -960,7 +960,7 @@
             said={nothingShown}
           />
           {#if shown.kind === "previewed"}
-            <div class="mt-2 font-mono text-ink-muted">
+            <div class="mt-2">
               {PREVIEW_IS_INDICATIVE}
             </div>
           {/if}
@@ -986,7 +986,7 @@
         {/if}
         <Action onclick={onclose}>cancel</Action>
         {#if said !== ""}
-          <span role="status" class="text-ink-muted">{said}</span>
+          <span role="status">{said}</span>
         {/if}
       </Commit>
     </div>

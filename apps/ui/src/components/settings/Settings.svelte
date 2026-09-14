@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Appearance from "$components/settings/Appearance.svelte";
   import Daemon from "$components/settings/Daemon.svelte";
   import Destinations from "$components/settings/Destinations.svelte";
   import Page from "$components/settings/Page.svelte";
@@ -15,4 +16,5 @@
   <Daemon />
   <Session />
   <Tokens />
+  <Appearance />
 </Page>

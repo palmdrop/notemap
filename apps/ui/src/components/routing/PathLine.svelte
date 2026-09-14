@@ -385,22 +385,19 @@
   );
 </script>
 
-<div class="font-mono">
-  <!-- A typed field is a ground and never a rule, so the only rule in the
-       modal is the chrome's. -->
-  <div class="relative px-2 py-0.5 field">
+<div>
+  <div class="relative border-b border-ink px-2 py-0.5">
     <!-- The input's own text is transparent and this is what is read, so the
-         settled part of the path and the one being typed can be drawn
-         differently. Alignment is exact: one monospace face, one size. -->
+         completion offered can be drawn after what was typed. Alignment is
+         exact: one face, one size, in both. -->
     <div
       bind:this={shown}
       aria-hidden="true"
       class="pointer-events-none absolute inset-0 overflow-hidden px-2 py-0.5 whitespace-pre"
     >
-      <span class="text-ink-muted">{settled}</span><span class="text-ink"
-        >{path.typing}</span
-      >{#if ghost !== undefined}<span class="text-ink-muted" data-ghost
-          >{ghost}</span
+      <span>{settled}{path.typing}</span>{#if ghost !== undefined}<span
+          data-ghost
+          class="text-inert">{ghost}</span
         >{/if}
     </div>
 
@@ -432,7 +429,7 @@
   </div>
 
   {#if refusal !== undefined}
-    <p class="mt-3.5 text-ink-muted" title={why}>{refusal}</p>
+    <p class="mt-3.5" title={why}>{refusal}</p>
   {:else if forecast !== undefined}
     <!-- The name a derived leaf would get is not said here: the tree draws it
          where the note lands, which is where the eye already is. -->
@@ -444,7 +441,7 @@
              place *nothing to choose* can surprise. -->
         <button
           type="button"
-          class="ml-auto shrink-0 text-ink-muted hover:text-accent"
+          class="ml-auto shrink-0 hover:underline"
           onmousedown={(event) => {
             event.preventDefault();
             onsubmit?.(forecast.beside);
@@ -460,7 +457,7 @@
     id="path-line-places"
     role="listbox"
     aria-label="places"
-    class="mt-2.5 {refusal === undefined ? 'min-h-[var(--spacing-tree)]' : ''}"
+    class="mt-2.5 {refusal === undefined ? 'min-h-[12.5rem]' : ''}"
   >
     {#each drawn as row (`${row.depth}:${row.made === true ? "+" : ""}${row.entry.label}`)}
       {@const picked =
@@ -471,7 +468,6 @@
         id={picked ? `path-line-place-${at}` : undefined}
         on={picked}
         held={row.made === true || row.held === true}
-        dim={!(row.onPath || picked)}
         disabled={row.made === true}
         indent={row.depth}
         ontake={() => take(row.entry)}
@@ -482,6 +478,6 @@
   </div>
 
   {#if caretIn?.truncated === true}
-    <p class="mt-1 text-ink-muted">more than this shows</p>
+    <p class="mt-1">more than this shows</p>
   {/if}
 </div>

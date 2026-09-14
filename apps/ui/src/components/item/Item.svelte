@@ -92,11 +92,11 @@
       <!-- The item may be the client's own and the records never are, so the
            one surface answers for the two of them separately. -->
       {#if item.routing !== undefined && records.all.length === 0 && !pool.yes}
-        <div class="mt-2 text-ink-muted">{NO_RECORDS_OFFLINE}</div>
+        <div class="mt-2">{NO_RECORDS_OFFLINE}</div>
       {/if}
 
       {#if records.refused !== ""}
-        <div role="status" class="mt-2 text-accent">{records.refused}</div>
+        <div role="status" class="mt-2 text-alarm">{records.refused}</div>
       {/if}
 
       <!-- What it is, the capture says; what a fact answers is what it cannot. -->
@@ -128,9 +128,9 @@
     </Rail>
     <Body first>
       {#if refused !== undefined}
-        <div role="status" class="font-mono text-accent">{refused}</div>
+        <div role="status" class="text-alarm">{refused}</div>
       {:else if read.failure !== undefined}
-        <div class="font-mono text-ink-muted">{NO_ITEM_OFFLINE}</div>
+        <div>{NO_ITEM_OFFLINE}</div>
       {:else}
         <Prose text={NO_SUCH_ITEM} />
       {/if}

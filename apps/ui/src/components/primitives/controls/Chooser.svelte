@@ -62,10 +62,10 @@
     aria-expanded={open}
     aria-controls={panel}
     onclick={() => (open = !open)}
-    class="flex cursor-pointer items-baseline gap-1 font-mono disabled:cursor-default disabled:text-ink-muted"
+    class="flex cursor-pointer items-baseline gap-1 tabular-nums disabled:cursor-default"
   >
     <span>{word}</span>
-    <span aria-hidden="true" class="text-ink-muted">▾</span>
+    <span aria-hidden="true">▾</span>
   </button>
 
   {#if open}
@@ -79,7 +79,7 @@
       role="group"
       aria-label={label}
       onmousedown={(event) => event.preventDefault()}
-      class="absolute top-full right-0 z-30 mt-1 w-max min-w-36 border border-ink bg-paper px-2.5 py-1 font-mono"
+      class="absolute top-full right-0 z-30 mt-1 w-max min-w-36 border border-ink bg-ground px-2.5 py-1"
     >
       {#each options as one (one.value)}
         <Option

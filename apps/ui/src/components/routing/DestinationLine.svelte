@@ -67,7 +67,7 @@
   }
 </script>
 
-<div class="font-mono">
+<div>
   <input
     bind:this={input}
     bind:value={typed}
@@ -80,7 +80,7 @@
     aria-autocomplete="list"
     aria-expanded={narrowed.length > 0}
     aria-controls="where-line-matches"
-    class="w-full px-2 py-0.5 outline-none field"
+    class="w-full border-b border-ink px-2 py-0.5 outline-none"
   />
 
   <div
@@ -96,7 +96,7 @@
     {/each}
 
     {#if narrowed.length > 1}
-      <p class="mt-1 text-ink-muted">{narrowed.length} match</p>
+      <p class="mt-1">{narrowed.length} match</p>
     {/if}
   </div>
 </div>

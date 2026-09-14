@@ -28,10 +28,10 @@
   </p>
 
   {#if said !== undefined && said !== ""}
-    <p role="status" class="mt-4 text-accent">{said}</p>
+    <p role="status" class="mt-4 text-alarm">{said}</p>
   {/if}
 
-  <p class="mt-5 border-t border-t-ink/20 pt-4 text-ink-muted">
+  <p class="mt-5 border-t border-t-ink pt-4">
     Retiring stops it being offered, disturbs nothing already decided, and can
     be undone.
   </p>

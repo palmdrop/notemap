@@ -109,13 +109,11 @@
   {#if !pool.yes}
     <!-- The chrome already says the pool is out of reach; this names what that
          costs here, and is not painted as an alarm. -->
-    <p role="status" class="mt-4 text-ink-muted">
-      Templates can be read but not changed.
-    </p>
+    <p role="status" class="mt-4">Templates can be read but not changed.</p>
   {/if}
 
   {#if said !== ""}
-    <p role="status" class="mt-4 text-accent">{said}</p>
+    <p role="status" class="mt-4 text-alarm">{said}</p>
   {/if}
 
   {#each $templates as one (one.id)}
@@ -158,7 +156,7 @@
         disabled={!pool.yes || $destinations.length === 0}
         onclick={() => (adding = true)}
       >
-        <span aria-hidden="true" class="text-ink-muted">+</span> Make a template
+        <span aria-hidden="true">+</span> Make a template
       </Action>
     </div>
   {/if}
@@ -168,7 +166,7 @@
   <!-- Deleting a template is not the irreversible thing deleting a destination
        is: a record made from one keeps resolving without it. So it asks in a
        line rather than in a modal. -->
-  <div role="dialog" aria-label="Delete a template" class="mt-4 text-accent">
+  <div role="dialog" aria-label="Delete a template" class="mt-4 text-alarm">
     <p>
       Delete {doomed.name}? Records made from it keep resolving; its tag stops
       filing anything.
@@ -181,10 +179,10 @@
             doomed = undefined;
           })}
       >
-        <span class="inverted-accent">× Delete</span>
+        <span class="text-alarm">× Delete</span>
       </Action>
       <Action onclick={() => (doomed = undefined)}>
-        <span class="text-ink-muted">Keep it</span>
+        <span>Keep it</span>
       </Action>
     </div>
   </div>

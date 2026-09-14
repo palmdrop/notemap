@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount, untrack } from "svelte";
 
+  import Order from "$components/order/Order.svelte";
   import Body from "$components/primitives/register/Body.svelte";
+  import Head from "$components/primitives/register/Head.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
@@ -14,6 +16,7 @@
   import { logHref } from "./href";
   import Says from "./Says.svelte";
   import LogRow from "./LogRow.svelte";
+  import Shown from "./Shown.svelte";
   import Views from "./Views.svelte";
 
   const pool = reachable();
@@ -39,41 +42,42 @@
   });
 </script>
 
-<p class="mt-8 font-mono text-ink-muted">
+<p class="mt-8">
   {LOG_LEDE}
   {#if log.item !== undefined}
     Only what is about <Says id={log.item} /> —
-    <a href={logHref(log.order, undefined, log.kinds)} class="text-ink"
-      >show everything</a
-    >
+    <a href={logHref(log.order, undefined, log.kinds)}>show everything</a>
   {/if}
 </p>
 
 <Views />
 
-<div class="mt-6">
-  <Register brief>
-    {#if log.quiet}
-      <Rail first>
-        <div class="cleared"><StateWord word="quiet" inline /></div>
-      </Rail>
-      <Body first>
-        <div class="cleared font-mono">{NOTHING_LOGGED}</div>
-      </Body>
-    {/if}
+<Head>
+  <Shown />
+  <span class="ml-auto"><Order /></span>
+</Head>
 
-    {#each log.rows as action, at (action.id)}
-      <LogRow {action} order={log.order} first={at === 0} />
-    {/each}
+<Register>
+  {#if log.quiet}
+    <Rail first>
+      <div class="cleared"><StateWord word="quiet" inline /></div>
+    </Rail>
+    <Body first>
+      <div class="cleared">{NOTHING_LOGGED}</div>
+    </Body>
+  {/if}
 
-    {#if log.more}
-      <More
-        loading={log.loading}
-        offline={!pool.yes}
-        onmore={() => {
-          log.next();
-        }}
-      />
-    {/if}
-  </Register>
-</div>
+  {#each log.rows as action, at (action.id)}
+    <LogRow {action} order={log.order} first={at === 0} />
+  {/each}
+
+  {#if log.more}
+    <More
+      loading={log.loading}
+      offline={!pool.yes}
+      onmore={() => {
+        log.next();
+      }}
+    />
+  {/if}
+</Register>

@@ -52,7 +52,7 @@
           }}
         >
           <div class="break-all">{place.value}</div>
-          <div class="text-ink-muted">
+          <div>
             {place.uses} · {whenOf(place.lastAt, now)}
           </div>
         </div>

@@ -1,8 +1,16 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-13
+**Last updated**: 2026-09-14
 **Shipped**:
+
+- 2026-09-14 — **One face, one size, ink on white.** The shell is set in Bricolage Grotesque at
+  15px throughout, black on white with one red for failure and destruction, the dark theme its
+  inversion. The bar is `queue · feed · log · settings` and one status glyph; the order control
+  moved into the head of each list, the palette into settings. Every retired role — the second
+  face, the second size, muted ink, green, the accent — is gone from the tokens and gated out.
+  Phase 2 of [shell-redesign](../plans/shell-redesign.md); the row and the composer are still the
+  old ones.
 
 - 2026-09-13 — **The log is narrowed to a view.** Five words under the lede — `everything`,
   `routing`, `captures`, `classification`, `pool` — each a fixed set of kinds the pool is asked for,
@@ -385,18 +393,17 @@ Two columns, designed at 375px and given air on a wider screen. There is no seco
 two-pane desktop, no bottom bar, no sheet. *Amended 2026-08-24*: the second column is the metadata
 rail, and it survives a phone rather than collapsing into the first.
 
-Navigation names **two** surfaces — the queue and the feed. Capture is not one of them: it is the
-first row of the queue. The log is not one either: it is a surface of this shell and reached from
-settings, being what a person opens when something has gone wrong rather than part of the round
-they make. Settings holds the destination list, the way to the log, and the exit to the daemon's
-`/docs`, none of which sit beside the two as equals. **Settings sits at
-the bar's right end**, after the reachability mark, with the other thing that is true of the shell
-rather than of a surface — not beside the two surfaces as a third.
+Navigation names **four** surfaces — `queue · feed · log · settings` — as four equals at the
+bar's left, the current one bold. *Amended 2026-09-14*: the log and settings joined the two; the
+wordmark, the theme toggle, the order control and the waiting count left. Capture is not a
+surface: it is the head of the queue. Sign-in is drawn in the same system, with the word `notemap`
+where the surfaces would be.
 
-The chrome carries what is true of the shell rather than of any item: whether the pool is
-reachable, how much the outbox is still holding, whether any operation has been refused, and which
-end the surface is read from. *Amended 2026-08-24*: the order control moved here from the surface,
-being a reading preference. The furl did not: it belongs on the edge it moves.
+The chrome carries what is true of the shell rather than of any item, and says it in **one glyph**
+at the bar's right: `●` the pool answers, `○` it does not, `◐` this device holds work the pool has
+not seen — with the count and the word in its title. The order control is a reading preference
+and sits in the head of each list that has one; the palette is a preference and sits in
+settings. A refusal goes to the corner.
 
 ### Capture is the first row of the queue
 
@@ -1678,112 +1685,78 @@ row, and adding a renderer later is additive.
 
 ### Tokens and themes
 
-Every colour, type step and spacing step is named by **role**. Components name roles; no component
-names a colour. Both a light and a dark palette are defined against those roles, and the design is
-drawn in one of them — the other follows from the definitions rather than from a second design
-pass.
+Every colour, face, size and spacing step is named by **role** in one `@theme` block in
+`styles/tokens.css`. Components name roles; no component names a value, and the gate in
+`tokens.test.ts` fails the build on one — a hex, a colour function, a `dark:` variant, a font
+family, a Tailwind palette colour, or any of the roles the shell used to have and no longer does.
 
-This is what makes the port mechanical: a block of `@theme` in `styles/tokens.css`, and components that
-stop carrying forty inline `dark:` variants.
+The roles, as of 2026-09-14: `ground`, `ink`, `alarm`, and `inert` for the one grey admitted where
+nothing else can say a control is inert; `font-shell`, the one face; `text-shell`, the one size,
+with its line height; `tracking-caps` for a label; `rail`, `rail-narrow`, `gutter`, `measure`,
+`read`, `prose` and `gap-time` for the widths and the one gap; `narrow` and `wide` for the two
+breakpoints. Ground and ink are `light-dark()` pairs and swap; the alarm does not. Dark is the
+inversion of light, `#000` on `#fff` becoming `#fff` on `#000`, and nothing warmer.
 
-**Which palette is on is the reader's**, and one small control in the **bottom-right corner** cycles
-`auto`, `light`, `dark`. `auto` is the browser's own answer and the default, because it is the only
-one that can be right before a person has said anything. The choice is remembered and applied
-**before first paint**, or the page shows one palette and corrects itself in front of the reader.
-It is the only chrome outside the bar: the bar carries facts about the shell, and this is a
-preference. The right corner because the left one belongs to a refusal.
+**Which palette is on is the reader's**, chosen in settings under *Appearance* as a row of three
+words, `auto · light · dark`, the chosen one bold. `auto` is the browser's own answer and the
+default, because it is the only one that can be right before a person has said anything. The
+choice is remembered and applied **before first paint**, or the page shows one palette and
+corrects itself in front of the reader.
 
 ### Visual direction
 
-*Settled 2026-08-19, in the design session, against a set of visual references held outside the
-repository. What they settled is below; the directory itself is not tracked, so nothing here rests
-on being able to open it.*
+*Settled 2026-09-14 in [ADR 46](../adr/0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md),
+against [the brief](../design/brief.md) and the drawings in `docs/design/redrawn/`. What they
+settled is below. Where this section and the drawings disagree, the drawings win.*
 
-**Industrial bones, paper skin.** Technical rather than terminal: strict structure and countable
-alignment on a warm ground rather than a cold grey one.
+**Printed and digital at once.** An index, a ledger, a running head — set on screen with nothing
+that pretends to be paper. The references are one face, one weight or two, one size, black on
+white, with columns and a few rules doing all the work. None of them use size for hierarchy.
+None of them use grey.
 
-**Every surface is a register.** Not a list of cards — an index, in the sense the references all
-share: a fixed column of times, a wide column of content, and a margin carrying marks. The row
-reads as a dated entry in a ledger, which is why the capture time is its title.
+**Colour.** Ground `#fff`, ink `#000`, and nothing between them by default. **One red**, for
+failure and for destructive action only: a refused operation, a delivery that is retrying or
+abandoned, `discard`. Never for a primary action, never for a link, never for structure. Primary
+actions are ink — bold, or inverted. **Green went** on 2026-09-14: a destination that answered
+says `reached` in words. **Grey went** with it; secondary is regular weight, primary is bold or
+capitals, and the one grey the tokens hold is for a control that is genuinely inert and for
+nothing else. Dark theme is the inversion, designed once, in light.
 
-**Two columns do the work that type hierarchy usually does.** *Amended 2026-08-24.* The left
-column is a **metadata rail**, and it carries the same things whether a row is open or shut: the
-stamp, the state word where there is one, the tags, and where the item went. Opening a row adds the
-item's facts under them rather than changing what the column is for.
-*Amended 2026-09-04*: **a fact is drawn only where it answers something**. `payload` went, the
-capture itself being right there and saying what it is; `edited` is absent where there is none,
-rather than spending three words to say nothing happened — an absent fact already reads as no.
-*Amended 2026-09-03*: the source and the id left that list. They are notemap's bookkeeping rather
-than the item, an id is in the address of the surface that has one, and a rail carrying four facts
-where two are unreadable is what made the column look like a debug pane. The right column holds nothing but what was captured, and its actions once the row is open.
-One system, reused, and nothing is distinguished by being bigger.
+**Type.** One face, Bricolage Grotesque at 400 and 600, self-hosted from `static/fonts/` and
+served by the daemon beside the app — a face on the same origin is exactly as offline as the app,
+which is what the browser's-own-faces rule was for. **One size**, 15px on 22px, everywhere:
+captured prose, timestamps, labels, actions, the bar. Hierarchy is weight, capitals or small-caps
+with tracking for a label, and position. Tabular figures on the stamp and nowhere else. A link
+under the cursor is underlined, never coloured.
 
-**The rail can be furled.** An arrow rides the seam the rail's edge makes, in its own strip above
-the register, and takes the left column to nothing — which gives the prose the whole measure
-without hiding a row or changing what a row can do. It sits on the edge it moves rather than in the
-bar, where a word for it was further from the thing it was about. The rail holds the button that
-opens a row, so a furled rail hands the stamp to the body rather than taking it away. *Amended
-2026-08-26*: the state word and the pending mark are handed over with it, since what a row became
-and what has not drained are what the acceptance criteria ask to be legible at a glance, and a
-reading preference is not a reason to lose either. Tags, routing and the opened row's facts stay
-behind, being what the reader asked for the measure back from. The reader's answer is remembered,
-like the palette.
+**Grid.** Two idioms, and the rule for which is where. *Lists are open*: queue, feed and log rows
+align on shared columns with no rule between rows; whitespace separates entries. *Rules mark a
+change of region*: a 1px ink rule under the bar; a vertical rule between the date column and the
+body, running the height of the list; a ruled box around the capture field; a ruled box around
+the selected row with the actions as its foot; rules between sections of the process surface and
+of settings; a ruled frame around a routing record. Nothing is ever boxed on four sides except the
+capture field, a record block, a control, and the selected row.
 
-**A surface that is a register without being a list of captures does not offer the fold.** Settings
-is the one, and there is nothing in it worth reading without its left column.
+**Every surface is a register.** A fixed column of times, a wide column of content: the row reads
+as a dated entry in a ledger, which is why the capture time is its title. The left column is a
+**metadata rail** — the stamp, the tags, and on the feed the state word and where the item went.
+The right column holds nothing but what was captured. Both surfaces are one grid, each item
+dropping two cells into it, so the columns stay in register down the whole page.
 
-**Both surfaces are one grid.** Each item drops two cells into it — a rail cell and a body cell —
-so the columns stay in register down the whole page without either one being told how tall the
-other is.
+**A phone keeps both columns.** Below 44rem the rail narrows to the width of a stacked date and
+time, and the two columns survive, because the rail is what says what a thing is.
 
-**A phone keeps both columns.** *Amended 2026-08-24.* An earlier version collapsed to one below
-34rem. It does not: below 44rem the rail narrows to the width of a stacked date and time, the facts
-put their values under their names, and the two columns survive, because the rail is what says what
-a thing is.
+**The measure.** The page is capped at 72rem, and **a paragraph is capped at 38rem** — about
+seventy characters — inside the body column: the column keeps its width, the prose stops early,
+as prose is set.
 
-**The grid is drawn, and it is rules rather than boxes.** Nothing is ever boxed or given a border
-on four sides. A rule runs across the top of every cell, lighter than the bar's own, and stops at
-the gap between the columns — so a row reads as two entries side by side rather than as a band
-across the page. *Amended 2026-08-24*: the separator that ran into the spine, and the spine itself,
-are gone. Nothing needs a vertical rule now that the second column is real.
+**Motion.** Few, structural, ~150–200ms, `prefers-reduced-motion` honoured. Nothing else moves.
+*(Not yet built; phase 7 of the plan.)*
 
-**An open row is one fill, not two panels** *(2026-09-04)*. The rail's ground runs across the
-gutter to meet the body's, so the row a person is working reads as a single band, and the accent
-edge sits at the **head of the row** rather than on the seam between the columns — the seam being
-the one place the design has spent a whole amendment removing. With the rail furled there is no
-head but the body's, and the edge goes there.
-
-**The frame has a measure.** The page is capped short of a desktop's width and nothing widens it,
-routing having left the register for a modal.
-
-**Green means a result, and only a result.** *Added 2026-08-24.* Something was asked and the answer
-was yes: a destination that answered, a daemon that is reachable. It is never spent on an intention
-— `add a destination` is ink, because nothing has happened yet and the reply to it is what earns a
-colour. Its opposite is the accent, which on settings reads as the thing that went wrong or the
-thing that cannot be undone. Each says so twice, in a mark and in a word, so the colour is never
-the only thing carrying it.
-
-**Lines are ink. Red means a warning or an action, and nothing else** — the route action, the
-arrow marking where an item went, the edge of the row being processed, a refused operation, a link
-under the cursor. Red is never structure and never body text, so it appears only where something is
-being done or has gone wrong.
-
-**Type: two faces, one size each.** A serif for what a person wrote, monospace for everything the
-interface says — the bar, timestamps, field names, values, tags, actions. The wordmark is the serif
-in small caps.
-
-**The faces are the browser's own** — the generic `serif` and `monospace` families, no webfont.
-A shell that needs a font server to look right is not offline-friendly
-([standards.md](../standards.md) #1), and the design is carried by the columns, the single line
-weight and the two sizes rather than by a particular typeface. Alegreya and Courier Prime are what
-the design was drawn in, after
-[the-proportional-web](https://owickstrom.github.io/the-proportional-web/), and remain the
-reference if self-hosted faces are ever wanted.
-
-Every monospace element is the same size; prose is one step larger, because it is the only thing on
-the page a person actually reads. Three-character indents on successive paragraphs are kept.
-
----
+*What was here before* — industrial bones on paper skin, two faces at two sizes, muted ink, green
+for a result and red for an action, the accent edge on the open row, the furlable rail — was the
+direction of 2026-08-19 and is superseded. The furl and the old row survive in the code until the
+row is redrawn.
 
 ## Constraints
 

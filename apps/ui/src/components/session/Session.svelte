@@ -40,14 +40,14 @@
         why={failed ?? "this browser holds a session"}
         tone={failed === undefined ? "good" : "bad"}
       >
-        <span class="ml-6 max-narrow:ml-[var(--spacing-mark)]">
+        <span class="ml-6 max-narrow:ml-7">
           <Action disabled={going} onclick={signOut}>
             {going ? "signing out" : "Sign out"}
           </Action>
         </span>
       </Row>
 
-      <p class="mt-4 text-ink-muted">
+      <p class="mt-4">
         Signing out drops what this browser cached and keeps what it has not
         sent yet.
       </p>
@@ -59,9 +59,8 @@
         tone="quiet"
       />
 
-      <p class="mt-4 text-ink-muted">
-        Run <code class="font-mono">notemap password set</code> where the daemon runs
-        to close the door.
+      <p class="mt-4">
+        Run <code>notemap password set</code> where the daemon runs to close the door.
       </p>
     {/if}
   </Section>

@@ -23,9 +23,8 @@
     bind:value={draft}
     rows="4"
     aria-label="What it says"
-    class="w-full resize-y border-b border-ink bg-transparent font-prose text-prose"
-  ></textarea>
-  <div class="flex gap-x-gap font-mono">
+    class="w-full resize-y border-b border-ink bg-transparent"></textarea>
+  <div class="flex gap-x-gutter">
     <Action submit>save</Action>
     <Action onclick={ondone}>cancel</Action>
   </div>

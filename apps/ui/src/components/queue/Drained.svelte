@@ -7,6 +7,6 @@
      says everything else it has done: once, quietly, and in the rail. No count,
      because the pool gives none. -->
 <Rail>
-  <div class="cleared text-ink-muted">nothing waiting</div>
+  <div class="cleared">nothing waiting</div>
 </Rail>
 <Body></Body>

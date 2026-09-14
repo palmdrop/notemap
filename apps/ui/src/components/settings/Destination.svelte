@@ -59,46 +59,37 @@
   const reach = $derived.by(() => {
     if (probed === undefined || probed.kind === "not-offered") return undefined;
     if (probed.kind === "ready") {
-      return { mark: "✓", said: "reached", tone: "text-good" };
+      return { mark: "✓", said: "reached", tone: "" };
     }
 
     return {
       mark: "⚠",
       said: `${probed.kind} — ${probed.detail}`,
-      tone: probed.kind === "rejected" ? "text-accent" : "text-ink-muted",
+      tone: probed.kind === "rejected" ? "text-alarm" : "",
     };
   });
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="border-b border-b-ink/20 py-4" onclick={pickable(onopen)}>
+<div class="border-b border-b-ink py-4" onclick={pickable(onopen)}>
   <div class="flex cursor-pointer flex-wrap items-baseline gap-x-3">
-    <span
-      aria-hidden="true"
-      class="w-[1ch] flex-none {retired ? 'text-ink-muted' : ''}"
-    >
+    <span aria-hidden="true" class="w-[1ch] flex-none">
       {retired ? "○" : "●"}
     </span>
     <button
       type="button"
       onclick={onopen}
       aria-expanded={opened}
-      class="tracking-wider uppercase hover:text-accent {retired
-        ? 'text-ink-muted'
-        : ''}"
+      class="tracking-caps uppercase hover:underline {retired ? '' : ''}"
     >
       {one.name}
     </button>
-    <span class="text-ink-muted">{one.kind}</span>
+    <span>{one.kind}</span>
 
     <span
-      class="ml-auto whitespace-nowrap max-narrow:ml-[var(--spacing-mark)] max-narrow:w-full
-        {refusing !== undefined
-        ? 'text-accent'
-        : can !== undefined
-          ? 'text-good'
-          : 'text-ink-muted'}"
+      class="ml-auto whitespace-nowrap max-narrow:ml-7 max-narrow:w-full
+        {refusing !== undefined ? 'text-alarm' : can !== undefined ? '' : ''}"
     >
       {#if refusing !== undefined}
         ⚠ {refusing}
@@ -117,8 +108,8 @@
   </div>
 
   {#if opened}
-    <div class="mt-4 pl-[var(--spacing-mark)]">
-      <Fact name="can" empty={can === undefined}>
+    <div class="mt-4 pl-7">
+      <Fact name="can">
         {#if can !== undefined}
           {can}
         {:else if asking}
@@ -129,7 +120,7 @@
           unasked — describing one is a read that can hang
         {/if}
       </Fact>
-      <Fact name="reach" empty={reach === undefined}>
+      <Fact name="reach">
         {#if reach !== undefined}
           {reach.said}
         {:else if probed?.kind === "not-offered"}
@@ -151,26 +142,26 @@
       <Fact name="id">{one.id}</Fact>
 
       <div
-        class="mt-4 flex flex-wrap items-baseline gap-x-6 border-t border-t-ink/20 pt-3"
+        class="mt-4 flex flex-wrap items-baseline gap-x-6 border-t border-t-ink pt-3"
       >
         <Action disabled={asking || probing} onclick={oncheck}>
-          <span aria-hidden="true" class="text-ink-muted">↻</span>
+          <span aria-hidden="true">↻</span>
           {can === undefined && refusing === undefined
             ? "Check"
             : "Check again"}
         </Action>
         <Action disabled={offline} onclick={onedit}>
-          <span aria-hidden="true" class="text-ink-muted">✎</span> Edit
+          <span aria-hidden="true">✎</span> Edit
         </Action>
         <Action disabled={offline} onclick={onretire}>
-          <span aria-hidden="true" class="text-ink-muted">
+          <span aria-hidden="true">
             {retired ? "●" : "○"}
           </span>
           {retired ? "Offer again" : "Retire"}
         </Action>
         <span class="ml-auto max-narrow:ml-0">
           <Action disabled={offline} onclick={ondelete}>
-            <span class="text-accent">
+            <span class="text-alarm">
               <span aria-hidden="true">×</span> Delete
             </span>
           </Action>

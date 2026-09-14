@@ -18,20 +18,18 @@
 
   const inked = {
     plain: "",
-    good: "text-good",
-    bad: "text-accent",
-    quiet: "text-ink-muted",
+    good: "",
+    bad: "text-alarm",
+    quiet: "",
   };
 </script>
 
-<div
-  class="flex flex-wrap items-baseline gap-x-3 border-b border-b-ink/20 py-3"
->
+<div class="flex flex-wrap items-baseline gap-x-3 border-b border-b-ink py-3">
   <span aria-hidden="true" class="w-[1ch] flex-none {inked[tone]}">{mark}</span>
-  <span class="tracking-wider uppercase {inked[tone]}">{what}</span>
+  <span class="tracking-caps uppercase {inked[tone]}">{what}</span>
   {#if why !== undefined}
     <span
-      class="ml-auto text-right text-ink-muted max-narrow:ml-[var(--spacing-mark)] max-narrow:w-full max-narrow:text-left"
+      class="ml-auto text-right max-narrow:ml-7 max-narrow:w-full max-narrow:text-left"
     >
       {why}
     </span>

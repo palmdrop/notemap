@@ -94,12 +94,12 @@ Decisions already made, so they are not asked again:
 One PR. Nothing in it changes what a surface does; everything in it changes how every surface
 looks. The queue will look odd at the end of this phase — old row, new type — and that is fine.
 
-- [ ] **Self-host the face.** Download Bricolage Grotesque as a variable `woff2` (Google Fonts
+- [x] **Self-host the face.** Download Bricolage Grotesque as a variable `woff2` (Google Fonts
       serves it; the licence is OFL) into `apps/ui/static/fonts/`, one file, latin subset. An
       `@font-face` in `styles/base.css` with `font-display: swap`, weights 400–600. Check the
       daemon serves `static/` with the app (it serves the built `apps/ui/build`, which includes
       `static/`); check the CSP, if one is set, allows `font-src 'self'`.
-- [ ] **Tokens.** Rewrite `styles/tokens.css`. Roles, with the values from
+- [x] **Tokens.** Rewrite `styles/tokens.css`. Roles, with the values from
       `docs/design/redrawn/tokens.css`:
       `--color-ground`, `--color-ink`, `--color-alarm`, `--color-inert` (defined, unused);
       `--font-shell`; `--text-shell: 15px` with `--text-shell--line-height: 22px`;
@@ -109,9 +109,9 @@ looks. The queue will look odd at the end of this phase — old row, new type �
       Delete `paper`, `ink-muted`, `accent`, `good`, `prose`/`mono` faces, both text sizes, and
       every composer/modal/tree/consult/log-rail spacing. `light-dark()` stays: ground and ink
       swap, alarm does not. The dark values are `#000`/`#fff`, nothing warmer.
-- [ ] **Base.** `styles/base.css`: body in `--font-shell` at `--text-shell`; `a:hover` is an
+- [x] **Base.** `styles/base.css`: body in `--font-shell` at `--text-shell`; `a:hover` is an
       underline, never a colour; `text-wrap: pretty`.
-- [ ] **Port the components** so every `font-mono`, `font-prose`, `text-mono`, `text-prose`,
+- [x] **Port the components** so every `font-mono`, `font-prose`, `text-mono`, `text-prose`,
       `text-ink-muted`, `text-good`, `text-accent`, `bg-ink/5`, `border-ink/20` is gone.
       Counts at the time of writing: `font-mono` 65 uses in 40 files, `text-ink-muted` 128,
       `text-good` 4, `font-prose`/`text-prose` 8. Muted becomes regular weight (drop the class);
@@ -119,25 +119,25 @@ looks. The queue will look odd at the end of this phase — old row, new type �
       `text-accent` on a failure or a destructive action becomes `text-alarm`, and on anything
       else (a link under the cursor, a primary action, the open row's edge) it is dropped.
       Primary actions are `font-semibold`; the one inverted control is `capture`/`route`.
-- [ ] **Extend the gate.** `tokens.test.ts` gains a `FORBIDDEN` entry per retired class name so
+- [x] **Extend the gate.** `tokens.test.ts` gains a `FORBIDDEN` entry per retired class name so
       none comes back: `font-mono`, `font-prose`, `text-mono`, `text-prose`, `text-ink-muted`,
       `text-good`, `text-accent`, `text-paper`, `bg-paper`. Keep the existing entries.
-- [ ] **The bar.** `routes/+layout.svelte` and `primitives/frame/Bar.svelte`, `Nav.svelte`:
+- [x] **The bar.** `routes/+layout.svelte` and `primitives/frame/Bar.svelte`, `Nav.svelte`:
       four surfaces `queue · feed · log · settings` as one `Nav`, the current one
       `font-semibold` (drop the `inverted` class), no wordmark, no `Order`, no `Shown`, no
       `Waiting`, no `ThemeToggle`. One glyph at the right: `●` reachable, `○` unreachable, `◐`
       when the outbox holds work, with `title` saying which and the count. One component,
       `frame/Status.svelte`, replacing `Reachability.svelte` and `Waiting.svelte`. The signed-out
       bar keeps the word `notemap`, in the face, regular.
-- [ ] **The order control moves.** `Order.svelte` is rendered by `Queue`, `Feed` and `Log` in a
+- [x] **The order control moves.** `Order.svelte` is rendered by `Queue`, `Feed` and `Log` in a
       list head of their own (`primitives/register/Head.svelte`: a flex row, `justify-between`,
       `pt-5 pb-2`), not by the layout. The log's `Shown` count goes with it, into the log's head.
-- [ ] **Theme in settings.** `ThemeToggle` leaves the layout; settings gains an `Appearance`
+- [x] **Theme in settings.** `ThemeToggle` leaves the layout; settings gains an `Appearance`
       section with the same three-way choice drawn as a row of options (`auto · light · dark`,
       the chosen one bold). `lib/theme.svelte.ts` is unchanged.
-- [ ] **Spec.** Rewrite `Tokens and themes` and `Visual direction` in `shell.md`, and the bar
+- [x] **Spec.** Rewrite `Tokens and themes` and `Visual direction` in `shell.md`, and the bar
       paragraph of `The shape of the shell`. Add a `Shipped:` entry linking here.
-- [ ] Typecheck, tests, lint; `git commit`.
+- [x] Typecheck, tests, lint; `git commit`. _(2026-09-14)_
 
 ### Phase 3 — the queue row and the quick tier
 

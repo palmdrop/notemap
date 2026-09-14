@@ -8,7 +8,9 @@
   import CaptureRow from "$components/capture/CaptureRow.svelte";
   import Drained from "$components/queue/Drained.svelte";
   import Row from "$components/item/Row.svelte";
+  import Order from "$components/order/Order.svelte";
   import ProcessingComposer from "$components/routing/ProcessingComposer.svelte";
+  import Head from "$components/primitives/register/Head.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
   import Register from "$components/primitives/register/Register.svelte";
@@ -164,6 +166,10 @@
     close();
   }}
 />
+
+<Head>
+  <span class="ml-auto"><Order /></span>
+</Head>
 
 <Register furled={rail.furled} onfurl={() => rail.toggle()}>
   <CaptureRow />

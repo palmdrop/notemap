@@ -130,11 +130,9 @@
     aria-pressed="true"
     onclick={() => onremove(name)}
     aria-label={fired === undefined ? undefined : `${name}, routes to ${fired}`}
-    class="font-mono hover:text-accent"
+    class="hover:underline"
   >
-    {name}{#if fired !== undefined}<span class="text-ink-muted"
-        >&nbsp;→&nbsp;{fired}</span
-      >{/if}
+    {name}{#if fired !== undefined}<span>&nbsp;→&nbsp;{fired}</span>{/if}
   </button>
 {/each}
 
@@ -155,7 +153,7 @@
       aria-expanded={shown.length > 0}
       aria-controls="{id}-tags"
       aria-activedescendant={active}
-      class="w-32 px-2 py-0.5 font-mono outline-none field"
+      class="w-32 border-b border-ink px-2 py-0.5 outline-none"
     />
     {#if shown.length > 0}
       <!-- In flow rather than floated: the composer scrolls inside a modal,
@@ -166,7 +164,7 @@
         id="{id}-tags"
         role="listbox"
         aria-label="Tags in use"
-        class="mt-1 max-h-64 w-max min-w-36 overflow-y-auto border border-ink bg-paper px-2.5 py-1 font-mono"
+        class="mt-1 max-h-64 w-max min-w-36 overflow-y-auto border border-ink bg-ground px-2.5 py-1"
       >
         {#each shown as entry, index (entry.label)}
           {@const on = moved && at === index}
@@ -174,10 +172,9 @@
           <Walked
             id={on ? `${id}-tag-${index}` : undefined}
             {on}
-            dim={!on}
             ontake={() => take(entry.label)}
           >
-            {entry.label}{#if fired !== undefined}<span class="text-ink-muted"
+            {entry.label}{#if fired !== undefined}<span
                 >&nbsp;→&nbsp;{fired}</span
               >{/if}
           </Walked>
@@ -190,6 +187,6 @@
     type="button"
     aria-label="Add a tag"
     onclick={() => (adding = true)}
-    class="text-ink-muted hover:text-accent">+</button
+    class="hover:underline">+</button
   >
 {/if}

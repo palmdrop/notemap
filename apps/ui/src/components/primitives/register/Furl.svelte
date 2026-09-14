@@ -10,7 +10,7 @@
     onclick={ontoggle}
     aria-pressed={furled}
     aria-label={furled ? "Show metadata" : "Hide metadata"}
-    class="absolute bottom-0 px-2 font-mono leading-none text-ink-muted hover:text-accent
+    class="absolute bottom-0 px-2 leading-none hover:underline
       {furled ? 'left-0 -ml-2' : 'left-[var(--spacing-rail)] -translate-x-1/2'}"
   >
     {furled ? "▸" : "◂"}

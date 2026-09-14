@@ -16,7 +16,7 @@
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import { itemHref } from "$components/item/href";
-  import { became, editable, finished } from "$lib/lineage";
+  import { became, editable } from "$lib/lineage";
   import { recordsOf } from "$lib/records.svelte";
   import { briefly } from "$lib/stamp";
 
@@ -83,7 +83,7 @@
   />
 
   {#if records.refused !== ""}
-    <div role="status" class="mt-2 text-accent">{records.refused}</div>
+    <div role="status" class="mt-2 text-alarm">{records.refused}</div>
   {/if}
 
   <!-- What it is, the capture says; what a fact answers is what it cannot. -->
@@ -101,7 +101,7 @@
   onreach={() => void goto(itemHref(item.id))}
 >
   {#if furled}
-    <div class="mb-2 flex flex-wrap items-baseline gap-3 font-mono">
+    <div class="mb-2 flex flex-wrap items-baseline gap-3">
       <Stamp at={item.createdAt} {opened} onopen={() => onopen()} />
 
       {#if word !== undefined}
@@ -117,7 +117,7 @@
   {#if editing && mayEdit}
     <Edit {item} ondone={() => (editing = false)} />
   {:else}
-    <Payload {item} muted={finished(item)} />
+    <Payload {item} />
   {/if}
 
   {#if opened}

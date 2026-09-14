@@ -39,7 +39,7 @@
   <button
     type="button"
     onclick={() => (open = true)}
-    class="mt-1.5 font-mono text-ink-muted hover:text-accent"
+    class="mt-1.5 hover:underline"
   >
     + {over} lines
   </button>

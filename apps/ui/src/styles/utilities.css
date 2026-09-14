@@ -1,18 +1,11 @@
 /**
- * Ink fill, paper text: this is the current one, or the chosen one. Bled by its
- * own padding so the text still sits on the column it belongs to.
+ * Ink fill, ground text: the one inverted control on a surface — `capture`,
+ * `route`. Bled by its own padding so the text still sits on the column it
+ * belongs to.
  */
 @utility inverted {
   background: var(--color-ink);
-  color: var(--color-paper);
-  padding-inline: 0.375rem;
-  margin-inline: -0.375rem;
-}
-
-/** The same mark, where what it names went wrong. */
-@utility inverted-accent {
-  background: var(--color-accent);
-  color: var(--color-paper);
+  color: var(--color-ground);
   padding-inline: 0.375rem;
   margin-inline: -0.375rem;
 }
@@ -23,31 +16,4 @@
  */
 @utility cleared {
   padding-block: 5rem;
-}
-
-/**
- * A panel filled with a role colour, carrying paper text. The shell hovers to
- * the accent everywhere else, which on a panel that is already filled is a
- * control that disappears under the pointer.
- */
-@utility filled {
-  color: var(--color-paper);
-
-  a:hover,
-  button:hover {
-    color: var(--color-paper);
-    opacity: 0.7;
-  }
-}
-
-/**
- * A typed field is a ground and never a rule, which leaves a rule meaning one
- * thing: a division between bands. On a row that is itself filled it takes the
- * paper back — a fainter fill over a fill is no field at all.
- */
-@utility field {
-  background: var(
-    --field-ground,
-    color-mix(in oklab, var(--color-ink) 5%, var(--color-paper))
-  );
 }

@@ -22,11 +22,11 @@
 
 <Rail {first}>
   <Stamp at={action.at} />
-  <div class="mt-2 break-words text-ink-muted">{agentOf(action.by)}</div>
+  <div class="mt-2 break-words">{agentOf(action.by)}</div>
 </Rail>
 
 <Body {first}>
-  <div class="font-mono">
+  <div>
     <StateWord word={action.kind} inline failed={bad} />
 
     {#if action.subject !== undefined}

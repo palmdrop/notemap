@@ -217,10 +217,10 @@
            came for, and the only line here that leaves notemap. A link only
            where the destination offered one — the shell never guesses whether
            a string is a URL. -->
-      <div class="font-mono text-ink-muted">where it landed</div>
-      <div class="mt-2 font-mono break-words">
+      <div class="tracking-caps uppercase">where it landed</div>
+      <div class="mt-2 break-words">
         {#if record.pointer === undefined}
-          <span class="text-ink-muted"
+          <span
             >{target.kind === "user"
               ? NO_POINTER_BY_HAND
               : NO_POINTER_KEPT}</span
@@ -233,14 +233,14 @@
       </div>
 
       {#if target.kind === "user" && target.note !== undefined}
-        <div class="mt-6 font-mono text-ink-muted">note</div>
+        <div class="mt-6 tracking-caps uppercase">note</div>
         <div class="mt-2 break-words">{target.note}</div>
       {/if}
 
       {#if carried !== undefined}
-        <div class="mt-6 font-mono text-ink-muted">words</div>
+        <div class="mt-6 tracking-caps uppercase">words</div>
         <div class="mt-2 break-words whitespace-pre-wrap">{carried}</div>
-        <div class="mt-2 font-mono text-ink-muted">{WORDS_WERE_ITS_OWN}</div>
+        <div class="mt-2">{WORDS_WERE_ITS_OWN}</div>
       {/if}
 
       <div class="mt-6">
@@ -265,11 +265,11 @@
         </div>
         {#if opened}
           {#if given.length === 0}
-            <div class="mt-2 font-mono text-ink-muted">no arguments</div>
+            <div class="mt-2">no arguments</div>
           {:else}
             <Facts>
               {#each given as argument (argument.name)}
-                <Fact name={argument.name} empty={argument.said === ""}>
+                <Fact name={argument.name}>
                   {argument.said === "" ? "blank" : argument.said}
                 </Fact>
               {/each}
@@ -292,11 +292,11 @@
     </Rail>
     <Body first>
       {#if records.refused !== ""}
-        <div role="status" class="font-mono text-accent">{records.refused}</div>
+        <div role="status" class="text-alarm">{records.refused}</div>
       {:else if records.settled}
         <Prose text={NO_SUCH_RECORD} />
       {:else if !pool.yes}
-        <div class="font-mono text-ink-muted">{NO_RECORDS_OFFLINE}</div>
+        <div>{NO_RECORDS_OFFLINE}</div>
       {/if}
     </Body>
   {/if}

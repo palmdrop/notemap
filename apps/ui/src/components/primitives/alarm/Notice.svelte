@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
    * Something that has already happened, said to somebody who did not ask. The
-   * accent is spent where it may want acting on; a confirmation is the ink.
+   * alarm is spent where it may want acting on; a confirmation is the ink.
    *
    * Standing usually means something went wrong, so it carries the accent by
    * default — but not always: a notice may stand because what it offers must
@@ -34,7 +34,9 @@
 
 <div
   role={alarming ? "alert" : "status"}
-  class="grid gap-1.5 px-3 py-2.5 filled {alarming ? 'bg-accent' : 'bg-ink'}"
+  class="grid gap-1.5 border bg-ground px-3 py-2.5 {alarming
+    ? 'border-alarm text-alarm'
+    : 'border-ink'}"
 >
   <span class="break-words">{what}</span>
 
@@ -43,7 +45,7 @@
   {/if}
 
   {#if about !== undefined}
-    <span class="break-words opacity-70">{about}</span>
+    <span class="break-words">{about}</span>
   {/if}
 
   {#if href !== undefined || offer !== undefined || ondismiss !== undefined}

@@ -2,70 +2,58 @@
  * The shell's whole visual system. Every colour, face, size and measure it is
  * allowed to use is named here by role; nothing outside this file names one.
  *
- * The three namespaces are cleared first, so Tailwind's own palette and type
- * scale are gone: `text-neutral-500` does not compile, which is what keeps the
- * rule mechanical rather than a matter of discipline.
+ * The namespaces are cleared first, so Tailwind's own palette and type scale
+ * are gone: `text-neutral-500` does not compile, which is what keeps the rule
+ * mechanical rather than a matter of discipline.
  */
 @theme {
   --color-*: initial;
   --font-*: initial;
   --text-*: initial;
   --breakpoint-*: initial;
+  --tracking-*: initial;
+  --max-width-*: initial;
 
-  --color-paper: light-dark(oklch(0.972 0.009 85), oklch(0.185 0.008 60));
-  --color-ink: light-dark(oklch(0.24 0.013 55), oklch(0.93 0.006 85));
-  --color-ink-muted: light-dark(oklch(0.58 0.011 55), oklch(0.63 0.01 60));
-  --color-accent: light-dark(oklch(0.55 0.215 28), oklch(0.58 0.225 27));
+  /* Two colours and one red. Dark is the inversion: ground and ink swap, the
+     red stays. */
+  --color-ground: light-dark(#ffffff, #000000);
+  --color-ink: light-dark(#000000, #ffffff);
+  --color-alarm: #d40000;
 
-  /* Something was asked and the answer was yes. Never spent on an intention:
-     what a person is about to do has produced no result to report. */
-  --color-good: light-dark(oklch(0.5 0.11 148), oklch(0.68 0.13 150));
+  /* The one grey, admitted only where nothing else can say inert. Unused. */
+  --color-inert: #808080;
 
-  --font-prose: serif;
-  --font-mono: monospace;
-  --default-font-family: var(--font-prose);
+  --font-shell:
+    "Bricolage Grotesque", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --default-font-family: var(--font-shell);
 
-  --text-mono: 1.0625rem;
-  --text-prose: 1.25rem;
+  --text-shell: 15px;
+  --text-shell--line-height: 22px;
 
-  --spacing-rail: 17rem;
-  --spacing-gap: 2.2rem;
-  --spacing-fact: 5.5rem;
-  --spacing-modal: 30rem;
+  /* The bar's status mark, which is a glyph and not a word: at the shell's
+     size a filled circle reads as a button. */
+  --text-glyph: 11px;
+  --text-glyph--line-height: 22px;
 
-  /* The composer earns a measure of its own once it has two columns, and the
-     modal growing when it gains the second is the one moment it may change
-     size: a decision was just made. `--spacing-modal` stays what the untaken
-     composer and the confirm that shares it want. */
-  --spacing-composer: 48rem;
-  --spacing-consult: 17rem;
+  --tracking-caps: 0.08em;
 
-  /* The room four or five levels need. A tree that gains and loses a whole
-     level as a segment is typed moves everything under it, and the control
-     being typed into must not move under the caret. */
-  --spacing-tree: 12.5rem;
+  --spacing-rail: 11rem;
+  --spacing-rail-narrow: 5.75rem;
+  --spacing-gutter: 1.5rem;
   --spacing-measure: 72rem;
-
-  /* Settings is read rather than scanned, so it takes a narrower measure than
-     the register — which is itself the signal that it is a different page. */
-  --spacing-read: 46rem;
-
-  /* The log's rail holds a stamp and one short word; the register's holds a
-     row's whole account, and 17rem of it would be empty here. */
-  --spacing-log-rail: 11rem;
-  --spacing-mark: 1.8rem;
+  --spacing-read: 44rem;
+  --spacing-prose: 38rem;
+  --spacing-gap-time: 28px;
 
   --breakpoint-narrow: 44rem;
+  --breakpoint-wide: 64rem;
 }
 
-/* A phone keeps both columns — the rail is what says what a thing is — but a
-   rail this wide would leave nothing for the prose. */
-@media (width < 44rem) {
-  :root {
-    --spacing-rail: 6.5rem;
-    --spacing-gap: 1rem;
-    /* Not the register's 6.5rem: `2026-09-02` is ten monospace characters and
-       wraps mid-date below that, which reads as a different day. */
-    --spacing-log-rail: 7.5rem;
-  }
+/* Served by the daemon beside the app, so it is exactly as offline as the app. */
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/bricolage-grotesque-latin.woff2") format("woff2");
 }

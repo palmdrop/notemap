@@ -98,7 +98,7 @@
 
 <Rail first>
   <Stamp {at} />
-  <div class="mt-2 text-ink-muted">not captured</div>
+  <div class="mt-2">not captured</div>
 </Rail>
 
 <Body first>
@@ -121,11 +121,10 @@
         }
       }}
       aria-label="What to capture"
-      class="min-h-18 w-full resize-y bg-transparent font-prose text-prose outline-none placeholder:text-ink-muted"
-    ></textarea>
+      class="min-h-18 w-full resize-y bg-transparent outline-none"></textarea>
 
     {#if chosen !== undefined}
-      <div class="mt-3 flex items-end gap-4 font-mono">
+      <div class="mt-3 flex items-end gap-4">
         {#if preview !== undefined}
           <img
             src={preview}
@@ -133,11 +132,9 @@
             class="size-21 border border-ink object-cover"
           />
         {/if}
-        <span class="min-w-0 break-words text-ink-muted">{chosen.name}</span>
-        <button
-          type="button"
-          onclick={drop}
-          class="shrink-0 text-ink-muted hover:text-accent">drop</button
+        <span class="min-w-0 break-words">{chosen.name}</span>
+        <button type="button" onclick={drop} class="shrink-0 hover:underline"
+          >drop</button
         >
       </div>
     {/if}
@@ -157,7 +154,7 @@
 
       {#if said !== ""}
         <!-- Only a failure reaches this: the capture itself waits on nothing. -->
-        <span role="status" class="text-accent">{said}</span>
+        <span role="status" class="text-alarm">{said}</span>
       {/if}
     </ActionRow>
   </form>
