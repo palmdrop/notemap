@@ -1,7 +1,4 @@
 <script lang="ts">
-  import type { DestinationDescription } from "@notemap/client";
-
-  import Action from "$components/primitives/controls/Action.svelte";
   import Output from "$components/routing/Output.svelte";
   import { itemHref } from "$components/item/href";
   import Body from "$components/primitives/register/Body.svelte";
@@ -12,9 +9,6 @@
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
-  import { argumentsOf } from "$lib/arguments";
-  import { nameFor } from "$lib/names.svelte";
-  import { resolve } from "$lib/naming";
   import { didWhat } from "$lib/capability";
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
@@ -37,17 +31,6 @@
   const pool = reachable();
   const destinations = client.destinations.all;
 
-  let described = $state<DestinationDescription | undefined>(undefined);
-
-  const held = $derived(client.held(id));
-  const item = $derived($held);
-
-  // The item is read so this surface can say what the record is about; what it
-  // says comes from whatever the client holds afterwards.
-  $effect(() => {
-    void client.item(id);
-  });
-
   const records = recordsOf(
     () => id,
     () => pool.yes,
@@ -56,64 +39,6 @@
   const record = $derived(records.all.find((one) => one.id === wanted));
   const target = $derived(record?.target);
 
-  $effect(() => {
-    described = undefined;
-    if (target === undefined || target.kind !== "destination") return;
-
-    const asking = target.destination;
-    void (async () => {
-      try {
-        const answer = await client.destinations.describe(asking);
-        if (target?.kind === "destination" && asking === target.destination) {
-          described = answer;
-        }
-      } catch {
-        // A destination that cannot be described is drawn by its own keys,
-        // which is the honest fallback rather than a failure of this surface.
-      }
-    })();
-  });
-
-  const capability = $derived(
-    described?.kind === "described" &&
-      target !== undefined &&
-      target.kind === "destination"
-      ? described.capabilities.find((one) => one.name === target.capability)
-      : undefined,
-  );
-
-  /** A record is read to find out where something went, so the id is the wrong answer. */
-  $effect(() => {
-    if (target === undefined || target.kind !== "destination") return;
-    const asking = target;
-    void resolve(
-      asking.destination,
-      Object.keys(asking.arguments).map((field) => ({
-        capability: asking.capability,
-        field,
-        value: String(asking.arguments[field] ?? ""),
-      })),
-    );
-  });
-
-  const given = $derived(
-    target !== undefined && target.kind === "destination"
-      ? argumentsOf(
-          target.arguments,
-          capability?.argumentsSchema,
-          (field, value) =>
-            target.kind === "destination"
-              ? nameFor({
-                  destination: target.destination,
-                  capability: target.capability,
-                  field,
-                  value,
-                })
-              : undefined,
-        )
-      : [],
-  );
-
   /** Marking processed is routing whose destination is the person, so it names one. */
   const destination = $derived(
     target !== undefined && target.kind === "destination"
@@ -121,8 +46,6 @@
           "a destination")
       : "the user",
   );
-
-  const said = $derived(item === undefined ? "" : client.says(item));
 
   /**
    * The words this delivery carried, where they were not the capture's. What
@@ -136,9 +59,6 @@
   );
 
   const link = $derived(followable(record?.url));
-
-  /** The arguments, which are a second reading of a record rather than the first. */
-  let opened = $state(false);
 
   let output = $state<string | undefined>(undefined);
   let reading = $state(false);
@@ -204,33 +124,28 @@
           : "Marked done by hand"}
       </div>
 
+      <!-- The destination and the place inside it, adjacent: one address in
+           two parts. A link only where the destination offered one — the
+           shell never guesses whether a string is a URL. -->
       <Facts>
-        <Fact name="where">{destination}</Fact>
+        <Fact name="destination">{destination}</Fact>
+        <Fact name="place">
+          {#if record.pointer === undefined}
+            {target.kind === "user" ? NO_POINTER_BY_HAND : NO_POINTER_KEPT}
+          {:else if link === undefined}
+            {record.pointer}
+          {:else}
+            <a href={link} rel="noreferrer">{record.pointer}</a>
+          {/if}
+        </Fact>
         <Fact name="item">
-          <a href={itemHref(id)}>{said || THIS_ITEM}</a>
+          <a href={itemHref(id)}>{THIS_ITEM}</a>
         </Fact>
       </Facts>
     </Rail>
 
     <Body>
-      <!-- Where to go and look, first: it is what somebody reading a record
-           came for, and the only line here that leaves notemap. A link only
-           where the destination offered one — the shell never guesses whether
-           a string is a URL. -->
-      <div class="tracking-caps uppercase">where it landed</div>
-      <div class="mt-2 break-words">
-        {#if record.pointer === undefined}
-          <span
-            >{target.kind === "user"
-              ? NO_POINTER_BY_HAND
-              : NO_POINTER_KEPT}</span
-          >
-        {:else if link === undefined}
-          {record.pointer}
-        {:else}
-          <a href={link} rel="noreferrer">{record.pointer}</a>
-        {/if}
-      </div>
+      <div class="font-semibold tracking-caps uppercase">routing record</div>
 
       {#if target.kind === "user" && target.note !== undefined}
         <div class="mt-6 tracking-caps uppercase">note</div>
@@ -245,7 +160,6 @@
 
       <div class="mt-6">
         <Output
-          heading="what was sent"
           note={record.output?.note}
           text={output}
           said={saidAboutOutput}
@@ -253,30 +167,6 @@
           busy={reading}
         />
       </div>
-
-      <!-- The decision, rather than its effect: a field name and a pattern
-           expanded belong to whoever is working out why it went there, which
-           is not what most readings of a record are for. -->
-      {#if target.kind === "destination"}
-        <div class="mt-6">
-          <Action onclick={() => (opened = !opened)}>
-            {opened ? "hide the decision" : "the decision"}
-          </Action>
-        </div>
-        {#if opened}
-          {#if given.length === 0}
-            <div class="mt-2">no arguments</div>
-          {:else}
-            <Facts>
-              {#each given as argument (argument.name)}
-                <Fact name={argument.name}>
-                  {argument.said === "" ? "blank" : argument.said}
-                </Fact>
-              {/each}
-            </Facts>
-          {/if}
-        {/if}
-      {/if}
     </Body>
   {:else}
     <Rail>
@@ -286,7 +176,7 @@
 
       <Facts>
         <Fact name="item">
-          <a href={itemHref(id)}>{said || THIS_ITEM}</a>
+          <a href={itemHref(id)}>{THIS_ITEM}</a>
         </Fact>
       </Facts>
     </Rail>

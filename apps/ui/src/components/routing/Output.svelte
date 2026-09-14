@@ -23,7 +23,7 @@
   } = $props();
 </script>
 
-<div>{heading}</div>
+<div class="tracking-caps uppercase">{heading}</div>
 
 {#if note !== undefined}
   <div class="mt-2 break-words">{note}</div>

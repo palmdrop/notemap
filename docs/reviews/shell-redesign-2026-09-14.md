@@ -198,3 +198,9 @@ Reconciled with the developer's design notes (numbered 12–18 below, theirs) on
     process surface from `wide`. Settings keeps its own 44rem inside.
 19. **Fixed** (theirs, added). The log: no lede, no source in the rail, views in the list head,
     the kind inverted (ground on ink; ground on the alarm for the three failures).
+20. **Fixed** (theirs, added). A sweep of `issues-2026-09-11.md` for the easy removals: the
+    record's `the decision` is gone with the arguments and their schema read; `where` → `destination`
+    with `place` beside it; `what was sent` → `output`; the item link is `this item`, not the
+    capture's words; a `routing record` heading; the settings lede is gone and section headings
+    are bold. Left for phase 5/6: the log's routing detail (ids, `firedByTag`, `pointer`), `only
+    this`, `daemon`/`session`/`sources`, the side menu.

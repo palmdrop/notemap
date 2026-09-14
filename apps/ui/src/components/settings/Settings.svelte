@@ -9,7 +9,7 @@
   import Tokens from "$components/settings/Tokens.svelte";
 </script>
 
-<Page lede="What this pool can reach, and where it keeps things.">
+<Page>
   <Destinations />
   <Templates />
   <Sources />

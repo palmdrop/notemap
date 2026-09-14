@@ -976,21 +976,24 @@ says out of reach as out of reach, muted and offering nothing, while the item be
 drawing from whatever the client holds — one surface, two answers about freshness, which is what
 the three conditions are for.
 
-**A record is drawn in full**: what the delivery did, the destination by name, when the decision
-was made, the arguments it was given, and the pointer to where it landed. The **state** is there
+**A record is drawn in full**: what the delivery did, the destination by name and the place inside
+it beside it, when the decision was made, and the output. *The arguments are not drawn at all
+(2026-09-14; they were behind `the decision`)*: a field name and a pattern expanded belong to
+somebody working out **why** it went there, and nobody opens a record for that. The rail's facts
+are `destination`, `place`, `item` — the last a way to the capture, `this item`, never its words,
+which the output already carries. The body is headed `routing record` and carries `output`. The
+**state** is there
 only where it is not `delivered` *(amended 2026-09-04)*, on the same reasoning as the row's line. Marking
 processed is routing whose destination is the person, so it reads as one, with its note beneath the
 place — and nothing at all where there is no note, a heading over `none` being a row spent saying
 that somebody left a field empty. The place says **done by hand** there rather than that a
 destination named nowhere to look: nothing was asked of anything, so nothing declined to answer.
 
-**Where it landed leads, and the decision is a press away** *(amended 2026-09-09; the arguments led
-and the pointer sat under them)*. Reading a record is almost always asking *where did this go, and
-what went* — a place to open and the bytes that were sent — so those two are the page and the
-arguments are behind `the decision`. Nothing is hidden that was not there before: a field name and a
-pattern expanded belong to somebody working out **why** it went there, which is a second reading of
-a record rather than the first. The arguments still draw against the capability's own schema when
-they are opened, and marking processed offers nothing to open, having made no argument set.
+**The place leads** *(amended 2026-09-09; the arguments led and the pointer sat under them; on
+2026-09-14 the arguments went altogether)*. Reading a record is almost always asking *where did
+this go, and what went* — a place to open and the bytes that were sent — so those two are the
+page. The record block that draws the same thing inline on the item and in the log is phase 5 of
+[shell-redesign](../plans/shell-redesign.md).
 
 **What it did is said, not the capability that did it.** A capability name is what a destination
 advertises and what a rule is written against ([CONTEXT.md](../../CONTEXT.md)), and a person
@@ -1403,7 +1406,8 @@ timeline.
 
 Settings is not a register and is not drawn as one. It is read rather than scanned, so it takes a
 **narrower measure** than the two surfaces — which is itself the signal that it is a different kind
-of page — in **one column**, with no rail and nothing to furl.
+of page — in **one column**, with no rail and nothing to furl. It has no lede *(2026-09-14)*: the
+sections say what is on the page. Section headings are bold capitals over a rule.
 
 **One type size, and the hierarchy comes from capitals and rules.** Three levels, meant to be
 countable: a **section** is muted ink at the widest tracking with a full-weight rule under it; a

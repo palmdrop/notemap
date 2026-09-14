@@ -1,10 +1,9 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  let { lede, children }: { lede: string; children: Snippet } = $props();
+  let { children }: { children: Snippet } = $props();
 </script>
 
-<div class="max-w-read pt-10">
-  <p class="m-0">{lede}</p>
+<div class="max-w-read pt-4">
   {@render children()}
 </div>
