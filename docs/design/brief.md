@@ -1,6 +1,7 @@
 # The shell, redrawn — design brief
 
-**Date**: 2026-09-14, revised the same day after the first round was looked at
+**Date**: 2026-09-14, revised twice the same day; settled for the first version
+**Drawings**: `docs/design/redrawn/` — `queue.html`, `process.html`, `tokens.css`, `shots/`
 **Status**: First draft. Every decision below may be reversed once it has been drawn and looked at.
 Drafts are drawn in light; dark is the inversion and is drawn last.
 **Supersedes**: the visual direction in [shell.md](../specs/shell.md#visual-direction) and the
@@ -113,10 +114,10 @@ them use size for hierarchy. None of them use grey.
 
 ### Type
 
-- **One face**: a self-hosted grotesk, served by the daemon beside the app. Which one is being
-  chosen from ten samples on the process surface (`Type.dc.html`, turn 5); Plex Sans is the
-  stand-in until then. Tabular figures in the stamp column and nowhere else — applied to a whole
-  page they spread some faces' punctuation.
+- **One face**: Bricolage Grotesque, weights 400 and 600, self-hosted and served by the daemon
+  beside the app. Chosen from ten samples on the process surface (`Type.dc.html`, turn 5).
+  Tabular figures in the stamp column and nowhere else — applied to a whole page they spread some
+  faces' punctuation.
 - **One size.** Literally. Captured prose, timestamps, labels, actions, the bar.
 - Hierarchy is weight (regular / bold), capitals or small-caps with tracking for labels, and
   position. A label is caps; a value is regular; a primary action is bold.
@@ -170,16 +171,15 @@ is unrouted, so saying it says nothing. No `+`. No grey. The queue should read a
 what was written.
 
 **A selected row** — one click or `enter` — is drawn as a box around both columns, the rail's
-rule running through it, with the actions as the box's own foot: `process · manual · discard ·
-tag` on the left, `process` bold, `discard` red; edit, copy and open on the right as marks (a
-pen, two sheets, an outgoing arrow). `tag` opens the chooser in place, which is also how a
-template is applied, since a template is a tag. No fill, no colour: the box is the selection.
-*The alternative still on the table* (`Queue.dc.html`, 3b): no box, the rail's rule heavier
-beside the row, the actions on a ruled line under the text with the marks spelt out.
+rule running through it, with the actions as the box's own foot: `process · manual · discard`
+on the left, `process` bold, `discard` red; `edit · copy · open` on the right. Words only; no
+marks for now. The rail's tags end in a `+` on the selected row, which opens the chooser in
+place — and is also how a template is applied, since a template is a tag. No fill, no colour:
+the box is the selection.
 
 A double click, or `enter` on a selected row, goes to the process surface.
 
-**Keyboard**: `j`/`k` walk rows, `enter` selects then opens, `d` discard, `m` manual, `t` tag,
+**Keyboard**: `j`/`k` walk rows, `enter` selects then opens, `d` discard, `m` manual, `+` tag,
 `p` process, `esc` deselects. Draw the actions so a reader could guess these; do not print them.
 
 **The index** is a second view of the same list, toggled in the head beside the order control:
@@ -195,7 +195,7 @@ the index for now; whether the timeline wants it too is a thing to look at once 
 A surface, not a modal. Three regions, in **two columns from 64rem up** — the capture on the
 left, the decision on the right, a rule between — and **stacked below it**:
 
-- **Head, fixed**: the capture, read-only until the pen at its right, a double click, or `e`
+- **Head, fixed**: the capture, read-only until `edit` at its right, a double click, or `e`
   opens it — then a ruled box with the caret in it, `keep the capture's` to put the words back
   and `done` to close. The words are this delivery's alone; the item is untouched. A picture
   capture draws the picture; long text scrolls within the head, not the page.

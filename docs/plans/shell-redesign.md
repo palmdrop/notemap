@@ -1,7 +1,7 @@
 # The shell, redrawn
 
 **Date**: 2026-09-14
-**Status**: In progress
+**Status**: In progress — the design phase is done; phases 2–4 are the first implementation
 **Spec**: `docs/specs/shell.md`
 **Closed**:
 
@@ -14,14 +14,60 @@ regional rules; processing has a quick tier on the queue row and a deep tier on 
 advances through the queue; and every finding in
 [issues-2026-09-11.md](../design/issues-2026-09-11.md) is either built or dropped with a reason.
 
-This is a programme rather than a slice. Phase 1 is the design work; the phases after it are
-named here so the order is visible, and each is expanded into tasks when its design is settled
-and not before. The direction is [ADR 46](../adr/0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md);
-the statement of the system is [the brief](../design/brief.md).
+This is a programme. Phase 1 was the design work. **Phases 2, 3 and 4 together are the first
+version** and are what an agent picking this up implements, in order, one PR per phase. Phases
+5–7 are named so the order is visible and are expanded when their design is drawn.
 
-Nothing in phase 1 touches code. The Claude Design project is the working surface; `docs/design/`
-stays the ground truth, and a page lands there — as static HTML and CSS, with shots — in the PR
-that implements it.
+The direction is [ADR 46](../adr/0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md).
+The statement of the system is [the brief](../design/brief.md). **The drawings to build against
+are `docs/design/redrawn/`** — `tokens.css`, `queue.html`, `process.html`, and `shots/` of each at
+1440, 1000 and 390. Open the HTML in a browser; the CSS in it is the intended CSS, written plainly
+so it can be read into Tailwind utilities and `@theme` roles. Where the brief and the drawings
+disagree, the drawings win; where the drawings are silent, the brief answers; where both are
+silent, do the simplest thing and say so in the PR.
+
+---
+
+## What the reader of this plan needs to know
+
+Read, in this order, before touching code:
+
+1. `docs/design/brief.md` — the whole system, twenty minutes.
+2. `docs/design/redrawn/queue.html` and `process.html` in a browser at 1440 and at 390, and
+   `#index` / `#editing` on each respectively. Then the CSS in them.
+3. `docs/design/shots/` — the app **as it is**, so the distance is clear.
+4. `docs/specs/shell.md`, the sections `The shape of the shell`, `Capture is the first row of the
+   queue`, `The row`, `The composer is for processing`, `Actions`, `Tagging`, `Tokens and
+   themes`, `Visual direction`. These describe what is being replaced and are rewritten in the
+   PR that replaces each.
+5. `apps/ui/src/styles/tokens.css`, `routes/+layout.svelte`, `components/item/Row.svelte`,
+   `components/item/Actions.svelte`, `components/queue/Queue.svelte`,
+   `components/routing/ProcessingComposer.svelte` (994 lines; the logic survives, the modal does
+   not), `tokens.test.ts` (the gate that stops a component naming a value).
+
+Decisions already made, so they are not asked again:
+
+- **Face**: Bricolage Grotesque, weights 400 and 600, self-hosted. Size 15px, line height 22px,
+  everywhere. No second face, no second size. Tabular figures on the stamp only.
+- **Colour**: `#fff` ground, `#000` ink, `#d40000` alarm. Dark is the inversion, chosen in
+  settings; `auto` follows the browser as today. **Green goes** — a destination that answered
+  says `reached` in words. **Grey goes**; `--inert` exists in the tokens for a disabled control
+  and nothing uses it yet.
+- **Selection** on the queue is a box around both columns with the actions as its foot
+  (`queue.html`, the fifth row). Actions are words: `process manual discard` left, `edit copy
+  open` right. `process` bold, `discard` red. No icons.
+- **Tags** on the selected row end with a `+` that opens the tag chooser in place; no `tag`
+  action word. A trigger tag is drawn as bold small-caps of the name after `route/`.
+- **No state word on the queue**; the feed keeps its words.
+- **The rail's furl goes.** The index view replaces it as the way to see more at once.
+- **Process** is a route, `/items/{id}/process`; the modal composer is deleted. Two columns at
+  ≥64rem, stacked below. `DESTINATION`, not `where`. The capture is read-only until `edit`;
+  the ruled box appears only while editing.
+- **Preview** is requested as soon as destination and place are settled, shown as the first
+  five lines of the file in a ruled block with `more`.
+- The keyboard map for the first version: `j`/`k` walk, `enter` select then open, `d` discard,
+  `m` manual, `p` process, `+` tag, `esc` deselect; on the process surface `e` edit,
+  `⌘/ctrl+enter` route, `esc` back.
 
 ---
 
@@ -33,44 +79,218 @@ that implements it.
 - [x] Screenshots of the app as it is, every surface at 1440 and 390, replacing `docs/design/shots/` _(2026-09-14)_
 - [x] `docs/design/brief.md` _(2026-09-14)_
 - [x] ADR 46 _(2026-09-14)_
-- [x] `docs/design/README.md` says what the directory is now: the brief, the shots of the app as it
-      is, and old mockups that are wrong until each is replaced _(2026-09-14)_
+- [x] `docs/design/README.md` says what the directory is now _(2026-09-14)_
 - [x] A fresh Claude Design project, `notemap shell — redrawn`, holding the brief, the issues and
-      the inspiration notes; images are dropped in by hand if wanted _(2026-09-14)_
-- [x] Round 1 drawn, awaiting review: `tokens.css`, `Queue.dc.html` (1a–1e: open list, ruled list,
-      the index, 390, drained), `Process.dc.html` (2a–2c: stacked, two columns, 390). Not yet
-      drawn: a picture capture on the process surface, the sections collapsed _(2026-09-14)_
-- [x] Round 1 revised on feedback: queue turn 3 (selection as a box or a heavy rule, actions on
-      the box, prose at 38rem, the index as a toggled view with time gaps), process turn 4 (two
-      columns by width, DESTINATION, preview as the file's head, capture editable), `Type.dc.html`
-      with ten faces to choose from _(2026-09-14)_
-- [ ] Choose: the face; 3a or 3b for the selection; whether the timeline takes the time gaps too
-- [ ] Round 2: feed, item with record blocks, log with the tab row, sign-in
-- [ ] Round 3: settings with its side menu, destination and template rows open
-- [ ] Commit the docs; open a PR for the docs alone
+      the inspiration notes _(2026-09-14)_
+- [x] Round 1 drawn and looked at; round 2 drawn on the feedback; ten faces sampled _(2026-09-14)_
+- [x] Chosen: Bricolage Grotesque; selection as a box; words not marks; `+` for tags _(2026-09-14)_
+- [x] The settled drawings as static files in `docs/design/redrawn/` with shots _(2026-09-14)_
+- [ ] Open a PR for the docs alone
 
-### Phase 2 — tokens, face and chrome
+### Phase 2 — the system: face, size, palette, chrome
 
-The one face and the one size, the palette, the bar, the theme moved to settings, the order
-control moved into the lists. Everything downstream sits on it. Expanded when round 1 is settled.
+One PR. Nothing in it changes what a surface does; everything in it changes how every surface
+looks. The queue will look odd at the end of this phase — old row, new type — and that is fine.
+
+- [ ] **Self-host the face.** Download Bricolage Grotesque as a variable `woff2` (Google Fonts
+      serves it; the licence is OFL) into `apps/ui/static/fonts/`, one file, latin subset. An
+      `@font-face` in `styles/base.css` with `font-display: swap`, weights 400–600. Check the
+      daemon serves `static/` with the app (it serves the built `apps/ui/build`, which includes
+      `static/`); check the CSP, if one is set, allows `font-src 'self'`.
+- [ ] **Tokens.** Rewrite `styles/tokens.css`. Roles, with the values from
+      `docs/design/redrawn/tokens.css`:
+      `--color-ground`, `--color-ink`, `--color-alarm`, `--color-inert` (defined, unused);
+      `--font-shell`; `--text-shell: 15px` with `--text-shell--line-height: 22px`;
+      `--spacing-rail: 11rem`, `--spacing-rail-narrow: 5.75rem`, `--spacing-gutter: 1.5rem`,
+      `--spacing-measure: 72rem`, `--spacing-read: 44rem`, `--spacing-prose: 38rem`,
+      `--spacing-gap-time: 28px`; `--breakpoint-narrow: 44rem`, `--breakpoint-wide: 64rem`.
+      Delete `paper`, `ink-muted`, `accent`, `good`, `prose`/`mono` faces, both text sizes, and
+      every composer/modal/tree/consult/log-rail spacing. `light-dark()` stays: ground and ink
+      swap, alarm does not. The dark values are `#000`/`#fff`, nothing warmer.
+- [ ] **Base.** `styles/base.css`: body in `--font-shell` at `--text-shell`; `a:hover` is an
+      underline, never a colour; `text-wrap: pretty`.
+- [ ] **Port the components** so every `font-mono`, `font-prose`, `text-mono`, `text-prose`,
+      `text-ink-muted`, `text-good`, `text-accent`, `bg-ink/5`, `border-ink/20` is gone.
+      Counts at the time of writing: `font-mono` 65 uses in 40 files, `text-ink-muted` 128,
+      `text-good` 4, `font-prose`/`text-prose` 8. Muted becomes regular weight (drop the class);
+      a label that was muted-and-small becomes `uppercase tracking-[var(--track-caps)]`;
+      `text-accent` on a failure or a destructive action becomes `text-alarm`, and on anything
+      else (a link under the cursor, a primary action, the open row's edge) it is dropped.
+      Primary actions are `font-semibold`; the one inverted control is `capture`/`route`.
+- [ ] **Extend the gate.** `tokens.test.ts` gains a `FORBIDDEN` entry per retired class name so
+      none comes back: `font-mono`, `font-prose`, `text-mono`, `text-prose`, `text-ink-muted`,
+      `text-good`, `text-accent`, `text-paper`, `bg-paper`. Keep the existing entries.
+- [ ] **The bar.** `routes/+layout.svelte` and `primitives/frame/Bar.svelte`, `Nav.svelte`:
+      four surfaces `queue · feed · log · settings` as one `Nav`, the current one
+      `font-semibold` (drop the `inverted` class), no wordmark, no `Order`, no `Shown`, no
+      `Waiting`, no `ThemeToggle`. One glyph at the right: `●` reachable, `○` unreachable, `◐`
+      when the outbox holds work, with `title` saying which and the count. One component,
+      `frame/Status.svelte`, replacing `Reachability.svelte` and `Waiting.svelte`. The signed-out
+      bar keeps the word `notemap`, in the face, regular.
+- [ ] **The order control moves.** `Order.svelte` is rendered by `Queue`, `Feed` and `Log` in a
+      list head of their own (`primitives/register/Head.svelte`: a flex row, `justify-between`,
+      `pt-5 pb-2`), not by the layout. The log's `Shown` count goes with it, into the log's head.
+- [ ] **Theme in settings.** `ThemeToggle` leaves the layout; settings gains an `Appearance`
+      section with the same three-way choice drawn as a row of options (`auto · light · dark`,
+      the chosen one bold). `lib/theme.svelte.ts` is unchanged.
+- [ ] **Spec.** Rewrite `Tokens and themes` and `Visual direction` in `shell.md`, and the bar
+      paragraph of `The shape of the shell`. Add a `Shipped:` entry linking here.
+- [ ] Typecheck, tests, lint; `git commit`.
 
 ### Phase 3 — the queue row and the quick tier
 
-Collapsed row, selected row with the ruled strip, the capture box, keyboard walking, `discard` and
-`manual` from the row, the tag chooser as the way to a template.
+One PR. `queue.html` is the drawing; `queue-1440.png`, `queue-390.png`, `queue-index-*.png` the
+shots. The feed shares the row and gets the new row for free; its own head and words are not
+redesigned here beyond what the shared row forces.
+
+- [ ] **The register.** `primitives/register/Register.svelte`: a grid of
+      `[var(--spacing-rail)_1fr]` with no column gap; below `narrow`, `[var(--spacing-rail-narrow)_1fr]`.
+      Delete `Furl.svelte`, `lib/rail.svelte.ts`, the `furled` prop everywhere, and the `brief`
+      variant (the log takes its own measure in phase 5). `Rail.svelte`: `border-r border-ink`,
+      `py-3 pr-4`; no top rule, no `lit` fill, no accent edge. `Body.svelte`: `py-3 pl-gutter`,
+      `min-w-0`; no top rule.
+- [ ] **The selected row is a box.** Selection is what `opened` already is; rename to `selected`
+      where it reads better. On the selected row: `Rail` takes `border-t border-l -ml-3 pl-3`,
+      `Body` takes `border-t border-r -mr-3 pr-3`, and a third grid cell — `Actions` — spans both
+      columns with `border-x border-b -mx-3 px-3 h-9` (`queue.html`, the CSS under “the selected
+      row”). Below `narrow` the negative margins are `-2` (8px). Nothing else about the row
+      changes when it is selected: no fill, no colour, no facts appear.
+- [ ] **The rail's content.** `Stamp` draws date and time on one line (`tabular-nums`, `gap-[1ch]`),
+      stacked below `narrow`. `Tags` draws the words in a wrapping row with `gap-x-[1ch]`, a
+      trigger tag as `font-semibold [font-variant-caps:all-small-caps] tracking-[0.04em]`
+      showing the name after `route/`, and — on the selected row only — a `+` after the last
+      tag that opens the existing `TagSet` chooser in place. `StateWord` is not drawn on the
+      queue (`Row` takes `surface: "queue" | "feed"`; `became()` is only consulted on the feed).
+      `Pending` stays, as a word. `Routing` (where it went) is feed-only already. The `edited`
+      fact goes.
+- [ ] **The body's content.** `Payload`/`Prose` capped at `max-w-prose` (38rem). The picture
+      placeholder and the picture itself keep their current size rule. No muting of finished
+      items (there is no muted ink); a discarded item on the feed says so in its word.
+- [ ] **Actions.** `item/Actions.svelte` becomes the box's foot: left `process` (bold), `manual`,
+      `discard` (`text-alarm`); right `edit`, `copy`, `open`. `unarchive` stays where it was
+      offered, in the left group, on a discarded row. Words only. `manual` calls
+      `client.routing.markProcessed(id, {})` at once, with no note — the note is offered on the
+      process surface's `otherwise` band, not here — and the corner says `marked manual` with
+      `undo` (the take-back `Routing.svelte` already offers on a decision made by hand).
+      `discard` calls `client.archive(id)` at once and the corner says `discarded` with `undo` →
+      `client.unarchive`. Both leave the row held as processing does today (`Queue.svelte`'s
+      `keep`). `open` → `/items/{id}`. `process` → `/items/{id}/process` (phase 4; until then it
+      may keep opening the modal).
+- [ ] **Double click** on a row goes to `/items/{id}/process`, not to the item (`Row.svelte`,
+      `onreach`). The item is reached by `open`.
+- [ ] **The capture box.** `capture/CaptureRow.svelte` stops being a row: a `border border-ink`
+      box above the list head spanning the page, `min-h-[88px]` field with no placeholder and no
+      stamp, a foot with `attach` left and `capture` right, `capture` bold behind a `border-l`.
+      `⇧⏎` still commits. A chosen picture draws inside the box above the text. `not captured`
+      goes. Rename the component `Capture.svelte`.
+- [ ] **The list head.** `primitives/register/Head.svelte` (from phase 2) holds, left, the view
+      toggle `timeline · index` (the current one bold) and, right, `Order`. The view is on the URL
+      as `view=index`, remembered per surface the way order is (`lib/order.ts` shows the pattern;
+      a sibling `lib/view.ts`).
+- [ ] **The index view.** `queue/Index.svelte`: a grid of `[max-content_1fr_max-content]` with
+      `gap-x-6`; per item one line — the stamp as `2026-09-13 07:02`, the first ~96 characters of
+      the text cut at a word with `…`, the tags at the right (below `narrow` the tags column is
+      dropped). Where the gap to the previous item in reading order is more than 12 hours, the
+      line takes `pt-[var(--spacing-gap-time)]` — the same size whether a day or a month passed.
+      A selected line is bold; `enter` on it goes to process; `j`/`k` walk it. The feed gets the
+      same view for nothing if `Index` takes items and a `selected` id; do that.
+- [ ] **The drained queue.** `Drained.svelte` is one line, `Nothing left to process.`, in the
+      body column's position (`pl-[calc(var(--spacing-rail)+var(--spacing-gutter))] pt-8`), and
+      no register is drawn under it.
+- [ ] **Keyboard on the queue.** In `Queue.svelte`, extending the `esc` handler that exists:
+      `j`/`k` move the selection and scroll it into view, `enter` selects the row under the
+      cursor or, if selected, opens process, `d` discard, `m` manual, `p` process, `+` opens the
+      tag chooser, `esc` deselects. None fire while `writing()`.
+- [ ] **Tests.** `Row.test.ts`, `Actions.test.ts`, `Queue.test.ts`, `register.test.ts` updated;
+      new: the box appears on selection and nowhere else; `manual` and `discard` act from the row
+      and raise the corner; `+` appears only on the selected row; the index draws a gap after
+      more than 12h and not after less; `view=index` survives a reload; the drained line.
+- [ ] **Spec.** Rewrite `Capture is the first row of the queue`, `The row`, `Actions` (the
+      quick tier), `Draining`, and the rail/furl paragraphs of `Visual direction` in `shell.md`.
+      `Shipped:` entry.
+- [ ] Typecheck, tests, lint; `git commit`.
 
 ### Phase 4 — the process surface
 
-`/items/{id}/process`, the modal removed, routing advancing through the queue.
+One PR. `process.html` is the drawing; `process-1440.png`, `process-1000.png`,
+`process-editing-1000.png`, `process-390.png` the shots. This deletes the modal composer.
+
+- [ ] **The route.** `routes/items/[id]/process/+page.svelte` and `+page.ts` (load the item as
+      `items/[id]/+page.ts` does). The page renders `components/process/Process.svelte` with the
+      item. Reached from the row's `process`, from a double click, from the feed's `process`, and
+      from the item page.
+- [ ] **Lift the logic out of the modal.** `routing/ProcessingComposer.svelte` holds the state
+      machine — destination line, template resolve, path line, candidate browser, schema fields,
+      tags, words, preview, route, discard, manual with a note — and it all survives. Move it
+      into `process/Process.svelte` with the sub-components it already uses (`DestinationLine`,
+      `PathLine`, `CandidateBrowser`, `ComposerTags`, `Output`; `UsedBefore` reduced to a count
+      and a last-place beside the destination's name). Delete `primitives/composer/Modal.svelte`
+      and whatever of `Commit`, `Group`, `Labelled`, `Option` has no other caller afterwards.
+      `Queue.svelte` and `Feed.svelte` lose the `routing` state and the `<ProcessingComposer>`;
+      `onprocess` becomes a `goto`.
+- [ ] **Layout.** From `process.html`: the bar, then a frame. Below `wide` the frame is a
+      column at `max-w-read`: head (`border-b`, `max-h-[40%]`, its own scroll), middle
+      (`flex-1 overflow-auto`), foot (`border-t h-12`). From `wide` up the frame is a grid
+      `[minmax(0,2fr)_minmax(0,3fr)]` at `max-w-measure`: the head fills the left column top to
+      bottom with a `border-r`, the middle and the foot stack in the right column. Only the middle
+      ever scrolls; the head and foot are always visible.
+- [ ] **Head.** Stamp and tags on one line with `edit` at the right; under it the capture
+      (`max-w-prose`). `edit`, a double click on the words, or `e` opens editing: the words
+      become a `textarea` in a `border border-ink p-[10px_12px]` box, `max-w-none`, with
+      `keep the capture's` and a bold `done` under it; `edit` is hidden meanwhile. The edited
+      words are the delivery's `content` exactly as the modal's `rewrite`/`words` were — the item
+      is never changed. A picture capture draws the picture above the words.
+- [ ] **Middle.** Sections as `grid-cols-[9rem_1fr] border-b py-3`, the label
+      `uppercase tracking-caps font-semibold`; below `narrow` the label stacks above the content.
+      In order:
+      **destination** — one field (the existing `DestinationLine`) whose typed text narrows three
+      bands drawn under it, each `grid-cols-[9rem_1fr]` with an uppercase label and a rule
+      between bands: `templates` (name left, pattern right), `destinations` (name left, `N routed
+      · last <when>` right from `remembered`), `otherwise` (`manual` with `processed by hand`
+      right, `discard` in alarm). The matched entry is bold; `⇥`/`⏎` take it as today.
+      **place** — the typed line and the tree beneath it as today (`PathLine`); for a flat
+      browse the flat list. **tags** — the row of words with `+`, the `TagSet` chooser.
+      **preview** — a `border border-ink` block, `whitespace-pre-wrap`, showing the first five
+      lines of what `client.routing.preview` answers, `more ▾` at the bottom right expanding to
+      all of it. Requested automatically once a destination and its required arguments are
+      settled and again whenever they or the words change, debounced 400ms; while it is in
+      flight the block keeps the last answer; a destination that offers no preview draws the
+      block with `no preview for this destination` and one that cannot be reached with
+      `out of reach`, neither in alarm. The label is `preview` and nothing says who writes.
+      Sections after the first are drawn collapsed — label only, the content on a press or when
+      the flow reaches them — **except** when they already hold something.
+- [ ] **Foot.** `← previous` and `next →` on the left walk the queue in its current order
+      without deciding anything; a bold inverted `route` on the right (`bg-ink text-ground
+      px-5 h-8`). `route` is enabled exactly when the modal's was. Taking `manual` or `discard`
+      from the `otherwise` band acts at once, as on the row.
+- [ ] **After a decision** — route, manual, discard, or a template tag — the corner says what
+      happened as it does today and the surface **advances to the next unprocessed item** in the
+      queue's order; when there is none it returns to the queue. `esc` returns to the queue with
+      the item still selected (`?selected=<id>` on the queue's URL, read once on arrival). The
+      queue's own `keep`/`held` logic goes with the modal: a processed item is seen on the feed.
+- [ ] **Keyboard on the surface.** `e` edit, `esc` (not editing) back, `⌘/ctrl+enter` route,
+      `[`/`]` previous/next. None fire while `writing()` except `⌘/ctrl+enter`.
+- [ ] **Tests.** `Process.test.ts` replacing `ProcessingComposer.test.ts`: the three bands
+      narrow together; a template taken draws its resolution; preview requested on settle and
+      re-requested on change, not before; editing state and `keep the capture's`; route advances
+      to the next item and returns to the queue when none; `esc` returns selected; the two
+      layouts by width (assert the classes, not the pixels).
+- [ ] **Full stack.** `pnpm test:stack` — a new route and the composer's transport moved; run it.
+- [ ] **Spec.** Rewrite `The composer is for processing`, `The place is one line you type` where
+      it speaks of the modal, `One way out of the queue`, and the `/items/{id}` paragraph of
+      `An item has an address` to name `/process`. Retire the composer's `Prior decisions` that
+      no longer hold with a dated note rather than deletion. `Shipped:` entry. Delete
+      `docs/design/composer.html`, `composer.css`, `queue.html` (the old one), `shell.css`.
+- [ ] Typecheck, tests, lint; `git commit`.
 
 ### Phase 5 — item, records and the log
 
 The record block, inline on the item and under a routing kind in the log; the tab row; the
-renames.
+renames. Drawn first.
 
 ### Phase 6 — settings
 
-The side menu and the five sections.
+The side menu and the five sections. Drawn first.
 
 ### Phase 7 — motion
 
@@ -84,7 +304,8 @@ ALWAYS CREATE TESTS for the behavior implemented, unless appropriate tests alrea
 
 Phase 1 has nothing to test. From phase 2 on, the token gate in `apps/ui/src/tokens.test.ts` is
 extended before any component names a value, and each phase's tests assert what the shell draws,
-enables and disables.
+enables and disables. Run `pnpm -r --silent test`, `pnpm typecheck`, `pnpm lint` at the end of
+each phase; `pnpm test:stack` at the end of phase 4.
 
 ---
 

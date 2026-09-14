@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>notemap — queue, redrawn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./tokens.css" />
+<style>
+  /* capture box: the one thing at the head of the queue that is boxed */
+  .capture { border: var(--rule); margin: 24px 0 0; }
+  .capture .field { min-height: 88px; padding: 10px 12px; }
+  .capture .actions { display: flex; justify-content: space-between; border-top: var(--rule); }
+  .capture .actions span { padding: 0 12px; height: 32px; line-height: 32px; }
+  .capture .go { font-weight: var(--bold); border-left: var(--rule); }
+
+  /* list head: the view toggle and the order control */
+  .lhead { display: flex; justify-content: space-between; gap: 20px; padding: 20px 0 8px; }
+  .views { display: flex; gap: 16px; }
+
+  /* register: two columns, one vertical rule, no rule between rows */
+  .list { display: grid; grid-template-columns: var(--rail) 1fr; }
+  .row { display: contents; }
+  .rail { border-right: var(--rule); padding: 12px 16px 12px 0; }
+  .body { padding: 12px 0 12px var(--gutter); min-width: 0; }
+  .stamp { display: flex; gap: 1ch; white-space: nowrap; }
+  .tags { display: flex; flex-wrap: wrap; gap: 0 1ch; }
+  .trig { font-variant-caps: all-small-caps; letter-spacing: 0.04em; font-weight: var(--bold); }
+  .prose { max-width: var(--measure-prose); }
+  .prose p { margin: 0; }
+  .prose p + p { margin-top: var(--leading); }
+  .prose ul { margin: 0; padding-left: 1.4em; }
+  .picture { border: var(--rule); height: 160px; max-width: 320px; background: repeating-linear-gradient(135deg, transparent 0 9px, rgba(0,0,0,0.08) 9px 10px); display: flex; align-items: flex-end; }
+  .picture span { font: 12px ui-monospace, Menlo, monospace; padding: 4px 8px; background: var(--ground); }
+
+  /* the selected row: a box around both columns, the rail's rule running through it,
+     the actions as the box's foot. The box reaches 12px outside the columns so the
+     text inside it does not move when it appears. */
+  .rail.sel { border-top: var(--rule); border-left: var(--rule); margin-left: -12px; padding-left: 12px; }
+  .body.sel { border-top: var(--rule); border-right: var(--rule); margin-right: -12px; padding-right: 12px; }
+  .acts { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; height: 36px; border: var(--rule); margin: 0 -12px; padding: 0 12px; }
+  .acts .words, .acts .more { display: flex; gap: 20px; }
+  .rail .plus { margin-left: 1ch; }
+
+  /* index view */
+  .index { display: grid; grid-template-columns: max-content 1fr max-content; column-gap: 24px; }
+  .index .ir { display: contents; }
+  .index .ir > * { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .index .ir.sel > * { font-weight: var(--bold); }
+  .index .ir.gap > * { padding-top: var(--gap-time); }
+  .index .it { text-align: right; }
+  .drained { padding: 32px 0 0 calc(var(--rail) + var(--gutter)); }
+
+  body:not(.show-index) .index { display: none; }
+  body.show-index .list { display: none; }
+  body.show-index .v-timeline, body:not(.show-index) .v-index { font-weight: 400; }
+  body.show-index .v-index, body:not(.show-index) .v-timeline { font-weight: var(--bold); }
+
+  @media (width < 44rem) {
+    .list { grid-template-columns: var(--rail-narrow) 1fr; }
+    .rail { padding-right: 10px; }
+    .body { padding-left: 14px; }
+    .stamp { flex-direction: column; gap: 0; }
+    .tags { flex-direction: column; gap: 0; }
+    .rail .plus { margin-left: 0; }
+    .rail.sel { margin-left: -8px; padding-left: 8px; }
+    .body.sel { margin-right: -8px; padding-right: 8px; }
+    .acts { margin: 0 -8px; padding: 0 8px; }
+    .acts .words, .acts .more { gap: 12px; }
+    .capture .field { min-height: 72px; }
+    .lhead { padding-top: 14px; }
+    .index { grid-template-columns: max-content 1fr; }
+    .index .it { display: none; }
+    .drained { padding-left: calc(var(--rail-narrow) + 14px); }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="bar">
+    <nav class="nav"><a class="on" href="#">queue</a><a href="#">feed</a><a href="#">log</a><a href="#">settings</a></nav>
+    <span class="glyph" title="reachable">●</span>
+  </div>
+
+  <div class="capture">
+    <div class="field"></div>
+    <div class="actions"><span>attach</span><span class="go">capture</span></div>
+  </div>
+
+  <div class="lhead">
+    <div class="views"><a class="v-timeline" href="#timeline">timeline</a><a class="v-index" href="#index">index</a></div>
+    <span class="num">oldest first ▾</span>
+  </div>
+
+  <div class="list">
+    <div class="row">
+      <div class="rail"><div class="stamp num"><span>2026-08-01</span><span>11:02</span></div></div>
+      <div class="body"><div class="prose"><p>check whether the sweeper races a capture that names the asset</p></div></div>
+    </div>
+    <div class="row">
+      <div class="rail"><div class="stamp num"><span>2026-08-01</span><span>11:07</span></div></div>
+      <div class="body"><div class="picture"><span>picture · 1 of 1</span></div><div class="prose"><p>the whiteboard, before anyone rubbed it out</p></div></div>
+    </div>
+    <div class="row">
+      <div class="rail"><div class="stamp num"><span>2026-09-12</span><span>08:14</span></div><div class="tags"><span>design</span><span>notemap</span></div></div>
+      <div class="body"><div class="prose"><p>The queue is a conveyor belt, not an archive. If it does not reach zero the design has failed, and no amount of clever sorting saves it.</p></div></div>
+    </div>
+    <div class="row">
+      <div class="rail"><div class="stamp num"><span>2026-09-12</span><span>11:40</span></div><div class="tags"><span>routing</span></div></div>
+      <div class="body"><div class="prose"><p>Choosing a capture template is the decision to route, made early.</p><ul><li>a template auto-tags</li><li>a template may name a destination</li><li>the person still confirms</li></ul></div></div>
+    </div>
+    <div class="row">
+      <div class="rail sel"><div class="stamp num"><span>2026-09-13</span><span>07:02</span></div><div class="tags"><span>adr</span><span>mirror</span><a class="plus" href="#" title="add a tag">+</a></div></div>
+      <div class="body sel"><div class="prose"><p>Ask whether the mirror should carry the routing record or only the fact that something left. ADR 19 says the delivery records what went, so the bytes that landed come back — but a rebuild has no destination to ask.</p></div></div>
+      <div class="acts">
+        <div class="words"><a class="b" href="#">process</a><a href="#">manual</a><a class="alarm" href="#">discard</a></div>
+        <div class="more"><a href="#">edit</a><a href="#">copy</a><a href="#">open</a></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="rail"><div class="stamp num"><span>2026-09-13</span><span>18:25</span></div><div class="tags"><span>todo</span><span class="trig">journal</span></div></div>
+      <div class="body"><div class="prose"><p>Call the dentist before Friday</p></div></div>
+    </div>
+    <div class="row">
+      <div class="rail"><div class="stamp num"><span>2026-09-14</span><span>09:10</span></div><div class="tags"><span>design</span><span>typography</span></div></div>
+      <div class="body"><div class="prose"><p>Still Here — the list is the whole interface. One face, one size, dates on the left, titles centred, numbers right. Nothing is bigger than anything else and you can still read it from across the room.</p></div></div>
+    </div>
+    <div class="row">
+      <div class="rail"><div class="stamp num"><span>2026-09-14</span><span>09:31</span></div><div class="tags"><span>design</span></div></div>
+      <div class="body"><div class="prose"><p>Städelschule index: rules only where a region changes. Year column, curator column, then the entries. Same weight throughout, italics for a title.</p></div></div>
+    </div>
+  </div>
+
+  <div class="index">
+    <div class="ir"><span class="num">2026-08-01 11:02</span><span>check whether the sweeper races a capture that names the asset</span><span class="it"></span></div>
+    <div class="ir"><span class="num">2026-08-01 11:07</span><span>the whiteboard, before anyone rubbed it out</span><span class="it"></span></div>
+    <div class="ir gap"><span class="num">2026-09-12 08:14</span><span>The queue is a conveyor belt, not an archive. If it does not reach zero the design has failed, …</span><span class="it">design notemap</span></div>
+    <div class="ir"><span class="num">2026-09-12 11:40</span><span>Choosing a capture template is the decision to route, made early.</span><span class="it">routing</span></div>
+    <div class="ir gap sel"><span class="num">2026-09-13 07:02</span><span>Ask whether the mirror should carry the routing record or only the fact that something left. …</span><span class="it">adr mirror</span></div>
+    <div class="ir"><span class="num">2026-09-13 18:25</span><span>Call the dentist before Friday</span><span class="it">todo <span class="trig">journal</span></span></div>
+    <div class="ir gap"><span class="num">2026-09-14 09:10</span><span>Still Here — the list is the whole interface. One face, one size, dates on the left, titles …</span><span class="it">design typography</span></div>
+    <div class="ir"><span class="num">2026-09-14 09:31</span><span>Städelschule index: rules only where a region changes. Year column, curator column, then the …</span><span class="it">design</span></div>
+  </div>
+</div>
+<script>
+  // The two views of one list; the app carries this on the URL.
+  const show = () => document.body.classList.toggle("show-index", location.hash === "#index");
+  addEventListener("hashchange", show); show();
+</script>
+</body>
+</html>
