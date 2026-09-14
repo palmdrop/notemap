@@ -17,17 +17,19 @@ build, no network and no account, with shots — in the PR that implements the p
 directory and the Design project ever disagree, this directory wins**: it is the one the code is
 verified against.
 
-## Re-taking the drawings' shots
+## Re-taking the shots
 
-A Playwright script opens each `redrawn/*.html` as `file://` at the three widths and writes
-`redrawn/shots/`; twenty lines of Playwright, not kept in the repo — rewrite it when needed.
+Both scripts are kept with `oneshot` (`oneshot list notemap-shoot` finds them, `oneshot show
+<name>` prints one); neither lives in this repo.
 
-## Re-taking the shots of the app
+- `oneshot run notemap-shoot-drafts [dir]` — opens each `redrawn/*.html` as `file://` at the
+  widths the design is judged at and writes `redrawn/shots/`. Run it from the repo root after
+  changing a drawing.
+- `oneshot run notemap-shoot-app <daemon-url> <out-dir>` — walks every route of a running
+  daemon at 1440 and 390, opening a row and the composer on the way, and writes `shots/`. The
+  daemon has to be a scratch one with no password, seeded; the recipe is in the script's header.
 
-The shots are of the real app, not of mockups. The running daemon is behind a password, so they
-are taken against a scratch one: a temporary config on another port with no password, `pnpm seed`
-plus a few tagged captures, two filesystem destinations and two templates, and a Playwright
-script walking every route at both widths and clicking a row's stamp and its `process`. The
-script is not kept in the repo — it is forty lines to rewrite.
+Both need Playwright's `playwright-core` and a Chromium; the paths default to this machine's and
+are overridden with `PLAYWRIGHT_CORE` and `CHROMIUM`.
 
 Check 390 as well as 1440. The register's columns tighten below 44rem.

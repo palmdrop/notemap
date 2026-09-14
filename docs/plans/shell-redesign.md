@@ -35,7 +35,9 @@ Read, in this order, before touching code:
 1. `docs/design/brief.md` — the whole system, twenty minutes.
 2. `docs/design/redrawn/queue.html` and `process.html` in a browser at 1440 and at 390, and
    `#index` / `#editing` on each respectively. Then the CSS in them.
-3. `docs/design/shots/` — the app **as it is**, so the distance is clear.
+3. `docs/design/shots/` — the app **as it is**, so the distance is clear. To re-take either set
+   of shots — the drawings' after editing one, the app's at the end of a phase — use the two
+   `oneshot` scripts named in `docs/design/README.md`; do not write new ones.
 4. `docs/specs/shell.md`, the sections `The shape of the shell`, `Capture is the first row of the
    queue`, `The row`, `The composer is for processing`, `Actions`, `Tagging`, `Tokens and
    themes`, `Visual direction`. These describe what is being replaced and are rewritten in the
