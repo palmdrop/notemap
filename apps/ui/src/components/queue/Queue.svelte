@@ -1,12 +1,14 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
 
+  import { replaceState } from "$app/navigation";
   import { page } from "$app/state";
 
   import { rank, type Item, type RoutingRecord } from "@notemap/client";
 
-  import CaptureRow from "$components/capture/CaptureRow.svelte";
+  import Capture from "$components/capture/Capture.svelte";
   import Drained from "$components/queue/Drained.svelte";
+  import Index from "$components/queue/Index.svelte";
   import Row from "$components/item/Row.svelte";
   import Order from "$components/order/Order.svelte";
   import ProcessingComposer from "$components/routing/ProcessingComposer.svelte";
@@ -14,6 +16,7 @@
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
   import Register from "$components/primitives/register/Register.svelte";
+  import ViewToggle from "$components/view/ViewToggle.svelte";
   import { itemHref } from "$components/item/href";
   import { client } from "$lib/client";
   import { nameOf } from "$lib/destinations";
@@ -21,11 +24,12 @@
   import { notices } from "$lib/notices.svelte";
   import { orderFor } from "$lib/order";
   import { pending } from "$lib/pending.svelte";
-  import { rail } from "$lib/rail.svelte";
+  import { discard, manual } from "$lib/quick";
   import { reachable } from "$lib/reachable.svelte";
   import { keepPlace, restorePlace } from "$lib/scroll-mark";
   import { refusalIn } from "$lib/refusal";
   import { saidOf } from "$lib/routing";
+  import { remember, viewFor, withView, type View } from "$lib/view";
 
   const SURFACE = "queue";
 
@@ -33,8 +37,10 @@
   const pool = reachable();
   const undrained = pending();
 
-  /** Processing happens in the row, and one row is open at a time. */
-  let opened = $state<string | undefined>(undefined);
+  /** Processing starts on the row, and one row is selected at a time. */
+  let selected = $state<string | undefined>(undefined);
+
+  let view = $state<View>(viewFor(SURFACE, page.url));
 
   /**
    * The item the composer is for. Routing takes it out of the queue before the
@@ -44,11 +50,15 @@
 
   /**
    * The row that has just been processed, kept in the register for as long as
-   * it is the open one. A decision is worth looking at after it is made — and
-   * looking at it is what routing the same capture somewhere else starts from.
+   * it is the selected one. A decision is worth looking at after it is made —
+   * and looking at it is what routing the same capture somewhere else starts
+   * from.
    */
   let holding = $state<string | undefined>(undefined);
   let held = $state<Item | undefined>(undefined);
+
+  /** Each row as drawn, so a key can reach into the one that is selected. */
+  let drawn = $state<Record<string, Row | undefined>>({});
 
   const refused = $derived(refusalIn($queue));
 
@@ -112,14 +122,14 @@
     return keepPlace(SURFACE);
   });
 
-  /** Opening any other row releases a held one: the register holds at most one. */
-  function show(id: string) {
-    opened = opened === id ? undefined : id;
-    if (opened !== holding) holding = undefined;
+  /** Selecting any other row releases a held one: the register holds at most one. */
+  function select(id: string) {
+    selected = selected === id ? undefined : id;
+    if (selected !== holding) holding = undefined;
   }
 
-  function close() {
-    opened = undefined;
+  function deselect() {
+    selected = undefined;
     holding = undefined;
   }
 
@@ -128,12 +138,12 @@
   }
 
   /**
-   * The composer sits over the register, so what is said about a decision is
-   * the queue's to know. The row it was made about stays open wearing it.
+   * What is said about a decision is the queue's to know. The row it was made
+   * about stays selected wearing it.
    */
   function keep(item: Item) {
     holding = item.id;
-    opened = item.id;
+    selected = item.id;
   }
 
   function went(item: Item, record: RoutingRecord) {
@@ -146,6 +156,12 @@
     keep(item);
   }
 
+  function read(wanted: View) {
+    view = wanted;
+    remember(SURFACE, wanted);
+    replaceState(withView(page.url, wanted), {});
+  }
+
   /** Whether the key was pressed in something a person is writing in. */
   function writing(target: EventTarget | null): boolean {
     return (
@@ -154,45 +170,97 @@
         ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
     );
   }
+
+  const current = $derived(rows.find((row) => row.id === selected));
+
+  /** Moves the selection one row along, and brings it into view. */
+  function walk(step: 1 | -1) {
+    if (rows.length === 0) return;
+    const at = rows.findIndex((row) => row.id === selected);
+    const next =
+      at === -1
+        ? step === 1
+          ? 0
+          : rows.length - 1
+        : Math.min(Math.max(at + step, 0), rows.length - 1);
+    const row = rows[next];
+    if (row === undefined) return;
+    selected = row.id;
+    if (selected !== holding) holding = undefined;
+    void tick().then(() => drawn[row.id]?.reveal());
+  }
+
+  function onkeydown(event: KeyboardEvent) {
+    // The composer is a modal and answers this itself while it is up, and a
+    // field answers for its own entry: acting on the row under a half-written
+    // tag would take the entry with it.
+    if (routing !== undefined || writing(event.target)) return;
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+
+    switch (event.key) {
+      case "Escape":
+        if (selected !== undefined) deselect();
+        return;
+      case "j":
+        walk(1);
+        break;
+      case "k":
+        walk(-1);
+        break;
+      case "Enter":
+        if (current !== undefined) process(current);
+        else walk(1);
+        break;
+      case "p":
+        if (current !== undefined) process(current);
+        break;
+      case "d":
+        if (current !== undefined) {
+          discard(current);
+          keep(current);
+        }
+        break;
+      case "m":
+        if (current !== undefined) {
+          const item = current;
+          void manual(item).then(() => keep(item));
+        }
+        break;
+      case "+":
+        if (current !== undefined) drawn[current.id]?.tag();
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+  }
 </script>
 
-<svelte:window
-  onkeydown={(event) => {
-    // The composer is a modal and answers this itself while it is up, and a
-    // field answers for its own entry: closing the row under a half-written tag
-    // would take the entry with it.
-    if (event.key !== "Escape" || routing !== undefined) return;
-    if (writing(event.target) || opened === undefined) return;
-    close();
-  }}
-/>
+<svelte:window {onkeydown} />
+
+<Capture />
 
 <Head>
-  <span class="ml-auto"><Order /></span>
+  <ViewToggle {view} onchoose={read} />
+  <Order />
 </Head>
 
-<Register furled={rail.furled} onfurl={() => rail.toggle()}>
-  <CaptureRow />
-
+{#if drained}
+  <Drained />
+{:else if view === "index"}
   {#if refused !== undefined}
-    <Refused surface="queue" {refused} />
+    <Register><Refused surface="queue" {refused} /></Register>
   {/if}
 
-  {#if drained}
-    <Drained />
-  {/if}
-
-  {#each rows as row (row.id)}
-    <Row
-      item={row}
-      opened={opened === row.id}
-      offline={!pool.yes}
-      furled={rail.furled}
-      pending={undrained.has(row.id)}
-      onopen={() => show(row.id)}
-      onprocess={() => process(row)}
-    />
-  {/each}
+  <Index
+    items={rows}
+    {selected}
+    onselect={select}
+    onprocess={(id) => {
+      const item = rows.find((row) => row.id === id);
+      if (item !== undefined) process(item);
+    }}
+  />
 
   {#if $queue.more}
     <More
@@ -201,7 +269,35 @@
       onmore={() => void client.loadQueue()}
     />
   {/if}
-</Register>
+{:else}
+  <Register>
+    {#if refused !== undefined}
+      <Refused surface="queue" {refused} />
+    {/if}
+
+    {#each rows as row (row.id)}
+      <Row
+        bind:this={drawn[row.id]}
+        item={row}
+        surface="queue"
+        selected={selected === row.id}
+        offline={!pool.yes}
+        pending={undrained.has(row.id)}
+        onselect={() => select(row.id)}
+        onprocess={() => process(row)}
+        ondecided={() => keep(row)}
+      />
+    {/each}
+
+    {#if $queue.more}
+      <More
+        loading={$queue.loading}
+        offline={!pool.yes}
+        onmore={() => void client.loadQueue()}
+      />
+    {/if}
+  </Register>
+{/if}
 
 {#if routing !== undefined}
   {@const subject = routing}

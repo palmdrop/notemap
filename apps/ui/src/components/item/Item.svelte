@@ -65,7 +65,7 @@
 
 <Register>
   {#if item !== undefined}
-    <Rail first>
+    <Rail>
       <Stamp at={item.createdAt} />
 
       {#if word !== undefined}
@@ -82,7 +82,9 @@
         <Cached />
       {/if}
 
-      <Tags {item} />
+      <div class="mt-0.5">
+        <Tags {item} addable />
+      </div>
       <Routing
         summary={item.routing}
         records={records.all}
@@ -107,26 +109,29 @@
       {/if}
     </Rail>
 
-    <Body first>
+    <Body>
       {#if editing}
         <Edit {item} ondone={() => (editing = false)} />
       {:else}
         <Payload {item} />
       {/if}
 
-      <Actions
-        {item}
-        onprocess={() => (routing = true)}
-        onedit={() => (editing = !editing)}
-      />
+      <div class="mt-3.5">
+        <Actions
+          {item}
+          offline={!pool.yes}
+          onprocess={() => (routing = true)}
+          onedit={() => (editing = !editing)}
+        />
+      </div>
     </Body>
   {:else if read !== undefined}
-    <Rail first>
+    <Rail>
       {#if refused === undefined && read.failure === undefined}
         <StateWord word="gone" />
       {/if}
     </Rail>
-    <Body first>
+    <Body>
       {#if refused !== undefined}
         <div role="status" class="text-alarm">{refused}</div>
       {:else if read.failure !== undefined}

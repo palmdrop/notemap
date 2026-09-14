@@ -4,6 +4,14 @@
 **Last updated**: 2026-09-14
 **Shipped**:
 
+- 2026-09-14 — **The queue row and the quick tier.** The register is two columns and one rule; a
+  selected row is a box with its actions as the foot — `process · manual · discard` left, `edit ·
+  copy · open` right — and `manual` and `discard` act from the row at once with `undo` in the
+  corner. No state word on the queue; a trigger tag is small caps of its name; `+` only on the
+  selected row. The capture box replaces the capture row, the furl goes, an index view joins the
+  timeline in a list head of its own, the drained queue is one line, and `j k ⏎ p m d + esc` work
+  the list. Phase 3 of [shell-redesign](../plans/shell-redesign.md); processing still opens the
+  modal.
 - 2026-09-14 — **One face, one size, ink on white.** The shell is set in Bricolage Grotesque at
   15px throughout, black on white with one red for failure and destruction, the dark theme its
   inversion. The bar is `queue · feed · log · settings` and one status glyph; the order control
@@ -405,139 +413,118 @@ not seen — with the count and the word in its title. The order control is a re
 and sits in the head of each list that has one; the palette is a preference and sits in
 settings. A refusal goes to the corner.
 
-### Capture is the first row of the queue
+### Capture is the head of the queue
 
-The compose field is the register's first row, in the same two columns as everything under it: the
-current date and time on the left, the field on the right, `capture` and `attach` where a row's
-actions sit. **The compose field is the row it is about to become**, and the date it shows is the
-one the capture will keep.
+*Redrawn 2026-09-14.* The capture box sits above the list, spanning the page: a ruled box — the
+one thing on the queue boxed on four sides besides a selected row — with the field inside it and a
+foot along its bottom rule carrying `attach` at the left and a bold `capture` at the right behind
+a rule of its own. **No placeholder and no stamp**: the box is the invitation, and the capture is
+stamped when it is sent. It is no longer a row of the register, and says nothing until it fails.
 
-A capture asks nothing — text, an optional attachment, send. *Amended 2026-08-26*: nothing waits on
-the pool any more. The client mints the asset id and holds the bytes, which go up with the capture
-when it drains ([client.md](client.md#an-attachment-made-offline)), so a picture is captured in the
-turn the button is pressed whether or not the daemon is there — and the row attaches and captures
-in one gesture, bytes with no capture behind them being bytes nothing will claim.
+A capture asks nothing — text, an optional attachment, send. Nothing waits on the pool: the client
+mints the asset id and holds the bytes, which go up with the capture when it drains
+([client.md](client.md#an-attachment-made-offline)), so a picture is captured in the turn the
+button is pressed whether or not the daemon is there — and the box attaches and captures in one
+gesture, bytes with no capture behind them being bytes nothing will claim.
 
 The queue is therefore where notemap opens: the surface you are meant to empty, with the way to
-add to it at the top of it. **The field takes the caret when the queue is drawn** *(added
-2026-09-04)*, as the composer's own first control does: the surface exists to be typed into, and a
-click before the first keystroke is a click nothing asked for.
+add to it at the top of it. **The field takes the caret when the queue is drawn**: the surface
+exists to be typed into, and a click before the first keystroke is a click nothing asked for.
 
-**`⇧⏎` commits it** *(2026-09-04)*, from inside the field it is written in. `⏎` there is a new
-line, which prose wants; the modifier is what the composer's line already uses for the gesture that
-means *and do it*.
+**`⇧⏎` commits it**, from inside the field it is written in. `⏎` there is a new line, which prose
+wants.
 
-**An attached picture is drawn before it is committed**, beside its name and with a way to drop it.
-The bytes go up with the capture and cannot be taken back once they have, so the one moment to look
-at what was picked is before the button, not afterwards in the feed.
+**An attached picture is drawn before it is committed**, inside the box above the text, beside its
+name and with a way to drop it. The bytes go up with the capture and cannot be taken back once they
+have, so the one moment to look at what was picked is before the button, not afterwards in the
+feed.
 
-**Every capture is a `note`** *(amended 2026-09-07)* — prose, an attachment, or both — because
-there is one payload type. What the shell still varies is the **source**: `web-manual` for a typed
-note and `web-image` for one with a picture, which is what a source is for and is where policy
-about the two can differ. The shell draws an attachment as a picture by its **media type**, never
-by the payload's, so a note carrying a recording is not drawn as a broken image.
+**Every capture is a `note`** — prose, an attachment, or both — because there is one payload type.
+What the shell still varies is the **source**: `web-manual` for a typed note and `web-image` for one
+with a picture, which is what a source is for and is where policy about the two can differ. The
+shell draws an attachment as a picture by its **media type**, never by the payload's, so a note
+carrying a recording is not drawn as a broken image.
 
 ### The row
 
-**Processing happens in the row, opened in place.** The queue is one scrollable list a person works
-freely ([client.md](client.md#the-queue)), and leaving it to process an item costs the reader their
-place. So the row has two states, and triage never leaves them. **One row is open at a time.**
-*Amended 2026-09-03*: there is an item surface as well ([below](#an-item-has-an-address)), and it
-took nothing from the row — it is where what a row cannot hold is read, and the queue keeps its
-place while a person is there.
+*Redrawn 2026-09-14 ([ADR 46](../adr/0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md)).
+What was here before — the open row as a fill with an accent edge, the facts it opened with, the
+furlable rail — is superseded; the dated amendments it carried are folded in below where they
+still hold.*
 
-**Collapsed, a row is for picking.** It carries:
+**Processing starts in the row.** The queue is one scrollable list a person works freely
+([client.md](client.md#the-queue)), and leaving it costs the reader their place — so every
+decision that needs no destination is taken from the row, and only the one that does leaves it,
+for [the process surface](#the-composer-is-for-processing). The row has two states, collapsed
+and **selected**, and **one row is selected at a time**.
 
-- The **capture time**, prominently — the row reads as a dated entry, not as a card with a caption.
-- The payload, rendered (below). Text clamps only when it is genuinely long — on the order of ten
-  lines — with a visible cue that there is more. An image is large enough to recognise and bounded
-  so it cannot swallow the list. A picture whose capture has not drained draws the bytes the client
-  is holding, so the row looks the same before the upload as after it.
-- **Tags**, always, and addable here. Tagging replays from the outbox, which makes it the one
-  processing gesture that survives an unreachable pool, and it is cheap enough to do while
-  scanning.
-- **Revision lineage** — that this is a revision of something, or that something was revised from
-  it — and **archived**, where either applies. Without these the feed shows the same note three
-  times and explains nothing. *Amended 2026-08-24*: a revision no longer replaces what it names, so
-  the word on the older row says it was revised rather than that it is stale
-  ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)), and an item may have been
-  revised more than once. Where a revision **sorts** is settled: at its own capture time, like any
-  capture. Drawing it beside what it came from is this shell's to choose, by grouping on the link.
-- A **pending** mark when an outbox operation about this item has not yet drained. *Amended
-  2026-08-26*: it is a word in the rail, muted, below the state word rather than in its idiom.
-- The **last touch** when it differs from the capture time. *Amended 2026-08-24*: it no longer
-  orders the queue ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)), so it
-  stops explaining where a row sits and becomes a plain fact about the note — worth more now that
-  an unprocessed item can be edited in place any number of times with nothing else recording that
-  it changed, and read among the facts a row opens with rather than on every collapsed one.
+**Collapsed, a row is a stamp, tags and text.** In the left column — the **rail** — the capture
+time as date and time on one line, tabular, and under it the tags as plain words in a wrapping
+row. In the right column — the **body** — the capture, rendered, capped at the prose measure. An
+image is large enough to recognise and bounded so it cannot swallow the list; a picture whose
+capture has not drained draws the bytes the client is holding, so the row looks the same before
+the upload as after it. Text clamps only when it is genuinely long, with a cue saying how many
+lines more. **No state word on the queue**: every row on it is unrouted, and a word saying so on
+each says nothing. A **pending** word stays, under the stamp, where an outbox operation about this
+item has not drained. Nothing on the collapsed row is a control except the tags, which are taken
+off by pressing them, and the stamp, which is the accessible way to select it.
 
-**One row serves both surfaces** *(2026-09-04)*. The queue's and the feed's differed in what they
-offered and never in what they were, so there is one of them, and what a surface hands it is what
-differs: the queue holds a row it has just processed until the reader looks away, and the feed
-offers none, keeping every row it holds anyway. Both offer a composer. **The feed's row opens
-in place**, with the facts the queue's has and one more.
+**A trigger tag is drawn as the name after `route/`, in bold small caps** — `journal`, not
+`route/journal → journal`. The style is what says the word files the item; the namespace is not a
+decision and is not repeated on every row. The chooser's offer keeps the whole name, being what is
+typed against, with the template it fires beside it.
+
+**Selected, a row is a box.** One click anywhere on either cell, or `enter`, draws a rule around
+both columns — the rail's own rule running through it — with the **actions as the box's foot**:
+`process · manual · discard` on the left, `process` bold and `discard` in the alarm; `edit · copy
+· open` on the right. Words only, no marks. The box reaches a little outside the columns so the
+text inside it does not move when it appears. **Nothing else changes**: no fill, no colour, no
+facts appear. The one thing the selected row adds to the rail is a `+` after the last tag, which
+opens the chooser in place ([Tagging](#tagging)) — and is how a template is applied, a template
+being a tag. `esc` deselects.
+
+**One row serves both surfaces.** The queue's and the feed's differ in what they offer and never in
+what they are, so there is one of them, and what a surface hands it is what differs: the queue
+holds a row it has just processed until the reader looks away, and the feed offers none, keeping
+every row it holds anyway.
 
 **In the feed, a row says what became of it.** The feed is the pool read completely, so routed and
-archived items are in it. The state is an inverted word in the left column, under the time —
-`routed`, `discarded` — and a routed row carries a `routing` line naming the places it went and
-what has not landed yet, which is what the item's routing summary holds
-([core.md](core.md#routing)). The time belongs to a record, so it is the opened row's, not the
-feed's: naming it per row would be a read per row. That is the one fact a feed row carries that a
-queue row does not — **where it went**, read off the records the row asks for when it opens, on
-whichever surface it is. Tags stay editable on every row in the feed, including an archived one,
-which also offers `unarchive` among an opened row's actions. A finished row's prose is muted, so
-live captures stand out while scrolling.
+discarded items are in it. The state is a word in the rail, under the stamp — `routed`, `manual`,
+`discarded`, `revised`, `retrying` in the alarm — and a routed row carries a routing line naming
+the places it went and what has not landed yet, which is what the item's routing summary holds
+([core.md](core.md#routing)). Where it went is read off the records the row asks for when it is
+selected, on whichever surface it is. Tags stay editable on every row in the feed, including a
+discarded one, which also offers `unarchive` among a selected row's actions. Nothing is muted:
+there is no fainter ink, and what became of a row is said in its word.
 
-**Opened, a row is for triage.** It adds the item's **routing records**, the facts about it the
-rail holds back while scanning, and the actions — process, copy, edit, open. Everything there
-is cheap and reversible. *Amended 2026-08-24*: the **last touch** is one of the additions. It no
-longer orders the queue ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)), so it
-stopped being the thing that explains where a row sits and became a fact like any other.
+**A whole cell selects the row it belongs to**, both of them, which is the reach a rail carrying
+tags and a body carrying prose both want. A control inside one — a tag, an action, a field — is
+worth clicking for its own sake and is not that click. The stamp stays a button, and is what says a
+row can be selected at all.
 
-**A whole cell opens the row it belongs to**, both of them, which is the reach a rail carrying tags
-and a body carrying prose both want. A control inside one — a tag, an action, a field — is worth
-clicking for its own sake and is not that click. The stamp stays a button, and is what says a row
-opens at all.
+**Double-clicking a row goes to process.** Selecting is a toggle, so a naive double would select
+the row, deselect it, and then navigate — a flicker nobody asked for. A click carries how many of
+them it is and the row takes only the first, so the gesture reads: select, nothing, go. The item's
+own surface is reached by `open`. **A double the browser has already spent goes nowhere**: double-
+clicking a word selects it, which is how anybody takes text out of a page, and leaving the surface
+out from under a selection they just made is not what they asked for. So the row goes only where
+the double selected nothing — the gutter, the marks and the space around the prose — and the
+body's words stay the browser's.
 
-**Double-clicking one goes to the item's own surface**, from either register *(2026-09-04)*.
-Opening is a toggle, so a naive double would open the row, shut it, and then navigate — a flicker
-nobody asked for. A click carries how many of them it is and the row takes only the first, so the
-gesture reads: open, nothing, go. The single click costs no delay, which is what waiting to find
-out whether a second one is coming would have cost.
+**The keyboard on the queue**, drawn so a reader could guess it from the actions and never printed:
+`j`/`k` walk the rows, moving the selection and bringing it into view; `enter` selects the first
+row where none is, and opens process on the one that is; `p` process; `m` manual; `d` discard;
+`+` opens the tag chooser; `esc` deselects. None fire while a field has the caret, which the
+capture box does when the queue is drawn: a key pressed into a field is the field's.
 
-**A double the browser has already spent goes nowhere** *(amended 2026-09-05)*. Double-clicking a
-word selects it, which is how anybody takes text out of a page and is exactly what a person reaching
-into a capture is doing; leaving the surface out from under a selection they just made is not what
-they asked for. So the row goes only where the double selected nothing — which is most of it, the
-gutter, the marks and the space around the prose — and the body's words stay the browser's.
-
-**Processing is not one of those, and it does not happen in the row.** It is the only act in the
-shell that composes an object rather than selecting a value: where, then what to do there, then
-exactly where and how, each step depending on the last. A row of controls asserts those are
-siblings when they are a chain. So `process` opens a **composer** *(amended 2026-09-05: it was
-`route`)*. *Amended 2026-08-24*: it is a **modal over the surface** rather than a panel beside the
-row. It names the capture it is about, since the row is behind it, and the veil and the cross put
-it away — as does `esc`, once there is no step left to give back
-([below](#the-composer-is-for-processing)). Nothing in the register reserves width or height for it, which is what the
-panel cost everywhere it was not open.
-
-The composer is stepped, not flat: **where** (destinations, with an unavailable one saying so
-rather than disappearing), then the arguments the capability's schema asks for. A settled step
-stays visible with its choice marked, so the decision reads back as it is built.
-
-**An argument the schema fixes is chosen here too** *(2026-09-08)*, on the same terms as the
-template form and the settings page: a value from an enumeration is offered as the options it is,
-and anything else is a box. Taking the option already taken **gives it back**, an absent argument
-being a value of its own — for a field whose absence means *inherit what the destination says*,
-there has to be a way back to it.
-
-**An argument the schema starts somewhere starts there** *(added 2026-09-09)*. A `default` an
-adapter declares is drawn into the field, where an empty box used to be — a destination that knows
-where most notes go should not make somebody type it every time. It is a **suggestion and not a
-value**: typed over it is gone, emptied it stays empty, and a field left alone is still absent from
-the request unless the schema requires it. It is not written into a decision a **template** started:
-what a template saved is the decision, and a default filling a field it deliberately left empty
-would commit as a correction of it and cost the record the template's name.
+**The index is a second view of the same list**, toggled in the list head beside the order
+control — `timeline · index`, the current one bold — and carried on the URL as `view=index`,
+remembered per surface the way the order is. One line per item: the stamp as `2026-09-13 07:02`,
+the first words cut at a word with `…`, the tags at the right, dropped below the narrow
+breakpoint. **Where more than half a day passed** between two items the list opens a gap of one
+fixed size, the same whether a day or a month passed: time passing is read from the space. The
+selected line is bold; `enter` on it goes to process; `j`/`k` walk it; a double click goes to
+process. The feed has the same view.
 
 #### The composer is for processing
 
@@ -1078,25 +1065,34 @@ because a preview and an output are one shape and reading them is one act.
 
 ### Actions
 
-An opened row's actions are not six of a kind and are not drawn as six of a kind.
+*Redrawn 2026-09-14.* A selected row's actions are the foot of the box it is drawn as, in two
+groups, and are not six of a kind.
 
-- **Tags sit close behind processing.** They are processing, not decoration, and their control
-  converges with routing's (below).
-- **Edit** is an affordance on the content, not an entry in a list of actions.
+**The quick tier is on the left**: every decision that needs no destination. `process`, bold, is
+the door to the one that does. `manual` calls the pool at once, with no note — the note is
+offered on the process surface, not here — and the corner says `marked manual` with `undo`, which
+cancels the record the mark made. `discard` calls the pool at once too, and the corner says
+`discarded` with `undo`, which unarchives. Both leave the row held in place as routing does, so the
+decision can be looked at after it is made. `manual` is disabled while the pool is out of reach or
+where the item is already marked, `discard` where the item is already discarded, each saying why
+in its title and drawn in the one grey the shell admits for an inert control. `unarchive` sits in
+this group on a discarded row: not processing — it puts the item back rather than sending it away.
 
-**Two lines on a grid, by what they do** *(2026-09-04)*. One line is how an item leaves the queue;
-`copy edit open` is working with the one in front of you, and reads muted. Nothing is hidden and no
-control is added: the split is the one the queue is about. **Every cell takes the same inline
-padding** — the padding the accent fill needs — so the words align down the columns and not merely
-the boxes, and a line with fewer of them closes up rather than leaving a hole where one would have
-been.
+**Working with the item is on the right**: `edit`, `copy`, `open`. None of them is a way out of the
+queue, and putting them behind `process` would make the word mean *do something with this*, which
+is not a decision anybody makes. `edit` is offered on an unprocessed item only, editing a processed
+one being a revision, which the queue is not where to make. `open` goes to the item's own surface,
+and is last, so the gesture that selects a row in place is never the one that leaves it.
 
-*Amended 2026-09-05*: **one line.** The split was what a set of six of unclear rank needed, and
-there is one way out of the queue now (below) — so the leaving line is a single control, and a
-second line drawn for three quiet ones said more about the layout than about the row. What the
-grid carried survives the flattening: the distinction is still there, spent as **muted ink on the
-controls themselves** rather than as a line of their own, and every action still takes the same
-inline padding. What goes with the columns is aligning down them, there being one row to align.
+**`copy` is the one action that has to say so.** It takes the capture's text, and everything else
+here either changes the row or takes you somewhere — this puts nothing on the screen at all. So it
+speaks in the corner, naming what it took rather than saying *copied* into the air. It uses
+`navigator.clipboard` and nothing else, which needs a secure context: HTTPS, or `localhost`.
+**Where that is missing the action is not drawn**: reached over plain HTTP at a LAN address — a
+plausible way to reach a self-hosted daemon from a phone — the browser hands over no clipboard at
+all, and a control that can only fail is worse than an absent one. **Nor is it drawn where there is
+nothing to take**: a note captured with a picture and no prose says nothing, and copying it would
+put an empty string on the clipboard and then claim in the corner to have taken something.
 
 #### One way out of the queue
 
@@ -1135,8 +1131,11 @@ put an empty string on the clipboard and then claim in the corner to have taken 
 ### Tagging
 
 Tagging is a **chooser over known names with free entry**, not a bare text field. It sits on the
-collapsed row, because it replays from the outbox and is therefore the one processing gesture that
-survives an unreachable pool.
+row, because it replays from the outbox and is therefore the one processing gesture that survives
+an unreachable pool. *Amended 2026-09-14*: the tags a row carries are on every row and taken off
+from any of them, but the `+` that opens the chooser is **the selected row's alone** — one press
+away, and not a mark on every line of a list meant to read as a timeline. Where this section says
+*the collapsed row's chooser*, read *the selected row's*.
 
 The known names are the **tags in use**, read from `GET /v1/tags` when the shell starts and again
 whenever classification drains ([client.md](client.md#the-outbox)), and filtered locally as the
@@ -1409,37 +1408,35 @@ long absence replaces the first rather than stacking on it.
 ### Draining
 
 The queue's job is to reach zero and the API gives no count — `ItemSlice` carries values and an
-optional `next` link, nothing more. So the shell claims no number. `Load more` is the honest
+optional `next` link, nothing more. So the shell claims no number. `load more` is the honest
 statement that more exists — and while the pool is out of reach the foot says that instead of
-offering a page it cannot fetch. **The empty state is designed as the thing you were working
-toward**, not as a grey apology — and *(amended 2026-09-04)* what that turned out to want is
-less, not more. Reaching the end is what the queue is for, so it is said the way the shell says
-everything else it has done: **once, quietly, in the rail**, and in no other idiom. No paragraph
-explaining it, and no `zero` — a state word says what became of a *thing*, and an empty list is
-not one.
+offering a page it cannot fetch. **The drained queue is one line where the rows were** —
+`Nothing left to process.` — in the body column's position, with no register drawn under it.
+Reaching the end is what the queue is for, so it is said once and quietly: no paragraph, no
+`zero`, and not as a notice.
 
-The reader's **order control** is in the bar and acts on whichever surface is being read; settings
-has no end to start from and it says nothing there. **It is the shell's own chooser** *(2026-09-04)*
-— a word, a mark, and a panel of marked options, the idiom `where` already uses — and not the
-browser's `select`, which draws in the system's face and colours and cannot be brought into this
-one. Leaving the control shuts it, whichever way a person leaves; `esc` shuts it too, choosing
-nothing — and *(added 2026-09-05)* **pointing at the panel moves no caret into it**, the same
-default the place line prevents for the same reason: leaving is what shuts this, so a pointer that
-took the focus on its way in would shut it out from under the click that was choosing. What it
-draws is **a named group of marked buttons and not a `listbox`**, which would promise options
-nothing here renders. Which end a reader starts from is the reader's,
+The reader's **order control** sits in the head of each list — the queue's, the feed's, the log's
+— beside the view toggle, and acts on the list it heads; settings and an item have no end to
+start from and draw none. **It is the shell's own chooser** — a word, a mark, and a panel of
+marked options — and not the browser's `select`, which draws in the system's face and colours and
+cannot be brought into this one. Leaving the control shuts it, whichever way a person leaves; `esc`
+shuts it too, choosing nothing — and **pointing at the panel moves no caret into it**: leaving is
+what shuts this, so a pointer that took the focus on its way in would shut it out from under the
+click that was choosing. What it draws is **a named group of marked buttons and not a `listbox`**,
+which would promise options nothing here renders. Which end a reader starts from is the reader's,
 for the queue as for the feed ([CONTEXT.md](../../CONTEXT.md)). Turning a surface around reads it
 again from that end ([client.md](client.md#the-queue)) — a position belongs to the order that made
 it — so the control is a choice of order, not a re-sort of what is on screen.
 
-**The choice is the reader's to keep** *(amended 2026-08-26)*. The order is named on the URL, so a
-read reloads as the one that was being read and travels as the one that was shared; and it is
-remembered, so a fresh visit opens where the last one left off. **Per surface**: the queue starts at
-the oldest, which is why it is a queue, and the feed at the newest, so one preference over both
-would have to overrule one of them. The URL wins over what was remembered — being the more specific
-statement about the read in front of you — and an order named there that is not one falls through to
-what was remembered rather than failing. Turning a surface **replaces** the URL rather than pushing
-it: which end you read from is not a place to go back to.
+**The choice is the reader's to keep.** The order is named on the URL, so a read reloads as the one
+that was being read and travels as the one that was shared; and it is remembered, so a fresh visit
+opens where the last one left off. **Per surface**: the queue starts at the oldest, which is why it
+is a queue, and the feed at the newest, so one preference over both would have to overrule one of
+them. The URL wins over what was remembered — being the more specific statement about the read in
+front of you — and an order named there that is not one falls through to what was remembered rather
+than failing. Turning a surface **replaces** the URL rather than pushing it: which end you read
+from is not a place to go back to. The view is kept the same way, and the plain address is the
+timeline.
 
 ### Settings
 
@@ -1755,8 +1752,8 @@ as prose is set.
 
 *What was here before* — industrial bones on paper skin, two faces at two sizes, muted ink, green
 for a result and red for an action, the accent edge on the open row, the furlable rail — was the
-direction of 2026-08-19 and is superseded. The furl and the old row survive in the code until the
-row is redrawn.
+direction of 2026-08-19 and is superseded. The furl went with the old row on 2026-09-14: the index
+view is how a reader sees more at once.
 
 ## Constraints
 

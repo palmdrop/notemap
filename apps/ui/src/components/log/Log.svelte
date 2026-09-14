@@ -59,16 +59,16 @@
 
 <Register>
   {#if log.quiet}
-    <Rail first>
+    <Rail>
       <div class="cleared"><StateWord word="quiet" inline /></div>
     </Rail>
-    <Body first>
+    <Body>
       <div class="cleared">{NOTHING_LOGGED}</div>
     </Body>
   {/if}
 
-  {#each log.rows as action, at (action.id)}
-    <LogRow {action} order={log.order} first={at === 0} />
+  {#each log.rows as action (action.id)}
+    <LogRow {action} order={log.order} />
   {/each}
 
   {#if log.more}

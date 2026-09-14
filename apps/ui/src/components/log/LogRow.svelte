@@ -10,22 +10,18 @@
   import About from "./About.svelte";
   import Detail from "./Detail.svelte";
 
-  let {
-    action,
-    order,
-    first = false,
-  }: { action: Action; order: Order; first?: boolean } = $props();
+  let { action, order }: { action: Action; order: Order } = $props();
 
   const bad = $derived(failed(action.kind));
   const pairs = $derived(flattened(action.detail));
 </script>
 
-<Rail {first}>
+<Rail>
   <Stamp at={action.at} />
   <div class="mt-2 break-words">{agentOf(action.by)}</div>
 </Rail>
 
-<Body {first}>
+<Body>
   <div>
     <StateWord word={action.kind} inline failed={bad} />
 

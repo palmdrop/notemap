@@ -7,7 +7,6 @@ import { anItem, json, routeOf } from "@notemap/client/testing";
 import { asked, client, pool } from "$testing/pool";
 import { online } from "$testing/dom";
 import { remember } from "$lib/order";
-import { rail } from "$lib/rail.svelte";
 import { NO_MORE_OFFLINE, NOTHING_CAPTURED } from "$lib/said";
 import Feed from "./Feed.svelte";
 
@@ -17,19 +16,29 @@ vi.mock("$lib/client", () => import("$testing/pool"));
 const went = vi.hoisted(() => ({ to: [] as string[] }));
 vi.mock("$app/navigation", () => ({
   goto: (url: string) => void went.to.push(url),
+  replaceState: () => undefined,
 }));
 
-/** A row opens on its own stamp, which is the row's title. */
+vi.mock("$app/state", () => ({
+  page: { url: new URL("http://localhost/feed"), route: { id: "/feed" } },
+}));
+
+/** A row is selected on its own stamp, which is the row's title. */
 function open(at = 0) {
-  return fireEvent.click(
-    screen.getAllByRole("button", { expanded: false })[at]!,
-  );
+  return fireEvent.click(stamps(false)[at]!);
 }
 
-// Module-scoped reading preference, so a test that furls the rail unfurls it.
+/** The rows' own buttons: the order chooser answers `expanded` too. */
+function stamps(expanded: boolean) {
+  return screen.queryAllByRole("button", {
+    expanded,
+    name: /^\d{4}-\d{2}-\d{2}/,
+  });
+}
+
 afterEach(() => {
-  if (rail.furled) rail.toggle();
   went.to = [];
+  localStorage.clear();
 });
 
 function held(...values: Record<string, unknown>[]) {
@@ -76,6 +85,7 @@ test("keeps tags editable on a finished row", async () => {
 
   render(Feed);
   await screen.findByText("discarded");
+  await open();
 
   await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
   const field = screen.getByLabelText("Add a tag");
@@ -115,9 +125,8 @@ test("offers a tag added on one row in the field on another", async () => {
   render(Feed);
   await screen.findByText("one");
 
-  await fireEvent.click(
-    screen.getAllByRole("button", { name: "Add a tag" })[0]!,
-  );
+  await open(0);
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
   const field = screen.getByRole("combobox", { name: "Add a tag" });
   await fireEvent.input(field, { target: { value: "reading" } });
   await fireEvent.keyDown(field, { key: "Enter" });
@@ -126,9 +135,9 @@ test("offers a tag added on one row in the field on another", async () => {
     expect(asked()).toContain("POST /v1/items/one/tag");
   });
 
-  await fireEvent.click(
-    screen.getAllByRole("button", { name: "Add a tag" })[1]!,
-  );
+  // The other row, which selecting is what puts the `+` on.
+  await open(0);
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
 
   await vi.waitFor(() => {
     expect(screen.getByRole("option", { name: "reading" })).toBeDefined();
@@ -229,6 +238,7 @@ test("says an archived row is discarded and still pending", async () => {
   render(Feed);
   await screen.findByText("discarded");
   transport.unreachable(true);
+  await open();
 
   await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
   const field = screen.getByLabelText("Add a tag");
@@ -312,30 +322,6 @@ test("says nothing was captured only once the pool has answered for the feed", a
   expect(await screen.findByText(NOTHING_CAPTURED)).toBeDefined();
 });
 
-test("keeps the row's marks when the rail furls, and draws each of them once", async () => {
-  const transport = pool(
-    held(
-      anItem("gone", { archived: { archivedAt: "2026-08-17T07:15:00.000Z" } }),
-    ),
-  );
-
-  render(Feed);
-  await screen.findByText("discarded");
-  transport.unreachable(true);
-
-  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
-  const field = screen.getByLabelText("Add a tag");
-  await fireEvent.input(field, { target: { value: "reading" } });
-  await fireEvent.keyDown(field, { key: "Enter" });
-  await screen.findByText("pending");
-
-  rail.toggle();
-  await vi.waitFor(() => {
-    expect(screen.getAllByText("discarded")).toHaveLength(1);
-  });
-  expect(screen.getAllByText("pending")).toHaveLength(1);
-});
-
 test("opens a row in place, with what the queue's row offers", async () => {
   pool(held(anItem("one")));
 
@@ -401,7 +387,7 @@ test("reads a row's records only once it is opened", async () => {
   expect(line.getAttribute("href")).toBe("/items/sent/records/record-1");
 });
 
-test("goes to the item's own surface on a double click, and leaves the row open", async () => {
+test("goes to process on a double click, and leaves the row selected", async () => {
   pool(held(anItem("one")));
 
   render(Feed);
@@ -411,9 +397,9 @@ test("goes to the item's own surface on a double click, and leaves the row open"
   await fireEvent.click(body, { detail: 2 });
   await fireEvent.dblClick(body);
 
-  expect(went.to).toEqual(["/items/one"]);
-  // The second click of a double is not a toggle: open, nothing, go.
-  expect(screen.getByRole("button", { expanded: true })).toBeDefined();
+  expect(await screen.findByRole("dialog")).toBeDefined();
+  // The second click of a double is not a toggle: select, nothing, go.
+  expect(stamps(true)).toHaveLength(1);
 });
 
 test("puts the view back where the reader left it to read one item", async () => {

@@ -17,6 +17,7 @@
     names,
     offered = [],
     fires,
+    addable = true,
     onadd,
     onremove,
   }: {
@@ -29,6 +30,8 @@
      * somebody takes one by accident.
      */
     fires?: (name: string) => string | undefined;
+    /** Whether the `+` is drawn. A row offers it only while it is selected. */
+    addable?: boolean;
     onadd: (name: string) => void;
     onremove: (name: string) => void;
   } = $props();
@@ -36,6 +39,11 @@
   const id = $props.id();
 
   let adding = $state(false);
+
+  /** Opens the line, for a key that asks for it from outside. */
+  export function add(): void {
+    adding = true;
+  }
   let draft = $state("");
   /** Where `↑↓` stands, and whether it has been used since the offer last changed. */
   let at = $state(0);
@@ -60,6 +68,16 @@
   const active = $derived(
     moved && shown[at] !== undefined ? `${id}-tag-${at}` : undefined,
   );
+
+  /** How a trigger tag is drawn, in the chooser and on the row alike. */
+  const TRIGGER =
+    "font-semibold [font-variant-caps:all-small-caps] tracking-[0.04em]";
+
+  const NAMESPACE = "route/";
+
+  function trigger(name: string): string {
+    return name.startsWith(NAMESPACE) ? name.slice(NAMESPACE.length) : name;
+  }
 
   function take(name: string): void {
     close();
@@ -123,6 +141,9 @@
   }
 </script>
 
+<!-- A carried trigger tag is drawn as the name after `route/`, in small caps:
+     the style says which words file, and the namespace is not a decision. The
+     offer below keeps the whole name, being what is typed against. -->
 {#each names as name (name)}
   {@const fired = fires?.(name)}
   <button
@@ -130,9 +151,9 @@
     aria-pressed="true"
     onclick={() => onremove(name)}
     aria-label={fired === undefined ? undefined : `${name}, routes to ${fired}`}
-    class="hover:underline"
+    class="hover:underline {fired === undefined ? '' : TRIGGER}"
   >
-    {name}{#if fired !== undefined}<span>&nbsp;→&nbsp;{fired}</span>{/if}
+    {fired === undefined ? name : trigger(name)}
   </button>
 {/each}
 
@@ -174,15 +195,14 @@
             {on}
             ontake={() => take(entry.label)}
           >
-            {entry.label}{#if fired !== undefined}<span
-                >&nbsp;→&nbsp;{fired}</span
-              >{/if}
+            <span class={fired === undefined ? "" : TRIGGER}>{entry.label}</span
+            >{#if fired !== undefined}<span>&nbsp;· {fired}</span>{/if}
           </Walked>
         {/each}
       </div>
     {/if}
   </div>
-{:else}
+{:else if addable}
   <button
     type="button"
     aria-label="Add a tag"

@@ -6,7 +6,7 @@ import { anItem, json, routeOf } from "@notemap/client/testing";
 import Feed from "$components/feed/Feed.svelte";
 
 import { pool } from "$testing/pool";
-import CaptureRow from "./CaptureRow.svelte";
+import Capture from "./Capture.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
@@ -53,7 +53,7 @@ test("draws a capture before the pool answers, and clears the form", async () =>
   });
 
   render(Feed);
-  render(CaptureRow);
+  render(Capture);
 
   const written = await capture("before any round trip");
 
@@ -65,7 +65,7 @@ test("draws a capture before the pool answers, and clears the form", async () =>
 
 test("takes the caret, so the queue is typed into rather than clicked into", () => {
   pool(() => empty.clone());
-  render(CaptureRow);
+  render(Capture);
 
   expect(document.activeElement).toBe(screen.getByLabelText("What to capture"));
 });
@@ -93,7 +93,7 @@ test("stamps a typed note and a picture with different channels", async () => {
     });
   });
 
-  render(CaptureRow);
+  render(Capture);
 
   await cleared(await capture("a typed note"));
 
@@ -134,7 +134,7 @@ test("draws an attached picture before it is committed, and offers a way to drop
   stubObjectUrls();
   pool(() => empty.clone());
 
-  render(CaptureRow);
+  render(Capture);
   await attach();
 
   const drawn = await screen.findByAltText("What is about to be captured");
@@ -161,7 +161,7 @@ test("a dropped picture is not sent with the capture that follows", async () => 
     });
   });
 
-  render(CaptureRow);
+  render(Capture);
   await attach();
   await fireEvent.click(screen.getByRole("button", { name: "drop" }));
   await capture("just words");
@@ -182,7 +182,7 @@ test("commits the capture with shift-enter from the field it is written in", asy
     });
   });
 
-  render(CaptureRow);
+  render(Capture);
   const written = screen.getByLabelText(
     "What to capture",
   ) as HTMLTextAreaElement;

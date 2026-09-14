@@ -190,7 +190,7 @@
 
 <Register>
   {#if record !== undefined && target !== undefined}
-    <Rail first>
+    <Rail>
       <Stamp at={record.at} />
 
       <!-- A record that is not saying otherwise was delivered. -->
@@ -212,7 +212,7 @@
       </Facts>
     </Rail>
 
-    <Body first>
+    <Body>
       <!-- Where to go and look, first: it is what somebody reading a record
            came for, and the only line here that leaves notemap. A link only
            where the destination offered one — the shell never guesses whether
@@ -279,7 +279,7 @@
       {/if}
     </Body>
   {:else}
-    <Rail first>
+    <Rail>
       {#if records.settled && records.refused === ""}
         <StateWord word="gone" />
       {/if}
@@ -290,7 +290,7 @@
         </Fact>
       </Facts>
     </Rail>
-    <Body first>
+    <Body>
       {#if records.refused !== ""}
         <div role="status" class="text-alarm">{records.refused}</div>
       {:else if records.settled}

@@ -13,36 +13,13 @@ import Item from "./Item.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
-/** `manual` is the composer's, and its field takes `⏎` empty or not. */
+/** Both act when taken, from the item's own actions: no second step and no commit. */
 async function manual() {
-  await open();
-  await fireEvent.click(screen.getByRole("button", { name: /^manual/ }));
-  await fireEvent.keyDown(await screen.findByLabelText("where it went"), {
-    key: "Enter",
-  });
-  await shut();
+  await fireEvent.click(screen.getByRole("button", { name: "manual" }));
 }
 
-/** Discarding acts when it is taken: no second step and no commit. */
 async function discard() {
-  await open();
-  await fireEvent.click(screen.getByRole("button", { name: /^discard/ }));
-  await shut();
-}
-
-/**
- * The composer is a modal and the row is behind it, so a test that moves on
- * before it opens or closes acts on whichever of the two happens to be there.
- */
-async function open() {
-  await fireEvent.click(screen.getByRole("button", { name: "process" }));
-  await screen.findByRole("dialog");
-}
-
-async function shut() {
-  await vi.waitFor(() => {
-    expect(screen.queryByRole("dialog")).toBeNull();
-  });
+  await fireEvent.click(screen.getByRole("button", { name: "discard" }));
 }
 
 afterEach(() => {
@@ -355,10 +332,11 @@ function acting(item: Held) {
 }
 
 /**
- * The rule is about the subject rather than the gesture: this surface keeps
- * what it is about, and the item under the corner is its own evidence.
+ * A quick decision says so in the corner wherever it is taken, because that is
+ * where its undo lives; what this surface stays quiet about is a routing, the
+ * item under the corner being its own evidence of one.
  */
-test("says nothing in the corner about work done to the item it is drawing", async () => {
+test("says only what offers a way back in the corner about the item it is drawing", async () => {
   pool(acting(saying("one", "still here")));
 
   render(Item, { id: "one" });
@@ -374,9 +352,15 @@ test("says nothing in the corner about work done to the item it is drawing", asy
     expect(asked()).toContain("POST /v1/items/one/archive");
   });
 
-  // A discard's own offer is the exception the corner keeps: archiving makes no
-  // record, so there is nowhere else an undo could sit.
-  expect(notices.shown.map((notice) => notice.what)).toEqual(["discarded"]);
+  await vi.waitFor(() => {
+    expect(notices.shown.map((notice) => notice.what).sort()).toEqual([
+      "discarded",
+      "marked manual",
+    ]);
+  });
+  expect(notices.shown.every((notice) => notice.offer?.label === "undo")).toBe(
+    true,
+  );
 });
 
 test("remembers the decision it stayed quiet about, so the log does not say it", async () => {
@@ -444,7 +428,8 @@ function deciding(held: () => unknown, records: readonly unknown[] = []) {
 
 /** Through the composer, as a person makes one. */
 async function decide() {
-  await open();
+  await fireEvent.click(screen.getByRole("button", { name: "process" }));
+  await screen.findByRole("dialog");
   await fireEvent.click(await screen.findByRole("button", { name: /Vault/ }));
 
   // Two of them: the surface's action, and the composer's commit over it.

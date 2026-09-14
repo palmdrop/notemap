@@ -145,19 +145,19 @@ One PR. `queue.html` is the drawing; `queue-1440.png`, `queue-390.png`, `queue-i
 shots. The feed shares the row and gets the new row for free; its own head and words are not
 redesigned here beyond what the shared row forces.
 
-- [ ] **The register.** `primitives/register/Register.svelte`: a grid of
+- [x] **The register.** `primitives/register/Register.svelte`: a grid of
       `[var(--spacing-rail)_1fr]` with no column gap; below `narrow`, `[var(--spacing-rail-narrow)_1fr]`.
       Delete `Furl.svelte`, `lib/rail.svelte.ts`, the `furled` prop everywhere, and the `brief`
       variant (the log takes its own measure in phase 5). `Rail.svelte`: `border-r border-ink`,
       `py-3 pr-4`; no top rule, no `lit` fill, no accent edge. `Body.svelte`: `py-3 pl-gutter`,
       `min-w-0`; no top rule.
-- [ ] **The selected row is a box.** Selection is what `opened` already is; rename to `selected`
+- [x] **The selected row is a box.** Selection is what `opened` already is; rename to `selected`
       where it reads better. On the selected row: `Rail` takes `border-t border-l -ml-3 pl-3`,
       `Body` takes `border-t border-r -mr-3 pr-3`, and a third grid cell — `Actions` — spans both
       columns with `border-x border-b -mx-3 px-3 h-9` (`queue.html`, the CSS under “the selected
       row”). Below `narrow` the negative margins are `-2` (8px). Nothing else about the row
       changes when it is selected: no fill, no colour, no facts appear.
-- [ ] **The rail's content.** `Stamp` draws date and time on one line (`tabular-nums`, `gap-[1ch]`),
+- [x] **The rail's content.** `Stamp` draws date and time on one line (`tabular-nums`, `gap-[1ch]`),
       stacked below `narrow`. `Tags` draws the words in a wrapping row with `gap-x-[1ch]`, a
       trigger tag as `font-semibold [font-variant-caps:all-small-caps] tracking-[0.04em]`
       showing the name after `route/`, and — on the selected row only — a `+` after the last
@@ -165,10 +165,10 @@ redesigned here beyond what the shared row forces.
       queue (`Row` takes `surface: "queue" | "feed"`; `became()` is only consulted on the feed).
       `Pending` stays, as a word. `Routing` (where it went) is feed-only already. The `edited`
       fact goes.
-- [ ] **The body's content.** `Payload`/`Prose` capped at `max-w-prose` (38rem). The picture
+- [x] **The body's content.** `Payload`/`Prose` capped at `max-w-prose` (38rem). The picture
       placeholder and the picture itself keep their current size rule. No muting of finished
       items (there is no muted ink); a discarded item on the feed says so in its word.
-- [ ] **Actions.** `item/Actions.svelte` becomes the box's foot: left `process` (bold), `manual`,
+- [x] **Actions.** `item/Actions.svelte` becomes the box's foot: left `process` (bold), `manual`,
       `discard` (`text-alarm`); right `edit`, `copy`, `open`. `unarchive` stays where it was
       offered, in the left group, on a discarded row. Words only. `manual` calls
       `client.routing.markProcessed(id, {})` at once, with no note — the note is offered on the
@@ -178,39 +178,39 @@ redesigned here beyond what the shared row forces.
       `client.unarchive`. Both leave the row held as processing does today (`Queue.svelte`'s
       `keep`). `open` → `/items/{id}`. `process` → `/items/{id}/process` (phase 4; until then it
       may keep opening the modal).
-- [ ] **Double click** on a row goes to `/items/{id}/process`, not to the item (`Row.svelte`,
+- [x] **Double click** on a row goes to `/items/{id}/process`, not to the item (`Row.svelte`,
       `onreach`). The item is reached by `open`.
-- [ ] **The capture box.** `capture/CaptureRow.svelte` stops being a row: a `border border-ink`
+- [x] **The capture box.** `capture/CaptureRow.svelte` stops being a row: a `border border-ink`
       box above the list head spanning the page, `min-h-[88px]` field with no placeholder and no
       stamp, a foot with `attach` left and `capture` right, `capture` bold behind a `border-l`.
       `⇧⏎` still commits. A chosen picture draws inside the box above the text. `not captured`
       goes. Rename the component `Capture.svelte`.
-- [ ] **The list head.** `primitives/register/Head.svelte` (from phase 2) holds, left, the view
+- [x] **The list head.** `primitives/register/Head.svelte` (from phase 2) holds, left, the view
       toggle `timeline · index` (the current one bold) and, right, `Order`. The view is on the URL
       as `view=index`, remembered per surface the way order is (`lib/order.ts` shows the pattern;
       a sibling `lib/view.ts`).
-- [ ] **The index view.** `queue/Index.svelte`: a grid of `[max-content_1fr_max-content]` with
+- [x] **The index view.** `queue/Index.svelte`: a grid of `[max-content_1fr_max-content]` with
       `gap-x-6`; per item one line — the stamp as `2026-09-13 07:02`, the first ~96 characters of
       the text cut at a word with `…`, the tags at the right (below `narrow` the tags column is
       dropped). Where the gap to the previous item in reading order is more than 12 hours, the
       line takes `pt-[var(--spacing-gap-time)]` — the same size whether a day or a month passed.
       A selected line is bold; `enter` on it goes to process; `j`/`k` walk it. The feed gets the
       same view for nothing if `Index` takes items and a `selected` id; do that.
-- [ ] **The drained queue.** `Drained.svelte` is one line, `Nothing left to process.`, in the
+- [x] **The drained queue.** `Drained.svelte` is one line, `Nothing left to process.`, in the
       body column's position (`pl-[calc(var(--spacing-rail)+var(--spacing-gutter))] pt-8`), and
       no register is drawn under it.
-- [ ] **Keyboard on the queue.** In `Queue.svelte`, extending the `esc` handler that exists:
+- [x] **Keyboard on the queue.** In `Queue.svelte`, extending the `esc` handler that exists:
       `j`/`k` move the selection and scroll it into view, `enter` selects the row under the
       cursor or, if selected, opens process, `d` discard, `m` manual, `p` process, `+` opens the
       tag chooser, `esc` deselects. None fire while `writing()`.
-- [ ] **Tests.** `Row.test.ts`, `Actions.test.ts`, `Queue.test.ts`, `register.test.ts` updated;
+- [x] **Tests.** `Row.test.ts`, `Actions.test.ts`, `Queue.test.ts`, `register.test.ts` updated;
       new: the box appears on selection and nowhere else; `manual` and `discard` act from the row
       and raise the corner; `+` appears only on the selected row; the index draws a gap after
       more than 12h and not after less; `view=index` survives a reload; the drained line.
-- [ ] **Spec.** Rewrite `Capture is the first row of the queue`, `The row`, `Actions` (the
+- [x] **Spec.** Rewrite `Capture is the first row of the queue`, `The row`, `Actions` (the
       quick tier), `Draining`, and the rail/furl paragraphs of `Visual direction` in `shell.md`.
       `Shipped:` entry.
-- [ ] Typecheck, tests, lint; `git commit`.
+- [x] Typecheck, tests, lint; `git commit`. _(2026-09-14)_
 
 ### Phase 4 — the process surface
 

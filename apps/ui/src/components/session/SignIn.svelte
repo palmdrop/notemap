@@ -34,8 +34,8 @@
 
 <form onsubmit={submit}>
   <Register>
-    <Rail first>name</Rail>
-    <Body first>
+    <Rail>name</Rail>
+    <Body>
       <input
         bind:value={name}
         autocomplete="username"

@@ -4,18 +4,17 @@
   import Register from "./Register.svelte";
 
   let {
-    furled = false,
-    onfurl,
+    selected = false,
     onpick,
-  }: { furled?: boolean; onfurl?: () => void; onpick?: () => void } = $props();
+  }: { selected?: boolean; onpick?: () => void } = $props();
 </script>
 
-<Register {furled} {onfurl}>
-  <Rail {onpick}>
+<Register>
+  <Rail {selected} {onpick}>
     <span>the rail</span>
     <button type="button">a tag</button>
   </Rail>
-  <Body {onpick}>
+  <Body {selected} {onpick}>
     <span>the body</span>
   </Body>
 </Register>
