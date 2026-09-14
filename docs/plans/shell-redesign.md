@@ -87,7 +87,8 @@ Decisions already made, so they are not asked again:
 - [x] Round 1 drawn and looked at; round 2 drawn on the feedback; ten faces sampled _(2026-09-14)_
 - [x] Chosen: Bricolage Grotesque; selection as a box; words not marks; `+` for tags _(2026-09-14)_
 - [x] The settled drawings as static files in `docs/design/redrawn/` with shots _(2026-09-14)_
-- [ ] Open a PR for the docs alone
+- [x] ~~Open a PR for the docs alone~~ — the docs went with phases 2–4 in one PR (#61)
+      _(2026-09-14)_
 
 ### Phase 2 — the system: face, size, palette, chrome
 

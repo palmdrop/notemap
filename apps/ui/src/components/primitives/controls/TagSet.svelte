@@ -177,10 +177,10 @@
       class="w-32 border-b border-ink px-2 py-0.5 outline-none"
     />
     {#if shown.length > 0}
-      <!-- In flow rather than floated: the composer scrolls inside a modal,
-           and a panel floated past its edge is a panel scrolled out of reach.
-           Rows taken on `mousedown` with the default prevented, so taking one
-           never blurs the line out from under the click. -->
+      <!-- In flow rather than floated: the process surface scrolls its
+           middle, and a panel floated past its edge is a panel scrolled out
+           of reach. Rows taken on `mousedown` with the default prevented, so
+           taking one never blurs the line out from under the click. -->
       <div
         id="{id}-tags"
         role="listbox"

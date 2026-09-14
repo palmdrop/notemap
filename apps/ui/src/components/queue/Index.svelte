@@ -26,6 +26,13 @@
 
   const HALF_A_DAY = 12 * 60 * 60 * 1000;
 
+  let stamps = $state<Record<string, HTMLElement | undefined>>({});
+
+  /** Brings a line into view, for the keys that walk the list. */
+  export function reveal(id: string): void {
+    stamps[id]?.scrollIntoView({ block: "nearest" });
+  }
+
   const NAMESPACE = "route/";
 
   const lines = $derived(
@@ -69,6 +76,7 @@
       ondblclick={() => onprocess(line.item.id)}
     >
       <span
+        bind:this={stamps[line.item.id]}
         class="{line.gap
           ? 'pt-[var(--spacing-gap-time)]'
           : ''} whitespace-nowrap"

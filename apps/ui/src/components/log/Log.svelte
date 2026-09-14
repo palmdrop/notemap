@@ -11,7 +11,7 @@
   import { client } from "$lib/client";
   import { log } from "$lib/log.svelte";
   import { reachable } from "$lib/reachable.svelte";
-  import { LOG_LEDE, NOTHING_LOGGED } from "$lib/said";
+  import { NOTHING_LOGGED } from "$lib/said";
 
   import { logHref } from "./href";
   import Says from "./Says.svelte";
@@ -42,20 +42,20 @@
   });
 </script>
 
-<p class="mt-8">
-  {LOG_LEDE}
-  {#if log.item !== undefined}
+<Head>
+  <Views />
+  <span class="flex items-baseline gap-x-5">
+    <Shown />
+    <Order />
+  </span>
+</Head>
+
+{#if log.item !== undefined}
+  <p class="pb-3">
     Only what is about <Says id={log.item} /> —
     <a href={logHref(log.order, undefined, log.kinds)}>show everything</a>
-  {/if}
-</p>
-
-<Views />
-
-<Head>
-  <Shown />
-  <span class="ml-auto"><Order /></span>
-</Head>
+  </p>
+{/if}
 
 <Register>
   {#if log.quiet}

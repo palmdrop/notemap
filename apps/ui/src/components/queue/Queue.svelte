@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick } from "svelte";
+  import { onMount, tick, untrack } from "svelte";
 
   import { goto, replaceState } from "$app/navigation";
   import { page } from "$app/state";
@@ -38,10 +38,17 @@
   /** Processing starts on the row, and one row is selected at a time. */
   let selected = $state<string | undefined>(undefined);
 
+  /** Where the selected row last stood, for when it leaves. */
+  let stood = $state<number | undefined>(undefined);
+
+  /** Back from processing with a row still selected: the keys are its, not the field's. */
+  const arrived = page.url.searchParams.get(SELECTED);
+
   let view = $state<View>(viewFor(SURFACE, page.url));
 
   /** Each row as drawn, so a key can reach into the one that is selected. */
   let drawn = $state<Record<string, Row | undefined>>({});
+  let index = $state<Index | undefined>(undefined);
 
   const refused = $derived(refusalIn($queue));
 
@@ -54,10 +61,23 @@
 
   const rows = $derived($queue.items);
 
+  // A quick decision takes the selected row off the list. The selection moves
+  // to the row that took its place, so `d` `d` `d` walks down rather than
+  // leaving nothing selected and the next `j` at the top.
+  $effect(() => {
+    const at = rows.findIndex((row) => row.id === selected);
+    if (at !== -1) {
+      stood = at;
+      return;
+    }
+    if (selected === undefined || rows.length === 0) return;
+    const place = untrack(() => stood);
+    if (place === undefined) return;
+    selected = rows[Math.min(place, rows.length - 1)]?.id;
+  });
+
   onMount(() => {
-    // Back from the process surface with the row it was about still selected.
     // Read once: the address is put back so a reload does not reselect it.
-    const arrived = page.url.searchParams.get(SELECTED);
     if (arrived !== null) {
       selected = arrived;
       const plain = new URL(page.url);
@@ -69,7 +89,7 @@
       await client.enter(SURFACE, orderFor(SURFACE, page.url));
       await tick();
       if (arrived === null) restorePlace(SURFACE);
-      else drawn[arrived]?.reveal();
+      else reveal(arrived);
     })();
 
     // Scrolling past an item is a skip, and a skip changes nothing: this is
@@ -79,11 +99,13 @@
   });
 
   function select(id: string) {
-    selected = selected === id ? undefined : id;
+    if (selected === id) deselect();
+    else selected = id;
   }
 
   function deselect() {
     selected = undefined;
+    stood = undefined;
   }
 
   /** The deep tier: a surface of its own, which comes back here when it is done. */
@@ -108,6 +130,11 @@
 
   const current = $derived(rows.find((row) => row.id === selected));
 
+  function reveal(id: string) {
+    drawn[id]?.reveal();
+    index?.reveal(id);
+  }
+
   /** Moves the selection one row along, and brings it into view. */
   function walk(step: 1 | -1) {
     if (rows.length === 0) return;
@@ -121,7 +148,7 @@
     const row = rows[next];
     if (row === undefined) return;
     selected = row.id;
-    void tick().then(() => drawn[row.id]?.reveal());
+    void tick().then(() => reveal(row.id));
   }
 
   function onkeydown(event: KeyboardEvent) {
@@ -165,7 +192,7 @@
 
 <svelte:window {onkeydown} />
 
-<Capture />
+<Capture focus={arrived === null} />
 
 <Head>
   <ViewToggle {view} onchoose={read} />
@@ -180,6 +207,7 @@
   {/if}
 
   <Index
+    bind:this={index}
     items={rows}
     {selected}
     onselect={select}

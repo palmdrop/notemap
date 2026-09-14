@@ -4,6 +4,14 @@
 **Last updated**: 2026-09-14
 **Shipped**:
 
+- 2026-09-14 — **The first version, looked at.** After the review of
+  [shell-redesign](../plans/shell-redesign.md): the page narrows to 56rem and the process surface
+  alone keeps 72rem; paragraphs are set apart by a blank line; the selected row's foot is ruled
+  on four sides and `edit` on a row draws the capture box's shape; the feed says where an item
+  went in a line and in no word; the log loses its lede and its source and draws the kind
+  inverted. A decision on the process surface advances to the row after the item rather than the
+  top of the queue, a quick decision on the queue moves the selection to the row that took the
+  place, and coming back with a row selected leaves the caret out of the capture field.
 - 2026-09-14 — **Processing is a surface.** `/items/{id}/process` replaces the modal composer:
   the capture at a fixed head, editable in place for this delivery alone; ruled sections —
   `destination` narrowing three bands, `place`, `tags`, `preview` asked for as soon as the place
@@ -437,6 +445,8 @@ gesture, bytes with no capture behind them being bytes nothing will claim.
 The queue is therefore where notemap opens: the surface you are meant to empty, with the way to
 add to it at the top of it. **The field takes the caret when the queue is drawn**: the surface
 exists to be typed into, and a click before the first keystroke is a click nothing asked for.
+*Except on the way back from processing with a row still selected* *(amended 2026-09-14)*: the
+keys are that row's then, and a caret in the field would swallow them.
 
 **`⇧⏎` commits it**, from inside the field it is written in. `⏎` there is a new line, which prose
 wants.
@@ -484,25 +494,30 @@ typed against, with the template it fires beside it.
 **Selected, a row is a box.** One click anywhere on either cell, or `enter`, draws a rule around
 both columns — the rail's own rule running through it — with the **actions as the box's foot**:
 `process · manual · discard` on the left, `process` bold and `discard` in the alarm; `edit · copy
-· open` on the right. Words only, no marks. The box reaches a little outside the columns so the
-text inside it does not move when it appears. **Nothing else changes**: no fill, no colour, no
-facts appear. The one thing the selected row adds to the rail is a `+` after the last tag, which
+· open` on the right, ruled on all four sides so the foot is a strip of its own. Words only, no
+marks. The box reaches a little outside the columns so the text inside it does not move when it
+appears. **Nothing else changes**: no fill, no colour, no facts appear. `edit` on the row draws
+the capture in the capture box's own shape — a ruled box with `cancel` and a bold `save` along its
+foot — with no ring or colour from the browser: rewriting looks like writing. The one thing the selected row adds to the rail is a `+` after the last tag, which
 opens the chooser in place ([Tagging](#tagging)) — and is how a template is applied, a template
 being a tag. `esc` deselects.
 
 **One row serves both surfaces.** The queue's and the feed's differ in what they offer and never in
-what they are, so there is one of them, and what a surface hands it is what differs: the queue
-holds a row it has just processed until the reader looks away, and the feed offers none, keeping
-every row it holds anyway.
+what they are, so there is one of them, and what a surface hands it is what differs: a processed
+row leaves the queue at once and is seen on the feed, which offers nothing and keeps every row it
+holds.
 
-**In the feed, a row says what became of it.** The feed is the pool read completely, so routed and
-discarded items are in it. The state is a word in the rail, under the stamp — `routed`, `manual`,
-`discarded`, `revised`, `retrying` in the alarm — and a routed row carries a routing line naming
-the places it went and what has not landed yet, which is what the item's routing summary holds
-([core.md](core.md#routing)). Where it went is read off the records the row asks for when it is
-selected, on whichever surface it is. Tags stay editable on every row in the feed, including a
-discarded one, which also offers `unarchive` among a selected row's actions. Nothing is muted:
-there is no fainter ink, and what became of a row is said in its word.
+**In the feed, a routed row says where it went, and no word repeats it** *(amended 2026-09-14; it
+carried `routed`, `manual` and `retrying` as words over the line)*. The feed is the pool read
+completely, so routed and discarded items are in it. A routed row carries a routing line — `→
+Obsidian vault · research/2026-09-13.md`, `→ manual` — naming the places it went and, from the
+summary, what has not landed yet as `· 1 pending` ([core.md](core.md#routing)); an unrouted row
+carries nothing, the absence being the word. The only state words left are the ones no line
+says: `discarded`, `revised`, `revision`. A delivery that failed is the log's and the corner's to
+say, not the feed's. Where it went is read off the records the row asks for when it is selected,
+on whichever surface it is. Tags stay editable on every row in the feed, including a discarded
+one, which also offers `unarchive` among a selected row's actions. Nothing is muted: there is no
+fainter ink.
 
 **A whole cell selects the row it belongs to**, both of them, which is the reach a rail carrying
 tags and a body carrying prose both want. A control inside one — a tag, an action, a field — is
@@ -1554,15 +1569,18 @@ alternative it leaves is already on screen.
 
 ### The log
 
-`/log` is the same register: a rail carrying the stamp and who did it, a body carrying what
-happened, what it was about and the detail, one rule across the top of every cell. It is a surface
-of this shell like any other *(2026-09-02; it was the daemon's markup, drawn in this language,
+`/log` is the same register: a rail carrying the stamp, a body carrying what happened, what it
+was about and the detail. *Slimmed 2026-09-14*: the rail no longer says who did it — the source
+of an action is not a fact a person reads the log for — and the lede is gone; the views sit in the
+list's head at the left with the count and the order at the right, as on every other list. It is a
+surface of this shell like any other *(2026-09-02; it was the daemon's markup, drawn in this language,
 until then)*, so there is no leaving the app and coming back, and no second copy of anything to
 hold in step.
 
-**The kind is what the row is**, and it wears the register's state mark rather than reading as body
-text. **The accent is spent on `delivery-failed`, `work-failed` and `work-abandoned`**, which are
-the same three the corner says out loud, and on the failure code beside them — not on `purged`,
+**The kind is what the row is**, and it is drawn inverted — ground on ink — as the row's heading
+rather than reading as body text. **The alarm is spent on `delivery-failed`, `work-failed` and
+`work-abandoned`**, which are the same three the corner says out loud — the heading is ground on
+the alarm there — and on the failure code beside them — not on `purged`,
 `destination-deleted` or `actions-cleared`, which are facts rather than warnings. A log where half
 the rows are red says nothing.
 
@@ -1583,8 +1601,8 @@ and the id is least use of all. The order and the filter both live on the URL, s
 shared link come back to the same reading.
 
 **The log is narrowed to a view** *(added 2026-09-13)*: `everything`, `routing`, `captures`,
-`classification`, `pool`, drawn as one line of words under the lede, the one being read in ink and
-the rest as links. A view is a fixed set of the pool's own kinds and the URL carries the kinds
+`classification`, `pool`, drawn as one line of words in the list's head, the one being read bold
+and the rest as links. A view is a fixed set of the pool's own kinds and the URL carries the kinds
 rather than the name — `?kind=routed,template-fired` — so a link somebody writes by hand reads the
 same way as one of these, and a set that is not exactly a view lights none of them. The pool does
 the narrowing: a page holds what it shows and its count means what it says, where a shell sifting
@@ -1635,7 +1653,7 @@ family, a Tailwind palette colour, or any of the roles the shell used to have an
 
 The roles, as of 2026-09-14: `ground`, `ink`, `alarm`, and `inert` for the one grey admitted where
 nothing else can say a control is inert; `font-shell`, the one face; `text-shell`, the one size,
-with its line height; `tracking-caps` for a label; `rail`, `rail-narrow`, `gutter`, `measure`,
+with its line height; `tracking-caps` for a label; `rail`, `rail-narrow`, `gutter`, `measure`, `measure-wide`,
 `read`, `prose` and `gap-time` for the widths and the one gap; `narrow` and `wide` for the two
 breakpoints. Ground and ink are `light-dark()` pairs and swap; the alarm does not. Dark is the
 inversion of light, `#000` on `#fff` becoming `#fff` on `#000`, and nothing warmer.
@@ -1689,9 +1707,12 @@ dropping two cells into it, so the columns stay in register down the whole page.
 **A phone keeps both columns.** Below 44rem the rail narrows to the width of a stacked date and
 time, and the two columns survive, because the rail is what says what a thing is.
 
-**The measure.** The page is capped at 72rem, and **a paragraph is capped at 38rem** — about
-seventy characters — inside the body column: the column keeps its width, the prose stops early,
-as prose is set.
+**The measure.** The page and the bar are capped at 56rem *(amended 2026-09-14; the drawings
+said 72rem, and at a desk the capture field and the bar read as wider than anything under them)*;
+the process surface alone takes 72rem from `wide`, its two columns needing the room. **A paragraph
+is capped at 38rem** — about seventy characters — inside the body column: the column keeps its
+width, the prose stops early, as prose is set. Paragraphs are set apart by a blank line, never an
+indent.
 
 **Motion.** Few, structural, ~150–200ms, `prefers-reduced-motion` honoured. Nothing else moves.
 *(Not yet built; phase 7 of the plan.)*

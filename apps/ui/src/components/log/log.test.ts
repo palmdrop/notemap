@@ -6,7 +6,7 @@ import { anItem, json, refusal, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool, sentUrls } from "$testing/pool";
 import { log } from "$lib/log.svelte";
-import { LOG_LEDE, NOTHING_LOGGED } from "$lib/said";
+import { NOTHING_LOGGED } from "$lib/said";
 import Log from "./Log.svelte";
 import LogRow from "./LogRow.svelte";
 import Shown from "./Shown.svelte";
@@ -57,7 +57,8 @@ test("draws what the pool has done, with the kind as the row's own word", async 
   reading();
 
   expect(await screen.findByText("routed")).toBeDefined();
-  expect(screen.getByText(LOG_LEDE, { exact: false })).toBeDefined();
+  // Nothing says who did it: the log is the pool's, and the source is not a fact about the action.
+  expect(screen.queryByText("you")).toBeNull();
 });
 
 test("says nothing has happened when nothing has", async () => {
@@ -154,9 +155,9 @@ test("says what the narrowed log is narrowed to in the capture's own words", asy
   render(Log);
   reading(SUBJECT);
 
-  expect(
-    (await screen.findByText(LOG_LEDE, { exact: false })).textContent,
-  ).toContain("the picker needs a trail");
+  expect((await screen.findByText(/Only what is about/)).textContent).toContain(
+    "the picker needs a trail",
+  );
 });
 
 test("keeps the log narrowed to that subject a word away", async () => {
@@ -270,7 +271,7 @@ test("spends the accent on a failure and on the code beside it, and on nothing e
     },
   });
 
-  expect(screen.getByText("delivery-failed").className).toContain("text-alarm");
+  expect(screen.getByText("delivery-failed").className).toContain("bg-alarm");
   expect(screen.getByText("unreachable").className).toContain("text-alarm");
   expect(screen.getByText("/vaults/obsidian: ENOENT").className).not.toContain(
     "text-alarm",

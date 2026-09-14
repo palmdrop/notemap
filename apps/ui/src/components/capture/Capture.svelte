@@ -5,6 +5,12 @@
   import { PICTURE, TYPED } from "$lib/channels";
   import { client } from "$lib/client";
 
+  /**
+   * Whether the field takes the caret when the queue is drawn. Not on the way
+   * back from processing with a row still selected: the keys are the row's then.
+   */
+  let { focus = true }: { focus?: boolean } = $props();
+
   let text = $state("");
   let chosen = $state<File | undefined>(undefined);
   let busy = $state(false);
@@ -31,7 +37,9 @@
   });
 
   // The queue is where capture happens, and this is the head of it.
-  $effect(() => box?.focus());
+  $effect(() => {
+    if (focus) box?.focus();
+  });
 
   function pick(event: Event) {
     chosen = (event.currentTarget as HTMLInputElement).files?.[0];

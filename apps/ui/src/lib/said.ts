@@ -19,9 +19,6 @@ export const NO_SUCH_ITEM = `No such item.
 
 This pool has never held it, or does not hold it any more. A link outlives the item it names.`;
 
-export const LOG_LEDE =
-  "Everything this pool has done, in the order it happened.";
-
 export const NOTHING_LOGGED = "Nothing has happened yet.";
 
 export const NO_PREVIEW_OFFERED = "no preview for this destination";

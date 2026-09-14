@@ -522,7 +522,7 @@ test("one discard's offer stands at a time, however many rows go", async () => {
     expect(notices.shown).toHaveLength(1);
   });
 
-  await open(0);
+  // The selection has moved to the row that took the first one's place.
   await discard();
 
   await vi.waitFor(() => {
@@ -659,6 +659,40 @@ test("enter selects, and enter on a selected row opens process", async () => {
   expect(went.to).toEqual(["/items/one/process"]);
 });
 
+/** A decision takes the row away; the selection stays where the hand is. */
+test("moves the selection to the row that took a discarded one's place", async () => {
+  let queued = [anItem("one"), anItem("two"), anItem("three")];
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/queue") return json(200, { values: queued });
+    if (route === "POST /v1/items/two/archive") {
+      queued = queued.filter((item) => item.id !== "two");
+      return json(204, undefined);
+    }
+    return json(200, { values: [] });
+  });
+
+  const { container } = render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "d" });
+
+  await vi.waitFor(() => {
+    expect(screen.queryByText("two")).toBeNull();
+  });
+  const boxed = container.querySelectorAll("[data-selected]");
+  expect(boxed).toHaveLength(2);
+  expect(boxed[1]?.textContent).toContain("three");
+
+  // The next press acts on it rather than starting over from the top.
+  await fireEvent.keyDown(window, { key: "d" });
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/three/archive");
+  });
+});
+
 /** Back from the process surface, the row it was about is still the one selected. */
 test("arrives with the row named on its address selected, and takes the name off again", async () => {
   pool(queued("one", "two"));
@@ -672,6 +706,24 @@ test("arrives with the row named on its address selected, and takes the name off
   });
   expect(screen.getAllByRole("button", { name: "discard" })).toHaveLength(1);
   expect(replaced.urls).toEqual(["http://localhost/"]);
+
+  // The keys are the row's: the capture field did not take the caret.
+  expect(document.activeElement).not.toBe(
+    screen.getByLabelText("What to capture"),
+  );
+  await fireEvent.keyDown(window, { key: "d" });
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/two/archive");
+  });
+});
+
+test("gives the capture field the caret when the queue is simply arrived at", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  expect(document.activeElement).toBe(screen.getByLabelText("What to capture"));
 });
 
 /** The index is one line per item, for scanning; the timeline is for reading. */

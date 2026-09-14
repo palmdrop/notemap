@@ -13,9 +13,7 @@
 
 <div class="max-w-prose">
   {#each paragraphs as paragraph, at (at)}
-    <p
-      class="m-0 break-words whitespace-pre-wrap {at > 0 ? 'indent-[3ch]' : ''}"
-    >
+    <p class="m-0 break-words whitespace-pre-wrap {at > 0 ? 'mt-5.5' : ''}">
       {paragraph}
     </p>
   {/each}

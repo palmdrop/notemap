@@ -17,7 +17,8 @@
 
   /**
    * One row, on either register. The queue's says nothing about what became
-   * of an item, every row on it being unrouted; the feed's says it in a word.
+   * of an item, every row on it being unrouted; the feed's says it in a word
+   * where there is one, and in a line saying where it went.
    */
   let {
     item,
@@ -27,7 +28,6 @@
     pending = false,
     onselect,
     onprocess,
-    ondecided,
   }: {
     item: Item;
     selected: boolean;
@@ -36,8 +36,6 @@
     pending?: boolean;
     onselect: () => void;
     onprocess: () => void;
-    /** A quick decision was taken on the row. */
-    ondecided?: () => void;
   } = $props();
 
   let editing = $state(false);
@@ -51,9 +49,9 @@
     () => selected && !offline,
   );
 
-  // The queue holds a row it has just processed until the reader looks away,
-  // and that one row wears what became of it; every other row there is
-  // unrouted, and a word saying so on each says nothing.
+  // Every row on the queue is unrouted, and a word saying so on each says
+  // nothing; one held from an earlier read that the pool no longer counts as
+  // work still wears what became of it.
   const finished = $derived(
     surface === "feed" ||
       item.archived !== undefined ||
@@ -113,7 +111,7 @@
 {#if selected}
   <!-- The box's foot, spanning both columns and closing the rail's rule. -->
   <div
-    class="col-span-full -mx-3 flex h-9 items-center border-x border-b border-ink px-3 max-narrow:-mx-2 max-narrow:px-2"
+    class="col-span-full -mx-3 flex h-9 items-center border border-ink px-3 max-narrow:-mx-2 max-narrow:px-2"
   >
     <Actions
       {item}
@@ -121,7 +119,6 @@
       address={itemHref(item.id)}
       onprocess={() => onprocess()}
       onedit={() => (editing = !editing)}
-      {ondecided}
     />
   </div>
 {/if}

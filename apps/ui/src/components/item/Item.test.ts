@@ -308,7 +308,8 @@ test("drops a record when the address moves to another item", async () => {
   await vi.waitFor(() => {
     expect(screen.queryByRole("link", { name: /drafts/ })).toBeNull();
   });
-  expect(screen.getByText("unrouted")).toBeDefined();
+  // Nothing routed is nothing said: the absence of a line is the word.
+  expect(screen.queryByText("unrouted")).toBeNull();
 });
 
 /** A summary that names the person, which is what a hand-marked item carries. */

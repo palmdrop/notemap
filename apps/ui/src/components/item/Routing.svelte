@@ -96,10 +96,8 @@
   }
 </script>
 
-<div class="mt-2">
-  {#if lines.length === 0}
-    <div>unrouted</div>
-  {:else}
+{#if lines.length > 0 || said !== ""}
+  <div class="mt-2">
     {#each lines as line (line.href ?? line.said)}
       <div class="flex flex-wrap items-baseline gap-x-4">
         <span class="min-w-0 break-words">
@@ -125,9 +123,9 @@
         {/if}
       </div>
     {/each}
-  {/if}
 
-  {#if said !== ""}
-    <div role="status" class="mt-1 text-alarm">{said}</div>
-  {/if}
-</div>
+    {#if said !== ""}
+      <div role="status" class="mt-1 text-alarm">{said}</div>
+    {/if}
+  </div>
+{/if}

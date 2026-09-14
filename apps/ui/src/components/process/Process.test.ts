@@ -1854,6 +1854,50 @@ test("advances to the next item in the queue after a decision, and esc returns s
   });
 });
 
+/** A decision takes the item off the queue first; the row after it is still the one to go to. */
+test("advances to the row after this one, not the top of the queue", async () => {
+  routing(
+    {
+      id: "r",
+      item: "one",
+      at: "2026-09-03T10:00:00.000Z",
+      state: "delivered",
+      target: aTarget,
+    },
+    [anItem("zero"), anItem("one"), anItem("two")],
+  );
+  await client.enter("queue");
+
+  draw();
+  await choose(/Vault/);
+  await commit();
+  await vi.waitFor(() => {
+    expect(left()).toBe("/items/two/process");
+  });
+});
+
+/** An item that was never on the queue — reached from the feed — has nothing after it. */
+test("returns to the queue after deciding an item that was not on it", async () => {
+  routing(
+    {
+      id: "r",
+      item: "one",
+      at: "2026-09-03T10:00:00.000Z",
+      state: "delivered",
+      target: aTarget,
+    },
+    [anItem("zero"), anItem("two")],
+  );
+  await client.enter("queue");
+
+  draw();
+  await choose(/Vault/);
+  await commit();
+  await vi.waitFor(() => {
+    expect(left()).toBe("/");
+  });
+});
+
 test("a refusal stays at the control, and the corner is left alone", async () => {
   pool((request) => {
     const route = routeOf(request);

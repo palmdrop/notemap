@@ -21,15 +21,12 @@
     offline = false,
     onprocess,
     onedit,
-    ondecided,
   }: {
     item: Item;
     address?: string;
     offline?: boolean;
     onprocess: () => void;
     onedit: () => void;
-    /** A decision was taken here: the surface may want to hold the row. */
-    ondecided?: () => void;
   } = $props();
 
   /** What this row did, and only that: a failed read is said where it was read. */
@@ -77,9 +74,7 @@
     <Action
       disabled={cannotMark !== undefined}
       title={cannotMark}
-      onclick={() => {
-        void manual(item).then(() => ondecided?.());
-      }}
+      onclick={() => void manual(item)}
     >
       manual
     </Action>
@@ -88,10 +83,7 @@
       alarm
       disabled={cannotDiscard !== undefined}
       title={cannotDiscard}
-      onclick={() => {
-        discard(item);
-        ondecided?.();
-      }}
+      onclick={() => discard(item)}
     >
       discard
     </Action>

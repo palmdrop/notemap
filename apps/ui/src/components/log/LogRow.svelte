@@ -5,7 +5,7 @@
   import Rail from "$components/primitives/register/Rail.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
-  import { agentOf, failed, flattened } from "$lib/actions";
+  import { failed, flattened } from "$lib/actions";
 
   import About from "./About.svelte";
   import Detail from "./Detail.svelte";
@@ -18,12 +18,11 @@
 
 <Rail>
   <Stamp at={action.at} />
-  <div class="mt-2 break-words">{agentOf(action.by)}</div>
 </Rail>
 
 <Body>
   <div>
-    <StateWord word={action.kind} inline failed={bad} />
+    <StateWord word={action.kind} inline inverted failed={bad} />
 
     {#if action.subject !== undefined}
       <About id={action.subject} {order} />

@@ -108,7 +108,6 @@
   let refusing = $state<Record<string, string>>({});
 
   let shown = $state<RoutingPreview | undefined>(undefined);
-  let showing = $state(false);
   let previewFailed = $state("");
 
   /**
@@ -273,7 +272,6 @@
     // after the person has moved on is dropped rather than drawn under
     // arguments it knows nothing about.
     const asked = decision;
-    showing = true;
     try {
       const answer = await client.routing.preview(item.id, {
         destination: chosen,
@@ -291,8 +289,6 @@
         previewFailed = saidBy(error);
         opened.preview = true;
       }
-    } finally {
-      showing = false;
     }
   }
 
@@ -638,14 +634,19 @@
     }
   }
 
-  /** The queue in its current order, which is what the surface walks. */
-  const around = $derived.by(() => {
+  /**
+   * The queue in its current order, which is what the surface walks. Kept as
+   * they stood while the item was still on the queue: a decision takes it off
+   * before the surface moves on, and the row after it is still the one to go
+   * to. An item that was never on the queue has no neighbours.
+   */
+  let around = $state<{ previous?: Item; next?: Item }>({});
+
+  $effect(() => {
     const rows = $queue.items;
     const at = rows.findIndex((one) => one.id === item.id);
-    return {
-      previous: at > 0 ? rows[at - 1] : undefined,
-      next: at === -1 ? rows.find((one) => one.id !== item.id) : rows[at + 1],
-    };
+    if (at === -1) return;
+    around = { previous: rows[at - 1], next: rows[at + 1] };
   });
 
   /**
@@ -766,7 +767,7 @@
 <!-- The bar, then a frame whose head and foot are fixed and whose middle
      scrolls: two columns from `wide` up, stacked below. -->
 <div
-  class="mx-auto flex min-h-0 w-full max-w-read flex-1 flex-col wide:grid wide:max-w-measure wide:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] wide:grid-rows-[1fr_auto]"
+  class="mx-auto flex min-h-0 w-full max-w-read flex-1 flex-col wide:grid wide:max-w-measure-wide wide:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] wide:grid-rows-[1fr_auto]"
 >
   <div
     class="flex max-h-[40%] flex-none flex-col border-b border-ink pt-5 pb-4 max-narrow:max-h-[34%] max-narrow:pt-3.5 max-narrow:pb-3 wide:row-span-2 wide:max-h-none wide:border-r wide:border-b-0 wide:pr-8 wide:pb-5"
@@ -946,8 +947,6 @@
             {@render labelled(field.title ?? field.name, field)}
           {/if}
         {/each}
-      {:else}
-        <span class="text-inert">after a destination</span>
       {/if}
     </Section>
 
@@ -968,10 +967,6 @@
         <Preview {shown} />
       {:else if previewFailed !== ""}
         <span role="status" class="text-alarm">{previewFailed}</span>
-      {:else}
-        <span class="text-inert">
-          {showing ? "asking…" : "once the place is settled"}
-        </span>
       {/if}
     </Section>
 

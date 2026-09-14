@@ -80,12 +80,10 @@ test("marks manual at once, with no note, and offers the way back in the corner"
         })
       : json(200, { values: [] }),
   );
-  const decided = vi.fn();
   render(Actions, {
     item: anItem("one"),
     onprocess: () => undefined,
     onedit: () => undefined,
-    ondecided: decided,
   });
 
   await fireEvent.click(screen.getByRole("button", { name: "manual" }));
@@ -94,25 +92,23 @@ test("marks manual at once, with no note, and offers the way back in the corner"
     expect(asked()).toContain("POST /v1/items/one/mark-processed");
   });
   expect(screen.queryByLabelText("where it went")).toBeNull();
-  await vi.waitFor(() => {
-    expect(decided).toHaveBeenCalledTimes(1);
-  });
 
-  const said = notices.shown.at(-1);
-  expect(said?.what).toBe("marked manual");
+  const said = await vi.waitFor(() => {
+    const raised = notices.shown.at(-1);
+    expect(raised?.what).toBe("marked manual");
+    return raised;
+  });
   expect(said?.offer?.label).toBe("undo");
   // Keyed to the record, so the log's own entry for it adds nothing.
   expect(said?.key).toBe("record:rec");
 });
 
 test("discards at once and offers the way back in the corner", async () => {
-  const decided = vi.fn();
   draw();
   render(Actions, {
     item: anItem("two"),
     onprocess: () => undefined,
     onedit: () => undefined,
-    ondecided: decided,
   });
 
   await fireEvent.click(
@@ -122,7 +118,6 @@ test("discards at once and offers the way back in the corner", async () => {
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/two/archive");
   });
-  expect(decided).toHaveBeenCalledTimes(1);
   expect(notices.shown.at(-1)?.what).toBe("discarded");
   expect(notices.shown.at(-1)?.offer?.label).toBe("undo");
 });

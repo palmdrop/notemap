@@ -182,10 +182,11 @@ test("says where a routed row went, without asking for its records", async () =>
   await client.destinations.load();
   render(Feed);
 
-  // One of the two records has not been carried out, and the word says the
-  // whole row rather than the half of it that landed.
-  expect(await screen.findByText("retrying")).toBeDefined();
+  // One of the two records has not been carried out: the line says so, and
+  // no word over it repeats what the line says.
   expect(await screen.findByText("Fiction, manual · 1 pending")).toBeDefined();
+  expect(screen.queryByText("retrying")).toBeNull();
+  expect(screen.queryByText("routed")).toBeNull();
   expect(asked()).not.toContain("GET /v1/items/sent/routing");
 });
 
