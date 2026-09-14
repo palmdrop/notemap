@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { failed, flattened, isCode, shortened } from "./actions";
+import { failed, flattened, isCode, shortened, factOf, known } from "./actions";
 
 describe("flattening a detail", () => {
   it("writes strings unquoted and everything else as it reads", () => {
@@ -104,5 +104,62 @@ describe("an id", () => {
 
   it("is left alone when there is nothing to save", () => {
     expect(shortened("short")).toBe("short");
+  });
+});
+
+describe("the fact a row carries", () => {
+  const naming = {
+    template: (id: string) => (id === "tpl" ? "Research" : "a template"),
+    destination: (id: string) => (id === "vault" ? "Vault" : "a destination"),
+  };
+
+  it("says one fact per kind, and never an id", () => {
+    expect(factOf("tagged", { tag: "design" }, naming)).toEqual({
+      said: "design",
+      trigger: true,
+    });
+    expect(factOf("archived", { reason: "noise" }, naming)).toEqual({
+      said: "noise",
+    });
+    expect(
+      factOf(
+        "template-fired",
+        { template: "tpl", name: "Research", record: "r" },
+        naming,
+      ),
+    ).toEqual({ said: "Research" });
+    expect(factOf("template-deleted", { template: "tpl" }, naming)).toEqual({
+      said: "Research",
+    });
+    expect(
+      factOf("destination-retired", { destination: "vault" }, naming),
+    ).toEqual({
+      said: "Vault",
+    });
+    expect(
+      factOf(
+        "delivery-failed",
+        { record: "r", failure: { code: "unreachable", detail: "…" } },
+        naming,
+      ),
+    ).toEqual({ said: "unreachable", alarm: true });
+    expect(
+      factOf("assets-released", { assets: ["a", "b"], blobs: [] }, naming),
+    ).toEqual({
+      said: "2 released",
+    });
+  });
+
+  it("says nothing for a kind whose row says it all", () => {
+    expect(
+      factOf("routed", { record: "r", pointer: "x.md" }, naming),
+    ).toBeUndefined();
+    expect(factOf("captured", {}, naming)).toBeUndefined();
+    expect(known("captured")).toBe(true);
+  });
+
+  it("has no reading for a kind nobody has written yet", () => {
+    expect(known("suggestion-added")).toBe(false);
+    expect(factOf("suggestion-added", { tag: "x" }, naming)).toBeUndefined();
   });
 });

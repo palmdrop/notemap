@@ -1,9 +1,8 @@
 <script lang="ts">
   import { onMount, untrack } from "svelte";
 
-  import Order from "$components/order/Order.svelte";
+  import { itemHref } from "$components/item/href";
   import Body from "$components/primitives/register/Body.svelte";
-  import Head from "$components/primitives/register/Head.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
@@ -16,10 +15,24 @@
   import { logHref } from "./href";
   import Says from "./Says.svelte";
   import LogRow from "./LogRow.svelte";
-  import Shown from "./Shown.svelte";
   import Views from "./Views.svelte";
 
   const pool = reachable();
+
+  const HALF_A_DAY = 12 * 60 * 60 * 1000;
+
+  /** A gap opens where more than half a day passed before a row, in reading order. */
+  const rows = $derived(
+    log.rows.map((action, at) => {
+      const before = log.rows[at - 1];
+      return {
+        action,
+        gap:
+          before !== undefined &&
+          Math.abs(Date.parse(action.at) - Date.parse(before.at)) > HALF_A_DAY,
+      };
+    }),
+  );
 
   // A read that failed left nothing, and there is no cache to draw meanwhile.
   $effect(() => {
@@ -42,20 +55,16 @@
   });
 </script>
 
-<Head>
-  <Views />
-  <span class="flex items-baseline gap-x-5">
-    <Shown />
-    <Order />
-  </span>
-</Head>
-
 {#if log.item !== undefined}
-  <p class="pb-3">
-    Only what is about <Says id={log.item} /> —
-    <a href={logHref(log.order, undefined, log.kinds)}>show everything</a>
+  <!-- History: the log narrowed to one item, said above the head. -->
+  <p class="pt-5">
+    <span class="font-semibold tracking-caps uppercase">history</span>
+    <Says id={log.item} href={itemHref(log.item)} />
+    · <a href={logHref(log.order, undefined, log.kinds)}>all of the log</a>
   </p>
 {/if}
+
+<Views />
 
 <Register>
   {#if log.quiet}
@@ -67,8 +76,8 @@
     </Body>
   {/if}
 
-  {#each log.rows as action (action.id)}
-    <LogRow {action} order={log.order} />
+  {#each rows as row (row.action.id)}
+    <LogRow action={row.action} gap={row.gap} />
   {/each}
 
   {#if log.more}

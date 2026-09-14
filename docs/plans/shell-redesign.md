@@ -1,7 +1,7 @@
 # The shell, redrawn
 
 **Date**: 2026-09-14
-**Status**: In progress — phases 2–4, the first version, shipped 2026-09-14; phase 5a shipped 2026-09-14, 5b in progress; 6–7 are drawn next
+**Status**: In progress — phases 2–4, the first version, shipped 2026-09-14; phase 5 shipped 2026-09-14; 6–7 are drawn next
 **Spec**: `docs/specs/shell.md`
 **Closed**:
 
@@ -381,12 +381,12 @@ Decisions made in the drawing, so they are not asked again:
 
 Depends on 5a for `Block`.
 
-- [ ] Branch `agent/shell-redesign-5b`.
-- [ ] **Head.** `log/Views.svelte` becomes the ruled tab row: the five names on the list head's
+- [x] Branch `agent/shell-redesign-5b`.
+- [x] **Head.** `log/Views.svelte` becomes the ruled tab row: the five names on the list head's
       bottom rule, the current one bold and boxed on three sides so it sits on the rule; `Order`
       at the right on the same rule. `Shown.svelte` goes; the refusal it carried is drawn in the
       head in alarm. Below `narrow` the tabs do not wrap — the row scrolls sideways.
-- [ ] **Row.** `LogRow.svelte` on the register: rail `Stamp` then the kind as
+- [x] **Row.** `LogRow.svelte` on the register: rail `Stamp` then the kind as
       `uppercase tracking-caps`, `text-alarm` on the three failure kinds, words per the decisions
       above (`lib/kinds.ts`, tested); body the item's first words as a link (`Says`) at the left
       and the row's fact at the right, the fact stacking under the words below `narrow`.
@@ -394,23 +394,23 @@ Depends on 5a for `Block`.
       pair is drawn (`tag`, `name`, `reason`, `code`, …) and how an id resolves (`template` →
       name via `lib/templates.ts`, `destination` → name); a kind with no entry draws its
       flattened pairs as today, so a kind nobody has written yet still reads.
-- [ ] **Block under a routing kind.** `routed` draws `Block` beneath the row from the action's
+- [x] **Block under a routing kind.** `routed` draws `Block` beneath the row from the action's
       detail — destination, capability, pointer, template — with the output read by the record id
       the detail carries; `delivery-failed` draws the head and the failure's detail in alarm as
       the body; `delivery-cancelled` the head and `called off`. `template-fired` draws no block;
       its fact is the template's name. The block spans the body column.
-- [ ] **History.** The paragraph above the list becomes `HISTORY <first words> · all of the log`,
+- [x] **History.** The paragraph above the list becomes `HISTORY <first words> · all of the log`,
       the words linking to the item and `all of the log` widening while keeping the view.
-- [ ] **The gap.** Where more than twelve hours passed between a row and the one before it in
+- [x] **The gap.** Where more than twelve hours passed between a row and the one before it in
       reading order, both cells take `pt-[var(--spacing-gap-time)]`, with whatever phase 3 wrote
       for the index reused.
-- [ ] **Tests.** `log.test.ts` extended: the tab row marks the current view; the kind is in the
+- [x] **Tests.** `log.test.ts` extended: the tab row marks the current view; the kind is in the
       rail; one fact per row and never an id; a block under `routed` and none under `tagged`;
       the history head; the gap after more than twelve hours and not after less.
-- [ ] **Spec.** Rewrite `The log` in `shell.md`: the register, the kind in the rail, the fact
+- [x] **Spec.** Rewrite `The log` in `shell.md`: the register, the kind in the rail, the fact
       per kind (retiring *flattened generically, never per kind* with a dated note), the tab row,
       `history`, the block, no count. `Shipped:` entry.
-- [ ] Typecheck, tests, lint; shots re-taken; `git commit`.
+- [x] Typecheck, tests, lint; shots re-taken; `git commit`.
 
 **Unknowns, and what happens if they go the wrong way**
 
@@ -419,9 +419,10 @@ Depends on 5a for `Block`.
   `output` — so the `ASSET` band in the drawing is **not built** here; recording asset landings
   on the record is a core change and its own plan. The block draws the item's attachments above
   the words instead, which is what the file looks like and not where its assets went.
-- *Output reads in the log.* One read per `routed` row on a page, on arrival. If that proves
-  heavy, the log's block reads on a press — `output` in the foot — and the item and the record
-  page keep reading on arrival.
+- *Output reads in the log.* One read per `routed` row on a page, on arrival — built that way
+  2026-09-14, with a `no-output` refusal read as `nothing kept`. If that proves heavy, the log's
+  block reads on a press — `output` in the foot — and the item and the record page keep reading
+  on arrival.
 - *A template that was deleted.* Its name is gone from `client.templates.held`; the block says
   `via a template`.
 

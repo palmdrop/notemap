@@ -9,7 +9,6 @@ import { log } from "$lib/log.svelte";
 import { NOTHING_LOGGED } from "$lib/said";
 import Log from "./Log.svelte";
 import LogRow from "./LogRow.svelte";
-import Shown from "./Shown.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
@@ -70,14 +69,14 @@ test("says nothing has happened when nothing has", async () => {
   expect(screen.getByText("quiet")).toBeDefined();
 });
 
-test("flattens a detail into pairs rather than stringifying it", async () => {
+/** A kind nobody has written a reading for still reads: its detail, flattened. */
+test("flattens the detail of a kind it has no reading for", async () => {
   pool(
     held([
       anAction("one", {
-        kind: "routed",
+        kind: "suggestion-added",
         detail: {
-          capability: "create-or-append",
-          arguments: { path: "projects/notemap/notes/decisions.md" },
+          suggestion: { tag: "design", by: "a model" },
         },
       }),
     ]),
@@ -85,8 +84,8 @@ test("flattens a detail into pairs rather than stringifying it", async () => {
   render(Log);
   reading();
 
-  expect(await screen.findByText("arguments.path")).toBeDefined();
-  expect(screen.getByText("projects/notemap/notes/decisions.md")).toBeDefined();
+  expect(await screen.findByText("suggestion.tag")).toBeDefined();
+  expect(screen.getByText("design")).toBeDefined();
 });
 
 const SUBJECT = "0198f0c2-9d3a-7b21-8e4f-112233445e6f";
@@ -155,22 +154,22 @@ test("says what the narrowed log is narrowed to in the capture's own words", asy
   render(Log);
   reading(SUBJECT);
 
-  expect((await screen.findByText(/Only what is about/)).textContent).toContain(
-    "the picker needs a trail",
-  );
+  const head = (await screen.findByText("history")).parentElement;
+  expect(head?.textContent).toContain("the picker needs a trail");
+  expect(
+    screen.getByRole("link", { name: "the picker needs a trail" }),
+  ).toHaveProperty("pathname", `/items/${SUBJECT}`);
 });
 
-test("keeps the log narrowed to that subject a word away", async () => {
+/** The way into history is the item's own; a row offers nothing about narrowing. */
+test("offers no narrowing on a row", async () => {
   pool(held([anAction("one")]));
   render(Log);
   reading();
+  await screen.findByText("captured");
 
-  const link = await screen.findByRole("link", { name: "only this" });
-  // The order travels with it, so following one does not turn the log around.
-  expect(link).toHaveProperty(
-    "search",
-    "?item=0198f0c2-9d3a-7b21-8e4f-112233445e6f&order=newest-first",
-  );
+  expect(screen.queryByRole("link", { name: "only this" })).toBeNull();
+  expect(screen.queryByText("history")).toBeNull();
 });
 
 test("says what it is narrowed to, and offers the way back", async () => {
@@ -179,7 +178,7 @@ test("says what it is narrowed to, and offers the way back", async () => {
   reading("0198f0c2-9d3a-7b21-8e4f-112233445e6f");
 
   expect(
-    await screen.findByRole("link", { name: "show everything" }),
+    await screen.findByRole("link", { name: "all of the log" }),
   ).toBeDefined();
 
   await vi.waitFor(() => {
@@ -256,9 +255,8 @@ test("turning the log around walks it again rather than stitching two orders", a
   expect(turned.has("after")).toBe(false);
 });
 
-test("spends the accent on a failure and on the code beside it, and on nothing else", () => {
+test("spends the accent on a failure: the kind, the code, and the block's word", () => {
   render(LogRow, {
-    order: "newest-first",
     action: {
       id: "one",
       kind: "delivery-failed",
@@ -266,21 +264,27 @@ test("spends the accent on a failure and on the code beside it, and on nothing e
       by: { kind: "notemap" },
       at: "2026-09-02T11:16:00.000Z",
       detail: {
+        record: "rec",
+        destination: "vault",
+        capability: "create",
+        attempt: 1,
         failure: { code: "unreachable", detail: "/vaults/obsidian: ENOENT" },
       },
     },
   });
 
-  expect(screen.getByText("delivery-failed").className).toContain("bg-alarm");
+  expect(screen.getByText("delivery failed").className).toContain("text-alarm");
   expect(screen.getByText("unreachable").className).toContain("text-alarm");
-  expect(screen.getByText("/vaults/obsidian: ENOENT").className).not.toContain(
+  // The failure's own words are the block's body, said in alarm.
+  expect(screen.getByText("/vaults/obsidian: ENOENT").className).toContain(
     "text-alarm",
   );
+  expect(screen.queryByText("attempt")).toBeNull();
+  expect(screen.queryByText("rec")).toBeNull();
 });
 
 test("leaves a destruction as a fact rather than a warning", () => {
   render(LogRow, {
-    order: "newest-first",
     action: {
       id: "one",
       kind: "purged",
@@ -294,33 +298,29 @@ test("leaves a destruction as a fact rather than a warning", () => {
   expect(word.className).not.toContain("text-alarm");
 });
 
-test("says a refusal where the count goes, and says neither before a read", () => {
-  render(Shown);
-  expect(screen.queryByRole("status")).toBeNull();
-});
-
-test("counts what is shown once rows arrive", async () => {
+test("says no refusal before a read, and counts nothing", async () => {
   pool(held([anAction("one"), anAction("two")]));
-  render(Shown);
+  render(Log);
+  expect(screen.queryByRole("status")).toBeNull();
   reading();
 
-  expect(await screen.findByText("2 shown")).toBeDefined();
+  await screen.findAllByText("captured");
+  expect(screen.queryByText(/shown/)).toBeNull();
 });
 
 /** The read behind the page is what refuses; the page itself stays served. */
-test("puts a refusal in the chrome, in accent, instead of the count", async () => {
+test("puts a refusal in the head, in alarm", async () => {
   pool((request) =>
     routeOf(request) === "GET /v1/actions"
       ? refusal(422, "bad-position")
       : json(200, { values: [] }),
   );
-  render(Shown);
+  render(Log);
   reading();
 
   const said = await screen.findByRole("status");
   expect(said.className).toContain("text-alarm");
   expect(said.textContent).toBe("the app lost its place in the list; reload");
-  expect(screen.queryByText(/shown/)).toBeNull();
 });
 
 /**
@@ -486,4 +486,176 @@ test("keeps an oldest-first walk where more happened than a page holds", async (
   log.raced();
 
   expect(log.rows.map((action) => action.id)).toEqual(["one"]);
+});
+
+/** The kind is the rail's second line, under the stamp, and is read as words. */
+test("draws the kind in the rail, under the stamp", async () => {
+  pool(held([anAction("one", { kind: "template-fired" })]));
+  const { container } = render(Log);
+  reading();
+
+  const word = await screen.findByText("template fired");
+  const rail = container.querySelector(".border-r");
+  expect(rail?.contains(word)).toBe(true);
+  expect(screen.queryByText("template-fired")).toBeNull();
+});
+
+test("says discarded where the pool says archived", async () => {
+  pool(
+    held([
+      anAction("one", { kind: "archived", detail: { reason: "noise" } }),
+      anAction("two", { kind: "unarchived" }),
+    ]),
+  );
+  render(Log);
+  reading();
+
+  expect(await screen.findByText("discarded")).toBeDefined();
+  expect(screen.getByText("undiscarded")).toBeDefined();
+  expect(screen.getByText("noise")).toBeDefined();
+  expect(screen.queryByText("archived")).toBeNull();
+});
+
+/** One fact per row, in a person's words: a template by name, never by id. */
+test("says one fact per row, and never an id", async () => {
+  pool(
+    held([
+      anAction("one", {
+        kind: "template-fired",
+        detail: {
+          record: "rec",
+          template: "tpl",
+          name: "Research",
+          destination: "vault",
+          capability: "create",
+          tag: "route/research",
+        },
+      }),
+      anAction("two", { kind: "tagged", detail: { tag: "design" } }),
+    ]),
+  );
+  render(Log);
+  reading();
+
+  expect(await screen.findByText("Research")).toBeDefined();
+  expect(screen.getByText("design")).toBeDefined();
+  for (const id of ["rec", "tpl", "vault", "firedByTag", "record"]) {
+    expect(screen.queryByText(id)).toBeNull();
+  }
+});
+
+const VAULT = {
+  id: "vault",
+  name: "Fiction vault",
+  kind: "filesystem",
+  settings: {},
+  retired: false,
+};
+
+test("draws the record as a block under routed, reading what was sent, and none under tagged", async () => {
+  pool((request) => {
+    switch (routeOf(request)) {
+      case "GET /v1/destinations":
+        return json(200, { values: [VAULT] });
+      case "GET /v1/routing/rec/output":
+        return new Response("# what went\n", {
+          status: 200,
+          headers: { "content-type": "text/markdown" },
+        });
+      default:
+        return held([
+          anAction("one", {
+            kind: "routed",
+            detail: {
+              record: "rec",
+              target: "destination",
+              destination: "vault",
+              capability: "create",
+              pointer: "drafts/note.md",
+            },
+          }),
+          anAction("two", { kind: "tagged", detail: { tag: "design" } }),
+        ])(request);
+    }
+  });
+  await client.destinations.load();
+  render(Log);
+  reading();
+
+  expect(await screen.findByText("Fiction vault")).toBeDefined();
+  expect(screen.getByText("drafts/note.md")).toBeDefined();
+  expect(screen.getByText("created")).toBeDefined();
+  expect(
+    await screen.findByRole("heading", { name: "what went" }),
+  ).toBeDefined();
+  // The way to the item is in the block's foot, in the log alone.
+  expect(screen.getByRole("link", { name: "item" })).toHaveProperty(
+    "pathname",
+    `/items/${SUBJECT}`,
+  );
+  // One block: the tag's row has none.
+  expect(screen.getAllByText("created")).toHaveLength(1);
+  expect(screen.queryByText("target")).toBeNull();
+});
+
+/** The detail does not say whether a copy was kept, so a refusal saying none is none. */
+test("says nothing kept where the pool has no copy of what a routed row sent", async () => {
+  pool((request) =>
+    routeOf(request) === "GET /v1/routing/rec/output"
+      ? json(404, { error: { code: "no-output", facts: {} } })
+      : held([
+          anAction("one", {
+            kind: "routed",
+            detail: {
+              record: "rec",
+              target: "destination",
+              destination: "vault",
+              capability: "append",
+            },
+          }),
+        ])(request),
+  );
+  render(Log);
+  reading();
+
+  expect(await screen.findByText("nothing kept")).toBeDefined();
+  expect(screen.queryByText(/could not be read/)).toBeNull();
+});
+
+test("draws a cancelled delivery as called off", async () => {
+  pool(
+    held([
+      anAction("one", {
+        kind: "delivery-cancelled",
+        detail: { record: "rec", template: "tpl", tag: "route/research" },
+      }),
+    ]),
+  );
+  render(Log);
+  reading();
+
+  expect(await screen.findByText("called off")).toBeDefined();
+  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
+});
+
+test("opens a gap where more than half a day passed, and not where less did", async () => {
+  pool(
+    held([
+      anAction("one", { at: "2026-09-02T11:14:00.000Z" }),
+      anAction("two", { at: "2026-09-02T09:00:00.000Z" }),
+      anAction("three", { at: "2026-09-01T09:00:00.000Z" }),
+    ]),
+  );
+  const { container } = render(Log);
+  reading();
+  await screen.findAllByText("captured");
+
+  const rails = [...container.querySelectorAll(".border-r")];
+  expect(rails).toHaveLength(3);
+  expect(rails.map((rail) => rail.className.includes("gap-time"))).toEqual([
+    false,
+    false,
+    true,
+  ]);
 });
