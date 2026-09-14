@@ -40,6 +40,11 @@ that implements it.
 - [x] Round 1 drawn, awaiting review: `tokens.css`, `Queue.dc.html` (1a–1e: open list, ruled list,
       the index, 390, drained), `Process.dc.html` (2a–2c: stacked, two columns, 390). Not yet
       drawn: a picture capture on the process surface, the sections collapsed _(2026-09-14)_
+- [x] Round 1 revised on feedback: queue turn 3 (selection as a box or a heavy rule, actions on
+      the box, prose at 38rem, the index as a toggled view with time gaps), process turn 4 (two
+      columns by width, DESTINATION, preview as the file's head, capture editable), `Type.dc.html`
+      with ten faces to choose from _(2026-09-14)_
+- [ ] Choose: the face; 3a or 3b for the selection; whether the timeline takes the time gaps too
 - [ ] Round 2: feed, item with record blocks, log with the tab row, sign-in
 - [ ] Round 3: settings with its side menu, destination and template rows open
 - [ ] Commit the docs; open a PR for the docs alone

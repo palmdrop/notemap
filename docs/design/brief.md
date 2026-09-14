@@ -1,7 +1,8 @@
 # The shell, redrawn — design brief
 
-**Date**: 2026-09-14
+**Date**: 2026-09-14, revised the same day after the first round was looked at
 **Status**: First draft. Every decision below may be reversed once it has been drawn and looked at.
+Drafts are drawn in light; dark is the inversion and is drawn last.
 **Supersedes**: the visual direction in [shell.md](../specs/shell.md#visual-direction) and the
 mockups beside this file, which are deleted as each is replaced.
 
@@ -112,8 +113,10 @@ them use size for hierarchy. None of them use grey.
 
 ### Type
 
-- **One face**: a self-hosted grotesk (Inter, or the like), served by the daemon beside the app.
-  Tabular figures everywhere a number sits in a column.
+- **One face**: a self-hosted grotesk, served by the daemon beside the app. Which one is being
+  chosen from ten samples on the process surface (`Type.dc.html`, turn 5); Plex Sans is the
+  stand-in until then. Tabular figures in the stamp column and nowhere else — applied to a whole
+  page they spread some faces' punctuation.
 - **One size.** Literally. Captured prose, timestamps, labels, actions, the bar.
 - Hierarchy is weight (regular / bold), capitals or small-caps with tracking for labels, and
   position. A label is caps; a value is regular; a primary action is bold.
@@ -128,15 +131,18 @@ Two idioms, and the rule for which is where:
   Whitespace separates entries, as in the references.
 - **Rules mark a change of region.** A 1px ink rule under the bar; a vertical rule between the
   date column and the body, running the height of the list; a ruled box around the capture
-  field; a ruled strip around the selected row's actions; rules between sections of the process
-  surface and of settings; a ruled frame around a routing record block.
-- Nothing is ever boxed on four sides except the capture field, a record block, and a control.
-- The measure is capped at a desk. A phone keeps both columns: the date stacks over the time in a
-  narrow column, the rule, then the body.
+  field; a ruled box around the selected row with the actions as its foot; rules between sections
+  of the process surface and of settings; a ruled frame around a routing record block.
+- Nothing is ever boxed on four sides except the capture field, a record block, a control, and
+  the selected row.
+- The measure is capped at a desk, and **a paragraph is capped at about seventy characters**
+  (38rem) inside the body column: the column keeps its width, the prose stops early, as prose is
+  set. A phone keeps both columns: the date stacks over the time in a narrow column, the rule,
+  then the body.
 
 ### Motion
 
-Few, structural, ~150–200ms, `prefers-reduced-motion` honoured: a row's action strip appearing;
+Few, structural, ~150–200ms, `prefers-reduced-motion` honoured: a row's selection box appearing;
 a routed item leaving the queue; the process surface advancing to the next item; a notice
 entering and leaving the corner. Nothing else moves.
 
@@ -163,46 +169,58 @@ arrow or a template name; the capture in the body column. No state word — ever
 is unrouted, so saying it says nothing. No `+`. No grey. The queue should read as a timeline of
 what was written.
 
-**A selected row** — one click or `enter` — gains a ruled strip under the body: `process ·
-manual · discard · tag` in the first line, `edit · copy · open` quieter in the second. `discard`
-is red. `tag` opens the chooser in place, which is also how a template is applied, since a
-template is a tag. Nothing else about the row changes: no fill, no coloured edge; the strip is
-the selection.
+**A selected row** — one click or `enter` — is drawn as a box around both columns, the rail's
+rule running through it, with the actions as the box's own foot: `process · manual · discard ·
+tag` on the left, `process` bold, `discard` red; edit, copy and open on the right as marks (a
+pen, two sheets, an outgoing arrow). `tag` opens the chooser in place, which is also how a
+template is applied, since a template is a tag. No fill, no colour: the box is the selection.
+*The alternative still on the table* (`Queue.dc.html`, 3b): no box, the rail's rule heavier
+beside the row, the actions on a ruled line under the text with the marks spelt out.
 
 A double click, or `enter` on a selected row, goes to the process surface.
 
 **Keyboard**: `j`/`k` walk rows, `enter` selects then opens, `d` discard, `m` manual, `t` tag,
-`p` process, `esc` deselects. Draw the strip so a reader could guess these; do not print them.
+`p` process, `esc` deselects. Draw the actions so a reader could guess these; do not print them.
+
+**The index** is a second view of the same list, toggled in the head beside the order control:
+one line per item — stamp, first words, tags at the right — for scanning rather than reading.
+Where more than half a day passed between two captures the list opens a gap, one fixed size,
+not proportional: time passing is read from the space, as in *Still Here*. The gap belongs to
+the index for now; whether the timeline wants it too is a thing to look at once it is built.
 
 **The drained queue** is one quiet line where the rows were.
 
 ### Process
 
-A surface, not a modal. Three regions:
+A surface, not a modal. Three regions, in **two columns from 64rem up** — the capture on the
+left, the decision on the right, a rule between — and **stacked below it**:
 
-- **Head, fixed**: the capture, at full width, editable in place — the words that this delivery
-  will carry. A picture capture draws the picture; long text scrolls within the head, not the
-  page.
-- **Middle, scrolls**: ruled sections, each collapsible, drawn collapsed until needed.
-  **Where** — the destination line with templates, then destinations, then `manual` and `discard`
-  as three ruled bands under one field that narrows all of them as it is typed. **Place** — the
+- **Head, fixed**: the capture, read-only until the pen at its right, a double click, or `e`
+  opens it — then a ruled box with the caret in it, `keep the capture's` to put the words back
+  and `done` to close. The words are this delivery's alone; the item is untouched. A picture
+  capture draws the picture; long text scrolls within the head, not the page.
+- **Middle, scrolls**: ruled sections, each a label column and a content column, collapsible,
+  drawn collapsed until needed. **Destination** — one field that narrows three ruled bands as it
+  is typed: templates, destinations, and `manual` / `discard` under *otherwise*. **Place** — the
   path or channel inside the destination, as the typed line with the tree beneath it. **Tags**.
-  **Preview** — what the destination would write, asked for, never volunteered.
+  **Preview** — asked for as soon as a destination and a place are settled, drawn as the head of
+  the file notemap would write, five lines in a ruled block with `more`; one request per change
+  of destination or place. The word is *preview*; nothing says who writes.
 - **Foot, fixed**: bold `route`, and `next` / `previous` to walk the queue without routing.
 
 Routing advances to the next unprocessed item. That is single-capture mode; it is not a separate
 feature. `esc` returns to the queue with the item still selected.
 
-Gone: `used before` as a long list (a count and the last two, at most); `words` as a separate
-row; `would write` as a label; `rewrite` as a button reading like content; a preview that scrolls
-the whole surface.
+Gone: `where`; `used before` as a long list (a count and the last beside the destination's
+name); `words` as a separate row; `would write` and `what X would write` as labels; `rewrite` as
+a button reading like content; a preview that scrolls the whole surface.
 
 ### Feed
 
 The queue's row, plus what became of it: a state word in the left column under the tags —
 `routed`, `manual`, `discarded`, `retrying` in red — and a routing line naming the destinations.
-The selected row's strip offers `process` again, `undo` on a decision made by hand, and the same
-second line. The order control in the head.
+The selected row's foot offers `process` again, `undo` on a decision made by hand, and the same
+marks. The order control and the index toggle in the head.
 
 ### Item
 
@@ -241,7 +259,8 @@ each leading to where the whole of it can be read.
 
 ## What the shell already does that the drawing must not lose
 
-- Works at 375px wide, both columns, one layout.
+- Works at 375px wide, both columns. One layout per surface that reflows rather than a phone
+  design and a desk design; the process surface is the one whose regions rearrange by width.
 - Legible offline: the bar's glyph says unreachable, a row says `pending`, and nothing dresses
   the ordinary condition as a failure.
 - The queue is one scrollable, paginated list. There is no count of it.
