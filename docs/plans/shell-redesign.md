@@ -1,7 +1,7 @@
 # The shell, redrawn
 
 **Date**: 2026-09-14
-**Status**: In progress — phases 2–4, the first version, shipped 2026-09-14; phases 5–7 are drawn next
+**Status**: In progress — phases 2–4, the first version, shipped 2026-09-14; phase 5 drawn and expanded 2026-09-14; 6–7 are drawn next
 **Spec**: `docs/specs/shell.md`
 **Closed**:
 
@@ -288,8 +288,141 @@ One PR. `process.html` is the drawing; `process-1440.png`, `process-1000.png`,
 
 ### Phase 5 — item, records and the log
 
-The record block, inline on the item and under a routing kind in the log; the tab row; the
-renames. Drawn first.
+Drawn 2026-09-14 as `Records.dc.html` in the Design project, one round, and chosen with three
+changes that the static drawings carry and the canvas does not: **1a** for the item (records as
+rows of the register) **with a rule between the capture row and the record rows**; on the log
+**the kind sits under the stamp in the rail**, not in a column of its own; and **the log is the
+register** — a vertical rule between the rail (stamp, kind) and the body (words, fact, block), as
+on the queue and the feed. The tab row, the record block and the per-kind fact are as drawn.
+
+Two PRs, **5a** then **5b**: the block has to exist before the log can draw it, and the log is a
+surface of its own. `item.html` and `log.html` in `docs/design/redrawn/` are the drawings for
+both, landed with 5a.
+
+Decisions made in the drawing, so they are not asked again:
+
+- **The block** is one component drawn in three places — the item, the record page, the log — and
+  reads as a file: head `**Destination** / place`, capability in plain words at the right
+  (`created`, `appended`, `created or appended`, `marked processed`) and `via <template>` where a
+  template applied it; a properties band for the output's front matter; the item's attachments
+  above the rendered words; the destination's note where there is one; a foot of `raw` and
+  `arguments` behind a press, `open ↗` where the record carries a URL, `cancel` (alarm) on a
+  pending record, `undo` on a by-hand one, `item` only in the log. Nothing says `where it
+  landed`, `what was sent`, `its tags did not go`, `the decision` or `routing record`.
+- **`delivered` is said**, in the rail of the record's row, as `pending` and `manual` are. The
+  rule that a state is said only where it is not `delivered` was a rule for a row's summary
+  line and does not hold for a row of its own.
+- **The kind's words**: hyphen drawn as a space (`DELIVERY FAILED`); `archived` drawn
+  `discarded`, `unarchived` drawn `undiscarded`, and the row action `unarchive` renamed
+  `undiscard` with them. The pool's kinds are untouched.
+- **One fact per row**, not the flattened detail: the tag, the template's name, the reason, the
+  refusal code in alarm. Ids are never drawn.
+- **`history`** is the word for the log narrowed to one item, reached from the item's actions,
+  and the word `only this` goes. Its head is `HISTORY <first words> · all of the log`.
+- **No count** in the log's head; a refusal still takes the head, in alarm.
+- **The half-day gap** opens on the log as it does on the index.
+
+#### 5a — the block, the item, the record page
+
+- [ ] Branch `agent/shell-redesign-5a`.
+- [ ] **Drawings.** `docs/design/redrawn/item.html` (the item with two record rows and the rule
+      between; `#record` draws the one-record page) and `log.html` (`#routing`, `#history`),
+      written plainly from `Records.dc.html` with the three changes above, in the CSS idiom of
+      `queue.html`. Extend the shot list in the `notemap-shoot-drafts` oneshot — `item`,
+      `item-record`, `log`, `log-routing`, `log-history`, each at 1440 and 390 — and re-take
+      `redrawn/shots/`. Delete `docs/design/feed.html`, `log.html`, `log.css`; rewrite the table
+      in `docs/design/README.md`.
+- [ ] **A CommonMark renderer** is chosen — the open question in `shell.md` since 2026-08-19 and
+      the developer's call. Ask before adding it. Whatever is chosen renders through
+      `primitives/text/Prose.svelte` so a capture and an output are drawn by one thing; every
+      element at the one size, a heading bold; raw HTML in the source is escaped, not rendered,
+      and links follow only `http`/`https` as `lib/link.ts` already rules.
+- [ ] **Front matter read.** `readFrontmatter(text)` beside `fixedFrontmatter` in
+      `packages/output-markdown/src/frontmatter.ts`, reading exactly the subset the writer
+      emits — scalars and a string list — into key/value pairs plus the body after the closing
+      `---`, and answering nothing for text that has none. Tested by round trip.
+- [ ] **`record/Block.svelte`.** Takes what a block needs — destination name, capability,
+      place and URL, state, when, the applied template's name, the record id, the by-hand note,
+      the output's note and whether content was kept — and the held item where a surface has it,
+      for the attachments. Reads the output on arrival exactly as `Record.svelte` does today
+      (once, not retried on its own, `read it` offered after a failure). Draws: the head; the
+      properties band from `readFrontmatter`; `Figure` per attachment; `Prose` of the body;
+      the note; the foot. A pending record's body is one line, `not yet delivered`; a record
+      whose delivery kept nothing says `nothing kept`. `raw` toggles the bytes as
+      `whitespace-pre-wrap` text below the rendered body; `arguments` toggles the record's
+      arguments named against the capability's schema, which `lib/arguments.ts` still does.
+      `cancel` → `client.routing.cancel`, `undo` the same call, both raising the corner and
+      calling `onundone`. Place and destination names resolve as `item/Routing.svelte` resolves
+      them now.
+- [ ] **`item/Item.svelte`.** The capture row as it is, minus the `edited` fact (gone from rows
+      in phase 3) and minus `Routing.svelte` (its lines stay on the feed row). Then a cell
+      spanning both columns with `border-t`, then one row per record: `Stamp` and the state word
+      in the rail, `Block` in the body. Out of reach and refused read as today, in the first
+      record row's place.
+- [ ] **`record/Record.svelte`** (`/items/{id}/records/{recordId}`) is the same register with the
+      capture row and one record row; a record that is gone says so as today.
+- [ ] **`item/Actions.svelte`** gains `history` in the right group, offered only where `address`
+      is undefined — the item page — going to `logHref(order, item.id)`. `unarchive` → `undiscard`.
+- [ ] **Tests.** `Block.test.ts` (new): the head reads destination, place, capability and
+      template; front matter becomes the band and leaves the body; `raw` and `arguments` are
+      hidden until pressed; `cancel` only on pending, `undo` only by hand, `item` only in the
+      log; output read on arrival and not re-read after a failure. `Item.test.ts`,
+      `Record.test.ts`, `Actions.test.ts` updated: the rule cell, one row per record, `history`.
+      `frontmatter.test.ts` round trip.
+- [ ] **Spec.** In `shell.md`, rewrite the record paragraphs of `An item has an address` — rail
+      facts, `routing record` heading, `the decision`, the arguments' absence — as the block; the
+      `Content` section for the renderer; close the markdown open question. `CONTEXT.md` gains
+      `history` (the log narrowed to one item) and notes `undiscard`.
+- [ ] Typecheck, tests, lint; shots of the app re-taken with `notemap-shoot-app`; `git commit`.
+
+#### 5b — the log
+
+Depends on 5a for `Block`.
+
+- [ ] Branch `agent/shell-redesign-5b`.
+- [ ] **Head.** `log/Views.svelte` becomes the ruled tab row: the five names on the list head's
+      bottom rule, the current one bold and boxed on three sides so it sits on the rule; `Order`
+      at the right on the same rule. `Shown.svelte` goes; the refusal it carried is drawn in the
+      head in alarm. Below `narrow` the tabs do not wrap — the row scrolls sideways.
+- [ ] **Row.** `LogRow.svelte` on the register: rail `Stamp` then the kind as
+      `uppercase tracking-caps`, `text-alarm` on the three failure kinds, words per the decisions
+      above (`lib/kinds.ts`, tested); body the item's first words as a link (`Says`) at the left
+      and the row's fact at the right, the fact stacking under the words below `narrow`.
+      `About.svelte` goes. The fact per kind is a small table in `lib/actions.ts` naming which
+      pair is drawn (`tag`, `name`, `reason`, `code`, …) and how an id resolves (`template` →
+      name via `lib/templates.ts`, `destination` → name); a kind with no entry draws its
+      flattened pairs as today, so a kind nobody has written yet still reads.
+- [ ] **Block under a routing kind.** `routed` draws `Block` beneath the row from the action's
+      detail — destination, capability, pointer, template — with the output read by the record id
+      the detail carries; `delivery-failed` draws the head and the failure's detail in alarm as
+      the body; `delivery-cancelled` the head and `called off`. `template-fired` draws no block;
+      its fact is the template's name. The block spans the body column.
+- [ ] **History.** The paragraph above the list becomes `HISTORY <first words> · all of the log`,
+      the words linking to the item and `all of the log` widening while keeping the view.
+- [ ] **The gap.** Where more than twelve hours passed between a row and the one before it in
+      reading order, both cells take `pt-[var(--spacing-gap-time)]`, with whatever phase 3 wrote
+      for the index reused.
+- [ ] **Tests.** `log.test.ts` extended: the tab row marks the current view; the kind is in the
+      rail; one fact per row and never an id; a block under `routed` and none under `tagged`;
+      the history head; the gap after more than twelve hours and not after less.
+- [ ] **Spec.** Rewrite `The log` in `shell.md`: the register, the kind in the rail, the fact
+      per kind (retiring *flattened generically, never per kind* with a dated note), the tab row,
+      `history`, the block, no count. `Shipped:` entry.
+- [ ] Typecheck, tests, lint; shots re-taken; `git commit`.
+
+**Unknowns, and what happens if they go the wrong way**
+
+- *Which renderer.* Not this plan's to pick. Until it is, `Prose` draws paragraphs as it does
+  today and the block is unformatted, which is never wrong.
+- *Where assets landed.* `RoutingRecord` carries no such fact — only `pointer`, `url` and
+  `output` — so the `ASSET` band in the drawing is **not built** here; recording asset landings
+  on the record is a core change and its own plan. The block draws the item's attachments above
+  the words instead, which is what the file looks like and not where its assets went.
+- *Output reads in the log.* One read per `routed` row on a page, on arrival. If that proves
+  heavy, the log's block reads on a press — `output` in the foot — and the item and the record
+  page keep reading on arrival.
+- *A template that was deleted.* Its name is gone from `client.templates.held`; the block says
+  `via a template`.
 
 ### Phase 6 — settings
 
@@ -308,7 +441,8 @@ ALWAYS CREATE TESTS for the behavior implemented, unless appropriate tests alrea
 Phase 1 has nothing to test. From phase 2 on, the token gate in `apps/ui/src/tokens.test.ts` is
 extended before any component names a value, and each phase's tests assert what the shell draws,
 enables and disables. Run `pnpm -r --silent test`, `pnpm typecheck`, `pnpm lint` at the end of
-each phase; `pnpm test:stack` at the end of phase 4.
+each phase; `pnpm test:stack` at the end of phase 4. Phase 5 adds no route and moves no
+transport, so it does not need the stack suite.
 
 ---
 
