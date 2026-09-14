@@ -4,6 +4,10 @@
 **Last updated**: 2026-09-14
 **Shipped**:
 
+- 2026-09-14 — **The log on the register.** Phase 5b of
+  [shell-redesign](../plans/shell-redesign.md): the kind under the stamp in the rail, as words; one
+  fact per row and never an id; the record block under a routing kind; the views as tabs on the
+  head's rule; `history` above a log narrowed to one item; the half-day gap; no count.
 - 2026-09-14 — **The item as a register, and the record as a block.** Phase 5a of
   [shell-redesign](../plans/shell-redesign.md): the item draws its routing records as rows under
   one rule, each a block that reads as the file it became — destination and place as a path, what
@@ -1579,46 +1583,62 @@ alternative it leaves is already on screen.
 
 ### The log
 
-`/log` is the same register: a rail carrying the stamp, a body carrying what happened, what it
-was about and the detail. *Slimmed 2026-09-14*: the rail no longer says who did it — the source
-of an action is not a fact a person reads the log for — and the lede is gone; the views sit in the
-list's head at the left with the count and the order at the right, as on every other list. It is a
-surface of this shell like any other *(2026-09-02; it was the daemon's markup, drawn in this language,
-until then)*, so there is no leaving the app and coming back, and no second copy of anything to
-hold in step.
+`/log` is the register *(redrawn 2026-09-14, [shell-redesign](../plans/shell-redesign.md) phase
+5b)*: the rail carries the stamp and, under it, **the kind**; the body carries what the action was
+about and the one fact the kind is worth; and under a routing kind, the record itself as the block
+the item draws. One vertical rule between the two, as on the queue and the feed, and no rule
+between rows. It is a surface of this shell like any other *(2026-09-02; it was the daemon's
+markup, drawn in this language, until then)*, so there is no leaving the app and coming back, and
+no second copy of anything to hold in step.
 
-**The kind is what the row is**, and it is drawn inverted — ground on ink — as the row's heading
-rather than reading as body text. **The alarm is spent on `delivery-failed`, `work-failed` and
-`work-abandoned`**, which are the same three the corner says out loud — the heading is ground on
-the alarm there — and on the failure code beside them — not on `purged`,
-`destination-deleted` or `actions-cleared`, which are facts rather than warnings. A log where half
-the rows are red says nothing.
+**The kind is in the rail, in capitals, as words.** The pool's name is drawn with its hyphen as a
+space — `DELIVERY FAILED` — and the archive is called what the UI calls it everywhere else:
+`archived` reads `discarded`, `unarchived` reads `undiscarded`; the pool's own kinds are untouched.
+*(Until 2026-09-14 the kind was inverted, ground on ink, as the body's heading.)* **The alarm is
+spent on `delivery-failed`, `work-failed` and `work-abandoned`**, which are the same three the
+corner says out loud — the kind is in alarm there, and so is the refusal's code beside the words —
+not on `purged`, `destination-deleted` or `actions-cleared`, which are facts rather than warnings.
+A log where half the rows are red says nothing.
 
-**`detail` is flattened generically, never per kind**: dotted keys, strings unquoted, arrays
-joined, nested objects flattened. `ActionKind` has twenty-seven members and will gain more, so a
-renderer per kind is that many places to drift from a shape nobody updates — and a kind nobody has
-written yet reads correctly for free.
+**One fact per row.** Each kind names the one thing it is worth beside the words it is about: a
+tag, drawn as the trigger it is where it is one; a template's name; a reason; the refusal's code.
+An id is never a fact — where the detail carries one, the name it stands for is said, and a
+template or destination since deleted is `a template` or `a destination`. `firedByTag`, `attempt`,
+`record` and the rest are not drawn at all. *Retired 2026-09-14: "`detail` is flattened
+generically, never per kind."* The table of facts is small and in one place, and a kind it has no
+entry for still reads — its detail flattened as before, dotted keys and strings unquoted — so a
+kind nobody has written yet is not lost, only plainer.
 
 **A subject leads to the capture it is about** *(amended 2026-09-09; it led to the log narrowed to
-that subject)*. An entry naming an id is an entry a person cannot connect to anything they wrote, so
-the way to the item comes first and the **capture's own first words** are drawn in place of the id
-wherever this shell already holds it — never read for: what the cache has, or the shortened id it
-has instead. The narrowed log stays one word away, `only this`, since tracing one item's history is
-the second thing somebody wants there and not the first. The destination on a `routed` row stays an
-id: the action recorded one, and resolving it to a name is a second read and a cache. **The
-narrowed log says the same words above itself**, where a person has already committed to one item
-and the id is least use of all. The order and the filter both live on the URL, so a reload and a
-shared link come back to the same reading.
+that subject)*. An entry naming an id is an entry a person cannot connect to anything they wrote,
+so the **capture's own first words** are drawn in place of the id wherever this shell already
+holds it — never read for: what the cache has, or the shortened id it has instead. The words are
+a link to the item, at the body's left; the fact is at its right, and stacks under the words below
+`narrow`. *`only this` is gone (2026-09-14)*: the way into one item's history is `history` on the
+item, and a row of the log offers nothing about narrowing.
+
+**A routing kind draws the record.** `routed` draws the block under its row from what the action
+says — destination, capability, place, template — with what was sent read by the record's id on
+arrival, and a refusal saying the pool kept no copy read as `nothing kept` rather than as a
+failure; `item` in the block's foot is the way to the capture. `delivery-failed` draws the head and
+the failure's own words as the body, in alarm; `delivery-cancelled` the head and `called off`.
+`template-fired` draws no block — its fact is the template's name, and the routing it began is a
+row of its own. The block is the item's, drawn once and the same wherever a record is read.
+
+**`history` is the log narrowed to one item**, reached from the item's actions, and says so above
+the head: `HISTORY`, the item's first words as a link to it, and `all of the log`, which widens
+while keeping the view. The order and the filter both live on the URL, so a reload and a shared
+link come back to the same reading.
 
 **The log is narrowed to a view** *(added 2026-09-13)*: `everything`, `routing`, `captures`,
-`classification`, `pool`, drawn as one line of words in the list's head, the one being read bold
-and the rest as links. A view is a fixed set of the pool's own kinds and the URL carries the kinds
-rather than the name — `?kind=routed,template-fired` — so a link somebody writes by hand reads the
-same way as one of these, and a set that is not exactly a view lights none of them. The pool does
-the narrowing: a page holds what it shows and its count means what it says, where a shell sifting
-the page after the read would page over rows it then threw away. What arrives at the head is held
-to the same kinds. A view composes with a subject, and `show everything` on a narrowed subject keeps
-the view.
+`classification`, `pool`, drawn as **tabs on the head's rule** — the one being read bold and
+boxed on three sides so it sits on the rule, the rest as links, the order control at the right of
+the same rule. Below `narrow` the tabs scroll sideways rather than wrap. A view is a fixed set of
+the pool's own kinds and the URL carries the kinds rather than the name — `?kind=routed,template-fired`
+— so a link somebody writes by hand reads the same way as one of these, and a set that is not
+exactly a view lights none of them. The pool does the narrowing: a page holds what it shows, where
+a shell sifting the page after the read would page over rows it then threw away. What arrives at
+the head is held to the same kinds. A view composes with a subject.
 
 **What has happened since goes to the head of the page** *(added 2026-09-09)*. The shell already
 reads the action log on its own tempo for the corner to speak from, and the log was the one surface
@@ -1631,14 +1651,13 @@ it is read again from the top — **on the same rule, and so newest-first only t
 nothing went stale, the walk growing towards the news rather than away from it, and ten walked
 pages are not the shell's to throw away for a burst at the far end.
 
-**The rail takes a measure of its own**, narrower than the register's — it holds a stamp and one
-short word where the register's holds a row's whole account — and `2026-09-02` fits on one line at
-every width. Below the breakpoint the stamp stacks and a `detail` pair stacks, so a path takes the
-measure rather than what is left beside its key.
+**A gap opens where more than half a day passed** between a row and the one before it in reading
+order — the index's gap, one fixed size whether a day or a month passed — so time passing is seen
+without being read.
 
-The count of what is shown sits in the chrome, and a refusal takes its place there, in accent. A
-pool that never answered is not one: the reachability mark already says *offline* once, for the
-whole shell, and no surface repeats it.
+**No count.** *(2026-09-14; `N shown` sat in the head until then.)* A refusal is drawn in the head,
+in alarm, since it is what the read has to report; a pool that never answered is not one: the
+reachability mark already says *offline* once, for the whole shell, and no surface repeats it.
 
 `/docs` is the daemon's own page, a vendored Swagger UI, and is left alone: restyling somebody
 else's application is not this design's job. Settings marks the two apart — one of this shell's

@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    Refused,
     saidBy,
     saidOf,
     type Item,
@@ -39,6 +40,7 @@
     said,
     alarm = false,
     inLog = false,
+    blind = false,
     onundone,
   }: {
     record: RoutingRecord;
@@ -49,6 +51,12 @@
     alarm?: boolean;
     /** The log draws the way to the item in the foot; the item's own surfaces need none. */
     inLog?: boolean;
+    /**
+     * The surface does not know whether a copy was kept — the log's detail does
+     * not say — so the output is asked for regardless, and a refusal saying
+     * there is none is read as none rather than as a failure.
+     */
+    blind?: boolean;
     /** A record cancelled here leaves what was read of them out of date. */
     onundone?: () => void;
   } = $props();
@@ -125,6 +133,7 @@
     void record.id;
     output = undefined;
     unreadable = "";
+    none = false;
     named = undefined;
   });
 
@@ -132,9 +141,11 @@
    * Read on arrival: whoever is looking at a record came to see what was sent.
    * A read that failed is not tried again on its own — `read it` is offered.
    */
+  let none = $state(false);
+
   $effect(() => {
-    if (record.output?.content === undefined) return;
-    if (output !== undefined || unreadable !== "" || reading) return;
+    if (!kept) return;
+    if (output !== undefined || unreadable !== "" || none || reading) return;
     void read();
   });
 
@@ -146,8 +157,12 @@
       const bytes = await client.routing.output(asked);
       if (asked === record.id) output = bytes;
     } catch (error) {
-      if (asked === record.id)
+      if (asked !== record.id) return;
+      if (blind && error instanceof Refused && error.code === "no-output") {
+        none = true;
+      } else {
         unreadable = `${OUTPUT_UNREADABLE} ${saidBy(error)}`;
+      }
     } finally {
       reading = false;
     }
@@ -163,7 +178,9 @@
         ? saidOf(target.content)
         : undefined),
   );
-  const kept = $derived(record.output?.content !== undefined);
+  const kept = $derived(
+    !none && (blind || record.output?.content !== undefined),
+  );
   const delivered = $derived(record.state === "delivered");
 
   /** The arguments named against the capability's schema, asked for on the press and kept. */
