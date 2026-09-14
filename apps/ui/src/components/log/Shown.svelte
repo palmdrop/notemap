@@ -4,7 +4,7 @@
 
 <!-- A refusal takes the count's place: both are what the read has to report. -->
 {#if log.refused !== undefined}
-  <span role="status" class="text-accent">{log.refused}</span>
+  <span role="status" class="text-alarm">{log.refused}</span>
 {:else if log.shown > 0}
-  <span role="status" class="text-ink-muted">{log.shown} shown</span>
+  <span role="status">{log.shown} shown</span>
 {/if}

@@ -4,32 +4,41 @@
   import { doubled, pickable } from "$lib/pick";
 
   let {
-    first = false,
-    lit = false,
+    selected = false,
     onpick,
     onreach,
     children,
   }: {
-    first?: boolean;
-    lit?: boolean;
+    /** Draws the head and the left edge of the box a selected row is. */
+    selected?: boolean;
     onpick?: () => void;
-    /** Somewhere to go rather than something to do: the item's own surface. */
+    /** Somewhere to go rather than something to do. */
     onreach?: () => void;
     children: Snippet;
   } = $props();
+
+  let cell = $state<HTMLElement | undefined>(undefined);
+
+  /** Brings the row into view, for the keys that walk the list. */
+  export function reveal(): void {
+    cell?.scrollIntoView({ block: "nearest" });
+  }
 </script>
 
-<!-- The stamp inside is the accessible way in; this is only reach. -->
+<!-- The stamp inside is the accessible way in; this is only reach. The box
+     reaches outside the column so the text inside it does not move when it
+     appears. -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
+  bind:this={cell}
   onclick={onpick === undefined ? undefined : pickable(onpick)}
   ondblclick={onreach === undefined ? undefined : doubled(onreach)}
-  class="col-start-1 min-w-0 border-t border-t-ink/20 font-mono group-data-furled:hidden
-    {first ? 'border-t-0 pt-3.5 pb-6' : 'py-6'}
+  data-selected={selected ? "" : undefined}
+  class="col-start-1 min-w-0 border-r border-ink py-3 pr-4 max-narrow:pr-2.5
     {onpick === undefined ? '' : 'cursor-pointer'}
-    {lit
-    ? '-mr-gap -ml-3.5 border-l-2 border-l-accent bg-ink/5 pr-gap pl-3 [--field-ground:var(--color-paper)]'
+    {selected
+    ? '-ml-3 border-t border-l pl-3 max-narrow:-ml-2 max-narrow:pl-2'
     : ''}"
 >
   {@render children()}

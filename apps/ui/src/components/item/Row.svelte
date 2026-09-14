@@ -1,131 +1,124 @@
 <script lang="ts">
   import type { Item } from "@notemap/client";
 
-  import { goto } from "$app/navigation";
-
   import Actions from "$components/item/Actions.svelte";
   import Edit from "$components/item/Edit.svelte";
   import Payload from "$components/item/Payload.svelte";
   import Routing from "$components/item/Routing.svelte";
   import Tags from "$components/item/Tags.svelte";
   import Body from "$components/primitives/register/Body.svelte";
-  import Fact from "$components/primitives/register/Fact.svelte";
-  import Facts from "$components/primitives/register/Facts.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
   import Pending from "$components/primitives/marks/Pending.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import { itemHref } from "$components/item/href";
-  import { became, editable, finished } from "$lib/lineage";
+  import { became, editable } from "$lib/lineage";
   import { recordsOf } from "$lib/records.svelte";
-  import { briefly } from "$lib/stamp";
 
   /**
-   * One row, on either register. What a surface offers it differs — a departure
-   * to go from, a composer to open — and which surface it is does not.
+   * One row, on either register. The queue's says nothing about what became
+   * of an item, every row on it being unrouted; the feed's says it in a word
+   * where there is one, and in a line saying where it went.
    */
   let {
     item,
-    opened,
+    selected,
     offline,
-    furled,
-    first = false,
+    surface,
     pending = false,
-    onopen,
+    onselect,
     onprocess,
   }: {
     item: Item;
-    opened: boolean;
+    selected: boolean;
     offline: boolean;
-    furled: boolean;
-    first?: boolean;
+    surface: "queue" | "feed";
     pending?: boolean;
-    onopen: () => void;
+    onselect: () => void;
     onprocess: () => void;
   } = $props();
 
   let editing = $state(false);
+  let rail = $state<Rail | undefined>(undefined);
+  let tags = $state<Tags | undefined>(undefined);
 
-  // Only ever for the one row that is open, and only where the item's summary
-  // says there is something to read: a request per triage at the very most.
+  // Only ever for the one row that is selected, and only where the item's
+  // summary says there is something to read: a request per triage at the most.
   const records = recordsOf(
     () => (item.routing === undefined ? undefined : item.id),
-    () => opened && !offline,
+    () => selected && !offline,
   );
 
-  const word = $derived(became(item));
+  // Every row on the queue is unrouted, and a word saying so on each says
+  // nothing; one held from an earlier read that the pool no longer counts as
+  // work still wears what became of it.
+  const finished = $derived(
+    surface === "feed" ||
+      item.archived !== undefined ||
+      item.routing !== undefined ||
+      item.revisedInto.length > 0,
+  );
+  const word = $derived(finished ? became(item) : undefined);
   const mayEdit = $derived(editable(item));
+
+  /** Opens the tag chooser, for the key that asks for it. */
+  export function tag(): void {
+    tags?.add();
+  }
+
+  /** Brings the row into view, for the keys that walk the list. */
+  export function reveal(): void {
+    rail?.reveal();
+  }
 </script>
 
-<Rail
-  {first}
-  lit={opened}
-  onpick={onopen}
-  onreach={() => void goto(itemHref(item.id))}
->
-  {#if !furled}
-    <Stamp at={item.createdAt} {opened} onopen={() => onopen()} />
+<Rail bind:this={rail} {selected} onpick={onselect} onreach={onprocess}>
+  <Stamp at={item.createdAt} opened={selected} onopen={onselect} />
 
-    {#if word !== undefined}
-      <StateWord {word} />
-    {/if}
-
-    {#if pending}
-      <Pending />
-    {/if}
+  {#if word !== undefined}
+    <StateWord {word} />
   {/if}
 
-  <Tags {item} />
-  <Routing
-    summary={item.routing}
-    records={records.all}
-    onundone={() => records.reread()}
-  />
+  {#if pending}
+    <Pending />
+  {/if}
+
+  <div class="mt-0.5">
+    <Tags bind:this={tags} {item} addable={selected} />
+  </div>
+
+  {#if finished}
+    <Routing
+      summary={item.routing}
+      records={records.all}
+      onundone={() => records.reread()}
+    />
+  {/if}
 
   {#if records.refused !== ""}
-    <div role="status" class="mt-2 text-accent">{records.refused}</div>
-  {/if}
-
-  <!-- What it is, the capture says; what a fact answers is what it cannot. -->
-  {#if opened && item.contentUpdatedAt !== undefined}
-    <Facts>
-      <Fact name="edited">{briefly(item.contentUpdatedAt)}</Fact>
-    </Facts>
+    <div role="status" class="mt-2 text-alarm">{records.refused}</div>
   {/if}
 </Rail>
 
-<Body
-  {first}
-  lit={opened}
-  onpick={onopen}
-  onreach={() => void goto(itemHref(item.id))}
->
-  {#if furled}
-    <div class="mb-2 flex flex-wrap items-baseline gap-3 font-mono">
-      <Stamp at={item.createdAt} {opened} onopen={() => onopen()} />
-
-      {#if word !== undefined}
-        <StateWord {word} inline />
-      {/if}
-
-      {#if pending}
-        <Pending inline />
-      {/if}
-    </div>
-  {/if}
-
+<Body {selected} onpick={onselect} onreach={onprocess}>
   {#if editing && mayEdit}
     <Edit {item} ondone={() => (editing = false)} />
   {:else}
-    <Payload {item} muted={finished(item)} />
+    <Payload {item} />
   {/if}
+</Body>
 
-  {#if opened}
+{#if selected}
+  <!-- The box's foot, spanning both columns and closing the rail's rule. -->
+  <div
+    class="col-span-full -mx-3 flex h-9 items-center border border-ink px-3 max-narrow:-mx-2 max-narrow:px-2"
+  >
     <Actions
       {item}
+      {offline}
       address={itemHref(item.id)}
       onprocess={() => onprocess()}
       onedit={() => (editing = !editing)}
     />
-  {/if}
-</Body>
+  </div>
+{/if}

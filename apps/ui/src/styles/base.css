@@ -13,11 +13,12 @@
   }
 
   body {
-    background: var(--color-paper);
+    background: var(--color-ground);
     color: var(--color-ink);
-    font-family: var(--font-prose);
-    font-size: var(--text-mono);
-    line-height: 1.5;
+    font-family: var(--font-shell);
+    font-size: var(--text-shell);
+    line-height: var(--text-shell--line-height);
+    text-wrap: pretty;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -27,6 +28,6 @@
   }
 
   a:hover {
-    color: var(--color-accent);
+    text-decoration: underline;
   }
 }

@@ -8,8 +8,7 @@
   import { copyable } from "$lib/clipboard";
   import { session } from "$lib/session.svelte";
 
-  const FIELD =
-    "w-full border-b border-ink bg-transparent font-mono focus:outline-none";
+  const FIELD = "w-full border-b border-ink bg-transparent focus:outline-none";
 
   const who = session();
 
@@ -100,7 +99,7 @@
 
 {#if who.canSignOut}
   <Section name="access tokens" aside={tally}>
-    <p class="mt-4 text-ink-muted">
+    <p class="mt-4">
       What something that is not a browser carries — a script, a phone's outbox,
       anything with no way to sign in. Each reaches everything this session
       does, except these tokens and signing every browser out.
@@ -108,7 +107,7 @@
 
     {#each held as token (token.id)}
       <Row mark="·" what={token.name} why={why(token)}>
-        <span class="ml-6 max-narrow:ml-[var(--spacing-mark)]">
+        <span class="ml-6 max-narrow:ml-7">
           <Action disabled={going} onclick={() => void revoke(token)}>
             Revoke
           </Action>
@@ -117,12 +116,12 @@
     {/each}
 
     {#if minted !== undefined}
-      <div class="mt-4 border border-accent p-3">
-        <p class="text-accent">
+      <div class="mt-4 border border-alarm p-3">
+        <p class="text-alarm">
           Copy it now. The daemon kept a hash, so this is the only time it can
           be read — one that was not written down is replaced, not recovered.
         </p>
-        <p class="mt-3 font-mono break-all select-all">{minted.token}</p>
+        <p class="mt-3 break-all select-all">{minted.token}</p>
         <p class="mt-3 flex flex-wrap items-baseline gap-x-6">
           <!-- Where the browser hands over no clipboard the string is still
                there to be selected, which is why this can go without a word. -->
@@ -137,7 +136,7 @@
     {/if}
 
     <form onsubmit={mint} class="mt-6 flex flex-wrap items-baseline gap-x-3">
-      <label for="token-name" class="tracking-wider uppercase">name</label>
+      <label for="token-name" class="tracking-caps uppercase">name</label>
       <input
         id="token-name"
         bind:value={name}
@@ -150,7 +149,7 @@
     </form>
 
     {#if said !== ""}
-      <p role="status" class="mt-4 text-accent">{said}</p>
+      <p role="status" class="mt-4 text-alarm">{said}</p>
     {/if}
   </Section>
 {/if}

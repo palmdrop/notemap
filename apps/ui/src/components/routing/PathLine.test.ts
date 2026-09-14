@@ -235,7 +235,7 @@ test("keeps a floor under the tree, so a shallow answer leaves room", async () =
 
   await settled();
   const tree = screen.getByRole("listbox", { name: "places" });
-  expect(tree.className).toContain("--spacing-tree");
+  expect(tree.className).toContain("min-h-[12.5rem]");
 });
 
 test("keeps no floor where there is no tree to hold up", async () => {
@@ -245,7 +245,7 @@ test("keeps no floor where there is no tree to hold up", async () => {
   await screen.findByText("unreachable · best effort");
   expect(
     screen.getByRole("listbox", { name: "places" }).className,
-  ).not.toContain("--spacing-tree");
+  ).not.toContain("min-h-[12.5rem]");
 });
 
 test("completes only as far as several matches agree", async () => {
@@ -563,22 +563,6 @@ test("a gone place is never the greyed continuation", async () => {
   line.line().setSelectionRange(1, 1);
   await fireEvent.keyDown(line.line(), { key: "ArrowRight" });
   expect(line.value()).toBe("d");
-});
-
-test("but the arrows reach it deliberately", async () => {
-  serving(
-    () =>
-      answered([folder("dossiers", "dossiers"), folder("journal", "journal")]),
-    [used("drafts/", 12)],
-  );
-  const line = draw("d");
-
-  await screen.findByText("dossiers/");
-
-  await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
-  await fireEvent.keyDown(line.line(), { key: "Enter" });
-
-  expect(line.value()).toBe("drafts/");
 });
 
 /** The pool holds these and the pool is reachable whenever the composer is open. */

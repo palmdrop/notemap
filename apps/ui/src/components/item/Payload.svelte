@@ -6,8 +6,7 @@
   import Prose from "$components/primitives/text/Prose.svelte";
   import { client } from "$lib/client";
 
-  /** Muted where the item is finished, so live captures stand out while scrolling. */
-  let { item, muted = false }: { item: Item; muted?: boolean } = $props();
+  let { item }: { item: Item } = $props();
 
   const images = $derived(client.images(item));
   const text = $derived(client.says(item));
@@ -25,7 +24,7 @@
 
 {#if text !== ""}
   <Clamp>
-    <Prose {text} {muted} />
+    <Prose {text} />
   </Clamp>
 {:else if images.length === 0}
   <!-- Nothing this shell knows how to draw, which is said by name rather than hidden. -->

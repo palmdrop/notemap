@@ -17,6 +17,7 @@
     names,
     offered = [],
     fires,
+    addable = true,
     onadd,
     onremove,
   }: {
@@ -29,6 +30,8 @@
      * somebody takes one by accident.
      */
     fires?: (name: string) => string | undefined;
+    /** Whether the `+` is drawn. A row offers it only while it is selected. */
+    addable?: boolean;
     onadd: (name: string) => void;
     onremove: (name: string) => void;
   } = $props();
@@ -36,6 +39,11 @@
   const id = $props.id();
 
   let adding = $state(false);
+
+  /** Opens the line, for a key that asks for it from outside. */
+  export function add(): void {
+    adding = true;
+  }
   let draft = $state("");
   /** Where `↑↓` stands, and whether it has been used since the offer last changed. */
   let at = $state(0);
@@ -60,6 +68,16 @@
   const active = $derived(
     moved && shown[at] !== undefined ? `${id}-tag-${at}` : undefined,
   );
+
+  /** How a trigger tag is drawn, in the chooser and on the row alike. */
+  const TRIGGER =
+    "font-semibold [font-variant-caps:all-small-caps] tracking-[0.04em]";
+
+  const NAMESPACE = "route/";
+
+  function trigger(name: string): string {
+    return name.startsWith(NAMESPACE) ? name.slice(NAMESPACE.length) : name;
+  }
 
   function take(name: string): void {
     close();
@@ -123,6 +141,9 @@
   }
 </script>
 
+<!-- A carried trigger tag is drawn as the name after `route/`, in small caps:
+     the style says which words file, and the namespace is not a decision. The
+     offer below keeps the whole name, being what is typed against. -->
 {#each names as name (name)}
   {@const fired = fires?.(name)}
   <button
@@ -130,11 +151,9 @@
     aria-pressed="true"
     onclick={() => onremove(name)}
     aria-label={fired === undefined ? undefined : `${name}, routes to ${fired}`}
-    class="font-mono hover:text-accent"
+    class="hover:underline {fired === undefined ? '' : TRIGGER}"
   >
-    {name}{#if fired !== undefined}<span class="text-ink-muted"
-        >&nbsp;→&nbsp;{fired}</span
-      >{/if}
+    {fired === undefined ? name : trigger(name)}
   </button>
 {/each}
 
@@ -155,18 +174,18 @@
       aria-expanded={shown.length > 0}
       aria-controls="{id}-tags"
       aria-activedescendant={active}
-      class="w-32 px-2 py-0.5 font-mono outline-none field"
+      class="w-32 border-b border-ink px-2 py-0.5 outline-none"
     />
     {#if shown.length > 0}
-      <!-- In flow rather than floated: the composer scrolls inside a modal,
-           and a panel floated past its edge is a panel scrolled out of reach.
-           Rows taken on `mousedown` with the default prevented, so taking one
-           never blurs the line out from under the click. -->
+      <!-- In flow rather than floated: the process surface scrolls its
+           middle, and a panel floated past its edge is a panel scrolled out
+           of reach. Rows taken on `mousedown` with the default prevented, so
+           taking one never blurs the line out from under the click. -->
       <div
         id="{id}-tags"
         role="listbox"
         aria-label="Tags in use"
-        class="mt-1 max-h-64 w-max min-w-36 overflow-y-auto border border-ink bg-paper px-2.5 py-1 font-mono"
+        class="mt-1 max-h-64 w-max min-w-36 overflow-y-auto border border-ink bg-ground px-2.5 py-1"
       >
         {#each shown as entry, index (entry.label)}
           {@const on = moved && at === index}
@@ -174,22 +193,20 @@
           <Walked
             id={on ? `${id}-tag-${index}` : undefined}
             {on}
-            dim={!on}
             ontake={() => take(entry.label)}
           >
-            {entry.label}{#if fired !== undefined}<span class="text-ink-muted"
-                >&nbsp;→&nbsp;{fired}</span
-              >{/if}
+            <span class={fired === undefined ? "" : TRIGGER}>{entry.label}</span
+            >{#if fired !== undefined}<span>&nbsp;· {fired}</span>{/if}
           </Walked>
         {/each}
       </div>
     {/if}
   </div>
-{:else}
+{:else if addable}
   <button
     type="button"
     aria-label="Add a tag"
     onclick={() => (adding = true)}
-    class="text-ink-muted hover:text-accent">+</button
+    class="hover:underline">+</button
   >
 {/if}

@@ -1,5 +1,3 @@
-import type { Agent } from "@notemap/client";
-
 export type Pair = { readonly key: string; readonly value: string };
 
 /** The kinds the accent is spent on, and the whole of them. */
@@ -76,18 +74,4 @@ export function shortened(id: string): string {
   return id.length <= HEAD + TAIL + 1
     ? id
     : `${id.slice(0, HEAD)}…${id.slice(-TAIL)}`;
-}
-
-/** Who did it. A person reading their own log is the one agent worth a pronoun. */
-export function agentOf(by: Agent): string {
-  switch (by.kind) {
-    case "person":
-      return "you";
-    case "provider":
-      return `provider ${by.provider}`;
-    case "source":
-      return `source ${by.source}`;
-    default:
-      return "notemap";
-  }
 }

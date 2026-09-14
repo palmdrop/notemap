@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Appearance from "$components/settings/Appearance.svelte";
   import Daemon from "$components/settings/Daemon.svelte";
   import Destinations from "$components/settings/Destinations.svelte";
   import Page from "$components/settings/Page.svelte";
@@ -8,11 +9,12 @@
   import Tokens from "$components/settings/Tokens.svelte";
 </script>
 
-<Page lede="What this pool can reach, and where it keeps things.">
+<Page>
   <Destinations />
   <Templates />
   <Sources />
   <Daemon />
   <Session />
   <Tokens />
+  <Appearance />
 </Page>

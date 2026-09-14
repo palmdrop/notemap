@@ -3,7 +3,7 @@ import { expect, test, vi } from "vitest";
 import { anItem } from "@notemap/client/testing";
 
 import { pool } from "$testing/pool";
-import { aboutItem, excerptOf } from "./excerpt";
+import { aboutItem, excerptOf, lineOf } from "./excerpt";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
@@ -53,4 +53,19 @@ test("falls back to the payload type where nothing was said", () => {
   );
 
   expect(said).toContain("image");
+});
+
+test("cuts a line at a word, and leaves a short one alone", () => {
+  expect(lineOf("short")).toBe("short");
+  expect(lineOf("")).toBeUndefined();
+
+  const long = `${"word ".repeat(30)}end`;
+  const line = lineOf(long);
+  expect(line?.length).toBeLessThanOrEqual(98);
+  expect(line?.endsWith(" …")).toBe(true);
+  expect(line).not.toMatch(/wor …$/);
+});
+
+test("takes the first line only", () => {
+  expect(lineOf("first\nsecond")).toBe("first");
 });

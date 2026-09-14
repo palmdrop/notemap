@@ -9,6 +9,7 @@ import {
   NO_POINTER_BY_HAND,
   NO_POINTER_KEPT,
   NO_RECORDS_OFFLINE,
+  THIS_ITEM,
   WORDS_WERE_ITS_OWN,
 } from "$lib/said";
 import { dayOf } from "$lib/stamp";
@@ -81,65 +82,6 @@ function answering(
   };
 }
 
-const ARENA_RECORD = {
-  ...RECORD,
-  target: {
-    kind: "destination",
-    destination: "vault",
-    capability: "publish",
-    arguments: { channel: "12345" },
-  },
-  pointer: undefined,
-};
-
-const PUBLISHES = {
-  kind: "described",
-  capabilities: [
-    {
-      name: "publish",
-      accepts: ["text"],
-      argumentsSchema: {
-        type: "object",
-        properties: {
-          channel: {
-            type: "string",
-            title: "Channel",
-            "x-notemap-candidates": true,
-            "x-notemap-offered-only": true,
-          },
-        },
-      },
-    },
-  ],
-};
-
-/**
- * A record is opened to find out where something went, and `12345` does not
- * answer that. Nothing here browsed anything, so the name was asked for.
- */
-test("says which channel a delivery went to, not the id it holds", async () => {
-  pool((request) => {
-    if (routeOf(request).endsWith("/named")) {
-      return json(200, {
-        kind: "answered",
-        entry: { label: "Reading", value: "reading", durable: "12345" },
-      });
-    }
-    if (routeOf(request).endsWith("/candidates")) {
-      return json(200, { kind: "answered", entries: [], truncated: true });
-    }
-    return answering([ARENA_RECORD], PUBLISHES)(request);
-  });
-
-  render(Record, { props: { item: "one", record: "rec" } });
-  await fireEvent.click(
-    await screen.findByRole("button", { name: "the decision" }),
-  );
-
-  await vi.waitFor(() => expect(screen.getByText("Reading")).toBeTruthy());
-  expect(screen.queryByText("12345")).toBeNull();
-});
-
 const WITH_OUTPUT = {
   ...RECORD,
   url: "https://vault.example/drafts/note.md",
@@ -172,24 +114,23 @@ test("draws a record in full, against the capability's own schema", async () => 
   const pointer = screen.getByText("drafts/note.md");
   expect(pointer.closest("a")).toBeNull();
 
-  // The decision is a second reading, and it is a press away.
+  // The decision — field names and expanded patterns — is nobody's reading
+  // of a record, and is not drawn.
   expect(screen.queryByText("Directory")).toBeNull();
-  await fireEvent.click(screen.getByRole("button", { name: "the decision" }));
-
-  // The titles the destination gives its fields, not the keys behind them.
-  expect(await screen.findByText("Directory")).toBeDefined();
-  expect(screen.getByText("drafts")).toBeDefined();
-  expect(screen.getByText("Filename")).toBeDefined();
+  expect(screen.queryByText("directory")).toBeNull();
+  expect(screen.queryByRole("button", { name: /decision/ })).toBeNull();
 });
 
-/** Where it landed is what somebody opening a record came for, so it leads. */
-test("leads with where it landed", async () => {
+/** The destination and the place inside it are one address, drawn adjacent. */
+test("says the destination and the place beside it", async () => {
   pool(answering());
   await client.destinations.load();
 
   render(Record, { item: "one", record: "rec" });
 
-  expect(await screen.findByText("where it landed")).toBeDefined();
+  expect(await screen.findByText("destination")).toBeDefined();
+  expect(screen.getByText("place")).toBeDefined();
+  expect(screen.queryByText("where it landed")).toBeNull();
   expect(screen.queryByText("arguments")).toBeNull();
 });
 
@@ -200,22 +141,6 @@ test("says a destination that named no place to go and look", async () => {
   render(Record, { item: "one", record: "rec" });
 
   expect(await screen.findByText(NO_POINTER_KEPT)).toBeDefined();
-});
-
-test("draws the arguments by their own keys when the destination cannot be described", async () => {
-  pool(answering([RECORD], { kind: "undescribable", detail: "unplugged" }));
-  await client.destinations.load();
-
-  render(Record, { item: "one", record: "rec" });
-
-  // The fallback is honest, not a failure: everything else still draws.
-  expect(await screen.findByText("drafts/note.md")).toBeDefined();
-
-  await fireEvent.click(screen.getByRole("button", { name: "the decision" }));
-
-  expect(await screen.findByText("directory")).toBeDefined();
-  expect(screen.getByText("filename")).toBeDefined();
-  expect(screen.queryByText("Directory")).toBeNull();
 });
 
 test("says a record this item does not have", async () => {
@@ -234,8 +159,8 @@ test("says records are out of reach while the item still draws", async () => {
   render(Record, { item: "one", record: "rec" });
 
   expect(await screen.findByText(NO_RECORDS_OFFLINE)).toBeDefined();
-  // The item is the client's own and is drawn from it; the record is nobody's.
-  expect(screen.getByRole("link", { name: "one" })).toBeDefined();
+  // The way to the item is still there; the record is nobody's.
+  expect(screen.getByRole("link", { name: THIS_ITEM })).toBeDefined();
 });
 
 test("reads a decision the person carried out themselves", async () => {
@@ -321,8 +246,6 @@ test("says a decision the person carried out with nothing written down", async (
   // Nothing was written down, so there is no note to head: a heading over
   // `none` is a row spent saying that a person left a field empty.
   expect(screen.queryByText("note")).toBeNull();
-  // Nor is there a decision to open: marking processed is not an argument set.
-  expect(screen.queryByRole("button", { name: "the decision" })).toBeNull();
 });
 
 /** What went is the question a record is opened with, and the item no longer answers it. */

@@ -1,28 +1,29 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
 
+  import { goto, replaceState } from "$app/navigation";
   import { page } from "$app/state";
 
-  import type { Item } from "@notemap/client";
-
   import Row from "$components/item/Row.svelte";
-  import ProcessingComposer from "$components/routing/ProcessingComposer.svelte";
+  import Order from "$components/order/Order.svelte";
+  import Index from "$components/queue/Index.svelte";
   import Body from "$components/primitives/register/Body.svelte";
+  import Head from "$components/primitives/register/Head.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
+  import ViewToggle from "$components/view/ViewToggle.svelte";
+  import { processHref } from "$components/item/href";
   import { client } from "$lib/client";
-  import { notices } from "$lib/notices.svelte";
   import { orderFor } from "$lib/order";
   import { pending } from "$lib/pending.svelte";
-  import { rail } from "$lib/rail.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { refusalIn } from "$lib/refusal";
-  import { keyFor } from "$lib/routing";
   import { keepPlace, restorePlace } from "$lib/scroll-mark";
   import { NOTHING_CAPTURED } from "$lib/said";
+  import { remember, viewFor, withView, type View } from "$lib/view";
 
   const SURFACE = "feed";
 
@@ -30,9 +31,9 @@
   const pool = reachable();
   const undrained = pending();
 
-  /** One row is open at a time, as on the queue: it is the same row. */
-  let opened = $state<string | undefined>(undefined);
-  let routing = $state<Item | undefined>(undefined);
+  /** One row is selected at a time, as on the queue: it is the same row. */
+  let selected = $state<string | undefined>(undefined);
+  let view = $state<View>(viewFor(SURFACE, page.url));
 
   const refused = $derived(refusalIn($feed));
 
@@ -52,32 +53,34 @@
 
     return keepPlace(SURFACE);
   });
+
+  function select(id: string) {
+    selected = selected === id ? undefined : id;
+  }
+
+  function read(wanted: View) {
+    view = wanted;
+    remember(SURFACE, wanted);
+    replaceState(withView(page.url, wanted), {});
+  }
 </script>
 
-<Register furled={rail.furled} onfurl={() => rail.toggle()}>
+<Head>
+  <ViewToggle {view} onchoose={read} />
+  <Order />
+</Head>
+
+{#if view === "index" && !bare}
   {#if refused !== undefined}
-    <Refused first surface="feed" {refused} />
+    <Register><Refused surface="feed" {refused} /></Register>
   {/if}
 
-  {#if bare}
-    <Rail first>feed</Rail>
-    <Body first>
-      <Prose text={NOTHING_CAPTURED} />
-    </Body>
-  {/if}
-
-  {#each $feed.items as item, at (item.id)}
-    <Row
-      {item}
-      first={at === 0 && refused === undefined}
-      opened={opened === item.id}
-      offline={!pool.yes}
-      furled={rail.furled}
-      pending={undrained.has(item.id)}
-      onopen={() => (opened = opened === item.id ? undefined : item.id)}
-      onprocess={() => (routing = item)}
-    />
-  {/each}
+  <Index
+    items={$feed.items}
+    {selected}
+    onselect={select}
+    onprocess={(id) => void goto(processHref(id))}
+  />
 
   {#if $feed.more}
     <More
@@ -86,16 +89,37 @@
       onmore={() => void client.loadFeed()}
     />
   {/if}
-</Register>
+{:else}
+  <Register>
+    {#if refused !== undefined}
+      <Refused surface="feed" {refused} />
+    {/if}
 
-<!-- The feed keeps every row it holds, so a decision made here is drawn on the
-     row a moment later rather than reported to somebody looking at it. The
-     record is remembered so the log does not report it back as news. -->
-{#if routing !== undefined}
-  {@const subject = routing}
-  <ProcessingComposer
-    item={subject}
-    onrouted={(record) => notices.mark(keyFor(record.id))}
-    onclose={() => (routing = undefined)}
-  />
+    {#if bare}
+      <Rail>feed</Rail>
+      <Body>
+        <Prose text={NOTHING_CAPTURED} />
+      </Body>
+    {/if}
+
+    {#each $feed.items as item (item.id)}
+      <Row
+        {item}
+        surface="feed"
+        selected={selected === item.id}
+        offline={!pool.yes}
+        pending={undrained.has(item.id)}
+        onselect={() => select(item.id)}
+        onprocess={() => void goto(processHref(item.id))}
+      />
+    {/each}
+
+    {#if $feed.more}
+      <More
+        loading={$feed.loading}
+        offline={!pool.yes}
+        onmore={() => void client.loadFeed()}
+      />
+    {/if}
+  </Register>
 {/if}

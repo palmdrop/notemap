@@ -9,6 +9,7 @@ import { forgetEveryName } from "$lib/names.svelte";
  */
 function stubScrolling(): void {
   window.scrollTo = vi.fn();
+  Element.prototype.scrollIntoView = vi.fn();
   Object.defineProperty(window, "scrollY", { configurable: true, value: 0 });
 }
 

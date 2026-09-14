@@ -54,35 +54,35 @@
   const said = $derived.by(() => {
     if (report === undefined) {
       return asking
-        ? { mark: "↻", text: "asking", tone: "text-ink-muted" }
-        : { mark: "", text: "not asked yet", tone: "text-ink-muted" };
+        ? { mark: "↻", text: "asking", tone: "" }
+        : { mark: "", text: "not asked yet", tone: "" };
     }
 
     switch (report.kind) {
       case "fits":
-        return { mark: "✓", text: "fits", tone: "text-good" };
+        return { mark: "✓", text: "fits", tone: "" };
       case "stranded":
-        return { mark: "⚠", text: "destination deleted", tone: "text-accent" };
+        return { mark: "⚠", text: "destination deleted", tone: "text-alarm" };
       case "destination-retired":
-        return { mark: "⚠", text: "destination retired", tone: "text-accent" };
+        return { mark: "⚠", text: "destination retired", tone: "text-alarm" };
       case "folder-missing":
         return {
           mark: "⚠",
           text: `${report.folder} missing`,
-          tone: "text-accent",
+          tone: "text-alarm",
         };
       case "capability-undeclared":
         return {
           mark: "⚠",
           text: `${report.capability} is no longer offered`,
-          tone: "text-accent",
+          tone: "text-alarm",
         };
       case "arguments-invalid":
-        return { mark: "⚠", text: "arguments refused", tone: "text-accent" };
+        return { mark: "⚠", text: "arguments refused", tone: "text-alarm" };
       case "destination-unusable":
-        return { mark: "", text: report.detail, tone: "text-ink-muted" };
+        return { mark: "", text: report.detail, tone: "" };
       case "unreachable":
-        return { mark: "", text: "not reachable", tone: "text-ink-muted" };
+        return { mark: "", text: "not reachable", tone: "" };
     }
   });
 
@@ -118,59 +118,50 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="border-b border-b-ink/20 py-4" onclick={pickable(onopen)}>
+<div class="border-b border-b-ink py-4" onclick={pickable(onopen)}>
   <div class="flex cursor-pointer flex-wrap items-baseline gap-x-3">
-    <span
-      aria-hidden="true"
-      class="w-[1ch] flex-none {stranded ? 'text-ink-muted' : ''}"
-    >
+    <span aria-hidden="true" class="w-[1ch] flex-none">
       {stranded ? "○" : "●"}
     </span>
     <button
       type="button"
       onclick={onopen}
       aria-expanded={opened}
-      class="tracking-wider uppercase hover:text-accent {stranded
-        ? 'text-ink-muted'
-        : ''}"
+      class="tracking-caps uppercase hover:underline {stranded ? '' : ''}"
     >
       {one.name}
     </button>
-    <span class="text-ink-muted">{destination?.name ?? one.destination}</span>
+    <span>{destination?.name ?? one.destination}</span>
 
     <span
-      class="ml-auto whitespace-nowrap {said.tone} max-narrow:ml-[var(--spacing-mark)] max-narrow:w-full"
+      class="ml-auto whitespace-nowrap {said.tone} max-narrow:ml-7 max-narrow:w-full"
     >
       {said.mark}
       {said.text}
     </span>
   </div>
 
-  <div
-    class="mt-1 flex flex-wrap items-baseline gap-x-2 pl-[var(--spacing-mark)]"
-  >
+  <div class="mt-1 flex flex-wrap items-baseline gap-x-2 pl-7">
     {#if one.triggerTag !== undefined}
-      <span class="px-1 {stranded ? 'text-ink-muted' : 'inverted'}">
+      <span class="px-1 {stranded ? '' : 'inverted'}">
         {one.triggerTag}
       </span>
-      <span aria-hidden="true" class="text-ink-muted">→</span>
+      <span aria-hidden="true">→</span>
     {/if}
-    <span class="break-all text-ink-muted">{place}</span>
+    <span class="break-all">{place}</span>
   </div>
 
   {#if stranded}
-    <p class="mt-1 pl-[var(--spacing-mark)] text-accent">
-      Does nothing until repointed.
-    </p>
+    <p class="mt-1 pl-7 text-alarm">Does nothing until repointed.</p>
   {/if}
 
   {#if opened}
-    <div class="mt-4 pl-[var(--spacing-mark)]">
+    <div class="mt-4 pl-7">
       {#if !editing}
-        <Fact name="tag" empty={one.triggerTag === undefined}>
+        <Fact name="tag">
           {one.triggerTag ?? "none — taken in the composer"}
         </Fact>
-        <Fact name="into" empty={stranded}>
+        <Fact name="into">
           {destination?.name ?? `${one.destination} · deleted`}
         </Fact>
         <Fact name="action">{one.capability}</Fact>
@@ -182,7 +173,7 @@
               : ` · established ${one.establishedAt.slice(0, 10)}`
             : ""}
         </Fact>
-        <Fact name="fired" empty={one.fired.records === 0}>
+        <Fact name="fired">
           {one.fired.records === 0
             ? "nothing yet"
             : `${String(one.fired.records)} items${
@@ -193,27 +184,27 @@
         </Fact>
 
         {#if report?.kind === "folder-missing"}
-          <p class="mt-2 text-accent">
+          <p class="mt-2 text-alarm">
             Next delivery refused, and the item returns to the queue.
           </p>
         {/if}
 
         <div
-          class="mt-4 flex flex-wrap items-baseline gap-x-6 border-t border-t-ink/20 pt-3"
+          class="mt-4 flex flex-wrap items-baseline gap-x-6 border-t border-t-ink pt-3"
         >
           {#if !stranded}
             <Action disabled={asking} onclick={oncheck}>
-              <span aria-hidden="true" class="text-ink-muted">↻</span>
+              <span aria-hidden="true">↻</span>
               {report === undefined ? "Check" : "Check again"}
             </Action>
           {/if}
           <Action disabled={offline} onclick={onedit}>
-            <span aria-hidden="true" class="text-ink-muted">✎</span>
+            <span aria-hidden="true">✎</span>
             {stranded ? "Repoint" : "Edit"}
           </Action>
           <span class="ml-auto max-narrow:ml-0">
             <Action disabled={offline} onclick={ondelete}>
-              <span class="text-accent">
+              <span class="text-alarm">
                 <span aria-hidden="true">×</span> Delete
               </span>
             </Action>

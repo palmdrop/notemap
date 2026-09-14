@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { agentOf, failed, flattened, isCode, shortened } from "./actions";
+import { failed, flattened, isCode, shortened } from "./actions";
 
 describe("flattening a detail", () => {
   it("writes strings unquoted and everything else as it reads", () => {
@@ -104,21 +104,5 @@ describe("an id", () => {
 
   it("is left alone when there is nothing to save", () => {
     expect(shortened("short")).toBe("short");
-  });
-});
-
-describe("who did it", () => {
-  it("names a person as a person reading their own log would", () => {
-    expect(agentOf({ kind: "person" })).toBe("you");
-  });
-
-  it("names the rest by what they are", () => {
-    expect(agentOf({ kind: "notemap" })).toBe("notemap");
-    expect(agentOf({ kind: "provider", provider: "ollama" })).toBe(
-      "provider ollama",
-    );
-    expect(agentOf({ kind: "source", source: "shell-note" })).toBe(
-      "source shell-note",
-    );
   });
 });

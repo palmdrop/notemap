@@ -46,23 +46,107 @@ function draw(item = anItem("one")) {
   });
 }
 
-/** The line as drawn, which is what "beside each other" is a claim about. */
-function line(container: Element) {
-  return [...(container.firstElementChild?.children ?? [])].map((cell) =>
-    cell.textContent?.trim(),
+/** The two groups as drawn: the quick tier on the left, the rest on the right. */
+function groups(container: Element) {
+  return [...(container.firstElementChild?.children ?? [])].map((group) =>
+    [...group.children].map((cell) => cell.textContent?.trim()),
   );
 }
 
 /**
- * One way out of the queue. Route, done and archive were three controls of
- * unclear rank drawn as siblings; what differed between them is the composer's
- * first step now, and four controls need no second line to be told apart.
+ * The quick tier is every decision that needs no destination — `process` is
+ * the door to the one that does — and working with the item is the other
+ * group, so that the two are never read as six of a kind.
  */
-test("draws every action on one line", () => {
+test("draws the decisions on the left and the rest on the right", () => {
   clipboard();
   const { container } = draw(saying("a note"));
 
-  expect(line(container)).toEqual(["process", "copy", "edit", "open"]);
+  expect(groups(container)).toEqual([
+    ["process", "manual", "discard"],
+    ["edit", "copy", "open"],
+  ]);
+});
+
+test("marks manual at once, with no note, and offers the way back in the corner", async () => {
+  pool((request) =>
+    routeOf(request) === "POST /v1/items/one/mark-processed"
+      ? json(200, {
+          id: "rec",
+          item: "one",
+          at: "2026-09-03T10:00:00.000Z",
+          state: "delivered",
+          target: { kind: "user" },
+        })
+      : json(200, { values: [] }),
+  );
+  render(Actions, {
+    item: anItem("one"),
+    onprocess: () => undefined,
+    onedit: () => undefined,
+  });
+
+  await fireEvent.click(screen.getByRole("button", { name: "manual" }));
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/mark-processed");
+  });
+  expect(screen.queryByLabelText("where it went")).toBeNull();
+
+  const said = await vi.waitFor(() => {
+    const raised = notices.shown.at(-1);
+    expect(raised?.what).toBe("marked manual");
+    return raised;
+  });
+  expect(said?.offer?.label).toBe("undo");
+  // Keyed to the record, so the log's own entry for it adds nothing.
+  expect(said?.key).toBe("record:rec");
+});
+
+test("discards at once and offers the way back in the corner", async () => {
+  draw();
+  render(Actions, {
+    item: anItem("two"),
+    onprocess: () => undefined,
+    onedit: () => undefined,
+  });
+
+  await fireEvent.click(
+    screen.getAllByRole("button", { name: "discard" }).at(-1)!,
+  );
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/two/archive");
+  });
+  expect(notices.shown.at(-1)?.what).toBe("discarded");
+  expect(notices.shown.at(-1)?.offer?.label).toBe("undo");
+});
+
+/** The one grey: a decision that cannot be taken says why, and stays in place. */
+test("cannot mark manual offline, and cannot discard what is discarded", () => {
+  const { rerender } = render(Actions, {
+    item: anItem("one"),
+    offline: true,
+    onprocess: () => undefined,
+    onedit: () => undefined,
+  });
+  const control = (name: string) =>
+    screen.getByRole("button", { name }) as HTMLButtonElement;
+
+  expect(control("manual").disabled).toBe(true);
+  expect(control("manual").title).toBe("pool out of reach");
+  expect(control("discard").disabled).toBe(false);
+
+  void rerender({
+    item: anItem("one", {
+      archived: { archivedAt: "2026-09-04T10:00:00.000Z" },
+    }),
+    offline: false,
+    onprocess: () => undefined,
+    onedit: () => undefined,
+  });
+  expect(control("discard").disabled).toBe(true);
+  expect(control("manual").disabled).toBe(false);
 });
 
 /**
@@ -74,7 +158,7 @@ test("offers no copy where the browser hands over no clipboard", () => {
   const { container } = draw(saying("a note"));
 
   expect(screen.queryByRole("button", { name: "copy" })).toBeNull();
-  expect(line(container)).toEqual(["process", "edit", "open"]);
+  expect(groups(container)[1]).toEqual(["edit", "open"]);
 });
 
 test("offers no copy of a capture that says nothing", () => {

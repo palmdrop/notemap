@@ -2,8 +2,7 @@ import { render, screen } from "@testing-library/svelte";
 import { expect, test } from "vitest";
 
 import Nav from "./Nav.svelte";
-import Reachability from "./Reachability.svelte";
-import Waiting from "./Waiting.svelte";
+import Status from "./Status.svelte";
 
 const SURFACES = [
   { href: "/", label: "queue" },
@@ -13,26 +12,27 @@ const SURFACES = [
 test("marks the surface being read, and only that one", () => {
   render(Nav, { surfaces: SURFACES, current: "/feed" });
 
-  const marked = (name: string) =>
-    screen.getByRole("link", { name }).getAttribute("aria-current");
+  const link = (name: string) => screen.getByRole("link", { name });
 
-  expect(marked("feed")).toBe("page");
-  expect(marked("queue")).toBeNull();
+  expect(link("feed").getAttribute("aria-current")).toBe("page");
+  expect(link("feed").classList.contains("font-semibold")).toBe(true);
+  expect(link("queue").getAttribute("aria-current")).toBeNull();
+  expect(link("queue").classList.contains("font-semibold")).toBe(false);
 });
 
-test("says whether the pool is within reach", () => {
-  const { rerender } = render(Reachability, { yes: true });
-  expect(screen.getByRole("status").textContent?.trim()).toBe("online");
+/** Pending is ordinary and heals itself, so an idle outbox is not a state of its own. */
+test("one glyph says whether the pool is within reach and whether work waits", () => {
+  const { rerender } = render(Status, { reachable: true, waiting: 0 });
+  const glyph = () => screen.getByRole("status");
 
-  void rerender({ yes: false });
-  expect(screen.getByRole("status").textContent?.trim()).toBe("offline");
-});
+  expect(glyph().textContent?.trim()).toBe("●");
+  expect(glyph().title).toBe("reachable");
 
-/** Pending is ordinary and heals itself, so an idle outbox says nothing at all. */
-test("says how much is waiting, and only while something is", () => {
-  const { rerender } = render(Waiting, { count: 0 });
-  expect(screen.queryByRole("status")).toBeNull();
+  void rerender({ reachable: false, waiting: 0 });
+  expect(glyph().textContent?.trim()).toBe("○");
+  expect(glyph().title).toBe("unreachable");
 
-  void rerender({ count: 4 });
-  expect(screen.getByRole("status").textContent?.trim()).toBe("4 waiting");
+  void rerender({ reachable: false, waiting: 4 });
+  expect(glyph().textContent?.trim()).toBe("◐");
+  expect(glyph().title).toBe("4 waiting, unreachable");
 });

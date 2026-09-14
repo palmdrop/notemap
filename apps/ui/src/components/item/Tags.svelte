@@ -6,12 +6,19 @@
   import { sayItFired } from "$lib/firing";
   import { offerable, triggeredBy } from "$lib/templates";
 
-  let { item }: { item: Item } = $props();
+  /** `addable` is the selected row's: a `+` on every row is a `+` nobody reads. */
+  let { item, addable = false }: { item: Item; addable?: boolean } = $props();
+
+  let set = $state<TagSet | undefined>(undefined);
 
   const names = $derived((item.tags ?? []).map((tag) => tag.name));
 
   const inUse = client.tags.inUse;
   const offered = $derived(offerable($inUse.map((use) => use.name)));
+
+  export function add(): void {
+    set?.add();
+  }
 
   /** A trigger tag files the item, so what it did is said as soon as it is known. */
   async function tagged(id: string, name: string): Promise<void> {
@@ -20,10 +27,14 @@
   }
 </script>
 
-<div class="mt-2 flex min-w-0 flex-wrap items-baseline gap-x-4 font-mono">
+<div
+  class="flex min-w-0 flex-wrap items-baseline gap-x-[1ch] max-narrow:flex-col max-narrow:items-start"
+>
   <TagSet
+    bind:this={set}
     {names}
     {offered}
+    {addable}
     fires={(name) => triggeredBy(name)?.name}
     onadd={(name) => void tagged(item.id, name)}
     onremove={(name) => void client.untag(item.id, name)}

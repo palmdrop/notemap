@@ -1,0 +1,72 @@
+/* The shell's system as values. First draft, 2026-09-14, settled after two rounds.
+   Every role a component may name; nothing outside this file names a value.
+   Drawn in light. Dark is the inversion (ground and ink swap, red stays), switched in
+   settings and never by the browser's preference alone. */
+
+:root {
+  /* colour: two, and one red for failure and destruction */
+  --ground: #ffffff;
+  --ink: #000000;
+  --alarm: #d40000;
+
+  /* type: one face, one size. The face is self-hosted by the app; the draft loads it from
+     Google Fonts only because a mockup has no daemon to serve it. */
+  --face: "Bricolage Grotesque", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --size: 15px;
+  --leading: 22px;
+  --bold: 600;
+  --track-caps: 0.08em;
+
+  /* structure */
+  --rule: 1px solid var(--ink);
+  --unit: 8px;
+  --measure: 72rem;        /* the page at a desk */
+  --measure-read: 44rem;   /* one thing being read or edited, stacked */
+  --measure-prose: 38rem;  /* a paragraph in the body column, about seventy characters */
+  --rail: 11rem;           /* the date column at a desk */
+  --rail-narrow: 5.75rem;  /* the date column on a phone: date over time, ten tabular figures */
+  --gutter: 1.5rem;        /* between the rail's rule and the body */
+  --gap-time: 28px;        /* the index's extra space where more than half a day passed */
+  --wide: 64rem;           /* from here the process surface is two columns */
+
+  /* motion: few, structural */
+  --beat: 160ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --beat: 0ms; }
+}
+
+/* The one exception, admitted only where nothing else can say inert. Not yet used anywhere. */
+:root { --inert: #808080; }
+
+/* ---- shared ------------------------------------------------------------ */
+
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--ground); }
+body {
+  font-family: var(--face);
+  font-size: var(--size);
+  line-height: var(--leading);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+a { color: inherit; text-decoration: none; }
+a:hover { text-decoration: underline; }
+.b { font-weight: var(--bold); }
+.alarm { color: var(--alarm); }
+.caps { text-transform: uppercase; letter-spacing: var(--track-caps); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* the bar: four surfaces and one glyph */
+.page { max-width: var(--measure); margin: 0 auto; padding: 0 32px 48px; }
+.bar { display: flex; align-items: baseline; justify-content: space-between; height: 44px; border-bottom: var(--rule); }
+.nav { display: flex; gap: 20px; }
+.nav .on { font-weight: var(--bold); }
+.glyph { font-size: 11px; line-height: 44px; }
+
+@media (width < 44rem) {
+  .page { padding: 0 14px 40px; }
+  .nav { gap: 14px; }
+}

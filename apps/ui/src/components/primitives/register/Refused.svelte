@@ -4,18 +4,10 @@
   import Body from "./Body.svelte";
   import Rail from "./Rail.svelte";
 
-  let {
-    surface,
-    refused,
-    first = false,
-  }: {
-    surface: Surface;
-    refused: string;
-    first?: boolean;
-  } = $props();
+  let { surface, refused }: { surface: Surface; refused: string } = $props();
 </script>
 
-<Rail {first}>{surface}</Rail>
-<Body {first}>
-  <div role="status" class="font-mono text-accent">{refused}</div>
+<Rail>{surface}</Rail>
+<Body>
+  <div role="status" class="text-alarm">{refused}</div>
 </Body>

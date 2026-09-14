@@ -23,7 +23,7 @@
   } = $props();
 </script>
 
-<div class="font-mono text-ink-muted">{heading}</div>
+<div class="tracking-caps uppercase">{heading}</div>
 
 {#if note !== undefined}
   <div class="mt-2 break-words">{note}</div>
@@ -31,16 +31,16 @@
 
 {#if text !== undefined}
   <Clamp>
-    <pre class="mt-2 font-mono break-words whitespace-pre-wrap">{text}</pre>
+    <pre class="mt-2 break-words whitespace-pre-wrap">{text}</pre>
   </Clamp>
   {#if truncated}
-    <div class="mt-1 font-mono text-ink-muted">shown in part</div>
+    <div class="mt-1">shown in part</div>
   {/if}
 {:else}
   <!-- Both, and not one or the other: a read that failed says why and stays
        available, which is what makes the failure worth reporting at all. -->
   {#if said !== ""}
-    <div role="status" class="mt-2 font-mono text-ink-muted">{said}</div>
+    <div role="status" class="mt-2">{said}</div>
   {/if}
   {#if onread !== undefined}
     <div class="mt-2">

@@ -1,37 +1,14 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import Furl from "./Furl.svelte";
-
-  /**
-   * Without `onfurl` the rail cannot be folded away, which settings wants.
-   * A `brief` rail holds a stamp and one short word rather than a row's whole
-   * account, and takes a measure of its own.
-   */
-  let {
-    furled = false,
-    brief = false,
-    onfurl,
-    children,
-  }: {
-    furled?: boolean;
-    brief?: boolean;
-    onfurl?: () => void;
-    children: Snippet;
-  } = $props();
+  let { children }: { children: Snippet } = $props();
 </script>
 
-{#if onfurl !== undefined}
-  <Furl {furled} ontoggle={onfurl} />
-{/if}
-
+<!-- Two columns and one vertical rule between them, drawn by the rail; no rule
+     between rows. Each item drops its cells into this, so the columns stay in
+     register down the whole page. -->
 <div
-  data-furled={furled && onfurl !== undefined ? "" : undefined}
-  class="group grid {furled && onfurl !== undefined
-    ? 'grid-cols-[0_1fr] gap-x-0'
-    : brief
-      ? 'grid-cols-[var(--spacing-log-rail)_1fr] gap-x-gap'
-      : 'grid-cols-[var(--spacing-rail)_1fr] gap-x-gap'}"
+  class="grid grid-cols-[var(--spacing-rail)_1fr] max-narrow:grid-cols-[var(--spacing-rail-narrow)_1fr]"
 >
   {@render children()}
 </div>

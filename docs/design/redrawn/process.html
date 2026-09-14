@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>notemap — process, redrawn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./tokens.css" />
+<style>
+  /* The surface fills the viewport: the bar, then a frame whose head and foot are fixed and
+     whose middle scrolls. Two columns from --wide up, stacked below. */
+  html, body { height: 100%; }
+  body { display: flex; flex-direction: column; }
+  .bar { flex: none; width: calc(100% - 64px); max-width: calc(var(--measure) - 64px); margin: 0 auto; }
+
+  .frame { flex: 1; min-height: 0; display: flex; flex-direction: column; width: 100%; max-width: var(--measure-read); margin: 0 auto; padding: 0 32px; }
+  .head { flex: none; border-bottom: var(--rule); padding: 20px 0 16px; max-height: 40%; display: flex; flex-direction: column; }
+  .meta { display: flex; justify-content: space-between; gap: 2ch; margin-bottom: 8px; }
+  .meta .facts { display: flex; gap: 2ch; flex-wrap: wrap; }
+  .meta .tags { display: flex; gap: 1ch; }
+  .words { overflow: auto; min-height: 0; max-width: var(--measure-prose); }
+  .words p { margin: 0; }
+  .caret { display: inline-block; width: 1px; height: 1.1em; background: var(--ink); vertical-align: -0.2em; margin-left: 1px; }
+
+  /* editing: the words in a ruled box, and only then */
+  .edit-foot { display: none; }
+  body.editing .words { border: var(--rule); padding: 10px 12px; max-width: none; }
+  body.editing .edit-foot { display: flex; justify-content: space-between; margin-top: 8px; }
+  body.editing .pen { visibility: hidden; }
+  body:not(.editing) .caret { display: none; }
+
+  .middle { flex: 1; min-height: 0; min-width: 0; overflow: auto; }
+  .band > div:last-child { min-width: 0; }
+  .sec { display: grid; grid-template-columns: 9rem 1fr; border-bottom: var(--rule); padding: 12px 0; }
+  .sec:last-child { border-bottom: 0; }
+  .sec .lab { text-transform: uppercase; letter-spacing: var(--track-caps); font-weight: var(--bold); }
+  .sec .sum { display: flex; justify-content: space-between; gap: 2ch; }
+  .line { border-bottom: var(--rule); padding: 0 0 2px; margin-bottom: 8px; }
+  .band { display: grid; grid-template-columns: 9rem 1fr; padding: 6px 0; }
+  .band + .band { border-top: var(--rule); }
+  .band .bl { text-transform: uppercase; letter-spacing: var(--track-caps); }
+  .opt { display: flex; justify-content: space-between; gap: 2ch; }
+  .opt.hit { font-weight: var(--bold); }
+  .opt span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tree { display: flex; flex-direction: column; }
+  .tree .lvl1 { padding-left: 2ch; }
+  .tree .cur { font-weight: var(--bold); }
+  .file { border: var(--rule); padding: 8px 12px; white-space: pre-wrap; }
+  .file .cut { display: flex; justify-content: flex-end; }
+
+  .foot { flex: none; display: flex; justify-content: space-between; align-items: center; border-top: var(--rule); height: 48px; }
+  .foot .walk { display: flex; gap: 24px; }
+  .foot .route { font-weight: var(--bold); background: var(--ink); color: var(--ground); padding: 0 20px; height: 32px; line-height: 32px; }
+
+  @media (width >= 64rem) {
+    .frame { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); grid-template-rows: 1fr auto; max-width: var(--measure); }
+    .head { grid-row: 1 / 3; border-bottom: 0; border-right: var(--rule); padding: 20px 32px 20px 0; max-height: none; }
+    .middle { padding: 8px 0 0 32px; }
+    .foot { margin-left: 32px; }
+  }
+  @media (width < 44rem) {
+    .bar { width: calc(100% - 28px); }
+    .frame { padding: 0 14px; }
+    .head { padding: 14px 0 12px; max-height: 34%; }
+    .sec { grid-template-columns: 1fr; gap: 4px; padding: 10px 0; }
+    .band { grid-template-columns: 1fr; }
+    .band .bl { margin-bottom: 2px; }
+    .foot .walk { gap: 16px; }
+  }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <nav class="nav"><a class="on" href="#">queue</a><a href="#">feed</a><a href="#">log</a><a href="#">settings</a></nav>
+    <span class="glyph" title="reachable">●</span>
+  </div>
+  <div class="frame">
+    <div class="head">
+      <div class="meta">
+        <div class="facts"><span class="num">2026-09-13 07:02</span><span class="tags"><span>adr</span><span>mirror</span></span></div>
+        <a class="pen" href="#editing" title="edit the words this delivery carries">edit</a>
+      </div>
+      <div class="words"><p>Ask whether the mirror should carry the routing record or only the fact that something left. ADR 19 says the delivery records what went, so the bytes that landed come back — but a rebuild has no destination to ask.<span class="caret"></span></p></div>
+      <div class="edit-foot"><a href="#">keep the capture's</a><a class="b" href="#">done</a></div>
+    </div>
+    <div class="middle">
+      <div class="sec"><div class="lab">destination</div><div>
+        <div class="line">obs</div>
+        <div class="band"><div class="bl">templates</div><div><div class="opt"><span>Research</span><span>research/{{captured_at:date}}.md</span></div><div class="opt"><span>Journal</span><span>journal/{{captured_at:date}}.md</span></div></div></div>
+        <div class="band"><div class="bl">destinations</div><div><div class="opt hit"><span>Obsidian vault</span><span>14 routed · last today</span></div></div></div>
+        <div class="band"><div class="bl">otherwise</div><div><div class="opt"><span>manual</span><span>processed by hand</span></div><div class="opt"><span class="alarm">discard</span><span></span></div></div></div>
+      </div></div>
+      <div class="sec"><div class="lab">place</div><div>
+        <div class="line">research/</div>
+        <div class="tree"><span>inbox/</span><span>journal/</span><span>projects/</span><span class="cur">research/</span><span class="lvl1">reading.md</span><span class="lvl1">+ 2026-09-13.md</span></div>
+      </div></div>
+      <div class="sec"><div class="lab">tags</div><div class="sum"><span>adr · mirror</span><span>+</span></div></div>
+      <div class="sec"><div class="lab">preview</div><div><div class="file">---
+captured_at: 2026-09-13T07:02:00+02:00
+tags: [adr, mirror]
+---
+Ask whether the mirror should carry the routing record or only the<div class="cut"><span>more ▾</span></div></div></div></div>
+    </div>
+    <div class="foot"><div class="walk"><a href="#">← previous</a><a href="#">next →</a></div><a class="route" href="#">route</a></div>
+  </div>
+<script>
+  // #editing shows the head's editing state; the app toggles it from the pen, a double click or `e`.
+  const show = () => document.body.classList.toggle("editing", location.hash === "#editing");
+  addEventListener("hashchange", show); show();
+</script>
+</body>
+</html>

@@ -16,10 +16,10 @@
   <!-- By position, not by key: `detail` is the one field with no schema behind
        it, so two pairs may share a name and a keyed block throws on a pair. -->
   {#each pairs as pair, at (at)}
-    <span class="text-ink-muted">{pair.key}</span>
+    <span class="tracking-caps uppercase">{pair.key}</span>
     <span
       class="min-w-0 break-words max-narrow:mb-1.5 {failed && isCode(pair.key)
-        ? 'text-accent'
+        ? 'text-alarm'
         : ''}"
     >
       {pair.value}

@@ -14,7 +14,6 @@
   import {
     completionOf,
     continuationOf,
-    continuing,
     ghostFor,
     landedOn,
     levelAt,
@@ -48,7 +47,6 @@
     onsubmit,
     onrelease,
     onforecast,
-    onwalk,
   }: {
     destination: string;
     capability: string;
@@ -61,11 +59,7 @@
      * drawing a field that is not a note's place.
      */
     said?: Said;
-    /**
-     * Places routed to before, as the pool answered them. They are drawn in the
-     * column beside this one and reached from here, `↑↓` walking the two lists
-     * as one — a keyboard reaching less than the pointer would be two lists.
-     */
+    /** Places routed to before, as the pool answered them: what the greyed continuation is read from. */
     places?: readonly RememberedPlace[];
     onchange: (value: string) => void;
     /**
@@ -75,10 +69,8 @@
     onsubmit?: (beside?: string) => void;
     /** Backspacing past the head of an empty line: a wrong destination is not a reason to close. */
     onrelease?: () => void;
-    /** What committing now would do, which decides what else the composer asks. */
+    /** What committing now would do, which decides what else the surface asks. */
     onforecast?: (word: "create" | "append" | undefined) => void;
-    /** Which of `places` the walk has landed on, for the column that draws them. */
-    onwalk?: (at: number | undefined) => void;
   } = $props();
 
   let levels = $state<readonly Level[]>([]);
@@ -122,7 +114,6 @@
    * person takes without reading.
    */
   const checked = $derived(marked(places, levels));
-  const remembered = $derived(continuing(value, places));
   const ghost = $derived(ghostFor(value, checked));
 
   const forecast = $derived(
@@ -153,29 +144,13 @@
   /** In the order they are drawn, so `↑↓` moves down the tree as the eye does. */
   const here = $derived(reachable(drawn));
 
-  /**
-   * One list for `↑↓`: places used before rank above what the vault merely
-   * offers, and a `gone` one is reachable here deliberately — which is what
-   * makes it safe to keep it out of the ghost.
-   */
-  const choices = $derived([
-    ...remembered.map((place) => ({ kind: "remembered" as const, place })),
-    ...here.map((row) => ({ kind: "entry" as const, row })),
-  ]);
-
-  /**
-   * Where the walk stands, said as a position in `places` rather than in the
-   * narrowed list: the column drawing them narrows separately, and two lists
-   * that must filter alike to agree on an index agree by luck.
-   */
-  const walked = $derived(
-    moved && at < remembered.length ? places.indexOf(remembered[at]!) : -1,
+  /** What `↑↓` walks: the tree as drawn. */
+  const choices = $derived(
+    here.map((row) => ({ kind: "entry" as const, row })),
   );
 
-  $effect(() => onwalk?.(walked === -1 ? undefined : walked));
-
-  // The place is what a composer with a destination in its chrome is for, so
-  // the caret is here rather than waiting to be clicked into.
+  // The place is what a surface with a destination settled is for, so the
+  // caret is here rather than waiting to be clicked into.
   $effect(() => input?.focus());
 
   // Every answer but the newest is dropped: typing a segment leaves several
@@ -292,12 +267,6 @@
   }
 
   function taken(choice: (typeof choices)[number]): void {
-    // A remembered place is the whole line, not a segment of it.
-    if (choice.kind === "remembered") {
-      onchange(choice.place.value);
-      input?.focus();
-      return;
-    }
     take(choice.row.entry);
   }
 
@@ -375,38 +344,27 @@
     path.complete.length === 0 ? "" : `${path.complete.join("/")}/`,
   );
 
-  /** Whichever list the walk is in, both being one list to the keyboard. */
   const active = $derived(
-    !moved || choices[at] === undefined
-      ? undefined
-      : walked !== -1
-        ? `used-before-place-${walked}`
-        : `path-line-place-${at}`,
+    !moved || choices[at] === undefined ? undefined : `path-line-place-${at}`,
   );
 </script>
 
-<div class="font-mono">
-  <!-- A typed field is a ground and never a rule, so the only rule in the
-       modal is the chrome's. -->
-  <div class="relative px-2 py-0.5 field">
+<div>
+  <div class="relative border-b border-ink px-2 py-0.5">
     <!-- The input's own text is transparent and this is what is read, so the
-         settled part of the path and the one being typed can be drawn
-         differently. Alignment is exact: one monospace face, one size. -->
+         completion offered can be drawn after what was typed. Alignment is
+         exact: one face, one size, in both. -->
     <div
       bind:this={shown}
       aria-hidden="true"
       class="pointer-events-none absolute inset-0 overflow-hidden px-2 py-0.5 whitespace-pre"
     >
-      <span class="text-ink-muted">{settled}</span><span class="text-ink"
-        >{path.typing}</span
-      >{#if ghost !== undefined}<span class="text-ink-muted" data-ghost
-          >{ghost}</span
+      <span>{settled}{path.typing}</span>{#if ghost !== undefined}<span
+          data-ghost
+          class="text-inert">{ghost}</span
         >{/if}
     </div>
 
-    <!-- `aria-controls` names both lists because `↑↓` walks both: an active
-         option in one this did not name is somewhere a reader was told not to
-         look. `used-before-places` is drawn in the column beside this one. -->
     <input
       bind:this={input}
       {value}
@@ -425,14 +383,14 @@
       role="combobox"
       aria-autocomplete="list"
       aria-expanded={choices.length > 0}
-      aria-controls="used-before-places path-line-places"
+      aria-controls="path-line-places"
       aria-activedescendant={active}
       class="relative w-full bg-transparent text-transparent caret-ink outline-none"
     />
   </div>
 
   {#if refusal !== undefined}
-    <p class="mt-3.5 text-ink-muted" title={why}>{refusal}</p>
+    <p class="mt-3.5" title={why}>{refusal}</p>
   {:else if forecast !== undefined}
     <!-- The name a derived leaf would get is not said here: the tree draws it
          where the note lands, which is where the eye already is. -->
@@ -444,7 +402,7 @@
              place *nothing to choose* can surprise. -->
         <button
           type="button"
-          class="ml-auto shrink-0 text-ink-muted hover:text-accent"
+          class="ml-auto shrink-0 hover:underline"
           onmousedown={(event) => {
             event.preventDefault();
             onsubmit?.(forecast.beside);
@@ -460,18 +418,14 @@
     id="path-line-places"
     role="listbox"
     aria-label="places"
-    class="mt-2.5 {refusal === undefined ? 'min-h-[var(--spacing-tree)]' : ''}"
+    class="mt-2.5 {refusal === undefined ? 'min-h-[12.5rem]' : ''}"
   >
     {#each drawn as row (`${row.depth}:${row.made === true ? "+" : ""}${row.entry.label}`)}
-      {@const picked =
-        moved &&
-        choices[at]?.kind === "entry" &&
-        here[at - remembered.length] === row}
+      {@const picked = moved && here[at] === row}
       <Walked
         id={picked ? `path-line-place-${at}` : undefined}
         on={picked}
         held={row.made === true || row.held === true}
-        dim={!(row.onPath || picked)}
         disabled={row.made === true}
         indent={row.depth}
         ontake={() => take(row.entry)}
@@ -482,6 +436,6 @@
   </div>
 
   {#if caretIn?.truncated === true}
-    <p class="mt-1 text-ink-muted">more than this shows</p>
+    <p class="mt-1">more than this shows</p>
   {/if}
 </div>

@@ -6,7 +6,6 @@
   import Payload from "$components/item/Payload.svelte";
   import Routing from "$components/item/Routing.svelte";
   import Tags from "$components/item/Tags.svelte";
-  import ProcessingComposer from "$components/routing/ProcessingComposer.svelte";
   import Body from "$components/primitives/register/Body.svelte";
   import Fact from "$components/primitives/register/Fact.svelte";
   import Facts from "$components/primitives/register/Facts.svelte";
@@ -17,13 +16,14 @@
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
+  import { goto } from "$app/navigation";
+
+  import { processHref } from "$components/item/href";
   import { client } from "$lib/client";
   import { became } from "$lib/lineage";
-  import { notices } from "$lib/notices.svelte";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { recordsOf } from "$lib/records.svelte";
-  import { keyFor } from "$lib/routing";
   import { NO_ITEM_OFFLINE, NO_RECORDS_OFFLINE, NO_SUCH_ITEM } from "$lib/said";
   import { briefly } from "$lib/stamp";
 
@@ -34,7 +34,6 @@
 
   let read = $state<ItemState | undefined>(undefined);
   let editing = $state(false);
-  let routing = $state(false);
 
   // The read settles what is drawn and what it was drawn from; the item itself
   // is then the client's held copy, so an archive made here marks it at once.
@@ -65,7 +64,7 @@
 
 <Register>
   {#if item !== undefined}
-    <Rail first>
+    <Rail>
       <Stamp at={item.createdAt} />
 
       {#if word !== undefined}
@@ -82,7 +81,9 @@
         <Cached />
       {/if}
 
-      <Tags {item} />
+      <div class="mt-0.5">
+        <Tags {item} addable />
+      </div>
       <Routing
         summary={item.routing}
         records={records.all}
@@ -92,11 +93,11 @@
       <!-- The item may be the client's own and the records never are, so the
            one surface answers for the two of them separately. -->
       {#if item.routing !== undefined && records.all.length === 0 && !pool.yes}
-        <div class="mt-2 text-ink-muted">{NO_RECORDS_OFFLINE}</div>
+        <div class="mt-2">{NO_RECORDS_OFFLINE}</div>
       {/if}
 
       {#if records.refused !== ""}
-        <div role="status" class="mt-2 text-accent">{records.refused}</div>
+        <div role="status" class="mt-2 text-alarm">{records.refused}</div>
       {/if}
 
       <!-- What it is, the capture says; what a fact answers is what it cannot. -->
@@ -107,44 +108,36 @@
       {/if}
     </Rail>
 
-    <Body first>
+    <Body>
       {#if editing}
         <Edit {item} ondone={() => (editing = false)} />
       {:else}
         <Payload {item} />
       {/if}
 
-      <Actions
-        {item}
-        onprocess={() => (routing = true)}
-        onedit={() => (editing = !editing)}
-      />
+      <div class="mt-3.5">
+        <Actions
+          {item}
+          offline={!pool.yes}
+          onprocess={() => void goto(processHref(id))}
+          onedit={() => (editing = !editing)}
+        />
+      </div>
     </Body>
   {:else if read !== undefined}
-    <Rail first>
+    <Rail>
       {#if refused === undefined && read.failure === undefined}
         <StateWord word="gone" />
       {/if}
     </Rail>
-    <Body first>
+    <Body>
       {#if refused !== undefined}
-        <div role="status" class="font-mono text-accent">{refused}</div>
+        <div role="status" class="text-alarm">{refused}</div>
       {:else if read.failure !== undefined}
-        <div class="font-mono text-ink-muted">{NO_ITEM_OFFLINE}</div>
+        <div>{NO_ITEM_OFFLINE}</div>
       {:else}
         <Prose text={NO_SUCH_ITEM} />
       {/if}
     </Body>
   {/if}
 </Register>
-
-<!-- Nothing said in the corner: the decision is drawn on this very surface a
-     moment later. The record is remembered so that the log, read on its own
-     tempo, does not report it back as news. -->
-{#if routing && item !== undefined}
-  <ProcessingComposer
-    {item}
-    onrouted={(record) => notices.mark(keyFor(record.id))}
-    onclose={() => (routing = false)}
-  />
-{/if}

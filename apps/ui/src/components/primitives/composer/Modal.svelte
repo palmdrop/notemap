@@ -64,10 +64,8 @@
     aria-modal="true"
     aria-label={title}
     tabindex="-1"
-    class="max-h-full w-full self-start overflow-auto border border-ink bg-paper px-5 pt-4 pb-6 font-mono text-mono
-      {wide
-      ? 'max-w-[var(--spacing-composer)]'
-      : 'max-w-[var(--spacing-modal)]'}"
+    class="max-h-full w-full self-start overflow-auto border border-ink bg-ground px-5 pt-4 pb-6
+      {wide ? 'max-w-[48rem]' : 'max-w-[30rem]'}"
   >
     <div
       class="flex items-baseline justify-between gap-4 border-b border-ink pb-3"
@@ -77,13 +75,13 @@
         type="button"
         aria-label="Close"
         onclick={onclose}
-        class="hover:text-accent"
+        class="hover:underline"
       >
         ×
       </button>
     </div>
 
-    <div class="mt-3.5 truncate text-ink-muted">{subject}</div>
+    <div class="mt-3.5 truncate">{subject}</div>
 
     {@render children()}
   </div>

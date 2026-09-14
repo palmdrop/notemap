@@ -13,7 +13,7 @@
   let { id, order }: { id: string; order: Order } = $props();
 </script>
 
-<div class="mt-2 text-ink-muted">
+<div class="mt-2">
   about <Says {id} href={itemHref(id)} />
   <a href={logHref(order, id)} class="ml-2">only this</a>
 </div>

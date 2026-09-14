@@ -12,7 +12,7 @@
 
 <Foot>
   {#if offline}
-    <span class="text-ink-muted">{NO_MORE_OFFLINE}</span>
+    <span>{NO_MORE_OFFLINE}</span>
   {:else}
     <Action disabled={loading} onclick={onmore}>
       {loading ? "loading…" : "load more"}

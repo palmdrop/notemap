@@ -31,13 +31,8 @@
   class="flex w-full items-baseline gap-2.5 py-px text-left"
 >
   <span aria-hidden="true" class="w-[1ch] flex-none">{chosen ? "▸" : ""}</span>
-  <span
-    class:inverted={chosen}
-    class={why === undefined ? "" : "text-ink-muted"}
-  >
-    {label}
-  </span>
+  <span class:font-semibold={chosen}>{label}</span>
   {#if said !== undefined}
-    <span class="ml-auto text-ink-muted">{said}</span>
+    <span class="ml-auto">{said}</span>
   {/if}
 </button>

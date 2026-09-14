@@ -7,7 +7,10 @@
   }: { what: string; why: string; ondismiss: () => void } = $props();
 </script>
 
-<div role="alert" class="grid gap-1.5 bg-accent px-3 py-2.5 filled">
+<div
+  role="alert"
+  class="grid gap-1.5 border border-alarm bg-ground px-3 py-2.5 text-alarm"
+>
   <span class="break-words">{what}</span>
   <span class="break-words">{why}</span>
   <button type="button" onclick={ondismiss} class="justify-self-end underline">

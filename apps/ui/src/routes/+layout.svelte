@@ -3,17 +3,13 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
 
-  import Shown from "$components/log/Shown.svelte";
   import Corner from "$components/notices/Corner.svelte";
-  import Order from "$components/order/Order.svelte";
   import SignIn from "$components/session/SignIn.svelte";
-  import ThemeToggle from "$components/theme/ThemeToggle.svelte";
   import Bar from "$components/primitives/frame/Bar.svelte";
   import Column from "$components/primitives/frame/Column.svelte";
   import Nav from "$components/primitives/frame/Nav.svelte";
-  import Reachability from "$components/primitives/frame/Reachability.svelte";
   import Sheet from "$components/primitives/frame/Sheet.svelte";
-  import Waiting from "$components/primitives/frame/Waiting.svelte";
+  import Status from "$components/primitives/frame/Status.svelte";
   import { client } from "$lib/client";
   import { notices } from "$lib/notices.svelte";
   import { reachable, watched } from "$lib/reachable.svelte";
@@ -33,10 +29,12 @@
   const SURFACES = [
     { href: resolve("/"), label: "queue" },
     { href: resolve("/feed"), label: "feed" },
+    { href: resolve("/log"), label: "log" },
+    { href: resolve("/settings"), label: "settings" },
   ];
 
-  // Swallowed because an unreachable pool is what the reachability mark is for:
-  // a row then says "a destination" and completion offers less. A shut door is
+  // Swallowed because an unreachable pool is what the status glyph is for: a
+  // row then says "a destination" and completion offers less. A shut door is
   // swallowed too: what it refuses is drawn by the login, not by a row.
   onMount(() => {
     void client.destinations.load().catch(() => undefined);
@@ -49,6 +47,9 @@
   // loss would otherwise be silent.
   const shut = $derived(who.shut);
 
+  /** The one surface that is a frame rather than a page. */
+  const fills = $derived(page.route.id === "/items/[id]/process");
+
   // Signing out is the pool's work leaving with it. A standing failure about a
   // delivery nobody can now look up would outlive the session that raised it.
   $effect(() => {
@@ -57,31 +58,15 @@
   });
 </script>
 
-<Sheet>
-  <Column>
+<Sheet {fills}>
+  <Column {fills}>
     <Bar>
       {#if shut}
-        <span class="font-mono tracking-[0.3em] text-ink-muted uppercase">
-          notemap
-        </span>
+        <span>notemap</span>
       {:else}
         <Nav surfaces={SURFACES} current={page.url.pathname} />
       {/if}
-      <span
-        class="ml-auto flex flex-wrap items-baseline gap-4 max-narrow:gap-3"
-      >
-        {#if !shut}
-          <Order />
-          {#if page.route.id === "/log"}
-            <Shown />
-          {/if}
-        {/if}
-        <Waiting count={held.count} />
-        <Reachability yes={pool.yes} />
-        {#if !shut}
-          <a href={resolve("/settings")}>settings</a>
-        {/if}
-      </span>
+      <Status reachable={pool.yes} waiting={held.count} />
     </Bar>
 
     {#if shut}
@@ -95,4 +80,3 @@
 {#if !shut}
   <Corner />
 {/if}
-<ThemeToggle />

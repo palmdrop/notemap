@@ -18,15 +18,23 @@
   }
 </script>
 
-<form onsubmit={save} class="grid gap-3">
+<!-- The capture box again, where the capture is: what was written is rewritten
+     in the same kind of box it was written in. -->
+<form onsubmit={save} class="border border-ink">
+  <!-- svelte-ignore a11y_autofocus -->
   <textarea
     bind:value={draft}
-    rows="4"
+    autofocus
     aria-label="What it says"
-    class="w-full resize-y border-b border-ink bg-transparent font-prose text-prose"
+    class="block min-h-[88px] w-full resize-y bg-transparent px-3 py-2.5 outline-none max-narrow:min-h-[72px]"
   ></textarea>
-  <div class="flex gap-x-gap font-mono">
-    <Action submit>save</Action>
-    <Action onclick={ondone}>cancel</Action>
+
+  <div class="flex items-baseline justify-between border-t border-ink">
+    <span class="px-3 leading-8">
+      <Action onclick={ondone}>cancel</Action>
+    </span>
+    <span class="border-l border-ink px-3 leading-8">
+      <Action primary submit>save</Action>
+    </span>
   </div>
 </form>

@@ -1,12 +1,7 @@
-<script lang="ts">
-  import Body from "$components/primitives/register/Body.svelte";
-  import Rail from "$components/primitives/register/Rail.svelte";
-</script>
-
-<!-- Reaching the end is what the queue is for, so it is said the way the shell
-     says everything else it has done: once, quietly, and in the rail. No count,
-     because the pool gives none. -->
-<Rail>
-  <div class="cleared text-ink-muted">nothing waiting</div>
-</Rail>
-<Body></Body>
+<!-- Reaching the end is what the queue is for, so it is said once, quietly,
+     where the rows were. No count, because the pool gives none. -->
+<div
+  class="pt-8 pl-[calc(var(--spacing-rail)+var(--spacing-gutter))] max-narrow:pl-[calc(var(--spacing-rail-narrow)+0.875rem)]"
+>
+  Nothing left to process.
+</div>

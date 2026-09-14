@@ -32,6 +32,22 @@ const FORBIDDEN: readonly { what: string; found: RegExp }[] = [
     found:
       /\b(?:text|bg|border|fill|stroke|ring|shadow|accent|caret|decoration|outline|divide|placeholder|from|via|to)-\[(?!var\()/,
   },
+  // Roles the shell used to have. One face at one size, and no muted ink,
+  // no green and no accent — each of these is a name for something retired.
+  ...[
+    "font-mono",
+    "font-prose",
+    "text-mono",
+    "text-prose",
+    "text-ink-muted",
+    "text-good",
+    "text-accent",
+    "text-paper",
+    "bg-paper",
+  ].map((name) => ({
+    what: `the retired class \`${name}\``,
+    found: new RegExp(`(?<![\\w-])${name}(?![\\w-])`),
+  })),
 ];
 
 function filesUnder(directory: string): string[] {

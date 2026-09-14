@@ -163,13 +163,13 @@
   }
 </script>
 
-<div class="mt-6 border-l-2 border-l-ink bg-ink/3 px-5 pt-4 pb-5">
-  <div class="tracking-[0.3em] text-ink-muted uppercase">
+<div class="mt-6 border-l-2 border-l-ink px-5 pt-4 pb-5">
+  <div class="tracking-caps uppercase">
     {editing === undefined ? "A new template" : "Editing"}
   </div>
 
   <div class="mt-4">
-    <div class="text-ink-muted">name</div>
+    <div class="tracking-caps uppercase">name</div>
     <input
       bind:value={name}
       aria-label="name"
@@ -178,9 +178,9 @@
   </div>
 
   <div class="mt-4">
-    <div class="text-ink-muted">trigger tag</div>
+    <div class="tracking-caps uppercase">trigger tag</div>
     <div class="mt-0.5 flex items-baseline border-b border-b-ink">
-      <span aria-hidden="true" class="text-ink-muted">{NAMESPACE}</span>
+      <span aria-hidden="true">{NAMESPACE}</span>
       <input
         bind:value={tag}
         aria-label="trigger tag"
@@ -190,7 +190,7 @@
   </div>
 
   <div class="mt-4">
-    <div class="text-ink-muted">destination</div>
+    <div class="tracking-caps uppercase">destination</div>
     <div class="mt-0.5">
       {#each destinations as one (one.id)}
         <Option
@@ -204,7 +204,7 @@
   </div>
 
   <div class="mt-4">
-    <div class="text-ink-muted">action</div>
+    <div class="tracking-caps uppercase">action</div>
     <div class="mt-0.5">
       {#each capabilities as one (one.name)}
         <Option
@@ -218,7 +218,7 @@
 
   {#each typeable as field (field.name)}
     <div class="mt-4">
-      <div class="text-ink-muted">{field.title ?? field.name}</div>
+      <div class="tracking-caps uppercase">{field.title ?? field.name}</div>
       {#if fixed(field) !== undefined}
         <div class="mt-0.5">
           {#each fixed(field) ?? [] as one (one)}
@@ -265,7 +265,7 @@
           bind:value={typed[field.name]}
           aria-label={field.title ?? field.name}
           placeholder={field.required ? "required" : "optional"}
-          class="mt-0.5 w-full border-0 border-b border-b-ink bg-transparent px-0 py-0.5 outline-none placeholder:text-ink-muted"
+          class="mt-0.5 w-full border-0 border-b border-b-ink bg-transparent px-0 py-0.5 outline-none"
         />
       {/if}
     </div>
@@ -278,14 +278,14 @@
        may hold only what its destination already has — a pattern expanded into
        an are.na channel names a channel nobody has. -->
   {#if typeable.some((field) => fixed(field) === undefined && !field.offeredOnly)}
-    <p class="mt-2 text-ink-muted">
+    <p class="mt-2">
       {"{{captured_at}} · {{captured_at:month}} · {{captured_at:week}} · {{item}} · {{source}}"}
     </p>
   {/if}
 
   {#if folders}
     <div class="mt-4">
-      <div class="text-ink-muted">folder</div>
+      <div class="tracking-caps uppercase">folder</div>
       <div class="mt-0.5">
         {#each FOLDERS as one (one.name)}
           <Option
@@ -300,13 +300,13 @@
   {/if}
 
   {#if said !== ""}
-    <p role="status" class="mt-3 text-accent">{said}</p>
+    <p role="status" class="mt-3 text-alarm">{said}</p>
   {/if}
 
   <div class="mt-6 flex flex-wrap items-baseline gap-x-6">
     <Action disabled={disabled || busy} onclick={() => void save()}>
       <span class="inverted">Save</span>
     </Action>
-    <Action onclick={done}><span class="text-ink-muted">Cancel</span></Action>
+    <Action onclick={done}><span>Cancel</span></Action>
   </div>
 </div>

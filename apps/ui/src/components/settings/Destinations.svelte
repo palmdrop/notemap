@@ -135,14 +135,12 @@
   {#if !pool.yes}
     <!-- The chrome already says the pool is out of reach; this names what that
          costs here, and is not painted as an alarm. -->
-    <p role="status" class="mt-4 text-ink-muted">
-      Destinations can be read but not changed.
-    </p>
+    <p role="status" class="mt-4">Destinations can be read but not changed.</p>
   {/if}
 
   <!-- A refusal about the one being deleted is shown in the asking instead. -->
   {#if said !== "" && doomed === undefined}
-    <p role="status" class="mt-4 text-accent">{said}</p>
+    <p role="status" class="mt-4 text-alarm">{said}</p>
   {/if}
 
   {#each $destinations as one (one.id)}
@@ -195,7 +193,7 @@
         disabled={!pool.yes || kinds.length === 0}
         onclick={() => (adding = true)}
       >
-        <span aria-hidden="true" class="text-ink-muted">+</span> Add a destination
+        <span aria-hidden="true">+</span> Add a destination
       </Action>
     </div>
   {/if}

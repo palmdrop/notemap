@@ -1,15 +1,14 @@
 <script lang="ts">
-  import Labelled from "$components/primitives/composer/Labelled.svelte";
   import TagSet from "$components/primitives/controls/TagSet.svelte";
   import { client } from "$lib/client";
   import { sayItFired } from "$lib/firing";
   import { offerable, triggeredBy } from "$lib/templates";
 
   /**
-   * The same classification the collapsed row makes, offered where routing is
-   * decided. It goes through the outbox on its own and **drains independently
-   * of the route**: a route that then fails leaves the tags applied, which is
-   * the honest outcome — the person classified the item, and that was true.
+   * The same classification the row makes, offered where routing is decided.
+   * It goes through the outbox on its own and **drains independently of the
+   * route**: a route that then fails leaves the tags applied, which is the
+   * honest outcome — the person classified the item, and that was true.
    */
   let {
     item,
@@ -47,7 +46,7 @@
   }
 </script>
 
-<Labelled name="tags">
+<div class="flex min-w-0 flex-wrap items-baseline gap-x-[1ch]">
   <TagSet
     {names}
     {offered}
@@ -55,4 +54,4 @@
     onadd={add}
     onremove={(name) => void client.untag(item, name)}
   />
-</Labelled>
+</div>

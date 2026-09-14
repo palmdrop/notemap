@@ -96,14 +96,12 @@
   }
 </script>
 
-<div class="mt-2">
-  {#if lines.length === 0}
-    <div class="text-ink-muted">unrouted</div>
-  {:else}
+{#if lines.length > 0 || said !== ""}
+  <div class="mt-2">
     {#each lines as line (line.href ?? line.said)}
       <div class="flex flex-wrap items-baseline gap-x-4">
         <span class="min-w-0 break-words">
-          <span aria-hidden="true" class="text-accent">→</span>
+          <span aria-hidden="true">→</span>
           {#if line.href === undefined}
             {line.said}
           {:else}
@@ -111,7 +109,7 @@
           {/if}
           <!-- What the person wrote about it, or the one state worth saying. -->
           {#if line.aside !== undefined}
-            <span class="text-ink-muted">· {line.aside}</span>
+            <span>· {line.aside}</span>
           {/if}
         </span>
 
@@ -120,14 +118,14 @@
           <button
             type="button"
             onclick={() => void undo(record)}
-            class="shrink-0 text-ink-muted hover:text-accent">undo</button
+            class="shrink-0 hover:underline">undo</button
           >
         {/if}
       </div>
     {/each}
-  {/if}
 
-  {#if said !== ""}
-    <div role="status" class="mt-1 text-accent">{said}</div>
-  {/if}
-</div>
+    {#if said !== ""}
+      <div role="status" class="mt-1 text-alarm">{said}</div>
+    {/if}
+  </div>
+{/if}

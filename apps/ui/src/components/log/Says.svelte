@@ -24,7 +24,7 @@
 </script>
 
 {#if href === undefined}
-  <span class="border-b border-ink/35">{said}</span>
+  <span class="border-b border-ink">{said}</span>
 {:else}
-  <a {href} class="border-b border-ink/35">{said}</a>
+  <a {href} class="border-b border-ink">{said}</a>
 {/if}
