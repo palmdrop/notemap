@@ -123,11 +123,11 @@ test("drops what one record sent when another is drawn", async () => {
   await client.destinations.load();
 
   const drawn = render(Record, { item: "one", record: "rec" });
-  expect(await screen.findByRole("heading", { name: "rec" })).toBeDefined();
+  expect(await screen.findByText("# rec")).toBeDefined();
 
   // The page component is reused across a change of record.
   await drawn.rerender({ item: "one", record: "rec-2" });
 
-  expect(await screen.findByRole("heading", { name: "rec-2" })).toBeDefined();
-  expect(screen.queryByRole("heading", { name: "rec" })).toBeNull();
+  expect(await screen.findByText("# rec-2")).toBeDefined();
+  expect(screen.queryByText("# rec")).toBeNull();
 });

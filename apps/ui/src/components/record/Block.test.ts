@@ -133,18 +133,47 @@ test("reads as a file: destination, place, what was done, and the template", asy
   }
 });
 
-test("draws front matter as a band of properties, and the rest as the body", async () => {
+/** True to the output: a path in it is the destination's, and rendering it here would break it. */
+test("draws what was sent exactly as it was sent, and the note beneath", async () => {
   await named();
 
   render(Block, { record: KEPT });
 
-  expect(await screen.findByText("design, research")).toBeDefined();
-  expect(screen.getByText("tags")).toBeDefined();
-  expect(screen.getByRole("heading", { name: "a thought" })).toBeDefined();
-  expect(screen.queryByText(/^---/)).toBeNull();
-  expect(screen.queryByText(/# a thought/)).toBeNull();
+  const sent = await screen.findByText(/# a thought/);
+  expect(sent.tagName).toBe("PRE");
+  expect(sent.textContent).toBe(NOTE);
+  expect(screen.queryByRole("heading")).toBeNull();
+  expect(screen.queryByRole("button", { name: "raw" })).toBeNull();
   // The destination's note about what it could not carry is on the record.
   expect(screen.getByText("the two pictures were not carried")).toBeDefined();
+});
+
+test("draws the item's attachments above what was sent, once", async () => {
+  await named();
+
+  render(Block, {
+    record: KEPT,
+    held: anItem("one", {
+      payload: {
+        type: "image",
+        content: { text: "the whiteboard" },
+        metadata: {},
+        assets: [{ slot: "image", asset: "asset-1" }],
+      },
+      assets: [
+        {
+          id: "asset-1",
+          filename: "whiteboard.jpg",
+          mime: "image/jpeg",
+          blob: "sha-256:whatever",
+          bytes: 5,
+        },
+      ],
+    }),
+  });
+
+  await screen.findByText(/# a thought/);
+  expect(document.querySelectorAll("img")).toHaveLength(1);
 });
 
 test("reads what was sent on arrival, once", async () => {
@@ -152,7 +181,7 @@ test("reads what was sent on arrival, once", async () => {
 
   render(Block, { record: KEPT });
 
-  await screen.findByRole("heading", { name: "a thought" });
+  await screen.findByText(/# a thought/);
   expect(
     asked().filter((route) => route === "GET /v1/routing/rec/output"),
   ).toHaveLength(1);
@@ -189,22 +218,16 @@ test("says why what was sent could not be read, and does not ask again on its ow
 
   await fireEvent.click(again);
 
-  expect(
-    await screen.findByRole("heading", { name: "a thought" }),
-  ).toBeDefined();
+  expect(await screen.findByText(/# a thought/)).toBeDefined();
 });
 
-test("keeps the bytes and the arguments behind a press", async () => {
+test("keeps the arguments behind a press", async () => {
   await named();
 
   render(Block, { record: KEPT });
-  await screen.findByRole("heading", { name: "a thought" });
+  await screen.findByText(/# a thought/);
 
-  expect(screen.queryByText(/^---/)).toBeNull();
   expect(screen.queryByText("Directory")).toBeNull();
-
-  await fireEvent.click(screen.getByRole("button", { name: "raw" }));
-  expect(screen.getByText(/id: 'one'/)).toBeDefined();
 
   await fireEvent.click(screen.getByRole("button", { name: "arguments" }));
   expect(await screen.findByText("Directory")).toBeDefined();

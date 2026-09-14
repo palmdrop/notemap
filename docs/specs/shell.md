@@ -7,8 +7,8 @@
 - 2026-09-14 — **The item as a register, and the record as a block.** Phase 5a of
   [shell-redesign](../plans/shell-redesign.md): the item draws its routing records as rows under
   one rule, each a block that reads as the file it became — destination and place as a path, what
-  was done and the template that did it, front matter as properties, the body rendered — with
-  `raw`, `arguments`, `open`, `cancel` and `undo` in its foot; the record's own address is the
+  was done and the template that did it, what was sent exactly as sent, the item's attachments
+  above it — with `arguments`, `open`, `cancel` and `undo` in its foot; the record's own address is the
   same register narrowed to one; notes and outputs are rendered as CommonMark by one renderer;
   `history` on the item leads to the log narrowed to it; `unarchive` is `undiscard`.
 
@@ -1015,21 +1015,23 @@ deleted reads `via a template`. A capability this shell has never heard of is sa
 which is worse than a sentence and better than silence. Nothing says `routing record`, `where it
 landed`, `what was sent`, `its tags did not go` or `the decision`, and no id is drawn anywhere.
 
-**Under the head, what was written, as the destination would show it.** The output is a fetch
-rather than something the record carries, and looking at the record is the asking: the read runs on
-arrival, once, and a read that fails says why and offers `read it`, never retrying on its own. What
-comes back is read as a note: **front matter becomes a band of properties** — key in capitals,
-value beside it — and leaves the body, which is **rendered as CommonMark** through the same thing
-that draws a capture. The item's attachments are drawn above the words, since that is what the
-file looks like; where the assets landed is not on the record and is not drawn. The destination's
-**note** about what it could not carry is on the record and is drawn beneath. A delivery that kept
-no copy says `nothing kept`, in two words, since that is ordinary; a delivery that carried words
-of its own in place of the capture's
+**Under the head, what was written, exactly as it was sent.** The output is a fetch rather than
+something the record carries, and looking at the record is the asking: the read runs on arrival,
+once, and a read that fails says why and offers `read it`, never retrying on its own. What comes
+back is drawn as it is — front matter, asterisks, image paths and all — in the one face,
+pre-wrapped. *Not rendered (2026-09-14, after a first version that was)*: the file is the
+destination's, and a path in it — `![](research/assets/whiteboard.jpg)` — resolves in the vault
+and nowhere here, so rendering it drew a broken picture beside the real one. True to the output is
+the honest reading; the capture itself is rendered where it is a capture, on the queue, the feed
+and the item's own row. **The item's attachments are drawn above the words** as the preview of
+what went with them; where the assets landed is not on the record and is not drawn. The
+destination's **note** about what it could not carry is on the record and is drawn beneath. A
+delivery that kept no copy says `nothing kept`, in two words, since that is ordinary; a delivery
+that carried words of its own in place of the capture's
 ([ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md)) and kept nothing draws those words,
 so what went is still on the page. A pending record's body is one line, `not yet delivered`.
 
-**The foot holds the presses.** `raw` shows the bytes as they were sent, under the rendered body,
-and is offered only once they were read. `arguments` shows what the delivery was given, named
+**The foot holds the presses.** `arguments` shows what the delivery was given, named
 against the capability's own schema where the destination can be described — `Directory` rather
 than `directory` — and by their own keys where it cannot, with anything the record carries that
 the schema does not name drawn all the same; it is offered only where there are any. `open ↗`
@@ -1646,8 +1648,9 @@ routes, and one the browser leaves for.
 
 A **note** renders as CommonMark, collapsed and opened — that is what
 [standards.md](../standards.md#payload-types) says a note is. Its attachments are drawn above it,
-in slot order, each by its own media type. **One renderer draws every note and every output**
-*(2026-09-14; the shell showed its asterisks until then)*: `micromark`, which is CommonMark and
+in slot order, each by its own media type. **One renderer draws every note** *(2026-09-14; the shell
+showed its asterisks until then)* — and no output, which is drawn as sent (`An item has an
+address`): `micromark`, which is CommonMark and
 nothing more. Every element is at the one size; a heading is bold; a list keeps its marks; a code
 span is in the one face. Raw HTML in the source is escaped, never rendered — the words came from a
 capture, a destination or a template and are never the shell's own — and a link is kept only where

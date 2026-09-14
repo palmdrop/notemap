@@ -304,8 +304,11 @@ Decisions made in the drawing, so they are not asked again:
 - **The block** is one component drawn in three places — the item, the record page, the log — and
   reads as a file: head `**Destination** / place`, capability in plain words at the right
   (`created`, `appended`, `created or appended`, `marked processed`) and `via <template>` where a
-  template applied it; a properties band for the output's front matter; the item's attachments
-  above the rendered words; the destination's note where there is one; a foot of `raw` and
+  template applied it; ~~a properties band for the output's front matter; the item's attachments
+  above the rendered words~~ *(2026-09-14, after building it: the output is drawn **as sent**, not
+  rendered — a path in it is the destination's and resolves nowhere here, so a rendered picture
+  broke beside the real one; the item's attachments are drawn above it as the preview)*; the
+  destination's note where there is one; a foot of ~~`raw` and~~
   `arguments` behind a press, `open ↗` where the record carries a URL, `cancel` (alarm) on a
   pending record, `undo` on a by-hand one, `item` only in the log. Nothing says `where it
   landed`, `what was sent`, `its tags did not go`, `the decision` or `routing record`.
@@ -337,10 +340,9 @@ Decisions made in the drawing, so they are not asked again:
       `primitives/text/Prose.svelte` so a capture and an output are drawn by one thing; every
       element at the one size, a heading bold; raw HTML in the source is escaped, not rendered,
       and links follow only `http`/`https` as `lib/link.ts` already rules.
-- [x] **Front matter read.** `readFrontmatter(text)` beside `fixedFrontmatter` in
-      `packages/output-markdown/src/frontmatter.ts`, reading exactly the subset the writer
-      emits — scalars and a string list — into key/value pairs plus the body after the closing
-      `---`, and answering nothing for text that has none. Tested by round trip.
+- [x] ~~**Front matter read.** `readFrontmatter(text)` beside `fixedFrontmatter` in
+      `packages/output-markdown/src/frontmatter.ts`~~ — built, then removed the same day with the
+      rendered output: nothing reads front matter back once the output is drawn as sent.
 - [x] **`record/Block.svelte`.** Takes what a block needs — destination name, capability,
       place and URL, state, when, the applied template's name, the record id, the by-hand note,
       the output's note and whether content was kept — and the held item where a surface has it,
