@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>notemap — log, redrawn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./tokens.css" />
+<style>
+  /* the head: five views as tabs on one rule, the current one bold and boxed on three
+     sides so it sits on the rule; the order control at the right of the same rule */
+  .lhead { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: var(--rule); padding-top: 20px; }
+  .tabs { display: flex; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .tab { padding: 0 14px; height: 32px; line-height: 32px; white-space: nowrap; }
+  .tab:first-child { padding-left: 0; }
+  .tab.on { font-weight: var(--bold); border: var(--rule); border-bottom: 1px solid var(--ground); margin-bottom: -1px; padding: 0 14px; }
+  .lhead .order { flex-shrink: 0; padding: 0 0 5px 14px; white-space: nowrap; }
+
+  /* history: the log narrowed to one item, said above the list */
+  .hist { display: none; padding: 20px 0 0; }
+  .hist .k { font-weight: var(--bold); text-transform: uppercase; letter-spacing: var(--track-caps); }
+  body.history .hist { display: block; }
+  body.history .lhead { padding-top: 8px; }
+
+  /* register: the stamp and the kind in the rail, the words and the fact in the body,
+     one vertical rule between them as on the queue and the feed */
+  .list { display: grid; grid-template-columns: var(--rail) 1fr; }
+  .row { display: contents; }
+  .rail { border-right: var(--rule); padding: 12px 16px 12px 0; }
+  .body { padding: 12px 0 12px var(--gutter); min-width: 0; }
+  .stamp { display: flex; gap: 1ch; white-space: nowrap; }
+  .kind { text-transform: uppercase; letter-spacing: var(--track-caps); }
+  .line { display: flex; justify-content: space-between; gap: 0 3ch; }
+  .line .of { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .line .fact { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 22rem; }
+  .trig { font-variant-caps: all-small-caps; letter-spacing: 0.04em; font-weight: var(--bold); }
+  .gap .rail, .gap .body { padding-top: calc(12px + var(--gap-time)); }
+  .blk { margin-top: 10px; }
+  .load { padding: 16px 0 0 calc(var(--rail) + var(--gutter)); }
+
+  /* the record block, as on the item */
+  .rec { border: var(--rule); max-width: var(--measure-read); }
+  .rec .rh { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 2ch; padding: 6px 12px; border-bottom: var(--rule); }
+  .rec .path { display: flex; flex-wrap: wrap; gap: 0 0.6ch; min-width: 0; }
+  .rec .path .dest { font-weight: var(--bold); }
+  .rec .how { display: flex; gap: 2ch; white-space: nowrap; }
+  .rec .out { padding: 10px 12px; }
+  .rec .out pre { margin: 0; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .rec .said { padding: 10px 12px; }
+  .rec .rf { display: flex; justify-content: space-between; border-top: var(--rule); padding: 0 12px; height: 32px; line-height: 32px; }
+  .rec .rf .more { display: flex; gap: 20px; }
+
+  /* #routing: the view most people read; #history: one item's */
+  body.routing .row.not-routing { display: none; }
+  body.routing .t-all, body.history .t-all, body:not(.routing) .t-routing { font-weight: 400; border: 0; margin-bottom: 0; }
+  body.routing .t-routing { font-weight: var(--bold); border: var(--rule); border-bottom: 1px solid var(--ground); margin-bottom: -1px; }
+  body.history .row.not-history { display: none; }
+  body.history .t-all { font-weight: var(--bold); border: var(--rule); border-bottom: 1px solid var(--ground); margin-bottom: -1px; }
+
+  @media (width < 44rem) {
+    .lhead { padding-top: 14px; }
+    .tab, .tab.on { padding: 0 10px; }
+    .list { grid-template-columns: var(--rail-narrow) 1fr; }
+    .rail { padding-right: 10px; }
+    .body { padding-left: 14px; }
+    .stamp { flex-direction: column; gap: 0; }
+    .line { flex-direction: column; }
+    .line .of { white-space: normal; }
+    .line .fact { max-width: none; }
+    .load { padding-left: calc(var(--rail-narrow) + 14px); }
+    .rec .rh { padding: 6px 10px; }
+    .rec .how { white-space: normal; flex-wrap: wrap; gap: 0 1.5ch; }
+    .rec .rf { padding: 0 10px; }
+    .rec .rf .more { gap: 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="bar">
+    <nav class="nav"><a href="#">queue</a><a href="#">feed</a><a class="on" href="#">log</a><a href="#">settings</a></nav>
+    <span class="glyph" title="reachable">●</span>
+  </div>
+
+  <div class="hist"><span class="k">history</span> <a href="#">the reading list is a graveyard, not a plan</a> · <a href="#">all of the log</a></div>
+
+  <div class="lhead">
+    <div class="tabs"><a class="tab on t-all" href="#">everything</a><a class="tab t-routing" href="#routing">routing</a><a class="tab" href="#">captures</a><a class="tab" href="#">classification</a><a class="tab" href="#">pool</a></div>
+    <span class="order num">newest first ▾</span>
+  </div>
+
+  <div class="list">
+    <div class="row">
+      <div class="rail"><div class="stamp num"><span>2026-09-14</span><span>11:23</span></div><div class="kind">routed</div></div>
+      <div class="body">
+        <div class="line"><a class="of" href="#">the reading list is a graveyard, not a plan</a></div>
+        <div class="blk">
+          <div class="rec">
+            <div class="rh"><div class="path"><span class="dest">Obsidian vault</span><span>/</span><span>research/2026-08-01.md</span></div><div class="how"><span>created</span><span>via Research</span></div></div>
+            <div class="out"><pre>---
+captured_at: '2026-08-01T09:01:00.000Z'
+tags:
+  - 'research'
+---
+the reading list is a graveyard, not a plan</pre></div>
+            <div class="rf"><div class="more"><a href="#">arguments</a><a href="#">item</a></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="rail"><div class="stamp num"><span>2026-09-14</span><span>11:23</span></div><div class="kind">template fired</div></div>
+      <div class="body"><div class="line"><a class="of" href="#">the reading list is a graveyard, not a plan</a><span class="fact">Research</span></div></div>
+    </div>
+    <div class="row not-routing">
+      <div class="rail"><div class="stamp num"><span>2026-09-14</span><span>11:23</span></div><div class="kind">tagged</div></div>
+      <div class="body"><div class="line"><a class="of" href="#">the reading list is a graveyard, not a plan</a><span class="fact trig">research</span></div></div>
+    </div>
+    <div class="row not-routing not-history">
+      <div class="rail"><div class="stamp num"><span>2026-09-14</span><span>11:23</span></div><div class="kind">tagged</div></div>
+      <div class="body"><div class="line"><a class="of" href="#">Städelschule index: rules only where a region changes. Year column, curator column, then the entries.</a><span class="fact">design</span></div></div>
+    </div>
+    <div class="row not-history">
+      <div class="rail"><div class="stamp num"><span>2026-09-14</span><span>11:22</span></div><div class="kind alarm">delivery failed</div></div>
+      <div class="body">
+        <div class="line"><a class="of" href="#">the whiteboard, before anyone rubbed it out</a><span class="fact alarm">unreachable</span></div>
+        <div class="blk">
+          <div class="rec">
+            <div class="rh"><div class="path"><span class="dest">are.na</span><span>/</span><span>notemap — references</span></div><div class="how"><span>appended</span></div></div>
+            <div class="said alarm">unreachable — connect ETIMEDOUT api.are.na:443. The pool tries again.</div>
+            <div class="rf"><div class="more"><a href="#">arguments</a><a href="#">item</a></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row not-routing not-history">
+      <div class="rail"><div class="stamp num"><span>2026-09-14</span><span>11:22</span></div><div class="kind">captured</div></div>
+      <div class="body"><div class="line"><a class="of" href="#">the whiteboard, before anyone rubbed it out</a></div></div>
+    </div>
+    <div class="row not-routing not-history">
+      <div class="rail"><div class="stamp num"><span>2026-09-14</span><span>11:22</span></div><div class="kind">discarded</div></div>
+      <div class="body"><div class="line"><a class="of" href="#">a note nobody processes is a note nobody wrote</a><span class="fact">read it, kept nothing</span></div></div>
+    </div>
+    <div class="row not-routing not-history">
+      <div class="rail"><div class="stamp num"><span>2026-09-14</span><span>11:22</span></div><div class="kind">captured</div></div>
+      <div class="body"><div class="line"><a class="of" href="#">a note nobody processes is a note nobody wrote</a></div></div>
+    </div>
+    <div class="row gap not-history">
+      <div class="rail"><div class="stamp num"><span>2026-09-13</span><span>18:40</span></div><div class="kind">routed</div></div>
+      <div class="body">
+        <div class="line"><a class="of" href="#">buy the good coffee, the cheap one is a false economy</a></div>
+        <div class="blk">
+          <div class="rec">
+            <div class="rh"><div class="path"><span class="dest">by hand</span></div><div class="how"><span>marked processed</span></div></div>
+            <div class="said">wrote it on the shopping list</div>
+            <div class="rf"><div class="more"><a href="#">item</a></div><a href="#">undo</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row gap not-routing" style="display:none">
+      <div class="rail"><div class="stamp num"><span>2026-08-01</span><span>11:01</span></div><div class="kind">captured</div></div>
+      <div class="body"><div class="line"><a class="of" href="#">the reading list is a graveyard, not a plan</a></div></div>
+    </div>
+  </div>
+
+  <div class="load"><a href="#">load more</a></div>
+</div>
+<script>
+  // Two of the views, and the log narrowed to one item; the app carries these on the URL.
+  const show = () => {
+    document.body.classList.toggle("routing", location.hash === "#routing");
+    document.body.classList.toggle("history", location.hash === "#history");
+    document.querySelector(".row[style]").style.display = location.hash === "#history" ? "contents" : "none";
+  };
+  addEventListener("hashchange", show); show();
+</script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>notemap — item, redrawn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./tokens.css" />
+<style>
+  /* register: the capture is the first row, then a rule, then one row per record */
+  .list { display: grid; grid-template-columns: var(--rail) 1fr; margin-top: 8px; }
+  .row { display: contents; }
+  .rail { border-right: var(--rule); padding: 12px 16px 12px 0; }
+  .body { padding: 12px 0 12px var(--gutter); min-width: 0; }
+  .stamp { display: flex; gap: 1ch; white-space: nowrap; }
+  .rail a .stamp { display: flex; }
+  .tags { display: flex; flex-wrap: wrap; gap: 0 1ch; }
+  .trig { font-variant-caps: all-small-caps; letter-spacing: 0.04em; font-weight: var(--bold); }
+  .prose { max-width: var(--measure-prose); }
+  .prose p { margin: 0; }
+  .prose p + p { margin-top: var(--leading); }
+  .picture { border: var(--rule); height: 160px; max-width: 320px; background: repeating-linear-gradient(135deg, transparent 0 9px, rgba(0,0,0,0.08) 9px 10px); display: flex; align-items: flex-end; }
+  .picture span { font: 12px ui-monospace, Menlo, monospace; padding: 4px 8px; background: var(--ground); }
+  .picture.small { height: 120px; max-width: 240px; margin-bottom: 8px; }
+
+  /* the item's actions: a row of words under the capture; history is the log narrowed to it */
+  .iacts { display: flex; justify-content: space-between; gap: 20px; margin-top: 14px; }
+  .iacts div { display: flex; gap: 20px; }
+
+  /* the one rule between regions: the capture above, what became of it below */
+  .rule { grid-column: 1 / -1; border-top: var(--rule); }
+  .state { margin-top: 8px; }
+
+  /* the record block: a ruled frame reading as a file. head = destination / place, with
+     what was done and the template at the right; a properties band for the front matter;
+     the attachments and the words, rendered; the destination's note; a foot of presses */
+  .rec { border: var(--rule); max-width: var(--measure-read); }
+  .rec .rh { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 2ch; padding: 6px 12px; border-bottom: var(--rule); }
+  .rec .path { display: flex; flex-wrap: wrap; gap: 0 0.6ch; min-width: 0; }
+  .rec .path .dest { font-weight: var(--bold); }
+  .rec .how { display: flex; gap: 2ch; white-space: nowrap; }
+  .rec .out { padding: 10px 12px; }
+  /* what was sent, as sent: a path in it is the destination's and resolves nowhere here */
+  .rec .out pre { margin: 0; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .rec .said { padding: 10px 12px; }
+  .rec .rf { display: flex; justify-content: space-between; border-top: var(--rule); padding: 0 12px; height: 32px; line-height: 32px; }
+  .rec .rf .more { display: flex; gap: 20px; }
+
+  /* #record: the record's own address is the same register with one record row */
+  body.one .row.other { display: none; }
+
+  @media (width < 44rem) {
+    .list { grid-template-columns: var(--rail-narrow) 1fr; }
+    .rail { padding-right: 10px; }
+    .body { padding-left: 14px; }
+    .stamp { flex-direction: column; gap: 0; }
+    .tags { flex-direction: column; gap: 0; }
+    .iacts, .iacts div { gap: 14px; }
+    .rec .rh { padding: 6px 10px; }
+    .rec .how { white-space: normal; flex-wrap: wrap; gap: 0 1.5ch; }
+    .rec .rf { padding: 0 10px; }
+    .rec .rf .more { gap: 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="bar">
+    <nav class="nav"><a href="#">queue</a><a href="#">feed</a><a href="#">log</a><a href="#">settings</a></nav>
+    <span class="glyph" title="reachable">●</span>
+  </div>
+
+  <div class="list">
+    <div class="row">
+      <div class="rail"><div class="stamp num"><span>2026-08-01</span><span>11:07</span></div><div class="tags"><span>design</span><span class="trig">research</span><a href="#" title="add a tag">+</a></div><div>routed</div></div>
+      <div class="body">
+        <div class="picture"><span>picture · 1 of 1</span></div>
+        <div class="prose"><p>The whiteboard, before anyone rubbed it out. Three columns: what the mirror carries, what a rebuild needs, what nobody has asked for yet.</p><p>The middle column is the interesting one. A rebuild has no destination to ask, so whatever it needs has to be in the record already.</p></div>
+        <div class="iacts"><div><a class="b" href="#">process</a><a href="#">manual</a><a class="alarm" href="#">discard</a></div><div><a href="#">edit</a><a href="#">copy</a><a href="#">history</a></div></div>
+      </div>
+    </div>
+
+    <div class="rule"></div>
+
+    <div class="row">
+      <div class="rail"><a href="#record"><div class="stamp num"><span>2026-09-14</span><span>11:23</span></div></a><div class="state">delivered</div></div>
+      <div class="body">
+        <div class="rec">
+          <div class="rh"><div class="path"><span class="dest">Obsidian vault</span><span>/</span><span>research/2026-08-01.md</span></div><div class="how"><span>created</span><span>via Research</span></div></div>
+          <div class="out"><div class="picture small"><span>whiteboard.jpg</span></div><pre>---
+captured_at: '2026-08-01T09:07:00.000Z'
+tags:
+  - 'design'
+  - 'research'
+---
+# The whiteboard
+
+![whiteboard](research/assets/whiteboard.jpg)
+
+The whiteboard, before anyone rubbed it out. Three columns: what the mirror carries, what a rebuild needs, what nobody has asked for yet.
+
+The middle column is the interesting one. A rebuild has no destination to ask, so whatever it needs has to be in the record already.</pre></div>
+          <div class="said">The picture was not carried: this destination takes text alone.</div>
+          <div class="rf"><div class="more"><a href="#">arguments</a></div><a href="#">open ↗</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row other">
+      <div class="rail"><a href="#record"><div class="stamp num"><span>2026-09-14</span><span>11:31</span></div></a><div class="state">pending</div></div>
+      <div class="body">
+        <div class="rec">
+          <div class="rh"><div class="path"><span class="dest">are.na</span><span>/</span><span>notemap — references</span></div><div class="how"><span>appended</span></div></div>
+          <div class="said">not yet delivered</div>
+          <div class="rf"><div class="more"><a href="#">arguments</a></div><a class="alarm" href="#">cancel</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  // The record's own address: the same register, narrowed to the one record.
+  const show = () => document.body.classList.toggle("one", location.hash === "#record");
+  addEventListener("hashchange", show); show();
+</script>
+</body>
+</html>

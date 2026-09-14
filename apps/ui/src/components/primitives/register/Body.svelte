@@ -7,6 +7,7 @@
     selected = false,
     onpick,
     onreach,
+    gap = false,
     children,
   }: {
     /** Draws the head and the right edge of the box a selected row is. */
@@ -14,6 +15,8 @@
     onpick?: () => void;
     /** Somewhere to go rather than something to do. */
     onreach?: () => void;
+    /** More than half a day passed before this row: the index's gap, opened here. */
+    gap?: boolean;
     /** Absent where the row is all rail: the cell still holds the column open. */
     children?: Snippet;
   } = $props();
@@ -25,8 +28,9 @@
   onclick={onpick === undefined ? undefined : pickable(onpick)}
   ondblclick={onreach === undefined ? undefined : doubled(onreach)}
   data-selected={selected ? "" : undefined}
-  class="col-start-2 min-w-0 py-3 pl-gutter max-narrow:pl-3.5
+  class="col-start-2 min-w-0 pb-3 pl-gutter max-narrow:pl-3.5
     {onpick === undefined ? '' : 'cursor-pointer'}
+    {gap ? 'pt-[calc(--spacing(3)+var(--spacing-gap-time))]' : 'pt-3'}
     {selected
     ? '-mr-3 border-t border-r border-ink pr-3 max-narrow:-mr-2 max-narrow:pr-2'
     : ''}"

@@ -75,3 +75,119 @@ export function shortened(id: string): string {
     ? id
     : `${id.slice(0, HEAD)}…${id.slice(-TAIL)}`;
 }
+
+/**
+ * The one fact a row carries beside the words it is about. `trigger` is a
+ * tag drawn as the trigger it is; `alarm` is the refusal's own name.
+ */
+export type Fact = {
+  readonly said: string;
+  readonly trigger?: boolean;
+  readonly alarm?: boolean;
+};
+
+/** What a fact needs of the rest of the shell: an id read as a name. */
+export type Naming = {
+  readonly template: (id: string) => string;
+  readonly destination: (id: string) => string;
+};
+
+function text(value: unknown): string | undefined {
+  return typeof value === "string" && value !== "" ? value : undefined;
+}
+
+function code(detail: Record<string, unknown>): string | undefined {
+  const failure = detail["failure"];
+  return isObject(failure) ? text(failure["code"]) : undefined;
+}
+
+function alarmed(detail: Record<string, unknown>): Fact | undefined {
+  const said = code(detail);
+  return said === undefined ? undefined : { said, alarm: true };
+}
+
+function tag(detail: Record<string, unknown>): Fact | undefined {
+  const said = text(detail["tag"]);
+  return said === undefined ? undefined : { said, trigger: true };
+}
+
+function named(
+  detail: Record<string, unknown>,
+  call: (id: string) => string,
+  key: string,
+): Fact | undefined {
+  const said = text(detail["name"]);
+  if (said !== undefined) return { said };
+  const id = text(detail[key]);
+  return id === undefined ? undefined : { said: call(id) };
+}
+
+/**
+ * The fact each kind is worth, and only that: a tag, a template's name, a
+ * reason, the refusal's code. An id is never a fact — where the detail carries
+ * one, the name it stands for is said instead. A kind with no entry has its
+ * detail flattened as before, so a kind nobody has written yet still reads.
+ */
+const FACTS: Readonly<
+  Record<
+    string,
+    (detail: Record<string, unknown>, naming: Naming) => Fact | undefined
+  >
+> = {
+  routed: () => undefined,
+  "template-fired": (detail, naming) =>
+    named(detail, naming.template, "template"),
+  "delivery-failed": alarmed,
+  "delivery-cancelled": tag,
+  captured: () => undefined,
+  amended: () => undefined,
+  revised: () => undefined,
+  tagged: tag,
+  untagged: tag,
+  archived: (detail) => {
+    const said = text(detail["reason"]);
+    return said === undefined ? undefined : { said };
+  },
+  unarchived: () => undefined,
+  "destination-created": (detail, naming) =>
+    named(detail, naming.destination, "destination"),
+  "destination-renamed": (detail, naming) =>
+    named(detail, naming.destination, "destination"),
+  "destination-reconfigured": (detail, naming) =>
+    named(detail, naming.destination, "destination"),
+  "destination-retired": (detail, naming) =>
+    named(detail, naming.destination, "destination"),
+  "destination-unretired": (detail, naming) =>
+    named(detail, naming.destination, "destination"),
+  "destination-deleted": (detail, naming) =>
+    named(detail, naming.destination, "destination"),
+  "template-created": (detail, naming) =>
+    named(detail, naming.template, "template"),
+  "template-edited": (detail, naming) =>
+    named(detail, naming.template, "template"),
+  "template-deleted": (detail, naming) =>
+    named(detail, naming.template, "template"),
+  "work-failed": alarmed,
+  "work-abandoned": alarmed,
+  "assets-released": (detail) => {
+    const assets = detail["assets"];
+    return Array.isArray(assets)
+      ? { said: `${String(assets.length)} released` }
+      : undefined;
+  },
+  purged: () => undefined,
+  "actions-cleared": () => undefined,
+};
+
+/** Whether the shell has a reading for this kind, or falls back to the flattened detail. */
+export function known(kind: string): boolean {
+  return kind in FACTS;
+}
+
+export function factOf(
+  kind: string,
+  detail: Record<string, unknown>,
+  naming: Naming,
+): Fact | undefined {
+  return FACTS[kind]?.(detail, naming);
+}

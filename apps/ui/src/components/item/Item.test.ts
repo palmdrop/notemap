@@ -239,20 +239,39 @@ test("names the channel a row's routing line went to", async () => {
 
   render(Item, { id: "routed" });
 
-  await vi.waitFor(() =>
-    expect(screen.getByRole("link", { name: /Reading/ })).toBeTruthy(),
-  );
+  expect(await screen.findByText("Reading")).toBeDefined();
   expect(screen.queryByText(/12345/)).toBeNull();
 });
 
-test("gives every record it draws the way into it", async () => {
-  pool(routed([RECORD]));
+/** The capture, a rule, then each record as a row: its stamp is the way into it. */
+test("draws each record as a row under a rule, with the way into it", async () => {
+  pool(routed([RECORD, { ...RECORD, id: "rec-2", pointer: "drafts/two.md" }]));
 
-  render(Item, { id: "routed" });
+  const { container } = render(Item, { id: "routed" });
 
-  // One line per record, which is what the opened row draws too.
-  const way = await screen.findByRole("link", { name: /drafts/ });
-  expect(way.getAttribute("href")).toBe("/items/routed/records/rec");
+  await screen.findByText("drafts/two.md");
+  expect(screen.getByText("drafts")).toBeDefined();
+  expect(container.querySelectorAll(".border-t.col-span-full")).toHaveLength(1);
+
+  const ways = screen
+    .getAllByRole("link")
+    .map((way) => way.getAttribute("href"))
+    .filter((href) => href?.startsWith("/items/routed/records/"));
+  expect(ways).toEqual([
+    "/items/routed/records/rec",
+    "/items/routed/records/rec-2",
+  ]);
+  // Delivered is said on a row of its own.
+  expect(screen.getAllByText("delivered")).toHaveLength(2);
+});
+
+test("draws no rule under an item nothing became of", async () => {
+  pool(holding(saying("plain", "nothing was routed")));
+
+  const { container } = render(Item, { id: "plain" });
+
+  await screen.findByText("nothing was routed");
+  expect(container.querySelector(".border-t.col-span-full")).toBeNull();
 });
 
 test("says the records are out of reach while the item still draws", async () => {
@@ -266,7 +285,7 @@ test("says the records are out of reach while the item still draws", async () =>
   // copy, and nothing caches a record at all.
   expect(await screen.findByText("from cache")).toBeDefined();
   expect(screen.getByText(NO_RECORDS_OFFLINE)).toBeDefined();
-  expect(screen.queryByRole("link", { name: /drafts/ })).toBeNull();
+  expect(screen.queryByText("drafts")).toBeNull();
 });
 
 test("says the pool is out of reach once, and not in the client's own words", async () => {
@@ -298,15 +317,15 @@ test("drops a record when the address moves to another item", async () => {
   });
 
   const { rerender } = render(Item, { id: "routed" });
-  await screen.findByRole("link", { name: /drafts/ });
+  await screen.findByText("drafts");
 
   await rerender({ id: "plain" });
   await screen.findByText("nothing was routed");
 
-  // One item's history under another item's stamp, with a link proving whose
-  // it was: the surface is reused across a change of address.
+  // One item's records under another item's stamp: the surface is reused
+  // across a change of address.
   await vi.waitFor(() => {
-    expect(screen.queryByRole("link", { name: /drafts/ })).toBeNull();
+    expect(screen.queryByText("drafts")).toBeNull();
   });
   // Nothing routed is nothing said: the absence of a line is the word.
   expect(screen.queryByText("unrouted")).toBeNull();
@@ -479,7 +498,8 @@ test("offers no undo on a record the pool delivered", async () => {
   pool(routed([RECORD]));
 
   render(Item, { id: "routed" });
-  await screen.findByRole("link", { name: /drafts/ });
+  await screen.findByText("drafts");
 
   expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
 });

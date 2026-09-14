@@ -6,15 +6,23 @@ import Figure from "./Figure.svelte";
 import Prose from "./Prose.svelte";
 import ClampFixture from "./Clamp.fixture.svelte";
 
-test("breaks what a person wrote into paragraphs, and changes not a character", () => {
+test("draws what a person wrote as CommonMark", () => {
   render(Prose, { text: "# a heading\n\nand *stars* kept\n\n\nthird" });
 
+  expect(screen.getByRole("heading", { name: "a heading" })).toBeDefined();
+  expect(screen.getByText("stars").tagName).toBe("EM");
   const written = screen.getAllByText(/./, { selector: "p" });
   expect(written.map((each) => each.textContent?.trim())).toEqual([
-    "# a heading",
-    "and *stars* kept",
+    "and stars kept",
     "third",
   ]);
+});
+
+test("escapes what looks like HTML rather than drawing it", () => {
+  render(Prose, { text: "<b>not bold</b>" });
+
+  expect(screen.getByText("<b>not bold</b>")).toBeDefined();
+  expect(document.querySelector("b")).toBeNull();
 });
 
 test("says how much more there is, and shows it when asked", async () => {

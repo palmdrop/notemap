@@ -206,7 +206,13 @@ _Avoid_: author, actor, user, system
 **Action**:
 One entry in the append-only log of everything that changed state — what happened, when, by
 which agent, to what. Read by a human tracing something; pool state is never derived from it.
-_Avoid_: event, audit entry, history
+_Avoid_: event, audit entry
+
+**History**:
+The action log narrowed to one item: everything that happened to it, in order. The shell's word
+for the way there from the item; the log itself is still the log, and one entry is still an
+action.
+_Avoid_: only this, timeline, activity
 
 **Job**:
 One unit of claimable work core holds but never runs — an enrichment to perform, a mirror record
@@ -382,10 +388,11 @@ _Avoid_: recent, history, favourite, suggestion
 
 **Archive**:
 To hide an item from the queue without deleting it. Presented in the UI as **discard**, the word
-for meaning "this is noise"; the item stays in the feed and stays processable. The word is spent
+for meaning "this is noise"; the item stays in the feed and stays processable. Taking it back is
+**undiscard** in the UI, and `unarchive` on the wire and in the log's kinds. The word is spent
 here rather than on **purge**, which is what a reader would otherwise expect it to mean: purge is
 the irreversible one and has no UI, so it will want a word of its own when it gets one.
-_Avoid_: delete, dismiss, trash
+_Avoid_: delete, dismiss, trash, unarchive (in the UI)
 
 **Purge**:
 To irreversibly remove one item, its assets and its enrichment. Revisions made from it are items in

@@ -8,9 +8,9 @@
  * to be.
  */
 const DID: Record<string, string> = {
-  create: "Created",
-  append: "Appended",
-  "create-or-append": "Created or appended",
+  create: "created",
+  append: "appended",
+  "create-or-append": "created or appended",
 };
 
 export function didWhat(capability: string): string {
