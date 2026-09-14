@@ -4,6 +4,14 @@
 **Last updated**: 2026-09-14
 **Shipped**:
 
+- 2026-09-14 — **The item as a register, and the record as a block.** Phase 5a of
+  [shell-redesign](../plans/shell-redesign.md): the item draws its routing records as rows under
+  one rule, each a block that reads as the file it became — destination and place as a path, what
+  was done and the template that did it, front matter as properties, the body rendered — with
+  `raw`, `arguments`, `open`, `cancel` and `undo` in its foot; the record's own address is the
+  same register narrowed to one; notes and outputs are rendered as CommonMark by one renderer;
+  `history` on the item leads to the log narrowed to it; `unarchive` is `undiscard`.
+
 - 2026-09-14 — **The first version, looked at.** After the review of
   [shell-redesign](../plans/shell-redesign.md): the page narrows to 56rem and the process surface
   alone keeps 72rem; paragraphs are set apart by a blank line; the selected row's foot is ruled
@@ -955,10 +963,14 @@ of its own — it is one entity rather than a list with an end to start from. Th
 remember theirs while they are drawn and stop while they are not, so leaving one to read an item
 and coming back reads the same order at the same place.
 
-**The actions are the row's**: process, copy, edit, and tagging, which is on every row
-in this shell. A surface that could only be read would be the one place a tag cannot be added. The
-overlap with the opened row is real and is being watched rather than resolved; nothing that fits
-on a row has moved off it.
+**The actions are the row's**: process, manual, discard, copy, edit, and tagging, which is on
+every row in this shell. A surface that could only be read would be the one place a tag cannot be
+added. The overlap with the opened row is real and is being watched rather than resolved; nothing
+that fits on a row has moved off it. One thing is the item's alone: **`history`**, where the row
+has `open` — the log narrowed to this item, since a person who has opened an item and wants to
+know what became of it has the register of records in front of them and the log's account one
+press away. A discarded item offers `undiscard` *(2026-09-14; the word was `unarchive`, the only
+place the archive said its own name)*.
 
 **It says what it was drawn from, and it is the only surface that does.** Every other one says
 nothing (above), because the chrome and the row already say it twice and a third sentence over
@@ -976,68 +988,60 @@ says out of reach as out of reach, muted and offering nothing, while the item be
 drawing from whatever the client holds — one surface, two answers about freshness, which is what
 the three conditions are for.
 
-**A record is drawn in full**: what the delivery did, the destination by name and the place inside
-it beside it, when the decision was made, and the output. *The arguments are not drawn at all
-(2026-09-14; they were behind `the decision`)*: a field name and a pattern expanded belong to
-somebody working out **why** it went there, and nobody opens a record for that. The rail's facts
-are `destination`, `place`, `item` — the last a way to the capture, `this item`, never its words,
-which the output already carries. The body is headed `routing record` and carries `output`. The
-**state** is there
-only where it is not `delivered` *(amended 2026-09-04)*, on the same reasoning as the row's line. Marking
-processed is routing whose destination is the person, so it reads as one, with its note beneath the
-place — and nothing at all where there is no note, a heading over `none` being a row spent saying
-that somebody left a field empty. The place says **done by hand** there rather than that a
-destination named nowhere to look: nothing was asked of anything, so nothing declined to answer.
+**The item is a register of what became of it** *(2026-09-14, after
+[shell-redesign](../plans/shell-redesign.md) phase 5; until then the records were lines in the
+rail and a record was a page of facts)*. The capture is the first row — stamp, state word and tags
+in the rail, the payload and the actions in the body. Then one rule across both columns, the one
+rule the surface has, and under it **one row per routing record**: the record's own stamp and its
+state in the rail, and the record itself, as a block, in the body. The state is said on every
+record row, `delivered` included: the rule that a state is said only where it is not that was a
+rule for a summary line, and a row of its own is not a summary. The record's stamp is the way into
+its own address, `/items/{id}/records/{recordId}`, which is the same register narrowed to that one
+record; on it the stamp goes nowhere, the address bar already saying which. A record the item
+does not have is said plainly there, and is not a failure. Records out of reach, or refused, are
+said in the first record row's place, under the rule; nothing about the records is said at all
+where the item was never routed, and the rule is not drawn.
 
-**The place leads** *(amended 2026-09-09; the arguments led and the pointer sat under them; on
-2026-09-14 the arguments went altogether)*. Reading a record is almost always asking *where did
-this go, and what went* — a place to open and the bytes that were sent — so those two are the
-page. The record block that draws the same thing inline on the item and in the log is phase 5 of
-[shell-redesign](../plans/shell-redesign.md).
+**A record reads as the file it became.** The block is a ruled frame whose head is the
+destination's name, bold, then `/`, then the place inside it — the pointer the destination handed
+back, or failing that the place the decision named, with a handle read as the name it stands for
+where anything has learned one. The place is a link where the record carries a URL and text
+everywhere else: the shell never guesses whether a string is one, and follows only `http` and
+`https`. At the head's right, **what was done** in plain words — `created`, `appended`, `created or
+appended` for the one that is both until the adapter reaches the vault
+([ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md)), `marked processed` —
+and `via <template>` where a template applied it, by its name and never its id; a template since
+deleted reads `via a template`. A capability this shell has never heard of is said by its name,
+which is worse than a sentence and better than silence. Nothing says `routing record`, `where it
+landed`, `what was sent`, `its tags did not go` or `the decision`, and no id is drawn anywhere.
 
-**What it did is said, not the capability that did it.** A capability name is what a destination
-advertises and what a rule is written against ([CONTEXT.md](../../CONTEXT.md)), and a person
-reading one record wants what happened: `Created a note`, `Appended to a note`, `Created or
-appended to a note` for the one that is both until the adapter reaches the vault
-([ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md)). The word is the
-shell's, since nothing on the wire carries a readable one; a capability this shell has never heard
-of is said by its name, which is worse than a sentence and better than silence. It is not labelled
-`action`, that being an entry in the pool's log and a word the glossary tells a capability not to
-borrow. The **arguments are drawn against the capability's own schema** where the
-destination can be described, so a person reads `Directory` rather than `directory`; where it
-cannot be described they are drawn by their own keys, which is the honest fallback and not a
-failure. Anything the record carries that the schema does not name is drawn all the same: the
-record is what happened and the schema is only what is offered now.
+**Under the head, what was written, as the destination would show it.** The output is a fetch
+rather than something the record carries, and looking at the record is the asking: the read runs on
+arrival, once, and a read that fails says why and offers `read it`, never retrying on its own. What
+comes back is read as a note: **front matter becomes a band of properties** — key in capitals,
+value beside it — and leaves the body, which is **rendered as CommonMark** through the same thing
+that draws a capture. The item's attachments are drawn above the words, since that is what the
+file looks like; where the assets landed is not on the record and is not drawn. The destination's
+**note** about what it could not carry is on the record and is drawn beneath. A delivery that kept
+no copy says `nothing kept`, in two words, since that is ordinary; a delivery that carried words
+of its own in place of the capture's
+([ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md)) and kept nothing draws those words,
+so what went is still on the page. A pending record's body is one line, `not yet delivered`.
 
-The **pointer is a link where the record carries a URL**, and text everywhere else *(amended
-2026-09-04)*: the shell never guesses whether a string is one, and it follows only `http` and
-`https` — a `javascript:` URL in an `href` is script on this origin, and the string came from an
-adapter rather than from a person. Neither kind that writes files offers one, so today the pointer
-is always text; the field is there for the kind that has somewhere to point.
+**The foot holds the presses.** `raw` shows the bytes as they were sent, under the rendered body,
+and is offered only once they were read. `arguments` shows what the delivery was given, named
+against the capability's own schema where the destination can be described — `Directory` rather
+than `directory` — and by their own keys where it cannot, with anything the record carries that
+the schema does not name drawn all the same; it is offered only where there are any. `open ↗`
+follows the record's URL where it carries one. On the right, `cancel`, in alarm, on a pending
+record — a reservation whose delivery has not landed is the person's to take back — and `undo` on
+a decision made by hand, which is the same call; both say so in the corner and the surface reads
+its records again. In the log alone the foot also offers `item`, the way to the capture; on the
+item's own surfaces the capture is the row above.
 
-**What was sent is drawn where the pointer is** *(added 2026-09-04)*. The destination's **note**
-about what it could not carry is on the record and is drawn at once, because it is the half a
-person needs to know a conversion was lossy at all. The **output** is a fetch rather than something
-the record carries — it may be long, and a page of records would otherwise drag every one of them
-along — but **opening a record is the asking**: whoever came to this address came to see what was
-sent, and a press between them and it is a step that answers nothing. So the fetch runs on arrival
-and nothing waits on a button. What that costs is one request per record opened, which is the
-narrowest place to pay it: nothing prefetches, and a record nobody opens is never read.
-
-**The words a delivery carried are drawn above what was sent** *(added 2026-09-10,
-[ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md))*, and only where it carried its own:
-a record whose delivery said what the item says draws no such block, on the record's own terms —
-absent content means the capture's. Where it is there, a line under it says the delivery carried
-those words rather than the item's and that the item was not changed. The item's link on the rail
-still says what the item says **now**, which is the point of drawing both: what went is the
-question a record is opened with, and a capture edited since would otherwise be the only answer on
-the page.
-
-A read that fails says why and offers to go again, and **is not retried on its own** — a blob that
-is gone stays gone, and a surface that kept asking would be a loop nobody asked for. A record whose
-delivery kept no copy says so plainly and asks for nothing: that is ordinary, and a destination
-posting to an API has nothing meaningful to keep. It is the component the composer's preview draws,
-because a preview and an output are one shape and reading them is one act.
+**Marking processed is routing whose destination is the person**, and reads as one: the head says
+`by hand` and `marked processed`, the note the person wrote is the body, and nothing at all is
+drawn where there is none.
 
 ### Actions
 
@@ -1641,8 +1645,16 @@ routes, and one the browser leaves for.
 ### Content
 
 A **note** renders as CommonMark, collapsed and opened — that is what
-[standards.md](../standards.md#payload-types) says a note is, and the shell currently shows its
-asterisks. Its attachments are drawn above it, in slot order, each by its own media type.
+[standards.md](../standards.md#payload-types) says a note is. Its attachments are drawn above it,
+in slot order, each by its own media type. **One renderer draws every note and every output**
+*(2026-09-14; the shell showed its asterisks until then)*: `micromark`, which is CommonMark and
+nothing more. Every element is at the one size; a heading is bold; a list keeps its marks; a code
+span is in the one face. Raw HTML in the source is escaped, never rendered — the words came from a
+capture, a destination or a template and are never the shell's own — and a link is kept only where
+its address is `http` or `https`, on the rule the record's pointer already follows: a
+`javascript:` address in an `href` is script on this origin, and the renderer's own list of safe
+protocols is longer than this shell's. An image in the source is drawn from wherever it points,
+which is what a person wrote.
 
 A payload type this shell cannot draw **says so by name** and stays taggable, archivable and
 routable, since none of those need to understand the content. An item never becomes an invisible
@@ -1855,9 +1867,11 @@ view is how a reader sees more at once.
       the tags in use ([http-v1.md](http-v1.md#the-tags-in-use)), the client holds the whole set,
       and the chooser filters it as the person types. The derivation from the client's cache was
       the rejected half: it is right only for the items that happen to be loaded.
-- [ ] 2026-08-19 — **Which markdown library, and whether captured markdown is sanitised before
-      rendering.** A library choice is the developer's. `@tailwindcss/typography` is already a
-      dependency and unused.
+- [x] 2026-08-19 — **Which markdown library, and whether captured markdown is sanitised before
+      rendering.** Answered 2026-09-14: `micromark`, chosen by the developer for being CommonMark
+      exactly and small, with raw HTML escaped and links held to `http`/`https` (`Content`, above).
+      `@tailwindcss/typography` is not used; every element is at the one size and the few rules
+      are the shell's own.
 - [x] 2026-08-19 — **`/log` and `/docs` remain in the daemon's own visual language.** Answered
       2026-08-25 for half of it: `/log` is drawn in this language, restated in the page because it
       loads nothing from anywhere but the daemon, with a test holding the copy to `tokens.css`.

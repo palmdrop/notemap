@@ -17,3 +17,77 @@
 @utility cleared {
   padding-block: 5rem;
 }
+
+/**
+ * CommonMark drawn at the one size: a heading is bold and nothing is bigger,
+ * blocks are set apart by one line, and a list keeps its marks. Every element
+ * a renderer can emit is named here, so a capture and a destination's output
+ * read as one thing wherever they are drawn.
+ */
+@utility rendered {
+  & > * {
+    margin: 0;
+  }
+  & > * + * {
+    margin-top: var(--text-shell--line-height);
+  }
+  & h1,
+  & h2,
+  & h3,
+  & h4,
+  & h5,
+  & h6 {
+    font-size: inherit;
+    font-weight: var(--font-weight-semibold);
+  }
+  & ul,
+  & ol {
+    padding-left: 1.4em;
+  }
+  & ul {
+    list-style: disc;
+  }
+  & ol {
+    list-style: decimal;
+  }
+  & li > ul,
+  & li > ol {
+    margin: 0;
+  }
+  & blockquote {
+    border-left: 1px solid var(--color-ink);
+    padding-left: var(--spacing-gutter);
+  }
+  & pre {
+    white-space: pre-wrap;
+  }
+  & code,
+  & pre,
+  & kbd,
+  & samp {
+    font: inherit;
+  }
+  & hr {
+    border: 0;
+    border-top: 1px solid var(--color-ink);
+  }
+  & img {
+    display: block;
+    max-width: 100%;
+    max-height: 24rem;
+    object-fit: contain;
+    object-position: left;
+  }
+  & table {
+    border-collapse: collapse;
+  }
+  & th,
+  & td {
+    text-align: left;
+    padding-right: 2ch;
+    vertical-align: top;
+  }
+  & th {
+    font-weight: var(--font-weight-semibold);
+  }
+}

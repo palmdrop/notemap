@@ -206,19 +206,41 @@ test("copies the capture's text and says in the corner what it took", async () =
  * Unarchiving puts an item back rather than sending it away, so it is not
  * behind the door that means leaving.
  */
-test("offers the way back on an archived item, beside the way out", async () => {
+test("offers the way back on a discarded item, beside the way out", async () => {
   draw(anItem("one", { archived: { archivedAt: "2026-09-04T10:00:00.000Z" } }));
 
   expect(screen.getByRole("button", { name: "process" })).toBeDefined();
-  await fireEvent.click(screen.getByRole("button", { name: "unarchive" }));
+  await fireEvent.click(screen.getByRole("button", { name: "undiscard" }));
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/unarchive");
   });
 });
 
-test("offers no way back on an item that is not archived", () => {
+test("offers no way back on an item that is not discarded", () => {
   draw();
 
+  expect(screen.queryByRole("button", { name: "undiscard" })).toBeNull();
   expect(screen.queryByRole("button", { name: "unarchive" })).toBeNull();
+});
+
+/** The log narrowed to this item, offered only where the item is already open. */
+test("offers history where there is no address to open", () => {
+  clipboard();
+  const { container } = render(Actions, {
+    item: saying("a note"),
+    onprocess: () => undefined,
+    onedit: () => undefined,
+  });
+
+  expect(groups(container)[1]).toEqual(["edit", "copy", "history"]);
+  expect(
+    screen.getByRole("link", { name: "history" }).getAttribute("href"),
+  ).toBe("/log?item=one");
+});
+
+test("offers no history where open leads to the item", () => {
+  draw();
+
+  expect(screen.queryByRole("link", { name: "history" })).toBeNull();
 });

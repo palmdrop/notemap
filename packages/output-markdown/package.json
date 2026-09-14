@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./naming": "./src/naming.ts"
+    "./naming": "./src/naming.ts",
+    "./frontmatter": "./src/frontmatter.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

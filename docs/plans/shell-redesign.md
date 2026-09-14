@@ -1,7 +1,7 @@
 # The shell, redrawn
 
 **Date**: 2026-09-14
-**Status**: In progress — phases 2–4, the first version, shipped 2026-09-14; phase 5 drawn and expanded 2026-09-14; 6–7 are drawn next
+**Status**: In progress — phases 2–4, the first version, shipped 2026-09-14; phase 5a shipped 2026-09-14, 5b in progress; 6–7 are drawn next
 **Spec**: `docs/specs/shell.md`
 **Closed**:
 
@@ -324,24 +324,24 @@ Decisions made in the drawing, so they are not asked again:
 
 #### 5a — the block, the item, the record page
 
-- [ ] Branch `agent/shell-redesign-5a`.
-- [ ] **Drawings.** `docs/design/redrawn/item.html` (the item with two record rows and the rule
+- [x] Branch `agent/shell-redesign-5a`.
+- [x] **Drawings.** `docs/design/redrawn/item.html` (the item with two record rows and the rule
       between; `#record` draws the one-record page) and `log.html` (`#routing`, `#history`),
       written plainly from `Records.dc.html` with the three changes above, in the CSS idiom of
       `queue.html`. Extend the shot list in the `notemap-shoot-drafts` oneshot — `item`,
       `item-record`, `log`, `log-routing`, `log-history`, each at 1440 and 390 — and re-take
       `redrawn/shots/`. Delete `docs/design/feed.html`, `log.html`, `log.css`; rewrite the table
       in `docs/design/README.md`.
-- [ ] **A CommonMark renderer** is chosen — the open question in `shell.md` since 2026-08-19 and
+- [x] **A CommonMark renderer** is chosen — the open question in `shell.md` since 2026-08-19 and
       the developer's call. Ask before adding it. Whatever is chosen renders through
       `primitives/text/Prose.svelte` so a capture and an output are drawn by one thing; every
       element at the one size, a heading bold; raw HTML in the source is escaped, not rendered,
       and links follow only `http`/`https` as `lib/link.ts` already rules.
-- [ ] **Front matter read.** `readFrontmatter(text)` beside `fixedFrontmatter` in
+- [x] **Front matter read.** `readFrontmatter(text)` beside `fixedFrontmatter` in
       `packages/output-markdown/src/frontmatter.ts`, reading exactly the subset the writer
       emits — scalars and a string list — into key/value pairs plus the body after the closing
       `---`, and answering nothing for text that has none. Tested by round trip.
-- [ ] **`record/Block.svelte`.** Takes what a block needs — destination name, capability,
+- [x] **`record/Block.svelte`.** Takes what a block needs — destination name, capability,
       place and URL, state, when, the applied template's name, the record id, the by-hand note,
       the output's note and whether content was kept — and the held item where a surface has it,
       for the attachments. Reads the output on arrival exactly as `Record.svelte` does today
@@ -354,26 +354,28 @@ Decisions made in the drawing, so they are not asked again:
       `cancel` → `client.routing.cancel`, `undo` the same call, both raising the corner and
       calling `onundone`. Place and destination names resolve as `item/Routing.svelte` resolves
       them now.
-- [ ] **`item/Item.svelte`.** The capture row as it is, minus the `edited` fact (gone from rows
+- [x] **`item/Item.svelte`.** The capture row as it is, minus the `edited` fact (gone from rows
       in phase 3) and minus `Routing.svelte` (its lines stay on the feed row). Then a cell
       spanning both columns with `border-t`, then one row per record: `Stamp` and the state word
       in the rail, `Block` in the body. Out of reach and refused read as today, in the first
       record row's place.
-- [ ] **`record/Record.svelte`** (`/items/{id}/records/{recordId}`) is the same register with the
+- [x] **`record/Record.svelte`** (`/items/{id}/records/{recordId}`) is the same register with the
       capture row and one record row; a record that is gone says so as today.
-- [ ] **`item/Actions.svelte`** gains `history` in the right group, offered only where `address`
+- [x] **`item/Actions.svelte`** gains `history` in the right group, offered only where `address`
       is undefined — the item page — going to `logHref(order, item.id)`. `unarchive` → `undiscard`.
-- [ ] **Tests.** `Block.test.ts` (new): the head reads destination, place, capability and
+- [x] **Tests.** `Block.test.ts` (new): the head reads destination, place, capability and
       template; front matter becomes the band and leaves the body; `raw` and `arguments` are
       hidden until pressed; `cancel` only on pending, `undo` only by hand, `item` only in the
       log; output read on arrival and not re-read after a failure. `Item.test.ts`,
       `Record.test.ts`, `Actions.test.ts` updated: the rule cell, one row per record, `history`.
       `frontmatter.test.ts` round trip.
-- [ ] **Spec.** In `shell.md`, rewrite the record paragraphs of `An item has an address` — rail
+- [x] **Spec.** In `shell.md`, rewrite the record paragraphs of `An item has an address` — rail
       facts, `routing record` heading, `the decision`, the arguments' absence — as the block; the
       `Content` section for the renderer; close the markdown open question. `CONTEXT.md` gains
       `history` (the log narrowed to one item) and notes `undiscard`.
-- [ ] Typecheck, tests, lint; shots of the app re-taken with `notemap-shoot-app`; `git commit`.
+- [x] Typecheck, tests, lint; shots of the app re-taken with `notemap-shoot-app`; `git commit`.
+      _(2026-09-14; the item and record shots re-taken by hand — `notemap-shoot-app` still walks
+      the modal composer and wants rewriting for the process surface)_
 
 #### 5b — the log
 
@@ -412,8 +414,7 @@ Depends on 5a for `Block`.
 
 **Unknowns, and what happens if they go the wrong way**
 
-- *Which renderer.* Not this plan's to pick. Until it is, `Prose` draws paragraphs as it does
-  today and the block is unformatted, which is never wrong.
+- *Which renderer.* ~~Not this plan's to pick.~~ `micromark`, chosen 2026-09-14.
 - *Where assets landed.* `RoutingRecord` carries no such fact — only `pointer`, `url` and
   `output` — so the `ASSET` band in the drawing is **not built** here; recording asset landings
   on the record is a core change and its own plan. The block draws the item's attachments above

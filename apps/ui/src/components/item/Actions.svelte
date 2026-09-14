@@ -1,6 +1,7 @@
 <script lang="ts">
   import { saidBy, type Item } from "@notemap/client";
 
+  import { logHref } from "$components/log/href";
   import Action from "$components/primitives/controls/Action.svelte";
   import { client } from "$lib/client";
   import { copyable } from "$lib/clipboard";
@@ -42,7 +43,7 @@
       action that would put nothing on the clipboard is not offered. */
   const holds = $derived(client.says(item));
 
-  function unarchive() {
+  function undiscard() {
     void client.unarchive(item.id).catch((error: unknown) => {
       said = saidBy(error);
     });
@@ -93,7 +94,7 @@
            and a door that means both means neither. Unarchiving leaves the row
            in front of the reader, so it says nothing of what it did — only what
            it could not do. -->
-      <Action onclick={unarchive}>unarchive</Action>
+      <Action onclick={undiscard}>undiscard</Action>
     {/if}
   </div>
 
@@ -114,6 +115,10 @@
          that selects a row in place is never the one that leaves it. -->
     {#if address !== undefined}
       <Action href={address}>open</Action>
+    {:else}
+      <!-- The log narrowed to this item: what became of it, in order. Offered
+           where the item is already open, since a row's `open` leads here. -->
+      <Action href={logHref(undefined, item.id)}>history</Action>
     {/if}
   </div>
 </div>

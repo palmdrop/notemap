@@ -38,6 +38,7 @@
   // swallowed too: what it refuses is drawn by the login, not by a row.
   onMount(() => {
     void client.destinations.load().catch(() => undefined);
+    void client.templates.load().catch(() => undefined);
     void client.tags.load().catch(() => undefined);
   });
 

@@ -69,7 +69,7 @@ test("says an archived row is discarded, and offers the way back", async () => {
   expect(await screen.findByText("discarded")).toBeDefined();
   await open();
 
-  await fireEvent.click(screen.getByRole("button", { name: "unarchive" }));
+  await fireEvent.click(screen.getByRole("button", { name: "undiscard" }));
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/gone/unarchive");
