@@ -37,9 +37,9 @@ that implements it.
       is, and old mockups that are wrong until each is replaced _(2026-09-14)_
 - [x] A fresh Claude Design project, `notemap shell — redrawn`, holding the brief, the issues and
       the inspiration notes; images are dropped in by hand if wanted _(2026-09-14)_
-- [ ] Round 1: tokens stylesheet; the queue at 1440 and 390 — capture box, collapsed rows, a
-      selected row with its strip, the drained queue; the process surface — head, sections
-      collapsed and open, foot, a picture capture
+- [x] Round 1 drawn, awaiting review: `tokens.css`, `Queue.dc.html` (1a–1e: open list, ruled list,
+      the index, 390, drained), `Process.dc.html` (2a–2c: stacked, two columns, 390). Not yet
+      drawn: a picture capture on the process surface, the sections collapsed _(2026-09-14)_
 - [ ] Round 2: feed, item with record blocks, log with the tab row, sign-in
 - [ ] Round 3: settings with its side menu, destination and template rows open
 - [ ] Commit the docs; open a PR for the docs alone
