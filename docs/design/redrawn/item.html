@@ -40,12 +40,9 @@
   .rec .path { display: flex; flex-wrap: wrap; gap: 0 0.6ch; min-width: 0; }
   .rec .path .dest { font-weight: var(--bold); }
   .rec .how { display: flex; gap: 2ch; white-space: nowrap; }
-  .rec .props { display: grid; grid-template-columns: max-content 1fr; column-gap: 3ch; padding: 6px 12px; border-bottom: var(--rule); }
-  .rec .props .k { text-transform: uppercase; letter-spacing: var(--track-caps); }
   .rec .out { padding: 10px 12px; }
-  .rec .out .prose { max-width: none; }
-  .rec .out h1 { font-size: inherit; font-weight: var(--bold); margin: 0; }
-  .rec .out h1 + p { margin-top: var(--leading); }
+  /* what was sent, as sent: a path in it is the destination's and resolves nowhere here */
+  .rec .out pre { margin: 0; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
   .rec .said { padding: 10px 12px; }
   .rec .rf { display: flex; justify-content: space-between; border-top: var(--rule); padding: 0 12px; height: 32px; line-height: 32px; }
   .rec .rf .more { display: flex; gap: 20px; }
@@ -62,8 +59,6 @@
     .iacts, .iacts div { gap: 14px; }
     .rec .rh { padding: 6px 10px; }
     .rec .how { white-space: normal; flex-wrap: wrap; gap: 0 1.5ch; }
-    .rec .out, .rec .props, .rec .said { padding-left: 10px; padding-right: 10px; }
-    .rec .props { grid-template-columns: 1fr; }
     .rec .rf { padding: 0 10px; }
     .rec .rf .more { gap: 14px; }
   }
@@ -93,10 +88,21 @@
       <div class="body">
         <div class="rec">
           <div class="rh"><div class="path"><span class="dest">Obsidian vault</span><span>/</span><span>research/2026-08-01.md</span></div><div class="how"><span>created</span><span>via Research</span></div></div>
-          <div class="props"><span class="k">captured</span><span>2026-08-01 11:07</span><span class="k">tags</span><span>design, research</span></div>
-          <div class="out"><div class="picture small"><span>whiteboard.jpg</span></div><div class="prose"><h1>The whiteboard</h1><p>The whiteboard, before anyone rubbed it out. Three columns: what the mirror carries, what a rebuild needs, what nobody has asked for yet.</p><p>The middle column is the interesting one. A rebuild has no destination to ask, so whatever it needs has to be in the record already.</p></div></div>
+          <div class="out"><div class="picture small"><span>whiteboard.jpg</span></div><pre>---
+captured_at: '2026-08-01T09:07:00.000Z'
+tags:
+  - 'design'
+  - 'research'
+---
+# The whiteboard
+
+![whiteboard](research/assets/whiteboard.jpg)
+
+The whiteboard, before anyone rubbed it out. Three columns: what the mirror carries, what a rebuild needs, what nobody has asked for yet.
+
+The middle column is the interesting one. A rebuild has no destination to ask, so whatever it needs has to be in the record already.</pre></div>
           <div class="said">The picture was not carried: this destination takes text alone.</div>
-          <div class="rf"><div class="more"><a href="#">raw</a><a href="#">arguments</a></div><a href="#">open ↗</a></div>
+          <div class="rf"><div class="more"><a href="#">arguments</a></div><a href="#">open ↗</a></div>
         </div>
       </div>
     </div>

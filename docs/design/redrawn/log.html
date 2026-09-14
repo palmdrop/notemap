@@ -45,10 +45,8 @@
   .rec .path { display: flex; flex-wrap: wrap; gap: 0 0.6ch; min-width: 0; }
   .rec .path .dest { font-weight: var(--bold); }
   .rec .how { display: flex; gap: 2ch; white-space: nowrap; }
-  .rec .props { display: grid; grid-template-columns: max-content 1fr; column-gap: 3ch; padding: 6px 12px; border-bottom: var(--rule); }
-  .rec .props .k { text-transform: uppercase; letter-spacing: var(--track-caps); }
   .rec .out { padding: 10px 12px; }
-  .rec .out p { margin: 0; }
+  .rec .out pre { margin: 0; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
   .rec .said { padding: 10px 12px; }
   .rec .rf { display: flex; justify-content: space-between; border-top: var(--rule); padding: 0 12px; height: 32px; line-height: 32px; }
   .rec .rf .more { display: flex; gap: 20px; }
@@ -73,8 +71,6 @@
     .load { padding-left: calc(var(--rail-narrow) + 14px); }
     .rec .rh { padding: 6px 10px; }
     .rec .how { white-space: normal; flex-wrap: wrap; gap: 0 1.5ch; }
-    .rec .out, .rec .props, .rec .said { padding-left: 10px; padding-right: 10px; }
-    .rec .props { grid-template-columns: 1fr; }
     .rec .rf { padding: 0 10px; }
     .rec .rf .more { gap: 14px; }
   }
@@ -102,9 +98,13 @@
         <div class="blk">
           <div class="rec">
             <div class="rh"><div class="path"><span class="dest">Obsidian vault</span><span>/</span><span>research/2026-08-01.md</span></div><div class="how"><span>created</span><span>via Research</span></div></div>
-            <div class="props"><span class="k">captured</span><span>2026-08-01 11:01</span><span class="k">tags</span><span>research</span></div>
-            <div class="out"><p>the reading list is a graveyard, not a plan</p></div>
-            <div class="rf"><div class="more"><a href="#">raw</a><a href="#">arguments</a><a href="#">item</a></div></div>
+            <div class="out"><pre>---
+captured_at: '2026-08-01T09:01:00.000Z'
+tags:
+  - 'research'
+---
+the reading list is a graveyard, not a plan</pre></div>
+            <div class="rf"><div class="more"><a href="#">arguments</a><a href="#">item</a></div></div>
           </div>
         </div>
       </div>

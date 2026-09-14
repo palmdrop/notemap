@@ -6,11 +6,9 @@
     type Item,
     type RoutingRecord,
   } from "@notemap/client";
-  import { readFrontmatter } from "@notemap/output-markdown/frontmatter";
 
   import { itemHref } from "$components/item/href";
   import Action from "$components/primitives/controls/Action.svelte";
-  import Prose from "$components/primitives/text/Prose.svelte";
   import { argumentsOf, type Argument } from "$lib/arguments";
   import { didWhat } from "$lib/capability";
   import { client } from "$lib/client";
@@ -30,8 +28,11 @@
   /**
    * One routing record read as the file it became: the destination and the
    * place inside it as a path, what was done and by which template, then what
-   * was written, rendered as the destination would show it. Drawn on the item,
-   * on the record's own page and under a routing kind in the log.
+   * was written, exactly as it was sent. Not rendered: a path in the output
+   * is the destination's and resolves nowhere here, and the item's own
+   * attachments are drawn above it as the preview of what went with it.
+   * Drawn on the item, on the record's own page and under a routing kind in
+   * the log.
    */
   let {
     record,
@@ -133,7 +134,6 @@
     output = undefined;
     unreadable = "";
     none = false;
-    raw = false;
     named = undefined;
   });
 
@@ -168,36 +168,20 @@
     }
   }
 
-  const front = $derived(
-    output === undefined ? undefined : readFrontmatter(output),
-  );
-
   /**
    * What went: the output as it landed, or — where the delivery kept no copy
    * but carried words of its own in place of the capture's — those words.
    */
   const body = $derived(
-    front?.body ??
-      output ??
+    output ??
       (target.kind === "destination" && target.content !== undefined
         ? saidOf(target.content)
         : undefined),
   );
-  const properties = $derived(
-    front === undefined
-      ? []
-      : [...front.entries].map(([key, value]) => ({
-          key,
-          value: Array.isArray(value) ? value.join(", ") : String(value),
-        })),
-  );
-
   const kept = $derived(
     !none && (blind || record.output?.content !== undefined),
   );
   const delivered = $derived(record.state === "delivered");
-
-  let raw = $state(false);
 
   /** The arguments named against the capability's schema, asked for on the press and kept. */
   let named = $state<readonly Argument[] | undefined>(undefined);
@@ -276,17 +260,6 @@
   {:else if !delivered}
     <div class="px-3 py-2.5">{NOT_YET_DELIVERED}</div>
   {:else}
-    {#if properties.length > 0}
-      <div
-        class="grid grid-cols-[max-content_1fr] gap-x-[3ch] border-b border-ink px-3 py-1.5 max-narrow:grid-cols-1"
-      >
-        {#each properties as property (property.key)}
-          <span class="tracking-caps uppercase">{property.key}</span>
-          <span class="min-w-0 break-words">{property.value}</span>
-        {/each}
-      </div>
-    {/if}
-
     {#if images.length > 0 || body !== undefined || (!kept && !byHand)}
       <div class="px-3 py-2.5">
         {#each images as image (image)}
@@ -298,7 +271,7 @@
           />
         {/each}
         {#if body !== undefined}
-          <Prose text={body} full />
+          <pre class="break-words whitespace-pre-wrap">{body}</pre>
         {:else if !kept && !byHand}
           <div>{NOTHING_KEPT}</div>
         {/if}
@@ -324,11 +297,6 @@
     <div class="px-3 py-2.5 break-words">{record.output.note}</div>
   {/if}
 
-  {#if raw && output !== undefined}
-    <pre
-      class="border-t border-ink px-3 py-2.5 break-words whitespace-pre-wrap">{output}</pre>
-  {/if}
-
   {#if named !== undefined}
     <div
       class="grid grid-cols-[max-content_1fr] gap-x-[3ch] border-t border-ink px-3 py-1.5 max-narrow:grid-cols-1"
@@ -344,9 +312,6 @@
     class="flex flex-wrap items-baseline justify-between gap-x-5 border-t border-ink px-3 py-1"
   >
     <div class="flex flex-wrap gap-x-5 max-narrow:gap-x-3.5">
-      {#if output !== undefined}
-        <Action onclick={() => (raw = !raw)}>raw</Action>
-      {/if}
       {#if hasArguments}
         <Action disabled={naming} onclick={() => void showArguments()}>
           arguments

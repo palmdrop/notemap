@@ -1,4 +1,4 @@
-import { dump, load } from "js-yaml";
+import { dump } from "js-yaml";
 
 import type { Delivery, JsonObject, JsonSchema } from "@notemap/core";
 
@@ -70,52 +70,6 @@ export function toYaml(entries: ReadonlyMap<string, FrontmatterValue>): string {
   });
 
   return `---\n${body}---\n`;
-}
-
-export type Frontmatter = {
-  readonly entries: ReadonlyMap<string, FrontmatterValue>;
-  /** What follows the closing `---`, which is the note as an append carries it. */
-  readonly body: string;
-};
-
-/**
- * The inverse of `toYaml`, for whoever reads a note back: the block at the
- * head of the text, as the writer would have written it — scalars and a list
- * of strings, and nothing a renderer's dialect might have put there beyond
- * those — and the body after it. Text with no block, or a block that is not
- * YAML, answers nothing rather than half a reading.
- */
-export function readFrontmatter(text: string): Frontmatter | undefined {
-  const found = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(text);
-  if (found === null) return undefined;
-
-  let loaded: unknown;
-  try {
-    loaded = load(found[1] ?? "");
-  } catch {
-    return undefined;
-  }
-  if (loaded === null || typeof loaded !== "object" || Array.isArray(loaded)) {
-    return undefined;
-  }
-
-  const entries = new Map<string, FrontmatterValue>();
-  for (const [key, value] of Object.entries(loaded)) {
-    if (
-      typeof value === "string" ||
-      typeof value === "number" ||
-      typeof value === "boolean"
-    ) {
-      entries.set(key, value);
-    } else if (
-      Array.isArray(value) &&
-      value.every((each): each is string => typeof each === "string")
-    ) {
-      entries.set(key, value);
-    }
-  }
-
-  return { entries, body: text.slice(found[0].length) };
 }
 
 /** How much provenance goes above a note. A string rather than a flag: there is
