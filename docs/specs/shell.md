@@ -658,10 +658,12 @@ resolved to and leaves it editable**: the template's name where the destination'
 the expanded place — `research/2026-09-07.md`, not `research/{{captured_at}}.md` — asked of the
 pool, which owns the expander
 ([ADR 35](../adr/0035-a-templates-arguments-are-patterns-expanded-when-the-decision-is-made.md)).
-**Where the place is the typed line, a taken template draws it read-only** *(amended 2026-09-15)*:
-one line holding the expanded place with `edit` at its right, rather than the line itself — a
-template is a decision already made, and opening the line for typing is asking to correct it.
-`edit` draws the same typed line a destination chosen directly gets, holding the resolved value.
+**A taken template draws its place read-only** *(amended 2026-09-15)*: one line holding the
+expanded place — as a record's row reads it, whatever the destination's kind — with `edit` at
+its right, rather than the form itself; the capability choice, the line and the fields are
+all behind it. A template is a decision already made, and opening the form is asking to
+correct it. `edit` draws the same form a destination chosen directly gets, holding the resolved
+values. The tags and preview sections are untouched by this: they are asked of every decision.
 **A template is where a decision starts, not a form that refuses to be corrected**: what commits
 is the decision it became — the template where nothing was touched, the destination and arguments
 where something was. Which of the two went is read off whether anything changed. **A template

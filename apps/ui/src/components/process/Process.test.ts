@@ -348,22 +348,72 @@ function servingTemplates(
   });
 }
 
+/**
+ * Whatever kind the template's destination is, taking it draws what it resolved
+ * to as a summary rather than as a form: a template is a decision somebody
+ * already made, and `edit` is the way to correct it.
+ */
 test("takes a template, draws what it resolved to, and leaves it editable", async () => {
   servingTemplates();
 
   draw();
   await choose("research");
 
-  const directory = (await screen.findByLabelText(
-    "directory",
-  )) as HTMLInputElement;
-  expect(directory.value).toBe("research/2026-09-04");
+  await screen.findByRole("button", { name: "edit place" });
+  expect(screen.getByText("research/2026-09-04")).toBeDefined();
+  expect(screen.queryByLabelText("directory")).toBeNull();
   expect(
     screen.getByText("research", { selector: ".font-semibold" }),
   ).toBeTruthy();
 
+  await fireEvent.click(screen.getByRole("button", { name: "edit place" }));
+
+  const directory = (await screen.findByLabelText(
+    "directory",
+  )) as HTMLInputElement;
+  expect(directory.value).toBe("research/2026-09-04");
+
   await fireEvent.input(directory, { target: { value: "reading/2026" } });
   expect(directory.value).toBe("reading/2026");
+});
+
+/** The capability choice is part of the form, so a taken template hides it too. */
+test("a template's summary hides the capability choice until edit", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "arena" })] });
+    }
+    if (route === "GET /v1/templates") return json(200, { values: [RESEARCH] });
+    if (route === "GET /v1/items/one/route/resolve") {
+      return json(200, {
+        destination: VAULT,
+        capability: "create",
+        arguments: { directory: "research/2026-09-04" },
+      });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, {
+        kind: "described",
+        capabilities: [CREATE, CREATE_OR_APPEND],
+      });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  draw();
+  await choose("research");
+
+  await screen.findByRole("button", { name: "edit place" });
+  expect(screen.queryByRole("button", { name: "create" })).toBeNull();
+
+  await fireEvent.click(screen.getByRole("button", { name: "edit place" }));
+
+  expect(
+    (await screen.findByRole("button", { name: "create" })).getAttribute(
+      "aria-pressed",
+    ),
+  ).toBe("true");
 });
 
 /**
@@ -406,6 +456,9 @@ test("keeps the capability a template resolved to, over the one the line settles
 
   draw();
   await choose("research");
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "edit place" }),
+  );
 
   // `create`'s form, not the line: the template said what it meant.
   const directory = (await screen.findByLabelText(
@@ -432,7 +485,7 @@ test("commits an untouched template as the template, so the record names it", as
 
   draw();
   await choose("research");
-  await screen.findByLabelText("directory");
+  await screen.findByRole("button", { name: "edit place" });
   await commit();
 
   await vi.waitFor(() => {
@@ -446,6 +499,9 @@ test("commits a corrected one as the decision it became", async () => {
 
   draw();
   await choose("research");
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "edit place" }),
+  );
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "reading/2026" },
   });
@@ -499,7 +555,7 @@ test("puts a template's trigger tag on the item it routed", async () => {
 
   draw();
   await choose("research");
-  await screen.findByLabelText("directory");
+  await screen.findByRole("button", { name: "edit place" });
   await commit();
 
   await vi.waitFor(() => {
@@ -514,6 +570,9 @@ test("leaves a corrected template's tag off the item", async () => {
 
   draw();
   await choose("research");
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "edit place" }),
+  );
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "reading/2026" },
   });
@@ -2870,6 +2929,9 @@ test("leaves a template's own arguments alone", async () => {
 
   draw();
   await choose("research");
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "edit place" }),
+  );
 
   const directory = (await screen.findByLabelText(
     "directory",
