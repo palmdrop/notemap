@@ -3741,6 +3741,7 @@ export interface components {
                 /** @enum {string} */
                 kind: "user";
             })[];
+            templates: string[];
         };
         Asset: {
             id: string;

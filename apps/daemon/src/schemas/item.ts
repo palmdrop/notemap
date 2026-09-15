@@ -42,6 +42,8 @@ const routingSummary = z
         z.object({ kind: z.literal("user") }),
       ]),
     ),
+    /** The templates whose records stand, distinct. */
+    templates: z.array(z.string()),
   })
   .openapi("RoutingSummary");
 

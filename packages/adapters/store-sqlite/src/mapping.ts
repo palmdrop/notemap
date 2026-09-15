@@ -110,10 +110,18 @@ export function toRoutingSummary(
     if (!to.has(key)) to.set(key, went);
   }
 
+  const templates = new Set<RoutingTemplateId>();
+  for (const row of rows) {
+    if (row.template_id !== null) {
+      templates.add(row.template_id as RoutingTemplateId);
+    }
+  }
+
   return {
     records: rows.length,
     pending: rows.filter((row) => row.state === "pending").length,
     to: [...to.values()],
+    templates: [...templates],
   };
 }
 

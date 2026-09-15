@@ -59,7 +59,12 @@ describe("a surface drawn from the cache", () => {
     await store.writeItems([
       at("work", 2020),
       at("routed", 2021, {
-        routing: { records: 1, pending: 0, to: [{ kind: "user" }] },
+        routing: {
+          records: 1,
+          pending: 0,
+          to: [{ kind: "user" }],
+          templates: [],
+        },
       }),
       at("archived", 2022, {
         archived: { archivedAt: "2022-06-01T00:00:00.000Z" },

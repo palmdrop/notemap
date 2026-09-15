@@ -182,6 +182,7 @@ describe("an item's routing summary, on every row it appears in", () => {
         { kind: "destination", destination: host.vault.id },
         { kind: "user" },
       ],
+      templates: [],
     });
   });
 
@@ -203,6 +204,7 @@ describe("an item's routing summary, on every row it appears in", () => {
       records: 1,
       pending: 0,
       to: [{ kind: "user" }],
+      templates: [],
     });
     expect(archived.values[0]?.routing?.records).toBe(1);
   });
@@ -443,6 +445,18 @@ describe("POST /v1/routing/{record}/cancel", () => {
     expect(await body(response)).toMatchObject({
       error: { code: "not-pending" },
     });
+  });
+
+  it("takes back a mark made by hand, which delivered nothing anywhere", async () => {
+    const host = serving();
+    const item = await only(host);
+    const record = (await body(
+      await send(host.app, `/v1/items/${item}/mark-processed`, {}),
+    )) as Record_;
+
+    const response = await send(host.app, `/v1/routing/${record.id}/cancel`);
+    expect(response.status).toBe(204);
+    expect(await queued(host)).toEqual([item]);
   });
 
   it("is 404 for an id no record has", async () => {

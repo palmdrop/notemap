@@ -112,6 +112,7 @@ const routingSummary = (): fc.Arbitrary<RoutingSummary> =>
                 : other.kind === "user",
             ) === at,
         ),
+        templates: [],
       })),
     );
 

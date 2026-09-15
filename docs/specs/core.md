@@ -795,7 +795,11 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   authoritative and a second copy is one that can one day disagree. It is on the item because a
   surface reads a page of them and cannot ask per row — without it a feed can say an item was
   archived and cannot say it was routed. The records themselves are still read one item at a
-  time: a capability, arguments and a pointer are an item's detail, not a row's.
+  time: a capability, arguments and a pointer are an item's detail, not a row's. *Amended
+  2026-09-15*: it also names the **templates whose records stand**, distinct and in the same
+  order. A trigger tag cannot come off while what it filed stands
+  ([classification](#classification)), and a row drawing the tag has to know that without reading
+  the records — so the one fact that refusal turns on rides on the item as the places do.
 - **A destination declares its capabilities** (decided 2026-08-04). Each capability names one
   thing that destination can do, the payload types it accepts for it, and a schema for the
   arguments a delivery must supply. A delivery names a capability and supplies arguments; core
@@ -917,6 +921,12 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   lands, so a record that is not pending means bytes reached somewhere. Removing one that never
   delivered erases no fact.
 - A person may **cancel a pending delivery** before it resolves, by the same path.
+- **A mark made by hand is cancelled by the same path** *(added 2026-09-15)*. `markProcessed`
+  writes a record born delivered, and a delivered record is otherwise not cancellable — but
+  nothing reached anywhere, so there is nothing that already happened to leave standing. Cancelling
+  it removes the record, returns the item to the queue, appends `delivery-cancelled` with
+  `target: user`, and owes the mirror the item, which a reservation never does: the mark was
+  mirrored when it was made.
 - **A failed delivery is nonetheless recorded**, so a destination failing silently and
   repeatedly is visible rather than invisible. The routing log says where an item went; a
   failed attempt is one kind of entry in the action log

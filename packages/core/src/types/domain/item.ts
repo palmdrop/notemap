@@ -3,6 +3,7 @@ import type { Asset } from "./asset";
 import type {
   DestinationId,
   ItemId,
+  RoutingTemplateId,
   SourceId,
   TagName,
   Timestamp,
@@ -30,6 +31,11 @@ export type RoutingSummary = {
   readonly pending: number;
   /** Distinct, in the order the records were made. */
   readonly to: readonly RoutedTo[];
+  /**
+   * The templates whose records stand, distinct and in the same order. What
+   * says a trigger tag cannot come off without asking for the records.
+   */
+  readonly templates: readonly RoutingTemplateId[];
 };
 
 /** One tag, and how much of the pool carries it. Every item carrying it is counted. */

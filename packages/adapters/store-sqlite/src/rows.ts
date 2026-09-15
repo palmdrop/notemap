@@ -142,6 +142,7 @@ export type ItemRoutingRow = {
   readonly target_kind: "destination" | "user";
   readonly destination: string | null;
   readonly state: "pending" | "delivered";
+  readonly template_id: string | null;
 };
 
 export type TagUseRow = {

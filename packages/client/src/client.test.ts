@@ -345,6 +345,7 @@ describe("the queue", () => {
       records: 1,
       pending: 1,
       to: [{ kind: "destination", destination: "vault" }],
+      templates: [],
     });
   });
 

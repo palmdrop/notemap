@@ -568,7 +568,8 @@ still considers done. The client asks rather than assumes.
 
 **A decision is folded into the held item's routing summary as well.** The pool answers the record
 it wrote, so the cached copy is brought up to what a re-read would say at that moment — one more
-record, one more pending where the delivery has not landed, the place it names added if it is new.
+record, one more pending where the delivery has not landed, the place it names added if it is new,
+and the template it was made from added on the same terms.
 Without it the item stays in the feed drawn as though it had been nowhere until something happened
 to re-read it, which is exactly the row a person just acted on.
 

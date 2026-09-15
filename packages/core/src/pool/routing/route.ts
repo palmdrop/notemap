@@ -256,6 +256,10 @@ async function reserve(
 /**
  * The item returns to the queue at its unchanged content time. Routing it again
  * is what a retry by hand is, so there is no operation for one.
+ *
+ * A record naming the person is born delivered and is still taken back here:
+ * nothing reached anywhere, so there is nothing that already happened. It was
+ * mirrored, though, which a reservation never is, so the mirror is owed the item.
  */
 export function cancelDelivery(
   ports: PoolPorts,
@@ -266,7 +270,9 @@ export function cancelDelivery(
     if (record === undefined) {
       return refused({ kind: "no-such-record", record: id });
     }
-    if (record.state !== "pending") {
+
+    const byHand = record.target.kind === "user";
+    if (!byHand && record.state !== "pending") {
       return refused({ kind: "not-pending", record: id });
     }
 
@@ -282,6 +288,14 @@ export function cancelDelivery(
     await tx.removeRoutingRecord(id);
     const gave = await releaseTriggerTag(ports, tx, record, at, "person");
     await appendCancelled(ports, tx, record, at, gave);
+    if (byHand) {
+      await enqueueMirrorWrite(
+        ports,
+        tx,
+        { kind: "item", item: record.item },
+        at,
+      );
+    }
 
     return ok<void, CancelRefusal>(undefined);
   });
@@ -302,6 +316,7 @@ function appendCancelled(
     at,
     detail: {
       record: record.id,
+      target: record.target.kind,
       // Which template this called off, so a shell saying one is on its way
       // knows this is the entry that ends it.
       ...templateDetail(record),
