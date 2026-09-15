@@ -7,10 +7,12 @@ import { anItem, json, routeOf } from "@notemap/client/testing";
 import { asked, client, pool } from "$testing/pool";
 import { notices } from "$lib/notices.svelte";
 import { NO_MORE_OFFLINE } from "$lib/said";
-import { online } from "$testing/dom";
+import { keyboard, online } from "$testing/dom";
 import { remember } from "$lib/order";
 import { remember as rememberView } from "$lib/view";
 import Queue from "./Queue.svelte";
+
+keyboard();
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
@@ -684,18 +686,18 @@ test("walks the rows with j and k, and acts on the one selected", async () => {
   await fireEvent.keyDown(window, { key: "k" });
   expect(selected()).toBe(1);
 
-  await fireEvent.keyDown(window, { key: "+" });
+  await fireEvent.keyDown(window, { key: "t" });
   expect(screen.getByLabelText("Add a tag")).toBeDefined();
 
   // A key pressed while writing is the field's.
-  await fireEvent.keyDown(screen.getByLabelText("Add a tag"), { key: "d" });
+  await fireEvent.keyDown(screen.getByLabelText("Add a tag"), { key: "D" });
   expect(asked()).not.toContain("POST /v1/items/one/archive");
 
   await fireEvent.keyDown(window, { key: "Escape" });
   expect(selected()).toBe(0);
 
   await fireEvent.keyDown(window, { key: "j" });
-  await fireEvent.keyDown(window, { key: "d" });
+  await fireEvent.keyDown(window, { key: "D" });
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/archive");
   });
@@ -733,7 +735,7 @@ test("a decision, then j, then the same decision walks the list", async () => {
 
   await fireEvent.keyDown(window, { key: "j" });
   await fireEvent.keyDown(window, { key: "j" });
-  await fireEvent.keyDown(window, { key: "d" });
+  await fireEvent.keyDown(window, { key: "D" });
   await screen.findByText("discarded");
 
   await fireEvent.keyDown(window, { key: "j" });
@@ -744,7 +746,7 @@ test("a decision, then j, then the same decision walks the list", async () => {
   expect(boxed).toHaveLength(2);
   expect(boxed[1]?.textContent).toContain("three");
 
-  await fireEvent.keyDown(window, { key: "d" });
+  await fireEvent.keyDown(window, { key: "D" });
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/three/archive");
   });
@@ -768,7 +770,7 @@ test("arrives with the row named on its address selected, and takes the name off
   expect(document.activeElement).not.toBe(
     screen.getByLabelText("What to capture"),
   );
-  await fireEvent.keyDown(window, { key: "d" });
+  await fireEvent.keyDown(window, { key: "D" });
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/two/archive");
   });
@@ -821,4 +823,89 @@ test("draws the index on request, keeps it on the URL, and reads it back on arri
   expect(screen.getByRole("button", { name: "index" }).className).toContain(
     "font-semibold",
   );
+});
+
+/** Shift is the guard on the one decision that sends an item away. */
+test("a bare d discards nothing, and e opens the row for editing", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "d" });
+  await tick();
+  expect(asked()).not.toContain("POST /v1/items/one/archive");
+
+  await fireEvent.keyDown(window, { key: "e" });
+  expect(await screen.findByLabelText("What it says")).toBeTruthy();
+});
+
+/**
+ * `Capture` is autofocused on arrival, so the first `esc` is what takes the
+ * caret out of it and makes every other key on the surface reachable.
+ */
+test("the first esc leaves the capture box, and the next one deselects", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  const box = screen.getByLabelText("What to capture");
+  box.focus();
+  expect(document.activeElement).toBe(box);
+
+  await fireEvent.keyDown(box, { key: "Escape" });
+  expect(document.activeElement).not.toBe(box);
+
+  await fireEvent.keyDown(window, { key: "j" });
+  expect(stamps(true)).toHaveLength(1);
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  expect(stamps(true)).toHaveLength(0);
+});
+
+/**
+ * The editable shape holds a draft and its own `cancel`, so `esc` leaves it
+ * before it leaves the selection — and losing the selection any other way
+ * leaves it too, the box's foot going with the box.
+ */
+test("esc leaves the row's editable shape before it leaves the row", async () => {
+  pool(queued("one", "two"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  const field = await screen.findByLabelText("What it says");
+
+  // The caret is in the field it just opened: the first press only leaves it.
+  field.focus();
+  await fireEvent.keyDown(field, { key: "Escape" });
+  expect(document.activeElement).not.toBe(field);
+  expect(screen.queryByLabelText("What it says")).not.toBeNull();
+  expect(stamps(true)).toHaveLength(1);
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  expect(screen.queryByLabelText("What it says")).toBeNull();
+  expect(stamps(true)).toHaveLength(1);
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  expect(stamps(true)).toHaveLength(0);
+});
+
+test("walking to another row leaves the one being rewritten as it was", async () => {
+  pool(queued("one", "two"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  expect(await screen.findByLabelText("What it says")).toBeTruthy();
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await tick();
+  expect(screen.queryByLabelText("What it says")).toBeNull();
 });

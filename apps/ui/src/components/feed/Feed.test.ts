@@ -5,10 +5,12 @@ import { tick } from "svelte";
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool } from "$testing/pool";
-import { online } from "$testing/dom";
+import { keyboard, online } from "$testing/dom";
 import { remember } from "$lib/order";
 import { NO_MORE_OFFLINE, NOTHING_CAPTURED } from "$lib/said";
 import Feed from "./Feed.svelte";
+
+keyboard();
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
@@ -473,4 +475,34 @@ test("puts the view back where the reader left it to read one item", async () =>
   await vi.waitFor(() => {
     expect(window.scrollTo).toHaveBeenCalledWith({ top: 320 });
   });
+});
+
+test("walks the rows with j and k, and processes the one selected", async () => {
+  pool(held(anItem("one"), anItem("two")));
+
+  render(Feed);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "j" });
+  expect(stamps(true)).toHaveLength(1);
+
+  await fireEvent.keyDown(window, { key: "k" });
+  await fireEvent.keyDown(window, { key: "p" });
+  expect(went.to).toEqual(["/items/one/process"]);
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  expect(stamps(true)).toHaveLength(0);
+});
+
+test("t opens the tag chooser on the selected row", async () => {
+  pool(held(anItem("one")));
+
+  render(Feed);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "t" });
+
+  expect(await screen.findByLabelText("Add a tag")).toBeTruthy();
 });

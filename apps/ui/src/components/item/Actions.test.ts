@@ -4,6 +4,7 @@ import { afterEach, expect, test, vi } from "vitest";
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { asked, pool } from "$testing/pool";
+import { commandsFor, type Surroundings } from "$lib/command/item";
 import { notices } from "$lib/notices.svelte";
 import Actions from "./Actions.svelte";
 
@@ -31,6 +32,19 @@ function saying(text: string) {
   });
 }
 
+/**
+ * What a surface hands the row. `Actions` is given the list rather than the
+ * item, so a test builds it the way the queue and the item page do.
+ */
+const at: Surroundings = {
+  onprocess: () => undefined,
+  onedit: () => undefined,
+};
+
+function drawing(item = anItem("one"), extra: Partial<Surroundings> = {}) {
+  return { commands: commandsFor(item, { ...at, ...extra }) };
+}
+
 function draw(item = anItem("one")) {
   pool((request) =>
     routeOf(request) === "POST /v1/items/one/unarchive"
@@ -38,12 +52,7 @@ function draw(item = anItem("one")) {
       : json(200, { values: [] }),
   );
 
-  return render(Actions, {
-    item,
-    address: "/items/one",
-    onprocess: () => undefined,
-    onedit: () => undefined,
-  });
+  return render(Actions, drawing(item, { address: "/items/one" }));
 }
 
 /** The two groups as drawn: the quick tier on the left, the rest on the right. */
@@ -80,11 +89,7 @@ test("marks manual at once, with no note, and offers the way back in the corner"
         })
       : json(200, { values: [] }),
   );
-  render(Actions, {
-    item: anItem("one"),
-    onprocess: () => undefined,
-    onedit: () => undefined,
-  });
+  render(Actions, drawing(anItem("one")));
 
   await fireEvent.click(screen.getByRole("button", { name: "manual" }));
 
@@ -108,11 +113,7 @@ test("marks manual at once, with no note, and offers the way back in the corner"
 
 test("discards at once and offers the way back in the corner", async () => {
   draw();
-  render(Actions, {
-    item: anItem("two"),
-    onprocess: () => undefined,
-    onedit: () => undefined,
-  });
+  render(Actions, drawing(anItem("two")));
 
   await fireEvent.click(
     screen.getAllByRole("button", { name: "discard" }).at(-1)!,
@@ -128,12 +129,10 @@ test("discards at once and offers the way back in the corner", async () => {
 
 /** The one grey: a decision that cannot be taken says why, and stays in place. */
 test("cannot mark manual offline, and cannot discard what is discarded", () => {
-  const { rerender } = render(Actions, {
-    item: anItem("one"),
-    offline: true,
-    onprocess: () => undefined,
-    onedit: () => undefined,
-  });
+  const { rerender } = render(
+    Actions,
+    drawing(anItem("one"), { offline: true }),
+  );
   const control = (name: string) =>
     screen.getByRole("button", { name }) as HTMLButtonElement;
 
@@ -141,14 +140,12 @@ test("cannot mark manual offline, and cannot discard what is discarded", () => {
   expect(control("manual").title).toBe("pool out of reach");
   expect(control("discard").disabled).toBe(false);
 
-  void rerender({
-    item: anItem("one", {
-      archived: { archivedAt: "2026-09-04T10:00:00.000Z" },
-    }),
-    offline: false,
-    onprocess: () => undefined,
-    onedit: () => undefined,
-  });
+  void rerender(
+    drawing(
+      anItem("one", { archived: { archivedAt: "2026-09-04T10:00:00.000Z" } }),
+      { offline: false },
+    ),
+  );
   expect(control("discard").disabled).toBe(true);
   expect(control("manual").disabled).toBe(false);
 });
@@ -235,11 +232,7 @@ test("offers no way back on an item that is not discarded", () => {
 /** The log narrowed to this item, offered only where the item is already open. */
 test("offers history where there is no address to open", () => {
   clipboard();
-  const { container } = render(Actions, {
-    item: saying("a note"),
-    onprocess: () => undefined,
-    onedit: () => undefined,
-  });
+  const { container } = render(Actions, drawing(saying("a note")));
 
   expect(groups(container)[1]).toEqual(["edit", "copy", "history"]);
   expect(

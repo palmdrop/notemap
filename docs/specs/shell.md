@@ -4,6 +4,13 @@
 **Last updated**: 2026-09-15
 **Shipped**:
 
+- 2026-09-15 — **A command is what a key and a button both reach.**
+  [keyboard-commands](../plans/keyboard-commands.md): every deed is a command a surface publishes
+  while it is on screen, a binding names its key, and one dispatcher resolves every chord against
+  what is published — so the actions a row draws and the keys that take them are one definition.
+  The feed gains the register's keyboard it never had, a selected row adds `e`, `c`, `o` and `u`,
+  discard moves to `D`, tagging to `t`, and `esc` in a field leaves the field on every surface. A page for changing
+  the bindings and a palette are the same seam read again, and neither exists yet.
 - 2026-09-15 — **A round of minor changes after a working session.** The row keeps its foot's
   height and its box's edges, so selecting shifts nothing, and reads its routing line short; the
   queue holds the selected row after a decision until the selection leaves it; the composer draws a
@@ -520,7 +527,10 @@ appears. **Nothing else changes**: no fill, no colour, no facts appear. `edit` o
 the capture in the capture box's own shape — a ruled box with `cancel` and a bold `save` along its
 foot — with no ring or colour from the browser: rewriting looks like writing. The one thing the selected row adds to the rail is a `+` after the last tag, which
 opens the chooser in place ([Tagging](#tagging)) — and is how a template is applied, a template
-being a tag. `esc` deselects.
+being a tag. `esc` deselects, and leaves the editable shape first where the row is in one
+([below](#a-command-is-what-a-key-and-a-button-both-reach)). Losing the selection any other way
+leaves the shape too: the box's foot goes with the box, and a collapsed row holding a half-written
+rewrite would have no way out of it.
 
 **Every row reserves the foot's height and the box's edges, selected or not** *(amended
 2026-09-15)*: the strip a selected row's actions sit in is drawn empty on every other row, with the
@@ -536,7 +546,7 @@ before, and a first trigger tag only seemed to hold it)*: a decision made on it 
 `discard`, a trigger tag, a route made on the surface and come back from — takes it off the queue
 and leaves it drawn where it stood, from the client's own copy, with its state word and its routing
 line, so the decision can be looked at and taken back from the row it was made on. `esc`, `j`/`k`
-or selecting another row lets it go. So `d` `d` `d` no longer walks the list — `d` `j` `d` `j`
+or selecting another row lets it go. So `D` `D` `D` no longer walks the list — `D` `j` `D` `j`
 does — which is the price of being able to read what one just did.
 
 **In the feed, a routed row says where it went, and no word repeats it** *(amended 2026-09-14; it
@@ -568,12 +578,18 @@ out from under a selection they just made is not what they asked for. So the row
 the double selected nothing — the gutter, the marks and the space around the prose — and the
 body's words stay the browser's.
 
-**The keyboard on the queue**, drawn so a reader could guess it from the actions and never printed:
-`j`/`k` walk the rows, moving the selection and bringing it into view — and off a held row, which
-then goes; `enter` selects the first
-row where none is, and opens process on the one that is; `p` process; `m` manual; `d` discard;
-`+` opens the tag chooser; `esc` deselects. None fire while a field has the caret, which the
-capture box does when the queue is drawn: a key pressed into a field is the field's.
+**The keyboard on a register** is the same keyboard on the queue and on the feed, because a
+register walks the same way whatever it holds. `j`/`k` walk the rows, moving the selection and
+bringing it into view — and off a held row, which then goes; `enter` selects the first row where
+none is, and opens process on the one that is; `esc` leaves the row's editable shape where there is
+one and deselects otherwise. The selected row adds every command its own actions draw
+([below](#a-command-is-what-a-key-and-a-button-both-reach)): `p` process, `m` manual, `D` discard,
+`u` undiscard, `e` edit, `c` copy, `o` open, `t` the tag chooser. So a key reaches exactly what a
+button reaches, on either surface, and a control that is not drawn has no key either.
+
+**Discard is the one deed shift guards.** `D`, not `d`: it is the only key here that sends an item
+away, and a capital is one deliberate press rather than a different gesture. Nothing else is
+guarded, the corner's `undo` being what makes the rest cheap to take back.
 
 **The index is a second view of the same list**, toggled in the list head beside the order
 control — `timeline · index`, the current one bold — and carried on the URL as `view=index`,
@@ -691,7 +707,9 @@ and a processed item comes back held on the queue until the selection leaves it
 ([the row](#the-row)). From a field, the first `esc` leaves the field.
 
 **The keyboard on the surface**: `e` edit, `esc` back, `⌘/ctrl+⏎` route, `[` and `]` previous and
-next. None fire while a field has the caret except `⌘/ctrl+⏎`.
+next. Only `⌘/ctrl+⏎` fires while a field has the caret, the decision being finished there and
+reaching for the mouse to send it being the gesture this surface exists to spare. `esc` in a field
+leaves the field, and the next one leaves the surface.
 
 **The surface opens with the pool out of reach.** A surface that refused to would be a queue that
 cannot be drained offline, and discarding is precisely the gesture that survived, replaying from
@@ -1126,6 +1144,49 @@ plausible way to reach a self-hosted daemon from a phone — the browser hands o
 all, and a control that can only fail is worse than an absent one. **Nor is it drawn where there is
 nothing to take**: a note captured with a picture and no prose says nothing, and copying it would
 put an empty string on the clipboard and then claim in the corner to have taken something.
+
+#### A command is what a key and a button both reach
+
+*Added 2026-09-15.* Every deed above is a **command**: an id, the word a person reads, the deed
+itself, and why it cannot be taken where it cannot. `Actions` draws the list; a **binding** names
+one command's key; and both read the same definition, so a button and a key can never learn two
+different answers about what a person may do.
+
+**A surface publishes what it offers, and only while it is on screen.** A command closes over the
+row that is selected, so there is no table of them anywhere — the queue and the feed publish a
+register's four and the selected row's, the item's own surface publishes one item's, and the
+process surface publishes its own five. A chord reaches the most deeply nested surface that
+published one, so the same key means the nearest thing: `esc` deselects a row on the queue and
+leaves the surface on process, and neither has to know about the other. Between two surfaces
+neither of which is inside the other, the one drawn most recently has it — which is what a page
+arriving over the one it replaces wants.
+
+**A key is spelled the way it is pressed.** A printable character *is* the binding — `D`, `+`, `[`
+— and shift is never named beside it; only a named key takes a prefix, as `mod+enter`, where `mod`
+is ⌘ or ctrl depending on the keyboard. **A command with a refusal has no key**, the same refusal
+that greys its button.
+
+**An editable shape publishes its own way out.** The box a capture is rewritten in draws `cancel`
+beside `save`, and publishes that `cancel` on `esc` for as long as it is drawn — so the shape is
+what `esc` leaves, wherever it was opened, and the surface it was opened on needs to know nothing
+about it. Being drawn inside that surface is what puts it first. The next press is the surface's
+own: deselecting on a register, and nothing at all on the item's own surface, where the page is
+the item and there is nothing behind the shape to leave.
+
+**Whatever has the press keeps it.** No chord fires while a field has the caret unless its command
+says otherwise, and `esc` in a field leaves the field rather than reaching anything — which is what
+makes the queue's keyboard reachable at all, the capture box taking the caret on arrival, so `esc`
+is the way from writing to working. The same rule covers a control reached by tab: a line that
+committed on `⏎`, or a button the browser is about to click, has answered for the press, and a
+command taking it too would act twice on one of them.
+
+**What a command could not do is said in the corner**, never under the row. A deed a key took may
+have no row on screen to draw a failure beneath — which is already why discarding and marking
+manual speak there, and is now why a failed `copy` and a failed `undiscard` do too.
+
+**The bindings are not configurable yet, and they are not printed anywhere.** A page for changing
+them, and a palette that lists every command a surface published, are both the same seam read a
+second way — neither exists.
 
 #### One way out of the queue
 

@@ -6,10 +6,13 @@ import { anItem, json, read, routeOf } from "@notemap/client/testing";
 
 import Queue from "$components/queue/Queue.svelte";
 import { asked, client, pool } from "$testing/pool";
+import { keyboard } from "$testing/dom";
 import { notices } from "$lib/notices.svelte";
 import { remember } from "$lib/order";
 import { NO_ITEM_OFFLINE, NO_RECORDS_OFFLINE } from "$lib/said";
 import Item from "./Item.svelte";
+
+keyboard();
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
@@ -508,4 +511,47 @@ test("offers no undo on a record the pool delivered", async () => {
 
   expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
   expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+});
+
+/**
+ * One subject and no selection, so the page publishes the item's own commands
+ * and every control it draws has the key its button does — the `+` included.
+ */
+test("takes the item's own commands from the keyboard, the tag chooser with them", async () => {
+  pool(holding(saying("linked", "what the link names")));
+
+  render(Item, { id: "linked" });
+  await screen.findByText("what the link names");
+
+  await fireEvent.keyDown(window, { key: "e" });
+  expect(await screen.findByLabelText("What it says")).toBeTruthy();
+
+  await fireEvent.keyDown(window, { key: "t" });
+  expect(await screen.findByLabelText("Add a tag")).toBeTruthy();
+
+  await fireEvent.keyDown(window, { key: "p" });
+  expect(went.to).toEqual(["/items/linked/process"]);
+});
+
+/** The same order as on a row: the field, then the editable shape, and no more. */
+test("esc leaves the editable shape the item page draws", async () => {
+  pool(holding(saying("linked", "what the link names")));
+
+  render(Item, { id: "linked" });
+  await screen.findByText("what the link names");
+
+  await fireEvent.keyDown(window, { key: "e" });
+  const field = await screen.findByLabelText("What it says");
+
+  field.focus();
+  await fireEvent.keyDown(field, { key: "Escape" });
+  expect(document.activeElement).not.toBe(field);
+  expect(screen.queryByLabelText("What it says")).not.toBeNull();
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  expect(screen.queryByLabelText("What it says")).toBeNull();
+
+  // Nothing behind it: the page is the item, and `esc` has nowhere left to go.
+  await fireEvent.keyDown(window, { key: "Escape" });
+  expect(went.to).toEqual([]);
 });

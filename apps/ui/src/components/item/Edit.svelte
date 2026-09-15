@@ -5,8 +5,14 @@
   import Action from "$components/primitives/controls/Action.svelte";
   import { TYPED } from "$lib/channels";
   import { client } from "$lib/client";
+  import { publish } from "$lib/command/stack.svelte";
 
   let { item, ondone }: { item: Item; ondone: () => void } = $props();
+
+  // Drawn inside whatever surface opened it, and so ahead of that surface's
+  // own `esc`: the draft is the nearer thing to leave, and this is the same
+  // way out as the `cancel` beside `save`.
+  publish(() => [{ id: "cancel", label: "cancel", run: ondone }]);
 
   /** A draft starts from what the item says and then stops following it. */
   let draft = $state(untrack(() => client.says(item)));

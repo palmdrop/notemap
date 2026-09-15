@@ -18,6 +18,8 @@
 
   import { processHref, recordHref } from "$components/item/href";
   import { client } from "$lib/client";
+  import { commandsFor } from "$lib/command/item";
+  import { publish } from "$lib/command/stack.svelte";
   import { became } from "$lib/lineage";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
@@ -42,6 +44,7 @@
 
   let read = $state<ItemState | undefined>(undefined);
   let editing = $state(false);
+  let tags = $state<Tags | undefined>(undefined);
 
   // The read settles what is drawn and what it was drawn from; the item itself
   // is then the client's held copy, so an archive made here marks it at once.
@@ -70,6 +73,23 @@
   });
 
   const word = $derived(item === undefined ? undefined : became(item));
+
+  // One subject and no selection: the page is the item, so what it offers is
+  // what its own `Actions` draws, built once and published as it stands. No
+  // address — this surface is where `open` would lead.
+  const commands = $derived(
+    item === undefined
+      ? []
+      : commandsFor(item, {
+          offline: !pool.yes,
+          onprocess: () => void goto(processHref(id)),
+          onedit: () => (editing = !editing),
+          tag: () => tags?.add(),
+        }),
+  );
+
+  publish(() => commands);
+
   const refused = $derived(
     read?.failure?.refused === true ? read.failure.said : undefined,
   );
@@ -112,7 +132,7 @@
       {/if}
 
       <div class="mt-0.5">
-        <Tags {item} addable />
+        <Tags bind:this={tags} {item} addable />
       </div>
     </Rail>
 
@@ -124,12 +144,7 @@
       {/if}
 
       <div class="mt-3.5">
-        <Actions
-          {item}
-          offline={!pool.yes}
-          onprocess={() => void goto(processHref(id))}
-          onedit={() => (editing = !editing)}
-        />
+        <Actions {commands} />
       </div>
     </Body>
 

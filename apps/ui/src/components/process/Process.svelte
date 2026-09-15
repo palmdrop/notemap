@@ -30,6 +30,7 @@
   import { OWN_ARGUMENTS, sameArguments } from "$lib/arguments";
   import { browserFor } from "$lib/candidate-browsers";
   import { client } from "$lib/client";
+  import { publish } from "$lib/command/stack.svelte";
   import { nameOf } from "$lib/destinations";
   import { aboutItem } from "$lib/excerpt";
   import { search } from "$lib/matching";
@@ -736,48 +737,32 @@
     if (to !== undefined) void goto(processHref(to.id));
   }
 
-  /** Whether the key was pressed in something a person is writing in. */
-  function writing(target: EventTarget | null): target is HTMLElement {
-    return (
-      target instanceof HTMLElement &&
-      (target.isContentEditable ||
-        ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
-    );
-  }
-
-  function onkeydown(event: KeyboardEvent) {
-    if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-      event.preventDefault();
-      if (ready) void send();
-      return;
-    }
-
-    if (writing(event.target)) {
-      // The first press leaves the field; the next one leaves the surface.
-      if (event.key === "Escape") event.target.blur();
-      return;
-    }
-    if (event.altKey || event.ctrlKey || event.metaKey) return;
-
-    switch (event.key) {
-      case "Escape":
-        if (editing) done();
-        else back();
-        break;
-      case "e":
-        edit();
-        break;
-      case "[":
-        walk(around.previous);
-        break;
-      case "]":
-        walk(around.next);
-        break;
-      default:
-        return;
-    }
-    event.preventDefault();
-  }
+  // Routing is the one command that fires with the caret in a field: the
+  // decision is finished there, and reaching for the mouse to send it is the
+  // gesture this surface exists to spare.
+  publish(() => [
+    {
+      id: "route",
+      label: "route",
+      whileWriting: true,
+      refusal: ready ? undefined : "nowhere to send it",
+      run: () => void send(),
+    },
+    { id: "edit", label: "edit", run: edit },
+    { id: "back", label: "back", run: () => (editing ? done() : back()) },
+    {
+      id: "previous",
+      label: "previous item",
+      refusal: around.previous === undefined ? "first in the queue" : undefined,
+      run: () => walk(around.previous),
+    },
+    {
+      id: "next",
+      label: "next item",
+      refusal: around.next === undefined ? "last in the queue" : undefined,
+      run: () => walk(around.next),
+    },
+  ]);
 </script>
 
 {#snippet control(field: (typeof fields)[number])}
@@ -829,8 +814,6 @@
     <div class="min-w-0">{@render control(field)}</div>
   </div>
 {/snippet}
-
-<svelte:window {onkeydown} />
 
 <!-- The bar, then a frame whose head and foot are fixed and whose middle
      scrolls: two columns from `wide` up, stacked below. -->
