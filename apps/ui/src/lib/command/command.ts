@@ -23,6 +23,7 @@ type Goes = {
 export type Command = {
   readonly id: string;
   readonly label: string;
+  /** Which tier `Actions` draws it in, absent where its control is its own — the row's `+`. */
   readonly group?: Group;
   readonly primary?: boolean;
   readonly alarm?: boolean;

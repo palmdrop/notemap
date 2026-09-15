@@ -1,9 +1,15 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { chord, reads, writing } from "./keys";
+import { activates, chord, writing } from "./keys";
 
 function keydown(init: KeyboardEventInit): KeyboardEvent {
   return new KeyboardEvent("keydown", init);
+}
+
+function aimed(init: KeyboardEventInit, target: EventTarget): KeyboardEvent {
+  const event = keydown(init);
+  Object.defineProperty(event, "target", { value: target });
+  return event;
 }
 
 describe("the chord a keydown is", () => {
@@ -33,29 +39,6 @@ describe("the chord a keydown is", () => {
   });
 });
 
-describe("reading a chord back", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("leaves an unnamed character alone", () => {
-    expect(reads("d")).toBe("d");
-    expect(reads("+")).toBe("+");
-  });
-
-  it("names mod and the key it is combined with", () => {
-    vi.spyOn(navigator, "userAgent", "get").mockReturnValue(
-      "(Windows NT 10.0)",
-    );
-    expect(reads("mod+enter")).toBe("Ctrl+⏎");
-  });
-
-  it("reads mod as the platform's own symbol on a mac, run together", () => {
-    vi.spyOn(navigator, "userAgent", "get").mockReturnValue("Macintosh");
-    expect(reads("mod+enter")).toBe("⌘⏎");
-  });
-});
-
 describe("whether a key was pressed while writing", () => {
   it("is true for an input, a textarea and anything contenteditable", () => {
     const input = document.createElement("input");
@@ -71,5 +54,27 @@ describe("whether a key was pressed while writing", () => {
   it("is false for anything else, including nothing at all", () => {
     expect(writing(document.createElement("div"))).toBe(false);
     expect(writing(null)).toBe(false);
+  });
+});
+
+describe("whether the browser will click what has the focus", () => {
+  it("is true for ⏎ and space on a control it activates", () => {
+    const button = document.createElement("button");
+    const link = document.createElement("a");
+    const pressed = document.createElement("div");
+    pressed.setAttribute("role", "button");
+
+    for (const target of [button, link, pressed]) {
+      expect(activates(aimed({ key: "Enter" }, target))).toBe(true);
+    }
+    expect(activates(aimed({ key: " " }, button))).toBe(true);
+  });
+
+  it("is false for any other key, and for anything else focused", () => {
+    const button = document.createElement("button");
+    expect(activates(aimed({ key: "j" }, button))).toBe(false);
+    expect(
+      activates(aimed({ key: "Enter" }, document.createElement("div"))),
+    ).toBe(false);
   });
 });

@@ -543,7 +543,7 @@ before, and a first trigger tag only seemed to hold it)*: a decision made on it 
 `discard`, a trigger tag, a route made on the surface and come back from — takes it off the queue
 and leaves it drawn where it stood, from the client's own copy, with its state word and its routing
 line, so the decision can be looked at and taken back from the row it was made on. `esc`, `j`/`k`
-or selecting another row lets it go. So `d` `d` `d` no longer walks the list — `d` `j` `d` `j`
+or selecting another row lets it go. So `D` `D` `D` no longer walks the list — `D` `j` `D` `j`
 does — which is the price of being able to read what one just did.
 
 **In the feed, a routed row says where it went, and no word repeats it** *(amended 2026-09-14; it
@@ -1152,19 +1152,23 @@ different answers about what a person may do.
 **A surface publishes what it offers, and only while it is on screen.** A command closes over the
 row that is selected, so there is no table of them anywhere — the queue and the feed publish a
 register's four and the selected row's, the item's own surface publishes one item's, and the
-process surface publishes its own five. A chord reaches the deepest surface that published one, so
-the same key means the nearest thing: `esc` deselects a row on the queue and leaves the surface on
-process, and neither has to know about the other.
+process surface publishes its own five. A chord reaches the most deeply nested surface that
+published one, so the same key means the nearest thing: `esc` deselects a row on the queue and
+leaves the surface on process, and neither has to know about the other. Between two surfaces
+neither of which is inside the other, the one drawn most recently has it — which is what a page
+arriving over the one it replaces wants.
 
 **A key is spelled the way it is pressed.** A printable character *is* the binding — `D`, `+`, `[`
 — and shift is never named beside it; only a named key takes a prefix, as `mod+enter`, where `mod`
 is ⌘ or ctrl depending on the keyboard. **A command with a refusal has no key**, the same refusal
 that greys its button.
 
-**A field answers for its own entry.** No chord fires while a field has the caret unless its
-command says otherwise, and `esc` in a field leaves the field rather than reaching anything. This
-is what makes the queue's keyboard reachable at all: the capture box takes the caret on arrival, so
-`esc` is the way from writing to working.
+**Whatever has the press keeps it.** No chord fires while a field has the caret unless its command
+says otherwise, and `esc` in a field leaves the field rather than reaching anything — which is what
+makes the queue's keyboard reachable at all, the capture box taking the caret on arrival, so `esc`
+is the way from writing to working. The same rule covers a control reached by tab: a line that
+committed on `⏎`, or a button the browser is about to click, has answered for the press, and a
+command taking it too would act twice on one of them.
 
 **What a command could not do is said in the corner**, never under the row. A deed a key took may
 have no row on screen to draw a failure beneath — which is already why discarding and marking

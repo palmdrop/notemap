@@ -3,6 +3,7 @@ import { expect, test } from "vitest";
 
 import { published } from "./stack.svelte";
 import Fixture from "./stack.fixture.svelte";
+import Nested from "./stack.nested.fixture.svelte";
 
 const ids = () =>
   published().flatMap((get) => get().map((command) => command.id));
@@ -30,4 +31,13 @@ test("pops the right layer by identity when two are mounted at once", () => {
 
   second.unmount();
   expect(ids()).toEqual([]);
+});
+
+/**
+ * A child mounts before its parent, so mount order alone would put the
+ * surface drawn inside underneath the one drawing it.
+ */
+test("puts a nested surface above the one it is drawn inside", () => {
+  render(Nested, { id: "outer", inside: "inner" });
+  expect(ids()).toEqual(["outer", "inner"]);
 });

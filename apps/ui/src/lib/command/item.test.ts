@@ -1,12 +1,16 @@
 import { afterEach, expect, test, vi } from "vitest";
 
-import { anItem } from "@notemap/client/testing";
+import { anItem, json } from "@notemap/client/testing";
+
+import { pool } from "$testing/pool";
+import { notices } from "$lib/notices.svelte";
 
 import { commandsFor, type Surroundings } from "./item";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
 afterEach(() => {
+  notices.clear();
   Reflect.deleteProperty(navigator, "clipboard");
 });
 
@@ -25,6 +29,12 @@ const at: Surroundings = {
 
 function ids(item = anItem("one"), extra: Partial<Surroundings> = {}) {
   return commandsFor(item, { ...at, ...extra }).map((command) => command.id);
+}
+
+function take(id: string, item = anItem("one")): void {
+  const found = commandsFor(item, at).find((command) => command.id === id);
+  if (found === undefined || !("run" in found)) throw new Error(id);
+  void found.run();
 }
 
 test("offers process, manual and discard for an ordinary item, none refused", () => {
@@ -108,4 +118,38 @@ test("goes to the address it is given, and to the log where it has none", () => 
 test("publishes tag only where the surface hands one over", () => {
   expect(ids()).not.toContain("tag");
   expect(ids(anItem("one"), { tag: () => undefined })).toContain("tag");
+});
+
+/**
+ * A key may have taken this from a surface the row is not on, so there is no
+ * row to draw a failure under: it speaks in the corner instead.
+ */
+test("says in the corner what copy could not take", async () => {
+  pool(() => json(200, { values: [] }));
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: {
+      writeText: vi.fn(() => Promise.reject(new Error("no clipboard"))),
+    },
+  });
+
+  take(
+    "copy",
+    anItem("one", {
+      payload: {
+        type: "text",
+        content: { text: "a note" },
+        metadata: {},
+        assets: [],
+      },
+    }),
+  );
+
+  const said = await vi.waitFor(() => {
+    const last = notices.shown.at(-1);
+    if (last === undefined) throw new Error("nothing said");
+    return last;
+  });
+  expect(said.what).toBe("no clipboard");
+  expect(said.standing).toBe(true);
 });

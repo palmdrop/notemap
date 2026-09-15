@@ -29,30 +29,21 @@ export function chord(event: KeyboardEvent): string {
   return parts.join("+");
 }
 
-function mac(): boolean {
-  return /mac/i.test(navigator.userAgent);
-}
+/** Controls the browser clicks when the key lands on them, focused. */
+const CLICKED = ["BUTTON", "A", "SUMMARY"];
 
-/** How a chord reads on the key a person would press, for a settings page or a palette. */
-export function reads(chord: string): string {
-  const onMac = mac();
-  const named: Record<string, string> = {
-    mod: onMac ? "⌘" : "Ctrl",
-    alt: onMac ? "⌥" : "Alt",
-    shift: "⇧",
-    enter: "⏎",
-    escape: "Esc",
-    tab: "⇥",
-    backspace: "⌫",
-    delete: "⌦",
-    up: "↑",
-    down: "↓",
-    left: "←",
-    right: "→",
-  };
+/**
+ * Whether the browser will turn this press into a click on whatever has the
+ * focus. A control reached by tab answers for `⏎` and `space` itself, so a
+ * command taking the same press would act twice, on two different things.
+ */
+export function activates(event: KeyboardEvent): boolean {
+  if (event.key !== "Enter" && event.key !== " ") return false;
 
-  return chord
-    .split("+")
-    .map((part) => named[part] ?? part)
-    .join(onMac ? "" : "+");
+  const target = event.target;
+  return (
+    target instanceof HTMLElement &&
+    (CLICKED.includes(target.tagName) ||
+      target.getAttribute("role") === "button")
+  );
 }

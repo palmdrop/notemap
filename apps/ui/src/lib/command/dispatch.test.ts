@@ -124,3 +124,23 @@ describe("the caret's own two rules", () => {
     expect(found).toBe(back);
   });
 });
+
+describe("what already has the press", () => {
+  it("leaves a key a control answered for alone", () => {
+    const event = keydown({ key: "D" });
+    event.preventDefault();
+
+    expect(dispatch(event, [() => [run("discard")]], chordFor)).toBeUndefined();
+  });
+
+  it("leaves ⏎ to the control the browser is about to click", () => {
+    const button = document.createElement("button");
+    const select: Command = { id: "select", label: "select", run: vi.fn() };
+
+    expect(
+      dispatch(keydown({ key: "Enter" }, button), [() => [select]], (id) =>
+        id === "select" ? "enter" : undefined,
+      ),
+    ).toBeUndefined();
+  });
+});
