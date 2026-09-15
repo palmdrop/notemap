@@ -840,3 +840,27 @@ test("a bare d discards nothing, and e opens the row for editing", async () => {
   await fireEvent.keyDown(window, { key: "e" });
   expect(await screen.findByLabelText("What it says")).toBeTruthy();
 });
+
+/**
+ * `Capture` is autofocused on arrival, so the first `esc` is what takes the
+ * caret out of it and makes every other key on the surface reachable.
+ */
+test("the first esc leaves the capture box, and the next one deselects", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  const box = screen.getByLabelText("What to capture");
+  box.focus();
+  expect(document.activeElement).toBe(box);
+
+  await fireEvent.keyDown(box, { key: "Escape" });
+  expect(document.activeElement).not.toBe(box);
+
+  await fireEvent.keyDown(window, { key: "j" });
+  expect(stamps(true)).toHaveLength(1);
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  expect(stamps(true)).toHaveLength(0);
+});

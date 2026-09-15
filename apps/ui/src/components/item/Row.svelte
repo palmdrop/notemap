@@ -11,7 +11,7 @@
   import Pending from "$components/primitives/marks/Pending.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
-  import { itemHref } from "$components/item/href";
+  import type { Command } from "$lib/command/command";
   import { became, editable } from "$lib/lineage";
   import { recordsOf } from "$lib/records.svelte";
 
@@ -25,6 +25,7 @@
     selected,
     offline,
     surface,
+    commands,
     pending = false,
     onselect,
     onprocess,
@@ -33,6 +34,8 @@
     selected: boolean;
     offline: boolean;
     surface: "queue" | "feed";
+    /** The surface's own list for this row, empty where it is not the selected one. */
+    commands: readonly Command[];
     pending?: boolean;
     onselect: () => void;
     onprocess: () => void;
@@ -120,13 +123,7 @@
   <div
     class="col-span-full -mx-3 flex h-9 items-center border border-ink px-3 max-narrow:-mx-2 max-narrow:px-2"
   >
-    <Actions
-      {item}
-      {offline}
-      address={itemHref(item.id)}
-      onprocess={() => onprocess()}
-      onedit={() => (editing = !editing)}
-    />
+    <Actions {commands} />
   </div>
 {:else}
   <div class="col-start-1 h-9 border-r border-ink"></div>

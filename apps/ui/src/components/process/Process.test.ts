@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
+import { tick } from "svelte";
 
 import {
   anItem,
@@ -3088,4 +3089,49 @@ test("keeping the capture's words draws them again and carries nothing", async (
     capability: "create",
     arguments: { directory: "inbox" },
   });
+});
+
+/**
+ * The one chord that fires with the caret in a field: the decision is finished
+ * where the words are, and reaching for the mouse to send it is the gesture
+ * this surface exists to spare.
+ */
+test("⌘⏎ routes from inside a field, where esc only leaves the field", async () => {
+  serving([aDestination()], { kind: "described", capabilities: [APPEND] });
+
+  draw();
+  await choose(/Vault/);
+  await vi.waitFor(() => {
+    expect(
+      (screen.getByRole("button", { name: "route" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false);
+  });
+
+  await fireEvent.keyDown(window, { key: "e" });
+  const words = await screen.findByLabelText("words");
+  words.focus();
+
+  // The first press leaves the field; the editor is still open behind it.
+  await fireEvent.keyDown(words, { key: "Escape" });
+  expect(document.activeElement).not.toBe(words);
+  expect(screen.queryByLabelText("words")).not.toBeNull();
+
+  words.focus();
+  await fireEvent.keyDown(words, { key: "Enter", metaKey: true });
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+});
+
+/** Nowhere to send it is a refusal, and a refused command has no key either. */
+test("⌘⏎ sends nothing while no destination is taken", async () => {
+  serving([aDestination()]);
+
+  draw();
+  await screen.findByRole("button", { name: /Vault/ });
+
+  await fireEvent.keyDown(window, { key: "Enter", metaKey: true });
+  await tick();
+  expect(asked()).not.toContain("POST /v1/items/one/route");
 });

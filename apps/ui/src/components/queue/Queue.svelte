@@ -164,16 +164,10 @@
     void tick().then(() => reveal(row.id));
   }
 
-  // The list's own walking, and the selected row's: `Actions`' commands
-  // reached by key wherever the row draws them as buttons.
-  publish(() => [
-    ...listCommands({
-      ondown: () => walk(1),
-      onup: () => walk(-1),
-      onselect: () => (current !== undefined ? process(current) : walk(1)),
-      ondeselect: deselect,
-    }),
-    ...(current === undefined
+  // Built once and read twice: the row draws these as buttons and a chord
+  // takes the same objects, so the two cannot come to mean different things.
+  const commands = $derived(
+    current === undefined
       ? []
       : commandsFor(current, {
           address: itemHref(current.id),
@@ -181,7 +175,17 @@
           onprocess: () => process(current),
           onedit: () => drawn[current.id]?.edit(),
           tag: () => drawn[current.id]?.tag(),
-        })),
+        }),
+  );
+
+  publish(() => [
+    ...listCommands({
+      ondown: () => walk(1),
+      onup: () => walk(-1),
+      onselect: () => (current !== undefined ? process(current) : walk(1)),
+      ondeselect: deselect,
+    }),
+    ...commands,
   ]);
 </script>
 
@@ -230,6 +234,7 @@
         surface="queue"
         selected={selected === row.id}
         offline={!pool.yes}
+        commands={selected === row.id ? commands : []}
         pending={undrained.has(row.id)}
         onselect={() => select(row.id)}
         onprocess={() => process(row)}

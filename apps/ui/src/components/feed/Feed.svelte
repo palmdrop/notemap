@@ -101,6 +101,20 @@
     replaceState(withView(page.url, wanted), {});
   }
 
+  // Built once and read twice, as on the queue: the row draws these as buttons
+  // and a chord takes the same objects.
+  const commands = $derived(
+    current === undefined
+      ? []
+      : commandsFor(current, {
+          address: itemHref(current.id),
+          offline: !pool.yes,
+          onprocess: () => process(current),
+          onedit: () => drawn[current.id]?.edit(),
+          tag: () => drawn[current.id]?.tag(),
+        }),
+  );
+
   // The same two the queue publishes: a register walks the same way whatever
   // it holds, and a row offers what it draws as buttons.
   publish(() => [
@@ -110,15 +124,7 @@
       onselect: () => (current !== undefined ? process(current) : walk(1)),
       ondeselect: () => (selected = undefined),
     }),
-    ...(current === undefined
-      ? []
-      : commandsFor(current, {
-          address: itemHref(current.id),
-          offline: !pool.yes,
-          onprocess: () => process(current),
-          onedit: () => drawn[current.id]?.edit(),
-          tag: () => drawn[current.id]?.tag(),
-        })),
+    ...commands,
   ]);
 </script>
 
@@ -167,6 +173,7 @@
         surface="feed"
         selected={selected === item.id}
         offline={!pool.yes}
+        commands={selected === item.id ? commands : []}
         pending={undrained.has(item.id)}
         onselect={() => select(item.id)}
         onprocess={() => void goto(processHref(item.id))}

@@ -1,32 +1,16 @@
 <script lang="ts">
-  import type { Item } from "@notemap/client";
-
   import Action from "$components/primitives/controls/Action.svelte";
-  import { commandsFor } from "$lib/command/item";
   import { DECIDE, WORK, type Command } from "$lib/command/command";
 
   /**
    * The quick tier on the left — every decision that needs no destination —
-   * and working with the item on the right. `address` is where this item is
-   * read, and is absent on the surface that already is it.
+   * and working with the item on the right. The list is the surface's, built
+   * once and published to the keyboard in the same breath: what a button
+   * reaches here is the same object a chord reaches, not a second reading of
+   * the same item.
    */
-  let {
-    item,
-    address,
-    offline = false,
-    onprocess,
-    onedit,
-  }: {
-    item: Item;
-    address?: string;
-    offline?: boolean;
-    onprocess: () => void;
-    onedit: () => void;
-  } = $props();
+  let { commands }: { commands: readonly Command[] } = $props();
 
-  const commands = $derived(
-    commandsFor(item, { address, offline, onprocess, onedit }),
-  );
   const decide = $derived(
     commands.filter((command) => command.group === DECIDE),
   );
@@ -41,8 +25,8 @@
   }
 </script>
 
-{#snippet drawn(commands: readonly Command[])}
-  {#each commands as command (command.id)}
+{#snippet drawn(tier: readonly Command[])}
+  {#each tier as command (command.id)}
     <Action
       primary={command.primary}
       alarm={command.alarm}
