@@ -59,11 +59,31 @@
       $queue.items.length === 0,
   );
 
-  const rows = $derived($queue.items);
+  /** The selected row's own copy, which outlives its place on the queue. */
+  const heldRow = $derived(client.held(selected ?? ""));
 
-  // A quick decision takes the selected row off the list. The selection moves
-  // to the row that took its place, so `d` `d` `d` walks down rather than
-  // leaving nothing selected and the next `j` at the top.
+  /**
+   * A decision takes the selected row off the queue, and the row stays drawn
+   * where it stood until the selection leaves it: the decision can be looked
+   * at, and taken back from the row, after it is made.
+   */
+  const rows = $derived.by(() => {
+    const live = $queue.items;
+    const kept = $heldRow;
+    if (
+      selected === undefined ||
+      kept === undefined ||
+      live.some((row) => row.id === selected)
+    ) {
+      return live;
+    }
+    const place = Math.min(untrack(() => stood) ?? live.length, live.length);
+    return [...live.slice(0, place), kept, ...live.slice(place)];
+  });
+
+  // A selected row the client no longer holds at all is gone for good. The
+  // selection moves to the row that took its place rather than leaving
+  // nothing selected and the next `j` at the top.
   $effect(() => {
     const at = rows.findIndex((row) => row.id === selected);
     if (at !== -1) {

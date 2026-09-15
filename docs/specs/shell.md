@@ -1,13 +1,17 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-14
-**Shipped**: *2026-09-15*: a round of minor changes after a working session — the row keeps its
-foot's height and reads its routing line short; the composer draws a taken template's place
-read-only, bolds the trail it names, and heads its preview with the full path; the tag chooser is
-an overlay that marks its match, offers a `new ·` row, removes on a second press, and draws a
-filed trigger tag inert. See [shell-minor-changes](../plans/shell-minor-changes.md).
+**Last updated**: 2026-09-15
+**Shipped**:
 
+- 2026-09-15 — **A round of minor changes after a working session.** The row keeps its foot's
+  height and its box's edges, so selecting shifts nothing, and reads its routing line short; the
+  queue holds the selected row after a decision until the selection leaves it; the composer draws a
+  taken template's place read-only, bolds the trail it names, heads its preview with the full path,
+  and stays after a route for a second place; the tag chooser is an overlay that marks its match
+  once typed into, offers a `new ·` row, removes on a second press, and draws a filed trigger tag
+  inert; a typed line break is drawn as one. See
+  [shell-minor-changes](../plans/shell-minor-changes.md).
 - 2026-09-14 — **The log on the register.** Phase 5b of
   [shell-redesign](../plans/shell-redesign.md): the kind under the stamp in the rail, as words; one
   fact per row and never an id; the record block under a routing kind; the views as tabs on the
@@ -518,14 +522,22 @@ foot — with no ring or colour from the browser: rewriting looks like writing. 
 opens the chooser in place ([Tagging](#tagging)) — and is how a template is applied, a template
 being a tag. `esc` deselects.
 
-**Every row reserves the foot's height, selected or not** *(amended 2026-09-15)*: the strip a
-selected row's actions sit in is drawn empty on every other row, so selecting one shifts nothing
-above or below it — the list a person is scanning does not resettle under them.
+**Every row reserves the foot's height and the box's edges, selected or not** *(amended
+2026-09-15)*: the strip a selected row's actions sit in is drawn empty on every other row, with the
+rail's rule running through it, and the box's edges are drawn on every row and coloured on the
+selected one — so selecting one shifts nothing above, below or inside it, by so much as the pixel
+a border is. The list a person is scanning does not resettle under them.
 
 **One row serves both surfaces.** The queue's and the feed's differ in what they offer and never in
 what they are, so there is one of them, and what a surface hands it is what differs: a processed
-row leaves the queue at once and is seen on the feed, which offers nothing and keeps every row it
-holds.
+row leaves the queue and is seen on the feed, which offers nothing and keeps every row it holds.
+**The selected row is held until the selection leaves it** *(amended 2026-09-15; it left at once
+before, and a first trigger tag only seemed to hold it)*: a decision made on it — `manual`,
+`discard`, a trigger tag, a route made on the surface and come back from — takes it off the queue
+and leaves it drawn where it stood, from the client's own copy, with its state word and its routing
+line, so the decision can be looked at and taken back from the row it was made on. `esc`, `j`/`k`
+or selecting another row lets it go. So `d` `d` `d` no longer walks the list — `d` `j` `d` `j`
+does — which is the price of being able to read what one just did.
 
 **In the feed, a routed row says where it went, and no word repeats it** *(amended 2026-09-14; it
 carried `routed`, `manual` and `retrying` as words over the line)*. The feed is the pool read
@@ -557,7 +569,8 @@ the double selected nothing — the gutter, the marks and the space around the p
 body's words stay the browser's.
 
 **The keyboard on the queue**, drawn so a reader could guess it from the actions and never printed:
-`j`/`k` walk the rows, moving the selection and bringing it into view; `enter` selects the first
+`j`/`k` walk the rows, moving the selection and bringing it into view — and off a held row, which
+then goes; `enter` selects the first
 row where none is, and opens process on the one that is; `p` process; `m` manual; `d` discard;
 `+` opens the tag chooser; `esc` deselects. None fire while a field has the caret, which the
 capture box does when the queue is drawn: a key pressed into a field is the field's.
@@ -664,13 +677,18 @@ block sit together rather than one of them living only in the `place` section ab
 order without deciding anything, and a bold inverted `route` on the right, enabled exactly when
 there is a destination and a capability to send.
 
-**After a decision — route, manual, discard, or a template tag — the surface advances to the next
-unprocessed item** in the queue's order, and returns to the queue when there is none. That is what
-a queue worked from one end is; single-capture mode is not a separate feature. The corner says
-what happened as it always did, with the way to the capture it was about. **`esc` returns to the
-queue with the item still selected** — `?selected=<id>` on the queue's address, read once on
-arrival and taken off again. From a field, the first `esc` leaves the field. The queue keeps no
-processed row: a processed item is seen on the feed.
+**After manual, discard or a template tag the surface advances to the next unprocessed item** in
+the queue's order, and returns to the queue when there is none. That is what a queue worked from
+one end is; single-capture mode is not a separate feature. The queue is read a page at a time, so
+where the item was the last row held the next page is read before the queue is declared empty,
+and an item that was never on the queue — reached from the feed — goes on from its top. **A route
+does not advance** *(amended 2026-09-15; it did, and an item bound for two places lost its surface
+under the first)*: the decision is cleared and the surface stays, so a second destination is one
+more decision away, and `next →` is what moves on. The corner says what happened as it always did,
+with the way to the capture it was about. **`esc` returns to the queue with the item still
+selected** — `?selected=<id>` on the queue's address, read once on arrival and taken off again —
+and a processed item comes back held on the queue until the selection leaves it
+([the row](#the-row)). From a field, the first `esc` leaves the field.
 
 **The keyboard on the surface**: `e` edit, `esc` back, `⌘/ctrl+⏎` route, `[` and `]` previous and
 next. None fire while a field has the caret except `⌘/ctrl+⏎`.
@@ -1149,19 +1167,21 @@ sits on the collapsed row.
 **The chooser is one control, wherever it is drawn** *(added 2026-09-11)*. What the item carries
 is a row of pressed words, a trigger tag marked with the template it applies, each pressed to
 select it and taken off on the `×` that then appears beside it *(amended 2026-09-15; a single
-press used to remove it outright)*. `esc`, opening the line, or pressing another tag clears the
-selection without taking anything off. `+` opens a line, an **absolute panel** beneath it —
+press used to remove it outright)*. `esc`, opening the line, pressing another tag, or the row
+losing its selection clears the selection without taking anything off. `+` opens a line, an **absolute panel** beneath it —
 *amended 2026-09-15: it used to sit in the flow, which shifted whatever was below the row; an
 absolute panel still extends the process surface's scrolling middle, so it stays reachable there
 too* — holding the pool's offer: the eight most used while the line is empty, the whole list the
 line narrows to once it is typed into, minus what the item carries either way.
 
-**The first row is marked the moment the panel is drawn, and stays marked as it narrows**
+**The first match is marked as soon as the line is typed into, and stays marked as it narrows**
 *(amended 2026-09-15; the match `⏎` was about to take used to be unmarked, so `⏎` on a half-typed
 name that matched one created a second, unrelated tag instead of taking the match — `qu` then `⏎`
-made `qu` over `quote`)*. `⇥` completes what was typed as far as the offer agrees, and once there
-is nothing left to complete walks the offer, moving the mark; `↑↓` and the pointer walk it too,
-without moving the caret out of the line. `⏎` takes the marked row. A name no offer holds is the
+made `qu` over `quote`)*. Nothing is marked while the line is empty: a reflex `⏎` after `+` puts
+the line away rather than classifying the item with whatever is most used. `⇥` completes what was
+typed as far as the offer agrees, and once there is nothing left to complete walks the offer,
+moving the mark; `↑↓` and the pointer walk it too, without moving the caret out of the line, and
+the walk goes on from wherever the mark is — there is no dead press. `⏎` takes the marked row. A name no offer holds is the
 panel's **last row**, `new · <name>` — how a fresh tag is made — and it is the only row, so the one
 marked, exactly where nothing else matched at all. `esc` or leaving the line puts it away and takes
 nothing: a name half-typed is not a decision, and a panel row is taken without the line ever losing
@@ -1719,7 +1739,10 @@ capture, a destination or a template and are never the shell's own — and a lin
 its address is `http` or `https`, on the rule the record's pointer already follows: a
 `javascript:` address in an `href` is script on this origin, and the renderer's own list of safe
 protocols is longer than this shell's. An image in the source is drawn from wherever it points,
-which is what a person wrote.
+which is what a person wrote. **A line break typed is a line break drawn** *(added 2026-09-15)*:
+CommonMark folds a soft break into the paragraph, so three short lines came out as one, which
+nobody who pressed `enter` three times meant. The break is kept, without a paragraph's space —
+`white-space: pre-line` on the paragraph — and a blank line still makes a paragraph.
 
 A payload type this shell cannot draw **says so by name** and stays taggable, archivable and
 routable, since none of those need to understand the content. An item never becomes an invisible

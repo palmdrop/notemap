@@ -58,6 +58,12 @@
     border-left: 1px solid var(--color-ink);
     padding-left: var(--spacing-gutter);
   }
+  /* A line break typed is a line break drawn: CommonMark's soft break folds
+     short lines into one paragraph, which nobody who pressed enter meant. */
+  & p,
+  & li {
+    white-space: pre-line;
+  }
   & pre {
     white-space: pre-wrap;
   }

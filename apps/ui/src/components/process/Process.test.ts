@@ -278,6 +278,20 @@ const described = async () => screen.findByLabelText("directory");
  * has it settled a tick after its description lands, so the commit is briefly
  * disabled where nothing is clicked in between.
  */
+/**
+ * Routing keeps the surface: the decision is cleared for a second place, and
+ * `next →` is what moves on.
+ */
+const stayed = async () => {
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+  expect(left()).toBeUndefined();
+  expect(
+    await screen.findByRole("combobox", { name: "what became of it" }),
+  ).toBeDefined();
+};
+
 const commit = async () => {
   const button = (await screen.findByRole("button", {
     name: "route",
@@ -579,6 +593,24 @@ test("a lined template draws its place read-only, with edit to reopen the line",
   expect(line.value).toBe("research/2026-09-04.md");
 });
 
+/** Opening the line and touching nothing is not a correction. */
+test("a lined template edited and left alone still commits as the template", async () => {
+  servingLinedTemplate();
+
+  draw();
+  await choose("research");
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "edit place" }),
+  );
+  await screen.findByRole("combobox", { name: "place" });
+  await commit();
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+  expect(await sent()).toContainEqual({ template: LINED_RESEARCH.id });
+});
+
 /** Taking a destination directly still draws the line at once: only a template starts read-only. */
 test("choosing a destination directly draws the line, not the read-only summary", async () => {
   servingLinedTemplate();
@@ -620,7 +652,9 @@ test("advances on a trigger tag taken in its own row", async () => {
     await screen.findByRole("option", { name: /route\/research/ }),
   );
 
-  expect(left()).toBe("/");
+  await vi.waitFor(() => {
+    expect(left()).toBe("/");
+  });
 });
 
 /**
@@ -695,10 +729,7 @@ test("composes a decision one step at a time and sends it", async () => {
   });
   await commit();
 
-  await vi.waitFor(() => {
-    expect(left()).toBe("/");
-  });
-  expect(asked()).toContain("POST /v1/items/one/route");
+  await stayed();
 });
 
 /** One capability that asks for nothing: taking the destination is the whole decision. */
@@ -825,9 +856,7 @@ test("a typed value that was never listed still routes", async () => {
   });
   await commit();
 
-  await vi.waitFor(() => {
-    expect(left()).toBe("/");
-  });
+  await stayed();
 
   const routed = sentTo(transport).find(
     (request) => routeOf(request) === "POST /v1/items/one/route",
@@ -1034,6 +1063,15 @@ function routing(
       return json(200, { kind: "described", capabilities: [APPEND] });
     }
     if (route === "POST /v1/items/one/route") return json(200, record);
+    if (route === "POST /v1/items/one/mark-processed") {
+      return json(200, {
+        id: "rec",
+        item: "one",
+        at: WHEN,
+        state: "delivered",
+        target: { kind: "user" },
+      });
+    }
     if (route === "GET /v1/queue") return json(200, { values: queued });
     return json(404, { error: { code: "unknown-route" } });
   });
@@ -1408,9 +1446,7 @@ test("an unreachable destination is still routable", async () => {
   expect(screen.queryByRole("alert")).toBeNull();
 
   await fireEvent.click(commit);
-  await vi.waitFor(() => {
-    expect(left()).toBe("/");
-  });
+  await stayed();
 
   expect(await routed(transport)).toMatchObject({
     capability: "create-or-append",
@@ -1895,7 +1931,7 @@ const aTarget = {
 };
 
 /** The record goes up; what is said about it belongs to the surface below. */
-test("says in the corner where it went, and returns to the queue when nothing is left", async () => {
+test("says in the corner where it went, and stays for a second place", async () => {
   routing({
     id: "r",
     item: "one",
@@ -1909,14 +1945,20 @@ test("says in the corner where it went, and returns to the queue when nothing is
   await choose(/Vault/);
   await commit();
 
-  await vi.waitFor(() => {
-    expect(left()).toBe("/");
-  });
+  await stayed();
   const said = notices.shown.at(-1);
   expect(said?.what).toBe("routed · Vault");
   expect(said?.why).toBe("notes/inbox/picker.md");
   expect(said?.href).toBe("/items/one");
   expect(said?.key).toBe("record:r");
+
+  await choose(/Vault/);
+  await commit();
+  await vi.waitFor(() => {
+    expect(
+      asked().filter((each) => each === "POST /v1/items/one/route"),
+    ).toHaveLength(2);
+  });
 });
 
 /** The next unprocessed item in the queue's order, which is what a queue worked from one end is. */
@@ -1942,8 +1984,7 @@ test("advances to the next item in the queue after a decision, and esc returns s
   await fireEvent.keyDown(window, { key: "[" });
   expect(left()).toBe("/items/two/process");
 
-  await choose(/Vault/);
-  await commit();
+  await choose(/^manual/);
   await vi.waitFor(() => {
     expect(left()).toBe("/items/two/process");
   });
@@ -1964,15 +2005,14 @@ test("advances to the row after this one, not the top of the queue", async () =>
   await client.enter("queue");
 
   draw();
-  await choose(/Vault/);
-  await commit();
+  await choose(/^manual/);
   await vi.waitFor(() => {
     expect(left()).toBe("/items/two/process");
   });
 });
 
-/** An item that was never on the queue — reached from the feed — has nothing after it. */
-test("returns to the queue after deciding an item that was not on it", async () => {
+/** An item that was never on the queue — reached from the feed — goes on from the top. */
+test("goes to the first queued item after deciding one that was not on the queue", async () => {
   routing(
     {
       id: "r",
@@ -1986,8 +2026,64 @@ test("returns to the queue after deciding an item that was not on it", async () 
   await client.enter("queue");
 
   draw();
-  await choose(/Vault/);
-  await commit();
+  await choose(/^manual/);
+  await vi.waitFor(() => {
+    expect(left()).toBe("/items/zero/process");
+  });
+});
+
+/** The queue is read a page at a time; the end of the page is not the end of the queue. */
+test("reads the next page before returning to a queue that has more", async () => {
+  let pages = 0;
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route === "POST /v1/items/one/mark-processed") {
+      return json(200, {
+        id: "rec",
+        item: "one",
+        at: WHEN,
+        state: "delivered",
+        target: { kind: "user" },
+      });
+    }
+    if (route === "GET /v1/queue") {
+      pages += 1;
+      return pages === 1
+        ? json(200, {
+            values: [anItem("zero"), anItem("one")],
+            next: "/v1/queue?after=one",
+          })
+        : json(200, { values: [anItem("two")] });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+  await client.enter("queue");
+
+  draw();
+  await choose(/^manual/);
+  await vi.waitFor(() => {
+    expect(left()).toBe("/items/two/process");
+  });
+});
+
+test("returns to the queue when nothing is left", async () => {
+  routing(
+    {
+      id: "r",
+      item: "one",
+      at: "2026-09-03T10:00:00.000Z",
+      state: "delivered",
+      target: aTarget,
+    },
+    [anItem("one")],
+  );
+  await client.enter("queue");
+
+  draw();
+  await choose(/^manual/);
   await vi.waitFor(() => {
     expect(left()).toBe("/");
   });
@@ -2189,9 +2285,7 @@ test("draws a kind that offers no preview as such, and still routes", async () =
   expect(await screen.findByText(NO_PREVIEW_OFFERED)).toBeDefined();
 
   await commit();
-  await vi.waitFor(() => {
-    expect(left()).toBe("/");
-  });
+  await stayed();
 });
 
 test("says a destination that could not be reached, and routing is still available", async () => {
@@ -2367,7 +2461,9 @@ test("taking discard archives the item, closes, and offers it back", async () =>
 
   await choose(/^discard/);
 
-  expect(left()).toBe("/");
+  await vi.waitFor(() => {
+    expect(left()).toBe("/");
+  });
   await vi.waitFor(() => {
     expect(sentTo(transport).map(routeOf)).toContain(
       "POST /v1/items/one/archive",
@@ -2497,7 +2593,9 @@ test("with the pool out of reach the composer opens and discards", async () => {
   expect((discard as HTMLButtonElement).disabled).toBe(false);
 
   await choose(/^discard/);
-  expect(left()).toBe("/");
+  await vi.waitFor(() => {
+    expect(left()).toBe("/");
+  });
 
   online(true);
   await vi.waitFor(() => {

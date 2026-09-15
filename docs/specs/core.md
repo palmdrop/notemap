@@ -1,11 +1,13 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-09-13
-**Shipped**: *2026-09-15*: `cancelDelivery` takes back a record naming the user whatever its state,
-and the routing summary names the distinct templates whose records stand. See
-[shell-minor-changes](../plans/shell-minor-changes.md).
+**Last updated**: 2026-09-15
+**Shipped**:
 
+- 2026-09-15 — **A manual mark is cancellable, the summary names its templates, and a note confesses less.** `cancelDelivery`
+  takes back a record naming the user whatever its state; the routing summary names the distinct
+  templates whose records stand; the markdown kinds no longer confess tags their settings left out.
+  See [shell-minor-changes](../plans/shell-minor-changes.md).
 - 2026-09-13 — **The action log is read through one query.** `actions.read` takes a subject, a set
   of kinds, or both, where `forItem` and `all` stood; `ACTION_KINDS` is the list a host validates
   against.
@@ -1018,11 +1020,15 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   output is never buffered in order to be hashed. Core stores it as a **blob**, the store being
   content-addressed already, and the record names the hash, the media type and the note.
 - **A kind confesses what its own rendering left behind** (added 2026-09-10). The markdown kinds
-  drop an item's artifacts always, and its tags wherever nothing was asked to carry them, and both
-  now reach the output's note — a lossy delivery that says nothing is indistinguishable from a
-  faithful one, which is the whole reason the note exists. What each dialect lost is the dialect's
-  to say: the renderer names its own losses and the note assembly names the tags, because neither
-  knows the other's half.
+  drop an item's artifacts always, and that reaches the output's note — a lossy delivery that says
+  nothing is indistinguishable from a faithful one, which is the whole reason the note exists. What
+  each dialect lost is the dialect's to say: the renderer names its own losses and the note
+  assembly names the tags it was asked to write and could not, because neither knows the other's
+  half. *Amended 2026-09-15*: tags the destination's settings left out are **not confessed**. They
+  used to be, on the reasoning above; but a setting is a choice rather than a loss, the output
+  already shows what it holds, and a note saying `its tags did not go` under every delivery to a
+  vault that writes no frontmatter was the confession nobody could act on. A hashtag that could
+  not be made of a tag is still said: that one was asked for.
 - **The note is free text nothing parses**, on the same footing as the `detail` that rides on
   `unreachable` and `rejected`. A machine-readable list of what was dropped is a vocabulary both
   core and every shell would have to learn, and would be wrong the first time a destination lost

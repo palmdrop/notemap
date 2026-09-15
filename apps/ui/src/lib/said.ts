@@ -36,5 +36,8 @@ export const NOT_YET_DELIVERED = "not yet delivered";
 /** A reservation cancelled before its delivery landed, in the log's block. */
 export const CALLED_OFF = "called off";
 
+/** A mark made by hand and taken back, in the log's block. */
+export const UNDONE = "undone";
+
 /** A delivery that kept no copy of what it sent: ordinary, and said in two words. */
 export const NOTHING_KEPT = "nothing kept";

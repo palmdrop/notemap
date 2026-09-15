@@ -48,6 +48,12 @@ The list, as written after working a queue with the redesigned shell:
   the template.
 - **Notices**: `marked manual` and `discarded` stand (so `undo` does not time out under somebody's
   hands) but are not alarms — `alarm: false`, the fired-template precedent.
+- **Route stays** *(after use)*: a route clears the decision and keeps the surface, so an item
+  can go to a second place; `next →` moves on. Manual, discard and a trigger tag still advance.
+- **Held row** *(after use)*: the queue holds the selected row after a decision until the
+  selection leaves it. The spec said both "leaves at once" and "held in place"; the second wins.
+- **Tag confession** *(after use)*: tags the settings left out are a choice, not a loss, and are
+  not confessed. Hashtags that could not be made still are.
 
 ---
 
@@ -73,6 +79,20 @@ The list, as written after working a queue with the redesigned shell:
    - [x] First match marked; `⏎` takes the marked row; `new · name` is the last row; pointer marks
    - [x] Removing a tag is press then `×`; a trigger tag that filed the item is inert with a title
    - [x] `shell.md` amended; commit
+
+5. After the review and a second working session _(done 2026-09-15)_
+   - [x] Chooser: no mark on an empty line, no dead press after a hover or a completion,
+         `new ·` not offered for a carried tag, `×` goes with the selection, the inert tag keeps
+         its accessible name
+   - [x] Rows: the box's edges reserved on every row, the rail's rule through the empty foot
+   - [x] Queue: the selected row is held after a decision until the selection leaves it
+   - [x] Composer: `route` stays for a second place; `next` reads the next queue page before
+         giving up; an item not on the queue goes on from the top; `beside` fields under the
+         read-only place; one leaf derivation, from the rewrite where there is one
+   - [x] A typed line break is drawn as one
+   - [x] The markdown kinds no longer confess tags their settings left out
+   - [x] An undone mark is said as undone in the log and the corner
+   - [x] `Shipped:` entries in the files' own shape; specs amended; commit
 
 ## Where each task lands
 

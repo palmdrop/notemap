@@ -2,11 +2,12 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one and health are settled; the rest is stub
-**Last updated**: 2026-09-13
-**Shipped**: *2026-09-15*: cancelling a routing record naming the user is no longer refused, and
-the routing summary's `templates` names which templates still stand. See
-[shell-minor-changes](../plans/shell-minor-changes.md).
+**Last updated**: 2026-09-15
+**Shipped**:
 
+- 2026-09-15 — **Cancelling a manual mark, and `templates` on the summary.** `POST /v1/routing/{record}/cancel` on a
+  record naming the user is no longer refused, and the routing summary's `templates` names which
+  templates still stand. See [shell-minor-changes](../plans/shell-minor-changes.md).
 - 2026-09-13 — **The action log narrows by kind.** `GET /v1/actions` takes `kind`, comma-separated,
   refused as `422 bad-kind` where a word names nothing the log writes, and `next` carries it. An
   `Action`'s `kind` is now the closed list in the schema rather than a bare string.

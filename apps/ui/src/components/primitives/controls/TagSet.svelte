@@ -8,12 +8,12 @@
    * A chooser over known names with free entry. What the item carries is a row
    * of pressed words, each taken off by pressing it once to select it and
    * again on the `×` that appears. `+` opens a line with the pool's offer in a
-   * panel beneath it, narrowed as the line is typed into: the first row is
-   * always marked, `⇥` completes what was typed as far as the offer agrees
-   * and once there is nothing left to complete walks the offer, `↑↓` and the
-   * pointer walk it too, `⏎` takes the marked row, and `esc` or leaving the
-   * line puts it away and takes nothing — a name half-typed is not a
-   * decision.
+   * panel beneath it, narrowed as the line is typed into: the first match is
+   * marked as soon as the line is typed into, `⇥` completes what was typed as
+   * far as the offer agrees and once there is nothing left to complete walks
+   * the offer, `↑↓` and the pointer walk it too, `⏎` takes the marked row, and
+   * `esc` or leaving the line puts it away and takes nothing — a name
+   * half-typed is not a decision.
    */
   let {
     names,
@@ -52,10 +52,8 @@
 
   let adding = $state(false);
   let draft = $state("");
-  /** Where the walk stands. The row at this index is always marked while the panel is drawn. */
-  let at = $state(0);
-  /** Whether `↑↓`/`⇥` have walked since the offer last changed, for `⇥`'s own step. */
-  let moved = $state(false);
+  /** Where the walk stands, and the row that is marked. Nothing, until the line is typed into or walked. */
+  let at = $state<number | undefined>(undefined);
   /** A carried tag pressed to select it, so its `×` is drawn. */
   let chosen = $state<string | undefined>(undefined);
 
@@ -73,6 +71,12 @@
     adding = false;
     draft = "";
   }
+
+  // The row is the only caller that toggles this, and a `×` left on a row
+  // nobody is on is a control nobody asked for.
+  $effect(() => {
+    if (!addable) chosen = undefined;
+  });
 
   const entries = $derived<readonly CandidateEntry[]>(
     offered
@@ -97,22 +101,22 @@
     const base: Row[] = shown.map((entry) => ({ label: entry.label }));
     if (typed === "") return base;
 
-    const known = entries.some(
-      (entry) => entry.label.toLowerCase() === typed.toLowerCase(),
+    const known = [...entries.map((entry) => entry.label), ...names].some(
+      (name) => name.toLowerCase() === typed.toLowerCase(),
     );
     return known ? base : [...base, { label: typed, fresh: true }];
   });
 
   $effect(() => {
     // Whatever the walk was on stops meaning anything once the offer beneath
-    // it has changed.
+    // it has changed. A line with nothing typed marks nothing: a reflex `⏎`
+    // after `+` must not classify the item with whatever is most used.
     void rows;
-    at = 0;
-    moved = false;
+    at = draft.trim() === "" ? undefined : 0;
   });
 
   const active = $derived(
-    rows[at] !== undefined ? `${id}-tag-${at}` : undefined,
+    at !== undefined && rows[at] !== undefined ? `${id}-tag-${at}` : undefined,
   );
 
   /** How a trigger tag is drawn, in the chooser and on the row alike. */
@@ -137,12 +141,12 @@
 
   function walk(step: 1 | -1): void {
     if (rows.length === 0) return;
-    at = moved
-      ? (at + step + rows.length) % rows.length
-      : step === 1
-        ? 0
-        : rows.length - 1;
-    moved = true;
+    at =
+      at === undefined
+        ? step === 1
+          ? 0
+          : rows.length - 1
+        : (at + step + rows.length) % rows.length;
   }
 
   function onkeydown(event: KeyboardEvent): void {
@@ -150,15 +154,10 @@
       // The line is what the control is for, so the key never leaves it.
       event.preventDefault();
 
-      // Completion is for a line still being typed. Once the walk has
-      // started the line is a filter, and completing it again would put the
-      // shared prefix back and walk the same two names forever.
-      if (!moved) {
-        const finished = completed(entries, draft, "label");
-        if (finished !== undefined) {
-          draft = finished;
-          return;
-        }
+      const finished = completed(entries, draft, "label");
+      if (finished !== undefined) {
+        draft = finished;
+        return;
       }
       walk(1);
       return;
@@ -172,8 +171,9 @@
 
     if (event.key === "Enter") {
       event.preventDefault();
-      const picked = rows[at];
-      if (picked !== undefined) take(picked.label);
+      const picked = at === undefined ? undefined : rows[at];
+      if (picked === undefined) close();
+      else take(picked.label);
       return;
     }
 
@@ -195,6 +195,9 @@
   {#if inert}
     <span
       title="filed the item — cancel the routing to take it off"
+      aria-label={fired === undefined
+        ? undefined
+        : `${name}, routes to ${fired}`}
       class={fired === undefined ? "" : TRIGGER}
     >
       {fired === undefined ? name : trigger(name)}
@@ -253,9 +256,7 @@
       class="w-32 border-b border-ink px-2 py-0.5 outline-none"
     />
     {#if rows.length > 0}
-      <!-- Absolute rather than in flow: a panel this size still extends the
-           process surface's scrolling middle, so it stays reachable there.
-           Rows taken on `mousedown` with the default prevented, so taking one
+      <!-- Rows taken on `mousedown` with the default prevented, so taking one
            never blurs the line out from under the click. -->
       <div
         id="{id}-tags"

@@ -17,7 +17,7 @@
     type RoutingRecord,
     type RoutingTemplate,
   } from "@notemap/client";
-  import { filenameFrom, placeOf } from "@notemap/output-markdown/naming";
+  import { placeOf } from "@notemap/output-markdown/naming";
 
   import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
   import ComposerTags from "$components/routing/ComposerTags.svelte";
@@ -45,6 +45,7 @@
   import { discard, manual } from "$lib/quick";
   import { reachable } from "$lib/reachable.svelte";
   import { placeNamed, saidOf } from "$lib/routing";
+  import { leafOf, type Said } from "$lib/forecast";
   import { fieldsOf, presetsFrom, valuesFrom } from "$lib/schema-form";
   import { whenOf } from "$lib/when";
 
@@ -71,8 +72,14 @@
 
   const offline = $derived(!pool.yes);
 
-  /** The item's own payload, from which the name of an unnamed note is derived. */
-  const content = $derived(item.payload.content);
+  /**
+   * What this delivery says, from which the name of an unnamed note is
+   * derived: the rewrite where there is one, the capture's own words otherwise.
+   */
+  const spoken = $derived<Said>({
+    content: carried().content ?? item.payload.content,
+    item: item.id,
+  });
   /** What the capture says, which is what editing starts from and what it replaces. */
   const captured = $derived(client.says(item));
   const pictures = $derived(client.images(item));
@@ -257,9 +264,9 @@
   });
 
   function placeFor(value: string): string {
-    const place = placeOf(value);
-    const filename = place.filename ?? filenameFrom(content, item.id);
-    return place.directory === "" ? filename : `${place.directory}/${filename}`;
+    const { directory } = placeOf(value);
+    const filename = leafOf(value, spoken);
+    return directory === "" ? filename : `${directory}/${filename}`;
   }
 
   /** A wrong choice is not a reason to leave the surface. */
@@ -578,13 +585,13 @@
   ) {
     if (id === DISCARD) {
       discard(item);
-      advance();
+      await advance();
       return;
     }
 
     if (id === MANUAL) {
       await manual(item);
-      advance();
+      await advance();
       return;
     }
 
@@ -661,7 +668,9 @@
           href: itemHref(item.id),
         }),
       );
-      advance();
+      // The surface stays, cleared: an item may go to more than one place,
+      // and `next →` is what moves on.
+      release();
     } catch (error) {
       said = saidBy(error);
     } finally {
@@ -685,13 +694,37 @@
   });
 
   /**
-   * After a decision the surface moves on to the next unprocessed item, and
-   * returns to the queue when there is none. That is what a queue worked from
-   * one end is.
+   * The row after this item as the queue stands now, whether or not the item
+   * is still on it: past the row it stood behind, or from the top where it
+   * was first or was never on the queue at all.
    */
-  function advance(): void {
-    const next = around.next;
-    void goto(next === undefined ? resolve("/") : processHref(next.id));
+  function following(): Item | undefined {
+    const rows = $queue.items;
+    const at = rows.findIndex((one) => one.id === item.id);
+    if (at !== -1) return rows[at + 1];
+
+    const before = around.previous;
+    const from =
+      before === undefined
+        ? 0
+        : rows.findIndex((one) => one.id === before.id) + 1;
+    return rows[from];
+  }
+
+  /**
+   * After manual, discard or a template tag the surface moves on to the next
+   * unprocessed item, and returns to the queue when there is none. That is
+   * what a queue worked from one end is. The queue is read a page at a time,
+   * so the end of what is held is not the end of the queue until it says so.
+   */
+  async function advance(): Promise<void> {
+    let next = around.next;
+    if (next === undefined && $queue.more) {
+      await client.loadQueue().catch(() => undefined);
+      next = following();
+    }
+    next ??= following();
+    await goto(next === undefined ? resolve("/") : processHref(next.id));
   }
 
   /** Back to the queue with this item still selected. */
@@ -757,7 +790,7 @@
       field={field.name}
       label={title}
       value={args[field.name] ?? ""}
-      said={field.name === LINE_FIELD ? { content, item: item.id } : undefined}
+      said={field.name === LINE_FIELD ? spoken : undefined}
       onchange={(value) => (args = { ...args, [field.name]: value })}
       onsubmit={(beside) => void send(beside)}
       onrelease={release}
@@ -961,7 +994,7 @@
             field={line.name}
             label={line.title ?? line.name}
             value={args[line.name] ?? ""}
-            said={{ content, item: item.id }}
+            said={spoken}
             {places}
             onchange={(value) => (args = { ...args, [line.name]: value })}
             onsubmit={(beside) => void send(beside)}
@@ -984,6 +1017,10 @@
               edit
             </button>
           </div>
+
+          {#each beside as field (field.name)}
+            {@render labelled(field.title ?? field.name, field)}
+          {/each}
         {/if}
       {:else if chosen !== undefined}
         <!-- A field's own `description` is a sentence written for a schema and
@@ -1007,7 +1044,7 @@
         item={item.id}
         names={tags}
         templates={($held ?? item).routing?.templates ?? []}
-        onfired={advance}
+        onfired={() => void advance()}
       />
     </Section>
 

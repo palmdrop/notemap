@@ -130,7 +130,10 @@ export function noticeOf(
     const gave = stringAt(detail, "tag");
 
     return {
-      what: "routing cancelled",
+      what:
+        stringAt(detail, "target") === "user"
+          ? "manual mark undone"
+          : "routing cancelled",
       ...(gave === undefined ? {} : { why: `${gave} taken back` }),
       ...where,
       alarm: false,

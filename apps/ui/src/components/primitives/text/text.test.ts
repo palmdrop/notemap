@@ -18,6 +18,18 @@ test("draws what a person wrote as CommonMark", () => {
   ]);
 });
 
+/**
+ * The break itself is the `rendered` utility's `white-space: pre-line`, which
+ * jsdom does not lay out; what it needs is the newline kept in the paragraph.
+ */
+test("keeps a line break typed inside a paragraph, for the style that draws it", () => {
+  render(Prose, { text: "line 1\nline 2\nline 3" });
+
+  const paragraphs = screen.getAllByText(/./, { selector: "p" });
+  expect(paragraphs).toHaveLength(1);
+  expect(paragraphs[0]?.textContent).toBe("line 1\nline 2\nline 3");
+});
+
 test("escapes what looks like HTML rather than drawing it", () => {
   render(Prose, { text: "<b>not bold</b>" });
 
