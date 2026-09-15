@@ -864,3 +864,48 @@ test("the first esc leaves the capture box, and the next one deselects", async (
   await fireEvent.keyDown(window, { key: "Escape" });
   expect(stamps(true)).toHaveLength(0);
 });
+
+/**
+ * The editable shape holds a draft and its own `cancel`, so `esc` leaves it
+ * before it leaves the selection — and losing the selection any other way
+ * leaves it too, the box's foot going with the box.
+ */
+test("esc leaves the row's editable shape before it leaves the row", async () => {
+  pool(queued("one", "two"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  const field = await screen.findByLabelText("What it says");
+
+  // The caret is in the field it just opened: the first press only leaves it.
+  field.focus();
+  await fireEvent.keyDown(field, { key: "Escape" });
+  expect(document.activeElement).not.toBe(field);
+  expect(screen.queryByLabelText("What it says")).not.toBeNull();
+  expect(stamps(true)).toHaveLength(1);
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  expect(screen.queryByLabelText("What it says")).toBeNull();
+  expect(stamps(true)).toHaveLength(1);
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  expect(stamps(true)).toHaveLength(0);
+});
+
+test("walking to another row leaves the one being rewritten as it was", async () => {
+  pool(queued("one", "two"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  expect(await screen.findByLabelText("What it says")).toBeTruthy();
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await tick();
+  expect(screen.queryByLabelText("What it says")).toBeNull();
+});

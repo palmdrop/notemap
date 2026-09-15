@@ -64,6 +64,12 @@
   const word = $derived(finished ? became(item) : undefined);
   const mayEdit = $derived(editable(item));
 
+  // The box's foot is where `cancel` and `save` are, so a row that loses the
+  // selection has no way out of the editable shape and must not be left in it.
+  $effect(() => {
+    if (!selected) editing = false;
+  });
+
   /** Opens the tag chooser, for the key that asks for it. */
   export function tag(): void {
     tags?.add();
@@ -72,6 +78,13 @@
   /** Toggles the capture into its editable shape, for the key that asks for it. */
   export function edit(): void {
     if (mayEdit) editing = !editing;
+  }
+
+  /** Leaves the editable shape, and says whether there was one to leave. */
+  export function cancel(): boolean {
+    if (!editing) return false;
+    editing = false;
+    return true;
   }
 
   /** Brings the row into view, for the keys that walk the list. */

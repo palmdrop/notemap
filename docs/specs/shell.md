@@ -527,7 +527,9 @@ appears. **Nothing else changes**: no fill, no colour, no facts appear. `edit` o
 the capture in the capture box's own shape — a ruled box with `cancel` and a bold `save` along its
 foot — with no ring or colour from the browser: rewriting looks like writing. The one thing the selected row adds to the rail is a `+` after the last tag, which
 opens the chooser in place ([Tagging](#tagging)) — and is how a template is applied, a template
-being a tag. `esc` deselects.
+being a tag. `esc` deselects, and leaves the editable shape first where the row is in one: the
+box's foot is where `cancel` and `save` are, so a row that lost the selection under a half-written
+rewrite would have no way out of it. Losing the selection any other way leaves it too.
 
 **Every row reserves the foot's height and the box's edges, selected or not** *(amended
 2026-09-15)*: the strip a selected row's actions sit in is drawn empty on every other row, with the
@@ -578,11 +580,11 @@ body's words stay the browser's.
 **The keyboard on a register** is the same keyboard on the queue and on the feed, because a
 register walks the same way whatever it holds. `j`/`k` walk the rows, moving the selection and
 bringing it into view — and off a held row, which then goes; `enter` selects the first row where
-none is, and opens process on the one that is; `esc` deselects. The selected row adds every command
-its own actions draw ([below](#a-command-is-what-a-key-and-a-button-both-reach)): `p` process,
-`m` manual, `D` discard, `u` undiscard, `e` edit, `c` copy, `o` open, `t` the tag chooser. So a key
-reaches exactly what a button reaches, on either surface, and a control that is not drawn has no
-key either.
+none is, and opens process on the one that is; `esc` leaves the row's editable shape where there is
+one and deselects otherwise. The selected row adds every command its own actions draw
+([below](#a-command-is-what-a-key-and-a-button-both-reach)): `p` process, `m` manual, `D` discard,
+`u` undiscard, `e` edit, `c` copy, `o` open, `t` the tag chooser. So a key reaches exactly what a
+button reaches, on either surface, and a control that is not drawn has no key either.
 
 **Discard is the one deed shift guards.** `D`, not `d`: it is the only key here that sends an item
 away, and a capital is one deliberate press rather than a different gesture. Nothing else is

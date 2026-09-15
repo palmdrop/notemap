@@ -95,6 +95,13 @@
     void goto(processHref(item.id));
   }
 
+  /** As on the queue: the row's editable shape is the nearer thing to leave. */
+  function leave() {
+    if (current === undefined || drawn[current.id]?.cancel() !== true) {
+      selected = undefined;
+    }
+  }
+
   function read(wanted: View) {
     view = wanted;
     remember(SURFACE, wanted);
@@ -122,7 +129,7 @@
       ondown: () => walk(1),
       onup: () => walk(-1),
       onselect: () => (current !== undefined ? process(current) : walk(1)),
-      ondeselect: () => (selected = undefined),
+      ondeselect: leave,
     }),
     ...commands,
   ]);
