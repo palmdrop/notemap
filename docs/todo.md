@@ -2,32 +2,17 @@
 
 ## Shell — layout and interaction
 
-- [ ] new shell design with more clear fields and less clutter/noise
-    - simplify
-    - stronger grids
-    - easier configuration
-    - better hierarchy using bold text, small-caps, grids
-
 - [ ] batch processing, i.e selecting many captures and routing them all at once, or discarding
-- [ ] easier, keyboard driven processing
-  - processing, discarding, etc, with keyboard shortcuts
-- [ ] single-capture mode, seeing only one capture at once with easier access to processing options
-- [ ] keyboard shortcuts
 - [ ] command palette
+- [ ] when editing, pressing enter or shift enter does not save - it should
+- [ ] shift enter as save operation maybe should be replaced with cmd+enter or ctrl+enter? shift+enter, 
+    in many other apps, work as inserting a line break, when just pressing enter would commit the state (save).
+    Notemap should try to adhere to common patterns. 
 
 - [ ] stale and premature UI state
   - No good way to see pending operations. A held row says `retrying` while it is
     looked at and the corner speaks when the delivery resolves, but nothing shows everything in
     flight at once. Belongs with the routing-record and log readability items below.
-  - ~~Log does not show new items without refresh~~ — closed 2026-09-09: the log listens to the
-    watcher the corner already speaks from, and what has happened since goes to the head of the
-    page. Newest-first only; read the other way the walk is what brings it.
-
-- [ ] The markdown renderer is unchosen, so a text capture shows its asterisks.
-  [standards.md](standards.md) says a text payload is CommonMark; the shell's `Prose` primitive
-  draws it verbatim behind the interface a renderer will sit in. A library choice, and the question
-  it drags in with it: whether captured markdown is sanitised before rendering, since a capture can
-  carry raw HTML and nothing between the field and the screen would stop it.
 
 - [ ] **Nothing bounds a surface that is being drawn.** The client's cache caps feed history at 500
   items, but exempts everything a page currently holds — and a page accumulates ids as it is walked
@@ -41,26 +26,6 @@
 
 ## Composer and capture
 
-- [x] ~~fuzzy search in composer input field~~. Narrowed 2026-09-09: `⇥` now walks what still
-  matches once completion has nothing left to add, so a name shared with four others is reached by
-  pressing the key again. Closed 2026-09-13: a name is found by anything in it, head matches
-  first, and the rule sits in one module every narrowing line reads — the flat browse, the place
-  line's segments, the tag chooser, the destination line, the places used before — so a smarter
-  algorithm is one change.
-- [x] ~~using a template from the composer does not add the routing tag~~ — closed 2026-09-09: an
-  untouched template routes and then applies its trigger tag, which the pool absorbs as
-  classification because that template's record already stands. A **corrected** one is the person's
-  own decision and takes no tag.
-- [x] ~~adding a routing tag from within the composer is confusing~~ — closed 2026-09-09: a trigger
-  tag taken in the composer's own tag row closes the composer, the tag being the whole decision.
-- [x] ~~the typed line drew a `+ filename` under a note it was about to append to~~ — closed
-  2026-09-09: a `+` is for what the delivery will make, so appending draws none and the note's own
-  row wears the accent as the row the line names.
-- [x] ~~A schema field's **default** is not drawn~~ — closed 2026-09-09, as a suggestion the person
-  types over and never written into a template's own arguments.
-- [x] ~~Tag picking is still free entry beside a datalist rather than the shell's own
-  chooser, which the order control now uses~~ — closed 2026-09-11: one `TagSet` under the row and
-  the composer, the offer in a panel beneath a line that `⇥` completes and walks.
 - [ ] Editing does not allow attaching anything. It is the edit surface rather than the
   row, and wants designing on its own. The composer's `rewrite` did not reach it (2026-09-10):
   that carries words for one delivery and touches neither the capture nor its assets, so editing
@@ -74,15 +39,12 @@
 - [ ] picking folders in composer is strange and clunky, sometimes you have to click with mouse 
   - it is not clear how to go back or use the current folder
   - tabbing down the hierarchy has no effect on input field until you press "use <path>"
+  - going back is not clearly a button
 
 ## Templates
 
 - [ ] Add a way to append text, or insert {{templates}} INSIDE the output of a capture. Requires capture output.
 - [ ] add way of picking a separate location for note and assets when using templates
-- [ ] A name that is taken - a capability that creates a file refuses a name that already exists, which is right and is not the whole answer. A template filing daily notes as `{{captured_at}}.md` collides on the second capture of the day: nothing is written, nothing is filed, and the item comes back to the queue. Raised 2026-09-07 from using the routing templates slice. Two answers, and they are not exclusive: `create-or-append` is what a daily note wants and the template that collided was pointed at the wrong capability, which the settings page could say; and a **collision policy** on the file capabilities — refuse, or append a number — which is an argument the adapters would declare and core would never interpret. The second wants its own slice and probably an ADR: it adds a word to an adapter's argument vocabulary, and it is useful to a decision made by hand as much as to a template.
-  - Not a missing pattern: `{{captured_at:datetime}}` and `{{captured_at:time}}` already tell two
-    captures on one day apart ([ADR 35](adr/0035-a-templates-arguments-are-patterns-expanded-when-the-decision-is-made.md)).
-    What is open is what a template that *wants* one name per day does when it reaches the second.
 - [ ] Whether a template may restrict who can fire it. A **source-supplied** trigger tag fires like
   any other, deliberately ([ADR 34](adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md)):
   an inbox deciding where its own captures go is the point. What it costs is that a system outside
@@ -96,20 +58,6 @@
 
 ## Seeing what happened — log, routing records, revisions
 
-- [x] ~~Inspecting routing records is hard to view~~ — closed 2026-09-09: the record leads with
-  where it landed and what was sent, which is what most readings of one are for, and the arguments
-  are behind `the decision` for the reading that is working out why it went there.
-- [ ] add new UI views
-    - routing view, showing all routed items. Maybe rather a human-readable action log with a
-      "routing" filter than a page of its own — the user needs a way to inspect the effects of
-      their actions.
-        - ~~hide unnecessary items from log~~ — closed 2026-09-13: `GET /v1/actions` takes `kind`,
-          comma-separated and refused when it names nothing the log writes, the client's read
-          carries `kinds`, and the log is narrowed to one of five views on the URL.
-        - ~~log entries should link to the capture~~ — closed 2026-09-09: the subject is a way to the
-          item, drawn as the capture's own first words where the shell holds them, with the narrowed
-          log a word away.
-- [ ] Certain feed views allow me to view all revisions, all entries, open to see
 - [ ] **Nothing in the shell can ask for a revision.** Editing is offered on the queue, which holds
   unprocessed items only, and the feed offers no edit at all — so the revision path is reachable
   only when another device processes an item between the draw and the send. Either the feed row
@@ -131,18 +79,6 @@
 - [ ] Destination configuration is way too clunky, not sensible to configure in BOTH config.toml and in the UI.
 
 ## Routing — templates, rules, conversion
-
-- [x] ~~Routing edits — being able to freely edit an item as it is routed. Settled: **amend, then
-  route**~~ — closed 2026-09-10, and **not** as it was settled. Amend-then-route was the wrong
-  mechanism and this entry's own `NOTE` said why: an item routed to two places in two wordings has
-  no single amended form, so the last route would win and the capture would end up a function of
-  its delivery history. What replaced it: **a delivery carries its own content**. The request takes
-  the words beside its arguments, core checks them against the item's payload type exactly as it
-  checks a capture, and the routing record holds the ones it sent. The capture is untouched, and
-  the composer's `rewrite` is one delivery where the row's `edit` is the item. The clone the second
-  `NOTE` proposed is dropped: it makes an item nobody asked for and puts a twin in the queue
-  ([routing-edits](plans/routing-edits.md),
-  [ADR 45](adr/0045-a-delivery-may-carry-its-own-content.md)).
 
 - [ ] Conversion - changing or formatting an item on routing, for example, making an item a piece of a TODO list. Called conversion rather than a routing template since 2026-09-05: a **routing template** is now a saved routing decision, and the two were sharing a word.
   - AI conversions, where a local model formats an entry that may or may not be properly formatted
@@ -168,32 +104,8 @@
 
 ## Output
 
-- [x] ~~add option to render tags as markdown `#tag` entries at the end of the file instead of
-  frontmatter items~~ — closed 2026-09-10: a **tags** switch beside the frontmatter one, a setting
-  on the markdown destinations and an argument on one capture, reading `frontmatter`, `hashtags` or
-  `none`. A tag holding a space is left out rather than rewritten, nothing ending a hashtag but a
-  space. Absent is `frontmatter`, so nothing a vault already writes changes.
-- [x] ~~The markdown kinds confessed nothing~~ — closed 2026-09-10, found opening the item above:
-  `frontmatter` defaults to `none`, so every filesystem and WebDAV delivery in the default
-  configuration dropped the item's tags and its artifacts and said nothing about either — which
-  [ADR 33](adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md) is
-  precisely about, and which the are.na kind had been doing correctly all along. The renderer names
-  its own losses and the note assembly names the tags, and both reach the output's note.
-
 ## Destinations and adapters
 
-- [ ] are.na destination:
-  - ~~tabbing multiple times does not move composer cursor to next channel that matches the inputted
-    text~~ — closed 2026-09-09: the second press walks what still matches what was typed.
-  - ~~are.na templates resolve to channel ID, but the frontend shows the ID instead of the channel
-    title~~ — closed 2026-09-09 for the surface it was raised about: the template form's line reads
-    the title while the field keeps the number, off the browse's own page where that carries it and
-    off `GET /v1/destinations/{id}/named` where it does not
-    ([ADR 44](adr/0044-naming-a-value-is-a-second-question-a-destination-answers.md)).
-    Closed for the template list, the routing record and a row's routing line too, the same day:
-    names are remembered in the browser and every surface reads them, filled from one browse where
-    a page carries them and an ask per value where it does not. A slug typed for a channel outside
-    that page resolves as well, which is what makes an unlisted channel reachable by hand.
 - [ ] **The shell picks a browse control by destination kind name.**
   `apps/ui/src/lib/candidate-browsers.ts` maps `filesystem` and `webdav` to the typed line and
   everything else to the flat one, so a third filesystem-like kind needs a UI edit to get the tree —
@@ -212,22 +124,11 @@
   ([ADR 20](adr/0020-destinations-are-pool-state.md)), but neither verify nor repair exists to
   reach anything, so a mirror holding a stale or missing destination record has nothing that would
   notice. Whoever builds them builds this at the same time.
-- [ ] Consider full POC: inbox via Memos app, routing to complex obsidian project. The **inbox
-  half closed 2026-09-07**: `apps/relay-memos` reads a Memos server and captures every memo into
-  the pool over `/v1`, with its pictures, at its own capture time, carrying the tags it already
-  had ([plan](plans/memos-relay.md),
-  [ADR 39](adr/0039-a-relay-is-outside-notemap-and-reaches-v1-like-anything-else.md)). What is
-  left of this line is the obsidian end. The "advertise
-  folders" half closed 2026-08-31: the destination port can be asked what an argument could hold
-  ([ADR 26](adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md)), and the
-  filesystem kind answers it for `create` and `append`. Still open: **custom tags that
-  exist for auto-routing** — the port can now answer this too, since a vault's tags are just another
-  field's candidates, but no kind implements it, obsidian tags being read from the notes themselves
-  rather than declared anywhere a filesystem adapter can see.
 
 ## Inboxes
 
-- [ ] raycast extension for notemap to quickly jot down a note!
+- [ ] raycast extension for notemap to quickly jot down a note > basic extension for calling the notemap api
+- [ ] are.na relay
 
 ## Pool, store and correctness
 
