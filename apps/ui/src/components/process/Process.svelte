@@ -17,7 +17,7 @@
     type RoutingRecord,
     type RoutingTemplate,
   } from "@notemap/client";
-  import { placeOf } from "@notemap/output-markdown/naming";
+  import { filenameFrom, placeOf } from "@notemap/output-markdown/naming";
 
   import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
   import ComposerTags from "$components/routing/ComposerTags.svelte";
@@ -44,9 +44,8 @@
   } from "$lib/processing";
   import { discard, manual } from "$lib/quick";
   import { reachable } from "$lib/reachable.svelte";
-  import { saidOf } from "$lib/routing";
+  import { placeNamed, saidOf } from "$lib/routing";
   import { fieldsOf, presetsFrom, valuesFrom } from "$lib/schema-form";
-  import { placeOf as patternOf } from "$lib/templates";
   import { whenOf } from "$lib/when";
 
   import Band from "./Band.svelte";
@@ -98,6 +97,14 @@
   let busy = $state(false);
   /** What the destination line holds, which narrows the bands under it. */
   let typed = $state("");
+
+  /**
+   * Whether the place line is drawn, over the read-only summary a taken
+   * template resolved to. A destination chosen directly always wants the line;
+   * a template starts read-only, since what it resolved to is already the
+   * decision.
+   */
+  let placing = $state(true);
 
   /** Places routed to before, for the line's greyed continuation and the count beside the name. */
   let places = $state<readonly RememberedPlace[]>([]);
@@ -232,6 +239,29 @@
       .every((one) => (args[one.name] ?? "").trim() !== ""),
   );
 
+  /**
+   * The full path the preview's head names: the destination and, from the
+   * line where it draws one, the directory and the name a blank leaf would
+   * get — the same code the line forecasts with. A kind with no line reads its
+   * place the way a record does, off whatever the destination called its
+   * arguments.
+   */
+  const previewPlace = $derived.by(() => {
+    if (chosen === undefined) return undefined;
+
+    const path = lined
+      ? placeFor(args[LINE_FIELD] ?? "")
+      : placeNamed(valuesFrom(fields, args));
+
+    return path === undefined ? undefined : `${nameOf(chosen)} / ${path}`;
+  });
+
+  function placeFor(value: string): string {
+    const place = placeOf(value);
+    const filename = place.filename ?? filenameFrom(content, item.id);
+    return place.directory === "" ? filename : `${place.directory}/${filename}`;
+  }
+
   /** A wrong choice is not a reason to leave the surface. */
   function release(): void {
     applied = undefined;
@@ -245,6 +275,7 @@
     forecast = undefined;
     shown = undefined;
     previewFailed = "";
+    placing = true;
   }
 
   /** Serialised because a keystroke changes a field of `args` rather than `args`. */
@@ -523,6 +554,9 @@
           ]),
         ),
       });
+      // What it resolved to is already the decision: the line stays behind
+      // `edit` until somebody asks to correct it.
+      placing = false;
     } catch (error) {
       refusing = { ...refusing, [one.id]: saidBy(error) };
       applied = undefined;
@@ -562,6 +596,7 @@
     places = [];
     forecast = undefined;
     opened.place = true;
+    placing = true;
 
     try {
       const report = await client.destinations.describe(id);
@@ -845,7 +880,6 @@
               {#each templatesShown as one (one.id)}
                 <Entry
                   label={one.name}
-                  aside={patternOf(one)}
                   why={unusable[one.id]}
                   hit={hit === one.id}
                   onchoose={() => void take(one)}
@@ -920,23 +954,37 @@
       ontoggle={() => (opened.place = !opened.place)}
     >
       {#if lined && line !== undefined && chosen !== undefined && capability !== undefined}
-        <PathLine
-          destination={chosen}
-          {capability}
-          field={line.name}
-          label={line.title ?? line.name}
-          value={args[line.name] ?? ""}
-          said={{ content, item: item.id }}
-          {places}
-          onchange={(value) => (args = { ...args, [line.name]: value })}
-          onsubmit={(beside) => void send(beside)}
-          onrelease={release}
-          onforecast={(word) => (forecast = word)}
-        />
+        {#if placing}
+          <PathLine
+            destination={chosen}
+            {capability}
+            field={line.name}
+            label={line.title ?? line.name}
+            value={args[line.name] ?? ""}
+            said={{ content, item: item.id }}
+            {places}
+            onchange={(value) => (args = { ...args, [line.name]: value })}
+            onsubmit={(beside) => void send(beside)}
+            onrelease={release}
+            onforecast={(word) => (forecast = word)}
+          />
 
-        {#each beside as field (field.name)}
-          {@render labelled(field.title ?? field.name, field)}
-        {/each}
+          {#each beside as field (field.name)}
+            {@render labelled(field.title ?? field.name, field)}
+          {/each}
+        {:else}
+          <div class="flex items-baseline justify-between gap-x-[2ch]">
+            <span class="min-w-0 break-words">{args[line.name] ?? ""}</span>
+            <button
+              type="button"
+              aria-label="edit place"
+              onclick={() => (placing = true)}
+              class="hover:underline"
+            >
+              edit
+            </button>
+          </div>
+        {/if}
       {:else if chosen !== undefined}
         <!-- A field's own `description` is a sentence written for a schema and
              is not drawn here: what a field means is its label and its control. -->
@@ -964,7 +1012,7 @@
       ontoggle={() => (opened.preview = !opened.preview)}
     >
       {#if shown !== undefined}
-        <Preview {shown} />
+        <Preview {shown} place={previewPlace} />
       {:else if previewFailed !== ""}
         <span role="status" class="text-alarm">{previewFailed}</span>
       {/if}

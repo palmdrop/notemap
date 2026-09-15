@@ -512,6 +512,98 @@ test("leaves a corrected template's tag off the item", async () => {
   );
 });
 
+const LINED_RESEARCH = {
+  id: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a81",
+  name: "research",
+  destination: VAULT,
+  capability: "create-or-append",
+  arguments: { path: "research/{{captured_at}}.md" },
+  triggerTag: "route/research",
+};
+
+/** A template whose destination draws the typed line, for the read-only place. */
+function servingLinedTemplate(
+  templates: readonly Record<string, unknown>[] = [LINED_RESEARCH],
+  resolved: Record<string, unknown> = {
+    destination: VAULT,
+    capability: "create-or-append",
+    arguments: { path: "research/2026-09-04.md" },
+  },
+) {
+  return pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "filesystem" })] });
+    }
+    if (route === "GET /v1/templates") return json(200, { values: templates });
+    if (route === "GET /v1/items/one/route/resolve") {
+      return json(200, resolved);
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE_OR_APPEND] });
+    }
+    if (route.endsWith("/candidates")) return json(200, answered([]));
+    if (route === "POST /v1/items/one/route") {
+      return json(200, {
+        id: "r",
+        item: "one",
+        state: "delivered",
+        target: {},
+      });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+}
+
+/**
+ * A template whose destination draws the typed line: taking it resolves the
+ * place, and the line stays behind `edit` rather than open for typing — a
+ * template is a decision somebody already made.
+ */
+test("a lined template draws its place read-only, with edit to reopen the line", async () => {
+  servingLinedTemplate();
+
+  draw();
+  await choose("research");
+
+  // The read-only summary, not the line: its own `edit` is what says so.
+  await screen.findByRole("button", { name: "edit place" });
+  expect(screen.getByText("research/2026-09-04.md")).toBeDefined();
+  expect(screen.queryByRole("combobox", { name: "place" })).toBeNull();
+
+  await fireEvent.click(screen.getByRole("button", { name: "edit place" }));
+
+  const line = (await screen.findByRole("combobox", {
+    name: "place",
+  })) as HTMLInputElement;
+  expect(line.value).toBe("research/2026-09-04.md");
+});
+
+/** Taking a destination directly still draws the line at once: only a template starts read-only. */
+test("choosing a destination directly draws the line, not the read-only summary", async () => {
+  servingLinedTemplate();
+
+  draw();
+  await choose(/Vault/);
+
+  expect(await screen.findByRole("combobox", { name: "place" })).toBeDefined();
+  expect(screen.queryByRole("button", { name: "edit place" })).toBeNull();
+});
+
+/** `change`, behind the template's own line, gives the decision back, including the place. */
+test("changing the destination after a lined template gives the line back", async () => {
+  servingLinedTemplate();
+
+  draw();
+  await choose("research");
+  await screen.findByText("research/2026-09-04.md");
+
+  await fireEvent.click(screen.getByRole("button", { name: "change" }));
+  await choose(/Vault/);
+
+  expect(await screen.findByRole("combobox", { name: "place" })).toBeDefined();
+});
+
 /**
  * The tag files it, so the decision this surface was for is made: staying is
  * offering to route an item that is already on its way somewhere.
@@ -2118,6 +2210,62 @@ test("says a destination that could not be reached, and routing is still availab
     (screen.getByRole("button", { name: "route" }) as HTMLButtonElement)
       .disabled,
   ).toBe(false);
+});
+
+/** The head line the schema-driven form's arguments name, above the preview. */
+test("the preview's head says the destination and the full place it names", async () => {
+  serving([aDestination()]);
+
+  draw();
+  await choose(/Vault/);
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "inbox" },
+  });
+
+  expect(await screen.findByText(/# a thought/)).toBeDefined();
+  expect(screen.getByText("Vault / inbox")).toBeDefined();
+});
+
+/** A destination whose place is the typed line, with a preview to head. */
+function servingLinedPreview(entries: readonly Record<string, unknown>[] = []) {
+  return pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "filesystem" })] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE_OR_APPEND] });
+    }
+    if (route.endsWith("/candidates")) {
+      const scope = new URL(request.url).searchParams.get("scope");
+      return json(200, scope === null ? answered(entries) : answered([]));
+    }
+    if (route === "POST /v1/items/one/route/preview") {
+      return json(200, {
+        kind: "previewed",
+        content: {
+          mediaType: "text/markdown",
+          text: "# a thought\n",
+          truncated: false,
+        },
+      });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+}
+
+/** The name a blank leaf would get is the same code the line forecasts with. */
+test("the preview's head says the full path the typed line names", async () => {
+  servingLinedPreview([]);
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+
+  const line = await screen.findByRole("combobox", { name: "place" });
+  await fireEvent.input(line, { target: { value: "research/" } });
+
+  expect(await screen.findByText(/# a thought/)).toBeDefined();
+  expect(screen.getByText("Vault / research/a thought.md")).toBeDefined();
 });
 
 /** The two layouts, by width: asserted as the classes that make them. */

@@ -601,8 +601,9 @@ press or when the flow reaches them — except where they already hold something
 draws its tags section open, and a preview that has answered draws open.
 
 **`destination` is one field that narrows three bands** drawn under it as it is typed, each with
-its own label and a rule between them: `templates` (name left, the pattern it files to right),
-`destinations` (name left), and `otherwise` — `manual` with `processed by hand` beside it, and
+its own label and a rule between them: `templates` (name left, no pattern beside it — a decision
+already made is not read as a pattern here *(amended 2026-09-15; the pattern used to sit to the
+right)*), `destinations` (name left), and `otherwise` — `manual` with `processed by hand` beside it, and
 `discard` in the alarm. The three narrow together by the one matching rule every line uses;
 the one entry the line has narrowed to is drawn bold and `⏎` or `⇥` takes it, an ambiguous line
 taking nothing. Typing is an accelerator: the bands are the way in for a pointer and for somebody
@@ -621,9 +622,13 @@ list that changes shape according to what has happened to the item is one a pers
 **Routing templates are the first band.** A template is a decision somebody already made, and
 offering it first puts the shortest route to a finished decision first. **Taking one draws what it
 resolved to and leaves it editable**: the template's name where the destination's would be, and
-the expanded place on the line — `research/2026-09-07.md`, not `research/{{captured_at}}.md` —
-asked of the pool, which owns the expander
+the expanded place — `research/2026-09-07.md`, not `research/{{captured_at}}.md` — asked of the
+pool, which owns the expander
 ([ADR 35](../adr/0035-a-templates-arguments-are-patterns-expanded-when-the-decision-is-made.md)).
+**Where the place is the typed line, a taken template draws it read-only** *(amended 2026-09-15)*:
+one line holding the expanded place with `edit` at its right, rather than the line itself — a
+template is a decision already made, and opening the line for typing is asking to correct it.
+`edit` draws the same typed line a destination chosen directly gets, holding the resolved value.
 **A template is where a decision starts, not a form that refuses to be corrected**: what commits
 is the decision it became — the template where nothing was touched, the destination and arguments
 where something was. Which of the two went is read off whether anything changed. **A template
@@ -645,6 +650,11 @@ it; while the next answer is in flight the last one stays up, and one that resol
 decision moved on is dropped. A destination that offers no preview draws the block with `no preview
 for this destination`; one that cannot be reached, `out of reach` — neither in the alarm, neither
 being a failure of the decision. The label is `preview`, and nothing says who writes.
+
+**The block's own head names the destination and the full place, bold** *(amended 2026-09-15)* —
+`Obsidian vault / research/2026-09-13.md`, above the content and ruled under it: the preview says
+what would be written, and the head line says where, so the two facts a person wants out of this
+block sit together rather than one of them living only in the `place` section above.
 
 **The foot** holds `← previous` and `next →` on the left, which walk the queue in its current
 order without deciding anything, and a bold inverted `route` on the right, enabled exactly when
@@ -682,9 +692,12 @@ string, which is what the browser-and-input pair did and neither half could see 
 
 **The hierarchy is shown, not walked**: the levels along the typed path are drawn beneath the line,
 each with its siblings, indented — so the context around a choice is there rather than replaced at
-every step. **Taking one is going to it**, not adding its name to what is typed: an entry carries
-its own path from the root, so a folder two levels up drills the line down to exactly that folder
-and a note sets the line to the note. Anything else makes folders nobody meant. **Only the level
+every step. **The trail the line names is bold all the way down** *(amended 2026-09-15)* — every
+segment the typed path took, and the note or the folder still to be made at the end of it — apart
+from the row a keyboard walk has landed on, which is bold for a different reason and carries
+`aria-selected` besides. **Taking one is going to it**, not adding its name to what is typed: an
+entry carries its own path from the root, so a folder two levels up drills the line down to exactly
+that folder and a note sets the line to the note. Anything else makes folders nobody meant. **Only the level
 the caret is in is narrowed** by what is being typed — not the deepest that happened to answer,
 which inside a folder that is not there yet is the folder above, and matching a half-typed note
 against its contents empties the trail exactly while a folder is being made. `⇥` completes from

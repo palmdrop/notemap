@@ -59,15 +59,15 @@ The list, as written after working a queue with the redesigned shell:
    - [x] `RoutingSummary` gains `templates`: the distinct templates whose records stand
    - [x] openapi, client types and state fold, integration and daemon tests
    - [x] `core.md`, `http-v1.md`, `client.md` amended; commit
-2. Rows
-   - [ ] A constant foot slot under every row, filled by the selected row's actions
-   - [ ] Routing line reads name + last segment, full place in the title
-   - [ ] Manual record block draws one rule between head and foot
-   - [ ] `manual` and `discard` notices stand without the alarm; commit
-3. Composer
-   - [ ] A template taken draws its place read-only with `edit`; templates show no pattern in the band
-   - [ ] The trail the line names is bold down to the note
-   - [ ] The preview's head says destination and full path; commit
+2. Rows _(done 2026-09-15)_
+   - [x] A constant foot slot under every row, filled by the selected row's actions
+   - [x] Routing line reads name + last segment, full place in the title
+   - [x] Manual record block draws one rule between head and foot
+   - [x] `manual` and `discard` notices stand without the alarm; commit
+3. Composer _(done 2026-09-15)_
+   - [x] A template taken draws its place read-only with `edit`; templates show no pattern in the band
+   - [x] The trail the line names is bold down to the note
+   - [x] The preview's head says destination and full path; commit
 4. Tagging
    - [ ] Panel is an overlay with a ground; eight most used until typing narrows it
    - [ ] First match marked; `⏎` takes the marked row; `new · name` is the last row; pointer marks

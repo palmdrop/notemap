@@ -136,6 +136,25 @@ test("draws the levels along the path, each with its siblings", async () => {
   expect(line.value()).toBe("projects/notemap/");
 });
 
+const SAID = { content: { text: "Picker needs a trail" }, item: "item-1" };
+
+/** The trail the line names is bold all the way down, not only the row the walk is on. */
+test("draws the trail the line names in bold, down to the note", async () => {
+  servingTree();
+  draw("projects/notemap/readme.md", SAID);
+
+  const projects = await screen.findByText("projects/");
+  const journal = screen.getByText("journal/");
+  const notemap = screen.getByText("notemap/");
+  const readme = await screen.findByText("readme.md");
+
+  expect(projects.className).toContain("font-semibold");
+  expect(notemap.className).toContain("font-semibold");
+  expect(readme.className).toContain("font-semibold");
+  // A sibling off the trail is not bold just for being drawn.
+  expect(journal.className).not.toContain("font-semibold");
+});
+
 /**
  * The tree shows every level at once, so pointing at one is going there — not
  * adding its name to the end of what is typed, which made folders nobody meant.
@@ -390,8 +409,6 @@ test("still holds a typed path nothing ever listed", async () => {
 
   expect(line.value()).toBe("brand-new/folder.md");
 });
-
-const SAID = { content: { text: "Picker needs a trail" }, item: "item-1" };
 
 const servingFolder = (entries: readonly Entry[]) =>
   serving((scope) =>

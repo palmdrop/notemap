@@ -425,6 +425,7 @@
       <Walked
         id={picked ? `path-line-place-${at}` : undefined}
         on={picked}
+        along={row.onPath || row.made === true || row.held === true}
         held={row.made === true || row.held === true}
         disabled={row.made === true}
         indent={row.depth}
