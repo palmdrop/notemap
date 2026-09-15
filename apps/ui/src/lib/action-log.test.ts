@@ -181,6 +181,16 @@ test("a cancellation ends the firing it called off", () => {
   expect(said?.standing).toBeUndefined();
 });
 
+test("a mark made by hand and taken back is said as undone, not as a routing cancelled", () => {
+  const said = noticeOf(
+    anAction("delivery-cancelled", { record: "r1", target: "user" }),
+    reading,
+  );
+
+  expect(said?.what).toBe("manual mark undone");
+  expect(said?.only).toBeUndefined();
+});
+
 test("everything else the log holds stays in the log", () => {
   expect(noticeOf(anAction("captured", {}), reading)).toBeUndefined();
   expect(noticeOf(anAction("tagged", {}), reading)).toBeUndefined();

@@ -1,9 +1,17 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-14
+**Last updated**: 2026-09-15
 **Shipped**:
 
+- 2026-09-15 — **A round of minor changes after a working session.** The row keeps its foot's
+  height and its box's edges, so selecting shifts nothing, and reads its routing line short; the
+  queue holds the selected row after a decision until the selection leaves it; the composer draws a
+  taken template's place read-only, bolds the trail it names, heads its preview with the full path,
+  and stays after a route for a second place; the tag chooser is an overlay that marks its match
+  once typed into, offers a `new ·` row, removes on a second press, and draws a filed trigger tag
+  inert; a typed line break is drawn as one. See
+  [shell-minor-changes](../plans/shell-minor-changes.md).
 - 2026-09-14 — **The log on the register.** Phase 5b of
   [shell-redesign](../plans/shell-redesign.md): the kind under the stamp in the rail, as words; one
   fact per row and never an id; the record block under a routing kind; the views as tabs on the
@@ -514,16 +522,31 @@ foot — with no ring or colour from the browser: rewriting looks like writing. 
 opens the chooser in place ([Tagging](#tagging)) — and is how a template is applied, a template
 being a tag. `esc` deselects.
 
+**Every row reserves the foot's height and the box's edges, selected or not** *(amended
+2026-09-15)*: the strip a selected row's actions sit in is drawn empty on every other row, with the
+rail's rule running through it, and the box's edges are drawn on every row and coloured on the
+selected one — so selecting one shifts nothing above, below or inside it, by so much as the pixel
+a border is. The list a person is scanning does not resettle under them.
+
 **One row serves both surfaces.** The queue's and the feed's differ in what they offer and never in
 what they are, so there is one of them, and what a surface hands it is what differs: a processed
-row leaves the queue at once and is seen on the feed, which offers nothing and keeps every row it
-holds.
+row leaves the queue and is seen on the feed, which offers nothing and keeps every row it holds.
+**The selected row is held until the selection leaves it** *(amended 2026-09-15; it left at once
+before, and a first trigger tag only seemed to hold it)*: a decision made on it — `manual`,
+`discard`, a trigger tag, a route made on the surface and come back from — takes it off the queue
+and leaves it drawn where it stood, from the client's own copy, with its state word and its routing
+line, so the decision can be looked at and taken back from the row it was made on. `esc`, `j`/`k`
+or selecting another row lets it go. So `d` `d` `d` no longer walks the list — `d` `j` `d` `j`
+does — which is the price of being able to read what one just did.
 
 **In the feed, a routed row says where it went, and no word repeats it** *(amended 2026-09-14; it
 carried `routed`, `manual` and `retrying` as words over the line)*. The feed is the pool read
 completely, so routed and discarded items are in it. A routed row carries a routing line — `→
-Obsidian vault · research/2026-09-13.md`, `→ manual` — naming the places it went and, from the
-summary, what has not landed yet as `· 1 pending` ([core.md](core.md#routing)); an unrouted row
+Obsidian vault · …/2026-09-13.md`, `→ manual` — naming the places it went and, from the
+summary, what has not landed yet as `· 1 pending` ([core.md](core.md#routing)). **The place is cut
+to its last segment** *(amended 2026-09-15)*, prefixed `…/` where more than that came before it, so
+a long path does not wrap the line into several — the full place is still in the element's own
+`title`, a hover away. An unrouted row
 carries nothing, the absence being the word. The only state words left are the ones no line
 says: `discarded`, `revised`, `revision`. A delivery that failed is the log's and the corner's to
 say, not the feed's. Where it went is read off the records the row asks for when it is selected,
@@ -546,7 +569,8 @@ the double selected nothing — the gutter, the marks and the space around the p
 body's words stay the browser's.
 
 **The keyboard on the queue**, drawn so a reader could guess it from the actions and never printed:
-`j`/`k` walk the rows, moving the selection and bringing it into view; `enter` selects the first
+`j`/`k` walk the rows, moving the selection and bringing it into view — and off a held row, which
+then goes; `enter` selects the first
 row where none is, and opens process on the one that is; `p` process; `m` manual; `d` discard;
 `+` opens the tag chooser; `esc` deselects. None fire while a field has the caret, which the
 capture box does when the queue is drawn: a key pressed into a field is the field's.
@@ -594,8 +618,9 @@ press or when the flow reaches them — except where they already hold something
 draws its tags section open, and a preview that has answered draws open.
 
 **`destination` is one field that narrows three bands** drawn under it as it is typed, each with
-its own label and a rule between them: `templates` (name left, the pattern it files to right),
-`destinations` (name left), and `otherwise` — `manual` with `processed by hand` beside it, and
+its own label and a rule between them: `templates` (name left, no pattern beside it — a decision
+already made is not read as a pattern here *(amended 2026-09-15; the pattern used to sit to the
+right)*), `destinations` (name left), and `otherwise` — `manual` with `processed by hand` beside it, and
 `discard` in the alarm. The three narrow together by the one matching rule every line uses;
 the one entry the line has narrowed to is drawn bold and `⏎` or `⇥` takes it, an ambiguous line
 taking nothing. Typing is an accelerator: the bands are the way in for a pointer and for somebody
@@ -614,9 +639,13 @@ list that changes shape according to what has happened to the item is one a pers
 **Routing templates are the first band.** A template is a decision somebody already made, and
 offering it first puts the shortest route to a finished decision first. **Taking one draws what it
 resolved to and leaves it editable**: the template's name where the destination's would be, and
-the expanded place on the line — `research/2026-09-07.md`, not `research/{{captured_at}}.md` —
-asked of the pool, which owns the expander
+the expanded place — `research/2026-09-07.md`, not `research/{{captured_at}}.md` — asked of the
+pool, which owns the expander
 ([ADR 35](../adr/0035-a-templates-arguments-are-patterns-expanded-when-the-decision-is-made.md)).
+**Where the place is the typed line, a taken template draws it read-only** *(amended 2026-09-15)*:
+one line holding the expanded place with `edit` at its right, rather than the line itself — a
+template is a decision already made, and opening the line for typing is asking to correct it.
+`edit` draws the same typed line a destination chosen directly gets, holding the resolved value.
 **A template is where a decision starts, not a form that refuses to be corrected**: what commits
 is the decision it became — the template where nothing was touched, the destination and arguments
 where something was. Which of the two went is read off whether anything changed. **A template
@@ -639,17 +668,27 @@ decision moved on is dropped. A destination that offers no preview draws the blo
 for this destination`; one that cannot be reached, `out of reach` — neither in the alarm, neither
 being a failure of the decision. The label is `preview`, and nothing says who writes.
 
+**The block's own head names the destination and the full place, bold** *(amended 2026-09-15)* —
+`Obsidian vault / research/2026-09-13.md`, above the content and ruled under it: the preview says
+what would be written, and the head line says where, so the two facts a person wants out of this
+block sit together rather than one of them living only in the `place` section above.
+
 **The foot** holds `← previous` and `next →` on the left, which walk the queue in its current
 order without deciding anything, and a bold inverted `route` on the right, enabled exactly when
 there is a destination and a capability to send.
 
-**After a decision — route, manual, discard, or a template tag — the surface advances to the next
-unprocessed item** in the queue's order, and returns to the queue when there is none. That is what
-a queue worked from one end is; single-capture mode is not a separate feature. The corner says
-what happened as it always did, with the way to the capture it was about. **`esc` returns to the
-queue with the item still selected** — `?selected=<id>` on the queue's address, read once on
-arrival and taken off again. From a field, the first `esc` leaves the field. The queue keeps no
-processed row: a processed item is seen on the feed.
+**After manual, discard or a template tag the surface advances to the next unprocessed item** in
+the queue's order, and returns to the queue when there is none. That is what a queue worked from
+one end is; single-capture mode is not a separate feature. The queue is read a page at a time, so
+where the item was the last row held the next page is read before the queue is declared empty,
+and an item that was never on the queue — reached from the feed — goes on from its top. **A route
+does not advance** *(amended 2026-09-15; it did, and an item bound for two places lost its surface
+under the first)*: the decision is cleared and the surface stays, so a second destination is one
+more decision away, and `next →` is what moves on. The corner says what happened as it always did,
+with the way to the capture it was about. **`esc` returns to the queue with the item still
+selected** — `?selected=<id>` on the queue's address, read once on arrival and taken off again —
+and a processed item comes back held on the queue until the selection leaves it
+([the row](#the-row)). From a field, the first `esc` leaves the field.
 
 **The keyboard on the surface**: `e` edit, `esc` back, `⌘/ctrl+⏎` route, `[` and `]` previous and
 next. None fire while a field has the caret except `⌘/ctrl+⏎`.
@@ -675,9 +714,12 @@ string, which is what the browser-and-input pair did and neither half could see 
 
 **The hierarchy is shown, not walked**: the levels along the typed path are drawn beneath the line,
 each with its siblings, indented — so the context around a choice is there rather than replaced at
-every step. **Taking one is going to it**, not adding its name to what is typed: an entry carries
-its own path from the root, so a folder two levels up drills the line down to exactly that folder
-and a note sets the line to the note. Anything else makes folders nobody meant. **Only the level
+every step. **The trail the line names is bold all the way down** *(amended 2026-09-15)* — every
+segment the typed path took, and the note or the folder still to be made at the end of it — apart
+from the row a keyboard walk has landed on, which is bold for a different reason and carries
+`aria-selected` besides. **Taking one is going to it**, not adding its name to what is typed: an
+entry carries its own path from the root, so a folder two levels up drills the line down to exactly
+that folder and a note sets the line to the note. Anything else makes folders nobody meant. **Only the level
 the caret is in is narrowed** by what is being typed — not the deepest that happened to answer,
 which inside a folder that is not there yet is the folder above, and matching a half-typed note
 against its contents empties the trail exactly while a folder is being made. `⇥` completes from
@@ -1009,7 +1051,10 @@ where the item was never routed, and the rule is not drawn.
 **A record reads as the file it became.** The block is a ruled frame whose head is the
 destination's name, bold, then `/`, then the place inside it — the pointer the destination handed
 back, or failing that the place the decision named, with a handle read as the name it stands for
-where anything has learned one. The place is a link where the record carries a URL and text
+where anything has learned one. **One rule runs between whichever sections the block draws**
+*(amended 2026-09-15)*: the head's own and the foot's used to be drawn separately, and with nothing
+between them — a manual record with no note — they touched and read as one thick rule; the block
+draws one `divide-y` between its sections instead. The place is a link where the record carries a URL and text
 everywhere else: the shell never guesses whether a string is one, and follows only `http` and
 `https`. At the head's right, **what was done** in plain words — `created`, `appended`, `created or
 appended` for the one that is both until the adapter reaches the vault
@@ -1058,7 +1103,9 @@ groups, and are not six of a kind.
 the door to the one that does. `manual` calls the pool at once, with no note — the note is
 offered on the process surface, not here — and the corner says `marked manual` with `undo`, which
 cancels the record the mark made. `discard` calls the pool at once too, and the corner says
-`discarded` with `undo`, which unarchives. Both leave the row held in place as routing does, so the
+`discarded` with `undo`, which unarchives. **Neither notice is an alarm** *(amended 2026-09-15)*:
+both stand, so their `undo` does not time out under somebody's hands, but nothing went wrong — the
+fired-template notice's own precedent ([below](#the-corner-says-what-happened)). Both leave the row held in place as routing does, so the
 decision can be looked at after it is made. `manual` is disabled while the pool is out of reach or
 where the item is already marked, `discard` where the item is already discarded, each saying why
 in its title and drawn in the one grey the shell admits for an inert control. `unarchive` sits in
@@ -1118,17 +1165,29 @@ it, and the chooser stays useful once the pool goes out of reach, which is the w
 sits on the collapsed row.
 
 **The chooser is one control, wherever it is drawn** *(added 2026-09-11)*. What the item carries
-is a row of pressed words, a trigger tag marked with the template it applies, each taken off by
-pressing it. `+` opens a line with the pool's offer in a panel beneath it — the tags in use minus
-what the item carries — narrowed as the line is typed into, by the one rule every line narrows by.
-`⇥` completes what was
-typed as far as the offer agrees, and once there is nothing left to complete walks the offer from
-the top; `↑↓` walk it both ways; `⏎` takes the one walked to, or what was typed where nothing has
-been walked to, and a name on no list is taken that way. `esc` or leaving the line puts it away
-and takes nothing: a name half-typed is not a decision, and a panel row is taken without the line
-ever losing focus. The composer's row reads the client's held copy of the item, which is where a
-tag taken through the outbox lands first, so it draws taken at once and drops the account of
-taken-and-dropped it used to keep beside the item it opened on.
+is a row of pressed words, a trigger tag marked with the template it applies, each pressed to
+select it and taken off on the `×` that then appears beside it *(amended 2026-09-15; a single
+press used to remove it outright)*. `esc`, opening the line, pressing another tag, or the row
+losing its selection clears the selection without taking anything off. `+` opens a line, an **absolute panel** beneath it —
+*amended 2026-09-15: it used to sit in the flow, which shifted whatever was below the row; an
+absolute panel still extends the process surface's scrolling middle, so it stays reachable there
+too* — holding the pool's offer: the eight most used while the line is empty, the whole list the
+line narrows to once it is typed into, minus what the item carries either way.
+
+**The first match is marked as soon as the line is typed into, and stays marked as it narrows**
+*(amended 2026-09-15; the match `⏎` was about to take used to be unmarked, so `⏎` on a half-typed
+name that matched one created a second, unrelated tag instead of taking the match — `qu` then `⏎`
+made `qu` over `quote`)*. Nothing is marked while the line is empty: a reflex `⏎` after `+` puts
+the line away rather than classifying the item with whatever is most used. `⇥` completes what was
+typed as far as the offer agrees, and once there is nothing left to complete walks the offer,
+moving the mark; `↑↓` and the pointer walk it too, without moving the caret out of the line, and
+the walk goes on from wherever the mark is — there is no dead press. `⏎` takes the marked row. A name no offer holds is the
+panel's **last row**, `new · <name>` — how a fresh tag is made — and it is the only row, so the one
+marked, exactly where nothing else matched at all. `esc` or leaving the line puts it away and takes
+nothing: a name half-typed is not a decision, and a panel row is taken without the line ever losing
+focus. The composer's row reads the client's held copy of the item, which is where a tag taken
+through the outbox lands first, so it draws taken at once and drops the account of taken-and-dropped
+it used to keep beside the item it opened on.
 
 **Tagging is offered in two places, and they are not redundant** (added 2026-09-02). The composer
 offers the same chooser beside the place being routed to, because classifying and filing are one
@@ -1141,11 +1200,15 @@ was on the way. The **collapsed row's chooser stays where it is** for the reason
 tagging is worth doing while scanning, without opening anything.
 
 **A trigger tag that filed an item cannot be taken off** while what it filed still stands
-([core.md](core.md#classification)) *(added 2026-09-07)*. The pool is what refuses it, and the
-refusal reaches the corner the way every refused outbox operation does, saying what the way back is:
-cancelling the routing, which gives the tag with it. The chooser does not draw the tag as
-unremovable, because whether anything it filed still stands is a question about the item's records
-rather than about the tag, and this shell would have to go and ask per tag to answer it.
+([core.md](core.md#classification)) *(added 2026-09-07)*. **The chooser now draws it as
+unremovable** *(amended 2026-09-15; the paragraph here used to say the opposite, for the reason
+given below, which the pool closed)*: `RoutingSummary.templates` names, per item, the distinct
+templates whose records still stand, so a carried tag whose template is among them is drawn a
+`<span>` rather than a button — the trigger style, and a `title` saying the routing has to be
+cancelled to take it off. It is read from what the item's own summary says, so it costs no ask per
+tag. Pressing it does nothing; the way back is still cancelling the routing, which gives the tag
+with it, and the refusal that used to explain this reaches the corner only where something is asked
+of the pool anyway — cancelling a routing it has already refused, say.
 
 The two drain apart. A tag taken in the composer is the same outbox operation the row makes, and
 it lands whatever becomes of the route beside it — a route that fails leaves the tags applied,
@@ -1676,7 +1739,10 @@ capture, a destination or a template and are never the shell's own — and a lin
 its address is `http` or `https`, on the rule the record's pointer already follows: a
 `javascript:` address in an `href` is script on this origin, and the renderer's own list of safe
 protocols is longer than this shell's. An image in the source is drawn from wherever it points,
-which is what a person wrote.
+which is what a person wrote. **A line break typed is a line break drawn** *(added 2026-09-15)*:
+CommonMark folds a soft break into the paragraph, so three short lines came out as one, which
+nobody who pressed `enter` three times meant. The break is kept, without a paragraph's space —
+`white-space: pre-line` on the paragraph — and a blank line still makes a paragraph.
 
 A payload type this shell cannot draw **says so by name** and stays taggable, archivable and
 routable, since none of those need to understand the content. An item never becomes an invisible

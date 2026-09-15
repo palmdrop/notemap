@@ -562,7 +562,7 @@ export function createSqlitePoolStore(
         .all(...ids);
       const routingRows = source
         .query<ItemRoutingRow, Bindable[]>(
-          `SELECT item_id, target_kind, destination, state FROM routing_records
+          `SELECT item_id, target_kind, destination, state, template_id FROM routing_records
            WHERE item_id IN (${slots}) ORDER BY at, id`,
         )
         .all(...ids);

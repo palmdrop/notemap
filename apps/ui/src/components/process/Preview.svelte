@@ -11,9 +11,10 @@
    * The head of the file the destination would write, in a ruled block: five
    * lines, and the rest behind `more`. A destination that offers no preview,
    * or that cannot be reached, says so in the block in plain ink — neither is
-   * a failure of the decision.
+   * a failure of the decision. `place` is the full path above it, bold, so
+   * the block says both where and what.
    */
-  let { shown }: { shown: RoutingPreview } = $props();
+  let { shown, place }: { shown: RoutingPreview; place?: string } = $props();
 
   const LINES = 5;
 
@@ -46,6 +47,11 @@
 </script>
 
 <div class="border border-ink px-3 py-2">
+  {#if place !== undefined}
+    <div class="mb-2 border-b border-ink pb-2 font-semibold break-words">
+      {place}
+    </div>
+  {/if}
   {#if drawn !== undefined}
     <pre class="font-shell break-words whitespace-pre-wrap">{drawn}</pre>
     {#if shown.kind === "previewed" && shown.note !== undefined}

@@ -547,6 +547,33 @@ describe("cancelling a delivery", () => {
     expect(await pool.routing.recordsFor(item)).toEqual([record]);
   });
 
+  /** Born delivered, but nothing reached anywhere: there is nothing that already happened. */
+  it("takes back a mark made by hand, and owes the mirror the item again", async () => {
+    const opened = await pooled(undefined, "filesystem");
+    const { pool } = opened;
+    const item = await capture(pool);
+    const record = succeeded(await pool.routing.markProcessed(item));
+    await drainWith(opened)();
+
+    expect(await pool.routing.cancelDelivery(record.id)).toEqual({
+      kind: "ok",
+      value: undefined,
+    });
+    expect(await pool.routing.recordsFor(item)).toEqual([]);
+    expect(ids((await pool.views.queue(ALL)).values)).toEqual([item]);
+
+    const logged = await pool.actions.read(
+      { item },
+      { limit: 50, order: "newest-first" },
+    );
+    expect(logged.values[0]).toMatchObject({
+      kind: "delivery-cancelled",
+      detail: { record: record.id, target: "user" },
+    });
+    expect(await drainWith(opened)()).toBe(1);
+    expect((await itemRecord(pool, item))?.routing).toEqual([]);
+  });
+
   it("refuses a record no decision minted", async () => {
     const { pool } = await pooled();
 

@@ -495,7 +495,7 @@ test("draws the kind in the rail, under the stamp", async () => {
   reading();
 
   const word = await screen.findByText("template fired");
-  const rail = container.querySelector(".border-r");
+  const rail = container.querySelector(".col-start-1");
   expect(rail?.contains(word)).toBe(true);
   expect(screen.queryByText("template-fired")).toBeNull();
 });
@@ -649,7 +649,7 @@ test("opens a gap where more than half a day passed, and not where less did", as
   reading();
   await screen.findAllByText("captured");
 
-  const rails = [...container.querySelectorAll(".border-r")];
+  const rails = [...container.querySelectorAll(".col-start-1")];
   expect(rails).toHaveLength(3);
   expect(rails.map((rail) => rail.className.includes("gap-time"))).toEqual([
     false,

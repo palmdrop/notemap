@@ -1381,6 +1381,7 @@ describe("an item's routing summary", () => {
       records: 2,
       pending: 1,
       to: [{ kind: "destination", destination: "vault" }, { kind: "user" }],
+      templates: [],
     });
   });
 
@@ -1399,6 +1400,7 @@ describe("an item's routing summary", () => {
       records: 2,
       pending: 2,
       to: [{ kind: "destination", destination: "vault" }],
+      templates: [],
     });
   });
 

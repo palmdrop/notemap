@@ -296,6 +296,32 @@ test("a decision made by hand reads as one, with its note, and offers undo", asy
   expect(screen.queryByRole("button", { name: "arguments" })).toBeNull();
 });
 
+/**
+ * The head's own rule and the foot's used to be drawn separately, and with no
+ * middle between them — a manual record with no note — they touched and read
+ * as one thick rule. One `divide-y` on the container draws exactly one.
+ */
+test("draws one rule between sections, never a doubled one with an empty middle", async () => {
+  await named();
+
+  const { container } = render(Block, {
+    record: {
+      id: "rec",
+      item: "one",
+      target: { kind: "user" },
+      state: "delivered",
+      at: "2026-08-19T22:14:00.000Z",
+    },
+  });
+
+  await screen.findByText("marked processed");
+
+  expect(container.querySelector(".max-w-read")?.className).toContain(
+    "divide-y",
+  );
+  expect(container.querySelectorAll(".border-t, .border-b")).toHaveLength(0);
+});
+
 test("offers the way to the item only in the log", async () => {
   await named();
 

@@ -419,6 +419,7 @@ test("keeps a record to one line on the opened row, and makes it the way in", as
                 records: 1,
                 pending: 0,
                 to: [{ kind: "destination", destination: "vault" }],
+                templates: [],
               },
             }),
           ],
@@ -552,7 +553,8 @@ test("tagging says nothing in the corner", async () => {
 });
 
 /** A processed item is seen on the feed; the corner holds the way back. */
-test("a discarded row leaves the queue at once", async () => {
+/** The decision can be looked at, and taken back from the row, after it is made. */
+test("a discarded row stays where it stood while it is selected, and leaves when the selection does", async () => {
   let queued = [anItem("one"), anItem("two")];
   pool((request) => {
     const route = routeOf(request);
@@ -564,17 +566,52 @@ test("a discarded row leaves the queue at once", async () => {
     return json(200, { values: [] });
   });
 
-  render(Queue);
+  const { container } = render(Queue);
   await screen.findByText("one");
   await open(0);
 
   await discard();
 
   await vi.waitFor(() => {
+    expect(screen.getByText("discarded")).toBeDefined();
+  });
+  expect(screen.getByText("one")).toBeDefined();
+  expect(screen.getByRole("button", { name: "undiscard" })).toBeDefined();
+  expect(container.querySelectorAll("[data-selected]")).toHaveLength(2);
+  expect(notices.shown.at(-1)?.offer?.label).toBe("undo");
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await vi.waitFor(() => {
     expect(screen.queryByText("one")).toBeNull();
   });
   expect(screen.getByText("two")).toBeDefined();
-  expect(notices.shown.at(-1)?.offer?.label).toBe("undo");
+});
+
+test("walking off a held row leaves it behind", async () => {
+  let queued = [anItem("one"), anItem("two")];
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/queue") return json(200, { values: queued });
+    if (route === "POST /v1/items/one/archive") {
+      queued = queued.filter((item) => item.id !== "one");
+      return json(204, undefined);
+    }
+    return json(200, { values: [] });
+  });
+
+  const { container } = render(Queue);
+  await screen.findByText("one");
+  await open(0);
+  await discard();
+  await screen.findByText("discarded");
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await vi.waitFor(() => {
+    expect(screen.queryByText("one")).toBeNull();
+  });
+  const boxed = container.querySelectorAll("[data-selected]");
+  expect(boxed).toHaveLength(2);
+  expect(boxed[1]?.textContent).toContain("two");
 });
 
 test("goes to process on a double click, and leaves the row selected", async () => {
@@ -607,6 +644,25 @@ test("draws the box around the selected row and nowhere else", async () => {
   expect(boxed()).toHaveLength(2);
   expect(screen.getAllByRole("button", { name: "Add a tag" })).toHaveLength(1);
   expect(screen.getAllByRole("button", { name: "discard" })).toHaveLength(1);
+});
+
+/** Every row reserves the foot's height, so selecting one shifts nothing. */
+test("keeps the foot's height on every row, selected or not", async () => {
+  pool(queued("one", "two"));
+
+  const { container } = render(Queue);
+  await screen.findByText("one");
+
+  // Unselected, the foot is one cell per column with the rail's rule between
+  // them; selected, one strip holding the actions. Both are the same height.
+  const feet = () =>
+    [...container.querySelectorAll(".h-9")].map((foot) =>
+      foot.classList.contains("col-span-full") ? "box" : "cell",
+    );
+  expect(feet()).toEqual(["cell", "cell", "cell", "cell"]);
+
+  await open(0);
+  expect(feet()).toEqual(["box", "cell", "cell"]);
 });
 
 /** The keys the actions are drawn to be guessed from. */
@@ -660,7 +716,7 @@ test("enter selects, and enter on a selected row opens process", async () => {
 });
 
 /** A decision takes the row away; the selection stays where the hand is. */
-test("moves the selection to the row that took a discarded one's place", async () => {
+test("a decision, then j, then the same decision walks the list", async () => {
   let queued = [anItem("one"), anItem("two"), anItem("three")];
   pool((request) => {
     const route = routeOf(request);
@@ -678,7 +734,9 @@ test("moves the selection to the row that took a discarded one's place", async (
   await fireEvent.keyDown(window, { key: "j" });
   await fireEvent.keyDown(window, { key: "j" });
   await fireEvent.keyDown(window, { key: "d" });
+  await screen.findByText("discarded");
 
+  await fireEvent.keyDown(window, { key: "j" });
   await vi.waitFor(() => {
     expect(screen.queryByText("two")).toBeNull();
   });
@@ -686,7 +744,6 @@ test("moves the selection to the row that took a discarded one's place", async (
   expect(boxed).toHaveLength(2);
   expect(boxed[1]?.textContent).toContain("three");
 
-  // The next press acts on it rather than starting over from the top.
   await fireEvent.keyDown(window, { key: "d" });
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/three/archive");

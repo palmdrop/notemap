@@ -2,9 +2,12 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one and health are settled; the rest is stub
-**Last updated**: 2026-09-13
+**Last updated**: 2026-09-15
 **Shipped**:
 
+- 2026-09-15 — **Cancelling a manual mark, and `templates` on the summary.** `POST /v1/routing/{record}/cancel` on a
+  record naming the user is no longer refused, and the routing summary's `templates` names which
+  templates still stand. See [shell-minor-changes](../plans/shell-minor-changes.md).
 - 2026-09-13 — **The action log narrows by kind.** `GET /v1/actions` takes `kind`, comma-separated,
   refused as `422 bad-kind` where a word names nothing the log writes, and `next` carries it. An
   `Action`'s `kind` is now the closed list in the schema rather than a bare string.
@@ -482,7 +485,8 @@ archive, a capture outcome, an edit outcome:
 ```json
 { "routing": { "records": 2, "pending": 1,
                "to": [ { "kind": "destination", "destination": "0198f0c2-..." },
-                       { "kind": "user" } ] } }
+                       { "kind": "user" } ],
+               "templates": [ "0198f0c3-..." ] } }
 ```
 
 - **Absent where the item has been nowhere**, like `archived`, rather than present and zeroed.
@@ -494,6 +498,9 @@ archive, a capture outcome, an edit outcome:
   capability, arguments and pointer are not here.
 - **`pending` is what has not landed**, on the same terms as a record's `state`. It is the whole of
   what a row can say about arrival; `GET /v1/items/{id}/routing` is what says which record.
+- **`templates` names the templates whose records stand** *(added 2026-09-15)*, distinct and in the
+  order the records were made, empty where none was applied. It is what says a trigger tag cannot
+  come off ([classifying an item](#classifying-an-item)) without a read of the records per row.
 - A summary saying nothing and one saying `records: 0` are the same claim, so only the first is
   spelled — a cancelled last reservation takes the field away again.
 
@@ -1361,6 +1368,9 @@ committed. It takes exactly the body `/route` takes.
 - **There is no "retry by hand" and no route for one.** The record is gone and the item is back in
   the queue, so routing it again *is* the retry.
 - A record that has already delivered is `409 not-pending` — there is nothing left to call off.
+  **A record naming the user is the exception** *(added 2026-09-15)*: a mark made by hand is born
+  delivered and delivered nothing anywhere, so cancelling it answers `204` and puts the item back
+  as it does for a reservation ([core.md](core.md#routing)).
 - A record a host currently holds a lease on is `409 delivery-in-flight`: that attempt may be
   halfway through, and its outcome is not the canceller's to decide. Trying again after the lease
   expires succeeds.

@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 
 import type { RoutingRecord } from "@notemap/client";
 
-import { saidOf, wentTo } from "./routing";
+import { placeShort, saidOf, wentTo } from "./routing";
 
 const nameOf = (id: string) => (id === "vault" ? "Vault" : "a destination");
 
@@ -69,10 +69,12 @@ test("marking processed is routing to the person, and says so", () => {
   expect(said.what).toBe("marked processed");
 });
 
-test("a record on a row reads as its destination and the place it landed", () => {
+test("a record on a row reads as its destination and the last segment of the place", () => {
   const said = wentTo(aRecord({ pointer: "notes/inbox/picker.md" }), nameOf);
 
-  expect(said.said).toBe("Vault · notes/inbox/picker.md");
+  expect(said.said).toBe("Vault · …/picker.md");
+  // The full place is still there for whoever hovers.
+  expect(said.title).toBe("notes/inbox/picker.md");
   // The capability is the adapter's word, and delivered is what a record with
   // no alarm on it already means.
   expect(said.aside).toBeUndefined();
@@ -84,8 +86,13 @@ test("a record the pool has not carried out says the one state worth saying", ()
     nameOf,
   );
 
-  expect(said.said).toBe("Vault · notes/inbox/picker.md");
+  expect(said.said).toBe("Vault · …/picker.md");
   expect(said.aside).toBe("pending");
+});
+
+test("a place with one segment has nothing to elide", () => {
+  expect(placeShort("decisions.md")).toBe("decisions.md");
+  expect(placeShort("notes/decisions.md")).toBe("…/decisions.md");
 });
 
 test("a decision made by hand reads as done, with the note beside it", () => {
@@ -124,7 +131,7 @@ test("a pending record's place leaves notemap's own arguments out of it", () => 
     nameOf,
   );
 
-  expect(said.said).toBe("Vault · research/2026-09-07.md");
+  expect(said.said).toBe("Vault · …/2026-09-07.md");
   expect(said.aside).toBe("pending");
 });
 

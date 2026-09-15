@@ -1,9 +1,12 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-09-13
+**Last updated**: 2026-09-15
 **Shipped**:
 
+- 2026-09-15 — **The folded summary carries the template.** The held item's folded routing summary
+  picks up the template a decision was made from, on the same terms as the place and the pending
+  count. See [shell-minor-changes](../plans/shell-minor-changes.md).
 - 2026-09-13 — **An actions read takes `kinds`.** Passed through to the pool's `kind`, so a
   narrowed log pages over what it shows and nothing else.
 - 2026-09-09 — **A queue arrived at corrects its head without losing its tail.** The fresh first
@@ -568,7 +571,8 @@ still considers done. The client asks rather than assumes.
 
 **A decision is folded into the held item's routing summary as well.** The pool answers the record
 it wrote, so the cached copy is brought up to what a re-read would say at that moment — one more
-record, one more pending where the delivery has not landed, the place it names added if it is new.
+record, one more pending where the delivery has not landed, the place it names added if it is new,
+and the template it was made from added on the same terms.
 Without it the item stays in the feed drawn as though it had been nowhere until something happened
 to re-read it, which is exactly the row a person just acted on.
 

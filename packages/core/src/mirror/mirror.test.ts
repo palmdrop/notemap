@@ -214,7 +214,12 @@ describe("what the record leaves out", () => {
       anItem({
         revisedInto: ["item-2" as ItemId],
         revisionOf: "item-0" as ItemId,
-        routing: { records: 1, pending: 0, to: [{ kind: "user" }] },
+        routing: {
+          records: 1,
+          pending: 0,
+          to: [{ kind: "user" }],
+          templates: [],
+        },
       }),
     );
 

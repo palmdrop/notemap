@@ -79,6 +79,7 @@
             {
               said: whereItWent(summary, nameOf),
               aside: undefined,
+              title: undefined,
               href: undefined,
               taken: undefined,
             },
@@ -103,9 +104,9 @@
         <span class="min-w-0 break-words">
           <span aria-hidden="true">→</span>
           {#if line.href === undefined}
-            {line.said}
+            <span title={line.title}>{line.said}</span>
           {:else}
-            <a href={line.href}>{line.said}</a>
+            <a href={line.href} title={line.title}>{line.said}</a>
           {/if}
           <!-- What the person wrote about it, or the one state worth saying. -->
           {#if line.aside !== undefined}

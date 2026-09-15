@@ -42,7 +42,7 @@ export function forecastOf(
 
   const place = placeOf(value);
   const segments = place.directory === "" ? [] : place.directory.split("/");
-  const leaf = place.filename ?? filenameFrom(said.content, said.item);
+  const leaf = leafOf(value, said);
 
   // A level that never answered is no evidence either way, and past the first
   // of those there is nothing to say about anything deeper: claiming a folder
@@ -75,6 +75,11 @@ export function forecastOf(
       ? { beside: freeName(leaf, new Set(taken.map((each) => each.label))) }
       : {}),
   };
+}
+
+/** The name the note gets: the line's own, or one derived from what the item says. */
+export function leafOf(value: string, said: Said): string {
+  return placeOf(value).filename ?? filenameFrom(said.content, said.item);
 }
 
 /**

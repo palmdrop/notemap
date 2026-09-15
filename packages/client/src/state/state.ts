@@ -360,6 +360,21 @@ function targets(
   return merged;
 }
 
+/** Distinct, in the order the records were made. */
+function applied(
+  held: readonly string[],
+  arriving: readonly RoutingRecord[],
+): string[] {
+  const merged = [...held];
+  for (const record of arriving) {
+    const template = record.applied?.template;
+    if (template !== undefined && !merged.includes(template)) {
+      merged.push(template);
+    }
+  }
+  return merged;
+}
+
 /** What the pool would answer for these records, so a re-read changes nothing. */
 export function summarise(
   records: readonly RoutingRecord[],
@@ -370,6 +385,7 @@ export function summarise(
     records: records.length,
     pending: records.filter((record) => record.state === "pending").length,
     to: targets([], records.map(wentTo)),
+    templates: applied([], records),
   };
 }
 
@@ -407,6 +423,7 @@ export function processed(
       records: (held?.records ?? 0) + 1,
       pending: (held?.pending ?? 0) + (record.state === "pending" ? 1 : 0),
       to: targets(held?.to ?? [], [wentTo(record)]),
+      templates: applied(held?.templates ?? [], [record]),
     }),
     queue: withIds(state.queue, without(state.queue.ids, id)),
   };

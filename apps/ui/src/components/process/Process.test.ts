@@ -278,6 +278,20 @@ const described = async () => screen.findByLabelText("directory");
  * has it settled a tick after its description lands, so the commit is briefly
  * disabled where nothing is clicked in between.
  */
+/**
+ * Routing keeps the surface: the decision is cleared for a second place, and
+ * `next →` is what moves on.
+ */
+const stayed = async () => {
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+  expect(left()).toBeUndefined();
+  expect(
+    await screen.findByRole("combobox", { name: "what became of it" }),
+  ).toBeDefined();
+};
+
 const commit = async () => {
   const button = (await screen.findByRole("button", {
     name: "route",
@@ -512,6 +526,116 @@ test("leaves a corrected template's tag off the item", async () => {
   );
 });
 
+const LINED_RESEARCH = {
+  id: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a81",
+  name: "research",
+  destination: VAULT,
+  capability: "create-or-append",
+  arguments: { path: "research/{{captured_at}}.md" },
+  triggerTag: "route/research",
+};
+
+/** A template whose destination draws the typed line, for the read-only place. */
+function servingLinedTemplate(
+  templates: readonly Record<string, unknown>[] = [LINED_RESEARCH],
+  resolved: Record<string, unknown> = {
+    destination: VAULT,
+    capability: "create-or-append",
+    arguments: { path: "research/2026-09-04.md" },
+  },
+) {
+  return pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "filesystem" })] });
+    }
+    if (route === "GET /v1/templates") return json(200, { values: templates });
+    if (route === "GET /v1/items/one/route/resolve") {
+      return json(200, resolved);
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE_OR_APPEND] });
+    }
+    if (route.endsWith("/candidates")) return json(200, answered([]));
+    if (route === "POST /v1/items/one/route") {
+      return json(200, {
+        id: "r",
+        item: "one",
+        state: "delivered",
+        target: {},
+      });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+}
+
+/**
+ * A template whose destination draws the typed line: taking it resolves the
+ * place, and the line stays behind `edit` rather than open for typing — a
+ * template is a decision somebody already made.
+ */
+test("a lined template draws its place read-only, with edit to reopen the line", async () => {
+  servingLinedTemplate();
+
+  draw();
+  await choose("research");
+
+  // The read-only summary, not the line: its own `edit` is what says so.
+  await screen.findByRole("button", { name: "edit place" });
+  expect(screen.getByText("research/2026-09-04.md")).toBeDefined();
+  expect(screen.queryByRole("combobox", { name: "place" })).toBeNull();
+
+  await fireEvent.click(screen.getByRole("button", { name: "edit place" }));
+
+  const line = (await screen.findByRole("combobox", {
+    name: "place",
+  })) as HTMLInputElement;
+  expect(line.value).toBe("research/2026-09-04.md");
+});
+
+/** Opening the line and touching nothing is not a correction. */
+test("a lined template edited and left alone still commits as the template", async () => {
+  servingLinedTemplate();
+
+  draw();
+  await choose("research");
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "edit place" }),
+  );
+  await screen.findByRole("combobox", { name: "place" });
+  await commit();
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+  expect(await sent()).toContainEqual({ template: LINED_RESEARCH.id });
+});
+
+/** Taking a destination directly still draws the line at once: only a template starts read-only. */
+test("choosing a destination directly draws the line, not the read-only summary", async () => {
+  servingLinedTemplate();
+
+  draw();
+  await choose(/Vault/);
+
+  expect(await screen.findByRole("combobox", { name: "place" })).toBeDefined();
+  expect(screen.queryByRole("button", { name: "edit place" })).toBeNull();
+});
+
+/** `change`, behind the template's own line, gives the decision back, including the place. */
+test("changing the destination after a lined template gives the line back", async () => {
+  servingLinedTemplate();
+
+  draw();
+  await choose("research");
+  await screen.findByText("research/2026-09-04.md");
+
+  await fireEvent.click(screen.getByRole("button", { name: "change" }));
+  await choose(/Vault/);
+
+  expect(await screen.findByRole("combobox", { name: "place" })).toBeDefined();
+});
+
 /**
  * The tag files it, so the decision this surface was for is made: staying is
  * offering to route an item that is already on its way somewhere.
@@ -528,7 +652,9 @@ test("advances on a trigger tag taken in its own row", async () => {
     await screen.findByRole("option", { name: /route\/research/ }),
   );
 
-  expect(left()).toBe("/");
+  await vi.waitFor(() => {
+    expect(left()).toBe("/");
+  });
 });
 
 /**
@@ -559,6 +685,9 @@ test("draws a tag taken in its own row as taken, at once", async () => {
   expect(word.getAttribute("aria-pressed")).toBe("true");
 
   await fireEvent.click(word);
+  await fireEvent.click(
+    screen.getByRole("button", { name: "remove seedling" }),
+  );
   await vi.waitFor(() => {
     expect(screen.queryByRole("button", { name: "seedling" })).toBeNull();
   });
@@ -600,10 +729,7 @@ test("composes a decision one step at a time and sends it", async () => {
   });
   await commit();
 
-  await vi.waitFor(() => {
-    expect(left()).toBe("/");
-  });
-  expect(asked()).toContain("POST /v1/items/one/route");
+  await stayed();
 });
 
 /** One capability that asks for nothing: taking the destination is the whole decision. */
@@ -730,9 +856,7 @@ test("a typed value that was never listed still routes", async () => {
   });
   await commit();
 
-  await vi.waitFor(() => {
-    expect(left()).toBe("/");
-  });
+  await stayed();
 
   const routed = sentTo(transport).find(
     (request) => routeOf(request) === "POST /v1/items/one/route",
@@ -939,6 +1063,15 @@ function routing(
       return json(200, { kind: "described", capabilities: [APPEND] });
     }
     if (route === "POST /v1/items/one/route") return json(200, record);
+    if (route === "POST /v1/items/one/mark-processed") {
+      return json(200, {
+        id: "rec",
+        item: "one",
+        at: WHEN,
+        state: "delivered",
+        target: { kind: "user" },
+      });
+    }
     if (route === "GET /v1/queue") return json(200, { values: queued });
     return json(404, { error: { code: "unknown-route" } });
   });
@@ -1313,9 +1446,7 @@ test("an unreachable destination is still routable", async () => {
   expect(screen.queryByRole("alert")).toBeNull();
 
   await fireEvent.click(commit);
-  await vi.waitFor(() => {
-    expect(left()).toBe("/");
-  });
+  await stayed();
 
   expect(await routed(transport)).toMatchObject({
     capability: "create-or-append",
@@ -1800,7 +1931,7 @@ const aTarget = {
 };
 
 /** The record goes up; what is said about it belongs to the surface below. */
-test("says in the corner where it went, and returns to the queue when nothing is left", async () => {
+test("says in the corner where it went, and stays for a second place", async () => {
   routing({
     id: "r",
     item: "one",
@@ -1814,14 +1945,20 @@ test("says in the corner where it went, and returns to the queue when nothing is
   await choose(/Vault/);
   await commit();
 
-  await vi.waitFor(() => {
-    expect(left()).toBe("/");
-  });
+  await stayed();
   const said = notices.shown.at(-1);
   expect(said?.what).toBe("routed · Vault");
   expect(said?.why).toBe("notes/inbox/picker.md");
   expect(said?.href).toBe("/items/one");
   expect(said?.key).toBe("record:r");
+
+  await choose(/Vault/);
+  await commit();
+  await vi.waitFor(() => {
+    expect(
+      asked().filter((each) => each === "POST /v1/items/one/route"),
+    ).toHaveLength(2);
+  });
 });
 
 /** The next unprocessed item in the queue's order, which is what a queue worked from one end is. */
@@ -1847,8 +1984,7 @@ test("advances to the next item in the queue after a decision, and esc returns s
   await fireEvent.keyDown(window, { key: "[" });
   expect(left()).toBe("/items/two/process");
 
-  await choose(/Vault/);
-  await commit();
+  await choose(/^manual/);
   await vi.waitFor(() => {
     expect(left()).toBe("/items/two/process");
   });
@@ -1869,15 +2005,14 @@ test("advances to the row after this one, not the top of the queue", async () =>
   await client.enter("queue");
 
   draw();
-  await choose(/Vault/);
-  await commit();
+  await choose(/^manual/);
   await vi.waitFor(() => {
     expect(left()).toBe("/items/two/process");
   });
 });
 
-/** An item that was never on the queue — reached from the feed — has nothing after it. */
-test("returns to the queue after deciding an item that was not on it", async () => {
+/** An item that was never on the queue — reached from the feed — goes on from the top. */
+test("goes to the first queued item after deciding one that was not on the queue", async () => {
   routing(
     {
       id: "r",
@@ -1891,8 +2026,64 @@ test("returns to the queue after deciding an item that was not on it", async () 
   await client.enter("queue");
 
   draw();
-  await choose(/Vault/);
-  await commit();
+  await choose(/^manual/);
+  await vi.waitFor(() => {
+    expect(left()).toBe("/items/zero/process");
+  });
+});
+
+/** The queue is read a page at a time; the end of the page is not the end of the queue. */
+test("reads the next page before returning to a queue that has more", async () => {
+  let pages = 0;
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route === "POST /v1/items/one/mark-processed") {
+      return json(200, {
+        id: "rec",
+        item: "one",
+        at: WHEN,
+        state: "delivered",
+        target: { kind: "user" },
+      });
+    }
+    if (route === "GET /v1/queue") {
+      pages += 1;
+      return pages === 1
+        ? json(200, {
+            values: [anItem("zero"), anItem("one")],
+            next: "/v1/queue?after=one",
+          })
+        : json(200, { values: [anItem("two")] });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+  await client.enter("queue");
+
+  draw();
+  await choose(/^manual/);
+  await vi.waitFor(() => {
+    expect(left()).toBe("/items/two/process");
+  });
+});
+
+test("returns to the queue when nothing is left", async () => {
+  routing(
+    {
+      id: "r",
+      item: "one",
+      at: "2026-09-03T10:00:00.000Z",
+      state: "delivered",
+      target: aTarget,
+    },
+    [anItem("one")],
+  );
+  await client.enter("queue");
+
+  draw();
+  await choose(/^manual/);
   await vi.waitFor(() => {
     expect(left()).toBe("/");
   });
@@ -2094,9 +2285,7 @@ test("draws a kind that offers no preview as such, and still routes", async () =
   expect(await screen.findByText(NO_PREVIEW_OFFERED)).toBeDefined();
 
   await commit();
-  await vi.waitFor(() => {
-    expect(left()).toBe("/");
-  });
+  await stayed();
 });
 
 test("says a destination that could not be reached, and routing is still available", async () => {
@@ -2118,6 +2307,62 @@ test("says a destination that could not be reached, and routing is still availab
     (screen.getByRole("button", { name: "route" }) as HTMLButtonElement)
       .disabled,
   ).toBe(false);
+});
+
+/** The head line the schema-driven form's arguments name, above the preview. */
+test("the preview's head says the destination and the full place it names", async () => {
+  serving([aDestination()]);
+
+  draw();
+  await choose(/Vault/);
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "inbox" },
+  });
+
+  expect(await screen.findByText(/# a thought/)).toBeDefined();
+  expect(screen.getByText("Vault / inbox")).toBeDefined();
+});
+
+/** A destination whose place is the typed line, with a preview to head. */
+function servingLinedPreview(entries: readonly Record<string, unknown>[] = []) {
+  return pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "filesystem" })] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE_OR_APPEND] });
+    }
+    if (route.endsWith("/candidates")) {
+      const scope = new URL(request.url).searchParams.get("scope");
+      return json(200, scope === null ? answered(entries) : answered([]));
+    }
+    if (route === "POST /v1/items/one/route/preview") {
+      return json(200, {
+        kind: "previewed",
+        content: {
+          mediaType: "text/markdown",
+          text: "# a thought\n",
+          truncated: false,
+        },
+      });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+}
+
+/** The name a blank leaf would get is the same code the line forecasts with. */
+test("the preview's head says the full path the typed line names", async () => {
+  servingLinedPreview([]);
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+
+  const line = await screen.findByRole("combobox", { name: "place" });
+  await fireEvent.input(line, { target: { value: "research/" } });
+
+  expect(await screen.findByText(/# a thought/)).toBeDefined();
+  expect(screen.getByText("Vault / research/a thought.md")).toBeDefined();
 });
 
 /** The two layouts, by width: asserted as the classes that make them. */
@@ -2216,7 +2461,9 @@ test("taking discard archives the item, closes, and offers it back", async () =>
 
   await choose(/^discard/);
 
-  expect(left()).toBe("/");
+  await vi.waitFor(() => {
+    expect(left()).toBe("/");
+  });
   await vi.waitFor(() => {
     expect(sentTo(transport).map(routeOf)).toContain(
       "POST /v1/items/one/archive",
@@ -2346,7 +2593,9 @@ test("with the pool out of reach the composer opens and discards", async () => {
   expect((discard as HTMLButtonElement).disabled).toBe(false);
 
   await choose(/^discard/);
-  expect(left()).toBe("/");
+  await vi.waitFor(() => {
+    expect(left()).toBe("/");
+  });
 
   online(true);
   await vi.waitFor(() => {
@@ -2479,6 +2728,52 @@ test("marks a trigger tag in the chooser with the template it applies", async ()
   await screen.findByRole("option", { name: /route\/research.*research/ });
   // An ordinary tag is left as it was: only a tag with an effect is marked.
   expect(screen.getByRole("option", { name: "seedling" })).toBeTruthy();
+});
+
+/**
+ * A trigger tag that filed the item still stands until the routing is
+ * cancelled, so the chooser draws it inert rather than a control that would
+ * refuse the press.
+ */
+test("draws a trigger tag that filed the item as inert, not a control", async () => {
+  const held = aCapture({
+    tags: [{ name: "route/research", addedAt: WHEN }],
+    routing: {
+      records: 1,
+      pending: 0,
+      to: [{ kind: "destination", destination: VAULT }],
+      templates: [RESEARCH.id],
+    },
+  });
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/items/one") return json(200, held);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route === "GET /v1/templates") return json(200, { values: [RESEARCH] });
+    return json(200, { values: [] });
+  });
+  await client.templates.load();
+  await client.item("one");
+
+  draw(held);
+  await screen.findByText("tags");
+
+  // The template band also says "research", inside its own button: the
+  // carried tag's span is the one that is not inside a control at all.
+  const tag = screen
+    .getAllByText("research")
+    .find((each) => each.tagName === "SPAN" && each.closest("button") === null);
+  expect(tag).toBeDefined();
+  expect(tag?.getAttribute("title")).toBe(
+    "filed the item — cancel the routing to take it off",
+  );
+  expect(
+    screen.queryByRole("button", {
+      name: "route/research, routes to research",
+    }),
+  ).toBeNull();
 });
 
 /** A destination that says where a field starts is answered: it starts there. */

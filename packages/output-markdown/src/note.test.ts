@@ -110,8 +110,8 @@ describe("what a note says it could not carry", () => {
     );
   });
 
-  /** The default pairing, and the one that used to lose tags in silence. */
-  it("confesses tags bound for a frontmatter block nobody is writing", () => {
+  /** The default pairing: tags nobody asked to write are the destination's choice, not a loss. */
+  it("says nothing of tags the options left out", () => {
     const note = renderNote(
       renderers,
       delivery({ tags: ["quote"] }),
@@ -119,7 +119,15 @@ describe("what a note says it could not carry", () => {
       options(),
     );
 
-    expect(note.dropped).toBe("its tags did not go");
+    expect(note.dropped).toBe(undefined);
+    expect(
+      renderNote(
+        renderers,
+        delivery({ tags: ["quote"] }),
+        at,
+        options({ tags: "none" }),
+      ).dropped,
+    ).toBe(undefined);
   });
 
   it("names the tags no hashtag could be made of", () => {
@@ -147,7 +155,7 @@ describe("what a note says it could not carry", () => {
       options(),
     );
 
-    expect(note.dropped).toBe("its tags and its artifacts did not go");
+    expect(note.dropped).toBe("its artifacts did not go");
   });
 
   it("rides out to the delivery as the output's own note", () => {

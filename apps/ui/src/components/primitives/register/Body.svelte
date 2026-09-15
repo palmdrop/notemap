@@ -28,12 +28,10 @@
   onclick={onpick === undefined ? undefined : pickable(onpick)}
   ondblclick={onreach === undefined ? undefined : doubled(onreach)}
   data-selected={selected ? "" : undefined}
-  class="col-start-2 min-w-0 pb-3 pl-gutter max-narrow:pl-3.5
+  class="col-start-2 -mr-3 min-w-0 border-t border-r pr-3 pb-3 pl-gutter max-narrow:-mr-2 max-narrow:pr-2 max-narrow:pl-3.5
     {onpick === undefined ? '' : 'cursor-pointer'}
     {gap ? 'pt-[calc(--spacing(3)+var(--spacing-gap-time))]' : 'pt-3'}
-    {selected
-    ? '-mr-3 border-t border-r border-ink pr-3 max-narrow:-mr-2 max-narrow:pr-2'
-    : ''}"
+    {selected ? 'border-ink' : 'border-transparent'}"
 >
   {@render children?.()}
 </div>

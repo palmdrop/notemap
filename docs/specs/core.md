@@ -1,9 +1,13 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-09-13
+**Last updated**: 2026-09-15
 **Shipped**:
 
+- 2026-09-15 — **A manual mark is cancellable, the summary names its templates, and a note confesses less.** `cancelDelivery`
+  takes back a record naming the user whatever its state; the routing summary names the distinct
+  templates whose records stand; the markdown kinds no longer confess tags their settings left out.
+  See [shell-minor-changes](../plans/shell-minor-changes.md).
 - 2026-09-13 — **The action log is read through one query.** `actions.read` takes a subject, a set
   of kinds, or both, where `forItem` and `all` stood; `ACTION_KINDS` is the list a host validates
   against.
@@ -795,7 +799,11 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   authoritative and a second copy is one that can one day disagree. It is on the item because a
   surface reads a page of them and cannot ask per row — without it a feed can say an item was
   archived and cannot say it was routed. The records themselves are still read one item at a
-  time: a capability, arguments and a pointer are an item's detail, not a row's.
+  time: a capability, arguments and a pointer are an item's detail, not a row's. *Amended
+  2026-09-15*: it also names the **templates whose records stand**, distinct and in the same
+  order. A trigger tag cannot come off while what it filed stands
+  ([classification](#classification)), and a row drawing the tag has to know that without reading
+  the records — so the one fact that refusal turns on rides on the item as the places do.
 - **A destination declares its capabilities** (decided 2026-08-04). Each capability names one
   thing that destination can do, the payload types it accepts for it, and a schema for the
   arguments a delivery must supply. A delivery names a capability and supplies arguments; core
@@ -917,6 +925,12 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   lands, so a record that is not pending means bytes reached somewhere. Removing one that never
   delivered erases no fact.
 - A person may **cancel a pending delivery** before it resolves, by the same path.
+- **A mark made by hand is cancelled by the same path** *(added 2026-09-15)*. `markProcessed`
+  writes a record born delivered, and a delivered record is otherwise not cancellable — but
+  nothing reached anywhere, so there is nothing that already happened to leave standing. Cancelling
+  it removes the record, returns the item to the queue, appends `delivery-cancelled` with
+  `target: user`, and owes the mirror the item, which a reservation never does: the mark was
+  mirrored when it was made.
 - **A failed delivery is nonetheless recorded**, so a destination failing silently and
   repeatedly is visible rather than invisible. The routing log says where an item went; a
   failed attempt is one kind of entry in the action log
@@ -1006,11 +1020,15 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   output is never buffered in order to be hashed. Core stores it as a **blob**, the store being
   content-addressed already, and the record names the hash, the media type and the note.
 - **A kind confesses what its own rendering left behind** (added 2026-09-10). The markdown kinds
-  drop an item's artifacts always, and its tags wherever nothing was asked to carry them, and both
-  now reach the output's note — a lossy delivery that says nothing is indistinguishable from a
-  faithful one, which is the whole reason the note exists. What each dialect lost is the dialect's
-  to say: the renderer names its own losses and the note assembly names the tags, because neither
-  knows the other's half.
+  drop an item's artifacts always, and that reaches the output's note — a lossy delivery that says
+  nothing is indistinguishable from a faithful one, which is the whole reason the note exists. What
+  each dialect lost is the dialect's to say: the renderer names its own losses and the note
+  assembly names the tags it was asked to write and could not, because neither knows the other's
+  half. *Amended 2026-09-15*: tags the destination's settings left out are **not confessed**. They
+  used to be, on the reasoning above; but a setting is a choice rather than a loss, the output
+  already shows what it holds, and a note saying `its tags did not go` under every delivery to a
+  vault that writes no frontmatter was the confession nobody could act on. A hashtag that could
+  not be made of a tag is still said: that one was asked for.
 - **The note is free text nothing parses**, on the same footing as the `detail` that rides on
   `unreachable` and `rejected`. A machine-readable list of what was dropped is a vocabulary both
   core and every shell would have to learn, and would be wrong the first time a destination lost

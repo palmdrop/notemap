@@ -235,14 +235,15 @@ describe("where a note carries its tags", () => {
     expect(file).toBe("a thought\n\n#quote #project/fiction-a\n");
   });
 
-  it("says the tags did not go where nothing carried them", async () => {
+  /** Tags nobody asked to write are the destination's choice, and the output shows it. */
+  it("confesses nothing where the settings left the tags out", async () => {
     const { outcome } = await wrote({
       frontmatter: "none",
       tags: "frontmatter",
     });
 
     expect(outcome.kind).toBe("delivered");
-    expect(delivered(outcome).output?.note).toBe("its tags did not go");
+    expect(delivered(outcome).output?.note).toBe(undefined);
   });
 
   it("confesses nothing where the note carried them", async () => {

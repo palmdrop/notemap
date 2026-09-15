@@ -43,6 +43,8 @@ function toVault(
   };
 }
 
+const viaResearch = { template: "tpl-research", firedByTag: true };
+
 /**
  * The fold and `summarise` are two implementations of one answer — one built a
  * record at a time from what the pool returned, one built from the records
@@ -71,6 +73,11 @@ describe("folding a routing decision matches summarising the records", () => {
       toVault("r2", "board", "pending"),
       toUser("r3", "delivered"),
     ],
+    "the same template twice, which names it once": [
+      { ...toVault("r1", "vault", "delivered"), applied: viaResearch },
+      { ...toVault("r2", "vault", "delivered"), applied: viaResearch },
+      toVault("r3", "vault", "delivered"),
+    ],
   };
 
   for (const [name, records] of Object.entries(cases)) {
@@ -80,6 +87,11 @@ describe("folding a routing decision matches summarising the records", () => {
       );
     });
   }
+
+  it("names the templates whose records stand, once each", () => {
+    const records = cases["the same template twice, which names it once"] ?? [];
+    expect(summarise(records)?.templates).toEqual(["tpl-research"]);
+  });
 });
 
 /**

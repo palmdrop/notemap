@@ -453,12 +453,19 @@
                 }
               ]
             }
+          },
+          "templates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
           "records",
           "pending",
-          "to"
+          "to",
+          "templates"
         ]
       },
       "Asset": {

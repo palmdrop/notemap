@@ -218,6 +218,9 @@ describe("a record made from a template", () => {
     expect((await p.routingRecords(item.id))[0]).toMatchObject({
       applied: { template: "tpl-research", firedByTag: true },
     });
+    expect((await p.item(item.id))?.routing?.templates).toEqual([
+      "tpl-research",
+    ]);
   });
 
   it("keeps naming a template that has since been deleted", async () => {

@@ -4,17 +4,28 @@ import { OWN_ARGUMENTS } from "./arguments";
 import type { Raised } from "./notices.svelte";
 
 /**
- * What one record says on a row: where it went, and the place it landed. The
- * capability is the adapter's vocabulary rather than a person's, and a record
- * that is not saying otherwise was delivered — so the words those two spent are
- * the words the place needed. Marking processed is routing whose destination is
- * the person, so it reads as one.
+ * The last segment of a place, prefixed `…/` where more remains before it: a
+ * row's line stays one line long whatever the path's depth, and the elided
+ * head is still in the element's own `title`.
+ */
+export function placeShort(place: string): string {
+  const at = place.lastIndexOf("/");
+  return at < 0 ? place : `…/${place.slice(at + 1)}`;
+}
+
+/**
+ * What one record says on a row: where it went, and the place it landed, cut
+ * to its last segment so the line never wraps a long path. The capability is
+ * the adapter's vocabulary rather than a person's, and a record that is not
+ * saying otherwise was delivered — so the words those two spent are the words
+ * the place needed. Marking processed is routing whose destination is the
+ * person, so it reads as one.
  */
 export function wentTo(
   record: RoutingRecord,
   nameOf: (destination: string) => string,
   called?: Namer,
-): { readonly said: string; readonly aside?: string } {
+): { readonly said: string; readonly aside?: string; readonly title?: string } {
   if (record.target.kind !== "destination") {
     const note = record.target.note;
     return { said: "manual", ...(note === undefined ? {} : { aside: note }) };
@@ -24,7 +35,8 @@ export function wentTo(
   const place = placeIn(record, called);
 
   return {
-    said: place === undefined ? name : `${name} · ${place}`,
+    said: place === undefined ? name : `${name} · ${placeShort(place)}`,
+    ...(place === undefined ? {} : { title: place }),
     ...(record.state === "delivered" ? {} : { aside: record.state }),
   };
 }

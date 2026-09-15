@@ -123,6 +123,7 @@ function tagSet(
     names: readonly string[];
     offered: readonly string[];
     fires: (name: string) => string | undefined;
+    held: (name: string) => boolean;
   }> = {},
 ) {
   const added = vi.fn();
@@ -176,7 +177,22 @@ test("the offer is drawn beneath the line, minus what the item carries, narrowed
   expect(options()).toEqual(["reading", "recipe"]);
 
   await typed(line, "rec");
-  expect(options()).toEqual(["recipe"]);
+  // `recipe` matches, and the last row is how a name no offer holds is made —
+  // drawn even where something else matched, since nothing offered is `rec`.
+  expect(options()).toEqual(["recipe", "new · rec"]);
+});
+
+/** A long offer is a sample while the line is empty, and the whole list once typing narrows it. */
+test("offers a handful while the line is empty, and the whole narrowed list once typing", async () => {
+  const many = Array.from({ length: 12 }, (_, at) => `tag-${String(at)}`);
+  tagSet({ offered: many });
+
+  await opened();
+  expect(options()).toHaveLength(8);
+
+  await typed(screen.getByRole("combobox"), "tag-1");
+  // "tag-1", "tag-10" and "tag-11" all match, and none is held back.
+  expect(options()).toHaveLength(3);
 });
 
 test("an offered tag is taken by pressing its row, and the line never blurs first", async () => {
@@ -199,17 +215,16 @@ test("tab completes what is typed, then walks what still matches", async () => {
 
   await pressed(line, "Tab");
   expect(line.value).toBe("rea");
-  expect(line.getAttribute("aria-activedescendant")).toBeNull();
-
-  await pressed(line, "Tab");
-  expect(line.value).toBe("rea");
+  // The first match is marked as soon as the line holds it, completion or not.
   expect(
     screen
       .getByRole("option", { name: "reading" })
       .getAttribute("aria-selected"),
   ).toBe("true");
 
+  // Nothing left to complete: the very next press walks, no dead press between.
   await pressed(line, "Tab");
+  expect(line.value).toBe("rea");
   expect(
     screen
       .getByRole("option", { name: "reasoning" })
@@ -218,6 +233,39 @@ test("tab completes what is typed, then walks what still matches", async () => {
 
   await pressed(line, "Enter");
   expect(added).toHaveBeenCalledWith("reasoning");
+});
+
+test("nothing is marked while the line is empty, so a reflex enter tags nothing", async () => {
+  const { added } = tagSet({ offered: ["reading", "seedling"] });
+
+  const line = await opened();
+  expect(screen.queryByRole("option", { selected: true })).toBeNull();
+  await pressed(line, "Enter");
+
+  expect(added).not.toHaveBeenCalled();
+  expect(screen.queryByRole("combobox")).toBeNull();
+});
+
+test("the first arrow from an empty line lands on the first row, not on a dead press", async () => {
+  const { added } = tagSet({ offered: ["reading", "seedling"] });
+
+  const line = await opened();
+  await pressed(line, "ArrowDown");
+  await pressed(line, "ArrowDown");
+  await pressed(line, "Enter");
+
+  expect(added).toHaveBeenCalledWith("seedling");
+});
+
+/** The bug this replaces: `⏎` used to create what was typed over the match it drew. */
+test("enter takes the marked match rather than creating what was typed over it", async () => {
+  const { added } = tagSet({ offered: ["quote", "question"] });
+
+  const line = await opened();
+  await typed(line, "qu");
+  await pressed(line, "Enter");
+
+  expect(added).toHaveBeenCalledWith("quote");
 });
 
 test("tab with nothing typed walks the offer from the top", async () => {
@@ -262,14 +310,80 @@ test("escape and leaving the line put it away and take nothing", async () => {
   expect(added).not.toHaveBeenCalled();
 });
 
-test("a tag the item carries is removed by pressing its word", async () => {
+test("a tag the item carries is removed by pressing it, then its ×", async () => {
   const { removed } = tagSet({ names: ["design", "notemap"] });
 
   const word = screen.getByRole("button", { name: "notemap" });
   expect(word.getAttribute("aria-pressed")).toBe("true");
+  expect(screen.queryByRole("button", { name: "remove notemap" })).toBeNull();
 
   await fireEvent.click(word);
+  expect(removed).not.toHaveBeenCalled();
+
+  await fireEvent.click(screen.getByRole("button", { name: "remove notemap" }));
   expect(removed).toHaveBeenCalledWith("notemap");
+  expect(screen.queryByRole("button", { name: "remove notemap" })).toBeNull();
+});
+
+test("pressing it again, esc, or pressing another tag deselects it", async () => {
+  const { removed } = tagSet({ names: ["design", "notemap"] });
+
+  const design = screen.getByRole("button", { name: "design" });
+  const notemap = screen.getByRole("button", { name: "notemap" });
+
+  await fireEvent.click(design);
+  await fireEvent.click(design);
+  expect(screen.queryByRole("button", { name: "remove design" })).toBeNull();
+
+  await fireEvent.click(design);
+  await fireEvent.keyDown(design, { key: "Escape" });
+  expect(screen.queryByRole("button", { name: "remove design" })).toBeNull();
+
+  await fireEvent.click(design);
+  await fireEvent.click(notemap);
+  expect(screen.queryByRole("button", { name: "remove design" })).toBeNull();
+  expect(screen.getByRole("button", { name: "remove notemap" })).toBeDefined();
+
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  expect(screen.queryByRole("button", { name: "remove notemap" })).toBeNull();
+
+  expect(removed).not.toHaveBeenCalled();
+});
+
+test("a trigger tag that filed the item is inert, not a control", async () => {
+  tagSet({
+    names: ["route/research"],
+    fires: (name) => (name.startsWith("route/") ? name.slice(6) : undefined),
+    held: (name) => name === "route/research",
+  });
+
+  const tag = screen.getByText("research");
+  expect(tag.tagName).toBe("SPAN");
+  expect(tag.getAttribute("title")).toBe(
+    "filed the item — cancel the routing to take it off",
+  );
+  expect(screen.queryByRole("button", { name: /research/ })).toBeNull();
+});
+
+/** The pointer marks a row the same way `↑↓` does, without moving the caret. */
+test("the pointer marks a row it moves over, and the walk goes on from there", async () => {
+  const { added } = tagSet({ offered: ["reading", "seedling", "writing"] });
+
+  const line = await opened();
+  await fireEvent.mouseEnter(screen.getByRole("option", { name: "seedling" }));
+  await pressed(line, "ArrowDown");
+  await pressed(line, "Enter");
+
+  expect(added).toHaveBeenCalledWith("writing");
+});
+
+test("a carried tag typed again is not offered as new", async () => {
+  tagSet({ names: ["reading"], offered: ["reading"] });
+
+  const line = await opened();
+  await typed(line, "reading");
+
+  expect(options()).toEqual([]);
 });
 
 test("a trigger tag is marked with the template it applies, carried or offered", async () => {

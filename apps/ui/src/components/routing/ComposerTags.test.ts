@@ -38,11 +38,16 @@ async function serving(
   return transport;
 }
 
-function draw(names: readonly string[] = [], onfired?: () => void) {
+function draw(
+  names: readonly string[] = [],
+  onfired?: () => void,
+  templates: readonly string[] = [],
+) {
   render(ComposerTags, {
     props: {
       item: "one",
       names,
+      templates,
       ...(onfired === undefined ? {} : { onfired }),
     },
   });
@@ -79,11 +84,12 @@ test("a tag taken here reaches the pool", async () => {
   });
 });
 
-test("a tag taken back is removed", async () => {
+test("a tag taken back is removed by pressing it, then its ×", async () => {
   await serving(["reading"]);
   draw(["reading"]);
 
   await fireEvent.click(word("reading"));
+  await fireEvent.click(screen.getByRole("button", { name: "remove reading" }));
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/untag");
@@ -119,6 +125,16 @@ test("says a trigger tag taken here filed the item", async () => {
   );
 
   expect(fired).toHaveBeenCalled();
+});
+
+/** A trigger tag whose template's record still stands cannot be taken off here. */
+test("draws a trigger tag whose template still stands as inert", async () => {
+  await serving(["route/research"], [RESEARCH]);
+  draw(["route/research"], undefined, [RESEARCH.id]);
+
+  const tag = screen.getByText("research");
+  expect(tag.tagName).toBe("SPAN");
+  expect(screen.queryByRole("button", { name: /route\/research/ })).toBeNull();
 });
 
 test("says nothing of an ordinary tag, which files nothing", async () => {

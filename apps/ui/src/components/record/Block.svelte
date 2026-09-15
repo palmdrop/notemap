@@ -229,10 +229,8 @@
   }
 </script>
 
-<div class="max-w-read border border-ink">
-  <div
-    class="flex flex-wrap justify-between gap-x-[2ch] gap-y-1 border-b border-ink px-3 py-1.5"
-  >
+<div class="max-w-read divide-y divide-ink border border-ink">
+  <div class="flex flex-wrap justify-between gap-x-[2ch] gap-y-1 px-3 py-1.5">
     <div class="flex min-w-0 flex-wrap gap-x-[0.6ch]">
       <span class="font-semibold">{destination}</span>
       {#if place !== undefined}
@@ -299,7 +297,7 @@
 
   {#if named !== undefined}
     <div
-      class="grid grid-cols-[max-content_1fr] gap-x-[3ch] border-t border-ink px-3 py-1.5 max-narrow:grid-cols-1"
+      class="grid grid-cols-[max-content_1fr] gap-x-[3ch] px-3 py-1.5 max-narrow:grid-cols-1"
     >
       {#each named as argument (argument.name)}
         <span class="tracking-caps uppercase">{argument.name}</span>
@@ -308,9 +306,7 @@
     </div>
   {/if}
 
-  <div
-    class="flex flex-wrap items-baseline justify-between gap-x-5 border-t border-ink px-3 py-1"
-  >
+  <div class="flex flex-wrap items-baseline justify-between gap-x-5 px-3 py-1">
     <div class="flex flex-wrap gap-x-5 max-narrow:gap-x-3.5">
       {#if hasArguments}
         <Action disabled={naming} onclick={() => void showArguments()}>
@@ -334,7 +330,7 @@
   </div>
 
   {#if failed !== ""}
-    <div role="status" class="border-t border-ink px-3 py-1.5 text-alarm">
+    <div role="status" class="px-3 py-1.5 text-alarm">
       {failed}
     </div>
   {/if}

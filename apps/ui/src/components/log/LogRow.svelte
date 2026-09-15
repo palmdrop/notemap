@@ -9,7 +9,7 @@
   import { factOf, failed, flattened, known } from "$lib/actions";
   import { client } from "$lib/client";
   import { kindWord } from "$lib/kinds";
-  import { CALLED_OFF } from "$lib/said";
+  import { CALLED_OFF, UNDONE } from "$lib/said";
 
   import Detail from "./Detail.svelte";
   import Says from "./Says.svelte";
@@ -103,7 +103,9 @@
     action.kind === "delivery-failed"
       ? (failure ?? "delivery failed")
       : action.kind === "delivery-cancelled"
-        ? CALLED_OFF
+        ? action.detail["target"] === "user"
+          ? UNDONE
+          : CALLED_OFF
         : undefined,
   );
 </script>

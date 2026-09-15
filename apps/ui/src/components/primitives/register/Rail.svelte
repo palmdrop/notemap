@@ -28,9 +28,9 @@
   }
 </script>
 
-<!-- The stamp inside is the accessible way in; this is only reach. The box
-     reaches outside the column so the text inside it does not move when it
-     appears. -->
+<!-- The stamp inside is the accessible way in; this is only reach. The box's
+     edges are drawn on every row and coloured on the selected one, so the
+     text inside it does not move by a pixel when it appears. -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
@@ -38,12 +38,10 @@
   onclick={onpick === undefined ? undefined : pickable(onpick)}
   ondblclick={onreach === undefined ? undefined : doubled(onreach)}
   data-selected={selected ? "" : undefined}
-  class="col-start-1 min-w-0 border-r border-ink pr-4 pb-3 max-narrow:pr-2.5
+  class="col-start-1 -ml-3 min-w-0 border-t border-r border-l border-ink pr-4 pb-3 pl-3 max-narrow:-ml-2 max-narrow:pr-2.5 max-narrow:pl-2
     {onpick === undefined ? '' : 'cursor-pointer'}
     {gap ? 'pt-[calc(--spacing(3)+var(--spacing-gap-time))]' : 'pt-3'}
-    {selected
-    ? '-ml-3 border-t border-l pl-3 max-narrow:-ml-2 max-narrow:pl-2'
-    : ''}"
+    {selected ? '' : 'border-t-transparent border-l-transparent'}"
 >
   {@render children()}
 </div>

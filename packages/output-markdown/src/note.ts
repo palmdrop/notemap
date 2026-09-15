@@ -77,7 +77,7 @@ export function renderNote(
     hashtags === undefined || hashtags.line === ""
       ? rendered.body
       : below(rendered.body, hashtags.line);
-  const dropped = confession(delivery, options, rendered, hashtags);
+  const dropped = confession(rendered, hashtags);
   const said = dropped === undefined ? {} : { dropped };
 
   if (options.frontmatter === "none") {
@@ -100,20 +100,17 @@ function below(body: string, line: string): string {
 }
 
 /**
- * What a person is owed a sentence about: this note's own losses, and whatever
- * the renderer says it left behind. Assembled here because nowhere else knows
- * both — the renderer never hears where tags were asked to go, and the adapter
- * never sees what the renderer decided.
+ * What a person is owed a sentence about: what this note was asked to carry
+ * and could not, and whatever the renderer says it left behind. Assembled here
+ * because nowhere else knows both. Tags the options left out are not among
+ * them: that was the destination's choice, and the output shows it.
  */
 function confession(
-  delivery: Delivery,
-  options: NoteOptions,
   rendered: Rendering,
   hashtags: Hashtags | undefined,
 ): string | undefined {
   const lost: string[] = [];
 
-  if (delivery.tags.length > 0 && nowhere(options)) lost.push("its tags");
   if (hashtags !== undefined && hashtags.unwritable.length > 0) {
     lost.push(
       `the tags no hashtag can be made of (${hashtags.unwritable.join(", ")})`,
@@ -122,14 +119,6 @@ function confession(
   lost.push(...(rendered.dropped ?? []));
 
   return lost.length === 0 ? undefined : `${lost.join(" and ")} did not go`;
-}
-
-/** Tags off outright, or in a frontmatter block this note is not writing. */
-function nowhere(options: NoteOptions): boolean {
-  return (
-    options.tags === "none" ||
-    (options.tags === "frontmatter" && options.frontmatter === "none")
-  );
 }
 
 /** A whole file: the block, a blank line, then the prose — or the prose alone. */

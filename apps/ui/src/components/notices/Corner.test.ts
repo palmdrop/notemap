@@ -33,6 +33,26 @@ test("says what logged, and lets a standing one be dismissed", async () => {
   });
 });
 
+/**
+ * `marked manual` and `discarded` stand, so their `undo` does not time out
+ * under somebody's hands — but nothing went wrong, so neither is an alarm.
+ */
+test("a standing notice that is not an alarm reads as status, and still offers dismiss", async () => {
+  pool(() => json(200, { values: [] }));
+  render(Corner);
+
+  notices.raise({ what: "marked manual", standing: true, alarm: false });
+
+  const said = await screen.findByRole("status");
+  expect(said.textContent).toContain("marked manual");
+  expect(screen.queryByRole("alert")).toBeNull();
+
+  await fireEvent.click(screen.getByRole("button", { name: "dismiss" }));
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+});
+
 /** The shell hovers to the accent everywhere else, which on an accent panel is gone. */
 test("keeps its controls readable on a filled panel", async () => {
   pool(() => json(200, { values: [] }));
