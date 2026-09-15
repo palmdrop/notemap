@@ -66,6 +66,11 @@
     tags?.add();
   }
 
+  /** Toggles the capture into its editable shape, for the key that asks for it. */
+  export function edit(): void {
+    if (mayEdit) editing = !editing;
+  }
+
   /** Brings the row into view, for the keys that walk the list. */
   export function reveal(): void {
     rail?.reveal();

@@ -13,7 +13,7 @@ const BINDINGS: Record<string, string> = {
   edit: "e",
   copy: "c",
   open: "o",
-  tag: "+",
+  tag: "t",
 
   // A register's own keyboard: `list.ts`, published by the queue and the feed.
   down: "j",

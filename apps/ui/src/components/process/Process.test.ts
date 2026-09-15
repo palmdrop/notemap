@@ -8,11 +8,13 @@ import {
   routeOf,
 } from "@notemap/client/testing";
 
-import { online } from "$testing/dom";
+import { keyboard, online } from "$testing/dom";
 import { asked, client, pool, sent } from "$testing/pool";
 import { notices } from "$lib/notices.svelte";
 import { NO_PREVIEW_OFFERED } from "$lib/said";
 import Process from "./Process.svelte";
+
+keyboard();
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 

@@ -16,11 +16,13 @@
   import Refused from "$components/primitives/register/Refused.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import ViewToggle from "$components/view/ViewToggle.svelte";
-  import { processHref } from "$components/item/href";
+  import { itemHref, processHref } from "$components/item/href";
   import { client } from "$lib/client";
+  import { commandsFor } from "$lib/command/item";
+  import { listCommands } from "$lib/command/list";
+  import { publish } from "$lib/command/stack.svelte";
   import { orderFor } from "$lib/order";
   import { pending } from "$lib/pending.svelte";
-  import { discard, manual } from "$lib/quick";
   import { reachable } from "$lib/reachable.svelte";
   import { keepPlace, restorePlace } from "$lib/scroll-mark";
   import { refusalIn } from "$lib/refusal";
@@ -139,15 +141,6 @@
     replaceState(withView(page.url, wanted), {});
   }
 
-  /** Whether the key was pressed in something a person is writing in. */
-  function writing(target: EventTarget | null): boolean {
-    return (
-      target instanceof HTMLElement &&
-      (target.isContentEditable ||
-        ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
-    );
-  }
-
   const current = $derived(rows.find((row) => row.id === selected));
 
   function reveal(id: string) {
@@ -171,46 +164,26 @@
     void tick().then(() => reveal(row.id));
   }
 
-  function onkeydown(event: KeyboardEvent) {
-    // A field answers for its own entry: acting on the row under a
-    // half-written tag would take the entry with it.
-    if (writing(event.target)) return;
-    if (event.altKey || event.ctrlKey || event.metaKey) return;
-
-    switch (event.key) {
-      case "Escape":
-        if (selected !== undefined) deselect();
-        return;
-      case "j":
-        walk(1);
-        break;
-      case "k":
-        walk(-1);
-        break;
-      case "Enter":
-        if (current !== undefined) process(current);
-        else walk(1);
-        break;
-      case "p":
-        if (current !== undefined) process(current);
-        break;
-      case "d":
-        if (current !== undefined) discard(current);
-        break;
-      case "m":
-        if (current !== undefined) void manual(current);
-        break;
-      case "+":
-        if (current !== undefined) drawn[current.id]?.tag();
-        break;
-      default:
-        return;
-    }
-    event.preventDefault();
-  }
+  // The list's own walking, and the selected row's: `Actions`' commands
+  // reached by key wherever the row draws them as buttons.
+  publish(() => [
+    ...listCommands({
+      ondown: () => walk(1),
+      onup: () => walk(-1),
+      onselect: () => (current !== undefined ? process(current) : walk(1)),
+      ondeselect: deselect,
+    }),
+    ...(current === undefined
+      ? []
+      : commandsFor(current, {
+          address: itemHref(current.id),
+          offline: !pool.yes,
+          onprocess: () => process(current),
+          onedit: () => drawn[current.id]?.edit(),
+          tag: () => drawn[current.id]?.tag(),
+        })),
+  ]);
 </script>
-
-<svelte:window {onkeydown} />
 
 <Capture focus={arrived === null} />
 

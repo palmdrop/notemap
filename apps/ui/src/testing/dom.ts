@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, vi } from "vitest";
 import { cleanup } from "@testing-library/svelte";
 import { forgetEverything } from "$lib/candidate-cache";
+import { chordFor } from "$lib/command/bindings";
+import { dispatch } from "$lib/command/dispatch";
+import { published } from "$lib/command/stack.svelte";
 import { forgetEveryName } from "$lib/names.svelte";
 
 /**
@@ -85,6 +88,23 @@ export function online(yes: boolean): void {
     value: yes,
   });
   window.dispatchEvent(new Event(yes ? "online" : "offline"));
+}
+
+/**
+ * The listener the layout is, for a test that renders a surface without it.
+ * Only what a command runs: one that goes somewhere is a `goto` the layout
+ * makes, and where it leads is `commandsFor`'s to answer rather than a key's.
+ * Called at the top of a file whose surface has a keyboard, so a file whose
+ * fields press their own keys is left alone.
+ */
+export function keyboard(): void {
+  const on = (event: KeyboardEvent): void => {
+    const found = dispatch(event, published(), chordFor);
+    if (found !== undefined && "run" in found) void found.run();
+  };
+
+  beforeEach(() => window.addEventListener("keydown", on));
+  afterEach(() => window.removeEventListener("keydown", on));
 }
 
 /** Whether the page is being looked at, which jsdom fixes at visible. */

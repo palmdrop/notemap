@@ -18,6 +18,8 @@
 
   import { processHref, recordHref } from "$components/item/href";
   import { client } from "$lib/client";
+  import { commandsFor } from "$lib/command/item";
+  import { publish } from "$lib/command/stack.svelte";
   import { became } from "$lib/lineage";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
@@ -70,6 +72,18 @@
   });
 
   const word = $derived(item === undefined ? undefined : became(item));
+
+  // One subject and no selection: the page is the item, so what it offers is
+  // what its own `Actions` draws. `tag` is absent — nothing here draws a `+`.
+  publish(() =>
+    item === undefined
+      ? []
+      : commandsFor(item, {
+          offline: !pool.yes,
+          onprocess: () => void goto(processHref(id)),
+          onedit: () => (editing = !editing),
+        }),
+  );
   const refused = $derived(
     read?.failure?.refused === true ? read.failure.said : undefined,
   );
