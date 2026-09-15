@@ -70,7 +70,7 @@ test("offers edit on an unprocessed item and not on a processed one", () => {
   expect(ids()).toContain("edit");
 
   const processed = anItem("one", {
-    routing: { records: 1, pending: 0, to: [] },
+    routing: { records: 1, pending: 0, to: [], templates: [] },
   });
   expect(ids(processed)).not.toContain("edit");
 });

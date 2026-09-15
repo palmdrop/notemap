@@ -494,3 +494,15 @@ test("walks the rows with j and k, and processes the one selected", async () => 
   await fireEvent.keyDown(window, { key: "Escape" });
   expect(stamps(true)).toHaveLength(0);
 });
+
+test("t opens the tag chooser on the selected row", async () => {
+  pool(held(anItem("one")));
+
+  render(Feed);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "t" });
+
+  expect(await screen.findByLabelText("Add a tag")).toBeTruthy();
+});

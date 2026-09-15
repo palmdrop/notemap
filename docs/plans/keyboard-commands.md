@@ -71,6 +71,10 @@ not worth the familiarity, so the concept is a **command**.
 **New bindings**, beyond porting what exists: `e` edit, `c` copy, `o` open, `u` undiscard — the
 four deeds `Actions` already draws as buttons and no key could reach.
 
+*Amended 2026-09-15, rebasing onto `main`*: the tag chooser moves from `+` to **`t`**. A letter
+like every other command on a row, where `+` is `shift`+`=` on a good many keyboards; the `+` the
+row draws is the affordance and stays what it was.
+
 ---
 
 ## Tasks
