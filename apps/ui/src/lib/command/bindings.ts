@@ -15,6 +15,10 @@ const BINDINGS: Record<string, string> = {
   open: "o",
   tag: "t",
 
+  // The editable shape's own way out, published by whatever drew one: the
+  // `cancel` beside `save`, which `esc` reaches before anything behind it.
+  cancel: "escape",
+
   // A register's own keyboard: `list.ts`, published by the queue and the feed.
   down: "j",
   up: "k",

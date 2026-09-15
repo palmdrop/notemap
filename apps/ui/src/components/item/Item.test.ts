@@ -532,3 +532,26 @@ test("takes the item's own commands from the keyboard, the tag chooser with them
   await fireEvent.keyDown(window, { key: "p" });
   expect(went.to).toEqual(["/items/linked/process"]);
 });
+
+/** The same order as on a row: the field, then the editable shape, and no more. */
+test("esc leaves the editable shape the item page draws", async () => {
+  pool(holding(saying("linked", "what the link names")));
+
+  render(Item, { id: "linked" });
+  await screen.findByText("what the link names");
+
+  await fireEvent.keyDown(window, { key: "e" });
+  const field = await screen.findByLabelText("What it says");
+
+  field.focus();
+  await fireEvent.keyDown(field, { key: "Escape" });
+  expect(document.activeElement).not.toBe(field);
+  expect(screen.queryByLabelText("What it says")).not.toBeNull();
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  expect(screen.queryByLabelText("What it says")).toBeNull();
+
+  // Nothing behind it: the page is the item, and `esc` has nowhere left to go.
+  await fireEvent.keyDown(window, { key: "Escape" });
+  expect(went.to).toEqual([]);
+});

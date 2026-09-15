@@ -130,17 +130,6 @@
     stood = undefined;
   }
 
-  /**
-   * What `esc` leaves, nearest first: the row's editable shape holds a draft
-   * and its own way out, so losing the selection from under it would take the
-   * rewriting with it.
-   */
-  function leave() {
-    if (current === undefined || drawn[current.id]?.cancel() !== true) {
-      deselect();
-    }
-  }
-
   /** The deep tier: a surface of its own, which comes back here when it is done. */
   function process(item: Item) {
     void goto(processHref(item.id));
@@ -194,7 +183,7 @@
       ondown: () => walk(1),
       onup: () => walk(-1),
       onselect: () => (current !== undefined ? process(current) : walk(1)),
-      ondeselect: leave,
+      ondeselect: deselect,
     }),
     ...commands,
   ]);

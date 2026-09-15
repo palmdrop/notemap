@@ -80,13 +80,6 @@
     if (mayEdit) editing = !editing;
   }
 
-  /** Leaves the editable shape, and says whether there was one to leave. */
-  export function cancel(): boolean {
-    if (!editing) return false;
-    editing = false;
-    return true;
-  }
-
   /** Brings the row into view, for the keys that walk the list. */
   export function reveal(): void {
     rail?.reveal();

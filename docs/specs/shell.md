@@ -527,9 +527,10 @@ appears. **Nothing else changes**: no fill, no colour, no facts appear. `edit` o
 the capture in the capture box's own shape — a ruled box with `cancel` and a bold `save` along its
 foot — with no ring or colour from the browser: rewriting looks like writing. The one thing the selected row adds to the rail is a `+` after the last tag, which
 opens the chooser in place ([Tagging](#tagging)) — and is how a template is applied, a template
-being a tag. `esc` deselects, and leaves the editable shape first where the row is in one: the
-box's foot is where `cancel` and `save` are, so a row that lost the selection under a half-written
-rewrite would have no way out of it. Losing the selection any other way leaves it too.
+being a tag. `esc` deselects, and leaves the editable shape first where the row is in one
+([below](#a-command-is-what-a-key-and-a-button-both-reach)). Losing the selection any other way
+leaves the shape too: the box's foot goes with the box, and a collapsed row holding a half-written
+rewrite would have no way out of it.
 
 **Every row reserves the foot's height and the box's edges, selected or not** *(amended
 2026-09-15)*: the strip a selected row's actions sit in is drawn empty on every other row, with the
@@ -1164,6 +1165,13 @@ arriving over the one it replaces wants.
 — and shift is never named beside it; only a named key takes a prefix, as `mod+enter`, where `mod`
 is ⌘ or ctrl depending on the keyboard. **A command with a refusal has no key**, the same refusal
 that greys its button.
+
+**An editable shape publishes its own way out.** The box a capture is rewritten in draws `cancel`
+beside `save`, and publishes that `cancel` on `esc` for as long as it is drawn — so the shape is
+what `esc` leaves, wherever it was opened, and the surface it was opened on needs to know nothing
+about it. Being drawn inside that surface is what puts it first. The next press is the surface's
+own: deselecting on a register, and nothing at all on the item's own surface, where the page is
+the item and there is nothing behind the shape to leave.
 
 **Whatever has the press keeps it.** No chord fires while a field has the caret unless its command
 says otherwise, and `esc` in a field leaves the field rather than reaching anything — which is what
