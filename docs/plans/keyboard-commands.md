@@ -1,9 +1,9 @@
 # A command is published by the surface, and a binding names its key
 
 **Date**: 2026-09-15
-**Status**: Todo
+**Status**: Done
 **Spec**: `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-09-15
 
 ---
 
@@ -79,69 +79,69 @@ four deeds `Actions` already draws as buttons and no key could reach.
 
 Nothing on screen changes. Depends on nothing.
 
-- [ ] Branch `agent/keyboard-commands`.
-- [ ] `docs/adr/0047-*.md`: a command is published by the surface and a binding names its key.
+- [x] Branch `agent/keyboard-commands`.
+- [x] `docs/adr/0047-*.md`: a command is published by the surface and a binding names its key.
       What it weighs: the global registry that selection would have to be hoisted for, `chord → id`
       against `id → chord`, and the word, given `Action` is spent.
-- [ ] `CONTEXT.md`: **Command**, and **Binding** beside it. _Avoid_ on the first: action, shortcut,
+- [x] `CONTEXT.md`: **Command**, and **Binding** beside it. _Avoid_ on the first: action, shortcut,
       hotkey, keybinding.
-- [ ] `lib/command/command.ts` — the type. `run` or `href`, never both: `open` and `history` are
+- [x] `lib/command/command.ts` — the type. `run` or `href`, never both: `open` and `history` are
       places rather than deeds and `shell.md:1069` is deliberate that they stay links, so a key on
       one is a `goto`. `refusal` replaces the `disabled`/`title` pair. `primary`, `alarm` and
       `group` are how the shell draws a deed, and one place holding them beats two.
-- [ ] `lib/command/keys.ts` — `chord(event)`, `reads(chord)` for display, and the single `writing()`
+- [x] `lib/command/keys.ts` — `chord(event)`, `reads(chord)` for display, and the single `writing()`
       that two components own copies of.
-- [ ] `lib/command/bindings.ts` — the default table, `id → chord`, and `chordFor(id)`. Named so it
+- [x] `lib/command/bindings.ts` — the default table, `id → chord`, and `chordFor(id)`. Named so it
       does not collide with `lib/routing.ts`'s `keyFor`.
-- [ ] `lib/command/stack.svelte.ts` — push a layer on mount, pop it by identity on destroy. One
+- [x] `lib/command/stack.svelte.ts` — push a layer on mount, pop it by identity on destroy. One
       layer in practice; by identity because SvelteKit can hold the outgoing and incoming page
       mounted at once and a single slot is clobbered by whichever effect runs last.
-- [ ] `lib/command/dispatch.ts` — a plain function over the event, the stack and the bindings, so it
+- [x] `lib/command/dispatch.ts` — a plain function over the event, the stack and the bindings, so it
       is tested without a DOM. Two rules live here rather than in any command, both being about the
       caret rather than about a deed: a chord does not fire while a field has it unless its binding
       says `whileWriting`, and `esc` in a field leaves the field.
-- [ ] Tests beside each: the chord of a shifted letter, of `+`, of `mod+enter`; a chord bound twice
+- [x] Tests beside each: the chord of a shifted letter, of `+`, of `mod+enter`; a chord bound twice
       taking the live one; the field rules.
-- [ ] `pnpm -r --silent test`, typecheck, lint. Commit.
+- [x] `pnpm -r --silent test`, typecheck, lint. Commit.
 
 ### 2 — An item's commands, and the buttons read them
 
 Depends on 1. The screen is unchanged and the tests that cover `Actions` should not move.
 
-- [ ] `lib/command/item.ts` — `commandsFor(item, surroundings)`, pure and list-returning, where
+- [x] `lib/command/item.ts` — `commandsFor(item, surroundings)`, pure and list-returning, where
       `surroundings` carries what `Actions` takes as props today plus `tag`. It absorbs
       `refusalFor()` from `lib/processing.ts` and calls `discard`/`manual` from `lib/quick.ts`;
       neither module moves.
-- [ ] `components/item/Actions.svelte` renders the list. The two tiers `shell.md:1054` describes
+- [x] `components/item/Actions.svelte` renders the list. The two tiers `shell.md:1054` describes
       come from `group`, and the order within each from the order returned — `process` bold first,
       `unarchive` beside the decisions, `open` last.
-- [ ] `copy` and `undiscard` raise their failures in the corner, and `Actions`' local `said` goes.
-- [ ] `lib/command/item.test.ts`: the refusals `processing.test.ts` covers, now as absent or refused
+- [x] `copy` and `undiscard` raise their failures in the corner, and `Actions`' local `said` goes.
+- [x] `lib/command/item.test.ts`: the refusals `processing.test.ts` covers, now as absent or refused
       commands; `copy` absent without a clipboard or with nothing to take; `edit` absent on a
       processed item.
-- [ ] `pnpm -r --silent test`, typecheck, lint. Commit.
+- [x] `pnpm -r --silent test`, typecheck, lint. Commit.
 
 ### 3 — The surfaces publish, and one dispatcher reads
 
 Depends on 2. This is where behaviour changes.
 
-- [ ] `lib/command/list.ts` — walking a register: `j`/`k`, `enter` as select-first-or-process, `esc`
+- [x] `lib/command/list.ts` — walking a register: `j`/`k`, `enter` as select-first-or-process, `esc`
       as deselect.
-- [ ] `Queue.svelte` publishes its list and the selected row's, and loses its handler, its `switch`
+- [x] `Queue.svelte` publishes its list and the selected row's, and loses its handler, its `switch`
       and its `writing()`. The selection, the `drawn` map and `reveal()` stay where they are.
-- [ ] `Feed.svelte` publishes the same two, which is the whole of it gaining a keyboard.
-- [ ] `components/item/Item.svelte` publishes the one item's, the subject there being the page.
-- [ ] `Process.svelte` publishes `e`, `esc`, `[`, `]` and `mod+enter`, and loses its handler.
-- [ ] `routes/+layout.svelte` binds the dispatcher to `<svelte:window>`, once, and not while the
+- [x] `Feed.svelte` publishes the same two, which is the whole of it gaining a keyboard.
+- [x] `components/item/Item.svelte` publishes the one item's, the subject there being the page.
+- [x] `Process.svelte` publishes `e`, `esc`, `[`, `]` and `mod+enter`, and loses its handler.
+- [x] `routes/+layout.svelte` binds the dispatcher to `<svelte:window>`, once, and not while the
       door is shut.
-- [ ] `docs/specs/shell.md`: the two keyboard paragraphs at `:548` and `:654` become one section
+- [x] `docs/specs/shell.md`: the two keyboard paragraphs at `:548` and `:654` become one section
       saying what a command is, what a binding is, which surface publishes what, and the tables.
       The "never printed" clause goes — a settings page and a palette both print it. The feed's
       keyboard is stated rather than implied, and `d` reads `D`.
-- [ ] A `keys()` helper in `testing/dom.ts` if none of the existing ones will dispatch on `window`.
-- [ ] Tests: the queue's `D` discards and `d` does not; the feed walks and processes; the process
+- [x] A `keys()` helper in `testing/dom.ts` if none of the existing ones will dispatch on `window`.
+- [x] Tests: the queue's `D` discards and `d` does not; the feed walks and processes; the process
       surface's `mod+enter` fires from a field and `e` does not.
-- [ ] `pnpm -r --silent test`, typecheck, lint. Commit.
+- [x] `pnpm -r --silent test`, typecheck, lint. Commit.
 
 ---
 
@@ -173,10 +173,18 @@ Resolved 2026-09-15, each against the code, and kept here with its fallback.
 
 ALWAYS CREATE TESTS for the behavior implemented, unless appropriate tests already exist.
 
-There are none for the keyboard today — neither `Queue.test.ts` nor `Process.test.ts` presses a
-key — so the port has nothing to keep it honest and the tests named in each phase are the point
-rather than the garnish. Most of it is pure and tests as a function: the chord, the binding lookup,
-the dispatch, `commandsFor`. Only the three surface tests in phase 3 need a rendered component.
+*Corrected 2026-09-15*: this said there were no keyboard tests. There are nineteen, in
+`Queue.test.ts` and `Process.test.ts`, pressing keys at `window` through `fireEvent.keyDown` — so
+the port has a net after all, and keeping every one of them passing unchanged is what says it
+landed. The one deliberate edit is `d` becoming `D`.
+
+A test renders a surface rather than the layout, so nothing is listening: `keyboard()` in
+`testing/dom.ts` is the layout's listener, opted into per file, which leaves a file whose fields
+press their own keys alone. It takes only what a command `run`s — where an `href` one leads is
+`commandsFor`'s to answer, and is tested there.
+
+Most of the rest is pure and tests as a function: the chord, the binding lookup, the dispatch,
+`commandsFor`.
 
 `pnpm test:stack` is not part of this. Nothing here crosses a layer.
 

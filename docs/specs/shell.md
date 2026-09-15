@@ -4,6 +4,13 @@
 **Last updated**: 2026-09-15
 **Shipped**:
 
+- 2026-09-15 — **A command is what a key and a button both reach.**
+  [keyboard-commands](../plans/keyboard-commands.md): every deed is a command a surface publishes
+  while it is on screen, a binding names its key, and one dispatcher resolves every chord against
+  what is published — so the actions a row draws and the keys that take them are one definition.
+  The feed gains the register's keyboard it never had, a selected row adds `e`, `c`, `o` and `u`,
+  discard moves to `D`, tagging to `t`, and `esc` in a field leaves the field on every surface. A page for changing
+  the bindings and a palette are the same seam read again, and neither exists yet.
 - 2026-09-15 — **A round of minor changes after a working session.** The row keeps its foot's
   height and its box's edges, so selecting shifts nothing, and reads its routing line short; the
   queue holds the selected row after a decision until the selection leaves it; the composer draws a
