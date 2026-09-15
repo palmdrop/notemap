@@ -40,7 +40,12 @@ function answering(records: readonly unknown[] = [RECORD]) {
         return json(
           200,
           anItem("one", {
-            routing: { records: records.length, pending: 0, to: [] },
+            routing: {
+              records: records.length,
+              pending: 0,
+              to: [],
+              templates: [],
+            },
           }),
         );
       case "GET /v1/items/one/routing":

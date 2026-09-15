@@ -514,6 +514,10 @@ foot — with no ring or colour from the browser: rewriting looks like writing. 
 opens the chooser in place ([Tagging](#tagging)) — and is how a template is applied, a template
 being a tag. `esc` deselects.
 
+**Every row reserves the foot's height, selected or not** *(amended 2026-09-15)*: the strip a
+selected row's actions sit in is drawn empty on every other row, so selecting one shifts nothing
+above or below it — the list a person is scanning does not resettle under them.
+
 **One row serves both surfaces.** The queue's and the feed's differ in what they offer and never in
 what they are, so there is one of them, and what a surface hands it is what differs: a processed
 row leaves the queue at once and is seen on the feed, which offers nothing and keeps every row it
@@ -522,8 +526,11 @@ holds.
 **In the feed, a routed row says where it went, and no word repeats it** *(amended 2026-09-14; it
 carried `routed`, `manual` and `retrying` as words over the line)*. The feed is the pool read
 completely, so routed and discarded items are in it. A routed row carries a routing line — `→
-Obsidian vault · research/2026-09-13.md`, `→ manual` — naming the places it went and, from the
-summary, what has not landed yet as `· 1 pending` ([core.md](core.md#routing)); an unrouted row
+Obsidian vault · …/2026-09-13.md`, `→ manual` — naming the places it went and, from the
+summary, what has not landed yet as `· 1 pending` ([core.md](core.md#routing)). **The place is cut
+to its last segment** *(amended 2026-09-15)*, prefixed `…/` where more than that came before it, so
+a long path does not wrap the line into several — the full place is still in the element's own
+`title`, a hover away. An unrouted row
 carries nothing, the absence being the word. The only state words left are the ones no line
 says: `discarded`, `revised`, `revision`. A delivery that failed is the log's and the corner's to
 say, not the feed's. Where it went is read off the records the row asks for when it is selected,
@@ -1009,7 +1016,10 @@ where the item was never routed, and the rule is not drawn.
 **A record reads as the file it became.** The block is a ruled frame whose head is the
 destination's name, bold, then `/`, then the place inside it — the pointer the destination handed
 back, or failing that the place the decision named, with a handle read as the name it stands for
-where anything has learned one. The place is a link where the record carries a URL and text
+where anything has learned one. **One rule runs between whichever sections the block draws**
+*(amended 2026-09-15)*: the head's own and the foot's used to be drawn separately, and with nothing
+between them — a manual record with no note — they touched and read as one thick rule; the block
+draws one `divide-y` between its sections instead. The place is a link where the record carries a URL and text
 everywhere else: the shell never guesses whether a string is one, and follows only `http` and
 `https`. At the head's right, **what was done** in plain words — `created`, `appended`, `created or
 appended` for the one that is both until the adapter reaches the vault
@@ -1058,7 +1068,9 @@ groups, and are not six of a kind.
 the door to the one that does. `manual` calls the pool at once, with no note — the note is
 offered on the process surface, not here — and the corner says `marked manual` with `undo`, which
 cancels the record the mark made. `discard` calls the pool at once too, and the corner says
-`discarded` with `undo`, which unarchives. Both leave the row held in place as routing does, so the
+`discarded` with `undo`, which unarchives. **Neither notice is an alarm** *(amended 2026-09-15)*:
+both stand, so their `undo` does not time out under somebody's hands, but nothing went wrong — the
+fired-template notice's own precedent ([below](#the-corner-says-what-happened)). Both leave the row held in place as routing does, so the
 decision can be looked at after it is made. `manual` is disabled while the pool is out of reach or
 where the item is already marked, `discard` where the item is already discarded, each saying why
 in its title and drawn in the one grey the shell admits for an inert control. `unarchive` sits in

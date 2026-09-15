@@ -419,6 +419,7 @@ test("keeps a record to one line on the opened row, and makes it the way in", as
                 records: 1,
                 pending: 0,
                 to: [{ kind: "destination", destination: "vault" }],
+                templates: [],
               },
             }),
           ],
@@ -607,6 +608,20 @@ test("draws the box around the selected row and nowhere else", async () => {
   expect(boxed()).toHaveLength(2);
   expect(screen.getAllByRole("button", { name: "Add a tag" })).toHaveLength(1);
   expect(screen.getAllByRole("button", { name: "discard" })).toHaveLength(1);
+});
+
+/** Every row reserves the foot's height, so selecting one shifts nothing. */
+test("keeps the foot's height on every row, selected or not", async () => {
+  pool(queued("one", "two"));
+
+  const { container } = render(Queue);
+  await screen.findByText("one");
+
+  const foot = () => container.querySelectorAll(".h-9");
+  expect(foot()).toHaveLength(2);
+
+  await open(0);
+  expect(foot()).toHaveLength(2);
 });
 
 /** The keys the actions are drawn to be guessed from. */

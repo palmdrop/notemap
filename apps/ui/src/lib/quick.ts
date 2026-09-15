@@ -29,6 +29,7 @@ export function discard(item: Item): void {
     about,
     href: itemHref(id),
     standing: true,
+    alarm: false,
     only: DISCARD,
     offer: {
       label: "undo",
@@ -57,6 +58,7 @@ export async function manual(item: Item): Promise<void> {
       about,
       href: itemHref(id),
       standing: true,
+      alarm: false,
       only: MANUAL,
       key: keyFor(record.id),
       offer: {
