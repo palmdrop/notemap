@@ -2,7 +2,11 @@
 
 **Status**: Implemented
 **Last updated**: 2026-09-14
-**Shipped**:
+**Shipped**: *2026-09-15*: a round of minor changes after a working session — the row keeps its
+foot's height and reads its routing line short; the composer draws a taken template's place
+read-only, bolds the trail it names, and heads its preview with the full path; the tag chooser is
+an overlay that marks its match, offers a `new ·` row, removes on a second press, and draws a
+filed trigger tag inert. See [shell-minor-changes](../plans/shell-minor-changes.md).
 
 - 2026-09-14 — **The log on the register.** Phase 5b of
   [shell-redesign](../plans/shell-redesign.md): the kind under the stamp in the rail, as words; one
@@ -1143,17 +1147,27 @@ it, and the chooser stays useful once the pool goes out of reach, which is the w
 sits on the collapsed row.
 
 **The chooser is one control, wherever it is drawn** *(added 2026-09-11)*. What the item carries
-is a row of pressed words, a trigger tag marked with the template it applies, each taken off by
-pressing it. `+` opens a line with the pool's offer in a panel beneath it — the tags in use minus
-what the item carries — narrowed as the line is typed into, by the one rule every line narrows by.
-`⇥` completes what was
-typed as far as the offer agrees, and once there is nothing left to complete walks the offer from
-the top; `↑↓` walk it both ways; `⏎` takes the one walked to, or what was typed where nothing has
-been walked to, and a name on no list is taken that way. `esc` or leaving the line puts it away
-and takes nothing: a name half-typed is not a decision, and a panel row is taken without the line
-ever losing focus. The composer's row reads the client's held copy of the item, which is where a
-tag taken through the outbox lands first, so it draws taken at once and drops the account of
-taken-and-dropped it used to keep beside the item it opened on.
+is a row of pressed words, a trigger tag marked with the template it applies, each pressed to
+select it and taken off on the `×` that then appears beside it *(amended 2026-09-15; a single
+press used to remove it outright)*. `esc`, opening the line, or pressing another tag clears the
+selection without taking anything off. `+` opens a line, an **absolute panel** beneath it —
+*amended 2026-09-15: it used to sit in the flow, which shifted whatever was below the row; an
+absolute panel still extends the process surface's scrolling middle, so it stays reachable there
+too* — holding the pool's offer: the eight most used while the line is empty, the whole list the
+line narrows to once it is typed into, minus what the item carries either way.
+
+**The first row is marked the moment the panel is drawn, and stays marked as it narrows**
+*(amended 2026-09-15; the match `⏎` was about to take used to be unmarked, so `⏎` on a half-typed
+name that matched one created a second, unrelated tag instead of taking the match — `qu` then `⏎`
+made `qu` over `quote`)*. `⇥` completes what was typed as far as the offer agrees, and once there
+is nothing left to complete walks the offer, moving the mark; `↑↓` and the pointer walk it too,
+without moving the caret out of the line. `⏎` takes the marked row. A name no offer holds is the
+panel's **last row**, `new · <name>` — how a fresh tag is made — and it is the only row, so the one
+marked, exactly where nothing else matched at all. `esc` or leaving the line puts it away and takes
+nothing: a name half-typed is not a decision, and a panel row is taken without the line ever losing
+focus. The composer's row reads the client's held copy of the item, which is where a tag taken
+through the outbox lands first, so it draws taken at once and drops the account of taken-and-dropped
+it used to keep beside the item it opened on.
 
 **Tagging is offered in two places, and they are not redundant** (added 2026-09-02). The composer
 offers the same chooser beside the place being routed to, because classifying and filing are one
@@ -1166,11 +1180,15 @@ was on the way. The **collapsed row's chooser stays where it is** for the reason
 tagging is worth doing while scanning, without opening anything.
 
 **A trigger tag that filed an item cannot be taken off** while what it filed still stands
-([core.md](core.md#classification)) *(added 2026-09-07)*. The pool is what refuses it, and the
-refusal reaches the corner the way every refused outbox operation does, saying what the way back is:
-cancelling the routing, which gives the tag with it. The chooser does not draw the tag as
-unremovable, because whether anything it filed still stands is a question about the item's records
-rather than about the tag, and this shell would have to go and ask per tag to answer it.
+([core.md](core.md#classification)) *(added 2026-09-07)*. **The chooser now draws it as
+unremovable** *(amended 2026-09-15; the paragraph here used to say the opposite, for the reason
+given below, which the pool closed)*: `RoutingSummary.templates` names, per item, the distinct
+templates whose records still stand, so a carried tag whose template is among them is drawn a
+`<span>` rather than a button — the trigger style, and a `title` saying the routing has to be
+cancelled to take it off. It is read from what the item's own summary says, so it costs no ask per
+tag. Pressing it does nothing; the way back is still cancelling the routing, which gives the tag
+with it, and the refusal that used to explain this reaches the corner only where something is asked
+of the pool anyway — cancelling a routing it has already refused, say.
 
 The two drain apart. A tag taken in the composer is the same outbox operation the row makes, and
 it lands whatever becomes of the route beside it — a route that fails leaves the tags applied,

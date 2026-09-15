@@ -651,6 +651,9 @@ test("draws a tag taken in its own row as taken, at once", async () => {
   expect(word.getAttribute("aria-pressed")).toBe("true");
 
   await fireEvent.click(word);
+  await fireEvent.click(
+    screen.getByRole("button", { name: "remove seedling" }),
+  );
   await vi.waitFor(() => {
     expect(screen.queryByRole("button", { name: "seedling" })).toBeNull();
   });
@@ -2627,6 +2630,52 @@ test("marks a trigger tag in the chooser with the template it applies", async ()
   await screen.findByRole("option", { name: /route\/research.*research/ });
   // An ordinary tag is left as it was: only a tag with an effect is marked.
   expect(screen.getByRole("option", { name: "seedling" })).toBeTruthy();
+});
+
+/**
+ * A trigger tag that filed the item still stands until the routing is
+ * cancelled, so the chooser draws it inert rather than a control that would
+ * refuse the press.
+ */
+test("draws a trigger tag that filed the item as inert, not a control", async () => {
+  const held = aCapture({
+    tags: [{ name: "route/research", addedAt: WHEN }],
+    routing: {
+      records: 1,
+      pending: 0,
+      to: [{ kind: "destination", destination: VAULT }],
+      templates: [RESEARCH.id],
+    },
+  });
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/items/one") return json(200, held);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route === "GET /v1/templates") return json(200, { values: [RESEARCH] });
+    return json(200, { values: [] });
+  });
+  await client.templates.load();
+  await client.item("one");
+
+  draw(held);
+  await screen.findByText("tags");
+
+  // The template band also says "research", inside its own button: the
+  // carried tag's span is the one that is not inside a control at all.
+  const tag = screen
+    .getAllByText("research")
+    .find((each) => each.tagName === "SPAN" && each.closest("button") === null);
+  expect(tag).toBeDefined();
+  expect(tag?.getAttribute("title")).toBe(
+    "filed the item — cancel the routing to take it off",
+  );
+  expect(
+    screen.queryByRole("button", {
+      name: "route/research, routes to research",
+    }),
+  ).toBeNull();
 });
 
 /** A destination that says where a field starts is answered: it starts there. */

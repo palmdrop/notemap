@@ -13,11 +13,14 @@
   let {
     item,
     names,
+    templates = [],
     onfired,
   }: {
     item: string;
     /** What the item carries, read live: a tag taken here is drawn taken at once. */
     names: readonly string[];
+    /** The templates whose records stand, from the item's routing summary. */
+    templates?: readonly string[];
     /**
      * A trigger tag was applied here, which files the item. Said as soon as the
      * tag is taken rather than when the pool answers: whoever is holding a
@@ -32,6 +35,12 @@
 
   function fires(name: string): string | undefined {
     return triggeredBy(name)?.name;
+  }
+
+  /** A trigger tag whose template's record still stands cannot be taken off here. */
+  function held(name: string): boolean {
+    const template = triggeredBy(name);
+    return template !== undefined && templates.includes(template.id);
   }
 
   function add(name: string): void {
@@ -51,6 +60,7 @@
     {names}
     {offered}
     {fires}
+    {held}
     onadd={add}
     onremove={(name) => void client.untag(item, name)}
   />

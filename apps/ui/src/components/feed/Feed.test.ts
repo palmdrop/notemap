@@ -391,6 +391,59 @@ test("reads a row's records only once it is opened", async () => {
   expect(line.getAttribute("href")).toBe("/items/sent/records/record-1");
 });
 
+/**
+ * A trigger tag whose template's record still stands cannot be taken off from
+ * a row either, since the pool would refuse it — so the row draws it inert
+ * rather than as a control that presses into a refusal.
+ */
+test("draws a trigger tag that filed the item as inert on the row", async () => {
+  const RESEARCH = {
+    id: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a80",
+    name: "research",
+    destination: "vault-1",
+    capability: "create",
+    arguments: {},
+    triggerTag: "route/research",
+  };
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/feed") {
+      return json(200, {
+        values: [
+          anItem("sent", {
+            tags: [
+              {
+                name: "route/research",
+                by: { kind: "person" },
+                addedAt: "2026-08-17T10:00:00.000Z",
+              },
+            ],
+            routing: {
+              records: 1,
+              pending: 0,
+              to: [{ kind: "destination", destination: "vault-1" }],
+              templates: [RESEARCH.id],
+            },
+          }),
+        ],
+      });
+    }
+    if (route === "GET /v1/templates") {
+      return json(200, { values: [RESEARCH] });
+    }
+    return json(200, { values: [] });
+  });
+  await client.templates.load();
+
+  render(Feed);
+  await screen.findByText("sent");
+  await open();
+
+  const tag = screen.getByText("research");
+  expect(tag.tagName).toBe("SPAN");
+  expect(screen.queryByRole("button", { name: /research/ })).toBeNull();
+});
+
 test("goes to process on a double click, and leaves the row selected", async () => {
   pool(held(anItem("one")));
 

@@ -6,17 +6,20 @@
 
   /**
    * A chooser over known names with free entry. What the item carries is a row
-   * of pressed words, each taken off by pressing it. `+` opens a line with the
-   * pool's offer beneath it, narrowed as the line is typed into: `⇥` completes
-   * what was typed and walks the offer once there is nothing left to complete,
-   * `↑↓` walk it, `⏎` takes the one walked to or what was typed, and `esc` or
-   * leaving the line puts it away and takes nothing — a name half-typed is not
-   * a decision.
+   * of pressed words, each taken off by pressing it once to select it and
+   * again on the `×` that appears. `+` opens a line with the pool's offer in a
+   * panel beneath it, narrowed as the line is typed into: the first row is
+   * always marked, `⇥` completes what was typed as far as the offer agrees
+   * and once there is nothing left to complete walks the offer, `↑↓` and the
+   * pointer walk it too, `⏎` takes the marked row, and `esc` or leaving the
+   * line puts it away and takes nothing — a name half-typed is not a
+   * decision.
    */
   let {
     names,
     offered = [],
     fires,
+    held,
     addable = true,
     onadd,
     onremove,
@@ -30,6 +33,12 @@
      * somebody takes one by accident.
      */
     fires?: (name: string) => string | undefined;
+    /**
+     * A carried tag this answers true for filed the item, and what it filed
+     * still stands: it is drawn inert rather than as a control, and the way
+     * off is cancelling the routing rather than pressing the tag.
+     */
+    held?: (name: string) => boolean;
     /** Whether the `+` is drawn. A row offers it only while it is selected. */
     addable?: boolean;
     onadd: (name: string) => void;
@@ -38,16 +47,32 @@
 
   const id = $props.id();
 
+  /** How many the panel offers while the line is empty; typing narrows the whole list. */
+  const SHOWN = 8;
+
   let adding = $state(false);
+  let draft = $state("");
+  /** Where the walk stands. The row at this index is always marked while the panel is drawn. */
+  let at = $state(0);
+  /** Whether `↑↓`/`⇥` have walked since the offer last changed, for `⇥`'s own step. */
+  let moved = $state(false);
+  /** A carried tag pressed to select it, so its `×` is drawn. */
+  let chosen = $state<string | undefined>(undefined);
 
   /** Opens the line, for a key that asks for it from outside. */
   export function add(): void {
-    adding = true;
+    open();
   }
-  let draft = $state("");
-  /** Where `↑↓` stands, and whether it has been used since the offer last changed. */
-  let at = $state(0);
-  let moved = $state(false);
+
+  function open(): void {
+    adding = true;
+    chosen = undefined;
+  }
+
+  function close(): void {
+    adding = false;
+    draft = "";
+  }
 
   const entries = $derived<readonly CandidateEntry[]>(
     offered
@@ -55,18 +80,39 @@
       .map((name) => ({ label: name, value: name })),
   );
 
-  const shown = $derived(narrowed(entries, draft));
+  const matched = $derived(narrowed(entries, draft));
+  const shown = $derived(
+    draft.trim() === "" ? matched.slice(0, SHOWN) : matched,
+  );
+
+  type Row = { readonly label: string; readonly fresh?: boolean };
+
+  /**
+   * `shown`, plus a last row for a name no offer holds — how a fresh tag is
+   * created. It is the only row, and so the one marked, exactly where nothing
+   * matched at all.
+   */
+  const rows = $derived.by((): readonly Row[] => {
+    const typed = draft.trim();
+    const base: Row[] = shown.map((entry) => ({ label: entry.label }));
+    if (typed === "") return base;
+
+    const known = entries.some(
+      (entry) => entry.label.toLowerCase() === typed.toLowerCase(),
+    );
+    return known ? base : [...base, { label: typed, fresh: true }];
+  });
 
   $effect(() => {
     // Whatever the walk was on stops meaning anything once the offer beneath
     // it has changed.
-    void shown;
+    void rows;
     at = 0;
     moved = false;
   });
 
   const active = $derived(
-    moved && shown[at] !== undefined ? `${id}-tag-${at}` : undefined,
+    rows[at] !== undefined ? `${id}-tag-${at}` : undefined,
   );
 
   /** How a trigger tag is drawn, in the chooser and on the row alike. */
@@ -84,18 +130,18 @@
     if (name !== "" && !names.includes(name)) onadd(name);
   }
 
-  function close(): void {
-    adding = false;
-    draft = "";
+  /** Pressing a carried tag selects it, or clears the selection where it already was. */
+  function press(name: string): void {
+    chosen = chosen === name ? undefined : name;
   }
 
   function walk(step: 1 | -1): void {
-    if (shown.length === 0) return;
+    if (rows.length === 0) return;
     at = moved
-      ? (at + step + shown.length) % shown.length
+      ? (at + step + rows.length) % rows.length
       : step === 1
         ? 0
-        : shown.length - 1;
+        : rows.length - 1;
     moved = true;
   }
 
@@ -126,9 +172,8 @@
 
     if (event.key === "Enter") {
       event.preventDefault();
-      const picked = shown[at];
-      if (moved && picked !== undefined) take(picked.label);
-      else take(draft.trim());
+      const picked = rows[at];
+      if (picked !== undefined) take(picked.label);
       return;
     }
 
@@ -146,19 +191,50 @@
      offer below keeps the whole name, being what is typed against. -->
 {#each names as name (name)}
   {@const fired = fires?.(name)}
-  <button
-    type="button"
-    aria-pressed="true"
-    onclick={() => onremove(name)}
-    aria-label={fired === undefined ? undefined : `${name}, routes to ${fired}`}
-    class="hover:underline {fired === undefined ? '' : TRIGGER}"
-  >
-    {fired === undefined ? name : trigger(name)}
-  </button>
+  {@const inert = held?.(name) === true}
+  {#if inert}
+    <span
+      title="filed the item — cancel the routing to take it off"
+      class={fired === undefined ? "" : TRIGGER}
+    >
+      {fired === undefined ? name : trigger(name)}
+    </span>
+  {:else}
+    <button
+      type="button"
+      aria-pressed="true"
+      onclick={() => press(name)}
+      onkeydown={(event) => {
+        if (event.key === "Escape" && chosen === name) {
+          event.stopPropagation();
+          chosen = undefined;
+        }
+      }}
+      aria-label={fired === undefined
+        ? undefined
+        : `${name}, routes to ${fired}`}
+      class="hover:underline {fired === undefined ? '' : TRIGGER}"
+    >
+      {fired === undefined ? name : trigger(name)}
+    </button>
+    {#if chosen === name}
+      <button
+        type="button"
+        aria-label={`remove ${name}`}
+        onclick={() => {
+          chosen = undefined;
+          onremove(name);
+        }}
+        class="hover:underline"
+      >
+        ×
+      </button>
+    {/if}
+  {/if}
 {/each}
 
 {#if adding}
-  <div>
+  <div class="relative">
     <!-- svelte-ignore a11y_autofocus -->
     <input
       bind:value={draft}
@@ -171,32 +247,37 @@
       aria-label="Add a tag"
       role="combobox"
       aria-autocomplete="list"
-      aria-expanded={shown.length > 0}
+      aria-expanded={rows.length > 0}
       aria-controls="{id}-tags"
       aria-activedescendant={active}
       class="w-32 border-b border-ink px-2 py-0.5 outline-none"
     />
-    {#if shown.length > 0}
-      <!-- In flow rather than floated: the process surface scrolls its
-           middle, and a panel floated past its edge is a panel scrolled out
-           of reach. Rows taken on `mousedown` with the default prevented, so
-           taking one never blurs the line out from under the click. -->
+    {#if rows.length > 0}
+      <!-- Absolute rather than in flow: a panel this size still extends the
+           process surface's scrolling middle, so it stays reachable there.
+           Rows taken on `mousedown` with the default prevented, so taking one
+           never blurs the line out from under the click. -->
       <div
         id="{id}-tags"
         role="listbox"
         aria-label="Tags in use"
-        class="mt-1 max-h-64 w-max min-w-36 overflow-y-auto border border-ink bg-ground px-2.5 py-1"
+        class="absolute top-full left-0 z-30 mt-1 max-h-64 w-max min-w-36 overflow-y-auto border border-ink bg-ground px-2.5 py-1"
       >
-        {#each shown as entry, index (entry.label)}
-          {@const on = moved && at === index}
-          {@const fired = fires?.(entry.label)}
+        {#each rows as row, index (row.fresh ? `fresh:${row.label}` : row.label)}
+          {@const on = at === index}
+          {@const fired = row.fresh ? undefined : fires?.(row.label)}
           <Walked
             id={on ? `${id}-tag-${index}` : undefined}
             {on}
-            ontake={() => take(entry.label)}
+            onhover={() => (at = index)}
+            ontake={() => take(row.label)}
           >
-            <span class={fired === undefined ? "" : TRIGGER}>{entry.label}</span
-            >{#if fired !== undefined}<span>&nbsp;· {fired}</span>{/if}
+            {#if row.fresh}
+              new · {row.label}
+            {:else}
+              <span class={fired === undefined ? "" : TRIGGER}>{row.label}</span
+              >{#if fired !== undefined}<span>&nbsp;· {fired}</span>{/if}
+            {/if}
           </Walked>
         {/each}
       </div>
@@ -206,7 +287,7 @@
   <button
     type="button"
     aria-label="Add a tag"
-    onclick={() => (adding = true)}
+    onclick={open}
     class="hover:underline">+</button
   >
 {/if}

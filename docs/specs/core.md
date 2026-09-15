@@ -2,7 +2,9 @@
 
 **Status**: Draft
 **Last updated**: 2026-09-13
-**Shipped**:
+**Shipped**: *2026-09-15*: `cancelDelivery` takes back a record naming the user whatever its state,
+and the routing summary names the distinct templates whose records stand. See
+[shell-minor-changes](../plans/shell-minor-changes.md).
 
 - 2026-09-13 — **The action log is read through one query.** `actions.read` takes a subject, a set
   of kinds, or both, where `forItem` and `all` stood; `ACTION_KINDS` is the list a host validates

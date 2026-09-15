@@ -36,6 +36,13 @@
     {offered}
     {addable}
     fires={(name) => triggeredBy(name)?.name}
+    held={(name) => {
+      const template = triggeredBy(name);
+      return (
+        template !== undefined &&
+        (item.routing?.templates ?? []).includes(template.id)
+      );
+    }}
     onadd={(name) => void tagged(item.id, name)}
     onremove={(name) => void client.untag(item.id, name)}
   />

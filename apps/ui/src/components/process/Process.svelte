@@ -1003,7 +1003,12 @@
       open={opened.tags || tags.length > 0}
       ontoggle={() => (opened.tags = !opened.tags)}
     >
-      <ComposerTags item={item.id} names={tags} onfired={advance} />
+      <ComposerTags
+        item={item.id}
+        names={tags}
+        templates={($held ?? item).routing?.templates ?? []}
+        onfired={advance}
+      />
     </Section>
 
     <Section

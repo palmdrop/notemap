@@ -1,9 +1,9 @@
 # Shell: a round of minor changes after use
 
 **Date**: 2026-09-15
-**Status**: In progress <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/shell.md`, `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`
-**Closed**:
+**Closed**: 2026-09-15
 
 ---
 
@@ -68,11 +68,11 @@ The list, as written after working a queue with the redesigned shell:
    - [x] A template taken draws its place read-only with `edit`; templates show no pattern in the band
    - [x] The trail the line names is bold down to the note
    - [x] The preview's head says destination and full path; commit
-4. Tagging
-   - [ ] Panel is an overlay with a ground; eight most used until typing narrows it
-   - [ ] First match marked; `⏎` takes the marked row; `new · name` is the last row; pointer marks
-   - [ ] Removing a tag is press then `×`; a trigger tag that filed the item is inert with a title
-   - [ ] `shell.md` amended; commit
+4. Tagging _(done 2026-09-15)_
+   - [x] Panel is an overlay with a ground; eight most used until typing narrows it
+   - [x] First match marked; `⏎` takes the marked row; `new · name` is the last row; pointer marks
+   - [x] Removing a tag is press then `×`; a trigger tag that filed the item is inert with a title
+   - [x] `shell.md` amended; commit
 
 ## Where each task lands
 
