@@ -107,10 +107,10 @@
   let typed = $state("");
 
   /**
-   * Whether the place line is drawn, over the read-only summary a taken
-   * template resolved to. A destination chosen directly always wants the line;
-   * a template starts read-only, since what it resolved to is already the
-   * decision.
+   * Whether the form is drawn — the capability choice, the line, the fields —
+   * over the read-only summary of what a taken template resolved to. A
+   * destination chosen directly always wants the form; a template starts
+   * read-only, since what it resolved to is already the decision.
    */
   let placing = $state(true);
 
@@ -263,6 +263,13 @@
 
     return path === undefined ? undefined : `${nameOf(chosen)} / ${path}`;
   });
+
+  /** The place a taken template resolved to, read the way a record's row reads it. */
+  const settled = $derived(
+    lined
+      ? (args[LINE_FIELD] ?? "")
+      : (placeNamed(valuesFrom(fields, args)) ?? ""),
+  );
 
   function placeFor(value: string): string {
     const { directory } = placeOf(value);
@@ -562,9 +569,9 @@
           ]),
         ),
       });
-      // What it resolved to is already the decision: the line stays behind
+      // What it resolved to is already the decision: the form stays behind
       // `edit` until somebody asks to correct it.
-      placing = false;
+      if (chosen !== undefined) placing = false;
     } catch (error) {
       refusing = { ...refusing, [one.id]: saidBy(error) };
       applied = undefined;
@@ -949,7 +956,7 @@
           </button>
         </div>
 
-        {#if chooses}
+        {#if chooses && placing}
           {#each capabilities as one (one.name)}
             <Option
               label={one.name}
@@ -969,42 +976,36 @@
       open={opened.place}
       ontoggle={() => (opened.place = !opened.place)}
     >
-      {#if lined && line !== undefined && chosen !== undefined && capability !== undefined}
-        {#if placing}
-          <PathLine
-            destination={chosen}
-            {capability}
-            field={line.name}
-            label={line.title ?? line.name}
-            value={args[line.name] ?? ""}
-            said={spoken}
-            {places}
-            onchange={(value) => (args = { ...args, [line.name]: value })}
-            onsubmit={(beside) => void send(beside)}
-            onrelease={release}
-            onforecast={(word) => (forecast = word)}
-          />
+      {#if chosen !== undefined && !placing}
+        <div class="flex items-baseline justify-between gap-x-[2ch]">
+          <span class="min-w-0 break-words">{settled}</span>
+          <button
+            type="button"
+            aria-label="edit place"
+            onclick={() => (placing = true)}
+            class="hover:underline"
+          >
+            edit
+          </button>
+        </div>
+      {:else if lined && line !== undefined && chosen !== undefined && capability !== undefined}
+        <PathLine
+          destination={chosen}
+          {capability}
+          field={line.name}
+          label={line.title ?? line.name}
+          value={args[line.name] ?? ""}
+          said={spoken}
+          {places}
+          onchange={(value) => (args = { ...args, [line.name]: value })}
+          onsubmit={(beside) => void send(beside)}
+          onrelease={release}
+          onforecast={(word) => (forecast = word)}
+        />
 
-          {#each beside as field (field.name)}
-            {@render labelled(field.title ?? field.name, field)}
-          {/each}
-        {:else}
-          <div class="flex items-baseline justify-between gap-x-[2ch]">
-            <span class="min-w-0 break-words">{args[line.name] ?? ""}</span>
-            <button
-              type="button"
-              aria-label="edit place"
-              onclick={() => (placing = true)}
-              class="hover:underline"
-            >
-              edit
-            </button>
-          </div>
-
-          {#each beside as field (field.name)}
-            {@render labelled(field.title ?? field.name, field)}
-          {/each}
-        {/if}
+        {#each beside as field (field.name)}
+          {@render labelled(field.title ?? field.name, field)}
+        {/each}
       {:else if chosen !== undefined}
         <!-- A field's own `description` is a sentence written for a schema and
              is not drawn here: what a field means is its label and its control. -->
