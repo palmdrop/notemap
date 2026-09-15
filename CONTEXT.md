@@ -419,6 +419,20 @@ with its own reading and its own position, not a screen: a shell may draw two su
 screen, or one surface across several.
 _Avoid_: screen, page, view, tab
 
+**Command**:
+A deed a person can take, published by whatever surface is on screen rather than registered
+anywhere — an id a binding names, a word a person reads, the deed itself, and why it cannot be
+taken where it cannot. Closes over whatever only the surface holds, such as the selected row, which
+is why a surface publishes its own rather than one list holding every command there is.
+_Avoid_: action, shortcut, hotkey, keybinding
+
+**Binding**:
+The chord one command answers to, held as `id → chord` in one table the dispatcher reads to resolve
+a keydown, and a button reads to draw what a key would do. The other direction — what chord is this
+— is a display question, answered by looking a chord up rather than by the table holding it that
+way round.
+_Avoid_: keybinding, shortcut, hotkey
+
 **Hydration**:
 Reading a client's own store back into memory when it starts, before anything is allowed to touch
 what was read. Pending operations are not re-applied: what they changed was written to the store
