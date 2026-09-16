@@ -104,7 +104,9 @@
   }
 
   function labelFor(field: Field, value: string): string {
-    if (value === "") return "—";
+    if (value === "") {
+      return field.preset === undefined ? "unset" : `default (${field.preset})`;
+    }
     return (listed(field) ?? []).includes(value)
       ? value
       : `${value} — not declared`;
@@ -165,9 +167,6 @@
       {field.name}{field.required ? "" : " (optional)"}
     </span>
     <div>
-      {#if field.description !== undefined}
-        <p class="mb-1">{field.description}</p>
-      {/if}
       {#if listed(field) !== undefined}
         <div class="flex flex-wrap gap-x-[2ch]">
           {#each offered(field) as one (one)}
@@ -190,8 +189,7 @@
 
   {#if unfamiliarRoot}
     <p role="status" class="col-start-2 max-narrow:col-start-1">
-      notemap has not used <span class="text-ink">{typedRoot}</span> before — check
-      it names the right place.
+      notemap has not used {typedRoot} before — check it names the right place.
     </p>
   {/if}
 

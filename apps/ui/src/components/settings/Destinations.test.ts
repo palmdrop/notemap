@@ -235,6 +235,24 @@ test("says a row is being asked while its probe is still out", async () => {
   await screen.findAllByText(/available/);
 });
 
+test("the opened row is a box, and the rest are ruled", async () => {
+  serving([aDestination(), aDestination({ id: "other", name: "Other" })]);
+
+  render(Destinations);
+  const vault = await screen.findByRole("button", { name: "Vault" });
+  const row = (name: string) =>
+    screen.getByRole("button", { name }).closest("div.py-4") as HTMLElement;
+
+  expect(row("Vault").classList.contains("border")).toBe(false);
+  await fireEvent.click(vault);
+  expect(row("Vault").classList.contains("border")).toBe(true);
+  expect(row("Other").classList.contains("border")).toBe(false);
+
+  await open("Other");
+  expect(row("Vault").classList.contains("border")).toBe(false);
+  expect(row("Other").classList.contains("border")).toBe(true);
+});
+
 test("keeps a destination's doings behind opening it", async () => {
   serving([aDestination()]);
 
@@ -315,7 +333,7 @@ test("adds one from the kind's own schema", async () => {
  * says an account is meant, and that it is one the daemon's config declares, is
  * the kind's own description of the field, so the form has to show it.
  */
-test("shows what a kind says one of its fields is for", async () => {
+test("draws a field's label and its control, never its description", async () => {
   serving([], {
     "GET /v1/destination-kinds": () =>
       json(200, {
@@ -341,11 +359,10 @@ test("shows what a kind says one of its fields is for", async () => {
   render(Destinations);
   await press("+ add a destination");
 
+  await screen.findByRole("textbox", { name: "profile" });
   expect(
-    await screen.findByText("The name of an account in the configuration.", {
-      selector: "p",
-    }),
-  ).toBeDefined();
+    screen.queryByText("The name of an account in the configuration."),
+  ).toBeNull();
 });
 
 function webdavKind(accounts: readonly string[]) {
@@ -405,8 +422,9 @@ test("chooses a setting the schema fixes, rather than typing it from memory", as
   render(Destinations);
   await press("+ add a destination");
 
-  // Blank leads, because an unset one is what a destination that never said has.
-  await screen.findByRole("button", { name: "—" });
+  // Blank leads, because an unset one is what a destination that never said
+  // has — and it says what unset comes out as, since nothing else here does.
+  await screen.findByRole("button", { name: "default (none)" });
   expect(screen.getByRole("button", { name: "full" })).toBeDefined();
   expect(screen.getByRole("button", { name: "none" })).toBeDefined();
 });
@@ -513,6 +531,43 @@ test("asks before deleting, in the actions line, and offers the reversible half 
   // the answer — and it lands where the alternative it leaves is already on screen.
   await screen.findByText(/retire it instead/);
   expect(screen.getByRole("button", { name: "disable instead" })).toBeDefined();
+});
+
+test("keeps the ask open under a click inside it, and `keep` turns it back", async () => {
+  serving([aDestination()]);
+
+  render(Destinations);
+  await open("Vault");
+  await press("delete");
+
+  await fireEvent.click(await screen.findByText("Delete Vault?"));
+  expect(screen.getByText("Delete Vault?")).toBeDefined();
+
+  await press("keep");
+  expect(screen.queryByText("Delete Vault?")).toBeNull();
+  expect(screen.getByRole("button", { name: "delete" })).toBeDefined();
+});
+
+test("the edit form replaces the actions, holds under a click on its label, and `cancel` restores them", async () => {
+  serving([aDestination()]);
+
+  render(Destinations);
+  await open("Vault");
+  await press("edit");
+
+  const form = await screen.findByRole("textbox", { name: "Name" });
+  expect(screen.queryByRole("button", { name: "delete" })).toBeNull();
+
+  // The label is no control, so the row's own click-to-open would have taken
+  // this as a toggle and thrown the form away with whatever was typed.
+  await fireEvent.input(form, { target: { value: "Vault renamed" } });
+  await fireEvent.click(screen.getByText("name"));
+  expect(screen.getByRole("textbox", { name: "Name" })).toBe(form);
+  expect((form as HTMLInputElement).value).toBe("Vault renamed");
+
+  await press("cancel");
+  expect(screen.queryByRole("textbox", { name: "Name" })).toBeNull();
+  expect(screen.getByRole("button", { name: "delete" })).toBeDefined();
 });
 
 test("deletes one nothing has ever named", async () => {

@@ -1580,14 +1580,23 @@ before. **A disabled destination is hidden** from the ordinary list; under it, `
 at the left and, where any are disabled, `N disabled · show` at the right, `hide` once shown.
 Opening a row adds its facts — `ACTIONS`, `STATUS` with when it was last checked, then one fact per
 setting its kind asked for, **no id among them** — and the actions line: `check again · edit ·
-disable | delete`, `enable` on a disabled one.
+disable | delete`, `enable` on a disabled one. **The opened row is a box** *(2026-09-16, the
+drawing had it plain)*, drawn as the queue draws its selected row, so that among rows ruled only
+between them the one that is open is the one with edges; whatever the row holds — facts, actions,
+the ask, the form — is inside it. A row with its form or its ask open **does not close on a click
+inside it**: it closes through `cancel`, `save` or `keep`, or when another row is opened, and
+never by a click on a label or a gap that throws away what was typed.
 
 Asking what a destination can do and whether it is really there **as the page draws**, per row and
 without being told to, is unchanged from 2026-09-02: a settled answer — `ready`, `rejected`, or a
 kind that cannot be asked — is not asked again, and only one that could not be reached is asked
 again once the pool comes back into reach. So is choosing a settings field the kind published values
 for over typing it, blank leading the list where nothing is held (2026-09-02, widened 2026-09-08),
-now drawn as a row of options with the chosen one bold rather than a `<select>`.
+now drawn as a row of options with the chosen one bold rather than a `<select>`. **The blank option
+is named as what it comes out as** *(2026-09-16)*: `default (none)`, read off the schema's own
+`default`, since an unset setting is the kind's default and `—` said nothing about which. A field's
+`description` is not drawn *(2026-09-16)*, on the same terms as the process surface's — a word,
+never a sentence; what a field means is its label and its control.
 
 **Deleting is the one thing here that cannot be undone, so it is the one thing that asks — in the
 actions line itself, in alarm, with no sentence**: `Delete Obsidian vault? · delete · keep`.
@@ -1610,11 +1619,13 @@ DESTINATION · ACTION · PLACE · FOLDER · USED`, `used` naming the count and w
 stranded template — one whose destination was deleted — still leads with that and is repointed by an
 ordinary edit of its destination field; the actions are `check again · edit | delete`.
 
-**Account** is one row — `signed in · this browser holds a session`, with `sign out` — or, on a
-daemon nobody has set a password on, `open · no password is set…`, naming the command that closes
-the door. Under it, **access tokens**, drawn only for a session, as before: one row per token with
-when it was made and last used and `revoke`, the once-shown minted string boxed in alarm with `copy`
-and `done`, and `+ add a token` opening a name field and `create` in its place.
+**Account** is one row — `signed in · this browser holds a session`, with `sign out` at the row's
+right — or, on a daemon nobody has set a password on, `open · no password is set…`, naming the
+command that closes the door. Under it, **access tokens**, drawn only for a session, as before: one
+row per token with when it was made and last used and `revoke` at its right, the once-shown minted
+string boxed in alarm with `copy` and `done`, and `+ add a token` opening a name field and `create`
+in its place. The action sits at the right *(2026-09-16)* so it reads as a control and not as the
+end of the sentence beside it.
 
 **Server** replaces Daemon, its facts drawn rather than a first row about *now* beside two links:
 `ADDRESS`, **`VERSION`** — the daemon's own, from `/v1/health`, which the client now carries beside

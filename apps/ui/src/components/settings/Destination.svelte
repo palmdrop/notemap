@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   import { saidBy } from "@notemap/client";
   import type {
     Destination,
@@ -44,7 +46,7 @@
     onedit: () => void;
     onretire: () => Promise<unknown>;
     ondelete: () => Promise<unknown>;
-    children?: import("svelte").Snippet;
+    children?: Snippet;
   } = $props();
 
   const disabled = $derived(one.retired === true);
@@ -128,15 +130,28 @@
     asked = false;
     refusal = undefined;
   }
+
+  // A row with a form or an ask open closes only through them — `cancel`,
+  // `save`, `keep` — or when another row is opened; a click inside it is not
+  // a way out that throws away what was typed.
+  function pick() {
+    if (editing || asked) return;
+    onopen();
+  }
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="border-b border-b-ink py-4" onclick={pickable(onopen)}>
+<div
+  class="py-4 {opened
+    ? '-mx-3 -mt-px border border-ink px-3 max-narrow:-mx-2 max-narrow:px-2'
+    : 'border-b border-b-ink'}"
+  onclick={pickable(pick)}
+>
   <div class="flex cursor-pointer flex-wrap items-baseline gap-x-3">
     <button
       type="button"
-      onclick={onopen}
+      onclick={pick}
       aria-expanded={opened}
       class="font-semibold hover:underline"
     >

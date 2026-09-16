@@ -220,6 +220,21 @@ test("says what the pool refused about a pattern, where it was typed", async () 
   expect(await screen.findByText(/there is no "captured"/)).toBeTruthy();
 });
 
+test("the edit form holds under a click on its label", async () => {
+  serving([aTemplate()]);
+
+  render(Templates);
+  await open(/research/);
+  await open(/^edit$/);
+
+  const form = await screen.findByRole("textbox", { name: "name" });
+  await fireEvent.click(screen.getByText("trigger tag"));
+  expect(screen.getByRole("textbox", { name: "name" })).toBe(form);
+
+  await open(/^cancel$/);
+  expect(screen.queryByRole("textbox", { name: "name" })).toBeNull();
+});
+
 test("deleting asks in a line, and says what a record keeps", async () => {
   serving([aTemplate()]);
 

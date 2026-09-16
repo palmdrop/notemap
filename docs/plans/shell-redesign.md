@@ -432,7 +432,8 @@ Depends on 5a for `Block`.
 
 Drawn 2026-09-16 as `Settings.dc.html` in the Design project, one round, and settled as
 `docs/design/redrawn/settings.html` with the changes the developer asked for on looking: the
-opened row is plain (not the queue's box); on the phone the menu is a screen of its own; `+` on
+opened row is plain (not the queue's box) *(reversed 2026-09-16 on review: it is the box after
+all — plain rows gave no sense of which was open)*; on the phone the menu is a screen of its own; `+` on
 every add; the words below. One PR.
 
 Decisions made in the drawing, so they are not asked again:

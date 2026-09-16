@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   import type { Destination, RoutingTemplate } from "@notemap/client";
   import type { RoutingTemplateReport } from "@notemap/client";
 
@@ -41,7 +43,7 @@
     oncheck: () => void;
     onedit: () => void;
     ondelete: () => void;
-    children?: import("svelte").Snippet;
+    children?: Snippet;
   } = $props();
 
   const stranded = $derived(destination === undefined);
@@ -97,6 +99,11 @@
     );
   });
 
+  function pick() {
+    if (editing) return;
+    onopen();
+  }
+
   const place = $derived(
     placeOf(one, (field, value) =>
       nameFor({
@@ -111,11 +118,16 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="border-b border-b-ink py-4" onclick={pickable(onopen)}>
+<div
+  class="py-4 {opened
+    ? '-mx-3 -mt-px border border-ink px-3 max-narrow:-mx-2 max-narrow:px-2'
+    : 'border-b border-b-ink'}"
+  onclick={pickable(pick)}
+>
   <div class="flex cursor-pointer flex-wrap items-baseline gap-x-3">
     <button
       type="button"
-      onclick={onopen}
+      onclick={pick}
       aria-expanded={opened}
       class="font-semibold hover:underline"
     >

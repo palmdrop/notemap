@@ -119,13 +119,17 @@
 <Section name="account">
   {#if who.canSignOut}
     <Fact name="signed in">
-      this browser holds a session
-      {#if signOutFailed !== undefined}
-        <span class="text-alarm">— {signOutFailed}</span>
-      {/if}
-      <Action disabled={signingOut} onclick={() => void signOut()}>
-        sign out
-      </Action>
+      <span class="flex flex-wrap items-baseline justify-between gap-x-[2ch]">
+        <span>
+          this browser holds a session
+          {#if signOutFailed !== undefined}
+            <span class="text-alarm">— {signOutFailed}</span>
+          {/if}
+        </span>
+        <Action disabled={signingOut} onclick={() => void signOut()}>
+          sign out
+        </Action>
+      </span>
     </Fact>
   {:else}
     <Fact name="open">
@@ -138,10 +142,14 @@
     <Section name="access tokens" sub>
       {#each held as token (token.id)}
         <Fact name={token.name}>
-          {why(token)}
-          <Action disabled={going} onclick={() => void revoke(token)}>
-            revoke
-          </Action>
+          <span
+            class="flex flex-wrap items-baseline justify-between gap-x-[2ch]"
+          >
+            <span>{why(token)}</span>
+            <Action disabled={going} onclick={() => void revoke(token)}>
+              revoke
+            </Action>
+          </span>
         </Fact>
       {/each}
 
