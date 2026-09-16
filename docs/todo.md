@@ -81,6 +81,19 @@
   by default, and whether ordering the queue by last touch comes back as a **reader's option** now
   that it is no longer the key.
 
+## The client
+
+- [ ] **rxjs is most of every shell's bundle.** The client imports the `rxjs` root barrel, which
+  resolves to the CJS build and so cannot be tree-shaken: 279KB across 446 modules, 59% of a 472KB
+  bundle, for the handful of operators `client.ts` and `reachability` actually use
+  (`distinctUntilChanged`, `filter`, `map`, `skip`). It costs about 7ms of module evaluation per
+  process start, which is why it is not urgent — but it is the single largest thing every shell
+  carries, and a short-lived process pays it on every launch rather than once per session. Measured
+  2026-09-16 while deciding whether the Raycast extension should run a whole client
+  ([plan](plans/client-store-on-a-filesystem.md)); it affects the web shell the same way. Worth
+  checking what deep imports cost before assuming they are the answer — the observable seam is one
+  file, and whether the client needs rxjs at all is the bigger question underneath.
+
 ## Configuration
 
 - [ ] Destination configuration is way too clunky, not sensible to configure in BOTH config.toml and in the UI.
@@ -135,6 +148,9 @@
 ## Inboxes
 
 - [ ] raycast extension for notemap to quickly jot down a note > basic extension for calling the notemap api
+  - Scaffolded 2026-09-16 at `apps/raycast-extension`, and it is a whole client rather than a
+    call to the api: what it waits on is a store it can keep an outbox in across processes
+    ([plan](plans/client-store-on-a-filesystem.md)).
 - [ ] are.na relay
 
 ## Pool, store and correctness
