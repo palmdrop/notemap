@@ -5,7 +5,7 @@
 </script>
 
 <div
-  class="grid grid-cols-[7rem_1fr] gap-x-2.5 py-0.5 max-narrow:grid-cols-[1fr] max-narrow:gap-x-0"
+  class="grid grid-cols-[9rem_1fr] gap-x-2.5 py-0.5 max-narrow:grid-cols-1 max-narrow:gap-x-0"
 >
   <span class="tracking-caps uppercase">{name}</span>
   <span class="min-w-0 break-words">

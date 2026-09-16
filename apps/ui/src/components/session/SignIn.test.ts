@@ -4,26 +4,18 @@ import { expect, test, vi } from "vitest";
 import { json, routeOf } from "@notemap/client/testing";
 
 import { asked, pool } from "$testing/pool";
-import Session from "./Session.svelte";
 import SignIn from "./SignIn.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
-const said = (
-  authenticated: boolean,
-  requiresCredentials = true,
-  identity?: Record<string, unknown>,
-) =>
-  json(200, {
-    authenticated,
-    requiresCredentials,
-    ...(identity === undefined ? {} : { identity }),
-  });
-
 test("signing in sends the credential and says nothing back about it", async () => {
   const transport = pool((request) =>
     routeOf(request) === "POST /v1/session"
-      ? said(true, true, { kind: "session", id: "abc" })
+      ? json(200, {
+          authenticated: true,
+          requiresCredentials: true,
+          identity: { kind: "session", id: "abc" },
+        })
       : json(200, {}),
   );
 
@@ -83,52 +75,4 @@ test("nothing can be sent until a password is typed", () => {
     (screen.getByRole("button", { name: /sign in/i }) as HTMLButtonElement)
       .disabled,
   ).toBe(true);
-});
-
-test("settings offers signing out where there is a session to end", async () => {
-  pool((request) =>
-    routeOf(request) === "GET /v1/session"
-      ? said(true, true, { kind: "session", id: "abc" })
-      : json(200, {}),
-  );
-
-  render(Session);
-
-  expect(
-    await screen.findByRole("button", { name: /sign out/i }),
-  ).toBeDefined();
-});
-
-/** There is no door to come back out of, so offering the way out would be a lie. */
-test("settings offers no way out of a daemon that asks for nothing", async () => {
-  pool((request) =>
-    routeOf(request) === "GET /v1/session" ? said(false, false) : json(200, {}),
-  );
-
-  render(Session);
-
-  expect(await screen.findByText(/no password is set/i)).toBeDefined();
-  expect(screen.queryByRole("button", { name: /sign out/i })).toBeNull();
-});
-
-test("signing out tells the daemon", async () => {
-  pool((request) => {
-    const route = routeOf(request);
-    if (route === "GET /v1/session") {
-      return said(true, true, { kind: "session", id: "abc" });
-    }
-    if (route === "DELETE /v1/session")
-      return new Response(null, { status: 204 });
-    return json(200, {});
-  });
-
-  render(Session);
-
-  await fireEvent.click(
-    await screen.findByRole("button", { name: /sign out/i }),
-  );
-
-  await waitFor(() => {
-    expect(asked()).toContain("DELETE /v1/session");
-  });
 });

@@ -11,6 +11,7 @@ let online = $state(true);
 let answering = $state(true);
 let answeredAt = $state<string | undefined>(undefined);
 let answeredIn = $state<number | undefined>(undefined);
+let daemonVersion = $state<string | undefined>(undefined);
 
 let readers = 0;
 let drop: (() => void) | undefined;
@@ -37,6 +38,7 @@ function hold(): () => void {
       answering = mark.yes;
       answeredAt = mark.at;
       answeredIn = mark.ms;
+      daemonVersion = mark.version;
     });
 
     drop = () => {
@@ -70,6 +72,10 @@ export function reachable() {
     /** Only where the probe measured it; an ordinary answer carries no timing. */
     get ms() {
       return answeredIn;
+    },
+    /** The daemon's own version, once the health probe has answered once. */
+    get version() {
+      return daemonVersion;
     },
   };
 }

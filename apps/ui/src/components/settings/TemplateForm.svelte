@@ -163,64 +163,60 @@
   }
 </script>
 
-<div class="mt-6 border-l-2 border-l-ink px-5 pt-4 pb-5">
-  <div class="tracking-caps uppercase">
-    {editing === undefined ? "A new template" : "Editing"}
-  </div>
+<form
+  onsubmit={(event) => {
+    event.preventDefault();
+    void save();
+  }}
+  class="mt-5 grid grid-cols-[9rem_1fr] gap-y-1.5 pt-3 max-narrow:grid-cols-1"
+>
+  <span class="tracking-caps uppercase max-narrow:mt-1.5">name</span>
+  <input
+    bind:value={name}
+    aria-label="name"
+    class="w-full border-b border-ink bg-transparent px-0 py-0.5 outline-none"
+  />
 
-  <div class="mt-4">
-    <div class="tracking-caps uppercase">name</div>
+  <span class="tracking-caps uppercase max-narrow:mt-1.5">trigger tag</span>
+  <div class="flex items-baseline border-b border-ink">
+    <span aria-hidden="true">{NAMESPACE}</span>
     <input
-      bind:value={name}
-      aria-label="name"
-      class="mt-0.5 w-full border-0 border-b border-b-ink bg-transparent px-0 py-0.5 outline-none"
+      bind:value={tag}
+      aria-label="trigger tag"
+      class="w-full border-0 bg-transparent px-0 py-0.5 outline-none"
     />
   </div>
 
-  <div class="mt-4">
-    <div class="tracking-caps uppercase">trigger tag</div>
-    <div class="mt-0.5 flex items-baseline border-b border-b-ink">
-      <span aria-hidden="true">{NAMESPACE}</span>
-      <input
-        bind:value={tag}
-        aria-label="trigger tag"
-        class="w-full border-0 bg-transparent px-0 py-0.5 outline-none"
+  <span class="tracking-caps uppercase max-narrow:mt-1.5">destination</span>
+  <div class="flex flex-wrap gap-x-[2ch]">
+    {#each destinations as one (one.id)}
+      <Option
+        label={one.name}
+        chosen={destination === one.id}
+        why={one.retired === true ? "disabled" : undefined}
+        onchoose={() => (destination = one.id)}
       />
-    </div>
+    {/each}
   </div>
 
-  <div class="mt-4">
-    <div class="tracking-caps uppercase">destination</div>
-    <div class="mt-0.5">
-      {#each destinations as one (one.id)}
-        <Option
-          label={one.name}
-          chosen={destination === one.id}
-          why={one.retired === true ? "retired" : undefined}
-          onchoose={() => (destination = one.id)}
-        />
-      {/each}
-    </div>
-  </div>
-
-  <div class="mt-4">
-    <div class="tracking-caps uppercase">action</div>
-    <div class="mt-0.5">
-      {#each capabilities as one (one.name)}
-        <Option
-          label={one.name}
-          chosen={capability === one.name}
-          onchoose={() => (capability = one.name)}
-        />
-      {/each}
-    </div>
+  <span class="tracking-caps uppercase max-narrow:mt-1.5">action</span>
+  <div class="flex flex-wrap gap-x-[2ch]">
+    {#each capabilities as one (one.name)}
+      <Option
+        label={one.name}
+        chosen={capability === one.name}
+        onchoose={() => (capability = one.name)}
+      />
+    {/each}
   </div>
 
   {#each typeable as field (field.name)}
-    <div class="mt-4">
-      <div class="tracking-caps uppercase">{field.title ?? field.name}</div>
+    <span class="tracking-caps uppercase max-narrow:mt-1.5">
+      {field.title ?? field.name}
+    </span>
+    <div>
       {#if fixed(field) !== undefined}
-        <div class="mt-0.5">
+        <div class="flex flex-wrap gap-x-[2ch]">
           {#each fixed(field) ?? [] as one (one)}
             <Option
               label={one}
@@ -248,24 +244,22 @@
           channel, not a number, and the form is the only thing that can say
           which one it was.
         -->
-        <div class="mt-0.5">
-          <CandidateBrowser
-            {destination}
-            {capability}
-            field={field.name}
-            label={field.title ?? field.name}
-            value={typed[field.name] ?? ""}
-            durable
-            naming={field.offeredOnly}
-            onchange={(value) => (typed[field.name] = value)}
-          />
-        </div>
+        <CandidateBrowser
+          {destination}
+          {capability}
+          field={field.name}
+          label={field.title ?? field.name}
+          value={typed[field.name] ?? ""}
+          durable
+          naming={field.offeredOnly}
+          onchange={(value) => (typed[field.name] = value)}
+        />
       {:else}
         <input
           bind:value={typed[field.name]}
           aria-label={field.title ?? field.name}
           placeholder={field.required ? "required" : "optional"}
-          class="mt-0.5 w-full border-0 border-b border-b-ink bg-transparent px-0 py-0.5 outline-none"
+          class="w-full border-b border-ink bg-transparent px-0 py-0.5 outline-none"
         />
       {/if}
     </div>
@@ -278,35 +272,40 @@
        may hold only what its destination already has — a pattern expanded into
        an are.na channel names a channel nobody has. -->
   {#if typeable.some((field) => fixed(field) === undefined && !field.offeredOnly)}
-    <p class="mt-2">
+    <span></span>
+    <p class="col-start-2 max-narrow:col-start-1">
       {"{{captured_at}} · {{captured_at:month}} · {{captured_at:week}} · {{item}} · {{source}}"}
     </p>
   {/if}
 
   {#if folders}
-    <div class="mt-4">
-      <div class="tracking-caps uppercase">folder</div>
-      <div class="mt-0.5">
-        {#each FOLDERS as one (one.name)}
-          <Option
-            label={one.name}
-            note={one.note}
-            chosen={folder === one.name}
-            onchoose={() => (folder = one.name)}
-          />
-        {/each}
-      </div>
+    <span class="tracking-caps uppercase max-narrow:mt-1.5">folder</span>
+    <div class="grid grid-cols-[max-content_1fr] items-baseline gap-x-[2ch]">
+      {#each FOLDERS as one (one.name)}
+        <Option
+          label={one.name}
+          chosen={folder === one.name}
+          onchoose={() => (folder = one.name)}
+        />
+        <span>{one.note}</span>
+      {/each}
     </div>
   {/if}
 
-  {#if said !== ""}
-    <p role="status" class="mt-3 text-alarm">{said}</p>
-  {/if}
-
-  <div class="mt-6 flex flex-wrap items-baseline gap-x-6">
-    <Action disabled={disabled || busy} onclick={() => void save()}>
-      <span class="inverted">Save</span>
-    </Action>
-    <Action onclick={done}><span>Cancel</span></Action>
+  <div
+    class="col-span-2 mt-3.5 flex items-center justify-between border-t border-ink pt-2.5 max-narrow:col-span-1"
+  >
+    <Action onclick={done}>cancel</Action>
+    <span class="inverted">
+      <Action disabled={disabled || busy} onclick={() => void save()}>
+        save
+      </Action>
+    </span>
   </div>
-</div>
+
+  {#if said !== ""}
+    <p role="status" class="col-span-2 text-alarm max-narrow:col-span-1">
+      {said}
+    </p>
+  {/if}
+</form>

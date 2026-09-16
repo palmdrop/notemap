@@ -1,7 +1,7 @@
 # The shell, redrawn
 
 **Date**: 2026-09-14
-**Status**: In progress — phases 2–4, the first version, shipped 2026-09-14; phase 5 shipped 2026-09-14; phase 6 drawn 2026-09-16, not yet built; 7 is drawn after it
+**Status**: In progress — phases 2–4, the first version, shipped 2026-09-14; phase 5 shipped 2026-09-14; phase 6 shipped 2026-09-16; 7 is drawn after it
 **Spec**: `docs/specs/shell.md`
 **Closed**:
 
@@ -481,51 +481,63 @@ Decisions made in the drawing, so they are not asked again:
 
 Tasks:
 
-- [ ] Branch `agent/shell-redesign-6`.
-- [ ] **Routes.** `routes/settings/+layout.svelte` draws the bar's page, the menu and a slot;
-      `routes/settings/[section]/+page.svelte` renders one of five components by the param and
-      404s otherwise; `routes/settings/+page.ts` redirects to `destinations` — except that below
-      `narrow` the layout draws the menu alone at `/settings` (`+page.svelte` renders nothing;
-      the redirect is a client-side `goto` guarded by the width, so a phone lands on the menu).
-      Update every `resolve("/settings")` caller that meant a section.
-- [ ] **Menu.** `settings/Menu.svelte`: five links, the current one bold; below `narrow` each
+- [x] Branch `agent/shell-redesign-6`.
+- [x] **Routes.** `routes/settings/+layout.svelte` draws the menu and a slot; `routes/settings/[section]/+page.svelte`
+      renders one of five components by the param and 404s otherwise; below `narrow` the layout
+      draws the menu alone at `/settings` and a section carries `← settings` above its head instead.
+      Update every `resolve("/settings")` caller that meant a section. *(Built as `+page.svelte`'s
+      own `onMount` doing the client-side `goto`, guarded by a new `lib/breakpoint.ts`'s `narrow()`
+      — no `+page.ts` was needed for the redirect; `[section]/+page.ts` validates the param and
+      404s instead.)*
+- [x] **Menu.** `settings/Menu.svelte`: five links, the current one bold; below `narrow` each
       is `h-11 border-b` and the whole thing is the page. `settings/Section.svelte` becomes the
       head: bold caps on a rule, a `sub` variant with `mt-9`, no `aside`; a `back` link above it
       below `narrow`. `Page.svelte` and `Row.svelte` (the mark/what/why row) go; `Fact.svelte`
       becomes the facts grid.
-- [ ] **Destinations.** `Destination.svelte`: the line as name (bold), kind, and the word at
+- [x] **Destinations.** `Destination.svelte`: the line as name (bold), kind, and the word at
       the right; opened, the facts and the actions line `check again · edit · disable | delete`;
       `enable` on a disabled one. Hidden when disabled unless the list's `show` is on (local
       state, not the URL). `DestinationForm.svelte` on the facts grid with an enum as options
-      (`primitives/composer/Option.svelte` reduced to a word, or a sibling `Options.svelte`);
-      `cancel` and inverted `save`/`use it anyway`. `Doomed.svelte` and
-      `primitives/composer/Modal.svelte` deleted; the ask is a state of the actions line.
-- [ ] **Templates.** `Template.svelte`: the line as name, destination, trigger tag as the
+      (`primitives/composer/Option.svelte`, unchanged); `cancel` and inverted `save`/`use it
+      anyway`. `Doomed.svelte` and `primitives/composer/Modal.svelte` and `Commit.svelte` deleted;
+      the ask is a state of the actions line.
+- [x] **Templates.** `Template.svelte`: the line as name, destination, trigger tag as the
       queue draws it (`font-semibold [font-variant-caps:all-small-caps]`, name after `route/`),
       the place, and the word at the right; the facts above; `check again · edit | delete`.
-      `TemplateForm.svelte` on the facts grid; `route/` printed before the field.
-- [ ] **Account.** `session/Session.svelte` and `settings/Tokens.svelte` become
+      `TemplateForm.svelte` on the facts grid; `route/` printed before the field. *(The
+      list-level "delete asks in a line, and says what a record keeps" dialog for a template —
+      pre-existing, and in tension with the spec's own "Deleting a template asks nothing and
+      refuses nothing" — was carried forward unchanged rather than resolved here; flagged, not
+      fixed, since phase 6 is the settings surface's visuals, not this behaviour.)*
+- [x] **Account.** `session/Session.svelte` and `settings/Tokens.svelte` become
       `settings/Account.svelte` drawing the row, the sub-head and the tokens; the once-box
-      reworded; `+ add a token` opening the name field.
-- [ ] **Server.** `Daemon.svelte` becomes `Server.svelte`: the facts grid; `VERSION` needs the
+      reworded; `+ add a token` opening the name field. `SignIn.svelte` (the login form, a
+      different surface) and its tests stay in `components/session/`.
+- [x] **Server.** `Daemon.svelte` becomes `Server.svelte`: the facts grid; `VERSION` needs the
       client to carry `/v1/health`'s `version` (`client.reachable` already carries `at` and `ms`;
       add `version` beside them, tested in `packages/client`). `Sources.svelte` folded under a
       `SOURCES` sub-head with `show`/`hide`, its lede sentence gone.
-- [ ] **Appearance.** `Appearance.svelte` as `THEME` on the facts grid.
-- [ ] **Words.** `lib/words.ts` or in place: `retired` → `disabled`, `reached` → `available`,
-      `fits` → `ok`, per the decisions above; the `Destination` and `Template` tests assert the
-      shell's words. `CONTEXT.md`: under **Retired**, a line that the shell says `disabled`.
-- [ ] **Tests.** `settings.test.ts`: the menu marks the current section; `/settings` redirects
-      wide and draws the menu narrow (assert classes, not pixels); a disabled destination is hidden
-      until `show`; `delete` turns the actions line into the ask and `keep` turns it back; the
-      refusal lands in the ask with `disable instead`; the edit form replaces the actions and
-      `cancel` restores them; the words. `tokens.test.ts` (settings) for the reworded box and
-      `+ add a token`. A client test for `version`.
-- [ ] **Spec.** Rewrite `Settings` in `shell.md`: the register layout, the routes, the phone's
-      menu, the words, no tally, hidden disabled, the ask in the line; retire *Settings is not a
+- [x] **Appearance.** `Appearance.svelte` as `THEME` on the facts grid.
+- [x] **Words.** In place (no `lib/words.ts` — the substitutions are a handful, each local to one
+      component): `retired` → `disabled`, `reached` → `available`, `unreachable` → `unavailable`,
+      `fits` → `ok`, `destination-retired` → `destination disabled`, per the decisions above; the
+      `Destinations` and `Templates` tests assert the shell's words. `CONTEXT.md`: under
+      **Retired**, a line that the shell says `disabled`.
+- [x] **Tests.** `routes/settings/settings.test.ts`: the menu marks the current section; `/settings`
+      redirects wide and draws the menu narrow (assert classes, not pixels). `Destinations.test.ts`:
+      a disabled destination is hidden until `show`; `delete` turns the actions line into the ask
+      and `keep` turns it back; the refusal lands in the ask with `disable instead`; the edit form
+      replaces the actions and `cancel` restores them; the words. `Account.test.ts` for the
+      reworded box and `+ add a token`. `packages/client`'s `pool.test.ts` for `version`, carried
+      forward on an ordinary request and not only the probe that learned it.
+- [x] **Spec.** Rewrote `Settings` in `shell.md`: the register layout, the routes, the phone's
+      menu, the words, no tally, hidden disabled, the ask in the line; retired *Settings is not a
       register* (2026-08-24) in `Prior decisions` with a dated note. `Shipped:` entry.
-- [ ] **Full stack.** `pnpm test:stack` — new routes and a client change.
-- [ ] Typecheck, tests, lint; shots re-taken; `git commit`.
+- [x] **Full stack.** `pnpm test:stack` — new routes and a client change. 67 passed.
+- [x] Typecheck, tests, lint; `git commit`. *(Shots not re-taken: `notemap-shoot-app` still walks
+      the modal composer removed in phase 4 — the same gap phase 5a flagged and left for the
+      developer to shoot by hand — and does not visit `/settings` at all yet; both want the script
+      rewritten, which is its own piece of work.)*
 
 ### Phase 7 — motion
 

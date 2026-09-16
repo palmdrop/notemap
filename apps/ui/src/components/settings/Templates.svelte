@@ -28,20 +28,6 @@
   let reports = $state<Record<string, RoutingTemplateReport>>({});
   let asking = $state<Record<string, boolean>>({});
 
-  const stranded = $derived(
-    $templates.filter(
-      (one) => !$destinations.some((each) => each.id === one.destination),
-    ).length,
-  );
-
-  const tally = $derived(
-    $templates.length === 0
-      ? "none yet"
-      : stranded === 0
-        ? `${String($templates.length)} saved`
-        : `${String($templates.length)} saved · ${String(stranded)} stranded`,
-  );
-
   async function read() {
     try {
       await Promise.all([client.templates.load(), client.destinations.load()]);
@@ -105,7 +91,7 @@
   }
 </script>
 
-<Section name="templates" aside={tally}>
+<Section name="templates">
   {#if !pool.yes}
     <!-- The chrome already says the pool is out of reach; this names what that
          costs here, and is not painted as an alarm. -->
@@ -156,7 +142,7 @@
         disabled={!pool.yes || $destinations.length === 0}
         onclick={() => (adding = true)}
       >
-        <span aria-hidden="true">+</span> Make a template
+        + add a template
       </Action>
     </div>
   {/if}
@@ -179,11 +165,9 @@
             doomed = undefined;
           })}
       >
-        <span class="text-alarm">× Delete</span>
+        delete anyway
       </Action>
-      <Action onclick={() => (doomed = undefined)}>
-        <span>Keep it</span>
-      </Action>
+      <Action onclick={() => (doomed = undefined)}>keep</Action>
     </div>
   </div>
 {/if}

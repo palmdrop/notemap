@@ -209,13 +209,17 @@ export function createClient(config: ClientConfig): Client {
     if (ours !== undefined) report(new PoolChanged(ours, identity));
   }
 
-  async function askedHealth(): Promise<boolean> {
+  async function askedHealth(): Promise<{
+    readonly yes: boolean;
+    readonly version?: string;
+  }> {
     try {
-      isThePoolWeCached((await answered(api.GET("/v1/health"))).pool);
-      return true;
+      const health = await answered(api.GET("/v1/health"));
+      isThePoolWeCached(health.pool);
+      return { yes: true, version: health.version };
     } catch (error) {
       // A refusal is still the pool answering. Only silence is not.
-      return !(error instanceof Unreachable);
+      return { yes: !(error instanceof Unreachable) };
     }
   }
 

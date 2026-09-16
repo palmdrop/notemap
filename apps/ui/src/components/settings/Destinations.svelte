@@ -11,7 +11,6 @@
 
   import DestinationRow from "$components/settings/Destination.svelte";
   import DestinationForm from "$components/settings/DestinationForm.svelte";
-  import Doomed from "$components/settings/Doomed.svelte";
   import Section from "$components/settings/Section.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import { client } from "$lib/client";
@@ -24,7 +23,7 @@
   let adding = $state(false);
   let opened = $state<string | undefined>(undefined);
   let editing = $state<string | undefined>(undefined);
-  let doomed = $state<Destination | undefined>(undefined);
+  let showDisabled = $state(false);
   let said = $state("");
 
   /** Per destination rather than for the list: either question is I/O that may hang. */
@@ -32,18 +31,14 @@
   let probed = $state<Record<string, DestinationProbe>>({});
   let asking = $state<Record<string, boolean>>({});
   let reaching = $state<Record<string, boolean>>({});
+  let checkedAt = $state<Record<string, string>>({});
 
-  const tally = $derived(
-    (() => {
-      const offered = $destinations.filter(
-        (one) => one.retired !== true,
-      ).length;
-      const retired = $destinations.length - offered;
-      if ($destinations.length === 0) return "none yet";
-      return retired === 0
-        ? `${offered} offered`
-        : `${offered} offered · ${retired} retired`;
-    })(),
+  const disabled = $derived(
+    $destinations.filter((one) => one.retired === true).length,
+  );
+
+  const shown = $derived(
+    $destinations.filter((one) => showDisabled || one.retired !== true),
   );
 
   async function read() {
@@ -61,17 +56,14 @@
     if (pool.yes && kinds.length === 0) void read();
   });
 
-  async function attempt(what: () => Promise<unknown>) {
-    said = "";
+  async function check(one: Destination) {
     try {
-      await what();
+      await Promise.all([describing(one), probing(one)]);
     } catch (error) {
       said = saidBy(error);
+    } finally {
+      checkedAt = { ...checkedAt, [one.id]: new Date().toISOString() };
     }
-  }
-
-  async function check(one: Destination) {
-    await attempt(() => Promise.all([describing(one), probing(one)]));
   }
 
   async function describing(one: Destination): Promise<void> {
@@ -103,7 +95,7 @@
     "not-offered",
   ];
 
-  // A retired one is offered to nothing new, so nothing asks it anything.
+  // A disabled one is offered to nothing new, so nothing asks it anything.
   // Refusals stay quiet: a pool out of reach is already said by the chrome.
   $effect(() => {
     const yes = pool.yes;
@@ -124,33 +116,38 @@
         const answer = probed[one.id];
         const settled = answer !== undefined && SETTLED.includes(answer.kind);
         if (reaching[one.id] !== true && !settled) {
-          void probing(one).catch(() => undefined);
+          void probing(one)
+            .then(() => {
+              checkedAt = { ...checkedAt, [one.id]: new Date().toISOString() };
+            })
+            .catch(() => undefined);
         }
       }
     });
   });
 </script>
 
-<Section name="destinations" aside={tally}>
+<Section name="destinations">
   {#if !pool.yes}
     <!-- The chrome already says the pool is out of reach; this names what that
          costs here, and is not painted as an alarm. -->
     <p role="status" class="mt-4">Destinations can be read but not changed.</p>
   {/if}
 
-  <!-- A refusal about the one being deleted is shown in the asking instead. -->
-  {#if said !== "" && doomed === undefined}
+  {#if said !== ""}
     <p role="status" class="mt-4 text-alarm">{said}</p>
   {/if}
 
-  {#each $destinations as one (one.id)}
+  {#each shown as one (one.id)}
     <DestinationRow
       {one}
       described={described[one.id]}
       probed={probed[one.id]}
+      checkedAt={checkedAt[one.id]}
       asking={asking[one.id] === true}
       probing={reaching[one.id] === true}
       opened={opened === one.id}
+      editing={editing === one.id}
       offline={!pool.yes}
       onopen={() => {
         opened = opened === one.id ? undefined : one.id;
@@ -159,23 +156,19 @@
       oncheck={() => void check(one)}
       onedit={() => (editing = editing === one.id ? undefined : one.id)}
       onretire={() =>
-        void attempt(() =>
-          one.retired
-            ? client.destinations.unretire(one.id)
-            : client.destinations.retire(one.id),
-        )}
-      ondelete={() => (doomed = one)}
+        one.retired
+          ? client.destinations.unretire(one.id)
+          : client.destinations.retire(one.id)}
+      ondelete={() => client.destinations.delete(one.id)}
     >
       {#if editing === one.id}
-        <div class="mt-5">
-          <DestinationForm
-            {kinds}
-            existing={$destinations}
-            editing={one}
-            disabled={!pool.yes}
-            done={() => (editing = undefined)}
-          />
-        </div>
+        <DestinationForm
+          {kinds}
+          existing={$destinations}
+          editing={one}
+          disabled={!pool.yes}
+          done={() => (editing = undefined)}
+        />
       {/if}
     </DestinationRow>
   {/each}
@@ -187,35 +180,23 @@
       disabled={!pool.yes}
       done={() => (adding = false)}
     />
-  {:else}
-    <div class="mt-6">
+  {/if}
+
+  <div class="mt-6 flex flex-wrap items-baseline justify-between gap-x-[2ch]">
+    {#if !adding}
       <Action
         disabled={!pool.yes || kinds.length === 0}
         onclick={() => (adding = true)}
       >
-        <span aria-hidden="true">+</span> Add a destination
+        + add a destination
       </Action>
-    </div>
-  {/if}
+    {:else}
+      <span></span>
+    {/if}
+    {#if disabled > 0}
+      <Action onclick={() => (showDisabled = !showDisabled)}>
+        {disabled} disabled · {showDisabled ? "hide" : "show"}
+      </Action>
+    {/if}
+  </div>
 </Section>
-
-{#if doomed !== undefined}
-  <Doomed
-    one={doomed}
-    {said}
-    onclose={() => {
-      doomed = undefined;
-      said = "";
-    }}
-    ondelete={() =>
-      void attempt(async () => {
-        await client.destinations.delete((doomed as Destination).id);
-        doomed = undefined;
-      })}
-    onretire={() =>
-      void attempt(async () => {
-        await client.destinations.retire((doomed as Destination).id);
-        doomed = undefined;
-      })}
-  />
-{/if}

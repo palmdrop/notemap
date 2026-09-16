@@ -4,15 +4,20 @@ import { expect, test, vi } from "vitest";
 import { json, routeOf } from "@notemap/client/testing";
 
 import { asked, pool } from "$testing/pool";
-import Tokens from "./Tokens.svelte";
+import Account from "./Account.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
-const SESSION = {
-  authenticated: true,
-  requiresCredentials: true,
-  identity: { kind: "session", id: "abc" },
-};
+const said = (
+  authenticated: boolean,
+  requiresCredentials = true,
+  identity?: Record<string, unknown>,
+) =>
+  json(200, {
+    authenticated,
+    requiresCredentials,
+    ...(identity === undefined ? {} : { identity }),
+  });
 
 const HELD = {
   id: "gpeukvybsmmgwnec",
@@ -20,11 +25,6 @@ const HELD = {
   createdAt: "2026-08-30T09:00:00.000Z",
 };
 
-/**
- * Every control is held while anything is in flight, the first read of the list
- * included — so a test that acts the moment the field appears acts on a form
- * that is not taking anything yet.
- */
 const settled = (name: RegExp) =>
   waitFor(() => {
     const button = screen.getByRole("button", { name }) as HTMLButtonElement;
@@ -32,9 +32,6 @@ const settled = (name: RegExp) =>
     return button;
   });
 
-const ready = (label: string) => waitFor(() => screen.getByLabelText(label));
-
-/** A daemon a session is through the door of, holding whatever is passed. */
 const holding = (
   tokens: readonly Record<string, unknown>[],
   answering?: (request: Request) => Response | undefined,
@@ -44,10 +41,60 @@ const holding = (
     const own = answering?.(request);
     if (own !== undefined) return own;
 
-    if (route === "GET /v1/session") return json(200, SESSION);
+    if (route === "GET /v1/session") {
+      return said(true, true, { kind: "session", id: "abc" });
+    }
     if (route === "GET /v1/tokens") return json(200, { values: tokens });
     return json(200, {});
   });
+
+test("offers signing out where there is a session to end", async () => {
+  pool((request) =>
+    routeOf(request) === "GET /v1/session"
+      ? said(true, true, { kind: "session", id: "abc" })
+      : json(200, {}),
+  );
+
+  render(Account);
+
+  expect(
+    await screen.findByRole("button", { name: /sign out/i }),
+  ).toBeDefined();
+});
+
+/** There is no door to come back out of, so offering the way out would be a lie. */
+test("offers no way out of a daemon that asks for nothing", async () => {
+  pool((request) =>
+    routeOf(request) === "GET /v1/session" ? said(false, false) : json(200, {}),
+  );
+
+  render(Account);
+
+  expect(await screen.findByText(/no password is set/i)).toBeDefined();
+  expect(screen.queryByRole("button", { name: /sign out/i })).toBeNull();
+});
+
+test("signing out tells the daemon", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/session") {
+      return said(true, true, { kind: "session", id: "abc" });
+    }
+    if (route === "DELETE /v1/session")
+      return new Response(null, { status: 204 });
+    return json(200, {});
+  });
+
+  render(Account);
+
+  await fireEvent.click(
+    await screen.findByRole("button", { name: /sign out/i }),
+  );
+
+  await waitFor(() => {
+    expect(asked()).toContain("DELETE /v1/session");
+  });
+});
 
 test("a token-carrying shell is not offered the tokens at all", async () => {
   pool((request) =>
@@ -60,7 +107,7 @@ test("a token-carrying shell is not offered the tokens at all", async () => {
       : json(200, {}),
   );
 
-  render(Tokens);
+  render(Account);
 
   // The routes are a session's alone, so asking would only be refused.
   await waitFor(() => {
@@ -73,7 +120,7 @@ test("a token-carrying shell is not offered the tokens at all", async () => {
 test("what exists is listed, with no secret among it", async () => {
   holding([HELD]);
 
-  render(Tokens);
+  render(Account);
 
   await waitFor(() => {
     expect(screen.getByText(HELD.name)).toBeTruthy();
@@ -91,10 +138,13 @@ test("a minted token is shown once, and not again", async () => {
     return json(201, { ...HELD, token: "nmp.gpeukvybsmmgwnec.qK9v" });
   });
 
-  render(Tokens);
+  render(Account);
 
-  await fireEvent.input(await ready("name"), { target: { value: HELD.name } });
-  await fireEvent.click(await settled(/mint/i));
+  await fireEvent.click(await settled(/\+ add a token/));
+  await fireEvent.input(screen.getByLabelText("name"), {
+    target: { value: HELD.name },
+  });
+  await fireEvent.click(await settled(/create/i));
 
   await waitFor(() => {
     expect(screen.getByText("nmp.gpeukvybsmmgwnec.qK9v")).toBeTruthy();
@@ -122,7 +172,7 @@ test("revoking one takes it off the list", async () => {
     return undefined;
   });
 
-  render(Tokens);
+  render(Account);
   await waitFor(() => {
     expect(screen.getByText(HELD.name)).toBeTruthy();
   });
@@ -141,7 +191,7 @@ test("a refusal is said where the person is looking", async () => {
       : undefined,
   );
 
-  render(Tokens);
+  render(Account);
 
   await waitFor(() => {
     expect(screen.getByRole("status").textContent).toBeTruthy();

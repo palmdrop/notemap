@@ -259,7 +259,9 @@ _Avoid_: type, driver, backend, provider
 **Retired**:
 Said of a destination that is no longer offered for new routing. Reversible, and nothing already
 decided is disturbed: records keep resolving and a pending delivery still lands. It is archive's
-counterpart for destinations rather than items, which is why it is not called archive.
+counterpart for destinations rather than items, which is why it is not called archive. Presented in
+the settings UI as **disabled** (`disable` / `enable`), on the same terms `archive` is presented as
+`discard` — the wire and this term are untouched; the shell alone says it differently.
 _Avoid_: disabled, archived, deleted, inactive
 
 **Adapter**:

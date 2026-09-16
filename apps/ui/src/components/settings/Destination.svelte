@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { saidBy } from "@notemap/client";
   import type {
     Destination,
     DestinationDescription,
@@ -8,14 +9,17 @@
   import Fact from "$components/settings/Fact.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import { pickable } from "$lib/pick";
+  import { since } from "$lib/stamp";
 
   let {
     one,
     described,
     probed,
+    checkedAt,
     asking,
     probing,
     opened,
+    editing,
     offline,
     onopen,
     oncheck,
@@ -27,19 +31,23 @@
     one: Destination;
     described?: DestinationDescription;
     probed?: DestinationProbe;
+    /** When either question last settled, for the facts grid's `checked …`. */
+    checkedAt?: string;
     asking: boolean;
     probing: boolean;
     opened: boolean;
+    /** The form is drawn below in its place; the row's own line and facts wait. */
+    editing: boolean;
     offline: boolean;
     onopen: () => void;
     oncheck: () => void;
     onedit: () => void;
-    onretire: () => void;
-    ondelete: () => void;
+    onretire: () => Promise<unknown>;
+    ondelete: () => Promise<unknown>;
     children?: import("svelte").Snippet;
   } = $props();
 
-  const retired = $derived(one.retired === true);
+  const disabled = $derived(one.retired === true);
 
   const can = $derived(
     described === undefined
@@ -55,120 +63,162 @@
       : `${described.kind} — ${described.detail}`,
   );
 
+  /** `reached` reads `available`; `unusable` stays, since it is the bigger fact. */
+  const PROBE_WORD: Partial<Record<DestinationProbe["kind"], string>> = {
+    ready: "available",
+    unreachable: "unavailable",
+  };
+
   // A kind that cannot be probed is drawn as it was before probing existed.
   const reach = $derived.by(() => {
     if (probed === undefined || probed.kind === "not-offered") return undefined;
     if (probed.kind === "ready") {
-      return { mark: "✓", said: "reached", tone: "" };
+      return { said: "available", alarm: false };
     }
 
     return {
-      mark: "⚠",
-      said: `${probed.kind} — ${probed.detail}`,
-      tone: probed.kind === "rejected" ? "text-alarm" : "",
+      said: `${PROBE_WORD[probed.kind] ?? probed.kind} — ${probed.detail}`,
+      alarm: probed.kind === "rejected",
     };
   });
+
+  /** What the row leads with, collapsed and in the facts grid alike. */
+  const status = $derived.by(() => {
+    if (refusing !== undefined) return { said: refusing, alarm: true };
+    if (reach !== undefined) return reach;
+    if (asking || probing) return { said: "asking", alarm: false };
+    if (can !== undefined) return { said: "answered", alarm: false };
+    if (disabled) return { said: "disabled", alarm: false };
+    return { said: "not asked yet", alarm: false };
+  });
+
+  const since_ = $derived(
+    checkedAt === undefined ? undefined : since(checkedAt),
+  );
+
+  let busy = $state(false);
+  let retireFailed = $state("");
+  let asked = $state(false);
+  let refusal = $state<string | undefined>(undefined);
+
+  async function toggleRetire() {
+    busy = true;
+    retireFailed = "";
+    try {
+      await onretire();
+    } catch (error) {
+      retireFailed = saidBy(error);
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function confirmDelete() {
+    busy = true;
+    try {
+      await ondelete();
+    } catch (error) {
+      refusal = saidBy(error);
+    } finally {
+      busy = false;
+    }
+  }
+
+  function cancelAsk() {
+    asked = false;
+    refusal = undefined;
+  }
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="border-b border-b-ink py-4" onclick={pickable(onopen)}>
   <div class="flex cursor-pointer flex-wrap items-baseline gap-x-3">
-    <span aria-hidden="true" class="w-[1ch] flex-none">
-      {retired ? "○" : "●"}
-    </span>
     <button
       type="button"
       onclick={onopen}
       aria-expanded={opened}
-      class="tracking-caps uppercase hover:underline {retired ? '' : ''}"
+      class="font-semibold hover:underline"
     >
       {one.name}
     </button>
     <span>{one.kind}</span>
 
     <span
-      class="ml-auto whitespace-nowrap max-narrow:ml-7 max-narrow:w-full
-        {refusing !== undefined ? 'text-alarm' : can !== undefined ? '' : ''}"
+      class="ml-auto whitespace-nowrap max-narrow:ml-0 max-narrow:w-full {status.alarm
+        ? 'text-alarm'
+        : ''}"
     >
-      {#if refusing !== undefined}
-        ⚠ {refusing}
-      {:else if reach !== undefined}
-        <span class={reach.tone}>{reach.mark} {reach.said}</span>
-      {:else if asking || probing}
-        ↻ asking
-      {:else if can !== undefined}
-        ✓ answered
-      {:else if retired}
-        retired · offered to nothing new
-      {:else}
-        not asked yet
-      {/if}
+      {status.said}
     </span>
   </div>
 
-  {#if opened}
-    <div class="mt-4 pl-7">
-      <Fact name="can">
-        {#if can !== undefined}
-          {can}
-        {:else if asking}
-          asking now
-        {:else if retired}
-          not offered, so not asked
-        {:else}
-          unasked — describing one is a read that can hang
-        {/if}
+  {#if opened && !editing}
+    <div class="mt-4">
+      <Fact name="actions">
+        {can ??
+          (asking
+            ? "asking now"
+            : disabled
+              ? "not offered, so not asked"
+              : "unasked")}
       </Fact>
-      <Fact name="reach">
-        {#if reach !== undefined}
-          {reach.said}
-        {:else if probed?.kind === "not-offered"}
-          the {one.kind} kind cannot be asked whether it is there
-        {:else if probing}
-          asking now
-        {:else if retired}
-          not offered, so not asked
-        {:else}
-          unasked
-        {/if}
+      <Fact name="status">
+        {probing ? "asking now" : status.said}{since_ === undefined
+          ? ""
+          : ` · checked ${since_}`}
       </Fact>
-      <!-- On the open row rather than the collapsed one: a kind may want a
-           token here, and a scannable list is the wrong place for it. -->
       {#each Object.entries(one.settings ?? {}) as [key, value] (key)}
         <Fact name={key}>{String(value)}</Fact>
       {/each}
 
-      <Fact name="id">{one.id}</Fact>
-
-      <div
-        class="mt-4 flex flex-wrap items-baseline gap-x-6 border-t border-t-ink pt-3"
-      >
-        <Action disabled={asking || probing} onclick={oncheck}>
-          <span aria-hidden="true">↻</span>
-          {can === undefined && refusing === undefined
-            ? "Check"
-            : "Check again"}
-        </Action>
-        <Action disabled={offline} onclick={onedit}>
-          <span aria-hidden="true">✎</span> Edit
-        </Action>
-        <Action disabled={offline} onclick={onretire}>
-          <span aria-hidden="true">
-            {retired ? "●" : "○"}
-          </span>
-          {retired ? "Offer again" : "Retire"}
-        </Action>
-        <span class="ml-auto max-narrow:ml-0">
-          <Action disabled={offline} onclick={ondelete}>
-            <span class="text-alarm">
-              <span aria-hidden="true">×</span> Delete
-            </span>
+      {#if asked}
+        <div
+          class="mt-3 flex flex-wrap items-baseline gap-x-6 border-t border-t-ink pt-3 text-alarm"
+        >
+          {#if refusal !== undefined}
+            <span>{refusal}</span>
+            <Action
+              onclick={() => void toggleRetire().then(() => (asked = false))}
+            >
+              disable instead
+            </Action>
+          {:else}
+            <span>Delete {one.name}?</span>
+            <Action disabled={busy} onclick={() => void confirmDelete()}>
+              delete
+            </Action>
+          {/if}
+          <Action onclick={cancelAsk}>keep</Action>
+        </div>
+      {:else}
+        <div
+          class="mt-3 flex flex-wrap items-baseline gap-x-6 border-t border-t-ink pt-3"
+        >
+          <Action disabled={asking || probing} onclick={oncheck}>
+            check again
           </Action>
-        </span>
-      </div>
-
-      {@render children?.()}
+          <Action disabled={offline} onclick={onedit}>edit</Action>
+          <Action
+            disabled={offline || busy}
+            onclick={() => void toggleRetire()}
+          >
+            {disabled ? "enable" : "disable"}
+          </Action>
+          {#if retireFailed !== ""}
+            <span class="text-alarm">{retireFailed}</span>
+          {/if}
+          <span class="ml-auto max-narrow:ml-0">
+            <Action alarm disabled={offline} onclick={() => (asked = true)}>
+              delete
+            </Action>
+          </span>
+        </div>
+      {/if}
     </div>
+  {/if}
+
+  {#if opened}
+    {@render children?.()}
   {/if}
 </div>

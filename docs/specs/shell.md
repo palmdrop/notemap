@@ -1,9 +1,17 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-15
+**Last updated**: 2026-09-16
 **Shipped**:
 
+- 2026-09-16 — **Settings, redrawn.** Phase 6 of [shell-redesign](../plans/shell-redesign.md):
+  settings becomes the register's own grid, menu on the rail, one section beside it, routed as
+  `/settings/{destinations | templates | account | server | appearance}`; no lede or tally in any
+  head; a row's facts on the process surface's `9rem` grid; no marks but `+` and `↗`; a disabled
+  destination hidden until shown; deleting asks in the actions line itself, in alarm; `session` and
+  `tokens` become `account`, `daemon` and `sources` become `server`; the shell's own words —
+  `disabled`, `available`, `ok` — beside the pool's. The client carries the daemon's version
+  alongside `at` and `ms` on every reachability mark.
 - 2026-09-15 — **A command is what a key and a button both reach.**
   [keyboard-commands](../plans/keyboard-commands.md): every deed is a command a surface publishes
   while it is on screen, a binding names its key, and one dispatcher resolves every chord against
@@ -1540,172 +1548,86 @@ timeline.
 
 ### Settings
 
-Settings is not a register and is not drawn as one. It is read rather than scanned, so it takes a
-**narrower measure** than the two surfaces — which is itself the signal that it is a different kind
-of page — in **one column**, with no rail and nothing to furl. It has no lede *(2026-09-14)*: the
-sections say what is on the page. Section headings are bold capitals over a rule.
+Settings is the register's own grid *(redrawn 2026-09-16, [shell-redesign](../plans/shell-redesign.md)
+phase 6)*: the menu sits on the rail, ruled at its right, and one section sits beside it at
+`--spacing-read`. **Each section is a route**, `/settings/{destinations | templates | account |
+server | appearance}`; `/settings` itself redirects to `destinations` from `--breakpoint-narrow` up.
+Below it there is no rail beside a section to draw, so the menu becomes the phone's own landing page
+at `/settings` — each item 44px tall, ruled between — and a section carries `← settings` above its
+head instead. One component draws both; there is no second design for the phone. It has no lede and
+no tally in any head *(2026-08-24, widened 2026-09-16)*: the sections and their rows say what is on
+the page. A section's heading is bold capitals over a rule; a sub-head, for **access tokens** under
+account and **sources** under server, is the same, lower down.
 
-**One type size, and the hierarchy comes from capitals and rules.** Three levels, meant to be
-countable: a **section** is muted ink at the widest tracking with a full-weight rule under it; a
-**destination** is full ink at tighter tracking with a mark in the margin; a **field** is lower
-case, muted, in a column of its own. Nothing is bigger and nothing is bold.
+**A row's facts are the process surface's grid** — `9rem` uppercase labels beside their values,
+stacked below `--breakpoint-narrow` — so a destination, a template and a field read the same way
+this shell already reads a decision being made. **No mark is drawn except `+` on an add and `↗` on a
+link that leaves the app.** `●/○` for offered and retired, `✓/⚠` for reached and refused, `↻` for
+asking, `✎` and `×` for edit and delete are all words now, at the row's right; only what a person has
+to act on is in alarm.
 
-Six sections *(two when this was written; the door brought two more, then routing templates and
-sources)*. **Destinations** says
-how many are offered and how many retired, then one line per destination: a mark for offered or
-retired, its name, its kind, and what it last answered. Opening one adds what it can do, the
-settings its kind asked for, its id, and the four things that can be done to it — check, edit,
-retire, delete — with the rule and the distance separating what can be undone from what cannot.
+**The shell's words are not the pool's** *(2026-09-16)*. `retired` reads **`disabled`**, and `retire`
+/ `unretire` read `disable` / `enable` — the wire and [CONTEXT.md](../../CONTEXT.md)'s term are
+untouched, this shell alone says it differently, on the same terms `archive` is presented as
+`discard`. `reached` reads **`available`**, `unreachable` reads **`unavailable`**, and `unusable`
+stays, being the bigger fact and already in alarm. A template's `fits` reads **`ok`**; `stranded`
+reads `destination deleted`; `destination-retired` reads `destination disabled`. `mint` reads `+ add
+a token` and then `create`.
 
-**Each one is asked what it can do, and whether it is really there, as the page draws**
-*(2026-09-02)*, without waiting to be told to. Asked **per row**, so the first kind that has to go
-and look leaves one line saying it is asking rather than holding up a list that is already drawn
-from pool state. A **retired** one is not asked — it is offered to nothing new — and keeps the
-control for a person who wants to know anyway. A **settled** answer is not asked again: what it can
-do once it has said, and whether it is there once that is `ready`, `rejected` or a kind that cannot
-be asked. One that could not be reached *is* asked again when the pool comes back into reach, since
-that is the moment worth re-asking on.
+**Destinations** lists what the pool holds, one line per destination: its name, its kind, and what
+it last answered — `available`, a refusal, or, where the kind cannot be probed, nothing at all, as
+before. **A disabled destination is hidden** from the ordinary list; under it, `+ add a destination`
+at the left and, where any are disabled, `N disabled · show` at the right, `hide` once shown.
+Opening a row adds its facts — `ACTIONS`, `STATUS` with when it was last checked, then one fact per
+setting its kind asked for, **no id among them** — and the actions line: `check again · edit ·
+disable | delete`, `enable` on a disabled one.
 
-**What it answered about being there is what the row leads with**, because it is the stronger fact:
-`reached` in green, and a refusal in the accent, which is the colour for a thing a person has to
-act on. A destination whose kind cannot be probed says nothing at all and looks exactly as it did
-before probing existed. What could not be *described* still wins over both, an unusable destination
-being a bigger fact than an unreachable one.
+Asking what a destination can do and whether it is really there **as the page draws**, per row and
+without being told to, is unchanged from 2026-09-02: a settled answer — `ready`, `rejected`, or a
+kind that cannot be asked — is not asked again, and only one that could not be reached is asked
+again once the pool comes back into reach. So is choosing a settings field the kind published values
+for over typing it, blank leading the list where nothing is held (2026-09-02, widened 2026-09-08),
+now drawn as a row of options with the chosen one bold rather than a `<select>`.
 
-**A settings field the kind published values for is chosen, not typed** *(2026-09-02, widened
-2026-09-08)*. A webdav destination's account is one of the accounts the daemon declares, drawn as a
-list; so is a field the schema **fixes** to an enumeration, which the template form already drew
-that way and this brings here. The two are told apart by the schema and never by name — suggested
-values and allowed ones read the same, and what differs is only whether typing something else
-would be refused. A field with nothing published stays a box, so a daemon declaring no accounts
-does not trap a person behind an empty one. A value the destination already holds that the daemon
-no longer declares is offered too, marked as such — opening the form must not quietly move a
-destination somewhere else. **Blank leads the list where nothing is held**, because for an
-optional field absent is a value of its own: it is what a destination that never said has, and
-what a person has to be able to go back to.
+**Deleting is the one thing here that cannot be undone, so it is the one thing that asks — in the
+actions line itself, in alarm, with no sentence**: `Delete Obsidian vault? · delete · keep`.
+Where the pool refuses because a record names it, the refusal *is* the line, with `disable instead`
+beside it — only the pool knows whether a record has ever named a destination, so its refusal is the
+answer, and it lands where the alternative it leaves is already on screen. There is no modal; a
+destination being deleted is a state of its own row rather than a veil over the page.
 
-**Templates** *(added 2026-09-07)* sits under Destinations, on the same three levels and for the
-same reason it comes second: a template names a destination, so the thing it names is above it. One
-line per template with its name, the place it files to, the destination, and what it last answered.
-Opening one adds the arguments, the folder mode, the trigger tag, **when it last fired**, and the
-ways to edit and delete it.
+**Editing draws the form in place**, under the row's line, in the facts' own column — `NAME`, then
+the kind's fields, an enum as a row of options — with `cancel` left and an inverted `save` right on a
+rule; the row's own actions wait until it closes, unchanged from 2026-09-07. Adding draws the same
+form under the list, in place of the add line. The unfamiliar-root warning is a line under the field
+and the button reads `use it anyway`, both unchanged from when they were drawn as sentences instead
+of a grid.
 
-**The place is read off the arguments**, never off the capability: every string they hold, in the
-order the destination declared them, which is what a routing record's place already does. This page
-draws from pool state and has asked no destination what its fields mean, so a template filing to
-`reading · {{captured_at}}` on a board reads as well as one filing to a path.
+**Templates** sits under Destinations, unchanged in what it draws and how it asks: one line per
+template — name, destination, its trigger tag as the queue draws one (bold small-caps of the name
+after `route/`), the place it files to, and what it last answered — and, opened, the facts `TAG ·
+DESTINATION · ACTION · PLACE · FOLDER · USED`, `used` naming the count and when it last fired. A
+stranded template — one whose destination was deleted — still leads with that and is repointed by an
+ordinary edit of its destination field; the actions are `check again · edit | delete`.
 
-**When it last fired is a derived field the pool computes beside the row**, on the terms an item's
-routing summary is already derived ([core.md](core.md#routing-templates)) — so the page asks nothing
-extra for it and a list of ten templates is still one read.
+**Account** is one row — `signed in · this browser holds a session`, with `sign out` — or, on a
+daemon nobody has set a password on, `open · no password is set…`, naming the command that closes
+the door. Under it, **access tokens**, drawn only for a session, as before: one row per token with
+when it was made and last used and `revoke`, the once-shown minted string boxed in alarm with `copy`
+and `done`, and `+ add a token` opening a name field and `create` in its place.
 
-**What a pattern reads as is not drawn.** Saying what `{{captured_at}}` comes out as needs an item
-to expand against, and there is no item on a settings page; inventing one would be a second expander
-on this side, which is the drift the one expander exists to prevent. The patterns are shown as
-written, which is what a template *is*.
+**Server** replaces Daemon, its facts drawn rather than a first row about *now* beside two links:
+`ADDRESS`, **`VERSION`** — the daemon's own, from `/v1/health`, which the client now carries beside
+`at` and `ms` on every mark — `STATUS available · checked <when>[, in <ms> ms]` with `check again`
+out of the probe's own turn, and `API reference ↗`. Nothing is pressed to find out whether the
+daemon answers, unchanged from 2026-09-02: the client probes on its own and every answered request
+settles the same mark. `daemon` is not said anywhere; `log` is not offered here either — the bar
+already carries it. **Sources**, folded under its sub-head with `show`/`hide`, is otherwise
+unchanged: one row per source, how many it captured and how long ago, read fresh each time the pool
+comes back into reach and held nowhere.
 
-**The arguments are a form built from the same `argumentsSchema` the composer builds from**, with an
-open field typed as text — a place field here holds a pattern, not a path, so the composer's typed
-line and its tree would be answering a question nobody asked. A pattern naming a field or a format
-nobody declared is refused when it is saved, and **the refusal is drawn where it belongs**: on the
-field that carries it, while the person is still looking at it.
-
-**A field the schema fixes is chosen instead of typed**, and the two are told apart by the schema
-rather than by the field's name: a value from an enumeration is offered as the options it is, and
-anything else is a box. This is what makes a destination whose places are a **fixed set** — a
-board's columns, a mailbox, a webhook — usable without the shell being taught about it, and it
-follows from what a pattern is: a pattern is in no enumeration, so a fixed field never holds one and
-an open field is exactly the one that might.
-
-**A lasting name is read back as the name it stands for** *(2026-09-09)*. The form takes the
-`durable` form of a candidate, which for an are.na channel is a number — so the field reads the
-label the destination answers under it while holding that number, and a template saved months ago
-says which channel it files to rather than only that it files somewhere. Only where the field says
-it holds nothing but what was offered: a path is its own name, and drawing something else over one
-would hide what is about to be written.
-
-**A field the destination can be asked about is browsed here too.** Where the places are neither a
-path nor a fixed set — a list only the account can answer, picked from rather than created — the
-form asks and offers what came back, through the same schema-driven browser the composer gives a
-kind it knows nothing else about. Deliberately that browser and **not** the kind's own control: a
-typed path line forecasts create-against-append for a concrete path, and what a template holds is a
-pattern. The browser carries the field's own input, so a place that has to be picked from what is
-there and one that has to be written are one field rather than two — and a destination that cannot
-be reached says so and leaves the field typable, which is what keeps a template editable against a
-sleeping account.
-
-**The folder mode is drawn only where the capability has folders.** A kind that files to a column
-declares no folder field, and offering `create · require · establish` there would be a control whose
-every setting the pool refuses. Nothing here knows which capabilities those are; it reads what the
-chosen one published. The three modes are **chosen**, each with a line saying what it means — a
-remark beside an option and the reason an option cannot be taken read alike and are not the same
-thing, and a control that explains itself with the second is a control nobody can use.
-
-**Editing draws the form alone** *(added 2026-09-07)*. What the template says and what it is being
-changed to are the same fields twice, and the settled copy is the one to go: a row reading `create`
-above an input reading `require` reads as the template having refused the edit. The row's own line
-stays, so it is clear which template is open.
-
-**Each row asks its own report as the page draws**, per row, exactly as a destination's is asked —
-so the first template whose destination has to go and look does not hold up a list already drawn
-from pool state. A settled answer is not asked again; one that could not be reached is asked when
-the pool comes back, that being the moment worth re-asking on.
-
-**A stranded template — one whose destination was deleted — leads with that**, and is deleted or
-**repointed**. Repointing is an ordinary edit of its destination field, followed by the report
-saying whether the capability and the arguments still fit where it now points; there is no special
-repair, because there is nothing to repair beyond the one field that is wrong.
-
-**The folder check reads the literal prefix of the path** — the part with no pattern in it, which is
-exactly the part that moves when somebody renames a folder — asked through `candidates` like any
-other look at a destination. Which field that is comes from the capability's own schema
-([core.md](core.md#routing-templates)), so a template against a destination with no paths has no
-such check rather than a check that quietly does nothing.
-
-**Unreachable is not an alarm.** A destination that cannot be asked says so quietly and draws no
-accent, the accent being for what a person has to act on and a sleeping vault being neither wrong
-nor theirs to fix. This is the `gone` mark removed from the composer on 2026-09-04, not made again.
-
-**Deleting a template asks nothing and refuses nothing**, unlike deleting a destination. A template
-names nothing that outlives it, and the records it made carry what they routed as and keep
-resolving without it — so there is no conflict for the pool to report and nothing for the asking to
-offer instead. Deleting the **destination** is where the warning lives, naming the templates it
-would strand.
-
-**Sources** *(added 2026-09-07)* says how many the pool has seen, then one line per source: its
-id, how many items it captured, and how long ago the last of them was — counted up while the page
-is open, as the daemon's own reading is. It is how a program feeding the pool from outside is seen
-to still be feeding it: a source whose figure keeps growing is one that has stopped. Read fresh
-each time the pool comes back into reach and held nowhere, since a remembered figure would say the
-opposite of what this section is for.
-
-**Daemon** says where this shell is talking to, and carries the way to `/log` and the exit to the
-daemon's `/docs` — one of this shell's own routes and one the browser leaves for, marked apart. Its
-first row is the one fact on the page that is about *now* rather than about configuration: whether
-the daemon answers, when it last did, and — where the probe was what asked — how long it took.
-**Nothing is pressed to find out** *(2026-09-02)*: the client probes on its own while anyone is
-watching and every answered request settles the same mark, so the row is drawn from what the client
-already knows rather than from a second, manual notion of reach. The control beside it asks again,
-out of the probe's turn, for a person who would rather not wait for the next one.
-
-**Session** says whether this browser holds one and offers the way out, or — on a daemon nobody has
-set a password on — says the door is open and names the command that shuts it.
-
-**Access tokens** is what something that is not a browser carries, and is drawn **only for a
-session**: the routes behind it are a session's alone, so a token-carrying shell is not offered a
-section it would only be refused. One line per token, with when it was made and when it was last
-used, which is what says whether one is safe to revoke. Minting takes a name and answers with the
-string **once** — the daemon kept a hash and has nothing to answer with a second time — so it is
-shown in the accent, selectable, with a way to copy it, and dismissing it is a deliberate act rather
-than a navigation. **Selectable is what carries the weight**: the way to copy it goes where the
-browser hands over no clipboard *(amended 2026-09-05, on the same reasoning as
-[`copy` on a row](#actions))*, and the string being on the screen to select is why it can go
-without anything said in its place.
-
-**Deleting is the one thing on this page that cannot be undone, so it is the one thing that asks**,
-and the asking offers retiring instead. Only the pool knows whether a record has ever named a
-destination, so its refusal is the answer — and the refusal lands *in the asking*, where the
-alternative it leaves is already on screen.
+**Appearance** is `THEME auto · light · dark` on the facts grid — the same three-way choice, moved
+under a section of its own rather than a row of buttons alone.
 
 ### The log
 
@@ -1949,10 +1871,15 @@ view is how a reader sees more at once.
   row's own body, and the place a reader had is kept by both surfaces while they are away from it.
   What the row cannot hold is what earned the address — an argument object, a pointer, and the
   delivered content that is coming — none of it triage.
-- **Settings is not a register.** *2026-08-24.* It inherited the two-column layout because
+- **Settings is not a register.** *2026-08-24; superseded 2026-09-16, phase 6 of
+  [shell-redesign](../plans/shell-redesign.md).* It inherited the two-column layout because
   everything did, and paid for it: a label gutter down a page whose content is already
   label-and-value, and a fold control on a page with nothing worth reading without its left column.
   One column at a narrower measure says "different kind of page" without a second type size.
+  What changed it back: the rest of the shell had, by then, become the register this reasoning was
+  reacting to — a rail and a body, `9rem` facts, a row that asks and answers the same way everywhere
+  else. Being the one page built differently had become the thing that read as a different kind of
+  page, not the narrower measure. The menu takes the rail's place; the measure narrows with it.
 - **Green is a result, never an intention.** *2026-08-24.* The first draft put green on
   `add a destination` and red on `delete`, which made red mean danger here and *the action* on the
   queue, where `capture` and `route` wear it. Spending green on what came back instead leaves the
