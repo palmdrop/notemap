@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>notemap — settings, redrawn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./tokens.css" />
+<style>
+  /* the menu on the register's rail, a rule between, one section at the reading measure */
+  .set { display: grid; grid-template-columns: var(--rail) 1fr; }
+  .menu { border-right: var(--rule); padding: 20px 16px 12px 0; display: flex; flex-direction: column; }
+  .menu .on { font-weight: var(--bold); }
+  .sec { padding: 20px 0 12px var(--gutter); min-width: 0; max-width: calc(var(--measure-read) + var(--gutter)); }
+  .back { display: none; }
+
+  /* a section's head: the name in bold caps on a rule; a sub-head is the same, lower down */
+  .head { display: flex; justify-content: space-between; align-items: baseline; gap: 2ch; border-bottom: var(--rule); padding-bottom: 6px; }
+  .head .name { font-weight: var(--bold); text-transform: uppercase; letter-spacing: var(--track-caps); }
+  .head.sub { margin-top: 36px; }
+
+  /* rows, ruled between; the row's word at the right */
+  .r { border-bottom: var(--rule); padding: 10px 0; }
+  .line { display: flex; flex-wrap: wrap; gap: 0 2ch; align-items: baseline; }
+  .line .nm { font-weight: var(--bold); }
+  .line .said { margin-left: auto; white-space: nowrap; }
+  .trig { font-variant-caps: all-small-caps; letter-spacing: 0.04em; font-weight: var(--bold); }
+
+  /* the opened row: facts as a label column and a value column, the actions as a line */
+  .facts { display: grid; grid-template-columns: 9rem 1fr; margin-top: 8px; }
+  .facts .k { text-transform: uppercase; letter-spacing: var(--track-caps); }
+  .facts .v { min-width: 0; overflow-wrap: anywhere; }
+  .facts .v a + a, .facts .v span + a { margin-left: 20px; }
+  .acts { display: flex; gap: 20px; margin-top: 10px; }
+  .acts .x { margin-left: auto; }
+
+  /* under a list: the add, and what is hidden */
+  .under { display: flex; justify-content: space-between; gap: 2ch; padding-top: 12px; }
+
+  /* a form, in place: the facts grid with a field on a rule in the value column; an enum is a row of options */
+  .form { display: grid; grid-template-columns: 9rem 1fr; row-gap: 6px; padding-top: 12px; }
+  .form .k { text-transform: uppercase; letter-spacing: var(--track-caps); }
+  .field { border-bottom: var(--rule); min-height: var(--leading); }
+  .with { display: flex; }
+  .with .field { flex: 1; }
+  .opts { display: flex; flex-wrap: wrap; gap: 0 2ch; }
+  .opts .on { font-weight: var(--bold); }
+  .modes { display: grid; grid-template-columns: max-content 1fr; column-gap: 2ch; }
+  .note { grid-column: 2; }
+  .fform { display: flex; justify-content: space-between; align-items: center; border-top: var(--rule); margin-top: 14px; padding-top: 10px; }
+  .inv { background: var(--ink); color: var(--ground); padding: 0 20px; height: 32px; line-height: 32px; display: inline-block; font-weight: var(--bold); }
+
+  /* the one thing that is boxed and red: a token that can be read once */
+  .once { border: 1px solid var(--alarm); padding: 10px 12px; margin-top: 12px; }
+  .once .tok { margin-top: 8px; overflow-wrap: anywhere; user-select: all; }
+  .once .acts { margin-top: 8px; }
+
+  /* states, on the hash */
+  .sec { display: none; }
+  body.s-destinations .sec.destinations, body.s-templates .sec.templates, body.s-account .sec.account,
+  body.s-server .sec.server, body.s-appearance .sec.appearance { display: block; }
+  body.s-destinations .m-destinations, body.s-templates .m-templates, body.s-account .m-account,
+  body.s-server .m-server, body.s-appearance .m-appearance { font-weight: var(--bold); }
+  .editing, .asking, .disabled-row, .sources-rows { display: none; }
+  body.is-editing .editing { display: grid; }
+  body.is-editing .facts.rest, body.is-editing .acts.rest { display: none; }
+  body.is-asking .asking { display: flex; }
+  body.is-asking .acts.rest { display: none; }
+  body.is-disabled .disabled-row { display: block; }
+  body.is-disabled .under .toggle-show, body:not(.is-disabled) .under .toggle-hide { display: none; }
+  body.is-sources .sources-rows { display: block; }
+  body.is-sources .sources-show, body:not(.is-sources) .sources-hide { display: none; }
+
+  @media (width < 44rem) {
+    /* the phone: the menu alone, full width, each item a tap; or one section with the way back above it */
+    .set { display: block; }
+    .menu { border-right: 0; padding: 8px 0 0; }
+    .menu a { height: 44px; line-height: 44px; border-bottom: var(--rule); }
+    .sec { padding: 12px 0 0; max-width: none; }
+    .back { display: block; padding: 12px 0 6px; }
+    body.is-menu .set .sec { display: none; }
+    body:not(.is-menu) .menu { display: none; }
+    .line .said { margin-left: 0; width: 100%; white-space: normal; }
+    .facts, .form { grid-template-columns: 1fr; }
+    .form .k { margin-top: 6px; }
+    .note { grid-column: 1; }
+    .acts { gap: 14px; flex-wrap: wrap; }
+    .under { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body class="s-destinations">
+<div class="page">
+  <div class="bar">
+    <nav class="nav"><a href="#">queue</a><a href="#">feed</a><a href="#">log</a><a class="on" href="#">settings</a></nav>
+    <span class="glyph" title="reachable">●</span>
+  </div>
+
+  <div class="set">
+    <nav class="menu">
+      <a class="m-destinations" href="#destinations">Destinations</a>
+      <a class="m-templates" href="#templates">Templates</a>
+      <a class="m-account" href="#account">Account</a>
+      <a class="m-server" href="#server">Server</a>
+      <a class="m-appearance" href="#appearance">Appearance</a>
+    </nav>
+
+    <section class="sec destinations">
+      <a class="back" href="#menu">← settings</a>
+      <div class="head"><span class="name">destinations</span></div>
+
+      <div class="r">
+        <div class="line"><a class="nm" href="#">Obsidian vault</a><span>filesystem</span><span class="said">available</span></div>
+        <div class="facts rest">
+          <span class="k">actions</span><span class="v">create, append</span>
+          <span class="k">status</span><span class="v">available · checked just now</span>
+          <span class="k">root</span><span class="v">/home/anton/vault</span>
+        </div>
+        <div class="acts rest"><a href="#">check again</a><a href="#editing">edit</a><a href="#">disable</a><a class="alarm x" href="#asking">delete</a></div>
+
+        <!-- #editing: the form in place, the row's own actions waiting until it closes -->
+        <div class="form editing">
+          <span class="k">name</span><span class="field">Obsidian vault</span>
+          <span class="k">kind</span><span>filesystem</span>
+          <span class="k">root</span><span class="field">/home/anton/vault2</span>
+          <span class="note">notemap has not used /home/anton/vault2 before — check it names the right place.</span>
+          <div class="fform" style="grid-column: 1 / -1"><a href="#destinations">cancel</a><a class="inv" href="#">use it anyway</a></div>
+        </div>
+
+        <!-- #asking: the actions line becomes the question -->
+        <div class="acts asking alarm"><span>Delete Obsidian vault?</span><a href="#">delete</a><a href="#destinations">keep</a></div>
+      </div>
+
+      <div class="r">
+        <div class="line"><a class="nm" href="#">Work notes</a><span>filesystem</span><span class="said alarm">unusable — /srv/notes overlaps notemap's own /srv/notes</span></div>
+      </div>
+
+      <div class="r disabled-row">
+        <div class="line"><a class="nm" href="#">References</a><span>are.na</span><span class="said">disabled</span></div>
+      </div>
+
+      <div class="under">
+        <a href="#">+ add a destination</a>
+        <a class="toggle-show" href="#disabled">1 disabled · show</a>
+        <a class="toggle-hide" href="#destinations">1 disabled · hide</a>
+      </div>
+    </section>
+
+    <section class="sec templates">
+      <a class="back" href="#menu">← settings</a>
+      <div class="head"><span class="name">templates</span></div>
+
+      <div class="r">
+        <div class="line"><a class="nm" href="#">Research</a><span>Obsidian vault</span><span class="trig">research</span><span>research/{{captured_at:date}}.md</span><span class="said">ok</span></div>
+        <div class="facts">
+          <span class="k">tag</span><span class="v">route/research</span>
+          <span class="k">destination</span><span class="v">Obsidian vault</span>
+          <span class="k">action</span><span class="v">create</span>
+          <span class="k">place</span><span class="v">research/{{captured_at:date}}.md</span>
+          <span class="k">folder</span><span class="v">establish · established 2026-08-02</span>
+          <span class="k">used</span><span class="v">12 times · last 2026-09-13</span>
+        </div>
+        <div class="acts"><a href="#">check again</a><a href="#">edit</a><a class="alarm x" href="#">delete</a></div>
+      </div>
+      <div class="r">
+        <div class="line"><a class="nm" href="#">Journal</a><span>Obsidian vault</span><span class="trig">journal</span><span>journal/{{captured_at:date}}.md</span><span class="said">ok</span></div>
+      </div>
+      <div class="r">
+        <div class="line"><a class="nm" href="#">Clippings</a><span>References</span><span>notemap — references</span><span class="said alarm">destination disabled</span></div>
+      </div>
+
+      <!-- the new-template form, in place of the add line -->
+      <div class="form">
+        <span class="k">name</span><span class="field"></span>
+        <span class="k">trigger tag</span><span class="with"><span>route/</span><span class="field"></span></span>
+        <span class="k">destination</span><span class="opts"><a class="on" href="#">Obsidian vault</a><a href="#">Work notes</a></span>
+        <span class="k">action</span><span class="opts"><a class="on" href="#">create</a><a href="#">append</a></span>
+        <span class="k">path</span><span class="field"></span>
+        <span class="note">{{captured_at}} · {{captured_at:month}} · {{captured_at:week}} · {{item}} · {{source}}</span>
+        <span class="k">folder</span><span class="modes"><a class="b" href="#">create</a><span>make it if missing</span><a href="#">require</a><span>refuse if missing</span><a href="#">establish</a><span>make once, require after</span></span>
+      </div>
+      <div class="fform"><a href="#">cancel</a><a class="inv" href="#">save</a></div>
+    </section>
+
+    <section class="sec account">
+      <a class="back" href="#menu">← settings</a>
+      <div class="head"><span class="name">account</span></div>
+      <div class="r">
+        <div class="line"><span class="nm">signed in</span><span>this browser holds a session</span><span class="said"><a href="#">sign out</a></span></div>
+      </div>
+
+      <div class="head sub"><span class="name">access tokens</span></div>
+      <div class="r">
+        <div class="line"><span class="nm">the phone in my pocket</span><span class="num">made 2026-09-01 · last used 2026-09-14</span><span class="said"><a href="#">revoke</a></span></div>
+      </div>
+      <div class="r">
+        <div class="line"><span class="nm">cron on the nas</span><span class="num">made 2026-09-16 · never used</span><span class="said"><a href="#">revoke</a></span></div>
+      </div>
+      <div class="once">
+        <p class="alarm">Copy now. The token will not be shown again.</p>
+        <p class="tok">nm_9f2c0e6b4a1d8e7c3b5f6a0d1e2c4b8a9f7e6d5c3b2a1f0e9d8c7b6a5f4e3d2c1b</p>
+        <div class="acts"><a class="b" href="#">copy</a><a href="#">done</a></div>
+      </div>
+      <div class="under"><a href="#">+ add a token</a></div>
+    </section>
+
+    <section class="sec server">
+      <a class="back" href="#menu">← settings</a>
+      <div class="head"><span class="name">server</span></div>
+      <div class="facts">
+        <span class="k">address</span><span class="v num">127.0.0.1:4799</span>
+        <span class="k">version</span><span class="v num">0.4.1</span>
+        <span class="k">status</span><span class="v"><span class="num">available · checked just now, in 12 ms</span><a href="#">check again</a></span>
+        <span class="k">api</span><span class="v"><a href="#">reference ↗</a></span>
+      </div>
+
+      <div class="head sub"><span class="name">sources</span><a class="sources-show" href="#sources">show</a><a class="sources-hide" href="#server">hide</a></div>
+      <div class="sources-rows">
+        <div class="r">
+          <div class="line"><span class="nm">web-manual</span><span class="said num">12 captured · last 1h ago</span></div>
+        </div>
+        <div class="r">
+          <div class="line"><span class="nm">web-image</span><span class="said num">1 captured · last 2026-08-01</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec appearance">
+      <a class="back" href="#menu">← settings</a>
+      <div class="head"><span class="name">appearance</span></div>
+      <div class="facts">
+        <span class="k">theme</span><span class="opts"><a href="#">auto</a><a class="on" href="#">light</a><a href="#">dark</a></span>
+      </div>
+    </section>
+  </div>
+</div>
+<script>
+  // One section at a time, on the URL; the app has /settings/{section}. #menu is the phone's
+  // menu alone; #editing, #asking and #disabled are states of the destinations section,
+  // #sources of the server's.
+  const SECTIONS = ["destinations", "templates", "account", "server", "appearance"];
+  const show = () => {
+    const h = location.hash.slice(1);
+    const section = SECTIONS.includes(h) ? h : h === "sources" ? "server" : "destinations";
+    document.body.className =
+      `s-${section}` +
+      (h === "menu" ? " is-menu" : "") +
+      (h === "editing" ? " is-editing" : "") +
+      (h === "asking" ? " is-asking" : "") +
+      (h === "disabled" ? " is-disabled" : "") +
+      (h === "sources" ? " is-sources" : "");
+  };
+  addEventListener("hashchange", show); show();
+</script>
+</body>
+</html>

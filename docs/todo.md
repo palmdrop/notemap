@@ -2,17 +2,18 @@
 
 ## Shell — layout and interaction
 
+- [ ] Add proper loading icons and states. Pay attention to layout shifting - avoid it.
+- [ ] stale and premature UI state
+  - No good way to see pending operations. A held row says `retrying` while it is
+    looked at and the corner speaks when the delivery resolves, but nothing shows everything in
+    flight at once. Belongs with the routing-record and log readability items below.
+
 - [ ] batch processing, i.e selecting many captures and routing them all at once, or discarding
 - [ ] command palette
 - [ ] when editing, pressing enter or shift enter does not save - it should
 - [ ] shift enter as save operation maybe should be replaced with cmd+enter or ctrl+enter? shift+enter, 
     in many other apps, work as inserting a line break, when just pressing enter would commit the state (save).
     Notemap should try to adhere to common patterns. 
-
-- [ ] stale and premature UI state
-  - No good way to see pending operations. A held row says `retrying` while it is
-    looked at and the corner speaks when the delivery resolves, but nothing shows everything in
-    flight at once. Belongs with the routing-record and log readability items below.
 
 - [ ] **Nothing bounds a surface that is being drawn.** The client's cache caps feed history at 500
   items, but exempts everything a page currently holds — and a page accumulates ids as it is walked
@@ -132,6 +133,7 @@
 
 ## Pool, store and correctness
 
+- [ ] Add proper service logging, at the moment, notemap logs almost nothing, making it pointless to inspect the docker logs for debugging purposes 
 - [ ] When purge lands: `GET /v1/items/:id/routing` reads the item and then its records, two reads on two connection states, so an item purged between them answers `200 {"values":[]}` — the claim about an item the existence check is there to avoid. Either one core method answering both, or the route accepting the window deliberately.
 - [ ] Nothing reclaims a blob no asset ever named. **Whatever closes this must not take an
   output**: a delivery's output is a blob named by a routing record rather than by an asset, so a

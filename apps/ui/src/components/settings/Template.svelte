@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   import type { Destination, RoutingTemplate } from "@notemap/client";
   import type { RoutingTemplateReport } from "@notemap/client";
 
@@ -41,7 +43,7 @@
     oncheck: () => void;
     onedit: () => void;
     ondelete: () => void;
-    children?: import("svelte").Snippet;
+    children?: Snippet;
   } = $props();
 
   const stranded = $derived(destination === undefined);
@@ -53,36 +55,29 @@
    */
   const said = $derived.by(() => {
     if (report === undefined) {
-      return asking
-        ? { mark: "↻", text: "asking", tone: "" }
-        : { mark: "", text: "not asked yet", tone: "" };
+      return { text: asking ? "asking" : "not asked yet", alarm: false };
     }
 
     switch (report.kind) {
       case "fits":
-        return { mark: "✓", text: "fits", tone: "" };
+        return { text: "ok", alarm: false };
       case "stranded":
-        return { mark: "⚠", text: "destination deleted", tone: "text-alarm" };
+        return { text: "destination deleted", alarm: true };
       case "destination-retired":
-        return { mark: "⚠", text: "destination retired", tone: "text-alarm" };
+        return { text: "destination disabled", alarm: true };
       case "folder-missing":
-        return {
-          mark: "⚠",
-          text: `${report.folder} missing`,
-          tone: "text-alarm",
-        };
+        return { text: `${report.folder} missing`, alarm: true };
       case "capability-undeclared":
         return {
-          mark: "⚠",
           text: `${report.capability} is no longer offered`,
-          tone: "text-alarm",
+          alarm: true,
         };
       case "arguments-invalid":
-        return { mark: "⚠", text: "arguments refused", tone: "text-alarm" };
+        return { text: "arguments refused", alarm: true };
       case "destination-unusable":
-        return { mark: "", text: report.detail, tone: "" };
+        return { text: report.detail, alarm: false };
       case "unreachable":
-        return { mark: "", text: "not reachable", tone: "" };
+        return { text: "not reachable", alarm: false };
     }
   });
 
@@ -104,6 +99,11 @@
     );
   });
 
+  function pick() {
+    if (editing) return;
+    onopen();
+  }
+
   const place = $derived(
     placeOf(one, (field, value) =>
       nameFor({
@@ -118,101 +118,92 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="border-b border-b-ink py-4" onclick={pickable(onopen)}>
+<div
+  class="py-4 {opened
+    ? '-mx-3 -mt-px border border-ink px-3 max-narrow:-mx-2 max-narrow:px-2'
+    : 'border-b border-b-ink'}"
+  onclick={pickable(pick)}
+>
   <div class="flex cursor-pointer flex-wrap items-baseline gap-x-3">
-    <span aria-hidden="true" class="w-[1ch] flex-none">
-      {stranded ? "○" : "●"}
-    </span>
     <button
       type="button"
-      onclick={onopen}
+      onclick={pick}
       aria-expanded={opened}
-      class="tracking-caps uppercase hover:underline {stranded ? '' : ''}"
+      class="font-semibold hover:underline"
     >
       {one.name}
     </button>
     <span>{destination?.name ?? one.destination}</span>
+    {#if one.triggerTag !== undefined}
+      <span
+        class="font-semibold tracking-[0.04em] [font-variant-caps:all-small-caps]"
+      >
+        {one.triggerTag.replace(/^route\//, "")}
+      </span>
+    {/if}
+    <span class="break-all">{place}</span>
 
     <span
-      class="ml-auto whitespace-nowrap {said.tone} max-narrow:ml-7 max-narrow:w-full"
+      class="ml-auto whitespace-nowrap {said.alarm
+        ? 'text-alarm'
+        : ''} max-narrow:ml-0 max-narrow:w-full"
     >
-      {said.mark}
       {said.text}
     </span>
   </div>
 
-  <div class="mt-1 flex flex-wrap items-baseline gap-x-2 pl-7">
-    {#if one.triggerTag !== undefined}
-      <span class="px-1 {stranded ? '' : 'inverted'}">
-        {one.triggerTag}
-      </span>
-      <span aria-hidden="true">→</span>
-    {/if}
-    <span class="break-all">{place}</span>
-  </div>
-
   {#if stranded}
-    <p class="mt-1 pl-7 text-alarm">Does nothing until repointed.</p>
+    <p class="mt-1 text-alarm">Does nothing until repointed.</p>
+  {/if}
+
+  {#if opened && !editing}
+    <div class="mt-4">
+      <Fact name="tag">
+        {one.triggerTag ?? "none — taken in the composer"}
+      </Fact>
+      <Fact name="destination">
+        {destination?.name ?? `${one.destination} · deleted`}
+      </Fact>
+      <Fact name="action">{one.capability}</Fact>
+      <Fact name="place">{place}</Fact>
+      <Fact name="folder">
+        {one.folder}{one.folder === "establish"
+          ? one.establishedAt === undefined
+            ? " · not established yet"
+            : ` · established ${one.establishedAt.slice(0, 10)}`
+          : ""}
+      </Fact>
+      <Fact name="used">
+        {one.fired.records === 0
+          ? "nothing yet"
+          : `${String(one.fired.records)} times${
+              one.fired.lastAt === undefined
+                ? ""
+                : ` · last ${one.fired.lastAt.slice(0, 10)}`
+            }`}
+      </Fact>
+
+      {#if report?.kind === "folder-missing"}
+        <p class="mt-2 text-alarm">
+          Next delivery refused, and the item returns to the queue.
+        </p>
+      {/if}
+
+      <div
+        class="mt-3 flex flex-wrap items-baseline gap-x-6 border-t border-t-ink pt-3"
+      >
+        {#if !stranded}
+          <Action disabled={asking} onclick={oncheck}>check again</Action>
+        {/if}
+        <Action disabled={offline} onclick={onedit}>edit</Action>
+        <span class="ml-auto max-narrow:ml-0">
+          <Action alarm disabled={offline} onclick={ondelete}>delete</Action>
+        </span>
+      </div>
+    </div>
   {/if}
 
   {#if opened}
-    <div class="mt-4 pl-7">
-      {#if !editing}
-        <Fact name="tag">
-          {one.triggerTag ?? "none — taken in the composer"}
-        </Fact>
-        <Fact name="into">
-          {destination?.name ?? `${one.destination} · deleted`}
-        </Fact>
-        <Fact name="action">{one.capability}</Fact>
-        <Fact name="path">{place}</Fact>
-        <Fact name="folder">
-          {one.folder}{one.folder === "establish"
-            ? one.establishedAt === undefined
-              ? " · not established yet"
-              : ` · established ${one.establishedAt.slice(0, 10)}`
-            : ""}
-        </Fact>
-        <Fact name="fired">
-          {one.fired.records === 0
-            ? "nothing yet"
-            : `${String(one.fired.records)} items${
-                one.fired.lastAt === undefined
-                  ? ""
-                  : ` · last ${one.fired.lastAt.slice(0, 10)}`
-              }`}
-        </Fact>
-
-        {#if report?.kind === "folder-missing"}
-          <p class="mt-2 text-alarm">
-            Next delivery refused, and the item returns to the queue.
-          </p>
-        {/if}
-
-        <div
-          class="mt-4 flex flex-wrap items-baseline gap-x-6 border-t border-t-ink pt-3"
-        >
-          {#if !stranded}
-            <Action disabled={asking} onclick={oncheck}>
-              <span aria-hidden="true">↻</span>
-              {report === undefined ? "Check" : "Check again"}
-            </Action>
-          {/if}
-          <Action disabled={offline} onclick={onedit}>
-            <span aria-hidden="true">✎</span>
-            {stranded ? "Repoint" : "Edit"}
-          </Action>
-          <span class="ml-auto max-narrow:ml-0">
-            <Action disabled={offline} onclick={ondelete}>
-              <span class="text-alarm">
-                <span aria-hidden="true">×</span> Delete
-              </span>
-            </Action>
-          </span>
-        </div>
-      {/if}
-
-      {@render children?.()}
-    </div>
+    {@render children?.()}
   {/if}
 </div>

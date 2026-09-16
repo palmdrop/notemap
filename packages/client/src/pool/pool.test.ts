@@ -6,7 +6,13 @@ import { PoolChanged } from "../errors";
 import type { PendingOperation } from "#outbox/operations";
 import { read, until } from "#testing/observing";
 import { anItem, asked, routeOf } from "#testing/pool";
-import { HEALTH, json, mockTransport, refusal } from "#testing/transport";
+import {
+  HEALTH,
+  json,
+  mockTransport,
+  refusal,
+  VERSION,
+} from "#testing/transport";
 
 function anOperation(
   operation: PendingOperation["operation"],
@@ -273,7 +279,23 @@ describe("reachability", () => {
     expect(read(client.reachable)).toEqual({
       yes: true,
       at: "2026-09-02T09:00:00.000Z",
+      version: VERSION,
     });
+    client.close();
+  });
+
+  it("carries the version the health probe last answered, on every mark after it", async () => {
+    vi.useFakeTimers();
+    const transport = mockTransport(() => json(200, { values: [] }));
+    const client = createClient({ transport, store: createMemoryStore() });
+    await quiet();
+
+    expect(read(client.reachable).version).toBe(VERSION);
+
+    // An ordinary request settles the mark too, and must not drop what the
+    // health probe already learned.
+    await client.loadFeed();
+    expect(read(client.reachable).version).toBe(VERSION);
     client.close();
   });
 

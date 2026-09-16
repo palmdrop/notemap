@@ -1,21 +1,46 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { resolve } from "$app/paths";
+
+  /**
+   * A section's head: bold capitals on a rule. `sub` is the same, lower down a
+   * section, for the second-level headings — access tokens under account, sources
+   * under server. Below `narrow` the top-level head also carries the way back to
+   * the menu, since the menu is not drawn there.
+   */
   let {
     name,
-    aside,
+    sub = false,
+    right,
     children,
-  }: { name: string; aside?: string; children: Snippet } = $props();
+  }: {
+    name: string;
+    sub?: boolean;
+    /** The one place a sub-head carries a control: `sources`' `show`/`hide`. */
+    right?: Snippet;
+    children: Snippet;
+  } = $props();
 </script>
 
-<section class="mt-12">
-  <h2
-    class="m-0 flex items-baseline gap-6 border-b border-ink pb-2 font-normal"
+{#if !sub}
+  <a
+    href={resolve("/settings")}
+    class="mb-2 hidden hover:underline max-narrow:block"
   >
-    <span class="font-semibold tracking-caps uppercase">{name}</span>
-    {#if aside !== undefined}
-      <span class="ml-auto">{aside}</span>
-    {/if}
-  </h2>
-  {@render children()}
-</section>
+    ← settings
+  </a>
+{/if}
+
+<div
+  class="flex items-baseline justify-between gap-x-[2ch] border-b border-ink pb-2 {sub
+    ? 'mt-9'
+    : ''}"
+>
+  <span class="font-semibold tracking-caps uppercase">{name}</span>
+  {#if right !== undefined}
+    {@render right()}
+  {/if}
+</div>
+
+{@render children()}

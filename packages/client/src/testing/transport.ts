@@ -18,6 +18,7 @@ export type MockTransport = Transport & {
 export const POOL = "http://pool.test";
 export const HEALTH = "GET /v1/health";
 const IDENTITY = "a1c9f2e4-6b30-4d51-9e7a-2f8b40c1d6e3";
+export const VERSION = "0.0.0-test";
 
 export function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -42,7 +43,7 @@ export function mockTransport(handler: Handler): MockTransport {
     baseUrl: POOL,
     sent,
     pool: IDENTITY,
-    health: () => json(200, { pool: transport.pool }),
+    health: () => json(200, { pool: transport.pool, version: VERSION }),
 
     assetUrl: (asset) =>
       `${POOL}/v1/assets/${encodeURIComponent(asset)}/content`,

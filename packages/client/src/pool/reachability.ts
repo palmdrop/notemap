@@ -18,6 +18,8 @@ export type Reach = {
   readonly at?: string;
   /** How long the round trip took, where the probe was the one that measured it. */
   readonly ms?: number;
+  /** The daemon's own version, where the probe was what asked — carried forward otherwise. */
+  readonly version?: string;
 };
 
 export type Reachability = {
@@ -29,7 +31,7 @@ export type Reachability = {
 };
 
 export function reachability(
-  probe: () => Promise<boolean>,
+  probe: () => Promise<{ readonly yes: boolean; readonly version?: string }>,
   now: () => string,
 ): Reachability {
   const reached = writable<Reach>({ yes: true });
@@ -38,7 +40,7 @@ export function reachability(
   let stopped = false;
   let watching = true;
 
-  function settle(answered: boolean, ms?: number): void {
+  function settle(answered: boolean, ms?: number, version?: string): void {
     if (stopped) return;
 
     const changed = reached.get().yes !== answered;
@@ -56,10 +58,14 @@ export function reachability(
 
     // Set on every answer rather than only on a flip: what changed is when it
     // was last answered, which is the whole of what a person reads off it.
+    // The version is only ever said by the health probe itself, so an ordinary
+    // request's answer carries the last one this learned rather than dropping it.
+    const carried = version ?? reached.get().version;
     reached.set({
       yes: answered,
       at: now(),
       ...(ms === undefined ? {} : { ms }),
+      ...(carried === undefined ? {} : { version: carried }),
     });
   }
 
@@ -78,8 +84,12 @@ export function reachability(
     if (stopped) return;
 
     const from = Date.now();
-    const answered = await probe().catch(() => false);
-    settle(answered, Date.now() - from);
+    const answered = await probe().catch(
+      (): { readonly yes: boolean; readonly version?: string } => ({
+        yes: false,
+      }),
+    );
+    settle(answered.yes, Date.now() - from, answered.version);
   }
 
   return {

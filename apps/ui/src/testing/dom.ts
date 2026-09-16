@@ -81,6 +81,15 @@ export function overflowing(content: number, box: number, line: number): void {
   );
 }
 
+/** `window.innerWidth`, which jsdom fixes at 1024 and lays out nothing to change. */
+export function viewport(width: number): void {
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    value: width,
+  });
+  window.dispatchEvent(new Event("resize"));
+}
+
 /** What the browser says about reachability, which jsdom fixes at `true`. */
 export function online(yes: boolean): void {
   Object.defineProperty(navigator, "onLine", {
@@ -121,6 +130,7 @@ beforeEach(() => {
   stubResizing();
   online(true);
   looking(true);
+  viewport(1024);
   sessionStorage.clear();
   localStorage.clear();
   // Held for the life of a page, which in a suite is the life of the run: one
