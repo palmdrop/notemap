@@ -1,7 +1,7 @@
 # The shell, redrawn
 
 **Date**: 2026-09-14
-**Status**: In progress — phases 2–4, the first version, shipped 2026-09-14; phase 5 shipped 2026-09-14; 6–7 are drawn next
+**Status**: In progress — phases 2–4, the first version, shipped 2026-09-14; phase 5 shipped 2026-09-14; phase 6 drawn 2026-09-16, not yet built; 7 is drawn after it
 **Spec**: `docs/specs/shell.md`
 **Closed**:
 
@@ -430,7 +430,102 @@ Depends on 5a for `Block`.
 
 ### Phase 6 — settings
 
-The side menu and the five sections. Drawn first.
+Drawn 2026-09-16 as `Settings.dc.html` in the Design project, one round, and settled as
+`docs/design/redrawn/settings.html` with the changes the developer asked for on looking: the
+opened row is plain (not the queue's box); on the phone the menu is a screen of its own; `+` on
+every add; the words below. One PR.
+
+Decisions made in the drawing, so they are not asked again:
+
+- **The layout** is the register's grid: the menu on the rail with a rule at its right, one
+  section beside it at `max-w-read`. **Each section is a route**, `/settings/{destinations |
+  templates | account | server | appearance}`; `/settings` redirects to `destinations` from
+  `narrow` up and draws the menu alone below it. Below `narrow` a section is drawn with
+  `← settings` above its head and the menu is not drawn; the menu's items are 44px tall, ruled
+  between. One component, one reflow; no second design.
+- **No lede, no tally in any head.** `offered`, `saved`, `seen`, `held` all go.
+- **No marks except `+` on an add and `↗` on a link that leaves the app.** `●/○`, `✓/⚠`, `↻`,
+  `✎`, `×` become words at the row's right. Only what a person has to act on is in alarm.
+- **The shell's words are not the pool's.** `retired` reads **`disabled`**, `retire` / `unretire`
+  read `disable` / `enable`; the API and `CONTEXT.md`'s term are untouched, and `CONTEXT.md` notes
+  the shell's word beside it. `reached` reads **`available`**, `unreachable` → `unavailable`,
+  `unusable` stays and is in alarm. A template's `fits` reads **`ok`**; `stranded` reads
+  `destination deleted`, `destination-retired` reads `destination disabled`; `repoint` is just `edit`. `mint` reads `+ add a token` then `create`.
+  `daemon` is not said anywhere; the section is **Server**.
+- **A row's facts** are `grid-cols-[9rem_1fr]` with uppercase labels, as the process surface's
+  sections. A destination's: `ACTIONS create, append` · `STATUS available · checked just now` ·
+  one per setting its kind asked for. A template's: `TAG` · `DESTINATION` · `ACTION` · `PLACE` ·
+  `FOLDER` · `USED 12 times · last 2026-09-13`. **No id is drawn.**
+- **Disabled destinations are hidden**; under the list `+ add a destination` at the left and
+  `1 disabled · show` at the right, `hide` once shown. Stranded templates stay in the list.
+- **Deleting asks in the actions line, in alarm, with no sentence**: `Delete Obsidian vault? ·
+  delete · keep`. The modal goes. Where the pool refuses because records name the destination,
+  the refusal is the line, with `disable instead` beside it. A template asks the same way and is
+  never refused.
+- **Editing draws the form in place** under the row's line — `NAME`, then the kind's fields, an
+  enum as a row of options, the chosen one bold — with `cancel` left and an inverted `save`
+  right on a rule; the row's actions wait until it closes. The unfamiliar-root warning is a line
+  under the field and the button reads `use it anyway`. Adding draws the same form under the list
+  in place of the add line; the template form has `route/` printed before the tag's field, the
+  patterns listed once under `PATH`, and the folder modes as options with their one-line meanings.
+- **Account** is one row — `signed in · this browser holds a session · sign out` — then
+  `ACCESS TOKENS` as a sub-head, a row per token (`made … · last used …`, `revoke`), the token
+  just created as the one red box (`Copy now. The token will not be shown again.`, bold `copy`,
+  `done`), then `+ add a token` which opens a name field and `create`. No sentence about what
+  signing out drops. On an open door the row says so and names the command.
+- **Server** is facts, not rows: `ADDRESS`, `VERSION` (from `/v1/health`, which the client does
+  not yet read), `STATUS available · checked just now, in 12 ms` with `check again`, `API
+  reference ↗`. Then `SOURCES` as a sub-head, **folded** with `show` at its right; shown, a row per
+  source. The `log` row goes — the bar has it.
+- **Appearance** is `THEME auto · light · dark`.
+
+Tasks:
+
+- [ ] Branch `agent/shell-redesign-6`.
+- [ ] **Routes.** `routes/settings/+layout.svelte` draws the bar's page, the menu and a slot;
+      `routes/settings/[section]/+page.svelte` renders one of five components by the param and
+      404s otherwise; `routes/settings/+page.ts` redirects to `destinations` — except that below
+      `narrow` the layout draws the menu alone at `/settings` (`+page.svelte` renders nothing;
+      the redirect is a client-side `goto` guarded by the width, so a phone lands on the menu).
+      Update every `resolve("/settings")` caller that meant a section.
+- [ ] **Menu.** `settings/Menu.svelte`: five links, the current one bold; below `narrow` each
+      is `h-11 border-b` and the whole thing is the page. `settings/Section.svelte` becomes the
+      head: bold caps on a rule, a `sub` variant with `mt-9`, no `aside`; a `back` link above it
+      below `narrow`. `Page.svelte` and `Row.svelte` (the mark/what/why row) go; `Fact.svelte`
+      becomes the facts grid.
+- [ ] **Destinations.** `Destination.svelte`: the line as name (bold), kind, and the word at
+      the right; opened, the facts and the actions line `check again · edit · disable | delete`;
+      `enable` on a disabled one. Hidden when disabled unless the list's `show` is on (local
+      state, not the URL). `DestinationForm.svelte` on the facts grid with an enum as options
+      (`primitives/composer/Option.svelte` reduced to a word, or a sibling `Options.svelte`);
+      `cancel` and inverted `save`/`use it anyway`. `Doomed.svelte` and
+      `primitives/composer/Modal.svelte` deleted; the ask is a state of the actions line.
+- [ ] **Templates.** `Template.svelte`: the line as name, destination, trigger tag as the
+      queue draws it (`font-semibold [font-variant-caps:all-small-caps]`, name after `route/`),
+      the place, and the word at the right; the facts above; `check again · edit | delete`.
+      `TemplateForm.svelte` on the facts grid; `route/` printed before the field.
+- [ ] **Account.** `session/Session.svelte` and `settings/Tokens.svelte` become
+      `settings/Account.svelte` drawing the row, the sub-head and the tokens; the once-box
+      reworded; `+ add a token` opening the name field.
+- [ ] **Server.** `Daemon.svelte` becomes `Server.svelte`: the facts grid; `VERSION` needs the
+      client to carry `/v1/health`'s `version` (`client.reachable` already carries `at` and `ms`;
+      add `version` beside them, tested in `packages/client`). `Sources.svelte` folded under a
+      `SOURCES` sub-head with `show`/`hide`, its lede sentence gone.
+- [ ] **Appearance.** `Appearance.svelte` as `THEME` on the facts grid.
+- [ ] **Words.** `lib/words.ts` or in place: `retired` → `disabled`, `reached` → `available`,
+      `fits` → `ok`, per the decisions above; the `Destination` and `Template` tests assert the
+      shell's words. `CONTEXT.md`: under **Retired**, a line that the shell says `disabled`.
+- [ ] **Tests.** `settings.test.ts`: the menu marks the current section; `/settings` redirects
+      wide and draws the menu narrow (assert classes, not pixels); a disabled destination is hidden
+      until `show`; `delete` turns the actions line into the ask and `keep` turns it back; the
+      refusal lands in the ask with `disable instead`; the edit form replaces the actions and
+      `cancel` restores them; the words. `tokens.test.ts` (settings) for the reworded box and
+      `+ add a token`. A client test for `version`.
+- [ ] **Spec.** Rewrite `Settings` in `shell.md`: the register layout, the routes, the phone's
+      menu, the words, no tally, hidden disabled, the ask in the line; retire *Settings is not a
+      register* (2026-08-24) in `Prior decisions` with a dated note. `Shipped:` entry.
+- [ ] **Full stack.** `pnpm test:stack` — new routes and a client change.
+- [ ] Typecheck, tests, lint; shots re-taken; `git commit`.
 
 ### Phase 7 — motion
 
