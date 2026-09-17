@@ -1,57 +1,63 @@
-import { Form, ActionPanel, Action, showToast } from "@raycast/api";
+import {
+  Action,
+  ActionPanel,
+  Form,
+  popToRoot,
+  showToast,
+  Toast,
+} from "@raycast/api";
+import { useEffect, useMemo } from "react";
+
+import { openClient } from "./lib/client";
 
 type Values = {
-  textfield: string;
-  textarea: string;
-  datepicker: Date;
-  checkbox: boolean;
-  dropdown: string;
-  tokeneditor: string[];
+  readonly text: string;
 };
 
+const pause = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Captures through a whole client, so a note made while the daemon is
+ * unreachable waits in the outbox for the drain command rather than being
+ * lost. The client is closed when the view goes.
+ */
 export default function Command() {
-  function handleSubmit(values: Values) {
-    console.log(values);
-    showToast({
-      title: "Submitted form",
-      message: "See logs for submitted values",
-    });
+  const client = useMemo(openClient, []);
+
+  useEffect(() => () => client.close(), [client]);
+
+  async function submit({ text }: Values) {
+    if (text.trim() === "") {
+      await showToast({
+        style: Toast.Style.Failure,
+        title: "Nothing to capture",
+      });
+      return;
+    }
+
+    await client.capture({ channel: "raycast", text });
+    await showToast({ style: Toast.Style.Success, title: "Captured" });
+    // Given a moment to land before the view goes; past that, the drain
+    // command sends it.
+    await Promise.race([client.drain(), pause(2_000)]);
+    await popToRoot();
   }
 
   return (
     <Form
       actions={
         <ActionPanel>
-          <Action.SubmitForm onSubmit={handleSubmit} />
+          <Action.SubmitForm title="Capture" onSubmit={submit} />
         </ActionPanel>
       }
     >
-      <Form.Description text="This form showcases all available form elements." />
-      <Form.TextField
-        id="textfield"
-        title="Text field"
-        placeholder="Enter text"
-        defaultValue="Raycast"
-      />
       <Form.TextArea
-        id="textarea"
-        title="Text area"
-        placeholder="Enter multi-line text"
+        id="text"
+        title="Note"
+        placeholder="What's on your mind?"
+        autoFocus
       />
-      <Form.Separator />
-      <Form.DatePicker id="datepicker" title="Date picker" />
-      <Form.Checkbox
-        id="checkbox"
-        title="Checkbox"
-        label="Checkbox Label"
-        storeValue
-      />
-      <Form.Dropdown id="dropdown" title="Dropdown">
-        <Form.Dropdown.Item value="dropdown-item" title="Dropdown Item" />
-      </Form.Dropdown>
-      <Form.TagPicker id="tokeneditor" title="Tag picker">
-        <Form.TagPicker.Item value="tagpicker-item" title="Tag Picker Item" />
-      </Form.TagPicker>
     </Form>
   );
 }

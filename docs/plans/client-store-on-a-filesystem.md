@@ -135,7 +135,7 @@ one.
 
 Depends on phases 3 and 4.
 
-- [ ] The Raycast extension opens the adapter at `environment.supportPath`. Both commands run a
+- [x] The Raycast extension opens the adapter at `environment.supportPath`. Both commands run a
       whole client: the view command captures through it and closes it when the view goes, the
       background command drains and closes before it returns
 - [ ] Verify by hand: capture with the daemon stopped, quit Raycast, start the daemon, and find the

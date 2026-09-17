@@ -4,6 +4,16 @@
 **Last updated**: 2026-09-17
 **Shipped**:
 
+- 2026-09-17 — **A client store on a filesystem, and two clients over one store.**
+  `@notemap/client/filesystem` keeps the outbox and the cache in a directory, for a shell that is
+  not a browser; a malformed file is reported and set aside rather than costing the rest. `sending`
+  is now a lease the store hands to one process at a time, so two clients over one store send an
+  operation once between them and a crashed one's work is taken up when its lease lapses. The
+  client's lifetime is written down: `close()` is what a process that ends owes it. The Raycast
+  extension is the first shell over it — a view command that captures and a background command
+  that drains. ([plan](../plans/client-store-on-a-filesystem.md),
+  [ADR 48](../adr/0048-an-operation-is-leased-for-sending.md))
+
 - 2026-09-15 — **The folded summary carries the template.** The held item's folded routing summary
   picks up the template a decision was made from, on the same terms as the place and the pending
   count. See [shell-minor-changes](../plans/shell-minor-changes.md).

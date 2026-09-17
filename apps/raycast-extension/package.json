@@ -19,9 +19,17 @@
     {
       "name": "capture",
       "title": "Capture",
-      "subtitle": "Make a note",
-      "description": "Capture a note and write it to your Notemap instance",
+      "subtitle": "Notemap",
+      "description": "Capture a note into your Notemap pool, or into the outbox until it can be reached",
       "mode": "view"
+    },
+    {
+      "name": "drain",
+      "title": "Drain Outbox",
+      "subtitle": "Notemap",
+      "description": "Send what was captured while the pool was unreachable",
+      "mode": "no-view",
+      "interval": "10m"
     }
   ],
   "dependencies": {
@@ -45,5 +53,22 @@
     "prepublishOnly": "echo \"\\n\\nIt seems like you are trying to publish the Raycast extension to npm.\\n\\nIf you did intend to publish it to npm, remove the \\`prepublishOnly\\` script and rerun \\`npm publish\\` again.\\nIf you wanted to publish it to the Raycast Store instead, use \\`npm run publish\\` instead.\\n\\n\" && exit 1",
     "publish": "npx @raycast/api@latest publish",
     "typecheck": "tsc --noEmit"
-  }
+  },
+  "preferences": [
+    {
+      "name": "daemonUrl",
+      "title": "Daemon URL",
+      "description": "Where the Notemap daemon answers",
+      "type": "textfield",
+      "required": true,
+      "default": "http://127.0.0.1:4747"
+    },
+    {
+      "name": "token",
+      "title": "Access token",
+      "description": "A token the daemon issued, for a daemon that asks for one",
+      "type": "password",
+      "required": false
+    }
+  ]
 }
