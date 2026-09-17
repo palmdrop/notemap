@@ -146,6 +146,35 @@ afterEach(() => {
   stalling = undefined;
 });
 
+describe("a client that has been closed", () => {
+  /**
+   * The signal a close fires does not un-fire, so everything after it is
+   * abandoned the moment it is made. A shell that builds one client and closes
+   * it on a view that unmounts and mounts again is left holding a dead one,
+   * which looks exactly like a pool that cannot be reached.
+   */
+  async function capturing(closed: boolean): Promise<number> {
+    const client = createClient({
+      transport: mockTransport(() => json(200, { ok: true })),
+      store: createMemoryStore(),
+    });
+
+    if (closed) client.close();
+    await client.capture({ channel: "web", text: "after a close" });
+    await client.drain();
+
+    return read(client.waiting);
+  }
+
+  it("sends nothing further, and what it is given waits in the outbox", async () => {
+    expect(await capturing(true)).toBe(1);
+  });
+
+  it("is told apart from a client that was left open, which sends", async () => {
+    expect(await capturing(false)).toBe(0);
+  });
+});
+
 describe("a request against a pool that never answers", () => {
   it("is given up on, and what it carried stays in the outbox", async () => {
     const client = createClient({

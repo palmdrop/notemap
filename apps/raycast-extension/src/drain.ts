@@ -1,4 +1,4 @@
-import { environment, LaunchType, showToast, Toast } from "@raycast/api";
+import { environment, LaunchType, showHUD } from "@raycast/api";
 import { openClient } from "./lib/client";
 
 /**
@@ -16,11 +16,11 @@ export default async function Command() {
       const waiting = await new Promise<number>((resolve) => {
         client.waiting.subscribe((count) => resolve(count)).unsubscribe();
       });
-      await showToast({
-        style: waiting === 0 ? Toast.Style.Success : Toast.Style.Failure,
-        title:
-          waiting === 0 ? "Outbox drained" : `${String(waiting)} still waiting`,
-      });
+      await showHUD(
+        waiting === 0
+          ? "Outbox drained"
+          : `${String(waiting)} still waiting to send`,
+      );
     }
   } finally {
     client.close();

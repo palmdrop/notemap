@@ -2,13 +2,13 @@ import {
   Action,
   ActionPanel,
   Form,
-  popToRoot,
+  showHUD,
   showToast,
   Toast,
 } from "@raycast/api";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { openClient } from "./lib/client";
+import { openClient, openReader } from "./lib/client";
 import { attaching, chosen, excerpt, landing } from "./lib/note";
 
 type Values = {
@@ -19,7 +19,7 @@ type Values = {
 };
 
 /** Long enough for a pool that answers to answer, short enough not to hold the form. */
-const SETTLE_MS = 1_200;
+const SETTLE_MS = 2_000;
 
 const pause = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -27,35 +27,33 @@ const pause = (ms: number) =>
 /**
  * Captures through a whole client, so a note made while the daemon is
  * unreachable waits in the outbox for the drain command rather than being
- * lost. The toast says which of the two happened.
+ * lost. The notice says which of the two happened.
  */
 export default function Command() {
-  const client = useMemo(openClient, []);
-  const sending = useRef<Promise<unknown>>(Promise.resolve());
   const [known, setKnown] = useState<readonly string[]>([]);
 
   useEffect(() => {
-    const held = client.tags.inUse.subscribe((tags) => {
-      setKnown(tags.map((tag) => tag.name));
-    });
-    // An unreachable pool is ordinary here; the picker stays as it was.
-    void client.tags.load().catch(() => undefined);
+    const client = openReader();
+    let wanted = true;
 
-    return () => {
-      held.unsubscribe();
-    };
-  }, [client]);
-
-  useEffect(
-    () => () => {
-      // Closing abandons a request on the wire, so a send that has started is
-      // waited out first; the client's own request limit is what bounds that.
-      void sending.current.finally(() => {
+    client.tags
+      .load()
+      .then((tags) => {
+        if (wanted) setKnown(tags.map((tag) => tag.name));
+      })
+      // An unreachable pool is ordinary here, and the field beside the picker
+      // is what a tag can still be written in.
+      .catch((error: unknown) => {
+        console.error(error);
+      })
+      .finally(() => {
         client.close();
       });
-    },
-    [client],
-  );
+
+    return () => {
+      wanted = false;
+    };
+  }, []);
 
   async function submit({ text, tags, newTags, files }: Values) {
     if (text.trim() === "") {
@@ -67,7 +65,14 @@ export default function Command() {
     }
 
     const said = excerpt(text);
-    let toast: Toast;
+    // Built here rather than with the view: a client closed once sends nothing
+    // further, and this one is closed as soon as the capture has been seen to.
+    const client = openClient();
+    const toast = await showToast({
+      style: Toast.Style.Animated,
+      title: "Capturing",
+      message: said,
+    });
 
     try {
       const asset = await attaching(client, files);
@@ -78,37 +83,25 @@ export default function Command() {
       });
       for (const tag of chosen(tags, newTags)) await client.tag(item.id, tag);
 
-      toast = await showToast({
-        style: Toast.Style.Animated,
-        title: "Capturing",
-        message: said,
-      });
+      // Whichever comes first: a pool that answered, or a wait worth no more of
+      // the person's time. What is still waiting, the drain command sends.
+      const landed = await Promise.race([
+        landing(client),
+        pause(SETTLE_MS).then(() => undefined),
+      ]);
+
+      await toast.hide();
+      await showHUD(
+        landed === true ? `Captured — ${said}` : `Waiting to send — ${said}`,
+      );
     } catch (error) {
-      await showToast({
-        style: Toast.Style.Failure,
-        title: "Nothing was captured",
-        message: error instanceof Error ? error.message : said,
-      });
-      return;
+      await toast.hide();
+      await showHUD(
+        `Nothing was captured — ${error instanceof Error ? error.message : said}`,
+      );
+    } finally {
+      client.close();
     }
-
-    const landed = landing(client);
-    sending.current = landed;
-    void landed.then(
-      (sent) => {
-        toast.style = sent ? Toast.Style.Success : Toast.Style.Failure;
-        toast.title = sent ? "Captured" : "Waiting in the outbox";
-      },
-      () => {
-        toast.style = Toast.Style.Failure;
-        toast.title = "Waiting in the outbox";
-      },
-    );
-
-    // Whichever comes first: a pool that answered, or a wait worth no more of
-    // the person's time. The toast keeps saying what happened either way.
-    await Promise.race([landed, pause(SETTLE_MS)]);
-    await popToRoot();
   }
 
   return (

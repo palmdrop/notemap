@@ -350,6 +350,13 @@ may close on a drain it has stopped waiting for, which is what the Raycast captu
 once its note is safely in the outbox. What was being sent stays there, `sending` until its lease
 lapses, and the next drain sends it — the same reading as a process killed mid-send.
 
+Closing does not undo. The signal a close fires does not un-fire, so a closed client sends nothing
+further: what it is given is written to the store and waits there, which from the outside is
+indistinguishable from a pool that cannot be reached. A client is therefore built for a piece of
+work and closed when that work ends. Binding one to a view is the shape to avoid — a render that
+unmounts and mounts again leaves the second mount holding a client the first one closed, and every
+capture made through it looks offline.
+
 ### The surfaces
 
 A client presents four surfaces, each a thin projection of core:

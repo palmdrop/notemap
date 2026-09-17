@@ -409,6 +409,11 @@ export interface Client {
    * answers would otherwise hold the process open with nothing to wait for.
    * What it was sending stays in the outbox and goes again once its lease has
    * lapsed, the same reading as a process that was killed mid-send.
+   *
+   * This does not undo. A closed client sends nothing further — what it is
+   * given is written and then waits — so a client is built for a piece of work
+   * and closed when that work ends, not held across one that may close it
+   * before it is used.
    */
   close(): void;
 }
