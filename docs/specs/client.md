@@ -1,7 +1,7 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-09-15
+**Last updated**: 2026-09-17
 **Shipped**:
 
 - 2026-09-15 — **The folded summary carries the template.** The held item's folded routing summary
@@ -796,6 +796,24 @@ copy of something the pool holds.
 start. *Amended 2026-08-26*: the attachment landed with it — bytes held in the store for a capture
 that has not drained, and resolved in place of a URL ([below](#an-attachment-made-offline)). The
 surfaces and reachability are described above.
+
+**A shell outside a browser wires a directory** (2026-09-17, `@notemap/client/filesystem`). The
+adapter takes the directory and names no platform: where it is, is the shell's question. Each read
+cache and the pool identity is one file, written to a unique temporary name and renamed over the
+old one, so a reader sees the previous list or the next and never half of either. **The outbox is
+one file per operation**, named for its id — written by rename, removed by unlink, read by listing
+the directory — which is what lets two processes enqueue into one directory without either losing
+a write. A blob is its bytes beside a record of the filename and the media type, written bytes
+first so the record is what says a blob is there; `blobUrl` answers a `file://` URL, which nothing
+has to revoke. The directory is made on the first write, not when the store is built.
+
+**A file a person can edit is a file that can be malformed**, and the adapter defends what it can.
+An operation file that does not parse is reported through `onError`, **set aside** under an
+`.unreadable` name — kept, so nothing the person typed is thrown away, but read no more, so it is
+not reported again on every start — and the rest of the outbox is read as normal. A collection file
+that does not parse is reported and answers empty, which is the answer never having been written
+gives and lands the client in the cold start it already knows how to be in; the next list the pool
+answers is written over it. Bytes with no record beside them are not a blob.
 
 **The cache's shape**, so the port serves the working set rather than an arbitrary blob: the
 **queue is the offline working set**, cached as the local source of truth a person triages against;

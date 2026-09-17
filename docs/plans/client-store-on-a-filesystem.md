@@ -1,7 +1,7 @@
 # A client store on a filesystem
 
 **Date**: 2026-09-16
-**Status**: Todo
+**Status**: In progress
 **Spec**: `docs/specs/client.md`
 **Closed**:
 
@@ -35,29 +35,29 @@ Depends on nothing. `ClientStore` already answers for every collection
 `adapters/store-contract.test.ts` already states what an adapter must answer; this phase adds a
 second implementation and nothing else.
 
-- [ ] Branch `agent/client-store-on-a-filesystem`
-- [ ] An adapter under `packages/client/src/adapters/`, taking the directory to work in as an
+- [x] Branch `agent/client-store-on-a-filesystem`
+- [x] An adapter under `packages/client/src/adapters/`, taking the directory to work in as an
       argument. It names no environment variable and no platform: where the directory is, is the
       shell's question
-- [ ] Exported from a subpath, as `./indexeddb` is, so a browser shell never resolves `node:fs`
-- [ ] The collections the pool answers for — items, tags, destinations, templates, pool identity —
+- [x] Exported from a subpath, as `./indexeddb` is, so a browser shell never resolves `node:fs`
+- [x] The collections the pool answers for — items, tags, destinations, templates, pool identity —
       are each a whole list replaced as it arrives, so each is one file written to a temporary name
       and renamed over the old one. A reader either sees the previous list or the next one. The
       temporary name is unique per write, not per process: two writes racing on one name is how the
       measurement harness broke, and a rename that lands on a file another write already moved
       fails with `ENOENT`
-- [ ] The outbox is one file per operation, named for its id: `writeOperation` renames into place,
+- [x] The outbox is one file per operation, named for its id: `writeOperation` renames into place,
       `removeOperation` unlinks, `readOutbox` lists the directory. This is what makes two writers
       safe, and it is the reason the outbox is not a list in one file like the rest
-- [ ] A blob is its bytes on disk beside a record of the filename and the media type, neither of
+- [x] A blob is its bytes on disk beside a record of the filename and the media type, neither of
       which is recoverable from bytes. `blobUrl` answers a `file://` URL — the port's own question
       for a shell that is not a browser, and one with no revocation to own
-- [ ] A directory that does not exist yet is created on first write, not at import
-- [ ] Tests: the shared contract, run against the new adapter; a store reopened over the same
+- [x] A directory that does not exist yet is created on first write, not at import
+- [x] Tests: the shared contract, run against the new adapter; a store reopened over the same
       directory answers what the last one wrote; a blob survives the reopen; a half-written file is
       never read, shown by writing through the adapter and listing the directory mid-write
-- [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
+- [x] `git commit`
 
 ### Phase 2 — what the store cannot be trusted to hold alone
 
@@ -68,16 +68,16 @@ An unreadable collection already leaves a cold client rather than a dead one
 edit and a process can be killed halfway through. This phase decides how much the adapter defends
 and says so.
 
-- [ ] An operation file that does not parse is reported through `onError` and skipped, not thrown:
+- [x] An operation file that does not parse is reported through `onError` and skipped, not thrown:
       one unreadable operation must not cost the person the rest of their outbox
-- [ ] A collection file that does not parse answers empty, which is the same answer as never having
+- [x] A collection file that does not parse answers empty, which is the same answer as never having
       been written and lands the client in the cold start it already knows how to be in
-- [ ] Decide whether a skipped operation file is left, moved aside, or removed, and record the
+- [x] Decide whether a skipped operation file is left, moved aside, or removed, and record the
       answer in the spec. Leaving it means it is re-reported on every start
-- [ ] Tests: a malformed operation file, a malformed collection file, a blob whose bytes are there
+- [x] Tests: a malformed operation file, a malformed collection file, a blob whose bytes are there
       and whose record is not
-- [ ] Verify: `pnpm -r --silent test` green
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test` green
+- [x] `git commit`
 
 ### Phase 3 — two processes over one directory
 
