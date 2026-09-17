@@ -3,6 +3,8 @@ import { basename, extname } from "node:path";
 
 import type { AssetId, Client } from "@notemap/client";
 
+import { remaining } from "./outbox";
+
 /**
  * What the pool reads an attachment as, which is what decides whether it comes
  * back as an image. Raycast hands back a path and nothing else, so the
@@ -62,11 +64,5 @@ export async function attaching(
 
 /** Whether what was captured reached the pool, rather than only the outbox. */
 export async function landing(client: Client): Promise<boolean> {
-  await client.drain();
-
-  const waiting = await new Promise<number>((resolve) => {
-    client.waiting.subscribe((count) => resolve(count)).unsubscribe();
-  });
-
-  return waiting === 0;
+  return (await remaining(client)) === 0;
 }

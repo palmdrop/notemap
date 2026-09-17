@@ -1,5 +1,7 @@
 import { environment, LaunchType, showHUD } from "@raycast/api";
+
 import { openClient } from "./lib/client";
+import { remaining } from "./lib/outbox";
 
 /**
  * Sends what the capture command left in the outbox. Runs on an interval in
@@ -10,12 +12,9 @@ export default async function Command() {
   const client = openClient();
 
   try {
-    await client.drain();
+    const waiting = await remaining(client);
 
     if (environment.launchType === LaunchType.UserInitiated) {
-      const waiting = await new Promise<number>((resolve) => {
-        client.waiting.subscribe((count) => resolve(count)).unsubscribe();
-      });
       await showHUD(
         waiting === 0
           ? "Outbox drained"
