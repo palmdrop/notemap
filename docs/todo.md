@@ -151,12 +151,17 @@
   - Scaffolded 2026-09-16 at `apps/raycast-extension`, and it is a whole client rather than a
     call to the api: what it waits on is a store it can keep an outbox in across processes
     ([plan](plans/client-store-on-a-filesystem.md)).
+  - Captures text, tags and one attachment. Tags come from a picker over `tags.inUse` plus a field
+    for ones that do not exist yet, and the toast says whether the note reached the pool or is
+    waiting in the outbox.
   - `src/lib/client.ts` merges the machine's trust store into Node's before it builds a client.
     Raycast's Node carries its own roots and reads neither the keychain nor a shell's
     `NODE_EXTRA_CA_CERTS`, so a pool behind a private CA answers
     `UNABLE_TO_GET_ISSUER_CERT_LOCALLY` however the certificate was accepted on the machine. A
     publicly trusted certificate on the pool — ACME over DNS-01, which needs no route from the
-    outside — retires those lines.
+    outside — retires those lines. It also gives the command `crypto`, which Raycast's global
+    object leaves out and uuid reaches for, and `File`, which an attachment is and which has not
+    been checked for either way.
 - [ ] are.na relay
 
 ## Pool, store and correctness
