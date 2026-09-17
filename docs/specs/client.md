@@ -336,11 +336,13 @@ request rather than from the client — one limit shared across a client's lifet
 and abort everything after it. Giving up reads as unreachable, the same as a socket that never
 opened, so the operation keeps its place in the outbox and goes again.
 
-The limit must stay under the outbox's own lease of 60 seconds. A lease says *this process is
-sending this operation*, and an operation still on the wire when its lease lapses is one another
-process is free to send a second time. That ceiling is also the constraint on uploads: an asset
-whose bytes cannot cross in 30 seconds is one no drain will ever finish, and raising the limit for
-it means raising the lease with it.
+The limit must stay under the outbox's own lease of 60 seconds, and a client is refused at
+construction with one that does not. A lease says *this process is sending this operation*, and an
+operation still on the wire when its lease lapses is one another process is free to send a second
+time. That ceiling is also the constraint on uploads: an asset whose bytes cannot cross in 30
+seconds is one no drain will ever finish, and raising the limit for it means raising the lease
+with it. The limit and the close are combined into one signal with `AbortSignal.any`, which is
+where the client's browser floor sits: Chrome 116, Safari 17.4, Firefox 124.
 
 `close()` does not wait for a call that has not settled — it abandons a request already on the
 wire. Waiting is not something a shell can afford to promise: a pool that accepts the connection
@@ -662,10 +664,9 @@ read back stays refused: it is not re-sent and it waits for a person, which is w
 
 **`sending` is a lease, and an operation read back as `sending` is attempted again once it
 lapses** (2026-09-17, [ADR 48](../adr/0048-an-operation-is-leased-for-sending.md); before that,
-on every start). `sending` is a claim about a process, and the process it was claimed in may be
-gone — or may be another one over the same store, still going. So the claim carries `until`: a
-drain leaves a `sending` whose `until` is ahead alone, and takes up one whose `until` is past or
-absent. The lease is a minute. Every operation is idempotent under an id minted before it was first
+on every start). `sending` says a process is sending it, and that process may be gone — or may be
+another one over the same store, still going. So the state carries `until`: a drain leaves a
+`sending` whose `until` is ahead alone, and takes up one whose `until` is past or absent. The lease is a minute. Every operation is idempotent under an id minted before it was first
 sent, which is what makes the second attempt safe — the pool answers the first one's identity
 either way. The cost is that an operation whose request did land, and whose answer was lost with
 the process, is sent twice; the pool's answer to the second is the same as to the first. **The
@@ -679,14 +680,14 @@ lease lapses, at which point the client drains again on its own; or enqueued by 
 since, and taken up. This is what lets a client that is not the one the person typed into drain
 their capture.
 
-**An operation reaches the store before it reaches state** (2026-09-17). A drain reads the store to
-decide what an operation is, so one visible in state that the store has not got yet is one a drain
-can claim and then fail to lease — and a failed lease means *another process holds this*, which is
-not true of an entry its own process has not finished writing. Reading that as another process's
-work drops it from state while leaving it on disk, and because a client never takes back an id it
-has already held, nothing in that process picks it up again: the capture sits in the outbox until
-some later process reads it out. Writing first closes the window at the cost of an entry appearing
-in the outbox a write later than the item it captures, which is already on the surfaces by then.
+**An operation is held in state at once, and a drain waits for its write** (2026-09-17). Two
+things read the outbox in state: an enqueue, to find what it opposes, and a drain, to find what to
+send. Holding the entry only once the store has it would hide it from an opposing enqueue arriving
+during the write, and both would be written and sent. Handing it to a drain before the store has it
+would fail the lease, which reads as *another process holds this* and drops from state what only
+this process has. So the entry is held before it is written, and a drain that has taken it up
+waits for the write to land before it asks the store for the lease; a drop waits the same way, so
+a cancelled operation's late write cannot bring it back.
 
 **A store that cannot be read leaves a cold client, not a dead one, and says so.** Each collection
 is read on its own, so a cache that fails does not also cost the outbox — the one thing whose loss
@@ -881,7 +882,9 @@ cache and the pool identity is one file, written to a unique temporary name and 
 old one, so a reader sees the previous list or the next and never half of either. **The outbox is
 one file per operation**, named for its id — written by rename, removed by unlink, read by listing
 the directory — which is what lets two processes enqueue into one directory without either losing
-a write. A blob is its bytes beside a record of the filename and the media type, written bytes
+a write. A lease is an empty file made beside the operation, exclusively, so two askers get one
+answer between them; one a process died holding before it wrote `sending` through is told from one
+made a moment ago only by age, and is taken over once a lease length has passed. A blob is its bytes beside a record of the filename and the media type, written bytes
 first so the record is what says a blob is there; `blobUrl` answers a `file://` URL, which nothing
 has to revoke. The directory is made on the first write, not when the store is built.
 
@@ -1119,7 +1122,9 @@ that logic out of the one place it is meant to live.
   on a cold start and removes the whole class of question about what a half-read cache answers.
 - **`sending` does not survive the process that claimed it** (2026-08-25): hydration reads such an
   operation back as pending, because a drain skips anything else and it would otherwise never be
-  sent again. Idempotence under a client-minted id is what pays for the double send.
+  sent again. Idempotence under a client-minted id is what pays for the double send. *Superseded
+  2026-09-17 by [ADR 48](../adr/0048-an-operation-is-leased-for-sending.md): `sending` is a lease,
+  and survives until it lapses.*
 - **A failed read is reported, not swallowed** (2026-08-25): per collection, so a cache that cannot
   be read does not cost the outbox, and through a seam rather than a `console` the package chose on
   a shell's behalf.

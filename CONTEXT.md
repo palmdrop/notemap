@@ -229,6 +229,12 @@ again without cleanup. A client's outbox uses the same shape one layer out: `sen
 on an operation, held `until` a time, so two clients over one store send it once between them.
 _Avoid_: lock, reservation, claim
 
+**Handover**:
+An outbox's in-memory hold on an operation, taken the moment a drain schedules it and released
+when the attempt settles, so a second drain in the same process cannot send it again. It does not
+cross a process boundary; that is what a lease is for.
+_Avoid_: claim, inflight
+
 **Processed**:
 Said of an item that has been routed, archived or revised. It is the *decision* that processes an
 item, so a routing record still pending delivery counts, and an item whose delivery is abandoned
