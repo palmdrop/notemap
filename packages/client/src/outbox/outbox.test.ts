@@ -1,12 +1,19 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+import { createFilesystemStore } from "../adapters/filesystem-store";
 import { createMemoryStore } from "../adapters/memory-store";
 import type { Item } from "#api/types";
 import { Refused, Unauthenticated, Unreachable } from "../errors";
 import { writable, type Writable } from "../observable/observable";
 import { cached, emptyState, withIds, type ClientState } from "#state/state";
+import { until } from "#testing/observing";
 import { anItem, stoppedClock } from "#testing/pool";
 import { replacing, type Settlement } from "./handler";
+import type { ClientStore } from "#ports/store";
 import type { Operation } from "./operations";
 import { createOutbox } from "./outbox";
 
@@ -24,7 +31,10 @@ const answering = (outcome: Outcome): Settlement =>
  * The engine with the network held open, so a test decides when — and whether —
  * an operation is answered. The client's own drain is too fast to see between.
  */
-function engineOver(items: readonly Item[]) {
+function engineOver(
+  items: readonly Item[],
+  store: ClientStore = createMemoryStore(),
+) {
   const sent: Operation[] = [];
   const reread: string[] = [];
   const waiting: ((outcome: Outcome) => void)[] = [];
@@ -51,7 +61,7 @@ function engineOver(items: readonly Item[]) {
 
   const outbox = createOutbox({
     state,
-    store: createMemoryStore(),
+    store,
     now: clock.now,
     mint: () => `op-${(minted += 1)}`,
     reread: (item) => {
@@ -62,6 +72,7 @@ function engineOver(items: readonly Item[]) {
       released.push(operation);
       return Promise.resolve();
     },
+    report: () => undefined,
     send: (operation) => {
       sent.push(operation);
       return new Promise<Settlement>((resolve, reject) => {
@@ -327,5 +338,105 @@ describe("an operation leaving the outbox", () => {
 
     await outbox.dismiss(state.get().outbox[0]!.id);
     expect(released).toEqual([ARCHIVE]);
+  });
+});
+
+/**
+ * Two processes over one directory, each a store of its own over it. The
+ * network is held open on both, so what each has sent is what it decided to.
+ */
+describe("two outboxes over one store", () => {
+  let directory = "";
+
+  beforeEach(async () => {
+    directory = await mkdtemp(join(tmpdir(), "notemap-outbox-"));
+  });
+
+  afterEach(() => rm(directory, { recursive: true, force: true }));
+
+  const another = () =>
+    engineOver([anItem("one")], createFilesystemStore(directory));
+
+  /** The first process, holding the lease on an archive it is sending. */
+  async function sending() {
+    const first = another();
+    await first.outbox.enqueue(ARCHIVE);
+    const draining = first.outbox.drain();
+    await until(() => first.sent.length > 0);
+    return { ...first, draining };
+  }
+
+  it("leaves alone what the other is sending, and says until when", async () => {
+    const first = await sending();
+
+    const second = another();
+    expect(await second.outbox.drain()).toBe("2026-08-17T12:01:00.000Z");
+
+    expect(first.sent).toEqual([ARCHIVE]);
+    expect(second.sent).toEqual([]);
+    expect(second.state.get().outbox.map((held) => held.state)).toEqual([
+      "sending",
+    ]);
+  });
+
+  it("takes over a lease the other abandoned, once it lapses", async () => {
+    await sending();
+
+    const second = another();
+    await second.outbox.drain();
+    expect(second.sent).toEqual([]);
+
+    clock.set("2026-08-17T12:01:00.000Z");
+    void second.outbox.drain();
+    await until(() => second.sent.length > 0);
+
+    expect(second.sent).toEqual([ARCHIVE]);
+    expect(
+      (await createFilesystemStore(directory).readOutbox())[0]?.until,
+    ).toBe("2026-08-17T12:02:00.000Z");
+  });
+
+  it("does not send what the other landed while it waited", async () => {
+    const first = await sending();
+
+    const second = another();
+    await second.outbox.drain();
+
+    first.answer({ item: ARCHIVED });
+    await first.draining;
+
+    clock.set("2026-08-17T12:01:00.000Z");
+    expect(await second.outbox.drain()).toBeUndefined();
+
+    expect(second.sent).toEqual([]);
+    expect(second.state.get().outbox).toEqual([]);
+  });
+
+  it("takes up what the other enqueued and never sent", async () => {
+    const first = another();
+    await first.outbox.enqueue(ARCHIVE);
+
+    const second = another();
+    void second.outbox.drain();
+    await until(() => second.sent.length > 0);
+
+    expect(second.sent).toEqual([ARCHIVE]);
+  });
+
+  it("sends an operation both reach at once exactly once", async () => {
+    const first = another();
+    await first.outbox.enqueue(ARCHIVE);
+    const second = another();
+    const third = another();
+
+    void first.outbox.drain();
+    void second.outbox.drain();
+    void third.outbox.drain();
+    const sent = () => [...first.sent, ...second.sent, ...third.sent];
+    await until(() => sent().length > 0);
+    await flush();
+    await flush();
+
+    expect(sent()).toEqual([ARCHIVE]);
   });
 });

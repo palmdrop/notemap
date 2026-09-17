@@ -89,18 +89,18 @@ re-send it (`outbox/outbox.ts`). That guard does not cross a process boundary. T
 draining one directory will send the same capture twice, and the pool will hold it twice — the
 capture endpoint deduplicates on nothing this plan can lean on.
 
-- [ ] ADR: what a second client over one store is allowed to do. The spec currently notes only that
+- [x] ADR: what a second client over one store is allowed to do. The spec currently notes only that
       it leaks the first one's object URLs; this makes it a supported arrangement with a stated
       rule. Weigh at least: a lock file taken for the length of a drain, with a stale-lock age;
       a claim written into the operation file itself, which makes the claim survive a crash and
       need an age too; and a rule that exactly one process drains and the others only enqueue,
       which needs no locking and costs the person a wait when that process is not running
-- [ ] Implement the decision, in the adapter if it is a lock and in the outbox if it is a claim
-- [ ] Tests: two stores over one directory, one draining, showing the operation is sent once; a
+- [x] Implement the decision, in the adapter if it is a lock and in the outbox if it is a claim
+- [x] Tests: two stores over one directory, one draining, showing the operation is sent once; a
       lock or claim abandoned by a killed process is taken by the next one rather than held forever
-- [ ] Update `docs/specs/client.md`: the store section, and the note about a second client
-- [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
-- [ ] `git commit`
+- [x] Update `docs/specs/client.md`: the store section, and the note about a second client
+- [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
+- [x] `git commit`
 
 ### Phase 4 — a client a short-lived process can finish with
 

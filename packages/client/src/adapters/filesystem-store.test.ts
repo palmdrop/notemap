@@ -90,6 +90,23 @@ describe("the filesystem store", () => {
     expect(await readdir(join(directory, "outbox"))).toEqual(["a.json"]);
   });
 
+  it("keeps a lease beside the operation, and drops both with it", async () => {
+    const store = reopen();
+    await store.writeOperation(anOperation("a"));
+    await store.leaseOperation(
+      "a",
+      "2026-08-17T00:00:00.000Z",
+      "2026-08-17T00:01:00.000Z",
+    );
+    expect((await readdir(join(directory, "outbox"))).sort()).toEqual([
+      "a.json",
+      "a.lease",
+    ]);
+
+    await store.removeOperation("a");
+    expect(await readdir(join(directory, "outbox"))).toEqual([]);
+  });
+
   it("leaves nothing behind but the file it wrote", async () => {
     const store = reopen();
     await store.writeTags([aTag("one")]);

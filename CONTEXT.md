@@ -225,7 +225,8 @@ _Avoid_: task, queue entry, work item
 **Lease**:
 A time-limited exclusive claim on a job. It expires by being past its time when someone next
 claims, not by anything reaping it, which is what lets a crashed host's work become available
-again without cleanup.
+again without cleanup. A client's outbox uses the same shape one layer out: `sending` is a lease
+on an operation, held `until` a time, so two clients over one store send it once between them.
 _Avoid_: lock, reservation, claim
 
 **Processed**:

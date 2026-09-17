@@ -48,5 +48,23 @@ export type PendingOperation = {
   /** The client's clock when the person acted: the last-write-wins key. */
   readonly at: string;
   readonly state: OperationState;
+  /**
+   * While `sending`, when the lease on it lapses: another process over the same
+   * store may attempt it after this, and must not before.
+   */
+  readonly until?: string;
   readonly failure?: string;
 };
+
+/**
+ * Whether a drain may take an operation up: what is pending or unreachable,
+ * and what another process was sending whose lease has lapsed by `now`.
+ */
+export function attemptable(entry: PendingOperation, now: string): boolean {
+  return (
+    entry.state === "pending" ||
+    entry.state === "unreachable" ||
+    (entry.state === "sending" &&
+      (entry.until === undefined || entry.until <= now))
+  );
+}

@@ -610,13 +610,24 @@ missing until the operation drains. The drain runs as soon as hydration lands, s
 previous session reaches the pool without the person doing anything, and a **refused** operation
 read back stays refused: it is not re-sent and it waits for a person, which is what a refusal is.
 
-**An operation read back as `sending` is attempted again.** `sending` is a claim about a process,
-and the process it was claimed in is gone; a drain picks up only what is pending or unreachable, so
-without this an operation the tab was closed on top of would sit in the outbox forever, never sent
-and never settled. Every operation is idempotent under an id minted before it was first sent, which
-is what makes the second attempt safe — the pool answers the first one's identity either way. The
-cost is that an operation whose request did land, and whose answer was lost with the process, is
-sent twice; the pool's answer to the second is the same as to the first.
+**`sending` is a lease, and an operation read back as `sending` is attempted again once it
+lapses** (2026-09-17, [ADR 48](../adr/0048-an-operation-is-leased-for-sending.md); before that,
+on every start). `sending` is a claim about a process, and the process it was claimed in may be
+gone — or may be another one over the same store, still going. So the claim carries `until`: a
+drain leaves a `sending` whose `until` is ahead alone, and takes up one whose `until` is past or
+absent. The lease is a minute. Every operation is idempotent under an id minted before it was first
+sent, which is what makes the second attempt safe — the pool answers the first one's identity
+either way. The cost is that an operation whose request did land, and whose answer was lost with
+the process, is sent twice; the pool's answer to the second is the same as to the first. **The
+acquire is the store's**: `leaseOperation` takes an operation up atomically, so two processes
+reaching for the same pending one in the same instant get one answer between them.
+
+**A drain reads the store back before reaching for what it hydrated.** What this client enqueued is
+its own; what it read out of the store is whatever the store says now — gone, because another
+process landed it, and dropped without being sent; leased by another, and left alone until the
+lease lapses, at which point the client drains again on its own; or enqueued by another process
+since, and taken up. This is what lets a client that is not the one the person typed into drain
+their capture.
 
 **A store that cannot be read leaves a cold client, not a dead one, and says so.** Each collection
 is read on its own, so a cache that fails does not also cost the outbox — the one thing whose loss
@@ -752,8 +763,15 @@ draft needs an answer to this, and does not have one.
 
 **Closing a client does not revoke the URLs it minted.** They go when the bytes do, and a page that
 goes away takes its own with it — so the leak is bounded by one session. A shell that builds a
-second client over one store, which is what a reload is outside a browser, leaks the first one's
-set; that is worth knowing before a shell starts doing it often.
+second client over one store leaks the first one's set; that is worth knowing before a shell starts
+doing it often.
+
+**Two clients over one store is a supported arrangement** (2026-09-17,
+[ADR 48](../adr/0048-an-operation-is-leased-for-sending.md)). Each drains what it finds, an
+operation is sent once between them because sending it is a lease the store hands to one asker,
+and one that a process died holding is taken up by the next once the lease lapses. What one
+enqueues, the other sends if it gets there first; what one lands, the other drops. Neither sees the
+other's cache writes until it next starts.
 
 ### The ports — the seam for offline
 
@@ -777,8 +795,9 @@ waiting on it goes — a collection that could not be read, a cache write that d
 these are swallowed as they always were; what a shell does with one is the shell's.
 
 **The store answers for every collection the client holds** (2026-08-25), one typed method per
-concern rather than one opaque blob: the outbox an operation at a time, the cached items in
-batches, the tags in use and the destinations each replaced whole as the pool answers them, the
+concern rather than one opaque blob: the outbox an operation at a time — and **leased** an
+operation at a time, atomically, since that is the one write two processes may race on — the
+cached items in batches, the tags in use and the destinations each replaced whole as the pool answers them, the
 **pool identity** the cache describes, and an asset's blob. **The local URL for a blob is the
 store's answer, not the client's** — the same reason `assetUrl` sits on the transport. A browser
 adapter mints an object URL and owns revoking it; a shell that is not a browser answers

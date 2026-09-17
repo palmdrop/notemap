@@ -285,6 +285,7 @@ export function createClient(config: ClientConfig): Client {
     store,
     reread,
     released: release,
+    report,
     send: async (operation) => {
       const settlement = await sendOperation(
         { api, bytes: (asset) => store.readBlob(asset) },
@@ -315,7 +316,8 @@ export function createClient(config: ClientConfig): Client {
   async function sweep(): Promise<void> {
     sweeping += 1;
     try {
-      await outbox.drain();
+      const leased = await outbox.drain();
+      if (leased !== undefined) drainWhenLapsed(leased);
       if (!classified) return;
 
       classified = false;
@@ -335,6 +337,21 @@ export function createClient(config: ClientConfig): Client {
   function drain(): Promise<void> {
     draining = draining.then(sweep, sweep);
     return draining;
+  }
+
+  // An operation another process is sending is left alone until its lease
+  // lapses, and nothing else would drain again at that moment.
+  let lapsing: ReturnType<typeof setTimeout> | undefined;
+
+  function drainWhenLapsed(until: string): void {
+    clearTimeout(lapsing);
+    lapsing = setTimeout(
+      () => {
+        lapsing = undefined;
+        void drain();
+      },
+      Math.max(0, Date.parse(until) - Date.parse(now())),
+    );
   }
 
   async function mutate(operation: Parameters<typeof outbox.enqueue>[0]) {
@@ -562,6 +579,7 @@ export function createClient(config: ClientConfig): Client {
     },
 
     close() {
+      clearTimeout(lapsing);
       reach.stop();
       actions.stop();
       onReturn.unsubscribe();

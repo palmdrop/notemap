@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import {
+  link,
   mkdir,
   readdir,
   readFile,
@@ -19,7 +20,11 @@ import type {
   RoutingTemplate,
   TagUse,
 } from "#api/types";
-import type { OperationId, PendingOperation } from "#outbox/operations";
+import {
+  attemptable,
+  type OperationId,
+  type PendingOperation,
+} from "#outbox/operations";
 import type { ClientStore } from "#ports/store";
 import { Unreadable } from "../errors";
 
@@ -35,6 +40,12 @@ type BlobRecord = { readonly name: string; readonly type: string };
 const OPERATION = ".json";
 /** What a malformed operation file is renamed to, so it is kept but read no more. */
 const UNREADABLE = ".unreadable";
+/**
+ * A hard link to the operation, made while it is being sent. Making one where
+ * one exists fails, which is what lets two processes ask for the same lease
+ * and only one be answered.
+ */
+const LEASE = ".lease";
 
 /**
  * A directory behind `ClientStore`, for a shell that is not a browser. Each
@@ -111,6 +122,10 @@ export function createFilesystemStore(
     return join(outboxDirectory, `${id}${OPERATION}`);
   }
 
+  function leasePath(id: OperationId): string {
+    return join(outboxDirectory, `${id}${LEASE}`);
+  }
+
   async function readOperation(
     name: string,
   ): Promise<PendingOperation | undefined> {
@@ -162,10 +177,45 @@ export function createFilesystemStore(
 
     async writeOperation(operation) {
       await replace(operationPath(operation.id), JSON.stringify(operation));
+      if (operation.state !== "sending") {
+        await rm(leasePath(operation.id), { force: true });
+      }
     },
 
     async removeOperation(id) {
       await rm(operationPath(id), { force: true });
+      await rm(leasePath(id), { force: true });
+    },
+
+    async leaseOperation(id, now, until) {
+      const path = operationPath(id);
+      const lease = leasePath(id);
+      const held = await parsed<PendingOperation>(path, `outbox/${id}`);
+      if (held === undefined || !attemptable(held, now)) return undefined;
+
+      // A lease its process never got to release. Renamed away rather than
+      // unlinked, so two takers arriving together cannot both clear it and
+      // both link.
+      if (held.state === "sending") {
+        const stale = `${lease}.${randomUUID()}.stale`;
+        await rename(lease, stale).then(
+          () => rm(stale, { force: true }),
+          (error: unknown) => {
+            if (!isMissing(error)) throw error;
+          },
+        );
+      }
+
+      try {
+        await link(path, lease);
+      } catch (error) {
+        if (isMissing(error) || isExisting(error)) return undefined;
+        throw error;
+      }
+
+      const leased: PendingOperation = { ...held, state: "sending", until };
+      await replace(path, JSON.stringify(leased));
+      return leased;
     },
 
     async readItems() {
@@ -261,10 +311,15 @@ export function createFilesystemStore(
 }
 
 function isMissing(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "ENOENT"
-  );
+  return codeOf(error) === "ENOENT";
+}
+
+function isExisting(error: unknown): boolean {
+  return codeOf(error) === "EEXIST";
+}
+
+function codeOf(error: unknown): unknown {
+  return typeof error === "object" && error !== null && "code" in error
+    ? error.code
+    : undefined;
 }

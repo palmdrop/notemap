@@ -66,7 +66,7 @@ export async function hydrate(
       heldBy(store, outbox),
     ),
     items: new Map<ItemId, Item>(items.map((item) => [item.id, item])),
-    outbox: outbox.map(attemptable),
+    outbox,
     tags,
     destinations,
     templates,
@@ -98,16 +98,4 @@ async function heldBy(
   }
 
   return blobs;
-}
-
-/**
- * `sending` is a claim about a process that no longer exists, and a drain only
- * picks up what is pending or unreachable — so an operation the tab was closed
- * on top of would sit there forever. Every operation is idempotent under an id
- * minted before it was first sent, which is what makes attempting it again safe.
- */
-function attemptable(operation: PendingOperation): PendingOperation {
-  return operation.state === "sending"
-    ? { ...operation, state: "pending" }
-    : operation;
 }
