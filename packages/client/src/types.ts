@@ -424,6 +424,13 @@ export type ClientConfig = {
    */
   readonly utcOffset?: () => number;
   /**
+   * Milliseconds one request may take before it is given up on, which a pool
+   * that accepts a connection and never answers is the reason for. Must stay
+   * under the outbox's lease, or an operation can still be sending when
+   * another process is free to take it. Left out, the client's own default.
+   */
+  readonly timeout?: number;
+  /**
    * Where a failure with no caller waiting on it goes. A shell decides whether
    * that is a console, a log or something a person sees; unwired, these are
    * swallowed as they were before.

@@ -329,6 +329,19 @@ life of the page and never needs it. A client that has only been told it is not 
 (`watched(false)`) schedules no probe either, which is what a process that only captures can start
 as, but `close()` is the contract and the other is a tempo.
 
+**A request has a limit** (2026-09-17). The same pool that answers nothing is why: without one, a
+single request waits forever and the outbox never learns the pool is unreachable. `timeout` on the
+client's config is how long one request may take, defaulting to 30 seconds, and it counts from the
+request rather than from the client — one limit shared across a client's lifetime would fire once
+and abort everything after it. Giving up reads as unreachable, the same as a socket that never
+opened, so the operation keeps its place in the outbox and goes again.
+
+The limit must stay under the outbox's own lease of 60 seconds. A lease says *this process is
+sending this operation*, and an operation still on the wire when its lease lapses is one another
+process is free to send a second time. That ceiling is also the constraint on uploads: an asset
+whose bytes cannot cross in 30 seconds is one no drain will ever finish, and raising the limit for
+it means raising the lease with it.
+
 `close()` does not wait for a call that has not settled — it abandons a request already on the
 wire. Waiting is not something a shell can afford to promise: a pool that accepts the connection
 and never answers, which is what a tunnel dropping mid-request looks like, holds the request open

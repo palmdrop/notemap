@@ -118,6 +118,12 @@ function listOf(state: ClientState, surface: Surface): ListState {
   };
 }
 
+/**
+ * Under the outbox's own lease, so an operation cannot still be on the wire
+ * when another process is free to take it and send it a second time.
+ */
+const TIMEOUT_MS = 30_000;
+
 export function createClient(config: ClientConfig): Client {
   const { transport, store } = config;
   const now = config.now ?? (() => new Date().toISOString());
@@ -144,7 +150,7 @@ export function createClient(config: ClientConfig): Client {
     watching(transport, reach.answered, () => {
       noticeLapsed();
     }),
-    closing.signal,
+    { signal: closing.signal, timeout: config.timeout ?? TIMEOUT_MS },
   );
 
   const sessions = createSessions({

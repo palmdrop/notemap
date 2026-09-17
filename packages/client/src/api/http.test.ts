@@ -1,6 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { createServer, type Server } from "node:http";
 
+import { afterEach, describe, expect, it } from "vitest";
+
+import { createFetchTransport } from "../adapters/fetch-transport";
+import { createMemoryStore } from "../adapters/memory-store";
+import { createClient } from "../client";
 import { Refused, Unauthenticated, Unreachable } from "../errors";
+import { read } from "../testing/observing";
 import { mockTransport, json } from "../testing/transport";
 import { acknowledged, answered, createApi } from "./http";
 
@@ -115,5 +121,62 @@ describe("the media type a write declares", () => {
     await api.GET("/v1/feed", {});
 
     expect(asked(transport).headers.get("content-type")).toBeNull();
+  });
+});
+
+let stalling: Server | undefined;
+
+/** Accepts the connection and answers nothing, which no socket times out. */
+function accepting(): Promise<string> {
+  return new Promise((resolve) => {
+    const server = createServer(() => undefined);
+    stalling = server;
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      const port =
+        typeof address === "object" && address !== null ? address.port : 0;
+      resolve(`http://127.0.0.1:${String(port)}`);
+    });
+  });
+}
+
+afterEach(() => {
+  stalling?.closeAllConnections();
+  stalling?.close();
+  stalling = undefined;
+});
+
+describe("a request against a pool that never answers", () => {
+  it("is given up on, and what it carried stays in the outbox", async () => {
+    const client = createClient({
+      transport: createFetchTransport(await accepting()),
+      store: createMemoryStore(),
+      timeout: 250,
+    });
+    client.watched(false);
+
+    await client.capture({ channel: "web", text: "sent at nothing" });
+    await client.drain();
+
+    expect(read(client.waiting)).toBe(1);
+    client.close();
+  });
+
+  it("is waited on up to the limit, rather than given up on at the first slowness", async () => {
+    const client = createClient({
+      transport: createFetchTransport(await accepting()),
+      store: createMemoryStore(),
+      timeout: 5_000,
+    });
+    client.watched(false);
+
+    await client.capture({ channel: "web", text: "sent at nothing" });
+    const settled = await Promise.race([
+      client.drain().then(() => "drained"),
+      new Promise((resolve) => setTimeout(() => resolve("still waiting"), 750)),
+    ]);
+
+    expect(settled).toBe("still waiting");
+    client.close();
   });
 });
