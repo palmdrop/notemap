@@ -10,7 +10,7 @@
 
 A client outside a browser keeps its store in a directory, and the shell that needs it — the
 Raycast extension — runs each command as its own short-lived process, sometimes two at once. The
-outbox guards against sending an operation twice with an in-memory set, claimed the moment a drain
+outbox guards against sending an operation twice with an in-memory handover, taken the moment a drain
 schedules one; that guard does not cross a process boundary. Two processes draining one directory
 would send the same capture twice, and the capture endpoint deduplicates on nothing the client can
 lean on. What is a second client over one store allowed to do, and what stops it re-sending what
@@ -54,14 +54,15 @@ next asks, not by anything reaping it.
 **The acquire is the store's, and atomic.** `ClientStore.leaseOperation(id, now, until)` takes the
 operation up and answers it as written, or nothing where it is gone or leased. The memory adapter
 is atomic by being single-threaded; the IndexedDB adapter by one read-write transaction; the
-filesystem adapter by a hard link made beside the operation file, which fails where one exists.
+filesystem adapter by an exclusive create of an empty file beside the operation, which fails where
+one exists.
 Two processes reading the same pending operation in the same instant get one answer between them.
 
 **A drain reads the store back before it reaches for what it hydrated.** What this process enqueued
-is its own to describe and is claimed before anything yields, as before. What it read out of the
+is its own to describe and is handed over before anything yields, as before. What it read out of the
 store is whatever the store says now — gone, because another process landed it; leased, and left
 alone; or newly enqueued by another process, and taken up. Hydration no longer rewrites `sending`
-to `pending`; the lapse does that job, at drain time, so a long-lived client also picks up a claim
+to `pending`; the lapse does that job, at drain time, so a long-lived client also picks up a lease
 a crashed one abandoned.
 
 **The lease is a minute.** Long enough that a slow upload is not taken over while it is still
@@ -78,6 +79,10 @@ going; short enough that a capture whose process died mid-send is not stranded f
   making a new one are two steps. That needs a crash and two cold starts in the same millisecond;
   closing it needs a lock the platform releases on death, which Node does not offer without a native
   module.
+- Bad: on a filesystem the lease is two steps — make the lease file, write `sending` through — and
+  a process that dies between them leaves a lease file with nothing behind it. Nothing but age
+  tells that from a lease made a moment ago, so it is taken over once a lease length has passed,
+  by the filesystem's clock.
 - Bad: an upload longer than a minute can be sent twice, by a process that takes the lease over
   while the first is still going. The pool answers the second on the first's identity.
 - Neutral: the port grows a method, and the contract test states what it answers. Every adapter
@@ -99,7 +104,7 @@ going; short enough that a capture whose process died mid-send is not stranded f
 
 ### A lease written into the operation itself
 
-- **Good** — the claim survives the crash of the process that made it, and lapses on its own.
+- **Good** — the lease survives the crash of the process that made it, and lapses on its own.
 - **Good** — the state a shell already draws, `sending`, is the lease; nothing new to show.
 - **Bad** — needs an atomic acquire on the port, which is a method every adapter has to answer.
 

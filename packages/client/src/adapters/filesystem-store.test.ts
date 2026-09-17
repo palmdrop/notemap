@@ -1,4 +1,11 @@
-import { mkdtemp, mkdir, readdir, rm, writeFile } from "node:fs/promises";
+import {
+  mkdtemp,
+  mkdir,
+  readdir,
+  rm,
+  utimes,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -105,6 +112,37 @@ describe("the filesystem store", () => {
 
     await store.removeOperation("a");
     expect(await readdir(join(directory, "outbox"))).toEqual([]);
+  });
+
+  describe("a lease file with no `sending` behind it", () => {
+    const T0 = "2026-08-17T00:00:00.000Z";
+    const T1 = "2026-08-17T00:01:00.000Z";
+
+    /** What a process that died between making the lease and writing through leaves. */
+    async function orphaned(age: number) {
+      const store = reopen();
+      await store.writeOperation(anOperation("a"));
+      await plant("outbox/a.lease", "");
+      const then = (Date.now() - age) / 1000;
+      await utimes(join(directory, "outbox/a.lease"), then, then);
+      return store;
+    }
+
+    it("is left alone while it could still be one being written through", async () => {
+      const store = await orphaned(0);
+
+      expect(await store.leaseOperation("a", T0, T1)).toBeUndefined();
+    });
+
+    it("is taken over once a lease length has passed", async () => {
+      const store = await orphaned(61_000);
+
+      expect((await store.leaseOperation("a", T0, T1))?.state).toBe("sending");
+      expect((await readdir(join(directory, "outbox"))).sort()).toEqual([
+        "a.json",
+        "a.lease",
+      ]);
+    });
   });
 
   it("leaves nothing behind but the file it wrote", async () => {

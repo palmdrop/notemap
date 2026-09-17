@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 import {
-  link,
   mkdir,
+  open,
   readdir,
   readFile,
   rename,
   rm,
+  stat,
   writeFile,
 } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -41,9 +42,9 @@ const OPERATION = ".json";
 /** What a malformed operation file is renamed to, so it is kept but read no more. */
 const UNREADABLE = ".unreadable";
 /**
- * A hard link to the operation, made while it is being sent. Making one where
- * one exists fails, which is what lets two processes ask for the same lease
- * and only one be answered.
+ * An empty file beside the operation, made while it is being sent. Creating
+ * one where one exists fails, which is what lets two processes ask for the
+ * same lease and only one be answered.
  */
 const LEASE = ".lease";
 
@@ -193,24 +194,23 @@ export function createFilesystemStore(
       const held = await parsed<PendingOperation>(path, `outbox/${id}`);
       if (held === undefined || !attemptable(held, now)) return undefined;
 
-      // A lease its process never got to release. Renamed away rather than
-      // unlinked, so two takers arriving together cannot both clear it and
-      // both link.
-      if (held.state === "sending") {
-        const stale = `${lease}.${randomUUID()}.stale`;
-        await rename(lease, stale).then(
-          () => rm(stale, { force: true }),
-          (error: unknown) => {
-            if (!isMissing(error)) throw error;
-          },
-        );
-      }
+      // A lease its process never got to release, lapsed. Renamed away rather
+      // than unlinked, so two takers arriving together cannot both clear it
+      // and both create.
+      if (held.state === "sending") await discard(lease);
 
-      try {
-        await link(path, lease);
-      } catch (error) {
-        if (isMissing(error) || isExisting(error)) return undefined;
-        throw error;
+      if (!(await create(lease))) {
+        // A lease file with no `sending` behind it is one a process died
+        // holding between making it and writing through — or one made a
+        // moment ago that has not been written through yet. Only age tells
+        // them apart, so it is taken over once a lease length has passed.
+        const fresh = await parsed<PendingOperation>(path, `outbox/${id}`);
+        if (fresh === undefined || !attemptable(fresh, now)) return undefined;
+        const grace = Date.parse(until) - Date.parse(now);
+        if (!(await olderThan(lease, grace))) return undefined;
+
+        await discard(lease);
+        if (!(await create(lease))) return undefined;
       }
 
       const leased: PendingOperation = { ...held, state: "sending", until };
@@ -308,6 +308,40 @@ export function createFilesystemStore(
         : pathToFileURL(bytesPath(asset)).href;
     },
   };
+}
+
+/**
+ * Whether the file was made here and now: `false` where it already existed, or
+ * where its directory has gone — which a re-read of the operation resolves.
+ */
+async function create(path: string): Promise<boolean> {
+  try {
+    await (await open(path, "wx")).close();
+    return true;
+  } catch (error) {
+    if (isExisting(error) || isMissing(error)) return false;
+    throw error;
+  }
+}
+
+async function discard(path: string): Promise<void> {
+  const stale = `${path}.${randomUUID()}.stale`;
+  await rename(path, stale).then(
+    () => rm(stale, { force: true }),
+    (error: unknown) => {
+      if (!isMissing(error)) throw error;
+    },
+  );
+}
+
+/** By the clock the filesystem stamps with, which is the only one a file has. */
+async function olderThan(path: string, ms: number): Promise<boolean> {
+  try {
+    return Date.now() - (await stat(path)).mtimeMs > ms;
+  } catch (error) {
+    if (isMissing(error)) return false;
+    throw error;
+  }
 }
 
 function isMissing(error: unknown): boolean {
