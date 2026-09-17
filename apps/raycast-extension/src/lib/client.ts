@@ -1,3 +1,4 @@
+import { webcrypto } from "node:crypto";
 import { getCACertificates, setDefaultCACertificates } from "node:tls";
 import { environment, getPreferenceValues } from "@raycast/api";
 import {
@@ -22,6 +23,13 @@ setDefaultCACertificates([
   ...getCACertificates("default"),
   ...getCACertificates("system"),
 ]);
+
+/**
+ * Raycast runs a command with no `crypto` on the global object, where every
+ * other runtime the client meets has one. Minting an id is the first thing a
+ * capture does, and uuid reaches for the global rather than importing it.
+ */
+globalThis.crypto ??= webcrypto as Crypto;
 
 /**
  * A whole client, over a directory Raycast keeps for this extension. Each
