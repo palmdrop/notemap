@@ -145,49 +145,65 @@ describe("opposing operations still in the outbox", () => {
   });
 });
 
+/** A store whose first write waits for the test to let it land. */
+function slowToWrite(base: ClientStore) {
+  let landed: () => void = () => undefined;
+  const writing = new Promise<void>((resolve) => {
+    landed = resolve;
+  });
+  let first = true;
+
+  const store: ClientStore = {
+    ...base,
+    async writeOperation(entry) {
+      if (first) {
+        first = false;
+        await writing;
+      }
+      return base.writeOperation(entry);
+    },
+  };
+
+  return { store, landed: () => landed() };
+}
+
 describe("an operation a drain reaches before the store has it", () => {
-  /**
-   * The drain the reachability probe starts arrives while the store is still
-   * being written to. Held in state that early, the entry is claimed, fails to
-   * lease against a store that has not got it yet, and reads as one another
-   * process took — after which `seen` keeps this process from ever taking it
-   * back, and it is left on disk for the next one to find.
-   */
-  it("is still sent, rather than left behind for another process", async () => {
-    const base = createMemoryStore();
-    let landed: () => void = () => undefined;
-    const writing = new Promise<void>((resolve) => {
-      landed = resolve;
-    });
-    let first = true;
-
-    const store: ClientStore = {
-      ...base,
-      async writeOperation(entry) {
-        if (first) {
-          first = false;
-          await writing;
-        }
-        return base.writeOperation(entry);
-      },
-    };
-
+  it("is sent once the store has it, rather than read as another process's", async () => {
+    const { store, landed } = slowToWrite(createMemoryStore());
     const { outbox, sent, answer } = engineOver([anItem("one")], store);
 
     clock.set("2026-08-17T12:00:01.000Z");
     const enqueued = outbox.enqueue(ARCHIVE);
-    await outbox.drain();
+    const draining = outbox.drain();
+    await flush();
+    expect(sent).toHaveLength(0);
 
     landed();
     await enqueued;
-
-    const draining = outbox.drain();
-    await flush();
+    await until(() => sent.length > 0);
     answer({ item: anItem("one") });
     await draining;
 
-    expect(sent).toHaveLength(1);
+    expect(sent).toEqual([ARCHIVE]);
     expect(await store.readOutbox()).toEqual([]);
+  });
+
+  it("is still cancelled by an opposing one enqueued during the write", async () => {
+    const { store, landed } = slowToWrite(createMemoryStore());
+    const { outbox, state, sent } = engineOver([anItem("one")], store);
+
+    clock.set("2026-08-17T12:00:01.000Z");
+    const archiving = outbox.enqueue(ARCHIVE);
+    clock.set("2026-08-17T12:00:02.000Z");
+    const unarchiving = outbox.enqueue(UNARCHIVE);
+    landed();
+    await Promise.all([archiving, unarchiving]);
+
+    expect(state.get().outbox).toEqual([]);
+    expect(await store.readOutbox()).toEqual([]);
+
+    await outbox.drain();
+    expect(sent).toEqual([]);
   });
 });
 

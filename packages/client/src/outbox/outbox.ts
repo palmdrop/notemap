@@ -42,7 +42,7 @@ export type OutboxDeps = {
  * Long enough that a slow upload is not taken over while it is still going;
  * short enough that a capture whose process died mid-send is not stranded.
  */
-const LEASE_MS = 60_000;
+export const LEASE_MS = 60_000;
 
 function unleased(entry: PendingOperation): PendingOperation {
   const { until: _, ...rest } = entry;
@@ -57,11 +57,13 @@ export function createOutbox(deps: OutboxDeps): Outbox {
    */
   const undos = new Map<OperationId, Undo>();
   const chains = new Map<string, Promise<void>>();
-  /** Claimed the moment a drain schedules one, so a second drain cannot re-send it. */
-  const inflight = new Set<OperationId>();
+  /** Handed over the moment a drain schedules one, so a second drain cannot re-send it. */
+  const handedOver = new Set<OperationId>();
   const restored = new Set<OperationId>();
   /** Every id this process has held, so a stale read of the store cannot bring one back. */
   const seen = new Set<OperationId>();
+  /** The write of each entry still on its way to the store, so a drain can wait for it. */
+  const writes = new Map<OperationId, Promise<void>>();
 
   function hold(entry: PendingOperation): void {
     seen.add(entry.id);
@@ -74,14 +76,28 @@ export function createOutbox(deps: OutboxDeps): Outbox {
   }
 
   /**
-   * The store before the state. An entry held in state the store has not got
-   * yet is one a drain can claim and then fail to lease, which reads as another
-   * process having taken it — and `seen` would keep this process from ever
-   * taking it back, leaving it on disk for whichever process comes next.
+   * The state before the store, so an enqueue arriving during the write still
+   * sees what it opposes. The write is kept where `stored` can wait for it: a
+   * drain that leased against a store yet to hold the entry would read the
+   * failed lease as another process's, and drop what only this one has.
    */
-  async function record(entry: PendingOperation): Promise<void> {
-    await deps.store.writeOperation(entry);
+  function record(entry: PendingOperation): Promise<void> {
     hold(entry);
+    const write = () => deps.store.writeOperation(entry);
+    const previous = writes.get(entry.id) ?? Promise.resolve();
+    const next = previous.then(write, write);
+    writes.set(entry.id, next);
+    void next
+      .catch(() => undefined)
+      .then(() => {
+        if (writes.get(entry.id) === next) writes.delete(entry.id);
+      });
+    return next;
+  }
+
+  /** Once every write of this entry has reached the store, or failed to. */
+  async function stored(id: OperationId): Promise<void> {
+    await writes.get(id)?.catch(() => undefined);
   }
 
   /** Left the outbox by another process's hand: nothing here to release. */
@@ -111,7 +127,7 @@ export function createOutbox(deps: OutboxDeps): Outbox {
     }
 
     const stored = new Map(held.map((entry) => [entry.id, entry]));
-    const theirs = (id: OperationId) => restored.has(id) && !inflight.has(id);
+    const theirs = (id: OperationId) => restored.has(id) && !handedOver.has(id);
 
     deps.state.update((state) => {
       const kept = state.outbox.flatMap((entry) => {
@@ -143,6 +159,7 @@ export function createOutbox(deps: OutboxDeps): Outbox {
       outbox: state.outbox.filter((entry) => entry.id !== id),
     }));
 
+    await stored(id);
     await deps.store.removeOperation(id);
     if (held !== undefined) await deps.released(held.operation);
   }
@@ -152,9 +169,9 @@ export function createOutbox(deps: OutboxDeps): Outbox {
     const opposed = deps.state.get().outbox.filter(
       (held) =>
         held.state !== "sending" &&
-        // A drain claims an operation a turn before it is recorded as
+        // A drain hands an operation over a turn before it is recorded as
         // sending, and what has been handed over cannot be taken back.
-        !inflight.has(held.id) &&
+        !handedOver.has(held.id) &&
         opposes(held.operation, operation),
     );
 
@@ -183,6 +200,7 @@ export function createOutbox(deps: OutboxDeps): Outbox {
   }
 
   async function send(entry: PendingOperation): Promise<void> {
+    await stored(entry.id);
     const now = deps.now();
     const until = new Date(Date.parse(now) + LEASE_MS).toISOString();
     const leased = await deps.store.leaseOperation(entry.id, now, until);
@@ -268,7 +286,7 @@ export function createOutbox(deps: OutboxDeps): Outbox {
 
       for (const entry of deps.state.get().outbox) {
         if (!eligible(entry)) continue;
-        if (inflight.has(entry.id) || attempted.has(entry.id)) continue;
+        if (handedOver.has(entry.id) || attempted.has(entry.id)) continue;
         if (!attemptable(entry, now)) {
           if (
             entry.state === "sending" &&
@@ -281,21 +299,21 @@ export function createOutbox(deps: OutboxDeps): Outbox {
         }
 
         attempted.add(entry.id);
-        inflight.add(entry.id);
+        handedOver.add(entry.id);
         chain(targetOf(entry.operation), async () => {
           try {
             await send(entry);
           } finally {
-            inflight.delete(entry.id);
+            handedOver.delete(entry.id);
           }
         });
       }
     }
 
-    // What this process enqueued is claimed before anything yields, so an
-    // opposing enqueue arriving meanwhile cannot take back what is handed over.
-    // What came out of the store is claimed only once the store has been asked
-    // again, since another process may have landed or leased it since.
+    // What this process enqueued is handed over before anything yields, so an
+    // opposing enqueue arriving meanwhile cannot take it back. What came out of
+    // the store is handed over only once the store has been asked again, since
+    // another process may have landed or leased it since.
     wave((entry) => !restored.has(entry.id));
     await reconciled();
 
