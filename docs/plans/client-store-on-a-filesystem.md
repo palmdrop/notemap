@@ -114,22 +114,22 @@ and had to be killed. Nothing here is wrong for a browser tab, which is the only
 existed. A process that is expected to end is a new arrangement and the client does not describe
 one.
 
-- [ ] `close()` is on `Client` and appears nowhere in `docs/specs/client.md`. Whatever this phase
+- [x] `close()` is on `Client` and appears nowhere in `docs/specs/client.md`. Whatever this phase
       decides, the spec gains the lifecycle: what a client holds once created, what `close()`
       releases, and what a shell owes it
-- [ ] Decide how much further to go than documenting `close()`. Weigh at least: leaving `close()` as
+- [x] Decide how much further to go than documenting `close()`. Weigh at least: leaving `close()` as
       the whole contract and making it the shell's duty; a client that schedules no probe until
       something reads its surfaces, so a process that only captures never acquires a timer to begin
       with; and an explicit one-shot arrangement that captures, drains once and resolves, with
       nothing left scheduled. The second is the one that changes behaviour for the web shell too
       and so is the one to argue about
-- [ ] Implement the decision in `packages/client`, and record it as an ADR if it changes what a
+- [x] Implement the decision in `packages/client`, and record it as an ADR if it changes what a
       client does rather than only what is written down
-- [ ] Test: a process that creates a client, captures, and closes exits on its own. This is a
+- [x] Test: a process that creates a client, captures, and closes exits on its own. This is a
       spawned process asserting its own exit, not a unit test — a leaked handle is invisible to a
       test runner that is holding the loop open anyway
-- [ ] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
-- [ ] `git commit`
+- [x] Verify: `pnpm -r --silent test` and `pnpm -r typecheck` green
+- [x] `git commit`
 
 ### Phase 5 — a shell wires it
 

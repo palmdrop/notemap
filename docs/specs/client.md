@@ -307,6 +307,18 @@ rule that lives in a shell is a rule the next shell has to rewrite.
 This mirrors the split core already makes with its hosts ([ADR 2](../adr/0002-core-is-a-host-agnostic-library.md)):
 the thinking is portable and the wiring is the platform's.
 
+**A client's lifetime is the shell's to end** (2026-09-17). Once created, a client holds things
+that run without being asked: the reachability probe, which schedules its next ask after every
+answer and after every failed request; the action watcher's tempo; and a drain waiting on another
+process's lease to lapse. In a browser tab those go when the page does. In a process that is
+expected to end — a Raycast command, a script, a test — they hold the event loop open, and the
+process does not end until they are let go. `close()` is what lets go: it stops the probe and the
+watcher and clears anything waiting, and what was written to the store stays written. A shell that
+builds a client for a process that ends owes it a `close()` once its last call has settled; a web
+shell holds one client for the life of the page and never needs it. A client that has only been
+told it is not watched (`watched(false)`) schedules no probe either, which is what a process that
+only captures can start as, but `close()` is the contract and the other is a tempo.
+
 ### The surfaces
 
 A client presents four surfaces, each a thin projection of core:

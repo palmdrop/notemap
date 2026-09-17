@@ -399,10 +399,10 @@ export interface Client {
   dismiss(operation: OperationId): Promise<void>;
 
   /**
-   * Stops the reachability probe, which is the one thing here that keeps
-   * running rather than waiting to be called. A web shell holds one client for
-   * the life of the page and never needs this; a shell that builds a second
-   * client, and a test, do.
+   * Lets go of everything that runs without being asked — the probe, the
+   * watcher, a drain waiting on a lease — so a process holding nothing else
+   * ends. A web shell holds one client for the life of the page and never
+   * needs this; a shell whose process is expected to end owes it one.
    */
   close(): void;
 }

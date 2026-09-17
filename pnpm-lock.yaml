@@ -546,6 +546,9 @@ importers:
         specifier: ^14.0.1
         version: 14.0.1
     devDependencies:
+      esbuild:
+        specifier: ^0.28.0
+        version: 0.28.1
       fake-indexeddb:
         specifier: ^6.2.5
         version: 6.2.5
