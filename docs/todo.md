@@ -8,12 +8,16 @@
     looked at and the corner speaks when the delivery resolves, but nothing shows everything in
     flight at once. Belongs with the routing-record and log readability items below.
 
+- [ ] enable tagging at capture time
+- [ ] clicking a tag does not clearly select it, maybe we add a border around it, or invert background color.
 - [ ] batch processing, i.e selecting many captures and routing them all at once, or discarding
 - [ ] command palette
 - [ ] when editing, pressing enter or shift enter does not save - it should
 - [ ] shift enter as save operation maybe should be replaced with cmd+enter or ctrl+enter? shift+enter, 
     in many other apps, work as inserting a line break, when just pressing enter would commit the state (save).
     Notemap should try to adhere to common patterns. 
+
+- [ ] no pointer cursor on some buttons, such as "timeline" / "index" chooser on queue and feed, and tags
 
 - [ ] **Nothing bounds a surface that is being drawn.** The client's cache caps feed history at 500
   items, but exempts everything a page currently holds — and a page accumulates ids as it is walked
@@ -41,6 +45,8 @@
   - it is not clear how to go back or use the current folder
   - tabbing down the hierarchy has no effect on input field until you press "use <path>"
   - going back is not clearly a button
+
+- [ ] consider source to destination auto routing: for example, I might have an inbox that I *always* want routed to a specific destination, using a template.
 
 ## Templates
 
