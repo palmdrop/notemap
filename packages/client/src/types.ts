@@ -432,7 +432,8 @@ export type ClientConfig = {
    * Milliseconds one request may take before it is given up on, which a pool
    * that accepts a connection and never answers is the reason for. Must stay
    * under the outbox's lease, or an operation can still be sending when
-   * another process is free to take it. Left out, the client's own default.
+   * another process is free to take it: one that does not is refused when the
+   * client is built. Left out, the client's own default.
    */
   readonly timeout?: number;
   /**

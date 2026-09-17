@@ -11,7 +11,7 @@ import { PoolChanged, Refused, saidBy, Unreachable } from "./errors";
 import { derived, writable, type Writable } from "./observable/observable";
 import { createDestinations } from "./destinations/destinations";
 import { createTemplates } from "./templates/templates";
-import { createOutbox } from "./outbox/outbox";
+import { createOutbox, LEASE_MS } from "./outbox/outbox";
 import { sendOperation } from "./outbox/registry";
 import { undrained, waiting } from "./outbox/undrained";
 import { reachability } from "./pool/reachability";
@@ -124,8 +124,19 @@ function listOf(state: ClientState, surface: Surface): ListState {
  */
 const TIMEOUT_MS = 30_000;
 
+function timeoutOf(config: ClientConfig): number {
+  const timeout = config.timeout ?? TIMEOUT_MS;
+  if (timeout >= LEASE_MS) {
+    throw new RangeError(
+      `a request's timeout must stay under the outbox's lease of ${String(LEASE_MS)}ms, and ${String(timeout)}ms does not`,
+    );
+  }
+  return timeout;
+}
+
 export function createClient(config: ClientConfig): Client {
   const { transport, store } = config;
+  const timeout = timeoutOf(config);
   const now = config.now ?? (() => new Date().toISOString());
   // Inverted: `getTimezoneOffset` counts minutes *behind* UTC, and the domain
   // counts them east of it.
@@ -150,7 +161,7 @@ export function createClient(config: ClientConfig): Client {
     watching(transport, reach.answered, () => {
       noticeLapsed();
     }),
-    { signal: closing.signal, timeout: config.timeout ?? TIMEOUT_MS },
+    { signal: closing.signal, timeout },
   );
 
   const sessions = createSessions({

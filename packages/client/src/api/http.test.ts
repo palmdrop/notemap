@@ -175,6 +175,18 @@ describe("a client that has been closed", () => {
   });
 });
 
+describe("a request's limit", () => {
+  it("is refused where it would outlive the outbox's lease", () => {
+    expect(() =>
+      createClient({
+        transport: mockTransport(() => json(200, { ok: true })),
+        store: createMemoryStore(),
+        timeout: 60_000,
+      }),
+    ).toThrow(RangeError);
+  });
+});
+
 describe("a request against a pool that never answers", () => {
   it("is given up on, and what it carried stays in the outbox", async () => {
     const client = createClient({
