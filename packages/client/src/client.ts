@@ -11,7 +11,7 @@ import { PoolChanged, Refused, saidBy, Unreachable } from "./errors";
 import { derived, writable, type Writable } from "./observable/observable";
 import { createDestinations } from "./destinations/destinations";
 import { createTemplates } from "./templates/templates";
-import { createOutbox } from "./outbox/outbox";
+import { createOutbox, LEASE_MS } from "./outbox/outbox";
 import { sendOperation } from "./outbox/registry";
 import { undrained, waiting } from "./outbox/undrained";
 import { reachability } from "./pool/reachability";
@@ -118,8 +118,25 @@ function listOf(state: ClientState, surface: Surface): ListState {
   };
 }
 
+/**
+ * Under the outbox's own lease, so an operation cannot still be on the wire
+ * when another process is free to take it and send it a second time.
+ */
+const TIMEOUT_MS = 30_000;
+
+function timeoutOf(config: ClientConfig): number {
+  const timeout = config.timeout ?? TIMEOUT_MS;
+  if (timeout >= LEASE_MS) {
+    throw new RangeError(
+      `a request's timeout must stay under the outbox's lease of ${String(LEASE_MS)}ms, and ${String(timeout)}ms does not`,
+    );
+  }
+  return timeout;
+}
+
 export function createClient(config: ClientConfig): Client {
   const { transport, store } = config;
+  const timeout = timeoutOf(config);
   const now = config.now ?? (() => new Date().toISOString());
   // Inverted: `getTimezoneOffset` counts minutes *behind* UTC, and the domain
   // counts them east of it.
@@ -139,10 +156,12 @@ export function createClient(config: ClientConfig): Client {
   // The sessions object needs the api, and the api needs to tell it about a
   // 401, so the notice goes through a binding rather than through either.
   let noticeLapsed = (): void => undefined;
+  const closing = new AbortController();
   const api = createApi(
     watching(transport, reach.answered, () => {
       noticeLapsed();
     }),
+    { signal: closing.signal, timeout },
   );
 
   const sessions = createSessions({
@@ -285,6 +304,7 @@ export function createClient(config: ClientConfig): Client {
     store,
     reread,
     released: release,
+    report,
     send: async (operation) => {
       const settlement = await sendOperation(
         { api, bytes: (asset) => store.readBlob(asset) },
@@ -315,7 +335,8 @@ export function createClient(config: ClientConfig): Client {
   async function sweep(): Promise<void> {
     sweeping += 1;
     try {
-      await outbox.drain();
+      const leased = await outbox.drain();
+      if (leased !== undefined) drainWhenLapsed(leased);
       if (!classified) return;
 
       classified = false;
@@ -335,6 +356,21 @@ export function createClient(config: ClientConfig): Client {
   function drain(): Promise<void> {
     draining = draining.then(sweep, sweep);
     return draining;
+  }
+
+  // An operation another process is sending is left alone until its lease
+  // lapses, and nothing else would drain again at that moment.
+  let lapsing: ReturnType<typeof setTimeout> | undefined;
+
+  function drainWhenLapsed(until: string): void {
+    clearTimeout(lapsing);
+    lapsing = setTimeout(
+      () => {
+        lapsing = undefined;
+        void drain();
+      },
+      Math.max(0, Date.parse(until) - Date.parse(now())),
+    );
   }
 
   async function mutate(operation: Parameters<typeof outbox.enqueue>[0]) {
@@ -562,6 +598,8 @@ export function createClient(config: ClientConfig): Client {
     },
 
     close() {
+      closing.abort();
+      clearTimeout(lapsing);
       reach.stop();
       actions.stop();
       onReturn.unsubscribe();

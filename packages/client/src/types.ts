@@ -399,10 +399,21 @@ export interface Client {
   dismiss(operation: OperationId): Promise<void>;
 
   /**
-   * Stops the reachability probe, which is the one thing here that keeps
-   * running rather than waiting to be called. A web shell holds one client for
-   * the life of the page and never needs this; a shell that builds a second
-   * client, and a test, do.
+   * Lets go of everything that runs without being asked — the probe, the
+   * watcher, a drain waiting on a lease — so a process holding nothing else
+   * ends. A web shell holds one client for the life of the page and never
+   * needs this; a shell whose process is expected to end owes it one.
+   *
+   * A request already on the wire is abandoned too, so this can be called on a
+   * call that has not settled: a pool that accepts a connection and never
+   * answers would otherwise hold the process open with nothing to wait for.
+   * What it was sending stays in the outbox and goes again once its lease has
+   * lapsed, the same reading as a process that was killed mid-send.
+   *
+   * This does not undo. A closed client sends nothing further — what it is
+   * given is written and then waits — so a client is built for a piece of work
+   * and closed when that work ends, not held across one that may close it
+   * before it is used.
    */
   close(): void;
 }
@@ -417,6 +428,14 @@ export type ClientConfig = {
    * zone it was made in. A port for the same reason the clock is one.
    */
   readonly utcOffset?: () => number;
+  /**
+   * Milliseconds one request may take before it is given up on, which a pool
+   * that accepts a connection and never answers is the reason for. Must stay
+   * under the outbox's lease, or an operation can still be sending when
+   * another process is free to take it: one that does not is refused when the
+   * client is built. Left out, the client's own default.
+   */
+  readonly timeout?: number;
   /**
    * Where a failure with no caller waiting on it goes. A shell decides whether
    * that is a console, a log or something a person sees; unwired, these are

@@ -26,10 +26,43 @@ function declaring(request: Request): Request {
   return new Request(request, { headers });
 }
 
-export function createApi(transport: Transport): Api {
+export type Limits = {
+  /** Fires when the client closes, so a request cannot hold a process open. */
+  readonly signal?: AbortSignal;
+  /** Milliseconds one request may take before it is given up on. */
+  readonly timeout?: number;
+};
+
+/**
+ * A pool that accepts a connection and never answers holds the request open
+ * with nothing to wait for, so neither a closing client nor a limit on how long
+ * a request may take can be left to the socket to notice.
+ *
+ * The timeout is built per request rather than once per client: it counts from
+ * the moment it is made, and one shared across a client's lifetime would fire
+ * once and abort every request after it.
+ */
+function cancellable(request: Request, limits: Limits): Request {
+  const signals = [
+    ...(limits.signal === undefined ? [] : [limits.signal]),
+    ...(limits.timeout === undefined
+      ? []
+      : [AbortSignal.timeout(limits.timeout)]),
+  ];
+
+  const only = signals[0];
+  if (only === undefined) return request;
+
+  return new Request(request, {
+    signal: signals.length === 1 ? only : AbortSignal.any(signals),
+  });
+}
+
+export function createApi(transport: Transport, limits: Limits = {}): Api {
   return createOpenapiClient<paths>({
     baseUrl: transport.baseUrl,
-    fetch: (request) => transport.fetch(declaring(request)),
+    fetch: (request) =>
+      transport.fetch(cancellable(declaring(request), limits)),
   });
 }
 

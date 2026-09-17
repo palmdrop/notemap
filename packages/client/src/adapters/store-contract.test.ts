@@ -44,6 +44,10 @@ export function aTag(name: string, items = 1): TagUse {
   return { name, items };
 }
 
+const T0 = "2026-08-17T00:00:00.000Z";
+const T1 = "2026-08-17T00:01:00.000Z";
+const T2 = "2026-08-17T00:02:00.000Z";
+
 /** What every adapter answers the same, run against each. */
 export function storeContract(open: () => Promise<ClientStore>): void {
   it("reads back the operations it was given, and forgets removed ones", async () => {
@@ -65,6 +69,36 @@ export function storeContract(open: () => Promise<ClientStore>): void {
     const outbox = await store.readOutbox();
     expect(outbox).toHaveLength(1);
     expect(outbox[0]?.state).toBe("sending");
+  });
+
+  it("leases an operation to one asker, and to the next once it lapses", async () => {
+    const store = await open();
+    await store.writeOperation(anOperation("a"));
+
+    const leased = await store.leaseOperation("a", T0, T1);
+    expect(leased?.state).toBe("sending");
+    expect(leased?.until).toBe(T1);
+    expect((await store.readOutbox())[0]?.until).toBe(T1);
+
+    expect(await store.leaseOperation("a", T0, T1)).toBeUndefined();
+    expect((await store.leaseOperation("a", T1, T2))?.until).toBe(T2);
+  });
+
+  it("leases again what was written back as not sending", async () => {
+    const store = await open();
+    await store.writeOperation(anOperation("a"));
+    await store.leaseOperation("a", T0, T1);
+    await store.writeOperation({ ...anOperation("a"), state: "unreachable" });
+
+    expect((await store.leaseOperation("a", T0, T1))?.state).toBe("sending");
+  });
+
+  it("leases nothing it does not hold, or holds as refused", async () => {
+    const store = await open();
+    await store.writeOperation({ ...anOperation("a"), state: "refused" });
+
+    expect(await store.leaseOperation("a", T0, T1)).toBeUndefined();
+    expect(await store.leaseOperation("b", T0, T1)).toBeUndefined();
   });
 
   it("reads back the items it was given, and forgets removed ones", async () => {

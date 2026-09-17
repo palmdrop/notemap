@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./testing": "./src/testing/index.ts",
-    "./indexeddb": "./src/adapters/indexeddb-store.ts"
+    "./indexeddb": "./src/adapters/indexeddb-store.ts",
+    "./filesystem": "./src/adapters/filesystem-store.ts"
   },
   "imports": {
     "#api/*": "./src/api/*.ts",
@@ -31,6 +32,7 @@
     }
   },
   "devDependencies": {
+    "esbuild": "^0.28.0",
     "fake-indexeddb": "^6.2.5",
     "idb": "^8.0.3",
     "openapi-typescript": "^7.13.0",

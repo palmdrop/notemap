@@ -18,6 +18,17 @@ export interface ClientStore {
   readOutbox(): Promise<readonly PendingOperation[]>;
   writeOperation(operation: PendingOperation): Promise<void>;
   removeOperation(id: OperationId): Promise<void>;
+  /**
+   * Takes an operation up for sending, and answers it as now written —
+   * `sending` until `until` — or nothing where it is gone, or another
+   * process's lease on it has not lapsed by `now`. Where two processes ask at
+   * once, one is answered.
+   */
+  leaseOperation(
+    id: OperationId,
+    now: string,
+    until: string,
+  ): Promise<PendingOperation | undefined>;
 
   readItems(): Promise<readonly Item[]>;
   writeItems(items: readonly Item[]): Promise<void>;

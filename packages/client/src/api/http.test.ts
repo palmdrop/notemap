@@ -1,6 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { createServer, type Server } from "node:http";
 
+import { afterEach, describe, expect, it } from "vitest";
+
+import { createFetchTransport } from "../adapters/fetch-transport";
+import { createMemoryStore } from "../adapters/memory-store";
+import { createClient } from "../client";
 import { Refused, Unauthenticated, Unreachable } from "../errors";
+import { read } from "../testing/observing";
 import { mockTransport, json } from "../testing/transport";
 import { acknowledged, answered, createApi } from "./http";
 
@@ -115,5 +121,103 @@ describe("the media type a write declares", () => {
     await api.GET("/v1/feed", {});
 
     expect(asked(transport).headers.get("content-type")).toBeNull();
+  });
+});
+
+let stalling: Server | undefined;
+
+/** Accepts the connection and answers nothing, which no socket times out. */
+function accepting(): Promise<string> {
+  return new Promise((resolve) => {
+    const server = createServer(() => undefined);
+    stalling = server;
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      const port =
+        typeof address === "object" && address !== null ? address.port : 0;
+      resolve(`http://127.0.0.1:${String(port)}`);
+    });
+  });
+}
+
+afterEach(() => {
+  stalling?.closeAllConnections();
+  stalling?.close();
+  stalling = undefined;
+});
+
+describe("a client that has been closed", () => {
+  /**
+   * The signal a close fires does not un-fire, so everything after it is
+   * abandoned the moment it is made. A shell that builds one client and closes
+   * it on a view that unmounts and mounts again is left holding a dead one,
+   * which looks exactly like a pool that cannot be reached.
+   */
+  async function capturing(closed: boolean): Promise<number> {
+    const client = createClient({
+      transport: mockTransport(() => json(200, { ok: true })),
+      store: createMemoryStore(),
+    });
+
+    if (closed) client.close();
+    await client.capture({ channel: "web", text: "after a close" });
+    await client.drain();
+
+    return read(client.waiting);
+  }
+
+  it("sends nothing further, and what it is given waits in the outbox", async () => {
+    expect(await capturing(true)).toBe(1);
+  });
+
+  it("is told apart from a client that was left open, which sends", async () => {
+    expect(await capturing(false)).toBe(0);
+  });
+});
+
+describe("a request's limit", () => {
+  it("is refused where it would outlive the outbox's lease", () => {
+    expect(() =>
+      createClient({
+        transport: mockTransport(() => json(200, { ok: true })),
+        store: createMemoryStore(),
+        timeout: 60_000,
+      }),
+    ).toThrow(RangeError);
+  });
+});
+
+describe("a request against a pool that never answers", () => {
+  it("is given up on, and what it carried stays in the outbox", async () => {
+    const client = createClient({
+      transport: createFetchTransport(await accepting()),
+      store: createMemoryStore(),
+      timeout: 250,
+    });
+    client.watched(false);
+
+    await client.capture({ channel: "web", text: "sent at nothing" });
+    await client.drain();
+
+    expect(read(client.waiting)).toBe(1);
+    client.close();
+  });
+
+  it("is waited on up to the limit, rather than given up on at the first slowness", async () => {
+    const client = createClient({
+      transport: createFetchTransport(await accepting()),
+      store: createMemoryStore(),
+      timeout: 5_000,
+    });
+    client.watched(false);
+
+    await client.capture({ channel: "web", text: "sent at nothing" });
+    const settled = await Promise.race([
+      client.drain().then(() => "drained"),
+      new Promise((resolve) => setTimeout(() => resolve("still waiting"), 750)),
+    ]);
+
+    expect(settled).toBe("still waiting");
+    client.close();
   });
 });

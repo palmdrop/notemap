@@ -10,3 +10,4 @@ apps/daemon/openapi.json
 **/.svelte-kit/
 **/generated.d.ts
 apps/daemon/public/
+apps/raycast-extension/raycast-env.d.ts

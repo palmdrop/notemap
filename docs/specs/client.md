@@ -1,8 +1,18 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-09-15
+**Last updated**: 2026-09-17
 **Shipped**:
+
+- 2026-09-17 — **A client store on a filesystem, and two clients over one store.**
+  `@notemap/client/filesystem` keeps the outbox and the cache in a directory, for a shell that is
+  not a browser; a malformed file is reported and set aside rather than costing the rest. `sending`
+  is now a lease the store hands to one process at a time, so two clients over one store send an
+  operation once between them and a crashed one's work is taken up when its lease lapses. The
+  client's lifetime is written down: `close()` is what a process that ends owes it. The Raycast
+  extension is the first shell over it — a view command that captures and a background command
+  that drains. ([plan](../plans/client-store-on-a-filesystem.md),
+  [ADR 48](../adr/0048-an-operation-is-leased-for-sending.md))
 
 - 2026-09-15 — **The folded summary carries the template.** The held item's folded routing summary
   picks up the template a decision was made from, on the same terms as the place and the pending
@@ -307,6 +317,48 @@ rule that lives in a shell is a rule the next shell has to rewrite.
 This mirrors the split core already makes with its hosts ([ADR 2](../adr/0002-core-is-a-host-agnostic-library.md)):
 the thinking is portable and the wiring is the platform's.
 
+**A client's lifetime is the shell's to end** (2026-09-17). Once created, a client holds things
+that run without being asked: the reachability probe, which schedules its next ask after every
+answer and after every failed request; the action watcher's tempo; and a drain waiting on another
+process's lease to lapse. In a browser tab those go when the page does. In a process that is
+expected to end — a Raycast command, a script, a test — they hold the event loop open, and the
+process does not end until they are let go. `close()` is what lets go: it stops the probe and the
+watcher and clears anything waiting, and what was written to the store stays written. A shell that
+builds a client for a process that ends owes it a `close()`; a web shell holds one client for the
+life of the page and never needs it. A client that has only been told it is not watched
+(`watched(false)`) schedules no probe either, which is what a process that only captures can start
+as, but `close()` is the contract and the other is a tempo.
+
+**A request has a limit** (2026-09-17). The same pool that answers nothing is why: without one, a
+single request waits forever and the outbox never learns the pool is unreachable. `timeout` on the
+client's config is how long one request may take, defaulting to 30 seconds, and it counts from the
+request rather than from the client — one limit shared across a client's lifetime would fire once
+and abort everything after it. Giving up reads as unreachable, the same as a socket that never
+opened, so the operation keeps its place in the outbox and goes again.
+
+The limit must stay under the outbox's own lease of 60 seconds, and a client is refused at
+construction with one that does not. A lease says *this process is sending this operation*, and an
+operation still on the wire when its lease lapses is one another process is free to send a second
+time. That ceiling is also the constraint on uploads: an asset whose bytes cannot cross in 30
+seconds is one no drain will ever finish, and raising the limit for it means raising the lease
+with it. The limit and the close are combined into one signal with `AbortSignal.any`, which is
+where the client's browser floor sits: Chrome 116, Safari 17.4, Firefox 124.
+
+`close()` does not wait for a call that has not settled — it abandons a request already on the
+wire. Waiting is not something a shell can afford to promise: a pool that accepts the connection
+and never answers, which is what a tunnel dropping mid-request looks like, holds the request open
+with nothing to time it out, and a shell that waited for its last call would never end. So a shell
+may close on a drain it has stopped waiting for, which is what the Raycast capture command does
+once its note is safely in the outbox. What was being sent stays there, `sending` until its lease
+lapses, and the next drain sends it — the same reading as a process killed mid-send.
+
+Closing does not undo. The signal a close fires does not un-fire, so a closed client sends nothing
+further: what it is given is written to the store and waits there, which from the outside is
+indistinguishable from a pool that cannot be reached. A client is therefore built for a piece of
+work and closed when that work ends. Binding one to a view is the shape to avoid — a render that
+unmounts and mounts again leaves the second mount holding a client the first one closed, and every
+capture made through it looks offline.
+
 ### The surfaces
 
 A client presents four surfaces, each a thin projection of core:
@@ -610,13 +662,32 @@ missing until the operation drains. The drain runs as soon as hydration lands, s
 previous session reaches the pool without the person doing anything, and a **refused** operation
 read back stays refused: it is not re-sent and it waits for a person, which is what a refusal is.
 
-**An operation read back as `sending` is attempted again.** `sending` is a claim about a process,
-and the process it was claimed in is gone; a drain picks up only what is pending or unreachable, so
-without this an operation the tab was closed on top of would sit in the outbox forever, never sent
-and never settled. Every operation is idempotent under an id minted before it was first sent, which
-is what makes the second attempt safe — the pool answers the first one's identity either way. The
-cost is that an operation whose request did land, and whose answer was lost with the process, is
-sent twice; the pool's answer to the second is the same as to the first.
+**`sending` is a lease, and an operation read back as `sending` is attempted again once it
+lapses** (2026-09-17, [ADR 48](../adr/0048-an-operation-is-leased-for-sending.md); before that,
+on every start). `sending` says a process is sending it, and that process may be gone — or may be
+another one over the same store, still going. So the state carries `until`: a drain leaves a
+`sending` whose `until` is ahead alone, and takes up one whose `until` is past or absent. The lease is a minute. Every operation is idempotent under an id minted before it was first
+sent, which is what makes the second attempt safe — the pool answers the first one's identity
+either way. The cost is that an operation whose request did land, and whose answer was lost with
+the process, is sent twice; the pool's answer to the second is the same as to the first. **The
+acquire is the store's**: `leaseOperation` takes an operation up atomically, so two processes
+reaching for the same pending one in the same instant get one answer between them.
+
+**A drain reads the store back before reaching for what it hydrated.** What this client enqueued is
+its own; what it read out of the store is whatever the store says now — gone, because another
+process landed it, and dropped without being sent; leased by another, and left alone until the
+lease lapses, at which point the client drains again on its own; or enqueued by another process
+since, and taken up. This is what lets a client that is not the one the person typed into drain
+their capture.
+
+**An operation is held in state at once, and a drain waits for its write** (2026-09-17). Two
+things read the outbox in state: an enqueue, to find what it opposes, and a drain, to find what to
+send. Holding the entry only once the store has it would hide it from an opposing enqueue arriving
+during the write, and both would be written and sent. Handing it to a drain before the store has it
+would fail the lease, which reads as *another process holds this* and drops from state what only
+this process has. So the entry is held before it is written, and a drain that has taken it up
+waits for the write to land before it asks the store for the lease; a drop waits the same way, so
+a cancelled operation's late write cannot bring it back.
 
 **A store that cannot be read leaves a cold client, not a dead one, and says so.** Each collection
 is read on its own, so a cache that fails does not also cost the outbox — the one thing whose loss
@@ -752,8 +823,15 @@ draft needs an answer to this, and does not have one.
 
 **Closing a client does not revoke the URLs it minted.** They go when the bytes do, and a page that
 goes away takes its own with it — so the leak is bounded by one session. A shell that builds a
-second client over one store, which is what a reload is outside a browser, leaks the first one's
-set; that is worth knowing before a shell starts doing it often.
+second client over one store leaks the first one's set; that is worth knowing before a shell starts
+doing it often.
+
+**Two clients over one store is a supported arrangement** (2026-09-17,
+[ADR 48](../adr/0048-an-operation-is-leased-for-sending.md)). Each drains what it finds, an
+operation is sent once between them because sending it is a lease the store hands to one asker,
+and one that a process died holding is taken up by the next once the lease lapses. What one
+enqueues, the other sends if it gets there first; what one lands, the other drops. Neither sees the
+other's cache writes until it next starts.
 
 ### The ports — the seam for offline
 
@@ -777,8 +855,9 @@ waiting on it goes — a collection that could not be read, a cache write that d
 these are swallowed as they always were; what a shell does with one is the shell's.
 
 **The store answers for every collection the client holds** (2026-08-25), one typed method per
-concern rather than one opaque blob: the outbox an operation at a time, the cached items in
-batches, the tags in use and the destinations each replaced whole as the pool answers them, the
+concern rather than one opaque blob: the outbox an operation at a time — and **leased** an
+operation at a time, atomically, since that is the one write two processes may race on — the
+cached items in batches, the tags in use and the destinations each replaced whole as the pool answers them, the
 **pool identity** the cache describes, and an asset's blob. **The local URL for a blob is the
 store's answer, not the client's** — the same reason `assetUrl` sits on the transport. A browser
 adapter mints an object URL and owns revoking it; a shell that is not a browser answers
@@ -796,6 +875,26 @@ copy of something the pool holds.
 start. *Amended 2026-08-26*: the attachment landed with it — bytes held in the store for a capture
 that has not drained, and resolved in place of a URL ([below](#an-attachment-made-offline)). The
 surfaces and reachability are described above.
+
+**A shell outside a browser wires a directory** (2026-09-17, `@notemap/client/filesystem`). The
+adapter takes the directory and names no platform: where it is, is the shell's question. Each read
+cache and the pool identity is one file, written to a unique temporary name and renamed over the
+old one, so a reader sees the previous list or the next and never half of either. **The outbox is
+one file per operation**, named for its id — written by rename, removed by unlink, read by listing
+the directory — which is what lets two processes enqueue into one directory without either losing
+a write. A lease is an empty file made beside the operation, exclusively, so two askers get one
+answer between them; one a process died holding before it wrote `sending` through is told from one
+made a moment ago only by age, and is taken over once a lease length has passed. A blob is its bytes beside a record of the filename and the media type, written bytes
+first so the record is what says a blob is there; `blobUrl` answers a `file://` URL, which nothing
+has to revoke. The directory is made on the first write, not when the store is built.
+
+**A file a person can edit is a file that can be malformed**, and the adapter defends what it can.
+An operation file that does not parse is reported through `onError`, **set aside** under an
+`.unreadable` name — kept, so nothing the person typed is thrown away, but read no more, so it is
+not reported again on every start — and the rest of the outbox is read as normal. A collection file
+that does not parse is reported and answers empty, which is the answer never having been written
+gives and lands the client in the cold start it already knows how to be in; the next list the pool
+answers is written over it. Bytes with no record beside them are not a blob.
 
 **The cache's shape**, so the port serves the working set rather than an arbitrary blob: the
 **queue is the offline working set**, cached as the local source of truth a person triages against;
@@ -1023,7 +1122,9 @@ that logic out of the one place it is meant to live.
   on a cold start and removes the whole class of question about what a half-read cache answers.
 - **`sending` does not survive the process that claimed it** (2026-08-25): hydration reads such an
   operation back as pending, because a drain skips anything else and it would otherwise never be
-  sent again. Idempotence under a client-minted id is what pays for the double send.
+  sent again. Idempotence under a client-minted id is what pays for the double send. *Superseded
+  2026-09-17 by [ADR 48](../adr/0048-an-operation-is-leased-for-sending.md): `sending` is a lease,
+  and survives until it lapses.*
 - **A failed read is reported, not swallowed** (2026-08-25): per collection, so a cache that cannot
   be read does not cost the outbox, and through a seam rather than a `console` the package chose on
   a shell's behalf.

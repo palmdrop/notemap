@@ -9,7 +9,11 @@ import type {
   RoutingTemplate,
   TagUse,
 } from "#api/types";
-import type { OperationId, PendingOperation } from "#outbox/operations";
+import {
+  attemptable,
+  type OperationId,
+  type PendingOperation,
+} from "#outbox/operations";
 import type { ClientStore } from "#ports/store";
 import { localUrls } from "./local-urls";
 
@@ -100,6 +104,22 @@ export function createIndexedDbStore(
 
     async removeOperation(id) {
       await (await open()).delete("outbox", id);
+    },
+
+    async leaseOperation(id, now, until) {
+      // One transaction: another tab asking at the same moment reads what this
+      // one wrote, or the other way round, and never both the same thing.
+      const transaction = (await open()).transaction("outbox", "readwrite");
+      const held = await transaction.store.get(id);
+      if (held === undefined || !attemptable(held, now)) {
+        await transaction.done;
+        return undefined;
+      }
+
+      const leased: PendingOperation = { ...held, state: "sending", until };
+      await transaction.store.put(leased);
+      await transaction.done;
+      return leased;
     },
 
     async readItems() {

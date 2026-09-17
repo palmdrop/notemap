@@ -53,6 +53,10 @@ export function mockTransport(handler: Handler): MockTransport {
     },
 
     async fetch(request) {
+      // A real fetch refuses an aborted signal before it reaches the network,
+      // and a mock that answered anyway would let a closed client look alive.
+      if (request.signal.aborted) throw request.signal.reason as Error;
+
       sent.push(request.clone());
       if (failing) throw new TypeError("fetch failed");
 

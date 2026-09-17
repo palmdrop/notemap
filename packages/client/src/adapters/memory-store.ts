@@ -7,7 +7,11 @@ import type {
   PoolIdentity,
   TagUse,
 } from "#api/types";
-import type { OperationId, PendingOperation } from "#outbox/operations";
+import {
+  attemptable,
+  type OperationId,
+  type PendingOperation,
+} from "#outbox/operations";
 import type { ClientStore } from "#ports/store";
 import { localUrls } from "./local-urls";
 
@@ -31,6 +35,15 @@ export function createMemoryStore(): ClientStore {
 
     async removeOperation(id) {
       operations.delete(id);
+    },
+
+    async leaseOperation(id, now, until) {
+      const held = operations.get(id);
+      if (held === undefined || !attemptable(held, now)) return undefined;
+
+      const leased: PendingOperation = { ...held, state: "sending", until };
+      operations.set(id, leased);
+      return leased;
     },
 
     readItems: async () => [...items.values()],

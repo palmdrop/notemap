@@ -164,9 +164,10 @@ describe("hydration", () => {
     const store = createMemoryStore();
     await store.writeItems([anItem("one")]);
     // What the store holds when the tab is closed while the request is away.
-    await store.writeOperation(
-      anOperation("op-1", { kind: "archive", item: "one" }, "sending"),
-    );
+    await store.writeOperation({
+      ...anOperation("op-1", { kind: "archive", item: "one" }, "sending"),
+      until: "2026-08-17T11:59:00.000Z",
+    });
 
     const sent: string[] = [];
     const { client } = clientOver(store, (request) => {
@@ -179,6 +180,30 @@ describe("hydration", () => {
     expect(sent).toEqual(["POST /v1/items/one/archive"]);
     expect(read(client.outbox)).toEqual([]);
     expect(await store.readOutbox()).toEqual([]);
+  });
+
+  it("leaves an operation another process is sending alone until its lease lapses", async () => {
+    const store = createMemoryStore();
+    await store.writeItems([anItem("one")]);
+    await store.writeOperation({
+      ...anOperation("op-1", { kind: "archive", item: "one" }, "sending"),
+      until: "2026-08-17T12:00:30.000Z",
+    });
+
+    const sent: string[] = [];
+    const { client } = clientOver(store, (request) => {
+      sent.push(routeOf(request));
+      return json(200, anItem("one"));
+    });
+
+    await client.drain();
+    expect(sent).toEqual([]);
+    expect(read(client.outbox)[0]?.state).toBe("sending");
+
+    clock.set("2026-08-17T12:00:30.000Z");
+    await client.drain();
+    expect(sent).toEqual(["POST /v1/items/one/archive"]);
+    expect(read(client.outbox)).toEqual([]);
   });
 
   it("reports a store it cannot read, and keeps the collections it could", async () => {

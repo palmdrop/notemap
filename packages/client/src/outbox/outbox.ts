@@ -5,12 +5,18 @@ import type { ClientStore } from "#ports/store";
 import type { Undo } from "#state/applied";
 import type { ClientState } from "#state/state";
 import type { Settlement } from "./handler";
-import type { Operation, OperationId, PendingOperation } from "./operations";
+import {
+  attemptable,
+  type Operation,
+  type OperationId,
+  type PendingOperation,
+} from "./operations";
 import { applyOperation, opposes, targetOf } from "./registry";
 
 export type Outbox = {
   enqueue(operation: Operation): Promise<void>;
-  drain(): Promise<void>;
+  /** Answers when the soonest lease it left alone lapses, if it left one. */
+  drain(): Promise<string | undefined>;
   dismiss(id: OperationId): Promise<void>;
   /** Which of these hydration read back, rather than this session enqueueing. */
   restored(ids: readonly OperationId[]): void;
@@ -27,9 +33,21 @@ export type OutboxDeps = {
   readonly reread: (item: ItemId) => Promise<void>;
   /** An operation that has left the outbox for good: landed, or dismissed. */
   readonly released: (operation: Operation) => Promise<void>;
+  readonly report: (error: unknown) => void;
   readonly now: () => string;
   readonly mint: () => OperationId;
 };
+
+/**
+ * Long enough that a slow upload is not taken over while it is still going;
+ * short enough that a capture whose process died mid-send is not stranded.
+ */
+export const LEASE_MS = 60_000;
+
+function unleased(entry: PendingOperation): PendingOperation {
+  const { until: _, ...rest } = entry;
+  return rest;
+}
 
 export function createOutbox(deps: OutboxDeps): Outbox {
   /**
@@ -39,19 +57,97 @@ export function createOutbox(deps: OutboxDeps): Outbox {
    */
   const undos = new Map<OperationId, Undo>();
   const chains = new Map<string, Promise<void>>();
-  /** Claimed the moment a drain schedules one, so a second drain cannot re-send it. */
-  const inflight = new Set<OperationId>();
+  /** Handed over the moment a drain schedules one, so a second drain cannot re-send it. */
+  const handedOver = new Set<OperationId>();
   const restored = new Set<OperationId>();
+  /** Every id this process has held, so a stale read of the store cannot bring one back. */
+  const seen = new Set<OperationId>();
+  /** The write of each entry still on its way to the store, so a drain can wait for it. */
+  const writes = new Map<OperationId, Promise<void>>();
 
-  function record(entry: PendingOperation): Promise<void> {
+  function hold(entry: PendingOperation): void {
+    seen.add(entry.id);
     deps.state.update((state) => ({
       ...state,
       outbox: state.outbox.some((held) => held.id === entry.id)
         ? state.outbox.map((held) => (held.id === entry.id ? entry : held))
         : [...state.outbox, entry],
     }));
+  }
 
-    return deps.store.writeOperation(entry);
+  /**
+   * The state before the store, so an enqueue arriving during the write still
+   * sees what it opposes. The write is kept where `stored` can wait for it: a
+   * drain that leased against a store yet to hold the entry would read the
+   * failed lease as another process's, and drop what only this one has.
+   */
+  function record(entry: PendingOperation): Promise<void> {
+    hold(entry);
+    const write = () => deps.store.writeOperation(entry);
+    const previous = writes.get(entry.id) ?? Promise.resolve();
+    const next = previous.then(write, write);
+    writes.set(entry.id, next);
+    void next
+      .catch(() => undefined)
+      .then(() => {
+        if (writes.get(entry.id) === next) writes.delete(entry.id);
+      });
+    return next;
+  }
+
+  /** Once every write of this entry has reached the store, or failed to. */
+  async function stored(id: OperationId): Promise<void> {
+    await writes.get(id)?.catch(() => undefined);
+  }
+
+  /** Left the outbox by another process's hand: nothing here to release. */
+  function forget(id: OperationId): void {
+    undos.delete(id);
+    restored.delete(id);
+    deps.state.update((state) => ({
+      ...state,
+      outbox: state.outbox.filter((entry) => entry.id !== id),
+    }));
+  }
+
+  /**
+   * The store is what other processes over it write to, so a drain reads it
+   * back first. What this process enqueued is its own to describe; what it read
+   * back from the store is whatever the store says now — landed by another
+   * process and gone, or leased by one and left alone — and what another
+   * process has enqueued since is taken up.
+   */
+  async function reconciled(): Promise<void> {
+    let held: readonly PendingOperation[];
+    try {
+      held = await deps.store.readOutbox();
+    } catch (error) {
+      deps.report(error);
+      return;
+    }
+
+    const stored = new Map(held.map((entry) => [entry.id, entry]));
+    const theirs = (id: OperationId) => restored.has(id) && !handedOver.has(id);
+
+    deps.state.update((state) => {
+      const kept = state.outbox.flatMap((entry) => {
+        if (!theirs(entry.id)) return [entry];
+        const now = stored.get(entry.id);
+        if (now !== undefined) return [now];
+
+        undos.delete(entry.id);
+        restored.delete(entry.id);
+        return [];
+      });
+      const added = held.filter((entry) => !seen.has(entry.id));
+
+      for (const entry of added) {
+        seen.add(entry.id);
+        restored.add(entry.id);
+      }
+
+      return { ...state, outbox: [...kept, ...added] };
+    });
   }
 
   async function drop(id: OperationId): Promise<void> {
@@ -63,6 +159,7 @@ export function createOutbox(deps: OutboxDeps): Outbox {
       outbox: state.outbox.filter((entry) => entry.id !== id),
     }));
 
+    await stored(id);
     await deps.store.removeOperation(id);
     if (held !== undefined) await deps.released(held.operation);
   }
@@ -72,9 +169,9 @@ export function createOutbox(deps: OutboxDeps): Outbox {
     const opposed = deps.state.get().outbox.filter(
       (held) =>
         held.state !== "sending" &&
-        // A drain claims an operation a turn before it is recorded as
+        // A drain hands an operation over a turn before it is recorded as
         // sending, and what has been handed over cannot be taken back.
-        !inflight.has(held.id) &&
+        !handedOver.has(held.id) &&
         opposes(held.operation, operation),
     );
 
@@ -103,7 +200,27 @@ export function createOutbox(deps: OutboxDeps): Outbox {
   }
 
   async function send(entry: PendingOperation): Promise<void> {
-    await record({ ...entry, state: "sending" });
+    await stored(entry.id);
+    const now = deps.now();
+    const until = new Date(Date.parse(now) + LEASE_MS).toISOString();
+    const leased = await deps.store.leaseOperation(entry.id, now, until);
+
+    // Another process got there first: the store's word on it is taken over
+    // this one's, and it is left to whoever holds it.
+    if (leased === undefined) {
+      const theirs = (await deps.store.readOutbox()).find(
+        (held) => held.id === entry.id,
+      );
+      if (theirs === undefined) {
+        forget(entry.id);
+      } else {
+        restored.add(entry.id);
+        hold(theirs);
+      }
+      return;
+    }
+
+    hold(leased);
 
     try {
       const settlement = await deps.send(entry.operation);
@@ -119,7 +236,7 @@ export function createOutbox(deps: OutboxDeps): Outbox {
       // away would burn every capture waiting behind it.
       if (error instanceof Unreachable || error instanceof Unauthenticated) {
         await record({
-          ...entry,
+          ...unleased(entry),
           state: "unreachable",
           failure: saidBy(error),
         });
@@ -136,7 +253,11 @@ export function createOutbox(deps: OutboxDeps): Outbox {
         undos.delete(entry.id);
       }
 
-      await record({ ...entry, state: "refused", failure: saidBy(error) });
+      await record({
+        ...unleased(entry),
+        state: "refused",
+        failure: saidBy(error),
+      });
     }
   }
 
@@ -156,27 +277,49 @@ export function createOutbox(deps: OutboxDeps): Outbox {
    * running still goes. `attempted` is what stops an unreachable one being
    * retried forever inside a single drain.
    */
-  async function drain(): Promise<void> {
+  async function drain(): Promise<string | undefined> {
     const attempted = new Set<OperationId>();
+    let leased: string | undefined;
 
-    for (;;) {
+    function wave(eligible: (entry: PendingOperation) => boolean): void {
+      const now = deps.now();
+
       for (const entry of deps.state.get().outbox) {
-        if (entry.state !== "pending" && entry.state !== "unreachable")
+        if (!eligible(entry)) continue;
+        if (handedOver.has(entry.id) || attempted.has(entry.id)) continue;
+        if (!attemptable(entry, now)) {
+          if (
+            entry.state === "sending" &&
+            entry.until !== undefined &&
+            (leased === undefined || entry.until < leased)
+          ) {
+            leased = entry.until;
+          }
           continue;
-        if (inflight.has(entry.id) || attempted.has(entry.id)) continue;
+        }
 
         attempted.add(entry.id);
-        inflight.add(entry.id);
+        handedOver.add(entry.id);
         chain(targetOf(entry.operation), async () => {
           try {
             await send(entry);
           } finally {
-            inflight.delete(entry.id);
+            handedOver.delete(entry.id);
           }
         });
       }
+    }
 
-      if (chains.size === 0) return;
+    // What this process enqueued is handed over before anything yields, so an
+    // opposing enqueue arriving meanwhile cannot take it back. What came out of
+    // the store is handed over only once the store has been asked again, since
+    // another process may have landed or leased it since.
+    wave((entry) => !restored.has(entry.id));
+    await reconciled();
+
+    for (;;) {
+      wave(() => true);
+      if (chains.size === 0) return leased;
       await Promise.allSettled([...chains.values()]);
     }
   }
@@ -186,7 +329,10 @@ export function createOutbox(deps: OutboxDeps): Outbox {
     drain,
     dismiss: drop,
     restored: (ids) => {
-      for (const id of ids) restored.add(id);
+      for (const id of ids) {
+        seen.add(id);
+        restored.add(id);
+      }
     },
   };
 }
