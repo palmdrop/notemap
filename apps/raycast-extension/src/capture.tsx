@@ -2,6 +2,7 @@ import {
   Action,
   ActionPanel,
   Form,
+  PopToRootType,
   showHUD,
   showToast,
   Toast,
@@ -74,6 +75,10 @@ export default function Command() {
       message: said,
     });
 
+    // What the notice may claim: past this, the note is in the outbox and safe,
+    // and a failure after it is no longer a failure to capture.
+    let captured = false;
+
     try {
       const asset = await attaching(client, files);
       const item = await client.capture({
@@ -81,6 +86,8 @@ export default function Command() {
         text,
         ...(asset === undefined ? {} : { asset }),
       });
+      captured = true;
+
       for (const tag of chosen(tags, newTags)) await client.tag(item.id, tag);
 
       // Whichever comes first: a pool that answered, or a wait worth no more of
@@ -91,14 +98,26 @@ export default function Command() {
       ]);
 
       await toast.hide();
+      // The form is left behind as well as closed: without this the next launch
+      // comes back to it, still holding the note that has already been sent.
       await showHUD(
         landed === true ? `Captured — ${said}` : `Waiting to send — ${said}`,
+        { clearRootSearch: true, popToRootType: PopToRootType.Immediate },
       );
     } catch (error) {
-      await toast.hide();
-      await showHUD(
-        `Nothing was captured — ${error instanceof Error ? error.message : said}`,
-      );
+      if (captured) {
+        await toast.hide();
+        await showHUD(`Captured, but not all of it — ${said}`, {
+          clearRootSearch: true,
+          popToRootType: PopToRootType.Immediate,
+        });
+      } else {
+        // Stays on the form, which still holds the words: a notice would close
+        // it and take them with it, and there is nothing captured to close over.
+        toast.style = Toast.Style.Failure;
+        toast.title = "Nothing was captured";
+        toast.message = error instanceof Error ? error.message : said;
+      }
     } finally {
       client.close();
     }
