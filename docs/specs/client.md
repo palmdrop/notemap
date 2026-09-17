@@ -679,6 +679,15 @@ lease lapses, at which point the client drains again on its own; or enqueued by 
 since, and taken up. This is what lets a client that is not the one the person typed into drain
 their capture.
 
+**An operation reaches the store before it reaches state** (2026-09-17). A drain reads the store to
+decide what an operation is, so one visible in state that the store has not got yet is one a drain
+can claim and then fail to lease — and a failed lease means *another process holds this*, which is
+not true of an entry its own process has not finished writing. Reading that as another process's
+work drops it from state while leaving it on disk, and because a client never takes back an id it
+has already held, nothing in that process picks it up again: the capture sits in the outbox until
+some later process reads it out. Writing first closes the window at the cost of an entry appearing
+in the outbox a write later than the item it captures, which is already on the surfaces by then.
+
 **A store that cannot be read leaves a cold client, not a dead one, and says so.** Each collection
 is read on its own, so a cache that fails does not also cost the outbox — the one thing whose loss
 costs a person work. What could not be read comes up empty and is **reported** rather than

@@ -73,9 +73,15 @@ export function createOutbox(deps: OutboxDeps): Outbox {
     }));
   }
 
-  function record(entry: PendingOperation): Promise<void> {
+  /**
+   * The store before the state. An entry held in state the store has not got
+   * yet is one a drain can claim and then fail to lease, which reads as another
+   * process having taken it — and `seen` would keep this process from ever
+   * taking it back, leaving it on disk for whichever process comes next.
+   */
+  async function record(entry: PendingOperation): Promise<void> {
+    await deps.store.writeOperation(entry);
     hold(entry);
-    return deps.store.writeOperation(entry);
   }
 
   /** Left the outbox by another process's hand: nothing here to release. */

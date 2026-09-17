@@ -145,6 +145,52 @@ describe("opposing operations still in the outbox", () => {
   });
 });
 
+describe("an operation a drain reaches before the store has it", () => {
+  /**
+   * The drain the reachability probe starts arrives while the store is still
+   * being written to. Held in state that early, the entry is claimed, fails to
+   * lease against a store that has not got it yet, and reads as one another
+   * process took — after which `seen` keeps this process from ever taking it
+   * back, and it is left on disk for the next one to find.
+   */
+  it("is still sent, rather than left behind for another process", async () => {
+    const base = createMemoryStore();
+    let landed: () => void = () => undefined;
+    const writing = new Promise<void>((resolve) => {
+      landed = resolve;
+    });
+    let first = true;
+
+    const store: ClientStore = {
+      ...base,
+      async writeOperation(entry) {
+        if (first) {
+          first = false;
+          await writing;
+        }
+        return base.writeOperation(entry);
+      },
+    };
+
+    const { outbox, sent, answer } = engineOver([anItem("one")], store);
+
+    clock.set("2026-08-17T12:00:01.000Z");
+    const enqueued = outbox.enqueue(ARCHIVE);
+    await outbox.drain();
+
+    landed();
+    await enqueued;
+
+    const draining = outbox.drain();
+    await flush();
+    answer({ item: anItem("one") });
+    await draining;
+
+    expect(sent).toHaveLength(1);
+    expect(await store.readOutbox()).toEqual([]);
+  });
+});
+
 describe("an operation already handed over", () => {
   it("does not cancel with a later one, even before it is recorded as sending", async () => {
     const { outbox, state, sent } = engineOver([anItem("one")]);
