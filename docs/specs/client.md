@@ -324,10 +324,18 @@ process's lease to lapse. In a browser tab those go when the page does. In a pro
 expected to end — a Raycast command, a script, a test — they hold the event loop open, and the
 process does not end until they are let go. `close()` is what lets go: it stops the probe and the
 watcher and clears anything waiting, and what was written to the store stays written. A shell that
-builds a client for a process that ends owes it a `close()` once its last call has settled; a web
-shell holds one client for the life of the page and never needs it. A client that has only been
-told it is not watched (`watched(false)`) schedules no probe either, which is what a process that
-only captures can start as, but `close()` is the contract and the other is a tempo.
+builds a client for a process that ends owes it a `close()`; a web shell holds one client for the
+life of the page and never needs it. A client that has only been told it is not watched
+(`watched(false)`) schedules no probe either, which is what a process that only captures can start
+as, but `close()` is the contract and the other is a tempo.
+
+`close()` does not wait for a call that has not settled — it abandons a request already on the
+wire. Waiting is not something a shell can afford to promise: a pool that accepts the connection
+and never answers, which is what a tunnel dropping mid-request looks like, holds the request open
+with nothing to time it out, and a shell that waited for its last call would never end. So a shell
+may close on a drain it has stopped waiting for, which is what the Raycast capture command does
+once its note is safely in the outbox. What was being sent stays there, `sending` until its lease
+lapses, and the next drain sends it — the same reading as a process killed mid-send.
 
 ### The surfaces
 

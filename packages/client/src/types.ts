@@ -403,6 +403,12 @@ export interface Client {
    * watcher, a drain waiting on a lease — so a process holding nothing else
    * ends. A web shell holds one client for the life of the page and never
    * needs this; a shell whose process is expected to end owes it one.
+   *
+   * A request already on the wire is abandoned too, so this can be called on a
+   * call that has not settled: a pool that accepts a connection and never
+   * answers would otherwise hold the process open with nothing to wait for.
+   * What it was sending stays in the outbox and goes again once its lease has
+   * lapsed, the same reading as a process that was killed mid-send.
    */
   close(): void;
 }

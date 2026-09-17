@@ -26,10 +26,23 @@ function declaring(request: Request): Request {
   return new Request(request, { headers });
 }
 
-export function createApi(transport: Transport): Api {
+/**
+ * A pool that accepts a connection and never answers holds the request open
+ * with nothing to wait for, so the signal a closing client carries is what
+ * lets a process end rather than wait on it.
+ */
+function cancellable(
+  request: Request,
+  signal: AbortSignal | undefined,
+): Request {
+  return signal === undefined ? request : new Request(request, { signal });
+}
+
+export function createApi(transport: Transport, signal?: AbortSignal): Api {
   return createOpenapiClient<paths>({
     baseUrl: transport.baseUrl,
-    fetch: (request) => transport.fetch(declaring(request)),
+    fetch: (request) =>
+      transport.fetch(cancellable(declaring(request), signal)),
   });
 }
 

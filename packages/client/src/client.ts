@@ -139,10 +139,12 @@ export function createClient(config: ClientConfig): Client {
   // The sessions object needs the api, and the api needs to tell it about a
   // 401, so the notice goes through a binding rather than through either.
   let noticeLapsed = (): void => undefined;
+  const closing = new AbortController();
   const api = createApi(
     watching(transport, reach.answered, () => {
       noticeLapsed();
     }),
+    closing.signal,
   );
 
   const sessions = createSessions({
@@ -579,6 +581,7 @@ export function createClient(config: ClientConfig): Client {
     },
 
     close() {
+      closing.abort();
       clearTimeout(lapsing);
       reach.stop();
       actions.stop();

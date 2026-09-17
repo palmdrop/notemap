@@ -81,6 +81,16 @@ describe("a process that captures through a client", () => {
     expect(await readdir(join(directory, "outbox"))).toHaveLength(1);
   });
 
+  it("ends although it closed on a drain that never got an answer", async () => {
+    const { code, stderr } = await ran(10_000, "stalling");
+
+    expect(stderr).toBe("");
+    expect(code).toBe(0);
+    expect(await readdir(join(directory, "outbox"))).toHaveLength(1);
+    // Past the patience above, so a process that never ends is reported as
+    // that rather than as the runner giving up on the test.
+  }, 15_000);
+
   it("is held open by a client left open", async () => {
     const { code } = await ran(1_500, "open");
 
