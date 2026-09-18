@@ -1,9 +1,9 @@
 # A client store on a filesystem
 
 **Date**: 2026-09-16
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/client.md`
-**Closed**:
+**Closed**: 2026-09-16
 
 ---
 
@@ -138,10 +138,10 @@ Depends on phases 3 and 4.
 - [x] The Raycast extension opens the adapter at `environment.supportPath`. Both commands run a
       whole client: the view command captures through it and closes it when the view goes, the
       background command drains and closes before it returns
-- [ ] Verify by hand: capture with the daemon stopped, quit Raycast, start the daemon, and find the
+- [x] Verify by hand: capture with the daemon stopped, quit Raycast, start the daemon, and find the
       capture in the pool without typing it again
-- [ ] Verify by hand: the background command's process ends rather than being killed
-- [ ] `git commit`
+- [x] Verify by hand: the background command's process ends rather than being killed
+- [x] `git commit`
 
 ---
 
