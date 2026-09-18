@@ -206,9 +206,7 @@
       {fired === undefined ? name : trigger(name)}
     </span>
   {:else}
-    <span
-      class="px-0.75 py-0.25 {chosen === name ? 'bg-ink text-ground' : ''}"
-    >
+    <span class="px-0.75 py-0.25 {chosen === name ? 'bg-ink text-ground' : ''}">
       <button
         type="button"
         aria-pressed="true"
@@ -222,7 +220,9 @@
         aria-label={fired === undefined
           ? undefined
           : `${name}, routes to ${fired}`}
-        class="{chosen === name ? '' : 'hover:underline'} {fired === undefined ? '' : TRIGGER}"
+        class="{chosen === name ? '' : 'hover:underline'} {fired === undefined
+          ? ''
+          : TRIGGER}"
       >
         {fired === undefined ? name : trigger(name)}
       </button>
