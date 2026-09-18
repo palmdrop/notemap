@@ -62,7 +62,7 @@
     aria-expanded={open}
     aria-controls={panel}
     onclick={() => (open = !open)}
-    class="flex cursor-pointer items-baseline gap-1 tabular-nums disabled:cursor-default"
+    class="flex items-baseline gap-1 tabular-nums"
   >
     <span>{word}</span>
     <span aria-hidden="true">▾</span>

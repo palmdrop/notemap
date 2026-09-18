@@ -35,3 +35,34 @@ describe("the envelope a capture is sent as", () => {
     expect(envelope.utcOffset).toBe(0);
   });
 });
+
+describe("the tags a capture carries", () => {
+  it("go on the envelope and are drawn on the optimistic item, as the source's", () => {
+    const envelope = envelopeFor(
+      { ...input, tags: ["research", "route/reading"] },
+      "item-1",
+      "2026-09-05T21:30:00.000Z",
+    );
+
+    expect(envelope.tags).toEqual(["research", "route/reading"]);
+    expect(optimisticItem(envelope).tags).toEqual([
+      {
+        name: "research",
+        by: { kind: "source", source: "web-manual" },
+        addedAt: "2026-09-05T21:30:00.000Z",
+      },
+      {
+        name: "route/reading",
+        by: { kind: "source", source: "web-manual" },
+        addedAt: "2026-09-05T21:30:00.000Z",
+      },
+    ]);
+  });
+
+  it("leaves the envelope without a field where there are none", () => {
+    const envelope = envelopeFor(input, "item-1", "2026-09-05T21:30:00.000Z");
+
+    expect(envelope.tags).toBeUndefined();
+    expect(optimisticItem(envelope).tags).toEqual([]);
+  });
+});

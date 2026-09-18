@@ -895,6 +895,31 @@ test("esc leaves the row's editable shape before it leaves the row", async () =>
   expect(stamps(true)).toHaveLength(0);
 });
 
+/** `⏎` in the box is a new line; `mod+⏎` is the same press as `save`. */
+test("mod-enter in the editable shape saves it", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  const field = await screen.findByLabelText("What it says");
+  await fireEvent.input(field, { target: { value: "rewritten" } });
+
+  await fireEvent.keyDown(field, { key: "Enter" });
+  await fireEvent.keyDown(field, { key: "Enter", shiftKey: true });
+  await tick();
+  expect(asked()).not.toContain("POST /v1/items/one/edit");
+  expect(screen.queryByLabelText("What it says")).not.toBeNull();
+
+  await fireEvent.keyDown(field, { key: "Enter", metaKey: true });
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/edit");
+  });
+  expect(screen.queryByLabelText("What it says")).toBeNull();
+});
+
 test("walking to another row leaves the one being rewritten as it was", async () => {
   pool(queued("one", "two"));
 

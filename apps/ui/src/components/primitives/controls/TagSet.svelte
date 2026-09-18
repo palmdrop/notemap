@@ -6,8 +6,8 @@
 
   /**
    * A chooser over known names with free entry. What the item carries is a row
-   * of pressed words, each taken off by pressing it once to select it and
-   * again on the `×` that appears. `+` opens a line with the pool's offer in a
+   * of pressed words, each taken off by pressing it once to select it — drawn
+   * inverted — and again on the `×` that appears. `+` opens a line with the pool's offer in a
    * panel beneath it, narrowed as the line is typed into: the first match is
    * marked as soon as the line is typed into, `⇥` completes what was typed as
    * far as the offer agrees and once there is nothing left to complete walks
@@ -21,6 +21,7 @@
     fires,
     held,
     addable = true,
+    label = "Add a tag",
     onadd,
     onremove,
   }: {
@@ -41,6 +42,8 @@
     held?: (name: string) => boolean;
     /** Whether the `+` is drawn. A row offers it only while it is selected. */
     addable?: boolean;
+    /** What the `+` and the line are called, where two sets share a page. */
+    label?: string;
     onadd: (name: string) => void;
     onremove: (name: string) => void;
   } = $props();
@@ -203,36 +206,40 @@
       {fired === undefined ? name : trigger(name)}
     </span>
   {:else}
-    <button
-      type="button"
-      aria-pressed="true"
-      onclick={() => press(name)}
-      onkeydown={(event) => {
-        if (event.key === "Escape" && chosen === name) {
-          event.stopPropagation();
-          chosen = undefined;
-        }
-      }}
-      aria-label={fired === undefined
-        ? undefined
-        : `${name}, routes to ${fired}`}
-      class="hover:underline {fired === undefined ? '' : TRIGGER}"
-    >
-      {fired === undefined ? name : trigger(name)}
-    </button>
-    {#if chosen === name}
+    <span class="px-0.75 py-0.25 {chosen === name ? 'bg-ink text-ground' : ''}">
       <button
         type="button"
-        aria-label={`remove ${name}`}
-        onclick={() => {
-          chosen = undefined;
-          onremove(name);
+        aria-pressed="true"
+        onclick={() => press(name)}
+        onkeydown={(event) => {
+          if (event.key === "Escape" && chosen === name) {
+            event.stopPropagation();
+            chosen = undefined;
+          }
         }}
-        class="hover:underline"
+        aria-label={fired === undefined
+          ? undefined
+          : `${name}, routes to ${fired}`}
+        class="{chosen === name ? '' : 'hover:underline'} {fired === undefined
+          ? ''
+          : TRIGGER}"
       >
-        ×
+        {fired === undefined ? name : trigger(name)}
       </button>
-    {/if}
+      {#if chosen === name}
+        <button
+          type="button"
+          aria-label={`remove ${name}`}
+          onclick={() => {
+            chosen = undefined;
+            onremove(name);
+          }}
+          class="hover:underline"
+        >
+          ×
+        </button>
+      {/if}
+    </span>
   {/if}
 {/each}
 
@@ -247,7 +254,7 @@
       spellcheck="false"
       autocapitalize="off"
       autocomplete="off"
-      aria-label="Add a tag"
+      aria-label={label}
       role="combobox"
       aria-autocomplete="list"
       aria-expanded={rows.length > 0}
@@ -287,7 +294,7 @@
 {:else if addable}
   <button
     type="button"
-    aria-label="Add a tag"
+    aria-label={label}
     onclick={open}
     class="hover:underline">+</button
   >

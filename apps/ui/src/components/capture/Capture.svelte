@@ -2,8 +2,12 @@
   import { saidBy } from "@notemap/client";
 
   import Action from "$components/primitives/controls/Action.svelte";
+  import TagSet from "$components/primitives/controls/TagSet.svelte";
   import { PICTURE, TYPED } from "$lib/channels";
   import { client } from "$lib/client";
+  import { sayItFired } from "$lib/firing";
+  import { commits } from "$lib/command/keys";
+  import { offerable, triggeredBy } from "$lib/templates";
 
   /**
    * Whether the field takes the caret when the queue is drawn. Not on the way
@@ -12,6 +16,7 @@
   let { focus = true }: { focus?: boolean } = $props();
 
   let text = $state("");
+  let tags = $state<string[]>([]);
   let chosen = $state<File | undefined>(undefined);
   let busy = $state(false);
   let said = $state("");
@@ -41,6 +46,9 @@
     if (focus) box?.focus();
   });
 
+  const inUse = client.tags.inUse;
+  const offered = $derived(offerable($inUse.map((use) => use.name)));
+
   function pick(event: Event) {
     chosen = (event.currentTarget as HTMLInputElement).files?.[0];
   }
@@ -60,15 +68,20 @@
       const asset =
         chosen === undefined ? undefined : await client.attach(chosen);
 
-      await client.capture({
+      const sent = [...tags];
+      const item = await client.capture({
         channel: chosen === undefined ? TYPED : PICTURE,
         text,
         ...(asset === undefined ? {} : { asset }),
+        ...(sent.length === 0 ? {} : { tags: sent }),
       });
 
       text = "";
+      tags = [];
       chosen = undefined;
       picker.value = "";
+
+      for (const name of sent) void sayItFired(item.id, name);
     } catch (error) {
       said = saidBy(error);
     } finally {
@@ -107,9 +120,7 @@
     bind:this={box}
     bind:value={text}
     onkeydown={(event) => {
-      // The one keystroke that commits from inside the field a capture is
-      // written in: `⏎` there is a new line, which prose wants.
-      if (event.key === "Enter" && event.shiftKey) {
+      if (commits(event)) {
         event.preventDefault();
         void capture();
       }
@@ -121,6 +132,17 @@
   <div class="flex items-baseline justify-between border-t border-ink">
     <span class="flex items-baseline gap-x-4 px-3 leading-8">
       <Action disabled={busy} onclick={() => picker.click()}>attach</Action>
+
+      <span class="flex min-w-0 flex-wrap items-baseline gap-x-[1ch]">
+        <TagSet
+          names={tags}
+          {offered}
+          label="Tag the capture"
+          fires={(name) => triggeredBy(name)?.name}
+          onadd={(name) => (tags = [...tags, name])}
+          onremove={(name) => (tags = tags.filter((one) => one !== name))}
+        />
+      </span>
 
       {#if said !== ""}
         <!-- Only a failure reaches this: the capture itself waits on nothing. -->

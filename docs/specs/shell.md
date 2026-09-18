@@ -1,9 +1,16 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-16
+**Last updated**: 2026-09-18
 **Shipped**:
 
+- 2026-09-18 — **Four small things from a working session.** The capture box carries the tag
+  chooser in its foot, so a capture arrives classified and a trigger tag among its tags files it
+  on arrival; `mod+⏎` commits the capture box and saves the editable shape, `⇧⏎` being a new line
+  like `⏎` everywhere else; a carried tag pressed to select it is drawn inverted, so the `×` has a
+  word it visibly belongs to; every button that can be taken shows the pointer, which
+  Tailwind's preflight had left on the arrow; and the editable shape attaches and drops a picture,
+  the capture box's own gesture, so what a capture carries is edited where its words are.
 - 2026-09-16 — **Settings, redrawn.** Phase 6 of [shell-redesign](../plans/shell-redesign.md):
   settings becomes the register's own grid, menu on the rail, one section beside it, routed as
   `/settings/{destinations | templates | account | server | appearance}`; no lede or tally in any
@@ -467,8 +474,8 @@ settings. A refusal goes to the corner.
 
 *Redrawn 2026-09-14.* The capture box sits above the list, spanning the page: a ruled box — the
 one thing on the queue boxed on four sides besides a selected row — with the field inside it and a
-foot along its bottom rule carrying `attach` at the left and a bold `capture` at the right behind
-a rule of its own. **No placeholder and no stamp**: the box is the invitation, and the capture is
+foot along its bottom rule carrying `attach` and the tag chooser at the left and a bold `capture`
+at the right behind a rule of its own. **No placeholder and no stamp**: the box is the invitation, and the capture is
 stamped when it is sent. It is no longer a row of the register, and says nothing until it fails.
 
 A capture asks nothing — text, an optional attachment, send. Nothing waits on the pool: the client
@@ -483,8 +490,17 @@ exists to be typed into, and a click before the first keystroke is a click nothi
 *Except on the way back from processing with a row still selected* *(amended 2026-09-14)*: the
 keys are that row's then, and a caret in the field would swallow them.
 
-**`⇧⏎` commits it**, from inside the field it is written in. `⏎` there is a new line, which prose
-wants.
+**`mod+⏎` commits it**, from inside the field it is written in — the same chord that routes on the
+process surface, and the one most editors commit on. `⏎` there is a new line, which prose wants,
+and so is `⇧⏎` *(amended 2026-09-18; `⇧⏎` used to commit, which is a line break nearly everywhere
+else)*.
+
+**A capture is classified where it is written** *(added 2026-09-18)*. The foot carries the chooser
+the row and the process surface draw ([Tagging](#tagging)), labelled `Tag the capture` so a page
+holding both has two names for two controls. The tags chosen go **on the envelope** rather than as
+operations after it: the item arrives carrying them, so a trigger tag among them fires its template
+as the capture lands, exactly as one arriving from any other source would, and the corner says so
+with the same `cancel` the row's chooser earns. Committing clears them with the text.
 
 **An attached picture is drawn before it is committed**, inside the box above the text, beside its
 name and with a way to drop it. The bytes go up with the capture and cannot be taken back once they
@@ -533,7 +549,13 @@ both columns — the rail's own rule running through it — with the **actions a
 marks. The box reaches a little outside the columns so the text inside it does not move when it
 appears. **Nothing else changes**: no fill, no colour, no facts appear. `edit` on the row draws
 the capture in the capture box's own shape — a ruled box with `cancel` and a bold `save` along its
-foot — with no ring or colour from the browser: rewriting looks like writing. The one thing the selected row adds to the rail is a `+` after the last tag, which
+foot — with no ring or colour from the browser: rewriting looks like writing. **The picture is
+editable there too** *(added 2026-09-18)*: the one the item carries is drawn above the words as
+the capture box draws one before it is sent, with `drop` beside it, and `attach` in the foot picks
+one in its place — at most one, the capture's own shape, and other kinds of attachment are left as
+they are. `save` sends the edit naming what the box then holds, uploading a fresh picture on the
+way, and stamps it `web-image` where a picture is carried and `web-manual` where none is, the
+capture's own rule. The one thing the selected row adds to the rail is a `+` after the last tag, which
 opens the chooser in place ([Tagging](#tagging)) — and is how a template is applied, a template
 being a tag. `esc` deselects, and leaves the editable shape first where the row is in one
 ([below](#a-command-is-what-a-key-and-a-button-both-reach)). Losing the selection any other way
@@ -1179,7 +1201,9 @@ that greys its button.
 **An editable shape publishes its own way out.** The box a capture is rewritten in draws `cancel`
 beside `save`, and publishes that `cancel` on `esc` for as long as it is drawn — so the shape is
 what `esc` leaves, wherever it was opened, and the surface it was opened on needs to know nothing
-about it. Being drawn inside that surface is what puts it first. The next press is the surface's
+about it. `save` is `mod+⏎` from inside its field *(added 2026-09-18)*, the capture box's own
+chord, and handled by the field rather than published: the field keeps the press, and `⏎` and
+`⇧⏎` stay new lines. Being drawn inside that surface is what puts it first. The next press is the surface's
 own: deselecting on a register, and nothing at all on the item's own surface, where the page is
 the item and there is nothing behind the shape to leave.
 
@@ -1237,8 +1261,9 @@ sits on the collapsed row.
 
 **The chooser is one control, wherever it is drawn** *(added 2026-09-11)*. What the item carries
 is a row of pressed words, a trigger tag marked with the template it applies, each pressed to
-select it and taken off on the `×` that then appears beside it *(amended 2026-09-15; a single
-press used to remove it outright)*. `esc`, opening the line, pressing another tag, or the row
+select it — **drawn inverted**, ink behind it, so the selection reads at a glance *(amended
+2026-09-18; a selected tag used to look like every other)* — and taken off on the `×` that then
+appears beside it *(amended 2026-09-15; a single press used to remove it outright)*. `esc`, opening the line, pressing another tag, or the row
 losing its selection clears the selection without taking anything off. `+` opens a line, an **absolute panel** beneath it —
 *amended 2026-09-15: it used to sit in the flow, which shifted whatever was below the row; an
 absolute panel still extends the process surface's scrolling middle, so it stays reachable there
@@ -1260,7 +1285,8 @@ focus. The composer's row reads the client's held copy of the item, which is whe
 through the outbox lands first, so it draws taken at once and drops the account of taken-and-dropped
 it used to keep beside the item it opened on.
 
-**Tagging is offered in two places, and they are not redundant** (added 2026-09-02). The composer
+**Tagging is offered in three places, and they are not redundant** (added 2026-09-02; the third,
+the capture box, on 2026-09-18 — classifying while writing, which goes on the capture itself). The composer
 offers the same chooser beside the place being routed to, because classifying and filing are one
 thought and making the person close one surface to finish the other splits it. *Amended
 2026-09-05*: the reason it cost nothing used to be that the composer only opened when the pool was

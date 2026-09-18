@@ -1,7 +1,7 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-09-17
+**Last updated**: 2026-09-18
 **Shipped**:
 
 - 2026-09-17 — **A client store on a filesystem, and two clients over one store.**
@@ -587,6 +587,11 @@ the honest answer — the same shape `candidates` already takes. A template's **
 per row and cached by nothing, on `describe()`'s terms: whether a vault still has the folder is
 somebody else's state.
 
+**A capture may carry tags** *(added 2026-09-18)*. `capture` takes `tags` beside `text` and
+`asset`, carries them on the envelope, and draws them on the optimistic item as the source's own —
+so the item is born classified and a trigger tag among them fires on arrival, on the pool's terms
+rather than as a `tag` drained behind the capture.
+
 **A trigger tag is an ordinary tag to this client.** `tag` is unchanged — one outbox operation, the
 same optimistic application, the same drain — and what it does at the far end is the pool's. This
 is what makes an offline tag fire: the operation that drains is a tag, so the daemon applies the
@@ -767,6 +772,12 @@ A capture is the client's own until it reaches the pool, and immutable once it d
   `revisionOf`, which says so without spending an identity on it. Its own id for the edit is minted
   with the operation and carried on it, and survives a reload with the operation (2026-08-25), so a
   retry after a restart claims the identity the first attempt did and the pool answers one revision.
+- **An edit may change what is attached** *(added 2026-09-18)*. The payload an edit carries names
+  whatever assets it names, and the drain uploads any the pool has never seen before it sends the
+  edit — which is what an edit of a picture captured offline already needed. The client keeps the
+  shell's one picture slot beside `saying`: `picture` reads what the item carries there, with the
+  filename and media type where the pool has said them, and `pictured` puts an attached asset in
+  the slot or empties it, leaving any other slot as it was.
 
 ### Source identity
 

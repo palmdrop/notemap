@@ -36,6 +36,8 @@ import type {
 } from "./api/types";
 import type { Observable } from "rxjs";
 
+import type { Picture } from "./capture/picture";
+
 import type { SessionState } from "./session/session";
 import type { Surface } from "./state/state";
 
@@ -90,6 +92,8 @@ export type CaptureInput = {
   readonly channel: string;
   readonly text: string;
   readonly asset?: AssetId;
+  /** Applied as the item arrives, so a trigger tag among them files it on capture. */
+  readonly tags?: readonly string[];
 };
 
 /**
@@ -360,6 +364,10 @@ export interface Client {
   edit(item: ItemId, payload: Payload, source: string): Promise<void>;
   /** The payload an edit would carry for new words, whichever slot holds them. */
   saying(item: Item, said: string): Payload;
+  /** The payload with this picture in the shell's one slot, or with that slot emptied. */
+  pictured(payload: Payload, asset: AssetId | undefined): Payload;
+  /** The picture an item carries in that slot, with what the pool says it is where it has said. */
+  picture(item: Item): Picture | undefined;
 
   /**
    * Mints an asset for a file and holds its bytes, so a capture can name them

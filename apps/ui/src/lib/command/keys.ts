@@ -29,6 +29,17 @@ export function chord(event: KeyboardEvent): string {
   return parts.join("+");
 }
 
+/**
+ * Whether the press is `mod+enter` inside a field: the one chord that commits
+ * what a field holds from inside it, where `⏎` is a new line. Handled by the
+ * field itself rather than published, so the field keeps the press.
+ */
+export function commits(event: KeyboardEvent): boolean {
+  return (
+    event.key === "Enter" && (event.metaKey || event.ctrlKey) && !event.shiftKey
+  );
+}
+
 /** Controls the browser clicks when the key lands on them, focused. */
 const CLICKED = ["BUTTON", "A", "SUMMARY"];
 

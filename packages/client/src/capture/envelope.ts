@@ -1,9 +1,8 @@
 import type { CaptureEnvelope, Item } from "#api/types";
 import type { CaptureInput } from "../types";
+import { SLOT } from "./picture";
 
 const NOTE = "note";
-/** The one slot a shell capture fills: it attaches at most one file. */
-const SLOT = "image";
 
 /**
  * A client that mints at the moment of capture has one answer for both
@@ -22,6 +21,7 @@ export function envelopeFor(
 ): CaptureEnvelope {
   const asset = input.asset;
   const said = input.text.trim() === "" ? {} : { text: input.text };
+  const tags = input.tags ?? [];
 
   return {
     id,
@@ -29,6 +29,7 @@ export function envelopeFor(
     sourceItemId: id,
     capturedAt: at,
     ...(utcOffset === undefined ? {} : { utcOffset }),
+    ...(tags.length === 0 ? {} : { tags: [...tags] }),
     payload: {
       type: NOTE,
       content: said,
@@ -44,7 +45,11 @@ export function optimisticItem(envelope: CaptureEnvelope): Item {
     source: envelope.source,
     sourceItemId: envelope.sourceItemId,
     payload: envelope.payload,
-    tags: [],
+    tags: (envelope.tags ?? []).map((name) => ({
+      name,
+      by: { kind: "source", source: envelope.source },
+      addedAt: envelope.capturedAt,
+    })),
     createdAt: envelope.capturedAt,
     ...(envelope.utcOffset === undefined
       ? {}
