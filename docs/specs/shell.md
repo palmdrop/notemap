@@ -8,8 +8,9 @@
   chooser in its foot, so a capture arrives classified and a trigger tag among its tags files it
   on arrival; `mod+⏎` commits the capture box and saves the editable shape, `⇧⏎` being a new line
   like `⏎` everywhere else; a carried tag pressed to select it is drawn inverted, so the `×` has a
-  word it visibly belongs to; and every button that can be taken shows the pointer, which
-  Tailwind's preflight had left on the arrow.
+  word it visibly belongs to; every button that can be taken shows the pointer, which
+  Tailwind's preflight had left on the arrow; and the editable shape attaches and drops a picture,
+  the capture box's own gesture, so what a capture carries is edited where its words are.
 - 2026-09-16 — **Settings, redrawn.** Phase 6 of [shell-redesign](../plans/shell-redesign.md):
   settings becomes the register's own grid, menu on the rail, one section beside it, routed as
   `/settings/{destinations | templates | account | server | appearance}`; no lede or tally in any
@@ -548,7 +549,13 @@ both columns — the rail's own rule running through it — with the **actions a
 marks. The box reaches a little outside the columns so the text inside it does not move when it
 appears. **Nothing else changes**: no fill, no colour, no facts appear. `edit` on the row draws
 the capture in the capture box's own shape — a ruled box with `cancel` and a bold `save` along its
-foot — with no ring or colour from the browser: rewriting looks like writing. The one thing the selected row adds to the rail is a `+` after the last tag, which
+foot — with no ring or colour from the browser: rewriting looks like writing. **The picture is
+editable there too** *(added 2026-09-18)*: the one the item carries is drawn above the words as
+the capture box draws one before it is sent, with `drop` beside it, and `attach` in the foot picks
+one in its place — at most one, the capture's own shape, and other kinds of attachment are left as
+they are. `save` sends the edit naming what the box then holds, uploading a fresh picture on the
+way, and stamps it `web-image` where a picture is carried and `web-manual` where none is, the
+capture's own rule. The one thing the selected row adds to the rail is a `+` after the last tag, which
 opens the chooser in place ([Tagging](#tagging)) — and is how a template is applied, a template
 being a tag. `esc` deselects, and leaves the editable shape first where the row is in one
 ([below](#a-command-is-what-a-key-and-a-button-both-reach)). Losing the selection any other way

@@ -23,10 +23,6 @@
 
 ## Composer and capture
 
-- [ ] Editing does not allow attaching anything. It is the edit surface rather than the
-  row, and wants designing on its own. The composer's `rewrite` did not reach it (2026-09-10):
-  that carries words for one delivery and touches neither the capture nor its assets, so editing
-  still attaches nothing.
 - [ ] Consider capture templates: on capture time, I select a capture format which auto-tags and auto-routes (optionally) the finished capture when it is committed.
   - Cheaper than it was, as of 2026-09-07: the auto-routing half is done. A capture that arrives
     carrying a **trigger tag** fires its template, so a capture template that auto-tags gets the

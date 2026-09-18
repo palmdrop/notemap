@@ -772,6 +772,12 @@ A capture is the client's own until it reaches the pool, and immutable once it d
   `revisionOf`, which says so without spending an identity on it. Its own id for the edit is minted
   with the operation and carried on it, and survives a reload with the operation (2026-08-25), so a
   retry after a restart claims the identity the first attempt did and the pool answers one revision.
+- **An edit may change what is attached** *(added 2026-09-18)*. The payload an edit carries names
+  whatever assets it names, and the drain uploads any the pool has never seen before it sends the
+  edit — which is what an edit of a picture captured offline already needed. The client keeps the
+  shell's one picture slot beside `saying`: `picture` reads what the item carries there, with the
+  filename and media type where the pool has said them, and `pictured` puts an attached asset in
+  the slot or empties it, leaving any other slot as it was.
 
 ### Source identity
 

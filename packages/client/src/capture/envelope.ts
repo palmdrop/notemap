@@ -1,9 +1,8 @@
 import type { CaptureEnvelope, Item } from "#api/types";
 import type { CaptureInput } from "../types";
+import { SLOT } from "./picture";
 
 const NOTE = "note";
-/** The one slot a shell capture fills: it attaches at most one file. */
-const SLOT = "image";
 
 /**
  * A client that mints at the moment of capture has one answer for both
