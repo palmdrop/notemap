@@ -30,4 +30,9 @@
   a:hover {
     text-decoration: underline;
   }
+
+  /* Tailwind's preflight leaves a button on the arrow; a control is pointed at. */
+  button:not(:disabled) {
+    cursor: pointer;
+  }
 }

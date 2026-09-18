@@ -170,8 +170,8 @@ test("a dropped picture is not sent with the capture that follows", async () => 
   expect(sent[0]?.payload.assets).toEqual([]);
 });
 
-/** `⏎` in the field is a new line, which is what prose wants. */
-test("commits the capture with shift-enter from the field it is written in", async () => {
+/** `⏎` in the field is a new line, which is what prose wants, and so is `⇧⏎`. */
+test("commits the capture with mod-enter from the field it is written in", async () => {
   pool(async (request) => {
     if (routeOf(request) !== "POST /v1/captures") return empty.clone();
     const envelope = (await request.json()) as Envelope;
@@ -189,8 +189,62 @@ test("commits the capture with shift-enter from the field it is written in", asy
   await fireEvent.input(written, { target: { value: "sent by keystroke" } });
 
   await fireEvent.keyDown(written, { key: "Enter" });
+  await fireEvent.keyDown(written, { key: "Enter", shiftKey: true });
   expect(written.value).toBe("sent by keystroke");
 
-  await fireEvent.keyDown(written, { key: "Enter", shiftKey: true });
+  await fireEvent.keyDown(written, { key: "Enter", ctrlKey: true });
   await cleared(written);
+});
+
+/** Classifying is part of writing it down, not a second gesture on the row. */
+test("carries the tags chosen in the box on the capture, and clears them with it", async () => {
+  const sent: (Envelope & { tags?: string[] })[] = [];
+  pool(async (request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/tags") {
+      return json(200, { values: [{ name: "research", count: 3 }] });
+    }
+    if (route !== "POST /v1/captures") return empty.clone();
+    const envelope = (await request.json()) as Envelope;
+    sent.push(envelope);
+    return json(201, {
+      kind: "captured",
+      item: anItem(envelope.id),
+      matchedOn: "id",
+    });
+  });
+
+  render(Capture);
+
+  await fireEvent.click(
+    screen.getByRole("button", { name: "Tag the capture" }),
+  );
+  const line = screen.getByLabelText("Tag the capture");
+  await fireEvent.input(line, { target: { value: "research" } });
+  await fireEvent.keyDown(line, { key: "Enter" });
+
+  await fireEvent.click(
+    screen.getByRole("button", { name: "Tag the capture" }),
+  );
+  await fireEvent.input(screen.getByLabelText("Tag the capture"), {
+    target: { value: "fresh" },
+  });
+  await fireEvent.keyDown(screen.getByLabelText("Tag the capture"), {
+    key: "Enter",
+  });
+
+  expect(
+    screen.getByRole("button", { name: "research", pressed: true }),
+  ).toBeDefined();
+  expect(
+    screen.getByRole("button", { name: "fresh", pressed: true }),
+  ).toBeDefined();
+
+  const written = await capture("a classified thought");
+
+  await vi.waitFor(() => expect(sent).toHaveLength(1));
+  expect(sent[0]?.tags).toEqual(["research", "fresh"]);
+  await cleared(written);
+  expect(screen.queryByRole("button", { name: "research" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "fresh" })).toBeNull();
 });

@@ -5,6 +5,7 @@
   import Action from "$components/primitives/controls/Action.svelte";
   import { TYPED } from "$lib/channels";
   import { client } from "$lib/client";
+  import { commits } from "$lib/command/keys";
   import { publish } from "$lib/command/stack.svelte";
 
   let { item, ondone }: { item: Item; ondone: () => void } = $props();
@@ -17,7 +18,7 @@
   /** A draft starts from what the item says and then stops following it. */
   let draft = $state(untrack(() => client.says(item)));
 
-  function save(event: SubmitEvent) {
+  function save(event: Event) {
     event.preventDefault();
     ondone();
     void client.edit(item.id, client.saying(item, draft), TYPED);
@@ -31,6 +32,9 @@
   <textarea
     bind:value={draft}
     autofocus
+    onkeydown={(event) => {
+      if (commits(event)) save(event);
+    }}
     aria-label="What it says"
     class="block min-h-[88px] w-full resize-y bg-transparent px-3 py-2.5 outline-none max-narrow:min-h-[72px]"
   ></textarea>

@@ -90,6 +90,8 @@ export type CaptureInput = {
   readonly channel: string;
   readonly text: string;
   readonly asset?: AssetId;
+  /** Applied as the item arrives, so a trigger tag among them files it on capture. */
+  readonly tags?: readonly string[];
 };
 
 /**

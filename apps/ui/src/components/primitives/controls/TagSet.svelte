@@ -6,8 +6,8 @@
 
   /**
    * A chooser over known names with free entry. What the item carries is a row
-   * of pressed words, each taken off by pressing it once to select it and
-   * again on the `×` that appears. `+` opens a line with the pool's offer in a
+   * of pressed words, each taken off by pressing it once to select it — drawn
+   * inverted — and again on the `×` that appears. `+` opens a line with the pool's offer in a
    * panel beneath it, narrowed as the line is typed into: the first match is
    * marked as soon as the line is typed into, `⇥` completes what was typed as
    * far as the offer agrees and once there is nothing left to complete walks
@@ -21,6 +21,7 @@
     fires,
     held,
     addable = true,
+    label = "Add a tag",
     onadd,
     onremove,
   }: {
@@ -41,6 +42,8 @@
     held?: (name: string) => boolean;
     /** Whether the `+` is drawn. A row offers it only while it is selected. */
     addable?: boolean;
+    /** What the `+` and the line are called, where two sets share a page. */
+    label?: string;
     onadd: (name: string) => void;
     onremove: (name: string) => void;
   } = $props();
@@ -216,7 +219,10 @@
       aria-label={fired === undefined
         ? undefined
         : `${name}, routes to ${fired}`}
-      class="hover:underline {fired === undefined ? '' : TRIGGER}"
+      class="hover:underline {fired === undefined ? '' : TRIGGER} {chosen ===
+      name
+        ? 'bg-ink text-ground'
+        : ''}"
     >
       {fired === undefined ? name : trigger(name)}
     </button>
@@ -247,7 +253,7 @@
       spellcheck="false"
       autocapitalize="off"
       autocomplete="off"
-      aria-label="Add a tag"
+      aria-label={label}
       role="combobox"
       aria-autocomplete="list"
       aria-expanded={rows.length > 0}
@@ -287,7 +293,7 @@
 {:else if addable}
   <button
     type="button"
-    aria-label="Add a tag"
+    aria-label={label}
     onclick={open}
     class="hover:underline">+</button
   >

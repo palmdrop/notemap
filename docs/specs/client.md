@@ -1,7 +1,7 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-09-17
+**Last updated**: 2026-09-18
 **Shipped**:
 
 - 2026-09-17 — **A client store on a filesystem, and two clients over one store.**
@@ -586,6 +586,11 @@ So a composer offline can offer a template and cannot draw the filename it would
 the honest answer — the same shape `candidates` already takes. A template's **report** is asked
 per row and cached by nothing, on `describe()`'s terms: whether a vault still has the folder is
 somebody else's state.
+
+**A capture may carry tags** *(added 2026-09-18)*. `capture` takes `tags` beside `text` and
+`asset`, carries them on the envelope, and draws them on the optimistic item as the source's own —
+so the item is born classified and a trigger tag among them fires on arrival, on the pool's terms
+rather than as a `tag` drained behind the capture.
 
 **A trigger tag is an ordinary tag to this client.** `tag` is unchanged — one outbox operation, the
 same optimistic application, the same drain — and what it does at the far end is the pool's. This
