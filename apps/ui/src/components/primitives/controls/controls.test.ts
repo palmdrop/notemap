@@ -320,7 +320,7 @@ test("a tag the item carries is removed by pressing it, then its ×", async () =
   await fireEvent.click(word);
   expect(removed).not.toHaveBeenCalled();
   // Selected is drawn inverted, so the × has a word it visibly belongs to.
-  expect(word.classList.contains("bg-ink")).toBe(true);
+  expect(word.parentElement!.classList.contains("bg-ink")).toBe(true);
   expect(
     screen.getByRole("button", { name: "design" }).classList.contains("bg-ink"),
   ).toBe(false);

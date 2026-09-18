@@ -206,39 +206,40 @@
       {fired === undefined ? name : trigger(name)}
     </span>
   {:else}
-    <button
-      type="button"
-      aria-pressed="true"
-      onclick={() => press(name)}
-      onkeydown={(event) => {
-        if (event.key === "Escape" && chosen === name) {
-          event.stopPropagation();
-          chosen = undefined;
-        }
-      }}
-      aria-label={fired === undefined
-        ? undefined
-        : `${name}, routes to ${fired}`}
-      class="hover:underline {fired === undefined ? '' : TRIGGER} {chosen ===
-      name
-        ? 'bg-ink text-ground'
-        : ''}"
+    <span
+      class="px-0.75 py-0.25 {chosen === name ? 'bg-ink text-ground' : ''}"
     >
-      {fired === undefined ? name : trigger(name)}
-    </button>
-    {#if chosen === name}
       <button
         type="button"
-        aria-label={`remove ${name}`}
-        onclick={() => {
-          chosen = undefined;
-          onremove(name);
+        aria-pressed="true"
+        onclick={() => press(name)}
+        onkeydown={(event) => {
+          if (event.key === "Escape" && chosen === name) {
+            event.stopPropagation();
+            chosen = undefined;
+          }
         }}
-        class="hover:underline"
+        aria-label={fired === undefined
+          ? undefined
+          : `${name}, routes to ${fired}`}
+        class="{chosen === name ? '' : 'hover:underline'} {fired === undefined ? '' : TRIGGER}"
       >
-        ×
+        {fired === undefined ? name : trigger(name)}
       </button>
-    {/if}
+      {#if chosen === name}
+        <button
+          type="button"
+          aria-label={`remove ${name}`}
+          onclick={() => {
+            chosen = undefined;
+            onremove(name);
+          }}
+          class="hover:underline"
+        >
+          ×
+        </button>
+      {/if}
+    </span>
   {/if}
 {/each}
 
