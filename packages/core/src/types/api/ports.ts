@@ -79,7 +79,22 @@ export type PoolPorts = {
   /** Absent disables the mirror: nothing enqueues mirror jobs. */
   readonly mirrorWriter?: MirrorWriter;
   readonly destinations: Destinations;
+  /** Absent means nobody is told. */
+  readonly observer?: ActionObserver;
 };
+
+/**
+ * Told each action once the transaction that appended it has committed, and
+ * never one that rolled back. What the host makes of it is the host's: core
+ * has no log of its own beyond the one the store keeps.
+ *
+ * Must not throw. The change it describes is already committed, so a throw
+ * here cannot be reported as that change failing; it surfaces as an uncaught
+ * exception instead.
+ */
+export interface ActionObserver {
+  action(action: Action): void;
+}
 
 export interface Clock {
   now(): Timestamp;
