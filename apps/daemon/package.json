@@ -27,6 +27,7 @@
     "@notemap/sqlite": "workspace:*",
     "@notemap/store-sqlite": "workspace:*",
     "hono": "^4.13.1",
+    "pino": "^10.3.1",
     "smol-toml": "^1.7.1",
     "uuid": "^14.0.1",
     "zod": "^4.4.3"

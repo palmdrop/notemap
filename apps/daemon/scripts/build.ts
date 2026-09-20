@@ -33,6 +33,11 @@ await build({
   target: "node24",
   packages: "bundle",
   external: ["node:*"],
+  // pino is CommonJS and `require`s node's own modules, which an ESM bundle
+  // has no `require` for unless one is made.
+  banner: {
+    js: 'import { createRequire as __createRequire } from "node:module"; const require = __createRequire(import.meta.url);',
+  },
   define: { __NOTEMAP_VERSION__: JSON.stringify(version) },
   logLevel: "info",
 });

@@ -52,7 +52,11 @@ describe("observed ports", () => {
 
     const answer = await ports.store.transaction(async (tx) => {
       await tx.appendAction(ACTION);
-      await tx.appendAction({ ...ACTION, id: "a2" as ActionId, kind: "tagged" });
+      await tx.appendAction({
+        ...ACTION,
+        id: "a2" as ActionId,
+        kind: "tagged",
+      });
       expect(heard).toEqual([]);
       return "done";
     });

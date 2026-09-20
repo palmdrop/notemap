@@ -95,23 +95,23 @@ Depends on nothing.
 
 Depends on nothing; may run beside phase 1.
 
-- [ ] Add `pino` to `apps/daemon`; the `createRequire` banner in `build.ts` (see the resolved
+- [x] Add `pino` to `apps/daemon`; the `createRequire` banner in `build.ts` (see the resolved
       unknown below). Confirm `node dist/main.js` starts from the bundle.
-- [ ] `apps/daemon/src/log/`: the root logger from `{ level, format }`. JSON is pino's own line
+- [x] `apps/daemon/src/log/`: the root logger from `{ level, format }`. JSON is pino's own line
       on stdout. Text is a writable of ours that pino writes into: one event becomes
       `HH:MM:SS.mmm LEVEL message key=value …`, with `err.stack` on the lines below it; `pid`
       and `hostname` are dropped from both formats, since one container is one process on one
       host. Values are quoted only where they hold whitespace or `=`.
-- [ ] `[log]` table in `config/load.ts` with defaults and validation; `NOTEMAP_LOG_LEVEL` read
+- [x] `[log]` table in `config/load.ts` with defaults and validation; `NOTEMAP_LOG_LEVEL` read
       in `loadConfig` and refused like a bad file value when it names no level. A `[log]` table
       note in `config.example.toml` and `docker/compose/config.toml`.
-- [ ] Tests beside them: a text line for each level, a nested detail object flattened to
+- [x] Tests beside them: a text line for each level, a nested detail object flattened to
       `key.sub=value`, an error with a stack, a JSON line, a secret-shaped field never appears (a
       `redact` list for `authorization`, `cookie`, `password`, `secret`, `token` as belt and
       braces), config parsing and the env override.
-- [ ] Verify: `pnpm --filter @notemap/daemon test`, `pnpm build`, `node apps/daemon/dist/main.js
+- [x] Verify: `pnpm --filter @notemap/daemon test`, `pnpm build`, `node apps/daemon/dist/main.js
       --config apps/daemon/config.example.toml` prints text lines.
-- [ ] `git commit`.
+- [x] `git commit`.
 
 ### Phase 3 — The daemon speaks through it
 
