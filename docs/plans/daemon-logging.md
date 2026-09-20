@@ -117,25 +117,26 @@ Depends on nothing; may run beside phase 1.
 
 Depends on phases 1 and 2.
 
-- [ ] `main.ts`: every `console.*` becomes a levelled line with fields (the startup facts,
+- [x] `main.ts`: every `console.*` becomes a levelled line with fields (the startup facts,
       config warnings, the plain-HTTP warning, adapter wiring, the session-sweep failure, the
       `EADDRINUSE` exit, shutdown). Keep the `on http://…` address line's text: the full-stack
       harness reads readiness from it.
-- [ ] Wire the phase-1 observer in `ports.ts`: each action becomes a line at the level the table
+- [x] Wire the phase-1 observer in `ports.ts`: each action becomes a line at the level the table
       above gives its kind, with `kind`, `subject`, `by`, and the detail spread as fields.
-- [ ] Runners and sweeper: `onError` takes the logger; a drain that resolved something and a
+- [x] Runners and sweeper: `onError` takes the logger; a drain that resolved something and a
       sweep's release count at `debug`/`info` as above.
-- [ ] Request logging middleware over `/v1/*` and `/docs`: method, path, status, duration,
+- [x] Request logging middleware over `/v1/*` and `/docs`: method, path, status, duration,
       identity kind, at `debug`; a `4xx` also carries `code` from the refusal body. `app.onError`
       logs at `error` with the stack and the request's method and path.
-- [ ] Auth events in the session and token handlers, and in `middleware/origin.ts`, at the
-      levels above. `provision.ts`'s startup lines through the logger too.
-- [ ] Tests: the request middleware beside `middleware/`; the action-to-line mapping beside
+- [x] Auth events at the levels above — in `createAuth` and `createTokens` rather than the
+      handlers, since every sign-in, sign-out, mint and revoke passes through them and the CLI's
+      do too; `middleware/origin.ts` and `provision.ts` through the logger as well.
+- [x] Tests: the request middleware beside `middleware/`; the action-to-line mapping beside
       `log/`; existing tests that assert on `console` output move to asserting on a captured
       logger.
-- [ ] Verify: `pnpm typecheck`, `pnpm -r --silent test`, `pnpm lint`. No `console.` left under
+- [x] Verify: `pnpm typecheck`, `pnpm -r --silent test`, `pnpm lint`. No `console.` left under
       `apps/daemon/src` outside `cli/` and `write-openapi.ts`.
-- [ ] `git commit`.
+- [x] `git commit`.
 
 ### Phase 4 — Docs and the full stack
 

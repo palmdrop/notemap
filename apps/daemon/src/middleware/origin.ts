@@ -1,12 +1,8 @@
 import type { MiddlewareHandler } from "hono";
 
 import { reachedElsewhere } from "../config/load";
+import type { Logger } from "../log";
 import type { AppEnv } from "../types";
-
-const advice = (arrivedFor: string, origin: string | undefined): string =>
-  origin === undefined
-    ? `notemap: a sign-in arrived for ${arrivedFor}, but daemon.origin is unset, so the session cookie is minted for a browser on loopback and carries Secure — set daemon.origin to the URL a browser reaches this daemon at, or the cookie is dropped and every request after signing in is refused`
-    : `notemap: a sign-in arrived for ${arrivedFor}, but daemon.origin says ${origin}, and the session cookie is minted for that one`;
 
 /**
  * Says the one thing the daemon cannot work out for itself. Where it is bound
@@ -19,6 +15,7 @@ const advice = (arrivedFor: string, origin: string | undefined): string =>
  */
 export const noticeOrigin = (
   origin: string | undefined,
+  log: Logger,
 ): MiddlewareHandler<AppEnv> => {
   let said = false;
 
@@ -27,7 +24,17 @@ export const noticeOrigin = (
 
     if (!said && reachedElsewhere(arrivedFor, origin)) {
       said = true;
-      console.warn(advice(arrivedFor as string, origin));
+      if (origin === undefined) {
+        log.warn(
+          { arrivedFor },
+          "a sign-in arrived for a host, but daemon.origin is unset, so the session cookie is minted for a browser on loopback and carries Secure — set daemon.origin to the URL a browser reaches this daemon at, or the cookie is dropped and every request after signing in is refused",
+        );
+      } else {
+        log.warn(
+          { arrivedFor, origin },
+          "a sign-in arrived for a host daemon.origin does not name, and the session cookie is minted for the configured one",
+        );
+      }
     }
 
     return next();

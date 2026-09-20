@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 
+import { silentLogger, type Logger } from "../log";
 import { DEFAULT_CREDENTIALS_NAME } from "./config";
 import {
   MAX_PASSWORD_BYTE_LENGTH,
@@ -74,13 +75,15 @@ export function passwordFromEnvironment(
 export async function provisionCredential(
   auth: Auth,
   env: NodeJS.ProcessEnv,
+  log: Logger = silentLogger(),
 ): Promise<void> {
   const arrived = passwordFromEnvironment(env);
   if (arrived === undefined) return;
 
   if (await auth.requiresCredentials()) {
-    console.warn(
-      `notemap: ${arrived.variable} is set and so is a password, so the one in the auth database stands — change it with \`notemap password set\``,
+    log.warn(
+      { variable: arrived.variable },
+      "a password is set already, so the one in the auth database stands — change it with `notemap password set`",
     );
     return;
   }
@@ -96,7 +99,8 @@ export async function provisionCredential(
     );
   }
 
-  console.log(
-    `notemap: the password was taken from ${arrived.variable}, for the username ${DEFAULT_CREDENTIALS_NAME}`,
+  log.info(
+    { variable: arrived.variable, name: DEFAULT_CREDENTIALS_NAME },
+    "the password was taken from the environment",
   );
 }

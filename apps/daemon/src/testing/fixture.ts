@@ -26,6 +26,7 @@ import { startSweeper } from "../assets/sweeper";
 import { DEFAULT_MAX_UPLOAD_BYTES } from "../constants";
 import { startDeliveryRunner } from "../destinations/runner";
 import { startMirrorRunner } from "../mirror/runner";
+import { silentLogger } from "../log";
 import { openPool, systemClock } from "../ports";
 
 export const WEB = "web" as SourceId;
@@ -156,6 +157,7 @@ export function daemon(
     cookies: options.cookies ?? { secure: false, prefixed: false },
     ...(options.origin === undefined ? {} : { origin: options.origin }),
     throttle: options.throttle ?? createLoginThrottle({ clock: systemClock }),
+    log: silentLogger(),
   });
   const answered = trackResponses(app);
 

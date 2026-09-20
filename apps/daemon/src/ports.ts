@@ -39,6 +39,8 @@ import {
 } from "@notemap/core";
 
 import { isSecretSource } from "./config/load";
+import type { Logger } from "./log";
+import { logAction } from "./log/actions";
 import { accountsFor } from "./destinations/credentials";
 import { destinationRenderers } from "./destinations/renderers";
 import { renderersFor } from "./mirror/renderers";
@@ -68,6 +70,8 @@ export type OpenPoolConfig = {
    * the pool — and a destination cannot name an address, only one of these.
    */
   readonly accounts?: readonly Account[];
+  /** Told each action the pool records. Absent is a pool nobody listens to. */
+  readonly log?: Logger;
 };
 
 /**
@@ -156,6 +160,8 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     clock: systemClock,
   });
 
+  const { log } = options;
+
   const ports: PoolPorts = {
     store,
     work: store,
@@ -165,6 +171,9 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     blobs,
     ...(mirrorWriter === undefined ? {} : { mirrorWriter }),
     destinations,
+    ...(log === undefined
+      ? {}
+      : { observer: { action: (action) => logAction(log, action) } }),
   };
 
   return {
@@ -189,15 +198,20 @@ type OpenAuthConfig = {
 
 type OpenAuthPorts = {
   clock: Clock;
+  log?: Logger;
 };
 
-export const openAuth = (config: OpenAuthConfig, { clock }: OpenAuthPorts) => {
+export const openAuth = (
+  config: OpenAuthConfig,
+  { clock, log }: OpenAuthPorts,
+) => {
   const store = createSqliteAuthStore({
     file: config.file,
   });
 
   const auth = createAuth(store, {
     clock,
+    ...(log === undefined ? {} : { log }),
   });
 
   return auth;

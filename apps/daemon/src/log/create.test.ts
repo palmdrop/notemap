@@ -1,36 +1,27 @@
-import { Writable } from "node:stream";
-
 import { describe, expect, it } from "vitest";
 
-import { createLogger } from "./create";
-
-function capture(): { out: Writable; lines: () => string[] } {
-  let said = "";
-  const out = new Writable({
-    write(chunk: Buffer | string, _encoding, done) {
-      said += chunk.toString();
-      done();
-    },
-  });
-  return { out, lines: () => said.split("\n").filter((line) => line !== "") };
-}
+import { capturedLog } from "./testing";
 
 const CLOCK = /^\d\d:\d\d:\d\d\.\d\d\d /;
 
 describe("the logger", () => {
   it("writes one text line per event, at or above its level", () => {
-    const { out, lines } = capture();
-    const logger = createLogger({ level: "info", format: "text" }, out);
+    const {
+      log: logger,
+      said,
+      lines,
+    } = capturedLog({
+      level: "info",
+      format: "text",
+    });
 
     logger.debug("hidden");
     logger.info({ kind: "captured" }, "action");
     logger.warn({ kind: "delivery-failed" }, "action");
     logger.error("broke");
 
-    const said = lines();
-    expect(said).toHaveLength(3);
-    expect(said[0]).toMatch(CLOCK);
-    expect(said.map((line) => line.replace(CLOCK, ""))).toEqual([
+    expect(said()).toMatch(CLOCK);
+    expect(lines()).toEqual([
       "INFO action kind=captured",
       "WARN action kind=delivery-failed",
       "ERROR broke",
@@ -38,8 +29,10 @@ describe("the logger", () => {
   });
 
   it("writes JSON with a named level and an ISO time, and no pid or host", () => {
-    const { out, lines } = capture();
-    const logger = createLogger({ level: "debug", format: "json" }, out);
+    const { log: logger, lines } = capturedLog({
+      level: "debug",
+      format: "json",
+    });
 
     logger.debug({ method: "GET", status: 200 }, "request");
 
@@ -55,8 +48,14 @@ describe("the logger", () => {
   });
 
   it("puts an error's stack under the line", () => {
-    const { out, lines } = capture();
-    const logger = createLogger({ level: "info", format: "text" }, out);
+    const { log: logger, said } = capturedLog({
+      level: "info",
+      format: "text",
+    });
+    const lines = () =>
+      said()
+        .split("\n")
+        .filter((line) => line !== "");
 
     logger.error({ err: new Error("boom") }, "unexpected");
 
@@ -66,8 +65,10 @@ describe("the logger", () => {
   });
 
   it("never prints a field shaped like a secret", () => {
-    const { out, lines } = capture();
-    const logger = createLogger({ level: "info", format: "json" }, out);
+    const { log: logger, lines } = capturedLog({
+      level: "info",
+      format: "json",
+    });
 
     logger.info(
       {

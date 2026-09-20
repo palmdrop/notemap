@@ -6,6 +6,8 @@ import type {
   WorkOutcome,
 } from "@notemap/core";
 
+import { silentLogger, type Logger } from "../log";
+
 export type RunnerConfig = {
   readonly pollIntervalMs: number;
   readonly leaseForMs: Duration;
@@ -31,7 +33,7 @@ export function startRunner(
   kinds: readonly JobKind[],
   perform: Perform,
   config: RunnerConfig,
-  onError: (cause: unknown) => void = (cause) => console.error(cause),
+  log: Logger = silentLogger(),
 ): Runner {
   let inFlight: Promise<number> | undefined;
   let timer: NodeJS.Timeout | undefined;
@@ -60,8 +62,13 @@ export function startRunner(
 
       for (const lease of fresh) {
         attempted.add(lease.job.id);
-        await pool.work.complete(lease.id, await perform(lease));
+        const outcome = await perform(lease);
+        await pool.work.complete(lease.id, outcome);
         resolved += 1;
+        log.debug(
+          { job: lease.job.id, kind: lease.job.kind, outcome: outcome.kind },
+          "job resolved",
+        );
       }
     }
   }
@@ -89,7 +96,9 @@ export function startRunner(
     if (stopped) return;
     // The timer wants a drain, not a *fresh* drain — one already running is
     // exactly what this tick would have started.
-    void next().catch(onError);
+    void next().catch((cause: unknown) =>
+      log.error({ err: cause, kinds }, "a work runner's pass threw"),
+    );
   };
 
   timer = setInterval(tick, config.pollIntervalMs);

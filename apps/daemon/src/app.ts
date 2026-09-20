@@ -126,7 +126,9 @@ import {
 } from "./middleware/authenticate";
 import { except } from "hono/combine";
 import { noticeOrigin } from "./middleware/origin";
+import { logRequests } from "./middleware/request-log";
 import type { Throttle } from "./auth/throttle";
+import type { Logger } from "./log";
 
 export type AppOptions = {
   readonly limits: UploadLimits;
@@ -135,11 +137,14 @@ export type AppOptions = {
   /** What `daemon.origin` said, for the notice when a request disagrees with it. */
   readonly origin?: string;
   readonly throttle: Throttle;
+  readonly log: Logger;
 };
 
 export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
-  const { auth, limits } = options;
+  const { auth, limits, log } = options;
   const app = new Hono<AppEnv>();
+
+  app.use("*", logRequests(log));
 
   /**
    * `/v1/openapi.json` describes the routes and never the pool, and it is what
@@ -166,7 +171,7 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
 
   app.get(honoPath(healthRoute.path), healthHandler(pool, auth));
 
-  app.use(honoPath(loginRoute.path), noticeOrigin(options.origin));
+  app.use(honoPath(loginRoute.path), noticeOrigin(options.origin, log));
 
   app.post(
     honoPath(loginRoute.path),
@@ -273,8 +278,11 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
 
   // An unexpected throw is a bug. Answering it in the refusal grammar would
   // teach clients to trust a fiction.
-  app.onError((error) => {
-    console.error(error);
+  app.onError((error, context) => {
+    log.error(
+      { err: error, method: context.req.method, path: context.req.path },
+      "a request threw",
+    );
     return new Response(null, { status: 500 });
   });
 

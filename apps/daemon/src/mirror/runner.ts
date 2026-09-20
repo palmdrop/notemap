@@ -7,6 +7,7 @@ import {
   type WorkOutcome,
 } from "@notemap/core";
 
+import type { Logger } from "../log";
 import {
   startRunner,
   wrongSubject,
@@ -23,7 +24,7 @@ export function startMirrorRunner(
   pool: Pool,
   writer: MirrorWriter,
   config: MirrorRunnerConfig,
-  onError?: (cause: unknown) => void,
+  log?: Logger,
 ): MirrorRunner {
   async function perform(lease: Lease): Promise<WorkOutcome> {
     const subject = lease.job.subject;
@@ -44,5 +45,5 @@ export function startMirrorRunner(
     }
   }
 
-  return startRunner(pool, KINDS, perform, config, onError);
+  return startRunner(pool, KINDS, perform, config, log);
 }

@@ -15,6 +15,7 @@ import { runCliCommand } from "./cli";
 import { FORGET_EXPIRED_EVERY_MS } from "./auth/config";
 import { provisionCredential } from "./auth/provision";
 import { createLoginThrottle } from "./auth/throttle";
+import { createLogger } from "./log";
 
 async function start(): Promise<void> {
   const { values } = parseArgs({
@@ -23,15 +24,18 @@ async function start(): Promise<void> {
   });
 
   const { config, warnings } = loadConfig(values.config);
+  const log = createLogger(config.log);
+
   for (const key of warnings) {
-    console.warn(`notemap: ignoring ${key}, which this daemon does not know`);
+    log.warn({ key }, "ignoring a config key this daemon does not know");
   }
 
   const cookies = cookieOptionsFor(config.origin);
 
   if (!cookies.secure) {
-    console.warn(
-      `notemap: ${config.origin} is plain HTTP, so a session cookie crosses the network in the clear — put TLS in front of the daemon`,
+    log.warn(
+      { origin: config.origin },
+      "the origin is plain HTTP, so a session cookie crosses the network in the clear — put TLS in front of the daemon",
     );
   }
 
@@ -49,12 +53,13 @@ async function start(): Promise<void> {
     assetRoot: config.assets.root,
     ...(config.mirror === undefined ? {} : { mirrorRoot: config.mirror.root }),
     accounts: config.accounts,
+    log,
   });
 
   // What the adapters make of the accounts they were handed. The daemon prints
   // it and does not author it: which kinds exist is `ports.ts`'s knowledge.
   for (const line of wired) {
-    console.warn(`notemap: ${line}`);
+    log.warn(line);
   }
 
   mkdirSync(dirname(config.auth), { recursive: true });
@@ -65,12 +70,13 @@ async function start(): Promise<void> {
     },
     {
       clock: ports.clock,
+      log,
     },
   );
 
   // Before anything listens: a daemon told to arrive with a door must not
   // answer a request through the moment before it has one.
-  await provisionCredential(auth, process.env);
+  await provisionCredential(auth, process.env, log);
 
   // Nothing waits on this: an expired session or token is refused whether or
   // not it has been swept, so a failed sweep costs a row rather than a refusal.
@@ -78,7 +84,7 @@ async function start(): Promise<void> {
     void auth
       .forgetExpired()
       .catch((cause: unknown) =>
-        console.error("notemap: could not sweep expired sessions", cause),
+        log.error({ err: cause }, "could not sweep expired sessions"),
       );
   };
 
@@ -89,13 +95,18 @@ async function start(): Promise<void> {
   const mirror =
     config.mirror === undefined || mirrorWriter === undefined
       ? undefined
-      : startMirrorRunner(pool, mirrorWriter, config.mirror);
+      : startMirrorRunner(pool, mirrorWriter, config.mirror, log);
 
   // Unconditional: a destination is a row a person may add at any moment, so
   // no startup fact says a delivery job cannot exist.
-  const delivery = startDeliveryRunner(pool, destinations, config.delivery);
+  const delivery = startDeliveryRunner(
+    pool,
+    destinations,
+    config.delivery,
+    log,
+  );
 
-  const sweeper = startSweeper(pool, config.sweep);
+  const sweeper = startSweeper(pool, config.sweep, log);
 
   /** A runner holds a lease while it works; stopping it first gives it back. */
   const close = async () => {
@@ -115,51 +126,63 @@ async function start(): Promise<void> {
         cookies,
         ...(config.origin === undefined ? {} : { origin: config.origin }),
         throttle: createLoginThrottle({ clock: ports.clock }),
+        log,
       }).fetch,
       hostname: config.host,
       port: config.port,
     },
     (address) => {
-      console.log(
-        `notemap: ${config.pool} on http://${config.host}:${address.port}`,
-      );
-      console.log(
-        config.mirror === undefined
-          ? "notemap: no mirror configured — the pool is the only copy"
-          : `notemap: mirroring to ${config.mirror.root}`,
-      );
-      console.log(`notemap: assets in ${config.assets.root}`);
+      // The address line is what a supervisor reads readiness from.
+      log.info(`${config.pool} on http://${config.host}:${address.port}`);
+      if (config.mirror === undefined) {
+        log.info("no mirror configured — the pool is the only copy");
+      } else {
+        log.info({ mirror: config.mirror.root }, "mirroring");
+      }
+      log.info({ assets: config.assets.root }, "assets");
 
       if (config.accounts.length > 0) {
-        console.log(
-          `notemap: accounts ${config.accounts.map((each) => `${each.name} (${each.kind})`).join(", ")}`,
+        log.info(
+          {
+            accounts: config.accounts.map(
+              (each) => `${each.name} (${each.kind})`,
+            ),
+          },
+          "accounts",
         );
       }
 
       void pool.destinations.list().then((held) => {
-        console.log(
-          held.length === 0
-            ? "notemap: no destinations yet — add one to route anything out"
-            : `notemap: destinations ${held.map((each) => each.name).join(", ")}`,
-        );
+        if (held.length === 0) {
+          log.info("no destinations yet — add one to route anything out");
+        } else {
+          log.info(
+            { destinations: held.map((each) => each.name) },
+            "destinations",
+          );
+        }
       });
 
       void auth.requiresCredentials().then((asks) => {
-        console.log(
+        log.info(
+          { signIn: asks ? "required" : "open" },
           asks
-            ? "notemap: signing in is required to reach /v1"
-            : "notemap: no password set — every request is let through; `notemap password set` closes the door",
+            ? "signing in is required to reach /v1"
+            : "no password set — every request is let through; `notemap password set` closes the door",
         );
       });
     },
   );
 
   server.on("error", (error: NodeJS.ErrnoException) => {
-    console.error(
-      error.code === "EADDRINUSE"
-        ? `port ${config.port} is already in use; stop what is on it, or set daemon.port`
-        : error.message,
-    );
+    if (error.code === "EADDRINUSE") {
+      log.error(
+        { port: config.port },
+        "the port is already in use; stop what is on it, or set daemon.port",
+      );
+    } else {
+      log.error({ err: error }, "the server could not listen");
+    }
     void close().then(() => process.exit(1));
   });
 
@@ -169,6 +192,7 @@ async function start(): Promise<void> {
    * sockets go at once; work in flight gets a moment.
    */
   const shutdown = () => {
+    log.info("shutting down");
     const sockets = server as {
       closeIdleConnections?: () => void;
       closeAllConnections?: () => void;
