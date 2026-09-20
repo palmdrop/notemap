@@ -45,7 +45,7 @@ describe("observed ports", () => {
     const ports = observed({
       store: storeWith(log),
       observer: {
-        action: (action) =>
+        action: (action: Action) =>
           heard.push({ action, committed: log.includes(action) }),
       },
     } as unknown as PoolPorts);
@@ -69,7 +69,7 @@ describe("observed ports", () => {
     const heard: Action[] = [];
     const ports = observed({
       store: storeWith([]),
-      observer: { action: (action) => heard.push(action) },
+      observer: { action: (action: Action) => heard.push(action) },
     } as unknown as PoolPorts);
 
     await expect(
