@@ -1,9 +1,9 @@
 # Daemon logging
 
 **Date**: 2026-09-20
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/http-v1.md`, `docs/specs/core.md`
-**Closed**:
+**Closed**: 2026-09-20
 
 ---
 
@@ -142,16 +142,16 @@ Depends on phases 1 and 2.
 
 Depends on phase 3.
 
-- [ ] `http-v1.md`: a **Logging** section under Behavior stating what is logged at which level,
+- [x] `http-v1.md`: a **Logging** section under Behavior stating what is logged at which level,
       what is never logged, and the `[log]` table; a Constraints line that the daemon logs and
       core does not.
-- [ ] `docs/running.md` § Checking on it: what the lines look like, `NOTEMAP_LOG_LEVEL=debug`,
+- [x] `docs/running.md` § Checking on it: what the lines look like, `NOTEMAP_LOG_LEVEL=debug`,
       `format = "json"`.
-- [ ] Full-stack: `session.test.ts` asserts on lines the daemon prints — re-read them against
+- [x] Full-stack: `session.test.ts` asserts on lines the daemon prints — re-read them against
       the new text; add one test that a capture shows up in the daemon's output as a `captured`
       line, and that a refused login shows up as a `warn`.
-- [ ] Verify: `pnpm test:stack`.
-- [ ] Tick the todo in `docs/todo.md`, add `Shipped:` entries, `git commit`.
+- [x] Verify: `pnpm test:stack`.
+- [x] Tick the todo in `docs/todo.md`, add `Shipped:` entries, `git commit`.
 
 ---
 
@@ -169,8 +169,8 @@ Depends on phase 3.
 - ~~Does the sqlite store's `transaction` expose a clean commit point?~~ **Resolved 2026-09-20**:
   `write-lock.ts` issues `COMMIT` right before `transaction()` resolves and `ROLLBACK` on any
   rejection, so "after `transaction()` resolves" is the commit exactly.
-- **Which action kinds are `warn`.** The table above names three. If reading real output says
-  another kind belongs there, change the table and the code together.
+- **Which action kinds are `warn`.** The table above names three, and `log/actions.ts` holds
+  the same three. If reading real output says another kind belongs there, change both.
 
 ---
 

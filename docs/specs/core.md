@@ -1,9 +1,12 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-09-15
+**Last updated**: 2026-09-20
 **Shipped**:
 
+- 2026-09-20 — **A host may listen to the action log.** The ports take an optional observer that
+  core tells each action once its transaction commits, and nothing about a rollback. See
+  [daemon-logging](../plans/daemon-logging.md).
 - 2026-09-15 — **A manual mark is cancellable, the summary names its templates, and a note confesses less.** `cancelDelivery`
   takes back a record naming the user whatever its state; the routing summary names the distinct
   templates whose records stand; the markdown kinds no longer confess tags their settings left out.

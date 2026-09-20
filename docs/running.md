@@ -95,8 +95,26 @@ authentication, or a proxy merging them back into one origin.
 
 ```sh
 docker compose ps      # healthy, once the healthcheck has asked /v1/health
-docker compose logs    # the pool, the mirror, the assets and the destinations it found
+docker compose logs    # what it found on startup, and everything it has done since
 ```
+
+The log is one line per event: the clock, the level, what happened, then the facts as
+`key=value`.
+
+```
+13:26:17.257 INFO /var/lib/notemap/state/notemap.db on http://0.0.0.0:4747
+13:26:17.258 INFO mirroring mirror=/var/lib/notemap/pool-mirror
+13:26:18.670 INFO action kind=captured item=01925f3e-… by=source source=raycast
+13:26:40.102 INFO action kind=routed item=01925f3e-… by=person record=… destination=… target=destination
+13:27:02.511 WARN action kind=delivery-failed item=01925f3e-… by=notemap record=… attempt=1 failure.code=unreachable
+```
+
+Every action the pool records is there — the same facts `/v1/actions` serves, as they happen — and
+so is every sign-in, every token minted or revoked, and every failure with its stack. Requests are
+below the default level: `NOTEMAP_LOG_LEVEL=debug` in the compose file's `environment` shows each
+one with its status, its duration and who asked, and `format = "json"` under `[log]` in
+`config.toml` makes every line an object for a collector. Neither prints a note's text, a password
+or a token's secret.
 
 To ask what is actually running rather than infer it from an image tag:
 
