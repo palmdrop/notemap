@@ -16,7 +16,9 @@
   values, and whatever it held is not sent: the markdown kinds' `trigger tags` appears only once
   `frontmatter` is `full` or `hashtags` is `yes`, since a switch about the tags means nothing
   while no tags go. A record draws a flag as the word. The first flag is that one, off by default,
-  so a `route/` tag stays in the pool unless a route or a template asks to send it.
+  so a `route/` tag stays in the pool unless a route or a template asks to send it. On the
+  template form the pattern vocabulary sits **under the last field a pattern can be written
+  into**, rather than under whatever switches follow it.
 - 2026-09-18 — **Four small things from a working session.** The capture box carries the tag
   chooser in its foot, so a capture arrives classified and a trigger tag among its tags files it
   on arrival; `mod+⏎` commits the capture box and saves the editable shape, `⇧⏎` being a new line

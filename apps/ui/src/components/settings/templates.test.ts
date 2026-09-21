@@ -25,6 +25,20 @@ const CREATE = {
   },
 };
 
+/** A place, then the switches a markdown kind draws after it. */
+const CREATE_WITH_SWITCHES = {
+  name: "create",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    required: ["directory"],
+    properties: {
+      directory: { type: "string" },
+      frontmatter: { type: "string", enum: ["full", "none"] },
+    },
+  },
+};
+
 function aDestination(overrides: Record<string, unknown> = {}) {
   return {
     id: VAULT,
@@ -54,6 +68,7 @@ function serving(
   templates: readonly Record<string, unknown>[],
   report: Record<string, unknown> = { kind: "fits" },
   destinations: readonly Record<string, unknown>[] = [aDestination()],
+  capabilities: readonly Record<string, unknown>[] = [CREATE],
 ) {
   return pool((request) => {
     const route = routeOf(request);
@@ -65,7 +80,7 @@ function serving(
     }
     if (route.endsWith("/report")) return json(200, report);
     if (route.endsWith("/description")) {
-      return json(200, { kind: "described", capabilities: [CREATE] });
+      return json(200, { kind: "described", capabilities });
     }
     if (route === "POST /v1/templates") return json(201, aTemplate());
     if (route === `DELETE /v1/templates/${RESEARCH}`) {
@@ -753,6 +768,26 @@ test("offers no patterns where every typed field may hold only what is offered",
   await screen.findByLabelText("channel");
 
   expect(screen.queryByText(/\{\{captured_at\}\}/)).toBeNull();
+});
+
+/** Under the place it is for, not under whatever switches follow it. */
+test("says the patterns under the last field one can be written into", async () => {
+  serving([], { kind: "fits" }, [aDestination()], [CREATE_WITH_SWITCHES]);
+
+  render(Templates);
+  await open(/add a template/);
+  const place = await screen.findByLabelText("directory");
+  const vocabulary = screen.getByText(/\{\{captured_at\}\}/);
+
+  expect(
+    place.compareDocumentPosition(vocabulary) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  const frontmatter = screen.getByRole("button", { name: "full" });
+  expect(
+    vocabulary.compareDocumentPosition(frontmatter) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
 });
 
 test("a destination that cannot be asked leaves the field typable", async () => {
