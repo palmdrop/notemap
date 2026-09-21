@@ -1,12 +1,12 @@
 /**
- * A form from a JSON Schema, for the two shapes a settings schema may take: a
- * string and a list of strings. Anything else is offered as a string, which the
- * pool then refuses with the reason rather than the field being hidden.
+ * A form from a JSON Schema, for the three shapes a schema may take: a string,
+ * a list of strings, and a flag. Anything else is offered as a string, which
+ * the pool then refuses with the reason rather than the field being hidden.
  */
 export type Field = {
   readonly name: string;
   readonly required: boolean;
-  readonly kind: "text" | "list";
+  readonly kind: "text" | "list" | "flag";
   readonly title?: string;
   readonly description?: string;
   /** Carries `x-notemap-candidates`: a destination can be asked what it could hold. */
@@ -120,8 +120,12 @@ function stringsAt(
 
 function kindOf(property: unknown): Field["kind"] {
   const type = (property as Record<string, unknown> | null)?.["type"];
-  return type === "array" ? "list" : "text";
+  if (type === "array") return "list";
+  return type === "boolean" ? "flag" : "text";
 }
+
+/** What an input holds for a flag that is on; anything else is off. */
+export const ON = "true";
 
 /**
  * What a person typed, as the value the schema asks for. A field nobody filled
@@ -129,6 +133,7 @@ function kindOf(property: unknown): Field["kind"] {
  * value there rather than an omission, and it is the one a folder field means
  * by it. A filesystem destination's `directory` says so in as many words, and
  * dropping it made "empty names the root itself" a thing the form could not do.
+ * A flag that is off is absent on the same terms, off being what absent means.
  */
 export function valuesFrom(
   fields: readonly Field[],
@@ -138,6 +143,11 @@ export function valuesFrom(
 
   for (const field of fields) {
     const value = (typed[field.name] ?? "").trim();
+    if (field.kind === "flag") {
+      if (value === ON) filled[field.name] = true;
+      else if (field.required) filled[field.name] = false;
+      continue;
+    }
     if (value === "" && !field.required) continue;
 
     filled[field.name] =

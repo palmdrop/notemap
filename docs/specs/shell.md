@@ -1,9 +1,15 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-18
+**Last updated**: 2026-09-21
 **Shipped**:
 
+- 2026-09-21 — **A field the schema makes a flag is drawn as one.** A `boolean` argument is a
+  mark and a word — `□ no`, `■ yes` — pressed to turn, in the composer and on the template form,
+  and never the browser's checkbox, on the terms the order control is not its `select`. Off is
+  absent on the wire, as a cleared option is; on is `true`. A record draws it as the word. The
+  first is the markdown kinds' `trigger tags`, off by default, so a `route/` tag stays in the pool
+  unless a route or a template asks to send it.
 - 2026-09-18 — **Four small things from a working session.** The capture box carries the tag
   chooser in its foot, so a capture arrives classified and a trigger tag among its tags files it
   on arrival; `mod+⏎` commits the capture box and saves the editable shape, `⇧⏎` being a new line
@@ -173,7 +179,8 @@
 
 - 2026-09-08 — **A field the schema fixes is chosen wherever it appears.** The destination form and
   the composer read a schema's `enum` the way the template form already did, so an enum setting or
-  argument is a row of options rather than a box typed from memory — which is also what stops
+  argument is a row of options rather than a box typed from memory *(and a `boolean` a flag, from
+  2026-09-21)* — which is also what stops
   `folder` being typed from memory in the composer. Taking the option already taken gives it back,
   absent being a value of its own for a field that means *inherit*. A record says what a delivery
   did in bare verbs — `Created`, `Appended` — the destination being named on the line beside it.

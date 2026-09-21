@@ -8,7 +8,7 @@ import {
   type Rendering,
   type RenderingContext,
 } from "./renderers";
-import { hashtagsFor, type Hashtags, type TagsMode } from "./tags";
+import { carriedTags, hashtagsFor, type Hashtags, type TagsMode } from "./tags";
 
 /** What a renderer did rather than what a destination did, which is never worth retrying. */
 export class RenderingFailed extends Error {}
@@ -29,6 +29,8 @@ export type Note = {
 export type NoteOptions = {
   readonly frontmatter: FrontmatterMode;
   readonly tags: TagsMode;
+  /** Whether the `route/` tags that filed the item go with the rest. */
+  readonly triggerTags: boolean;
 };
 
 /** What every note either kind writes is, and what a delivery says its output was. */
@@ -68,10 +70,8 @@ export function renderNote(
   options: NoteOptions,
 ): Note {
   const rendered = renderOrRefuse(renderers, delivery, at);
-  const hashtags =
-    options.tags === "hashtags"
-      ? hashtagsFor(delivery.tags.map((tag) => tag.name))
-      : undefined;
+  const tags = carriedTags(delivery.tags, options.triggerTags);
+  const hashtags = options.tags === "hashtags" ? hashtagsFor(tags) : undefined;
 
   const body =
     hashtags === undefined || hashtags.line === ""
@@ -84,7 +84,9 @@ export function renderNote(
     return { frontmatter: "", body, ...said };
   }
 
-  const entries = new Map<string, FrontmatterValue>(fixedFrontmatter(delivery));
+  const entries = new Map<string, FrontmatterValue>(
+    fixedFrontmatter(delivery, tags),
+  );
   if (options.tags !== "frontmatter") entries.delete(TAGS_KEY);
   for (const [key, value] of rendered.frontmatter ?? []) {
     if (!FIXED_KEYS.includes(key)) entries.set(key, value);

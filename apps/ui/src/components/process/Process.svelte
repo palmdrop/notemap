@@ -23,6 +23,7 @@
   import ComposerTags from "$components/routing/ComposerTags.svelte";
   import DestinationLine from "$components/routing/DestinationLine.svelte";
   import PathLine from "$components/routing/PathLine.svelte";
+  import Flag from "$components/primitives/composer/Flag.svelte";
   import Option from "$components/primitives/composer/Option.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
@@ -47,7 +48,7 @@
   import { reachable } from "$lib/reachable.svelte";
   import { placeNamed, saidOf } from "$lib/routing";
   import { leafOf, type Said } from "$lib/forecast";
-  import { fieldsOf, presetsFrom, valuesFrom } from "$lib/schema-form";
+  import { fieldsOf, ON, presetsFrom, valuesFrom } from "$lib/schema-form";
   import { whenOf } from "$lib/when";
 
   import Band from "./Band.svelte";
@@ -786,6 +787,16 @@
       onchange={(value) => (args = { ...args, [field.name]: value })}
       onsubmit={(beside) => void send(beside)}
       onrelease={release}
+    />
+  {:else if field.kind === "flag"}
+    <Flag
+      label={title}
+      on={args[field.name] === ON}
+      ontoggle={() =>
+        (args = {
+          ...args,
+          [field.name]: args[field.name] === ON ? "" : ON,
+        })}
     />
   {:else if field.options !== undefined}
     <!-- Chosen rather than typed: these values *are* the field, and taking the

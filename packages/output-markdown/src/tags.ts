@@ -1,4 +1,5 @@
-import type { JsonObject, JsonSchema } from "@notemap/core";
+import { TRIGGER_TAG_NAMESPACE } from "@notemap/core";
+import type { JsonObject, JsonSchema, Tag } from "@notemap/core";
 
 /**
  * Where a note carries its tags. `frontmatter` is where they went before this
@@ -47,6 +48,37 @@ function modeOf(held: unknown): TagsMode | undefined {
   return typeof held === "string" && (MODES as readonly string[]).includes(held)
     ? (held as TagsMode)
     : undefined;
+}
+
+export const TRIGGER_TAGS = "triggerTags";
+
+/**
+ * Whether the tags that filed the item go with it. They are the pool's record
+ * of why an item went where it went rather than anything about the item, so a
+ * delivery that was not asked leaves them behind, in the frontmatter as in the
+ * foot of the note.
+ */
+export const TRIGGER_TAGS_ARGUMENT: JsonSchema = {
+  type: "boolean",
+  default: false,
+  title: "trigger tags",
+  description:
+    "Whether the `route/` tags that filed this item are written with its other tags. Left unset, they stay in the pool.",
+};
+
+/** Only `true` says yes; absent and anything else is the default. */
+export function triggerTagsOf(args: JsonObject): boolean {
+  return args[TRIGGER_TAGS] === true;
+}
+
+/** The names a note is asked to write, in the order the item holds them. */
+export function carriedTags(
+  tags: readonly Tag[],
+  triggerTags: boolean,
+): readonly string[] {
+  return tags
+    .map((tag) => tag.name)
+    .filter((name) => triggerTags || !name.startsWith(TRIGGER_TAG_NAMESPACE));
 }
 
 /** Nothing ends a hashtag but a space, so a tag holding one cannot be written as one. */

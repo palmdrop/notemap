@@ -37,8 +37,10 @@ export const FIXED_KEYS: readonly string[] = [
   ...Object.values(PROVENANCE),
 ];
 
+/** `tags` is what the note carries rather than what the item holds, since not every tag goes. */
 export function fixedFrontmatter(
   delivery: Delivery,
+  tags: readonly string[],
 ): Map<string, FrontmatterValue> {
   const entries = new Map<string, FrontmatterValue>([
     [KEYS.item, delivery.item],
@@ -52,12 +54,7 @@ export function fixedFrontmatter(
   if (delivery.contentUpdatedAt !== undefined) {
     entries.set(KEYS.contentUpdatedAt, delivery.contentUpdatedAt);
   }
-  if (delivery.tags.length > 0) {
-    entries.set(
-      KEYS.tags,
-      delivery.tags.map((tag) => tag.name),
-    );
-  }
+  if (tags.length > 0) entries.set(KEYS.tags, tags);
 
   return entries;
 }

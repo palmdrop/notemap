@@ -1,6 +1,21 @@
 import { describe, expect, it } from "vitest";
 
-import { hashtagsFor, tagsModeOf, tagsSettingOf } from "./tags";
+import type { Tag, TagName, Timestamp } from "@notemap/core";
+
+import {
+  carriedTags,
+  hashtagsFor,
+  tagsModeOf,
+  tagsSettingOf,
+  triggerTagsOf,
+} from "./tags";
+
+const held = (...names: string[]): Tag[] =>
+  names.map((name) => ({
+    name: name as TagName,
+    by: { kind: "person" as const },
+    addedAt: "2026-09-10T09:00:00.000Z" as Timestamp,
+  }));
 
 describe("where a note's tags go", () => {
   it("inherits the destination's setting where the arguments say nothing", () => {
@@ -44,6 +59,27 @@ describe("tags as hashtags", () => {
   it("rewrites nothing: a tag is somebody's word for something", () => {
     expect(hashtagsFor(["a loose thought"]).unwritable).toEqual([
       "a loose thought",
+    ]);
+  });
+});
+
+describe("whether the tags that filed the item go with it", () => {
+  it("is no unless the arguments say yes, and only `true` says it", () => {
+    expect(triggerTagsOf({})).toBe(false);
+    expect(triggerTagsOf({ triggerTags: "true" })).toBe(false);
+    expect(triggerTagsOf({ triggerTags: true })).toBe(true);
+  });
+
+  it("leaves every tag under `route/` behind by default, keeping the order", () => {
+    expect(
+      carriedTags(held("route/research", "quote", "route/journal", "b"), false),
+    ).toEqual(["quote", "b"]);
+  });
+
+  it("carries them all where asked", () => {
+    expect(carriedTags(held("route/research", "quote"), true)).toEqual([
+      "route/research",
+      "quote",
     ]);
   });
 });

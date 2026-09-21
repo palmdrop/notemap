@@ -86,7 +86,9 @@ describe("what the block remembers about where it came from", () => {
     );
 
     expect(written).toEqual(
-      [...fixedFrontmatter(delivery({ tags: ["one"] }))].map(([key]) => key),
+      [...fixedFrontmatter(delivery({ tags: ["one"] }), ["one"])].map(
+        ([key]) => key,
+      ),
     );
   });
 

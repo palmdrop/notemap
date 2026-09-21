@@ -13,6 +13,7 @@ import {
   placeOf,
   renderNote,
   tagsModeOf,
+  triggerTagsOf,
   type FrontmatterMode,
   type Note,
   type Renderers,
@@ -312,6 +313,7 @@ function renderInto(
     {
       frontmatter: frontmatterModeOf(delivery.arguments, wiring.frontmatter),
       tags: tagsModeOf(delivery.arguments, wiring.tags),
+      triggerTags: triggerTagsOf(delivery.arguments),
     },
   );
 }

@@ -1,9 +1,13 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-09-20
+**Last updated**: 2026-09-21
 **Shipped**:
 
+- 2026-09-21 — **A trigger tag stays in the pool unless the delivery asks for it.** The markdown
+  kinds leave every tag under `route/` out of what they write — the frontmatter and the `#tag`
+  foot alike — and a `triggerTags` argument on their capabilities, `false` by default, sends them
+  with the rest. Not confessed either way: the default is a choice rather than a loss.
 - 2026-09-20 — **A host may listen to the action log.** The ports take an optional observer that
   core tells each action once its transaction commits, and nothing about a rollback. See
   [daemon-logging](../plans/daemon-logging.md).
@@ -1031,7 +1035,8 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   used to be, on the reasoning above; but a setting is a choice rather than a loss, the output
   already shows what it holds, and a note saying `its tags did not go` under every delivery to a
   vault that writes no frontmatter was the confession nobody could act on. A hashtag that could
-  not be made of a tag is still said: that one was asked for.
+  not be made of a tag is still said: that one was asked for. A **trigger tag** left behind is
+  not (2026-09-21), on the same terms: leaving it is the default, and sending it is asked for.
 - **The note is free text nothing parses**, on the same footing as the `detail` that rides on
   `unreachable` and `rejected`. A machine-readable list of what was dropped is a vocabulary both
   core and every shell would have to learn, and would be wrong the first time a destination lost
@@ -1537,7 +1542,15 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   2026-09-10), on the same terms: among the frontmatter, as `#tag` at the foot of the note, or
   nowhere. They are not provenance — `standards.md`'s vocabulary does not name them — so where they
   go is a question about a vault's own conventions rather than about traceability, and a note
-  carrying them in its body carries none of them in a block it is also writing. Local-only is the default for every provider; anything
+  carrying them in its body carries none of them in a block it is also writing. **A trigger tag
+  goes with neither unless asked** (added 2026-09-21): it is the pool's record of why the item
+  went where it went rather than anything about the item, and it reads as noise in a vault that
+  never heard of the template. Every tag under `route/` is left out, declared or not — the
+  namespace is reserved for the purpose and a renderer knows tag names and no templates — and a
+  `triggerTags` argument on the capability, `false` by default, sends them with the rest. A
+  template may save it, so one destination that wants them has them on every route it makes. The
+  are.na kind copies the note's frontmatter into a block's metadata and leaves them out on the
+  same terms, with no argument to send them. Local-only is the default for every provider; anything
   that sends content off-box is opt-in and named on the item.
 
 ---

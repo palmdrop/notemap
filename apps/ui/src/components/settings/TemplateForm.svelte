@@ -9,12 +9,14 @@
   } from "@notemap/client";
 
   import Action from "$components/primitives/controls/Action.svelte";
+  import Flag from "$components/primitives/composer/Flag.svelte";
   import Option from "$components/primitives/composer/Option.svelte";
   import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
   import { OWN_ARGUMENTS } from "$lib/arguments";
   import { client } from "$lib/client";
   import {
     fieldsOf,
+    ON,
     typedFrom,
     valuesFrom,
     type Field,
@@ -215,7 +217,14 @@
       {field.title ?? field.name}
     </span>
     <div>
-      {#if fixed(field) !== undefined}
+      {#if field.kind === "flag"}
+        <Flag
+          label={field.title ?? field.name}
+          on={typed[field.name] === ON}
+          ontoggle={() =>
+            (typed[field.name] = typed[field.name] === ON ? "" : ON)}
+        />
+      {:else if fixed(field) !== undefined}
         <div class="flex flex-wrap gap-x-[2ch]">
           {#each fixed(field) ?? [] as one (one)}
             <Option

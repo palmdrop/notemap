@@ -1,5 +1,5 @@
 import type { Delivery } from "@notemap/core";
-import { fixedFrontmatter } from "@notemap/output-markdown";
+import { carriedTags, fixedFrontmatter } from "@notemap/output-markdown";
 
 /**
  * What a delivery becomes on a board. Not markdown, and not
@@ -102,7 +102,8 @@ export function provenanceOf(
 ): Record<string, string> | undefined {
   const written: Record<string, string> = {};
 
-  for (const [key, value] of fixedFrontmatter(delivery)) {
+  const tags = carriedTags(delivery.tags, false);
+  for (const [key, value] of fixedFrontmatter(delivery, tags)) {
     if (Object.keys(written).length >= KEY_LIMIT) break;
 
     const flat = Array.isArray(value) ? value.join(", ") : String(value);

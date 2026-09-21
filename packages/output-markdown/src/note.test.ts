@@ -54,17 +54,24 @@ const prose: Renderer = (given) => ({
 const renderers: Renderers = { [NOTE]: prose };
 
 function options(overrides: Partial<NoteOptions> = {}): NoteOptions {
-  return { frontmatter: "none", tags: "frontmatter", ...overrides };
+  return {
+    frontmatter: "none",
+    tags: "frontmatter",
+    triggerTags: false,
+    ...overrides,
+  };
 }
 
 const at = { directory: "", assets: new Map<string, string>() };
 
 describe("where a note carries its tags", () => {
   it("puts them among the frontmatter, which is where they went before", () => {
-    const note = renderNote(renderers, delivery({ tags: ["quote"] }), at, {
-      frontmatter: "full",
-      tags: "frontmatter",
-    });
+    const note = renderNote(
+      renderers,
+      delivery({ tags: ["quote"] }),
+      at,
+      options({ frontmatter: "full" }),
+    );
 
     expect(note.frontmatter).toContain("tags:\n  - 'quote'");
     expect(note.body).toBe("a thought\n");
@@ -83,23 +90,89 @@ describe("where a note carries its tags", () => {
 
   /** Both places would be one tag said twice, and the block is the one being turned off. */
   it("takes them out of the frontmatter where the body is carrying them", () => {
-    const note = renderNote(renderers, delivery({ tags: ["quote"] }), at, {
-      frontmatter: "full",
-      tags: "hashtags",
-    });
+    const note = renderNote(
+      renderers,
+      delivery({ tags: ["quote"] }),
+      at,
+      options({ frontmatter: "full", tags: "hashtags" }),
+    );
 
     expect(note.frontmatter).not.toContain("tags:");
     expect(note.body).toBe("a thought\n\n#quote\n");
   });
 
   it("carries them nowhere where it was asked to carry them nowhere", () => {
-    const note = renderNote(renderers, delivery({ tags: ["quote"] }), at, {
-      frontmatter: "full",
-      tags: "none",
-    });
+    const note = renderNote(
+      renderers,
+      delivery({ tags: ["quote"] }),
+      at,
+      options({ frontmatter: "full", tags: "none" }),
+    );
 
     expect(note.frontmatter).not.toContain("tags:");
     expect(note.body).toBe("a thought\n");
+  });
+});
+
+describe("the tags that filed the item", () => {
+  const filed = delivery({ tags: ["quote", "route/research"] });
+
+  it("stay in the pool, out of the frontmatter as out of the foot", () => {
+    const block = renderNote(
+      renderers,
+      filed,
+      at,
+      options({ frontmatter: "full" }),
+    );
+    const foot = renderNote(
+      renderers,
+      filed,
+      at,
+      options({ tags: "hashtags" }),
+    );
+
+    expect(block.frontmatter).toContain("tags:\n  - 'quote'\n");
+    expect(block.frontmatter).not.toContain("route/");
+    expect(foot.body).toBe("a thought\n\n#quote\n");
+  });
+
+  it("go where the delivery asked for them, in both places", () => {
+    const block = renderNote(
+      renderers,
+      filed,
+      at,
+      options({ frontmatter: "full", triggerTags: true }),
+    );
+    const foot = renderNote(
+      renderers,
+      filed,
+      at,
+      options({ tags: "hashtags", triggerTags: true }),
+    );
+
+    expect(block.frontmatter).toContain(
+      "tags:\n  - 'quote'\n  - 'route/research'\n",
+    );
+    expect(foot.body).toBe("a thought\n\n#quote #route/research\n");
+  });
+
+  /** A choice rather than a loss, on the same terms as a setting that leaves tags out. */
+  it("are not confessed", () => {
+    expect(renderNote(renderers, filed, at, options()).dropped).toBeUndefined();
+  });
+
+  it("leave a note with no tags line where they were the only tags", () => {
+    const only = delivery({ tags: ["route/research"] });
+    const block = renderNote(
+      renderers,
+      only,
+      at,
+      options({ frontmatter: "full" }),
+    );
+    const foot = renderNote(renderers, only, at, options({ tags: "hashtags" }));
+
+    expect(block.frontmatter).not.toContain("tags:");
+    expect(foot.body).toBe("a thought\n");
   });
 });
 

@@ -1,6 +1,12 @@
 import { describe, expect, test } from "vitest";
 
-import { fieldsOf, presetsFrom, typedFrom, valuesFrom } from "./schema-form";
+import {
+  fieldsOf,
+  ON,
+  presetsFrom,
+  typedFrom,
+  valuesFrom,
+} from "./schema-form";
 
 const SCHEMA = {
   type: "object",
@@ -89,6 +95,29 @@ describe("what a person typed, as the value the schema asks for", () => {
       path: "inbox",
       tags: "one, two",
     });
+  });
+
+  test("sends a flag as a boolean, and one that is off as nothing", () => {
+    const flagged = fieldsOf({
+      type: "object",
+      properties: { whether: { type: "boolean", default: false } },
+    });
+
+    expect(flagged[0]?.kind).toBe("flag");
+    expect(valuesFrom(flagged, { whether: ON })).toEqual({ whether: true });
+    expect(valuesFrom(flagged, { whether: "false" })).toEqual({});
+    expect(valuesFrom(flagged, {})).toEqual({});
+    expect(typedFrom({ whether: true })).toEqual({ whether: ON });
+  });
+
+  test("sends a required flag that is off as false", () => {
+    const flagged = fieldsOf({
+      type: "object",
+      required: ["whether"],
+      properties: { whether: { type: "boolean" } },
+    });
+
+    expect(valuesFrom(flagged, {})).toEqual({ whether: false });
   });
 });
 

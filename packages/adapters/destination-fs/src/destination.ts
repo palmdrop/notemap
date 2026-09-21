@@ -29,6 +29,7 @@ import {
   renderNote,
   RenderingFailed,
   tagsModeOf,
+  triggerTagsOf,
   type FrontmatterMode,
   type Renderers,
   type TagsMode,
@@ -444,6 +445,7 @@ function render(wiring: Wiring, delivery: Delivery, note: Contained) {
     {
       frontmatter: frontmatterModeOf(delivery.arguments, wiring.frontmatter),
       tags: tagsModeOf(delivery.arguments, wiring.tags),
+      triggerTags: triggerTagsOf(delivery.arguments),
     },
   );
 }
