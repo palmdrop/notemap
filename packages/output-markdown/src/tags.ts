@@ -1,53 +1,50 @@
-import { TRIGGER_TAG_NAMESPACE } from "@notemap/core";
+import {
+  INHERITS_FIELD,
+  OFFERED_WHEN_FIELD,
+  TRIGGER_TAG_NAMESPACE,
+} from "@notemap/core";
 import type { JsonObject, JsonSchema, Tag } from "@notemap/core";
 
+import { FRONTMATTER } from "./frontmatter";
+
+export const HASHTAGS = "hashtags";
+
 /**
- * Where a note carries its tags. `frontmatter` is where they went before this
- * existed, so a destination that never said keeps writing what it wrote — and
- * a destination writing no frontmatter carries none, which it also already did.
+ * Whether a note carries its tags as `#tag` at its foot. Off, they go among
+ * the frontmatter, and nowhere where there is none — so where a note carries
+ * them is one switch beside the frontmatter's, and every setting of the two
+ * means something.
  */
-export type TagsMode = "frontmatter" | "hashtags" | "none";
-
-export const TAGS = "tags";
-
-const MODES = ["frontmatter", "hashtags", "none"] as const;
-
-/** The destination's own default, on the same terms as the frontmatter setting. */
-export const TAGS_SETTING: JsonSchema = {
-  type: "string",
-  enum: [...MODES],
-  default: "frontmatter",
-  title: "Tags",
+export const HASHTAGS_SETTING: JsonSchema = {
+  type: "boolean",
+  default: false,
+  title: "Hashtags",
   description:
-    "Where a note this destination writes carries its tags: among the frontmatter, as `#tag` at the foot of the note, or nowhere. Frontmatter that is switched off carries none of it either way.",
+    "Whether a note this destination writes carries its tags as `#tag` at its foot. Otherwise they go among the frontmatter, and nowhere where none is written.",
 };
 
-/** The same choice for one capture. Left unset, the destination's own decides. */
-export const TAGS_MODE: JsonSchema = {
-  type: "string",
-  enum: [...MODES],
-  title: "tags",
+/** The same choice for one capture, on the frontmatter argument's terms. */
+export const HASHTAGS_ARGUMENT: JsonSchema = {
+  type: "boolean",
+  default: false,
+  title: "hashtags",
   description:
-    "Where this note carries its tags. Left unset, the destination's own setting decides.",
+    "Whether this note carries its tags as `#tag` at its foot. Left unset, the destination's own setting decides.",
+  [INHERITS_FIELD]: true,
 };
 
-/** Absent inherits the destination's setting, and an absent setting is `frontmatter`. */
-export function tagsModeOf(
-  args: JsonObject,
-  setting: TagsMode = "frontmatter",
-): TagsMode {
-  return modeOf(args[TAGS]) ?? setting;
+/** Absent inherits the destination's setting, and an absent setting is off. */
+export function hashtagsOf(args: JsonObject, setting = false): boolean {
+  return flagOf(args[HASHTAGS]) ?? setting;
 }
 
 /** Read rather than cast, as a settings reader reads everything else. */
-export function tagsSettingOf(settings: JsonObject): TagsMode | undefined {
-  return modeOf(settings[TAGS]);
+export function hashtagsSettingOf(settings: JsonObject): boolean | undefined {
+  return flagOf(settings[HASHTAGS]);
 }
 
-function modeOf(held: unknown): TagsMode | undefined {
-  return typeof held === "string" && (MODES as readonly string[]).includes(held)
-    ? (held as TagsMode)
-    : undefined;
+function flagOf(held: unknown): boolean | undefined {
+  return typeof held === "boolean" ? held : undefined;
 }
 
 export const TRIGGER_TAGS = "triggerTags";
@@ -56,14 +53,17 @@ export const TRIGGER_TAGS = "triggerTags";
  * Whether the tags that filed the item go with it. They are the pool's record
  * of why an item went where it went rather than anything about the item, so a
  * delivery that was not asked leaves them behind, in the frontmatter as in the
- * foot of the note.
+ * foot of the note. Offered only while the tags go somewhere at all.
  */
 export const TRIGGER_TAGS_ARGUMENT: JsonSchema = {
   type: "boolean",
-  default: false,
   title: "trigger tags",
   description:
     "Whether the `route/` tags that filed this item are written with its other tags. Left unset, they stay in the pool.",
+  [OFFERED_WHEN_FIELD]: [
+    { field: FRONTMATTER, is: ["full"] },
+    { field: HASHTAGS, is: [true] },
+  ],
 };
 
 /** Only `true` says yes; absent and anything else is the default. */

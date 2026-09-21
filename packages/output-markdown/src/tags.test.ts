@@ -5,8 +5,8 @@ import type { Tag, TagName, Timestamp } from "@notemap/core";
 import {
   carriedTags,
   hashtagsFor,
-  tagsModeOf,
-  tagsSettingOf,
+  hashtagsOf,
+  hashtagsSettingOf,
   triggerTagsOf,
 } from "./tags";
 
@@ -17,23 +17,23 @@ const held = (...names: string[]): Tag[] =>
     addedAt: "2026-09-10T09:00:00.000Z" as Timestamp,
   }));
 
-describe("where a note's tags go", () => {
+describe("whether a note's tags go at its foot", () => {
   it("inherits the destination's setting where the arguments say nothing", () => {
-    expect(tagsModeOf({}, "hashtags")).toBe("hashtags");
+    expect(hashtagsOf({}, true)).toBe(true);
   });
 
   it("lets one capture override the destination", () => {
-    expect(tagsModeOf({ tags: "none" }, "hashtags")).toBe("none");
+    expect(hashtagsOf({ hashtags: false }, true)).toBe(false);
   });
 
-  it("is the frontmatter where neither said, which is where they went before", () => {
-    expect(tagsModeOf({})).toBe("frontmatter");
+  it("is off where neither said", () => {
+    expect(hashtagsOf({})).toBe(false);
   });
 
   it("reads a setting rather than trusting one", () => {
-    expect(tagsSettingOf({ tags: "hashtags" })).toBe("hashtags");
-    expect(tagsSettingOf({ tags: "somewhere" })).toBeUndefined();
-    expect(tagsSettingOf({})).toBeUndefined();
+    expect(hashtagsSettingOf({ hashtags: true })).toBe(true);
+    expect(hashtagsSettingOf({ hashtags: "yes" })).toBeUndefined();
+    expect(hashtagsSettingOf({})).toBeUndefined();
   });
 });
 

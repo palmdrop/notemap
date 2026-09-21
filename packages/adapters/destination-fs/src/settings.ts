@@ -7,11 +7,10 @@ import {
   FRONTMATTER,
   FRONTMATTER_SETTING,
   frontmatterSettingOf,
-  TAGS,
-  TAGS_SETTING,
-  tagsSettingOf,
+  HASHTAGS,
+  HASHTAGS_SETTING,
+  hashtagsSettingOf,
   type FrontmatterMode,
-  type TagsMode,
 } from "@notemap/output-markdown";
 
 export const FILESYSTEM = "filesystem" as DestinationKindName;
@@ -27,7 +26,7 @@ export const FILESYSTEM_SETTINGS: JsonSchema = {
   properties: {
     root: { type: "string", minLength: 1 },
     [FRONTMATTER]: FRONTMATTER_SETTING,
-    [TAGS]: TAGS_SETTING,
+    [HASHTAGS]: HASHTAGS_SETTING,
   },
 };
 
@@ -36,8 +35,8 @@ export type FilesystemSettings = {
   readonly root: string;
   /** Absent is `none`, and a capability's own argument overrides it. */
   readonly frontmatter?: FrontmatterMode;
-  /** Absent is `frontmatter`, and a capability's own argument overrides it. */
-  readonly tags?: TagsMode;
+  /** Absent is off, and a capability's own argument overrides it. */
+  readonly hashtags?: boolean;
 };
 
 /** Read rather than cast: a schema that passed once is not a type, and a row holds JSON. */
@@ -53,12 +52,14 @@ export function asFilesystemSettings(
     return undefined;
   }
 
-  const tags = tagsSettingOf(settings);
-  if (settings[TAGS] !== undefined && tags === undefined) return undefined;
+  const hashtags = hashtagsSettingOf(settings);
+  if (settings[HASHTAGS] !== undefined && hashtags === undefined) {
+    return undefined;
+  }
 
   return {
     root,
     ...(frontmatter === undefined ? {} : { frontmatter }),
-    ...(tags === undefined ? {} : { tags }),
+    ...(hashtags === undefined ? {} : { hashtags }),
   };
 }

@@ -56,7 +56,7 @@ const renderers: Renderers = { [NOTE]: prose };
 function options(overrides: Partial<NoteOptions> = {}): NoteOptions {
   return {
     frontmatter: "none",
-    tags: "frontmatter",
+    hashtags: false,
     triggerTags: false,
     ...overrides,
   };
@@ -65,7 +65,7 @@ function options(overrides: Partial<NoteOptions> = {}): NoteOptions {
 const at = { directory: "", assets: new Map<string, string>() };
 
 describe("where a note carries its tags", () => {
-  it("puts them among the frontmatter, which is where they went before", () => {
+  it("puts them among the frontmatter, where there is one", () => {
     const note = renderNote(
       renderers,
       delivery({ tags: ["quote"] }),
@@ -82,7 +82,7 @@ describe("where a note carries its tags", () => {
       renderers,
       delivery({ tags: ["quote", "project/fiction-a"] }),
       at,
-      options({ tags: "hashtags" }),
+      options({ hashtags: true }),
     );
 
     expect(note.body).toBe("a thought\n\n#quote #project/fiction-a\n");
@@ -94,22 +94,22 @@ describe("where a note carries its tags", () => {
       renderers,
       delivery({ tags: ["quote"] }),
       at,
-      options({ frontmatter: "full", tags: "hashtags" }),
+      options({ frontmatter: "full", hashtags: true }),
     );
 
     expect(note.frontmatter).not.toContain("tags:");
     expect(note.body).toBe("a thought\n\n#quote\n");
   });
 
-  it("carries them nowhere where it was asked to carry them nowhere", () => {
+  it("carries them nowhere where there is no frontmatter and no hashtags", () => {
     const note = renderNote(
       renderers,
       delivery({ tags: ["quote"] }),
       at,
-      options({ frontmatter: "full", tags: "none" }),
+      options(),
     );
 
-    expect(note.frontmatter).not.toContain("tags:");
+    expect(note.frontmatter).toBe("");
     expect(note.body).toBe("a thought\n");
   });
 });
@@ -124,12 +124,7 @@ describe("the tags that filed the item", () => {
       at,
       options({ frontmatter: "full" }),
     );
-    const foot = renderNote(
-      renderers,
-      filed,
-      at,
-      options({ tags: "hashtags" }),
-    );
+    const foot = renderNote(renderers, filed, at, options({ hashtags: true }));
 
     expect(block.frontmatter).toContain("tags:\n  - 'quote'\n");
     expect(block.frontmatter).not.toContain("route/");
@@ -147,7 +142,7 @@ describe("the tags that filed the item", () => {
       renderers,
       filed,
       at,
-      options({ tags: "hashtags", triggerTags: true }),
+      options({ hashtags: true, triggerTags: true }),
     );
 
     expect(block.frontmatter).toContain(
@@ -169,7 +164,7 @@ describe("the tags that filed the item", () => {
       at,
       options({ frontmatter: "full" }),
     );
-    const foot = renderNote(renderers, only, at, options({ tags: "hashtags" }));
+    const foot = renderNote(renderers, only, at, options({ hashtags: true }));
 
     expect(block.frontmatter).not.toContain("tags:");
     expect(foot.body).toBe("a thought\n");
@@ -193,14 +188,6 @@ describe("what a note says it could not carry", () => {
     );
 
     expect(note.dropped).toBe(undefined);
-    expect(
-      renderNote(
-        renderers,
-        delivery({ tags: ["quote"] }),
-        at,
-        options({ tags: "none" }),
-      ).dropped,
-    ).toBe(undefined);
   });
 
   it("names the tags no hashtag could be made of", () => {
@@ -208,7 +195,7 @@ describe("what a note says it could not carry", () => {
       renderers,
       delivery({ tags: ["quote", "a loose thought"] }),
       at,
-      options({ tags: "hashtags" }),
+      options({ hashtags: true }),
     );
 
     expect(note.dropped).toBe(

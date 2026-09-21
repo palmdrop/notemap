@@ -28,11 +28,10 @@ import {
   placeOf,
   renderNote,
   RenderingFailed,
-  tagsModeOf,
+  hashtagsOf,
   triggerTagsOf,
   type FrontmatterMode,
   type Renderers,
-  type TagsMode,
 } from "@notemap/output-markdown";
 
 import { assetNames, placeAssets } from "./assets";
@@ -247,8 +246,8 @@ type Wiring = {
   readonly renderers: Renderers;
   /** The destination's own, which a delivery's own argument overrides. */
   readonly frontmatter?: FrontmatterMode;
-  /** The same, for where a note carries its tags. */
-  readonly tags?: TagsMode;
+  /** The same, for whether its tags go at the foot as hashtags. */
+  readonly hashtags?: boolean;
 };
 
 function wiringFor(
@@ -262,7 +261,7 @@ function wiringFor(
     ...(settings.frontmatter === undefined
       ? {}
       : { frontmatter: settings.frontmatter }),
-    ...(settings.tags === undefined ? {} : { tags: settings.tags }),
+    ...(settings.hashtags === undefined ? {} : { hashtags: settings.hashtags }),
   };
 }
 
@@ -444,7 +443,7 @@ function render(wiring: Wiring, delivery: Delivery, note: Contained) {
     { directory: within(note), assets: assetNames(delivery.assets) },
     {
       frontmatter: frontmatterModeOf(delivery.arguments, wiring.frontmatter),
-      tags: tagsModeOf(delivery.arguments, wiring.tags),
+      hashtags: hashtagsOf(delivery.arguments, wiring.hashtags),
       triggerTags: triggerTagsOf(delivery.arguments),
     },
   );

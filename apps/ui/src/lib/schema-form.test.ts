@@ -1,7 +1,12 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  effectiveOf,
   fieldsOf,
+  impliedOf,
+  labelOf,
+  OFF,
+  offered,
   ON,
   presetsFrom,
   typedFrom,
@@ -33,6 +38,7 @@ describe("the fields a schema asks for", () => {
         description: "Where it goes.",
         askable: true,
         offeredOnly: false,
+        inherits: false,
       },
       {
         name: "tags",
@@ -40,6 +46,7 @@ describe("the fields a schema asks for", () => {
         kind: "list",
         askable: false,
         offeredOnly: false,
+        inherits: false,
       },
     ]);
   });
@@ -97,17 +104,28 @@ describe("what a person typed, as the value the schema asks for", () => {
     });
   });
 
-  test("sends a flag as a boolean, and one that is off as nothing", () => {
+  test("sends a flag as a boolean either way, and one nobody said as nothing", () => {
     const flagged = fieldsOf({
       type: "object",
       properties: { whether: { type: "boolean", default: false } },
     });
 
     expect(flagged[0]?.kind).toBe("flag");
+    expect(flagged[0]?.options).toEqual([ON, OFF]);
     expect(valuesFrom(flagged, { whether: ON })).toEqual({ whether: true });
-    expect(valuesFrom(flagged, { whether: "false" })).toEqual({});
+    expect(valuesFrom(flagged, { whether: OFF })).toEqual({ whether: false });
     expect(valuesFrom(flagged, {})).toEqual({});
     expect(typedFrom({ whether: true })).toEqual({ whether: ON });
+  });
+
+  test("reads a flag's values as yes and no", () => {
+    const [whether] = fieldsOf({
+      type: "object",
+      properties: { whether: { type: "boolean" } },
+    });
+
+    expect(labelOf(whether as never, ON)).toBe("yes");
+    expect(labelOf(whether as never, OFF)).toBe("no");
   });
 
   test("sends a required flag that is off as false", () => {
@@ -208,5 +226,79 @@ describe("what a field starts at", () => {
     });
 
     expect(presetsFrom(fields)).toEqual({ directory: "inbox" });
+  });
+});
+
+describe("what a field comes out as", () => {
+  const fields = fieldsOf({
+    type: "object",
+    properties: {
+      frontmatter: {
+        type: "string",
+        enum: ["full", "none"],
+        default: "none",
+        "x-notemap-inherits": true,
+      },
+      hashtags: {
+        type: "boolean",
+        default: false,
+        "x-notemap-inherits": true,
+      },
+      triggerTags: {
+        type: "boolean",
+        "x-notemap-when": [
+          { field: "frontmatter", is: ["full"] },
+          { field: "hashtags", is: [true] },
+        ],
+      },
+    },
+  });
+  const [, , triggerTags] = fields;
+
+  test("is what was typed, else the setting it inherits, else the default", () => {
+    expect(effectiveOf(fields, {}, {})).toEqual({
+      frontmatter: "none",
+      hashtags: false,
+      triggerTags: false,
+    });
+    expect(effectiveOf(fields, {}, { frontmatter: "full" })).toMatchObject({
+      frontmatter: "full",
+    });
+    expect(
+      effectiveOf(fields, { frontmatter: "none" }, { frontmatter: "full" }),
+    ).toMatchObject({ frontmatter: "none" });
+  });
+
+  test("is never seeded for a field that inherits", () => {
+    expect(presetsFrom(fields)).toEqual({});
+  });
+
+  test("offers a conditional field only while one of its conditions holds", () => {
+    const field = triggerTags as never;
+
+    expect(offered(field, effectiveOf(fields, {}, {}))).toBe(false);
+    expect(offered(field, effectiveOf(fields, { hashtags: ON }, {}))).toBe(
+      true,
+    );
+    expect(
+      offered(field, effectiveOf(fields, {}, { frontmatter: "full" })),
+    ).toBe(true);
+    expect(
+      offered(
+        field,
+        effectiveOf(fields, { frontmatter: "none" }, { hashtags: true }),
+      ),
+    ).toBe(true);
+  });
+
+  test("always offers a field with no condition", () => {
+    expect(offered(fields[0] as never, {})).toBe(true);
+  });
+
+  test("says what an untouched field would come out as, in an input's own words", () => {
+    expect(impliedOf(fields[0] as never)).toBe("none");
+    expect(impliedOf(fields[0] as never, { frontmatter: "full" })).toBe("full");
+    expect(impliedOf(fields[1] as never, { hashtags: true })).toBe(ON);
+    expect(impliedOf(triggerTags as never)).toBe(OFF);
   });
 });

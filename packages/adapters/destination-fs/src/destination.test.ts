@@ -121,7 +121,7 @@ function bind(
 }
 
 /** The destination's own settings; absent is what a vault that never set one gets. */
-type Settings = { frontmatter?: string; tags?: string };
+type Settings = { frontmatter?: string; hashtags?: boolean };
 
 async function vault(
   renderers: Record<string, Renderer> = {},
@@ -194,8 +194,8 @@ describe("what it says it can do", () => {
 
 describe("where a note carries its tags", () => {
   const wrote = async (
-    settings: { frontmatter?: string; tags?: string },
-    args: Record<string, string> = {},
+    settings: { frontmatter?: string; hashtags?: boolean },
+    args: Record<string, string | boolean> = {},
   ) => {
     const { path, destination } = await vault({ text: renderText }, settings);
     const outcome = await destination.deliver(
@@ -217,37 +217,34 @@ describe("where a note carries its tags", () => {
   });
 
   it("writes them at the foot of the note where it was asked for hashtags", async () => {
-    const { file } = await wrote({ tags: "hashtags" });
+    const { file } = await wrote({ hashtags: true });
 
     expect(file).toBe("a thought\n\n#quote #project/fiction-a\n");
   });
 
   it("lets one capture override the destination", async () => {
-    const { file } = await wrote({ tags: "none" }, { tags: "hashtags" });
+    const { file } = await wrote({ hashtags: false }, { hashtags: true });
 
     expect(file).toContain("#quote");
   });
 
   /** The block is the one being switched off, so a note carrying tags keeps them. */
   it("keeps the hashtags on a note that writes no frontmatter", async () => {
-    const { file } = await wrote({ frontmatter: "none", tags: "hashtags" });
+    const { file } = await wrote({ frontmatter: "none", hashtags: true });
 
     expect(file).toBe("a thought\n\n#quote #project/fiction-a\n");
   });
 
   /** Tags nobody asked to write are the destination's choice, and the output shows it. */
   it("confesses nothing where the settings left the tags out", async () => {
-    const { outcome } = await wrote({
-      frontmatter: "none",
-      tags: "frontmatter",
-    });
+    const { outcome } = await wrote({ frontmatter: "none" });
 
     expect(outcome.kind).toBe("delivered");
     expect(delivered(outcome).output?.note).toBe(undefined);
   });
 
   it("confesses nothing where the note carried them", async () => {
-    const { outcome } = await wrote({ tags: "hashtags" });
+    const { outcome } = await wrote({ hashtags: true });
 
     expect(delivered(outcome).output?.note).toBe(undefined);
   });

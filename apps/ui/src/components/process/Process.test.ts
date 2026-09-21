@@ -106,6 +106,38 @@ const CREATE_WITH_ENUM = {
   },
 };
 
+/** The markdown kinds' switches, as they declare them: two that inherit, one offered only while tags go. */
+const CREATE_WITH_SWITCHES = {
+  name: "create",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    required: ["directory"],
+    properties: {
+      directory: { type: "string" },
+      frontmatter: {
+        type: "string",
+        enum: ["full", "none"],
+        default: "none",
+        "x-notemap-inherits": true,
+      },
+      hashtags: {
+        type: "boolean",
+        default: false,
+        "x-notemap-inherits": true,
+      },
+      triggerTags: {
+        type: "boolean",
+        title: "trigger tags",
+        "x-notemap-when": [
+          { field: "frontmatter", is: ["full"] },
+          { field: "hashtags", is: [true] },
+        ],
+      },
+    },
+  },
+};
+
 const CREATE_WITH_DEFAULT = {
   name: "create",
   accepts: ["text"],
@@ -1255,6 +1287,56 @@ test("gives an argument back where the one taken is taken again", async () => {
   await vi.waitFor(async () => {
     expect((await routed(transport)).arguments).toEqual({ directory: "inbox" });
   });
+});
+
+/** A switch about the tags means nothing while no tags go, so it is not offered. */
+test("offers a conditional argument only once the others make it mean something", async () => {
+  const transport = serving([aDestination()], {
+    kind: "described",
+    capabilities: [CREATE_WITH_SWITCHES],
+  });
+
+  draw();
+  await choose(/Vault/);
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "inbox" },
+  });
+
+  expect(screen.queryByText("trigger tags")).toBeNull();
+
+  const [hashtagsYes] = screen.getAllByRole("button", { name: "yes" });
+  await fireEvent.click(hashtagsYes as HTMLElement);
+  expect(await screen.findByText("trigger tags")).toBeDefined();
+
+  const [, triggerYes] = screen.getAllByRole("button", { name: "yes" });
+  await fireEvent.click(triggerYes as HTMLElement);
+  await fireEvent.click(hashtagsYes as HTMLElement);
+  expect(screen.queryByText("trigger tags")).toBeNull();
+
+  await commit();
+  await vi.waitFor(async () => {
+    expect((await routed(transport)).arguments).toEqual({ directory: "inbox" });
+  });
+});
+
+/** The destination's own setting is what an untouched argument comes out as, so it is what decides. */
+test("judges a conditional argument against what the destination's settings imply", async () => {
+  serving([aDestination({ settings: { frontmatter: "full" } })], {
+    kind: "described",
+    capabilities: [CREATE_WITH_SWITCHES],
+  });
+
+  draw();
+  await choose(/Vault/);
+  await screen.findByLabelText("directory");
+
+  expect(await screen.findByText("trigger tags")).toBeDefined();
+  expect(
+    screen.getByRole("button", { name: "full" }).getAttribute("aria-pressed"),
+  ).toBe("false");
+  expect(screen.getByRole("button", { name: "full" }).textContent).toContain(
+    "▹",
+  );
 });
 
 async function pickingFrontmatter(taken: readonly string[]) {

@@ -12,12 +12,11 @@ import {
   insertUnder,
   placeOf,
   renderNote,
-  tagsModeOf,
+  hashtagsOf,
   triggerTagsOf,
   type FrontmatterMode,
   type Note,
   type Renderers,
-  type TagsMode,
 } from "@notemap/output-markdown";
 
 import { assetNames, placeAssets } from "./assets";
@@ -36,8 +35,8 @@ export type Wiring = {
   readonly renderers: Renderers;
   /** The destination's own, which a delivery's own argument overrides. */
   readonly frontmatter?: FrontmatterMode;
-  /** The same, for where a note carries its tags. */
-  readonly tags?: TagsMode;
+  /** The same, for whether its tags go at the foot as hashtags. */
+  readonly hashtags?: boolean;
 };
 
 /** What this delivery put there: for an append into a note that was there, what was inserted. */
@@ -312,7 +311,7 @@ function renderInto(
     { directory: collectionOfPointer(note), assets },
     {
       frontmatter: frontmatterModeOf(delivery.arguments, wiring.frontmatter),
-      tags: tagsModeOf(delivery.arguments, wiring.tags),
+      hashtags: hashtagsOf(delivery.arguments, wiring.hashtags),
       triggerTags: triggerTagsOf(delivery.arguments),
     },
   );

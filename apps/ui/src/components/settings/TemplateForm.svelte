@@ -9,14 +9,16 @@
   } from "@notemap/client";
 
   import Action from "$components/primitives/controls/Action.svelte";
-  import Flag from "$components/primitives/composer/Flag.svelte";
   import Option from "$components/primitives/composer/Option.svelte";
   import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
   import { OWN_ARGUMENTS } from "$lib/arguments";
   import { client } from "$lib/client";
   import {
+    effectiveOf,
     fieldsOf,
-    ON,
+    impliedOf,
+    labelOf,
+    offered,
     typedFrom,
     valuesFrom,
     type Field,
@@ -59,11 +61,22 @@
   let said = $state("");
   let busy = $state(false);
 
-  const fields = $derived(
+  const declared = $derived(
     fieldsOf(
       capabilities.find((one) => one.name === capability)?.argumentsSchema,
     ),
   );
+
+  /** What an argument left unset falls back to, where the kind says it inherits one. */
+  const inherited = $derived(
+    destinations.find((one) => one.id === destination)?.settings ?? {},
+  );
+
+  /** Only the fields that mean something given the others, as the composer draws them. */
+  const fields = $derived.by(() => {
+    const effective = effectiveOf(declared, typed, inherited);
+    return declared.filter((one) => offered(one, effective));
+  });
 
   /**
    * Notemap's own arguments are drawn as their own controls below, so the
@@ -217,20 +230,21 @@
       {field.title ?? field.name}
     </span>
     <div>
-      {#if field.kind === "flag"}
-        <Flag
-          label={field.title ?? field.name}
-          on={typed[field.name] === ON}
-          ontoggle={() =>
-            (typed[field.name] = typed[field.name] === ON ? "" : ON)}
-        />
-      {:else if fixed(field) !== undefined}
+      {#if fixed(field) !== undefined}
+        <!-- Taking the option already taken gives it back: absent inherits,
+             and the hollow mark says what that comes out as. -->
+        {@const implied =
+          (typed[field.name] ?? "") === ""
+            ? impliedOf(field, inherited)
+            : undefined}
         <div class="flex flex-wrap gap-x-[2ch]">
           {#each fixed(field) ?? [] as one (one)}
             <Option
-              label={one}
+              label={labelOf(field, one)}
               chosen={typed[field.name] === one}
-              onchoose={() => (typed[field.name] = one)}
+              implied={implied === one}
+              onchoose={() =>
+                (typed[field.name] = typed[field.name] === one ? "" : one)}
             />
           {/each}
         </div>

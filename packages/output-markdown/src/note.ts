@@ -1,6 +1,6 @@
 import type { Delivery, DeliveredOutput } from "@notemap/core";
 
-import { FIXED_KEYS, fixedFrontmatter, TAGS_KEY, toYaml } from "./frontmatter";
+import { FIXED_KEYS, fixedFrontmatter, toYaml } from "./frontmatter";
 import type { FrontmatterMode, FrontmatterValue } from "./frontmatter";
 import {
   renderAsJson,
@@ -8,7 +8,7 @@ import {
   type Rendering,
   type RenderingContext,
 } from "./renderers";
-import { carriedTags, hashtagsFor, type Hashtags, type TagsMode } from "./tags";
+import { carriedTags, hashtagsFor, type Hashtags } from "./tags";
 
 /** What a renderer did rather than what a destination did, which is never worth retrying. */
 export class RenderingFailed extends Error {}
@@ -28,7 +28,8 @@ export type Note = {
 /** What a note is asked to carry beyond the item's own prose. */
 export type NoteOptions = {
   readonly frontmatter: FrontmatterMode;
-  readonly tags: TagsMode;
+  /** At the foot as `#tag`, or else among the frontmatter where there is one. */
+  readonly hashtags: boolean;
   /** Whether the `route/` tags that filed the item go with the rest. */
   readonly triggerTags: boolean;
 };
@@ -71,7 +72,7 @@ export function renderNote(
 ): Note {
   const rendered = renderOrRefuse(renderers, delivery, at);
   const tags = carriedTags(delivery.tags, options.triggerTags);
-  const hashtags = options.tags === "hashtags" ? hashtagsFor(tags) : undefined;
+  const hashtags = options.hashtags ? hashtagsFor(tags) : undefined;
 
   const body =
     hashtags === undefined || hashtags.line === ""
@@ -85,9 +86,8 @@ export function renderNote(
   }
 
   const entries = new Map<string, FrontmatterValue>(
-    fixedFrontmatter(delivery, tags),
+    fixedFrontmatter(delivery, options.hashtags ? [] : tags),
   );
-  if (options.tags !== "frontmatter") entries.delete(TAGS_KEY);
   for (const [key, value] of rendered.frontmatter ?? []) {
     if (!FIXED_KEYS.includes(key)) entries.set(key, value);
   }

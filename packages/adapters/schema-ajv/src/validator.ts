@@ -43,8 +43,8 @@ export function createAjvSchemaValidator(
    * startup rather than silently validating less than its author meant. The
    * list is core's, so a new one is not a second place to remember.
    */
-  for (const keyword of ANNOTATIONS) {
-    ajv.addKeyword({ keyword, schemaType: "boolean" });
+  for (const { keyword, shape } of ANNOTATIONS) {
+    ajv.addKeyword({ keyword, schemaType: shape });
   }
 
   return {

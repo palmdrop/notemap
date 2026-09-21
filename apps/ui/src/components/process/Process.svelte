@@ -23,7 +23,6 @@
   import ComposerTags from "$components/routing/ComposerTags.svelte";
   import DestinationLine from "$components/routing/DestinationLine.svelte";
   import PathLine from "$components/routing/PathLine.svelte";
-  import Flag from "$components/primitives/composer/Flag.svelte";
   import Option from "$components/primitives/composer/Option.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
@@ -48,7 +47,15 @@
   import { reachable } from "$lib/reachable.svelte";
   import { placeNamed, saidOf } from "$lib/routing";
   import { leafOf, type Said } from "$lib/forecast";
-  import { fieldsOf, ON, presetsFrom, valuesFrom } from "$lib/schema-form";
+  import {
+    effectiveOf,
+    fieldsOf,
+    impliedOf,
+    labelOf,
+    offered,
+    presetsFrom,
+    valuesFrom,
+  } from "$lib/schema-form";
   import { whenOf } from "$lib/when";
 
   import Band from "./Band.svelte";
@@ -147,15 +154,29 @@
     described?.kind === "described" ? described.capabilities : [],
   );
 
-  const fields = $derived(
+  const destinationKind = $derived(
+    $destinations.find((one) => one.id === chosen)?.kind,
+  );
+
+  /** What an argument left unset falls back to, where the kind says it inherits one. */
+  const inherited = $derived(
+    $destinations.find((one) => one.id === chosen)?.settings ?? {},
+  );
+
+  const declared = $derived(
     fieldsOf(
       capabilities.find((one) => one.name === capability)?.argumentsSchema,
     ),
   );
 
-  const destinationKind = $derived(
-    $destinations.find((one) => one.id === chosen)?.kind,
-  );
+  /**
+   * Only the fields that mean something given the others: a switch about the
+   * tags is not drawn while no tags go, and whatever it held is not sent.
+   */
+  const fields = $derived.by(() => {
+    const effective = effectiveOf(declared, args, inherited);
+    return declared.filter((one) => offered(one, effective));
+  });
 
   /**
    * Where the line is what draws the place, *what will happen* is not a step:
@@ -205,7 +226,7 @@
   $effect(() => {
     if (applied !== undefined) return;
 
-    const wanted = presetsFrom(fields);
+    const wanted = presetsFrom(declared);
     const held = untrack(() => args);
     const seeded = { ...wanted, ...held };
     if (Object.keys(seeded).length !== Object.keys(held).length) args = seeded;
@@ -788,24 +809,17 @@
       onsubmit={(beside) => void send(beside)}
       onrelease={release}
     />
-  {:else if field.kind === "flag"}
-    <Flag
-      label={title}
-      on={args[field.name] === ON}
-      ontoggle={() =>
-        (args = {
-          ...args,
-          [field.name]: args[field.name] === ON ? "" : ON,
-        })}
-    />
   {:else if field.options !== undefined}
     <!-- Chosen rather than typed: these values *are* the field, and taking the
          one already taken clears it, since absent is a value here too. -->
+    {@const implied =
+      (args[field.name] ?? "") === "" ? impliedOf(field, inherited) : undefined}
     <div>
       {#each field.options as one (one)}
         <Option
-          label={one}
+          label={labelOf(field, one)}
           chosen={args[field.name] === one}
+          implied={implied === one}
           onchoose={() =>
             (args = {
               ...args,
