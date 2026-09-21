@@ -37,6 +37,12 @@ test("falls back to the keys where there is no schema to read", () => {
   ]);
 });
 
+test("says a flag as a word rather than as JSON", () => {
+  expect(argumentsOf({ triggerTags: true }, undefined)).toEqual([
+    { name: "triggerTags", said: "yes" },
+  ]);
+});
+
 test("says a field left blank as the blank it was sent as", () => {
   expect(argumentsOf({ directory: "" }, schema)).toEqual([
     { name: "Directory", said: "" },

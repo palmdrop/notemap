@@ -136,6 +136,40 @@ describe("a vendor keyword this validator does not interpret", () => {
     expect(issues(withCandidates, { directory: "inbox" })).toEqual([]);
   });
 
+  it("is tolerated where its value is a list of conditions, as declared", () => {
+    const conditional: JsonSchema = {
+      type: "object",
+      properties: {
+        hashtags: { type: "boolean" },
+        triggerTags: {
+          type: "boolean",
+          "x-notemap-when": [{ field: "hashtags", is: [true] }],
+        },
+      },
+    };
+
+    expect(issues(conditional, { triggerTags: true })).toEqual([]);
+  });
+
+  /** A condition a form cannot read is dropped, and a field with none is offered always. */
+  it("throws on a condition that is not the shape declared", () => {
+    const malformed = (when: JsonValue): JsonSchema => ({
+      type: "object",
+      properties: {
+        triggerTags: { type: "boolean", "x-notemap-when": when },
+      },
+    });
+
+    expect(() => issues(malformed(true), {})).toThrow();
+    expect(() => issues(malformed([]), {})).toThrow();
+    expect(() =>
+      issues(malformed([{ fields: "hashtags", is: [true] }]), {}),
+    ).toThrow();
+    expect(() =>
+      issues(malformed([{ field: "hashtags", is: true }]), {}),
+    ).toThrow();
+  });
+
   it("is not stripped from the schema object handed in", () => {
     const withCandidates: JsonSchema = {
       type: "object",

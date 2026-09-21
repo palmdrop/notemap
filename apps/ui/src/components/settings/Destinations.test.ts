@@ -4,7 +4,7 @@ import { expect, test, vi } from "vitest";
 import { json, routeOf } from "@notemap/client/testing";
 
 import { online } from "$testing/dom";
-import { asked, client, pool } from "$testing/pool";
+import { asked, client, pool, sent } from "$testing/pool";
 import Destinations from "./Destinations.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
@@ -427,6 +427,83 @@ test("chooses a setting the schema fixes, rather than typing it from memory", as
   await screen.findByRole("button", { name: "default (none)" });
   expect(screen.getByRole("button", { name: "full" })).toBeDefined();
   expect(screen.getByRole("button", { name: "none" })).toBeDefined();
+});
+
+/** A boolean setting is two options under a person's words, and a chosen `no` is sent as one. */
+test("chooses a boolean setting as yes or no, and says what unset comes out as", async () => {
+  serving([], {
+    "GET /v1/destination-kinds": () =>
+      json(200, {
+        values: [
+          {
+            name: "filesystem",
+            settingsSchema: {
+              type: "object",
+              required: ["root"],
+              properties: {
+                root: { type: "string" },
+                hashtags: { type: "boolean", default: false },
+              },
+            },
+          },
+        ],
+      }),
+  });
+
+  render(Destinations);
+  await press("+ add a destination");
+
+  await screen.findByRole("button", { name: "default (no)" });
+  await fireEvent.input(screen.getByLabelText("Name"), {
+    target: { value: "Second brain" },
+  });
+  await fireEvent.input(screen.getByLabelText("root"), {
+    target: { value: "~/second-brain" },
+  });
+  await press("no");
+  await press("use it anyway");
+
+  await vi.waitFor(async () => {
+    expect(await sent()).toContainEqual({
+      name: "Second brain",
+      kind: "filesystem",
+      settings: { root: "~/second-brain", hashtags: false },
+    });
+  });
+});
+
+/** A setting the kind offers only under a condition is not drawn while the condition fails. */
+test("hides a setting the others make meaningless", async () => {
+  serving([], {
+    "GET /v1/destination-kinds": () =>
+      json(200, {
+        values: [
+          {
+            name: "filesystem",
+            settingsSchema: {
+              type: "object",
+              required: ["root"],
+              properties: {
+                root: { type: "string" },
+                hashtags: { type: "boolean", default: false },
+                extra: {
+                  type: "string",
+                  "x-notemap-when": [{ field: "hashtags", is: [true] }],
+                },
+              },
+            },
+          },
+        ],
+      }),
+  });
+
+  render(Destinations);
+  await press("+ add a destination");
+  await screen.findByRole("button", { name: "default (no)" });
+
+  expect(screen.queryByText(/^extra/)).toBeNull();
+  await press("yes");
+  expect(await screen.findByText(/^extra/)).toBeDefined();
 });
 
 test("keeps an account the daemon no longer declares, and says it does not", async () => {

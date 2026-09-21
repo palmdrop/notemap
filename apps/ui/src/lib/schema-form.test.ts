@@ -1,6 +1,17 @@
 import { describe, expect, test } from "vitest";
 
-import { fieldsOf, presetsFrom, typedFrom, valuesFrom } from "./schema-form";
+import {
+  effectiveOf,
+  fieldsOf,
+  impliedOf,
+  labelOf,
+  OFF,
+  offered,
+  ON,
+  presetsFrom,
+  typedFrom,
+  valuesFrom,
+} from "./schema-form";
 
 const SCHEMA = {
   type: "object",
@@ -27,6 +38,7 @@ describe("the fields a schema asks for", () => {
         description: "Where it goes.",
         askable: true,
         offeredOnly: false,
+        inherits: false,
       },
       {
         name: "tags",
@@ -34,6 +46,7 @@ describe("the fields a schema asks for", () => {
         kind: "list",
         askable: false,
         offeredOnly: false,
+        inherits: false,
       },
     ]);
   });
@@ -89,6 +102,40 @@ describe("what a person typed, as the value the schema asks for", () => {
       path: "inbox",
       tags: "one, two",
     });
+  });
+
+  test("sends a flag as a boolean either way, and one nobody said as nothing", () => {
+    const flagged = fieldsOf({
+      type: "object",
+      properties: { whether: { type: "boolean", default: false } },
+    });
+
+    expect(flagged[0]?.kind).toBe("flag");
+    expect(flagged[0]?.options).toEqual([ON, OFF]);
+    expect(valuesFrom(flagged, { whether: ON })).toEqual({ whether: true });
+    expect(valuesFrom(flagged, { whether: OFF })).toEqual({ whether: false });
+    expect(valuesFrom(flagged, {})).toEqual({});
+    expect(typedFrom({ whether: true })).toEqual({ whether: ON });
+  });
+
+  test("reads a flag's values as yes and no", () => {
+    const [whether] = fieldsOf({
+      type: "object",
+      properties: { whether: { type: "boolean" } },
+    });
+
+    expect(labelOf(whether as never, ON)).toBe("yes");
+    expect(labelOf(whether as never, OFF)).toBe("no");
+  });
+
+  test("sends a required flag that is off as false", () => {
+    const flagged = fieldsOf({
+      type: "object",
+      required: ["whether"],
+      properties: { whether: { type: "boolean" } },
+    });
+
+    expect(valuesFrom(flagged, {})).toEqual({ whether: false });
   });
 });
 
@@ -179,5 +226,127 @@ describe("what a field starts at", () => {
     });
 
     expect(presetsFrom(fields)).toEqual({ directory: "inbox" });
+  });
+});
+
+describe("what a field comes out as", () => {
+  const fields = fieldsOf({
+    type: "object",
+    properties: {
+      frontmatter: {
+        type: "string",
+        enum: ["full", "none"],
+        default: "none",
+        "x-notemap-inherits": true,
+      },
+      hashtags: {
+        type: "boolean",
+        default: false,
+        "x-notemap-inherits": true,
+      },
+      triggerTags: {
+        type: "boolean",
+        "x-notemap-when": [
+          { field: "frontmatter", is: ["full"] },
+          { field: "hashtags", is: [true] },
+        ],
+      },
+    },
+  });
+  const [, , triggerTags] = fields;
+
+  test("is what was typed, else the setting it inherits, else the default", () => {
+    expect(effectiveOf(fields, {}, {})).toEqual({
+      frontmatter: "none",
+      hashtags: false,
+      triggerTags: false,
+    });
+    expect(effectiveOf(fields, {}, { frontmatter: "full" })).toMatchObject({
+      frontmatter: "full",
+    });
+    expect(
+      effectiveOf(fields, { frontmatter: "none" }, { frontmatter: "full" }),
+    ).toMatchObject({ frontmatter: "none" });
+  });
+
+  test("is never seeded for a field that inherits", () => {
+    expect(presetsFrom(fields)).toEqual({});
+  });
+
+  test("offers a conditional field only while one of its conditions holds", () => {
+    const field = triggerTags as never;
+
+    expect(offered(field, effectiveOf(fields, {}, {}))).toBe(false);
+    expect(offered(field, effectiveOf(fields, { hashtags: ON }, {}))).toBe(
+      true,
+    );
+    expect(
+      offered(field, effectiveOf(fields, {}, { frontmatter: "full" })),
+    ).toBe(true);
+    expect(
+      offered(
+        field,
+        effectiveOf(fields, { frontmatter: "none" }, { hashtags: true }),
+      ),
+    ).toBe(true);
+  });
+
+  test("holds a condition where any of its values is met", () => {
+    const [, wide] = fieldsOf({
+      type: "object",
+      properties: {
+        mode: { type: "string", enum: ["a", "b", "c"] },
+        extra: {
+          type: "boolean",
+          "x-notemap-when": [{ field: "mode", is: ["a", "b"] }],
+        },
+      },
+    });
+
+    expect(offered(wide as never, { mode: "b" })).toBe(true);
+    expect(offered(wide as never, { mode: "c" })).toBe(false);
+  });
+
+  /** What a hidden field still holds is not sent, so nothing may be judged by it. */
+  test("judges a chained condition as if the hidden field held nothing", () => {
+    const chained = fieldsOf({
+      type: "object",
+      properties: {
+        hashtags: { type: "boolean" },
+        triggerTags: {
+          type: "boolean",
+          "x-notemap-when": [{ field: "hashtags", is: [true] }],
+        },
+        onlyThese: {
+          type: "string",
+          "x-notemap-when": [{ field: "triggerTags", is: [true] }],
+        },
+      },
+    });
+    const [, , onlyThese] = chained;
+
+    expect(
+      offered(
+        onlyThese as never,
+        effectiveOf(chained, { hashtags: ON, triggerTags: ON }),
+      ),
+    ).toBe(true);
+    expect(
+      offered(
+        onlyThese as never,
+        effectiveOf(chained, { hashtags: OFF, triggerTags: ON }),
+      ),
+    ).toBe(false);
+  });
+
+  test("always offers a field with no condition", () => {
+    expect(offered(fields[0] as never, {})).toBe(true);
+  });
+
+  test("says what an untouched field would come out as, in an input's own words", () => {
+    expect(impliedOf(fields[0] as never)).toBe("none");
+    expect(impliedOf(fields[0] as never, { frontmatter: "full" })).toBe("full");
+    expect(impliedOf(fields[1] as never, { hashtags: true })).toBe(ON);
+    expect(impliedOf(triggerTags as never)).toBe(OFF);
   });
 });

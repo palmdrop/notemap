@@ -382,7 +382,9 @@ applies the template. Declared rather than derived from the name, so renaming a 
 tag already written, and unique across templates. Fires on the **tagging** and never on the tag
 being present, so a revision carrying one fires nothing. It stays on a delivered item, where it
 reads as why the item went where it went, and comes off again where the reservation it made was
-cancelled or abandoned. A `route/` tag naming no template is an ordinary tag that fires nothing.
+cancelled or abandoned. It is the pool's and not the item's, so a delivery leaves every `route/` tag
+behind unless asked to send them. A `route/` tag naming no template is an ordinary tag that fires
+nothing.
 _Avoid_: hotkey tag, magic tag, action tag
 
 **Routing summary**:

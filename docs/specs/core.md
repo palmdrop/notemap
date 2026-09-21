@@ -1,9 +1,24 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-09-20
+**Last updated**: 2026-09-21
 **Shipped**:
 
+- 2026-09-21 — **A trigger tag stays in the pool unless the delivery asks for it.** The markdown
+  kinds leave every tag under `route/` out of what they write — the frontmatter and the `#tag`
+  foot alike — and a `triggerTags` argument on their capabilities sends them with the rest.
+  Absent is off, and the schema declares no default on purpose: a default is what a form seeds,
+  and an explicit `false` on every record that never asked says nothing. Not confessed either
+  way: leaving them is a choice rather than a loss. With it, the `tags` switch becomes the
+  boolean `hashtags`, so no pairing with `frontmatter` means nothing; and two annotations join
+  the vocabulary — `x-notemap-inherits` says an argument left absent takes the destination's
+  setting of the same name, and `x-notemap-when` says a field is offered only while another's
+  value makes it mean something. Core reads neither; a form does, and the validator checks each
+  annotation's value against the shape the vocabulary declares for it. **Nothing stored is
+  migrated**: a destination holding the old `tags` setting is reported unusable until it is
+  re-saved from the settings form, which drops the old value, and a template holding a `tags`
+  argument reports `arguments-invalid` and fires nothing until it is re-saved on the same terms.
+  Loud in both cases, and a pool with nobody in it yet.
 - 2026-09-20 — **A host may listen to the action log.** The ports take an optional observer that
   core tells each action once its transaction commits, and nothing about a rollback. See
   [daemon-logging](../plans/daemon-logging.md).
@@ -1031,7 +1046,8 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   used to be, on the reasoning above; but a setting is a choice rather than a loss, the output
   already shows what it holds, and a note saying `its tags did not go` under every delivery to a
   vault that writes no frontmatter was the confession nobody could act on. A hashtag that could
-  not be made of a tag is still said: that one was asked for.
+  not be made of a tag is still said: that one was asked for. A **trigger tag** left behind is
+  not (2026-09-21), on the same terms: leaving it is the default, and sending it is asked for.
 - **The note is free text nothing parses**, on the same footing as the `detail` that rides on
   `unreachable` and `rejected`. A machine-readable list of what was dropped is a vocabulary both
   core and every shell would have to learn, and would be wrong the first time a destination lost
@@ -1244,6 +1260,23 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   pattern vocabulary beside such a field is advice that can only ever fail. It says the field *may*
   hold only what was offered, not that a caller must refuse anything else — a browse answers one
   page of what a destination holds, so what it did not name is not thereby wrong.
+- **A capability may say an argument inherits, and when a field is worth offering** (added
+  2026-09-21). `x-notemap-inherits` on an argument says that, left absent, it takes the
+  destination's setting of the same name — which the markdown kinds' `frontmatter` and `hashtags`
+  always did, and now say. The schema's `default` on such an argument is what the setting means
+  where it too is absent, never a value a form seeds: seeding it would write over the setting.
+  `x-notemap-when` on a field is a list of `{ field, is }`, and the field is offered only while
+  some entry's field comes out as one of its values — typed, else inherited, else the default,
+  resolved in the schema's order with a field that is not offered counting as untyped, so a
+  condition on a conditional field never holds through a value nobody can see. `triggerTags` is
+  offered while `frontmatter` is `full` or `hashtags` is `true`, because a switch about the tags
+  means nothing while no tags go. **Core reads neither.** Both are said for the surfaces, on
+  `x-notemap-offered-only`'s terms: a combination that must be *refused* is the schema's own
+  business, through the keywords JSON Schema already has, and a form that hid a field still
+  sends nothing for it. Every annotation carries the schema its own value must satisfy, and the
+  validator checks it: a condition list with an entry the form could not read would otherwise
+  drop that entry, and a field whose every entry was dropped would be offered always — the
+  degenerate offer the annotation exists to prevent, arrived at through a typo.
 - **`establish` is the template's word alone**, and resolves at decision time: unestablished it asks
   the adapter to create, established it asks the adapter to require. No adapter ever hears it, so
   the arguments on a record are always the two-valued thing. The **argument it is carried in is
@@ -1534,10 +1567,23 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   `derived_from`. The pool still holds all of it, and the routing record still says where the note
   went; what is given up is the file being traceable on its own. Absent means none, so a
   destination that never said writes none. **Tags are a second switch beside it** (added
-  2026-09-10), on the same terms: among the frontmatter, as `#tag` at the foot of the note, or
-  nowhere. They are not provenance — `standards.md`'s vocabulary does not name them — so where they
-  go is a question about a vault's own conventions rather than about traceability, and a note
-  carrying them in its body carries none of them in a block it is also writing. Local-only is the default for every provider; anything
+  2026-09-10), on the same terms. They are not provenance — `standards.md`'s vocabulary does not
+  name them — so where they go is a question about a vault's own conventions rather than about
+  traceability. *Amended 2026-09-21*: the switch is **`hashtags`**, a boolean, where it was a
+  three-way `frontmatter | hashtags | none`. On, the tags go as `#tag` at the foot of the note and
+  out of the block; off, they go among the frontmatter where there is one and nowhere where there
+  is not. The three-way could say `frontmatter` under a block that was switched off, which was
+  `none` under another name, and it could say `none` under a block that was on, which nobody had
+  asked for; a boolean beside the frontmatter switch has no setting that means nothing. A note
+  carrying them in its body still carries none of them in a block it is also writing. **A trigger tag
+  goes with neither unless asked** (added 2026-09-21): it is the pool's record of why the item
+  went where it went rather than anything about the item, and it reads as noise in a vault that
+  never heard of the template. Every tag under `route/` is left out, declared or not — the
+  namespace is reserved for the purpose and a renderer knows tag names and no templates — and a
+  `triggerTags` argument on the capability, absent meaning off, sends them with the rest. A
+  template may save it, so one destination that wants them has them on every route it makes. The
+  are.na kind copies the note's frontmatter into a block's metadata and leaves them out on the
+  same terms, with no argument to send them. Local-only is the default for every provider; anything
   that sends content off-box is opt-in and named on the item.
 
 ---

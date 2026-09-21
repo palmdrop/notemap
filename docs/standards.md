@@ -103,8 +103,10 @@ don't require model changes.
   That is what lets an item that has *left* the hub be traced back, re-enriched, or re-routed.
 
   **Tags are not in this vocabulary**, and are not provenance: where a note carries them —
-  frontmatter, `#tag` at its foot, or nowhere — is a vault's own convention, switched per
-  destination and per capture beside the frontmatter (2026-09-10).
+  among the frontmatter, as `#tag` at its foot, or nowhere — is a vault's own convention,
+  switched per destination and per capture beside the frontmatter (2026-09-10; one boolean,
+  `hashtags`, from 2026-09-21). A **trigger tag** is the
+  pool's, not the note's, and goes with neither unless the delivery asks for it (2026-09-21).
 
   **Whether it carries any is the destination's**, narrowed 2026-09-08 with the markdown kinds'
   `frontmatter` switch and the arrival of a kind that writes no frontmatter at all. Absent means

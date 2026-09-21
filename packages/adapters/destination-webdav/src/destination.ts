@@ -49,7 +49,7 @@ function wiringFor(
     ...(settings.frontmatter === undefined
       ? {}
       : { frontmatter: settings.frontmatter }),
-    ...(settings.tags === undefined ? {} : { tags: settings.tags }),
+    ...(settings.hashtags === undefined ? {} : { hashtags: settings.hashtags }),
   };
 }
 

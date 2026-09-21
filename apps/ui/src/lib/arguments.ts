@@ -49,6 +49,7 @@ export type Argument = {
 
 function written(value: unknown): string {
   if (typeof value === "string") return value;
+  if (typeof value === "boolean") return value ? "yes" : "no";
   if (Array.isArray(value))
     return value.map((each) => written(each)).join(", ");
   return JSON.stringify(value) ?? "";

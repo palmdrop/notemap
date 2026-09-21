@@ -34,17 +34,63 @@ export const ASKABLE_FIELD = "x-notemap-candidates";
 export const OFFERED_ONLY_FIELD = "x-notemap-offered-only";
 
 /**
- * Every vendor annotation notemap declares. A validator has to be told about
- * them or reject the schemas carrying them, and a list here is what stops that
- * being a second place to remember: one more annotation is one more line, and
- * a keyword nobody declared still fails loudly, which is what catches a typo in
- * a hand-written `config.toml` payload type.
+ * The argument that, left absent, takes the destination's setting of the same
+ * name. Core never reads it: an adapter already resolves its own arguments
+ * against its own settings, and this says so to a surface, so a form can draw
+ * what an untouched field comes out as instead of a blank.
  */
-export const ANNOTATIONS = [
-  ASKABLE_FIELD,
-  OFFERED_ONLY_FIELD,
-  PATH_FIELD,
-] as const;
+export const INHERITS_FIELD = "x-notemap-inherits";
+
+/**
+ * The field that is offered only while another field's value makes it mean
+ * something: a list of `{ field, is }`, any one of which holding is enough.
+ * Judged against what each field comes out as — typed, else inherited, else
+ * the schema's default — so a person is never offered a choice that changes
+ * nothing. Core never reads it; a combination it would forbid is the schema's
+ * to forbid.
+ */
+export const OFFERED_WHEN_FIELD = "x-notemap-when";
+
+const FLAG: JsonSchema = { type: "boolean" };
+
+/**
+ * One condition per entry, and every entry whole: a form drops an entry it
+ * cannot read, and a field whose every entry was dropped would be offered
+ * always — the one thing the annotation exists to prevent.
+ */
+const CONDITIONS: JsonSchema = {
+  type: "array",
+  minItems: 1,
+  items: {
+    type: "object",
+    required: ["field", "is"],
+    additionalProperties: false,
+    properties: {
+      field: { type: "string", minLength: 1 },
+      is: { type: "array", minItems: 1 },
+    },
+  },
+};
+
+/**
+ * Every vendor annotation notemap declares, each with the schema its own value
+ * must satisfy. A validator has to be told about them or reject the schemas
+ * carrying them, and a list here is what stops that being a second place to
+ * remember: one more annotation is one more line, and a keyword nobody
+ * declared — or a value that is not the shape declared here — still fails
+ * loudly, which is what catches a typo in a hand-written `config.toml` payload
+ * type.
+ */
+export const ANNOTATIONS: readonly {
+  readonly keyword: string;
+  readonly value: JsonSchema;
+}[] = [
+  { keyword: ASKABLE_FIELD, value: FLAG },
+  { keyword: INHERITS_FIELD, value: FLAG },
+  { keyword: OFFERED_ONLY_FIELD, value: FLAG },
+  { keyword: OFFERED_WHEN_FIELD, value: CONDITIONS },
+  { keyword: PATH_FIELD, value: FLAG },
+];
 
 /**
  * The argument field holding a hierarchical path, where the capability declares

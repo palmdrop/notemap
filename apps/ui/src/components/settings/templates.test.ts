@@ -25,6 +25,38 @@ const CREATE = {
   },
 };
 
+/** A place, then the switches a markdown kind draws after it, as the kind declares them. */
+const CREATE_WITH_SWITCHES = {
+  name: "create",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    required: ["directory"],
+    properties: {
+      directory: { type: "string" },
+      frontmatter: {
+        type: "string",
+        enum: ["full", "none"],
+        default: "none",
+        "x-notemap-inherits": true,
+      },
+      hashtags: {
+        type: "boolean",
+        default: false,
+        "x-notemap-inherits": true,
+      },
+      triggerTags: {
+        type: "boolean",
+        title: "trigger tags",
+        "x-notemap-when": [
+          { field: "frontmatter", is: ["full"] },
+          { field: "hashtags", is: [true] },
+        ],
+      },
+    },
+  },
+};
+
 function aDestination(overrides: Record<string, unknown> = {}) {
   return {
     id: VAULT,
@@ -54,6 +86,7 @@ function serving(
   templates: readonly Record<string, unknown>[],
   report: Record<string, unknown> = { kind: "fits" },
   destinations: readonly Record<string, unknown>[] = [aDestination()],
+  capabilities: readonly Record<string, unknown>[] = [CREATE],
 ) {
   return pool((request) => {
     const route = routeOf(request);
@@ -65,7 +98,7 @@ function serving(
     }
     if (route.endsWith("/report")) return json(200, report);
     if (route.endsWith("/description")) {
-      return json(200, { kind: "described", capabilities: [CREATE] });
+      return json(200, { kind: "described", capabilities });
     }
     if (route === "POST /v1/templates") return json(201, aTemplate());
     if (route === `DELETE /v1/templates/${RESEARCH}`) {
@@ -753,6 +786,83 @@ test("offers no patterns where every typed field may hold only what is offered",
   await screen.findByLabelText("channel");
 
   expect(screen.queryByText(/\{\{captured_at\}\}/)).toBeNull();
+});
+
+/** Under the place it is for, not under whatever switches follow it. */
+test("says the patterns under the last field one can be written into", async () => {
+  serving([], { kind: "fits" }, [aDestination()], [CREATE_WITH_SWITCHES]);
+
+  render(Templates);
+  await open(/add a template/);
+  const place = await screen.findByLabelText("directory");
+  const vocabulary = screen.getByText(/\{\{captured_at\}\}/);
+
+  expect(
+    place.compareDocumentPosition(vocabulary) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  const frontmatter = screen.getByRole("button", { name: "full" });
+  expect(
+    vocabulary.compareDocumentPosition(frontmatter) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+});
+
+/** What the destination's setting says is what an untouched argument comes out as. */
+test("marks what an argument inherits, and offers what that makes meaningful", async () => {
+  serving(
+    [],
+    { kind: "fits" },
+    [aDestination({ settings: { root: "~/notes", frontmatter: "full" } })],
+    [CREATE_WITH_SWITCHES],
+  );
+
+  render(Templates);
+  await open(/add a template/);
+  await screen.findByLabelText("directory");
+
+  const full = await screen.findByRole("button", { name: /^full/ });
+  expect(full.getAttribute("aria-pressed")).toBe("false");
+  expect(full.textContent).toContain("▹");
+  expect(full.textContent).toContain("(default)");
+  expect(screen.getByText("trigger tags")).toBeTruthy();
+});
+
+/** A conditional argument is neither drawn nor saved while its condition does not hold. */
+test("hides a conditional argument and saves nothing for it", async () => {
+  serving([], { kind: "fits" }, [aDestination()], [CREATE_WITH_SWITCHES]);
+
+  render(Templates);
+  await open(/add a template/);
+  await fireEvent.input(await screen.findByLabelText("name"), {
+    target: { value: "Research links" },
+  });
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "research" },
+  });
+
+  expect(screen.queryByText("trigger tags")).toBeNull();
+  const [hashtagsYes] = screen.getAllByRole("button", { name: /^yes/ });
+  await fireEvent.click(hashtagsYes as HTMLElement);
+  expect(await screen.findByText("trigger tags")).toBeTruthy();
+
+  const [, triggerYes] = screen.getAllByRole("button", { name: /^yes/ });
+  await fireEvent.click(triggerYes as HTMLElement);
+  // Taking the taken option gives it back to inherit, and takes the switch with it.
+  await fireEvent.click(hashtagsYes as HTMLElement);
+  expect(screen.queryByText("trigger tags")).toBeNull();
+  await open("save");
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/templates");
+  });
+  expect(await sent()).toContainEqual({
+    name: "Research links",
+    destination: VAULT,
+    capability: "create",
+    arguments: { directory: "research" },
+    folder: "create",
+  });
 });
 
 test("a destination that cannot be asked leaves the field typable", async () => {

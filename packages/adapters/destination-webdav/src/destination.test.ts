@@ -161,6 +161,27 @@ describe("creating a note", () => {
     expect(note).toContain("- 'project/fiction-a'");
   });
 
+  it("leaves the tag that filed the item out of the note unless asked", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+    const filed = (filename: string, args: Record<string, boolean> = {}) =>
+      delivery({
+        arguments: { directory: "", filename, frontmatter: "full", ...args },
+        tags: ["route/reading", "project/fiction-a"],
+      });
+
+    await adapter(server).deliver(destinationRow({ root: "V" }), filed("a.md"));
+    await adapter(server).deliver(
+      destinationRow({ root: "V" }),
+      filed("b.md", { triggerTags: true }),
+    );
+
+    const files = server.files();
+    expect(files["V/a.md"]).toContain("- 'project/fiction-a'");
+    expect(files["V/a.md"]).not.toContain("route/reading");
+    expect(files["V/b.md"]).toContain("- 'route/reading'");
+  });
+
   it("derives a filename where the delivery names none", async () => {
     const server = await vault();
     server.makeCollection("V");

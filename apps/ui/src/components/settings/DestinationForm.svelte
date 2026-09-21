@@ -12,7 +12,10 @@
   import { client } from "$lib/client";
   import { isFamiliarRoot } from "$lib/roots";
   import {
+    effectiveOf,
     fieldsOf,
+    labelOf,
+    offered as meaningful,
     typedFrom,
     valuesFrom,
     type Field,
@@ -44,8 +47,13 @@
 
   let chosen = $derived(editing?.kind ?? kinds[0]?.name);
 
-  const fields = $derived(
+  const declared = $derived(
     fieldsOf(kinds.find((one) => one.name === chosen)?.settingsSchema),
+  );
+
+  /** Only the settings that mean something given the others; what a hidden one held is not sent. */
+  const fields = $derived(
+    declared.filter((one) => meaningful(one, effectiveOf(declared, typed))),
   );
 
   // "root" rather than every field a kind might offer: it is the one shape a
@@ -105,10 +113,12 @@
 
   function labelFor(field: Field, value: string): string {
     if (value === "") {
-      return field.preset === undefined ? "unset" : `default (${field.preset})`;
+      return field.preset === undefined
+        ? "unset"
+        : `default (${labelOf(field, field.preset)})`;
     }
     return (listed(field) ?? []).includes(value)
-      ? value
+      ? labelOf(field, value)
       : `${value} — not declared`;
   }
 

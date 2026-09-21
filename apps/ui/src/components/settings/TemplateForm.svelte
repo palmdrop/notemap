@@ -14,7 +14,11 @@
   import { OWN_ARGUMENTS } from "$lib/arguments";
   import { client } from "$lib/client";
   import {
+    effectiveOf,
     fieldsOf,
+    impliedOf,
+    labelOf,
+    offered,
     typedFrom,
     valuesFrom,
     type Field,
@@ -57,11 +61,22 @@
   let said = $state("");
   let busy = $state(false);
 
-  const fields = $derived(
+  const declared = $derived(
     fieldsOf(
       capabilities.find((one) => one.name === capability)?.argumentsSchema,
     ),
   );
+
+  /** What an argument left unset falls back to, where the kind says it inherits one. */
+  const inherited = $derived(
+    destinations.find((one) => one.id === destination)?.settings ?? {},
+  );
+
+  /** Only the fields that mean something given the others, as the composer draws them. */
+  const fields = $derived.by(() => {
+    const effective = effectiveOf(declared, typed, inherited);
+    return declared.filter((one) => offered(one, effective));
+  });
 
   /**
    * Notemap's own arguments are drawn as their own controls below, so the
@@ -85,6 +100,20 @@
    */
   const fixed = (field: Field): readonly string[] | undefined =>
     field.options ?? field.examples;
+
+  /**
+   * The last field a pattern can be written into, which is where the
+   * vocabulary is said: under the place it is for, not under whatever
+   * switches happen to follow. Nothing, where nothing can hold one — a form
+   * of chosen fields has nowhere to put a pattern, and neither has one whose
+   * every typed field may hold only what its destination already has; a
+   * pattern expanded into an are.na channel names a channel nobody has.
+   */
+  const patterned = $derived(
+    typeable.findLast(
+      (field) => fixed(field) === undefined && !field.offeredOnly,
+    )?.name,
+  );
 
   // The list may arrive after the form opens, and a form that started with
   // nothing to point at would never find one.
@@ -216,12 +245,22 @@
     </span>
     <div>
       {#if fixed(field) !== undefined}
+        <!-- Taking the option already taken gives it back: absent inherits,
+             and the hollow mark says what that comes out as. A required field
+             has no absent to go back to. -->
+        {@const implied =
+          (typed[field.name] ?? "") === ""
+            ? impliedOf(field, inherited)
+            : undefined}
         <div class="flex flex-wrap gap-x-[2ch]">
           {#each fixed(field) ?? [] as one (one)}
             <Option
-              label={one}
+              label={labelOf(field, one)}
               chosen={typed[field.name] === one}
-              onchoose={() => (typed[field.name] = one)}
+              implied={implied === one}
+              onchoose={() =>
+                (typed[field.name] =
+                  typed[field.name] === one && !field.required ? "" : one)}
             />
           {/each}
         </div>
@@ -263,20 +302,15 @@
         />
       {/if}
     </div>
+    <!-- Said once, terse, rather than a paragraph per pattern: what each comes
+         out as is the pool's answer, and the pool refuses one it does not know. -->
+    {#if field.name === patterned}
+      <span></span>
+      <p class="col-start-2 max-narrow:col-start-1">
+        {"{{captured_at}} · {{captured_at:month}} · {{captured_at:week}} · {{item}} · {{source}}"}
+      </p>
+    {/if}
   {/each}
-
-  <!-- Said once, terse, rather than a paragraph per pattern: what each comes
-       out as is the pool's answer, and the pool refuses one it does not know.
-       Only where something can hold one: a form of nothing but chosen fields
-       has nowhere to put a pattern, and neither has one whose every typed field
-       may hold only what its destination already has — a pattern expanded into
-       an are.na channel names a channel nobody has. -->
-  {#if typeable.some((field) => fixed(field) === undefined && !field.offeredOnly)}
-    <span></span>
-    <p class="col-start-2 max-narrow:col-start-1">
-      {"{{captured_at}} · {{captured_at:month}} · {{captured_at:week}} · {{item}} · {{source}}"}
-    </p>
-  {/if}
 
   {#if folders}
     <span class="tracking-caps uppercase max-narrow:mt-1.5">folder</span>

@@ -1,5 +1,6 @@
 import { dump } from "js-yaml";
 
+import { INHERITS_FIELD } from "@notemap/core";
 import type { Delivery, JsonObject, JsonSchema } from "@notemap/core";
 
 export type FrontmatterValue = string | number | boolean | readonly string[];
@@ -28,17 +29,16 @@ const PROVENANCE = {
   origin: "derived_from",
 } as const;
 
-/** The one fixed key a note may carry in its body instead, as `#tag`. */
-export const TAGS_KEY: string = KEYS.tags;
-
 /** A renderer may add its own keys, but never shadow one of these — whichever of them this note writes. */
 export const FIXED_KEYS: readonly string[] = [
   ...Object.values<string | null>(KEYS).filter((key) => key !== null),
   ...Object.values(PROVENANCE),
 ];
 
+/** `tags` is what the note carries rather than what the item holds, since not every tag goes. */
 export function fixedFrontmatter(
   delivery: Delivery,
+  tags: readonly string[],
 ): Map<string, FrontmatterValue> {
   const entries = new Map<string, FrontmatterValue>([
     [KEYS.item, delivery.item],
@@ -52,12 +52,7 @@ export function fixedFrontmatter(
   if (delivery.contentUpdatedAt !== undefined) {
     entries.set(KEYS.contentUpdatedAt, delivery.contentUpdatedAt);
   }
-  if (delivery.tags.length > 0) {
-    entries.set(
-      KEYS.tags,
-      delivery.tags.map((tag) => tag.name),
-    );
-  }
+  if (tags.length > 0) entries.set(KEYS.tags, tags);
 
   return entries;
 }
@@ -92,13 +87,19 @@ export const FRONTMATTER_SETTING: JsonSchema = {
     "How much provenance is written above a note this destination writes. Left unset, none is.",
 };
 
-/** The same choice for one capture. Left unset, the destination's own decides. */
+/**
+ * The same choice for one capture. Left unset, the destination's own decides,
+ * and the default here is what that comes out as where the destination never
+ * said either.
+ */
 export const FRONTMATTER_MODE: JsonSchema = {
   type: "string",
   enum: ["full", "none"],
+  default: "none",
   title: "frontmatter",
   description:
     "How much provenance is written above this note. Left unset, the destination's own setting decides.",
+  [INHERITS_FIELD]: true,
 };
 
 /** Absent inherits the destination's setting, and an absent setting is `none`. */
