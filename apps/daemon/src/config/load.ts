@@ -20,6 +20,14 @@ import {
   defaultZone,
 } from "../constants";
 import type { CookieOptions } from "../auth/sessions/config";
+import {
+  DEFAULT_LOG,
+  LOG_FORMATS,
+  LOG_LEVELS,
+  LOG_LEVEL_VARIABLE,
+  isLogLevel,
+  type LogConfig,
+} from "../log/config";
 
 export type MirrorConfig = {
   /** The `pool-mirror` directory. */
@@ -75,6 +83,7 @@ export type DaemonConfig = {
   readonly delivery: DeliveryConfig;
   /** The accounts a destination may name, by kind. Empty is a daemon with nothing remote to reach. */
   readonly accounts: readonly Account[];
+  readonly log: LogConfig;
   readonly poolConfig: PoolConfig;
 };
 
@@ -136,6 +145,12 @@ const fileSchema = z.object({
       pollInterval: z.number().int().positive().optional(),
       leaseFor: z.number().int().positive().optional(),
       batch: z.number().int().positive().optional(),
+    })
+    .optional(),
+  log: z
+    .object({
+      level: z.enum(LOG_LEVELS).optional(),
+      format: z.enum(LOG_FORMATS).optional(),
     })
     .optional(),
   // Everything past `kind` and `name` is the kind's, so nothing is stripped
@@ -446,6 +461,10 @@ export function parseConfig(source: string, from: string): LoadedConfig {
       batch: file.delivery?.batch ?? DEFAULT_DELIVERY.batch,
     },
     accounts: readAccounts(file.accounts, from),
+    log: {
+      level: file.log?.level ?? DEFAULT_LOG.level,
+      format: file.log?.format ?? DEFAULT_LOG.format,
+    },
     poolConfig: {
       payloadTypes: PAYLOAD_TYPES,
       retry: {
@@ -467,6 +486,7 @@ export function parseConfig(source: string, from: string): LoadedConfig {
 
 export function loadConfig(
   path = process.env["NOTEMAP_CONFIG"] || defaultConfigPath(),
+  env: NodeJS.ProcessEnv = process.env,
 ): LoadedConfig {
   let source: string;
   try {
@@ -477,5 +497,28 @@ export function loadConfig(
       { cause },
     );
   }
-  return parseConfig(source, path);
+  return withEnvironment(parseConfig(source, path), env);
+}
+
+/**
+ * The one setting the environment may override: a container is easier to turn
+ * up to `debug` from its compose file than by editing the config inside it.
+ */
+export function withEnvironment(
+  loaded: LoadedConfig,
+  env: NodeJS.ProcessEnv,
+): LoadedConfig {
+  const level = env[LOG_LEVEL_VARIABLE];
+  if (level === undefined || level === "") return loaded;
+
+  if (!isLogLevel(level)) {
+    throw new Error(
+      `${LOG_LEVEL_VARIABLE} is "${level}", and a level is one of ${LOG_LEVELS.join(", ")}`,
+    );
+  }
+
+  return {
+    ...loaded,
+    config: { ...loaded.config, log: { ...loaded.config.log, level } },
+  };
 }

@@ -6,6 +6,7 @@ import type { Clock, Timestamp } from "@notemap/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createAuth } from ".";
+import { capturedLog } from "../log/testing";
 import { DEFAULT_CREDENTIALS_NAME } from "./config";
 import {
   passwordFromEnvironment,
@@ -121,15 +122,15 @@ describe("a daemon starting with a password in its environment", () => {
     const it_ = auth();
     await it_.setPassword("someone", "a password of their own");
 
-    const warned = vi
-      .spyOn(console, "warn")
-      .mockImplementation(() => undefined);
-    await provisionCredential(it_, { [PASSWORD]: GIVEN });
+    const { log, lines } = capturedLog();
+    await provisionCredential(it_, { [PASSWORD]: GIVEN }, log);
 
     // The database is what a person changed; a restart must not undo it.
     expect(await it_.login("someone", "a password of their own")).toBeDefined();
     expect(await it_.login(DEFAULT_CREDENTIALS_NAME, GIVEN)).toBeUndefined();
-    expect(warned).toHaveBeenCalledWith(expect.stringContaining(PASSWORD));
+    expect(lines()).toEqual([
+      expect.stringMatching(new RegExp(`^WARN .*variable=${PASSWORD}`)),
+    ]);
   });
 
   it("does not start where the password cannot be used", async () => {

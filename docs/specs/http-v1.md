@@ -2,9 +2,13 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one and health are settled; the rest is stub
-**Last updated**: 2026-09-15
+**Last updated**: 2026-09-20
 **Shipped**:
 
+- 2026-09-20 — **The daemon logs.** Every action the pool records, every refusal and failure,
+  the startup facts and the auth events reach stdout as one levelled line each, text by default
+  and JSON on request, at a level `[log]` or `NOTEMAP_LOG_LEVEL` chooses. See
+  [daemon-logging](../plans/daemon-logging.md).
 - 2026-09-15 — **Cancelling a manual mark, and `templates` on the summary.** `POST /v1/routing/{record}/cancel` on a
   record naming the user is no longer refused, and the routing summary's `templates` names which
   templates still stand. See [shell-minor-changes](../plans/shell-minor-changes.md).
@@ -439,6 +443,42 @@ rather than the one the client wrote.
   from a pool — a cached window, a delta cursor — can tell that what it holds describes somewhere
   else. What it should then do is [sync.md](sync.md)'s open question, and unanswered.
 - It takes no parameters and is not paginated.
+
+### Logging
+
+The daemon says what it did and what went wrong on stdout, one levelled line per event, for the
+person reading `docker logs` (added 2026-09-20, [plan](../plans/daemon-logging.md)).
+
+- **Every action the pool records is a line**, heard from core after the transaction that
+  appended it commits ([core.md](core.md#the-action-log)), so the log says exactly what the action
+  log holds — template firings, deferred deliveries and abandonments included, which no route
+  ever sees. The line carries the kind, the item, the agent and the action's own facts.
+- **Four levels.** `error` is a throw nobody expected — a request that threw, a runner's pass
+  that threw, a sweep that failed — with its stack. `warn` is a fact the admin should act on: an
+  unknown config key, a plain-HTTP origin, an adapter's account warning, a sign-in that arrived
+  for a host `daemon.origin` does not name, a refused sign-in, and the actions that say work went
+  wrong — `delivery-failed`, `work-failed`, `work-abandoned`. `info` is what happened: every
+  other action, the startup facts, a session opened or ended, a token minted or revoked, a sweep
+  that released something, shutdown. `debug` is every request — method, path, status, duration,
+  whether a session, a token or nobody asked, and a refusal's `code` — plus a job resolved and a
+  sweep that released nothing.
+- **Requests are `debug` rather than `info`** because the shell polls the action log on its own
+  tempo ([ADR 32](../adr/0032-a-shell-learns-what-happened-by-reading-the-log.md)) and the
+  container's healthcheck asks `/v1/health`; at `info` the log would be mostly that.
+- **Facts, never material.** A line never carries a payload, a request body, a password, a token's
+  secret, a cookie or an `Authorization` header; a field named like one, up to two levels down,
+  is printed redacted. A tag
+  name or a destination name may appear, because the action's own detail carries it.
+- **Two formats, one stream.** `text` is one line a person reads — the clock, the level, the
+  message, then `key=value` pairs, an error's stack indented below. `json` is one object per
+  line with `level`, `time` and `msg`, for a collector. Both go to stdout, warnings and errors
+  included, so one ordering reaches `docker logs`. The CLI's answers are program output and stay
+  outside the log.
+- **`[log]` in the config**: `level` (`debug` | `info` | `warn` | `error`, default `info`) and
+  `format` (`text` | `json`, default `text`). `NOTEMAP_LOG_LEVEL` overrides `level` and nothing
+  else, refused like a bad file value when it names no level.
+- **The address line stays what it was** — `<pool> on http://<host>:<port>` — because a
+  supervisor reads readiness from it.
 
 ### Captures
 
@@ -1758,6 +1798,9 @@ remains the interop surface; `/docs` is a convenience over it.
   translation onto the core library ([ADR 2](../adr/0002-core-is-a-host-agnostic-library.md)).
   The `next` URL is the one thing the daemon composes rather than passes through, and it
   composes it from the position core handed back.
+- **The daemon logs and core does not** (decided 2026-09-20). Core tells an observer what it
+  recorded; what becomes a line, at which level, in which format, is the host's — a second host
+  may say nothing at all.
 - **Daemon configuration is TOML** (decided 2026-08-08): comments survive a hand-edit, and it
   is the format a self-hosted single-file config is least annoying to write by hand. The host
   reads it; core takes it as data ([core.md](core.md#constraints)).

@@ -11,6 +11,7 @@ import { capture } from "./capture";
 import { edit } from "./edit";
 import * as maintenance from "./maintenance";
 import * as mirror from "./mirror";
+import { observed } from "./observe";
 import * as routing from "./routing";
 import * as tags from "./tags";
 import * as work from "./work";
@@ -30,7 +31,8 @@ function ordered<P>(page: PageRequest<P>, fallback: ReadOrder): OrderedPage<P> {
   return { ...page, order: page.order ?? fallback };
 }
 
-export function createPool(config: PoolConfig, ports: PoolPorts): Pool {
+export function createPool(config: PoolConfig, wired: PoolPorts): Pool {
+  const ports = observed(wired);
   const { store } = ports;
 
   return {

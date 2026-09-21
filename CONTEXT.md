@@ -214,6 +214,13 @@ for the way there from the item; the log itself is still the log, and one entry 
 action.
 _Avoid_: only this, timeline, activity
 
+**Daemon log**:
+What the daemon says on stdout as it runs — every action as core commits it, every refusal and
+failure, the facts it started with — one levelled line per event, for the person reading
+`docker logs`. Not the action log, which is pool state the daemon merely echoes: nothing reads
+the daemon log back, and a line it dropped is not a fact the pool lost.
+_Avoid_: the log *on its own, which is the action log*, console output, server logs
+
 **Job**:
 One unit of claimable work core holds but never runs — an enrichment to perform, a mirror record
 to write, a purged item's mirror files to remove, a delivery to attempt. Hosts claim jobs and drive

@@ -103,6 +103,15 @@ pollInterval = 5000 # milliseconds between claims
 leaseFor = 300000   # how long a claimed delivery is held before anyone may retake it
 batch = 4           # deliveries claimed per pass
 
+# What the daemon says on stdout: every action the pool records, every failure,
+# and — at `debug` — every request. `text` is one line a person reads; `json` is
+# one object a log collector reads. `NOTEMAP_LOG_LEVEL` in the environment
+# overrides `level` and nothing else, so a container can be turned up to
+# `debug` from its compose file.
+[log]
+level = "info"  # debug | info | warn | error
+format = "text" # text | json
+
 # The accounts a destination may be pointed at. This is the one part of a
 # destination that is not created in settings, and the reason is that it carries
 # a password: a destination's settings are pool state, answered verbatim by

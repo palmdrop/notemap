@@ -154,7 +154,7 @@
 
 ## Pool, store and correctness
 
-- [ ] Add proper service logging, at the moment, notemap logs almost nothing, making it pointless to inspect the docker logs for debugging purposes 
+- [x] Add proper service logging, at the moment, notemap logs almost nothing, making it pointless to inspect the docker logs for debugging purposes _(2026-09-20, [daemon-logging](plans/daemon-logging.md))_
 - [ ] When purge lands: `GET /v1/items/:id/routing` reads the item and then its records, two reads on two connection states, so an item purged between them answers `200 {"values":[]}` — the claim about an item the existence check is there to avoid. Either one core method answering both, or the route accepting the window deliberately.
 - [ ] Nothing reclaims a blob no asset ever named. **Whatever closes this must not take an
   output**: a delivery's output is a blob named by a routing record rather than by an asset, so a

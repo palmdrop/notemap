@@ -16,6 +16,7 @@ import {
   defaultPoolPath,
   loadConfig,
   parseConfig,
+  withEnvironment,
 } from "./load";
 
 const EXAMPLE = fileURLToPath(
@@ -136,6 +137,45 @@ describe("what a config may leave out", () => {
   it("takes the payload types from core rather than from the file", () => {
     expect(parse("").poolConfig.payloadTypes).toBe(PAYLOAD_TYPES);
     expect(PAYLOAD_TYPES.map((type) => type.name)).toEqual(["note"]);
+  });
+});
+
+describe("how the daemon logs", () => {
+  it("says what happened, as text, unless told otherwise", () => {
+    expect(parse("").log).toEqual({ level: "info", format: "text" });
+  });
+
+  it("takes a level and a format from the file", () => {
+    expect(parse('[log]\nlevel = "debug"\nformat = "json"').log).toEqual({
+      level: "debug",
+      format: "json",
+    });
+  });
+
+  it("refuses a level or a format it has no name for", () => {
+    expect(() => parse('[log]\nlevel = "verbose"')).toThrow(/log\.level/);
+    expect(() => parse('[log]\nformat = "xml"')).toThrow(/log\.format/);
+  });
+
+  it("lets the environment turn the level up or down, and nothing else", () => {
+    const loaded = parseConfig('[log]\nformat = "json"', "test.toml");
+
+    expect(
+      withEnvironment(loaded, { NOTEMAP_LOG_LEVEL: "debug" }).config.log,
+    ).toEqual({
+      level: "debug",
+      format: "json",
+    });
+    expect(withEnvironment(loaded, {})).toBe(loaded);
+    expect(withEnvironment(loaded, { NOTEMAP_LOG_LEVEL: "" })).toBe(loaded);
+  });
+
+  it("refuses an environment level it has no name for, like a file value", () => {
+    const loaded = parseConfig("", "test.toml");
+
+    expect(() =>
+      withEnvironment(loaded, { NOTEMAP_LOG_LEVEL: "loud" }),
+    ).toThrow(/NOTEMAP_LOG_LEVEL/);
   });
 });
 

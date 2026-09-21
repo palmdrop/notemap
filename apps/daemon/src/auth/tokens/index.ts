@@ -1,5 +1,6 @@
 import type { Clock, Timestamp } from "@notemap/core";
 
+import { silentLogger, type Logger } from "../../log";
 import { TOKEN_PREFIX } from "../config";
 import { hasPassed, mintSecret, verifySecret } from "../secret";
 import type { AuthStore, TokenRecord } from "../store/types";
@@ -8,6 +9,7 @@ import { TOUCH_AFTER_MS } from "./config";
 
 type TokensOptions = {
   clock: Clock;
+  log?: Logger;
 };
 
 export type Tokens = {
@@ -31,7 +33,7 @@ const recordToToken = (record: TokenRecord): Token => ({
 
 export const createTokens = (
   store: AuthStore,
-  { clock }: TokensOptions,
+  { clock, log = silentLogger() }: TokensOptions,
 ): Tokens => ({
   mint: async (name, expiresAt) => {
     const minted = await mintSecret(TOKEN_PREFIX);
@@ -45,6 +47,7 @@ export const createTokens = (
     };
 
     await store.addToken(tokenRecord);
+    log.info({ id: tokenRecord.id, name }, "access token minted");
 
     const token = recordToToken(tokenRecord);
 
@@ -79,9 +82,9 @@ export const createTokens = (
       try {
         await store.touchToken(record.id, now);
       } catch (cause) {
-        console.warn(
-          `notemap: could not record use of token ${record.id}`,
-          cause,
+        log.warn(
+          { err: cause, id: record.id },
+          "could not record the access token's use",
         );
       }
     }
@@ -93,5 +96,6 @@ export const createTokens = (
     (await store.listTokens()).map((record) => recordToToken(record)),
   revoke: async (id) => {
     await store.deleteToken(id);
+    log.info({ id }, "access token revoked");
   },
 });

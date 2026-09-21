@@ -51,6 +51,12 @@ pollInterval = 5000 # milliseconds between claims
 leaseFor = 300000   # how long a claimed delivery is held before anyone may retake it
 batch = 4           # deliveries claimed per pass
 
+# `docker compose logs` reads these. `NOTEMAP_LOG_LEVEL=debug` in the compose
+# file's `environment` turns the level up without touching this file.
+[log]
+level = "info"  # debug | info | warn | error
+format = "text" # text | json
+
 # The accounts a destination may be pointed at. Not a destination: this carries
 # a password, and a destination's settings are pool state the mirror writes in
 # the clear. A destination names an account and a folder under it.

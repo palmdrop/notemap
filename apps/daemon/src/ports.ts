@@ -24,6 +24,7 @@ import { createSqlitePoolStore } from "@notemap/store-sqlite";
 import {
   createPool,
   destinationRegistry,
+  type ActionObserver,
   type BlobStore,
   type Clock,
   type Destinations,
@@ -39,6 +40,8 @@ import {
 } from "@notemap/core";
 
 import { isSecretSource } from "./config/load";
+import type { Logger } from "./log";
+import { logAction } from "./log/actions";
 import { accountsFor } from "./destinations/credentials";
 import { destinationRenderers } from "./destinations/renderers";
 import { renderersFor } from "./mirror/renderers";
@@ -68,6 +71,8 @@ export type OpenPoolConfig = {
    * the pool — and a destination cannot name an address, only one of these.
    */
   readonly accounts?: readonly Account[];
+  /** Told each action the pool records. Absent is a pool nobody listens to. */
+  readonly log?: Logger;
 };
 
 /**
@@ -89,6 +94,23 @@ export type OpenPool = {
    */
   readonly warnings: readonly string[];
 };
+
+/**
+ * The one failure that cannot be logged is the log's own, and core rethrows an
+ * observer's throw as an uncaught exception — so it is dropped here rather than
+ * taking the daemon down over a line nobody will read anyway.
+ */
+function observing(log: Logger): ActionObserver {
+  return {
+    action: (action) => {
+      try {
+        logAction(log, action);
+      } catch {
+        // Nowhere left to say so.
+      }
+    },
+  };
+}
 
 export function openPool(options: OpenPoolConfig): OpenPool {
   const blobs = createFilesystemBlobStore({ root: options.assetRoot });
@@ -156,6 +178,8 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     clock: systemClock,
   });
 
+  const { log } = options;
+
   const ports: PoolPorts = {
     store,
     work: store,
@@ -165,6 +189,7 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     blobs,
     ...(mirrorWriter === undefined ? {} : { mirrorWriter }),
     destinations,
+    ...(log === undefined ? {} : { observer: observing(log) }),
   };
 
   return {
@@ -189,15 +214,20 @@ type OpenAuthConfig = {
 
 type OpenAuthPorts = {
   clock: Clock;
+  log?: Logger;
 };
 
-export const openAuth = (config: OpenAuthConfig, { clock }: OpenAuthPorts) => {
+export const openAuth = (
+  config: OpenAuthConfig,
+  { clock, log }: OpenAuthPorts,
+) => {
   const store = createSqliteAuthStore({
     file: config.file,
   });
 
   const auth = createAuth(store, {
     clock,
+    ...(log === undefined ? {} : { log }),
   });
 
   return auth;

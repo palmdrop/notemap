@@ -1,5 +1,7 @@
 import type { AssetId, Pool } from "@notemap/core";
 
+import { silentLogger, type Logger } from "../log";
+
 export type SweeperConfig = {
   readonly intervalMs: number;
 };
@@ -20,7 +22,7 @@ export type Sweeper = {
 export function startSweeper(
   pool: Pool,
   config: SweeperConfig,
-  onError: (cause: unknown) => void = (cause) => console.error(cause),
+  log: Logger = silentLogger(),
 ): Sweeper {
   let inFlight: Promise<readonly AssetId[]> | undefined;
   let timer: NodeJS.Timeout | undefined;
@@ -31,14 +33,25 @@ export function startSweeper(
     // afterwards would reach a store that has gone.
     if (stopped) return Promise.resolve([]);
 
-    inFlight ??= pool.maintenance.sweepUnreferencedAssets().finally(() => {
-      inFlight = undefined;
-    });
+    inFlight ??= pool.maintenance
+      .sweepUnreferencedAssets()
+      .then((released) => {
+        log[released.length === 0 ? "debug" : "info"](
+          { released: released.length },
+          "swept assets no item ever referenced",
+        );
+        return released;
+      })
+      .finally(() => {
+        inFlight = undefined;
+      });
     return inFlight;
   }
 
   timer = setInterval(() => {
-    void run().catch(onError);
+    void run().catch((cause: unknown) =>
+      log.error({ err: cause }, "the sweep threw"),
+    );
   }, config.intervalMs);
   timer.unref?.();
 

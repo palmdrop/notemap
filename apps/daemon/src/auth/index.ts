@@ -1,5 +1,6 @@
 import type { Clock } from "@notemap/core";
 
+import { silentLogger, type Logger } from "../log";
 import { UnreadableHash } from "./passwords/errors";
 import { hashPassword, needsRehash, verifyPassword } from "./passwords";
 import { sameSecretly } from "./secret";
@@ -10,11 +11,15 @@ import type { Auth } from "./types";
 
 type AuthParams = {
   clock: Clock;
+  log?: Logger;
 };
 
-export const createAuth = (store: AuthStore, { clock }: AuthParams): Auth => {
+export const createAuth = (
+  store: AuthStore,
+  { clock, log = silentLogger() }: AuthParams,
+): Auth => {
   const sessions = createSessions(store, { clock });
-  const tokens = createTokens(store, { clock });
+  const tokens = createTokens(store, { clock, log });
 
   return {
     requiresCredentials: async () => {
@@ -56,6 +61,7 @@ export const createAuth = (store: AuthStore, { clock }: AuthParams): Auth => {
       const credential = await store.getCredential();
 
       if (!credential) {
+        log.warn("sign-in refused: no password is set");
         return undefined;
       }
 
@@ -70,9 +76,9 @@ export const createAuth = (store: AuthStore, { clock }: AuthParams): Auth => {
 
         // A row nobody can read is not a password anybody can get wrong, and
         // answering 500 would tell a person to try again at something broken.
-        console.error(
-          "notemap: the stored credential cannot be read — run `notemap password set`",
-          cause,
+        log.error(
+          { err: cause },
+          "sign-in refused: the stored credential cannot be read — run `notemap password set`",
         );
         return undefined;
       }
@@ -80,6 +86,7 @@ export const createAuth = (store: AuthStore, { clock }: AuthParams): Auth => {
       const named = sameSecretly(credential.name, name);
 
       if (!named || !proved) {
+        log.warn("sign-in refused: wrong name or password");
         return undefined;
       }
 
@@ -89,13 +96,17 @@ export const createAuth = (store: AuthStore, { clock }: AuthParams): Auth => {
         await store.rehashCredential(await hashPassword(password));
       }
 
-      return await sessions.mint();
+      const minted = await sessions.mint();
+      log.info({ session: minted.id }, "signed in");
+      return minted;
     },
     endSession: async (id) => {
       await store.deleteSession(id);
+      log.info({ session: id }, "signed out");
     },
     endAllSessions: async () => {
       await store.deleteAllSessions();
+      log.info("every session ended");
     },
     forgetExpired: async () => {
       await store.cleanExpired(clock.now());

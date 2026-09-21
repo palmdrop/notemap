@@ -12,6 +12,7 @@ import {
 } from "@notemap/core";
 
 import { DELIVERY_REPORT_MARGIN_MS } from "../constants";
+import type { Logger } from "../log";
 import {
   startRunner,
   wrongSubject,
@@ -32,7 +33,7 @@ export function startDeliveryRunner(
   pool: Pool,
   destinations: Destinations,
   config: DeliveryRunnerConfig,
-  onError?: (cause: unknown) => void,
+  log?: Logger,
 ): DeliveryRunner {
   /**
    * The attempt has to finish while the lease is still held: a lease that
@@ -124,7 +125,7 @@ export function startDeliveryRunner(
     }
   }
 
-  return startRunner(pool, KINDS, perform, config, onError);
+  return startRunner(pool, KINDS, perform, config, log);
 }
 
 function why(cause: unknown): string {

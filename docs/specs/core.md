@@ -1,9 +1,12 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-09-15
+**Last updated**: 2026-09-20
 **Shipped**:
 
+- 2026-09-20 — **A host may listen to the action log.** The ports take an optional observer that
+  core tells each action once its transaction commits, and nothing about a rollback. See
+  [daemon-logging](../plans/daemon-logging.md).
 - 2026-09-15 — **A manual mark is cancellable, the summary names its templates, and a note confesses less.** `cancelDelivery`
   takes back a record naming the user whatever its state; the routing summary names the distinct
   templates whose records stand; the markdown kinds no longer confess tags their settings left out.
@@ -1381,6 +1384,11 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - **State is never derived from the log.** It is a record read by a person tracing something;
   nothing is replayed or rebuilt from it, and nothing in the pool becomes unanswerable if it is
   cleared.
+- **A host may listen** (added 2026-09-20). The ports take an optional observer that core tells
+  each action once the transaction that appended it has committed — never before, and never one
+  that rolled back, so what the observer hears is exactly what the log holds. What it does with
+  an action is the host's business; core keeps no log of its own beyond the store's, and never
+  writes to a console, a file or a socket.
 - The log is operational state rather than the user's material, so it is not mirrored
   ([mirror.md](mirror.md)) and a pool rebuilt from its mirror has no history.
 
