@@ -248,6 +248,28 @@ describe("where a note carries its tags", () => {
 
     expect(delivered(outcome).output?.note).toBe(undefined);
   });
+
+  it("leaves the tag that filed the item behind unless the delivery asks for it", async () => {
+    const { path, destination } = await vault(
+      { text: renderText },
+      { hashtags: true },
+    );
+    const filed = (args: Record<string, string | boolean>) =>
+      delivery({
+        arguments: { directory: "", filename: "a.md", ...args },
+        tags: ["route/reading", "quote"],
+      });
+
+    await destination.deliver(filed({}));
+    expect(await readFile(join(path, "a.md"), "utf8")).toBe(
+      "a thought\n\n#quote\n",
+    );
+
+    await destination.deliver(filed({ filename: "b.md", triggerTags: true }));
+    expect(await readFile(join(path, "b.md"), "utf8")).toBe(
+      "a thought\n\n#route/reading #quote\n",
+    );
+  });
 });
 
 describe("how much provenance goes above a note", () => {

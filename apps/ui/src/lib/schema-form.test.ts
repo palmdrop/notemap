@@ -291,6 +291,54 @@ describe("what a field comes out as", () => {
     ).toBe(true);
   });
 
+  test("holds a condition where any of its values is met", () => {
+    const [, wide] = fieldsOf({
+      type: "object",
+      properties: {
+        mode: { type: "string", enum: ["a", "b", "c"] },
+        extra: {
+          type: "boolean",
+          "x-notemap-when": [{ field: "mode", is: ["a", "b"] }],
+        },
+      },
+    });
+
+    expect(offered(wide as never, { mode: "b" })).toBe(true);
+    expect(offered(wide as never, { mode: "c" })).toBe(false);
+  });
+
+  /** What a hidden field still holds is not sent, so nothing may be judged by it. */
+  test("judges a chained condition as if the hidden field held nothing", () => {
+    const chained = fieldsOf({
+      type: "object",
+      properties: {
+        hashtags: { type: "boolean" },
+        triggerTags: {
+          type: "boolean",
+          "x-notemap-when": [{ field: "hashtags", is: [true] }],
+        },
+        onlyThese: {
+          type: "string",
+          "x-notemap-when": [{ field: "triggerTags", is: [true] }],
+        },
+      },
+    });
+    const [, , onlyThese] = chained;
+
+    expect(
+      offered(
+        onlyThese as never,
+        effectiveOf(chained, { hashtags: ON, triggerTags: ON }),
+      ),
+    ).toBe(true);
+    expect(
+      offered(
+        onlyThese as never,
+        effectiveOf(chained, { hashtags: OFF, triggerTags: ON }),
+      ),
+    ).toBe(false);
+  });
+
   test("always offers a field with no condition", () => {
     expect(offered(fields[0] as never, {})).toBe(true);
   });

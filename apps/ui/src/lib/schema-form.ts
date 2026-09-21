@@ -150,16 +150,24 @@ export function presetsFrom(fields: readonly Field[]): Record<string, string> {
 /**
  * What every field comes out as: what was typed, else the destination's
  * setting where the field inherits one, else the schema's default. A flag
- * nobody said anything about is off.
+ * nobody said anything about is off. Resolved in the schema's order, and a
+ * field that is not offered comes out as if nothing were typed in it — what
+ * it still holds is not sent, so nothing downstream may be judged by it.
  */
 export function effectiveOf(
   fields: readonly Field[],
   typed: Readonly<Record<string, string>>,
   inherited: Readonly<Record<string, unknown>> = {},
 ): Effective {
-  return Object.fromEntries(
-    fields.map((field) => [field.name, comesOutAs(field, typed, inherited)]),
-  );
+  const effective: Record<string, unknown> = {};
+  for (const field of fields) {
+    effective[field.name] = comesOutAs(
+      field,
+      offered(field, effective) ? typed : {},
+      inherited,
+    );
+  }
+  return effective;
 }
 
 function comesOutAs(

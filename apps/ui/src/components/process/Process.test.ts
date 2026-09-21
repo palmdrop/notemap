@@ -355,6 +355,7 @@ function servingTemplates(
     capability: "create",
     arguments: { directory: "research/2026-09-04" },
   },
+  capabilities: readonly Record<string, unknown>[] = [CREATE],
 ) {
   return pool((request) => {
     const route = routeOf(request);
@@ -366,7 +367,7 @@ function servingTemplates(
       return json(200, resolved);
     }
     if (route.endsWith("/description")) {
-      return json(200, { kind: "described", capabilities: [CREATE] });
+      return json(200, { kind: "described", capabilities });
     }
     if (route === "POST /v1/items/one/route") {
       return json(200, {
@@ -514,6 +515,32 @@ test("keeps the capability a template resolved to, over the one the line settles
 
 test("commits an untouched template as the template, so the record names it", async () => {
   servingTemplates();
+
+  draw();
+  await choose("research");
+  await screen.findByRole("button", { name: "edit place" });
+  await commit();
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+  expect(await sent()).toContainEqual({ template: RESEARCH.id });
+});
+
+/**
+ * The destination's settings moved since the template was saved, so the form
+ * no longer offers the field the template holds. Nothing was corrected.
+ */
+test("a template holding a field the form does not offer is still untouched", async () => {
+  servingTemplates(
+    [RESEARCH],
+    {
+      destination: VAULT,
+      capability: "create",
+      arguments: { directory: "research/2026-09-04", triggerTags: true },
+    },
+    [CREATE_WITH_SWITCHES],
+  );
 
   draw();
   await choose("research");
@@ -1331,12 +1358,9 @@ test("judges a conditional argument against what the destination's settings impl
   await screen.findByLabelText("directory");
 
   expect(await screen.findByText("trigger tags")).toBeDefined();
-  expect(
-    screen.getByRole("button", { name: "full" }).getAttribute("aria-pressed"),
-  ).toBe("false");
-  expect(screen.getByRole("button", { name: "full" }).textContent).toContain(
-    "▹",
-  );
+  const full = screen.getByRole("button", { name: "full (default)" });
+  expect(full.getAttribute("aria-pressed")).toBe("false");
+  expect(full.textContent).toContain("▹");
 });
 
 async function pickingFrontmatter(taken: readonly string[]) {

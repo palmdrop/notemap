@@ -246,7 +246,8 @@
     <div>
       {#if fixed(field) !== undefined}
         <!-- Taking the option already taken gives it back: absent inherits,
-             and the hollow mark says what that comes out as. -->
+             and the hollow mark says what that comes out as. A required field
+             has no absent to go back to. -->
         {@const implied =
           (typed[field.name] ?? "") === ""
             ? impliedOf(field, inherited)
@@ -258,7 +259,8 @@
               chosen={typed[field.name] === one}
               implied={implied === one}
               onchoose={() =>
-                (typed[field.name] = typed[field.name] === one ? "" : one)}
+                (typed[field.name] =
+                  typed[field.name] === one && !field.required ? "" : one)}
             />
           {/each}
         </div>

@@ -6,12 +6,19 @@
 
 - 2026-09-21 — **A trigger tag stays in the pool unless the delivery asks for it.** The markdown
   kinds leave every tag under `route/` out of what they write — the frontmatter and the `#tag`
-  foot alike — and a `triggerTags` argument on their capabilities, `false` by default, sends them
-  with the rest. Not confessed either way: the default is a choice rather than a loss. With it,
-  the `tags` switch becomes the boolean `hashtags`, so no pairing with `frontmatter` means
-  nothing; and two annotations join the vocabulary — `x-notemap-inherits` says an argument left
-  absent takes the destination's setting of the same name, and `x-notemap-when` says a field is
-  offered only while another's value makes it mean something. Core reads neither; a form does.
+  foot alike — and a `triggerTags` argument on their capabilities sends them with the rest.
+  Absent is off, and the schema declares no default on purpose: a default is what a form seeds,
+  and an explicit `false` on every record that never asked says nothing. Not confessed either
+  way: leaving them is a choice rather than a loss. With it, the `tags` switch becomes the
+  boolean `hashtags`, so no pairing with `frontmatter` means nothing; and two annotations join
+  the vocabulary — `x-notemap-inherits` says an argument left absent takes the destination's
+  setting of the same name, and `x-notemap-when` says a field is offered only while another's
+  value makes it mean something. Core reads neither; a form does, and the validator checks each
+  annotation's value against the shape the vocabulary declares for it. **Nothing stored is
+  migrated**: a destination holding the old `tags` setting is reported unusable until it is
+  re-saved from the settings form, which drops the old value, and a template holding a `tags`
+  argument reports `arguments-invalid` and fires nothing until it is re-saved on the same terms.
+  Loud in both cases, and a pool with nobody in it yet.
 - 2026-09-20 — **A host may listen to the action log.** The ports take an optional observer that
   core tells each action once its transaction commits, and nothing about a rollback. See
   [daemon-logging](../plans/daemon-logging.md).
@@ -1259,13 +1266,17 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   always did, and now say. The schema's `default` on such an argument is what the setting means
   where it too is absent, never a value a form seeds: seeding it would write over the setting.
   `x-notemap-when` on a field is a list of `{ field, is }`, and the field is offered only while
-  some entry's field comes out as one of its values — typed, else inherited, else the default.
-  `triggerTags` is offered while `frontmatter` is `full` or `hashtags` is `true`, because a switch
-  about the tags means nothing while no tags go. **Core reads neither.** Both are said for the
-  surfaces, on `x-notemap-offered-only`'s terms: a combination that must be *refused* is the
-  schema's own business, through the keywords JSON Schema already has, and a form that hid a
-  field still sends nothing for it. Every annotation now carries the shape of its value, since a
-  validator that accepts only booleans would throw on a list.
+  some entry's field comes out as one of its values — typed, else inherited, else the default,
+  resolved in the schema's order with a field that is not offered counting as untyped, so a
+  condition on a conditional field never holds through a value nobody can see. `triggerTags` is
+  offered while `frontmatter` is `full` or `hashtags` is `true`, because a switch about the tags
+  means nothing while no tags go. **Core reads neither.** Both are said for the surfaces, on
+  `x-notemap-offered-only`'s terms: a combination that must be *refused* is the schema's own
+  business, through the keywords JSON Schema already has, and a form that hid a field still
+  sends nothing for it. Every annotation carries the schema its own value must satisfy, and the
+  validator checks it: a condition list with an entry the form could not read would otherwise
+  drop that entry, and a field whose every entry was dropped would be offered always — the
+  degenerate offer the annotation exists to prevent, arrived at through a typo.
 - **`establish` is the template's word alone**, and resolves at decision time: unestablished it asks
   the adapter to create, established it asks the adapter to require. No adapter ever hears it, so
   the arguments on a record are always the two-valued thing. The **argument it is carried in is
@@ -1569,7 +1580,7 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   went where it went rather than anything about the item, and it reads as noise in a vault that
   never heard of the template. Every tag under `route/` is left out, declared or not — the
   namespace is reserved for the purpose and a renderer knows tag names and no templates — and a
-  `triggerTags` argument on the capability, `false` by default, sends them with the rest. A
+  `triggerTags` argument on the capability, absent meaning off, sends them with the rest. A
   template may save it, so one destination that wants them has them on every route it makes. The
   are.na kind copies the note's frontmatter into a block's metadata and leaves them out on the
   same terms, with no argument to send them. Local-only is the default for every provider; anything

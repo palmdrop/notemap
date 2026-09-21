@@ -51,23 +51,45 @@ export const INHERITS_FIELD = "x-notemap-inherits";
  */
 export const OFFERED_WHEN_FIELD = "x-notemap-when";
 
+const FLAG: JsonSchema = { type: "boolean" };
+
 /**
- * Every vendor annotation notemap declares, with the shape its value takes. A
- * validator has to be told about them or reject the schemas carrying them, and
- * a list here is what stops that being a second place to remember: one more
- * annotation is one more line, and a keyword nobody declared still fails
+ * One condition per entry, and every entry whole: a form drops an entry it
+ * cannot read, and a field whose every entry was dropped would be offered
+ * always — the one thing the annotation exists to prevent.
+ */
+const CONDITIONS: JsonSchema = {
+  type: "array",
+  minItems: 1,
+  items: {
+    type: "object",
+    required: ["field", "is"],
+    additionalProperties: false,
+    properties: {
+      field: { type: "string", minLength: 1 },
+      is: { type: "array", minItems: 1 },
+    },
+  },
+};
+
+/**
+ * Every vendor annotation notemap declares, each with the schema its own value
+ * must satisfy. A validator has to be told about them or reject the schemas
+ * carrying them, and a list here is what stops that being a second place to
+ * remember: one more annotation is one more line, and a keyword nobody
+ * declared — or a value that is not the shape declared here — still fails
  * loudly, which is what catches a typo in a hand-written `config.toml` payload
  * type.
  */
 export const ANNOTATIONS: readonly {
   readonly keyword: string;
-  readonly shape: "boolean" | "array";
+  readonly value: JsonSchema;
 }[] = [
-  { keyword: ASKABLE_FIELD, shape: "boolean" },
-  { keyword: INHERITS_FIELD, shape: "boolean" },
-  { keyword: OFFERED_ONLY_FIELD, shape: "boolean" },
-  { keyword: OFFERED_WHEN_FIELD, shape: "array" },
-  { keyword: PATH_FIELD, shape: "boolean" },
+  { keyword: ASKABLE_FIELD, value: FLAG },
+  { keyword: INHERITS_FIELD, value: FLAG },
+  { keyword: OFFERED_ONLY_FIELD, value: FLAG },
+  { keyword: OFFERED_WHEN_FIELD, value: CONDITIONS },
+  { keyword: PATH_FIELD, value: FLAG },
 ];
 
 /**

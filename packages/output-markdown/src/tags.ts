@@ -54,6 +54,9 @@ export const TRIGGER_TAGS = "triggerTags";
  * of why an item went where it went rather than anything about the item, so a
  * delivery that was not asked leaves them behind, in the frontmatter as in the
  * foot of the note. Offered only while the tags go somewhere at all.
+ *
+ * Declares no `default` on purpose: absent is off, and a default a form would
+ * seed puts an explicit `false` on every record that never asked.
  */
 export const TRIGGER_TAGS_ARGUMENT: JsonSchema = {
   type: "boolean",

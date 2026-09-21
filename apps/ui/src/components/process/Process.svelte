@@ -440,7 +440,7 @@
       applied !== undefined &&
       resolved !== undefined &&
       capability === resolved.capability &&
-      sameArguments(wanted, resolved.arguments);
+      sameArguments(wanted, offeredOf(resolved.arguments));
 
     if (untouched) {
       return { template: (applied as RoutingTemplate).id, ...carried() };
@@ -453,6 +453,21 @@
         : freshFile(beside)),
       ...carried(),
     };
+  }
+
+  /**
+   * A template may hold a value for a field the form is not offering — the
+   * destination's settings moved since it was saved, or it was written over
+   * the wire. The form sends nothing for it, so comparing against the whole
+   * would call every such template touched and commit it as the person's own.
+   */
+  function offeredOf(
+    held: Readonly<Record<string, unknown>>,
+  ): Record<string, unknown> {
+    const names = new Set(fields.map((one) => one.name));
+    return Object.fromEntries(
+      Object.entries(held).filter(([name]) => names.has(name)),
+    );
   }
 
   /**
@@ -811,7 +826,8 @@
     />
   {:else if field.options !== undefined}
     <!-- Chosen rather than typed: these values *are* the field, and taking the
-         one already taken clears it, since absent is a value here too. -->
+         one already taken clears it, since absent is a value here too — except
+         where the field is required, and absent is nothing the pool takes. -->
     {@const implied =
       (args[field.name] ?? "") === "" ? impliedOf(field, inherited) : undefined}
     <div>
@@ -823,7 +839,8 @@
           onchoose={() =>
             (args = {
               ...args,
-              [field.name]: args[field.name] === one ? "" : one,
+              [field.name]:
+                args[field.name] === one && !field.required ? "" : one,
             })}
         />
       {/each}

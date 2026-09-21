@@ -7,16 +7,20 @@
 - 2026-09-21 — **A form offers only what means something, and says what silence comes out as.**
   A `boolean` field is a row of two options, `yes` and `no`, held as `true` and `false` — the
   same control an enum gets, and never the browser's checkbox, on the terms the order control is
-  not its `select`. Taking the option already taken gives it back, in the composer, on the
-  template form and on the destination form alike, absent meaning *inherit* or *default*; and
-  **what absent comes out as is marked hollow** — `▹ none` beside a solid `▸` — read off the
-  destination's settings where the schema says the argument inherits (`x-notemap-inherits`), and
-  off the schema's default otherwise. A field the schema offers only under a condition
+  not its `select`. In the composer and on the template form, taking the option already taken
+  gives it back — absent meaning *inherit* — unless the field is required, which has no absent
+  to go back to; and **what absent comes out as is marked hollow** — `▹ none` beside a solid
+  `▸`, with `(default)` said to a reader that cannot see the mark — read off the destination's
+  settings where the schema says the argument inherits (`x-notemap-inherits`), and off the
+  schema's default otherwise. The destination form keeps its blank option instead, which already
+  names what it comes out as: `default (no)`. A field the schema offers only under a condition
   (`x-notemap-when`) is not drawn while the condition does not hold, judged against those same
   values, and whatever it held is not sent: the markdown kinds' `trigger tags` appears only once
   `frontmatter` is `full` or `hashtags` is `yes`, since a switch about the tags means nothing
-  while no tags go. A record draws a flag as the word. The first flag is that one, off by default,
-  so a `route/` tag stays in the pool unless a route or a template asks to send it. On the
+  while no tags go, and a condition is judged with a hidden field holding nothing, so one can
+  never hold through what a person cannot see. A record draws a flag as the word. The first flag
+  is that one, off unless said, so a `route/` tag stays in the pool unless a route or a template
+  asks to send it. On the
   template form the pattern vocabulary sits **under the last field a pattern can be written
   into**, rather than under whatever switches follow it.
 - 2026-09-18 — **Four small things from a working session.** The capture box carries the tag

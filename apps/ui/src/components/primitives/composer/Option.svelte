@@ -40,6 +40,9 @@
     {chosen ? "▸" : implied ? "▹" : ""}
   </span>
   <span class:font-semibold={chosen}>{label}</span>
+  {#if implied && !chosen}
+    <span class="sr-only">(default)</span>
+  {/if}
   {#if said !== undefined}
     <span class="ml-auto">{said}</span>
   {/if}

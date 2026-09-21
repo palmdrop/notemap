@@ -92,6 +92,16 @@ describe("what the block remembers about where it came from", () => {
     );
   });
 
+  /** The tag that filed the item is the pool's, and a block has no argument to ask for it. */
+  it("leaves the tags that filed the item out of the metadata", () => {
+    expect(
+      provenanceOf(delivery({ tags: ["route/reading", "kind/quote"] })),
+    ).toMatchObject({ tags: "kind/quote" });
+    expect(
+      provenanceOf(delivery({ tags: ["route/reading"] })),
+    ).not.toHaveProperty("tags");
+  });
+
   /** One key: a capture may carry more tags than the whole object is allowed keys. */
   it("flattens the tags into one joined string", () => {
     expect(
