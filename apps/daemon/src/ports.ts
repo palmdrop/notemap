@@ -24,6 +24,7 @@ import { createSqlitePoolStore } from "@notemap/store-sqlite";
 import {
   createPool,
   destinationRegistry,
+  type ActionObserver,
   type BlobStore,
   type Clock,
   type Destinations,
@@ -93,6 +94,23 @@ export type OpenPool = {
    */
   readonly warnings: readonly string[];
 };
+
+/**
+ * The one failure that cannot be logged is the log's own, and core rethrows an
+ * observer's throw as an uncaught exception — so it is dropped here rather than
+ * taking the daemon down over a line nobody will read anyway.
+ */
+function observing(log: Logger): ActionObserver {
+  return {
+    action: (action) => {
+      try {
+        logAction(log, action);
+      } catch {
+        // Nowhere left to say so.
+      }
+    },
+  };
+}
 
 export function openPool(options: OpenPoolConfig): OpenPool {
   const blobs = createFilesystemBlobStore({ root: options.assetRoot });
@@ -171,9 +189,7 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     blobs,
     ...(mirrorWriter === undefined ? {} : { mirrorWriter }),
     destinations,
-    ...(log === undefined
-      ? {}
-      : { observer: { action: (action) => logAction(log, action) } }),
+    ...(log === undefined ? {} : { observer: observing(log) }),
   };
 
   return {

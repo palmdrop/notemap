@@ -75,13 +75,14 @@ describe("the logger", () => {
         token: "tk_1234",
         headers: { authorization: "Bearer x", cookie: "s=1" },
         account: { password: "hunter2", secret: "s3" },
+        deeper: { account: { password: "hunter3" } },
         name: "fine",
       },
       "leak",
     );
 
     const [line] = lines();
-    expect(line).not.toMatch(/tk_1234|Bearer x|s=1|hunter2|s3"/);
+    expect(line).not.toMatch(/tk_1234|Bearer x|s=1|hunter2|hunter3|s3"/);
     expect(line).toContain('"name":"fine"');
     expect(line).toContain("[redacted]");
   });

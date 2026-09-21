@@ -466,7 +466,8 @@ person reading `docker logs` (added 2026-09-20, [plan](../plans/daemon-logging.m
   tempo ([ADR 32](../adr/0032-a-shell-learns-what-happened-by-reading-the-log.md)) and the
   container's healthcheck asks `/v1/health`; at `info` the log would be mostly that.
 - **Facts, never material.** A line never carries a payload, a request body, a password, a token's
-  secret, a cookie or an `Authorization` header; a field named like one is printed redacted. A tag
+  secret, a cookie or an `Authorization` header; a field named like one, up to two levels down,
+  is printed redacted. A tag
   name or a destination name may appear, because the action's own detail carries it.
 - **Two formats, one stream.** `text` is one line a person reads — the clock, the level, the
   message, then `key=value` pairs, an error's stack indented below. `json` is one object per

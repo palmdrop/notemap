@@ -7,9 +7,11 @@ export type { Logger } from "pino";
 
 /**
  * Belt and braces: nothing should hand a secret to the log in the first place,
- * and one that does is printed as this instead.
+ * and one that does is printed as this instead. Two levels down is as far as
+ * pino's paths reach; nothing logged nests deeper than one.
  */
 const REDACTED = ["authorization", "cookie", "password", "secret", "token"];
+const DEPTHS = ["", "*.", "*.*."];
 
 export function createLogger(
   config: LogConfig,
@@ -22,7 +24,7 @@ export function createLogger(
       timestamp: pino.stdTimeFunctions.isoTime,
       formatters: { level: (label) => ({ level: label }) },
       redact: {
-        paths: REDACTED.flatMap((key) => [key, `*.${key}`]),
+        paths: DEPTHS.flatMap((depth) => REDACTED.map((key) => depth + key)),
         censor: "[redacted]",
       },
     },
