@@ -5,7 +5,8 @@ import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import Feed from "$components/feed/Feed.svelte";
 
-import { pool } from "$testing/pool";
+import { readDraft, writeDraft } from "$lib/draft";
+import { client, pool } from "$testing/pool";
 import Capture from "./Capture.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
@@ -247,4 +248,72 @@ test("carries the tags chosen in the box on the capture, and clears them with it
   await cleared(written);
   expect(screen.queryByRole("button", { name: "research" })).toBeNull();
   expect(screen.queryByRole("button", { name: "fresh" })).toBeNull();
+});
+
+function captured() {
+  return pool(async (request) => {
+    if (routeOf(request) !== "POST /v1/captures") return empty.clone();
+    const envelope = (await request.json()) as Envelope;
+    return json(201, {
+      kind: "captured",
+      item: anItem(envelope.id),
+      matchedOn: "id",
+    });
+  });
+}
+
+/**
+ * A crash or a closed tab should not cost what was typed before `capture`, so
+ * the box keeps a draft and starts from it. The picture is not part of it.
+ */
+test("starts from the draft it last held, words and tags both", () => {
+  captured();
+  writeDraft({ text: "half a thought", tags: ["research"] });
+
+  render(Capture);
+
+  expect(
+    (screen.getByLabelText("What to capture") as HTMLTextAreaElement).value,
+  ).toBe("half a thought");
+  expect(
+    screen.getByRole("button", { name: "research", pressed: true }),
+  ).toBeDefined();
+});
+
+test("keeps what is typed and tagged as it goes, and lets go when the capture commits", async () => {
+  captured();
+  render(Capture);
+
+  await fireEvent.click(
+    screen.getByRole("button", { name: "Tag the capture" }),
+  );
+  await fireEvent.input(screen.getByLabelText("Tag the capture"), {
+    target: { value: "research" },
+  });
+  await fireEvent.keyDown(screen.getByLabelText("Tag the capture"), {
+    key: "Enter",
+  });
+  const written = screen.getByLabelText("What to capture");
+  await fireEvent.input(written, { target: { value: "half a thought" } });
+
+  await vi.waitFor(() => {
+    expect(readDraft()).toEqual({ text: "half a thought", tags: ["research"] });
+  });
+
+  await fireEvent.click(screen.getByRole("button", { name: "capture" }));
+  await cleared(written as HTMLTextAreaElement);
+
+  expect(readDraft()).toEqual({ text: "", tags: [] });
+});
+
+test("keeps the draft where the capture fails", async () => {
+  captured();
+  vi.spyOn(client, "capture").mockRejectedValue(new Error("not this time"));
+  render(Capture);
+
+  const written = await capture("not lost");
+
+  expect(await screen.findByRole("status")).toBeDefined();
+  expect(written.value).toBe("not lost");
+  expect(readDraft()).toEqual({ text: "not lost", tags: [] });
 });

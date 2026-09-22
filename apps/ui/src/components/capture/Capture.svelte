@@ -5,6 +5,7 @@
   import TagSet from "$components/primitives/controls/TagSet.svelte";
   import { PICTURE, TYPED } from "$lib/channels";
   import { client } from "$lib/client";
+  import { clearDraft, readDraft, writeDraft } from "$lib/draft";
   import { sayItFired } from "$lib/firing";
   import { commits } from "$lib/command/keys";
   import { offerable, triggeredBy } from "$lib/templates";
@@ -15,8 +16,11 @@
    */
   let { focus = true }: { focus?: boolean } = $props();
 
-  let text = $state("");
-  let tags = $state<string[]>([]);
+  // Read where the box is drawn, so coming back from another surface restores
+  // it the same way a reload does.
+  const held = readDraft();
+  let text = $state(held.text);
+  let tags = $state<string[]>([...held.tags]);
   let chosen = $state<File | undefined>(undefined);
   let busy = $state(false);
   let said = $state("");
@@ -44,6 +48,10 @@
   // The queue is where capture happens, and this is the head of it.
   $effect(() => {
     if (focus) box?.focus();
+  });
+
+  $effect(() => {
+    writeDraft({ text, tags });
   });
 
   const inUse = client.tags.inUse;
@@ -80,6 +88,7 @@
       tags = [];
       chosen = undefined;
       picker.value = "";
+      clearDraft();
 
       for (const name of sent) void sayItFired(item.id, name);
     } catch (error) {
