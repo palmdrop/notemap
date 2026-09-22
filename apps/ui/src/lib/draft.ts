@@ -12,7 +12,7 @@ export type Draft = {
 
 const KEY = "notemap:draft";
 
-export const EMPTY: Draft = { text: "", tags: [] };
+const EMPTY: Draft = { text: "", tags: [] };
 
 function shaped(held: unknown): held is Draft {
   return (
@@ -28,7 +28,10 @@ function shaped(held: unknown): held is Draft {
 export function readDraft(): Draft {
   try {
     const held: unknown = JSON.parse(localStorage.getItem(KEY) ?? "null");
-    return shaped(held) ? held : EMPTY;
+    if (!shaped(held)) return EMPTY;
+    // A name twice is a key twice to the chooser this restores into, and only
+    // a hand-edited store can hold one.
+    return { text: held.text, tags: [...new Set(held.tags)] };
   } catch {
     return EMPTY;
   }
@@ -36,7 +39,8 @@ export function readDraft(): Draft {
 
 export function writeDraft(draft: Draft): void {
   try {
-    if (draft.text === "" && draft.tags.length === 0) {
+    // Whitespace is nothing to come back to, and nothing `capture` would take.
+    if (draft.text.trim() === "" && draft.tags.length === 0) {
       localStorage.removeItem(KEY);
       return;
     }

@@ -47,6 +47,22 @@ describe("the capture draft", () => {
     expect(readDraft()).toEqual({ text: "", tags: [] });
   });
 
+  it("keeps no draft of whitespace alone, which is nothing to come back to", () => {
+    writeDraft({ text: "   \n ", tags: [] });
+
+    expect(localStorage.getItem(KEY)).toBeNull();
+    expect(readDraft()).toEqual({ text: "", tags: [] });
+  });
+
+  it("restores a tag once, however many times a hand-edited store names it", () => {
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({ text: "a thought", tags: ["research", "research"] }),
+    );
+
+    expect(readDraft()).toEqual({ text: "a thought", tags: ["research"] });
+  });
+
   it("holds the picture in memory, and lets go of it with the rest", () => {
     const shot = new File(["bytes"], "shot.png", { type: "image/png" });
     holdPicture(shot);

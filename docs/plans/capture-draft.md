@@ -11,7 +11,8 @@
 
 > Text typed into the capture box and the tags chosen for it are there again after a reload, a
 > crash, a closed tab, or a visit to another surface, until a capture commits them. A picked
-> picture is not kept, and nothing in `@notemap/client` changes.
+> picture survives the visit and not the reload, being held in memory, and nothing in
+> `@notemap/client` changes.
 
 ## Decisions taken
 
@@ -43,8 +44,9 @@ Depends on nothing.
 
 - [x] Branch `agent/capture-draft`.
 - [x] `apps/ui/src/lib/draft.ts`: read, write and clear one `{ text, tags }` under `notemap:draft`.
-      No module-level state — the box reads it when it mounts, so a visit to another surface and
-      back restores it the same way a reload does.
+      The box reads it when it mounts, so a visit to another surface and back restores it the
+      same way a reload does. The picked `File` is held beside it, at module scope, which is what
+      lets the picture survive the visit; nothing about it is written.
 - [x] `apps/ui/src/lib/draft.test.ts`: round-trips; clear leaves nothing; garbage, a wrong shape
       and a full or refused storage all restore empty and do not throw.
 - [x] Verify: `pnpm --filter ui test -- draft` green.
@@ -85,7 +87,8 @@ Depends on phase 2.
 ## Unknowns
 
 - ~~**Whether `Capture.test.ts` sees `localStorage` per case.**~~ It does: `testing/dom.ts`
-  clears it in `beforeEach`, and the module holds nothing at module scope.
+  clears it in `beforeEach`. The module-level picture is not storage and does not clear with it,
+  so `dom.ts` calls `clearDraft()` too.
 - ~~**Whether the tag chooser's `onadd`/`onremove` are the only writes to `tags`.**~~ They are:
   `TagSet` takes `names` read-only. Written through an `$effect` over both fields anyway, which
   is the one place a change can come from.

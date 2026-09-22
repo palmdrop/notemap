@@ -531,8 +531,9 @@ of its words and its tags in the browser's own storage, written as they change a
 a capture commits, so a reload, a crash, a closed tab or a visit to the feed and back finds the
 box as it was left. A capture that fails keeps it. The picture is held in memory rather than
 written: it survives the box being drawn again — the feed and back — and not the page, so a box
-restored after a reload comes back with its words and no picture, which is picked again. One draft per origin — two tabs share it, and the last
-write wins; it is never sent and the pool never sees it.
+restored after a reload comes back with its words and no picture, which is picked again. One
+draft per origin — two tabs share it, and the last write wins; it is never sent and the pool
+never sees it.
 
 **An attached picture is drawn before it is committed**, inside the box above the text, beside its
 name and with a way to drop it. The bytes go up with the capture and cannot be taken back once they
