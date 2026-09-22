@@ -30,6 +30,13 @@ place while its item is unprocessed, and fixed once it is: what left the pool is
 keeps.
 _Avoid_: original, raw note
 
+**Draft**:
+What a capture box holds before its capture commits — the words and the tags, kept across a
+reload, and the picture, kept in memory and so only across the box being drawn again. Kept by
+the shell, on the device, and never sent: the pool has no draft. Cleared when the capture
+commits, kept when it fails.
+_Avoid_: unsaved, pending *(the outbox's word, for a capture that has committed and not landed)*
+
 **Source**:
 The channel a capture came in through — a shell's typed note, its picture, a watched folder, a
 polled inbox. Finer than the app that sent it, because policy is what the distinction is for: one

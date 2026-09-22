@@ -8,6 +8,9 @@
     looked at and the corner speaks when the delivery resolves, but nothing shows everything in
     flight at once. Belongs with the routing-record and log readability items below.
 
+- [ ] make URLs clickable links
+- [ ] preview external links, like instagram, are.na, image URLs, etc 
+
 - [ ] batch processing, i.e selecting many captures and routing them all at once, or discarding
 - [ ] command palette
 
@@ -33,6 +36,7 @@
   - it is not clear how to go back or use the current folder
   - tabbing down the hierarchy has no effect on input field until you press "use <path>"
   - going back is not clearly a button
+- [ ] searchable files/folders in webdav/fs destinations, investigate if possible
 
 - [ ] consider source to destination auto routing: for example, I might have an inbox that I *always* want routed to a specific destination, using a template.
 

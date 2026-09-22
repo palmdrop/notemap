@@ -1,7 +1,7 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-09-18
+**Last updated**: 2026-09-22
 **Shipped**:
 
 - 2026-09-17 — **A client store on a filesystem, and two clients over one store.**
@@ -830,7 +830,9 @@ rather than at a drain that is nobody's business to watch.
 **Attaching without capturing leaves bytes nothing will claim.** A shell that mints one and then
 loses interest is holding bytes with no operation behind them, and nothing sweeps them; the
 compose row therefore attaches and captures in the same gesture. A shell that wants a longer-lived
-draft needs an answer to this, and does not have one.
+draft needs an answer to this, and does not have one. *(2026-09-22: the web shell's capture box
+keeps a draft of its words and tags and nothing else — the picture is held in memory until the
+button — which is why it still has none.)
 
 **Closing a client does not revoke the URLs it minted.** They go when the bytes do, and a page that
 goes away takes its own with it — so the leak is bounded by one session. A shell that builds a

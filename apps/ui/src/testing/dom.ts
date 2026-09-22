@@ -4,6 +4,7 @@ import { forgetEverything } from "$lib/candidate-cache";
 import { chordFor } from "$lib/command/bindings";
 import { dispatch } from "$lib/command/dispatch";
 import { published } from "$lib/command/stack.svelte";
+import { clearDraft } from "$lib/draft";
 import { forgetEveryName } from "$lib/names.svelte";
 
 /**
@@ -139,6 +140,7 @@ beforeEach(() => {
   // this process already read out of it.
   forgetEverything();
   forgetEveryName();
+  clearDraft();
   delete document.documentElement.dataset["theme"];
 });
 
