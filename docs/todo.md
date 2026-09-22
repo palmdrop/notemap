@@ -11,9 +11,6 @@
 - [ ] make URLs clickable links
 - [ ] preview external links, like instagram, are.na, image URLs, etc 
 
-- [ ] cache capture state before commit, so that user does not lose work if they close the tab 
-    - if a user typed something into the capture field, and attach an asset, those should be preserved if tab is opened and closed again (local state only, just within the same browser, not commited to BE)
-
 - [ ] batch processing, i.e selecting many captures and routing them all at once, or discarding
 - [ ] command palette
 
