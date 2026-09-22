@@ -6,8 +6,8 @@
 
 - 2026-09-22 — **The capture box keeps a draft.** What is typed into it and the tags chosen for
   it are there again after a reload, a crash, a closed tab or a visit to another surface, until
-  a capture commits them; a picked picture is not kept. Held by the shell, on the device, in
-  the browser's own storage. Plan: [capture-draft](../plans/capture-draft.md).
+  a capture commits them; a picked picture survives the visit and not the reload. Held by the
+  shell, on the device, in the browser's own storage. Plan: [capture-draft](../plans/capture-draft.md).
 - 2026-09-21 — **A form offers only what means something, and says what silence comes out as.**
   A `boolean` field is a row of two options, `yes` and `no`, held as `true` and `false` — the
   same control an enum gets, and never the browser's checkbox, on the terms the order control is
@@ -529,9 +529,9 @@ with the same `cancel` the row's chooser earns. Committing clears them with the 
 **What is typed is not lost before the button** *(added 2026-09-22)*. The box keeps a **draft**
 of its words and its tags in the browser's own storage, written as they change and cleared when
 a capture commits, so a reload, a crash, a closed tab or a visit to the feed and back finds the
-box as it was left. A capture that fails keeps it. The picture is not part of it: the bytes are
-held in memory until the button, and a box restored from its draft comes back with its words
-and no picture, which is picked again. One draft per origin — two tabs share it, and the last
+box as it was left. A capture that fails keeps it. The picture is held in memory rather than
+written: it survives the box being drawn again — the feed and back — and not the page, so a box
+restored after a reload comes back with its words and no picture, which is picked again. One draft per origin — two tabs share it, and the last
 write wins; it is never sent and the pool never sees it.
 
 **An attached picture is drawn before it is committed**, inside the box above the text, beside its

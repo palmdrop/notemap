@@ -5,7 +5,13 @@
   import TagSet from "$components/primitives/controls/TagSet.svelte";
   import { PICTURE, TYPED } from "$lib/channels";
   import { client } from "$lib/client";
-  import { clearDraft, readDraft, writeDraft } from "$lib/draft";
+  import {
+    clearDraft,
+    heldPicture,
+    holdPicture,
+    readDraft,
+    writeDraft,
+  } from "$lib/draft";
   import { sayItFired } from "$lib/firing";
   import { commits } from "$lib/command/keys";
   import { offerable, triggeredBy } from "$lib/templates";
@@ -21,7 +27,7 @@
   const held = readDraft();
   let text = $state(held.text);
   let tags = $state<string[]>([...held.tags]);
-  let chosen = $state<File | undefined>(undefined);
+  let chosen = $state<File | undefined>(heldPicture());
   let busy = $state(false);
   let said = $state("");
   let picker: HTMLInputElement;
@@ -52,6 +58,10 @@
 
   $effect(() => {
     writeDraft({ text, tags });
+  });
+
+  $effect(() => {
+    holdPicture(chosen);
   });
 
   const inUse = client.tags.inUse;

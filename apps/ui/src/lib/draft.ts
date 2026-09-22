@@ -1,8 +1,9 @@
 /**
- * What the capture box holds before its capture commits: the words and the
- * tags, and not the picture. `localStorage` on the same terms as the order and
- * the theme — small, string-shaped, and losing it costs retyping. One draft
- * per origin, so two tabs share it and the last write wins.
+ * What the capture box holds before its capture commits. The words and the
+ * tags go to `localStorage` on the same terms as the order and the theme —
+ * small, string-shaped, and losing it costs retyping. One draft per origin, so
+ * two tabs share it and the last write wins. The picture is held in memory
+ * only: it survives the box being drawn again, and not the page.
  */
 export type Draft = {
   readonly text: string;
@@ -45,6 +46,17 @@ export function writeDraft(draft: Draft): void {
   }
 }
 
+let picture: File | undefined;
+
+export function heldPicture(): File | undefined {
+  return picture;
+}
+
+export function holdPicture(file: File | undefined): void {
+  picture = file;
+}
+
 export function clearDraft(): void {
   writeDraft(EMPTY);
+  picture = undefined;
 }

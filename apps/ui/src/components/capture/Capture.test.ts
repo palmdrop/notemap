@@ -317,3 +317,25 @@ test("keeps the draft where the capture fails", async () => {
   expect(written.value).toBe("not lost");
   expect(readDraft()).toEqual({ text: "not lost", tags: [] });
 });
+
+/** The box unmounts with the queue, and a picture picked for it should not go with it. */
+test("keeps a picked picture across the box being drawn again, until the capture commits", async () => {
+  stubObjectUrls();
+  captured();
+
+  const first = render(Capture);
+  await attach();
+  expect(await screen.findByText("shot.png")).toBeDefined();
+  first.unmount();
+
+  const second = render(Capture);
+  expect(await screen.findByText("shot.png")).toBeDefined();
+  await capture("with the picture");
+  await vi.waitFor(() => {
+    expect(screen.queryByText("shot.png")).toBeNull();
+  });
+  second.unmount();
+
+  render(Capture);
+  expect(screen.queryByText("shot.png")).toBeNull();
+});

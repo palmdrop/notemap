@@ -2,7 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 
 import "$testing/dom";
 
-import { clearDraft, readDraft, writeDraft } from "./draft";
+import {
+  clearDraft,
+  heldPicture,
+  holdPicture,
+  readDraft,
+  writeDraft,
+} from "./draft";
 
 const KEY = "notemap:draft";
 
@@ -39,6 +45,16 @@ describe("the capture draft", () => {
     localStorage.setItem(KEY, stored);
 
     expect(readDraft()).toEqual({ text: "", tags: [] });
+  });
+
+  it("holds the picture in memory, and lets go of it with the rest", () => {
+    const shot = new File(["bytes"], "shot.png", { type: "image/png" });
+    holdPicture(shot);
+    expect(heldPicture()).toBe(shot);
+    expect(localStorage.getItem(KEY)).toBeNull();
+
+    clearDraft();
+    expect(heldPicture()).toBeUndefined();
   });
 
   it("does not throw where the store refuses the write", () => {

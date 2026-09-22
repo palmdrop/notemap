@@ -19,10 +19,12 @@
   use it: presentation-sized, string-shaped, and losing it costs retyping. It is not the client's
   and not in the store port — that shape was weighed and would only have been worth it for the
   picture, which is out.
-- **The picture is not kept.** `Capture.svelte` goes on holding the `File` in memory and attaching
+- **The picture is not written.** `Capture.svelte` goes on holding the `File` in memory and attaching
   at commit, so `client.md`'s "attaching without capturing" paragraph stays true and nothing about
   asset lifecycle moves. After a reload the box comes back with its text and no picture, and says
-  nothing about it.
+  nothing about it. *Amended while implementing*: the `File` is held at module scope beside the
+  draft, so it survives the box unmounting — a visit to the feed and back — and only a reload
+  loses it.
 - **One draft per origin.** Two tabs share it, last write wins. Not synced across tabs and not
   through the pool.
 - **Capture only.** An edit's draft and the composer's typed arguments are not in scope.
@@ -57,6 +59,8 @@ Depends on phase 1.
       they are.
 - [x] `Capture.test.ts`: a box rendered over a stored draft draws the text and the tags; typing
       writes; a commit clears storage; a refused capture leaves it.
+- [x] The picked `File` held in memory across mounts, dropped with the draft; a test that unmounts
+      and draws the box again.
 - [x] Verify: `pnpm --filter ui test -- Capture` green; by hand, type, reload, see it; type, go to
       the feed, come back, see it; capture, reload, see nothing.
 - [x] Commit `feat(ui): restore the capture box from its draft`.
