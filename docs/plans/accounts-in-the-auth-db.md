@@ -129,16 +129,18 @@ schema and additionally requires a key ending in `File` or `Env`, which is how t
 finds a secret. **A stored account has no such key** — it holds the secret itself — so it cannot
 satisfy the schema as written. This is the one place ADR 40's contract has to give.
 
-- [ ] Split the check: a config account validates exactly as today. A stored account validates
+- [x] ~~Split the check~~ — superseded by the host-side shape settled above. A kind's schema is
+      its fields alone; `accountIssues` in `ports.ts` checks them for both paths and refuses a
+      `*File`/`*Env` key whatever the kind allows. Original task: Split the check: a config account validates exactly as today. A stored account validates
       against the same kind schema with the secret-source requirement satisfied by the held secret
       instead, and the `File`/`Env` keys not permitted.
-- [ ] Validation for a stored account happens at **write** time, not startup — the daemon is
+- [x] Validation for a stored account happens at **write** time, not startup — the daemon is
       already running — and a write that fails answers the issues, which is better than the config
       path's refuse-to-start.
-- [ ] Tests for each kind: a valid stored account, one missing a required field, one carrying a
+- [x] Tests for each kind: a valid stored account, one missing a required field, one carrying a
       `File` key it may not have.
-- [ ] **Verify**: `pnpm --filter @notemap/daemon test` green.
-- [ ] `git commit`
+- [x] **Verify**: `pnpm --filter @notemap/daemon test` green.
+- [x] `git commit`
 
 ### Phase 4 — the routes
 

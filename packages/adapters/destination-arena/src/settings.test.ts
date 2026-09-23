@@ -48,47 +48,21 @@ describe("the settings a person fills in", () => {
   });
 });
 
-/** Checked when the daemon starts, which is the point of a kind declaring one. */
+/** Everything but the secret, which the host holds and this never sees. */
 describe("the account this kind needs", () => {
-  it("takes a name and a secret, and asks for nothing else", () => {
-    expect(
-      account({ kind: "arena", name: "mine", secretFile: "~/.are-na" }),
-    ).toEqual([]);
-    expect(
-      account({ kind: "arena", name: "mine", secretEnv: "ARENA_TOKEN" }),
-    ).toEqual([]);
+  it("asks for nothing beyond the secret", () => {
+    expect(account({})).toEqual([]);
   });
 
   /** None of ADR 28's three fields fits: no username, and the address is the service's. */
   it("has nowhere to put a base URL or a username", () => {
-    expect(
-      account({
-        kind: "arena",
-        name: "mine",
-        secretEnv: "ARENA_TOKEN",
-        baseUrl: "https://elsewhere.example",
-      }),
-    ).not.toEqual([]);
-    expect(
-      account({
-        kind: "arena",
-        name: "mine",
-        secretEnv: "ARENA_TOKEN",
-        username: "alice",
-      }),
-    ).not.toEqual([]);
+    expect(account({ baseUrl: "https://elsewhere.example" })).not.toEqual([]);
+    expect(account({ username: "alice" })).not.toEqual([]);
   });
 
-  /** A misspelt key is a daemon running without the credential somebody meant to give it. */
-  it("refuses a key it does not know, rather than ignoring it", () => {
-    expect(
-      account({ kind: "arena", name: "mine", secretFilee: "~/.are-na" }),
-    ).not.toEqual([]);
-  });
-
-  it("refuses an account of another kind", () => {
-    expect(
-      account({ kind: "webdav", name: "mine", secretEnv: "ARENA_TOKEN" }),
-    ).not.toEqual([]);
+  /** Where the secret is read from is the host's to know, never the kind's. */
+  it("has nowhere to say where a secret is read from", () => {
+    expect(account({ secretFile: "~/.are-na" })).not.toEqual([]);
+    expect(account({ secretEnv: "ARENA_TOKEN" })).not.toEqual([]);
   });
 });

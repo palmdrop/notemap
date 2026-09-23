@@ -34,13 +34,15 @@ import {
   type PayloadTypeName,
   type Pool,
   type PoolConfig,
+  type JsonObject,
   type JsonSchema,
   type PoolPorts,
+  type SchemaIssue,
   type Timestamp,
 } from "@notemap/core";
 
 import { isSecretSource } from "./config/load";
-import type { Accounts } from "./accounts";
+import { fieldsOf, type Accounts } from "./accounts";
 import type { Logger } from "./log";
 import { logAction } from "./log/actions";
 import { destinationRenderers } from "./destinations/renderers";
@@ -237,59 +239,60 @@ export const openAuth = (
 };
 
 /**
- * What an account of a given kind must carry is that kind's own, and this is
- * where the daemon asks. At startup rather than at the first delivery: a
- * malformed account otherwise fails hours later, on a runner's timer, where
- * nobody is looking.
- *
- * A kind nothing registers is refused too. An account naming one is a typo, and
- * starting anyway would leave a destination that can never deliver.
+ * What an account of a given kind must carry besides its secret is that kind's
+ * own, and this is where the daemon asks. Its kind, its name and where its
+ * secret comes from are the host's, the same for every kind, so no schema
+ * names them.
  */
-const ACCOUNT_SCHEMAS: Readonly<Record<string, JsonSchema>> = {
+export const ACCOUNT_SCHEMAS: Readonly<Record<string, JsonSchema>> = {
   [WEBDAV]: WEBDAV_ACCOUNT,
   [ARENA]: ARENA_ACCOUNT,
 };
 
 /**
- * That a kind's schema and the config reader agree on where a secret is read
- * from. The reader recognises a source by its suffix alone and enforces *one of
- * them* there; a kind spelling its own `credentialsPath` would satisfy this
- * schema and then die at load against a convention the schema never mentioned.
- * Checked here, at startup, so the mismatch is caught where it is made.
+ * What stands between an account's fields and its kind. A stored account holds
+ * its secret, so a key saying where one is read from is refused whatever the
+ * kind's schema allows. Checked when the account is written, so a malformed one
+ * is answered to the person writing it rather than failing a delivery later.
  */
-function refuseKindWithNoSecretSource(kind: string, schema: JsonSchema): void {
-  const properties = schema["properties"];
-  const named =
-    properties !== null && typeof properties === "object"
-      ? Object.keys(properties as Record<string, unknown>)
-      : [];
-
-  if (!named.some(isSecretSource)) {
-    throw new Error(
-      `the ${kind} kind declares an account with no key ending in File or Env, which is how the config reader finds a secret — name one, or that kind's accounts can never be read`,
-    );
+export function accountIssues(
+  kind: string,
+  fields: JsonObject,
+  schemas: PoolPorts["schemas"] = createAjvSchemaValidator(),
+): readonly SchemaIssue[] {
+  const schema = ACCOUNT_SCHEMAS[kind];
+  if (schema === undefined) {
+    throw new Error(`no destination kind named ${kind} holds an account`);
   }
+
+  const sources = Object.keys(fields)
+    .filter(isSecretSource)
+    .map((key) => ({ path: `/${key}`, keyword: "secretSource" }));
+
+  return [...sources, ...schemas.validate(schema, fields)];
 }
 
+/**
+ * At startup rather than at the first delivery: a malformed account otherwise
+ * fails hours later, on a runner's timer, where nobody is looking.
+ *
+ * A kind nothing registers is refused too. An account naming one is a typo, and
+ * starting anyway would leave a destination that can never deliver.
+ */
 export function refuseUnusableAccounts(
   accounts: readonly Account[],
   schemas: PoolPorts["schemas"] = createAjvSchemaValidator(),
 ): void {
-  for (const [kind, schema] of Object.entries(ACCOUNT_SCHEMAS)) {
-    refuseKindWithNoSecretSource(kind, schema);
-  }
-
   for (const account of accounts) {
     const at = `the ${account.kind} account ${account.name}`;
-    const schema = ACCOUNT_SCHEMAS[account.kind];
 
-    if (schema === undefined) {
+    if (ACCOUNT_SCHEMAS[account.kind] === undefined) {
       throw new Error(
         `${at} names a kind nothing speaks — the kinds that hold an account are ${Object.keys(ACCOUNT_SCHEMAS).join(" and ")}`,
       );
     }
 
-    const issues = schemas.validate(schema, account);
+    const issues = accountIssues(account.kind, fieldsOf(account), schemas);
     if (issues.length > 0) {
       const said = issues
         .map((issue) => `${issue.path || "(root)"} ${issue.keyword}`)

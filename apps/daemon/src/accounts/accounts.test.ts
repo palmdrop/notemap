@@ -12,7 +12,7 @@ import type { Timestamp } from "@notemap/core";
 import { createSqliteAuthStore } from "../auth/store";
 import type { AuthStore } from "../auth/store/types";
 import { parseConfig, type Account } from "../config/load";
-import { refuseUnusableAccounts } from "../ports";
+import { accountIssues, refuseUnusableAccounts } from "../ports";
 import { openAccounts } from ".";
 
 const directories: string[] = [];
@@ -446,5 +446,52 @@ describe("checking an account against its kind", () => {
     expect(() =>
       check(`[[accounts]]\nkind = "s3"\nname = "main"\nsecretEnv = "A"\n`),
     ).toThrow(/nothing speaks/);
+  });
+});
+
+/**
+ * A stored account holds its secret, so its fields are checked against the
+ * same schema a config account is, with nowhere to say where a secret is read.
+ */
+describe("checking a stored account against its kind", () => {
+  it("takes a webdav account carrying an address and a username", () => {
+    expect(
+      accountIssues("webdav", {
+        baseUrl: "https://cloud.example/dav",
+        username: "alice",
+      }),
+    ).toEqual([]);
+  });
+
+  it("takes an arena account carrying nothing", () => {
+    expect(accountIssues("arena", {})).toEqual([]);
+  });
+
+  it("refuses a webdav account missing a username", () => {
+    expect(
+      accountIssues("webdav", { baseUrl: "https://cloud.example/dav" }),
+    ).not.toEqual([]);
+  });
+
+  it("refuses an arena account carrying a field it has no use for", () => {
+    expect(accountIssues("arena", { username: "alice" })).not.toEqual([]);
+  });
+
+  it("refuses a key saying where a secret is read from, for every kind", () => {
+    expect(
+      accountIssues("webdav", {
+        baseUrl: "https://cloud.example/dav",
+        username: "alice",
+        passwordFile: "/run/secrets/nextcloud",
+      }),
+    ).toContainEqual({ path: "/passwordFile", keyword: "secretSource" });
+    expect(accountIssues("arena", { secretEnv: "ARENA" })).toContainEqual({
+      path: "/secretEnv",
+      keyword: "secretSource",
+    });
+  });
+
+  it("throws for a kind nothing speaks, which is not a malformed account", () => {
+    expect(() => accountIssues("s3", {})).toThrow(/s3/);
   });
 });

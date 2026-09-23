@@ -71,10 +71,18 @@ export async function openAccounts({
 }
 
 function knownFromConfig(account: Account): KnownAccount {
-  const { kind, name, ...rest } = account;
-  const fields: JsonObject = Object.fromEntries(
+  return {
+    kind: account.kind,
+    name: account.name,
+    fields: fieldsOf(account),
+    from: "config",
+  };
+}
+
+/** A config account as its kind sees it: without its kind, its name, or where its secret is. */
+export function fieldsOf(account: Account): JsonObject {
+  const { kind: _kind, name: _name, ...rest } = account;
+  return Object.fromEntries(
     Object.entries(rest).filter(([key]) => !isSecretSource(key)),
   );
-
-  return { kind, name, fields, from: "config" };
 }

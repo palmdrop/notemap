@@ -158,20 +158,17 @@ describe("describing a destination", () => {
   });
 });
 
-/** Checked when the daemon starts, which is the point of a kind declaring one. */
+/** Everything but the secret, which the host holds and this never sees. */
 describe("the account this kind needs", () => {
   const account = (held: JsonObject) =>
     validator.validate(WEBDAV_ACCOUNT, held);
 
   const declared = {
-    kind: "webdav",
-    name: "nextcloud",
     baseUrl: "https://cloud.example/dav",
     username: "alice",
-    passwordEnv: "NC",
   };
 
-  it("takes an address, a username and where the password is read from", () => {
+  it("takes an address and a username", () => {
     expect(account(declared)).toEqual([]);
   });
 
@@ -194,7 +191,13 @@ describe("the account this kind needs", () => {
   });
 
   it("refuses a key it does not know, rather than ignoring it", () => {
-    expect(account({ ...declared, secretEnv: "NC" })).not.toEqual([]);
+    expect(account({ ...declared, usename: "alice" })).not.toEqual([]);
+  });
+
+  /** Where the password is read from is the host's to know, never the kind's. */
+  it("has nowhere to say where a password is read from", () => {
+    expect(account({ ...declared, passwordEnv: "NC" })).not.toEqual([]);
+    expect(account({ ...declared, passwordFile: "/run/a" })).not.toEqual([]);
   });
 
   /** What a base URL may end in is this kind's business, so the slash goes here. */
