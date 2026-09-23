@@ -132,22 +132,22 @@ moves into the daemon — so it must not know how it is being run: no config, no
 
 _Depends on phase 1._
 
-- [ ] `src/config/load.ts` — `apps/relay-memos/src/config/load.ts` is the model and its rules carry
+- [x] `src/config/load.ts` — `apps/relay-memos/src/config/load.ts` is the model and its rules carry
       over verbatim: `smol-toml` plus a **strict** zod object, an inline `token` refused by name,
       exactly one of `tokenFile`/`tokenEnv`, `~` expanded, secrets read where they are used rather
       than held from startup so rotation is writing the file.
-- [ ] The shape, which differs from memos in one way — one token, many channels:
+- [x] The shape, which differs from memos in one way — one token, many channels:
   - `[pool]` — `url`, `tokenFile`/`tokenEnv`. No `source` key here; it is per channel.
   - `[arena]` — `tokenFile`/`tokenEnv`. No `url`: are.na's address is a constant of the service,
     as `ARENA_API` in the destination adapter already states.
   - `[[channel]]`, one or more — `handle` (id or slug, required), `source` (required), `tags`
     (optional, default empty).
   - `[poll]` — `interval`, defaulting to `DEFAULT_POLL_MS`.
-- [ ] Refuse at load: no channels, a duplicate `source` across two channel blocks, a duplicate
+- [x] Refuse at load: no channels, a duplicate `source` across two channel blocks, a duplicate
       `handle`. Two channels under one source would merge two channels' blocks into one identity.
-- [ ] Tests beside it covering each refusal and the happy parse.
-- [ ] **Verify**: `pnpm --filter @notemap/relay-arena test` green.
-- [ ] `git commit`
+- [x] Tests beside it covering each refusal and the happy parse.
+- [x] **Verify**: `pnpm --filter @notemap/relay-arena test` green.
+- [x] `git commit`
 
 ### Phase 5 — the loop
 
