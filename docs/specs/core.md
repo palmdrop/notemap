@@ -1,9 +1,15 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-09-21
+**Last updated**: 2026-09-23
 **Shipped**:
 
+- 2026-09-23 — **A block connected to a watched are.na channel reaches the pool by itself.**
+  `apps/relay-arena`, a second relay beside `apps/relay-memos`
+  ([ADR 39](../adr/0039-a-relay-is-outside-notemap-and-reaches-v1-like-anything-else.md)): it
+  watches one or more are.na channels, each under its own required source, and captures what is
+  connected into them, with `connected_at` as `capturedAt` rather than the block's own creation
+  time. See [arena-relay](../plans/arena-relay.md).
 - 2026-09-21 — **A trigger tag stays in the pool unless the delivery asks for it.** The markdown
   kinds leave every tag under `route/` out of what they write — the frontmatter and the `#tag`
   foot alike — and a `triggerTags` argument on their capabilities sends them with the rest.

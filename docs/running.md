@@ -441,6 +441,27 @@ never left; notemap retries, and the block may already be there. A duplicate sit
 channel and you can delete it — the alternative is throwing away a decision that probably landed.
 Both file kinds do promise a retry cannot duplicate, and say by what mechanism.
 
+## relay-arena
+
+A **relay**, not a destination: a program outside notemap, reaching `/v1` with an access token like
+anything else that is not a browser
+([ADR 39](adr/0039-a-relay-is-outside-notemap-and-reaches-v1-like-anything-else.md)). It watches one
+or more are.na channels and captures what is connected into them; nothing about it is in the
+daemon, and nothing here is in `config.toml`. `apps/relay-arena/README.md` has the rest — building
+it, running it in Docker, what it does with a block.
+
+It carries **two** tokens, neither minted for you:
+
+- **The pool token**, `notemap token mint --name relay-arena`, reaching the whole pool the same as
+  any other access token.
+- **The are.na token**, from are.na's own developer settings. Unlike the `arena` **destination**,
+  which needs `write` scope to post a block and cannot get the check to confirm it (see above), this
+  relay only ever reads. The default scope — `read` — is enough; there is nothing to mint specially
+  and nothing that would tell you either way if you did.
+
+Both are read from a file or an environment variable, never written inline, and read again at every
+poll — rotating either one is writing the file it lives in, not a restart.
+
 ## Cutting a release
 
 From a clone, on the machine you develop on:
