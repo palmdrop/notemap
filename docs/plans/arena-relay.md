@@ -81,22 +81,24 @@ _Depends on nothing._
 
 _Depends on phase 1. Resolve unknown 1 first._
 
-- [ ] `src/arena/types.ts` — the block and page shapes read down to the fields used, on the terms
+- [x] `src/arena/types.ts` — the block and page shapes read down to the fields used, on the terms
       `apps/relay-memos/src/memos/types.ts` sets: only what is consumed.
-- [ ] `src/arena/read.ts` — `arenaAt(target)` with `ArenaRefused` (status, route, first 200 chars),
+- [x] `src/arena/read.ts` — `arenaAt(target)` with `ArenaRefused` (status, route, first 200 chars),
       mirroring `MemosRefused`. It offers:
   - `contents(handle, signal)`, an async generator over every block in a channel, paginated, with
-    the same guard `memos/read.ts` has against a server that would page forever.
+    the same guard `memos/read.ts` has against a server that would page forever — here,
+    `meta.total_pages` bounds the scan, since are.na's own page numbers are a plain counter with
+    no opaque token to repeat.
   - `open(block, signal)` returning the bytes of a block's file. are.na serves these from its own
     object storage under a plain URL, so **no bearer is attached** to that request — the same shape
     as Memos' `externalLink` path.
   - The channel handle is sent verbatim: are.na accepts both the numeric id and the slug
     (`packages/adapters/destination-arena/src/api.ts` relies on this for `channel`).
-- [ ] Tests beside it, driven by a fake `fetch`: pagination across two pages, a page that ends the
+- [x] Tests beside it, driven by a fake `fetch`: pagination across two pages, a page that ends the
       scan, a `401` and a `404` surfacing as `ArenaRefused`, and `open` sending no authorization
       header.
-- [ ] **Verify**: `pnpm --filter @notemap/relay-arena test` green.
-- [ ] `git commit`
+- [x] **Verify**: `pnpm --filter @notemap/relay-arena test` green.
+- [x] `git commit`
 
 ### Phase 3 — one block as the pool takes it
 
@@ -210,18 +212,21 @@ _Depends on phase 6._
 
 ## Unknowns
 
-1. **Does `/v3` answer a channel's contents?** `packages/adapters/destination-arena/src/api.ts`
-   uses `/v3` throughout and reads `/v3/users/{id}/contents`, so `/v3/channels/{handle}/contents`
-   is the obvious mirror — but the destination never needed it and it is unverified. Check before
-   writing phase 2. *Fallback*: use `/v2/channels/{handle}/contents`, which is are.na's long-lived
-   public form, and say in the README that the relay reads v2 while the destination writes v3.
-   Not a blocker either way; it changes one path and the page shape.
-2. **What an image block reports for filename and content type.** The mapping needs both for the
-   attachment, and are.na's shapes differ between an uploaded image and a linked one. Inspect a
-   real channel's response before phase 3. *Fallback*: derive the filename from the URL's last
-   segment and the mime from its extension, defaulting to `application/octet-stream` — the pool
-   compares filename and media type on upload, so whatever is chosen must be derived the same way
-   on every poll or the asset will conflict with itself.
+1. **Resolved.** `/v3/channels/{handle}/contents?page=&per=` answers, verified live against
+   `arena-influences`: `meta` carries `has_more_pages` and `total_pages`, same shape as the
+   destination's `/v3/users/{id}/contents`. A slug and a public channel need no token at all; a
+   missing channel answers `404` with `{"error":"Not Found",...}`.
+2. **Resolved.** Both `Image` and `Attachment` blocks report `filename` and `content_type`
+   directly (`image.filename`/`image.content_type`, `attachment.filename`/`attachment.content_type`)
+   — verified against a real `Attachment` block carrying a PDF. The URL-derivation fallback was not
+   needed and is not implemented.
+   - **Found in the process, not in the plan**: are.na has a sixth block class, `Embed` (rich
+     media — a Vimeo/YouTube embed), alongside `Text`/`Link`/`Image`/`Attachment`/`Channel`. Raised
+     with the developer; decided `Embed` is mapped like `Link` — title, description and
+     `source.url` composed into prose, no attachment. Its `image` is a cached thumbnail, not the
+     block's content, and downloading the actual media would mean scraping the embed provider
+     directly (a per-provider extractor, most providers' ToS, an identity story the asset-id model
+     has no room for) — out of scope for this plan.
 3. **Rate limiting.** are.na asks callers not to enumerate aggressively, which is why the
    destination's browse deliberately reads one page
    ([ADR 44](../adr/0044-naming-a-value-is-a-second-question-a-destination-answers.md)). A relay

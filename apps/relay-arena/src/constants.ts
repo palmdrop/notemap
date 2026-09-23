@@ -1,5 +1,8 @@
 export const DEFAULT_POOL_URL = "http://127.0.0.1:4747";
 
+/** The service, not a deployment: nothing in config or in a setting can move it. */
+export const ARENA_API = "https://api.are.na";
+
 /**
  * Longer than relay-memos' five minutes: are.na asks callers not to enumerate
  * aggressively, and this relay re-reads every watched channel every poll.
