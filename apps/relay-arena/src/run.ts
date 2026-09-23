@@ -1,6 +1,6 @@
 import { notThisItem, type Relay } from "@notemap/relay";
 
-import type { Arena } from "./arena/read";
+import { ArenaRateLimited, type Arena } from "./arena/read";
 import { relayedFrom } from "./arena/relayed";
 import type { WatchedChannel } from "./config/load";
 
@@ -43,24 +43,31 @@ export type ChannelReport = {
   readonly readFailed: boolean;
 };
 
+export type Scan = {
+  /** Read every page, rather than stopping at the first page the pool knows. */
+  readonly full: boolean;
+  readonly signal?: AbortSignal;
+};
+
 /**
- * Every watched channel, every poll. Nothing is remembered between runs: the
- * pool answers `already-captured` for what it has, which is what makes a full
- * scan the whole of the relay's correctness.
+ * Every watched channel, newest connection first. Nothing is remembered
+ * between runs: the pool answers `already-captured` for what it has, and the
+ * first page holding such a block is where a scan that is not `full` stops —
+ * everything below it was connected earlier and read by an earlier poll.
  *
  * A block that could not be relayed is logged and the scan of that channel
  * carries on. A channel that could not be *read* — are.na refused it, most
  * often a private channel the token lost access to — ends that channel and
  * lets the next one run: the other channels are other upstreams, and one
- * dead one should not stop the rest. A failure that was the *pool's* ends the
- * whole run instead, since every channel after it would fail the identical
- * way.
+ * dead one should not stop the rest. A failure that was the *pool's*, or
+ * are.na's rate limit, ends the whole run instead, since every channel after
+ * it would fail the identical way.
  */
 export async function relayEverything(
   from: Arena,
   channels: readonly ChannelTarget[],
   log: Log,
-  signal?: AbortSignal,
+  { full, signal }: Scan,
 ): Promise<readonly ChannelReport[]> {
   const reports: ChannelReport[] = [];
 
@@ -69,32 +76,46 @@ export async function relayEverything(
     let readFailed = false;
 
     try {
-      for await (const block of from.contents(channel.handle, signal)) {
-        tally.read += 1;
+      for await (const page of from.pages(channel.handle, signal)) {
+        let known = false;
 
-        try {
-          const relaying = relayedFrom(block, from.open, channel.tags);
-          if (relaying === undefined) {
-            tally.empty += 1;
-            continue;
+        for (const block of page) {
+          tally.read += 1;
+
+          try {
+            const relaying = relayedFrom(block, from.open, channel.tags);
+            if (relaying === undefined) {
+              tally.empty += 1;
+              continue;
+            }
+
+            const landed = await channel.relay.relay(relaying, signal);
+            if (landed.kind !== "captured") known = true;
+
+            if (landed.kind === "already-captured") tally.unchanged += 1;
+            else if (landed.kind === "captured") tally.captured += 1;
+            else if (landed.kind === "amended") tally.amended += 1;
+            else tally.revised += 1;
+          } catch (cause) {
+            if (notThisItem(cause)) throw cause;
+            tally.failed += 1;
+            log.fault(
+              `block ${String(block.id)} in ${channel.source} could not be relayed`,
+              cause,
+            );
           }
-
-          const landed = await channel.relay.relay(relaying, signal);
-          if (landed.kind === "already-captured") tally.unchanged += 1;
-          else if (landed.kind === "captured") tally.captured += 1;
-          else if (landed.kind === "amended") tally.amended += 1;
-          else tally.revised += 1;
-        } catch (cause) {
-          if (notThisItem(cause)) throw cause;
-          tally.failed += 1;
-          log.fault(
-            `block ${String(block.id)} in ${channel.source} could not be relayed`,
-            cause,
-          );
         }
+
+        if (known && !full) break;
       }
     } catch (cause) {
-      if (notThisItem(cause)) throw cause;
+      if (
+        notThisItem(cause) ||
+        cause instanceof ArenaRateLimited ||
+        signal?.aborted === true
+      ) {
+        throw cause;
+      }
       readFailed = true;
       log.fault(`${channel.source} could not be read`, cause);
     }

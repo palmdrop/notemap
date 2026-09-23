@@ -9,7 +9,6 @@ function block(overrides: Partial<ArenaBlock> = {}): ArenaBlock {
   return {
     id: 123,
     type: "Text",
-    updated_at: "2026-09-05T08:00:00Z",
     connection: { connected_at: "2026-09-04T14:23:05Z" },
     ...overrides,
   };
@@ -25,7 +24,7 @@ describe("a block as the pool takes it", () => {
 
     expect(relaying).toEqual({
       sourceItemId: "123",
-      version: "2026-09-05T08:00:00Z",
+      version: expect.stringMatching(/^[0-9a-f]{64}$/) as unknown,
       capturedAt: "2026-09-04T14:23:05Z",
       text: "a thought",
       tags: [],
@@ -116,6 +115,50 @@ describe("a block as the pool takes it", () => {
       ],
     });
     expect(relaying && "text" in relaying).toBe(false);
+  });
+
+  it("names an Image's file by a title that is only the uploaded file's name, and keeps it out of the prose", () => {
+    const image = {
+      filename: "495ca161.png",
+      content_type: "image/png",
+      src: "https://images.example.com/495ca161.png",
+    };
+
+    const untitled = relayedFrom(
+      block({ type: "Image", title: "098__resnet-bitstamp.png", image }),
+      bytes,
+      [],
+    );
+    expect(untitled).not.toHaveProperty("text");
+    expect(untitled?.attachments[0]?.filename).toBe("098__resnet-bitstamp.png");
+
+    const titled = relayedFrom(
+      block({ type: "Image", title: "a scan.png", image }),
+      bytes,
+      [],
+    );
+    expect(titled?.text).toBe("a scan.png");
+    expect(titled?.attachments[0]?.filename).toBe("495ca161.png");
+  });
+
+  it("versions a block by what it says, not by when are.na last touched it", () => {
+    const one = relayedFrom(block({ content: { markdown: "a" } }), bytes, []);
+    const again = relayedFrom(
+      block({
+        content: { markdown: "a" },
+        connection: { connected_at: "2027-01-01T00:00:00Z" },
+      }),
+      bytes,
+      [],
+    );
+    const edited = relayedFrom(
+      block({ content: { markdown: "b" } }),
+      bytes,
+      [],
+    );
+
+    expect(again?.version).toBe(one?.version);
+    expect(edited?.version).not.toBe(one?.version);
   });
 
   it("relays nothing for a Channel block: a channel connected into a channel is not a note", () => {

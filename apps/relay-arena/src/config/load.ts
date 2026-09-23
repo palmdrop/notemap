@@ -5,7 +5,7 @@ import { join, resolve } from "node:path";
 import { parse as parseToml } from "smol-toml";
 import { z } from "zod";
 
-import { DEFAULT_POLL_MS, DEFAULT_POOL_URL } from "../constants";
+import { DEFAULT_POLL_MS, DEFAULT_POOL_URL, MIN_POLL_MS } from "../constants";
 
 /** Where a token is read from. Never the config file itself. */
 export type Secret = { readonly file: string } | { readonly env: string };
@@ -68,7 +68,14 @@ const fileSchema = z.strictObject({
     .optional(),
   poll: z
     .strictObject({
-      interval: z.number().int().positive().optional(),
+      interval: z
+        .number()
+        .int()
+        .min(
+          MIN_POLL_MS,
+          `must be at least ${String(MIN_POLL_MS)} milliseconds: are.na asks not to be polled hard`,
+        )
+        .optional(),
     })
     .optional(),
 });

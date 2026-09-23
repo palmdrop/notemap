@@ -146,6 +146,15 @@ source = "arena/influences-2"
     ).toThrow(/exactly one of tokenFile and tokenEnv/);
   });
 
+  it("refuses an interval shorter than five minutes", () => {
+    expect(() =>
+      parseConfig(`${MINIMAL}\n[poll]\ninterval = 299999\n`, "relay.toml"),
+    ).toThrow(/poll.interval: must be at least 300000 milliseconds/);
+    expect(
+      parseConfig(`${MINIMAL}\n[poll]\ninterval = 300000\n`, "relay.toml").poll,
+    ).toEqual({ intervalMs: 300_000 });
+  });
+
   it("refuses a key it does not know, which in a file this size is a typo", () => {
     expect(() =>
       parseConfig(`${MINIMAL}\n[poll]\ninterval_ms = 1000\n`, "relay.toml"),

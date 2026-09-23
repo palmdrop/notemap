@@ -5,7 +5,7 @@
 **Spec**: `docs/specs/core.md`
 **Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
 
-All seven phases are implemented, tested and documented. What's left is phase 6's hand
+All eight phases are implemented, tested and documented. What's left is phase 6's hand
 verification — running the real binary against a real are.na channel and a real daemon — which
 the developer is doing themselves rather than in this session. Flip to **Done** once that's
 confirmed.
@@ -17,8 +17,9 @@ confirmed.
 > A block connected to a watched are.na channel appears in the notemap queue without anyone
 > touching notemap — with its image, at the time it was connected, under a source named per
 > channel — and a block edited afterwards amends or revises the item it became. The program
-> holds no state: it re-reads every watched channel every poll, and the pool's own dedup is
-> what makes that harmless.
+> holds no state: it reads every watched channel newest connection first, as far as the first
+> page the pool already has, and in full once a day; the pool's own dedup is what makes that
+> harmless.
 
 `apps/relay-arena`, modelled closely on `apps/relay-memos`. It is a **relay**: a program outside
 notemap reaching `/v1` with an access token
@@ -113,7 +114,8 @@ moves into the daemon — so it must not know how it is being run: no config, no
 - [x] `src/arena/relayed.ts` — `relayedFrom(block, open, tags)` returning `Relayed | undefined`,
       on the terms `memos/relayed.ts` sets.
   - `sourceItemId` — the block id as a string.
-  - `version` — `updated_at`.
+  - `version` — ~~`updated_at`~~ a SHA-256 over the block's text and file name and type
+    (phase 8: are.na moves `updated_at` whenever a block is connected anywhere).
   - `capturedAt` — `connected_at` (see above).
   - `text` — by block class. A text block is its content verbatim. A link block is its title,
     description and source URL composed into prose. An image or attachment block is its title and
@@ -236,6 +238,32 @@ _Depends on phase 6._
       `pnpm -r --silent test` and `pnpm -r --silent lint` all clean across the repo.
 - [x] `git commit`
 
+### Phase 8 — are.na's rate limit
+
+_Depends on phase 7. From [the review](../reviews/arena-relay-2026-09-23.md) and the live checks
+recorded in `docs/research/are-na-v3-api.md` ("Observed live")._
+
+- [x] `contents` becomes `pages`, asking `sort=created_at_desc` — newest *connection* first, verified
+      live. `relayEverything` takes `{ full, signal }` and, unless `full`, stops after the first page
+      holding a block that landed as anything but `captured`. An empty, channel-class or failed
+      block is not "known" and does not stop the scan.
+- [x] The timer loop reads every page on its first poll and every `FULL_SCAN_MS` (a day) after one
+      that finished. `--once` stops early unless `--full` is given; `--full` without `--once` is
+      refused.
+- [x] `arena/pace.ts` — requests spaced by `x-ratelimit-remaining`/`x-ratelimit-reset`: no wait
+      above a reserve of five, a wait for the reset (at most one window) at or below it, and a
+      500 ms gap where the headers are absent. Object-storage downloads are not paced.
+- [x] A `429` is `ArenaRateLimited`, carrying the reset, and ends the whole poll like a pool failure.
+- [x] `poll.interval` below five minutes (`MIN_POLL_MS`) is refused at load.
+- [x] `version` is a content digest, not `updated_at`, so a block connected into a second channel
+      no longer earns a second revision of a processed item.
+- [x] An Image or Attachment title that is only a filename is dropped from the prose and names
+      the asset instead: are.na's own `filename` for an upload is a storage hash.
+- [x] README, `config.example.toml`, `docker/compose/relay-arena.toml`, `CONTEXT.md` (Relay) updated.
+- [x] Tests: sort param, pacing (spare, reserve, clamp, no headers), `429`, the stop rule, full scan,
+      rate limit ending the poll, the interval floor, the digest version, the filename title.
+- [x] `git commit`
+
 ---
 
 ## Unknowns
@@ -255,7 +283,7 @@ _Depends on phase 6._
      block's content, and downloading the actual media would mean scraping the embed provider
      directly (a per-provider extractor, most providers' ToS, an identity story the asset-id model
      has no room for) — out of scope for this plan.
-3. **Rate limiting.** are.na asks callers not to enumerate aggressively, which is why the
+3. **Resolved in phase 8.** ~~**Rate limiting.**~~ are.na asks callers not to enumerate aggressively, which is why the
    destination's browse deliberately reads one page
    ([ADR 44](../adr/0044-naming-a-value-is-a-second-question-a-destination-answers.md)). A relay
    re-reading every channel every poll is exactly the pattern that guidance is about. *Fallback*:

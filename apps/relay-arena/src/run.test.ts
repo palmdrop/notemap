@@ -2,7 +2,7 @@ import { PoolRefused, PoolUnreachable } from "@notemap/relay";
 import type { Landed, Relay, Relayed } from "@notemap/relay";
 import { describe, expect, it } from "vitest";
 
-import { ArenaRefused, type Arena } from "./arena/read";
+import { ArenaRateLimited, ArenaRefused, type Arena } from "./arena/read";
 import type { ArenaBlock } from "./arena/types";
 import { relayEverything, type ChannelTarget, type Log } from "./run";
 
@@ -10,25 +10,35 @@ function block(id: number, overrides: Partial<ArenaBlock> = {}): ArenaBlock {
   return {
     id,
     type: "Text",
-    updated_at: "2026-09-04T14:23:05Z",
     content: { markdown: `block ${String(id)}` },
     connection: { connected_at: "2026-09-04T14:23:05Z" },
     ...overrides,
   };
 }
 
-/** A fake are.na, one channel's blocks per handle, or an error the handle refuses with. */
+/** A channel as the fake answers it: one page, several, or the error it refuses with. */
+type Upstream =
+  | readonly ArenaBlock[]
+  | { readonly pages: readonly (readonly ArenaBlock[])[] }
+  | Error;
+
+/** A fake are.na, keeping which handles it was asked for. */
 function upstream(
-  byHandle: Record<string, readonly ArenaBlock[] | Error>,
-): Arena {
+  byHandle: Record<string, Upstream>,
+): Arena & { asked: string[] } {
+  const asked: string[] = [];
   return {
-    async *contents(handle: string) {
+    asked,
+    async *pages(handle: string) {
+      asked.push(handle);
       const entry = byHandle[handle];
       if (entry instanceof Error) throw entry;
-      yield* entry ?? [];
+      if (entry === undefined) return;
+      if ("pages" in entry) yield* entry.pages;
+      else yield entry;
     },
     open: () => Promise.resolve(new TextEncoder().encode("BYTES")),
-  } as unknown as Arena;
+  } as unknown as Arena & { asked: string[] };
 }
 
 function landing(answers: Record<string, Landed["kind"] | Error>): Relay {
@@ -56,6 +66,8 @@ function logging(): Log & { faults: string[] } {
   };
 }
 
+const shallow = { full: false };
+
 describe("one scan of every watched channel", () => {
   it("counts what each block came to", async () => {
     const reports = await relayEverything(
@@ -73,6 +85,7 @@ describe("one scan of every watched channel", () => {
         ),
       ],
       logging(),
+      shallow,
     );
 
     expect(reports).toEqual([
@@ -105,6 +118,7 @@ describe("one scan of every watched channel", () => {
         ),
       ],
       log,
+      shallow,
     );
 
     expect(reports[0]?.tally).toMatchObject({
@@ -127,6 +141,7 @@ describe("one scan of every watched channel", () => {
       }),
       [channel("arena/x", "c", landing({}))],
       logging(),
+      shallow,
     );
 
     expect(reports[0]?.tally).toMatchObject({ read: 2, empty: 2, captured: 0 });
@@ -141,6 +156,7 @@ describe("one scan of every watched channel", () => {
         upstream({ c: [block(1), block(2)] }),
         [channel("arena/x", "c", landing({ "1": gone }))],
         log,
+        shallow,
       ),
     ).rejects.toBe(gone);
 
@@ -156,6 +172,7 @@ describe("one scan of every watched channel", () => {
         upstream({ c: [block(1)] }),
         [channel("arena/x", "c", landing({ "1": shut }))],
         logging(),
+        shallow,
       ),
     ).rejects.toBe(shut);
   });
@@ -177,6 +194,7 @@ describe("one scan of every watched channel", () => {
         channel("arena/fine", "fine", landing({})),
       ],
       log,
+      shallow,
     );
 
     expect(reports).toEqual([
@@ -210,5 +228,85 @@ describe("one scan of every watched channel", () => {
     expect(log.faults).toEqual([
       "arena/gone could not be read: ArenaRefused: /v3/channels/gone/contents was refused 404: no such channel",
     ]);
+  });
+  it("stops after the first page holding a block the pool already had", async () => {
+    const from = upstream({
+      c: { pages: [[block(1)], [block(2), block(3)], [block(4)]] },
+    });
+
+    const reports = await relayEverything(
+      from,
+      [channel("arena/x", "c", landing({ "2": "already-captured" }))],
+      logging(),
+      shallow,
+    );
+
+    expect(reports[0]?.tally).toMatchObject({
+      read: 3,
+      captured: 2,
+      unchanged: 1,
+    });
+  });
+
+  it("reads every page on a full scan", async () => {
+    const reports = await relayEverything(
+      upstream({ c: { pages: [[block(1)], [block(2)], [block(3)]] } }),
+      [
+        channel(
+          "arena/x",
+          "c",
+          landing({ "1": "already-captured", "2": "already-captured" }),
+        ),
+      ],
+      logging(),
+      { full: true },
+    );
+
+    expect(reports[0]?.tally).toMatchObject({ read: 3, captured: 1 });
+  });
+
+  it("reads on past a page of blocks the pool never takes, or could not take", async () => {
+    const reports = await relayEverything(
+      upstream({
+        c: {
+          pages: [[block(1, { type: "Channel" }), block(2)], [block(3)]],
+        },
+      }),
+      [channel("arena/x", "c", landing({ "2": new Error("refused") }))],
+      logging(),
+      shallow,
+    );
+
+    expect(reports[0]?.tally).toMatchObject({
+      read: 3,
+      empty: 1,
+      failed: 1,
+      captured: 1,
+    });
+  });
+
+  it("ends the whole poll when are.na rate-limits the token, and reads no further channel", async () => {
+    const log = logging();
+    const limited = new ArenaRateLimited(
+      "/v3/channels/a/contents",
+      "slow down",
+      undefined,
+    );
+    const from = upstream({ a: limited, b: [block(1)] });
+
+    await expect(
+      relayEverything(
+        from,
+        [
+          channel("arena/a", "a", landing({})),
+          channel("arena/b", "b", landing({})),
+        ],
+        log,
+        shallow,
+      ),
+    ).rejects.toBe(limited);
+
+    expect(from.asked).toEqual(["a"]);
+    expect(log.faults).toEqual([]);
   });
 });

@@ -66,14 +66,15 @@ source = "arena/my-channel"
 # handle = "another-channel"
 # source = "arena/another-channel"
 
-# How often every watched channel is read again. A poll holds nothing and
-# repeats everything, so this is latency and nothing else: a shorter interval
-# finds a block sooner, and costs one request per page plus one per changed
-# block, per channel.
+# How often every watched channel is read again. A poll reads each channel
+# newest connection first and stops at the first page of 100 blocks the pool
+# already has, so a quiet channel costs one request to are.na per poll. The
+# first poll after start, and one a day after that, reads every page instead.
+# Files are fetched from are.na's object storage, which the rate limit does
+# not count.
 #
-# Longer than relay-memos' default: are.na asks callers not to enumerate
-# aggressively, and this relay re-reads every watched channel every poll.
-#
-# Polls never overlap — the next is due when the last one finished.
+# At least five minutes — shorter is refused at load: are.na asks callers
+# not to poll it hard. Polls never overlap; the next is due when the last one
+# finished.
 [poll]
 interval = 900000 # milliseconds — fifteen minutes

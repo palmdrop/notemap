@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import type { Attachment, Bytes, Relayed } from "@notemap/relay";
 
 import type { ArenaBlock } from "./types";
@@ -8,6 +10,22 @@ export type Open = (block: ArenaBlock, signal?: AbortSignal) => Promise<Bytes>;
 function nonEmpty(text: string | undefined | null): string | undefined {
   const trimmed = (text ?? "").trim();
   return trimmed === "" ? undefined : trimmed;
+}
+
+/**
+ * The name a file was uploaded under, where the title still is that name:
+ * are.na titles an upload with it until someone retitles it, and keeps only a
+ * storage hash as the file's own `filename`.
+ */
+function uploadedAs(block: ArenaBlock): string | undefined {
+  const title = nonEmpty(block.title);
+  return title !== undefined && /^[^\s/\\]+\.[a-z0-9]{2,5}$/i.test(title)
+    ? title
+    : undefined;
+}
+
+function titleOf(block: ArenaBlock): string | undefined {
+  return uploadedAs(block) === undefined ? nonEmpty(block.title) : undefined;
 }
 
 /** Title, caption and source URL, each present or not, joined as paragraphs. */
@@ -36,10 +54,7 @@ function textOf(block: ArenaBlock): string | undefined {
       ]);
     case "Image":
     case "Attachment":
-      return composed([
-        nonEmpty(block.title),
-        nonEmpty(block.description?.markdown),
-      ]);
+      return composed([titleOf(block), nonEmpty(block.description?.markdown)]);
     case "Channel":
       return undefined;
   }
@@ -62,10 +77,30 @@ function attachmentOf(block: ArenaBlock, open: Open): Attachment | undefined {
 
   return {
     id: `block/${String(block.id)}/image`,
-    filename: file.filename,
+    filename: uploadedAs(block) ?? file.filename,
     mime: file.content_type,
     open: (signal) => open(block, signal),
   };
+}
+
+/**
+ * What the block says, as a digest. are.na moves `updated_at` whenever a block
+ * is connected into any channel, which is not an edit.
+ */
+function versionOf(
+  text: string | undefined,
+  attachment: Attachment | undefined,
+): string {
+  return createHash("sha256")
+    .update(
+      JSON.stringify([
+        text ?? null,
+        attachment === undefined
+          ? null
+          : [attachment.filename, attachment.mime],
+      ]),
+    )
+    .digest("hex");
 }
 
 /**
@@ -90,7 +125,7 @@ export function relayedFrom(
 
   return {
     sourceItemId: String(block.id),
-    version: block.updated_at,
+    version: versionOf(text, attachment),
     // The moment the block was connected into *this* channel, not when it was
     // made — a block connected here may have been made by someone else years
     // earlier.

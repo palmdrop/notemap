@@ -16,7 +16,8 @@ node apps/relay-arena/dist/main.js --config ~/.config/notemap/relay-arena.toml
 ```
 
 `--once` polls once and exits non-zero if anything went wrong, which is the
-shape cron wants. `--help` says the rest.
+shape cron wants. It stops early like any other poll; `--once --full` reads
+every page, and a cron setup wants that once a day. `--help` says the rest.
 
 ## Never watch a channel notemap delivers into
 
@@ -63,7 +64,7 @@ relay container's.
 | ----------------------------- | ------------------------------------------------ |
 | the block's numeric id        | `sourceItemId`                                   |
 | `connected_at`                | `capturedAt` — the moment it joined *this* channel, never the block's own `created_at` |
-| `updated_at`                  | the identity an edit is captured under           |
+| a digest of the block's prose and file | the identity an edit is captured under — never `updated_at`, which are.na moves whenever the block is connected into any channel |
 | a Text block's own prose      | `note` prose, verbatim                           |
 | a Link block's title, caption and source URL | composed into `note` prose         |
 | an Embed block                | mapped like a Link — are.na never hosts the actual media, only a cached thumbnail, so no attachment is carried |
@@ -73,6 +74,11 @@ relay container's.
 
 A block with neither prose nor a file is not captured: core would take it, and
 a relay guards its own input.
+
+An Image or Attachment titled with nothing but a filename — `IMG_2231.jpg`,
+which is what are.na titles an upload until someone retitles it — carries no
+title into the prose; the title names the asset instead, since the file's own
+`filename` on are.na is a storage hash.
 
 A block removed from the channel upstream is left alone. Notemap never loses
 an item, and there is nothing to do.
@@ -94,16 +100,32 @@ queue.
 
 ## What it holds
 
-Nothing. Every poll reads every watched channel and posts each block; the pool
-answers `already-captured` for the ones it has, and dedup on
-`(source, sourceItemId)` is what makes re-reading everything harmless. There
-is no watermark, no cursor and no database — so there is nothing to lose,
-corrupt or migrate, and a poll that failed halfway is repaired by the next
-one.
+Nothing. Every poll reads each watched channel newest connection first and
+posts each block; the pool answers `already-captured` for the ones it has, and
+the first page of 100 holding such a block is where the poll stops — anything
+below it was connected earlier and read by an earlier poll. There is no
+watermark, no cursor and no database, so there is nothing to lose, corrupt or
+migrate.
+
+The first poll after start, and one a day after that, reads every page. That
+is where an edit to a block below the newest page is seen, and where a block
+a failed poll left behind is picked up — an edit can take up to a day to
+arrive.
 
 An asset id is derived from the block's own id rather than minted, so a block's
 file is uploaded once and the block does not look edited on every run.
 `packages/relay` does that half.
+
+## are.na's rate limit
+
+Requests to are.na are spaced by its own `x-ratelimit-remaining` and
+`x-ratelimit-reset` headers: none while the window has requests to spare,
+and a wait for the reset once five are left, which leaves some for an arena
+destination sharing the token. An answer without those headers earns a fixed
+half-second gap. A `429` ends the whole poll — the limit is the token's, so
+every channel after it would be refused the same way — and the log says when
+the window resets. Files come from are.na's object storage, which the limit
+does not count.
 
 ## What it says
 
@@ -112,7 +134,8 @@ another program's errors, and a relay that could not reach the pool has
 nothing to report to it by definition. A block that could not be relayed is
 logged and that channel's scan carries on. A channel are.na refused — most
 often one the token lost access to — ends that channel's scan and lets the
-next one run; a failure that was the pool's ends the whole poll.
+next one run; a failure that was the pool's, or are.na's rate limit, ends the
+whole poll.
 
 Whether it is running at all is read from the other end —
 `GET /v1/sources`, drawn in notemap's settings, says when each source last

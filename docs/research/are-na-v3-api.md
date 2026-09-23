@@ -81,6 +81,23 @@ Rate limits are enforced per-minute based on your tier:
 
 When you exceed limits, you'll receive a `429 Too Many Requests` response with upgrade recommendations and retry timing.
 
+## Observed live (2026-09-23)
+
+Against a public test channel, unauthenticated, not from the docs above:
+
+- Responses carry two headers the docs do not list: `x-ratelimit-remaining` and
+  `x-ratelimit-cost` (`1` for a contents page), plus `x-ratelimit-bucket: read-minute` and
+  `x-ratelimit-policy: 30;w=60`. `x-ratelimit-reset` is Unix seconds.
+- On `/v3/channels/{id}/contents`, `sort=created_at_*` orders by when a block was **connected**
+  into the channel, not when the block was made: a block made in 2019 and connected today sorts
+  first under `created_at_desc`.
+- Connecting a block into a channel moves the **block's** `updated_at` to the connection time.
+  `updated_at` is therefore not an edit marker — it changes whenever the block is connected
+  anywhere.
+- An Image block uploaded without a title is titled with the original filename
+  (`098__resnetv2_152-block3_unit1-bitstamp.png`), while `image.filename` is a storage hash
+  (`495ca16135c2f5b9bb06dc6730e02b6f.png`).
+
 ## Request Validation
 
 All parameters are validated against this OpenAPI specification. Invalid requests return `400 Bad Request` with detailed error messages.

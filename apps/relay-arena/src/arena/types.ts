@@ -1,3 +1,5 @@
+import type { Clock } from "./pace";
+
 /** Prose as are.na answers it in more than one place, read down to its source form. */
 export type ArenaProse = {
   readonly markdown: string;
@@ -30,7 +32,6 @@ export type ArenaBlockType =
 export type ArenaBlock = {
   readonly id: number;
   readonly type: ArenaBlockType;
-  readonly updated_at: string;
   readonly title?: string | null;
   /** A Text block's own prose. */
   readonly content?: ArenaProse | null;
@@ -65,4 +66,6 @@ export type ArenaTarget = {
   readonly fetch?: typeof globalThis.fetch;
   /** Host-wired for a test against a fake server. Never a setting. */
   readonly baseUrl?: string;
+  /** For a test that drives the pacing without waiting. */
+  readonly clock?: Clock;
 };

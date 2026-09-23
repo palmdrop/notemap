@@ -37,6 +37,7 @@ handle = "my-channel"
 source = "arena/my-channel"
 # tags = ["kind/reference"]
 
-# How often every watched channel is read again. Polls never overlap.
+# How often every watched channel is read again: at least five minutes.
+# Polls never overlap.
 [poll]
 interval = 900000 # milliseconds — fifteen minutes

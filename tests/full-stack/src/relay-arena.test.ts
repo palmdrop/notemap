@@ -185,7 +185,6 @@ describe("the arena relay, over a real daemon", () => {
 
     where.arena.channel("one")[0] = block(1, {
       content: { markdown: "rewritten since" },
-      updated_at: "2026-09-08T09:00:00.000Z",
     });
     expect(await polled(where)).toMatch(/amended 1/);
 

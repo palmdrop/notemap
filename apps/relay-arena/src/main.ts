@@ -2,20 +2,25 @@ import { parseArgs } from "node:util";
 
 import { arenaAt } from "./arena/read";
 import { loadConfig, readSecret, type RelayConfig } from "./config/load";
+import { FULL_SCAN_MS } from "./constants";
 import { relayInto } from "./relay";
 import { relayEverything, said, type ChannelTarget, type Log } from "./run";
+import { sleep } from "./utils/sleep";
 
 const USAGE = `notemap-relay-arena — put what is connected into a watched are.na channel into a notemap pool.
 
-  notemap-relay-arena [--config <path>] [--once]
+  notemap-relay-arena [--config <path>] [--once [--full]]
 
-It holds nothing. Every poll reads every watched channel and captures each
-block; the pool answers for what it already has, and a block edited upstream
-amends or revises the item it became.
+It holds nothing. Every poll reads each watched channel newest connection
+first, captures each block, and stops at the first page the pool already
+has. The first poll, and one a day after it, reads every page instead —
+which is where an edit further down a channel amends or revises the item it
+became.
 
---once polls exactly once and exits, for a run by hand or from cron. It exits
-non-zero if anything at all went wrong; the timer, left to itself, logs a
-failed poll and tries again at the next one.
+--once polls exactly once and exits, for a run by hand or from cron. It stops
+early like any other poll unless --full is given. It exits non-zero if
+anything at all went wrong; the timer, left to itself, logs a failed poll and
+tries again at the next one.
 
 The config is --config <path>, then NOTEMAP_RELAY_ARENA_CONFIG, then
 ~/.config/notemap/relay-arena.toml.`;
@@ -50,6 +55,7 @@ function message(cause: unknown): string {
  */
 async function poll(
   config: RelayConfig,
+  full: boolean,
   signal: AbortSignal,
 ): Promise<boolean> {
   const arena = arenaAt({
@@ -72,7 +78,8 @@ async function poll(
     ),
   }));
 
-  const reports = await relayEverything(arena, channels, log, signal);
+  if (full) log.note("reading every page of every channel");
+  const reports = await relayEverything(arena, channels, log, { full, signal });
 
   let clean = true;
   for (const report of reports) {
@@ -87,6 +94,7 @@ async function start(): Promise<void> {
     options: {
       config: { type: "string" },
       once: { type: "boolean" },
+      full: { type: "boolean" },
       help: { type: "boolean" },
     },
     strict: true,
@@ -95,6 +103,10 @@ async function start(): Promise<void> {
   if (values.help === true) {
     console.log(USAGE);
     return;
+  }
+
+  if (values.full === true && values.once !== true) {
+    throw new Error("--full goes with --once; the timer schedules its own");
   }
 
   const config = loadConfig(values.config);
@@ -110,7 +122,7 @@ async function start(): Promise<void> {
   process.on("SIGTERM", stop);
 
   if (values.once === true) {
-    const clean = await poll(config, stopping.signal);
+    const clean = await poll(config, values.full === true, stopping.signal);
     if (!clean) process.exitCode = 1;
     return;
   }
@@ -119,33 +131,19 @@ async function start(): Promise<void> {
 
   // One poll at a time, and the next is due when this one is done: a scan that
   // outlasts the interval is a large backlog, not a reason to start a second.
+  let fullDue = 0;
   while (!stopping.signal.aborted) {
+    const full = Date.now() >= fullDue;
     try {
-      await poll(config, stopping.signal);
+      await poll(config, full, stopping.signal);
+      if (full) fullDue = Date.now() + FULL_SCAN_MS;
     } catch (cause) {
       if (stopping.signal.aborted) break;
       log.fault("the poll could not be finished", cause);
     }
 
-    await waiting(config.poll.intervalMs, stopping.signal);
+    await sleep(config.poll.intervalMs, stopping.signal);
   }
-}
-
-function waiting(ms: number, signal: AbortSignal): Promise<void> {
-  return new Promise((resolve) => {
-    if (signal.aborted) return resolve();
-
-    const timer = setTimeout(() => {
-      signal.removeEventListener("abort", wake);
-      resolve();
-    }, ms);
-
-    function wake(): void {
-      clearTimeout(timer);
-      resolve();
-    }
-    signal.addEventListener("abort", wake, { once: true });
-  });
 }
 
 start().catch((error: unknown) => {

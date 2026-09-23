@@ -530,8 +530,10 @@ A program *outside* notemap that reads someone else's system and captures what i
 pool over `/v1`, carrying an **access token** like anything else that is not a browser. Deliberately
 not an **adapter**: a destination is in-process because core owns the decision, the durable record,
 retry and leases, and intake owns none of those — the recovery strategy for a failed poll is to
-poll again. So a relay holds nothing. It re-reads everything each poll and lets the pool's own
-dedup make that harmless, which is why it needs no job, no lease and no outbox
+poll again. So a relay holds nothing. It re-reads what it watches each poll and lets the pool's own
+dedup make that harmless — everything, or as far as the first page the pool already has, where an
+upstream asks not to be read in full every time — which is why it needs no job, no lease and no
+outbox
 ([ADR 39](docs/adr/0039-a-relay-is-outside-notemap-and-reaches-v1-like-anything-else.md)). There are
 two: `apps/relay-memos`, which reads a Memos server, and `apps/relay-arena`, which reads a watched
 are.na channel.

@@ -1,4 +1,10 @@
-export { arenaAt, ArenaRefused, type Arena } from "./arena/read";
+export { type Clock } from "./arena/pace";
+export {
+  arenaAt,
+  ArenaRateLimited,
+  ArenaRefused,
+  type Arena,
+} from "./arena/read";
 export {
   defaultConfigPath,
   loadConfig,
@@ -26,5 +32,6 @@ export {
   type ChannelReport,
   type ChannelTarget,
   type Log,
+  type Scan,
   type Tally,
 } from "./run";
