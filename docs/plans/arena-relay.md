@@ -105,26 +105,28 @@ _Depends on phase 1. Resolve unknown 1 first._
 _Depends on phase 2. The bulk of the thinking, and the part that ports unchanged if a poller ever
 moves into the daemon — so it must not know how it is being run: no config, no HTTP, no loop._
 
-- [ ] `src/arena/relayed.ts` — `relayedFrom(block, open, tags)` returning `Relayed | undefined`,
+- [x] `src/arena/relayed.ts` — `relayedFrom(block, open, tags)` returning `Relayed | undefined`,
       on the terms `memos/relayed.ts` sets.
   - `sourceItemId` — the block id as a string.
   - `version` — `updated_at`.
   - `capturedAt` — `connected_at` (see above).
   - `text` — by block class. A text block is its content verbatim. A link block is its title,
     description and source URL composed into prose. An image or attachment block is its title and
-    description where it has them, and may have no text at all.
+    description where it has them, and may have no text at all. **An `Embed` block — a class the
+    plan missed; see Unknown 2 — is composed the same way as a link, with no attachment**: decided
+    with the developer, since are.na never hosts the actual media, only a cached thumbnail.
   - `attachments` — an image block's stored image, an attachment block's file. Attachment `id` is
     composed and stable — `block/<id>/image` — since the asset id is a UUIDv5 over it and must not
-    move while the block stands still. Filename and mime come from what are.na reports; where it
-    reports neither, derive from the URL and fall back to `application/octet-stream`.
+    move while the block stands still. Filename and mime come from what are.na reports directly on
+    every block tried (Unknown 2, resolved) — the URL-derived fallback is not implemented.
   - `tags` — are.na has no tags on a block, so these are the watched channel's configured tags and
     nothing else. Empty by default. They travel once, at capture, and are never reconciled
     afterwards — the pool drops tags from the payload comparison on purpose.
   - Returns `undefined` for a block with neither text nor attachment, and for a channel-class block
     (a channel connected into a channel is not a note).
-- [ ] Tests beside it, one per class, plus the empty guard and the channel-block skip.
-- [ ] **Verify**: `pnpm --filter @notemap/relay-arena test` green.
-- [ ] `git commit`
+- [x] Tests beside it, one per class, plus the empty guard and the channel-block skip.
+- [x] **Verify**: `pnpm --filter @notemap/relay-arena test` green.
+- [x] `git commit`
 
 ### Phase 4 — configuration
 
