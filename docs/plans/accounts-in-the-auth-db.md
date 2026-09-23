@@ -1,7 +1,7 @@
 # An account can be set from the settings page
 
 **Date**: 2026-09-23
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: In progress <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/http-v1.md`, `docs/specs/shell.md`, `docs/specs/security.md`
 **Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
 
@@ -69,19 +69,19 @@ keeps `[[accounts]]` with `secretFile`, which is what compose and Docker secrets
 
 _Depends on nothing._
 
-- [ ] Branch `agent/accounts-in-the-auth-db`.
-- [ ] A migration in `apps/daemon/src/auth/store/migrations.ts` adding an account table, keyed on
+- [x] Branch `agent/accounts-in-the-auth-db`.
+- [x] A migration in `apps/daemon/src/auth/store/migrations.ts` adding an account table, keyed on
       (kind, name): the non-secret fields as a JSON column, the secret as text, `changedAt`.
-- [ ] `AccountRecord` in `apps/daemon/src/auth/store/types.ts`, and on `AuthStore`: `listAccounts`,
+- [x] `AccountRecord` in `apps/daemon/src/auth/store/types.ts`, and on `AuthStore`: `listAccounts`,
       `getAccount(kind, name)`, `putAccount`, `deleteAccount`. `listAccounts` must be able to
       answer **without** the secret — the route path should never have it in hand at all — so
       either it omits the column or there are two reads. Prefer omitting it; the only caller that
       needs the secret is the resolver, asking for one account by name.
-- [ ] Tests in `store.test.ts` on the shape the existing ones set: round trip, overwrite by
+- [x] Tests in `store.test.ts` on the shape the existing ones set: round trip, overwrite by
       (kind, name), delete, and the listing not carrying the secret.
-- [ ] **Verify**: `pnpm --filter @notemap/daemon test` green; the migration runs against a fresh
+- [x] **Verify**: `pnpm --filter @notemap/daemon test` green; the migration runs against a fresh
       `auth.db` and against one created by the previous version.
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 2 — the account list becomes dynamic
 

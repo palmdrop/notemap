@@ -1,8 +1,20 @@
-import type { Timestamp } from "@notemap/core";
+import type { JsonObject, Timestamp } from "@notemap/core";
 
 import type { SessionId, TokenId } from "../types";
-import type { CredentialRecord, SessionRecord, TokenRecord } from "./types";
-import type { CredentialRow, SessionRow, TokenRow } from "./rows";
+import type {
+  AccountListing,
+  AccountRecord,
+  CredentialRecord,
+  SessionRecord,
+  TokenRecord,
+} from "./types";
+import type {
+  AccountListingRow,
+  AccountRow,
+  CredentialRow,
+  SessionRow,
+  TokenRow,
+} from "./rows";
 
 export function toMillis(value: Timestamp): number {
   const millis = Date.parse(value);
@@ -46,4 +58,17 @@ export function toToken(row: TokenRow): TokenRecord {
       ? {}
       : { lastUsedAt: toTimestamp(row.last_used_at) }),
   };
+}
+
+export function toAccountListing(row: AccountListingRow): AccountListing {
+  return {
+    kind: row.kind,
+    name: row.name,
+    fields: JSON.parse(row.fields) as JsonObject,
+    changedAt: toTimestamp(row.changed_at),
+  };
+}
+
+export function toAccount(row: AccountRow): AccountRecord {
+  return { ...toAccountListing(row), secret: row.secret };
 }

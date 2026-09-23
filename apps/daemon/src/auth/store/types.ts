@@ -1,4 +1,4 @@
-import type { Timestamp } from "@notemap/core";
+import type { JsonObject, Timestamp } from "@notemap/core";
 
 import type { SessionId, TokenId } from "../types";
 
@@ -24,6 +24,22 @@ export type TokenRecord = {
   readonly lastUsedAt?: Timestamp;
 };
 
+/**
+ * An account on another system, held by the daemon rather than declared in
+ * config. The secret is kept as it was given: it is presented to somebody
+ * else's server, so unlike a password or a token it cannot be hashed.
+ */
+export type AccountRecord = {
+  readonly kind: string;
+  readonly name: string;
+  /** What the kind asks an account to carry, without the secret. */
+  readonly fields: JsonObject;
+  readonly secret: string;
+  readonly changedAt: Timestamp;
+};
+
+export type AccountListing = Omit<AccountRecord, "secret">;
+
 export type AuthStore = {
   getCredential(): Promise<CredentialRecord | undefined>;
   /** Sets the credential, and ends every session: a reset answers a suspicion. */
@@ -46,6 +62,13 @@ export type AuthStore = {
   listTokens(): Promise<readonly TokenRecord[]>;
   deleteToken(id: TokenId): Promise<void>;
   deleteAllTokens(): Promise<void>;
+
+  /** Never carries a secret, so nothing that lists accounts has one in hand. */
+  listAccounts(): Promise<readonly AccountListing[]>;
+  getAccount(kind: string, name: string): Promise<AccountRecord | undefined>;
+  /** Creates or replaces, by kind and name. */
+  putAccount(account: AccountRecord): Promise<void>;
+  deleteAccount(kind: string, name: string): Promise<void>;
 
   cleanExpired(now: Timestamp): Promise<void>;
 

@@ -23,4 +23,14 @@ export const MIGRATIONS: readonly string[] = [
     last_used_at  INTEGER
   ) STRICT;
   `,
+  `
+  CREATE TABLE accounts (
+    kind       TEXT NOT NULL,
+    name       TEXT NOT NULL,
+    fields     TEXT NOT NULL,
+    secret     TEXT NOT NULL,
+    changed_at INTEGER NOT NULL,
+    PRIMARY KEY (kind, name)
+  ) STRICT;
+  `,
 ];
