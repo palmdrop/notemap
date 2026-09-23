@@ -23,6 +23,8 @@ export type Told = {
    * and what it decides is the session cookie's `Secure` and `__Host-`.
    */
   readonly origin?: string;
+  /** Written at the end of the config file as it is, for a test that declares `[[accounts]]`. */
+  readonly accounts?: string;
 };
 
 export type World = {
@@ -124,5 +126,5 @@ interval = 3600000
 pollInterval = ${POLL}
 leaseFor = 300000
 batch = 4
-`;
+${told.accounts ?? ""}`;
 }

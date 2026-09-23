@@ -214,11 +214,12 @@ _Depends on phase 5._
 
 _Depends on phase 6._
 
-- [ ] `tests/full-stack`: an account created over the routes is used by a real delivery; a stored
+- [x] `tests/full-stack` (`src/accounts.test.ts`, against the webdav adapter's own fake DAV
+      server, imported from its source): an account created over the routes is used by a real delivery; a stored
       account shadows a config one of the same kind and name; a bearer token is refused where a
       session succeeds; a deleted stored account reveals the config one again.
-- [ ] **Verify**: `pnpm test:stack` green.
-- [ ] `git commit`
+- [x] **Verify**: `pnpm test:stack` green.
+- [x] `git commit`
 
 ---
 
@@ -229,7 +230,7 @@ _Depends on phase 6._
    "where the secret comes from" to be the *host's* concern in both paths, which would simplify
    ADR 40 rather than amending it. Worth ten minutes before phase 3. *Fallback*: the split
    described, which is confined to one function.
-2. **What an in-flight delivery does when its account changes mid-run.** The resolver reads per
+2. **What an in-flight delivery does when its account changes mid-run.** *Not confirmed by a test.* The resolver reads per
    delivery, so a replacement lands on the next attempt and a retry after a fixed secret just
    works — but a delivery already holding the old secret will fail and retry, which is probably
    right and should be confirmed rather than assumed.
