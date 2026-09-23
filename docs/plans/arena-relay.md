@@ -1,9 +1,14 @@
 # A block in an are.na channel reaches the pool by itself
 
 **Date**: 2026-09-23
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: In progress <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`
 **Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+
+All seven phases are implemented, tested and documented. What's left is phase 6's hand
+verification — running the real binary against a real are.na channel and a real daemon — which
+the developer is doing themselves rather than in this session. Flip to **Done** once that's
+confirmed.
 
 ---
 
@@ -211,13 +216,25 @@ _Depends on phase 5._
 
 _Depends on phase 6._
 
-- [ ] `tests/full-stack/src/relay-arena.test.ts` beside `relay-memos.test.ts`, with a fake are.na
+- [x] `tests/full-stack/src/relay-arena.test.ts` beside `relay-memos.test.ts`, with a fake are.na
       in the harness alongside the fake Memos: a block captured, a block re-read as
       `already-captured`, an edited block amending, an image arriving as an asset, and a block in a
       second channel landing under the second source.
-- [ ] **Verify**: `pnpm test:stack` green — this change crosses the layers, so it is one of the
-      cases that earns the stack suite.
-- [ ] `git commit`
+  - **Found while writing this phase, decided with the developer**: are.na's address has no config
+    key by deliberate choice (phase 4), so the real `notemap-relay-arena` binary had no way to be
+    pointed at a fake are.na for this test — unlike relay-memos, where `[memos] url` already does
+    that job. `main.ts` now reads `NOTEMAP_RELAY_ARENA_API` and, if set, passes it as `arenaAt`'s
+    `baseUrl` — never written to `config.example.toml`, the same "host-wired, never a setting"
+    shape `ArenaConfig.baseUrl` already has in `destination-arena`'s own suite. The harness sets it
+    only when spawning the child process under test.
+  - `harness/arena.ts` (a fake are.na: one page per channel, a plain object-storage route neither
+    block class reads through, 401 without the bearer) and `harness/relay-arena.ts` (writes the
+    config and secrets, runs `--once`) are new; `harness/build.ts` now builds `apps/relay-arena`
+    too.
+- [x] **Verify**: `pnpm test:stack` green (17 files, 77 tests) — this change crosses the layers, so
+      it is one of the cases that earns the stack suite. `pnpm -r --silent typecheck`,
+      `pnpm -r --silent test` and `pnpm -r --silent lint` all clean across the repo.
+- [x] `git commit`
 
 ---
 

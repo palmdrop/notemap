@@ -54,6 +54,13 @@ async function poll(
 ): Promise<boolean> {
   const arena = arenaAt({
     token: readSecret(config.arena.token, "the arena token"),
+    // Never in the config file — are.na's address is a constant of the
+    // service. This exists so a test can run the real binary against a fake
+    // are.na, the same way `ArenaConfig.baseUrl` lets destination-arena's own
+    // suite do it in-process.
+    ...(process.env["NOTEMAP_RELAY_ARENA_API"] === undefined
+      ? {}
+      : { baseUrl: process.env["NOTEMAP_RELAY_ARENA_API"] }),
   });
   const poolToken = readSecret(config.pool.token, "the pool token");
 

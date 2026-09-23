@@ -1,3 +1,9 @@
+export {
+  ARENA_TOKEN,
+  upstreamsArena,
+  type ArenaBlock,
+  type ArenaUpstream,
+} from "./arena.ts";
 export { browser, keepingCookies } from "./browser.ts";
 export {
   NAME,
@@ -16,6 +22,12 @@ export {
 } from "./memos.ts";
 export { read } from "./read.ts";
 export { relayMemos, RELAY_MAIN, type Relaying } from "./relay.ts";
+export {
+  relayArena,
+  RELAY_ARENA_MAIN,
+  type RelayingArena,
+  type ToldArena,
+} from "./relay-arena.ts";
 export { until } from "./until.ts";
 export { vaults, type Vaults } from "./vaults.ts";
 export {
