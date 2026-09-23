@@ -117,6 +117,29 @@ describe("reaching the account", () => {
       ),
     ).toMatchObject({ kind: "rejected", detail: /post-to-board/ });
   });
+
+  /** An account added while the daemon runs is offered without a restart. */
+  it("offers the accounts the host holds at the moment it is asked", async () => {
+    const server = await vault();
+    const names = ["home"];
+    const live = createWebdavDestination({
+      accepts: [TEXT],
+      credentials: resolverFor(server),
+      renderers: {},
+      accounts: () => names,
+    });
+    const examples = () =>
+      (
+        live.settingsSchema["properties"] as Record<
+          string,
+          Record<string, unknown>
+        >
+      )["account"]?.["examples"];
+
+    expect(examples()).toEqual(["home"]);
+    names.push("work");
+    expect(examples()).toEqual(["home", "work"]);
+  });
 });
 
 describe("creating a note", () => {

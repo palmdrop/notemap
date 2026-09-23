@@ -61,6 +61,16 @@ dropping it.
 **TOML stays the headless path.** No CLI subcommand in this plan. A container without a browser
 keeps `[[accounts]]` with `secretFile`, which is what compose and Docker secrets are for.
 
+**Settled while implementing (2026-09-23).**
+- The live account list is a daemon module, `apps/daemon/src/accounts/`. It is loaded at startup
+  from both sources, keeps the non-secret listing in memory, and every write goes through it so
+  the listing cannot drift. `settingsSchema` stays synchronous. `main.ts` opens `auth.db` before
+  the pool.
+- Unknown 1 is resolved toward the host. A kind's account schema declares its non-secret fields
+  only. The host strips the one `*File`/`*Env` key off a config account before validating, and a
+  stored account's fields validate against the same schema. This amends ADR 40.
+- `settings/Account.svelte` becomes `Access.svelte`. The new section is `Accounts.svelte`.
+
 ---
 
 ## Tasks
@@ -91,23 +101,24 @@ surprise._
 
 Three things read the account list once, at wiring time, and all three must become lazy.
 
-- [ ] `accountsFor(kind, accounts)` in `apps/daemon/src/destinations/credentials.ts` builds a `Map`
+- [x] `accountsFor(kind, accounts)` in `apps/daemon/src/destinations/credentials.ts` builds a `Map`
       at startup. It takes a live source instead — stored first, config second — and resolves per
       delivery. It already reads the *secret* per delivery so that rotation is writing a file; this
       extends the same reasoning to the record.
-- [ ] `settingsSchema` on each destination kind bakes the account names into `examples` at wiring
+- [x] `settingsSchema` on each destination kind bakes the account names into `examples` at wiring
       (`packages/adapters/destination-arena/src/destination.ts`, and the webdav equivalent). It
       becomes a getter over the live list, so an account created in the UI appears in the form
       without a restart. Safe to do because names are `examples` and deliberately not an `enum`
       (`packages/adapters/destination-arena/src/settings.ts`) — a stale or missing name is
       cosmetic and cannot turn a destination unusable.
-- [ ] `apps/daemon/src/ports.ts` reads `baseUrl` off each webdav account at wiring time to hand to
+- [x] `apps/daemon/src/ports.ts` reads `baseUrl` off each webdav account at wiring time to hand to
       the adapter. That must move behind the resolver too, or a stored webdav account's address
-      will never be seen.
-- [ ] **Verify**: `pnpm -r --silent test` green with no stored accounts — every existing
+      will never be seen. *As built*: `baseUrl` already travelled through the resolver, and
+      only the plain-HTTP warning read it at wiring. That warning now reads the accounts in use.
+- [x] **Verify**: `pnpm -r --silent test` green with no stored accounts — every existing
       destination test passes untouched. `pnpm test:stack` green, since this crosses the host's
       wiring.
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 3 — validation for a held secret
 
@@ -219,7 +230,8 @@ _Depends on phase 6._
    right and should be confirmed rather than assumed.
 3. **Migration of `auth.db` in the container.** The volume carries an existing database; confirm
    the migration runner handles a schema bump in place, since nothing has needed one since the
-   token table.
+   token table. *Confirmed*: `migrate` applies from `user_version` onward, and `store.test.ts`
+   opens a database written before the accounts table.
 
 ---
 

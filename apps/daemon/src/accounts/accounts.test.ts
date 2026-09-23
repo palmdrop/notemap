@@ -7,17 +7,41 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { createAjvSchemaValidator } from "@notemap/schema-ajv";
 
-import { parseConfig } from "../config/load";
+import type { Timestamp } from "@notemap/core";
+
+import { createSqliteAuthStore } from "../auth/store";
+import type { AuthStore } from "../auth/store/types";
+import { parseConfig, type Account } from "../config/load";
 import { refuseUnusableAccounts } from "../ports";
-import { accountsFor } from "./credentials";
+import { openAccounts } from ".";
 
 const directories: string[] = [];
+const stores: AuthStore[] = [];
 
-afterEach(() => {
+afterEach(async () => {
+  for (const each of stores.splice(0)) await each.close();
   for (const each of directories.splice(0)) {
     rmSync(each, { recursive: true, force: true });
   }
 });
+
+function authStore(): AuthStore {
+  const directory = mkdtempSync(join(tmpdir(), "notemap-accounts-"));
+  directories.push(directory);
+
+  const store = createSqliteAuthStore({ file: join(directory, "auth.db") });
+  stores.push(store);
+  return store;
+}
+
+async function accountsFor(
+  kind: string,
+  config: readonly Account[],
+  env: NodeJS.ProcessEnv,
+) {
+  const accounts = await openAccounts({ config, env });
+  return (name: string) => accounts.resolve(kind, name);
+}
 
 function secretFile(contents: string): Promise<string> {
   const directory = mkdtempSync(join(tmpdir(), "notemap-credential-"));
@@ -39,7 +63,7 @@ const ACCOUNT = {
 describe("resolving an account", () => {
   it("reads the secret from a file, dropping the newline it was written with", async () => {
     const path = await secretFile("an-app-password\n");
-    const resolve = accountsFor(
+    const resolve = await accountsFor(
       WEBDAV,
       [{ ...ACCOUNT, passwordFile: path }],
       {},
@@ -55,7 +79,7 @@ describe("resolving an account", () => {
   /** A password may legitimately end in a space, so only the line ending goes. */
   it("keeps the whitespace a password actually carries", async () => {
     const path = await secretFile("  spaced  \n");
-    const resolve = accountsFor(
+    const resolve = await accountsFor(
       WEBDAV,
       [{ ...ACCOUNT, passwordFile: path }],
       {},
@@ -67,9 +91,13 @@ describe("resolving an account", () => {
   });
 
   it("reads the secret from the environment where that is what was named", async () => {
-    const resolve = accountsFor(WEBDAV, [{ ...ACCOUNT, passwordEnv: "NC" }], {
-      NC: "from-the-environment",
-    });
+    const resolve = await accountsFor(
+      WEBDAV,
+      [{ ...ACCOUNT, passwordEnv: "NC" }],
+      {
+        NC: "from-the-environment",
+      },
+    );
 
     await expect(resolve("nextcloud")).resolves.toMatchObject({
       secret: "from-the-environment",
@@ -79,7 +107,7 @@ describe("resolving an account", () => {
   /** Rotation is writing the file: a secret read once at startup would outlive it. */
   it("reads the file again on every resolution", async () => {
     const path = await secretFile("first\n");
-    const resolve = accountsFor(
+    const resolve = await accountsFor(
       WEBDAV,
       [{ ...ACCOUNT, passwordFile: path }],
       {},
@@ -98,13 +126,13 @@ describe("resolving an account", () => {
 
 describe("a credential that will not resolve", () => {
   it("names the account nothing declared", async () => {
-    const resolve = accountsFor(WEBDAV, [], {});
+    const resolve = await accountsFor(WEBDAV, [], {});
 
     await expect(resolve("nextcloud")).rejects.toThrow(/nextcloud/);
   });
 
   it("names the file it could not read", async () => {
-    const resolve = accountsFor(
+    const resolve = await accountsFor(
       WEBDAV,
       [{ ...ACCOUNT, passwordFile: "/nowhere/at/all" }],
       {},
@@ -115,7 +143,7 @@ describe("a credential that will not resolve", () => {
 
   it("refuses an empty secret rather than presenting one", async () => {
     const path = await secretFile("\n");
-    const resolve = accountsFor(
+    const resolve = await accountsFor(
       WEBDAV,
       [{ ...ACCOUNT, passwordFile: path }],
       {},
@@ -123,8 +151,128 @@ describe("a credential that will not resolve", () => {
 
     await expect(resolve("nextcloud")).rejects.toThrow(/empty/);
 
-    const unset = accountsFor(WEBDAV, [{ ...ACCOUNT, passwordEnv: "NC" }], {});
+    const unset = await accountsFor(
+      WEBDAV,
+      [{ ...ACCOUNT, passwordEnv: "NC" }],
+      {},
+    );
     await expect(unset("nextcloud")).rejects.toThrow(/no secret/);
+  });
+});
+
+describe("an account the daemon holds", () => {
+  const STORED = {
+    kind: WEBDAV,
+    name: "nextcloud",
+    fields: {
+      baseUrl: "https://other.example/remote.php/dav/files/bob",
+      username: "bob",
+    },
+    secret: "held-secret",
+    changedAt: "2026-09-23T09:00:00.000Z" as Timestamp,
+  };
+
+  it("resolves from the store, secret and all", async () => {
+    const store = authStore();
+    await store.putAccount(STORED);
+    const accounts = await openAccounts({ store, config: [], env: {} });
+
+    await expect(accounts.resolve(WEBDAV, "nextcloud")).resolves.toEqual({
+      kind: WEBDAV,
+      name: "nextcloud",
+      ...STORED.fields,
+      secret: "held-secret",
+    });
+  });
+
+  /** Merging two half-accounts is undebuggable, so nothing of the config one survives. */
+  it("replaces a config account of the same kind and name entirely", async () => {
+    const store = authStore();
+    await store.putAccount({
+      ...STORED,
+      fields: { baseUrl: "https://b.example/", username: "bob" },
+    });
+    const accounts = await openAccounts({
+      store,
+      config: [{ ...ACCOUNT, passwordEnv: "NC", extra: "from-config" }],
+      env: { NC: "config-secret" },
+    });
+
+    const held = await accounts.resolve(WEBDAV, "nextcloud");
+
+    expect(held).toEqual({
+      kind: WEBDAV,
+      name: "nextcloud",
+      baseUrl: "https://b.example/",
+      username: "bob",
+      secret: "held-secret",
+    });
+    expect(accounts.list()).toEqual([
+      {
+        kind: WEBDAV,
+        name: "nextcloud",
+        fields: { baseUrl: "https://b.example/", username: "bob" },
+        from: "stored",
+        changedAt: STORED.changedAt,
+      },
+    ]);
+    expect(accounts.shadowed()).toEqual([
+      {
+        kind: WEBDAV,
+        name: "nextcloud",
+        fields: {
+          baseUrl: ACCOUNT.baseUrl,
+          username: ACCOUNT.username,
+          extra: "from-config",
+        },
+        from: "config",
+      },
+    ]);
+  });
+
+  it("leaves a config account of another name, or another kind, in use", async () => {
+    const store = authStore();
+    await store.putAccount(STORED);
+    const accounts = await openAccounts({
+      store,
+      config: [
+        { ...ACCOUNT, name: "work", passwordEnv: "A" },
+        { kind: "arena", name: "nextcloud", secretEnv: "B" },
+      ],
+      env: {},
+    });
+
+    expect(accounts.names(WEBDAV)).toEqual(["nextcloud", "work"]);
+    expect(accounts.names("arena")).toEqual(["nextcloud"]);
+    expect(accounts.shadowed()).toEqual([]);
+  });
+
+  it("lists nothing that carries a secret, or where one is read from", async () => {
+    const store = authStore();
+    await store.putAccount(STORED);
+    const accounts = await openAccounts({
+      store,
+      config: [{ ...ACCOUNT, name: "work", passwordFile: "/run/secrets/work" }],
+      env: {},
+    });
+
+    const listed = JSON.stringify(accounts.list());
+    expect(listed).not.toContain("held-secret");
+    expect(listed).not.toContain("passwordFile");
+    expect(listed).not.toContain("/run/secrets/work");
+  });
+
+  /** A replaced secret lands on the next delivery, not the next restart. */
+  it("reads the store again on every resolution", async () => {
+    const store = authStore();
+    await store.putAccount(STORED);
+    const accounts = await openAccounts({ store, config: [], env: {} });
+
+    await store.putAccount({ ...STORED, secret: "replaced" });
+
+    await expect(accounts.resolve(WEBDAV, "nextcloud")).resolves.toMatchObject({
+      secret: "replaced",
+    });
   });
 });
 

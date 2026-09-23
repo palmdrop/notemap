@@ -40,9 +40,9 @@ import {
 } from "@notemap/core";
 
 import { isSecretSource } from "./config/load";
+import type { Accounts } from "./accounts";
 import type { Logger } from "./log";
 import { logAction } from "./log/actions";
-import { accountsFor } from "./destinations/credentials";
 import { destinationRenderers } from "./destinations/renderers";
 import { renderersFor } from "./mirror/renderers";
 import { createAuth } from "./auth";
@@ -70,7 +70,7 @@ export type OpenPoolConfig = {
    * closes over the resolver these make, so a secret reaches neither core nor
    * the pool — and a destination cannot name an address, only one of these.
    */
-  readonly accounts?: readonly Account[];
+  readonly accounts?: Accounts;
   /** Told each action the pool records. Absent is a pool nobody listens to. */
   readonly log?: Logger;
 };
@@ -132,15 +132,16 @@ export function openPool(options: OpenPoolConfig): OpenPool {
   ];
 
   const renderers = destinationRenderers();
-  const accounts = options.accounts ?? [];
+  const { accounts } = options;
   const schemas = createAjvSchemaValidator();
-  refuseUnusableAccounts(accounts, schemas);
 
-  const webdavAccounts = accounts.filter((account) => account.kind === WEBDAV);
-  const arenaAccounts = accounts.filter((account) => account.kind === ARENA);
-
-  const webdavCredentials = accountsFor(WEBDAV, accounts);
-  const arenaCredentials = accountsFor(ARENA, accounts);
+  const resolve = (kind: string, name: string) =>
+    accounts === undefined
+      ? Promise.reject(
+          new Error(`no ${kind} account named ${name} is configured`),
+        )
+      : accounts.resolve(kind, name);
+  const names = (kind: string) => () => accounts?.names(kind) ?? [];
 
   const destinations = destinationRegistry([
     createFilesystemDestination({
@@ -151,15 +152,15 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     createWebdavDestination({
       renderers,
       accepts: everyPayloadType,
-      credentials: (name) => webdavCredentials(name).then(asWebdavCredential),
-      accounts: webdavAccounts.map((account) => account.name),
+      credentials: (name) => resolve(WEBDAV, name).then(asWebdavCredential),
+      accounts: names(WEBDAV),
     }),
     createArenaDestination({
       // Not `everyPayloadType`: what has a block form is the kind's own to
       // say, and core refuses the rest before a decision is made.
       renderers: arenaRenderers(),
-      credentials: (name) => arenaCredentials(name).then(asArenaCredential),
-      accounts: arenaAccounts.map((account) => account.name),
+      credentials: (name) => resolve(ARENA, name).then(asArenaCredential),
+      accounts: names(ARENA),
     }),
   ]);
 
@@ -200,10 +201,12 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     destinations,
     // What an account is reached over is the adapter's to judge; the host asks.
     warnings: transportWarnings(
-      webdavAccounts.map((account) => ({
-        name: account.name,
-        baseUrl: String(account["baseUrl"]),
-      })),
+      (accounts?.list() ?? [])
+        .filter((account) => account.kind === WEBDAV)
+        .map((account) => ({
+          name: account.name,
+          baseUrl: String(account.fields["baseUrl"]),
+        })),
     ),
   };
 }
@@ -230,7 +233,7 @@ export const openAuth = (
     ...(log === undefined ? {} : { log }),
   });
 
-  return auth;
+  return { auth, store };
 };
 
 /**
@@ -270,7 +273,7 @@ function refuseKindWithNoSecretSource(kind: string, schema: JsonSchema): void {
 
 export function refuseUnusableAccounts(
   accounts: readonly Account[],
-  schemas: PoolPorts["schemas"],
+  schemas: PoolPorts["schemas"] = createAjvSchemaValidator(),
 ): void {
   for (const [kind, schema] of Object.entries(ACCOUNT_SCHEMAS)) {
     refuseKindWithNoSecretSource(kind, schema);
