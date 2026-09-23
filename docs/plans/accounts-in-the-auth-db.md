@@ -170,24 +170,26 @@ _Depends on phase 3._
 
 _Depends on phase 4._
 
-- [ ] **Decide the component name first.** `apps/ui/src/components/settings/Account.svelte` is
+- [x] **Decide the component name first.** `apps/ui/src/components/settings/Account.svelte` is
       today the *signed-in person's* page — sign out, access tokens — which contradicts
       `CONTEXT.md`, where **Account** is reserved for the outward thing and is called "the one word
       in this glossary that points outward". Either rename the existing component or name the new
-      one something else. Do not ship two `Account`s meaning different things.
-- [ ] A settings section listing accounts, grouped by kind, each showing name, the non-secret
+      one something else. Do not ship two `Account`s meaning different things. *As built*: the
+      existing page is `Access.svelte` at `/settings/access`; the new one is `Accounts.svelte`
+      at `/settings/accounts`.
+- [x] A settings section listing accounts, grouped by kind, each showing name, the non-secret
       fields, whether a secret is set, when it changed, and whether it comes from config or is
       stored.
-- [ ] A form per kind, built from that kind's account schema over `GET /v1/account-kinds`, on the
+- [x] A form per kind, built from that kind's account schema over `GET /v1/account-kinds`, on the
       same terms `DestinationForm.svelte` builds a destination's settings form.
-- [ ] Editing a **config** account seeds the form from its non-secret fields and saves a stored
+- [x] Editing a **config** account seeds the form from its non-secret fields and saves a stored
       record, with the page saying plainly that the config entry is from then on shadowed.
-- [ ] A secret field that is never populated from the server, shows only set / not set, and where
+- [x] A secret field that is never populated from the server, shows only set / not set, and where
       left blank on an edit leaves the stored secret alone rather than clearing it.
-- [ ] Tests beside the components, on the terms `Destinations.test.ts` sets.
-- [ ] **Verify**: `pnpm --filter @notemap/ui test` green; by hand, create a webdav account in the
+- [x] Tests beside the components, on the terms `Destinations.test.ts` sets.
+- [ ] **Verify**: `pnpm --filter @notemap/ui test` green (done); by hand, create a webdav account in the
       UI, point a destination at it, and check the destination — it reaches.
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 6 — docs and the ADR
 

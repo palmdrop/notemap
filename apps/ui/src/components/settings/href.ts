@@ -2,8 +2,9 @@ import { resolve } from "$app/paths";
 
 export const SECTIONS = [
   { slug: "destinations", label: "Destinations" },
+  { slug: "accounts", label: "Accounts" },
   { slug: "templates", label: "Templates" },
-  { slug: "account", label: "Account" },
+  { slug: "access", label: "Access" },
   { slug: "server", label: "Server" },
   { slug: "appearance", label: "Appearance" },
 ] as const;

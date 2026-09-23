@@ -5,7 +5,7 @@
 
   /**
    * A section's head: bold capitals on a rule. `sub` is the same, lower down a
-   * section, for the second-level headings — access tokens under account, sources
+   * section, for the second-level headings — access tokens under access, sources
    * under server. Below `narrow` the top-level head also carries the way back to
    * the menu, since the menu is not drawn there.
    */
