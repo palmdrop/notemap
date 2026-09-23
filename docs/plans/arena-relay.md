@@ -153,23 +153,25 @@ _Depends on phase 1._
 
 _Depends on phases 2, 3, 4._
 
-- [ ] `src/run.ts` — `relayEverything(...)` per channel, with a `Tally` on `relay-memos`' terms
+- [x] `src/run.ts` — `relayEverything(...)` per channel, with a `Tally` on `relay-memos`' terms
       (`read`, `captured`, `unchanged`, `amended`, `revised`, `empty`, `failed`). A block that
       could not be relayed is logged and the scan carries on; `notThisItem(cause)` rethrows, so a
       failure that was the *pool's* ends the scan rather than writing one identical line per block.
-- [ ] A failure reading **one channel** ends that channel and not the poll: the other channels are
+      Takes every watched channel in one call and returns one `ChannelReport` (source, tally,
+      `readFailed`) per channel, since it is also where a channel-read failure is caught.
+- [x] A failure reading **one channel** ends that channel and not the poll: the other channels are
       other upstreams, and one private channel the token lost access to should not stop the rest.
       A pool failure still ends everything.
-- [ ] `src/main.ts` — `parseArgs` with `--config`, `--once`, `--help`; `NOTEMAP_RELAY_ARENA_CONFIG`
+- [x] `src/main.ts` — `parseArgs` with `--config`, `--once`, `--help`; `NOTEMAP_RELAY_ARENA_CONFIG`
       then `~/.config/notemap/relay-arena.toml`; SIGINT/SIGTERM into an `AbortController`; polls
       that never overlap; `--once` exiting non-zero if anything went wrong. The tally is said per
       channel and the usage text is this program's.
-- [ ] Tests for `run.ts` against a fake reader and a fake `Relay`: each `Landed` kind counted, a
+- [x] Tests for `run.ts` against a fake reader and a fake `Relay`: each `Landed` kind counted, a
       per-block failure counted and survived, a pool failure ending the scan, a channel failure
       leaving the next channel to run.
-- [ ] **Verify**: `pnpm --filter @notemap/relay-arena test` green; `pnpm -r --silent typecheck`
+- [x] **Verify**: `pnpm --filter @notemap/relay-arena test` green; `pnpm -r --silent typecheck`
       and `pnpm -r --silent lint` clean.
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 6 — running it
 

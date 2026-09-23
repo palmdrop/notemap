@@ -20,3 +20,11 @@ export type {
   ArenaTarget,
 } from "./arena/types";
 export { namespaceFor, relayInto, type PoolTarget } from "./relay";
+export {
+  relayEverything,
+  said,
+  type ChannelReport,
+  type ChannelTarget,
+  type Log,
+  type Tally,
+} from "./run";
