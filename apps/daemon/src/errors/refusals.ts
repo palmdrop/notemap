@@ -16,6 +16,7 @@ import type {
   TemplateRoutingRefusal,
 } from "@notemap/core";
 
+import type { AccountRefusal } from "../accounts";
 import type { DaemonRefusal, ErrorBody } from "../types";
 
 export type StatusMap = Readonly<Record<string, number>>;
@@ -158,6 +159,19 @@ export const DESTINATION_DELETION_STATUS = {
   "unknown-destination": 404,
   "destination-in-use": 409,
 } as const satisfies Record<DestinationDeletionRefusal["kind"], number>;
+
+/**
+ * An account held by the daemon. `409` is a destination still naming the one
+ * being removed; retiring it, or declaring the account in config, is the way
+ * through.
+ */
+export const ACCOUNT_STATUS = {
+  "unknown-account-kind": 404,
+  "no-such-account": 404,
+  "invalid-account": 422,
+  "account-secret-missing": 422,
+  "account-in-use": 409,
+} as const satisfies Record<AccountRefusal["kind"], number>;
 
 /**
  * Saving a template. `404` is the id itself; `409` is a trigger tag another
@@ -307,12 +321,17 @@ export function templateRoutingStatus(refusal: TemplateRoutingRefusal): number {
   return TEMPLATE_ROUTING_STATUS[refusal.kind];
 }
 
+export function accountStatus(refusal: AccountRefusal): number {
+  return ACCOUNT_STATUS[refusal.kind];
+}
+
 export function daemonStatus(refusal: DaemonRefusal): number {
   return DAEMON_STATUS[refusal.kind];
 }
 
 export function errorBody(
   refusal:
+    | AccountRefusal
     | ArchiveRefusal
     | AssetRefusal
     | AssetStoreRefusal

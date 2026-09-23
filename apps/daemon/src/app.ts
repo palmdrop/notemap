@@ -22,6 +22,8 @@ import {
   archivedRoute,
   archiveRoute,
   assetContentRoute,
+  accountKindsRoute,
+  accountsRoute,
   assetRoute,
   assetUploadRoute,
   cancelDeliveryRoute,
@@ -50,6 +52,8 @@ import {
   loginRoute,
   logoutRoute,
   mintTokenRoute,
+  putAccountRoute,
+  removeAccountRoute,
   revokeTokenRoute,
   sessionRoute,
   tokensRoute,
@@ -128,11 +132,19 @@ import { except } from "hono/combine";
 import { noticeOrigin } from "./middleware/origin";
 import { logRequests } from "./middleware/request-log";
 import type { Throttle } from "./auth/throttle";
+import type { Accounts } from "./accounts";
+import {
+  accountKindsHandler,
+  accountsHandler,
+  putAccountHandler,
+  removeAccountHandler,
+} from "./routes/accounts";
 import type { Logger } from "./log";
 
 export type AppOptions = {
   readonly limits: UploadLimits;
   readonly auth: Auth;
+  readonly accounts: Accounts;
   readonly cookies: CookieOptions;
   /** What `daemon.origin` said, for the notice when a request disagrees with it. */
   readonly origin?: string;
@@ -141,7 +153,7 @@ export type AppOptions = {
 };
 
 export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
-  const { auth, limits, log } = options;
+  const { auth, accounts, limits, log } = options;
   const app = new Hono<AppEnv>();
 
   app.use("*", logRequests(log));
@@ -168,6 +180,9 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
   app.use(honoPath(tokensRoute.path), requireSession);
   app.use(`${honoPath(tokensRoute.path)}/*`, requireSession);
   app.use(honoPath(endAllSessionsRoute.path), requireSession);
+  app.use(honoPath(accountKindsRoute.path), requireSession);
+  app.use(honoPath(accountsRoute.path), requireSession);
+  app.use(`${honoPath(accountsRoute.path)}/*`, requireSession);
 
   app.get(honoPath(healthRoute.path), healthHandler(pool, auth));
 
@@ -187,6 +202,14 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
   app.get(honoPath(tokensRoute.path), tokensHandler(auth));
   app.post(honoPath(mintTokenRoute.path), mintTokenHandler(auth));
   app.delete(honoPath(revokeTokenRoute.path), revokeTokenHandler(auth));
+
+  app.get(honoPath(accountKindsRoute.path), accountKindsHandler(accounts));
+  app.get(honoPath(accountsRoute.path), accountsHandler(accounts));
+  app.put(honoPath(putAccountRoute.path), putAccountHandler(accounts));
+  app.delete(
+    honoPath(removeAccountRoute.path),
+    removeAccountHandler(accounts, pool),
+  );
 
   app.post(honoPath(captureRoute.path), captureHandler(pool));
   app.get(honoPath(feedRoute.path), feedHandler(pool));

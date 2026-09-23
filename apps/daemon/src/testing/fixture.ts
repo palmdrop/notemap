@@ -27,6 +27,7 @@ import { DEFAULT_MAX_UPLOAD_BYTES } from "../constants";
 import { startDeliveryRunner } from "../destinations/runner";
 import { startMirrorRunner } from "../mirror/runner";
 import { silentLogger } from "../log";
+import type { Accounts } from "../accounts";
 import { openPool, systemClock } from "../ports";
 
 export const WEB = "web" as SourceId;
@@ -89,8 +90,29 @@ const noAuth = {
   requiresCredentials: async () => false,
 } as Auth;
 
+/** A daemon with no accounts at all, and nowhere to store one. */
+const noAccounts: Accounts = {
+  kinds: () => [],
+  list: () => [],
+  names: () => [],
+  shadowed: () => [],
+  resolve: (kind, name) =>
+    Promise.reject(new Error(`no ${kind} account named ${name} is configured`)),
+  secretSet: async () => false,
+  put: async ({ kind }) => ({
+    ok: false,
+    refusal: { kind: "unknown-account-kind", accountKind: kind },
+  }),
+  remove: async (kind, name) => ({
+    ok: false,
+    refusal: { kind: "no-such-account", accountKind: kind, name },
+  }),
+};
+
 export type DaemonOptions = {
   readonly mirroring?: boolean;
+  /** Absent is a daemon with no accounts and nowhere to store one. */
+  readonly accounts?: Accounts;
   /** Absent leaves the door open, which is what a daemon with no credential set does. */
   readonly auth?: Auth;
   /**
@@ -125,10 +147,13 @@ export function daemon(
   mkdirSync(stateRoot, { recursive: true });
   if (options.vault === "ready") mkdirSync(vaultRoot, { recursive: true });
 
+  const accounts = options.accounts ?? noAccounts;
+
   const { pool, blobs, mirrorWriter, destinations } = openPool({
     file: join(stateRoot, "pool.db"),
     config,
     assetRoot,
+    accounts,
     ...(options.mirroring === true ? { mirrorRoot } : {}),
   });
 
@@ -154,6 +179,7 @@ export function daemon(
       maxUploadBytes: options.maxUploadBytes ?? DEFAULT_MAX_UPLOAD_BYTES,
     },
     auth: options.auth ?? noAuth,
+    accounts,
     cookies: options.cookies ?? { secure: false, prefixed: false },
     ...(options.origin === undefined ? {} : { origin: options.origin }),
     throttle: options.throttle ?? createLoginThrottle({ clock: systemClock }),

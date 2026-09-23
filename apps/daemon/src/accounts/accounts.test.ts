@@ -7,13 +7,35 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { createAjvSchemaValidator } from "@notemap/schema-ajv";
 
-import type { Timestamp } from "@notemap/core";
+import type { JsonObject, Timestamp } from "@notemap/core";
 
 import { createSqliteAuthStore } from "../auth/store";
 import type { AuthStore } from "../auth/store/types";
 import { parseConfig, type Account } from "../config/load";
-import { accountIssues, refuseUnusableAccounts } from "../ports";
-import { openAccounts } from ".";
+import { ACCOUNT_SCHEMAS, systemClock } from "../ports";
+import { createAccounts } from ".";
+import * as check from "./check";
+
+const validator = createAjvSchemaValidator();
+
+const refuseUnusableAccounts = (accounts: readonly Account[]) =>
+  check.refuseUnusableAccounts(ACCOUNT_SCHEMAS, accounts, validator);
+
+const accountIssues = (kind: string, fields: JsonObject) =>
+  check.accountIssues(ACCOUNT_SCHEMAS[kind] ?? {}, fields, validator);
+
+const openAccounts = (
+  config: Omit<
+    Parameters<typeof createAccounts>[0],
+    "kinds" | "schemas" | "clock"
+  >,
+) =>
+  createAccounts({
+    kinds: ACCOUNT_SCHEMAS,
+    schemas: validator,
+    clock: systemClock,
+    ...config,
+  });
 
 const directories: string[] = [];
 const stores: AuthStore[] = [];
@@ -194,7 +216,7 @@ describe("an account the daemon holds", () => {
     });
     const accounts = await openAccounts({
       store,
-      config: [{ ...ACCOUNT, passwordEnv: "NC", extra: "from-config" }],
+      config: [{ ...ACCOUNT, passwordEnv: "NC" }],
       env: { NC: "config-secret" },
     });
 
@@ -220,11 +242,7 @@ describe("an account the daemon holds", () => {
       {
         kind: WEBDAV,
         name: "nextcloud",
-        fields: {
-          baseUrl: ACCOUNT.baseUrl,
-          username: ACCOUNT.username,
-          extra: "from-config",
-        },
+        fields: { baseUrl: ACCOUNT.baseUrl, username: ACCOUNT.username },
         from: "config",
       },
     ]);
@@ -391,9 +409,9 @@ username = "alice"
 passwordEnv = "A"`);
 
     expect(config.accounts[0]?.["baseUrl"]).toBe("ftp://cloud.example/dav");
-    expect(() =>
-      refuseUnusableAccounts(config.accounts, createAjvSchemaValidator()),
-    ).toThrow(/webdav account/);
+    expect(() => refuseUnusableAccounts(config.accounts)).toThrow(
+      /webdav account/,
+    );
   });
 });
 
@@ -403,10 +421,7 @@ passwordEnv = "A"`);
  */
 describe("checking an account against its kind", () => {
   const check = (body: string) =>
-    refuseUnusableAccounts(
-      parseConfig(body, "config.toml").config.accounts,
-      createAjvSchemaValidator(),
-    );
+    refuseUnusableAccounts(parseConfig(body, "config.toml").config.accounts);
 
   it("takes a webdav account carrying an address and a username", () => {
     expect(() =>
@@ -490,8 +505,161 @@ describe("checking a stored account against its kind", () => {
       keyword: "secretSource",
     });
   });
+});
 
-  it("throws for a kind nothing speaks, which is not a malformed account", () => {
-    expect(() => accountIssues("s3", {})).toThrow(/s3/);
+describe("writing an account", () => {
+  const FIELDS = {
+    baseUrl: "https://cloud.example/remote.php/dav/files/alice",
+    username: "alice",
+  };
+
+  it("stores one, offers its name at once, and resolves it", async () => {
+    const accounts = await openAccounts({
+      store: authStore(),
+      config: [],
+      env: {},
+    });
+
+    const put = await accounts.put({
+      kind: WEBDAV,
+      name: "nextcloud",
+      fields: FIELDS,
+      secret: "app-password",
+    });
+
+    expect(put).toMatchObject({ ok: true, value: { from: "stored" } });
+    expect(accounts.names(WEBDAV)).toEqual(["nextcloud"]);
+    await expect(accounts.resolve(WEBDAV, "nextcloud")).resolves.toMatchObject({
+      secret: "app-password",
+      username: "alice",
+    });
+  });
+
+  it("keeps the secret it holds when a replacement brings none", async () => {
+    const accounts = await openAccounts({
+      store: authStore(),
+      config: [],
+      env: {},
+    });
+    await accounts.put({
+      kind: WEBDAV,
+      name: "nextcloud",
+      fields: FIELDS,
+      secret: "app-password",
+    });
+
+    await accounts.put({
+      kind: WEBDAV,
+      name: "nextcloud",
+      fields: { ...FIELDS, username: "bob" },
+    });
+
+    await expect(accounts.resolve(WEBDAV, "nextcloud")).resolves.toMatchObject({
+      secret: "app-password",
+      username: "bob",
+    });
+  });
+
+  /** A config account's secret is not copied across: it lives in a file the daemon does not own. */
+  it("refuses a new account with no secret, even over a config one", async () => {
+    const accounts = await openAccounts({
+      store: authStore(),
+      config: [{ ...ACCOUNT, passwordEnv: "NC" }],
+      env: { NC: "config-secret" },
+    });
+
+    expect(
+      await accounts.put({ kind: WEBDAV, name: "nextcloud", fields: FIELDS }),
+    ).toEqual({ ok: false, refusal: { kind: "account-secret-missing" } });
+  });
+
+  it("refuses a kind nothing speaks, and fields its kind would not take", async () => {
+    const accounts = await openAccounts({
+      store: authStore(),
+      config: [],
+      env: {},
+    });
+
+    expect(
+      await accounts.put({ kind: "s3", name: "x", fields: {}, secret: "s" }),
+    ).toEqual({
+      ok: false,
+      refusal: { kind: "unknown-account-kind", accountKind: "s3" },
+    });
+    expect(
+      await accounts.put({
+        kind: WEBDAV,
+        name: "x",
+        fields: { ...FIELDS, passwordFile: "/run/a" },
+        secret: "s",
+      }),
+    ).toMatchObject({ ok: false, refusal: { kind: "invalid-account" } });
+  });
+
+  it("reveals the config account a removed one shadowed", async () => {
+    const accounts = await openAccounts({
+      store: authStore(),
+      config: [{ ...ACCOUNT, passwordEnv: "NC" }],
+      env: { NC: "config-secret" },
+    });
+    await accounts.put({
+      kind: WEBDAV,
+      name: "nextcloud",
+      fields: FIELDS,
+      secret: "held",
+    });
+
+    const removed = await accounts.remove(WEBDAV, "nextcloud");
+
+    expect(removed).toMatchObject({
+      ok: true,
+      value: { revealed: { from: "config", name: "nextcloud" } },
+    });
+    expect(accounts.shadowed()).toEqual([]);
+    await expect(accounts.resolve(WEBDAV, "nextcloud")).resolves.toMatchObject({
+      secret: "config-secret",
+    });
+  });
+
+  it("refuses to remove what is not stored, a config account among them", async () => {
+    const accounts = await openAccounts({
+      store: authStore(),
+      config: [{ ...ACCOUNT, passwordEnv: "NC" }],
+      env: {},
+    });
+
+    expect(await accounts.remove(WEBDAV, "nextcloud")).toMatchObject({
+      ok: false,
+      refusal: { kind: "no-such-account" },
+    });
+  });
+});
+
+describe("whether a secret is set", () => {
+  it("is so for a stored account, and for a config one whose source can be read", async () => {
+    const accounts = await openAccounts({
+      store: authStore(),
+      config: [
+        { ...ACCOUNT, passwordEnv: "NC" },
+        { ...ACCOUNT, name: "unset", passwordEnv: "NOTHING" },
+      ],
+      env: { NC: "config-secret" },
+    });
+    await accounts.put({
+      kind: "arena",
+      name: "mine",
+      fields: {},
+      secret: "token",
+    });
+
+    const set = Object.fromEntries(
+      await Promise.all(
+        accounts
+          .list()
+          .map(async (each) => [each.name, await accounts.secretSet(each)]),
+      ),
+    );
+
+    expect(set).toEqual({ mine: true, nextcloud: true, unset: false });
   });
 });

@@ -1,4 +1,8 @@
 import type {
+  Account,
+  AccountKind,
+  PutAccountRequest,
+  RemovedAccount,
   Action,
   ActionId,
   ActionKind,
@@ -290,6 +294,22 @@ export interface TokensApi {
   revoke(id: string): Promise<void>;
 }
 
+/**
+ * The accounts the daemon reaches other systems with. A session is required,
+ * as for tokens: whoever writes one can aim the daemon at any address with a
+ * password attached. No answer carries a secret.
+ */
+export interface AccountsApi {
+  /** Each kind that holds an account, with the schema its form is built from. */
+  kinds(): Promise<readonly AccountKind[]>;
+  /** Config and stored alike, a shadowed config one among them. */
+  list(): Promise<readonly Account[]>;
+  /** Creates or replaces a stored account. No secret keeps the one already held. */
+  put(kind: string, name: string, request: PutAccountRequest): Promise<Account>;
+  /** Forgets a stored account, answering the config one now used in its place. */
+  remove(kind: string, name: string): Promise<RemovedAccount>;
+}
+
 export interface Client {
   /**
    * Whether the pool is answering, and when it last did. Optimistic before
@@ -304,6 +324,7 @@ export interface Client {
   readonly session: Observable<SessionState>;
 
   readonly tokens: TokensApi;
+  readonly accounts: AccountsApi;
 
   /** Asks the daemon who this is. Open, so it answers whether or not anyone is. */
   askSession(): Promise<SessionState>;

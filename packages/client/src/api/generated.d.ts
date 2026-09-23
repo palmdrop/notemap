@@ -476,6 +476,326 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/account-kinds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the kinds that hold an account
+         * @description Each with the `accountSchema` an account of that kind must satisfy besides its secret, which is what a client builds its form from. The same arrangement as `GET /v1/destination-kinds`. **A session is required.**
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Every kind that holds an account. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AccountKinds"];
+                    };
+                };
+                /** @description Authenticated by an access token. Accounts are managed from a signed-in browser alone: whoever writes one can aim the daemon at any address with a password attached. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "session-required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the accounts the daemon can reach other systems with
+         * @description Every account, from config and held by the daemon alike, with the fields beside its secret. **No route answers a secret, ever**: `secretSet` says whether there is one, and that is all. A config account a stored one replaces is listed with `shadowed`, so it is never silently dropped. **A session is required.**
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Every account. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Accounts"];
+                    };
+                };
+                /** @description Authenticated by an access token. Accounts are managed from a signed-in browser alone: whoever writes one can aim the daemon at any address with a password attached. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "session-required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/accounts/{kind}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Create or replace an account held by the daemon
+         * @description Stored in the daemon's own database, beside the credential and never in the pool, so it is neither answered by any other route nor written to the mirror. The secret is stored as given: it is presented to another system, so unlike a password it cannot be hashed. A stored account replaces a config one of the same kind and name entirely. Leaving `secret` out keeps the one already held, and is refused where none is. **A session is required.**
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    kind: string;
+                    name: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PutAccountRequest"];
+                };
+            };
+            responses: {
+                /** @description Stored. Without its secret. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Account"];
+                    };
+                };
+                /** @description The body could not be read. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "malformed-json" | "malformed-envelope";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description Authenticated by an access token. Accounts are managed from a signed-in browser alone: whoever writes one can aim the daemon at any address with a password attached. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "session-required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description No kind of that name holds an account. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unknown-account-kind" | "no-such-account";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The body was not JSON. */
+                415: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unsupported-media-type";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The fields do not satisfy the kind's `accountSchema`, or no secret is held or given. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid-account" | "account-secret-missing";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        /**
+         * Forget an account held by the daemon
+         * @description Removes the stored account. A config account of the same kind and name is used again, and answered as `revealed`. Where there is none, removal is refused while a destination that is not retired names the account. A config account cannot be removed here. **A session is required.**
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    kind: string;
+                    name: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Forgotten. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RemovedAccount"];
+                    };
+                };
+                /** @description Authenticated by an access token. Accounts are managed from a signed-in browser alone: whoever writes one can aim the daemon at any address with a password attached. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "session-required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description No stored account has that kind and name. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unknown-account-kind" | "no-such-account";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description A destination that is not retired still names it. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "account-in-use";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/captures": {
         parameters: {
             query?: never;
@@ -3672,6 +3992,59 @@ export interface components {
              * @example 2026-11-30T09:00:00.000Z
              */
             expiresAt?: string;
+        };
+        AccountKinds: {
+            values: components["schemas"]["AccountKind"][];
+        };
+        AccountKind: {
+            name: string;
+            accountSchema: {
+                [key: string]: unknown;
+            };
+        };
+        Accounts: {
+            values: components["schemas"]["Account"][];
+        };
+        Account: {
+            /** @example webdav */
+            kind: string;
+            /** @example nextcloud */
+            name: string;
+            /**
+             * @description What the kind asks an account to carry besides its secret. Never the secret, and never where it is read from.
+             * @example {
+             *       "baseUrl": "https://cloud.example/remote.php/dav/files/alice",
+             *       "username": "alice"
+             *     }
+             */
+            fields: {
+                [key: string]: unknown;
+            };
+            /**
+             * @description `config` is declared under `[[accounts]]`; `stored` is held by the daemon and set over this API.
+             * @enum {string}
+             */
+            from: "config" | "stored";
+            /** @description A config account a stored one of the same kind and name replaces entirely. Listed so it is not silently dropped; never used. */
+            shadowed: boolean;
+            /** @description Whether a secret could be presented now: always for a stored account, and for a config one whether its file or variable can be read. */
+            secretSet: boolean;
+            /**
+             * @description When a stored account was last written.
+             * @example 2026-09-23T09:00:00.000Z
+             */
+            changedAt?: string;
+        };
+        PutAccountRequest: {
+            /** @description Must satisfy the kind's `accountSchema`. */
+            fields: {
+                [key: string]: unknown;
+            };
+            /** @description The password or token presented to the other system. Required to create; left out on a replacement, the secret already held is kept. */
+            secret?: string;
+        };
+        RemovedAccount: {
+            revealed?: components["schemas"]["Account"] & unknown;
         };
         CaptureOutcome: {
             /** @enum {string} */

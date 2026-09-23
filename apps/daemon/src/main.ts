@@ -10,13 +10,7 @@ import { cookieOptionsFor, loadConfig } from "./config/load";
 import { SHUTDOWN_GRACE_MS } from "./constants";
 import { startDeliveryRunner } from "./destinations/runner";
 import { startMirrorRunner } from "./mirror/runner";
-import { openAccounts } from "./accounts";
-import {
-  openPool,
-  openAuth,
-  refuseUnusableAccounts,
-  systemClock,
-} from "./ports";
+import { openAccounts, openAuth, openPool, systemClock } from "./ports";
 import { runCliCommand } from "./cli";
 import { FORGET_EXPIRED_EVERY_MS } from "./auth/config";
 import { provisionCredential } from "./auth/provision";
@@ -45,8 +39,6 @@ async function start(): Promise<void> {
     );
   }
 
-  refuseUnusableAccounts(config.accounts);
-
   mkdirSync(dirname(config.auth), { recursive: true });
 
   const { auth, store: authStore } = openAuth(
@@ -62,6 +54,7 @@ async function start(): Promise<void> {
   const accounts = await openAccounts({
     store: authStore,
     config: config.accounts,
+    clock: systemClock,
   });
 
   for (const each of accounts.shadowed()) {
@@ -143,6 +136,7 @@ async function start(): Promise<void> {
       fetch: createApp(pool, {
         limits: config.assets,
         auth,
+        accounts,
         cookies,
         ...(config.origin === undefined ? {} : { origin: config.origin }),
         throttle: createLoginThrottle({ clock: ports.clock }),

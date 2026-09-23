@@ -146,24 +146,25 @@ satisfy the schema as written. This is the one place ADR 40's contract has to gi
 
 _Depends on phase 3._
 
-- [ ] `GET /v1/account-kinds` — each kind that holds an account, with the schema a client builds a
+- [x] `GET /v1/account-kinds` — each kind that holds an account, with the schema a client builds a
       form from, mirroring `GET /v1/destination-kinds` exactly. The UI has no other way to know
       that webdav wants a `baseUrl` and a `username` and are.na wants neither.
-- [ ] `GET /v1/accounts` — every account from both sources, each carrying `kind`, `name`, the
+- [x] `GET /v1/accounts` — every account from both sources, each carrying `kind`, `name`, the
       non-secret fields, `secretSet`, `changedAt`, and `from: "config" | "stored"`. No secret.
-- [ ] `PUT /v1/accounts/{kind}/{name}` — create or replace a stored account. Validated per phase 3.
-- [ ] `DELETE /v1/accounts/{kind}/{name}` — removes the stored record. Where a config account of
+- [x] `PUT /v1/accounts/{kind}/{name}` — create or replace a stored account. Validated per phase 3.
+- [x] `DELETE /v1/accounts/{kind}/{name}` — removes the stored record. Where a config account of
       the same kind and name exists, this *reveals* it again rather than leaving nothing, and the
       response should make that legible. **Refused while a destination that is not retired names
       it**, with the count — matching "a destination is never removed once a routing record has
-      named it".
-- [ ] All four behind `requireSession`. A request carrying a bearer token is refused, and there is
+      named it". *As built*: not refused where a config account is revealed, since nothing is
+      stranded then. "Names it" reads `settings.account`, which both remote kinds use.
+- [x] All four behind `requireSession`. A request carrying a bearer token is refused, and there is
       a test for exactly that on each route.
-- [ ] Error kinds in the refusals table; `definitions.ts` and the OpenAPI document; the generated
+- [x] Error kinds in the refusals table; `definitions.ts` and the OpenAPI document; the generated
       client types; `packages/client` methods.
-- [ ] **Verify**: `pnpm --filter @notemap/daemon test` green; the OpenAPI snapshot test passes; a
+- [x] **Verify**: `pnpm --filter @notemap/daemon test` green; the OpenAPI snapshot test passes; a
       bearer token is refused on all four.
-- [ ] `git commit`
+- [x] `git commit`
 
 ### Phase 5 — the settings page
 
