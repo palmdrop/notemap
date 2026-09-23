@@ -126,9 +126,7 @@ describe("a block as the pool takes it", () => {
     expect(
       relayedFrom(block({ content: { markdown: "   " } }), bytes, []),
     ).toBeUndefined();
-    expect(
-      relayedFrom(block({ type: "Link" }), bytes, []),
-    ).toBeUndefined();
+    expect(relayedFrom(block({ type: "Link" }), bytes, [])).toBeUndefined();
   });
 
   it("reads a file through the reader it was given, once asked, passing the block itself", async () => {

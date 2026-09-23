@@ -1,0 +1,79 @@
+# notemap-relay-arena configuration.
+#
+# Copy to $XDG_CONFIG_HOME/notemap/relay-arena.toml (usually
+# ~/.config/notemap/relay-arena.toml), or pass --config <path>.
+#
+# A relay is a program outside notemap: it reads someone else's system and
+# captures what it finds over `/v1`, carrying an access token like anything
+# else that is not a browser. Nothing about it is in the daemon, and nothing
+# here is the daemon's config — which is why both tokens are named in this
+# file and neither is in that one.
+#
+# An unrecognised key is refused rather than ignored. This file has a dozen
+# keys and one job, so a misspelt one is a typo, not a key from a newer
+# version.
+
+# The notemap daemon this relay feeds.
+[pool]
+url = "http://127.0.0.1:4747"
+
+# The access token, minted with `notemap token mint --name relay-arena`. Read
+# from a file or from the environment — exactly one, and never an inline
+# `token`, which would put a secret in a file that is backed up and pasted
+# into issues. It is read at each poll, so rotating it is writing the file.
+#
+# It reaches the whole pool. There is no narrower grant yet.
+tokenFile = "~/.config/notemap/relay-arena/pool-token"
+# tokenEnv = "NOTEMAP_RELAY_ARENA_POOL_TOKEN"
+
+# are.na. Its address is a constant of the service, not a setting — there is
+# no url here, the way there is none in the destination adapter's account
+# either.
+[arena]
+
+# An access token from are.na's developer settings, under the same rule as
+# the pool's: a file or the environment, exactly one, never inline.
+#
+# The default scope — `read` — is enough. This relay only ever reads; unlike
+# the arena *destination*, which needs `write` to post a block, nothing here
+# asks are.na for anything it would refuse a read-only token.
+tokenFile = "~/.config/notemap/relay-arena/arena-token"
+# tokenEnv = "NOTEMAP_RELAY_ARENA_TOKEN"
+
+# One or more channels to watch. Every block connected into one arrives under
+# that channel's own source — never one source for the whole relay — because a
+# source is finer than the app that sent it, and because policy in notemap is
+# per source.
+[[channel]]
+# The channel's slug or its numeric ID, sent to are.na verbatim. The ID is the
+# one that survives a rename; a slug that has been retitled since is read as a
+# different, empty channel rather than an error, so prefer the ID once a
+# channel is settled.
+handle = "my-channel"
+
+# How the pool sees this channel. Required, and never derived from the handle:
+# a renamed channel would otherwise silently split one channel's items across
+# two sources, which reads in `GET /v1/sources` exactly like a relay that
+# died.
+source = "arena/my-channel"
+
+# Tags every block from this channel arrives with. are.na has no tags on a
+# block, so these are it — applied once, at capture, and never reconciled on a
+# later poll. Optional; empty by default.
+# tags = ["kind/reference"]
+
+# [[channel]]
+# handle = "another-channel"
+# source = "arena/another-channel"
+
+# How often every watched channel is read again. A poll holds nothing and
+# repeats everything, so this is latency and nothing else: a shorter interval
+# finds a block sooner, and costs one request per page plus one per changed
+# block, per channel.
+#
+# Longer than relay-memos' default: are.na asks callers not to enumerate
+# aggressively, and this relay re-reads every watched channel every poll.
+#
+# Polls never overlap — the next is due when the last one finished.
+[poll]
+interval = 900000 # milliseconds — fifteen minutes

@@ -24,12 +24,7 @@ export type ArenaAttachment = {
 };
 
 export type ArenaBlockType =
-  | "Text"
-  | "Link"
-  | "Image"
-  | "Attachment"
-  | "Embed"
-  | "Channel";
+  "Text" | "Link" | "Image" | "Attachment" | "Embed" | "Channel";
 
 /** One block, as `/v3/channels/{handle}/contents` answers it in a channel's context. */
 export type ArenaBlock = {

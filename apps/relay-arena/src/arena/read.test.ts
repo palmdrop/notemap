@@ -36,18 +36,19 @@ describe("reading a channel from are.na", () => {
 
     const arena = arenaAt({ token: "t", fetch, baseUrl: "https://x.example" });
 
-    expect((await all(arena.contents("some slug"))).map((b) => b.id)).toEqual(
-      [1],
-    );
-    expect(reached[0]?.url.pathname).toBe(
-      "/v3/channels/some%20slug/contents",
-    );
+    expect((await all(arena.contents("some slug"))).map((b) => b.id)).toEqual([
+      1,
+    ]);
+    expect(reached[0]?.url.pathname).toBe("/v3/channels/some%20slug/contents");
     expect(reached[0]?.headers.get("authorization")).toBe("Bearer t");
   });
 
   it("follows the pages until the last one answers no more", async () => {
     const pages = [
-      { data: [block(1), block(2)], meta: { has_more_pages: true, total_pages: 2 } },
+      {
+        data: [block(1), block(2)],
+        meta: { has_more_pages: true, total_pages: 2 },
+      },
       { data: [block(3)], meta: { has_more_pages: false, total_pages: 2 } },
     ];
     let page = 0;
@@ -103,9 +104,7 @@ describe("reading a channel from are.na", () => {
         )) as typeof globalThis.fetch,
     });
 
-    await expect(all(notFound.contents("gone"))).rejects.toThrow(
-      ArenaRefused,
-    );
+    await expect(all(notFound.contents("gone"))).rejects.toThrow(ArenaRefused);
     await expect(all(notFound.contents("gone"))).rejects.toThrow(
       /was refused 404/,
     );

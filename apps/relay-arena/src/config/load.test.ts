@@ -103,7 +103,9 @@ source = "arena/influences"
 `,
         "relay.toml",
       ),
-    ).toThrow(/source "arena\/influences" is configured for more than one channel/);
+    ).toThrow(
+      /source "arena\/influences" is configured for more than one channel/,
+    );
   });
 
   it("refuses the same handle configured twice", () => {

@@ -106,6 +106,33 @@ services:
   #   # a stopped scan leaves undone, the next poll does.
   #   stop_grace_period: 10s
 
+  # A second relay, reading a watched are.na channel instead of a Memos
+  # server. Its own image and its own two tokens — never watch a channel the
+  # `arena` destination also delivers into, or its own blocks are read back
+  # as fresh captures.
+  #
+  #   docker build -f Dockerfile.relay-arena -t notemap-relay-arena:local .
+  #
+  #   docker compose exec notemap notemap token mint --name relay-arena \
+  #     > notemap_relay_arena_pool_token
+  #
+  # relay-arena:
+  #   image: notemap-relay-arena:local
+  #   restart: unless-stopped
+  #
+  #   depends_on:
+  #     notemap:
+  #       condition: service_healthy
+  #
+  #   volumes:
+  #     - ./relay-arena.toml:/etc/notemap/relay-arena.toml:ro
+  #
+  #   secrets:
+  #     - notemap_relay_arena_pool_token
+  #     - notemap_relay_arena_token
+  #
+  #   stop_grace_period: 10s
+
 volumes:
   # The pool, the mirror and the assets, which are one backup unit.
   state:
@@ -118,3 +145,7 @@ volumes:
 #     file: ./notemap_relay_pool_token
 #   notemap_relay_memos_token:
 #     file: ./notemap_relay_memos_token
+#   notemap_relay_arena_pool_token:
+#     file: ./notemap_relay_arena_pool_token
+#   notemap_relay_arena_token:
+#     file: ./notemap_relay_arena_token

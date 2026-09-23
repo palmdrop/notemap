@@ -83,10 +83,7 @@ export function arenaAt(target: ArenaTarget) {
         );
       }
 
-      const response = await send(
-        link,
-        signal === undefined ? {} : { signal },
-      );
+      const response = await send(link, signal === undefined ? {} : { signal });
       if (!response.ok || response.body === null) {
         throw new ArenaRefused(
           response.status,

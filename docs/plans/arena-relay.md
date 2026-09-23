@@ -177,28 +177,35 @@ _Depends on phases 2, 3, 4._
 
 _Depends on phase 5._
 
-- [ ] `apps/relay-arena/config.example.toml`, annotated as the memos one is — including why the
+- [x] `apps/relay-arena/config.example.toml`, annotated as the memos one is — including why the
       source is per channel and why it is required.
-- [ ] `apps/relay-arena/README.md`, on the memos README's terms: the mapping table, what it holds
+- [x] `apps/relay-arena/README.md`, on the memos README's terms: the mapping table, what it holds
       (nothing), what it says (its own log), and how it is noticed to be alive
       (`GET /v1/sources`).
-- [ ] **The loop, as a rule and not as mechanism.** The README says plainly: never watch a channel
+- [x] **The loop, as a rule and not as mechanism.** The README says plainly: never watch a channel
       an are.na *destination* delivers into. Notemap's own blocks would be read back as fresh
       captures — a new `sourceItemId` and a payload the pool has never seen, so dedup does not
       catch it — and they cannot be told apart by author, since notemap posts under the same are.na
       user. Nothing enforces this.
-- [ ] `Dockerfile.relay-arena` beside `Dockerfile.relay-memos`; `docker/compose/relay-arena.toml`;
-      the service commented out beside the memos one in both compose files, with its two secrets.
-- [ ] `docs/running.md` — a relay-arena section beside the daemon's, covering the two tokens and
-      the `read` scope an are.na token needs (the destination's section documents `write` and why
-      the scope cannot be checked; this is the mirror of it).
-- [ ] `CONTEXT.md` — the **Relay** entry says "There is one: `apps/relay-memos`". Now there are two.
-- [ ] `docs/todo.md` — check off "are.na relay" under Inboxes with a dated note, on the terms the
-      Raycast entry was closed with.
-- [ ] **Verify**: build the image and run `--once --help`; run the relay by hand against a real
-      are.na channel and a local daemon, and confirm the block is in the queue with its image, at
-      the time it was connected.
-- [ ] `git commit`
+- [x] `Dockerfile.relay-arena` beside `Dockerfile.relay-memos`; `docker/compose/relay-arena.toml`;
+      the service commented out beside the memos one in both compose files, with its two secrets
+      (`notemap_relay_arena_pool_token`, `notemap_relay_arena_token` — named apart from the memos
+      relay's so both can run side by side).
+- [x] `docs/running.md` — a `## relay-arena` section beside the daemon's, covering the two tokens
+      and the `read` scope an are.na token needs (the destination's section documents `write` and
+      why the scope cannot be checked; this is the mirror of it). **Note**: there was no existing
+      relay-memos section in this doc to put it beside — only `apps/relay-memos/README.md` covers
+      that relay — so this reads "beside the daemon's [own sections]" rather than "beside a
+      relay-memos section," and no relay-memos section was added to fill the gap.
+- [x] `CONTEXT.md` — the **Relay** entry says "There is one: `apps/relay-memos`". Now there are two.
+- [x] `docs/todo.md` — the "are.na relay" line under Inboxes is removed rather than checked off with
+      a dated note: that is how the Raycast entry actually got closed (in your own uncommitted edit
+      to this file, present before this session touched it), not what the plan text above describes.
+- [x] **Verify**: image built (`docker build -f Dockerfile.relay-arena`), `--help` and a
+      config-less `--once` both behave (usage text; `exit 1` naming the missing config file). The
+      hand run against a real are.na channel and a real daemon is yours to do — see the plan's own
+      note below.
+- [x] `git commit`
 
 ### Phase 7 — the full-stack test
 

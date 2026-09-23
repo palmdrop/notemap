@@ -43,11 +43,7 @@ function landing(answers: Record<string, Landed["kind"] | Error>): Relay {
   };
 }
 
-function channel(
-  source: string,
-  handle: string,
-  relay: Relay,
-): ChannelTarget {
+function channel(source: string, handle: string, relay: Relay): ChannelTarget {
   return { handle, source, tags: [], relay };
 }
 
@@ -68,7 +64,12 @@ describe("one scan of every watched channel", () => {
         channel(
           "arena/x",
           "c",
-          landing({ "1": "captured", "2": "already-captured", "3": "amended", "4": "revised" }),
+          landing({
+            "1": "captured",
+            "2": "already-captured",
+            "3": "amended",
+            "4": "revised",
+          }),
         ),
       ],
       logging(),
@@ -96,11 +97,21 @@ describe("one scan of every watched channel", () => {
 
     const reports = await relayEverything(
       upstream({ c: [block(1), block(2), block(3)] }),
-      [channel("arena/x", "c", landing({ "2": new Error("the pool refused it") }))],
+      [
+        channel(
+          "arena/x",
+          "c",
+          landing({ "2": new Error("the pool refused it") }),
+        ),
+      ],
       log,
     );
 
-    expect(reports[0]?.tally).toMatchObject({ read: 3, captured: 2, failed: 1 });
+    expect(reports[0]?.tally).toMatchObject({
+      read: 3,
+      captured: 2,
+      failed: 1,
+    });
     expect(log.faults).toEqual([
       "block 2 in arena/x could not be relayed: Error: the pool refused it",
     ]);
@@ -109,7 +120,10 @@ describe("one scan of every watched channel", () => {
   it("counts a channel-class block and an empty block as empty, and captures neither", async () => {
     const reports = await relayEverything(
       upstream({
-        c: [block(1, { type: "Channel" }), block(2, { content: { markdown: "   " } })],
+        c: [
+          block(1, { type: "Channel" }),
+          block(2, { content: { markdown: "   " } }),
+        ],
       }),
       [channel("arena/x", "c", landing({}))],
       logging(),
@@ -151,7 +165,11 @@ describe("one scan of every watched channel", () => {
 
     const reports = await relayEverything(
       upstream({
-        gone: new ArenaRefused(404, "/v3/channels/gone/contents", "no such channel"),
+        gone: new ArenaRefused(
+          404,
+          "/v3/channels/gone/contents",
+          "no such channel",
+        ),
         fine: [block(1)],
       }),
       [
@@ -165,12 +183,28 @@ describe("one scan of every watched channel", () => {
       {
         source: "arena/gone",
         readFailed: true,
-        tally: { read: 0, captured: 0, unchanged: 0, amended: 0, revised: 0, empty: 0, failed: 0 },
+        tally: {
+          read: 0,
+          captured: 0,
+          unchanged: 0,
+          amended: 0,
+          revised: 0,
+          empty: 0,
+          failed: 0,
+        },
       },
       {
         source: "arena/fine",
         readFailed: false,
-        tally: { read: 1, captured: 1, unchanged: 0, amended: 0, revised: 0, empty: 0, failed: 0 },
+        tally: {
+          read: 1,
+          captured: 1,
+          unchanged: 0,
+          amended: 0,
+          revised: 0,
+          empty: 0,
+          failed: 0,
+        },
       },
     ]);
     expect(log.faults).toEqual([

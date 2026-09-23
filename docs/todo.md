@@ -154,7 +154,6 @@
     outside — retires those lines. It also gives the command `crypto`, which Raycast's global
     object leaves out and uuid reaches for, and `File`, which an attachment is and which has not
     been checked for either way.
-- [ ] are.na relay
 
 ## Pool, store and correctness
 

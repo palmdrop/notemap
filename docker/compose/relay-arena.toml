@@ -1,0 +1,42 @@
+# notemap-relay-arena, as the compose files run it.
+#
+# The annotated reference is `apps/relay-arena/config.example.toml`; this is the
+# same file with the container's paths in it. Mounted read-only at
+# /etc/notemap/relay-arena.toml, which is where the image's own entrypoint
+# looks.
+#
+# Nothing here is the daemon's config. A relay is a program outside notemap, so
+# both of its credentials live with it rather than with the pool it feeds.
+
+# The daemon, on the compose network. Never `127.0.0.1`: the port `compose.yaml`
+# publishes is on the host's loopback, which is not this container's.
+[pool]
+url = "http://notemap:4747"
+
+# Minted in the daemon's container and carried in as a compose secret:
+#
+#   docker compose exec notemap notemap token mint --name relay-arena \
+#     > notemap_relay_arena_pool_token
+#
+# Read at each poll, so rotating it is writing the file and restarting nothing.
+# It reaches the whole pool; there is no narrower grant yet.
+tokenFile = "/run/secrets/notemap_relay_arena_pool_token"
+
+# are.na. Its address is a constant of the service, so there is no url here.
+[arena]
+
+# An access token from are.na's developer settings, under the same rule as
+# the pool's: a file, never inline. The default `read` scope is enough — this
+# relay never writes to are.na.
+tokenFile = "/run/secrets/notemap_relay_arena_token"
+
+# One or more channels to watch. Replace with your own; `source` is required
+# and per channel, never derived from `handle`.
+[[channel]]
+handle = "my-channel"
+source = "arena/my-channel"
+# tags = ["kind/reference"]
+
+# How often every watched channel is read again. Polls never overlap.
+[poll]
+interval = 900000 # milliseconds — fifteen minutes

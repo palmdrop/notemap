@@ -48,7 +48,10 @@ function message(cause: unknown): string {
  * channels rather than one upstream. Answers whether the whole poll was
  * clean, which is what decides `--once`'s exit code.
  */
-async function poll(config: RelayConfig, signal: AbortSignal): Promise<boolean> {
+async function poll(
+  config: RelayConfig,
+  signal: AbortSignal,
+): Promise<boolean> {
   const arena = arenaAt({
     token: readSecret(config.arena.token, "the arena token"),
   });
