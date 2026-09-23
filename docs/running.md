@@ -229,7 +229,7 @@ The named volume `notemap_state` holds all three of these under `/var/lib/notema
 | | |
 |---|---|
 | `state/notemap.db` | The pool. The authority for everything. |
-| `state/auth.db` | The password and the access tokens. Not in the pool, and never mirrored. |
+| `state/auth.db` | The password, the access tokens, and every account set from settings, **its secret readable**. Not in the pool, and never mirrored. |
 | `pool-mirror/` | The plain-file copy of every item, written and never read back. |
 | `assets/` | The blobs — every uploaded image, recording and snapshot. |
 
@@ -345,7 +345,20 @@ mirror writes them to disk in the clear. And an address in one would be somewher
 that password, chosen by whoever can create a destination
 ([ADR 28](adr/0028-a-remote-destination-names-a-credential-profile-not-a-url.md)).
 
-So the account goes in `config.toml`, once:
+So an account is declared apart from any destination, in one of two places. **From settings**, on
+the Accounts page, while signed in: the daemon stores it in `state/auth.db`, and a new or replaced
+one is used from the next delivery on, with no restart. **Or in `config.toml`**, which is the way
+for a container with no browser. Where both name the same kind and name, the stored one wins
+entirely and the config block is ignored — the Accounts page marks it, and the daemon says so on
+startup.
+
+**A stored secret is recoverable on disk.** It has to be presented to Nextcloud or are.na, so it
+cannot be hashed the way your own password is. It sits in `auth.db` as given, protected by that
+file's `0600` mode and nothing else — the same as a `passwordFile`. No route answers it back, and an
+access token cannot reach the account routes at all. `auth.db` is not in the mirror, so a pool
+rebuilt from the mirror leaves every stored account to be set again.
+
+In `config.toml`, once:
 
 ```toml
 [[accounts]]
@@ -367,7 +380,8 @@ Plain HTTP is fine where the password cannot cross a network somebody else is on
 private or link-local address, or a **single-label name**, which is what a container on the same
 network is called. Nextcloud in the same compose stack is `http://nextcloud/remote.php/dav/files/…`
 and needs no certificate. Anywhere else, plain HTTP still works and the daemon says so once on
-startup, naming the account:
+startup, naming the account — a stored one included, though one stored while the daemon runs is
+not named until the next start:
 
 ```
 notemap: the webdav account nextcloud reaches cloud.example.com over plain HTTP, so its
@@ -402,7 +416,7 @@ An [are.na](https://www.are.na) account. A capture leaves as a **block**, connec
 you named.
 
 The account is a name and a token, and nothing else — are.na has no username, and its address is a
-constant of the service:
+constant of the service. Set it on the Accounts page in settings, or in `config.toml`:
 
 ```toml
 [[accounts]]

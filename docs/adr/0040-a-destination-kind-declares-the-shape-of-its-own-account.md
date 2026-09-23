@@ -1,7 +1,7 @@
 # 40. A destination kind declares the shape of its own account
 
 **Date**: 2026-09-07
-**Status**: Accepted — narrows [ADR 28](0028-a-remote-destination-names-a-credential-profile-not-a-url.md)
+**Status**: Accepted — narrows [ADR 28](0028-a-remote-destination-names-a-credential-profile-not-a-url.md). Amended by [ADR 49](0049-an-account-may-be-held-by-the-daemon.md): the schema covers only the fields beside the secret
 **Deciders**: palmdrop, with Claude
 
 ---

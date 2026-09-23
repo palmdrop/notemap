@@ -195,20 +195,20 @@ _Depends on phase 4._
 
 _Depends on phase 5._
 
-- [ ] An ADR: an account may be held by the daemon and set from the UI. It must carry the four
+- [x] An ADR: an account may be held by the daemon and set from the UI. It must carry the four
       points above — `auth.db` not the pool, recoverable and said so, session-only, whole-record
       precedence — and say what of ADR 28 and ADR 40 still stands. ADR 28's rule that a
       *destination* never holds an address or a secret is untouched and should be restated as
       untouched.
-- [ ] `apps/daemon/config.example.toml` — the long `[[accounts]]` comment now describes one of two
+- [x] `apps/daemon/config.example.toml` — the long `[[accounts]]` comment now describes one of two
       ways, and says which wins.
-- [ ] `docs/running.md` — the arena and webdav sections, plus a plain statement that a stored
+- [x] `docs/running.md` — the arena and webdav sections, plus a plain statement that a stored
       secret is recoverable on disk in `auth.db`, and that `auth.db` is not in the mirror so a
       rebuild leaves every account to be set again.
-- [ ] `CONTEXT.md` — the **Account** entry says an account is "declared in the daemon's config
+- [x] `CONTEXT.md` — the **Account** entry says an account is "declared in the daemon's config
       under `[[accounts]]`". Now it is declared there or held by the daemon.
-- [ ] **Verify**: `pnpm -r --silent test`, `pnpm -r --silent typecheck`, `pnpm -r --silent lint`.
-- [ ] `git commit`
+- [x] **Verify**: `pnpm -r --silent test`, `pnpm -r --silent typecheck`, `pnpm -r --silent lint`.
+- [x] `git commit`
 
 ### Phase 7 — the full-stack test
 

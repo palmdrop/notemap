@@ -134,10 +134,17 @@ format = "text" # text | json
 # at the first delivery hours later. A name has to be unique within its kind and
 # nowhere else, so two kinds may each have a `main`.
 #
-# Every kind says where its secret is read from in one key ending in `File` or
-# `Env` — exactly one, and never the bare word inline, which would put the
+# Every account says where its secret is read from in one key ending in `File`
+# or `Env` — exactly one, and never the bare word inline, which would put the
 # secret in this file. It is read when a delivery needs it rather than at
 # startup, so rotating one is writing the file.
+#
+# This is one of two ways to declare an account. The other is the Accounts
+# page in settings, which stores the account, secret included, in `auth.db`
+# (readable by whoever can read that file, and never mirrored). Where both
+# declare the same kind and name, **the stored one wins entirely** and this
+# block is ignored; the daemon says so on startup. Keep this way for a
+# container with no browser, where compose or Docker secrets fill `secretFile`.
 #
 # ## webdav
 #

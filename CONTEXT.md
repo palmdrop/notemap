@@ -510,14 +510,17 @@ _Avoid_: failed, error, rejected (reserved for suggestions)
 
 **Account**:
 A login the daemon holds on **another** system, so that a destination can deliver to it — a
-Nextcloud, an are.na, and whatever comes after. Declared in the daemon's config under
-`[[accounts]]`, one per kind and name, and resolved as one thing when a delivery needs it. What an
-account of a given kind must carry is that kind's own — an address and a username for one, a bare
-secret for another — declared by its adapter and checked when the daemon starts. Where the secret is
-read from is the only part every kind shares. Never in a destination's settings, which are pool
-state: a destination names an account and a place within it, and has nowhere to put an address or a
-secret ([ADR 28](docs/adr/0028-a-remote-destination-names-a-credential-profile-not-a-url.md),
-[ADR 40](docs/adr/0040-a-destination-kind-declares-the-shape-of-its-own-account.md)).
+Nextcloud, an are.na, and whatever comes after. Either declared in the daemon's config under
+`[[accounts]]`, or **stored** by the daemon in `auth.db`, set from the settings page. One per kind
+and name, and resolved as one thing when a delivery needs it. Where both declare the same kind and
+name, the stored one is used whole and the config one is **shadowed**. What an account of a given
+kind must carry besides its secret is that kind's own — an address and a username for one, nothing
+for another — declared by its adapter. The secret, and where a config account reads it from, are the
+host's. Never in a destination's settings, which are pool state: a destination names an account and
+a place within it, and has nowhere to put an address or a secret
+([ADR 28](docs/adr/0028-a-remote-destination-names-a-credential-profile-not-a-url.md),
+[ADR 40](docs/adr/0040-a-destination-kind-declares-the-shape-of-its-own-account.md),
+[ADR 49](docs/adr/0049-an-account-may-be-held-by-the-daemon.md)).
 
 The one word in this glossary that points outward. The daemon's own **credential** is not an
 account and is never called one, and neither is an **access token**, which notemap issues rather

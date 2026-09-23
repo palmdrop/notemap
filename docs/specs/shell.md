@@ -1,8 +1,15 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-22
+**Last updated**: 2026-09-23
 **Shipped**:
+
+- 2026-09-23 — **Accounts in settings.** A new `/settings/accounts` section lists every account
+  grouped by kind: where it came from, whether a secret is set, and which config accounts a stored
+  one shadows. Its form is built from each kind's `accountSchema`. The secret field is never filled
+  from the daemon, and left blank on an edit it keeps the held secret. The section that held
+  sign-out and access tokens is renamed `access`, since **account** means the outward thing. See
+  [accounts-in-the-auth-db](../plans/accounts-in-the-auth-db.md).
 
 - 2026-09-22 — **The capture box keeps a draft.** What is typed into it and the tags chosen for
   it are there again after a reload, a crash, a closed tab or a visit to another surface, until
@@ -1609,14 +1616,14 @@ timeline.
 
 Settings is the register's own grid *(redrawn 2026-09-16, [shell-redesign](../plans/shell-redesign.md)
 phase 6)*: the menu sits on the rail, ruled at its right, and one section sits beside it at
-`--spacing-read`. **Each section is a route**, `/settings/{destinations | templates | account |
-server | appearance}`; `/settings` itself redirects to `destinations` from `--breakpoint-narrow` up.
+`--spacing-read`. **Each section is a route**, `/settings/{destinations | accounts | templates |
+access | server | appearance}`; `/settings` itself redirects to `destinations` from `--breakpoint-narrow` up.
 Below it there is no rail beside a section to draw, so the menu becomes the phone's own landing page
 at `/settings` — each item 44px tall, ruled between — and a section carries `← settings` above its
 head instead. One component draws both; there is no second design for the phone. It has no lede and
 no tally in any head *(2026-08-24, widened 2026-09-16)*: the sections and their rows say what is on
-the page. A section's heading is bold capitals over a rule; a sub-head, for **access tokens** under
-account and **sources** under server, is the same, lower down.
+the page. A section's heading is bold capitals over a rule; a sub-head, for each kind under
+accounts, **access tokens** under access and **sources** under server, is the same, lower down.
 
 **A row's facts are the process surface's grid** — `9rem` uppercase labels beside their values,
 stacked below `--breakpoint-narrow` — so a destination, a template and a field read the same way
@@ -1679,7 +1686,18 @@ DESTINATION · ACTION · PLACE · FOLDER · USED`, `used` naming the count and w
 stranded template — one whose destination was deleted — still leads with that and is repointed by an
 ordinary edit of its destination field; the actions are `check again · edit | delete`.
 
-**Account** is one row — `signed in · this browser holds a session`, with `sign out` at the row's
+**Accounts** sits under Destinations *(2026-09-23)*: the logins the daemon holds on other systems,
+under a sub-head per kind. Each is one row: its name, then its fields, `secret set` or `no secret`,
+and where it came from — `stored <date>` or `config`. `edit` sits at the row's right, and `remove`
+too for a stored one. A config account a stored one replaces is drawn faded, reading `config —
+ignored, a stored one replaces it`, with no actions. `+ add an account` opens a form built from the
+kind's `accountSchema`, as the destination form is built from `settingsSchema`, with a `secret`
+field that is a password input and is never filled from the daemon. On an edit of a stored account,
+leaving it blank keeps the secret held. Editing a config account seeds the form from its fields,
+requires a secret, and says that saving stores the account and the config entry is ignored from
+then on.
+
+**Access** *(was Account, renamed 2026-09-23 so the word keeps its one meaning)* is one row — `signed in · this browser holds a session`, with `sign out` at the row's
 right — or, on a daemon nobody has set a password on, `open · no password is set…`, naming the
 command that closes the door. Under it, **access tokens**, drawn only for a session, as before: one
 row per token with when it was made and last used and `revoke` at its right, the once-shown minted
