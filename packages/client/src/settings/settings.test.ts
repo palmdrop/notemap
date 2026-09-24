@@ -46,6 +46,17 @@ describe("reading pool settings", () => {
     expect(client.settings.held).toBeUndefined();
   });
 
+  it("answers one setting's value, and nothing for one not read", async () => {
+    const { client } = clientOver(() =>
+      json(200, { values: [{ name: "unfurl", value: false }] }),
+    );
+
+    expect(client.settings.value("unfurl")).toBeUndefined();
+    await client.settings.load();
+    expect(client.settings.value("unfurl")).toBe(false);
+    expect(client.settings.value("second")).toBeUndefined();
+  });
+
   it("is dropped when the pool identity changes", async () => {
     const store = createMemoryStore();
     await store.writePoolIdentity("the-pool-that-was");

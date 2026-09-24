@@ -45,11 +45,7 @@ export type ClientState = {
   readonly destinations: readonly Destination[];
   /** The same, for templates: a saved decision is offered while the pool is away. */
   readonly templates: readonly RoutingTemplate[];
-  /**
-   * True of the pool rather than of any item. Absent is "not yet read" and
-   * never a guessed default — a cold client fails closed rather than answer
-   * for a pool it has not heard from.
-   */
+  /** Absent until read from the pool, never filled with a default. */
   readonly poolSettings?: readonly PoolSetting[];
   /** What completion offers, most used first, as the pool last counted it. */
   readonly tags: readonly TagUse[];

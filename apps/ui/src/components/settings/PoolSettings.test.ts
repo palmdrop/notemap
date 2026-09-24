@@ -3,7 +3,7 @@ import { expect, test, vi } from "vitest";
 
 import { json, routeOf } from "@notemap/client/testing";
 
-import { asked, pool, sent } from "$testing/pool";
+import { asked, client, pool, sent } from "$testing/pool";
 import PoolSettings from "./PoolSettings.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
@@ -73,4 +73,37 @@ test("a cold client draws it as unread rather than as on, while the read is in f
 
   settle(json(200, { values: [{ name: "unfurl", value: true }] }));
   await screen.findByRole("button", { name: "yes" });
+});
+
+test("a cached answer is read again on opening, and the pool's current one is drawn", async () => {
+  let value = true;
+  pool((request) =>
+    routeOf(request) === "GET /v1/settings"
+      ? json(200, { values: [{ name: "unfurl", value }] })
+      : json(404, { error: { code: "unknown-route" } }),
+  );
+  await client.settings.load();
+  value = false;
+
+  render(PoolSettings);
+
+  await vi.waitFor(() => {
+    expect(
+      screen.getByRole("button", { name: "no" }).getAttribute("aria-pressed"),
+    ).toBe("true");
+  });
+});
+
+test("choosing the option already chosen sends nothing", async () => {
+  serving([{ name: "unfurl", value: true }]);
+
+  render(PoolSettings);
+
+  await fireEvent.click(await screen.findByRole("button", { name: "yes" }));
+  await fireEvent.click(screen.getByRole("button", { name: "no" }));
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("PATCH /v1/settings");
+  });
+  expect(await sent()).toEqual([{ unfurl: false }]);
 });

@@ -22,14 +22,14 @@
     }
   }
 
-  // A cold client, or one opened while the pool was down, has nothing to draw
-  // until it is asked. Coming back into reach is the only moment anything
-  // will ask again.
+  // What this device cached may be stale, so opening the section, or the pool
+  // coming back into reach, always asks again.
   $effect(() => {
-    if (pool.yes && $settings === undefined) void read();
+    if (pool.yes) void read();
   });
 
-  async function change(name: string, value: boolean) {
+  async function change(name: string, value: boolean, now: boolean) {
+    if (value === now) return;
     changing = { ...changing, [name]: true };
     said = "";
     try {
@@ -68,13 +68,13 @@
               label="yes"
               chosen={setting.value}
               why={changing[setting.name] ? "…" : undefined}
-              onchoose={() => void change(setting.name, true)}
+              onchoose={() => void change(setting.name, true, setting.value)}
             />
             <Option
               label="no"
               chosen={!setting.value}
               why={changing[setting.name] ? "…" : undefined}
-              onchoose={() => void change(setting.name, false)}
+              onchoose={() => void change(setting.name, false, setting.value)}
             />
           </span>
         {:else}

@@ -12,11 +12,6 @@ export type PoolSettingsDeps = {
   readonly cached: (settings: readonly PoolSetting[]) => Promise<void>;
 };
 
-/**
- * Not an outbox operation: a change validated against a cached list of known
- * names would hand back an acceptance the pool may refuse. Reached only while
- * online, on the destinations cache's own terms.
- */
 export function createPoolSettings(deps: PoolSettingsDeps): PoolSettingsApi {
   const { api } = deps;
 
@@ -25,6 +20,10 @@ export function createPoolSettings(deps: PoolSettingsDeps): PoolSettingsApi {
 
     get held() {
       return deps.held();
+    },
+
+    value(name: string): boolean | undefined {
+      return deps.held()?.find((setting) => setting.name === name)?.value;
     },
 
     async load(): Promise<readonly PoolSetting[]> {

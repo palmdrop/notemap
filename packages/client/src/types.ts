@@ -200,21 +200,19 @@ export interface DestinationsApi {
 }
 
 /**
- * True of the pool rather than of any item, destination or template. Cached on
- * destinations' and templates' terms — read for display, persisted, offered
- * from the cache while the pool is out of reach — and **not** an outbox
- * operation: a change validated against a cached list of known names would
- * hand back an acceptance the pool may refuse.
+ * Not an outbox operation: a change checked against a cached list of names
+ * would hand back an acceptance the pool may refuse.
  */
 export interface PoolSettingsApi {
   /** What was last read, for a screen to render while the pool is unreachable. */
   readonly all: Observable<readonly PoolSetting[] | undefined>;
-  /**
-   * The same cache, read now. Absent is "not yet read" — never guessed from a
-   * setting's own default — which is what lets a reader fail closed rather
-   * than assume an answer the pool has not given yet.
-   */
+  /** The same cache, read now. Absent until read, never filled with a default. */
   readonly held: readonly PoolSetting[] | undefined;
+  /**
+   * One setting's value as last read, absent where it has not been — so a
+   * caller that must fail closed writes `value(name) === true`.
+   */
+  value(name: string): boolean | undefined;
 
   /** Fills the cache `all` answers from, and answers the same list. */
   load(): Promise<readonly PoolSetting[]>;
