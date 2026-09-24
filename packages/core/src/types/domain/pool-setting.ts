@@ -1,10 +1,5 @@
 import type { PoolSettingName, Timestamp } from "./ids";
 
-/**
- * What kind of value a pool setting carries. One today, because nothing built
- * so far needs richer — the closed list in `POOL_SETTINGS` is what grows, not
- * this.
- */
 export type PoolSettingType = "boolean";
 
 /** A pool setting's name, type and default, as the running code declares it. */

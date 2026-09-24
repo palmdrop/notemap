@@ -62,12 +62,7 @@ export type RoutingTemplateMirrorRecord = {
   readonly modifiedAt: Timestamp;
 };
 
-/**
- * The third non-item unit: what a person changed about the pool itself. Never
- * removed — a reverted setting is an ordinary write, a value equal to the
- * default included — so this is the one mirror record kind with no matching
- * `mirror-remove` job.
- */
+/** Never removed: reverting a setting writes its default, so no `mirror-remove` names one. */
 export type PoolSettingMirrorRecord = {
   readonly kind: "pool-setting";
   readonly setting: PoolSettingName;

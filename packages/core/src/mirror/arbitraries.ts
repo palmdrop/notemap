@@ -248,7 +248,6 @@ export const destination = (): fc.Arbitrary<Destination> =>
     },
   );
 
-/** The mirror's third non-item unit: what someone changed about the pool itself. */
 export const poolSettingRecord = (): fc.Arbitrary<PoolSettingRecord> =>
   fc.record({ name: branded(), value: fc.boolean(), changedAt: stamp() });
 

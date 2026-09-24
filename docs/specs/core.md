@@ -6,8 +6,8 @@
 
 - 2026-09-24 — **A pool holds pool settings.** A value true of the pool rather than of any item,
   destination or template — read over `/v1`, changed by a person using notemap, written to the
-  action log, mirrored, and read back the same on every device. One exists: the unfurl opt-out,
-  a boolean defaulting to on. See [ADR 49](../adr/0049-pool-settings-are-pool-state.md) and
+  action log, mirrored, and read the same on every device. One exists: the unfurl opt-out,
+  a boolean defaulting to on. See [ADR 50](../adr/0050-pool-settings-are-pool-state.md) and
   [a-pool-holds-settings](../plans/a-pool-holds-settings.md).
 
 - 2026-09-23 — **A block connected to a watched are.na channel reaches the pool by itself.**
@@ -1331,7 +1331,7 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 
 - A **pool setting** is a value true of the pool rather than of any item, destination or template —
   changed by a person while using notemap, on destinations' footing rather than an install's
-  ([ADR 49](../adr/0049-pool-settings-are-pool-state.md)). The known ones are a closed list core
+  ([ADR 50](../adr/0050-pool-settings-are-pool-state.md)). The known ones are a closed list core
   exports as `POOL_SETTINGS`, and a host hands back on `PoolConfig.poolSettings`, on
   `PAYLOAD_TYPES`'s own pattern ([ADR 43](../adr/0043-config-holds-what-an-install-is.md)): core
   validates against what it was given rather than what it found. One entry exists today: `unfurl`,
@@ -1340,13 +1340,15 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   effective value for every known setting, and adding one later is an entry and a migration, never
   a backfill.
 - **Writing always writes a row**, a value equal to the default included. Reverting a setting is an
-  ordinary change with an ordinary action and an ordinary mirror write, not a delete path.
+  ordinary change with an ordinary action and an ordinary mirror write, not a delete path. A change
+  to the value already stored changes nothing, and so writes no row, no action and no mirror write.
 - **A change is an action**, `pool-setting-changed`, carrying the setting's name and the value
   before and after. `Action.subject` is not widened: a setting names itself in `detail`, exactly as
   a destination already does.
-- **One mirror record per pool setting**, subject `{ kind: "pool-setting", setting }`. A record
-  naming a setting the running code does not know is warned about and skipped on a rebuild — the
-  mechanism ADR 43 already chose for a leftover `config.toml` key.
+- **One mirror record per pool setting**, subject `{ kind: "pool-setting", setting }`. Rebuild is
+  not built, so nothing reads these back yet. When it is, a record naming a setting the running code
+  does not know is to be warned about and skipped — the mechanism ADR 43 already chose for a
+  leftover `config.toml` key.
 - **The client fails closed** ([client.md](client.md)): a client that has not yet read a setting
   from the pool treats it as off, never guessing from the constant's own default.
 - `unknown-pool-setting` and `pool-setting-invalid` are the two refusals, facts and no sentence, on

@@ -13,17 +13,10 @@ import type {
 } from "#types/domain/pool-setting";
 import type { Result } from "#types/result";
 
-/**
- * The known pool settings, closed and declared here rather than discovered: a
- * name the running code does not know is refused rather than stored. One
- * today — `unfurl`, a boolean defaulting to on — and a second is an entry
- * here and a migration, not a redesign.
- */
 export const POOL_SETTINGS: readonly PoolSettingDescriptor[] = [
   { name: "unfurl" as PoolSettingName, type: "boolean", default: true },
 ];
 
-/** Every known pool setting, unset reading as its default. */
 export async function list(
   config: PoolConfig,
   ports: PoolPorts,
@@ -51,7 +44,6 @@ function wrongType(declared: PoolSettingDescriptor, value: JsonValue): boolean {
   }
 }
 
-/** One setting at a time, so two callers changing two settings never clobber each other. */
 export function change(
   config: PoolConfig,
   ports: PoolPorts,
@@ -83,8 +75,11 @@ export function change(
 
   return ports.store.transaction(async (tx) => {
     const before = await tx.poolSettings();
-    const previous =
-      before.find((each) => each.name === name)?.value ?? declared.default;
+    const stored = before.find((each) => each.name === name);
+    if (stored?.value === settled) {
+      return ok<PoolSetting, PoolSettingRefusal>({ name, value: settled });
+    }
+    const previous = stored?.value ?? declared.default;
 
     const at = ports.clock.now();
     const record: PoolSettingRecord = { name, value: settled, changedAt: at };

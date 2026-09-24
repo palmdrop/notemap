@@ -130,7 +130,6 @@ describe("the record round trips", () => {
     );
   });
 
-  /** The mirror's third non-item unit, on the same property. */
   it("carries a pool setting whole", () => {
     fc.assert(
       fc.property(poolSettingRecord(), (held) => {

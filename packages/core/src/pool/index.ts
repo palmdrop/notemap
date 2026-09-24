@@ -35,7 +35,5 @@ export { Rejected } from "./destinations/probe";
 // a second type is a code change everywhere one is read.
 export { PAYLOAD_TYPES } from "./payload";
 
-// A pool setting is a name, a type and a default, declared by this constant on
-// the same pattern: a host puts it on the pool config it builds, and core
-// validates against what it was given rather than what it found.
+// The same arrangement for the pool settings this code knows.
 export { POOL_SETTINGS } from "./settings";

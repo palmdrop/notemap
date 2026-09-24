@@ -171,6 +171,27 @@ describe("changing a pool setting", () => {
     ]);
   });
 
+  it("writes nothing when the stored value is already the one asked for", async () => {
+    const wired = ports([
+      {
+        name: UNFURL,
+        value: false,
+        changedAt: "2026-09-24T09:00:00.000Z" as Timestamp,
+      },
+    ]);
+    const result = await change(CONFIG, wired, UNFURL, false);
+
+    expect(result).toEqual({
+      kind: "ok",
+      value: { name: UNFURL, value: false },
+    });
+    expect(wired.held).toEqual([
+      expect.objectContaining({ changedAt: "2026-09-24T09:00:00.000Z" }),
+    ]);
+    expect(wired.appended).toEqual([]);
+    expect(wired.enqueued).toEqual([]);
+  });
+
   it("enqueues one mirror write naming the setting", async () => {
     const wired = ports();
     await change(CONFIG, wired, UNFURL, false);
