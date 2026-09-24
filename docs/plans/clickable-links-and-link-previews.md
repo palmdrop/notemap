@@ -231,67 +231,71 @@ ship meanwhile.
 
 What this plan owes it is one entry in a constant.
 
-- [ ] Check the prerequisite is `Done` and its spec `Shipped:` entries are in place.
-- [ ] Add `unfurl` to `POOL_SETTINGS`: a boolean, **default on**. On is what the shell does before
+- [x] Check the prerequisite is `Done` and its spec `Shipped:` entries are in place.
+- [x] Add `unfurl` to `POOL_SETTINGS`: a boolean, **default on**. On is what the shell does before
       anybody says otherwise, and the safer default was weighed — a feature nobody can see until
       they find a switch is a feature nobody finds. The ADR from phase 2 says so.
-- [ ] Nothing else. The table, the routes, the action, the mirror record, `client.settings` and the
+- [x] Nothing else. The table, the routes, the action, the mirror record, `client.settings` and the
       **Pool settings** section all exist already, and the host already hands the list back.
-- [ ] Verify: `pnpm -r --silent test` green; by hand, the pool setting appears under **Pool
+- [x] Verify: `pnpm -r --silent test` green; by hand, the pool setting appears under **Pool
       settings** and in `GET /v1/settings`, and flipping it in one browser is agreed with by
       another.
-- [ ] Commit `feat(core): the unfurl pool setting`.
+- [x] Commit `feat(core): the unfurl pool setting`. *Nothing to commit: `unfurl` landed in
+      `POOL_SETTINGS` with the prerequisite plan (#75).*
 
 ### Phase 4 — the daemon unfurls
 
 Depends on phase 3, whose pool setting the route consults. Nothing in the shell calls this route until
 phase 6; until then it is reachable only by a signed-in caller who curls it deliberately.
 
-- [ ] `apps/daemon/src/unfurl/`: the fetch, the guard, the extraction and the cache, as small files
+- [x] `apps/daemon/src/unfurl/`: the fetch, the guard, the extraction and the cache, as small files
       beside each other. Daemon-only — it is not core's, it is not a port, and no adapter seam has
       asked for it.
-- [ ] The **guard**, with its own file and its own tests. Every rule from *Decisions taken*, as
+- [x] The **guard**, with its own file and its own tests. Every rule from *Decisions taken*, as
       named limits rather than inline numbers: the two allowed schemes; the refused address
       families, checked against an IP-literal host and against every address a name resolves to;
       the redirect cap, with each hop resolved and checked again; the wall-clock timeout; the byte
       cap. **No allowlist, no configuration, no way to switch it off.**
-- [ ] The **pinned fetch**, which is why the fetch is a seam of its own: the connection goes to the
+- [x] The **pinned fetch**, which is why the fetch is a seam of its own: the connection goes to the
       address the guard checked, the original hostname is kept for `Host` and for TLS SNI, and
       redirects are read and followed by hand rather than by the runtime — so no hop is fetched by
       a name that was resolved twice. The seam is also what makes the tests injectable without a
       global stub.
-- [ ] The **extraction**: `og:title`, `og:description`, `og:image`, `og:site_name`, falling back to
+- [x] The **extraction**: `og:title`, `og:description`, `og:image`, `og:site_name`, falling back to
       the document's `<title>`. An answer with none of them is an answer, not a failure.
       `og:image` comes back as the absolute URL the browser will fetch.
-- [ ] The **cache**: one in-memory map, an hour per entry, five hundred entries, and a short
+- [x] The **cache**: one in-memory map, an hour per entry, five hundred entries, and a short
       lifetime of its own for an answer that failed. Lost on restart, invisible to the mirror, and
       nothing in the pool refers to it.
-- [ ] `routes/definitions.ts`, `routes/unfurl.ts`, and the registration in `app.ts` — behind the
+- [x] `routes/definitions.ts`, `routes/unfurl.ts`, and the registration in `app.ts` — behind the
       existing gate, so it is **not** in `OPEN_PATHS`. A signed-in caller only, and **refused
       while the pool setting is off**, which is the boundary the client's not-asking is not.
-- [ ] The answer shape: what was read, or an ordinary answer saying nothing was. A refusal is for a
+- [x] The answer shape: what was read, or an ordinary answer saying nothing was. A refusal is for a
       request that is wrong — a missing or unparseable `url`, an address the guard refuses, the
       setting being off — and each wants an entry in the refusal table with the status the
       document's own stated rule gives it. A target that timed out or answered nothing usable is
       not a refusal.
-- [ ] `routes/unfurl.test.ts`: a page with all four properties; one with none, falling back to
+- [x] `routes/unfurl.test.ts`: a page with all four properties; one with none, falling back to
       `<title>`; one with neither; a redirect chain inside the cap and one past it; a redirect that
       lands on a refused address; a target that times out; every refused address family, by literal
       and by resolved name; a name that resolves to one address for the check and another for the
       fetch, which the pinning must defeat; an oversized body cut short; a second call inside the
       hour served without a second fetch and one after it fetching again; a failure served from the
       short-lived cache and re-fetched after it; the route refused while the setting is off.
-- [ ] `docs/specs/http-v1.md`: the route, its parameter, its answer, the new refusal codes, and a
+- [x] `docs/specs/http-v1.md`: the route, its parameter, its answer, the new refusal codes, and a
       *Settled* line dated the day it lands.
-- [ ] `docs/specs/security.md`: a section for the one egress path a caller chooses — what the guard
+- [x] `docs/specs/security.md`: a section for the one egress path a caller chooses — what the guard
       checks, that the address is pinned so the check is the address that is fetched, that there is
       no allowlist by decision, and that the route is behind the door and behind a pool setting.
       What it still does not close belongs here too, stated rather than claimed away.
-- [ ] Verify: `pnpm --filter daemon test` green; `pnpm -r typecheck` and lint green; OpenAPI
+- [x] Verify: `pnpm --filter daemon test` green; `pnpm -r typecheck` and lint green; OpenAPI
       regenerated and `openapi.test.ts` green. By hand: `curl` the route for a public page, for
       `http://127.0.0.1:4747/`, for a name resolving to `127.0.0.1`, and for a link-local address,
-      and see the last three refused.
-- [ ] Commit `feat(daemon): unfurl an external link`.
+      and see the last three refused. *(2026-09-24: run against the real resolver and fetch rather
+      than through `curl` — are.na, GitHub and Wikipedia answered in full; `127.0.0.1:4747`,
+      `localhost` and `169.254.169.254` refused; Instagram answered its login wall's title,
+      `Instagram`, and nothing else.)*
+- [x] Commit `feat(daemon): unfurl an external link`.
 
 ### Phase 5 — the wire reaches the shell
 

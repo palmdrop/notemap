@@ -73,6 +73,7 @@ import {
   untagRoute,
   updateDestinationRoute,
   updatePoolSettingsRoute,
+  unfurlRoute,
 } from "./routes/definitions";
 import {
   createDestinationHandler,
@@ -103,6 +104,8 @@ import {
   poolSettingsHandler,
   updatePoolSettingsHandler,
 } from "./routes/settings";
+import { unfurlHandler } from "./routes/unfurl";
+import type { Unfurler } from "./unfurl";
 import { sourcesInUseHandler } from "./routes/sources";
 import { tagHandler, tagsInUseHandler } from "./routes/tags";
 import {
@@ -156,6 +159,7 @@ export type AppOptions = {
   readonly origin?: string;
   readonly throttle: Throttle;
   readonly log: Logger;
+  readonly unfurler: Unfurler;
 };
 
 export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
@@ -284,6 +288,7 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
     honoPath(updatePoolSettingsRoute.path),
     updatePoolSettingsHandler(pool),
   );
+  app.get(honoPath(unfurlRoute.path), unfurlHandler(pool, options.unfurler));
 
   app.put(honoPath(assetUploadRoute.path), assetUploadHandler(pool, limits));
   app.get(honoPath(assetRoute.path), assetHandler(pool));

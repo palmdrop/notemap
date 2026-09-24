@@ -16,6 +16,7 @@ import { FORGET_EXPIRED_EVERY_MS } from "./auth/config";
 import { provisionCredential } from "./auth/provision";
 import { createLoginThrottle } from "./auth/throttle";
 import { createLogger } from "./log";
+import { createUnfurler, pinnedFetch, systemResolve } from "./unfurl";
 
 async function start(): Promise<void> {
   const { values } = parseArgs({
@@ -141,6 +142,11 @@ async function start(): Promise<void> {
         ...(config.origin === undefined ? {} : { origin: config.origin }),
         throttle: createLoginThrottle({ clock: ports.clock }),
         log,
+        unfurler: createUnfurler({
+          resolve: systemResolve,
+          fetch: pinnedFetch,
+          now: Date.now,
+        }),
       }).fetch,
       hostname: config.host,
       port: config.port,

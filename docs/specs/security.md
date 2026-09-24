@@ -1,7 +1,7 @@
 # Spec: What is undefended
 
 **Status**: Draft
-**Last updated**: 2026-09-08
+**Last updated**: 2026-09-24
 **Shipped**:
 
 - 2026-09-23 — **An account may be stored by the daemon.** Set from settings by a signed-in
@@ -370,6 +370,48 @@ threat ADR 28 closed: the address comes from an authenticated answer rather than
 authorisation — and no answer from it is trusted for anything but whether the write succeeded. What
 travels is material a person decided to route there, which is the point of routing it. A redirect
 from such an address is not followed either.
+
+### Unfurling
+
+`GET /v1/unfurl` ([http-v1.md](http-v1.md#unfurling-a-link)) is **the one outbound request whose
+address the caller chooses** *(2026-09-24,
+[ADR 51](../adr/0051-an-unfurl-is-the-daemons-and-is-not-enrichment.md))*. Everything else the
+daemon reaches is an account a person configured, or an address such an account's answer named.
+Without a guard it would let any caller make the daemon fetch its own loopback, the network it sits
+on, or a cloud metadata address.
+
+**What the guard checks.** The scheme is `http` or `https`, and a URL carrying credentials is
+refused. The host — an IP literal, in whatever form the URL parser normalises, or **every** address
+a name resolves to — must be public: loopback, private, shared (`100.64.0.0/10`), link-local,
+unique-local, multicast, reserved, documentation, benchmarking and unspecified ranges are refused,
+and so is every IPv6 form that embeds an IPv4 address (mapped, compatible, NAT64, 6to4, Teredo),
+so a private address cannot arrive dressed as v6. One refused address among several refuses the
+name. At most five redirects, each hop checked again; five seconds for the whole chain; half a
+megabyte read, counted after decompression.
+
+**The address checked is the address fetched.** The daemon resolves a name once, checks what came
+back, and connects to that address, with the name kept for `Host` and TLS SNI; redirects are read
+and followed by hand. A name answering one address to the check and another to the connection —
+DNS rebinding — does not get through.
+
+**There is no allowlist, by decision.** No configuration, no deployment-level exception, and no
+way to switch the guard off. A self-hosted wiki on the same network gets no unfurl: no unfurl is
+preferred to any path by which an internal address gets fetched.
+
+**Behind the door, and behind a pool setting.** A caller must be signed in or carry a token. While
+the pool setting `unfurl` is off the route is refused before anything is resolved.
+
+**What it does not close**, stated rather than claimed away:
+
+- **Any port on a public address.** The guard checks addresses, not ports: the daemon can be asked
+  to open a connection to port 25 of a public host and send an HTTP request to it.
+- **The daemon's own public address, if it has one.** A daemon reachable at a public address can be
+  asked to fetch itself there; it would meet its own door.
+- **What the target learns.** The page's server sees the daemon's address and that somebody is
+  reading the link, which is what the pool setting exists to turn off. The picture is fetched by the
+  browser, from wherever `og:image` points, so the image host sees the reader.
+- **Load.** An unfurl is cached, and not rate-limited: a signed-in caller can make the daemon fetch
+  as many distinct URLs as it asks for.
 
 ### No CORS headers, which is load-bearing
 

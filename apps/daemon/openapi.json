@@ -2244,6 +2244,36 @@
       "UpdatePoolSettingsRequest": {
         "type": "object",
         "additionalProperties": {}
+      },
+      "Unfurl": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "As asked."
+          },
+          "reached": {
+            "type": "boolean",
+            "description": "False where nothing could be read: the target was unreachable, timed out, or did not answer a success. Not a refusal."
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string",
+            "description": "Absolute, `http` or `https`. Fetched by whoever draws it."
+          },
+          "siteName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "reached"
+        ]
       }
     },
     "parameters": {}
@@ -7587,6 +7617,101 @@
                           "type": "string",
                           "enum": [
                             "pool-setting-invalid"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/unfurl": {
+      "get": {
+        "summary": "Read what an external link points at",
+        "description": "The daemon fetches the page and answers its Open Graph title, description, image and site name, falling back to the document's `<title>`. Indicative: held in memory for an hour (a failure for minutes), never pool state. Only a public address is fetched — every hop of a redirect is checked, and the connection is made to the address that was checked. A target that could not be read is an ordinary answer with `reached: false`, not a refusal. Refused outright while the `unfurl` pool setting is off.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "`http` or `https`, with no credentials in it.",
+              "example": "https://example.org/"
+            },
+            "required": true,
+            "description": "`http` or `https`, with no credentials in it.",
+            "name": "url",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What the page says about itself, or that nothing could be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unfurl"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The `unfurl` pool setting is off.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unfurl-off"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The address is not `http` or `https`, carries credentials, or is not one the daemon will fetch.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "bad-url",
+                            "address-refused"
                           ]
                         }
                       },

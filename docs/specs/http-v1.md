@@ -1,7 +1,7 @@
 # Spec: HTTP API (`/v1`)
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
-editing, destinations, routing to one, pool settings and health are settled; the rest is stub
+editing, destinations, routing to one, pool settings, unfurling and health are settled; the rest is stub
 **Last updated**: 2026-09-24
 **Shipped**:
 
@@ -328,6 +328,10 @@ because of one.
 
 Settled (2026-09-07): `GET /v1/sources`, and `assets` on the `Item` — the payload's references
 resolved, carried by every read that answers items.
+
+Settled (2026-09-24): `GET /v1/unfurl`, what an external link points at, read by the daemon and
+held in memory — the one route whose outbound address the caller chooses
+([ADR 51](../adr/0051-an-unfurl-is-the-daemons-and-is-not-enrichment.md)).
 
 Still stub, and unwritten below: suggestions and their decisions, artifacts and corrections, purge
 and tombstones, range requests over asset content, the wire form of sync delta reads, and
@@ -1689,6 +1693,42 @@ Answers the same shape as `GET`, as it now stands.
   type is `422 pool-setting-invalid` carrying what was expected. Either way nothing is written.
 - Not paginated: there are as many pool settings as core has declared, never more than a handful.
 
+### Unfurling a link
+
+`GET /v1/unfurl?url=` — what a link points at, read by the daemon from the page's Open Graph tags:
+`og:title`, `og:description`, `og:image` and `og:site_name`, with the document's `<title>` where
+`og:title` is missing. oEmbed is not read.
+
+```json
+{
+  "url": "https://www.are.na/",
+  "reached": true,
+  "title": "Are.na",
+  "description": "Are.na is a platform for connecting ideas and building knowledge.",
+  "image": "https://www.are.na/og-image.png",
+  "siteName": "Are.na"
+}
+```
+
+- **`url` is as asked**, so a caller can match an answer to the link it drew. Every field besides
+  `url` and `reached` may be absent; a page that says nothing about itself answers the two alone.
+- **Nothing read is an answer, not a refusal.** A target that did not resolve, timed out, answered
+  something other than a success, or redirected somewhere the guard will not go answers `200` with
+  `reached: false`. A response that is an image answers its own address as `image`.
+- **`image` is absolute and `http` or `https`**, and the daemon does not fetch it: whoever draws it
+  does.
+- **Indicative, and held in memory.** An answer is kept for an hour, one that reached nothing for
+  five minutes, five hundred at most; lost on restart, never pool state, never mirrored, never an
+  action. Two reads of the same link at once make one request.
+- **Only a public address is fetched** — the guard in [security.md](security.md#unfurling), which
+  has no allowlist and no switch. An address that is not `http` or `https`, carries credentials, or
+  is missing is `422 bad-url`; one whose host is, or resolves to, an address the guard refuses is
+  `422 address-refused`. A redirect to such an address is the target's doing, not the caller's,
+  and answers `reached: false`.
+- **Behind the door, and behind a pool setting.** Not in `OPEN_PATHS`. While the pool setting
+  `unfurl` is off it is `409 unfurl-off`, and nothing is resolved or fetched — the client does not
+  ask either, but only this check is a boundary.
+
 ### Errors
 
 Every error, from core or from the daemon, is one shape:
@@ -1737,6 +1777,7 @@ Every error, from core or from the daemon, is one shape:
 | `409` | `destination-unusable` | `destination`, `detail` | core |
 | `409` | `trigger-tag-taken` | `tag`, `template` | core |
 | `409` | `account-in-use` | `destinations` | daemon |
+| `409` | `unfurl-off` | `setting` | daemon |
 | `413` | `asset-too-large` | `max` | daemon |
 | `415` | `unsupported-media-type` | `contentType` | daemon |
 | `422` | `limit-too-large` | `limit`, `max` | daemon |
@@ -1773,6 +1814,8 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `account-secret-missing` | — | daemon |
 | `422` | `unreachable` | `detail` | core |
 | `422` | `pool-setting-invalid` | `setting`, `expected` | core |
+| `422` | `bad-url` | `url` | daemon |
+| `422` | `address-refused` | `url` | daemon |
 | `429` | `too-many-attempts` | `retryAfter` | daemon (+ `Retry-After` header) |
 
 The rule behind the table, so a refusal added later has a status without a decision being

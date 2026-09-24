@@ -29,6 +29,7 @@ import { startMirrorRunner } from "../mirror/runner";
 import { silentLogger } from "../log";
 import type { Accounts } from "../accounts";
 import { openPool, systemClock } from "../ports";
+import { createUnfurler, type Unfurler } from "../unfurl";
 
 export const WEB = "web" as SourceId;
 export const NOTE = "note" as PayloadTypeName;
@@ -131,7 +132,15 @@ export type DaemonOptions = {
    * a case rather than an omission: it is what an unmounted drive looks like.
    */
   readonly vault?: "ready" | "missing";
+  /** Absent is one that can reach nothing: every name fails to resolve. */
+  readonly unfurler?: Unfurler;
 };
+
+const unreachable: Unfurler = createUnfurler({
+  resolve: () => Promise.reject(new Error("no network in tests")),
+  fetch: () => Promise.reject(new Error("no network in tests")),
+  now: Date.now,
+});
 
 export function daemon(
   config: PoolConfig = CONFIG,
@@ -185,6 +194,7 @@ export function daemon(
     ...(options.origin === undefined ? {} : { origin: options.origin }),
     throttle: options.throttle ?? createLoginThrottle({ clock: systemClock }),
     log: silentLogger(),
+    unfurler: options.unfurler ?? unreachable,
   });
   const answered = trackResponses(app);
 

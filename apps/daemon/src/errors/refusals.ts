@@ -18,6 +18,7 @@ import type {
 } from "@notemap/core";
 
 import type { AccountRefusal } from "../accounts";
+import type { UnfurlRefusal } from "../unfurl";
 import type { DaemonRefusal, ErrorBody } from "../types";
 
 export type StatusMap = Readonly<Record<string, number>>;
@@ -166,6 +167,21 @@ export const POOL_SETTING_STATUS = {
   "unknown-pool-setting": 404,
   "pool-setting-invalid": 422,
 } as const satisfies Record<PoolSettingRefusal["kind"], number>;
+
+/**
+ * Asking what a link points at. `422` is a request that is wrong on its face —
+ * an address that is not `http` or `https`, or one the guard will not fetch;
+ * `409` is the pool setting being off, which the caller can read. A target
+ * that could not be read is none of these: it answers `200`, unreached.
+ */
+export const UNFURL_STATUS = {
+  "bad-url": 422,
+  "address-refused": 422,
+  "unfurl-off": 409,
+} as const satisfies Record<RouteUnfurlRefusal["kind"], number>;
+
+export type RouteUnfurlRefusal =
+  UnfurlRefusal | { readonly kind: "unfurl-off"; readonly setting: string };
 
 /**
  * An account held by the daemon. `409` is a destination still naming the one
@@ -332,6 +348,10 @@ export function templateRoutingStatus(refusal: TemplateRoutingRefusal): number {
   return TEMPLATE_ROUTING_STATUS[refusal.kind];
 }
 
+export function unfurlStatus(refusal: RouteUnfurlRefusal): number {
+  return UNFURL_STATUS[refusal.kind];
+}
+
 export function accountStatus(refusal: AccountRefusal): number {
   return ACCOUNT_STATUS[refusal.kind];
 }
@@ -359,7 +379,8 @@ export function errorBody(
     | RoutingRefusal
     | RoutingTemplateRefusal
     | TagRefusal
-    | TemplateRoutingRefusal,
+    | TemplateRoutingRefusal
+    | RouteUnfurlRefusal,
 ): ErrorBody {
   const { kind, ...facts } = refusal;
   return { error: { code: kind, ...facts } };

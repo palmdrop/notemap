@@ -24,6 +24,7 @@ import {
   ROUTING_STATUS,
   SUBJECT_STATUS,
   TAG_STATUS,
+  UNFURL_STATUS,
   UNTAG_STATUS,
   UPLOAD_STATUS,
   TEMPLATE_STATUS,
@@ -88,6 +89,7 @@ import {
   poolSettingsSchema,
   updatePoolSettingsRequestSchema,
 } from "../schemas/settings";
+import { unfurlQuery, unfurlSchema } from "../schemas/unfurl";
 import { sourcesInUseSchema } from "../schemas/sources";
 import { tagRequestSchema, tagsInUseSchema } from "../schemas/tags";
 import type { StatusMap } from "../errors/refusals";
@@ -1566,6 +1568,28 @@ export const updatePoolSettingsRoute = createRoute({
   },
 });
 
+export const unfurlRoute = createRoute({
+  method: "get",
+  path: "/v1/unfurl",
+  summary: "Read what an external link points at",
+  description:
+    "The daemon fetches the page and answers its Open Graph title, description, image and site name, falling back to the document's `<title>`. Indicative: held in memory for an hour (a failure for minutes), never pool state. Only a public address is fetched — every hop of a redirect is checked, and the connection is made to the address that was checked. A target that could not be read is an ordinary answer with `reached: false`, not a refusal. Refused outright while the `unfurl` pool setting is off.",
+  request: { query: unfurlQuery },
+  responses: {
+    200: {
+      description:
+        "What the page says about itself, or that nothing could be read.",
+      content: { [JSON_MEDIA_TYPE]: { schema: unfurlSchema } },
+    },
+    409: errorResponse("The `unfurl` pool setting is off.", 409, UNFURL_STATUS),
+    422: errorResponse(
+      "The address is not `http` or `https`, carries credentials, or is not one the daemon will fetch.",
+      422,
+      UNFURL_STATUS,
+    ),
+  },
+});
+
 export const ROUTES = [
   healthRoute,
   loginRoute,
@@ -1621,6 +1645,7 @@ export const ROUTES = [
   assetContentRoute,
   poolSettingsRoute,
   updatePoolSettingsRoute,
+  unfurlRoute,
 ] as const;
 
 /** OpenAPI writes a path parameter `{id}`; Hono matches it as `:id`. */
