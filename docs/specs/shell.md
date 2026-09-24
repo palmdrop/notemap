@@ -1646,7 +1646,8 @@ untouched, this shell alone says it differently, on the same terms `archive` is 
 `discard`. `reached` reads **`available`**, `unreachable` reads **`unavailable`**, and `unusable`
 stays, being the bigger fact and already in alarm. A template's `fits` reads **`ok`**; `stranded`
 reads `destination deleted`; `destination-retired` reads `destination disabled`. `mint` reads `+ add
-a token` and then `create`.
+a token` and then `create`. The pool setting `unfurl` reads **`show link previews`** *(2026-09-24)*;
+a pool setting this shell has no words for is shown by its name.
 
 **Destinations** lists what the pool holds, one line per destination: its name, its kind, and what
 it last answered — `available`, a refusal, or, where the kind cannot be probed, nothing at all, as
@@ -1727,7 +1728,7 @@ under a section of its own rather than a row of buttons alone.
 
 **Pool settings** is the last section *(added 2026-09-24,
 [a-pool-holds-settings](../plans/a-pool-holds-settings.md))*, one row per setting on the facts
-grid — its name, and a boolean as two options, `yes` and `no`, the chosen one bold, on the same
+grid — its label in the shell's words, and a boolean as two options, `yes` and `no`, the chosen one bold, on the same
 control every boolean in this shell draws with. It is not a sub-head of Appearance, which is the
 reader's and lives on the device, and not of Server, which is what the daemon is rather than what
 the pool holds: the heading is what makes the two-word term carry itself, so a person meets **pool

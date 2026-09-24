@@ -7,6 +7,8 @@
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
 
+  import { poolSettingLabel } from "./pool-setting-label";
+
   const settings = client.settings.all;
   const pool = reachable();
 
@@ -57,12 +59,12 @@
     {/if}
 
     {#each $settings as setting (setting.name)}
-      <Fact name={setting.name}>
+      <Fact name={poolSettingLabel(setting.name)}>
         {#if pool.yes}
           <span
             class="flex flex-wrap gap-x-[2ch]"
             role="group"
-            aria-label={setting.name}
+            aria-label={poolSettingLabel(setting.name)}
           >
             <Option
               label="yes"

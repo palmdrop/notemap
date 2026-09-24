@@ -26,7 +26,8 @@ test("draws what the pool said", async () => {
 
   render(PoolSettings);
 
-  await screen.findByText("unfurl");
+  await screen.findByText("show link previews");
+  expect(screen.queryByText("unfurl")).toBeNull();
   const yes = await screen.findByRole("button", { name: "yes" });
   expect(yes.getAttribute("aria-pressed")).toBe("true");
   const no = screen.getByRole("button", { name: "no" });
@@ -106,4 +107,12 @@ test("choosing the option already chosen sends nothing", async () => {
     expect(asked()).toContain("PATCH /v1/settings");
   });
   expect(await sent()).toEqual([{ unfurl: false }]);
+});
+
+test("a setting this shell has no words for is shown by its name", async () => {
+  serving([{ name: "second", value: false }]);
+
+  render(PoolSettings);
+
+  await screen.findByText("second");
 });
