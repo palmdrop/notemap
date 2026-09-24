@@ -492,7 +492,6 @@ test("a row that leaves the queue says where it went", async () => {
   expect(notices.shown.at(-1)?.offer?.label).toBe("undo");
 });
 
-/** Archiving makes no record, so the corner is the only place its undo can sit. */
 test("discarding says so, and offers the row back", async () => {
   pool(queued("one"));
 
@@ -506,10 +505,9 @@ test("discarding says so, and offers the row back", async () => {
     expect(notices.shown.map((notice) => notice.what)).toContain("discarded");
   });
   const said = notices.shown.at(-1);
-  expect(said?.standing).toBe(true);
+  expect(said?.standing).toBeUndefined();
   expect(said?.offer?.label).toBe("undo");
-  // The row it was made on is one look away from being gone, and the corner
-  // is then the only way back to the capture it was about.
+  // The row it was made on is one look away from being gone.
   expect(said?.href).toBe("/items/one");
 });
 
@@ -668,6 +666,28 @@ test("keeps the foot's height on every row, selected or not", async () => {
 });
 
 /** The keys the actions are drawn to be guessed from. */
+const LATER = "2026-08-19T10:00:00.000Z";
+
+test("j past the last row held reads the next page and steps into it", async () => {
+  pool((request) => {
+    if (routeOf(request) !== "GET /v1/queue") return json(200, { values: [] });
+    return new URL(request.url).searchParams.has("after")
+      ? json(200, { values: [anItem("two", { createdAt: LATER })] })
+      : json(200, { values: [anItem("one")], next: "/v1/queue?after=one" });
+  });
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await screen.findByText("two");
+
+  await vi.waitFor(() => {
+    expect(stamps(true)[0]?.textContent).toContain(LATER.slice(0, 10));
+  });
+});
+
 test("walks the rows with j and k, and acts on the one selected", async () => {
   pool(queued("one", "two"));
 

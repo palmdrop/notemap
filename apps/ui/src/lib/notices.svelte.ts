@@ -3,6 +3,9 @@ import { SvelteMap, SvelteSet } from "svelte/reactivity";
 /** How long a confirmation holds before it goes. A glance, not a read. */
 const LINGERS = 4_000;
 
+/** Long enough to reach for what it offers; the way back is elsewhere too. */
+const OFFERED = 10_000;
+
 /** How many the corner draws at once before it counts the rest instead. */
 const SHOWN = 4;
 
@@ -51,6 +54,9 @@ export type Raised = Omit<Notice, "id">;
 let held = $state<Notice[]>([]);
 let minted = 0;
 
+/** Somebody is at the corner, so nothing in it leaves or is trimmed away. */
+let holding = $state(false);
+
 const spoken = new SvelteSet<string>();
 const timers = new SvelteMap<string, ReturnType<typeof setTimeout>>();
 
@@ -58,6 +64,18 @@ function forget(id: string): void {
   const timer = timers.get(id);
   if (timer !== undefined) clearTimeout(timer);
   timers.delete(id);
+}
+
+function lingers(notice: Notice): number {
+  return notice.offer === undefined ? LINGERS : OFFERED;
+}
+
+function wait(notice: Notice): void {
+  forget(notice.id);
+  timers.set(
+    notice.id,
+    setTimeout(() => drop(notice.id), lingers(notice)),
+  );
 }
 
 function drop(id: string): void {
@@ -105,12 +123,12 @@ function remember(key: string): void {
 export const notices = {
   /** Oldest first, so the newest sits nearest the corner it is drawn in. */
   get shown(): readonly Notice[] {
-    return held.slice(-SHOWN);
+    return holding ? held : held.slice(-SHOWN);
   },
 
   /** Standing notices there was no room for. They are counted, not lost. */
   get folded(): number {
-    return Math.max(held.length - SHOWN, 0);
+    return holding ? 0 : Math.max(held.length - SHOWN, 0);
   },
 
   /** The id it was given, or nothing where this had already been said. */
@@ -130,14 +148,10 @@ export const notices = {
 
     minted += 1;
     const id = `notice-${String(minted)}`;
-    held = trimmed([...kept, { ...notice, id }]);
+    const raised = { ...notice, id };
+    held = holding ? [...kept, raised] : trimmed([...kept, raised]);
 
-    if (notice.standing !== true) {
-      timers.set(
-        id,
-        setTimeout(() => drop(id), LINGERS),
-      );
-    }
+    if (notice.standing !== true && !holding) wait(raised);
 
     return id;
   },
@@ -164,10 +178,27 @@ export const notices = {
     drop(id);
   },
 
+  /** Under somebody's pointer or focus, nothing in the corner leaves. */
+  hold(): void {
+    holding = true;
+    for (const id of [...timers.keys()]) forget(id);
+  },
+
+  /** Let go, the corner is trimmed and everything lingers again from the start. */
+  release(): void {
+    if (!holding) return;
+    holding = false;
+    held = trimmed(held);
+    for (const notice of held) {
+      if (notice.standing !== true) wait(notice);
+    }
+  },
+
   /** Everything, said and remembered: a shut door leaves none of it standing. */
   clear(): void {
     for (const notice of held) forget(notice.id);
     held = [];
+    holding = false;
     spoken.clear();
   },
 };

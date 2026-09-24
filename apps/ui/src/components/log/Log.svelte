@@ -84,6 +84,7 @@
     <More
       loading={log.loading}
       offline={!pool.yes}
+      failed={log.failed}
       onmore={() => {
         log.next();
       }}

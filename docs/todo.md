@@ -2,8 +2,6 @@
 
 ## Shell — layout and interaction
 
-- [ ] Some notices never disappear, even when they are not warnings :for example, "marked manual"
-- [ ] Endless scroll - auto-load next page of feed and queue when user scrolls to bottom 
 - [ ] Add proper loading icons and states. Pay attention to layout shifting - avoid it.
 - [ ] stale and premature UI state
   - No good way to see pending operations. A held row says `retrying` while it is
@@ -26,6 +24,12 @@
   a windowed page that drops what is far from the reader and re-reads it, or a cap on the page that
   the shell knows how to draw. Raised reviewing
   [the cache's readers](reviews/cache-with-readers-2026-08-26.md).
+- [ ] **Endless scroll makes the unbounded page ordinary.** Since 2026-09-24 the feed and the queue
+  read their next page as the reader scrolls, so walking a page past the cache's 500-item cap no
+  longer takes hundreds of presses of `load more` — it takes a long scroll. The item above is the
+  fix; this is the note that it is now reachable by anyone who reads far back, and that whatever
+  bounds a drawn surface has to leave the auto-read working (a windowed page re-reading what it
+  dropped as the reader scrolls back).
 
 ## Composer and capture
 

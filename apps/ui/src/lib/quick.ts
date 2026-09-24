@@ -11,9 +11,8 @@ import { keyFor } from "./routing";
 /**
  * The two decisions that need no destination and no second step, taken from
  * wherever an item is drawn. Each acts at once and says so in the corner with
- * the way back beside it: the row it was made on may be gone by the time
- * somebody reads it, and neither decision leaves anything on the item to undo
- * from.
+ * the way back beside it while it lingers. The item keeps a way back of its
+ * own: `unarchive` on the row, `undo` on the record.
  */
 
 export function discard(item: Item): void {
@@ -28,8 +27,6 @@ export function discard(item: Item): void {
     what: "discarded",
     about,
     href: itemHref(id),
-    standing: true,
-    alarm: false,
     only: DISCARD,
     offer: {
       label: "undo",
@@ -57,8 +54,6 @@ export async function manual(item: Item): Promise<void> {
       what: "marked manual",
       about,
       href: itemHref(id),
-      standing: true,
-      alarm: false,
       only: MANUAL,
       key: keyFor(record.id),
       offer: {

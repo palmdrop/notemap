@@ -154,3 +154,66 @@ test("a standing notice carrying an offer survives a full corner", () => {
 
   expect(notices.shown.map((notice) => notice.what)).toContain("discarded · a");
 });
+
+test("a notice offering something lingers long enough to reach for it", () => {
+  notices.raise({ what: "discarded", offer: { label: "undo", take: vi.fn() } });
+
+  vi.advanceTimersByTime(5_000);
+  expect(notices.shown).toHaveLength(1);
+
+  vi.advanceTimersByTime(5_000);
+  expect(notices.shown).toHaveLength(0);
+});
+
+test("a held corner lets nothing leave, and lingers again once let go", () => {
+  notices.raise({ what: "copied" });
+
+  notices.hold();
+  vi.advanceTimersByTime(60_000);
+  expect(notices.shown).toHaveLength(1);
+
+  notices.release();
+  vi.advanceTimersByTime(3_000);
+  expect(notices.shown).toHaveLength(1);
+  vi.advanceTimersByTime(1_000);
+  expect(notices.shown).toHaveLength(0);
+});
+
+test("a notice raised into a held corner waits to be let go", () => {
+  notices.hold();
+  notices.raise({ what: "routing · research", standing: true, only: "fired" });
+  notices.raise({ what: "routed · research", only: "fired" });
+  vi.advanceTimersByTime(60_000);
+
+  expect(notices.shown.map((notice) => notice.what)).toEqual([
+    "routed · research",
+  ]);
+
+  notices.release();
+  vi.advanceTimersByTime(4_000);
+  expect(notices.shown).toHaveLength(0);
+});
+
+test("a held corner trims nothing, and trims once let go", () => {
+  notices.hold();
+  for (const what of ["one", "two", "three", "four", "five"]) {
+    notices.raise({ what });
+  }
+
+  expect(notices.shown).toHaveLength(5);
+  expect(notices.folded).toBe(0);
+
+  notices.release();
+  expect(notices.shown.map((notice) => notice.what)).not.toContain("one");
+  expect(notices.shown).toHaveLength(4);
+});
+
+test("letting go of the corner does not start a standing notice leaving", () => {
+  notices.raise({ what: "delivery failed", standing: true });
+
+  notices.hold();
+  notices.release();
+  vi.advanceTimersByTime(60_000);
+
+  expect(notices.shown).toHaveLength(1);
+});

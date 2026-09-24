@@ -88,7 +88,7 @@
   because they are the ones nothing but a person will clear, and the bottom of
   the corner is the reachable end of it.
 -->
-<Alarm>
+<Alarm onhold={() => notices.hold()} onrelease={() => notices.release()}>
   {#if folded > 0}
     <Notice what={`${String(folded)} more`} href="/log" standing />
   {/if}
@@ -104,9 +104,7 @@
         : { label: notice.offer.label, take: () => notices.take(notice.id) }}
       standing={notice.standing === true}
       alarm={notice.alarm}
-      ondismiss={notice.standing === true
-        ? () => notices.dismiss(notice.id)
-        : undefined}
+      ondismiss={() => notices.dismiss(notice.id)}
     />
   {/each}
 

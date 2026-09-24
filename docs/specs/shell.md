@@ -4,6 +4,13 @@
 **Last updated**: 2026-09-24
 **Shipped**:
 
+- 2026-09-24 — **The corner lets go, and the lists read on.** `marked manual`, `discarded` and a
+  landed `routed · research` no longer stand: a notice that offers something lingers long enough to
+  reach for it, nothing leaves the corner while the pointer is over it or focus is inside it, and
+  every notice can be dismissed. Only `routing · research`, whose `cancel` exists nowhere else,
+  still stands. The feed, the queue and the log read their next page as the reader scrolls within a
+  screen of the foot, and `j` past the last row held reads it before stepping; `load more` stays as
+  the keyboard's and a failed read's way to ask again, and keeps its width while it loads.
 - 2026-09-24 — **Clickable links, and what they point at.** A bare URL typed in a capture is a
   link, by the GFM autolink-literal extension over the still-CommonMark renderer, and a followable
   link is underlined. Every link in a note draws a fixed-height block with what the daemon read of
@@ -1213,9 +1220,11 @@ groups, and are not six of a kind.
 the door to the one that does. `manual` calls the pool at once, with no note — the note is
 offered on the process surface, not here — and the corner says `marked manual` with `undo`, which
 cancels the record the mark made. `discard` calls the pool at once too, and the corner says
-`discarded` with `undo`, which unarchives. **Neither notice is an alarm** *(amended 2026-09-15)*:
-both stand, so their `undo` does not time out under somebody's hands, but nothing went wrong — the
-fired-template notice's own precedent ([below](#the-corner-says-what-happened)). Both leave the row held in place as routing does, so the
+`discarded` with `undo`, which unarchives. **Neither notice is an alarm, and neither stands**
+*(amended 2026-09-24)*: both linger as a confirmation that offers something does
+([below](#the-corner-says-what-happened)), held while somebody is at them, since the way back is
+also on the row and on the item surface. Standing made a corner nobody could empty without
+clicking. Both leave the row held in place as routing does, so the
 decision can be looked at after it is made. `manual` is disabled while the pool is out of reach or
 where the item is already marked, `discard` where the item is already discarded, each saying why
 in its title and drawn in the one grey the shell admits for an inert control. `unarchive` sits in
@@ -1426,7 +1435,7 @@ pool had not answered for the queue or the feed, the surface named itself in the
 that this was what the client holds. That entry is gone. Between the chrome's `offline` mark and a
 row's `pending` mark the condition is already stated twice, and a third sentence above the rows was
 the loudest of the three about the quietest thing. What replaces it is the **foot**: a surface with
-more to read says, where `Load more` would be, that the pool is out of reach and that nothing more
+more to read says, where `load more` would be, that the pool is out of reach and that nothing more
 can be fetched — muted, in the foot's own place, with no action offered. It is drawn from
 reachability rather than from what the surface holds, because a surface drawn from the cache while
 the pool answers is one whose read is about to land and it has nothing to say. A surface read to
@@ -1452,6 +1461,15 @@ corner would be a reader learning where to look to learn nothing more.
 until they clear it, which is the rule the refusal already followed; a success is a glance and
 leaves after a few seconds. The accent is spent on the second kind and on nothing else, as it is in
 the log.
+
+**A confirmation that offers something lingers longer** *(amended 2026-09-24)* — ten seconds rather
+than four — which is long enough to reach for an `undo`. It still goes on its own, because the way
+back is not only in the corner: a discarded row offers `unarchive`, and a manual mark's record
+offers `undo` on the item surface. **Nothing leaves the corner while the pointer is over it or
+focus is inside it** — not by lingering out, and not by being trimmed for room, which waits too — so
+nothing vanishes under somebody's hand, including a notice that arrived while they were there. Let
+go, everything in it lingers again from the start.
+**Every notice can be dismissed**, a confirmation as well as what stands.
 
 **The refusals sit at the bottom of the stack**, being the ones that will not clear themselves, and
 the bottom of the corner is its reachable end. Above them the newest notice sits nearest, and the
@@ -1496,7 +1514,8 @@ brevity cost here *(amended 2026-09-03, after reading it in use)*.
 before attempting it, precisely so there is something to call off
 ([ADR 37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md)).
 So the corner reads **`routing · research`** while the window is open and carries **`cancel`**;
-when the record resolves it reads **`routed · research`** and carries only the way to dismiss it.
+when the record resolves it reads **`routed · research`**, which lingers as any confirmation does
+*(amended 2026-09-24)*: there is nothing left to call off.
 Both name the **template**, not the destination, because the template's name is what the person
 pressed.
 
@@ -1504,7 +1523,8 @@ pressed.
 progress it is not measuring would be inventing one, and the only fact worth drawing is whether
 there is still something to cancel.
 
-It **stands** rather than lingering, and there is **one at a time**, the newer replacing the older —
+While the window is open it **stands** rather than lingering, the `cancel` being nowhere else, and
+there is **one at a time**, the newer replacing the older —
 the rule `discard` already follows, and for the same reason: a tag files an item in one keystroke,
 so a corner stacking four of them while a queue is worked is not the quiet thing it is meant to be.
 
@@ -1604,7 +1624,15 @@ long absence replaces the first rather than stacking on it.
 The queue's job is to reach zero and the API gives no count — `ItemSlice` carries values and an
 optional `next` link, nothing more. So the shell claims no number. `load more` is the honest
 statement that more exists — and while the pool is out of reach the foot says that instead of
-offering a page it cannot fetch. **The drained queue is one line where the rows were** —
+offering a page it cannot fetch.
+
+**The next page is read before it is asked for** *(added 2026-09-24)*. The feed, the queue and the
+log read it once the foot comes within a screen of the view, and go on reading while it stays
+there. `j` past the last row held reads the next page and steps into it — waiting for a page
+already being read rather than giving up on the step — unless the reader has moved or let go in
+the meantime. `load more` stays: it is how the keyboard asks without walking, and how a read that
+failed is asked for again, since scrolling never retries one. While a page is read the foot says
+`loading…` in the width `load more` already took. **The drained queue is one line where the rows were** —
 `Nothing left to process.` — in the body column's position, with no register drawn under it.
 Reaching the end is what the queue is for, so it is said once and quietly: no paragraph, no
 `zero`, and not as a notice.
@@ -2153,6 +2181,10 @@ view is how a reader sees more at once.
   a queue holding three cached rows does not read as a queue nearly drained.
 - With the pool out of reach, a surface with more to read offers no `load more` and says in its foot
   why, and offers it again once the pool answers.
+- Scrolling the feed, the queue or the log to within a screen of its foot reads the next page
+  without a press, and a failed read is not retried until somebody asks.
+- Nothing leaves the corner while the pointer is over it or focus is inside it, and every notice
+  offers `dismiss`.
 - A picture captured with the pool out of reach draws the picture, and the same row after the drain
   draws the pool's copy.
 - With the daemon unreachable: the chrome says so once, no row and no surface repeats it, capture

@@ -153,10 +153,8 @@ export function noticeOf(
           : `routed · ${fired ? (called ?? named) : named}`,
       ...(pointer === undefined ? {} : { why: pointer }),
       ...where,
-      // It replaces the `routing` notice it resolves, and stands in its place:
-      // there is one at a time, and the window closing is worth seeing. Nothing
-      // went wrong, so it is not drawn as though something had.
-      ...(fired ? { standing: true, alarm: false, only: FIRED } : {}),
+      // It replaces the `routing` notice it resolves: there is one at a time.
+      ...(fired ? { only: FIRED } : {}),
       ...(record === undefined ? {} : { key: keyFor(record) }),
     };
   }

@@ -22,6 +22,7 @@
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
   import { orderFor } from "$lib/order";
+  import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { keepPlace, restorePlace } from "$lib/scroll-mark";
@@ -148,9 +149,23 @@
     index?.reveal(id);
   }
 
-  /** Moves the selection one row along, and brings it into view. */
-  function walk(step: 1 | -1) {
+  /**
+   * Moves the selection one row along, and brings it into view. Past the last
+   * row held it reads the next page first.
+   */
+  async function walk(step: 1 | -1) {
     if (rows.length === 0) return;
+    const from = selected;
+    const last = () => rows.at(-1)?.id === from;
+    if (step === 1 && from !== undefined && last() && pool.yes) {
+      await readPast(
+        queue,
+        () => client.loadQueue(),
+        () => selected === from && last(),
+      );
+      // Somebody moved on, or let go, while the page was read.
+      if (selected !== from) return;
+    }
     const at = rows.findIndex((row) => row.id === selected);
     const next =
       at === -1
@@ -180,9 +195,9 @@
 
   publish(() => [
     ...listCommands({
-      ondown: () => walk(1),
-      onup: () => walk(-1),
-      onselect: () => (current !== undefined ? process(current) : walk(1)),
+      ondown: () => void walk(1),
+      onup: () => void walk(-1),
+      onselect: () => (current !== undefined ? process(current) : void walk(1)),
       ondeselect: deselect,
     }),
     ...commands,
@@ -218,6 +233,7 @@
     <More
       loading={$queue.loading}
       offline={!pool.yes}
+      failed={$queue.failure !== undefined}
       onmore={() => void client.loadQueue()}
     />
   {/if}
@@ -245,6 +261,7 @@
       <More
         loading={$queue.loading}
         offline={!pool.yes}
+        failed={$queue.failure !== undefined}
         onmore={() => void client.loadQueue()}
       />
     {/if}

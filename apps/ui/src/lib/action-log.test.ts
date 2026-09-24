@@ -111,7 +111,7 @@ test("a landing from a tag takes the place of the notice it resolves", () => {
 
   expect(said?.what).toBe("routed · Research links");
   expect(said?.only).toBe("fired");
-  expect(said?.alarm).toBe(false);
+  expect(said?.standing).toBeUndefined();
 });
 
 /**
@@ -273,8 +273,8 @@ test("one fired template stands at a time, and the landing takes its place", () 
 
   expect(routing?.only).toBe(landed?.only);
   expect(landed?.what).toBe("routed · Research");
-  // It carries only the way to dismiss it: nothing is left to call off.
-  expect(landed?.standing).toBe(true);
+  // Nothing is left to call off, so it lingers like any confirmation.
+  expect(landed?.standing).toBeUndefined();
   expect(landed?.offer).toBeUndefined();
 });
 

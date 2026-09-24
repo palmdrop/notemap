@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
-import { expect, test, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 
 import { NO_MORE_OFFLINE } from "$lib/said";
 
@@ -50,6 +50,7 @@ test("the foot offers the next page, or says why it cannot", async () => {
   const { rerender } = render(More, {
     loading: false,
     offline: false,
+    failed: false,
     onmore: more,
   });
 
@@ -57,14 +58,102 @@ test("the foot offers the next page, or says why it cannot", async () => {
   expect(more).toHaveBeenCalledTimes(1);
   expect(screen.queryByText(NO_MORE_OFFLINE)).toBeNull();
 
-  void rerender({ loading: true, offline: false, onmore: more });
+  void rerender({ loading: true, offline: false, failed: false, onmore: more });
   expect(screen.getByRole("button", { name: "loading…" })).toHaveProperty(
     "disabled",
     true,
   );
 
   // Not a disabled action: offline there is no page to promise, only a reason.
-  void rerender({ loading: false, offline: true, onmore: more });
+  void rerender({ loading: false, offline: true, failed: false, onmore: more });
   expect(screen.getByText(NO_MORE_OFFLINE)).toBeDefined();
   expect(screen.queryByRole("button")).toBeNull();
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+function watchingTheFoot() {
+  const seen: Array<(entries: Array<{ isIntersecting: boolean }>) => void> = [];
+  vi.stubGlobal(
+    "IntersectionObserver",
+    class {
+      constructor(
+        callback: (entries: Array<{ isIntersecting: boolean }>) => void,
+      ) {
+        seen.push(callback);
+      }
+      observe() {}
+      disconnect() {}
+    },
+  );
+  return (isIntersecting: boolean) => {
+    for (const callback of seen) callback([{ isIntersecting }]);
+  };
+}
+
+const reading = { loading: false, offline: false, failed: false };
+
+test("the foot asks for the next page when it scrolls near", async () => {
+  const scroll = watchingTheFoot();
+  const more = vi.fn();
+  render(More, { ...reading, onmore: more });
+
+  expect(more).not.toHaveBeenCalled();
+  scroll(true);
+  await vi.waitFor(() => {
+    expect(more).toHaveBeenCalledTimes(1);
+  });
+});
+
+test("a page that lands with the foot still near asks for the next", async () => {
+  const scroll = watchingTheFoot();
+  const more = vi.fn();
+  const { rerender } = render(More, { ...reading, onmore: more });
+
+  scroll(true);
+  await vi.waitFor(() => {
+    expect(more).toHaveBeenCalledTimes(1);
+  });
+
+  await rerender({ ...reading, loading: true, onmore: more });
+  await rerender({ ...reading, onmore: more });
+  expect(more).toHaveBeenCalledTimes(2);
+});
+
+test("a read that failed is not asked for again by scrolling", async () => {
+  const scroll = watchingTheFoot();
+  const more = vi.fn();
+  const { rerender } = render(More, { ...reading, onmore: more });
+
+  scroll(true);
+  await vi.waitFor(() => {
+    expect(more).toHaveBeenCalledTimes(1);
+  });
+
+  await rerender({ ...reading, loading: true, onmore: more });
+  await rerender({ ...reading, failed: true, onmore: more });
+  expect(more).toHaveBeenCalledTimes(1);
+
+  // A press is how it is asked for again.
+  await fireEvent.click(screen.getByRole("button", { name: "load more" }));
+  expect(more).toHaveBeenCalledTimes(2);
+});
+
+test("the foot asks for nothing while offline", async () => {
+  const scroll = watchingTheFoot();
+  const more = vi.fn();
+  render(More, { ...reading, offline: true, onmore: more });
+
+  scroll(true);
+  await Promise.resolve();
+  expect(more).not.toHaveBeenCalled();
+});
+
+test("the foot keeps its width while it loads", () => {
+  render(More, { ...reading, loading: true, onmore: vi.fn() });
+
+  const button = screen.getByRole("button", { name: "loading…" });
+  expect(button.textContent).toContain("load more");
 });
