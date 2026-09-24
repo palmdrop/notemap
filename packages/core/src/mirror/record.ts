@@ -6,9 +6,11 @@ import type { Item, ItemRecord, Tag } from "#types/domain/item";
 import type {
   DestinationMirrorRecord,
   ItemMirrorRecord,
+  PoolSettingMirrorRecord,
   RoutingTemplateMirrorRecord,
 } from "#types/domain/mirror";
 import type { Payload } from "#types/domain/payload";
+import type { PoolSettingRecord } from "#types/domain/pool-setting";
 import type { RoutingRecord } from "#types/domain/routing";
 import type { RoutingTemplate } from "#types/domain/template";
 
@@ -76,6 +78,18 @@ export function projectTemplateRecord(
       createdAt: instant(record.createdAt),
     },
     modifiedAt: instant(modifiedAt),
+  };
+}
+
+/** A pool setting's durable state. Its own unit, on the destination and template's terms. */
+export function projectPoolSettingRecord(
+  record: PoolSettingRecord,
+): PoolSettingMirrorRecord {
+  return {
+    kind: "pool-setting",
+    setting: record.name,
+    value: record.value,
+    modifiedAt: instant(record.changedAt),
   };
 }
 

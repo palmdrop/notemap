@@ -4,6 +4,7 @@ import type {
   Item,
   ItemId,
   PoolIdentity,
+  PoolSetting,
   RoutingTemplate,
   TagUse,
 } from "#api/types";
@@ -41,6 +42,12 @@ export interface ClientStore {
   writeDestinations(destinations: readonly Destination[]): Promise<void>;
   readTemplates(): Promise<readonly RoutingTemplate[]>;
   writeTemplates(templates: readonly RoutingTemplate[]): Promise<void>;
+  /** Absent is "not yet read", never guessed from a default: a cold client has no answer here. */
+  readPoolSettings(): Promise<readonly PoolSetting[] | undefined>;
+  /** Absent clears it back to "not yet read" — what a dropped cache is written as. */
+  writePoolSettings(
+    settings: readonly PoolSetting[] | undefined,
+  ): Promise<void>;
 
   /** Which pool everything above describes, absent until one has answered. */
   readPoolIdentity(): Promise<PoolIdentity | undefined>;

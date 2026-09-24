@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import type { Hono } from "hono";
 
-import { PAYLOAD_TYPES } from "@notemap/core";
+import { PAYLOAD_TYPES, POOL_SETTINGS } from "@notemap/core";
 import type {
   AssetId,
   BlobStore,
@@ -35,6 +35,7 @@ export const NOTE = "note" as PayloadTypeName;
 
 export const CONFIG: PoolConfig = {
   payloadTypes: PAYLOAD_TYPES,
+  poolSettings: POOL_SETTINGS,
   retry: {
     maxAttempts: 5,
     initialBackoff: 1000 as Duration,

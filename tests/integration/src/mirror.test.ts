@@ -8,6 +8,7 @@ import {
   type JobId,
   type Lease,
   type Pool,
+  type PoolSettingName,
 } from "@notemap/core";
 import { FAKE_KIND, fakeDestinations } from "@notemap/core/testing";
 import { afterEach, describe, expect, it } from "vitest";
@@ -354,6 +355,95 @@ describe("a destination on disk", () => {
     const written = await files(harnessed);
     expect(written).toContain(
       join(harnessed.mirrorRoot, "destinations", `${created.id}.json`),
+    );
+    expect(written.filter((path) => path.endsWith(".md"))).toHaveLength(1);
+  });
+});
+
+describe("a pool setting on disk", () => {
+  const UNFURL = "unfurl" as PoolSettingName;
+
+  function pooled(): Harness {
+    const opened = harness(undefined, "filesystem");
+    open.push(opened);
+    return opened;
+  }
+
+  const files = (harnessed: Harness) => filesUnder(harnessed.mirrorRoot);
+
+  it("owes a write the moment it is changed, and lands a file of its own", async () => {
+    const harnessed = pooled();
+    await harnessed.pool.settings.change(UNFURL, false);
+
+    expect(await drainWith(harnessed)()).toBe(1);
+
+    expect(await files(harnessed)).toEqual([
+      join(harnessed.mirrorRoot, "settings", "unfurl.json"),
+    ]);
+    expect(
+      await harnessed.pool.mirror.recordFor({
+        kind: "pool-setting",
+        setting: UNFURL,
+      }),
+    ).toMatchObject({ kind: "pool-setting", setting: "unfurl", value: false });
+  });
+
+  it("owes another on every change, and the file says what the pool says", async () => {
+    const harnessed = pooled();
+    await harnessed.pool.settings.change(UNFURL, false);
+    await drainWith(harnessed)();
+
+    await harnessed.pool.settings.change(UNFURL, true);
+    expect(await drainWith(harnessed)()).toBe(1);
+
+    const stored = parseMirrorRecord(
+      await readFile(
+        join(harnessed.mirrorRoot, "settings", "unfurl.json"),
+        "utf8",
+      ),
+    );
+    if (stored.kind !== "pool-setting") {
+      throw new Error("expected a pool setting");
+    }
+    expect(stored.value).toBe(true);
+  });
+
+  /** A value equal to the default still writes, and reading it back answers the same. */
+  it("reads back what it wrote, effective value and all", async () => {
+    const harnessed = pooled();
+    await harnessed.pool.settings.change(UNFURL, true);
+    await drainWith(harnessed)();
+
+    const stored = parseMirrorRecord(
+      await readFile(
+        join(harnessed.mirrorRoot, "settings", "unfurl.json"),
+        "utf8",
+      ),
+    );
+    if (stored.kind !== "pool-setting") {
+      throw new Error("expected a pool setting");
+    }
+    expect(stored).toEqual({
+      kind: "pool-setting",
+      setting: "unfurl",
+      value: true,
+      modifiedAt: expect.any(String),
+    });
+    expect(await harnessed.pool.settings.list()).toEqual([
+      { name: "unfurl", value: true },
+    ]);
+  });
+
+  it("writes beside items rather than instead of them", async () => {
+    const harnessed = pooled();
+    await harnessed.pool.settings.change(UNFURL, false);
+    captured(await harnessed.pool.capture(envelope({ text: "a thought" })));
+
+    await drainWith(harnessed)();
+
+    const written = await files(harnessed);
+    expect(written).toContain(
+      join(harnessed.mirrorRoot, "settings", "unfurl.json"),
     );
     expect(written.filter((path) => path.endsWith(".md"))).toHaveLength(1);
   });

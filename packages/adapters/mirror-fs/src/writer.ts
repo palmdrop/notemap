@@ -22,6 +22,7 @@ import {
 import {
   destinationPathFor,
   pathsFor,
+  poolSettingPathFor,
   renderingBeside,
   templatePathFor,
 } from "./paths";
@@ -62,6 +63,14 @@ export function createFilesystemMirrorWriter(
         return;
       }
 
+      if (record.kind === "pool-setting") {
+        await writeAtomically(
+          poolSettingPathFor(config.root, record.setting),
+          serialiseMirrorRecord(record),
+        );
+        return;
+      }
+
       const paths = pathsFor(config.root, record);
 
       // Material before presentation: a renderer is host-supplied code, and a
@@ -85,6 +94,10 @@ export function createFilesystemMirrorWriter(
         await removeIfPresent(templatePathFor(config.root, subject.template));
         return;
       }
+
+      // Writing always writes a row, a value equal to the default included, so
+      // a pool setting's record is never owed a removal: nothing enqueues one.
+      if (subject.kind === "pool-setting") return;
 
       // A bare item id cannot give a path, so removal walks the tree instead.
       for (const record of await recordsFor(config.root, subject.item)) {

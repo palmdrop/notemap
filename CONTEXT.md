@@ -19,6 +19,18 @@ it names a pool without describing one. A rebuild makes a new pool and so takes 
 which is how a client that cached one can tell that everything it holds describes somewhere else.
 _Avoid_: pool id, instance id, server id, fingerprint
 
+**Pool setting**:
+A named value true of the pool rather than of any item, destination or template — changed by a
+person while using notemap, on the same footing as a destination, and never something an install
+sets. The known ones are a closed list in code, one entry today: `unfurl`, a boolean defaulting to
+on. Unset reads as its default, and every change is an ordinary write, mirrored and logged like any
+other pool state. Named for what it differs from: a destination's **settings** are the values a
+kind's schema asks for and belong to one destination; a reading **preference** — the palette, the
+order control — lives on the device and carries no privacy cost, where a pool setting wants one
+answer for the whole pool and not one per device.
+_Avoid_: setting on its own, configuration (which is what an install is), preference, option, flag,
+knob
+
 **Item**:
 One thing in the pool, with its own lifecycle, enrichment and routing decisions. Items never
 merge with each other.
@@ -90,7 +102,9 @@ _Avoid_: backup, export, sync folder
 **Mirror record**:
 One item's complete durable state as the mirror carries it — payload, classification, assets,
 artifacts and their corrections, routing records. The unit of mirroring, and the only thing a
-rebuild reads. Owned by the domain; where its bytes land is the driver's.
+rebuild reads. Owned by the domain; where its bytes land is the driver's. *Amended 2026-09-24*: the
+unit is not only an item's. A destination, a template and a pool setting each get one too, complete
+and durable on the same terms — everything a rebuild needs to restore that thing, and nothing else.
 _Avoid_: sidecar, state file, document, snapshot
 
 **Rendering**:

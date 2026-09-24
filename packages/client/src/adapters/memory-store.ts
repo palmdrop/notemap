@@ -1,6 +1,7 @@
 import type {
   AssetId,
   Destination,
+  PoolSetting,
   RoutingTemplate,
   Item,
   ItemId,
@@ -24,6 +25,7 @@ export function createMemoryStore(): ClientStore {
   let tags: readonly TagUse[] = [];
   let destinations: readonly Destination[] = [];
   let templates: readonly RoutingTemplate[] = [];
+  let poolSettings: readonly PoolSetting[] | undefined;
   let pool: PoolIdentity | undefined;
 
   return {
@@ -70,6 +72,12 @@ export function createMemoryStore(): ClientStore {
 
     async writeDestinations(written) {
       destinations = written;
+    },
+
+    readPoolSettings: async () => poolSettings,
+
+    async writePoolSettings(written) {
+      poolSettings = written;
     },
 
     readPoolIdentity: async () => pool,

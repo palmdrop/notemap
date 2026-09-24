@@ -6,6 +6,7 @@ import type {
   Item,
   ItemId,
   PoolIdentity,
+  PoolSetting,
   RoutingRecord,
   RoutingSummary,
   RoutingTemplate,
@@ -44,6 +45,8 @@ export type ClientState = {
   readonly destinations: readonly Destination[];
   /** The same, for templates: a saved decision is offered while the pool is away. */
   readonly templates: readonly RoutingTemplate[];
+  /** Absent until read from the pool, never filled with a default. */
+  readonly poolSettings?: readonly PoolSetting[];
   /** What completion offers, most used first, as the pool last counted it. */
   readonly tags: readonly TagUse[];
   /**
@@ -92,8 +95,9 @@ export function withHeld(
 }
 
 export function rebuilt(state: ClientState, pool: PoolIdentity): ClientState {
+  const { poolSettings: _poolSettings, ...rest } = state;
   return {
-    ...state,
+    ...rest,
     pool,
     items: new Map(),
     feed: emptyPage(state.feed.order),
@@ -110,8 +114,9 @@ export function rebuilt(state: ClientState, pool: PoolIdentity): ClientState {
  * it drains when someone signs in again.
  */
 export function forgotten(state: ClientState): ClientState {
+  const { poolSettings: _poolSettings, ...rest } = state;
   return {
-    ...state,
+    ...rest,
     items: new Map(),
     feed: emptyPage(state.feed.order),
     queue: emptyPage(state.queue.order),

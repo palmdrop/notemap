@@ -13,6 +13,7 @@ import * as maintenance from "./maintenance";
 import * as mirror from "./mirror";
 import { observed } from "./observe";
 import * as routing from "./routing";
+import * as settings from "./settings";
 import * as tags from "./tags";
 import * as work from "./work";
 
@@ -101,6 +102,11 @@ export function createPool(config: PoolConfig, wired: PoolPorts): Pool {
       resolve: (item, id) => templates.resolve(config, ports, item, id),
       route: (item, id, options) =>
         templates.routeFrom(config, ports, item, id, options),
+    },
+
+    settings: {
+      list: () => settings.list(config, ports),
+      change: (name, value) => settings.change(config, ports, name, value),
     },
 
     routing: {

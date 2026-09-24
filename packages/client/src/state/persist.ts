@@ -50,6 +50,13 @@ export function persist(
   );
   whole(
     state,
+    (current) => current.poolSettings,
+    (poolSettings) => store.writePoolSettings(poolSettings),
+    hydrated,
+    report,
+  );
+  whole(
+    state,
     (current) => current.pool,
     async (pool) => {
       if (pool !== undefined) await store.writePoolIdentity(pool);

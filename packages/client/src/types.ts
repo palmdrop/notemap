@@ -23,6 +23,7 @@ import type {
   MintedToken,
   NamingRequest,
   Payload,
+  PoolSetting,
   RememberedRequest,
   ResolvedRoutingTemplate,
   RouteRequest,
@@ -196,6 +197,27 @@ export interface DestinationsApi {
   unretire(id: DestinationId): Promise<Destination>;
   /** Refused by the pool where a routing record has ever named it. */
   delete(id: DestinationId): Promise<void>;
+}
+
+/**
+ * Not an outbox operation: a change checked against a cached list of names
+ * would hand back an acceptance the pool may refuse.
+ */
+export interface PoolSettingsApi {
+  /** What was last read, for a screen to render while the pool is unreachable. */
+  readonly all: Observable<readonly PoolSetting[] | undefined>;
+  /** The same cache, read now. Absent until read, never filled with a default. */
+  readonly held: readonly PoolSetting[] | undefined;
+  /**
+   * One setting's value as last read, absent where it has not been — so a
+   * caller that must fail closed writes `value(name) === true`.
+   */
+  value(name: string): boolean | undefined;
+
+  /** Fills the cache `all` answers from, and answers the same list. */
+  load(): Promise<readonly PoolSetting[]>;
+  /** One setting at a time, on the wire's own terms. Answers every setting, as it now stands. */
+  change(name: string, value: boolean): Promise<readonly PoolSetting[]>;
 }
 
 /**
@@ -405,6 +427,7 @@ export interface Client {
   readonly routing: RoutingApi;
   readonly destinations: DestinationsApi;
   readonly templates: TemplatesApi;
+  readonly settings: PoolSettingsApi;
   readonly tags: TagsApi;
   readonly sources: SourcesApi;
   readonly actions: ActionsApi;

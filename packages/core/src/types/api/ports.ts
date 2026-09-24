@@ -38,6 +38,7 @@ import type {
   TagUse,
 } from "../domain/item";
 import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
+import type { PoolSettingRecord } from "../domain/pool-setting";
 import type {
   RoutingTemplate,
   RoutingTemplateRecord,
@@ -312,6 +313,9 @@ export interface PoolReads {
   /** A reservation still to land counts as much as a delivered record: both name it. */
   destinationEverNamed(id: DestinationId): Promise<boolean>;
 
+  /** Only a setting someone has changed. Whole and unnarrowed, on `destinations()`'s terms. */
+  poolSettings(): Promise<readonly PoolSettingRecord[]>;
+
   /** Every routing template the pool holds, oldest first. */
   routingTemplates(): Promise<readonly RoutingTemplate[]>;
   routingTemplate(id: RoutingTemplateId): Promise<RoutingTemplate | undefined>;
@@ -390,6 +394,9 @@ export interface PoolTx extends PoolReads {
    * and the template it came from is a name that may go.
    */
   deleteRoutingTemplate(id: RoutingTemplateId): Promise<void>;
+
+  /** Always writes a row, a value equal to the default included: reverting is an ordinary change. */
+  setPoolSetting(record: PoolSettingRecord): Promise<void>;
 
   insertDestination(record: DestinationRecord): Promise<Destination>;
   /** Every field a person may change is written at once; the store owns `modifiedAt`. */

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import type {
   DestinationId,
   ItemMirrorRecord,
+  PoolSettingName,
   RoutingTemplateId,
 } from "@notemap/core";
 
@@ -15,6 +16,9 @@ export const DESTINATIONS = "destinations";
 
 /** Beside the destinations, and on the same reasoning. */
 export const TEMPLATES = "templates";
+
+/** Beside the destinations and templates: pool state that belongs to no day. */
+export const SETTINGS = "settings";
 
 export type MirrorPaths = {
   readonly directory: string;
@@ -57,6 +61,13 @@ export function destinationPathFor(root: string, id: DestinationId): string {
 
 export function templatePathFor(root: string, id: RoutingTemplateId): string {
   return join(root, TEMPLATES, `${filenameSafe(id)}.json`);
+}
+
+export function poolSettingPathFor(
+  root: string,
+  name: PoolSettingName,
+): string {
+  return join(root, SETTINGS, `${filenameSafe(name)}.json`);
 }
 
 /** The rendering that belongs to a record file, which shares its stem. */

@@ -7,6 +7,7 @@ import type { Destination } from "#types/domain/destination";
 import type { Artifact } from "#types/domain/enrichment";
 import type { DestinationId, Timestamp } from "#types/domain/ids";
 import type { Item, RoutingSummary } from "#types/domain/item";
+import type { PoolSettingRecord } from "#types/domain/pool-setting";
 import type { RoutingRecord } from "#types/domain/routing";
 import type { RoutingTemplate } from "#types/domain/template";
 
@@ -246,6 +247,9 @@ export const destination = (): fc.Arbitrary<Destination> =>
       ],
     },
   );
+
+export const poolSettingRecord = (): fc.Arbitrary<PoolSettingRecord> =>
+  fc.record({ name: branded(), value: fc.boolean(), changedAt: stamp() });
 
 export type PoolState = {
   readonly item: Item;

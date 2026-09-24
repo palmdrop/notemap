@@ -5,6 +5,7 @@ import type {
   Item,
   ItemId,
   PoolIdentity,
+  PoolSetting,
   TagUse,
 } from "#api/types";
 import { Unreadable } from "../errors";
@@ -44,7 +45,7 @@ export async function hydrate(
     }
   }
 
-  const [outbox, items, tags, destinations, templates, pool] =
+  const [outbox, items, tags, destinations, templates, poolSettings, pool] =
     await Promise.all([
       read<readonly PendingOperation[]>("outbox", [], () => store.readOutbox()),
       read<readonly Item[]>("items", [], () => store.readItems()),
@@ -54,6 +55,11 @@ export async function hydrate(
       ),
       read<readonly RoutingTemplate[]>("templates", [], () =>
         store.readTemplates(),
+      ),
+      // Absent is "not yet read"; the fallback on a store that cannot be read
+      // is the same fact a cold client answers, not a guessed default.
+      read<readonly PoolSetting[] | undefined>("pool settings", undefined, () =>
+        store.readPoolSettings(),
       ),
       read<PoolIdentity | undefined>("pool identity", undefined, () =>
         store.readPoolIdentity(),
@@ -70,6 +76,7 @@ export async function hydrate(
     tags,
     destinations,
     templates,
+    ...(poolSettings === undefined ? {} : { poolSettings }),
     ...(pool === undefined ? {} : { pool }),
   };
 

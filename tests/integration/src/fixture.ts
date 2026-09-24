@@ -25,6 +25,7 @@ import {
   type MirrorRecord,
   type MirrorWriter,
   type PayloadTypeName,
+  POOL_SETTINGS,
   type Pool,
   type PoolConfig,
   type PoolPorts,
@@ -81,6 +82,7 @@ export const CONFIG: PoolConfig = {
       },
     },
   ],
+  poolSettings: POOL_SETTINGS,
   retry: {
     maxAttempts: 5,
     initialBackoff: 1000 as Duration,

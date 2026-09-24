@@ -131,6 +131,8 @@ const SAID: {
   "not-retired": "that destination is not retired",
   "not-pending": "that delivery has already been decided",
   "payload-invalid": "nothing to capture",
+  "pool-setting-invalid": (facts) =>
+    `that setting needs a ${String(facts["expected"])}, not what was sent`,
   "payload-type-changed": "an edit cannot change what kind of thing this is",
   "payload-type-unsupported":
     "that destination does not accept this kind of item",
@@ -165,6 +167,8 @@ const SAID: {
     `this daemon has no adapter for "${String(facts["destinationKind"])}" destinations`,
   "unknown-payload-type": (facts) =>
     `this daemon has no "${String(facts["type"])}" payload type configured`,
+  "unknown-pool-setting": (facts) =>
+    `this daemon has no "${String(facts["setting"])}" setting`,
   unreachable: "the destination could not be reached",
   "unsupported-media-type": "this daemon does not accept that kind of request",
 };

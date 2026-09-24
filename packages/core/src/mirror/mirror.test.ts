@@ -13,6 +13,7 @@ import type { RoutingRecord } from "#types/domain/routing";
 
 import {
   destination,
+  poolSettingRecord,
   poolState,
   routingTemplate,
   type PoolState,
@@ -21,6 +22,7 @@ import { parseMirrorRecord, serialiseMirrorRecord } from "./codec";
 import {
   projectDestinationRecord,
   projectMirrorRecord,
+  projectPoolSettingRecord,
   projectTemplateRecord,
 } from "./record";
 
@@ -122,6 +124,28 @@ describe("the record round trips", () => {
     fc.assert(
       fc.property(routingTemplate(), (held) => {
         const once = serialiseMirrorRecord(projectTemplateRecord(held));
+        expect(serialiseMirrorRecord(parseMirrorRecord(once))).toBe(once);
+      }),
+      { numRuns: 500 },
+    );
+  });
+
+  it("carries a pool setting whole", () => {
+    fc.assert(
+      fc.property(poolSettingRecord(), (held) => {
+        const record = projectPoolSettingRecord(held);
+        expect(parseMirrorRecord(serialiseMirrorRecord(record))).toEqual(
+          record,
+        );
+      }),
+      { numRuns: 500 },
+    );
+  });
+
+  it("keeps a pool setting byte for byte a second time round", () => {
+    fc.assert(
+      fc.property(poolSettingRecord(), (held) => {
+        const once = serialiseMirrorRecord(projectPoolSettingRecord(held));
         expect(serialiseMirrorRecord(parseMirrorRecord(once))).toBe(once);
       }),
       { numRuns: 500 },

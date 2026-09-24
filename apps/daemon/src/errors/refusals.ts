@@ -9,6 +9,7 @@ import type {
   DestinationRefusal,
   EditRefusal,
   OutputRefusal,
+  PoolSettingRefusal,
   RetireRefusal,
   RoutingRefusal,
   RoutingTemplateRefusal,
@@ -159,6 +160,12 @@ export const DESTINATION_DELETION_STATUS = {
   "unknown-destination": 404,
   "destination-in-use": 409,
 } as const satisfies Record<DestinationDeletionRefusal["kind"], number>;
+
+/** `404` is the name itself; `422` is what it was asked to hold. */
+export const POOL_SETTING_STATUS = {
+  "unknown-pool-setting": 404,
+  "pool-setting-invalid": 422,
+} as const satisfies Record<PoolSettingRefusal["kind"], number>;
 
 /**
  * An account held by the daemon. `409` is a destination still naming the one
@@ -317,6 +324,10 @@ export function templateStatus(refusal: RoutingTemplateRefusal): number {
   return TEMPLATE_STATUS[refusal.kind];
 }
 
+export function poolSettingStatus(refusal: PoolSettingRefusal): number {
+  return POOL_SETTING_STATUS[refusal.kind];
+}
+
 export function templateRoutingStatus(refusal: TemplateRoutingRefusal): number {
   return TEMPLATE_ROUTING_STATUS[refusal.kind];
 }
@@ -343,6 +354,7 @@ export function errorBody(
     | DestinationRefusal
     | EditRefusal
     | OutputRefusal
+    | PoolSettingRefusal
     | RetireRefusal
     | RoutingRefusal
     | RoutingTemplateRefusal

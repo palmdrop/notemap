@@ -46,6 +46,15 @@
     void client.tags.load().catch(() => undefined);
   });
 
+  // A pool setting can stop this device reaching out on the pool's behalf, so
+  // a change made on another device has to arrive without anyone opening
+  // settings: read whenever the pool is in reach and the door is open.
+  $effect(() => {
+    if (pool.yes && !who.shut) {
+      void client.settings.load().catch(() => undefined);
+    }
+  });
+
   // The cache holds the pool's items and the door is shut; drawing them because
   // they happen to be local would make signing out mean nothing. What is still
   // said is how much unsent work is held, because that is the person's and its

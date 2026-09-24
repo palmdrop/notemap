@@ -21,6 +21,8 @@ import type {
   JobSubject,
   JsonObject,
   PayloadTypeName,
+  PoolSettingName,
+  PoolSettingRecord,
   ProviderName,
   RoutedTo,
   RoutingRecord,
@@ -46,6 +48,7 @@ import type {
   ItemRoutingRow,
   ItemTagRow,
   JobRow,
+  PoolSettingRow,
   RoutingRecordRow,
   RoutingTemplateRow,
 } from "./rows";
@@ -249,6 +252,11 @@ export function toJobSubject(
         kind: "destination",
         destination: row.subject_id as DestinationId,
       };
+    case "pool-setting":
+      return {
+        kind: "pool-setting",
+        setting: row.subject_id as PoolSettingName,
+      };
   }
 }
 
@@ -265,6 +273,8 @@ export function subjectColumns(
       return ["template", subject.template];
     case "destination":
       return ["destination", subject.destination];
+    case "pool-setting":
+      return ["pool-setting", subject.setting];
   }
 }
 
@@ -447,6 +457,21 @@ export function routingTemplateParams(
     toMillis(record.createdAt),
     modifiedAt,
   ];
+}
+
+export function toPoolSettingRecord(row: PoolSettingRow): PoolSettingRecord {
+  return {
+    name: row.name as PoolSettingName,
+    value: row.value === 1,
+    changedAt: toTimestamp(row.changed_at),
+  };
+}
+
+/** The bound parameters for writing a pool setting, in the order the statement declares. */
+export function poolSettingParams(
+  record: PoolSettingRecord,
+): [string, 0 | 1, number] {
+  return [record.name, record.value ? 1 : 0, toMillis(record.changedAt)];
 }
 
 export function toDestination(row: DestinationRow): Destination {

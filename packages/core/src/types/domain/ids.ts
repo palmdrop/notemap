@@ -15,6 +15,7 @@ export type CapabilityName = Branded<string, "CapabilityName">;
 export type PayloadTypeName = Branded<string, "PayloadTypeName">;
 export type RoutingRecordId = Branded<string, "RoutingRecordId">;
 export type RoutingTemplateId = Branded<string, "RoutingTemplateId">;
+export type PoolSettingName = Branded<string, "PoolSettingName">;
 export type JobId = Branded<string, "JobId">;
 export type LeaseId = Branded<string, "LeaseId">;
 export type ActionId = Branded<string, "ActionId">;

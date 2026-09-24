@@ -4,7 +4,7 @@ import { expect, test, vi } from "vitest";
 
 import { json, routeOf } from "@notemap/client/testing";
 
-import { asked, pool } from "$testing/pool";
+import { asked, client, pool } from "$testing/pool";
 import Layout from "./+layout.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
@@ -80,4 +80,58 @@ test("signing in through the shell reaches the daemon and draws the surface", as
     expect(asked()).toContain("POST /v1/session");
   });
   expect(await screen.findByText("the surface")).toBeDefined();
+});
+
+const open = () =>
+  json(200, {
+    authenticated: true,
+    requiresCredentials: true,
+    identity: { kind: "session", id: "abc" },
+  });
+
+test("reads the pool settings on start, without anyone opening settings", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/session") return open();
+    if (route === "GET /v1/settings") {
+      return json(200, { values: [{ name: "unfurl", value: false }] });
+    }
+    return json(200, { values: [] });
+  });
+
+  render(Layout, { children });
+
+  await waitFor(() => {
+    expect(client.settings.held).toEqual([{ name: "unfurl", value: false }]);
+  });
+});
+
+test("reads the pool settings again once the door opens", async () => {
+  let signedIn = false;
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "POST /v1/session") {
+      signedIn = true;
+      return open();
+    }
+    if (route === "GET /v1/session") return signedIn ? open() : shut();
+    if (route === "GET /v1/settings") {
+      return signedIn
+        ? json(200, { values: [{ name: "unfurl", value: true }] })
+        : json(401, { error: { code: "unauthenticated" } });
+    }
+    return json(200, { values: [] });
+  });
+
+  render(Layout, { children });
+
+  await fireEvent.input(
+    await screen.findByLabelText("password", { exact: false }),
+    { target: { value: "correct horse battery staple" } },
+  );
+  await fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+  await waitFor(() => {
+    expect(client.settings.held).toEqual([{ name: "unfurl", value: true }]);
+  });
 });

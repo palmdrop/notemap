@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { PAYLOAD_TYPES } from "@notemap/core";
+import { PAYLOAD_TYPES, POOL_SETTINGS } from "@notemap/core";
 
 import {
   cookieOptionsFor,
@@ -137,6 +137,11 @@ describe("what a config may leave out", () => {
   it("takes the payload types from core rather than from the file", () => {
     expect(parse("").poolConfig.payloadTypes).toBe(PAYLOAD_TYPES);
     expect(PAYLOAD_TYPES.map((type) => type.name)).toEqual(["note"]);
+  });
+
+  it("takes the pool settings from core rather than from the file", () => {
+    expect(parse("").poolConfig.poolSettings).toBe(POOL_SETTINGS);
+    expect(POOL_SETTINGS.map((setting) => setting.name)).toEqual(["unfurl"]);
   });
 });
 

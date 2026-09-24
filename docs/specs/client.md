@@ -1,8 +1,16 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-09-22
+**Last updated**: 2026-09-24
 **Shipped**:
+
+- 2026-09-24 — **`client.settings` caches the pool's own settings.** Beside `destinations` and
+  `templates`, on the same `all`/`held` terms, persisted and hydrated and dropped when the pool
+  identity changes; a change is not an outbox operation. `held` answers `undefined` until the first
+  read lands, and `value(name)` answers one setting on the same terms, which is what lets a reader
+  fail closed rather than guess. See
+  [ADR 50](../adr/0050-pool-settings-are-pool-state.md) and
+  [a-pool-holds-settings](../plans/a-pool-holds-settings.md).
 
 - 2026-09-17 — **A client store on a filesystem, and two clients over one store.**
   `@notemap/client/filesystem` keeps the outbox and the cache in a directory, for a shell that is
@@ -577,6 +585,25 @@ pool still offers every template it last read. Editing one is **not** an outbox 
 destination's reason unchanged: whether a pattern names a field this daemon declares, and whether
 a trigger tag is free, are questions only the pool can answer, so an offline save would validate
 against nothing and hand back an acceptance the pool may then refuse.
+
+**Pool settings are cached on the same terms again** *(added 2026-09-24,*
+[ADR 50](../adr/0050-pool-settings-are-pool-state.md)*)*. `client.settings` sits beside
+`destinations` and `templates` with the same `all`/`held` pair, persisted and hydrated the same
+way, and dropped when the pool identity changes or when the device signs out, on the same terms
+as the destinations and templates caches. Changing one is **not** an outbox operation, for
+the destinations' own reason: a change validated against a cached list of known names would hand
+back an acceptance the pool may refuse.
+
+**`held` distinguishes "not yet read" from "read and off"**, which destinations' and templates'
+`held` never had to: an empty destinations list is a true answer, absent is not one. A pool setting
+is answered `undefined` until the first successful read lands — never guessed from the setting's
+own default — which is what lets a reader **fail closed**. `value(name)` answers one setting the
+same way, absent where it has not been read, so a reader that must fail closed asks
+`value(name) === true`. A cold client, or one whose cache was
+dropped because the identity changed, treats a setting it has not read as off; one that read it once
+and has since gone offline goes on honouring what it last read, on the destinations cache's own
+terms. Fail-closed therefore bites only on a genuinely cold client, where the cost of being wrong is
+an outbound request nobody asked for.
 
 **What a template resolves to is asked, never cached.** `resolve` answers the expanded arguments
 for one item, and the expansion is core's: a second implementation on this side would be a second
