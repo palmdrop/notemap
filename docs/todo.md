@@ -143,10 +143,13 @@
   every other annotation is. It changes an annotation that has already shipped and that
   `docs/specs/shell.md` and [ADR 26](adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md)
   both describe, so it wants an ADR and a migration of the three kinds that declare it.
-- [ ] Verify and repair reach destination records. The mirror carries them
-  ([ADR 20](adr/0020-destinations-are-pool-state.md)), but neither verify nor repair exists to
-  reach anything, so a mirror holding a stale or missing destination record has nothing that would
-  notice. Whoever builds them builds this at the same time.
+- [ ] Verify and repair reach destination, template and pool-setting records. The mirror carries
+  them ([ADR 20](adr/0020-destinations-are-pool-state.md),
+  [ADR 49](adr/0049-pool-settings-are-pool-state.md)), but neither verify nor repair exists to
+  reach anything, so a mirror holding a stale or missing record of any of the three has nothing that
+  would notice. Named together because none of them exists to reach anything yet, and pool settings
+  is a third thing that would otherwise join the debt silently. Whoever builds them builds this at
+  the same time.
 
 ## Inboxes
 - [ ] raycast extension: add command for viewing inbox

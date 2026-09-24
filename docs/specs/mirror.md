@@ -1,8 +1,17 @@
 # Spec: The mirror on disk
 
 **Status**: Draft
-**Last updated**: 2026-09-10
+**Last updated**: 2026-09-24
 **Shipped**:
+
+- 2026-09-24 — **The mirror carries pool settings, its fourth unit and third non-item one.** A pool
+  setting is a value someone changed about the pool itself, and writing always writes a row — a
+  value equal to the default included — so there is no delete path to grow a repair for. One
+  `.json` per setting under `pool-mirror/settings/`, beside the destinations and templates
+  directories and on the same terms: no rendering, a write owed when one changes, and a record
+  naming a setting the running code does not know is warned about and skipped on a rebuild.
+  ([ADR 49](../adr/0049-pool-settings-are-pool-state.md),
+  [a-pool-holds-settings](../plans/a-pool-holds-settings.md))
 
 - 2026-09-10 — **A mirrored routing record says what words went.** Where a delivery carried its
   own content, the record's destination target holds it beside the arguments, so a rebuilt pool
@@ -197,6 +206,15 @@ A template that names a destination the pool no longer holds is mirrored as it s
 an ordinary state a person repairs, not corruption, and a mirror that dropped the row would turn a
 repairable template into one nobody can find.
 
+**Pool settings are the fourth unit, and the third that is not an item** (added 2026-09-24,
+[ADR 49](../adr/0049-pool-settings-are-pool-state.md)). A pool setting is a value someone changed
+about the pool itself rather than about anything in it, and it is material a person set up and
+would otherwise have to redo, which is the destination's argument a third time. The unit is the
+setting itself: its name and its value. **There is no removal.** Writing always writes a row, a
+value equal to the default included, so reverting a setting is an ordinary write rather than a
+delete — the mirror never needs a job or a repair path to take a settings record away, which is the
+one way this unit is simpler than the other three.
+
 **An output's bytes need no home of their own.** They are a blob like any other, so a mirrored
 record names a hash and `assets/` holds the content once however many records name it. A mirror
 copied without `assets/` answers *where* an item went and no longer *what* went — the same loss a
@@ -239,7 +257,9 @@ an item is either there or it is gone.
 same transaction as the mutation itself. A capture, an amendment, a revision, a tag added or
 removed, an archive or unarchive, an artifact or a correction, a routing record: each leaves the
 pool owing the mirror a write, and a mutation committed with nothing recording that debt would
-never be written and nothing would notice.
+never be written and nothing would notice. A destination created or changed, a template saved or
+edited, and a pool setting changed each owe a write the same way, on the unit they are about rather
+than on any item.
 
 **A routing record owes a write when its delivery lands, not when it is decided** (added
 2026-08-13). Minting a reservation changes nothing the mirror carries, so it enqueues nothing;
@@ -372,6 +392,7 @@ notemap/
   pool-mirror/YYYY/MM/DD/          <- write-only: one .json + one .md per item
   pool-mirror/destinations/        <- one .json per destination, no rendering
   pool-mirror/templates/           <- one .json per routing template, no rendering
+  pool-mirror/settings/            <- one .json per pool setting, no rendering
   assets/<hash-prefix>/            <- blobs, single copy, content-addressed
 ```
 
@@ -395,6 +416,10 @@ lost notemap. The directory sits beside the years rather than under one, since a
 belongs to no day.
 
 A template's file is `pool-mirror/templates/<template-id>.json`, on every one of those terms.
+
+A pool setting's file is `pool-mirror/settings/<name>.json`, on the same terms again: no rendering,
+its name being immutable and its two fields readable as JSON by a person who has lost notemap. The
+directory sits beside destinations and templates, and belongs to no day.
 
 Ids are client-minted and may hold anything, so the id in the filename is a **one-way encoding**
 (stated 2026-08-11): anything but a lowercase safe name is replaced *and* given a digest of the
@@ -440,6 +465,12 @@ reason and one more: tagging now applies a template, and a rebuild replaying an 
 - **Order: destinations, then templates, then items.** A template names a destination and a routing
   record names both, so each is restored before the thing that refers to it. Within the items there
   is no order to keep — a revision carries its own capture time and refers to its original by id.
+  **Pool settings have no order to keep either**, and none with the other three: a setting names
+  nothing and is named by nothing, so its record is restored whenever the reader hands it over.
+- **A record naming a pool setting the running code does not know is warned about and skipped**,
+  the same mechanism a leftover `config.toml` key already uses
+  ([ADR 43](../adr/0043-config-holds-what-an-install-is.md)); the rebuild goes on rather than
+  failing on a file describing a setting nobody ships anymore.
 
 - **Enrichment state is derived from material.** An `(item, enrichment)` pair with at least one
   mirrored artifact is `done`; everything else falls to normal per-source policy. Without this a

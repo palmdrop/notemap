@@ -1,6 +1,7 @@
 import {
   projectDestinationRecord,
   projectMirrorRecord,
+  projectPoolSettingRecord,
   projectTemplateRecord,
 } from "../mirror/record";
 import type { PoolPorts, PoolTx } from "#types/api/ports";
@@ -64,7 +65,18 @@ export async function recordFor(
       return templateRecord(ports, subject);
     case "item":
       return itemRecord(ports, subject);
+    case "pool-setting":
+      return poolSettingRecord(ports, subject);
   }
+}
+
+async function poolSettingRecord(
+  ports: PoolPorts,
+  subject: Extract<MirrorSubject, { kind: "pool-setting" }>,
+): Promise<MirrorRecord | undefined> {
+  const held = await ports.store.poolSettings();
+  const record = held.find((each) => each.name === subject.setting);
+  return record === undefined ? undefined : projectPoolSettingRecord(record);
 }
 
 async function templateRecord(

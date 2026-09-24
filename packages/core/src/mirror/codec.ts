@@ -13,6 +13,7 @@ import type {
   EnrichmentName,
   ItemId,
   PayloadTypeName,
+  PoolSettingName,
   ProviderName,
   RoutingRecordId,
   RoutingTemplateId,
@@ -71,6 +72,13 @@ export function parseMirrorRecord(source: string): MirrorRecord {
       return {
         kind: "template",
         template: readTemplate(root["template"], "template"),
+        modifiedAt: stamp(root["modifiedAt"], "modifiedAt"),
+      };
+    case "pool-setting":
+      return {
+        kind: "pool-setting",
+        setting: text(root["setting"], "setting") as PoolSettingName,
+        value: flag(root["value"], "value"),
         modifiedAt: stamp(root["modifiedAt"], "modifiedAt"),
       };
     default:

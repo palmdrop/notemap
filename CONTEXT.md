@@ -102,7 +102,9 @@ _Avoid_: backup, export, sync folder
 **Mirror record**:
 One item's complete durable state as the mirror carries it — payload, classification, assets,
 artifacts and their corrections, routing records. The unit of mirroring, and the only thing a
-rebuild reads. Owned by the domain; where its bytes land is the driver's.
+rebuild reads. Owned by the domain; where its bytes land is the driver's. *Amended 2026-09-24*: the
+unit is not only an item's. A destination, a template and a pool setting each get one too, complete
+and durable on the same terms — everything a rebuild needs to restore that thing, and nothing else.
 _Avoid_: sidecar, state file, document, snapshot
 
 **Rendering**:
