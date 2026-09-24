@@ -66,6 +66,7 @@ describe("GET /v1/openapi.json", () => {
       "/v1/routing/{record}/output",
       "/v1/session",
       "/v1/sessions",
+      "/v1/settings",
       "/v1/sources",
       "/v1/tags",
       "/v1/templates",

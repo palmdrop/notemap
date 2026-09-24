@@ -19,6 +19,7 @@ import {
   EDIT_STATUS,
   OUTPUT_STATUS,
   PARAMETER_STATUS,
+  POOL_SETTING_STATUS,
   RETIRE_STATUS,
   ROUTING_STATUS,
   SUBJECT_STATUS,
@@ -83,6 +84,10 @@ import {
   routingRecordSchema,
   routingRecordsSchema,
 } from "../schemas/routing";
+import {
+  poolSettingsSchema,
+  updatePoolSettingsRequestSchema,
+} from "../schemas/settings";
 import { sourcesInUseSchema } from "../schemas/sources";
 import { tagRequestSchema, tagsInUseSchema } from "../schemas/tags";
 import type { StatusMap } from "../errors/refusals";
@@ -1509,6 +1514,58 @@ export const removeAccountRoute = createRoute({
   },
 });
 
+export const poolSettingsRoute = createRoute({
+  method: "get",
+  path: "/v1/settings",
+  summary: "Read the pool's own settings",
+  description:
+    "Every setting this daemon knows, with its effective value — a name never changed reads as its own default. The bare path is right: one daemon serves one pool, and a destination's settings are reached at `/v1/destinations/{id}` instead, so nothing else is addressable here.",
+  responses: {
+    200: {
+      description: "Every known pool setting.",
+      content: { [JSON_MEDIA_TYPE]: { schema: poolSettingsSchema } },
+    },
+  },
+});
+
+export const updatePoolSettingsRoute = createRoute({
+  method: "patch",
+  path: "/v1/settings",
+  summary: "Change one of the pool's own settings",
+  description:
+    'The body names exactly one setting — `{ "unfurl": false }` — so two callers changing two different settings never clobber each other, and a refusal never follows a change that already landed. Answers the full list, on `GET`\'s terms.',
+  request: {
+    body: {
+      required: true,
+      content: {
+        [JSON_MEDIA_TYPE]: { schema: updatePoolSettingsRequestSchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Every known pool setting, as it now stands.",
+      content: { [JSON_MEDIA_TYPE]: { schema: poolSettingsSchema } },
+    },
+    400: errorResponse(
+      "The body could not be read as this request, or did not name exactly one setting.",
+      400,
+      BODY_STATUS,
+    ),
+    404: errorResponse(
+      "The name is not one this daemon knows.",
+      404,
+      POOL_SETTING_STATUS,
+    ),
+    415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
+    422: errorResponse(
+      "The value is not of the setting's type.",
+      422,
+      POOL_SETTING_STATUS,
+    ),
+  },
+});
+
 export const ROUTES = [
   healthRoute,
   loginRoute,
@@ -1562,6 +1619,8 @@ export const ROUTES = [
   assetUploadRoute,
   assetRoute,
   assetContentRoute,
+  poolSettingsRoute,
+  updatePoolSettingsRoute,
 ] as const;
 
 /** OpenAPI writes a path parameter `{id}`; Hono matches it as `:id`. */

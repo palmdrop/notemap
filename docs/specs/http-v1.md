@@ -1,10 +1,16 @@
 # Spec: HTTP API (`/v1`)
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
-editing, destinations, routing to one and health are settled; the rest is stub
-**Last updated**: 2026-09-23
+editing, destinations, routing to one, pool settings and health are settled; the rest is stub
+**Last updated**: 2026-09-24
 **Shipped**:
 
+- 2026-09-24 — **`GET` and `PATCH /v1/settings`.** Every known pool setting with its effective
+  value, and a change that names exactly one setting, so two callers changing two of them never
+  clobber each other. Behind the door; no other settings are addressable here, a
+  destination's own being reached at `/v1/destinations/{id}`. See
+  [ADR 50](../adr/0050-pool-settings-are-pool-state.md) and
+  [a-pool-holds-settings](../plans/a-pool-holds-settings.md).
 - 2026-09-23 — **Accounts over `/v1`, for a session only.** `GET /v1/account-kinds`,
   `GET /v1/accounts`, and `PUT` and `DELETE /v1/accounts/{kind}/{name}` read, store, replace and
   forget an account the daemon holds in `auth.db`, beside the ones config declares. No route answers
@@ -1653,6 +1659,36 @@ sandbox already covers.
 - `next` is a ready-to-fetch relative URL on the same terms as the feed's, carrying the order, the
   limit, the filter where there is one, and the next position. It is absent on the last page.
 
+### Pool settings
+
+`GET /v1/settings` — every pool setting this daemon knows, with its effective value. A read of pool
+state on `/v1/destinations`' own terms: it answers at once and cannot fail. Unset reads as the
+setting's own default.
+
+```json
+{ "values": [{ "name": "unfurl", "value": true }] }
+```
+
+`PATCH /v1/settings` — changes one setting, named with its new value:
+
+```json
+{ "unfurl": false }
+```
+
+Answers the same shape as `GET`, as it now stands.
+
+- **The bare path is right.** One daemon serves one pool, and no other settings are addressable
+  under `/v1` — a destination's own are reached at `/v1/destinations/{id}`.
+- **Behind the door.** Neither route is in `OPEN_PATHS`; both need a signed-in request like any
+  other pool state.
+- **A change names only what changed**, never a whole document read and written back, so two
+  callers changing two different settings never clobber each other.
+- **Exactly one setting per `PATCH`.** A body naming none or several is `400 malformed-envelope`, so a
+  refusal never follows a change that already landed. A name this daemon does not know is
+  `404 unknown-pool-setting` carrying the allowed names; a value that is not that setting's own
+  type is `422 pool-setting-invalid` carrying what was expected. Either way nothing is written.
+- Not paginated: there are as many pool settings as core has declared, never more than a handful.
+
 ### Errors
 
 Every error, from core or from the daemon, is one shape:
@@ -1685,6 +1721,7 @@ Every error, from core or from the daemon, is one shape:
 | `404` | `unknown-template` | `template` | core |
 | `404` | `unknown-account-kind` | `accountKind` | daemon |
 | `404` | `no-such-account` | `accountKind`, `name` | daemon |
+| `404` | `unknown-pool-setting` | `setting`, `allowed` | core |
 | `405` | `method-not-allowed` | `method`, `allow` | daemon (+ `Allow` header) |
 | `409` | `asset-id-conflict` | `asset` | core |
 | `409` | `capture-id-conflict` | `existing` | core |
@@ -1735,6 +1772,7 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `invalid-account` | `issues` | daemon |
 | `422` | `account-secret-missing` | — | daemon |
 | `422` | `unreachable` | `detail` | core |
+| `422` | `pool-setting-invalid` | `setting`, `expected` | core |
 | `429` | `too-many-attempts` | `retryAfter` | daemon (+ `Retry-After` header) |
 
 The rule behind the table, so a refusal added later has a status without a decision being

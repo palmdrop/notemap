@@ -5,7 +5,7 @@ import { isAbsolute, join, resolve } from "node:path";
 import { parse as parseToml } from "smol-toml";
 import { z } from "zod";
 
-import { PAYLOAD_TYPES } from "@notemap/core";
+import { PAYLOAD_TYPES, POOL_SETTINGS } from "@notemap/core";
 import type { Duration, JsonObject, PoolConfig } from "@notemap/core";
 
 import {
@@ -467,6 +467,7 @@ export function parseConfig(source: string, from: string): LoadedConfig {
     },
     poolConfig: {
       payloadTypes: PAYLOAD_TYPES,
+      poolSettings: POOL_SETTINGS,
       retry: {
         maxAttempts: retry.maxAttempts,
         initialBackoff: retry.initialBackoff as Duration,

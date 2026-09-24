@@ -59,6 +59,7 @@ import {
   tokensRoute,
   itemRoute,
   markProcessedRoute,
+  poolSettingsRoute,
   queueRoute,
   retireDestinationRoute,
   previewRouteRoute,
@@ -71,6 +72,7 @@ import {
   unretireDestinationRoute,
   untagRoute,
   updateDestinationRoute,
+  updatePoolSettingsRoute,
 } from "./routes/definitions";
 import {
   createDestinationHandler,
@@ -97,6 +99,10 @@ import { feedHandler } from "./routes/feed";
 import { healthHandler } from "./routes/health";
 import { itemHandler } from "./routes/items";
 import { itemViewHandler } from "./routes/queue";
+import {
+  poolSettingsHandler,
+  updatePoolSettingsHandler,
+} from "./routes/settings";
 import { sourcesInUseHandler } from "./routes/sources";
 import { tagHandler, tagsInUseHandler } from "./routes/tags";
 import {
@@ -273,6 +279,11 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
   app.post(honoPath(cancelDeliveryRoute.path), cancelDeliveryHandler(pool));
   app.get(honoPath(routingOutputRoute.path), routingOutputHandler(pool));
   app.get(honoPath(actionsRoute.path), actionsHandler(pool));
+  app.get(honoPath(poolSettingsRoute.path), poolSettingsHandler(pool));
+  app.patch(
+    honoPath(updatePoolSettingsRoute.path),
+    updatePoolSettingsHandler(pool),
+  );
 
   app.put(honoPath(assetUploadRoute.path), assetUploadHandler(pool, limits));
   app.get(honoPath(assetRoute.path), assetHandler(pool));

@@ -2111,6 +2111,7 @@
               "template-edited",
               "template-deleted",
               "template-fired",
+              "pool-setting-changed",
               "enrichment-requested",
               "work-failed",
               "work-abandoned",
@@ -2210,6 +2211,39 @@
           "at",
           "detail"
         ]
+      },
+      "PoolSettings": {
+        "type": "object",
+        "properties": {
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PoolSetting"
+            }
+          }
+        },
+        "required": [
+          "values"
+        ]
+      },
+      "PoolSetting": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "value"
+        ]
+      },
+      "UpdatePoolSettingsRequest": {
+        "type": "object",
+        "additionalProperties": {}
       }
     },
     "parameters": {}
@@ -7384,6 +7418,175 @@
                           "enum": [
                             "no-such-asset",
                             "blob-missing"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/settings": {
+      "get": {
+        "summary": "Read the pool's own settings",
+        "description": "Every setting this daemon knows, with its effective value — a name never changed reads as its own default. The bare path is right: one daemon serves one pool, and a destination's settings are reached at `/v1/destinations/{id}` instead, so nothing else is addressable here.",
+        "responses": {
+          "200": {
+            "description": "Every known pool setting.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoolSettings"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Change one or more of the pool's own settings",
+        "description": "The body names only the settings being changed — `{ \"unfurl\": false }` — so two callers changing two different settings never clobber each other. Each named setting is applied in turn and becomes its own action and its own mirror write; a name this daemon does not know, or a value of the wrong type, refuses and leaves whatever came before it in the body applied. Answers the full list either way, on `GET`'s terms.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePoolSettingsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Every known pool setting, as it now stands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoolSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body could not be read as this request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "malformed-json",
+                            "malformed-envelope"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A name in the body is not one this daemon knows.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unknown-pool-setting"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The body was not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unsupported-media-type"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A value in the body was not of the setting's type. Nothing named after it in the body was applied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "pool-setting-invalid"
                           ]
                         }
                       },
