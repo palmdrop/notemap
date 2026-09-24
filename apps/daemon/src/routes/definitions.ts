@@ -1573,7 +1573,7 @@ export const unfurlRoute = createRoute({
   path: "/v1/unfurl",
   summary: "Read what an external link points at",
   description:
-    "The daemon fetches the page and answers its Open Graph title, description, image and site name, falling back to the document's `<title>`. Indicative: held in memory for an hour (a failure for minutes), never pool state. Only a public address is fetched — every hop of a redirect is checked, and the connection is made to the address that was checked. A target that could not be read is an ordinary answer with `reached: false`, not a refusal. Refused outright while the `unfurl` pool setting is off.",
+    "The daemon reads the page's head and answers its title, description, image and site name — Open Graph first, then the common tags pages use instead (`twitter:`, `description`, `application-name`, `image_src`), then the document's `<title>`. Indicative: held in memory for an hour (a failure for minutes), never pool state. Only a public address is fetched — every hop of a redirect is checked, and the connection is made to the address that was checked. A target that could not be read is an ordinary answer with `reached: false`, not a refusal. Refused outright while the `unfurl` pool setting is off.",
   request: { query: unfurlQuery },
   responses: {
     200: {

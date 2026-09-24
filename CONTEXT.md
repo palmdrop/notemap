@@ -558,15 +558,19 @@ _Avoid_: importer, connector, sync agent, ingester, adapter (for this)
 
 **Unfurl**:
 What a link in a note points at, read by the daemon on request — a title, a line of description, a
-picture's address and the site's name, from the page's Open Graph tags or its `<title>` — and the
+picture's address and the site's name, from the page's Open Graph tags, the common tags pages use
+where they lack one, or its `<title>` — and the
 act of reading it. Indicative, like a **preview**, and never binding: held in the daemon's memory
 for a while and then forgotten, never pool state, never mirrored, never an action. "Nothing could be
 read" is an ordinary unfurl. Like a **relay** it points at somebody else's server, so it is guarded:
 only a public address is ever fetched. Whether the daemon unfurls at all is the **pool setting**
 `unfurl`, and while it is off nothing is asked
 ([ADR 51](docs/adr/0051-an-unfurl-is-the-daemons-and-is-not-enrichment.md)). Not a **preview**,
-which is a destination's output before commit, and not enrichment, which writes to the pool.
-_Avoid_: preview (for this), enrichment, metadata, embed, oEmbed, scrape, link preview
+which is a destination's output before commit, and not enrichment, which writes to the pool. The
+shell's words for a person say **link preview** — the settings label is `show link previews` —
+and nothing else does.
+_Avoid_ (in code and docs): preview (for this), enrichment, metadata, embed, oEmbed, scrape, link
+preview
 
 ### The door
 

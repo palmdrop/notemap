@@ -82,7 +82,9 @@ which is the convention the specs use.
 - **An ADR is warranted**, and is phase 2. The decision says no to a shape the docs already
   describe, for reasons that are not readable off the code, and it opens an egress path the project
   has not had. Without it the next reader finds an endpoint that looks like enrichment done wrong.
-- **Open Graph only.** `og:title`, `og:description`, `og:image`, `og:site_name`, falling back to
+- **Open Graph only** *(amended 2026-09-24 after review: Open Graph first, then the common
+  non-standard tags — `twitter:`, `description`, `application-name`, `image_src` — then `<title>`,
+  read by a streaming `htmlparser2`; see ADR 51)*. `og:title`, `og:description`, `og:image`, `og:site_name`, falling back to
   the document's own `<title>`. **oEmbed is not built** — it would buy real embeds from the sites
   people most want them from, at the price of a discovery step or a provider list and a second
   failure mode, and it is left for when something demands it. Nothing in the answer shape should

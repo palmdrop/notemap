@@ -1868,15 +1868,22 @@ picture is fetched by the browser, from wherever `og:image` points, on the rule 
 image already follows, and with no referrer. It is **automatic, everywhere a note's links appear** —
 the rows on the queue and the feed, the item surface, and the process surface. Three states are
 ordinary, never the alarm: a block still asking draws the host alone; one whose page said nothing
-reads **`says nothing about itself`**; one the daemon could not reach reads **`out of reach`**, and
-one it would not read — an address inside a network — **`not read`**. **Every block is the same
-height in every state**, so nothing shifts when an answer lands. A link is asked about once per
-page, however many rows name it.
+reads **`says nothing about itself`**; one that could not be reached — by the daemon, or the daemon
+by this device — reads **`out of reach`**, and is asked again the next time it is drawn; one the
+daemon would not read — an address inside a network — reads **`not read`**. **Every block is the
+same height in every state**, so nothing shifts when an answer lands. A link is asked about once per
+page, however many rows name it and however often they are drawn — a link the daemon would not read
+included.
+
+**The shell's own words say `link preview`**, where the code and the docs say **unfurl**: a reader
+has no reason to know the word, and the settings label is theirs *(2026-09-24)*.
 
 **It is governed by a pool setting, not a reading preference.** The pool setting `unfurl` —
 **`show link previews`** in [Pool settings](#settings) — decides it for every device at once, and
-while it is off **no request is made** and no block is drawn: no placeholder says a preview was
-withheld. A client that has not yet read the setting draws none and asks nothing.
+while it is off **no request is made** and no block is drawn: no placeholder says an unfurl was
+withheld. A client that has not yet read the setting draws none and asks nothing. One whose copy is
+stale — the daemon answers that the setting is off — reads the pool settings again, and every block
+goes.
 
 A payload type this shell cannot draw **says so by name** and stays taggable, archivable and
 routable, since none of those need to understand the content. An item never becomes an invisible

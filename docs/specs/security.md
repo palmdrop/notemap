@@ -392,7 +392,9 @@ unique-local, multicast, reserved, documentation, benchmarking and unspecified r
 and so is every IPv6 form that embeds an IPv4 address (mapped, compatible, NAT64, 6to4, Teredo),
 so a private address cannot arrive dressed as v6. One refused address among several refuses the
 name. At most five redirects, each hop checked again; five seconds for the whole chain; half a
-megabyte read, counted after decompression.
+megabyte read at most, counted after decompression — and reading stops where the page's head ends,
+nearly always long before. Nothing but a success whose type is HTML is read at all. The head is
+parsed as it streams, in linear time, so a page built to be slow to parse is not.
 
 **The address checked is the address fetched.** The daemon resolves a name once, checks what came
 back, and connects to that address, with the name kept for `Host` and TLS SNI; redirects are read
@@ -415,6 +417,11 @@ the pool setting `unfurl` is off the route is refused before anything is resolve
 - **What the target learns.** The page's server sees the daemon's address and that somebody is
   reading the link, which is what the pool setting exists to turn off. The picture is fetched by the
   browser, from wherever `og:image` points, so the image host sees the reader.
+- **Which internal names exist.** A name that resolves to an address the guard refuses is
+  `422 address-refused`; one that does not resolve is `200 reached: false`. So a signed-in caller
+  can tell which names the daemon's resolver knows, and that they are internal. Accepted: that
+  caller already holds the whole pool, and the refusal is what tells an honest caller why a link
+  drew nothing.
 - **Load.** An unfurl is cached, and not rate-limited: a signed-in caller can make the daemon fetch
   as many distinct URLs as it asks for.
 

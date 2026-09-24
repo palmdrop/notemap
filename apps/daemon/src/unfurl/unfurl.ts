@@ -1,7 +1,7 @@
 import { isIP } from "node:net";
 
 import { createUnfurlCache } from "./cache";
-import { extract } from "./extract";
+import { readHead } from "./head";
 import { hostOf, refusedAddress, unfurlable } from "./guard";
 import { MAX_REDIRECTS, UNFURL_TIMEOUT_MS } from "./limits";
 import type {
@@ -80,6 +80,11 @@ export function createUnfurler(ports: UnfurlerPorts): Unfurler {
         ]);
         if (fetched === "timeout") return nothing;
 
+        const { body } = fetched;
+        const type = fetched.contentType?.split(";")[0]?.trim().toLowerCase();
+        const html = type === "text/html" || type === "application/xhtml+xml";
+        if (!html) body?.destroy();
+
         if (REDIRECTS.has(fetched.status)) {
           const next =
             fetched.location === undefined
@@ -91,22 +96,21 @@ export function createUnfurler(ports: UnfurlerPorts): Unfurler {
         }
         if (fetched.status < 200 || fetched.status >= 300) return nothing;
 
-        const type = fetched.contentType?.split(";")[0]?.trim().toLowerCase();
         if (type?.startsWith("image/") === true) {
           return {
             ok: true,
             value: { url: asked, reached: true, image: url.href },
           };
         }
-        const html = type === "text/html" || type === "application/xhtml+xml";
-        return {
-          ok: true,
-          value: {
-            url: asked,
-            reached: true,
-            ...(html ? extract(fetched.body, url) : {}),
-          },
-        };
+        const head =
+          html && body !== undefined
+            ? await Promise.race([
+                readHead(body, fetched.contentType, url),
+                deadline,
+              ])
+            : {};
+        if (head === "timeout") return nothing;
+        return { ok: true, value: { url: asked, reached: true, ...head } };
       }
       return nothing;
     } catch {
@@ -125,13 +129,13 @@ export function createUnfurler(ports: UnfurlerPorts): Unfurler {
       }
 
       const held = cache.get(asked);
-      if (held !== undefined) return { ok: true, value: held };
+      if (held !== undefined) return held;
 
       const pending = inFlight.get(asked);
       if (pending !== undefined) return pending;
 
       const reading = read(asked, start).then((result) => {
-        if (result.ok) cache.set(asked, result.value);
+        cache.set(asked, result);
         return result;
       });
       inFlight.set(asked, reading);

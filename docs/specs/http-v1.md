@@ -5,8 +5,8 @@ editing, destinations, routing to one, pool settings, unfurling and health are s
 **Last updated**: 2026-09-24
 **Shipped**:
 
-- 2026-09-24 — **`GET /v1/unfurl`.** What an external link points at — its Open Graph title,
-  description, image and site name, or the document's `<title>` — read by the daemon behind a
+- 2026-09-24 — **`GET /v1/unfurl`.** What an external link points at — its title, description,
+  image and site name, from Open Graph or the common tags pages use instead — read by the daemon behind a
   strict guard and held in memory, never pool state. A target that could not be read is an ordinary
   answer; a bad or internal address is refused, and so is the whole route while the pool setting
   `unfurl` is off. See [ADR 51](../adr/0051-an-unfurl-is-the-daemons-and-is-not-enrichment.md) and
@@ -1701,9 +1701,14 @@ Answers the same shape as `GET`, as it now stands.
 
 ### Unfurling a link
 
-`GET /v1/unfurl?url=` — what a link points at, read by the daemon from the page's Open Graph tags:
-`og:title`, `og:description`, `og:image` and `og:site_name`, with the document's `<title>` where
-`og:title` is missing. oEmbed is not read.
+`GET /v1/unfurl?url=` — what a link points at, read by the daemon from the page's head. Each field
+takes the first the page carries *(fallbacks added 2026-09-24)*: the title from `og:title`,
+`twitter:title`, then `<title>`; the description from `og:description`, `twitter:description`,
+then `<meta name="description">`; the image from `og:image`, `og:image:url`,
+`og:image:secure_url`, `twitter:image`, `twitter:image:src`, then `<link rel="image_src">`; the
+site name from `og:site_name`, then `application-name`. The charset is the response's, else the
+one the page declares in its opening bytes. Reading stops where the head ends. oEmbed is not
+read.
 
 ```json
 {
@@ -1722,10 +1727,11 @@ Answers the same shape as `GET`, as it now stands.
   something other than a success, or redirected somewhere the guard will not go answers `200` with
   `reached: false`. A response that is an image answers its own address as `image`.
 - **`image` is absolute and `http` or `https`**, and the daemon does not fetch it: whoever draws it
-  does.
+  does. An address longer than 2048 characters is dropped rather than cut.
 - **Indicative, and held in memory.** An answer is kept for an hour, one that reached nothing for
   five minutes, five hundred at most; lost on restart, never pool state, never mirrored, never an
-  action. Two reads of the same link at once make one request.
+  action. A refusal is held for the five minutes too, since reaching it can cost a name lookup. Two
+  reads of the same link at once make one request.
 - **Only a public address is fetched** — the guard in [security.md](security.md#unfurling), which
   has no allowlist and no switch. An address that is not `http` or `https`, carries credentials, or
   is missing is `422 bad-url`; one whose host is, or resolves to, an address the guard refuses is

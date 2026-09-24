@@ -14,7 +14,7 @@ async function serving(
   unfurl: boolean | undefined,
   answers: Record<string, () => Answer> = {},
 ) {
-  pool((request) => {
+  const transport = pool((request) => {
     const route = routeOf(request);
     if (route === "GET /v1/settings") {
       return json(200, {
@@ -28,6 +28,7 @@ async function serving(
     return json(404, { error: { code: "unknown-route" } });
   });
   if (unfurl !== undefined) await client.settings.load();
+  return transport;
 }
 
 const unfurls = () => asked().filter((route) => route === "GET /v1/unfurl");
@@ -81,15 +82,57 @@ test("says so where the page could not be reached", async () => {
   await screen.findByText("out of reach");
 });
 
-test("says so where the daemon would not read it", async () => {
+test("says so where the daemon would not read it, and asks once however often it is drawn", async () => {
   await serving(true, {
     "http://10.0.0.1/": () =>
       refusal(422, "address-refused", { url: "http://10.0.0.1/" }),
   });
 
+  const first = render(Unfurls, { text: "http://10.0.0.1/" });
+  await screen.findByText("not read");
+  first.unmount();
   render(Unfurls, { text: "http://10.0.0.1/" });
 
   await screen.findByText("not read");
+  expect(unfurls()).toHaveLength(1);
+});
+
+test("says out of reach, not refused, while the daemon cannot be reached, and asks again after", async () => {
+  const transport = await serving(true, {
+    "https://a.example/": () =>
+      json(200, { url: "https://a.example/", reached: true, title: "Back" }),
+  });
+  transport.unreachable(true);
+
+  const first = render(Unfurls, { text: "https://a.example/" });
+  await screen.findByText("out of reach");
+  expect(screen.queryByText("not read")).toBeNull();
+  first.unmount();
+
+  transport.unreachable(false);
+  render(Unfurls, { text: "https://a.example/" });
+  await screen.findByText("Back");
+});
+
+test("reads the pool setting again when the daemon says it is off, and draws nothing", async () => {
+  let unfurl = true;
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/settings") {
+      return json(200, { values: [{ name: "unfurl", value: unfurl }] });
+    }
+    return refusal(409, "unfurl-off", { setting: "unfurl" });
+  });
+  await client.settings.load();
+  unfurl = false;
+
+  render(Unfurls, { text: "https://a.example/" });
+
+  await vi.waitFor(() => {
+    expect(document.querySelector("[data-unfurl]")).toBeNull();
+  });
+  expect(screen.queryByText("out of reach")).toBeNull();
+  expect(screen.queryByText("not read")).toBeNull();
 });
 
 test("holds the block's place while the answer is in flight, and keeps it after", async () => {

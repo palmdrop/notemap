@@ -1,3 +1,5 @@
+import type { Readable } from "node:stream";
+
 /** What a link points at, as far as its page says. Every field but `url` and `reached` may be absent. */
 export type Unfurl = {
   /** As asked, so a caller can match the answer to the link it drew. */
@@ -32,8 +34,11 @@ export type Fetched = {
   readonly status: number;
   readonly location?: string;
   readonly contentType?: string;
-  /** Decoded, and no longer than the byte cap allowed. */
-  readonly body: string;
+  /**
+   * A success's body, content-encoding undone and not yet read. Whoever takes
+   * it reads as little as it needs and destroys it.
+   */
+  readonly body?: Readable;
 };
 
 /** Connects to `address` and nothing else, whatever `url`'s host would resolve to now. */

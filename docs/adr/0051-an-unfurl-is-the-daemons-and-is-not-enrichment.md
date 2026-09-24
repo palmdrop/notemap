@@ -52,6 +52,13 @@ Three narrower calls belong with it:
   the document's `<title>`. oEmbed is not built: it buys real embeds from the sites people most want
   them from, at the price of a discovery step or a provider list and a second failure mode. The
   answer's shape leaves room to add it without breaking anything.
+  *Amended 2026-09-24, the same day, after review:* Open Graph first, and where a page does not
+  carry an Open Graph property, the tags that pages which never adopted it, or adopted only part
+  of it, say instead — `twitter:` tags, `<meta name="description">`, `application-name` and `<link rel="image_src">` — before the document's `<title>`. Still no oEmbed:
+  every fallback is read from the same head of the same response, so none adds a request or a
+  failure mode. The head is read by a streaming HTML parser, `htmlparser2`, and reading stops
+  where the head ends: the first version's regular expressions could be made to take seconds by a
+  page built for it.
 - **A strict guard, with no allowlist, and a pinned address.** `http` and `https` only; every
   loopback, private, link-local, unique-local, multicast, reserved or unspecified address refused,
   for an IP-literal host and for every address a name resolves to; a bounded number of redirects,

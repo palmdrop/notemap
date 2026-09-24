@@ -1,12 +1,13 @@
 <script lang="ts">
-  import type { Unfurl } from "@notemap/client";
+  import { Refused, type Unfurl } from "@notemap/client";
 
   import {
     UNFURL_NOT_READ,
     UNFURL_SAYS_NOTHING,
     UNFURL_UNREACHABLE,
   } from "$lib/said";
-  import { unfurled } from "$lib/unfurls";
+  import { client } from "$lib/client";
+  import { refusedLink, unfurled } from "$lib/unfurls";
 
   /**
    * One link's block, the same height in every state, so a list does not
@@ -38,8 +39,17 @@
           drawn = { kind: "said", said: UNFURL_SAYS_NOTHING };
         } else drawn = { kind: "read", unfurl };
       },
-      () => {
-        if (asking === url) drawn = { kind: "said", said: UNFURL_NOT_READ };
+      (error: unknown) => {
+        if (asking !== url) return;
+        if (refusedLink(error)) {
+          drawn = { kind: "said", said: UNFURL_NOT_READ };
+        } else if (error instanceof Refused && error.code === "unfurl-off") {
+          // Turned off elsewhere since this device last read it: reading it
+          // again takes every block away.
+          void client.settings.load().catch(() => undefined);
+        } else {
+          drawn = { kind: "said", said: UNFURL_UNREACHABLE };
+        }
       },
     );
   });
@@ -53,36 +63,42 @@
   });
 </script>
 
+<!-- The height is on the inside, so the rule and the padding add to four lines
+     rather than coming out of them. -->
 <a
   href={url}
   rel="noreferrer"
   data-unfurl={drawn.kind}
-  class="flex h-[calc(var(--text-shell--line-height)*4+--spacing(4))] max-w-prose gap-3 overflow-hidden border border-ink px-3 py-2 hover:no-underline"
+  class="block max-w-prose border border-ink px-3 py-2 hover:no-underline"
 >
-  {#if drawn.kind === "read" && drawn.unfurl.image !== undefined}
-    <img
-      src={drawn.unfurl.image}
-      alt=""
-      loading="lazy"
-      referrerpolicy="no-referrer"
-      class="aspect-square h-full flex-none object-cover"
-    />
-  {/if}
-  <div class="min-w-0 flex-1">
-    <div class="truncate">
-      {drawn.kind === "read" ? (drawn.unfurl.siteName ?? host) : host}
-    </div>
-    {#if drawn.kind === "read"}
-      {#if drawn.unfurl.title !== undefined}
-        <div class="truncate font-semibold">{drawn.unfurl.title}</div>
-      {/if}
-      {#if drawn.unfurl.description !== undefined}
-        <div class="line-clamp-2 break-words">
-          {drawn.unfurl.description}
-        </div>
-      {/if}
-    {:else if drawn.kind === "said"}
-      <div>{drawn.said}</div>
+  <div
+    class="flex h-[calc(var(--text-shell--line-height)*4)] gap-3 overflow-hidden"
+  >
+    {#if drawn.kind === "read" && drawn.unfurl.image !== undefined}
+      <img
+        src={drawn.unfurl.image}
+        alt=""
+        loading="lazy"
+        referrerpolicy="no-referrer"
+        class="aspect-square h-full flex-none object-cover"
+      />
     {/if}
+    <div class="min-w-0 flex-1">
+      <div class="truncate">
+        {drawn.kind === "read" ? (drawn.unfurl.siteName ?? host) : host}
+      </div>
+      {#if drawn.kind === "read"}
+        {#if drawn.unfurl.title !== undefined}
+          <div class="truncate font-semibold">{drawn.unfurl.title}</div>
+        {/if}
+        {#if drawn.unfurl.description !== undefined}
+          <div class="line-clamp-2 break-words">
+            {drawn.unfurl.description}
+          </div>
+        {/if}
+      {:else if drawn.kind === "said"}
+        <div>{drawn.said}</div>
+      {/if}
+    </div>
   </div>
 </a>

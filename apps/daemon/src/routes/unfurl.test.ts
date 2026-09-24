@@ -2,6 +2,8 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { Readable } from "node:stream";
+
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { PoolSettingName, Timestamp } from "@notemap/core";
@@ -35,7 +37,7 @@ function web(
   });
   const fetch = vi.fn<PinnedFetch>(async (url) => {
     const page = pages[url.href];
-    if (page === undefined) return { status: 404, body: "" };
+    if (page === undefined) return { status: 404 };
     return typeof page === "function" ? page() : page;
   });
   const unfurler = createUnfurler({ resolve, fetch, now: () => clock });
@@ -49,16 +51,18 @@ function web(
   };
 }
 
-const html = (body: string): Fetched => ({
-  status: 200,
-  contentType: "text/html; charset=utf-8",
-  body,
-});
+/** A fresh body per fetch: a stream is read once. */
+const html =
+  (body: string): (() => Promise<Fetched>) =>
+  async () => ({
+    status: 200,
+    contentType: "text/html; charset=utf-8",
+    body: Readable.from([Buffer.from(body)]),
+  });
 
 const redirect = (location: string): Fetched => ({
   status: 302,
   location,
-  body: "",
 });
 
 const open: Daemon[] = [];
@@ -140,7 +144,6 @@ describe("GET /v1/unfurl", () => {
         "https://example.org/a.jpg": {
           status: 200,
           contentType: "image/jpeg",
-          body: "",
         },
       },
     );
@@ -152,6 +155,33 @@ describe("GET /v1/unfurl", () => {
       reached: true,
       image: "https://example.org/a.jpg",
     });
+  });
+
+  it("reads nothing of a body that is not a page", async () => {
+    let pulled = 0;
+    const body = Readable.from(
+      (function* () {
+        for (let chunk = 0; chunk < 64; chunk++) {
+          pulled += 1;
+          yield Buffer.alloc(16 * 1024);
+        }
+      })(),
+    );
+    const { unfurler } = web(
+      { "example.org": [PUBLIC] },
+      {
+        "https://example.org/a.jpg": {
+          status: 200,
+          contentType: "image/jpeg",
+          body,
+        },
+      },
+    );
+
+    await ask(serving(unfurler), "https://example.org/a.jpg");
+
+    expect(pulled).toBe(0);
+    expect(body.destroyed).toBe(true);
   });
 
   it("answers a target that could not be read as unreached, not refused", async () => {
@@ -174,7 +204,7 @@ describe("GET /v1/unfurl", () => {
   });
 
   it("follows a redirect chain inside the cap, checking each hop", async () => {
-    const pages: Record<string, Fetched> = {};
+    const pages: Record<string, Page> = {};
     for (let hop = 0; hop < MAX_REDIRECTS; hop++) {
       pages[`https://example.org/${hop}`] = redirect(`/${hop + 1}`);
     }
@@ -188,7 +218,7 @@ describe("GET /v1/unfurl", () => {
   });
 
   it("gives up past the redirect cap", async () => {
-    const pages: Record<string, Fetched> = {};
+    const pages: Record<string, Page> = {};
     for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
       pages[`https://example.org/${hop}`] = redirect(`/${hop + 1}`);
     }
@@ -361,6 +391,23 @@ describe("GET /v1/unfurl", () => {
     advance(1);
     await ask(host, "https://example.org/down");
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("holds a refusal as long as a failure, without looking the name up again", async () => {
+    const { unfurler, resolve, advance } = web(
+      { "inside.example": [{ address: "10.0.0.1", family: 4 }] },
+      {},
+    );
+    const host = serving(unfurler);
+
+    await ask(host, "http://inside.example/");
+    const again = await ask(host, "http://inside.example/");
+    expect(again.status).toBe(422);
+    expect(resolve).toHaveBeenCalledTimes(1);
+
+    advance(FAILED_UNFURL_LIFETIME_MS);
+    await ask(host, "http://inside.example/");
+    expect(resolve).toHaveBeenCalledTimes(2);
   });
 
   it("asks once for two reads of the same link at the same time", async () => {

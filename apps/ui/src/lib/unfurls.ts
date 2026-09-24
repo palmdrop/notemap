@@ -1,11 +1,20 @@
-import type { Client, Unfurl } from "@notemap/client";
+import { Refused, type Client, type Unfurl } from "@notemap/client";
 
 import { client } from "$lib/client";
 
+/** Refused for what the link is, which asking again will not change. */
+export function refusedLink(error: unknown): boolean {
+  return (
+    error instanceof Refused &&
+    (error.code === "address-refused" || error.code === "bad-url")
+  );
+}
+
 /**
  * One request per link for as long as the page holds this client, however many
- * rows draw it. What was never asked — the pool setting was off — and what
- * failed are forgotten, so the next draw asks again.
+ * rows draw it — a link refused for what it is included. What was never asked,
+ * the pool setting being off, and what failed for any other reason are
+ * forgotten, so the next draw asks again.
  */
 const asked = new WeakMap<Client, Map<string, Promise<Unfurl | undefined>>>();
 
@@ -24,7 +33,9 @@ export function unfurled(url: string): Promise<Unfurl | undefined> {
     (unfurl) => {
       if (unfurl === undefined) held.delete(url);
     },
-    () => held.delete(url),
+    (error: unknown) => {
+      if (!refusedLink(error)) held.delete(url);
+    },
   );
   return answer;
 }
