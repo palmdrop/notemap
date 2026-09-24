@@ -74,6 +74,7 @@ describe("GET /v1/openapi.json", () => {
       "/v1/templates/{id}/report",
       "/v1/tokens",
       "/v1/tokens/{id}",
+      "/v1/unfurl",
     ]);
     expect(Object.keys(document.paths["/v1/captures"] ?? {})).toEqual(["post"]);
   });

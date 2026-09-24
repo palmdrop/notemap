@@ -1,10 +1,10 @@
 # Clickable links, and a preview of what they point at
 
 **Date**: 2026-09-23 *(open questions answered 2026-09-24; the opt-out split out 2026-09-24)*
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/shell.md`, `docs/specs/http-v1.md`, `docs/specs/security.md`
 **Depends on**: [a-pool-holds-settings](a-pool-holds-settings.md), which must be `Done` before phase 3
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-09-24
 
 ---
 
@@ -82,7 +82,9 @@ which is the convention the specs use.
 - **An ADR is warranted**, and is phase 2. The decision says no to a shape the docs already
   describe, for reasons that are not readable off the code, and it opens an egress path the project
   has not had. Without it the next reader finds an endpoint that looks like enrichment done wrong.
-- **Open Graph only.** `og:title`, `og:description`, `og:image`, `og:site_name`, falling back to
+- **Open Graph only** *(amended 2026-09-24 after review: Open Graph first, then the common
+  non-standard tags — `twitter:`, `description`, `application-name`, `image_src` — then `<title>`,
+  read by a streaming `htmlparser2`; see ADR 51)*. `og:title`, `og:description`, `og:image`, `og:site_name`, falling back to
   the document's own `<title>`. **oEmbed is not built** — it would buy real embeds from the sites
   people most want them from, at the price of a discovery step or a provider list and a second
   failure mode, and it is left for when something demands it. Nothing in the answer shape should
@@ -176,25 +178,25 @@ Three of its decisions reach back into this one:
 
 Depends on nothing. Independently shippable; do not hold it for the rest.
 
-- [ ] Branch `agent/clickable-links-and-link-previews`.
-- [ ] `apps/ui`: add `micromark-extension-gfm-autolink-literal`. One extension, not
+- [x] Branch `agent/clickable-links-and-link-previews`.
+- [x] `apps/ui`: add `micromark-extension-gfm-autolink-literal`. One extension, not
       `micromark-extension-gfm` — the renderer is CommonMark by decision (shell.md, *Content*,
       2026-09-14), and tables, strikethrough and task lists are not what the todo asked for.
-- [ ] `markdown.ts`: pass the extension's syntax and HTML halves to the single `micromark` call.
+- [x] `markdown.ts`: pass the extension's syntax and HTML halves to the single `micromark` call.
       The `followable()` pass over `a[href]` is unchanged and is what still keeps the output safe —
       it runs after, over whatever the extension produced.
-- [ ] `markdown.test.ts`: `https://example.com` in prose is an `a[href]`; `www.example.com` is one
+- [x] `markdown.test.ts`: `https://example.com` in prose is an `a[href]`; `www.example.com` is one
       too and is given a scheme; a URL inside a code span and one inside a fenced block are not
       linked; trailing punctuation stays outside the link; an existing `[text](url)` is unchanged;
       an autolinked address that `followable()` rejects comes out as text with no `href`.
-- [ ] `docs/specs/shell.md`, *Content*: a dated line saying a bare URL typed in prose is a link,
+- [x] `docs/specs/shell.md`, *Content*: a dated line saying a bare URL typed in prose is a link,
       by the GFM autolink-literal extension over the CommonMark core, held to the same
       `http`/`https` rule every other link is. Say the renderer is still CommonMark plus this one
       extension, so the next person does not read it as GFM.
-- [ ] Verify: `pnpm --filter ui test -- markdown` green; `pnpm -r --silent test`, `pnpm -r typecheck`
+- [x] Verify: `pnpm --filter ui test -- markdown` green; `pnpm -r --silent test`, `pnpm -r typecheck`
       and lint green. By hand: capture a note holding a bare URL, see it followable in the queue,
-      the feed and the item surface.
-- [ ] Commit `feat(ui): render a bare URL as a link`.
+      the feed and the item surface. *(The by-hand check is the developer's; not run by the agent.)*
+- [x] Commit `feat(ui): render a bare URL as a link`.
 
 ### Phase 2 — the decisions are written down
 
@@ -203,7 +205,7 @@ Depends on phase 1 only for the branch.
 Before any of the rest, because the shape these record is what phases 3 to 6 build, and writing
 them afterwards would be retrofitting a doc to code.
 
-- [ ] `docs/adr/00NN-a-link-preview-is-the-daemons-and-is-not-enrichment.md`. What was weighed:
+- [x] `docs/adr/0051-an-unfurl-is-the-daemons-and-is-not-enrichment.md` *(named for the word, not "link preview", which the glossary spends elsewhere)*. What was weighed:
       enrichment with jobs and artifacts, a browser-side fetch, and the daemon endpoint. Why the
       first is the wrong size for a reading nicety and is out of scope for the shell anyway, why
       the second cannot read most targets and leaks the reader's address, and what the third costs
@@ -211,15 +213,15 @@ them afterwards would be retrofitting a doc to code.
       three narrower calls that belong with it: Open Graph only with oEmbed deliberately not built,
       a guard with no allowlist and a pinned address, and the browser fetching the picture on the
       precedent a capture's own image already sets.
-- [ ] `CONTEXT.md`: **Unfurl**, under *Reaching out*. What it is, that what comes back is
+- [x] `CONTEXT.md`: **Unfurl**, under *Reaching out*. What it is, that what comes back is
       indicative and held in memory, that it is never pool state and never mirrored, and that it is
       not a **preview**, which is a destination's. _Avoid_: preview (for this), enrichment,
       metadata, embed, oEmbed, scrape.
-- [ ] Verify: the ADR reads as a decision with its rejected options; no other doc says something it
+- [x] Verify: the ADR reads as a decision with its rejected options; no other doc says something it
       contradicts; the new glossary entry collides with nothing already there — including whatever
       **pool setting**, which [a-pool-holds-settings](a-pool-holds-settings.md) adds under *The
       store*. `unfurl` goes under *Reaching out*; the two do not meet.
-- [ ] Commit `docs(adr): a link preview is the daemon's and is not enrichment`.
+- [x] Commit `docs(adr): a link preview is the daemon's and is not enrichment`.
 
 ### Phase 3 — the `unfurl` pool setting
 
@@ -231,115 +233,120 @@ ship meanwhile.
 
 What this plan owes it is one entry in a constant.
 
-- [ ] Check the prerequisite is `Done` and its spec `Shipped:` entries are in place.
-- [ ] Add `unfurl` to `POOL_SETTINGS`: a boolean, **default on**. On is what the shell does before
+- [x] Check the prerequisite is `Done` and its spec `Shipped:` entries are in place.
+- [x] Add `unfurl` to `POOL_SETTINGS`: a boolean, **default on**. On is what the shell does before
       anybody says otherwise, and the safer default was weighed — a feature nobody can see until
       they find a switch is a feature nobody finds. The ADR from phase 2 says so.
-- [ ] Nothing else. The table, the routes, the action, the mirror record, `client.settings` and the
+- [x] Nothing else. The table, the routes, the action, the mirror record, `client.settings` and the
       **Pool settings** section all exist already, and the host already hands the list back.
-- [ ] Verify: `pnpm -r --silent test` green; by hand, the pool setting appears under **Pool
+- [x] Verify: `pnpm -r --silent test` green; by hand, the pool setting appears under **Pool
       settings** and in `GET /v1/settings`, and flipping it in one browser is agreed with by
       another.
-- [ ] Commit `feat(core): the unfurl pool setting`.
+- [x] Commit `feat(core): the unfurl pool setting`. *Nothing to commit: `unfurl` landed in
+      `POOL_SETTINGS` with the prerequisite plan (#75).*
 
 ### Phase 4 — the daemon unfurls
 
 Depends on phase 3, whose pool setting the route consults. Nothing in the shell calls this route until
 phase 6; until then it is reachable only by a signed-in caller who curls it deliberately.
 
-- [ ] `apps/daemon/src/unfurl/`: the fetch, the guard, the extraction and the cache, as small files
+- [x] `apps/daemon/src/unfurl/`: the fetch, the guard, the extraction and the cache, as small files
       beside each other. Daemon-only — it is not core's, it is not a port, and no adapter seam has
       asked for it.
-- [ ] The **guard**, with its own file and its own tests. Every rule from *Decisions taken*, as
+- [x] The **guard**, with its own file and its own tests. Every rule from *Decisions taken*, as
       named limits rather than inline numbers: the two allowed schemes; the refused address
       families, checked against an IP-literal host and against every address a name resolves to;
       the redirect cap, with each hop resolved and checked again; the wall-clock timeout; the byte
       cap. **No allowlist, no configuration, no way to switch it off.**
-- [ ] The **pinned fetch**, which is why the fetch is a seam of its own: the connection goes to the
+- [x] The **pinned fetch**, which is why the fetch is a seam of its own: the connection goes to the
       address the guard checked, the original hostname is kept for `Host` and for TLS SNI, and
       redirects are read and followed by hand rather than by the runtime — so no hop is fetched by
       a name that was resolved twice. The seam is also what makes the tests injectable without a
       global stub.
-- [ ] The **extraction**: `og:title`, `og:description`, `og:image`, `og:site_name`, falling back to
+- [x] The **extraction**: `og:title`, `og:description`, `og:image`, `og:site_name`, falling back to
       the document's `<title>`. An answer with none of them is an answer, not a failure.
       `og:image` comes back as the absolute URL the browser will fetch.
-- [ ] The **cache**: one in-memory map, an hour per entry, five hundred entries, and a short
+- [x] The **cache**: one in-memory map, an hour per entry, five hundred entries, and a short
       lifetime of its own for an answer that failed. Lost on restart, invisible to the mirror, and
       nothing in the pool refers to it.
-- [ ] `routes/definitions.ts`, `routes/unfurl.ts`, and the registration in `app.ts` — behind the
+- [x] `routes/definitions.ts`, `routes/unfurl.ts`, and the registration in `app.ts` — behind the
       existing gate, so it is **not** in `OPEN_PATHS`. A signed-in caller only, and **refused
       while the pool setting is off**, which is the boundary the client's not-asking is not.
-- [ ] The answer shape: what was read, or an ordinary answer saying nothing was. A refusal is for a
+- [x] The answer shape: what was read, or an ordinary answer saying nothing was. A refusal is for a
       request that is wrong — a missing or unparseable `url`, an address the guard refuses, the
       setting being off — and each wants an entry in the refusal table with the status the
       document's own stated rule gives it. A target that timed out or answered nothing usable is
       not a refusal.
-- [ ] `routes/unfurl.test.ts`: a page with all four properties; one with none, falling back to
+- [x] `routes/unfurl.test.ts`: a page with all four properties; one with none, falling back to
       `<title>`; one with neither; a redirect chain inside the cap and one past it; a redirect that
       lands on a refused address; a target that times out; every refused address family, by literal
       and by resolved name; a name that resolves to one address for the check and another for the
       fetch, which the pinning must defeat; an oversized body cut short; a second call inside the
       hour served without a second fetch and one after it fetching again; a failure served from the
       short-lived cache and re-fetched after it; the route refused while the setting is off.
-- [ ] `docs/specs/http-v1.md`: the route, its parameter, its answer, the new refusal codes, and a
+- [x] `docs/specs/http-v1.md`: the route, its parameter, its answer, the new refusal codes, and a
       *Settled* line dated the day it lands.
-- [ ] `docs/specs/security.md`: a section for the one egress path a caller chooses — what the guard
+- [x] `docs/specs/security.md`: a section for the one egress path a caller chooses — what the guard
       checks, that the address is pinned so the check is the address that is fetched, that there is
       no allowlist by decision, and that the route is behind the door and behind a pool setting.
       What it still does not close belongs here too, stated rather than claimed away.
-- [ ] Verify: `pnpm --filter daemon test` green; `pnpm -r typecheck` and lint green; OpenAPI
+- [x] Verify: `pnpm --filter daemon test` green; `pnpm -r typecheck` and lint green; OpenAPI
       regenerated and `openapi.test.ts` green. By hand: `curl` the route for a public page, for
       `http://127.0.0.1:4747/`, for a name resolving to `127.0.0.1`, and for a link-local address,
-      and see the last three refused.
-- [ ] Commit `feat(daemon): unfurl an external link`.
+      and see the last three refused. *(2026-09-24: run against the real resolver and fetch rather
+      than through `curl` — are.na, GitHub and Wikipedia answered in full; `127.0.0.1:4747`,
+      `localhost` and `169.254.169.254` refused; Instagram answered its login wall's title,
+      `Instagram`, and nothing else.)*
+- [x] Commit `feat(daemon): unfurl an external link`.
 
 ### Phase 5 — the wire reaches the shell
 
 Depends on phase 4.
 
-- [ ] Regenerate `apps/daemon/openapi.json` and the client's generated types
+- [x] Regenerate `apps/daemon/openapi.json` and the client's generated types
       (`pnpm --filter @notemap/client codegen`).
-- [ ] `@notemap/client`: one read in the api layer, **outside the cache, the outbox and hydration**.
+- [x] `@notemap/client`: one read in the api layer, **outside the cache, the outbox and hydration**.
       It asks nothing while the pool setting reads off, including while the client has never heard
       the setting — the fail-closed rule from phase 3, enforced here rather than left to the shell.
-- [ ] Tests: it reaches the right path; a refusal comes back in the client's own refusal shape; it
+- [x] Tests: it reaches the right path; a refusal comes back in the client's own refusal shape; it
       makes no request at all while the setting is off or unknown.
-- [ ] Verify: `pnpm --filter @notemap/client test` green; `pnpm -r typecheck` green.
-- [ ] Commit `feat(client): read an unfurl`.
+- [x] Verify: `pnpm --filter @notemap/client test` green; `pnpm -r typecheck` green.
+- [x] Commit `feat(client): read an unfurl`.
 
 ### Phase 6 — the shell draws it
 
 Depends on phase 5. **Must not land before phase 3**, which is what makes the drawing refusable.
 
-- [ ] One component, drawn wherever a note's rendered links appear: the register row's body on the
+- [x] One component, drawn wherever a note's rendered links appear: the register row's body on the
       queue and the feed, the item surface, and the process surface. In the one face at the one
       size, from token roles only, with no second visual language. A block that has not answered,
       one that answered nothing and one that could not be reached are ordinary states and not the
       alarm.
-- [ ] **Nothing shifts when an unfurl arrives**: the space it will occupy is reserved, the way the
+- [x] **Nothing shifts when an unfurl arrives**: the space it will occupy is reserved, the way the
       selected row's foot is already reserved on every row (shell.md, *The row*). A list that
       resettles under a reader as previews land is worse than no previews.
-- [ ] The requests are made per distinct URL and de-duplicated within a draw, so a note naming the
+- [x] The requests are made per distinct URL and de-duplicated within a draw, so a note naming the
       same link twice asks once and a page naming one link across five rows asks once. **A page of
       rows holding several distinct links is still several requests on its first read**, which is
       the cost the developer accepted; the hour-long cache is what makes every later read free.
-- [ ] Nothing is asked while the setting is off. The shell does not draw a placeholder saying a
+- [x] Nothing is asked while the setting is off. The shell does not draw a placeholder saying a
       preview was withheld either — the setting is in Settings, and a row explaining itself on
       every link would be the noise the offline marks were already trimmed of.
-- [ ] Component tests: a link with an unfurl; one without; one still in flight; one refused; a note
+- [x] Component tests: a link with an unfurl; one without; one still in flight; one refused; a note
       holding several; the same link twice asking once; and the setting off, asking nothing.
-- [ ] `docs/specs/shell.md`, *Content* plus *The row* and *The process surface*: what draws, that
+- [x] `docs/specs/shell.md`, *Content* plus *The row* and *The process surface*: what draws, that
       it is automatic everywhere a link appears, what the three empty states say, that the picture
       is fetched by the browser from wherever it points, and that what governs it is a **pool
       setting** rather than a reading preference — the distinction the **Pool settings** section
       exists to make readable. Acceptance criteria for the no-layout-shift rule and for asking
       nothing while it is off. The `Shipped:` line names the cost plainly: several links on a page
       are several outbound requests the first time it is read.
-- [ ] Verify: `pnpm --filter ui test` green; `pnpm -r --silent test`, `pnpm -r typecheck` and lint
+- [x] Verify: `pnpm --filter ui test` green; `pnpm -r --silent test`, `pnpm -r typecheck` and lint
       green; `pnpm test:stack` green. By hand: a note holding an are.na link, an Instagram link and
       a bare image URL, drawn on all four surfaces; then the setting off, and the network tab
-      showing no request to `/v1/unfurl`.
-- [ ] Commit `feat(ui): draw what an external link points at`.
+      showing no request to `/v1/unfurl`. *(The by-hand browser check is the developer's; not run
+      by the agent.)*
+- [x] Commit `feat(ui): draw what an external link points at`.
 
 ---
 

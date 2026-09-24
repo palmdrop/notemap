@@ -4,6 +4,10 @@
 **Last updated**: 2026-09-24
 **Shipped**:
 
+- 2026-09-24 — **`client.unfurl(url)`.** What a link points at, read straight off `/v1` and held
+  nowhere; it asks nothing unless the pool setting `unfurl` reads on as last read. See
+  [ADR 51](../adr/0051-an-unfurl-is-the-daemons-and-is-not-enrichment.md) and
+  [clickable-links-and-link-previews](../plans/clickable-links-and-link-previews.md).
 - 2026-09-24 — **`client.settings` caches the pool's own settings.** Beside `destinations` and
   `templates`, on the same `all`/`held` terms, persisted and hydrated and dropped when the pool
   identity changes; a change is not an outbox operation. `held` answers `undefined` until the first
@@ -604,6 +608,15 @@ dropped because the identity changed, treats a setting it has not read as off; o
 and has since gone offline goes on honouring what it last read, on the destinations cache's own
 terms. Fail-closed therefore bites only on a genuinely cold client, where the cost of being wrong is
 an outbound request nobody asked for.
+
+**`client.unfurl(url)` reads what a link points at** *(2026-09-24,
+[ADR 51](../adr/0051-an-unfurl-is-the-daemons-and-is-not-enrichment.md))*, straight off `/v1`:
+outside the cache, the outbox and hydration, since an unfurl is indicative and the daemon already
+holds it for an hour. **It asks nothing** — no request at all, answering `undefined` — unless the
+pool setting `unfurl` reads `true` as last read, so a cold client and a pool that does not know the
+setting are both off. That is the fail-closed rule enforced here rather than left to each surface.
+A refusal comes back as `Refused` like any other; a target that could not be read is an answer with
+`reached: false`, not a refusal.
 
 **What a template resolves to is asked, never cached.** `resolve` answers the expanded arguments
 for one item, and the expansion is core's: a second implementation on this side would be a second

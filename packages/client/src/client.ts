@@ -12,6 +12,7 @@ import { PoolChanged, Refused, saidBy, Unreachable } from "./errors";
 import { derived, writable, type Writable } from "./observable/observable";
 import { createDestinations } from "./destinations/destinations";
 import { createPoolSettings } from "./settings/settings";
+import { createUnfurl } from "./unfurl/unfurl";
 import { createTemplates } from "./templates/templates";
 import { createOutbox, LEASE_MS } from "./outbox/outbox";
 import { sendOperation } from "./outbox/registry";
@@ -598,6 +599,12 @@ export function createClient(config: ClientConfig): Client {
       held: () => state.get().poolSettings,
       cached: (poolSettings) =>
         after(() => state.update((current) => ({ ...current, poolSettings }))),
+    }),
+
+    unfurl: createUnfurl({
+      api,
+      setting: () =>
+        state.get().poolSettings?.find((each) => each.name === "unfurl")?.value,
     }),
 
     tags,

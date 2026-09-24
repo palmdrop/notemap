@@ -26,6 +26,7 @@
   import Option from "$components/primitives/composer/Option.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
+  import Unfurls from "$components/unfurl/Unfurls.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { OWN_ARGUMENTS, sameArguments } from "$lib/arguments";
   import { browserFor } from "$lib/candidate-browsers";
@@ -926,6 +927,7 @@
       >
         {words ?? captured}
       </div>
+      <Unfurls text={words ?? captured} />
     {/if}
   </div>
 

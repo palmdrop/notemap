@@ -10,8 +10,8 @@
     looked at and the corner speaks when the delivery resolves, but nothing shows everything in
     flight at once. Belongs with the routing-record and log readability items below.
 
-- [ ] make URLs clickable links
-- [ ] preview external links, like instagram, are.na, image URLs, etc 
+- [x] make URLs clickable links
+- [x] preview external links, like instagram, are.na, image URLs, etc 
 
 - [ ] batch processing, i.e selecting many captures and routing them all at once, or discarding
     - batch processing by tag, i.e route all items tagged with a specific tag to a location. Default: only unprocessed item. Checkbox for ALL items in the feed.
