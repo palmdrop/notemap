@@ -113,13 +113,6 @@
     class={FIELD}
   />
 
-  {#if editing?.from === "config"}
-    <p role="status" class="col-span-2 mt-2 max-narrow:col-span-1">
-      Saving stores this account in the daemon. From then on the entry in the
-      config file is ignored.
-    </p>
-  {/if}
-
   <div
     class="col-span-2 mt-3.5 flex items-center justify-between border-t border-ink pt-2.5 max-narrow:col-span-1"
   >

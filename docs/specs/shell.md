@@ -1693,9 +1693,8 @@ too for a stored one. A config account a stored one replaces is drawn faded, rea
 ignored, a stored one replaces it`, with no actions. `+ add an account` opens a form built from the
 kind's `accountSchema`, as the destination form is built from `settingsSchema`, with a `secret`
 field that is a password input and is never filled from the daemon. On an edit of a stored account,
-leaving it blank keeps the secret held. Editing a config account seeds the form from its fields,
-requires a secret, and says that saving stores the account and the config entry is ignored from
-then on.
+leaving it blank keeps the secret held. Editing a config account seeds the form from its fields and
+requires a secret; once saved, its row says the config entry is ignored.
 
 **Access** *(was Account, renamed 2026-09-23 so the word keeps its one meaning)* is one row — `signed in · this browser holds a session`, with `sign out` at the row's
 right — or, on a daemon nobody has set a password on, `open · no password is set…`, naming the

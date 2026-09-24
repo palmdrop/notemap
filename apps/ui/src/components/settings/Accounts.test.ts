@@ -142,18 +142,15 @@ test("leaves the held secret alone when an edit leaves the field blank", async (
   });
 });
 
-test("edits a config account by storing a copy, and says the config one is then ignored", async () => {
+test("edits a config account by storing a copy, which needs a secret of its own", async () => {
   serving([anAccount({ from: "config", changedAt: undefined })]);
 
   render(Accounts);
   await press("edit");
 
   expect(
-    await screen.findByText(/the entry in the config file is ignored/),
-  ).toBeDefined();
-  expect((screen.getByLabelText("username") as HTMLInputElement).value).toBe(
-    "alice",
-  );
+    ((await screen.findByLabelText("username")) as HTMLInputElement).value,
+  ).toBe("alice");
   expect((screen.getByLabelText("Secret") as HTMLInputElement).required).toBe(
     true,
   );
