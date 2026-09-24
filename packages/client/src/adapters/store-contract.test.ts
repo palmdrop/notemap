@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 
-import type { Destination, Item, TagUse } from "#api/types";
+import type { Destination, Item, PoolSetting, TagUse } from "#api/types";
 import type { PendingOperation } from "#outbox/operations";
 import type { ClientStore } from "#ports/store";
 
@@ -42,6 +42,10 @@ export function aFile(): File {
 
 export function aTag(name: string, items = 1): TagUse {
   return { name, items };
+}
+
+export function aPoolSetting(name: string, value = true): PoolSetting {
+  return { name, value };
 }
 
 const T0 = "2026-08-17T00:00:00.000Z";
@@ -128,6 +132,24 @@ export function storeContract(open: () => Promise<ClientStore>): void {
     expect((await store.readDestinations()).map((held) => held.id)).toEqual([
       "three",
     ]);
+  });
+
+  it("replaces the whole pool settings list rather than merging it", async () => {
+    const store = await open();
+
+    await store.writePoolSettings([aPoolSetting("unfurl", true)]);
+    await store.writePoolSettings([aPoolSetting("unfurl", false)]);
+
+    expect(await store.readPoolSettings()).toEqual([
+      aPoolSetting("unfurl", false),
+    ]);
+  });
+
+  /** Absent is "not yet read", which is what lets a cold reader fail closed rather than guess. */
+  it("answers undefined for pool settings never written, not an empty list", async () => {
+    const store = await open();
+
+    expect(await store.readPoolSettings()).toBeUndefined();
   });
 
   it("reads back the pool identity it was given", async () => {

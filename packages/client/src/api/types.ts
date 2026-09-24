@@ -44,6 +44,11 @@ export type CaptureOutcome = components["schemas"]["CaptureOutcome"];
 
 export type EditEnvelope = components["schemas"]["EditEnvelope"];
 
+export type PoolSetting = components["schemas"]["PoolSetting"];
+export type PoolSettings = components["schemas"]["PoolSettings"];
+export type UpdatePoolSettingsRequest =
+  components["schemas"]["UpdatePoolSettingsRequest"];
+
 export type Destination = components["schemas"]["Destination"];
 export type DestinationKind = components["schemas"]["DestinationKind"];
 export type DestinationDescription =

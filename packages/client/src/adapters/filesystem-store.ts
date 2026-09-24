@@ -18,6 +18,7 @@ import type {
   Item,
   ItemId,
   PoolIdentity,
+  PoolSetting,
   RoutingTemplate,
   TagUse,
 } from "#api/types";
@@ -34,7 +35,8 @@ export type FilesystemStoreOptions = {
   readonly onError?: (error: unknown) => void;
 };
 
-type Collection = "items" | "tags" | "destinations" | "templates" | "pool";
+type Collection =
+  "items" | "tags" | "destinations" | "templates" | "pool-settings" | "pool";
 
 type BlobRecord = { readonly name: string; readonly type: string };
 
@@ -265,6 +267,17 @@ export function createFilesystemStore(
     },
 
     writeTemplates: (templates) => write("templates", templates),
+
+    readPoolSettings: () => read<readonly PoolSetting[]>("pool-settings"),
+
+    // Absent clears it back to "not yet read", so the file is removed rather
+    // than written as the JSON `undefined` cannot spell.
+    writePoolSettings: (settings) =>
+      settings === undefined
+        ? serialised("pool-settings", () =>
+            rm(collectionPath("pool-settings"), { force: true }),
+          )
+        : write("pool-settings", settings),
 
     readPoolIdentity: () => read<PoolIdentity>("pool"),
 

@@ -6,6 +6,7 @@ import type {
   Item,
   ItemId,
   PoolIdentity,
+  PoolSetting,
   RoutingTemplate,
   TagUse,
 } from "#api/types";
@@ -22,7 +23,7 @@ const DATABASE = "notemap";
  * Bumped when a store is added. The upgrade makes only what is missing, so a
  * browser holding version 1 gains `templates` and keeps everything it had.
  */
-const VERSION = 2;
+const VERSION = 3;
 
 /** The one key of every store holding a single whole value rather than rows. */
 const HELD = "held";
@@ -34,6 +35,7 @@ interface Notemap extends DBSchema {
   tags: { key: typeof HELD; value: readonly TagUse[] };
   destinations: { key: typeof HELD; value: readonly Destination[] };
   templates: { key: typeof HELD; value: readonly RoutingTemplate[] };
+  poolSettings: { key: typeof HELD; value: readonly PoolSetting[] };
   pool: { key: typeof HELD; value: PoolIdentity };
 }
 
@@ -70,6 +72,7 @@ export function createIndexedDbStore(
         make("tags");
         make("destinations");
         make("templates");
+        make("poolSettings");
         make("pool");
       },
 
@@ -87,9 +90,9 @@ export function createIndexedDbStore(
     return opening;
   }
 
-  async function held<S extends "tags" | "destinations" | "templates" | "pool">(
-    store: S,
-  ): Promise<Notemap[S]["value"] | undefined> {
+  async function held<
+    S extends "tags" | "destinations" | "templates" | "poolSettings" | "pool",
+  >(store: S): Promise<Notemap[S]["value"] | undefined> {
     return (await open()).get(store, HELD);
   }
 
@@ -165,6 +168,17 @@ export function createIndexedDbStore(
 
     async writeTemplates(templates) {
       await (await open()).put("templates", templates, HELD);
+    },
+
+    readPoolSettings: () => held("poolSettings"),
+
+    // Absent clears it back to "not yet read", which is what a dropped cache is.
+    async writePoolSettings(settings) {
+      if (settings === undefined) {
+        await (await open()).delete("poolSettings", HELD);
+      } else {
+        await (await open()).put("poolSettings", settings, HELD);
+      }
     },
 
     readPoolIdentity: () => held("pool"),

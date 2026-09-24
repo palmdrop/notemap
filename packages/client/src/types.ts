@@ -23,6 +23,7 @@ import type {
   MintedToken,
   NamingRequest,
   Payload,
+  PoolSetting,
   RememberedRequest,
   ResolvedRoutingTemplate,
   RouteRequest,
@@ -196,6 +197,29 @@ export interface DestinationsApi {
   unretire(id: DestinationId): Promise<Destination>;
   /** Refused by the pool where a routing record has ever named it. */
   delete(id: DestinationId): Promise<void>;
+}
+
+/**
+ * True of the pool rather than of any item, destination or template. Cached on
+ * destinations' and templates' terms — read for display, persisted, offered
+ * from the cache while the pool is out of reach — and **not** an outbox
+ * operation: a change validated against a cached list of known names would
+ * hand back an acceptance the pool may refuse.
+ */
+export interface PoolSettingsApi {
+  /** What was last read, for a screen to render while the pool is unreachable. */
+  readonly all: Observable<readonly PoolSetting[] | undefined>;
+  /**
+   * The same cache, read now. Absent is "not yet read" — never guessed from a
+   * setting's own default — which is what lets a reader fail closed rather
+   * than assume an answer the pool has not given yet.
+   */
+  readonly held: readonly PoolSetting[] | undefined;
+
+  /** Fills the cache `all` answers from, and answers the same list. */
+  load(): Promise<readonly PoolSetting[]>;
+  /** One setting at a time, on the wire's own terms. Answers every setting, as it now stands. */
+  change(name: string, value: boolean): Promise<readonly PoolSetting[]>;
 }
 
 /**
@@ -405,6 +429,7 @@ export interface Client {
   readonly routing: RoutingApi;
   readonly destinations: DestinationsApi;
   readonly templates: TemplatesApi;
+  readonly settings: PoolSettingsApi;
   readonly tags: TagsApi;
   readonly sources: SourcesApi;
   readonly actions: ActionsApi;
