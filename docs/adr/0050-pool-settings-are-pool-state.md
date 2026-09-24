@@ -1,4 +1,4 @@
-# 49. A pool setting is pool state, its list closed and handed to core
+# 50. A pool setting is pool state, its list closed and handed to core
 
 **Date**: 2026-09-24
 **Status**: Accepted — extends [ADR 20](0020-destinations-are-pool-state.md) and
@@ -64,9 +64,9 @@ than inventing a fourth one:
   ordinary change with an ordinary action and an ordinary mirror write, not a delete path — the
   mirror never grows a removal job or a repair path for this kind.
 - **One mirror record per pool setting**, subject `{ kind: "pool-setting", setting }`, parallel to a
-  destination's and a template's record. A record naming a setting the running code does not know is
-  warned about and skipped on a rebuild, the mechanism ADR 43 already chose for a leftover
-  `config.toml` key.
+  destination's and a template's record. Rebuild is not built yet; when it is, a record naming a
+  setting the running code does not know is to be warned about and skipped, the mechanism ADR 43
+  already chose for a leftover `config.toml` key.
 - **The client fails closed.** A client that has not yet read a setting from the pool treats it as
   off rather than guessing from the constant's own default, because the point of pool state is that
   the answer comes from the pool. This bites only on a genuinely cold client — a first run, or one

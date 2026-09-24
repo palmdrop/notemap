@@ -6,7 +6,7 @@ the subject already says "pool".*
 **Date**: 2026-09-24 *(both open questions answered the same day)*
 **Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`, `docs/specs/mirror.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`
-**Closed**: 2026-09-24
+**Closed**: 2026-09-24 *(rebuild of pool-setting records postponed: rebuild itself is unbuilt)*
 
 ---
 
@@ -208,18 +208,20 @@ Depends on phase 2.
       covers it.
 - [x] A change enqueues a mirror write the way a destination's does — the same job, the same one
       write path, no second route to the mirror.
-- [x] Rebuild reads the pool-setting records back. A record naming a pool setting this code does
-      not know is warned about and skipped, and the rebuild goes on.
-- [x] `docs/specs/mirror.md`: the fourth record kind, what its file holds, and what a rebuild does
-      with an unknown one.
+- [ ] Rebuild reads the pool-setting records back. A record naming a pool setting this code does
+      not know is warned about and skipped, and the rebuild goes on. *Postponed 2026-09-24: rebuild
+      does not exist yet. Carried in `docs/todo.md`, "Rebuild restores pool settings".*
+- [x] `docs/specs/mirror.md`: the fourth record kind, what its file holds, and what a rebuild is
+      to do with an unknown one once it exists.
 - [x] `CONTEXT.md`, **Mirror record**: it says "one item's complete durable state", which
       destination and template records already stretched. A dated amendment saying what the unit
       actually is now — rather than leaving an entry that reads false.
 - [x] `docs/todo.md`: the open entry "Verify and repair reach destination records" gains pool
       settings, since neither exists to reach anything and this adds a third thing nothing would
       notice the loss of. Named rather than silently added to the debt.
-- [x] Verify: `pnpm --filter @notemap/core test` green, property tests included; a rebuild
-      integration test that flips a pool setting, rebuilds, and reads it back.
+- [x] Verify: `pnpm --filter @notemap/core test` green, property tests included.
+- [ ] A rebuild integration test that flips a pool setting, rebuilds, and reads it back.
+      *Postponed with the task above; the integration tests cover the write side only.*
 - [x] Commit `feat(mirror): a pool setting is a mirror record`.
 
 ### Phase 4 — the wire

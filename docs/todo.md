@@ -145,11 +145,17 @@
   both describe, so it wants an ADR and a migration of the three kinds that declare it.
 - [ ] Verify and repair reach destination, template and pool-setting records. The mirror carries
   them ([ADR 20](adr/0020-destinations-are-pool-state.md),
-  [ADR 49](adr/0049-pool-settings-are-pool-state.md)), but neither verify nor repair exists to
+  [ADR 50](adr/0050-pool-settings-are-pool-state.md)), but neither verify nor repair exists to
   reach anything, so a mirror holding a stale or missing record of any of the three has nothing that
   would notice. Named together because none of them exists to reach anything yet, and pool settings
   is a third thing that would otherwise join the debt silently. Whoever builds them builds this at
   the same time.
+- [ ] Rebuild restores pool settings. The mirror writes one record per pool setting under
+  `settings/`, but rebuild does not exist, so nothing reads them back. Whoever builds it restores
+  them beside destinations and templates, warns about and skips a record naming a setting the
+  running code does not know, and adds the integration test that changes a setting, rebuilds, and
+  reads it back ([mirror.md](specs/mirror.md#rebuild),
+  [a-pool-holds-settings](plans/a-pool-holds-settings.md)).
 
 ## Inboxes
 - [ ] raycast extension: add command for viewing inbox

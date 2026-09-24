@@ -8,9 +8,9 @@
   setting is a value someone changed about the pool itself, and writing always writes a row — a
   value equal to the default included — so there is no delete path to grow a repair for. One
   `.json` per setting under `pool-mirror/settings/`, beside the destinations and templates
-  directories and on the same terms: no rendering, a write owed when one changes, and a record
-  naming a setting the running code does not know is warned about and skipped on a rebuild.
-  ([ADR 49](../adr/0049-pool-settings-are-pool-state.md),
+  directories and on the same terms: no rendering, and a write owed when one changes. Rebuild is not
+  built, so nothing reads these records back yet.
+  ([ADR 50](../adr/0050-pool-settings-are-pool-state.md),
   [a-pool-holds-settings](../plans/a-pool-holds-settings.md))
 
 - 2026-09-10 — **A mirrored routing record says what words went.** Where a delivery carried its
@@ -207,7 +207,7 @@ an ordinary state a person repairs, not corruption, and a mirror that dropped th
 repairable template into one nobody can find.
 
 **Pool settings are the fourth unit, and the third that is not an item** (added 2026-09-24,
-[ADR 49](../adr/0049-pool-settings-are-pool-state.md)). A pool setting is a value someone changed
+[ADR 50](../adr/0050-pool-settings-are-pool-state.md)). A pool setting is a value someone changed
 about the pool itself rather than about anything in it, and it is material a person set up and
 would otherwise have to redo, which is the destination's argument a third time. The unit is the
 setting itself: its name and its value. **There is no removal.** Writing always writes a row, a
@@ -466,8 +466,9 @@ reason and one more: tagging now applies a template, and a rebuild replaying an 
   record names both, so each is restored before the thing that refers to it. Within the items there
   is no order to keep — a revision carries its own capture time and refers to its original by id.
   **Pool settings have no order to keep either**, and none with the other three: a setting names
-  nothing and is named by nothing, so its record is restored whenever the reader hands it over.
-- **A record naming a pool setting the running code does not know is warned about and skipped**,
+  nothing and is named by nothing, so its record can be restored whenever the reader hands it over.
+- **A record naming a pool setting the running code does not know is to be warned about and
+  skipped**,
   the same mechanism a leftover `config.toml` key already uses
   ([ADR 43](../adr/0043-config-holds-what-an-install-is.md)); the rebuild goes on rather than
   failing on a file describing a setting nobody ships anymore.
