@@ -66,6 +66,7 @@ export const VIEWS: readonly View[] = covering([
       "template-created",
       "template-edited",
       "template-deleted",
+      "pool-setting-changed",
       "enrichment-requested",
       "work-failed",
       "work-abandoned",

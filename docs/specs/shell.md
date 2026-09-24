@@ -1,9 +1,16 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-23
+**Last updated**: 2026-09-24
 **Shipped**:
 
+- 2026-09-24 — **A Settings section for Pool settings.** Routed `/settings/pool`, after the
+  others: one row per pool setting, a boolean drawn as the two-option `yes`/`no` row every boolean
+  here has been since 2026-09-21, unavailable rather than guessed while the pool is out of reach.
+  The shell reads pool settings when it starts and again when the section opens, so a change made
+  on another device is what it draws. See
+  [ADR 50](../adr/0050-pool-settings-are-pool-state.md) and
+  [a-pool-holds-settings](../plans/a-pool-holds-settings.md).
 - 2026-09-23 — **Accounts in settings.** A new `/settings/accounts` section lists every account
   grouped by kind: where it came from, whether a secret is set, and which config accounts a stored
   one shadows. Its form is built from each kind's `accountSchema`. The secret field is never filled
@@ -1617,7 +1624,8 @@ timeline.
 Settings is the register's own grid *(redrawn 2026-09-16, [shell-redesign](../plans/shell-redesign.md)
 phase 6)*: the menu sits on the rail, ruled at its right, and one section sits beside it at
 `--spacing-read`. **Each section is a route**, `/settings/{destinations | accounts | templates |
-access | server | appearance}`; `/settings` itself redirects to `destinations` from `--breakpoint-narrow` up.
+access | server | appearance | pool}`; `/settings` itself redirects to `destinations` from
+`--breakpoint-narrow` up.
 Below it there is no rail beside a section to draw, so the menu becomes the phone's own landing page
 at `/settings` — each item 44px tall, ruled between — and a section carries `← settings` above its
 head instead. One component draws both; there is no second design for the phone. It has no lede and
@@ -1716,6 +1724,20 @@ comes back into reach and held nowhere.
 
 **Appearance** is `THEME auto · light · dark` on the facts grid — the same three-way choice, moved
 under a section of its own rather than a row of buttons alone.
+
+**Pool settings** is the last section *(added 2026-09-24,
+[a-pool-holds-settings](../plans/a-pool-holds-settings.md))*, one row per setting on the facts
+grid — its name, and a boolean as two options, `yes` and `no`, the chosen one bold, on the same
+control every boolean in this shell draws with. It is not a sub-head of Appearance, which is the
+reader's and lives on the device, and not of Server, which is what the daemon is rather than what
+the pool holds: the heading is what makes the two-word term carry itself, so a person meets **pool
+setting** exactly where they meet the control. Unavailable rather than guessing while the pool is
+out of reach, on Destinations' own terms: read but not changed while offline, drawn as unavailable
+where a cold client has nothing cached to show. A cold client draws a setting as unread rather than
+as on, never guessing from its own default. The shell reads pool settings when it starts, beside
+destinations and templates, and the section reads them again whenever it opens or the pool comes
+back into reach, so what it draws is the pool's current answer rather than whatever this device
+last heard. Choosing the option already chosen sends nothing.
 
 ### The log
 

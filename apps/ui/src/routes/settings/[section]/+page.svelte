@@ -3,6 +3,7 @@
   import Accounts from "$components/settings/Accounts.svelte";
   import Appearance from "$components/settings/Appearance.svelte";
   import Destinations from "$components/settings/Destinations.svelte";
+  import PoolSettings from "$components/settings/PoolSettings.svelte";
   import Server from "$components/settings/Server.svelte";
   import Templates from "$components/settings/Templates.svelte";
   import type { Section } from "$components/settings/href";
@@ -20,6 +21,8 @@
   <Access />
 {:else if data.section === "server"}
   <Server />
+{:else if data.section === "pool"}
+  <PoolSettings />
 {:else}
   <Appearance />
 {/if}

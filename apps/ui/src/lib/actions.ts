@@ -167,6 +167,12 @@ const FACTS: Readonly<
     named(detail, naming.template, "template"),
   "template-deleted": (detail, naming) =>
     named(detail, naming.template, "template"),
+  "pool-setting-changed": (detail) => {
+    const setting = text(detail["setting"]);
+    return setting === undefined
+      ? undefined
+      : { said: `${setting} → ${scalar(detail["to"])}` };
+  },
   "work-failed": alarmed,
   "work-abandoned": alarmed,
   "assets-released": (detail) => {
