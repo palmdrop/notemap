@@ -1,10 +1,10 @@
 # Clickable links, and a preview of what they point at
 
 **Date**: 2026-09-23 *(open questions answered 2026-09-24; the opt-out split out 2026-09-24)*
-**Status**: In progress <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/shell.md`, `docs/specs/http-v1.md`, `docs/specs/security.md`
 **Depends on**: [a-pool-holds-settings](a-pool-holds-settings.md), which must be `Done` before phase 3
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-09-24
 
 ---
 
@@ -193,7 +193,7 @@ Depends on nothing. Independently shippable; do not hold it for the rest.
       extension, so the next person does not read it as GFM.
 - [x] Verify: `pnpm --filter ui test -- markdown` green; `pnpm -r --silent test`, `pnpm -r typecheck`
       and lint green. By hand: capture a note holding a bare URL, see it followable in the queue,
-      the feed and the item surface.
+      the feed and the item surface. *(The by-hand check is the developer's; not run by the agent.)*
 - [x] Commit `feat(ui): render a bare URL as a link`.
 
 ### Phase 2 — the decisions are written down
@@ -315,35 +315,36 @@ Depends on phase 4.
 
 Depends on phase 5. **Must not land before phase 3**, which is what makes the drawing refusable.
 
-- [ ] One component, drawn wherever a note's rendered links appear: the register row's body on the
+- [x] One component, drawn wherever a note's rendered links appear: the register row's body on the
       queue and the feed, the item surface, and the process surface. In the one face at the one
       size, from token roles only, with no second visual language. A block that has not answered,
       one that answered nothing and one that could not be reached are ordinary states and not the
       alarm.
-- [ ] **Nothing shifts when an unfurl arrives**: the space it will occupy is reserved, the way the
+- [x] **Nothing shifts when an unfurl arrives**: the space it will occupy is reserved, the way the
       selected row's foot is already reserved on every row (shell.md, *The row*). A list that
       resettles under a reader as previews land is worse than no previews.
-- [ ] The requests are made per distinct URL and de-duplicated within a draw, so a note naming the
+- [x] The requests are made per distinct URL and de-duplicated within a draw, so a note naming the
       same link twice asks once and a page naming one link across five rows asks once. **A page of
       rows holding several distinct links is still several requests on its first read**, which is
       the cost the developer accepted; the hour-long cache is what makes every later read free.
-- [ ] Nothing is asked while the setting is off. The shell does not draw a placeholder saying a
+- [x] Nothing is asked while the setting is off. The shell does not draw a placeholder saying a
       preview was withheld either — the setting is in Settings, and a row explaining itself on
       every link would be the noise the offline marks were already trimmed of.
-- [ ] Component tests: a link with an unfurl; one without; one still in flight; one refused; a note
+- [x] Component tests: a link with an unfurl; one without; one still in flight; one refused; a note
       holding several; the same link twice asking once; and the setting off, asking nothing.
-- [ ] `docs/specs/shell.md`, *Content* plus *The row* and *The process surface*: what draws, that
+- [x] `docs/specs/shell.md`, *Content* plus *The row* and *The process surface*: what draws, that
       it is automatic everywhere a link appears, what the three empty states say, that the picture
       is fetched by the browser from wherever it points, and that what governs it is a **pool
       setting** rather than a reading preference — the distinction the **Pool settings** section
       exists to make readable. Acceptance criteria for the no-layout-shift rule and for asking
       nothing while it is off. The `Shipped:` line names the cost plainly: several links on a page
       are several outbound requests the first time it is read.
-- [ ] Verify: `pnpm --filter ui test` green; `pnpm -r --silent test`, `pnpm -r typecheck` and lint
+- [x] Verify: `pnpm --filter ui test` green; `pnpm -r --silent test`, `pnpm -r typecheck` and lint
       green; `pnpm test:stack` green. By hand: a note holding an are.na link, an Instagram link and
       a bare image URL, drawn on all four surfaces; then the setting off, and the network tab
-      showing no request to `/v1/unfurl`.
-- [ ] Commit `feat(ui): draw what an external link points at`.
+      showing no request to `/v1/unfurl`. *(The by-hand browser check is the developer's; not run
+      by the agent.)*
+- [x] Commit `feat(ui): draw what an external link points at`.
 
 ---
 

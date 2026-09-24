@@ -4,6 +4,15 @@
 **Last updated**: 2026-09-24
 **Shipped**:
 
+- 2026-09-24 — **Clickable links, and what they point at.** A bare URL typed in a capture is a
+  link, by the GFM autolink-literal extension over the still-CommonMark renderer, and a followable
+  link is underlined. Every link in a note draws a fixed-height block with what the daemon read of
+  it — picture, site, title, description — on the rows, the item surface and the process surface,
+  governed by the pool setting `unfurl`, and asking nothing while it is off or unread. **The cost,
+  stated plainly:** a page holding several distinct links is that many outbound requests from the
+  daemon the first time it is read; the daemon's hour-long cache makes every later read free, not
+  the first. See [ADR 51](../adr/0051-an-unfurl-is-the-daemons-and-is-not-enrichment.md) and
+  [clickable-links-and-link-previews](../plans/clickable-links-and-link-previews.md).
 - 2026-09-24 — **A Settings section for Pool settings.** Routed `/settings/pool`, after the
   others: one row per pool setting, a boolean drawn as the two-option `yes`/`no` row every boolean
   here has been since 2026-09-21, unavailable rather than guessed while the pool is out of reach.
@@ -584,6 +593,9 @@ each says nothing. A **pending** word stays, under the stamp, where an outbox op
 item has not drained. Nothing on the collapsed row is a control except the tags, which are taken
 off by pressing them, and the stamp, which is the accessible way to select it.
 
+**Under the text, a block per link** *(2026-09-24)* — what each link points at, as
+[Content](#content) describes, outside the clamp so a long note's cue does not hide them.
+
 **A trigger tag is drawn as the name after `route/`, in bold small caps** — `journal`, not
 `route/journal → journal`. The style is what says the word files the item; the namespace is not a
 decision and is not repeated on every row. The chooser's offer keeps the whole name, being what is
@@ -697,7 +709,8 @@ always visible.
 
 **The head is the capture, read-only until `edit`.** The stamp and the tags on one line with
 `edit` at the right; under them the words, at the prose measure; a picture capture draws the
-picture above them. `edit`, a double click on the words, or `e` opens editing: the words become a
+picture above them. Under the words, while not editing, a block per link they name *(2026-09-24;
+[Content](#content))*. `edit`, a double click on the words, or `e` opens editing: the words become a
 ruled box with the caret in it, `keep the capture's` puts them back and a bold `done` closes the
 box, `edit` being hidden meanwhile. **The edited words are this delivery's alone** — the record's
 `content` exactly as the modal's rewrite was ([ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md)):
@@ -1846,6 +1859,25 @@ links as `mailto:`, stays text. The renderer is still CommonMark plus this one e
 no tables, strikethrough or task lists. A followable link in rendered prose is underlined, since
 the shell's links otherwise read as text until pointed at.
 
+**A link draws what it points at** *(2026-09-24,
+[ADR 51](../adr/0051-an-unfurl-is-the-daemons-and-is-not-enrichment.md))*: under a note, one ruled
+block per distinct followable link, in the order written — the page's picture at the left where it
+has one, then its site name (or the host), its title in bold and two lines of its description. The
+whole block is the link. It is an **unfurl**, read by the daemon, never by the browser; only the
+picture is fetched by the browser, from wherever `og:image` points, on the rule a capture's own
+image already follows, and with no referrer. It is **automatic, everywhere a note's links appear** —
+the rows on the queue and the feed, the item surface, and the process surface. Three states are
+ordinary, never the alarm: a block still asking draws the host alone; one whose page said nothing
+reads **`says nothing about itself`**; one the daemon could not reach reads **`out of reach`**, and
+one it would not read — an address inside a network — **`not read`**. **Every block is the same
+height in every state**, so nothing shifts when an answer lands. A link is asked about once per
+page, however many rows name it.
+
+**It is governed by a pool setting, not a reading preference.** The pool setting `unfurl` —
+**`show link previews`** in [Pool settings](#settings) — decides it for every device at once, and
+while it is off **no request is made** and no block is drawn: no placeholder says a preview was
+withheld. A client that has not yet read the setting draws none and asks nothing.
+
 A payload type this shell cannot draw **says so by name** and stays taggable, archivable and
 routable, since none of those need to understand the content. An item never becomes an invisible
 row, and adding a renderer later is additive.
@@ -2092,6 +2124,11 @@ view is how a reader sees more at once.
 
 ## Acceptance criteria
 
+- An unfurl arriving, or failing, moves nothing on the page: the block is the same height asking
+  as answered.
+- While the pool setting `unfurl` is off, or before it has been read, no request to `/v1/unfurl`
+  is made and no block is drawn.
+- A bare URL typed in prose is a followable link; an email address is not.
 - The whole design is legible and operable at 375px wide, with the rail intact, and no surface
   requires a second layout to be usable at a desk.
 - Furling the rail leaves every row still openable and every action still reachable.

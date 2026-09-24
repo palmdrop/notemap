@@ -22,6 +22,14 @@ export const NO_PREVIEW_OFFERED = "no preview for this destination";
 
 export const PREVIEW_UNREACHABLE = "out of reach";
 
+/** A link whose page answered, and said nothing about itself. */
+export const UNFURL_SAYS_NOTHING = "says nothing about itself";
+
+export const UNFURL_UNREACHABLE = "out of reach";
+
+/** The daemon would not read it: an address inside a network, most often. */
+export const UNFURL_NOT_READ = "not read";
+
 /** Followed by the media type it would have written. */
 export const PREVIEW_NOT_TEXT =
   "This would not be text, so it cannot be shown here:";

@@ -4,6 +4,10 @@
 **Last updated**: 2026-09-24
 **Shipped**:
 
+- 2026-09-24 — **`client.unfurl(url)`.** What a link points at, read straight off `/v1` and held
+  nowhere; it asks nothing unless the pool setting `unfurl` reads on as last read. See
+  [ADR 51](../adr/0051-an-unfurl-is-the-daemons-and-is-not-enrichment.md) and
+  [clickable-links-and-link-previews](../plans/clickable-links-and-link-previews.md).
 - 2026-09-24 — **`client.settings` caches the pool's own settings.** Beside `destinations` and
   `templates`, on the same `all`/`held` terms, persisted and hydrated and dropped when the pool
   identity changes; a change is not an outbox operation. `held` answers `undefined` until the first

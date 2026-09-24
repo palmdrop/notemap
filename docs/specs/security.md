@@ -4,6 +4,11 @@
 **Last updated**: 2026-09-24
 **Shipped**:
 
+- 2026-09-24 — **The one outbound request a caller chooses the address of.** `GET /v1/unfurl`
+  fetches only public addresses — every hop checked, the checked address the one connected to, no
+  allowlist — behind the door and behind the pool setting `unfurl`; what it still does not close is
+  written down. See [ADR 51](../adr/0051-an-unfurl-is-the-daemons-and-is-not-enrichment.md) and
+  [clickable-links-and-link-previews](../plans/clickable-links-and-link-previews.md).
 - 2026-09-23 — **An account may be stored by the daemon.** Set from settings by a signed-in
   person, kept in `auth.db` with its secret recoverable, never in the pool or the mirror, and never
   answered back. A bearer token cannot reach the account routes. A stored account replaces a config

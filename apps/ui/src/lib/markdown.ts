@@ -31,3 +31,13 @@ export function rendered(text: string): string {
 
   return holder.innerHTML;
 }
+
+/** Every address the rendered text would let a reader follow, each once, in the order written. */
+export function links(text: string): string[] {
+  const holder = document.createElement("template");
+  holder.innerHTML = rendered(text);
+  const hrefs = [...holder.content.querySelectorAll("a[href]")].map(
+    (link) => link.getAttribute("href") ?? "",
+  );
+  return [...new Set(hrefs)];
+}

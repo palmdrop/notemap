@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { rendered } from "./markdown";
+import { links, rendered } from "./markdown";
 
 function drawn(text: string): HTMLElement {
   const holder = document.createElement("div");
@@ -96,4 +96,12 @@ test("leaves a bare email address as text with nowhere to go", () => {
 
   expect(html.querySelector("a[href]")).toBeNull();
   expect(html.textContent).toBe("write to someone@example.org");
+});
+
+test("lists the links a reader could follow, each once", () => {
+  expect(
+    links(
+      "see https://a.example/one and [again](https://a.example/one), then www.b.example, `https://c.example` and [no](javascript:alert(1))",
+    ),
+  ).toEqual(["https://a.example/one", "http://www.b.example"]);
 });

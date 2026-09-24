@@ -5,6 +5,12 @@ editing, destinations, routing to one, pool settings, unfurling and health are s
 **Last updated**: 2026-09-24
 **Shipped**:
 
+- 2026-09-24 — **`GET /v1/unfurl`.** What an external link points at — its Open Graph title,
+  description, image and site name, or the document's `<title>` — read by the daemon behind a
+  strict guard and held in memory, never pool state. A target that could not be read is an ordinary
+  answer; a bad or internal address is refused, and so is the whole route while the pool setting
+  `unfurl` is off. See [ADR 51](../adr/0051-an-unfurl-is-the-daemons-and-is-not-enrichment.md) and
+  [clickable-links-and-link-previews](../plans/clickable-links-and-link-previews.md).
 - 2026-09-24 — **`GET` and `PATCH /v1/settings`.** Every known pool setting with its effective
   value, and a change that names exactly one setting, so two callers changing two of them never
   clobber each other. Behind the door; no other settings are addressable here, a

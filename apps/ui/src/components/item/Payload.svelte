@@ -4,6 +4,7 @@
   import Clamp from "$components/primitives/text/Clamp.svelte";
   import Figure from "$components/primitives/text/Figure.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
+  import Unfurls from "$components/unfurl/Unfurls.svelte";
   import { client } from "$lib/client";
 
   let { item }: { item: Item } = $props();
@@ -26,6 +27,7 @@
   <Clamp>
     <Prose {text} />
   </Clamp>
+  <Unfurls {text} />
 {:else if images.length === 0}
   <!-- Nothing this shell knows how to draw, which is said by name rather than hidden. -->
   <Figure label={item.payload.type} />
