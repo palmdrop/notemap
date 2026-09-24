@@ -2,6 +2,8 @@
 
 ## Shell — layout and interaction
 
+- [ ] Some notices never disappear, even when they are not warnings :for example, "marked manual"
+- [ ] Endless scroll - auto-load next page of feed and queue when user scrolls to bottom 
 - [ ] Add proper loading icons and states. Pay attention to layout shifting - avoid it.
 - [ ] stale and premature UI state
   - No good way to see pending operations. A held row says `retrying` while it is
@@ -12,6 +14,7 @@
 - [ ] preview external links, like instagram, are.na, image URLs, etc 
 
 - [ ] batch processing, i.e selecting many captures and routing them all at once, or discarding
+    - batch processing by tag, i.e route all items tagged with a specific tag to a location. Default: only unprocessed item. Checkbox for ALL items in the feed.
 - [ ] command palette
 
 - [ ] **Nothing bounds a surface that is being drawn.** The client's cache caps feed history at 500
@@ -90,6 +93,9 @@
 
 - [ ] Destination configuration is way too clunky, not sensible to configure in BOTH config.toml and in the UI.
 
+## Classification
+- [ ] Try JEV for typesafe AI classification/suggestions
+
 ## Routing — templates, rules, conversion
 
 - [ ] Conversion - changing or formatting an item on routing, for example, making an item a piece of a TODO list. Called conversion rather than a routing template since 2026-09-05: a **routing template** is now a saved routing decision, and the two were sharing a word.
@@ -117,8 +123,11 @@
 ## Output
 
 - [ ] in-file edits: instead of creating or appending, notemap allows for *inserting* a capture in a file. Only works if file is parsed by, for example, a markdown parser, or some other pattern/filetype that the destination supports. For example, inserting a capture item below a pre-existing heading in a file, or adding a todo list entry at the top of a todo list
+    - test if JEV can be used for this
 
 ## Destinations and adapters
+
+- [ ] Consider (fs) adapter on other machine. Sometimes, I might want to send a note to a specific machine, reachable over HTTPs or SSH (usually local network or tailscale/twingate network) 
 
 - [ ] **The shell picks a browse control by destination kind name.**
   `apps/ui/src/lib/candidate-browsers.ts` maps `filesystem` and `webdav` to the typed line and
@@ -140,10 +149,16 @@
   notice. Whoever builds them builds this at the same time.
 
 ## Inboxes
+- [ ] raycast extension: add command for viewing inbox
+- [ ] raycast extension: add command for viewing queue/feed and editing (BUT NOT PROCESING?)
+
+- [ ] browser extension: create notemap browser extension 
+    - for now, in personal flow, this is covered by are.na browser extension + are.na->notemap relay
 
 ## Pool, store and correctness
 
-- [x] Add proper service logging, at the moment, notemap logs almost nothing, making it pointless to inspect the docker logs for debugging purposes _(2026-09-20, [daemon-logging](plans/daemon-logging.md))_
+- [ ] All captures seem to end up in the `assets` folder in the Notemap data directory, even for captures that are text only. Not sure why. These are also mirrored by the mirror, so all text data is effectively duplicated on disk, while also being present in the db
+
 - [ ] When purge lands: `GET /v1/items/:id/routing` reads the item and then its records, two reads on two connection states, so an item purged between them answers `200 {"values":[]}` — the claim about an item the existence check is there to avoid. Either one core method answering both, or the route accepting the window deliberately.
 - [ ] Nothing reclaims a blob no asset ever named. **Whatever closes this must not take an
   output**: a delivery's output is a blob named by a routing record rather than by an asset, so a
