@@ -1,4 +1,4 @@
-import type { JsonObject } from "../json";
+import type { JsonObject, JsonValue } from "../json";
 import type { Page, PageRequest, Result, Slice } from "../result";
 import type { Action, ActionQuery } from "../domain/action-log";
 import type { Agent } from "../domain/agent";
@@ -43,6 +43,7 @@ import type {
   ItemId,
   LeaseId,
   PoolIdentity,
+  PoolSettingName,
   RoutingRecordId,
   SuggestionId,
   SyncCursor,
@@ -51,6 +52,7 @@ import type {
 import type { EditOutcome, Item, TagUse } from "../domain/item";
 import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
 import type { AbandonedPosition } from "../domain/position";
+import type { PoolSetting } from "../domain/pool-setting";
 import type {
   AttemptableDelivery,
   DeliveryRequest,
@@ -88,6 +90,7 @@ import type {
   EnrichmentRefusal,
   LeaseRefusal,
   OutputRefusal,
+  PoolSettingRefusal,
   PreviewRefusal,
   PurgeRefusal,
   RetireRefusal,
@@ -293,6 +296,16 @@ export type TemplateRouting = {
   readonly content?: JsonObject;
 };
 
+export interface PoolSettingsApi {
+  /** Every known pool setting, with its effective value — unset reads as its default. */
+  list(): Promise<readonly PoolSetting[]>;
+  /** One at a time, so two callers changing two settings never clobber each other. */
+  change(
+    name: PoolSettingName,
+    value: JsonValue,
+  ): Promise<Result<PoolSetting, PoolSettingRefusal>>;
+}
+
 export interface RoutingApi {
   /** The record it answers may be pending: read the state rather than reading a record as arrival. */
   route(
@@ -425,6 +438,7 @@ export interface Pool {
   readonly enrichment: EnrichmentApi;
   readonly destinations: DestinationsApi;
   readonly templates: TemplatesApi;
+  readonly settings: PoolSettingsApi;
   readonly routing: RoutingApi;
   readonly assets: AssetsApi;
   readonly work: WorkApi;

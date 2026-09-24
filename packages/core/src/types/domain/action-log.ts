@@ -28,6 +28,7 @@ export const ACTION_KINDS = [
   "template-edited",
   "template-deleted",
   "template-fired",
+  "pool-setting-changed",
   "enrichment-requested",
   "work-failed",
   "work-abandoned",

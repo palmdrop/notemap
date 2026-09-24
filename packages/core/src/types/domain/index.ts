@@ -8,6 +8,7 @@ export * from "./ids";
 export * from "./item";
 export * from "./mirror";
 export * from "./payload";
+export * from "./pool-setting";
 export * from "./position";
 export * from "./routing";
 export * from "./source";

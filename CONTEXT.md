@@ -19,6 +19,18 @@ it names a pool without describing one. A rebuild makes a new pool and so takes 
 which is how a client that cached one can tell that everything it holds describes somewhere else.
 _Avoid_: pool id, instance id, server id, fingerprint
 
+**Pool setting**:
+A named value true of the pool rather than of any item, destination or template — changed by a
+person while using notemap, on the same footing as a destination, and never something an install
+sets. The known ones are a closed list in code, one entry today: `unfurl`, a boolean defaulting to
+on. Unset reads as its default, and every change is an ordinary write, mirrored and logged like any
+other pool state. Named for what it differs from: a destination's **settings** are the values a
+kind's schema asks for and belong to one destination; a reading **preference** — the palette, the
+order control — lives on the device and carries no privacy cost, where a pool setting wants one
+answer for the whole pool and not one per device.
+_Avoid_: setting on its own, configuration (which is what an install is), preference, option, flag,
+knob
+
 **Item**:
 One thing in the pool, with its own lifecycle, enrichment and routing decisions. Items never
 merge with each other.

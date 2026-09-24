@@ -1,10 +1,13 @@
 import type { SweepPolicy } from "../domain/asset";
 import type { PayloadTypeDescriptor } from "../domain/payload";
+import type { PoolSettingDescriptor } from "../domain/pool-setting";
 import type { Duration } from "../domain/ids";
 import type { RetryPolicy } from "../domain/work";
 
 export type PoolConfig = {
   readonly payloadTypes: readonly PayloadTypeDescriptor[];
+  /** The pool settings this code knows, on `payloadTypes`' pattern: core exports the list, a host hands it back. */
+  readonly poolSettings: readonly PoolSettingDescriptor[];
   readonly retry: RetryPolicy;
   readonly sweep: SweepPolicy;
   /**

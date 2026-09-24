@@ -1,4 +1,5 @@
 import type { SchemaIssue } from "../json";
+import type { PoolSettingType } from "../domain/pool-setting";
 import type { JobKind } from "../domain/work";
 import type {
   ArtifactId,
@@ -11,6 +12,7 @@ import type {
   ItemId,
   LeaseId,
   PayloadTypeName,
+  PoolSettingName,
   RoutingRecordId,
   RoutingTemplateId,
   SuggestionId,
@@ -299,6 +301,19 @@ export type CompletionRefusal =
 
 /** Clearing refuses nothing; the result stays refusal-shaped because every mutation's is. */
 export type ActionLogRefusal = never;
+
+/** Facts and no sentence, on the table `http-v1.md` already states. */
+export type PoolSettingRefusal =
+  | {
+      readonly kind: "unknown-pool-setting";
+      readonly setting: PoolSettingName;
+      readonly allowed: readonly PoolSettingName[];
+    }
+  | {
+      readonly kind: "pool-setting-invalid";
+      readonly setting: PoolSettingName;
+      readonly expected: PoolSettingType;
+    };
 
 export type RebuildRefusal =
   | { readonly kind: "pool-not-empty" }

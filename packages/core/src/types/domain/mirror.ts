@@ -4,6 +4,7 @@ import type { Artifact } from "./enrichment";
 import type {
   DestinationId,
   ItemId,
+  PoolSettingName,
   RoutingTemplateId,
   Timestamp,
 } from "./ids";
@@ -15,7 +16,8 @@ import type { RoutingTemplateRecord } from "./template";
 export type MirrorSubject =
   | { readonly kind: "item"; readonly item: ItemId }
   | { readonly kind: "destination"; readonly destination: DestinationId }
-  | { readonly kind: "template"; readonly template: RoutingTemplateId };
+  | { readonly kind: "template"; readonly template: RoutingTemplateId }
+  | { readonly kind: "pool-setting"; readonly setting: PoolSettingName };
 
 /**
  * One item's complete durable state: everything a rebuild needs to restore it,
@@ -60,5 +62,22 @@ export type RoutingTemplateMirrorRecord = {
   readonly modifiedAt: Timestamp;
 };
 
+/**
+ * The third non-item unit: what a person changed about the pool itself. Never
+ * removed — a reverted setting is an ordinary write, a value equal to the
+ * default included — so this is the one mirror record kind with no matching
+ * `mirror-remove` job.
+ */
+export type PoolSettingMirrorRecord = {
+  readonly kind: "pool-setting";
+  readonly setting: PoolSettingName;
+  readonly value: boolean;
+  /** Compared by verify, never restored. */
+  readonly modifiedAt: Timestamp;
+};
+
 export type MirrorRecord =
-  ItemMirrorRecord | DestinationMirrorRecord | RoutingTemplateMirrorRecord;
+  | ItemMirrorRecord
+  | DestinationMirrorRecord
+  | RoutingTemplateMirrorRecord
+  | PoolSettingMirrorRecord;
