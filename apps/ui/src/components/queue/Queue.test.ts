@@ -492,7 +492,6 @@ test("a row that leaves the queue says where it went", async () => {
   expect(notices.shown.at(-1)?.offer?.label).toBe("undo");
 });
 
-/** Archiving makes no record, so the corner is the only place its undo can sit. */
 test("discarding says so, and offers the row back", async () => {
   pool(queued("one"));
 
@@ -506,10 +505,9 @@ test("discarding says so, and offers the row back", async () => {
     expect(notices.shown.map((notice) => notice.what)).toContain("discarded");
   });
   const said = notices.shown.at(-1);
-  expect(said?.standing).toBe(true);
+  expect(said?.standing).toBeUndefined();
   expect(said?.offer?.label).toBe("undo");
-  // The row it was made on is one look away from being gone, and the corner
-  // is then the only way back to the capture it was about.
+  // The row it was made on is one look away from being gone.
   expect(said?.href).toBe("/items/one");
 });
 

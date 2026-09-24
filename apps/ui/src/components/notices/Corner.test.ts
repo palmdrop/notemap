@@ -13,7 +13,7 @@ afterEach(() => {
   notices.clear();
 });
 
-test("says what logged, and lets a standing one be dismissed", async () => {
+test("says what logged, and lets either kind be dismissed", async () => {
   pool(() => json(200, { values: [] }));
   render(Corner);
 
@@ -21,30 +21,26 @@ test("says what logged, and lets a standing one be dismissed", async () => {
   const said = await screen.findByRole("status");
   expect(said.textContent).toContain("routed · obsidian");
   expect(said.textContent).toContain("notes/inbox/picker.md");
-  expect(screen.queryByRole("button", { name: "dismiss" })).toBeNull();
+  expect(screen.getAllByRole("button", { name: "dismiss" })).toHaveLength(1);
 
   notices.raise({ what: "delivery failed · vault", standing: true });
   const stands = await screen.findByRole("alert");
   expect(stands.textContent).toContain("delivery failed · vault");
 
-  await fireEvent.click(screen.getByRole("button", { name: "dismiss" }));
+  await fireEvent.click(screen.getAllByRole("button", { name: "dismiss" })[1]!);
   await vi.waitFor(() => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 });
 
-/**
- * `marked manual` and `discarded` stand, so their `undo` does not time out
- * under somebody's hands — but nothing went wrong, so neither is an alarm.
- */
 test("a standing notice that is not an alarm reads as status, and still offers dismiss", async () => {
   pool(() => json(200, { values: [] }));
   render(Corner);
 
-  notices.raise({ what: "marked manual", standing: true, alarm: false });
+  notices.raise({ what: "routing · research", standing: true, alarm: false });
 
   const said = await screen.findByRole("status");
-  expect(said.textContent).toContain("marked manual");
+  expect(said.textContent).toContain("routing · research");
   expect(screen.queryByRole("alert")).toBeNull();
 
   await fireEvent.click(screen.getByRole("button", { name: "dismiss" }));
@@ -62,6 +58,31 @@ test("keeps its controls readable on a filled panel", async () => {
 
   const panel = await screen.findByRole("alert");
   expect(panel.className).toContain("border-alarm");
+});
+
+test("a notice under the pointer does not leave", async () => {
+  pool(() => json(200, { values: [] }));
+  render(Corner);
+  vi.useFakeTimers();
+
+  try {
+    notices.raise({
+      what: "discarded",
+      offer: { label: "undo", take: vi.fn() },
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    const said = screen.getByRole("status");
+
+    await fireEvent.pointerEnter(said);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(screen.queryByRole("status")).not.toBeNull();
+
+    await fireEvent.pointerLeave(said);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(screen.queryByRole("status")).toBeNull();
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 test("a notice about something leads to where it can be read", async () => {

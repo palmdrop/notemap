@@ -154,3 +154,40 @@ test("a standing notice carrying an offer survives a full corner", () => {
 
   expect(notices.shown.map((notice) => notice.what)).toContain("discarded · a");
 });
+
+test("a notice offering something lingers long enough to reach for it", () => {
+  notices.raise({ what: "discarded", offer: { label: "undo", take: vi.fn() } });
+
+  vi.advanceTimersByTime(5_000);
+  expect(notices.shown).toHaveLength(1);
+
+  vi.advanceTimersByTime(5_000);
+  expect(notices.shown).toHaveLength(0);
+});
+
+test("a held notice does not leave, and lingers again once let go", () => {
+  const id = notices.raise({ what: "copied" }) as string;
+
+  notices.hold(id);
+  vi.advanceTimersByTime(60_000);
+  expect(notices.shown).toHaveLength(1);
+
+  notices.release(id);
+  vi.advanceTimersByTime(3_000);
+  expect(notices.shown).toHaveLength(1);
+  vi.advanceTimersByTime(1_000);
+  expect(notices.shown).toHaveLength(0);
+});
+
+test("letting go of a standing notice does not start it leaving", () => {
+  const id = notices.raise({
+    what: "delivery failed",
+    standing: true,
+  }) as string;
+
+  notices.hold(id);
+  notices.release(id);
+  vi.advanceTimersByTime(60_000);
+
+  expect(notices.shown).toHaveLength(1);
+});

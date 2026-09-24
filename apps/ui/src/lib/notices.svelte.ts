@@ -3,6 +3,9 @@ import { SvelteMap, SvelteSet } from "svelte/reactivity";
 /** How long a confirmation holds before it goes. A glance, not a read. */
 const LINGERS = 4_000;
 
+/** Long enough to reach for what it offers; the way back is elsewhere too. */
+const OFFERED = 10_000;
+
 /** How many the corner draws at once before it counts the rest instead. */
 const SHOWN = 4;
 
@@ -58,6 +61,18 @@ function forget(id: string): void {
   const timer = timers.get(id);
   if (timer !== undefined) clearTimeout(timer);
   timers.delete(id);
+}
+
+function lingers(notice: Notice): number {
+  return notice.offer === undefined ? LINGERS : OFFERED;
+}
+
+function wait(notice: Notice): void {
+  forget(notice.id);
+  timers.set(
+    notice.id,
+    setTimeout(() => drop(notice.id), lingers(notice)),
+  );
 }
 
 function drop(id: string): void {
@@ -130,14 +145,10 @@ export const notices = {
 
     minted += 1;
     const id = `notice-${String(minted)}`;
-    held = trimmed([...kept, { ...notice, id }]);
+    const raised = { ...notice, id };
+    held = trimmed([...kept, raised]);
 
-    if (notice.standing !== true) {
-      timers.set(
-        id,
-        setTimeout(() => drop(id), LINGERS),
-      );
-    }
+    if (notice.standing !== true) wait(raised);
 
     return id;
   },
@@ -162,6 +173,18 @@ export const notices = {
 
   dismiss(id: string): void {
     drop(id);
+  },
+
+  /** Under somebody's pointer or focus a notice does not leave. */
+  hold(id: string): void {
+    forget(id);
+  },
+
+  /** Let go, it lingers again from the start. */
+  release(id: string): void {
+    const notice = held.find((one) => one.id === id);
+    if (notice === undefined || notice.standing === true) return;
+    wait(notice);
   },
 
   /** Everything, said and remembered: a shut door leaves none of it standing. */

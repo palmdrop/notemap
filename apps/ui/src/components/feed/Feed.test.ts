@@ -495,6 +495,29 @@ test("walks the rows with j and k, and processes the one selected", async () => 
   expect(stamps(true)).toHaveLength(0);
 });
 
+test("j past the last row held reads the next page and steps into it", async () => {
+  pool((request) => {
+    if (routeOf(request) !== "GET /v1/feed") return json(200, { values: [] });
+    return new URL(request.url).searchParams.has("after")
+      ? json(200, { values: [anItem("two")] })
+      : json(200, { values: [anItem("one")], next: "/v1/feed?after=one" });
+  });
+
+  render(Feed);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await screen.findByText("two");
+
+  // The step lands once the page has; `p` takes whichever row is selected.
+  await vi.waitFor(async () => {
+    went.to = [];
+    await fireEvent.keyDown(window, { key: "p" });
+    expect(went.to).toEqual(["/items/two/process"]);
+  });
+});
+
 test("t opens the tag chooser on the selected row", async () => {
   pool(held(anItem("one")));
 

@@ -104,9 +104,9 @@
         : { label: notice.offer.label, take: () => notices.take(notice.id) }}
       standing={notice.standing === true}
       alarm={notice.alarm}
-      ondismiss={notice.standing === true
-        ? () => notices.dismiss(notice.id)
-        : undefined}
+      ondismiss={() => notices.dismiss(notice.id)}
+      onhold={() => notices.hold(notice.id)}
+      onrelease={() => notices.release(notice.id)}
     />
   {/each}
 

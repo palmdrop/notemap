@@ -68,3 +68,76 @@ test("the foot offers the next page, or says why it cannot", async () => {
   expect(screen.getByText(NO_MORE_OFFLINE)).toBeDefined();
   expect(screen.queryByRole("button")).toBeNull();
 });
+
+function watchingTheFoot() {
+  const seen: Array<(entries: Array<{ isIntersecting: boolean }>) => void> = [];
+  vi.stubGlobal(
+    "IntersectionObserver",
+    class {
+      constructor(
+        callback: (entries: Array<{ isIntersecting: boolean }>) => void,
+      ) {
+        seen.push(callback);
+      }
+      observe() {}
+      disconnect() {}
+    },
+  );
+  return (isIntersecting: boolean) => {
+    for (const callback of seen) callback([{ isIntersecting }]);
+  };
+}
+
+test("the foot asks for the next page when it scrolls near", async () => {
+  const scroll = watchingTheFoot();
+  const more = vi.fn();
+  render(More, { loading: false, offline: false, onmore: more });
+
+  expect(more).not.toHaveBeenCalled();
+  scroll(true);
+  await vi.waitFor(() => {
+    expect(more).toHaveBeenCalledTimes(1);
+  });
+
+  vi.unstubAllGlobals();
+});
+
+test("a page that did not move the foot is not asked for again by scrolling", async () => {
+  const scroll = watchingTheFoot();
+  const more = vi.fn();
+  const { rerender } = render(More, {
+    loading: false,
+    offline: false,
+    onmore: more,
+  });
+
+  scroll(true);
+  await vi.waitFor(() => {
+    expect(more).toHaveBeenCalledTimes(1);
+  });
+
+  await rerender({ loading: true, offline: false, onmore: more });
+  await rerender({ loading: false, offline: false, onmore: more });
+  expect(more).toHaveBeenCalledTimes(1);
+
+  vi.unstubAllGlobals();
+});
+
+test("the foot asks for nothing while offline", async () => {
+  const scroll = watchingTheFoot();
+  const more = vi.fn();
+  render(More, { loading: false, offline: true, onmore: more });
+
+  scroll(true);
+  await Promise.resolve();
+  expect(more).not.toHaveBeenCalled();
+
+  vi.unstubAllGlobals();
+});
+
+test("the foot keeps its width while it loads", () => {
+  render(More, { loading: true, offline: false, onmore: vi.fn() });
+
+  const button = screen.getByRole("button", { name: "loading…" });
+  expect(button.textContent).toContain("load more");
+});

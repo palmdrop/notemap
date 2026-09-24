@@ -75,10 +75,17 @@
     index?.reveal(id);
   }
 
-  /** Moves the selection one row along, and brings it into view. */
-  function walk(step: 1 | -1) {
+  /**
+   * Moves the selection one row along, and brings it into view. Past the last
+   * row held it reads the next page first.
+   */
+  async function walk(step: 1 | -1) {
     if (rows.length === 0) return;
-    const at = rows.findIndex((row) => row.id === selected);
+    let at = rows.findIndex((row) => row.id === selected);
+    if (step === 1 && at === rows.length - 1 && $feed.more && pool.yes) {
+      await client.loadFeed();
+      at = rows.findIndex((row) => row.id === selected);
+    }
     const next =
       at === -1
         ? step === 1
@@ -119,9 +126,9 @@
   // it holds, and a row offers what it draws as buttons.
   publish(() => [
     ...listCommands({
-      ondown: () => walk(1),
-      onup: () => walk(-1),
-      onselect: () => (current !== undefined ? process(current) : walk(1)),
+      ondown: () => void walk(1),
+      onup: () => void walk(-1),
+      onselect: () => (current !== undefined ? process(current) : void walk(1)),
       ondeselect: () => (selected = undefined),
     }),
     ...commands,
