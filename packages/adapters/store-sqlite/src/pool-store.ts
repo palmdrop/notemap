@@ -337,7 +337,6 @@ export function createSqlitePoolStore(
   const deleteDestination = write.query<never, [string]>(
     `DELETE FROM destinations WHERE id = ?`,
   );
-  /** Always writes a row, a value equal to the default included: reverting is an ordinary change. */
   const upsertPoolSetting = write.query<never, [string, 0 | 1, number]>(`
     INSERT INTO pool_settings (${POOL_SETTING_COLUMNS}) VALUES (?, ?, ?)
     ON CONFLICT (name) DO UPDATE SET value = excluded.value, changed_at = excluded.changed_at

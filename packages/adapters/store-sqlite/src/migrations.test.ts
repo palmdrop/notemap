@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
-import type { Duration, ItemId, JobId } from "@notemap/core";
+import type { Duration, ItemId, JobId, PoolSettingName } from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { MIGRATIONS } from "./migrations";
@@ -684,7 +684,7 @@ describe("a pool holds its own settings", () => {
 
     await pool.transaction((tx) =>
       tx.setPoolSetting({
-        name: "unfurl" as never,
+        name: "unfurl" as PoolSettingName,
         value: false,
         changedAt: NOW,
       }),
@@ -704,7 +704,10 @@ describe("a pool holds its own settings", () => {
         {
           id: "mirror-unfurl" as JobId,
           kind: "mirror",
-          subject: { kind: "pool-setting", setting: "unfurl" as never },
+          subject: {
+            kind: "pool-setting",
+            setting: "unfurl" as PoolSettingName,
+          },
           attempt: 0,
           enqueuedAt: NOW,
         },

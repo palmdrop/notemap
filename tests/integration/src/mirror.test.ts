@@ -360,11 +360,6 @@ describe("a destination on disk", () => {
   });
 });
 
-/**
- * The mirror's third non-item unit. Nothing else can restore what a person
- * changed about the pool itself, so a mirror that carried only items and
- * destinations would rebuild a pool that had forgotten every switch.
- */
 describe("a pool setting on disk", () => {
   const UNFURL = "unfurl" as PoolSettingName;
 

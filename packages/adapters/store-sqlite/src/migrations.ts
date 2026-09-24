@@ -839,11 +839,8 @@ export const MIGRATIONS: readonly string[] = [
   `,
 
   `
-  -- A value true of the pool rather than of any item, destination or template.
-  -- The known names are a closed list core is handed, not a foreign key this
-  -- table could enforce; the CHECK stays to \`value\` alone, which every setting
-  -- shares whatever the name. Holds only what someone changed — a name never
-  -- written answers nothing, and core turns that into the default.
+  -- Holds only what someone changed; core reads a missing name as its default.
+  -- The known names are a list core is handed, so nothing here constrains them.
   CREATE TABLE pool_settings (
     name       TEXT    NOT NULL PRIMARY KEY,
     value      INTEGER NOT NULL CHECK (value IN (0, 1)),
