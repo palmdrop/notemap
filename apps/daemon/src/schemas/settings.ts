@@ -20,5 +20,5 @@ export const poolSettingsSchema = z
  */
 export const updatePoolSettingsRequestSchema = z
   .record(z.string().min(1), z.unknown())
-  .refine((body) => Object.keys(body).length > 0, "at least one pool setting")
+  .refine((body) => Object.keys(body).length === 1, "exactly one pool setting")
   .openapi("UpdatePoolSettingsRequest");

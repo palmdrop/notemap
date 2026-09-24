@@ -98,6 +98,25 @@ describe("PATCH /v1/settings", () => {
     expect(response.status).toBe(400);
   });
 
+  it("refuses a body naming two settings, and applies neither", async () => {
+    const host = daemon(TWO_SETTINGS);
+    open.push(host);
+
+    const response = await patch(host, { unfurl: false, second: false });
+    expect(response.status).toBe(400);
+    expect(await body(response)).toMatchObject({
+      error: { code: "malformed-envelope" },
+    });
+
+    const read = await host.app.request("/v1/settings");
+    expect(await body(read)).toEqual({
+      values: [
+        { name: "unfurl", value: true },
+        { name: "second", value: true },
+      ],
+    });
+  });
+
   it("naming one pool setting leaves the others alone", async () => {
     const host = daemon(TWO_SETTINGS);
     open.push(host);

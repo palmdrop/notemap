@@ -3969,8 +3969,8 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Change one or more of the pool's own settings
-         * @description The body names only the settings being changed — `{ "unfurl": false }` — so two callers changing two different settings never clobber each other. Each named setting is applied in turn and becomes its own action and its own mirror write; a name this daemon does not know, or a value of the wrong type, refuses and leaves whatever came before it in the body applied. Answers the full list either way, on `GET`'s terms.
+         * Change one of the pool's own settings
+         * @description The body names exactly one setting — `{ "unfurl": false }` — so two callers changing two different settings never clobber each other, and a refusal never follows a change that already landed. Answers the full list, on `GET`'s terms.
          */
         patch: {
             parameters: {
@@ -3994,7 +3994,7 @@ export interface paths {
                         "application/json": components["schemas"]["PoolSettings"];
                     };
                 };
-                /** @description The body could not be read as this request. */
+                /** @description The body could not be read as this request, or did not name exactly one setting. */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -4011,7 +4011,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description A name in the body is not one this daemon knows. */
+                /** @description The name is not one this daemon knows. */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -4045,7 +4045,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description A value in the body was not of the setting's type. Nothing named after it in the body was applied. */
+                /** @description The value is not of the setting's type. */
                 422: {
                     headers: {
                         [name: string]: unknown;
