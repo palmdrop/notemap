@@ -421,7 +421,8 @@ the pool setting `unfurl` is off the route is refused before anything is resolve
   `422 address-refused`; one that does not resolve is `200 reached: false`. So a signed-in caller
   can tell which names the daemon's resolver knows, and that they are internal. Accepted: that
   caller already holds the whole pool, and the refusal is what tells an honest caller why a link
-  drew nothing.
+  drew nothing. Answering both alike would not close it either: how long a name takes to resolve,
+  and whether it is already cached, differs between a name that exists and one that does not.
 - **Load.** An unfurl is cached, and not rate-limited: a signed-in caller can make the daemon fetch
   as many distinct URLs as it asks for.
 
