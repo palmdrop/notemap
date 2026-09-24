@@ -71,6 +71,12 @@ export type DestinationRow = {
   readonly modified_at: number;
 };
 
+export type PoolSettingRow = {
+  readonly name: string;
+  readonly value: 0 | 1;
+  readonly changed_at: number;
+};
+
 export type RoutingTemplateRow = {
   readonly id: string;
   readonly name: string;
@@ -91,7 +97,8 @@ export type RoutingTemplateRow = {
 export type JobRow = {
   readonly id: string;
   readonly kind: "enrichment" | "mirror" | "mirror-remove" | "delivery";
-  readonly subject_kind: "item" | "routing-record" | "destination" | "template";
+  readonly subject_kind:
+    "item" | "routing-record" | "destination" | "template" | "pool-setting";
   readonly subject_id: string;
   /**
    * The capture the work concerns, which outlives a subject that may be
@@ -247,4 +254,5 @@ export const TABLE_COLUMNS = {
   actions: ["id", "kind", "subject", "by_kind", "by_ref", "at", "detail"],
   pool_meta: ["key", "value"],
   pool_identity: ["singleton", "identity"],
+  pool_settings: ["name", "value", "changed_at"],
 } as const satisfies Record<string, readonly string[]>;

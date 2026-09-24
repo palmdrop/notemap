@@ -39,6 +39,9 @@ const BEFORE_ONE_PAYLOAD_TYPE = 20;
 /** The version at which a capability was still named after a file. */
 const BEFORE_GENERIC_CAPABILITIES = 21;
 
+/** The version before a pool held its own settings. */
+const BEFORE_POOL_SETTINGS = 24;
+
 const directories: string[] = [];
 const opened: SqlitePoolStore[] = [];
 
@@ -619,6 +622,104 @@ function templateCapabilities(file: string) {
     raw.close();
   }
 }
+
+/** A pool as it stood before it held its own settings, with items, a destination and a template already in it. */
+function settledAtPreviousVersion(): string {
+  const directory = mkdtempSync(join(tmpdir(), "notemap-migration-"));
+  directories.push(directory);
+  const file = join(directory, "pool.db");
+
+  const raw = new DatabaseSync(file);
+  for (const migration of MIGRATIONS.slice(0, BEFORE_POOL_SETTINGS)) {
+    raw.exec(migration);
+  }
+  raw.exec(`PRAGMA user_version = ${BEFORE_POOL_SETTINGS}`);
+
+  raw
+    .prepare(
+      `INSERT INTO destinations (id, name, kind, settings, created_at, modified_at)
+       VALUES ('vault', 'Vault', 'filesystem', '{}', ?, ?)`,
+    )
+    .run(ENQUEUED, ENQUEUED);
+
+  raw
+    .prepare(
+      `INSERT INTO routing_templates
+         (id, name, destination_id, capability, arguments, folder, trigger_tag,
+          established_at, created_at, modified_at)
+       VALUES ('t-create', 'drafts', 'vault', 'create', '{}', 'create', NULL, NULL, ?, ?)`,
+    )
+    .run(ENQUEUED, ENQUEUED);
+
+  raw
+    .prepare(
+      `INSERT INTO items (id, source_id, source_item_id, payload_type,
+         payload_content, payload_metadata, created_at, modified_at)
+       VALUES ('item-1', 'web-manual', 'src-1', 'note', '{}', '{}', ?, ?)`,
+    )
+    .run(ENQUEUED, ENQUEUED);
+
+  raw.close();
+  return file;
+}
+
+describe("a pool holds its own settings", () => {
+  it("adds an empty table, leaving existing items, destinations and templates untouched", async () => {
+    const file = settledAtPreviousVersion();
+    const pool = migrated(file);
+
+    expect(await pool.poolSettings()).toEqual([]);
+    expect((await pool.destinations()).map((each) => each.id)).toEqual([
+      "vault",
+    ]);
+    expect((await pool.routingTemplates()).map((each) => each.id)).toEqual([
+      "t-create",
+    ]);
+    expect((await pool.item("item-1" as ItemId))?.id).toBe("item-1");
+  });
+
+  it("lets a setting be written and read back", async () => {
+    const file = settledAtPreviousVersion();
+    const pool = migrated(file);
+
+    await pool.transaction((tx) =>
+      tx.setPoolSetting({
+        name: "unfurl" as never,
+        value: false,
+        changedAt: NOW,
+      }),
+    );
+
+    expect(await pool.poolSettings()).toEqual([
+      { name: "unfurl", value: false, changedAt: NOW },
+    ]);
+  });
+
+  it("accepts a mirror job whose subject is a pool setting", async () => {
+    const file = settledAtPreviousVersion();
+    const pool = migrated(file);
+
+    await pool.transaction((tx) =>
+      tx.enqueue([
+        {
+          id: "mirror-unfurl" as JobId,
+          kind: "mirror",
+          subject: { kind: "pool-setting", setting: "unfurl" as never },
+          attempt: 0,
+          enqueuedAt: NOW,
+        },
+      ]),
+    );
+
+    const leases = await pool.claim(
+      { kinds: ["mirror"], limit: 10, leaseFor: MINUTE },
+      NOW,
+    );
+    expect(leases.map((lease) => lease.job.subject)).toEqual([
+      { kind: "pool-setting", setting: "unfurl" },
+    ]);
+  });
+});
 
 describe("capability names that stopped being file-shaped", () => {
   it("respells every template, which is live and fires on a tag", () => {

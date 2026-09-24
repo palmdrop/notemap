@@ -19,6 +19,7 @@ import type {
   RememberedAnswer,
   RememberedRequest,
   DeliveryLanding,
+  PoolSettingRecord,
   RoutingRecord,
   RoutingRecordId,
   RoutingTemplate,
@@ -54,6 +55,7 @@ import {
   agentColumns,
   destinationParams,
   itemParams,
+  poolSettingParams,
   routingRecordParams,
   routingTemplateParams,
   toAction,
@@ -61,6 +63,7 @@ import {
   toDestination,
   toItem,
   toMillis,
+  toPoolSettingRecord,
   toRoutingRecord,
   toRoutingSummary,
   toRoutingTemplate,
@@ -78,6 +81,7 @@ import type {
   ItemRow,
   ItemTagRow,
   PoolMetaRow,
+  PoolSettingRow,
   RoutingRecordRow,
   RoutingTemplateRow,
   SourceUseRow,
@@ -117,6 +121,8 @@ const ASSET_COLUMNS = `id, filename, mime, blob, bytes, stored_at`;
 const DESTINATION_COLUMNS = `
   id, name, kind, settings, retired_at, created_at, modified_at
 `;
+
+const POOL_SETTING_COLUMNS = `name, value, changed_at`;
 
 const ROUTING_COLUMNS = `
   id, item_id, target_kind, destination, capability, note, arguments, content,
@@ -331,6 +337,11 @@ export function createSqlitePoolStore(
   const deleteDestination = write.query<never, [string]>(
     `DELETE FROM destinations WHERE id = ?`,
   );
+  /** Always writes a row, a value equal to the default included: reverting is an ordinary change. */
+  const upsertPoolSetting = write.query<never, [string, 0 | 1, number]>(`
+    INSERT INTO pool_settings (${POOL_SETTING_COLUMNS}) VALUES (?, ?, ?)
+    ON CONFLICT (name) DO UPDATE SET value = excluded.value, changed_at = excluded.changed_at
+  `);
   const insertTemplate = write.query<
     never,
     ReturnType<typeof routingTemplateParams>
@@ -517,6 +528,9 @@ export function createSqlitePoolStore(
     /** A reservation counts as much as a delivered record: both name it. */
     const namedBy = source.query<{ one: number }, [string]>(
       `SELECT 1 AS one FROM routing_records WHERE destination = ? LIMIT 1`,
+    );
+    const everyPoolSetting = source.query<PoolSettingRow, []>(
+      `SELECT ${POOL_SETTING_COLUMNS} FROM pool_settings ORDER BY name`,
     );
     const everyTemplate = source.query<RoutingTemplateRow, []>(
       `SELECT ${TEMPLATE_READ} FROM routing_templates
@@ -726,6 +740,9 @@ export function createSqlitePoolStore(
       destinationEverNamed: async (id: DestinationId): Promise<boolean> =>
         namedBy.get(id) !== undefined,
 
+      poolSettings: async (): Promise<readonly PoolSettingRecord[]> =>
+        everyPoolSetting.all().map(toPoolSettingRecord),
+
       routingTemplates: async (): Promise<readonly RoutingTemplate[]> =>
         everyTemplate.all().map(toRoutingTemplate),
 
@@ -873,6 +890,7 @@ export function createSqlitePoolStore(
       destinations: guard(uncommitted.destinations),
       destination: guard(uncommitted.destination),
       destinationEverNamed: guard(uncommitted.destinationEverNamed),
+      poolSettings: guard(uncommitted.poolSettings),
       routingTemplates: guard(uncommitted.routingTemplates),
       routingTemplate: guard(uncommitted.routingTemplate),
       routingTemplateByTriggerTag: guard(
@@ -994,6 +1012,12 @@ export function createSqlitePoolStore(
       deleteDestination: guard(async (id: DestinationId): Promise<void> => {
         deleteDestination.run(id);
       }),
+
+      setPoolSetting: guard(
+        async (record: PoolSettingRecord): Promise<void> => {
+          upsertPoolSetting.run(...poolSettingParams(record));
+        },
+      ),
 
       insertRoutingTemplate: guard(
         async (record: RoutingTemplateRecord): Promise<RoutingTemplate> => {

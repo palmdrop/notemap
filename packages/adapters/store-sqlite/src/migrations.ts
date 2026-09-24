@@ -837,6 +837,75 @@ export const MIGRATIONS: readonly string[] = [
     ADD COLUMN content TEXT
     CHECK (content IS NULL OR target_kind = 'destination');
   `,
+
+  `
+  -- A value true of the pool rather than of any item, destination or template.
+  -- The known names are a closed list core is handed, not a foreign key this
+  -- table could enforce; the CHECK stays to \`value\` alone, which every setting
+  -- shares whatever the name. Holds only what someone changed — a name never
+  -- written answers nothing, and core turns that into the default.
+  CREATE TABLE pool_settings (
+    name       TEXT    NOT NULL PRIMARY KEY,
+    value      INTEGER NOT NULL CHECK (value IN (0, 1)),
+    changed_at INTEGER NOT NULL
+  ) STRICT;
+  `,
+
+  `
+  -- A pool setting's mirror write is about no capture at all, exactly as a
+  -- destination's and a template's are, and neither CHECK can be relaxed in
+  -- place.
+  CREATE TABLE jobs_next (
+    id                  TEXT    NOT NULL PRIMARY KEY,
+    kind                TEXT    NOT NULL
+                        CHECK (kind IN ('enrichment', 'mirror', 'mirror-remove',
+                                        'delivery')),
+    subject_kind        TEXT    NOT NULL
+                        CHECK (subject_kind IN ('item', 'routing-record',
+                                                'destination', 'template',
+                                                'pool-setting')),
+    subject_id          TEXT    NOT NULL,
+    subject_item        TEXT    CHECK ((subject_kind IN ('destination', 'template',
+                                                          'pool-setting'))
+                                       = (subject_item IS NULL)),
+    enrichment          TEXT    CHECK ((kind = 'enrichment') = (enrichment IS NOT NULL)),
+    attempt             INTEGER NOT NULL,
+    enqueued_at         INTEGER NOT NULL,
+    next_attempt_at     INTEGER NOT NULL,
+    lease_id            TEXT,
+    lease_expires_at    INTEGER CHECK ((lease_id IS NULL) = (lease_expires_at IS NULL)),
+    abandoned_at        INTEGER,
+    last_failure_code   TEXT,
+    last_failure_detail TEXT
+                        CHECK ((last_failure_code IS NULL) = (last_failure_detail IS NULL))
+  ) STRICT;
+
+  INSERT INTO jobs_next
+    (id, kind, subject_kind, subject_id, subject_item, enrichment, attempt,
+     enqueued_at, next_attempt_at, lease_id, lease_expires_at, abandoned_at,
+     last_failure_code, last_failure_detail)
+    SELECT id, kind, subject_kind, subject_id, subject_item, enrichment, attempt,
+           enqueued_at, next_attempt_at, lease_id, lease_expires_at, abandoned_at,
+           last_failure_code, last_failure_detail FROM jobs;
+
+  DROP TABLE jobs;
+  ALTER TABLE jobs_next RENAME TO jobs;
+
+  CREATE UNIQUE INDEX jobs_one_pending_mirror
+    ON jobs (subject_kind, subject_id, kind)
+    WHERE kind IN ('mirror', 'mirror-remove')
+      AND lease_id IS NULL
+      AND abandoned_at IS NULL;
+
+  CREATE UNIQUE INDEX jobs_lease ON jobs (lease_id) WHERE lease_id IS NOT NULL;
+
+  CREATE INDEX jobs_claimable ON jobs (kind, next_attempt_at, enqueued_at, id);
+  CREATE INDEX jobs_subject   ON jobs (subject_kind, subject_id, kind);
+
+  CREATE INDEX jobs_abandoned
+    ON jobs (abandoned_at, subject_kind, subject_id, kind)
+    WHERE abandoned_at IS NOT NULL;
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";
