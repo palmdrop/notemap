@@ -30,6 +30,9 @@ describe("GET /v1/openapi.json", () => {
     expect(response.status).toBe(200);
     expect(document.openapi).toBe("3.1.0");
     expect(Object.keys(document.paths).sort()).toEqual([
+      "/v1/account-kinds",
+      "/v1/accounts",
+      "/v1/accounts/{kind}/{name}",
       "/v1/actions",
       "/v1/archived",
       "/v1/assets/{id}",

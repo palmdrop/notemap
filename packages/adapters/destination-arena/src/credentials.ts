@@ -1,26 +1,15 @@
 import type { JsonObject, JsonSchema } from "@notemap/core";
 
-import { ARENA } from "./settings";
-
 /**
- * What an account of this kind must carry, checked when the daemon starts, and
- * it is only the secret: are.na has no username, and its address is a constant
- * of the service rather than anything an operator supplies.
- *
- * `secretFile` and `secretEnv` rather than `password*`: a bearer token is not a
- * password, and `token` is spent — in notemap an **access token** is a
- * credential notemap issues, and an account's secret is never notemap's.
+ * What an account of this kind must carry besides its secret, which is nothing:
+ * are.na has no username, and its address is a constant of the service rather
+ * than anything an operator supplies. The host owns the kind, the name and
+ * where the secret is read from.
  */
 export const ARENA_ACCOUNT: JsonSchema = {
   type: "object",
-  required: ["kind", "name"],
   additionalProperties: false,
-  properties: {
-    kind: { const: ARENA },
-    name: { type: "string", minLength: 1 },
-    secretFile: { type: "string", minLength: 1 },
-    secretEnv: { type: "string", minLength: 1 },
-  },
+  properties: {},
 };
 
 /** The whole of what this adapter is handed, and it never learns where it came from. */

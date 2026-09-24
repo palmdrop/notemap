@@ -5,6 +5,7 @@ export {
   type ArenaUpstream,
 } from "./arena.ts";
 export { browser, keepingCookies } from "./browser.ts";
+export { davServers, type DavServer } from "./dav.ts";
 export {
   NAME,
   PASSWORD,

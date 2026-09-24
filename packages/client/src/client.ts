@@ -42,6 +42,7 @@ import {
 import { createSessions } from "./session/session";
 import { createSources } from "./sources/sources";
 import { createTags } from "./tags/tags";
+import { createAccounts } from "./accounts/accounts";
 import { createTokens } from "./tokens/tokens";
 import { enter, loadMore, readAfterReturn } from "./surfaces/reads";
 import type { Client, ClientConfig, ListState } from "./types";
@@ -416,6 +417,7 @@ export function createClient(config: ClientConfig): Client {
     logout: () => sessions.logout(),
 
     tokens: createTokens({ api }),
+    accounts: createAccounts({ api }),
 
     feed: derived(
       state.changes,

@@ -81,6 +81,9 @@ export class Unencodable extends Error {
 const SAID: {
   readonly [C in RefusalCode]: string | ((facts: Facts) => string);
 } = {
+  "account-in-use": (facts) =>
+    `${String(facts["destinations"])} destination(s) still use that account; retire them first`,
+  "account-secret-missing": "a new account needs its password or token",
   "already-archived": "that item is already archived",
   "already-retired": "that destination is already retired",
   "asset-id-conflict":
@@ -107,6 +110,7 @@ const SAID: {
     "this daemon cannot make sense of that destination's settings",
   "digest-mismatch": "the upload arrived corrupted; pick the file again",
   "field-not-askable": "that field cannot be browsed; type it instead",
+  "invalid-account": "those are not details this kind of account can use",
   "invalid-destination-settings":
     "those settings are not ones this daemon can use",
   "item-purged": "that item was purged",
@@ -116,6 +120,8 @@ const SAID: {
   "malformed-json": "the app sent something this daemon cannot read",
   "missing-filename": "the file has no name",
   "no-output": "that delivery kept no copy of what it sent",
+  "no-such-account":
+    "that account is not held by this daemon; one in the config file is changed there",
   "no-such-asset": "the upload is gone; pick the file again",
   "no-such-item": "that item is not here",
   "no-such-record": "that routing record is not here",
@@ -129,8 +135,10 @@ const SAID: {
   "payload-type-unsupported":
     "that destination does not accept this kind of item",
   "rejected-by-destination": "the destination refused it",
-  "session-required": "only someone signed in may manage access tokens",
+  "session-required":
+    "only someone signed in may manage access tokens and accounts",
   "tag-invalid": "a tag needs something in it",
+  "unknown-account-kind": "this daemon has no kind of account by that name",
   "source-item-changed":
     "something else in the pool was captured under that id, saying something different",
   "arguments-invalid": "that destination needs different arguments",

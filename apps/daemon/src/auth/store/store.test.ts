@@ -3,10 +3,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import type { Timestamp } from "@notemap/core";
+import { migrate, openDatabase } from "@notemap/sqlite";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { SessionId, TokenId } from "../types";
 import { createSqliteAuthStore } from ".";
+import { MIGRATIONS } from "./migrations";
 import type { AuthStore } from "./types";
 
 const at = (value: string) => value as Timestamp;
@@ -49,6 +51,17 @@ const token = {
   createdAt: at("2026-08-29T09:00:00.000Z"),
 };
 
+const account = {
+  kind: "webdav",
+  name: "nextcloud",
+  fields: {
+    baseUrl: "https://cloud.example/remote.php/dav/files/anton",
+    username: "anton",
+  },
+  secret: "app-password",
+  changedAt: at("2026-09-23T09:00:00.000Z"),
+};
+
 describe("the database file", () => {
   /**
    * It holds the password hash, so it is the owner's alone. SQLite gives the
@@ -69,6 +82,29 @@ describe("the database file", () => {
       const mode = statSync(join(directory, name)).mode & 0o777;
       expect(mode.toString(8), name).toBe("600");
     }
+  });
+});
+
+describe("migrating", () => {
+  it("brings a database written before accounts up to date, keeping what it held", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "notemap-auth-"));
+    const file = join(directory, "auth.db");
+
+    const earlier = openDatabase({ file });
+    migrate(earlier.writer, MIGRATIONS.slice(0, 1), "auth");
+    earlier.writer
+      .prepare(
+        "INSERT INTO tokens (id, name, secret_hash, created_at) VALUES (?, ?, ?, ?)",
+      )
+      .run(token.id, token.name, token.secretHash, Date.parse(token.createdAt));
+    earlier.close();
+
+    const auth = createSqliteAuthStore({ file });
+    opened.push({ store: auth, directory });
+
+    expect(await auth.getToken(token.id)).toEqual(token);
+    await auth.putAccount(account);
+    expect(await auth.getAccount(account.kind, account.name)).toEqual(account);
   });
 });
 
@@ -183,6 +219,73 @@ describe("tokens", () => {
 
     await auth.deleteAllTokens();
     expect(await auth.listTokens()).toEqual([]);
+  });
+});
+
+describe("accounts", () => {
+  it("round-trips one, secret and all", async () => {
+    const auth = store();
+    await auth.putAccount(account);
+
+    expect(await auth.getAccount(account.kind, account.name)).toEqual(account);
+  });
+
+  it("answers for an account that was never there", async () => {
+    expect(await store().getAccount("webdav", "nobody")).toBeUndefined();
+  });
+
+  it("replaces one of the same kind and name rather than adding a second", async () => {
+    const auth = store();
+    await auth.putAccount(account);
+    const replaced = {
+      ...account,
+      fields: { ...account.fields, username: "someone-else" },
+      secret: "a newer secret",
+      changedAt: at("2026-09-24T09:00:00.000Z"),
+    };
+    await auth.putAccount(replaced);
+
+    expect(await auth.getAccount(account.kind, account.name)).toEqual(replaced);
+    expect(await auth.listAccounts()).toHaveLength(1);
+  });
+
+  it("keeps the same name under two kinds apart", async () => {
+    const auth = store();
+    await auth.putAccount(account);
+    await auth.putAccount({ ...account, kind: "arena", fields: {} });
+
+    expect(await auth.listAccounts()).toHaveLength(2);
+    expect(await auth.getAccount("webdav", account.name)).toEqual(account);
+  });
+
+  it("lists without the secret", async () => {
+    const auth = store();
+    await auth.putAccount(account);
+
+    const listed = await auth.listAccounts();
+
+    expect(listed).toEqual([
+      {
+        kind: account.kind,
+        name: account.name,
+        fields: account.fields,
+        changedAt: account.changedAt,
+      },
+    ]);
+    expect(JSON.stringify(listed)).not.toContain(account.secret);
+  });
+
+  it("forgets one when deleted, and only that one", async () => {
+    const auth = store();
+    await auth.putAccount(account);
+    await auth.putAccount({ ...account, name: "work" });
+
+    await auth.deleteAccount(account.kind, account.name);
+
+    expect(await auth.getAccount(account.kind, account.name)).toBeUndefined();
+    expect((await auth.listAccounts()).map((each) => each.name)).toEqual([
+      "work",
+    ]);
   });
 });
 

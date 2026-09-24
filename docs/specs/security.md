@@ -4,6 +4,13 @@
 **Last updated**: 2026-09-08
 **Shipped**:
 
+- 2026-09-23 — **An account may be stored by the daemon.** Set from settings by a signed-in
+  person, kept in `auth.db` with its secret recoverable, never in the pool or the mirror, and never
+  answered back. A bearer token cannot reach the account routes. A stored account replaces a config
+  one of the same kind and name entirely. See
+  [accounts-in-the-auth-db](../plans/accounts-in-the-auth-db.md) and
+  [ADR 49](../adr/0049-an-account-may-be-held-by-the-daemon.md).
+
 - 2026-09-08 — **An account's shape becomes its kind's, and the daemon writes to one address it was
   not configured with.** Each adapter publishes an account schema and the daemon validates every
   `[[accounts]]` block against its kind's at startup, refusing to run on one that fails; what stays
@@ -342,7 +349,18 @@ schema, the daemon validates every block against its kind's at startup and refus
 that fails, and the checks left in the config reader are the ones that hold for every kind — no
 inline secret, exactly one source for it, no two accounts under one kind and name. Nothing about
 the property changes: neither core nor the pool ever holds a secret, and an account schema is not
-published over `/v1`.
+published over `/v1` (until 2026-09-23, below).
+
+**An account may also be stored by the daemon** (added 2026-09-23,
+[ADR 49](../adr/0049-an-account-may-be-held-by-the-daemon.md)). A signed-in person can set one
+from settings. It goes into `auth.db`, never into the pool or the mirror. Its secret is kept as
+given, because it has to be presented rather than verified, so whoever can read `auth.db` can read
+it. Every account route requires a session, so the set of addresses the daemon authenticates to is
+still fixed by the operator: by the config file, or by the one person signed in at a browser, and
+never by a bearer token. A kind's account schema now covers only the fields beside the secret, and
+it is published over `/v1/account-kinds` so a form can be built from it. The secret, and where a
+config account reads it from, are the host's. A stored account is checked against the kind's schema
+when it is written, and a key naming a secret source is refused.
 
 **A destination may send an item's bytes to an address the service names at runtime**
 (added 2026-09-08). The are.na kind asks for a presigned upload URL and streams the asset to it,
@@ -492,7 +510,9 @@ destination. There is one exception, and it is a containment measure rather than
 model — **an access token may not manage access tokens**. `GET`, `POST` on `/v1/tokens` and
 `DELETE /v1/tokens/{id}` require a session, and a bearer token is refused with `session-required`.
 The reason is narrow: without it a leaked token mints a replacement, and revoking the token you
-know about leaves the one you do not.
+know about leaves the one you do not. The account routes — `/v1/account-kinds`, `/v1/accounts` and
+`/v1/accounts/{kind}/{name}` — are held to the same rule, for a different reason: a token that could
+write an account could aim the daemon at any address with a password attached.
 
 What that does not give:
 

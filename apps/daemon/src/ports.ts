@@ -34,19 +34,18 @@ import {
   type PayloadTypeName,
   type Pool,
   type PoolConfig,
-  type JsonSchema,
   type PoolPorts,
   type Timestamp,
 } from "@notemap/core";
 
-import { isSecretSource } from "./config/load";
+import { createAccounts, type AccountKinds, type Accounts } from "./accounts";
 import type { Logger } from "./log";
 import { logAction } from "./log/actions";
-import { accountsFor } from "./destinations/credentials";
 import { destinationRenderers } from "./destinations/renderers";
 import { renderersFor } from "./mirror/renderers";
 import { createAuth } from "./auth";
 import { createSqliteAuthStore } from "./auth/store";
+import type { AuthStore } from "./auth/store/types";
 import type { Account } from "./config/load";
 
 export const systemClock: Clock = {
@@ -70,7 +69,7 @@ export type OpenPoolConfig = {
    * closes over the resolver these make, so a secret reaches neither core nor
    * the pool — and a destination cannot name an address, only one of these.
    */
-  readonly accounts?: readonly Account[];
+  readonly accounts?: Accounts;
   /** Told each action the pool records. Absent is a pool nobody listens to. */
   readonly log?: Logger;
 };
@@ -132,15 +131,16 @@ export function openPool(options: OpenPoolConfig): OpenPool {
   ];
 
   const renderers = destinationRenderers();
-  const accounts = options.accounts ?? [];
+  const { accounts } = options;
   const schemas = createAjvSchemaValidator();
-  refuseUnusableAccounts(accounts, schemas);
 
-  const webdavAccounts = accounts.filter((account) => account.kind === WEBDAV);
-  const arenaAccounts = accounts.filter((account) => account.kind === ARENA);
-
-  const webdavCredentials = accountsFor(WEBDAV, accounts);
-  const arenaCredentials = accountsFor(ARENA, accounts);
+  const resolve = (kind: string, name: string) =>
+    accounts === undefined
+      ? Promise.reject(
+          new Error(`no ${kind} account named ${name} is configured`),
+        )
+      : accounts.resolve(kind, name);
+  const names = (kind: string) => () => accounts?.names(kind) ?? [];
 
   const destinations = destinationRegistry([
     createFilesystemDestination({
@@ -151,15 +151,15 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     createWebdavDestination({
       renderers,
       accepts: everyPayloadType,
-      credentials: (name) => webdavCredentials(name).then(asWebdavCredential),
-      accounts: webdavAccounts.map((account) => account.name),
+      credentials: (name) => resolve(WEBDAV, name).then(asWebdavCredential),
+      accounts: names(WEBDAV),
     }),
     createArenaDestination({
       // Not `everyPayloadType`: what has a block form is the kind's own to
       // say, and core refuses the rest before a decision is made.
       renderers: arenaRenderers(),
-      credentials: (name) => arenaCredentials(name).then(asArenaCredential),
-      accounts: arenaAccounts.map((account) => account.name),
+      credentials: (name) => resolve(ARENA, name).then(asArenaCredential),
+      accounts: names(ARENA),
     }),
   ]);
 
@@ -200,10 +200,12 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     destinations,
     // What an account is reached over is the adapter's to judge; the host asks.
     warnings: transportWarnings(
-      webdavAccounts.map((account) => ({
-        name: account.name,
-        baseUrl: String(account["baseUrl"]),
-      })),
+      (accounts?.list() ?? [])
+        .filter((account) => account.kind === WEBDAV)
+        .map((account) => ({
+          name: account.name,
+          baseUrl: String(account.fields["baseUrl"]),
+        })),
     ),
   };
 }
@@ -230,68 +232,32 @@ export const openAuth = (
     ...(log === undefined ? {} : { log }),
   });
 
-  return auth;
+  return { auth, store };
 };
 
+type OpenAccountsConfig = {
+  readonly store: AuthStore;
+  readonly config: readonly Account[];
+  readonly clock: Clock;
+};
+
+/** Refuses to open over a config account its kind would not take. */
+export const openAccounts = ({ store, config, clock }: OpenAccountsConfig) =>
+  createAccounts({
+    kinds: ACCOUNT_SCHEMAS,
+    schemas: createAjvSchemaValidator(),
+    clock,
+    store,
+    config,
+  });
+
 /**
- * What an account of a given kind must carry is that kind's own, and this is
- * where the daemon asks. At startup rather than at the first delivery: a
- * malformed account otherwise fails hours later, on a runner's timer, where
- * nobody is looking.
- *
- * A kind nothing registers is refused too. An account naming one is a typo, and
- * starting anyway would leave a destination that can never deliver.
+ * What an account of a given kind must carry besides its secret is that kind's
+ * own, and this is where the daemon asks. Its kind, its name and where its
+ * secret comes from are the host's, the same for every kind, so no schema
+ * names them.
  */
-const ACCOUNT_SCHEMAS: Readonly<Record<string, JsonSchema>> = {
+export const ACCOUNT_SCHEMAS: AccountKinds = {
   [WEBDAV]: WEBDAV_ACCOUNT,
   [ARENA]: ARENA_ACCOUNT,
 };
-
-/**
- * That a kind's schema and the config reader agree on where a secret is read
- * from. The reader recognises a source by its suffix alone and enforces *one of
- * them* there; a kind spelling its own `credentialsPath` would satisfy this
- * schema and then die at load against a convention the schema never mentioned.
- * Checked here, at startup, so the mismatch is caught where it is made.
- */
-function refuseKindWithNoSecretSource(kind: string, schema: JsonSchema): void {
-  const properties = schema["properties"];
-  const named =
-    properties !== null && typeof properties === "object"
-      ? Object.keys(properties as Record<string, unknown>)
-      : [];
-
-  if (!named.some(isSecretSource)) {
-    throw new Error(
-      `the ${kind} kind declares an account with no key ending in File or Env, which is how the config reader finds a secret — name one, or that kind's accounts can never be read`,
-    );
-  }
-}
-
-export function refuseUnusableAccounts(
-  accounts: readonly Account[],
-  schemas: PoolPorts["schemas"],
-): void {
-  for (const [kind, schema] of Object.entries(ACCOUNT_SCHEMAS)) {
-    refuseKindWithNoSecretSource(kind, schema);
-  }
-
-  for (const account of accounts) {
-    const at = `the ${account.kind} account ${account.name}`;
-    const schema = ACCOUNT_SCHEMAS[account.kind];
-
-    if (schema === undefined) {
-      throw new Error(
-        `${at} names a kind nothing speaks — the kinds that hold an account are ${Object.keys(ACCOUNT_SCHEMAS).join(" and ")}`,
-      );
-    }
-
-    const issues = schemas.validate(schema, account);
-    if (issues.length > 0) {
-      const said = issues
-        .map((issue) => `${issue.path || "(root)"} ${issue.keyword}`)
-        .join("; ");
-      throw new Error(`${at} is not a ${account.kind} account: ${said}`);
-    }
-  }
-}

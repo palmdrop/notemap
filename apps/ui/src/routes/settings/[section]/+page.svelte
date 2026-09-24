@@ -1,5 +1,6 @@
 <script lang="ts">
-  import Account from "$components/settings/Account.svelte";
+  import Access from "$components/settings/Access.svelte";
+  import Accounts from "$components/settings/Accounts.svelte";
   import Appearance from "$components/settings/Appearance.svelte";
   import Destinations from "$components/settings/Destinations.svelte";
   import Server from "$components/settings/Server.svelte";
@@ -13,8 +14,10 @@
   <Destinations />
 {:else if data.section === "templates"}
   <Templates />
-{:else if data.section === "account"}
-  <Account />
+{:else if data.section === "accounts"}
+  <Accounts />
+{:else if data.section === "access"}
+  <Access />
 {:else if data.section === "server"}
   <Server />
 {:else}

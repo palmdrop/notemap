@@ -1,9 +1,20 @@
 import { openDatabase, migrate, statements } from "@notemap/sqlite";
 import { MIGRATIONS } from "./migrations";
-import { toCredential, toMillis, toSession, toToken } from "./mapping";
 import {
+  toAccount,
+  toAccountListing,
+  toCredential,
+  toMillis,
+  toSession,
+  toToken,
+} from "./mapping";
+import {
+  ACCOUNT_COLUMNS,
+  ACCOUNT_LISTING_COLUMNS,
   CREDENTIAL_COLUMNS,
   TOKEN_COLUMNS,
+  type AccountListingRow,
+  type AccountRow,
   type CredentialRow,
   type SessionRow,
   type TokenRow,
@@ -112,6 +123,27 @@ export const createSqliteAuthStore = (config: Config): AuthStore => {
     DELETE FROM tokens
   `);
 
+  const listAccounts = query<AccountListingRow, []>(`
+    SELECT ${ACCOUNT_LISTING_COLUMNS} FROM accounts ORDER BY kind, name
+  `);
+
+  const getAccount = query<AccountRow, [string, string]>(`
+    SELECT ${ACCOUNT_COLUMNS} FROM accounts WHERE kind = ? AND name = ?
+  `);
+
+  const putAccount = query<never, [string, string, string, string, number]>(`
+    INSERT INTO accounts (kind, name, fields, secret, changed_at)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT (kind, name) DO UPDATE SET
+      fields = excluded.fields,
+      secret = excluded.secret,
+      changed_at = excluded.changed_at
+  `);
+
+  const deleteAccount = query<never, [string, string]>(`
+    DELETE FROM accounts WHERE kind = ? AND name = ?
+  `);
+
   const deleteExpiredSessions = query<never, [number]>(`
     DELETE FROM sessions WHERE expires_at <= ?
   `);
@@ -185,6 +217,23 @@ export const createSqliteAuthStore = (config: Config): AuthStore => {
     },
     deleteAllTokens: async () => {
       deleteAllTokens.run();
+    },
+    listAccounts: async () => listAccounts.all().map(toAccountListing),
+    getAccount: async (kind, name) => {
+      const row = getAccount.get(kind, name);
+      return row && toAccount(row);
+    },
+    putAccount: async (account) => {
+      putAccount.run(
+        account.kind,
+        account.name,
+        JSON.stringify(account.fields),
+        account.secret,
+        toMillis(account.changedAt),
+      );
+    },
+    deleteAccount: async (kind, name) => {
+      deleteAccount.run(kind, name);
     },
     close: async () => database.close(),
   };

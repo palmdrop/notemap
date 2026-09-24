@@ -4,7 +4,9 @@
 **Status**: Accepted — narrows [ADR 20](0020-destinations-are-pool-state.md). Amended 2026-09-02:
 the word is **account** and the config block is `[[accounts]]`, generic across kinds, and plain
 HTTP to an address that is not private is warned about rather than refused. The decision is
-unchanged; what changed is the spelling of it and one enforcement that was wrong in practice
+unchanged; what changed is the spelling of it and one enforcement that was wrong in practice.
+Amended by [ADR 49](0049-an-account-may-be-held-by-the-daemon.md): an account may also be stored
+by the daemon and set by a signed-in person; a destination still holds no address or secret
 **Deciders**: palmdrop, with Claude
 
 ---

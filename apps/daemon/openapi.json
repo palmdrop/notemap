@@ -174,6 +174,135 @@
           "name"
         ]
       },
+      "AccountKinds": {
+        "type": "object",
+        "properties": {
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountKind"
+            }
+          }
+        },
+        "required": [
+          "values"
+        ]
+      },
+      "AccountKind": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "accountSchema": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "name",
+          "accountSchema"
+        ]
+      },
+      "Accounts": {
+        "type": "object",
+        "properties": {
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Account"
+            }
+          }
+        },
+        "required": [
+          "values"
+        ]
+      },
+      "Account": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "example": "webdav"
+          },
+          "name": {
+            "type": "string",
+            "example": "nextcloud"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "What the kind asks an account to carry besides its secret. Never the secret, and never where it is read from.",
+            "example": {
+              "baseUrl": "https://cloud.example/remote.php/dav/files/alice",
+              "username": "alice"
+            }
+          },
+          "from": {
+            "type": "string",
+            "enum": [
+              "config",
+              "stored"
+            ],
+            "description": "`config` is declared under `[[accounts]]`; `stored` is held by the daemon and set over this API."
+          },
+          "shadowed": {
+            "type": "boolean",
+            "description": "A config account a stored one of the same kind and name replaces entirely. Listed so it is not silently dropped; never used."
+          },
+          "secretSet": {
+            "type": "boolean",
+            "description": "Whether a secret could be presented now: always for a stored account, and for a config one whether its file or variable can be read."
+          },
+          "changedAt": {
+            "type": "string",
+            "description": "When a stored account was last written.",
+            "example": "2026-09-23T09:00:00.000Z"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "fields",
+          "from",
+          "shadowed",
+          "secretSet"
+        ]
+      },
+      "PutAccountRequest": {
+        "type": "object",
+        "properties": {
+          "fields": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Must satisfy the kind's `accountSchema`."
+          },
+          "secret": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The password or token presented to the other system. Required to create; left out on a replacement, the secret already held is kept."
+          }
+        },
+        "required": [
+          "fields"
+        ],
+        "additionalProperties": false
+      },
+      "RemovedAccount": {
+        "type": "object",
+        "properties": {
+          "revealed": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Account"
+              },
+              {
+                "description": "The config account of the same kind and name, now in use again. Absent where there is none."
+              }
+            ]
+          }
+        }
+      },
       "CaptureOutcome": {
         "anyOf": [
           {
@@ -2587,6 +2716,436 @@
                           "type": "string",
                           "enum": [
                             "session-required"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account-kinds": {
+      "get": {
+        "summary": "Read the kinds that hold an account",
+        "description": "Each with the `accountSchema` an account of that kind must satisfy besides its secret, which is what a client builds its form from. The same arrangement as `GET /v1/destination-kinds`. **A session is required.**",
+        "responses": {
+          "200": {
+            "description": "Every kind that holds an account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountKinds"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated by an access token. Accounts are managed from a signed-in browser alone: whoever writes one can aim the daemon at any address with a password attached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "session-required"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/accounts": {
+      "get": {
+        "summary": "Read the accounts the daemon can reach other systems with",
+        "description": "Every account, from config and held by the daemon alike, with the fields beside its secret. **No route answers a secret, ever**: `secretSet` says whether there is one, and that is all. A config account a stored one replaces is listed with `shadowed`, so it is never silently dropped. **A session is required.**",
+        "responses": {
+          "200": {
+            "description": "Every account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accounts"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated by an access token. Accounts are managed from a signed-in browser alone: whoever writes one can aim the daemon at any address with a password attached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "session-required"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/accounts/{kind}/{name}": {
+      "put": {
+        "summary": "Create or replace an account held by the daemon",
+        "description": "Stored in the daemon's own database, beside the credential and never in the pool, so it is neither answered by any other route nor written to the mirror. The secret is stored as given: it is presented to another system, so unlike a password it cannot be hashed. A stored account replaces a config one of the same kind and name entirely. Leaving `secret` out keeps the one already held, and is refused where none is. **A session is required.**",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "kind",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutAccountRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stored. Without its secret.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body could not be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "malformed-json",
+                            "malformed-envelope"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated by an access token. Accounts are managed from a signed-in browser alone: whoever writes one can aim the daemon at any address with a password attached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "session-required"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No kind of that name holds an account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unknown-account-kind",
+                            "no-such-account"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The body was not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unsupported-media-type"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The fields do not satisfy the kind's `accountSchema`, or no secret is held or given.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "invalid-account",
+                            "account-secret-missing"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Forget an account held by the daemon",
+        "description": "Removes the stored account. A config account of the same kind and name is used again, and answered as `revealed`. Where there is none, removal is refused while a destination that is not retired names the account. A config account cannot be removed here. **A session is required.**",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "kind",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Forgotten.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemovedAccount"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated by an access token. Accounts are managed from a signed-in browser alone: whoever writes one can aim the daemon at any address with a password attached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "session-required"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No stored account has that kind and name.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unknown-account-kind",
+                            "no-such-account"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A destination that is not retired still names it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "account-in-use"
                           ]
                         }
                       },

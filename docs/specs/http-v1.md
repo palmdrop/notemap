@@ -2,8 +2,14 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one and health are settled; the rest is stub
-**Last updated**: 2026-09-20
+**Last updated**: 2026-09-23
 **Shipped**:
+
+- 2026-09-23 — **Accounts over `/v1`, for a session only.** `GET /v1/account-kinds`,
+  `GET /v1/accounts`, and `PUT` and `DELETE /v1/accounts/{kind}/{name}` read, store, replace and
+  forget an account the daemon holds in `auth.db`, beside the ones config declares. No route answers
+  a secret. A bearer token is refused on all four. See
+  [accounts-in-the-auth-db](../plans/accounts-in-the-auth-db.md).
 
 - 2026-09-20 — **The daemon logs.** Every action the pool records, every refusal and failure,
   the startup facts and the auth events reach stdout as one levelled line each, text by default
@@ -1084,6 +1090,38 @@ level up: the daemon publishes what a kind needs and holds no opinion about how 
   daemon is actually running, are questions only the daemon can answer.
 - Routing to a retired or unusable destination is refused, with which of the two it was.
 
+### Accounts
+
+The accounts the daemon reaches other systems with
+([ADR 49](../adr/0049-an-account-may-be-held-by-the-daemon.md)). **Every route here requires a
+session**, and a bearer token is refused `403 session-required`: whoever can write an account can
+point the daemon at any address, with a password attached. **No route answers a secret**, for any
+caller and in any shape.
+
+`GET /v1/account-kinds` — each kind that holds an account, with an `accountSchema` of the fields
+beside its secret. It is the account form's counterpart to `GET /v1/destination-kinds`.
+
+`GET /v1/accounts` — every account, config and stored. Each carries `kind`, `name`, `fields`,
+`from` (`config` or `stored`), `secretSet`, `shadowed`, and `changedAt` for a stored one.
+`secretSet` is always true for a stored account. For a config one it says whether its file or
+variable can be read now. A config account a stored one of the same kind and name replaces is still
+listed, with `shadowed: true`.
+
+`PUT /v1/accounts/{kind}/{name}` — create or replace a stored account from `fields` and an
+optional `secret`. It is used whole from the next delivery on, and replaces a config account of the
+same kind and name. Leaving `secret` out keeps the one already held.
+
+- `fields` are checked against the kind's `accountSchema`, and a key ending in `File` or `Env` is
+  refused whatever the schema allows. Both are `422 invalid-account`, with `issues`.
+- No secret given and none held is `422 account-secret-missing`. A config account's secret is never
+  copied across.
+- A kind that holds no account is `404 unknown-account-kind`.
+
+`DELETE /v1/accounts/{kind}/{name}` — forget a stored account. Where a config account of the same
+kind and name exists, it is used again and answered as `revealed`. Where none does, removal is
+`409 account-in-use`, with the count, while a destination that is not retired names the account.
+A config account is not stored, so removing one is `404 no-such-account`.
+
 ### Routing templates
 
 `GET /v1/templates` — the templates the pool holds. A read of pool state on `/v1/destinations`'
@@ -1645,6 +1683,8 @@ Every error, from core or from the daemon, is one shape:
 | `404` | `no-such-record` | `record` | core |
 | `404` | `unknown-destination` | `destination` | core (on `/v1/destinations/{id}`) |
 | `404` | `unknown-template` | `template` | core |
+| `404` | `unknown-account-kind` | `accountKind` | daemon |
+| `404` | `no-such-account` | `accountKind`, `name` | daemon |
 | `405` | `method-not-allowed` | `method`, `allow` | daemon (+ `Allow` header) |
 | `409` | `asset-id-conflict` | `asset` | core |
 | `409` | `capture-id-conflict` | `existing` | core |
@@ -1659,6 +1699,7 @@ Every error, from core or from the daemon, is one shape:
 | `409` | `destination-retired` | `destination` | core |
 | `409` | `destination-unusable` | `destination`, `detail` | core |
 | `409` | `trigger-tag-taken` | `tag`, `template` | core |
+| `409` | `account-in-use` | `destinations` | daemon |
 | `413` | `asset-too-large` | `max` | daemon |
 | `415` | `unsupported-media-type` | `contentType` | daemon |
 | `422` | `limit-too-large` | `limit`, `max` | daemon |
@@ -1691,6 +1732,8 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `rejected-by-destination` | `detail` | core |
 | `422` | `delivery-outcome-unknown` | `detail` | core |
 | `422` | `not-a-session` | `presented` | daemon |
+| `422` | `invalid-account` | `issues` | daemon |
+| `422` | `account-secret-missing` | — | daemon |
 | `422` | `unreachable` | `detail` | core |
 | `429` | `too-many-attempts` | `retryAfter` | daemon (+ `Retry-After` header) |
 

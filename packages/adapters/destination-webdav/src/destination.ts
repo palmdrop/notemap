@@ -62,7 +62,7 @@ export type WebdavDestinationConfig = {
   /** Turns an account's name into the account. The adapter never learns where one is held. */
   readonly credentials: CredentialResolver;
   /** Names only: an address or a secret here is one `/v1` would answer with. */
-  readonly accounts?: readonly string[];
+  readonly accounts?: () => readonly string[];
 };
 
 export function createWebdavDestination(
@@ -72,7 +72,10 @@ export function createWebdavDestination(
 
   return {
     name: WEBDAV,
-    settingsSchema: webdavSettings(config.accounts ?? []),
+    // Asked each time: an account may be added while the daemon runs.
+    get settingsSchema() {
+      return webdavSettings(config.accounts?.() ?? []);
+    },
 
     /**
      * Never touches the network, exactly as the filesystem kind refuses to

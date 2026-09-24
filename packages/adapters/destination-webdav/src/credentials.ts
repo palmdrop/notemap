@@ -1,32 +1,26 @@
 import type { JsonObject, JsonSchema } from "@notemap/core";
 
-import { WEBDAV } from "./settings";
-
 /**
- * What an account of this kind must carry, checked when the daemon starts. The
- * secret is a **password**, because that is what Basic authentication holds,
- * and `additionalProperties: false` is what turns a misspelt key into a refusal
- * rather than a daemon running without the credential somebody meant to give it.
+ * What an account of this kind must carry besides its secret, which is a
+ * **password**: that is what Basic authentication holds. The host owns the
+ * account's kind and name and where its secret is read from, so none of them
+ * is here. `additionalProperties: false` is what turns a misspelt key into a
+ * refusal rather than an account missing what somebody meant to give it.
  *
- * The scheme is checked here rather than in the daemon's config reader: it is a
- * statement about Basic auth over a URL and means nothing to a kind that has no
- * URL.
+ * The scheme is checked here rather than by the host: it is a statement about
+ * Basic auth over a URL and means nothing to a kind that has no URL.
  */
 export const WEBDAV_ACCOUNT: JsonSchema = {
   type: "object",
-  required: ["kind", "name", "baseUrl", "username"],
+  required: ["baseUrl", "username"],
   additionalProperties: false,
   properties: {
-    kind: { const: WEBDAV },
-    name: { type: "string", minLength: 1 },
     baseUrl: {
       type: "string",
       pattern: "^https?://",
       description: "The collection everything is resolved against.",
     },
     username: { type: "string", minLength: 1 },
-    passwordFile: { type: "string", minLength: 1 },
-    passwordEnv: { type: "string", minLength: 1 },
   },
 };
 

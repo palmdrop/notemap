@@ -70,6 +70,10 @@ export type RememberedRequest =
 export type Token = components["schemas"]["Token"];
 export type MintedToken = components["schemas"]["MintedToken"];
 export type MintTokenRequest = components["schemas"]["MintTokenRequest"];
+export type Account = components["schemas"]["Account"];
+export type AccountKind = components["schemas"]["AccountKind"];
+export type PutAccountRequest = components["schemas"]["PutAccountRequest"];
+export type RemovedAccount = components["schemas"]["RemovedAccount"];
 
 export type RouteRequest = components["schemas"]["RouteRequest"];
 /** What a destination says it would write. Indicative, never binding. */

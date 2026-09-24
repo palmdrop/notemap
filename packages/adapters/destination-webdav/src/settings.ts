@@ -35,7 +35,7 @@ export function webdavSettings(accounts: readonly string[]): JsonSchema {
         minLength: 1,
         title: "Account",
         description:
-          "The name of an account in the daemon's configuration, under `[[accounts]]`. The address and the password are the account's, not this destination's.",
+          "The name of an account, set in settings or declared under `[[accounts]]` in the daemon's config. The address and the password are the account's, not this destination's.",
         ...(accounts.length === 0 ? {} : { examples: [...accounts] }),
       },
       root: {

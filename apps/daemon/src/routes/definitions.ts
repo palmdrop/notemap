@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { JSON_MEDIA_TYPE, MAX_LIMIT } from "../constants";
 import {
+  ACCOUNT_STATUS,
   ARCHIVE_STATUS,
   AUTH_STATUS,
   ASSET_STATUS,
@@ -26,6 +27,13 @@ import {
   UPLOAD_STATUS,
   TEMPLATE_STATUS,
 } from "../errors/refusals";
+import {
+  accountKindsSchema,
+  accountSchema,
+  accountsSchema,
+  putAccountRequestSchema,
+  removedAccountSchema,
+} from "../schemas/account";
 import { actionSliceSchema } from "../schemas/action";
 import {
   archiveRequestSchema,
@@ -1400,6 +1408,107 @@ export const assetContentRoute = createRoute({
   },
 });
 
+const accountAddress = z.object({
+  kind: z.string().openapi({ param: { name: "kind", in: "path" } }),
+  name: z.string().openapi({ param: { name: "name", in: "path" } }),
+});
+
+const ACCOUNT_SESSION_ONLY = errorResponse(
+  "Authenticated by an access token. Accounts are managed from a signed-in browser alone: whoever writes one can aim the daemon at any address with a password attached.",
+  403,
+  AUTH_STATUS,
+);
+
+export const accountKindsRoute = createRoute({
+  method: "get",
+  path: "/v1/account-kinds",
+  summary: "Read the kinds that hold an account",
+  description:
+    "Each with the `accountSchema` an account of that kind must satisfy besides its secret, which is what a client builds its form from. The same arrangement as `GET /v1/destination-kinds`. **A session is required.**",
+  responses: {
+    200: {
+      description: "Every kind that holds an account.",
+      content: { [JSON_MEDIA_TYPE]: { schema: accountKindsSchema } },
+    },
+    403: ACCOUNT_SESSION_ONLY,
+  },
+});
+
+export const accountsRoute = createRoute({
+  method: "get",
+  path: "/v1/accounts",
+  summary: "Read the accounts the daemon can reach other systems with",
+  description:
+    "Every account, from config and held by the daemon alike, with the fields beside its secret. **No route answers a secret, ever**: `secretSet` says whether there is one, and that is all. A config account a stored one replaces is listed with `shadowed`, so it is never silently dropped. **A session is required.**",
+  responses: {
+    200: {
+      description: "Every account.",
+      content: { [JSON_MEDIA_TYPE]: { schema: accountsSchema } },
+    },
+    403: ACCOUNT_SESSION_ONLY,
+  },
+});
+
+export const putAccountRoute = createRoute({
+  method: "put",
+  path: "/v1/accounts/{kind}/{name}",
+  summary: "Create or replace an account held by the daemon",
+  description:
+    "Stored in the daemon's own database, beside the credential and never in the pool, so it is neither answered by any other route nor written to the mirror. The secret is stored as given: it is presented to another system, so unlike a password it cannot be hashed. A stored account replaces a config one of the same kind and name entirely. Leaving `secret` out keeps the one already held, and is refused where none is. **A session is required.**",
+  request: {
+    params: accountAddress,
+    body: {
+      required: true,
+      content: { [JSON_MEDIA_TYPE]: { schema: putAccountRequestSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Stored. Without its secret.",
+      content: { [JSON_MEDIA_TYPE]: { schema: accountSchema } },
+    },
+    400: errorResponse("The body could not be read.", 400, BODY_STATUS),
+    403: ACCOUNT_SESSION_ONLY,
+    404: errorResponse(
+      "No kind of that name holds an account.",
+      404,
+      ACCOUNT_STATUS,
+    ),
+    415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
+    422: errorResponse(
+      "The fields do not satisfy the kind's `accountSchema`, or no secret is held or given.",
+      422,
+      ACCOUNT_STATUS,
+    ),
+  },
+});
+
+export const removeAccountRoute = createRoute({
+  method: "delete",
+  path: "/v1/accounts/{kind}/{name}",
+  summary: "Forget an account held by the daemon",
+  description:
+    "Removes the stored account. A config account of the same kind and name is used again, and answered as `revealed`. Where there is none, removal is refused while a destination that is not retired names the account. A config account cannot be removed here. **A session is required.**",
+  request: { params: accountAddress },
+  responses: {
+    200: {
+      description: "Forgotten.",
+      content: { [JSON_MEDIA_TYPE]: { schema: removedAccountSchema } },
+    },
+    403: ACCOUNT_SESSION_ONLY,
+    404: errorResponse(
+      "No stored account has that kind and name.",
+      404,
+      ACCOUNT_STATUS,
+    ),
+    409: errorResponse(
+      "A destination that is not retired still names it.",
+      409,
+      ACCOUNT_STATUS,
+    ),
+  },
+});
+
 export const ROUTES = [
   healthRoute,
   loginRoute,
@@ -1409,6 +1518,10 @@ export const ROUTES = [
   tokensRoute,
   mintTokenRoute,
   revokeTokenRoute,
+  accountKindsRoute,
+  accountsRoute,
+  putAccountRoute,
+  removeAccountRoute,
   captureRoute,
   feedRoute,
   queueRoute,

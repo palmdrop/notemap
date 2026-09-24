@@ -37,7 +37,7 @@ export type ArenaDestinationConfig = {
   /** Turns an account's name into the token. The adapter never learns where one is held. */
   readonly credentials: CredentialResolver;
   /** Names only: a token here is one `/v1` would answer with. */
-  readonly accounts?: readonly string[];
+  readonly accounts?: () => readonly string[];
   /** Host-wired, so the suite can point at a fake. Never config and never a setting. */
   readonly baseUrl?: string;
   readonly uploadsUrl?: string;
@@ -61,7 +61,10 @@ export function createArenaDestination(
 
   return {
     name: ARENA,
-    settingsSchema: arenaSettings(config.accounts ?? []),
+    // Asked each time: an account may be added while the daemon runs.
+    get settingsSchema() {
+      return arenaSettings(config.accounts?.() ?? []);
+    },
 
     /**
      * Never touches the network, exactly as both file kinds refuse to: a

@@ -27,6 +27,16 @@ export type TokenRow = {
   readonly last_used_at: number | null;
 };
 
+export type AccountRow = {
+  readonly kind: string;
+  readonly name: string;
+  readonly fields: string;
+  readonly secret: string;
+  readonly changed_at: number;
+};
+
+export type AccountListingRow = Omit<AccountRow, "secret">;
+
 /** Every table the migrations create, and the columns each row is read as. */
 export const TABLE_COLUMNS = {
   credential: ["id", "username", "password_hash", "changed_at"],
@@ -39,8 +49,13 @@ export const TABLE_COLUMNS = {
     "expires_at",
     "last_used_at",
   ],
+  accounts: ["kind", "name", "fields", "secret", "changed_at"],
 } as const satisfies Record<string, readonly string[]>;
 
 export const CREDENTIAL_COLUMNS = TABLE_COLUMNS.credential.join(", ");
 export const SESSION_COLUMNS = TABLE_COLUMNS.sessions.join(", ");
 export const TOKEN_COLUMNS = TABLE_COLUMNS.tokens.join(", ");
+export const ACCOUNT_COLUMNS = TABLE_COLUMNS.accounts.join(", ");
+export const ACCOUNT_LISTING_COLUMNS = TABLE_COLUMNS.accounts
+  .filter((column) => column !== "secret")
+  .join(", ");

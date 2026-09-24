@@ -116,7 +116,7 @@
   }
 </script>
 
-<Section name="account">
+<Section name="access">
   {#if who.canSignOut}
     <Fact name="signed in">
       <span class="flex flex-wrap items-baseline justify-between gap-x-[2ch]">

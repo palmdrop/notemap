@@ -4,7 +4,7 @@ import { expect, test, vi } from "vitest";
 import { json, routeOf } from "@notemap/client/testing";
 
 import { asked, pool } from "$testing/pool";
-import Account from "./Account.svelte";
+import Access from "./Access.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
@@ -55,7 +55,7 @@ test("offers signing out where there is a session to end", async () => {
       : json(200, {}),
   );
 
-  render(Account);
+  render(Access);
 
   expect(
     await screen.findByRole("button", { name: /sign out/i }),
@@ -68,7 +68,7 @@ test("offers no way out of a daemon that asks for nothing", async () => {
     routeOf(request) === "GET /v1/session" ? said(false, false) : json(200, {}),
   );
 
-  render(Account);
+  render(Access);
 
   expect(await screen.findByText(/no password is set/i)).toBeDefined();
   expect(screen.queryByRole("button", { name: /sign out/i })).toBeNull();
@@ -85,7 +85,7 @@ test("signing out tells the daemon", async () => {
     return json(200, {});
   });
 
-  render(Account);
+  render(Access);
 
   await fireEvent.click(
     await screen.findByRole("button", { name: /sign out/i }),
@@ -107,7 +107,7 @@ test("a token-carrying shell is not offered the tokens at all", async () => {
       : json(200, {}),
   );
 
-  render(Account);
+  render(Access);
 
   // The routes are a session's alone, so asking would only be refused.
   await waitFor(() => {
@@ -120,7 +120,7 @@ test("a token-carrying shell is not offered the tokens at all", async () => {
 test("what exists is listed, with no secret among it", async () => {
   holding([HELD]);
 
-  render(Account);
+  render(Access);
 
   await waitFor(() => {
     expect(screen.getByText(HELD.name)).toBeTruthy();
@@ -138,7 +138,7 @@ test("a minted token is shown once, and not again", async () => {
     return json(201, { ...HELD, token: "nmp.gpeukvybsmmgwnec.qK9v" });
   });
 
-  render(Account);
+  render(Access);
 
   await fireEvent.click(await settled(/\+ add a token/));
   await fireEvent.input(screen.getByLabelText("name"), {
@@ -172,7 +172,7 @@ test("revoking one takes it off the list", async () => {
     return undefined;
   });
 
-  render(Account);
+  render(Access);
   await waitFor(() => {
     expect(screen.getByText(HELD.name)).toBeTruthy();
   });
@@ -191,7 +191,7 @@ test("a refusal is said where the person is looking", async () => {
       : undefined,
   );
 
-  render(Account);
+  render(Access);
 
   await waitFor(() => {
     expect(screen.getByRole("status").textContent).toBeTruthy();

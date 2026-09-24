@@ -10,7 +10,7 @@ import { cookieOptionsFor, loadConfig } from "./config/load";
 import { SHUTDOWN_GRACE_MS } from "./constants";
 import { startDeliveryRunner } from "./destinations/runner";
 import { startMirrorRunner } from "./mirror/runner";
-import { openPool, openAuth } from "./ports";
+import { openAccounts, openAuth, openPool, systemClock } from "./ports";
 import { runCliCommand } from "./cli";
 import { FORGET_EXPIRED_EVERY_MS } from "./auth/config";
 import { provisionCredential } from "./auth/provision";
@@ -39,6 +39,31 @@ async function start(): Promise<void> {
     );
   }
 
+  mkdirSync(dirname(config.auth), { recursive: true });
+
+  const { auth, store: authStore } = openAuth(
+    {
+      file: config.auth,
+    },
+    {
+      clock: systemClock,
+      log,
+    },
+  );
+
+  const accounts = await openAccounts({
+    store: authStore,
+    config: config.accounts,
+    clock: systemClock,
+  });
+
+  for (const each of accounts.shadowed()) {
+    log.warn(
+      { account: `${each.name} (${each.kind})` },
+      "an account held by the daemon has the same kind and name as one in the config, so the config one is ignored",
+    );
+  }
+
   mkdirSync(dirname(config.pool), { recursive: true });
 
   const {
@@ -52,7 +77,7 @@ async function start(): Promise<void> {
     config: config.poolConfig,
     assetRoot: config.assets.root,
     ...(config.mirror === undefined ? {} : { mirrorRoot: config.mirror.root }),
-    accounts: config.accounts,
+    accounts,
     log,
   });
 
@@ -61,18 +86,6 @@ async function start(): Promise<void> {
   for (const line of wired) {
     log.warn(line);
   }
-
-  mkdirSync(dirname(config.auth), { recursive: true });
-
-  const auth = openAuth(
-    {
-      file: config.auth,
-    },
-    {
-      clock: ports.clock,
-      log,
-    },
-  );
 
   // Before anything listens: a daemon told to arrive with a door must not
   // answer a request through the moment before it has one.
@@ -123,6 +136,7 @@ async function start(): Promise<void> {
       fetch: createApp(pool, {
         limits: config.assets,
         auth,
+        accounts,
         cookies,
         ...(config.origin === undefined ? {} : { origin: config.origin }),
         throttle: createLoginThrottle({ clock: ports.clock }),
@@ -141,11 +155,12 @@ async function start(): Promise<void> {
       }
       log.info({ assets: config.assets.root }, "assets");
 
-      if (config.accounts.length > 0) {
+      const held = accounts.list();
+      if (held.length > 0) {
         log.info(
           {
-            accounts: config.accounts.map(
-              (each) => `${each.name} (${each.kind})`,
+            accounts: held.map(
+              (each) => `${each.name} (${each.kind}, ${each.from})`,
             ),
           },
           "accounts",
