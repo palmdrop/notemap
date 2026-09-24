@@ -8,6 +8,8 @@
 !docker/compose/.env
 *.pem
 *.key
+# A self-signed key for `unfurl.test`, trusted by nothing but the TLS tests.
+!apps/daemon/src/testing/tls/unfurl.test.key
 
 # A pool and everything around it (ADR 1). A pool normally lives outside the
 # repo, but dev runs and tests put one here.
