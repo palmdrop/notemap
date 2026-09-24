@@ -4066,6 +4066,82 @@ export interface paths {
         };
         trace?: never;
     };
+    "/v1/unfurl": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read what an external link points at
+         * @description The daemon fetches the page and answers its Open Graph title, description, image and site name, falling back to the document's `<title>`. Indicative: held in memory for an hour (a failure for minutes), never pool state. Only a public address is fetched — every hop of a redirect is checked, and the connection is made to the address that was checked. A target that could not be read is an ordinary answer with `reached: false`, not a refusal. Refused outright while the `unfurl` pool setting is off.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description `http` or `https`, with no credentials in it. */
+                    url: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What the page says about itself, or that nothing could be read. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Unfurl"];
+                    };
+                };
+                /** @description The `unfurl` pool setting is off. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unfurl-off";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The address is not `http` or `https`, carries credentials, or is not one the daemon will fetch. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "bad-url" | "address-refused";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4727,6 +4803,17 @@ export interface components {
         };
         UpdatePoolSettingsRequest: {
             [key: string]: unknown;
+        };
+        Unfurl: {
+            /** @description As asked. */
+            url: string;
+            /** @description False where nothing could be read: the target was unreachable, timed out, or did not answer a success. Not a refusal. */
+            reached: boolean;
+            title?: string;
+            description?: string;
+            /** @description Absolute, `http` or `https`. Fetched by whoever draws it. */
+            image?: string;
+            siteName?: string;
         };
     };
     responses: never;

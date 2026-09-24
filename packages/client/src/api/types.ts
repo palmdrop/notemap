@@ -49,6 +49,8 @@ export type PoolSettings = components["schemas"]["PoolSettings"];
 export type UpdatePoolSettingsRequest =
   components["schemas"]["UpdatePoolSettingsRequest"];
 
+export type Unfurl = components["schemas"]["Unfurl"];
+
 export type Destination = components["schemas"]["Destination"];
 export type DestinationKind = components["schemas"]["DestinationKind"];
 export type DestinationDescription =

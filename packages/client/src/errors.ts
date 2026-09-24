@@ -84,6 +84,7 @@ const SAID: {
   "account-in-use": (facts) =>
     `${String(facts["destinations"])} destination(s) still use that account; retire them first`,
   "account-secret-missing": "a new account needs its password or token",
+  "address-refused": "that link points inside a network, which is never read",
   "already-archived": "that item is already archived",
   "already-retired": "that destination is already retired",
   "asset-id-conflict":
@@ -95,6 +96,7 @@ const SAID: {
   "bad-kind": "the app asked for a kind of entry this daemon does not write",
   "bad-order": "the app asked for an order this daemon does not have",
   "bad-position": "the app lost its place in the list; reload",
+  "bad-url": "that is not a link this daemon will read",
   "blob-missing": "the stored file is gone from this daemon's disk",
   "capability-undeclared": "that destination cannot do this",
   "capture-id-conflict": "that capture already exists, with different content",
@@ -169,6 +171,7 @@ const SAID: {
     `this daemon has no "${String(facts["type"])}" payload type configured`,
   "unknown-pool-setting": (facts) =>
     `this daemon has no "${String(facts["setting"])}" setting`,
+  "unfurl-off": "showing link previews is turned off for this pool",
   unreachable: "the destination could not be reached",
   "unsupported-media-type": "this daemon does not accept that kind of request",
 };

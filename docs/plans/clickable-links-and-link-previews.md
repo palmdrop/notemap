@@ -301,15 +301,15 @@ phase 6; until then it is reachable only by a signed-in caller who curls it deli
 
 Depends on phase 4.
 
-- [ ] Regenerate `apps/daemon/openapi.json` and the client's generated types
+- [x] Regenerate `apps/daemon/openapi.json` and the client's generated types
       (`pnpm --filter @notemap/client codegen`).
-- [ ] `@notemap/client`: one read in the api layer, **outside the cache, the outbox and hydration**.
+- [x] `@notemap/client`: one read in the api layer, **outside the cache, the outbox and hydration**.
       It asks nothing while the pool setting reads off, including while the client has never heard
       the setting — the fail-closed rule from phase 3, enforced here rather than left to the shell.
-- [ ] Tests: it reaches the right path; a refusal comes back in the client's own refusal shape; it
+- [x] Tests: it reaches the right path; a refusal comes back in the client's own refusal shape; it
       makes no request at all while the setting is off or unknown.
-- [ ] Verify: `pnpm --filter @notemap/client test` green; `pnpm -r typecheck` green.
-- [ ] Commit `feat(client): read an unfurl`.
+- [x] Verify: `pnpm --filter @notemap/client test` green; `pnpm -r typecheck` green.
+- [x] Commit `feat(client): read an unfurl`.
 
 ### Phase 6 — the shell draws it
 

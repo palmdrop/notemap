@@ -24,6 +24,7 @@ import type {
   NamingRequest,
   Payload,
   PoolSetting,
+  Unfurl,
   RememberedRequest,
   ResolvedRoutingTemplate,
   RouteRequest,
@@ -428,6 +429,14 @@ export interface Client {
   readonly destinations: DestinationsApi;
   readonly templates: TemplatesApi;
   readonly settings: PoolSettingsApi;
+
+  /**
+   * What a link points at, as the daemon read it. Answers `undefined` without
+   * asking anything while the `unfurl` pool setting reads off — or has not been
+   * read at all, since the pool setting is the pool's answer and not a default.
+   */
+  unfurl(url: string): Promise<Unfurl | undefined>;
+
   readonly tags: TagsApi;
   readonly sources: SourcesApi;
   readonly actions: ActionsApi;
