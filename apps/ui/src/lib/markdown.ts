@@ -1,4 +1,8 @@
 import { micromark } from "micromark";
+import {
+  gfmAutolinkLiteral,
+  gfmAutolinkLiteralHtml,
+} from "micromark-extension-gfm-autolink-literal";
 
 import { followable } from "./link";
 
@@ -11,7 +15,10 @@ import { followable } from "./link";
  */
 export function rendered(text: string): string {
   const holder = document.createElement("template");
-  holder.innerHTML = micromark(text);
+  holder.innerHTML = micromark(text, {
+    extensions: [gfmAutolinkLiteral()],
+    htmlExtensions: [gfmAutolinkLiteralHtml()],
+  });
 
   for (const link of holder.content.querySelectorAll("a[href]")) {
     const href = followable(link.getAttribute("href") ?? undefined);

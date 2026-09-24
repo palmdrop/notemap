@@ -1839,6 +1839,12 @@ which is what a person wrote. **A line break typed is a line break drawn** *(add
 CommonMark folds a soft break into the paragraph, so three short lines came out as one, which
 nobody who pressed `enter` three times meant. The break is kept, without a paragraph's space —
 `white-space: pre-line` on the paragraph — and a blank line still makes a paragraph.
+**A bare URL typed in prose is a link** *(2026-09-24)*: `https://…` and `www.…` are linked by the
+GFM autolink-literal extension over the CommonMark core, a `www.` address given `http://`, and held
+to the same `http`/`https` rule as every other link — so an email address, which the extension
+links as `mailto:`, stays text. The renderer is still CommonMark plus this one extension, not GFM:
+no tables, strikethrough or task lists. A followable link in rendered prose is underlined, since
+the shell's links otherwise read as text until pointed at.
 
 A payload type this shell cannot draw **says so by name** and stays taggable, archivable and
 routable, since none of those need to understand the content. An item never becomes an invisible

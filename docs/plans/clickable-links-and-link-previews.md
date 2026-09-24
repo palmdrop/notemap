@@ -1,7 +1,7 @@
 # Clickable links, and a preview of what they point at
 
 **Date**: 2026-09-23 *(open questions answered 2026-09-24; the opt-out split out 2026-09-24)*
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: In progress <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/shell.md`, `docs/specs/http-v1.md`, `docs/specs/security.md`
 **Depends on**: [a-pool-holds-settings](a-pool-holds-settings.md), which must be `Done` before phase 3
 **Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
@@ -176,25 +176,25 @@ Three of its decisions reach back into this one:
 
 Depends on nothing. Independently shippable; do not hold it for the rest.
 
-- [ ] Branch `agent/clickable-links-and-link-previews`.
-- [ ] `apps/ui`: add `micromark-extension-gfm-autolink-literal`. One extension, not
+- [x] Branch `agent/clickable-links-and-link-previews`.
+- [x] `apps/ui`: add `micromark-extension-gfm-autolink-literal`. One extension, not
       `micromark-extension-gfm` — the renderer is CommonMark by decision (shell.md, *Content*,
       2026-09-14), and tables, strikethrough and task lists are not what the todo asked for.
-- [ ] `markdown.ts`: pass the extension's syntax and HTML halves to the single `micromark` call.
+- [x] `markdown.ts`: pass the extension's syntax and HTML halves to the single `micromark` call.
       The `followable()` pass over `a[href]` is unchanged and is what still keeps the output safe —
       it runs after, over whatever the extension produced.
-- [ ] `markdown.test.ts`: `https://example.com` in prose is an `a[href]`; `www.example.com` is one
+- [x] `markdown.test.ts`: `https://example.com` in prose is an `a[href]`; `www.example.com` is one
       too and is given a scheme; a URL inside a code span and one inside a fenced block are not
       linked; trailing punctuation stays outside the link; an existing `[text](url)` is unchanged;
       an autolinked address that `followable()` rejects comes out as text with no `href`.
-- [ ] `docs/specs/shell.md`, *Content*: a dated line saying a bare URL typed in prose is a link,
+- [x] `docs/specs/shell.md`, *Content*: a dated line saying a bare URL typed in prose is a link,
       by the GFM autolink-literal extension over the CommonMark core, held to the same
       `http`/`https` rule every other link is. Say the renderer is still CommonMark plus this one
       extension, so the next person does not read it as GFM.
-- [ ] Verify: `pnpm --filter ui test -- markdown` green; `pnpm -r --silent test`, `pnpm -r typecheck`
+- [x] Verify: `pnpm --filter ui test -- markdown` green; `pnpm -r --silent test`, `pnpm -r typecheck`
       and lint green. By hand: capture a note holding a bare URL, see it followable in the queue,
       the feed and the item surface.
-- [ ] Commit `feat(ui): render a bare URL as a link`.
+- [x] Commit `feat(ui): render a bare URL as a link`.
 
 ### Phase 2 — the decisions are written down
 

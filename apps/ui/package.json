@@ -31,6 +31,7 @@
     "@notemap/client": "workspace:*",
     "@notemap/output-markdown": "workspace:*",
     "idb": "^8.0.3",
-    "micromark": "^4.0.2"
+    "micromark": "^4.0.2",
+    "micromark-extension-gfm-autolink-literal": "^2.1.0"
   }
 }
