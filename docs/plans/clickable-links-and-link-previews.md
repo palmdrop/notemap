@@ -203,7 +203,7 @@ Depends on phase 1 only for the branch.
 Before any of the rest, because the shape these record is what phases 3 to 6 build, and writing
 them afterwards would be retrofitting a doc to code.
 
-- [ ] `docs/adr/00NN-a-link-preview-is-the-daemons-and-is-not-enrichment.md`. What was weighed:
+- [x] `docs/adr/0051-an-unfurl-is-the-daemons-and-is-not-enrichment.md` *(named for the word, not "link preview", which the glossary spends elsewhere)*. What was weighed:
       enrichment with jobs and artifacts, a browser-side fetch, and the daemon endpoint. Why the
       first is the wrong size for a reading nicety and is out of scope for the shell anyway, why
       the second cannot read most targets and leaks the reader's address, and what the third costs
@@ -211,15 +211,15 @@ them afterwards would be retrofitting a doc to code.
       three narrower calls that belong with it: Open Graph only with oEmbed deliberately not built,
       a guard with no allowlist and a pinned address, and the browser fetching the picture on the
       precedent a capture's own image already sets.
-- [ ] `CONTEXT.md`: **Unfurl**, under *Reaching out*. What it is, that what comes back is
+- [x] `CONTEXT.md`: **Unfurl**, under *Reaching out*. What it is, that what comes back is
       indicative and held in memory, that it is never pool state and never mirrored, and that it is
       not a **preview**, which is a destination's. _Avoid_: preview (for this), enrichment,
       metadata, embed, oEmbed, scrape.
-- [ ] Verify: the ADR reads as a decision with its rejected options; no other doc says something it
+- [x] Verify: the ADR reads as a decision with its rejected options; no other doc says something it
       contradicts; the new glossary entry collides with nothing already there — including whatever
       **pool setting**, which [a-pool-holds-settings](a-pool-holds-settings.md) adds under *The
       store*. `unfurl` goes under *Reaching out*; the two do not meet.
-- [ ] Commit `docs(adr): a link preview is the daemon's and is not enrichment`.
+- [x] Commit `docs(adr): a link preview is the daemon's and is not enrichment`.
 
 ### Phase 3 — the `unfurl` pool setting
 
