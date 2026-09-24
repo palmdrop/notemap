@@ -23,6 +23,7 @@
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
   import { orderFor } from "$lib/order";
+  import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { refusalIn } from "$lib/refusal";
@@ -81,11 +82,18 @@
    */
   async function walk(step: 1 | -1) {
     if (rows.length === 0) return;
-    let at = rows.findIndex((row) => row.id === selected);
-    if (step === 1 && at === rows.length - 1 && $feed.more && pool.yes) {
-      await client.loadFeed();
-      at = rows.findIndex((row) => row.id === selected);
+    const from = selected;
+    const last = () => rows.at(-1)?.id === from;
+    if (step === 1 && from !== undefined && last() && pool.yes) {
+      await readPast(
+        feed,
+        () => client.loadFeed(),
+        () => selected === from && last(),
+      );
+      // Somebody moved on, or let go, while the page was read.
+      if (selected !== from) return;
     }
+    const at = rows.findIndex((row) => row.id === selected);
     const next =
       at === -1
         ? step === 1
@@ -157,6 +165,7 @@
     <More
       loading={$feed.loading}
       offline={!pool.yes}
+      failed={$feed.failure !== undefined}
       onmore={() => void client.loadFeed()}
     />
   {/if}
@@ -191,6 +200,7 @@
       <More
         loading={$feed.loading}
         offline={!pool.yes}
+        failed={$feed.failure !== undefined}
         onmore={() => void client.loadFeed()}
       />
     {/if}

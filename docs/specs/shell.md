@@ -6,11 +6,11 @@
 
 - 2026-09-24 — **The corner lets go, and the lists read on.** `marked manual`, `discarded` and a
   landed `routed · research` no longer stand: a notice that offers something lingers long enough to
-  reach for it, none leaves while it is under the pointer or holds focus, and every notice can be
-  dismissed. Only `routing · research`, whose `cancel` exists nowhere else, still stands. The feed
-  and the queue read their next page as the reader scrolls within a screen of the foot, and `j` past
-  the last row held reads it before stepping; `load more` stays as the keyboard's and a failed
-  read's way to ask again, and keeps its width while it loads.
+  reach for it, nothing leaves the corner while the pointer is over it or focus is inside it, and
+  every notice can be dismissed. Only `routing · research`, whose `cancel` exists nowhere else,
+  still stands. The feed, the queue and the log read their next page as the reader scrolls within a
+  screen of the foot, and `j` past the last row held reads it before stepping; `load more` stays as
+  the keyboard's and a failed read's way to ask again, and keeps its width while it loads.
 - 2026-09-24 — **Clickable links, and what they point at.** A bare URL typed in a capture is a
   link, by the GFM autolink-literal extension over the still-CommonMark renderer, and a followable
   link is underlined. Every link in a note draws a fixed-height block with what the daemon read of
@@ -1465,8 +1465,10 @@ the log.
 **A confirmation that offers something lingers longer** *(amended 2026-09-24)* — ten seconds rather
 than four — which is long enough to reach for an `undo`. It still goes on its own, because the way
 back is not only in the corner: a discarded row offers `unarchive`, and a manual mark's record
-offers `undo` on the item surface. **No notice leaves while it is under the pointer or holds
-focus**, and one let go lingers again from the start, so nothing vanishes under somebody's hand.
+offers `undo` on the item surface. **Nothing leaves the corner while the pointer is over it or
+focus is inside it** — not by lingering out, and not by being trimmed for room, which waits too — so
+nothing vanishes under somebody's hand, including a notice that arrived while they were there. Let
+go, everything in it lingers again from the start.
 **Every notice can be dismissed**, a confirmation as well as what stands.
 
 **The refusals sit at the bottom of the stack**, being the ones that will not clear themselves, and
@@ -1624,11 +1626,12 @@ optional `next` link, nothing more. So the shell claims no number. `load more` i
 statement that more exists — and while the pool is out of reach the foot says that instead of
 offering a page it cannot fetch.
 
-**The next page is read before it is asked for** *(added 2026-09-24)*. The feed and the queue read
-it once the foot comes within a screen of the view, and `j` past the last row held reads it before
-stepping into it. `load more` stays: it is how the keyboard asks without walking, and how a read
-that failed is asked for again — a page that landed nothing leaves the foot where it was, and the
-shell does not ask again from the same place on its own. While a page is read the foot says
+**The next page is read before it is asked for** *(added 2026-09-24)*. The feed, the queue and the
+log read it once the foot comes within a screen of the view, and go on reading while it stays
+there. `j` past the last row held reads the next page and steps into it — waiting for a page
+already being read rather than giving up on the step — unless the reader has moved or let go in
+the meantime. `load more` stays: it is how the keyboard asks without walking, and how a read that
+failed is asked for again, since scrolling never retries one. While a page is read the foot says
 `loading…` in the width `load more` already took. **The drained queue is one line where the rows were** —
 `Nothing left to process.` — in the body column's position, with no register drawn under it.
 Reaching the end is what the queue is for, so it is said once and quietly: no paragraph, no
@@ -2178,9 +2181,10 @@ view is how a reader sees more at once.
   a queue holding three cached rows does not read as a queue nearly drained.
 - With the pool out of reach, a surface with more to read offers no `load more` and says in its foot
   why, and offers it again once the pool answers.
-- Scrolling the feed or the queue to within a screen of its foot reads the next page without a
-  press, and a failed read is not retried until somebody asks.
-- A notice under the pointer does not leave, and every notice offers `dismiss`.
+- Scrolling the feed, the queue or the log to within a screen of its foot reads the next page
+  without a press, and a failed read is not retried until somebody asks.
+- Nothing leaves the corner while the pointer is over it or focus is inside it, and every notice
+  offers `dismiss`.
 - A picture captured with the pool out of reach draws the picture, and the same row after the drain
   draws the pool's copy.
 - With the daemon unreachable: the chrome says so once, no row and no surface repeats it, capture

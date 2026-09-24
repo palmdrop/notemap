@@ -60,7 +60,7 @@ test("keeps its controls readable on a filled panel", async () => {
   expect(panel.className).toContain("border-alarm");
 });
 
-test("a notice under the pointer does not leave", async () => {
+test("nothing leaves the corner while the pointer is over it", async () => {
   pool(() => json(200, { values: [] }));
   render(Corner);
   vi.useFakeTimers();
@@ -71,13 +71,42 @@ test("a notice under the pointer does not leave", async () => {
       offer: { label: "undo", take: vi.fn() },
     });
     await vi.advanceTimersByTimeAsync(0);
-    const said = screen.getByRole("status");
+    const corner = screen.getByRole("status").parentElement!;
 
-    await fireEvent.pointerEnter(said);
+    await fireEvent.pointerEnter(corner);
     await vi.advanceTimersByTimeAsync(60_000);
     expect(screen.queryByRole("status")).not.toBeNull();
 
-    await fireEvent.pointerLeave(said);
+    await fireEvent.pointerLeave(corner);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(screen.queryByRole("status")).toBeNull();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test("nothing leaves the corner while focus is inside it", async () => {
+  pool(() => json(200, { values: [] }));
+  render(Corner);
+  vi.useFakeTimers();
+
+  try {
+    notices.raise({
+      what: "discarded",
+      offer: { label: "undo", take: vi.fn() },
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    const undo = screen.getByRole("button", { name: "undo" });
+    const dismiss = screen.getByRole("button", { name: "dismiss" });
+
+    await fireEvent.focusIn(undo);
+    // Moving between its own controls is still being at the corner.
+    await fireEvent.focusOut(undo, { relatedTarget: dismiss });
+    await fireEvent.focusIn(dismiss);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(screen.queryByRole("status")).not.toBeNull();
+
+    await fireEvent.focusOut(dismiss, { relatedTarget: document.body });
     await vi.advanceTimersByTimeAsync(10_000);
     expect(screen.queryByRole("status")).toBeNull();
   } finally {

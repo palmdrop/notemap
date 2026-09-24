@@ -17,8 +17,6 @@
     standing = false,
     alarm,
     ondismiss,
-    onhold,
-    onrelease,
   }: {
     what: string;
     why?: string;
@@ -29,39 +27,13 @@
     standing?: boolean;
     alarm?: boolean;
     ondismiss?: () => void;
-    /** Somebody is at it: the pointer is over it, or focus is inside it. */
-    onhold?: () => void;
-    onrelease?: () => void;
   } = $props();
 
   const alarming = $derived(alarm ?? standing);
-
-  let hovered = false;
-  let focused = false;
-
-  function held(pointer: boolean, focus: boolean) {
-    const was = hovered || focused;
-    hovered = pointer;
-    focused = focus;
-    const is = hovered || focused;
-    if (is && !was) onhold?.();
-    if (!is && was) onrelease?.();
-  }
-
-  function left(event: FocusEvent) {
-    const into = event.relatedTarget;
-    const self = event.currentTarget as HTMLElement;
-    if (into instanceof Node && self.contains(into)) return;
-    held(hovered, false);
-  }
 </script>
 
 <div
   role={alarming ? "alert" : "status"}
-  onpointerenter={() => held(true, focused)}
-  onpointerleave={() => held(false, focused)}
-  onfocusin={() => held(hovered, true)}
-  onfocusout={left}
   class="grid gap-1.5 border bg-ground px-3 py-2.5 {alarming
     ? 'border-alarm text-alarm'
     : 'border-ink'}"

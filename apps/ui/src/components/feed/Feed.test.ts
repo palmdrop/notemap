@@ -518,6 +518,64 @@ test("j past the last row held reads the next page and steps into it", async () 
   });
 });
 
+/** A second page whose answer waits until the test lets it go. */
+function paged() {
+  let answer: () => void = () => {};
+  const gate = new Promise<void>((done) => (answer = done));
+
+  pool(async (request) => {
+    if (routeOf(request) !== "GET /v1/feed") return json(200, { values: [] });
+    if (!new URL(request.url).searchParams.has("after")) {
+      return json(200, { values: [anItem("one")], next: "/v1/feed?after=one" });
+    }
+    await gate;
+    return json(200, { values: [anItem("two")] });
+  });
+
+  return () => answer();
+}
+
+test("j past the last row while its next page is read steps once it lands", async () => {
+  const answer = paged();
+
+  render(Feed);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "j" });
+  // Scrolling got there first.
+  const reading = client.loadFeed();
+  await fireEvent.keyDown(window, { key: "j" });
+
+  answer();
+  await reading;
+  await screen.findByText("two");
+
+  await vi.waitFor(async () => {
+    went.to = [];
+    await fireEvent.keyDown(window, { key: "p" });
+    expect(went.to).toEqual(["/items/two/process"]);
+  });
+});
+
+test("letting go while the next page is read does not select anything", async () => {
+  const answer = paged();
+
+  render(Feed);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "j" });
+  const reading = client.loadFeed();
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "Escape" });
+
+  answer();
+  await reading;
+  await screen.findByText("two");
+  await tick();
+
+  expect(stamps(true)).toHaveLength(0);
+});
+
 test("t opens the tag chooser on the selected row", async () => {
   pool(held(anItem("one")));
 

@@ -24,6 +24,7 @@ let more = $state(false);
 let loading = $state(false);
 let answered = $state(false);
 let refused = $state<string | undefined>(undefined);
+let failed = $state(false);
 
 /**
  * Which walk is the current one. A read that lands after the log has been
@@ -59,6 +60,7 @@ async function walk(from: ActionPosition | undefined): Promise<void> {
   const mine = walking;
   loading = true;
   refused = undefined;
+  failed = false;
 
   try {
     const page = await client.actions.read({
@@ -76,6 +78,7 @@ async function walk(from: ActionPosition | undefined): Promise<void> {
   } catch (error) {
     // A pool that never answered is not a refusal, and the chrome says
     // "offline" for the whole shell rather than every surface saying it again.
+    if (mine === walking) failed = true;
     if (mine === walking && !(error instanceof Unreachable)) {
       refused = saidBy(error);
     }
@@ -128,6 +131,9 @@ export const log = {
   },
   get loading() {
     return loading;
+  },
+  get failed() {
+    return failed;
   },
   get refused() {
     return refused;
@@ -233,5 +239,6 @@ export const log = {
     more = false;
     answered = false;
     refused = undefined;
+    failed = false;
   },
 };

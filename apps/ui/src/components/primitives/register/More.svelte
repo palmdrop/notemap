@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { untrack } from "svelte";
+
   import Action from "$components/primitives/controls/Action.svelte";
   import Foot from "$components/primitives/register/Foot.svelte";
   import { NO_MORE_OFFLINE } from "$lib/said";
@@ -6,18 +8,18 @@
   let {
     loading,
     offline,
+    failed,
     onmore,
-  }: { loading: boolean; offline: boolean; onmore: () => void } = $props();
+  }: {
+    loading: boolean;
+    offline: boolean;
+    /** The last read failed: it is asked for again by a press, not by scrolling. */
+    failed: boolean;
+    onmore: () => void;
+  } = $props();
 
   let foot = $state<HTMLElement | undefined>(undefined);
   let near = $state(false);
-
-  /** Where the foot stood when the last page was asked for by scrolling. */
-  let askedAt: number | undefined;
-
-  function at(element: HTMLElement): number {
-    return element.getBoundingClientRect().top + window.scrollY;
-  }
 
   $effect(() => {
     if (foot === undefined || typeof IntersectionObserver === "undefined") {
@@ -35,19 +37,8 @@
     return () => watching.disconnect();
   });
 
-  /**
-   * A page that landed moves the foot down. One that did not — a failed read —
-   * leaves it where it was, and asking again from the same place would retry
-   * in a loop; the button is left to do that.
-   */
   $effect(() => {
-    if (!near || loading || offline || foot === undefined) return;
-
-    const now = at(foot);
-    if (askedAt === now) return;
-
-    askedAt = now;
-    onmore();
+    if (near && !loading && !offline && !failed) untrack(onmore);
   });
 </script>
 
