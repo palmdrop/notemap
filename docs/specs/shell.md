@@ -1357,9 +1357,11 @@ sits on the collapsed row.
 
 **The chooser is one control, wherever it is drawn** *(added 2026-09-11)*. What the item carries
 is a row of pressed words, a trigger tag marked with the template it applies, each pressed to
-select it — **drawn inverted**, ink behind it, so the selection reads at a glance *(amended
-2026-09-18; a selected tag used to look like every other)* — and taken off on the `×` that then
-appears beside it *(amended 2026-09-15; a single press used to remove it outright)*. `esc`, opening the line, pressing another tag, or the row
+select it — **ruled round**, one line tall, the shell's mark for what is selected as a selected
+row's box is *(amended 2026-09-25; it was drawn inverted, ink behind it, which filled the capture
+box's foot; before 2026-09-18 a selected tag looked like every other)* — and taken off on the `×`
+that then slides in inside the rule, the tag growing to hold it *(amended 2026-09-15; a single
+press used to remove it outright)*. `esc`, opening the line, pressing another tag, or the row
 losing its selection clears the selection without taking anything off. `+` opens a line **where
 the `+` stood, one line tall, taking what is left of that line** *(2026-09-25; it was a fixed width
 and a little taller, and wrapped under the tags)*, and an **absolute panel** beneath it —
@@ -2078,8 +2080,15 @@ indent.
 slides in and out of a list; a notice rises into the corner and fades out of it; a section, a
 settings row, `more` and the capture box's picture slide open and shut; the process surface's
 next item fades up. The selected row's box and foot **fade and never slide**, since selecting shifts nothing. The
-overlays — the order chooser, the tag chooser, the path and candidate lists — do not move: they
-are used at typing speed, and a panel fading in behind a keystroke reads as lag. **What a read
+overlays — the order chooser, the path and candidate lists — do not move: they
+are used at typing speed, and a panel fading in behind a keystroke reads as lag. **Except the tag
+chooser** *(2026-09-25)*: its line opens where the `+` stood, the underline running out to the
+right, and its panel unrolls downward, both over `short` and back again as it closes; the panel
+grows and shrinks over `short` as typing narrows it, turned from wherever it stands at each key.
+Nothing waits on either: the caret is live from the first frame and a key is never held back,
+though a quick hand may be a step ahead of the panel. **A tag slides in** across its line when it
+is added and out when it is taken off, down where a narrow width stacks the tags; one drawn with
+its row does not. **What a read
 brought never moves**: a page, a re-read, a turned order, the pool's first answer over the cache.
 Only a change moves — a decision let go, a capture, an item heard about, a row processed
 elsewhere — so the reader's eye goes to the one thing that changed. Nothing else moves.

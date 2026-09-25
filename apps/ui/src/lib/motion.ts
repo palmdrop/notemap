@@ -69,17 +69,52 @@ function timing({ magnitude = "long", still = false }: Moving = {}) {
   return { duration: still ? 0 : duration(magnitude), easing: easing() };
 }
 
-/** Height, and the space around it, growing from nothing; fading too if asked. */
+/**
+ * Height, and the space around it, growing from nothing — or width, across a
+ * line; fading too if asked.
+ */
 export function slide(
   node: Element,
-  params: Moving & { fade?: boolean } = {},
+  params: Moving & { fade?: boolean; axis?: "x" | "y" } = {},
 ): TransitionConfig {
-  const moved = sliding(node, timing(params));
+  const moved = sliding(node, { ...timing(params), axis: params.axis ?? "y" });
   if (params.fade !== true) return moved;
   const css = moved.css;
   return {
     ...moved,
     css: (t, u) => `${css?.(t, u) ?? ""};opacity: ${t}`,
+  };
+}
+
+/**
+ * Sliding the way its neighbours run: across in a row of them, and down where
+ * a narrow width stacks them.
+ */
+export function unfold(
+  node: Element,
+  params: Moving & { fade?: boolean } = {},
+): TransitionConfig {
+  const parent = node.parentElement;
+  const stacked =
+    parent !== null &&
+    getComputedStyle(parent).flexDirection.startsWith("column");
+  return slide(node, {
+    magnitude: "short",
+    ...params,
+    axis: stacked ? "y" : "x",
+  });
+}
+
+/**
+ * Width from nothing at the start of the line, with what is inside drawn to
+ * the width it is given: a line opening where a mark stood, whose underline
+ * runs out to the right.
+ */
+export function widen(node: Element, params: Moving = {}): TransitionConfig {
+  const width = node.getBoundingClientRect().width;
+  return {
+    ...timing({ magnitude: "short", ...params }),
+    css: (t) => `min-width: 0; max-width: ${String(t * width)}px`,
   };
 }
 
@@ -94,12 +129,15 @@ export function rise(node: Element, params: Moving = {}): TransitionConfig {
 
 /**
  * A box that has just changed height in place, grown from the height it had:
- * what a `more` opens, where there is no block coming or going to slide.
+ * what a `more` opens, where there is no block coming or going to slide. One
+ * already growing is turned toward the new height from wherever it stands.
  */
 export function grow(node: HTMLElement, from: number): void {
   const time = duration("short");
+  if (time === 0 || typeof node.animate !== "function") return;
+  for (const moving of node.getAnimations()) moving.cancel();
   const to = node.offsetHeight;
-  if (time === 0 || to === from || typeof node.animate !== "function") return;
+  if (to === from) return;
   node.animate(
     [
       { height: `${String(from)}px`, overflow: "hidden" },

@@ -12,6 +12,8 @@ import {
   revealed,
   rise,
   slide,
+  unfold,
+  widen,
 } from "./motion";
 
 const root = document.documentElement;
@@ -101,9 +103,22 @@ describe("grow", () => {
     const node = document.createElement("div");
     Object.defineProperty(node, "offsetHeight", { value: height });
     const animate = vi.fn();
-    Object.assign(node, { animate });
-    return { node, animate };
+    const running = { cancel: vi.fn() };
+    const getAnimations = vi.fn(() => [running]);
+    Object.assign(node, { animate, getAnimations });
+    return { node, animate, running };
   }
+
+  test("turns a box already growing toward the new height from where it stands", () => {
+    root.style.setProperty("--duration-short", "150ms");
+    const { node, animate, running } = box(200);
+
+    grow(node, 120);
+
+    expect(running.cancel).toHaveBeenCalled();
+    const [frames] = animate.mock.calls[0] as [{ height: string }[]];
+    expect(frames.map((frame) => frame.height)).toEqual(["120px", "200px"]);
+  });
 
   test("grows a box from the height it had to the height it has", () => {
     root.style.setProperty("--duration-short", "150ms");
@@ -129,6 +144,47 @@ describe("grow", () => {
 
     expect(animate).not.toHaveBeenCalled();
   });
+});
+
+describe("unfold", () => {
+  function within(direction: string) {
+    const parent = document.createElement("div");
+    parent.style.display = "flex";
+    parent.style.flexDirection = direction;
+    const node = document.createElement("span");
+    parent.append(node);
+    document.body.append(parent);
+    return node;
+  }
+
+  afterEach(() => {
+    document.body.replaceChildren();
+  });
+
+  test("runs across a row of neighbours, and down where they stack", () => {
+    root.style.setProperty("--duration-short", "150ms");
+
+    expect(unfold(within("row")).css?.(0.5, 0.5)).toContain("width");
+    expect(unfold(within("column")).css?.(0.5, 0.5)).toContain("height");
+  });
+
+  test("is short", () => {
+    root.style.setProperty("--duration-short", "150ms");
+    root.style.setProperty("--duration-long", "220ms");
+    expect(unfold(within("row")).duration).toBe(150);
+  });
+});
+
+test("widening caps the width at the share of it the moment has reached", () => {
+  root.style.setProperty("--duration-short", "150ms");
+  const node = document.createElement("div");
+  node.getBoundingClientRect = () => ({ width: 200 }) as DOMRect;
+
+  const opening = widen(node);
+
+  expect(opening.duration).toBe(150);
+  expect(opening.css?.(0.5, 0.5)).toContain("max-width: 100px");
+  expect(opening.css?.(0, 1)).toContain("min-width: 0");
 });
 
 describe("revealed", () => {

@@ -355,13 +355,18 @@ test("a tag the item carries is removed by pressing it, then its ×", async () =
 
   await fireEvent.click(word);
   expect(removed).not.toHaveBeenCalled();
-  // Selected is drawn inverted, so the × has a word it visibly belongs to.
-  expect(word.parentElement!.classList.contains("bg-ink")).toBe(true);
+  // Selected is ruled round, the × inside the rule, so the × has a word it
+  // visibly belongs to.
+  const remove = screen.getByRole("button", { name: "remove notemap" });
+  expect(word.parentElement!.classList.contains("outline-ink")).toBe(true);
+  expect(word.parentElement!.contains(remove)).toBe(true);
   expect(
-    screen.getByRole("button", { name: "design" }).classList.contains("bg-ink"),
+    screen
+      .getByRole("button", { name: "design" })
+      .parentElement!.classList.contains("outline-ink"),
   ).toBe(false);
 
-  await fireEvent.click(screen.getByRole("button", { name: "remove notemap" }));
+  await fireEvent.click(remove);
   expect(removed).toHaveBeenCalledWith("notemap");
   expect(screen.queryByRole("button", { name: "remove notemap" })).toBeNull();
 });

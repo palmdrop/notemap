@@ -203,6 +203,10 @@ Asked for after phase 7, as the developer finds them.
 - [x] The capture box: `attach` stands behind a rule of its own, as `capture` does; the attached
       picture sits in a section ruled off above the text, which slides open and fades in; `drop`
       becomes `×`. _(2026-09-25)_
+- [x] Tags: a selected tag is ruled round rather than inverted, one line tall, and its `×` slides
+      in inside the rule; a tag slides in and out as it is added and taken off; the chooser's line
+      widens out from where the `+` stood and its panel unrolls, both short and never holding a key
+      back, the panel's height following the narrowing. Overlays no longer all stand still. _(2026-09-25)_
 
 ---
 
