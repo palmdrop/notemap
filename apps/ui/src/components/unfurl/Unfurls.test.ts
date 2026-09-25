@@ -214,3 +214,27 @@ test("asks nothing before the pool setting has been read", async () => {
   expect(unfurls()).toEqual([]);
   expect(document.querySelector("[data-unfurl]")).toBeNull();
 });
+
+test("stands the asking mark inside the block while the daemon reads the link", async () => {
+  let answer!: (response: Response) => void;
+  await serving(true, {
+    "https://a.example/post": () =>
+      new Promise<Response>((resolve) => (answer = resolve)),
+  });
+
+  render(Unfurls, { text: "read https://a.example/post" });
+  await vi.waitFor(() => {
+    expect(unfurls()).toHaveLength(1);
+  });
+  expect(block("a.example").querySelector("[data-asking]")).not.toBeNull();
+
+  answer(
+    json(200, {
+      url: "https://a.example/post",
+      reached: true,
+      title: "A post",
+    }),
+  );
+  await screen.findByText("A post");
+  expect(block("A post").querySelector("[data-asking]")).toBeNull();
+});

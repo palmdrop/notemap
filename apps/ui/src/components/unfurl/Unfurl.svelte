@@ -1,6 +1,8 @@
 <script lang="ts">
   import { Refused, type Unfurl } from "@notemap/client";
 
+  import Asking from "$components/primitives/marks/Asking.svelte";
+
   import {
     UNFURL_NOT_READ,
     UNFURL_SAYS_NOTHING,
@@ -98,6 +100,8 @@
         {/if}
       {:else if drawn.kind === "said"}
         <div>{drawn.said}</div>
+      {:else}
+        <Asking />
       {/if}
     </div>
   </div>

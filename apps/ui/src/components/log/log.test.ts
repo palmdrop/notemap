@@ -318,9 +318,11 @@ test("puts a refusal in the head, in alarm", async () => {
   render(Log);
   reading();
 
-  const said = await screen.findByRole("status");
+  const said = await screen.findByText(
+    "the app lost its place in the list; reload",
+  );
+  expect(said.getAttribute("role")).toBe("status");
   expect(said.className).toContain("text-alarm");
-  expect(said.textContent).toBe("the app lost its place in the list; reload");
 });
 
 /**

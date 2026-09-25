@@ -68,7 +68,7 @@
 
   @keyframes step {
     0% {
-      background-color: var(--color-ink);
+      background-color: currentColor;
     }
     33.333% {
       background-color: transparent;

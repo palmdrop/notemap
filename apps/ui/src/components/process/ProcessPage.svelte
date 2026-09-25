@@ -2,6 +2,7 @@
   import type { ItemState } from "@notemap/client";
 
   import Process from "$components/process/Process.svelte";
+  import Asking from "$components/primitives/marks/Asking.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
   import { client } from "$lib/client";
   import { NO_ITEM_OFFLINE, NO_SUCH_ITEM } from "$lib/said";
@@ -45,4 +46,6 @@
       <Prose text={NO_SUCH_ITEM} />
     {/if}
   </div>
+{:else}
+  <div class="pt-8"><Asking /></div>
 {/if}

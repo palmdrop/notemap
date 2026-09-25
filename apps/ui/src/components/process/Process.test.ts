@@ -3303,3 +3303,133 @@ test("⌘⏎ sends nothing while no destination is taken", async () => {
   await tick();
   expect(asked()).not.toContain("POST /v1/items/one/route");
 });
+
+/** A pool that answers everything at once except the one route held open. */
+function holding(held: string) {
+  const releases: ((value: Response) => void)[] = [];
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === held) {
+      return new Promise<Response>((resolve) => releases.push(resolve));
+    }
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE] });
+    }
+    if (route === "POST /v1/items/one/route/preview") {
+      return json(200, {
+        kind: "previewed",
+        content: { mediaType: "text/markdown", text: "# a thought\n" },
+      });
+    }
+    if (route === "POST /v1/items/one/route") {
+      return json(200, {
+        id: "r",
+        item: "one",
+        state: "delivered",
+        target: {},
+      });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+  return releases;
+}
+
+const section = (name: string) =>
+  screen.getByRole("button", { name }).closest("section")!;
+
+test("a destination slow to describe itself is named where its place will be", async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  try {
+    holding(`GET /v1/destinations/${VAULT}/description`);
+    draw();
+    await choose(/Vault/);
+
+    await vi.waitFor(() => {
+      expect(section("place").querySelector("[data-asking]")).not.toBeNull();
+    });
+    expect(screen.queryByText("Vault is slow to answer")).toBeNull();
+
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(section("place").textContent).toContain("Vault is slow to answer");
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test("a preview being asked for stands in the block it will fill", async () => {
+  holding("POST /v1/items/one/route/preview");
+  draw();
+  await choose(/Vault/);
+  await fireEvent.input(await described(), { target: { value: "inbox" } });
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route/preview");
+  });
+  expect(section("preview").querySelector("[data-asking]")).not.toBeNull();
+  expect(screen.queryByText(/# a thought/)).toBeNull();
+});
+
+test("routing is said on route itself, and nothing appears under the sections", async () => {
+  const releases = holding("POST /v1/items/one/route");
+  draw();
+  await choose(/Vault/);
+  await fireEvent.input(await described(), { target: { value: "inbox" } });
+  await commit();
+
+  const button = screen.getByRole("button", { name: /route/ });
+  await vi.waitFor(() => {
+    expect(button.getAttribute("aria-busy")).toBe("true");
+  });
+  expect(button.querySelector("[data-asking]")).not.toBeNull();
+  expect(screen.queryByText("routing…")).toBeNull();
+
+  releases.forEach((release) =>
+    release(
+      json(200, { id: "r", item: "one", state: "delivered", target: {} }),
+    ),
+  );
+  await vi.waitFor(() => {
+    expect(button.getAttribute("aria-busy")).toBeNull();
+  });
+});
+
+test("a browse being asked stands the mark where its entries will be", async () => {
+  let answer!: (response: Response) => void;
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "kanban" })] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE_ASKABLE] });
+    }
+    if (route.endsWith("/candidates")) {
+      return new Promise<Response>((resolve) => (answer = resolve));
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  draw();
+  await choose(/Vault/);
+  const list = await screen.findByRole("listbox", {
+    name: "directory candidates",
+  });
+  await vi.waitFor(() => {
+    expect(asked().some((route) => route.endsWith("/candidates"))).toBe(true);
+  });
+  expect(list.querySelector("[data-asking]")).not.toBeNull();
+  expect(screen.queryByText("loading…")).toBeNull();
+
+  answer(
+    json(200, {
+      kind: "answered",
+      entries: [{ label: "inbox", value: "inbox" }],
+      truncated: false,
+    }),
+  );
+  await screen.findByText("inbox");
+  expect(list.querySelector("[data-asking]")).toBeNull();
+});

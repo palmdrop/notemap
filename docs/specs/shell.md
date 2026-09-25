@@ -782,6 +782,10 @@ it; while the next answer is in flight the last one stays up, and one that resol
 decision moved on is dropped. A destination that offers no preview draws the block with `no preview
 for this destination`; one that cannot be reached, `out of reach` — neither in the alarm, neither
 being a failure of the decision. The label is `preview`, and nothing says who writes.
+**The block is five lines tall before it holds anything** *(2026-09-25)*: the section opens when the
+preview is asked for, with the asking mark on the first of those lines, so the answer landing
+moves nothing under it. While a later answer is in flight over one that is up, the mark stands at
+the end of the head line instead.
 
 **The block's own head names the destination and the full place, bold** *(amended 2026-09-15)* —
 `Obsidian vault / research/2026-09-13.md`, above the content and ruled under it: the preview says
@@ -790,7 +794,12 @@ block sit together rather than one of them living only in the `place` section ab
 
 **The foot** holds `← previous` and `next →` on the left, which walk the queue in its current
 order without deciding anything, and a bold inverted `route` on the right, enabled exactly when
-there is a destination and a capability to send.
+there is a destination and a capability to send. **While a route is asked, `route` carries the
+asking mark** in its label's place, still inverted, and nothing is drawn under the sections: the
+line there is a failure's alone *(2026-09-25; it said `routing…`, which appeared and went and moved
+the foot twice)*. **While the chosen destination describes itself**, and while a template resolves,
+the `place` section holds the asking mark on its first line, naming the destination once it is
+slow to answer — the description being the call that can hang.
 
 **After manual, discard or a template tag the surface advances to the next unprocessed item** in
 the queue's order, and returns to the queue when there is none. That is what a queue worked from
@@ -1445,6 +1454,14 @@ naming it, because the pool is fine and nothing else on screen says which of the
 is keeping the reader waiting. Settings' `asking`, `asking now` and `checking`, sign-in's `signing
 in`, and the pool settings' `reading…` all became the mark.
 
+Where a region is waiting rather than an action, the mark stands on the first line its answer will
+take: a list read cold draws it in the foot's place, where `load more` would have been, and no
+`load more` beside it, there being nothing yet to have more of; an item read cold, in the body
+column where the capture will be; an item's routing records, under the rule, where the first
+record will be; a link's block, inside its fixed frame, below the host; a browse or the typed
+line's tree, at the top of the floor the list already keeps. A browse or a tree already drawn is
+not marked while it is asked again, being what the last answer said and exactly as useful.
+
 **A surface says nothing about what it is drawn from** *(amended 2026-08-26)*. It used to: while the
 pool had not answered for the queue or the feed, the surface named itself in the register and said
 that this was what the client holds. That entry is gone. Between the chrome's `offline` mark and a
@@ -2043,6 +2060,16 @@ view is how a reader sees more at once.
 ---
 
 ## Prior decisions
+
+- **No skeletons, and no grey to draw one.** *2026-09-25.* A placeholder shaped like a typical
+  answer was weighed for the waits the asking mark now covers, with a grey admitted to fill it.
+  Declined: the cache draws the queue, the feed and an item before the pool answers, so an empty
+  surface is a cold cache or a question the cache never holds — a description, a preview, a
+  browse — and most of those are over before 250ms. None of the answers has a shape worth guessing
+  — a row is a line or forty, a picture or two unfurls — so a skeleton guessing wrong moves the page
+  when the answer replaces it, which is what it was for. And grey went on 2026-09-14 for reasons a
+  rarely-seen state does not outweigh. What a skeleton is for, where it is right, the shell already
+  has without one: the unfurl block's fixed four lines, and the preview's five.
 
 - **A held row is released by selection, not by a clock.** *2026-09-08; retired 2026-09-14: the
   queue holds no processed row now that processing is a surface which moves on to the next item,

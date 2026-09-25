@@ -8,6 +8,7 @@
   import Body from "$components/primitives/register/Body.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
+  import Asking from "$components/primitives/marks/Asking.svelte";
   import Cached from "$components/primitives/marks/Cached.svelte";
   import Pending from "$components/primitives/marks/Pending.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
@@ -108,6 +109,7 @@
     if (!pool.yes) return { said: NO_RECORDS_OFFLINE, alarm: false };
     if (only !== undefined && records.settled)
       return { said: NO_SUCH_RECORD, alarm: false, gone: true };
+    if (!records.settled) return { said: "", alarm: false, asking: true };
     return undefined;
   });
 </script>
@@ -177,7 +179,9 @@
         {/if}
       </Rail>
       <Body>
-        {#if aboutRecords.alarm}
+        {#if aboutRecords.asking === true}
+          <Asking />
+        {:else if aboutRecords.alarm}
           <div role="status" class="text-alarm">{aboutRecords.said}</div>
         {:else if aboutRecords.gone === true}
           <Prose text={aboutRecords.said} />
@@ -201,5 +205,8 @@
         <Prose text={NO_SUCH_ITEM} />
       {/if}
     </Body>
+  {:else}
+    <Rail />
+    <Body><Asking /></Body>
   {/if}
 </Register>

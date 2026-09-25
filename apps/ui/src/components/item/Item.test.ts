@@ -555,3 +555,46 @@ test("esc leaves the editable shape the item page draws", async () => {
   await fireEvent.keyDown(window, { key: "Escape" });
   expect(went.to).toEqual([]);
 });
+
+test("stands the asking mark where the item will be, before the pool has said anything", async () => {
+  let answer!: (response: Response) => void;
+  pool((request) =>
+    routeOf(request) === "GET /v1/items/linked"
+      ? new Promise<Response>((resolve) => (answer = resolve))
+      : json(200, { values: [] }),
+  );
+
+  const { container } = render(Item, { id: "linked" });
+  await vi.waitFor(() => {
+    expect(asked()).toContain("GET /v1/items/linked");
+  });
+  expect(container.querySelector("[data-asking]")).not.toBeNull();
+
+  answer(json(200, saying("linked", "what the link names")));
+  expect(await screen.findByText("what the link names")).toBeDefined();
+  expect(container.querySelector("[data-asking]")).toBeNull();
+});
+
+test("stands the asking mark under the rule while the records are read", async () => {
+  let answer!: (response: Response) => void;
+  pool((request) => {
+    switch (routeOf(request)) {
+      case "GET /v1/items/routed":
+        return json(200, anItem("routed", ROUTED));
+      case "GET /v1/items/routed/routing":
+        return new Promise<Response>((resolve) => (answer = resolve));
+      default:
+        return json(200, { values: [] });
+    }
+  });
+
+  const { container } = render(Item, { id: "routed" });
+  await vi.waitFor(() => {
+    expect(asked()).toContain("GET /v1/items/routed/routing");
+  });
+  expect(container.querySelector("[data-asking]")).not.toBeNull();
+
+  answer(json(200, { values: [RECORD] }));
+  await screen.findByText("delivered");
+  expect(container.querySelector("[data-asking]")).toBeNull();
+});

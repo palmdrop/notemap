@@ -51,7 +51,7 @@
   <span class="inline-flex gap-1" aria-hidden="true">
     {#each [0, 1, 2] as beat (beat)}
       <span
-        class="size-1.5 animate-step border border-ink motion-reduce:animate-none {beat ===
+        class="size-1.5 animate-step border border-current motion-reduce:animate-none {beat ===
         1
           ? '[animation-delay:var(--duration-step)]'
           : beat === 2

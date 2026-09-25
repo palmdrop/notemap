@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import Asking from "$components/primitives/marks/Asking.svelte";
+  import Working from "./Working.svelte";
 
   /**
    * `primary` is bold and means *the action* — one per context. `alarm` is
@@ -35,36 +35,12 @@
     children: Snippet;
   } = $props();
 
-  let marked = $state(false);
-
-  $effect(() => {
-    if (!working) marked = false;
-  });
-
   const look = $derived(
     `hover:underline disabled:no-underline ${
       working ? "" : "disabled:text-inert"
     } ${primary ? "font-semibold" : ""} ${alarm ? "text-alarm" : ""}`,
   );
 </script>
-
-{#snippet label()}
-  {#if working}
-    <span class="inline-grid justify-items-center">
-      <span
-        class="col-start-1 row-start-1 {marked ? 'invisible' : ''}"
-        aria-hidden={marked}
-      >
-        {@render children()}
-      </span>
-      <span class="col-start-1 row-start-1">
-        <Asking bind:shown={marked} />
-      </span>
-    </span>
-  {:else}
-    {@render children()}
-  {/if}
-{/snippet}
 
 {#if href === undefined}
   <button
@@ -75,7 +51,7 @@
     {onclick}
     class={look}
   >
-    {@render label()}
+    <Working {working}>{@render children()}</Working>
   </button>
 {:else if disabled}
   <span aria-disabled="true" {title} class="text-inert">

@@ -151,6 +151,13 @@ test("the foot asks for nothing while offline", async () => {
   expect(more).not.toHaveBeenCalled();
 });
 
+test("the first page read is the mark alone, there being nothing yet to have more of", () => {
+  render(More, { ...reading, loading: true, first: true, onmore: vi.fn() });
+
+  expect(screen.queryByRole("button")).toBeNull();
+  expect(document.querySelector("[data-asking]")).not.toBeNull();
+});
+
 test("the foot keeps its width while it loads", () => {
   render(More, { ...reading, loading: true, onmore: vi.fn() });
 

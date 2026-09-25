@@ -8,6 +8,8 @@
 
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import Walked from "$components/primitives/composer/Walked.svelte";
+  import Asking from "$components/primitives/marks/Asking.svelte";
+  import { nameOf } from "$lib/destinations";
   import { recall, remember } from "$lib/candidate-cache";
   import { client } from "$lib/client";
   import { forecastOf, type Said } from "$lib/forecast";
@@ -158,6 +160,8 @@
   // of a scope already left.
   let asking = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  /** The newest round of asks is still out. */
+  let unanswered = $state(false);
 
   $effect(() => {
     const scopes = scopesAlong(path);
@@ -173,11 +177,13 @@
 
     clearTimeout(timer);
     timer = setTimeout(() => {
+      unanswered = true;
       void (async () => {
         const answers = await Promise.all(scopes.map(askAbout));
         if (mine !== asking) return;
 
         levels = answers;
+        unanswered = false;
       })();
     }, 120);
 
@@ -420,6 +426,9 @@
     aria-label="places"
     class="mt-2.5 {refusal === undefined ? 'min-h-[12.5rem]' : ''}"
   >
+    {#if drawn.length === 0 && unanswered}
+      <Asking subject={nameOf(destination)} />
+    {/if}
     {#each drawn as row (`${row.depth}:${row.made === true ? "+" : ""}${row.entry.label}`)}
       {@const picked = moved && here[at] === row}
       <Walked

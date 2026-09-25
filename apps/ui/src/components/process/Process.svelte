@@ -25,6 +25,8 @@
   import PathLine from "$components/routing/PathLine.svelte";
   import Option from "$components/primitives/composer/Option.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
+  import Working from "$components/primitives/controls/Working.svelte";
+  import Asking from "$components/primitives/marks/Asking.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import Unfurls from "$components/unfurl/Unfurls.svelte";
   import { itemHref, processHref } from "$components/item/href";
@@ -132,6 +134,8 @@
   let refusing = $state<Record<string, string>>({});
 
   let shown = $state<RoutingPreview | undefined>(undefined);
+  /** A preview asked for the decision as it stands, and not yet answered. */
+  let previewing = $state(false);
   let previewFailed = $state("");
 
   /**
@@ -313,6 +317,7 @@
     forecast = undefined;
     shown = undefined;
     previewFailed = "";
+    previewing = false;
     placing = true;
   }
 
@@ -341,6 +346,7 @@
     // after the person has moved on is dropped rather than drawn under
     // arguments it knows nothing about.
     const asked = decision;
+    previewing = true;
     try {
       const answer = await client.routing.preview(item.id, {
         destination: chosen,
@@ -358,6 +364,8 @@
         previewFailed = saidBy(error);
         opened.preview = true;
       }
+    } finally {
+      if (asked === decision) previewing = false;
     }
   }
 
@@ -704,7 +712,7 @@
     if (chosen === undefined || capability === undefined || busy) return;
 
     busy = true;
-    said = "routing…";
+    said = "";
     try {
       const record = await client.routing.route(item.id, requestFor(beside));
       classify(record);
@@ -1020,7 +1028,11 @@
       open={opened.place}
       ontoggle={() => (opened.place = !opened.place)}
     >
-      {#if chosen !== undefined && !placing}
+      {#if chosen === undefined && applied !== undefined}
+        <Asking />
+      {:else if chosen !== undefined && described === undefined}
+        <Asking subject={nameOf(chosen)} />
+      {:else if chosen !== undefined && !placing}
         <div class="flex items-baseline justify-between gap-x-[2ch]">
           <span class="min-w-0 break-words">{settled}</span>
           <button
@@ -1078,18 +1090,23 @@
 
     <Section
       name="preview"
-      open={opened.preview || shown !== undefined}
+      open={opened.preview || shown !== undefined || previewing}
       ontoggle={() => (opened.preview = !opened.preview)}
     >
-      {#if shown !== undefined}
-        <Preview {shown} place={previewPlace} />
+      {#if shown !== undefined || previewing}
+        <Preview
+          {shown}
+          place={previewPlace}
+          asking={previewing}
+          subject={chosen === undefined ? undefined : nameOf(chosen)}
+        />
       {:else if previewFailed !== ""}
         <span role="status" class="text-alarm">{previewFailed}</span>
       {/if}
     </Section>
 
     {#if said !== ""}
-      <div role="status" class="mt-3 {busy ? '' : 'text-alarm'}">{said}</div>
+      <div role="status" class="mt-3 text-alarm">{said}</div>
     {/if}
   </div>
 
@@ -1113,10 +1130,13 @@
     <button
       type="button"
       disabled={!ready || busy}
+      aria-busy={busy || undefined}
       onclick={() => void send()}
-      class="inverted h-8 px-5 font-semibold disabled:bg-transparent disabled:text-inert"
+      class="inverted h-8 px-5 font-semibold {busy
+        ? ''
+        : 'disabled:bg-transparent disabled:text-inert'}"
     >
-      route
+      <Working working={busy}>route</Working>
     </button>
   </div>
 </div>

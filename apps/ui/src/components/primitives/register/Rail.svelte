@@ -17,7 +17,8 @@
     onreach?: () => void;
     /** More than half a day passed before this row: the index's gap, opened here. */
     gap?: boolean;
-    children: Snippet;
+    /** Absent where nothing is known yet to put in it: the rule still runs. */
+    children?: Snippet;
   } = $props();
 
   let cell = $state<HTMLElement | undefined>(undefined);
@@ -43,5 +44,5 @@
     {gap ? 'pt-[calc(--spacing(3)+var(--spacing-gap-time))]' : 'pt-3'}
     {selected ? '' : 'border-t-transparent border-l-transparent'}"
 >
-  {@render children()}
+  {@render children?.()}
 </div>

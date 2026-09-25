@@ -164,6 +164,7 @@
   {#if $feed.more}
     <More
       loading={$feed.loading}
+      first={rows.length === 0}
       offline={!pool.yes}
       failed={$feed.failure !== undefined}
       onmore={() => void client.loadFeed()}
@@ -199,6 +200,7 @@
     {#if $feed.more}
       <More
         loading={$feed.loading}
+        first={rows.length === 0}
         offline={!pool.yes}
         failed={$feed.failure !== undefined}
         onmore={() => void client.loadFeed()}

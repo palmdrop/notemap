@@ -232,6 +232,7 @@
   {#if $queue.more}
     <More
       loading={$queue.loading}
+      first={rows.length === 0}
       offline={!pool.yes}
       failed={$queue.failure !== undefined}
       onmore={() => void client.loadQueue()}
@@ -260,6 +261,7 @@
     {#if $queue.more}
       <More
         loading={$queue.loading}
+        first={rows.length === 0}
         offline={!pool.yes}
         failed={$queue.failure !== undefined}
         onmore={() => void client.loadQueue()}

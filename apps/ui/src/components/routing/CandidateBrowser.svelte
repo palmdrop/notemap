@@ -7,6 +7,8 @@
 
   import Action from "$components/primitives/controls/Action.svelte";
   import Walked from "$components/primitives/composer/Walked.svelte";
+  import Asking from "$components/primitives/marks/Asking.svelte";
+  import { nameOf } from "$lib/destinations";
   import { client } from "$lib/client";
   import {
     completed,
@@ -530,7 +532,7 @@
     class="mt-2.5 min-h-[12.5rem]"
   >
     {#if loading}
-      <p>loading…</p>
+      <p><Asking subject={nameOf(destination)} /></p>
     {:else if refusal !== undefined && entries.length === 0}
       <p>{refusal}</p>
     {:else}

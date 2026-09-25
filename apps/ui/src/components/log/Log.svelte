@@ -80,9 +80,10 @@
     <LogRow action={row.action} gap={row.gap} />
   {/each}
 
-  {#if log.more}
+  {#if log.more || (log.loading && rows.length === 0)}
     <More
       loading={log.loading}
+      first={rows.length === 0}
       offline={!pool.yes}
       failed={log.failed}
       onmore={() => {
