@@ -7,12 +7,14 @@
     type RoutingTemplateReport,
   } from "@notemap/client";
 
+  import Unfolding from "$components/primitives/motion/Unfolding.svelte";
   import TemplateRow from "$components/settings/Template.svelte";
   import TemplateForm from "$components/settings/TemplateForm.svelte";
   import Section from "$components/settings/Section.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
+  import { slide } from "$lib/motion";
 
   const templates = client.templates.all;
   const destinations = client.destinations.all;
@@ -120,24 +122,28 @@
       ondelete={() => (doomed = one)}
     >
       {#if editing === one.id}
-        <TemplateForm
-          destinations={$destinations}
-          editing={one}
-          disabled={!pool.yes}
-          done={() => (editing = undefined)}
-        />
+        <Unfolding>
+          <TemplateForm
+            destinations={$destinations}
+            editing={one}
+            disabled={!pool.yes}
+            done={() => (editing = undefined)}
+          />
+        </Unfolding>
       {/if}
     </TemplateRow>
   {/each}
 
   {#if adding}
-    <TemplateForm
-      destinations={$destinations}
-      disabled={!pool.yes}
-      done={() => (adding = false)}
-    />
+    <Unfolding>
+      <TemplateForm
+        destinations={$destinations}
+        disabled={!pool.yes}
+        done={() => (adding = false)}
+      />
+    </Unfolding>
   {:else}
-    <div class="mt-6">
+    <div class="mt-6" transition:slide={{ magnitude: "short" }}>
       <Action
         disabled={!pool.yes || $destinations.length === 0}
         onclick={() => (adding = true)}

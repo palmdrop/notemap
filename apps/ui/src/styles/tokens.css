@@ -42,9 +42,7 @@
   --spacing-rail: 11rem;
   --spacing-rail-narrow: 5.75rem;
   --spacing-gutter: 1.5rem;
-  --spacing-measure: 56rem;
-  /* The process surface alone, two columns from `wide`. */
-  --spacing-measure-wide: 72rem;
+  --spacing-measure: 72rem;
   --spacing-read: 44rem;
   --spacing-prose: 38rem;
   --spacing-gap-time: 28px;

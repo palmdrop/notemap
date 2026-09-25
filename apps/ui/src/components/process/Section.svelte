@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { slide } from "$lib/motion";
+  import Unfolding from "$components/primitives/motion/Unfolding.svelte";
 
   /**
    * One ruled section of the surface: a label column and a content column.
@@ -33,8 +33,8 @@
     {name}
   </button>
   {#if open}
-    <div class="min-w-0" transition:slide={{ magnitude: "short" }}>
-      {@render children()}
+    <div class="min-w-0">
+      <Unfolding>{@render children()}</Unfolding>
     </div>
   {/if}
 </section>

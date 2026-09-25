@@ -2000,7 +2000,7 @@ family, a Tailwind palette colour, or any of the roles the shell used to have an
 
 The roles, as of 2026-09-14: `ground`, `ink`, `alarm`, and `inert` for the one grey admitted where
 nothing else can say a control is inert; `font-shell`, the one face; `text-shell`, the one size,
-with its line height; `tracking-caps` for a label; `rail`, `rail-narrow`, `gutter`, `measure`, `measure-wide`,
+with its line height; `tracking-caps` for a label; `rail`, `rail-narrow`, `gutter`, `measure`,
 `read`, `prose` and `gap-time` for the widths and the one gap; `narrow` and `wide` for the two
 breakpoints.
 
@@ -2069,18 +2069,25 @@ dropped two bare cells into the grid, which left nothing to slide)*.
 **A phone keeps both columns.** Below 44rem the rail narrows to the width of a stacked date and
 time, and the two columns survive, because the rail is what says what a thing is.
 
-**The measure.** The page and the bar are capped at 56rem *(amended 2026-09-14; the drawings
-said 72rem, and at a desk the capture field and the bar read as wider than anything under them)*;
-the process surface alone takes 72rem from `wide`, its two columns needing the room. **A paragraph
+**The measure.** Every surface, the bar with it, is capped at 72rem *(amended 2026-09-25; the page
+and the bar were 56rem and the process surface alone 72rem, which widened the bar and moved the
+navigation on the way in; before 2026-09-14 the page was 72rem too, when at a desk the capture
+field and the bar read as wider than anything under them)*. **A paragraph
 is capped at 38rem** — about seventy characters — inside the body column: the column keeps its
 width, the prose stops early, as prose is set. Paragraphs are set apart by a blank line, never an
 indent.
 
 **Motion.** Few, structural, and still under `prefers-reduced-motion` *(built 2026-09-25)*. A row
 slides in and out of a list; a notice rises into the corner and fades out of it; a section, a
-settings row, `more` and the capture box's picture slide open and shut; the process surface's
-next item fades up. The selected row's box and foot **fade and never slide**, since selecting shifts nothing. The
-overlays — the order chooser, the path and candidate lists — do not move: they
+settings row, `more` and the capture box's picture slide open and shut; an open section of the
+process surface grows and shrinks into what it holds as it changes — a destination chosen, a place
+described, the decision cleared by `route` — over `short`, turned from wherever it stands when a
+change lands mid-way, typing included; the process surface's next item fades up; a form in
+settings — adding or editing a template, a destination, an account, a token — and the server's
+sources slide open and shut, a `+ add` sliding shut as its form opens, and a form grows and
+shrinks into the fields a choice in it brings — a destination's kind, an account's. No navigation moves: an item carried from its
+row onto its own surfaces was tried on 2026-09-25 and taken out the same day. The selected row's box and foot **fade and never slide**, since selecting shifts nothing. The
+overlays — the order chooser, the path and candidate lists — do not move of themselves: they
 are used at typing speed, and a panel fading in behind a keystroke reads as lag. **Except the tag
 chooser** *(2026-09-25)*: its line opens where the `+` stood, the underline running out to the
 right, and its panel unrolls downward, both over `short` and back again as it closes; the panel

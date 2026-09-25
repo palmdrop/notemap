@@ -207,6 +207,16 @@ Asked for after phase 7, as the developer finds them.
       in inside the rule; a tag slides in and out as it is added and taken off; the chooser's line
       widens out from where the `+` stood and its panel unrolls, both short and never holding a key
       back, the panel's height following the narrowing. Overlays no longer all stand still. _(2026-09-25)_
+- [x] The process surface: an open section's height follows what it holds — a destination
+      chosen, a place described, `route` clearing the decision — turned from where it stands at
+      each change. _(2026-09-25)_
+- [x] One measure, 72rem, for every surface and the bar, so the navigation keeps its width on
+      the way into the process surface; a paragraph keeps its 38rem. The process surface at 56rem
+      was tried first and was too narrow. ADR 46 amended. _(2026-09-25)_
+- [-] An item carried between its row and its own surfaces by view transitions. _(built and taken
+      out 2026-09-25 — the developer preferred the cut)_
+- [x] Settings: add and edit forms, the minted token and the server's sources slide open and shut;
+      a form follows its height as a kind changes its fields. _(2026-09-25)_
 
 ---
 

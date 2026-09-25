@@ -1,12 +1,14 @@
 <script lang="ts">
   import { saidBy, type Account, type AccountKind } from "@notemap/client";
 
+  import Unfolding from "$components/primitives/motion/Unfolding.svelte";
   import AccountForm from "$components/settings/AccountForm.svelte";
   import Fact from "$components/settings/Fact.svelte";
   import Section from "$components/settings/Section.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
+  import { slide } from "$lib/motion";
 
   const pool = reachable();
 
@@ -121,12 +123,14 @@
           </span>
         </Fact>
         {#if editing === keyOf(one)}
-          <AccountForm
-            {kinds}
-            editing={one}
-            disabled={!pool.yes}
-            done={saved}
-          />
+          <Unfolding>
+            <AccountForm
+              {kinds}
+              editing={one}
+              disabled={!pool.yes}
+              done={saved}
+            />
+          </Unfolding>
         {/if}
       {:else}
         <p class="mt-2">none</p>
@@ -135,11 +139,11 @@
   {/each}
 
   {#if adding}
-    <AccountForm {kinds} disabled={!pool.yes} done={saved} />
-  {/if}
-
-  {#if !adding}
-    <div class="mt-6">
+    <Unfolding>
+      <AccountForm {kinds} disabled={!pool.yes} done={saved} />
+    </Unfolding>
+  {:else}
+    <div class="mt-6" transition:slide={{ magnitude: "short" }}>
       <Action
         disabled={!pool.yes || kinds.length === 0}
         onclick={() => (adding = true)}

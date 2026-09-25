@@ -10,6 +10,7 @@
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
   import { since } from "$lib/stamp";
+  import { slide } from "$lib/motion";
 
   const address = $derived(
     import.meta.env.VITE_API_URL ??
@@ -106,13 +107,15 @@
     {/snippet}
 
     {#if showSources}
-      {#each sources as source (source.id)}
-        <Fact name={source.id}>{sourceSince(source)}</Fact>
-      {/each}
+      <div transition:slide={{ magnitude: "short" }}>
+        {#each sources as source (source.id)}
+          <Fact name={source.id}>{sourceSince(source)}</Fact>
+        {/each}
 
-      {#if sourcesFailed !== ""}
-        <p class="mt-2 text-alarm">{sourcesFailed}</p>
-      {/if}
+        {#if sourcesFailed !== ""}
+          <p class="mt-2 text-alarm">{sourcesFailed}</p>
+        {/if}
+      </div>
     {/if}
   </Section>
 </Section>

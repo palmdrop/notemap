@@ -9,6 +9,7 @@
     type DestinationProbe,
   } from "@notemap/client";
 
+  import Unfolding from "$components/primitives/motion/Unfolding.svelte";
   import DestinationRow from "$components/settings/Destination.svelte";
   import DestinationForm from "$components/settings/DestinationForm.svelte";
   import Section from "$components/settings/Section.svelte";
@@ -162,24 +163,28 @@
       ondelete={() => client.destinations.delete(one.id)}
     >
       {#if editing === one.id}
-        <DestinationForm
-          {kinds}
-          existing={$destinations}
-          editing={one}
-          disabled={!pool.yes}
-          done={() => (editing = undefined)}
-        />
+        <Unfolding>
+          <DestinationForm
+            {kinds}
+            existing={$destinations}
+            editing={one}
+            disabled={!pool.yes}
+            done={() => (editing = undefined)}
+          />
+        </Unfolding>
       {/if}
     </DestinationRow>
   {/each}
 
   {#if adding}
-    <DestinationForm
-      {kinds}
-      existing={$destinations}
-      disabled={!pool.yes}
-      done={() => (adding = false)}
-    />
+    <Unfolding>
+      <DestinationForm
+        {kinds}
+        existing={$destinations}
+        disabled={!pool.yes}
+        done={() => (adding = false)}
+      />
+    </Unfolding>
   {/if}
 
   <div class="mt-6 flex flex-wrap items-baseline justify-between gap-x-[2ch]">

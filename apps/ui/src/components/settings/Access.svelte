@@ -8,6 +8,7 @@
   import { copyable } from "$lib/clipboard";
   import { log } from "$lib/log.svelte";
   import { session } from "$lib/session.svelte";
+  import { slide } from "$lib/motion";
 
   const FIELD = "w-full border-b border-ink bg-transparent focus:outline-none";
 
@@ -164,7 +165,10 @@
       {/each}
 
       {#if minted !== undefined}
-        <div class="mt-4 border border-alarm p-3">
+        <div
+          class="mt-4 border border-alarm p-3"
+          transition:slide={{ magnitude: "short" }}
+        >
           <p class="text-alarm">Copy now. The token will not be shown again.</p>
           <p class="mt-2 break-all select-all">{minted.token}</p>
           <div class="mt-2 flex flex-wrap items-baseline gap-x-6">
@@ -182,6 +186,7 @@
         <form
           onsubmit={mint}
           class="mt-4 flex flex-wrap items-baseline gap-x-3"
+          transition:slide={{ magnitude: "short" }}
         >
           <label for="token-name" class="tracking-caps uppercase">name</label>
           <input
@@ -198,7 +203,7 @@
           </Action>
         </form>
       {:else}
-        <div class="mt-4">
+        <div class="mt-4" transition:slide={{ magnitude: "short" }}>
           <Action onclick={() => (addingToken = true)}>+ add a token</Action>
         </div>
       {/if}

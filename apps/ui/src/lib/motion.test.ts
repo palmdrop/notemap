@@ -7,6 +7,7 @@ import {
   bezier,
   duration,
   fade,
+  following,
   grow,
   growing,
   revealed,
@@ -277,6 +278,91 @@ describe("growing", () => {
 
     moving(true);
     resize({ height: 180 });
+    expect(animate).not.toHaveBeenCalled();
+  });
+});
+
+describe("following", () => {
+  let told: (() => void) | undefined;
+
+  function box() {
+    const node = document.createElement("div");
+    const content = document.createElement("div");
+    node.append(content);
+    let size = { height: 100, width: 400 };
+    let standing = 100;
+    Object.defineProperty(content, "offsetHeight", { get: () => size.height });
+    Object.defineProperty(content, "offsetWidth", { get: () => size.width });
+    Object.defineProperty(node, "offsetHeight", { get: () => size.height });
+    node.getBoundingClientRect = () => ({ height: standing }) as DOMRect;
+    const animate = vi.fn();
+    let running: { cancel: () => void }[] = [];
+    Object.assign(node, { animate, getAnimations: () => running });
+    return {
+      node,
+      animate,
+      resize(next: Partial<typeof size>) {
+        size = { ...size, ...next };
+        told?.();
+      },
+      midway(at: number) {
+        standing = at;
+        running = [{ cancel: vi.fn() }];
+      },
+    };
+  }
+
+  const froms = (animate: ReturnType<typeof vi.fn>) =>
+    animate.mock.calls.map(([frames]) =>
+      (frames as { height: string }[]).map((one) => one.height),
+    );
+
+  beforeEach(() => {
+    root.style.setProperty("--duration-short", "150ms");
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: () => void) {
+          told = callback;
+        }
+        observe() {
+          told?.();
+        }
+        disconnect() {
+          told = undefined;
+        }
+      },
+    );
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  test("grows the box from what its content was to what it is, and not on first sight", () => {
+    const { node, animate, resize } = box();
+    following(node);
+    expect(animate).not.toHaveBeenCalled();
+
+    resize({ height: 240 });
+
+    expect(froms(animate)).toEqual([["100px", "240px"]]);
+  });
+
+  test("a change landing mid-way turns the box from where it stands", () => {
+    const { node, animate, resize, midway } = box();
+    following(node);
+
+    resize({ height: 240 });
+    midway(170);
+    resize({ height: 60 });
+
+    expect(froms(animate).at(-1)).toEqual(["170px", "60px"]);
+  });
+
+  test("a change of width is the window's, and moves nothing", () => {
+    const { node, animate, resize } = box();
+    following(node);
+
+    resize({ height: 180, width: 300 });
     expect(animate).not.toHaveBeenCalled();
   });
 });

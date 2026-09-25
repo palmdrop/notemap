@@ -162,6 +162,36 @@ export function revealed(node: HTMLImageElement): () => void {
 }
 
 /**
+ * A box whose height follows its one child: each change to the child's height
+ * grows or shrinks the box into it, turned from wherever the box stands if the
+ * change lands mid-way. The child is what is measured and the box what moves,
+ * so a change mid-way is never mistaken for the box's own motion. A change of
+ * width is the window's, and moves nothing.
+ */
+export function following(node: HTMLElement): () => void {
+  const content = node.firstElementChild;
+  if (!(content instanceof HTMLElement)) return () => undefined;
+
+  let height: number | undefined;
+  let width: number | undefined;
+
+  const watching = new ResizeObserver(() => {
+    const was = height;
+    const across = width;
+    height = content.offsetHeight;
+    width = content.offsetWidth;
+    if (was === undefined || across !== width || was === height) return;
+    const moving =
+      typeof node.getAnimations === "function" &&
+      node.getAnimations().length > 0;
+    grow(node, moving ? node.getBoundingClientRect().height : was);
+  });
+
+  watching.observe(content);
+  return () => watching.disconnect();
+}
+
+/**
  * A box that grows or shrinks into every height it changes to in place — a
  * tag wrapping, a record read, a picture arriving — rather than jumping. A
  * change of width is the window's, and moves nothing; while the box is

@@ -878,7 +878,7 @@
      scrolls: two columns from `wide` up, stacked below. -->
 <div
   in:rise
-  class="mx-auto flex min-h-0 w-full max-w-read flex-1 flex-col wide:grid wide:max-w-measure-wide wide:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] wide:grid-rows-[1fr_auto]"
+  class="mx-auto flex min-h-0 w-full max-w-read flex-1 flex-col wide:grid wide:max-w-measure wide:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] wide:grid-rows-[1fr_auto]"
 >
   <div
     class="flex max-h-[40%] flex-none flex-col border-b border-ink pt-5 pb-4 max-narrow:max-h-[34%] max-narrow:pt-3.5 max-narrow:pb-3 wide:row-span-2 wide:max-h-none wide:border-r wide:border-b-0 wide:pr-8 wide:pb-5"
